@@ -16,9 +16,14 @@ ui <- fluidPage(theme = shinytheme("flatly"),
               ),
             conditionalPanel(
               condition = "input.dropDownMenu == 'Descriptive Stastics'", 
-              textInput("descriptiveStastics", "Sample", value=NULL, placeholder = "Enter values seperated by a comma with decimals as points"), #make wider and taller
+              textAreaInput("descriptiveStastics", "Sample", value=NULL, placeholder = "Enter values seperated by a comma with decimals as points", rows = 6), #make wider and taller
               checkboxGroupInput(inputId = "checkBoxDescpStats", "Select", selected = c("Mean", "Mode","Median"),choices = c("Mean","Mode","Median","Standard Deviation","Interquartile Range","Box Plot")), #default mean, mode, median, must select at least once
               actionButton(inputId = "goDescpStats", "Calculate") #blue
+            ), 
+            conditionalPanel(
+              condition = "input.dropDownMenu == 'Probability'", 
+              radioButtons("probability", "Choose", choices = c("1","2"), selected = NULL, inline=TRUE), 
+              textAreaInput("probabilitySample", "Sample", value= NULL, placeholder = "Enter values seperated by a comma with decimals as points", rows = 6)
             )
         ),
 
@@ -31,21 +36,23 @@ ui <- fluidPage(theme = shinytheme("flatly"),
     )
 )
 
+#stuff
+
 # Define server logic required to draw a histogram
 server <- function(input, output) {
   
   #String List to Numeric List
   createNumLst <- function(text) {
-    text <- gsub(" ", "", text)
+    text <- gsub("","", text)
     split <- strsplit(text, ",", fixed = FALSE)[[1]]
     as.numeric(split)
   }
   
-  Modes <- function(x) {
-    ux <- unique(x)
-    tab <- tabulate(match(x, ux))
-    ux[tab == max(tab)]
-  }
+  # Modes <- function(x) {
+  #   ux <- unique(x)
+  #   tab <- tabulate(match(x, ux))
+  #   ux[tab == max(tab)]
+  # }
   
   # Mode <- function(x) {
   #   a <- table(x)
@@ -54,20 +61,21 @@ server <- function(input, output) {
   
   output$resultsDescpStats <- renderUI({
     dat <- createNumLst(input$descriptiveStastics)
+    print(class(dat))
     if(anyNA(dat) | length(dat)<2){
           "Invalid input or not enough observations"
     } else{
       withMathJax(
         paste0("\\(\\bar{x}=\\)", mean(dat)),
-        #paste0("Mode = ", Modes(dat)),
+        paste0("Mode = ", Modes(dat)),
         br(),
-        paste0("Median =", median(dat)),
+        paste0("Median (Q2) =", median(dat)),
         br(),
         paste("Five Number Summary:"),
         br(),
-        paste0(min(dat), " ", quantile(dat,0.25)," ", median(dat), " ", quantile(dat, 0.75)," ", max(dat)),
+        #paste0(min(dat), " ", quantile(dat,0.25)," ", median(dat), " ", quantile(dat, 0.75)," ", max(dat)),
         br(), 
-        paste0("Q3: ", quantile(dat,0.25)), 
+        paste0("Q1: ", quantile(dat,0.25)), 
         br(),
         paste0("Q3: ", quantile(dat,0.75)),
         br(),
@@ -77,7 +85,9 @@ server <- function(input, output) {
         br(),
         paste0("Variance: ",var(dat)),
         br(),
-        paste0(range(dat)[2]-range(dat)[1])
+        paste0("Range",range(dat)[2]-range(dat)[1]),
+        br(),
+        paste0("Boxplot", boxplot(c(dat)))
       )
       
     }
