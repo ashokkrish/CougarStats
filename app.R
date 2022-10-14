@@ -1,6 +1,12 @@
 library(shiny)
 library(shinythemes)
 
+render <- "
+{
+  option: function(data, escape){return '<div class=\"option\">'+data.label+'</div>';},
+  item: function(data, escape){return '<div class=\"item\">'+data.label+'</div>';}
+}"
+
 # Define UI for application that draws a histogram
 ui <- fluidPage(theme = shinytheme("flatly"),
                 
@@ -12,7 +18,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                     selectInput(
                       inputId= "dropDownMenu",
                       label= "Choose your test",
-                      choices = c("Descriptive Statistics", "Probability","Inference","Correlation & Regression"),
+                      choices = c("Descriptive Statistics", "Probability","Inference"),
                     ),
                     conditionalPanel(
                       condition = "input.dropDownMenu == 'Descriptive Statistics'",
@@ -146,7 +152,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                       conditionalPanel(
                         condition = "input.samplesSelect == '1' && input.dataAvailability == 'Enter Raw Data'",
                         
-                        textAreaInput("sample1", "Sample 1", value = NULL, placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                        textAreaInput("sample1", "Sample 1", value = NULL, placeholder = "Enter values seperated by a comma with decimals as points", rows = 3),
                       ),
                       
                       conditionalPanel(
