@@ -1,5 +1,6 @@
 library(shiny)
 library(shinythemes)
+library(moments)
 
 render <- "
 {
@@ -228,7 +229,8 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                     div( id="despStats",
                       conditionalPanel(
                         condition = "input.dropDownMenu == 'Descriptive Statistics'",
-                        tableOutput("table")
+                        tableOutput("table"),
+                        plotOutput("boxplotDespStats")
                     )
                     
                     )
@@ -252,12 +254,6 @@ server <- function(input, output) {
     tab <- tabulate(match(x, ux))
     ux[tab == max(tab)]
   }
-  # 
-  # # Mode <- function(x) {
-  # #   a <- table(x)
-  # #   as.numeric(names(a)[a == max(a)])
-  # # }
-  # 
   
   
   observeEvent(input$goDescpStats, {
@@ -271,31 +267,28 @@ server <- function(input, output) {
       values$df <- data.frame(Variable = character(), Value = character())
       output$table <- renderTable(values$df)
       row1 <- data.frame(Variable = "Mean", Value = paste0(mean(dat)))
-      row2 <- data.frame(Variable = "Median", Value = paste0(median(dat)))
-      values$df <- rbind(row1, row2)
-      # withMathJax(
-      #   paste0("\\(\\bar{x}=\\)", mean(dat)),
-      #   #paste0("Mode = ", Modes(dat)),
-      #   br(),
-      #   paste0("Median (Q2) =", median(dat)),
-      #   br(),
-      #   #paste("Five Number Summary:"),
-      #   #br(),
-      #   #paste0(min(dat), " ", quantile(dat,0.25)," ", median(dat), " ", quantile(dat, 0.75)," ", max(dat)),
-      #   #br(),
-      #   paste0("Q1: ", quantile(dat,0.25)),
-      #   br(),
-      #   paste0("Q3: ", quantile(dat,0.75)),
-      #   br(),
-      #   paste0("IQR:",IQR(dat)),
-      #   br(),
-      #   paste0("Standard Deviation: ",sd(dat)),
-      #   br(),
-      #   paste0("Variance: ",var(dat)),
-      #   br(),
-      #   paste0("Range",range(dat)[2]-range(dat)[1]),
-      #   br()
-        #paste0("Boxplot", boxplot(c(dat)))
+      row2 <- data.frame(Variable = "Median (Q2)", Value = paste0(median(dat)))
+      row3 <- data.frame(Variable = "Mode", Value = paste(Modes(dat)))
+      row4 <- data.frame(Variable = "Q1", Value = paste0(quantile(dat, 0.25)))
+      row5 <- data.frame(Variable = "Q3", Value = paste0(quantile(dat, 0.75)))
+      row6 <- data.frame(Variable = "Minimum", Value = paste0(min(dat)))
+      row7 <- data.frame(Variable = "Maximum", Value = paste0(max(dat)))
+      row8 <- data.frame(Variable = "IQR", Value = paste0(IQR(dat)))
+      row9 <- data.frame(Variable = "Range", Value = paste0(range(dat)[2]-range(dat)[1]))
+      row10 <- data.frame(Variable = "Sample Standard Deviation", Value = paste0(sd(dat)))
+      row11 <- data.frame(Variable = "Sample Variance", Value = paste0(var(dat)))
+      row12 <- data.frame(Variable = "Check for Outliers Lower", Value = paste("In progress"))
+      row13 <- data.frame(Variable = "Check for Outliers Upper", Value = paste("In progress"))
+      row14 <- data.frame(Variable = "Number of Outliers", Value = paste("In progress"))
+      row15 <- data.frame(Variable = "Skewness", Value = paste0(skewness(dat)))
+      row16 <- data.frame(Variable = "Kurtosis", Value = paste0(kurtosis(dat)))
+      row17 <- data.frame(Variable = "Count", Value = paste0(length(dat)))
+      row18 <- data.frame(Variable = "Sum", Value = paste0(sum(dat)))
+      values$df <- rbind(row1, row2, row3, row4, row5, row6, row7, row8, row9, row10, row11, row12, row13, row14, row15, row16, row17, row18)
+      
+      output$boxplotDespStats <- renderPlot({
+        boxplot(dat)
+      })
       
     }
   })
