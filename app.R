@@ -1,6 +1,7 @@
 library(shiny)
 library(shinythemes)
 library(moments)
+library(ggplot2)
 
 render <- "
 {
@@ -19,18 +20,25 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                     selectInput(
                       inputId= "dropDownMenu",
                       label= "Choose your test",
-                      choices = c("Descriptive Statistics", "Probability","Inference"),
+                      choices = c("Descriptive Statistics", "Probability", "Inference"),
                     ),
                     conditionalPanel(
                       condition = "input.dropDownMenu == 'Descriptive Statistics'",
-                      textAreaInput("descriptiveStat", "Sample", value= "2.14,2.09,2.65,3.56,5.55,5.00,5.55,3.09,6.79", placeholder = "Enter values seperated by a comma with decimals as points", rows = 6), #make wider and taller
-                      #checkboxGroupInput(inputId = "checkBoxDescpStats", "Select", selected = c("Mean", "Mode","Median"),choices = c("Mean","Mode","Median","Standard Deviation","Interquartile Range","Box Plot")), #default mean, mode, median, must select at least once
-                      actionButton(inputId = "goDescpStats", "Calculate") #blue
+                      textAreaInput("descriptiveStat", "Sample", value = "2.14, 2.09, 2.65, 3.56, 5.55, 5.00, 5.55, 3.09, 6.79", placeholder = "Enter values seperated by a comma with decimals as points", rows = 6),
+                      #checkboxGroupInput(inputId = "checkBoxDescpStats", "Select", selected = c("Mean", "Mode","Median"),choices = c("Mean","Mode","Median","Standard Deviation","Interquartile Range","Box Plot")),
+                      actionButton(inputId = "goDescpStats", "Calculate",
+                                   style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
+                      actionButton("resetAll","Reset Values",
+                                   style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
                     ),
                     conditionalPanel(
                       condition = "input.dropDownMenu == 'Probability'",
-                      radioButtons("probability", "Choose", choices = c("Discrete","Continuous"), selected = NULL, inline=TRUE),
-                      textAreaInput("probabilitySample", "Sample", value= NULL, placeholder = "Enter values seperated by a comma with decimals as points", rows = 6)
+                      radioButtons("probability", "Choose", choices = c("Binomial","Poisson", "Normal"), selected = NULL, inline=TRUE),
+                      #textAreaInput("probabilitySample", "Sample", value= NULL, placeholder = "Enter values seperated by a comma with decimals as points", rows = 6)
+                      actionButton(inputId = "goProbability", "Calculate",
+                                   style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
+                      actionButton("resetAll","Reset Values",
+                                   style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
                     ), 
                     conditionalPanel(
                       condition = "input.dropDownMenu == 'Inference'",
@@ -231,18 +239,16 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                         condition = "input.dropDownMenu == 'Descriptive Statistics'",
                         tableOutput("table"),
                         plotOutput("boxplotDespStats")
-                    )
-                    
+                     )
                     )
                   )
                 )
 )
 
-  
 # Define server logic required to draw a histogram
 server <- function(input, output) {
   
-  # # #String List to Numeric List
+  # String List to Numeric List
   createNumLst <- function(text) {
     text <- gsub("","", text)
     split <- strsplit(text, ",", fixed = FALSE)[[1]]
@@ -255,47 +261,47 @@ server <- function(input, output) {
     ux[tab == max(tab)]
   }
   
-  
   observeEvent(input$goDescpStats, {
     dat <- createNumLst(input$descriptiveStat)
     if(anyNA(dat) | length(dat)<2){
       "Invalid input or not enough observations"
     } else{
       dat <- createNumLst(input$descriptiveStat)
-      print(dat)
+      #print(dat)
       values <- reactiveValues()
       values$df <- data.frame(Variable = character(), Value = character())
       output$table <- renderTable(values$df)
-      row1 <- data.frame(Variable = "Mean", Value = paste0(mean(dat)))
-      row2 <- data.frame(Variable = "Median (Q2)", Value = paste0(median(dat)))
-      row3 <- data.frame(Variable = "Mode", Value = paste(Modes(dat)))
-      row4 <- data.frame(Variable = "Q1", Value = paste0(quantile(dat, 0.25)))
-      row5 <- data.frame(Variable = "Q3", Value = paste0(quantile(dat, 0.75)))
-      row6 <- data.frame(Variable = "Minimum", Value = paste0(min(dat)))
-      row7 <- data.frame(Variable = "Maximum", Value = paste0(max(dat)))
-      row8 <- data.frame(Variable = "IQR", Value = paste0(IQR(dat)))
-      row9 <- data.frame(Variable = "Range", Value = paste0(range(dat)[2]-range(dat)[1]))
-      row10 <- data.frame(Variable = "Sample Standard Deviation", Value = paste0(sd(dat)))
-      row11 <- data.frame(Variable = "Sample Variance", Value = paste0(var(dat)))
-      row12 <- data.frame(Variable = "Check for Outliers Lower", Value = paste("In progress"))
-      row13 <- data.frame(Variable = "Check for Outliers Upper", Value = paste("In progress"))
-      row14 <- data.frame(Variable = "Number of Outliers", Value = paste("In progress"))
-      row15 <- data.frame(Variable = "Skewness", Value = paste0(skewness(dat)))
-      row16 <- data.frame(Variable = "Kurtosis", Value = paste0(kurtosis(dat)))
-      row17 <- data.frame(Variable = "Count", Value = paste0(length(dat)))
-      row18 <- data.frame(Variable = "Sum", Value = paste0(sum(dat)))
+      row1 <- data.frame(Variable = "Count", Value = paste0(length(dat)))
+      row2 <- data.frame(Variable = "Sum", Value = paste0(sum(dat)))
+      row3 <- data.frame(Variable = "Mean", Value = paste0(mean(dat)))
+      row4 <- data.frame(Variable = "Mode", Value = paste(Modes(dat)))
+      row5 <- data.frame(Variable = "Q1", Value = paste0(quantile(dat, 0.25)))
+      row6 <- data.frame(Variable = "Median (Q2)", Value = paste0(median(dat)))
+      row7 <- data.frame(Variable = "Q3", Value = paste0(quantile(dat, 0.75)))
+      row8 <- data.frame(Variable = "Minimum", Value = paste0(min(dat)))
+      row9 <- data.frame(Variable = "Maximum", Value = paste0(max(dat)))
+      row10 <- data.frame(Variable = "IQR", Value = paste0(IQR(dat)))
+      row11 <- data.frame(Variable = "Range", Value = paste0(range(dat)[2]-range(dat)[1]))
+      row12 <- data.frame(Variable = "Sample Standard Deviation", Value = paste0(round(sd(dat),4)))
+      row13 <- data.frame(Variable = "Sample Variance", Value = paste0(round(var(dat),4)))
+      row14 <- data.frame(Variable = "Check for Outliers Lower", Value = paste(quantile(dat, 0.25) - (1.5*IQR(dat))))
+      row15 <- data.frame(Variable = "Check for Outliers Upper", Value = paste(quantile(dat, 0.75) + (1.5*IQR(dat))))
+      row16 <- data.frame(Variable = "Number of Outliers", Value = paste("In progress"))
+      row17 <- data.frame(Variable = "Skewness", Value = paste0(round(skewness(dat),4)))
+      row18 <- data.frame(Variable = "Kurtosis", Value = paste0(round(kurtosis(dat),4)))
+
       values$df <- rbind(row1, row2, row3, row4, row5, row6, row7, row8, row9, row10, row11, row12, row13, row14, row15, row16, row17, row18)
       
       output$boxplotDespStats <- renderPlot({
-        boxplot(dat)
+        boxplot(dat, horizontal = TRUE)
+        # ggplot(as.data.frame(dat), aes(x = "", y = dat)) +    
+        #   geom_boxplot(show.legend = FALSE)
       })
       
     }
   })
 
-  }
+}
   
-
-
 # Run the application 
 shinyApp(ui = ui, server = server)
