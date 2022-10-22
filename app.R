@@ -24,7 +24,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                     ),
                     conditionalPanel(
                       condition = "input.dropDownMenu == 'Descriptive Statistics'",
-                      textAreaInput("descriptiveStat", "Sample", value = "2.14, 2.09, 2.65, 3.56, 5.55, 5.00, 5.55, 3.09, 6.79", placeholder = "Enter values seperated by a comma with decimals as points", rows = 6),
+                      textAreaInput("descriptiveStat", "Sample", value = "2.14, 2.09, 2.65, 3.56, 5.55, 5.00, 5.55, 3.09, 6.79", placeholder = "Enter values separated by a comma with decimals as points", rows = 6),
                       #checkboxGroupInput(inputId = "checkBoxDescpStats", "Select", selected = c("Mean", "Mode","Median"),choices = c("Mean","Mode","Median","Standard Deviation","Interquartile Range","Box Plot")),
                       actionButton(inputId = "goDescpStats", "Calculate",
                                    style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
@@ -34,7 +34,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                     conditionalPanel(
                       condition = "input.dropDownMenu == 'Probability'",
                       radioButtons("probability", "Choose", choices = c("Binomial","Poisson", "Normal"), selected = NULL, inline=TRUE),
-                      #textAreaInput("probabilitySample", "Sample", value= NULL, placeholder = "Enter values seperated by a comma with decimals as points", rows = 6)
+                      #textAreaInput("probabilitySample", "Sample", value= NULL, placeholder = "Enter values separated by a comma with decimals as points", rows = 6)
                       actionButton(inputId = "goProbability", "Calculate",
                                    style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
                       actionButton("resetAll","Reset Values",
@@ -161,7 +161,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                       conditionalPanel(
                         condition = "input.samplesSelect == '1' && input.dataAvailability == 'Enter Raw Data'",
                         
-                        textAreaInput("sample1", "Sample 1", value = NULL, placeholder = "Enter values seperated by a comma with decimals as points", rows = 3),
+                        textAreaInput("sample1", "Sample 1", value = NULL, placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
                       ),
                       
                       conditionalPanel(
@@ -293,7 +293,23 @@ server <- function(input, output) {
       values$df <- rbind(row1, row2, row3, row4, row5, row6, row7, row8, row9, row10, row11, row12, row13, row14, row15, row16, row17, row18)
       
       output$boxplotDespStats <- renderPlot({
+        
+        #-------------------
+        # Horizontal boxplot
+        #-------------------
+        
         boxplot(dat, horizontal = TRUE)
+        ## Add mean line
+        # segments(x0 = mean(dat), y0 = 0.8,
+        #          x1 = mean(dat), y1 = 1.2,
+        #          col = "red", lwd = 2)
+        # 
+        # points(mean(dat), col = 3, pch = 19)
+        
+        #-------------------
+        # ggplot2 boxplot
+        #-------------------
+        
         # ggplot(as.data.frame(dat), aes(x = "", y = dat)) +    
         #   geom_boxplot(show.legend = FALSE)
       })
