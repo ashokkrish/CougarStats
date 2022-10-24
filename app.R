@@ -233,7 +233,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                       actionButton("resetAll","Reset Values",
                                    style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
                     )
-                  )),
+                  ),
                   
                   mainPanel(
                     div( id="despStats",
@@ -251,26 +251,8 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                          )
                       )
                   ),
-                  
-                  tabPanel( "Authors",
-                    p("This interactive Shiny app was developed as a part of my COMP 5690 Senior Computer Sceince Project in Fall 2022"), 
-                    p(span("Lead Developer and maintainer", style = "font-weight:bold")),
-                    p("Crystal Wai,"), 
-                    p("Undergraduate Student,"), 
-                    p("Mount Royal University,"), 
-                    p("Calgary, AB, CANADA"), 
-                    
-                    br(), 
-                    
-                    p(span("Template design, model structure and coding tips", style = "font-weight:bold")),
-                    p("Ashok Krishnamurthy, PhD"), 
-                    p("Associate Professor, Department of Mathematics and Computing,"),
-                    p("Faculty of Science and Technology,"), 
-                    p("Mount Royal University,"), 
-                    p("Calgary, AB, CANADA")
-                  )
-                ))
-
+                )
+)
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
