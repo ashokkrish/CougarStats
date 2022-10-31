@@ -12,7 +12,6 @@ render <- "
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(theme = shinytheme("flatly"),
-                
                 # Application title
                 titlePanel("Intro to Stats"),
                 
@@ -36,11 +35,36 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                     conditionalPanel(
                       condition = "input.dropDownMenu == 'Probability'",
                       radioButtons("probability", "Choose", choices = c("Binomial","Poisson", "Normal"), selected = NULL, inline=TRUE),
-                      textAreaInput("probabilitySample", "Sample", value= NULL, placeholder = "Enter values separated by a comma with decimals as points", rows = 6),
-                      actionButton(inputId = "goProbability", "Calculate",
-                                   style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
-                      actionButton("resetAll","Reset Values",
-                                   style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
+                      conditionalPanel(
+                        condition = "input.probability == 'Binomial'",
+                        textInput("nBinom", "Number of trials (n)", value = ""),
+                        textInput("pBionom", "Probability of success (p)", value = ""), 
+                        textInput("xBionom", "Number of Successes (x)", value = ""),
+                        checkboxGroupInput(inputId = "calcBionom", 
+                                     label = "",
+                                     choiceValues = list("P(X=x)","P(X \\leq x)\\)","P(X>x)"),
+                                     choiceNames = list("P(X=x)","P(X \\leq x)\\)","P(X>x)")), 
+                        actionButton(inputId = "goProbability", "Calculate",
+                                     style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
+                        actionButton("resetAll","Reset Values",
+                                     style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
+                      ),
+                      
+                      conditionalPanel(
+                        condition = "input.probability == Poisson", 
+                        textInput("nPoisson", "Number of Trials (n)", value = ""), 
+                        textInput("xPoisson", "Number of Successes (x)", value = ""),
+                        checkboxGroupInput(inputId = "calcPoisson",
+                                           label = "", 
+                                           choiceValues = list("P(X=x)","P(X \\leq x)\\)","P(X>x)"),
+                                           choiceNames = list("P(X=x)","P(X \\leq x)\\)","P(X>x)")
+                                           ),
+                        actionButton(inputId = "goProbability", "Calculate",
+                                     style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
+                        actionButton("resetAll","Reset Values",
+                                     style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
+                        
+                      )
                     ), 
                     conditionalPanel(
                       condition = "input.dropDownMenu == 'Inference'",
@@ -249,7 +273,8 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                            tableOutput("tableProb"),
                            tableOutput("tableProbT")
                          )
-                      )
+                      ) 
+                    
                   ),
                 )
 )
