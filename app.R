@@ -51,8 +51,8 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                       ),
                       
                       conditionalPanel(
-                        condition = "input.probability == Poisson", 
-                        textInput("nPoisson", "Average (\mu)", value = ""), 
+                        condition = "input.probability == 'Poisson'", 
+                        textInput("nPoisson", "Average (mu)", value = ""), 
                         textInput("xPoisson", "Number of Successes (x)", value = ""),
                         checkboxGroupInput(inputId = "calcPoisson",
                                            label = "", 
@@ -249,7 +249,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                               render = I(render)
                             )
                           )
-                        ),
+                        )
                       ),
                       
                       actionButton(inputId = "goInference", "Calculate",
@@ -275,7 +275,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                          )
                       ) 
                     
-                  ),
+                  )
                 )
 )
 
