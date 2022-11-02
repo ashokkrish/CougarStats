@@ -3,6 +3,7 @@ library(shinythemes)
 library(moments)
 library(ggplot2)
 library(shinyjs)
+library(shinyvalidate)
 
 render <- "
 {
@@ -34,12 +35,22 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                     ),
                     conditionalPanel(
                       condition = "input.dropDownMenu == 'Probability'",
-                      radioButtons("probability", "Distribution", choices = c("Binomial","Poisson", "Normal"), selected = NULL, inline=TRUE),
+                      radioButtons("probability", "Distribution", choices = c("Binomial", "Poisson", "Normal"), selected = NULL, inline = TRUE),
                       conditionalPanel(
                         condition = "input.probability == 'Binomial'",
-                        textInput("nBinom", "Number of trials (n)", value = ""),
-                        textInput("pBinom", "Probability of success (p)", value = ""), 
-                        textInput("xBinom", "Number of Successes (x)", value = ""),
+                        
+                        numericInput(inputId = "numTrailsBinom", 
+                                     label = "Number of Trails (n):",
+                                     value = 10, min = 1, step = 1),
+                        
+                        numericInput(inputId = "successProbBinom", 
+                                     label = "Probability of Success (p):",
+                                     value = 0.5, min = 0, max = 1, step = 0.00001),
+                        
+                        numericInput(inputId = "numSuccessesBinom", 
+                                     label = "Number of Successes (x):",
+                                     value = 0, min = 0, step = 1),
+                        
                         checkboxGroupInput(inputId = "calcBinom", 
                                      label = "",
                                      choiceValues = list("P(X=x)","P(X \\leq x)\\)","P(X>x)"),
@@ -52,8 +63,8 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                       
                       conditionalPanel(
                         condition = "input.probability == 'Poisson'", 
-                        textInput("nPoisson", "Average (mu)", value = ""), 
-                        textInput("xPoisson", "Number of Successes (x)", value = ""),
+                        textInput("muPoisson", "Average (mu)", value = ""),  # CHANGE THIS TO A NUMERIC INPUT
+                        textInput("xPoisson", "Number of Successes (x)", value = ""), # CHANGE THIS TO A NUMERIC INPUT
                         checkboxGroupInput(inputId = "calcPoisson",
                                            label = "", 
                                            choiceValues = list("P(X=x)","P(X \\leq x)\\)","P(X>x)"),
@@ -65,7 +76,8 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
                         
                       )
-                    ), 
+                    ),
+                    
                     conditionalPanel(
                       condition = "input.dropDownMenu == 'Inference'",
                       
@@ -181,7 +193,6 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                                        inline = TRUE,
                                        width = "1000px"),
                         ),
-                        
                       ),
                       
                       conditionalPanel(
@@ -260,27 +271,49 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                   ),
                   
                   mainPanel(
-                    div( id="despStats",
+                    div(id="despStats",
                       conditionalPanel(
                         condition = "input.dropDownMenu == 'Descriptive Statistics'",
                         tableOutput("table"),
                         plotOutput("boxplotDespStats")
                      )
                     ),
-                    div( id="probability", 
-                         conditionalPanel(
-                           condition = "input.dropDownMenu == 'Probability'",
-                           tableOutput("tableProb"),
-                           tableOutput("tableProbT")
-                         )
-                      ) 
-                    
+                    # div(id="probability", 
+                    #      conditionalPanel(
+                    #        condition = "input.dropDownMenu == 'Probability'",
+                    #        tableOutput("tableProb"),
+                    #        tableOutput("tableProbT")
+                    #      )
+                    #   ) 
                   )
                 )
 )
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
+  
+  # Data validation
+  iv <- InputValidator$new()
+  
+  #numTrailsBinom
+  
+  iv$add_rule("numTrailsBinom", sv_required())
+  iv$add_rule("numTrailsBinom", sv_integer())
+  iv$add_rule("numTrailsBinom", sv_gt(0))
+  
+  # successProbBinom
+  
+  iv$add_rule("successProbBinom", sv_required())
+  iv$add_rule("successProbBinom", sv_gte(0))
+  iv$add_rule("successProbBinom", sv_lte(1))
+  
+  iv$enable()
+  
+  #numSuccessesBinom
+  
+  iv$add_rule("numSuccessesBinom", sv_required())
+  iv$add_rule("numSuccessesBinom", sv_integer())
+  iv$add_rule("numSuccessesBinom", sv_gte(0))
   
   # String List to Numeric List
   createNumLst <- function(text) {
@@ -307,7 +340,7 @@ server <- function(input, output) {
       output$table <- renderTable(values$df)
       row1 <- data.frame(Variable = "Count", Value = paste0(length(dat)))
       row2 <- data.frame(Variable = "Sum", Value = paste0(sum(dat)))
-      row3 <- data.frame(Variable = "Mean", Value = paste0(mean(dat)))
+      row3 <- data.frame(Variable = "Mean", Value = paste0(round(mean(dat),4)))
       row4 <- data.frame(Variable = "Mode", Value = paste(Modes(dat)))
       row5 <- data.frame(Variable = "Q1", Value = paste0(quantile(dat, 0.25)))
       row6 <- data.frame(Variable = "Median (Q2)", Value = paste0(median(dat)))
@@ -355,39 +388,39 @@ server <- function(input, output) {
   #   
   # })
   
-  observeEvent(input$goProbability, {
-    dat1 <- createNumLst(input$probabilitySample)
-    if(anyNA(dat1) | length(dat1)<2){
-      "Invalid input or not enough observations"
-    } else{
-      dat1 <- createNumLst(input$probabilitySample)
-      values <- reactiveValues()
-      values$dfProb <- data.frame(Distribution = character(), Root = character())
-      output$tableProb <- renderTable(values$dfProb)
-      row1 <- data.frame(Distribution = "Binomial", Root = paste0("In progress"))
-      row2 <- data.frame(Distribution = "Poisson", Root = paste0("In progress"))
-      row3 <- data.frame(Distribution = "Normal", Root = paste0("In progress"))
-      
-      values$dfProb <- rbind(row1, row2, row3) 
-      
-      }
-  })
+  # observeEvent(input$goProbability, {
+  #   dat1 <- createNumLst(input$probabilitySample)
+  #   if(anyNA(dat1) | length(dat1)<2){
+  #     "Invalid input or not enough observations"
+  #   } else{
+  #     dat1 <- createNumLst(input$probabilitySample)
+  #     values <- reactiveValues()
+  #     values$dfProb <- data.frame(Distribution = character(), Root = character())
+  #     output$tableProb <- renderTable(values$dfProb)
+  #     row1 <- data.frame(Distribution = "Binomial", Root = paste0("In progress"))
+  #     row2 <- data.frame(Distribution = "Poisson", Root = paste0("In progress"))
+  #     row3 <- data.frame(Distribution = "Normal", Root = paste0("In progress"))
+  #     
+  #     values$dfProb <- rbind(row1, row2, row3) 
+  #     
+  #     }
+  # })
   
-  observeEvent(input$goProbability, {
-    dat2 <- createNumLst(input$probabilitySample)
-    if(anyNA(dat2) | length(dat2)<2){
-      "Invalid input or not enough observations"
-    } else{
-      dat2 <- createNumLst(input$probabilitySample)
-      values <- reactiveValues()
-      values$dfProbT <- data.frame(Prefix = character(), Continuous = character(), Discrete = character())
-      output$tableProbT <- renderTable(values$dfProbT)
-      row1 <- data.frame(Prefix = "d", Continuous = "density", Discrete = "pmf")
-      row2 <- data.frame(Prefix = "p", Continuous = "probability", Discrete = "cdf")
-      
-      values$dfProbT <- rbind(row1,row2)
-    }
-  })
+  # observeEvent(input$goProbability, {
+  #   dat2 <- createNumLst(input$probabilitySample)
+  #   if(anyNA(dat2) | length(dat2)<2){
+  #     "Invalid input or not enough observations"
+  #   } else{
+  #     dat2 <- createNumLst(input$probabilitySample)
+  #     values <- reactiveValues()
+  #     values$dfProbT <- data.frame(Prefix = character(), Continuous = character(), Discrete = character())
+  #     output$tableProbT <- renderTable(values$dfProbT)
+  #     row1 <- data.frame(Prefix = "d", Continuous = "density", Discrete = "pmf")
+  #     row2 <- data.frame(Prefix = "p", Continuous = "probability", Discrete = "cdf")
+  #     
+  #     values$dfProbT <- rbind(row1,row2)
+  #   }
+  # })
 
 }
   
