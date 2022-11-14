@@ -50,11 +50,14 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                         numericInput(inputId = "numSuccessesBinom", 
                                      label = "Number of Successes (x):",
                                      value = 0, min = 0, step = 1),
-                        
-                        checkboxGroupInput(inputId = "calcBinom", 
-                                     label = "",
-                                     choiceValues = list("P(X=x)","P(X \\leq x)\\)","P(X>x)"),
-                                     choiceNames = list("P(X=x)","P(X \\leq x)\\)","P(X>x)")), 
+                        # checkboxGroupInput(inputId = "calcBinom", 
+                        #                    label = "",
+                        #                    choiceValues = list("P(X=x)","P(X \\leq x)\\)","P(X>x)"),
+                        #                    choiceNames = list("P(X=x)","P(X \\leq x)\\)","P(X>x)")),
+                        radioButtons(inputId = "calcBinom", 
+                                           label = "",
+                                           choiceValues = list("P(X=x)","P(X \\leq x)\\)","P(X>x)"),
+                                           choiceNames = list("P(X=x)","P(X \\leq x)\\)","P(X>x)")),
                         actionButton(inputId = "goBinom", "Calculate",
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
                         actionButton("resetAll","Reset Values",
@@ -63,8 +66,8 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                       
                       conditionalPanel(
                         condition = "input.probability == 'Poisson'", 
-                        textInput("muPoisson", "Average (mu)", value = ""),  # CHANGE THIS TO A NUMERIC INPUT
-                        textInput("xPoisson", "Number of Successes (x)", value = ""), # CHANGE THIS TO A NUMERIC INPUT
+                        numericInput("muPoisson", "Average (mu)", value = ""),  # CHANGE THIS TO A NUMERIC INPUT
+                        numericInput("xPoisson", "Number of Successes (x)", value = ""), # CHANGE THIS TO A NUMERIC INPUT
                         checkboxGroupInput(inputId = "calcPoisson",
                                            label = "", 
                                            choiceValues = list("P(X=x)","P(X \\leq x)\\)","P(X>x)"),
@@ -75,6 +78,28 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                         actionButton("resetAll","Reset Values",
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
                         
+                      ),
+                      
+                      conditionalPanel(
+                        condition = "input.probability == 'Normal'", 
+                        numericInput(inputId = "popMean", 
+                                     label = "Population Mean (mu):", 
+                                     value = 0, step = 0.00001),
+                        numericInput(inputId = "popSD",
+                                     label = "Population Standard Deviation (sigma):",
+                                     value = 1, min = 0, step = 0.00001), 
+                        numericInput(inputId = "xValue",
+                                     label = "x:",
+                                     value = 0, step = 0.00001),
+                        checkboxGroupInput(inputId = "calcNormal",
+                                           label = "", 
+                                           choiceValues = list("P(X \\leq x)","P(X > x)\\)"),
+                                           choiceNames = list("P(X \\leq x)","P(X > x)\\)")
+                        ),
+                        actionButton(inputId = "goNormal", "Calculate",
+                                     style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
+                        actionButton("resetAll","Reset Values",
+                                     style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
                       )
                     ),
                     
@@ -278,16 +303,16 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                         plotOutput("boxplotDespStats")
                      )
                     ),
-                    # div(id="probability", 
-                    #      conditionalPanel(
-                    #        condition = "input.dropDownMenu == 'Probability'",
-                    #        tableOutput("tableProb"),
-                    #        tableOutput("tableProbT")
-                    #      )
-                    #   ) 
+                    div(id="probability",
+                         conditionalPanel(
+                           condition = "input.dropDownMenu == 'Probability'",
+                           uiOutput("render_probability")
+                           )
+
+                         )
+                      )
                   )
                 )
-)
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
@@ -384,43 +409,33 @@ server <- function(input, output) {
     }
   })
   
+  output$render_probability <- renderUI({
+    if (input$goBinom) {
+      withMathJax(
+        paste0("\\(X \\sim Bin(n = \\)","", input$numTrailsBinom,",", "\\(p = \\)","", input$successProbBinom, "\\()\\)","and", case_when(
+          input$calcBinom == "P(X=x)" ~ paste0(dbinom(input$numSuccessesBinom,input$numTrailsBinom,input$successProbBinom)),
+          input$calcBinom == "P(X \\leq x)\\)" ~ paste0("\\(P(X \\leq \\)", " ", input$x1_binomial, "\\()\\)", " ", "\\( = \\)", " ", round(pbinom(input$x1_binomial, size = input$n_binomial, prob = input$p_binomial, lower.tail = TRUE), 4)),
+          input$calcBinom == "P(X>x)" ~ paste0("\\(P(X > \\)", " ", input$x2_binomial, "\\()\\)", " ", "\\( = \\)", " ", round(pbinom(input$x2_binomial, size = input$n_binomial, prob = input$p_binomial, lower.tail = FALSE), 4))
+        ) )
+      )
+    }
+    else if (input$calcPoisson){
+      withMathJax(
+        paste0("\(X \\sim Pois(\\lambda = \\)", " ", input$muPoisson, "\\()\\)", " and ", case_when(
+          input$calcPoisson == "P(X=x)" ~ paste0() 
+        ))
+      )
+    }
+    else (input$goNormal){
+      
+    }
+  })
+  
   # observeEvent(input$resetAll, {
   #   
   # })
   
-  # observeEvent(input$goProbability, {
-  #   dat1 <- createNumLst(input$probabilitySample)
-  #   if(anyNA(dat1) | length(dat1)<2){
-  #     "Invalid input or not enough observations"
-  #   } else{
-  #     dat1 <- createNumLst(input$probabilitySample)
-  #     values <- reactiveValues()
-  #     values$dfProb <- data.frame(Distribution = character(), Root = character())
-  #     output$tableProb <- renderTable(values$dfProb)
-  #     row1 <- data.frame(Distribution = "Binomial", Root = paste0("In progress"))
-  #     row2 <- data.frame(Distribution = "Poisson", Root = paste0("In progress"))
-  #     row3 <- data.frame(Distribution = "Normal", Root = paste0("In progress"))
-  #     
-  #     values$dfProb <- rbind(row1, row2, row3) 
-  #     
-  #     }
-  # })
   
-  # observeEvent(input$goProbability, {
-  #   dat2 <- createNumLst(input$probabilitySample)
-  #   if(anyNA(dat2) | length(dat2)<2){
-  #     "Invalid input or not enough observations"
-  #   } else{
-  #     dat2 <- createNumLst(input$probabilitySample)
-  #     values <- reactiveValues()
-  #     values$dfProbT <- data.frame(Prefix = character(), Continuous = character(), Discrete = character())
-  #     output$tableProbT <- renderTable(values$dfProbT)
-  #     row1 <- data.frame(Prefix = "d", Continuous = "density", Discrete = "pmf")
-  #     row2 <- data.frame(Prefix = "p", Continuous = "probability", Discrete = "cdf")
-  #     
-  #     values$dfProbT <- rbind(row1,row2)
-  #   }
-  # })
 
 }
   
