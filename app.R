@@ -14,12 +14,16 @@ render <- "
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(theme = shinytheme("flatly"),
+                
                 # Application title
                 titlePanel("Intro to Stats"),
                 
                 sidebarLayout(
                   #shinyjs::useShinyjs(),
                   sidebarPanel(
+                    withMathJax(),
+                    shinyjs::useShinyjs(),
+                    id = "sideBar", 
                     selectInput(
                       inputId= "dropDownMenu",
                       label= "Choose your test",
@@ -58,7 +62,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                         checkboxGroupInput(inputId = "calcBinom", 
                                            label = "",
                                            choiceValues = list("exact","cumulative","P(X>x)"),
-                                           choiceNames = list("P(X=x)","P(X \\leq x)\\)","P(X>x)")),
+                                           choiceNames = list("P(X=x)","\\(P(X \\leq x)\\)","P(X>x)")),
                         actionButton(inputId = "goBinom", "Calculate",
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
                         actionButton("resetAll","Reset Values",
@@ -91,6 +95,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                       ),
                       
                       conditionalPanel(
+                        withMathJax(),
                         condition = "input.probability == 'Normal'", 
                         numericInput(inputId = "popMean", 
                                      label = "Population Mean (mu):", 
@@ -104,7 +109,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                         checkboxGroupInput(inputId = "calcNormal",
                                            label = "", 
                                            choiceValues = list("P(X \\leq x)", "P(X > x)"),
-                                           choiceNames = list("P(X \\leq x)", "P(X > x)")
+                                           choiceNames = list("\\P(X \\leq x)\\)", "P(X > x)")
                         ),
                         actionButton(inputId = "goNormal", "Calculate",
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
@@ -508,6 +513,17 @@ server <- function(input, output) {
     })
   })
   
+  observeEvent(input$resetAll, {
+    shinyjs::reset("sideBar")
+  })
+  
+  observeEvent(input$resetAll,{
+    hide(id = 'despStats')
+  })
+  
+  observeEvent(input$goDescpStats, {
+    show(id = 'despStats')
+  })
 
 }
   
