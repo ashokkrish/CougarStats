@@ -4,6 +4,7 @@ library(moments)
 library(ggplot2)
 library(shinyjs)
 library(shinyvalidate)
+library(dplyr)
 
 render <- "
 {
@@ -54,9 +55,9 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                         #                    label = "",
                         #                    choiceValues = list("P(X=x)","P(X \\leq x)\\)","P(X>x)"),
                         #                    choiceNames = list("P(X=x)","P(X \\leq x)\\)","P(X>x)")),
-                        radioButtons(inputId = "calcBinom", 
+                        checkboxGroupInput(inputId = "calcBinom", 
                                            label = "",
-                                           choiceValues = list("P(X=x)","P(X \\leq x)\\)","P(X>x)"),
+                                           choiceValues = list("exact","cumulative","P(X>x)"),
                                            choiceNames = list("P(X=x)","P(X \\leq x)\\)","P(X>x)")),
                         actionButton(inputId = "goBinom", "Calculate",
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
@@ -70,9 +71,18 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                         numericInput("xPoisson", "Number of Successes (x)", value = ""), # CHANGE THIS TO A NUMERIC INPUT
                         checkboxGroupInput(inputId = "calcPoisson",
                                            label = "", 
-                                           choiceValues = list("P(X=x)","P(X \\leq x)\\)","P(X>x)"),
-                                           choiceNames = list("P(X=x)","P(X \\leq x)\\)","P(X>x)")
+                                           choiceValues = list("lowerTail", "upperTail","interval"),
+                                           choiceNames = list("\\P(X \\leq x)\\)","\\P(X > x)\\)","\\P(a \\leq X \\leq b)\\)")
                                            ),
+                        conditionalPanel(
+                          condition = "input.calcPoisson = 'interval'",
+                          numericInput("aPoisson", "a:",
+                                       value = 6, min = 0, step = 1
+                          ),
+                          numericInput("bPoisson", "b: \\( (a \\leq b) \\)",
+                                       value = 10, min = 0, step = 1
+                          )
+                        ),
                         actionButton(inputId = "goPoisson", "Calculate",
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
                         actionButton("resetAll","Reset Values",
@@ -178,8 +188,8 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                         radioButtons(inputId = "bothsigmaKnown",
                                      label = strong("Population Standard Deviations"),
                                      choiceValues = list("bothKnown","bothUnknown"),
-                                     choiceNames = list("Known","Unknown"),
-                                     selected = character(0),
+                                     choiceNames = list("bothKnown","bothUnknown"),
+                                     selected = "bothKnown",
                                      inline = TRUE,
                                      width = "1000px"),
                         
@@ -237,7 +247,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                                      label = strong("Type of Samples"),
                                      choiceValues = list("Independent Samples","Dependent Samples"),
                                      choiceNames = list("Independent Samples","Dependent Samples (Paired Data)"),
-                                     selected = character(0), # "Independent Samples", #
+                                     selected = "Independent Samples", 
                                      inline = TRUE,
                                      width = "1000px"),
                       ),
@@ -409,27 +419,78 @@ server <- function(input, output) {
     }
   })
   
-  output$render_probability <- renderUI({
-    if (input$goBinom) {
-      withMathJax(
-        paste0("\\(X \\sim Bin(n = \\)","", input$numTrailsBinom,",", "\\(p = \\)","", input$successProbBinom, "\\()\\)","and", case_when(
-          input$calcBinom == "P(X=x)" ~ paste0(dbinom(input$numSuccessesBinom,input$numTrailsBinom,input$successProbBinom)),
-          input$calcBinom == "P(X \\leq x)\\)" ~ paste0("\\(P(X \\leq \\)", " ", input$x1_binomial, "\\()\\)", " ", "\\( = \\)", " ", round(pbinom(input$x1_binomial, size = input$n_binomial, prob = input$p_binomial, lower.tail = TRUE), 4)),
-          input$calcBinom == "P(X>x)" ~ paste0("\\(P(X > \\)", " ", input$x2_binomial, "\\()\\)", " ", "\\( = \\)", " ", round(pbinom(input$x2_binomial, size = input$n_binomial, prob = input$p_binomial, lower.tail = FALSE), 4))
-        ) )
-      )
-    }
-    else if (input$calcPoisson){
-      withMathJax(
-        paste0("\(X \\sim Pois(\\lambda = \\)", " ", input$muPoisson, "\\()\\)", " and ", case_when(
-          input$calcPoisson == "P(X=x)" ~ paste0() 
-        ))
-      )
-    }
-    else (input$goNormal){
-      
-    }
+  
+  observeEvent(input$goBinom, {
+    output$render_probability <- renderUI({
+      binomNum <- input$numTrailsBinom
+      binomSu <- input$successProbBinom
+      binomNumSu <- input$numSuccessesBinom
+      if(input$calcBinom == 'exact' || input$calcBinom == 'cumulative' || input$calcBinom == 'P(X>x)'){
+        withMathJax(
+          paste0("\\(P(X = \\)","",binomNumSu,"\\()\\)","\\( = \\)","",round(dbinom(binomNumSu,binomNum,binomSu),4)),
+          br(),
+          paste0("\\(P(X \\leq \\)","",binomNumSu,"\\()\\)","","\\( = \\)","",round(pbinom(binomNumSu,binomNum,binomSu,lower.tail = TRUE),4)),
+          br(),
+          paste0("\\(P(X > \\)","",binomNumSu,"\\()\\)","","\\( = \\)","",round(pbinom(binomNumSu,binomNum,binomSu,lower.tail = FALSE),4))
+        )
+      }
+      else if(input$calcBinom == 'exact'){
+        withMathJax(
+          paste0("\\(P(X = \\)","",binomNumSu,"\\()\\)","\\( = \\)","",round(dbinom(binomNumSu,binomNum,binomSu),4))
+        )
+      }
+      else if(input$calcBinom == 'cumulative'){
+        withMathJax(
+          paste0("\\(P(X \\leq \\)","",binomNumSu,"\\()\\)","","\\( = \\)","",round(pbinom(binomNumSu,binomNum,binomSu,lower.tail = TRUE),4)))
+      }
+      else if(input$calcBinom == 'P(X>x)'){
+        withMathJax(
+          paste0("\\(P(X > \\)","",binomNumSu,"\\()\\)","","\\( = \\)","",round(pbinom(binomNumSu,binomNum,binomSu,lower.tail = FALSE),4)))
+      }
+      else{
+        print("Select")
+      }
+    })
   })
+  
+  observeEvent(input$goPoisson, {
+    output$render_probability <- renderUI({
+      poissonAvg <- input$muPoisson
+      xPoisson <- input$xPoisson 
+      if(input$calcPoisson == "lowerTail"){
+        withMathJax("\\(P(X \\leq \\)"," ",xPoisson," ","\\()\\)", " ", "\\( = \\)",round(ppois(xPoisson,poissonAvg,lower.tail = TRUE),4))
+      }
+      else if(input$calcPoisson == "upperTrail"){}
+      else if(){}
+      else{}
+    })
+  })
+  
+  # output$render_probability <- renderUI({
+  #   if (input$goBinom) {
+  #     withMathJax(
+  #       paste0("\\(X \\sim Bin(n = \\)","", input$numTrailsBinom,",", "\\(p = \\)","", input$successProbBinom, "\\()\\)","and", case_when(
+  #         input$calcBinom == "P(X=x)" ~ paste0(dbinom(input$numSuccessesBinom,input$numTrailsBinom,input$successProbBinom)),
+  #         input$calcBinom == "P(X \\leq x)\\)" ~ paste0("\\(P(X \\leq \\)", " ", input$numSuccessesBinom, "\\()\\)", " ", "\\( = \\)", " ", round(pbinom(input$numSuccessesBinom, size = input$numTrailsBinom, prob = input$successProbBinom, lower.tail = TRUE), 4)),
+  #         input$calcBinom == "P(X>x)" ~ paste0("\\(P(X > \\)", " ", input$numSuccessesBinom, "\\()\\)", " ", "\\( = \\)", " ", round(pbinom(input$numSuccessesBinom, size = input$numTrailsBinom, prob = input$successProbBinom, lower.tail = FALSE), 4))
+  #       ) )
+  #     )
+  #   }
+  #   else if (input$goPoisson){
+  #     withMathJax(
+  #       paste0("\(X \\sim Pois(\\lambda = \\)", " ", input$muPoisson, "\\()\\)", " and ", case_when(
+  #         input$calcPoisson == "lowerTail" ~ paste0("\\(P(X \\leq \\)", " ", input$xPoisson, "\\()\\)", " ", "\\( = \\)", " ", round(ppois(input$xPoisson, lambda = input$muPoisson, lower.tail = TRUE), 4)),
+  #         input$calcPoisson == "upperTail" ~ paste0("\\(P(X > \\)", " ", input$xPoisson, "\\()\\)", " ", "\\( = \\)", " ", round(ppois(input$xPoisson, lambda = input$muPoisson, lower.tail = FALSE), 4)),
+  #         input$calcPoisson == "interval" ~ paste0("\\(P(\\)", input$aPoisson, " ", "\\(\\leq X\\leq \\)", " ", input$bPoisson, "\\()\\)", " ", "\\( = \\)", " ", ifelse(input$aPoisson > input$bPoisson, "a must be less than or equal to b", round(ppois(input$bPoisson, lambda = input$muPoisson, lower.tail = TRUE) - ppois(input$aPoisson - 1, lambda = input$muPoisson, lower.tail = TRUE), 4)))
+  #       ))
+  #     )
+  #   }
+  #   else (input$goNormal){
+  #     withMathJax(
+  #       paste0()
+  #     )
+  #   }
+  # })
   
   # observeEvent(input$resetAll, {
   #   
