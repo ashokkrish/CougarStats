@@ -39,6 +39,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                                    style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
                     ),
                     conditionalPanel(
+                      id = "probPanel",
                       condition = "input.dropDownMenu == 'Probability'",
                       radioButtons("probability", "Distribution", choices = c("Binomial", "Poisson", "Normal"), selected = NULL, inline = TRUE),
                       conditionalPanel(
@@ -65,7 +66,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                                            choiceNames = list("P(X=x)","\\(P(X \\leq x)\\)","P(X>x)")),
                         actionButton(inputId = "goBinom", "Calculate",
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
-                        actionButton("resetAll","Reset Values",
+                        actionButton("resetAllB","Reset Values",
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
                       ),
                       
@@ -318,7 +319,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                         plotOutput("boxplotDespStats")
                      )
                     ),
-                    div(id="probability",
+                    div(id="probabilityMP",
                          conditionalPanel(
                            condition = "input.dropDownMenu == 'Probability'",
                            uiOutput("render_probability")
@@ -430,7 +431,7 @@ server <- function(input, output) {
       binomNum <- input$numTrailsBinom
       binomSu <- input$successProbBinom
       binomNumSu <- input$numSuccessesBinom
-      if(input$calcBinom == 'exact' && input$calcBinom == 'cumulative' && input$calcBinom == 'P(X>x)'){
+      if(input$calcBinom == 'exact' & input$calcBinom == 'cumulative' & input$calcBinom == 'P(X>x)'){
         withMathJax(
           paste0("\\(P(X = \\)","",binomNumSu,"\\()\\)","\\( = \\)","",round(dbinom(binomNumSu,binomNum,binomSu),4)),
           br(),
@@ -517,6 +518,7 @@ server <- function(input, output) {
     shinyjs::reset("sideBar")
   })
   
+  
   observeEvent(input$resetAll,{
     hide(id = 'despStats')
   })
@@ -524,6 +526,16 @@ server <- function(input, output) {
   observeEvent(input$goDescpStats, {
     show(id = 'despStats')
   })
+  
+  observeEvent(input$resetAllB, {
+    hide(id = 'probabilityMP')
+  })
+  
+  observeEvent(input$goBinom, {
+    show(id = 'probabilityMP')
+  }
+    
+  )
 
 }
   
