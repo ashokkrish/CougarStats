@@ -46,24 +46,26 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                         condition = "input.probability == 'Binomial'",
                         
                         numericInput(inputId = "numTrailsBinom", 
-                                     label = "Number of Trails (n):",
-                                     value = 10, min = 1, step = 1),
+                                     label = "Number of Trials (n):",
+                                     value = 15, min = 1, step = 1),
                         
                         numericInput(inputId = "successProbBinom", 
                                      label = "Probability of Success (p):",
-                                     value = 0.5, min = 0, max = 1, step = 0.00001),
+                                     value = 0.29, min = 0, max = 1, step = 0.00001),
                         
                         numericInput(inputId = "numSuccessesBinom", 
                                      label = "Number of Successes (x):",
-                                     value = 0, min = 0, step = 1),
+                                     value = 3, min = 0, step = 1),
                         # checkboxGroupInput(inputId = "calcBinom", 
                         #                    label = "",
                         #                    choiceValues = list("P(X=x)","P(X \\leq x)\\)","P(X>x)"),
                         #                    choiceNames = list("P(X=x)","P(X \\leq x)\\)","P(X>x)")),
-                        checkboxGroupInput(inputId = "calcBinom", 
+                        radioButtons(inputId = "calcBinom", 
                                            label = "",
                                            choiceValues = list("exact","cumulative","P(X>x)"),
-                                           choiceNames = list("P(X=x)","\\(P(X \\leq x)\\)","P(X>x)")),
+                                           choiceNames = list("\\(P(X = x \\))","\\(P(X \\leq x)\\)","\\(P(X \\gt x)\\)"),
+                                     inline = TRUE,
+                                     width = '1000px'),
                         actionButton(inputId = "goBinom", "Calculate",
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
                         actionButton("resetAllB","Reset Values",
@@ -72,22 +74,22 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                       
                       conditionalPanel(
                         condition = "input.probability == 'Poisson'", 
-                        numericInput("muPoisson", "Average (mu)", value = ""),  # CHANGE THIS TO A NUMERIC INPUT
-                        numericInput("xPoisson", "Number of Successes (x)", value = ""), # CHANGE THIS TO A NUMERIC INPUT
+                        numericInput("muPoisson", "Average (mu)", value = 4),  # CHANGE THIS TO A NUMERIC INPUT
+                        numericInput("xPoisson", "Number of Successes (x)", value = 3), # CHANGE THIS TO A NUMERIC INPUT
                         checkboxGroupInput(inputId = "calcPoisson",
                                            label = "", 
                                            choiceValues = list("lowerTail", "upperTail","interval"),
                                            choiceNames = list("\\P(X \\leq x)\\)","\\P(X > x)\\)","\\P(a \\leq X \\leq b)\\)")
                                            ),
-                        conditionalPanel(
-                          condition = "input.calcPoisson = 'interval'",
-                          numericInput("aPoisson", "a:",
-                                       value = 6, min = 0, step = 1
-                          ),
-                          numericInput("bPoisson", "b: \\( (a \\leq b) \\)",
-                                       value = 10, min = 0, step = 1
-                          )
-                        ),
+                        # conditionalPanel(
+                        #   condition = "input.calcPoisson = 'interval'",
+                        #   numericInput("aPoisson", "a:",
+                        #                value = 6, min = 0, step = 1
+                        #   ),
+                        #   numericInput("bPoisson", "b: \\( (a \\leq b) \\)",
+                        #                value = 10, min = 0, step = 1
+                        #   )
+                        # ),
                         actionButton(inputId = "goPoisson", "Calculate",
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
                         actionButton("resetAll","Reset Values",
@@ -322,11 +324,14 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                     div(id="probabilityMP",
                          conditionalPanel(
                            condition = "input.dropDownMenu == 'Probability'",
-                           uiOutput("render_probability")
+                           uiOutput("render_probability"),
+                           uiOutput("bVal")
                            )
 
                          )
-                      )
+                      
+                    
+                    )
                   )
                 )
 
@@ -431,7 +436,7 @@ server <- function(input, output) {
       binomNum <- input$numTrailsBinom
       binomSu <- input$successProbBinom
       binomNumSu <- input$numSuccessesBinom
-      if(input$calcBinom == 'exact' & input$calcBinom == 'cumulative' & input$calcBinom == 'P(X>x)'){
+      if(input$calcBinom == 'exact' && input$calcBinom == 'cumulative' && input$calcBinom == 'P(X>x)'){
         withMathJax(
           paste0("\\(P(X = \\)","",binomNumSu,"\\()\\)","\\( = \\)","",round(dbinom(binomNumSu,binomNum,binomSu),4)),
           br(),
@@ -513,6 +518,25 @@ server <- function(input, output) {
       
     })
   })
+  
+  binomValues <- reactive({
+    
+    req(input$numTrailsBinom,input$successProbBinom, input$numSuccessesBinom )
+    
+    validate(
+      need(input$numTrailsBinom, "Required Value"),
+      need(input$numTrailsBinom > 0, 'n must be positive'),
+      need(input$successProbBinom > 0, "p must be 0 < p < 1"),
+      need(input$successProbBinom < 1, "p must be 0 < p < 1"),
+      need(input$numSuccessesBinom > 0, "x must be positve"),
+      need(input$numSuccessesBinom <= input$numTrailsBinom, "Number of successes must be less than number of trials")
+    )
+  })
+  
+  output$bVal <- renderTable({
+    head(binomValues())
+  })
+  
   
   observeEvent(input$resetAll, {
     shinyjs::reset("sideBar")
