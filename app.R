@@ -74,8 +74,8 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                       
                       conditionalPanel(
                         condition = "input.probability == 'Poisson'", 
-                        numericInput("muPoisson", "Average (mu)", value = 4),  # CHANGE THIS TO A NUMERIC INPUT
-                        numericInput("xPoisson", "Number of Successes (x)", value = 3), # CHANGE THIS TO A NUMERIC INPUT
+                        numericInput("muPoisson", "Average (mu)", value = 4),  
+                        numericInput("xPoisson", "Number of Successes (x)", value = 3), 
                         radioButtons(inputId = "calcPoisson",
                                            label = "", 
                                            choiceValues = list("lowerTail", "upperTail"),
@@ -278,13 +278,13 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                         conditionalPanel(
                           condition = "input.inferenceType == 'Confidence Interval'",
                           
-                          checkboxGroupInput(inputId = "confidenceLevel", "Confidence Level", selected = c("95%"), choices = c("90%", "95%","99%"), inline = TRUE)
+                          radioButtons(inputId = "confidenceLevel", "Confidence Level", selected = c("95%"), choices = c("90%", "95%","99%"), inline = TRUE)
                         ),
                         
                         conditionalPanel(
                           condition = "input.inferenceType == 'Hypothesis Testing'",
                           
-                          checkboxGroupInput(inputId = "significanceLevel", "Significance Level", selected = c("5%"), choices = c("10%", "5%","1%"), inline = TRUE),
+                          radioButtons(inputId = "significanceLevel", "Significance Level", selected = c("5%"), choices = c("10%", "5%","1%"), inline = TRUE),
                         ),
                         
                         conditionalPanel(
@@ -329,9 +329,18 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                          conditionalPanel(
                            condition = "input.dropDownMenu == 'Probability'",
                            uiOutput("render_probability"),
-                           uiOutput("bVal"),
-                           uiOutput("pVal"),
-                           uiOutput("nVal")
+                           conditionalPanel(
+                             condition = "input.probability == 'Binomial'",
+                             uiOutput("bVal")
+                           ),
+                           conditionalPanel(
+                             condition = "input.probability == 'Poisson'",
+                             uiOutput("pVal")
+                           ),
+                           conditionalPanel(
+                             condition = "input.probability == 'Normal'",
+                             uiOutput("nVal")
+                           )
                            )
 
                          )
@@ -450,7 +459,6 @@ server <- function(input, output) {
         req(input$numTrailsBinom,input$successProbBinom, input$numSuccessesBinom )
         
         validate(
-          #need(input$numTrailsBinom != '', 'Required Value'),
           need(input$numTrailsBinom > 0, "n must be positive"),
           need(input$successProbBinom > 0, "p must be 0 < p < 1"),
           need(input$successProbBinom < 1, "p must be 0 < p < 1"),
@@ -460,19 +468,21 @@ server <- function(input, output) {
       })
       
       output$bVal <- renderTable({
-        head(binomValues())
+        if(input$probability == 'Binomial'){head(binomValues())}
+        else{print(" ")}
+        
       })
       
-      if(input$calcBinom == 'exact' && input$calcBinom == 'cumulative' && input$calcBinom == 'P(X>x)'){
-        withMathJax(
-          paste0("\\(P(X = \\)","",binomNumSu,"\\()\\)","\\( = \\)","",round(dbinom(binomNumSu,binomNum,binomSu),4)),
-          br(),
-          paste0("\\(P(X \\leq \\)","",binomNumSu,"\\()\\)","","\\( = \\)","",round(pbinom(binomNumSu,binomNum,binomSu,lower.tail = TRUE),4)),
-          br(),
-          paste0("\\(P(X > \\)","",binomNumSu,"\\()\\)","","\\( = \\)","",round(pbinom(binomNumSu,binomNum,binomSu,lower.tail = FALSE),4))
-        )
-      }
-      else if(input$calcBinom == 'exact' && input$numSuccessesBinom <= input$numTrailsBinom && input$numSuccessesBinom >= 0 && input$successProbBinom < 1 && input$successProbBinom > 0 && input$numTrailsBinom > 0){
+      # if(input$calcBinom == 'exact' && input$calcBinom == 'cumulative' && input$calcBinom == 'P(X>x)'){
+      #   withMathJax(
+      #     paste0("\\(P(X = \\)","",binomNumSu,"\\()\\)","\\( = \\)","",round(dbinom(binomNumSu,binomNum,binomSu),4)),
+      #     br(),
+      #     paste0("\\(P(X \\leq \\)","",binomNumSu,"\\()\\)","","\\( = \\)","",round(pbinom(binomNumSu,binomNum,binomSu,lower.tail = TRUE),4)),
+      #     br(),
+      #     paste0("\\(P(X > \\)","",binomNumSu,"\\()\\)","","\\( = \\)","",round(pbinom(binomNumSu,binomNum,binomSu,lower.tail = FALSE),4))
+      #   )
+      # }
+      if(input$calcBinom == 'exact' && input$numSuccessesBinom <= input$numTrailsBinom && input$numSuccessesBinom >= 0 && input$successProbBinom < 1 && input$successProbBinom > 0 && input$numTrailsBinom > 0){
         withMathJax(
           paste0("\\(P(X = \\)","",binomNumSu,"\\()\\)","\\( = \\)","",round(dbinom(binomNumSu,binomNum,binomSu),4))
         )
@@ -495,8 +505,8 @@ server <- function(input, output) {
     output$render_probability <- renderUI({
       poissonAvg <- input$muPoisson
       numPoisson <- input$xPoisson 
-      aP <- input$aPoisson
-      bP <- input$bPoisson
+      # aP <- input$aPoisson
+      # bP <- input$bPoisson
       
       poissonValues <- reactive({
         validate(
@@ -505,7 +515,8 @@ server <- function(input, output) {
       })
       
       output$pVal <- renderTable({
-        head(poissonValues())
+        if(input$probability == 'Poisson'){head(poissonValues())}
+        else{print("")}
       })
       
       if(input$calcPoisson == "lowerTail" && input$muPoisson > 0){
