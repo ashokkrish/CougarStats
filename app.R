@@ -76,10 +76,12 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                         condition = "input.probability == 'Poisson'", 
                         numericInput("muPoisson", "Average (mu)", value = 4),  # CHANGE THIS TO A NUMERIC INPUT
                         numericInput("xPoisson", "Number of Successes (x)", value = 3), # CHANGE THIS TO A NUMERIC INPUT
-                        checkboxGroupInput(inputId = "calcPoisson",
+                        radioButtons(inputId = "calcPoisson",
                                            label = "", 
-                                           choiceValues = list("lowerTail", "upperTail","interval"),
-                                           choiceNames = list("\\P(X \\leq x)\\)","\\P(X > x)\\)","\\P(a \\leq X \\leq b)\\)")
+                                           choiceValues = list("lowerTail", "upperTail"),
+                                           choiceNames = list("\\(P(X \\leq x)\\)","\\(P(X \\gt x)\\)"),
+                                     inline = TRUE,
+                                     width = "1000px"
                                            ),
                         # conditionalPanel(
                         #   condition = "input.calcPoisson = 'interval'",
@@ -92,7 +94,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                         # ),
                         actionButton(inputId = "goPoisson", "Calculate",
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
-                        actionButton("resetAll","Reset Values",
+                        actionButton("resetAllP","Reset Values",
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
                         
                       ),
@@ -109,14 +111,16 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                         numericInput(inputId = "xValue",
                                      label = "x:",
                                      value = 0, step = 0.00001),
-                        checkboxGroupInput(inputId = "calcNormal",
+                        radioButtons(inputId = "calcNormal",
                                            label = "", 
                                            choiceValues = list("P(X \\leq x)", "P(X > x)"),
-                                           choiceNames = list("\\P(X \\leq x)\\)", "P(X > x)")
+                                           choiceNames = list("\\(P(X \\leq x)\\)", "\\(P(X \\gt x)\\)"),
+                                     inline = TRUE,
+                                     width = "1000px"
                         ),
                         actionButton(inputId = "goNormal", "Calculate",
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
-                        actionButton("resetAll","Reset Values",
+                        actionButton("resetAllN","Reset Values",
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
                       )
                     ),
@@ -325,7 +329,9 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                          conditionalPanel(
                            condition = "input.dropDownMenu == 'Probability'",
                            uiOutput("render_probability"),
-                           uiOutput("bVal")
+                           uiOutput("bVal"),
+                           uiOutput("pVal"),
+                           uiOutput("nVal")
                            )
 
                          )
@@ -360,6 +366,7 @@ server <- function(input, output) {
   iv$add_rule("numSuccessesBinom", sv_required())
   iv$add_rule("numSuccessesBinom", sv_integer())
   iv$add_rule("numSuccessesBinom", sv_gte(0))
+  
   
   # String List to Numeric List
   createNumLst <- function(text) {
@@ -431,11 +438,31 @@ server <- function(input, output) {
   })
   
   
+  
   observeEvent(input$goBinom, {
     output$render_probability <- renderUI({
       binomNum <- input$numTrailsBinom
       binomSu <- input$successProbBinom
       binomNumSu <- input$numSuccessesBinom
+      
+      binomValues <- reactive({
+        
+        req(input$numTrailsBinom,input$successProbBinom, input$numSuccessesBinom )
+        
+        validate(
+          #need(input$numTrailsBinom != '', 'Required Value'),
+          need(input$numTrailsBinom > 0, "n must be positive"),
+          need(input$successProbBinom > 0, "p must be 0 < p < 1"),
+          need(input$successProbBinom < 1, "p must be 0 < p < 1"),
+          need(input$numSuccessesBinom >= 0, "x must be positve"),
+          need(input$numSuccessesBinom <= input$numTrailsBinom, "Number of successes must be less than number of trials")
+        )
+      })
+      
+      output$bVal <- renderTable({
+        head(binomValues())
+      })
+      
       if(input$calcBinom == 'exact' && input$calcBinom == 'cumulative' && input$calcBinom == 'P(X>x)'){
         withMathJax(
           paste0("\\(P(X = \\)","",binomNumSu,"\\()\\)","\\( = \\)","",round(dbinom(binomNumSu,binomNum,binomSu),4)),
@@ -445,21 +472,21 @@ server <- function(input, output) {
           paste0("\\(P(X > \\)","",binomNumSu,"\\()\\)","","\\( = \\)","",round(pbinom(binomNumSu,binomNum,binomSu,lower.tail = FALSE),4))
         )
       }
-      else if(input$calcBinom == 'exact'){
+      else if(input$calcBinom == 'exact' && input$numSuccessesBinom <= input$numTrailsBinom && input$numSuccessesBinom >= 0 && input$successProbBinom < 1 && input$successProbBinom > 0 && input$numTrailsBinom > 0){
         withMathJax(
           paste0("\\(P(X = \\)","",binomNumSu,"\\()\\)","\\( = \\)","",round(dbinom(binomNumSu,binomNum,binomSu),4))
         )
       }
-      else if(input$calcBinom == 'cumulative'){
+      else if(input$calcBinom == 'cumulative' && input$numSuccessesBinom <= input$numTrailsBinom && input$numSuccessesBinom >= 0 && input$successProbBinom < 1 && input$successProbBinom > 0 && input$numTrailsBinom > 0){
         withMathJax(
           paste0("\\(P(X \\leq \\)","",binomNumSu,"\\()\\)","","\\( = \\)","",round(pbinom(binomNumSu,binomNum,binomSu,lower.tail = TRUE),4)))
       }
-      else if(input$calcBinom == 'P(X>x)'){
+      else if(input$calcBinom == 'P(X>x)' && input$numSuccessesBinom <= input$numTrailsBinom && input$numSuccessesBinom >= 0 && input$successProbBinom < 1 && input$successProbBinom > 0 && input$numTrailsBinom > 0){
         withMathJax(
           paste0("\\(P(X > \\)","",binomNumSu,"\\()\\)","","\\( = \\)","",round(pbinom(binomNumSu,binomNum,binomSu,lower.tail = FALSE),4)))
       }
       else{
-        print("Select")
+        print(" ")
       }
     })
   })
@@ -470,21 +497,32 @@ server <- function(input, output) {
       numPoisson <- input$xPoisson 
       aP <- input$aPoisson
       bP <- input$bPoisson
-      if(input$calcPoisson == "lowerTail"){
+      
+      poissonValues <- reactive({
+        validate(
+          need(input$muPoisson > 0, "Average must be a positive")
+        )
+      })
+      
+      output$pVal <- renderTable({
+        head(poissonValues())
+      })
+      
+      if(input$calcPoisson == "lowerTail" && input$muPoisson > 0){
         withMathJax("\\(P(X \\leq \\)"," ",numPoisson," ","\\()\\)", " ", "\\( = \\)",round(ppois(numPoisson,poissonAvg,lower.tail = TRUE),4))
       }
-      else if(input$calcPoisson == "upperTail"){
+      else if(input$calcPoisson == "upperTail" && input$muPoisson > 0){
         withMathJax(
           paste0("\\(P(X > \\)", numPoisson, "\\()\\)", " ", "\\( = \\)" , " ", round(ppois(numPoisson, poissonAvg, lower.tail = FALSE), 4))
         )
       }
-      else if(input$calcPoisson == "interval"){
+      else if(input$calcPoisson == "interval" && input$muPoisson > 0){
         withMathJax(
           paste0("\\(P(\\)",aP," ", "\\(\\leq X\\leq \\)", " ", bP, "\\()\\)"," ", "\\( = \\)", " ", ifelse(input$aP > input$bP, "a must be less than or equal to b", round(ppois(input$bP, poissonAvg, lower.tail = TRUE) - ppois(input$aP - 1, poissonAvg, lower.tail = TRUE), 4)))   
         )
       }
       else{
-        print("Please Select")
+        print(" ")
       }
     })
   })
@@ -494,6 +532,17 @@ server <- function(input, output) {
       normMean <- input$popMean
       normSd <- input$popSD
       normX <- input$xValue
+      
+      normValues <- reactive({
+        validate(
+          need(input$popSD > 0, "Standard Deviation must be positive")
+        )
+      })
+      
+      output$nVal <- renderTable({
+        head(normValues())
+      })
+      
       if(input$calcNormal == "P(X \\leq x)" && input$calcNormal == "P(X > x)"){
         withMathJax(
           paste0("\\(P(X \\leq \\)"," ",normX, "\\()\\)"," ", "\\( = \\)"," ", round(pnorm(normX, normMean, normSd),4)),
@@ -501,40 +550,22 @@ server <- function(input, output) {
           paste0("\\(P(X > \\)", " ",normX,"\\()\\)", " ", "\\( = \\)", " ",round(1 - pnorm(normX,normMean,normSd),4))
         )
       }
-      else if(input$calcNormal == "P(X \\leq x)"){
+      else if(input$calcNormal == "P(X \\leq x)" && input$popSD > 0){
         withMathJax(
           paste0("\\(P(X \\leq \\)"," ",normX, "\\()\\)"," ", "\\( = \\)"," ", round(pnorm(normX, normMean, normSd),4))
         )
       }
-      else if(input$calcNormal == "P(X > x)"){
+      else if(input$calcNormal == "P(X > x)" && input$popSD > 0){
         withMathJax(
           paste0("\\(P(X > \\)", " ",normX,"\\()\\)", " ", "\\( = \\)", " ",round(1 - pnorm(normX,normMean,normSd),4))
         )
       }
       else{
-        print("Please Select")
+        print(" ")
       }
       
       
     })
-  })
-  
-  binomValues <- reactive({
-    
-    req(input$numTrailsBinom,input$successProbBinom, input$numSuccessesBinom )
-    
-    validate(
-      need(input$numTrailsBinom, "Required Value"),
-      need(input$numTrailsBinom > 0, 'n must be positive'),
-      need(input$successProbBinom > 0, "p must be 0 < p < 1"),
-      need(input$successProbBinom < 1, "p must be 0 < p < 1"),
-      need(input$numSuccessesBinom > 0, "x must be positve"),
-      need(input$numSuccessesBinom <= input$numTrailsBinom, "Number of successes must be less than number of trials")
-    )
-  })
-  
-  output$bVal <- renderTable({
-    head(binomValues())
   })
   
   
@@ -560,6 +591,22 @@ server <- function(input, output) {
   }
     
   )
+  
+  observeEvent(input$goPoisson, {
+    show(id = "probabilityMP")
+  })
+  
+  observeEvent(input$resetAllP, {
+    hide(id = "probabilityMP")
+  })
+  
+  observeEvent(input$goNormal, {
+    show(id = "probabilityMP")
+  })
+  
+  observeEvent(input$resetAllN, {
+    hide(id = "probabilityMP")
+  })
 
 }
   
