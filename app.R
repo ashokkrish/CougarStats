@@ -78,8 +78,8 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                         numericInput("xPoisson", "Number of Successes (x)", value = 3), 
                         radioButtons(inputId = "calcPoisson",
                                            label = "", 
-                                           choiceValues = list("lowerTail", "upperTail"),
-                                           choiceNames = list("\\(P(X \\leq x)\\)","\\(P(X \\gt x)\\)"),
+                                           choiceValues = list("exact","lowerTail", "upperTail"),
+                                           choiceNames = list("\\(P(X = x\\))","\\(P(X \\leq x)\\)","\\(P(X \\gt x)\\)"),
                                      inline = TRUE,
                                      width = "1000px"
                                            ),
@@ -328,18 +328,20 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                     div(id="probabilityMP",
                          conditionalPanel(
                            condition = "input.dropDownMenu == 'Probability'",
-                           uiOutput("render_probability"),
                            conditionalPanel(
                              condition = "input.probability == 'Binomial'",
+                             uiOutput("renderProbabilityBinom"),
                              uiOutput("bVal")
                            ),
                            conditionalPanel(
                              condition = "input.probability == 'Poisson'",
+                             uiOutput("renderProbabilityPoisson"),
                              uiOutput("pVal")
                            ),
                            conditionalPanel(
                              condition = "input.probability == 'Normal'",
-                             uiOutput("nVal")
+                             uiOutput("nVal"),
+                             uiOutput("renderProbabilityNorm")
                            )
                            )
 
@@ -376,6 +378,29 @@ server <- function(input, output) {
   iv$add_rule("numSuccessesBinom", sv_integer())
   iv$add_rule("numSuccessesBinom", sv_gte(0))
   
+  #muPoisson
+  
+  iv$add_rule("muPoisson", sv_required())
+  iv$add_rule("muPoisson", sv_gt(0))
+  
+  #xPoisson 
+  
+  iv$add_rule("xPoisson", sv_required())
+  iv$add_rule("xPoisson", sv_integer())
+  iv$add_rule("xPoisson", sv_gt(0))
+  
+  #popMean 
+  
+  iv$add_rule("popMean", sv_required())
+  
+  #popSD
+  
+  iv$add_rule("popSD", sv_required())
+  iv$add_rule("popSD", sv_gt(0))
+  
+  #xValue 
+  
+  iv$add_rule("xValue", sv_required())
   
   # String List to Numeric List
   createNumLst <- function(text) {
@@ -449,7 +474,7 @@ server <- function(input, output) {
   
   
   observeEvent(input$goBinom, {
-    output$render_probability <- renderUI({
+    output$renderProbabilityBinom <- renderUI({
       binomNum <- input$numTrailsBinom
       binomSu <- input$successProbBinom
       binomNumSu <- input$numSuccessesBinom
@@ -463,7 +488,7 @@ server <- function(input, output) {
           need(input$successProbBinom > 0, "p must be 0 < p < 1"),
           need(input$successProbBinom < 1, "p must be 0 < p < 1"),
           need(input$numSuccessesBinom >= 0, "x must be positve"),
-          need(input$numSuccessesBinom <= input$numTrailsBinom, "Number of successes must be less than number of trials")
+          need(input$numSuccessesBinom <= input$numTrailsBinom, "Number of successes must be less than or equal to number of trials")
         )
       })
       
@@ -502,7 +527,7 @@ server <- function(input, output) {
   })
   
   observeEvent(input$goPoisson, {
-    output$render_probability <- renderUI({
+    output$renderProbabilityPoisson <- renderUI({
       poissonAvg <- input$muPoisson
       numPoisson <- input$xPoisson 
       # aP <- input$aPoisson
@@ -519,7 +544,10 @@ server <- function(input, output) {
         else{print("")}
       })
       
-      if(input$calcPoisson == "lowerTail" && input$muPoisson > 0){
+      if(input$calcPoisson == "exact" && input$muPoisson > 0){
+        withMathJax("\\(P(X =  \\)","  ",numPoisson,"\\()\\)", " ","\\(= \\)", round(dpois(numPoisson,poissonAvg),4))
+      }
+      else if(input$calcPoisson == "lowerTail" && input$muPoisson > 0){
         withMathJax("\\(P(X \\leq \\)"," ",numPoisson," ","\\()\\)", " ", "\\( = \\)",round(ppois(numPoisson,poissonAvg,lower.tail = TRUE),4))
       }
       else if(input$calcPoisson == "upperTail" && input$muPoisson > 0){
@@ -539,7 +567,7 @@ server <- function(input, output) {
   })
   
   observeEvent(input$goNormal, {
-    output$render_probability <- renderUI({
+    output$renderProbabilityNorm <- renderUI({
       normMean <- input$popMean
       normSd <- input$popSD
       normX <- input$xValue
