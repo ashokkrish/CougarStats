@@ -381,13 +381,13 @@ server <- function(input, output) {
   #muPoisson
   
   iv$add_rule("muPoisson", sv_required())
-  iv$add_rule("muPoisson", sv_gt(0))
+  iv$add_rule("muPoisson", sv_gte(0))
   
   #xPoisson 
   
   iv$add_rule("xPoisson", sv_required())
   iv$add_rule("xPoisson", sv_integer())
-  iv$add_rule("xPoisson", sv_gt(0))
+  iv$add_rule("xPoisson", sv_gte(0))
   
   #popMean 
   
@@ -396,7 +396,7 @@ server <- function(input, output) {
   #popSD
   
   iv$add_rule("popSD", sv_required())
-  iv$add_rule("popSD", sv_gt(0))
+  iv$add_rule("popSD", sv_gte(0))
   
   #xValue 
   
