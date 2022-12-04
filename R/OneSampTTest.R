@@ -1,29 +1,22 @@
 TTest <- function(n, xbar, s, mu = 0, alternative = c("two.sided", "less", "greater"),  s_level = 0.05)
 {
-  df <- n - 1
-  
-  if(alternative == 'two.sided'){
-    t.crit <- qt((1 - s_level) + s_level/2, df)
-  }
-  else if(alternative == 'less') {
-    t.crit <- -qt(1 - s_level, df)
-  }
-  else if(alternative == 'greater') {
-    t.crit <- qt(1 - s_level, df)
-  }
-  
   se <- s/sqrt(n)
   
   tstat <- (xbar - mu)/se
   
+  df <- n - 1
+  
   if(alternative == 'two.sided'){
     p_value <- 2*pt(abs(tstat), df, lower.tail = FALSE)
+    t.crit <- qt((1 - s_level) + s_level/2, df)
   }
   else if(alternative == 'less') {
     p_value <- pt(tstat, df, lower.tail = TRUE)
+    t.crit <- -qt(1 - s_level, df)
   }
   else if(alternative == 'greater') {
     p_value <- 1 - pt(tstat, df, lower.tail = TRUE)
+    t.crit <- qt(1 - s_level, df)
   }
   
   dat <- round(c(n, xbar, s, t.crit, se, tstat, p_value), 4)
