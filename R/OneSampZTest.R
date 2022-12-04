@@ -1,32 +1,25 @@
 ZTest <- function(n, xbar, sigma, mu = 0, alternative = c("two.sided", "less", "greater"),  s_level = 0.05)
 {
-  if(alternative == 'two.sided'){
-    z.crit <- qnorm((1 - s_level) + s_level/2)
-  }
-  else if(alternative == 'less') {
-    z.crit <- -qnorm(1 - s_level)
-  }
-  else if(alternative == 'greater') {
-    z.crit <- qnorm(1 - s_level)
-  }
-  
   se <- sigma/sqrt(n)
   
   zstat <- (xbar - mu)/se
   
   if(alternative == 'two.sided'){
     p_value <- 2*pnorm(abs(zstat), lower.tail = FALSE)
+    z.crit <- qnorm((1 - s_level) + s_level/2)
   }
   else if(alternative == 'less') {
     p_value <- pnorm(zstat, lower.tail = TRUE)
+    z.crit <- -qnorm(1 - s_level)
   }
   else if(alternative == 'greater') {
     p_value <- pnorm(zstat, lower.tail = TRUE)
+    z.crit <- qnorm(1 - s_level)
   }
   
   dat <- round(c(n, xbar, sigma, z.crit, se, zstat, p_value), 4)
   
-  names(dat) <- c("Sample Size", "Sample Mean", "Population SD", "Z Critical", "Std Error", "TS", "P-Value")
+  names(dat) <- c("Sample Size", "Sample Mean", "Population SD", "Z Critical", "Std Error", "Test Statistic", "P-Value")
   
   return(dat)
 }
