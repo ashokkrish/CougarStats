@@ -140,7 +140,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                                    label = strong("Data Availability"),
                                    choiceValues = list("Summarized Data","Enter Raw Data"),
                                    choiceNames = list("Summarized Data","Enter Raw Data"),
-                                   selected = character(0), # "Summarized Data", #
+                                   selected = "Summarized Data", # character(0), #
                                    inline = TRUE,
                                    width = "1000px"),
                       
@@ -149,14 +149,14 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                         
                         numericInput(inputId = "sampleSize",
                                      label = "Sample Size (n):",
-                                     value = 0, min = 0, step = 1),
+                                     value = 18, min = 0, step = 1),
                         
                         numericInput(inputId = "sampleMean",
-                                     label = "Sample Mean:",
-                                     value = 0, step = 0.00001),
+                                     label = "Sample Mean: (xbar)",
+                                     value = 103.5375, step = 0.00001),
                         
                         radioButtons(inputId = "sigmaKnown",
-                                     label = strong("Population Standard Deviation"),
+                                     label = strong("Population Standard Deviation (sigma)"),
                                      choiceValues = list("Known","Unknown"),
                                      choiceNames = list("Known","Unknown"),
                                      selected = "Known", #character(0), #
@@ -167,15 +167,15 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                           condition = "input.sigmaKnown == 'Known'",
                           
                           numericInput(inputId = "popuSD",
-                                       label = "Population Standard Deviation Value:",
-                                       value = 0, min = 0, step = 0.00001)),
+                                       label = "Population Standard Deviation (sigma )Value:",
+                                       value = 8.78, min = 0, step = 0.00001)),
                         
                         conditionalPanel(
                           condition = "input.sigmaKnown == 'Unknown'",
                           
                           numericInput(inputId = "sampSD",
-                                       label = "Sample Standard Deviation Value:",
-                                       value = 0, min = 0, step = 0.00001)),
+                                       label = "Sample Standard Deviation (s) Value:",
+                                       value = 4.78, min = 0, step = 0.00001)),
                       ),
                       
                       conditionalPanel(
@@ -186,7 +186,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                                      value = 0, min = 0, step = 1),
                         
                         numericInput(inputId = "sampleMean1",
-                                     label = "Sample Mean 1:",
+                                     label = "Sample Mean 1: (xbar1)",
                                      value = 0, step = 0.00001),
                         
                         numericInput(inputId = "sampleSize2",
@@ -194,11 +194,11 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                                      value = 0, min = 0, step = 1),
                         
                         numericInput(inputId = "sampleMean2",
-                                     label = "Sample Mean 2:",
+                                     label = "Sample Mean 2: (xbar2)",
                                      value = 0, step = 0.00001),
                         
                         radioButtons(inputId = "bothsigmaKnown",
-                                     label = strong("Population Standard Deviations"),
+                                     label = strong("Population Standard Deviations (sigma1 and sigma2)"),
                                      choiceValues = list("bothKnown","bothUnknown"),
                                      choiceNames = list("bothKnown","bothUnknown"),
                                      selected = "bothKnown",
@@ -209,11 +209,11 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                           condition = "input.bothsigmaKnown == 'bothKnown'",
                           
                           numericInput(inputId = "popuSD1",
-                                       label = "Population Standard Deviation 1 Value:",
+                                       label = "Population Standard Deviation 1 (sigma1) Value:",
                                        value = 0, min = 0, step = 0.00001),
                           
                           numericInput(inputId = "popuSD2",
-                                       label = "Population Standard Deviation 2 Value:",
+                                       label = "Population Standard Deviation 2 (sigma2) Value:",
                                        value = 0, min = 0, step = 0.00001),
                         ),
                         
@@ -221,19 +221,19 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                           condition = "input.bothsigmaKnown == 'bothUnknown'",
                           
                           numericInput(inputId = "sampSD1",
-                                       label = "Sample Standard Deviation 1 Value:",
+                                       label = "Sample Standard Deviation 1 (s1) Value:",
                                        value = 0, min = 0, step = 0.00001),
                           
                           numericInput(inputId = "sampSD2",
-                                       label = "Sample Standard Deviation 2 Value:",
+                                       label = "Sample Standard Deviation 2 (s2) Value:",
                                        value = 0, min = 0, step = 0.00001),
                         ),
                         
                         conditionalPanel(
                           condition = "input.bothsigmaKnown == 'bothUnknown'",
                           
-                          radioButtons(inputId = "bothsigmaKnown",
-                                       label = strong("Assume Population Variances are equal"),
+                          radioButtons(inputId = "bothsigmaEqual",
+                                       label = strong("Assume Population Variances are equal (sigma1^2 = sigma2^2)"),
                                        choiceValues = list("Yes","No"),
                                        choiceNames = list("Yes","No"),
                                        selected = "Yes", # character(0), #
@@ -298,9 +298,9 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                             inputId = "altHypothesis",
                             label = "Alternate Hypothesis",
                             choices = c(
-                              "&le; " = 1,
+                              "<; " = 1,
                               "&ne; " = 2,
-                              "&ge; " = 3
+                              ">; " = 3
                             ),
                             selected = 2,
                             options = list(
@@ -345,7 +345,21 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                            )
                            )
 
-                         )
+                         ), 
+                    
+                    div(id = "inferenceMP",
+                        conditionalPanel(
+                          condition = "input.dropDownMenu == 'Inference'",
+                          conditionalPanel(
+                            condition = "input.samplesSelect == '1'",
+                            uiOutput("sampleOne")
+                          ), 
+                          conditionalPanel(
+                            condition = "input.samplesSelect == '2'",
+                            uiOutput("sampleTwo")
+                          )
+                        )
+                        )
                       
                     
                     )
@@ -369,8 +383,6 @@ server <- function(input, output) {
   iv$add_rule("successProbBinom", sv_required())
   iv$add_rule("successProbBinom", sv_gte(0))
   iv$add_rule("successProbBinom", sv_lte(1))
-  
-  iv$enable()
   
   #numSuccessesBinom
   
@@ -401,6 +413,10 @@ server <- function(input, output) {
   #xValue 
   
   iv$add_rule("xValue", sv_required())
+  
+  
+  iv$enable() 
+  
   
   # String List to Numeric List
   createNumLst <- function(text) {
@@ -488,7 +504,7 @@ server <- function(input, output) {
           need(input$successProbBinom > 0, "p must be 0 < p < 1"),
           need(input$successProbBinom < 1, "p must be 0 < p < 1"),
           need(input$numSuccessesBinom >= 0, "x must be positve"),
-          need(input$numSuccessesBinom <= input$numTrailsBinom, "Number of successes must be less than or equal to number of trials")
+          need(input$numSuccessesBinom <= input$numTrailsBinom, "Number of successes(n) must be less than or equal to the number of trials(x)")
         )
       })
       
@@ -604,6 +620,79 @@ server <- function(input, output) {
       }
       
       
+    })
+  })
+  
+  observeEvent(input$goInference, {
+    output$sampleOne <- renderUI({
+      if(input$sampleSelect == '1'){
+        if(input$inferenceType == 'Confidence Interval'){
+          if(input$sigmaKnown == 'Known'){
+            source("OneSampZInt.R")
+          }
+          else if(input$sigmaKnown == 'Unknown'){
+            source("OneSampTint.R")
+          }
+          else(input$inferenceType == 'Hypothesis Testing'){
+            if(input$sigmaKnown == 'Known'){
+              source("OneSampZTest.R")
+            }
+            else if(sigmaKnown == 'Unknown'){
+              source("OneSampeTTest.R")
+            }
+          }
+        }
+        else if(input$dataAvailability == 'Enter Raw Date'){
+          if(input$inferenceType == 'Confidence Interval'){
+            if(input$sigmaKnown == 'Known'){
+              withMathJax(z.test(x,y, alternative = 'two.sided', mu = 0, sigma.x = NULL, sigma.y = NULL, conf.level = .95))
+            }
+            else if(input$sigmaKnown == 'Unknown'){
+              withMathJax(t.test(x,y, alternative = "two.sided", var.equal = TRUE, conf.level = .95))
+            }
+          }
+          else if(input$inferenceType == 'Hypothesis Testing'){
+            withMathJax(
+              z.test(x, y, alternative ='two.sided', mu = 0, sigma.x = NULL, sigma.y = NULL, conf.level = .95), 
+              t.test(x, y, alternative = "two.sided", var.equal = TRUE, conf.level = .95)
+            )
+          }
+        }
+      }
+      else if(input$sampleSelect == '2'){ 
+        if(input$dataAvailability == 'Summarized Data'){
+          if(inferenceType == 'Confidence Interval'){
+            source("TwoSampZInt.R")
+            source("TwoSampeZint.R")
+          }
+          else if(inferenceType == 'Hypothesis Testing'){
+            source("TwoSampZTest.R")
+            source("TwoSampZtest.R")
+          }
+        }
+        else if(input$dataAvailability == 'Enter Raw Data'){
+          if(input$inferenceType == 'Confidence Interval'){
+            if(input$samplesType == 'Independent Samples'){
+              withMathJax(
+                z.test(x, y, alternative ='two.sided', mu = 0, sigma.x = NULL, sigma.y = NULL, conf.level = .95),
+                t.test(x, y, alternative = "two.sided", var.equal = TRUE, conf.level = .95)
+              )
+            }
+            else if(input$samplesType == 'Dependent Samples'){
+              t.test(x, y, alternative = "two.sided", paired = TRUE, conf.level = .95)
+            }
+          }
+          else if(input$inferenceType == 'Hypothesis Testing'){
+            if(input$samplesType == 'Independent Samples'){
+              z.test(x, y, alternative ='two.sided', mu = 0, sigma.x = NULL, sigma.y = NULL, conf.level = .95)
+              t.test(x, y, alternative = "two.sided", var.equal = TRUE, conf.level = .95)
+            }
+            else if(input$samplesType == 'DependentSamples'){
+              t.test(x, y, alternative = "two.sided", paired = TRUE, conf.level = .95)
+            }
+          }
+        }
+        }
     })
   })
   
