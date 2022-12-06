@@ -13,7 +13,7 @@ ZTest <- function(n, xbar, sigma, mu = 0, alternative = c("two.sided", "less", "
     z.crit <- -qnorm(1 - s_level)
   }
   else if(alternative == 'greater') {
-    p_value <- pnorm(zstat, lower.tail = TRUE)
+    p_value <- pnorm(zstat, lower.tail = FALSE)
     z.crit <- qnorm(1 - s_level)
   }
   
