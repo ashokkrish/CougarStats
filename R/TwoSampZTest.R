@@ -19,7 +19,7 @@ TwoSampZTest <- function(xbar1, sigma1, n1, xbar2, sigma2, n2, alternative = c("
     z.crit <- -qnorm(1 - s_level)
   }
   else if(alternative == 'greater') {
-    p_value <- pnorm(zstat, lower.tail = TRUE)
+    p_value <- pnorm(zstat, lower.tail = FALSE)
     z.crit <- qnorm(1 - s_level)
   }
   
