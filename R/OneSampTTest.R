@@ -15,7 +15,7 @@ TTest <- function(n, xbar, s, mu = 0, alternative = c("two.sided", "less", "grea
     t.crit <- -qt(1 - s_level, df)
   }
   else if(alternative == 'greater') {
-    p_value <- 1 - pt(tstat, df, lower.tail = TRUE)
+    p_value <- pt(tstat, df, lower.tail = FALSE)
     t.crit <- qt(1 - s_level, df)
   }
   
