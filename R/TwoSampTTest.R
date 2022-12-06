@@ -33,7 +33,7 @@ TwoSampTTest <- function(xbar1, s1, n1, xbar2, s2, n2, var.equal = TRUE, alterna
     t.crit <- -qt(1 - s_level, df)
   }
   else if(alternative == 'greater') {
-    p_value <- 1 - pt(tstat, df, lower.tail = TRUE)
+    p_value <- pt(tstat, df, lower.tail = FALSE)
     t.crit <- qt(1 - s_level, df)
   }
   
