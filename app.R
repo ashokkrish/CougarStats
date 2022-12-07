@@ -350,18 +350,9 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                     div(id = "inferenceMP",
                         conditionalPanel(
                           condition = "input.dropDownMenu == 'Inference'",
-                          conditionalPanel(
-                            condition = "input.samplesSelect == '1'",
-                            uiOutput("sampleOne")
-                          ), 
-                          conditionalPanel(
-                            condition = "input.samplesSelect == '2'",
-                            uiOutput("sampleTwo")
-                          )
+                            uiOutput("renderInference")
                         )
                         )
-                      
-                    
                     )
                   )
                 )
@@ -624,77 +615,49 @@ server <- function(input, output) {
   })
   
   observeEvent(input$goInference, {
-    output$sampleOne <- renderUI({
-      if(input$sampleSelect == '1'){
-        if(input$inferenceType == 'Confidence Interval'){
+    output$renderInference <- renderUI(
+      if(input$samplesSelect == '1'){
+        if(input$dataAvailability == 'Summarized Data'){
           if(input$sigmaKnown == 'Known'){
-            source("OneSampZInt.R")
+            source("R/OneSampZInt.R")
+            nSampOne <- input$sampleSize1 
+            xbarSampOne <- input$sampleMean1 
+            sigmaSampOne <- input$popSD 
+            
+            ZInterval(nSampOne, xbarSampOne, sigmaSampOne, c_level = 0.95)
+          }
+          else if(input$sigmaKnown == "Unknown"){
+            nSampOne <- input$sampleSize1  
+            xbarSampOne <- input$sampleMean1
+            sigmaSampOne <- input$popSD 
+            
+            source("R/OneSampTInt.R")
+            TInterval(nSampOne, xbarSampOne, sigmaSampOne, c_level = 0.95)
+            
+          }
+          else{}
+        }
+        else(input$inferenceType == 'Hypothesis Testing'){
+          if(input$sigmaKnown == 'Known'){
+            nSampOne <- input$sampleSize1  
+            xbarSampOne <- input$sampleMean1
+            sigmaSampOne <- input$popSD 
+            
+            source("R/OneSampZTest")
+            
+            ZTest(nSampOne, xbarSampOne, sigmaSampOne, mu = 0, alternative = c("two.sided", "less", "greater"), s_level = 0.05)
           }
           else if(input$sigmaKnown == 'Unknown'){
-            source("OneSampTint.R")
+            source("R/OneSampTTest.R")
+            TTest(nSampOne, xbarSampOne, sigmaSampOne, mu=0, alternative = c("two.sided", "less", "greater"),  s_level = 0.05)
           }
-          else(input$inferenceType == 'Hypothesis Testing'){
-            if(input$sigmaKnown == 'Known'){
-              source("OneSampZTest.R")
-            }
-            else if(sigmaKnown == 'Unknown'){
-              source("OneSampeTTest.R")
-            }
-          }
-        }
-        else if(input$dataAvailability == 'Enter Raw Date'){
-          if(input$inferenceType == 'Confidence Interval'){
-            if(input$sigmaKnown == 'Known'){
-              withMathJax(z.test(x,y, alternative = 'two.sided', mu = 0, sigma.x = NULL, sigma.y = NULL, conf.level = .95))
-            }
-            else if(input$sigmaKnown == 'Unknown'){
-              withMathJax(t.test(x,y, alternative = "two.sided", var.equal = TRUE, conf.level = .95))
-            }
-          }
-          else if(input$inferenceType == 'Hypothesis Testing'){
-            withMathJax(
-              z.test(x, y, alternative ='two.sided', mu = 0, sigma.x = NULL, sigma.y = NULL, conf.level = .95), 
-              t.test(x, y, alternative = "two.sided", var.equal = TRUE, conf.level = .95)
-            )
-          }
+          
         }
       }
-      else if(input$sampleSelect == '2'){ 
-        if(input$dataAvailability == 'Summarized Data'){
-          if(inferenceType == 'Confidence Interval'){
-            source("TwoSampZInt.R")
-            source("TwoSampeZint.R")
-          }
-          else if(inferenceType == 'Hypothesis Testing'){
-            source("TwoSampZTest.R")
-            source("TwoSampZtest.R")
-          }
-        }
-        else if(input$dataAvailability == 'Enter Raw Data'){
-          if(input$inferenceType == 'Confidence Interval'){
-            if(input$samplesType == 'Independent Samples'){
-              withMathJax(
-                z.test(x, y, alternative ='two.sided', mu = 0, sigma.x = NULL, sigma.y = NULL, conf.level = .95),
-                t.test(x, y, alternative = "two.sided", var.equal = TRUE, conf.level = .95)
-              )
-            }
-            else if(input$samplesType == 'Dependent Samples'){
-              t.test(x, y, alternative = "two.sided", paired = TRUE, conf.level = .95)
-            }
-          }
-          else if(input$inferenceType == 'Hypothesis Testing'){
-            if(input$samplesType == 'Independent Samples'){
-              z.test(x, y, alternative ='two.sided', mu = 0, sigma.x = NULL, sigma.y = NULL, conf.level = .95)
-              t.test(x, y, alternative = "two.sided", var.equal = TRUE, conf.level = .95)
-            }
-            else if(input$samplesType == 'DependentSamples'){
-              t.test(x, y, alternative = "two.sided", paired = TRUE, conf.level = .95)
-            }
-          }
-        }
-        }
-    })
+    )
   })
+  
+  
   
   
   observeEvent(input$resetAll, {
@@ -737,6 +700,7 @@ server <- function(input, output) {
   })
 
 }
+
   
 # Run the application 
 shinyApp(ui = ui, server = server)
