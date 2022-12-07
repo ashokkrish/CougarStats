@@ -620,27 +620,27 @@ server <- function(input, output) {
         if(input$dataAvailability == 'Summarized Data'){
           if(input$sigmaKnown == 'Known'){
             source("R/OneSampZInt.R")
-            nSampOne <- input$sampleSize1 
-            xbarSampOne <- input$sampleMean1 
-            sigmaSampOne <- input$popSD 
-            
+            nSampOne <- input$sampleSize1
+            xbarSampOne <- input$sampleMean1
+            sigmaSampOne <- input$popSD
+
             ZInterval(nSampOne, xbarSampOne, sigmaSampOne, c_level = 0.95)
           }
           else if(input$sigmaKnown == "Unknown"){
-            nSampOne <- input$sampleSize1  
+            nSampOne <- input$sampleSize1
             xbarSampOne <- input$sampleMean1
-            sigmaSampOne <- input$popSD 
-            
+            sigmaSampOne <- input$popSD
+
             source("R/OneSampTInt.R")
             TInterval(nSampOne, xbarSampOne, sigmaSampOne, c_level = 0.95)
-            
+
           }
           else{}
         }
-        else(input$inferenceType == 'Hypothesis Testing'){
+        else if(input$inferenceType == 'Hypothesis Testing'){
           if(input$sigmaKnown == 'Known'){
-            nSampOne <- input$sampleSize1  
-            xbarSampOne <- input$sampleMean1
+            nSampOne <- input$sampleSize1 
+            xbarSampOne <- input$sampleMean1 
             sigmaSampOne <- input$popSD 
             
             source("R/OneSampZTest")
@@ -649,15 +649,14 @@ server <- function(input, output) {
           }
           else if(input$sigmaKnown == 'Unknown'){
             source("R/OneSampTTest.R")
-            TTest(nSampOne, xbarSampOne, sigmaSampOne, mu=0, alternative = c("two.sided", "less", "greater"),  s_level = 0.05)
+            TTest(nSampOne, xbarSampOne, sigmaSampOne, mu=0, alternative = c("two.sided", "less", "greater"),  s_level = 0.05) 
           }
-          
+      
         }
+        else{}
       }
     )
   })
-  
-  
   
   
   observeEvent(input$resetAll, {
