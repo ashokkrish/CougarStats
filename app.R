@@ -618,38 +618,45 @@ server <- function(input, output) {
     output$renderInference <- renderUI(
       if(input$samplesSelect == '1'){
         if(input$dataAvailability == 'Summarized Data'){
-          if(input$sigmaKnown == 'Known'){
-            source("R/OneSampZInt.R")
-            nSampOne <- input$sampleSize1
-            xbarSampOne <- input$sampleMean1
-            sigmaSampOne <- input$popSD
-
-            ZInterval(nSampOne, xbarSampOne, sigmaSampOne, c_level = 0.95)
-          }
-          else if(input$sigmaKnown == "Unknown"){
-            nSampOne <- input$sampleSize1
-            xbarSampOne <- input$sampleMean1
-            sigmaSampOne <- input$popSD
-
-            source("R/OneSampTInt.R")
-            TInterval(nSampOne, xbarSampOne, sigmaSampOne, c_level = 0.95)
-
-          }
-          else{}
-        }
+          if(input$inferenceType == 'Confidence Interval'){
+            if(input$sigmaKnown == 'Known'){
+              source('R/OneSampZInt.R')
+              nSampOne <- input$sampleSize
+              xbarSampOne <- input$sampleMean
+              sigmaSampOne <- input$popuSD
+  
+              print(ZInterval(nSampOne, xbarSampOne, sSampOne, c_level = 0.95))
+            }
+            else if(input$sigmaKnown == 'Unknown'){
+              nSampOne <- input$sampleSize
+              xbarSampOne <- input$sampleMean
+              sSampOne <- input$sampSD
+  
+              source('R/OneSampTInt.R')
+              print(TInterval(nSampOne, xbarSampOne, sSampOne, c_level = 0.95))
+  
+            }
+            else{}
+        }}
         else if(input$inferenceType == 'Hypothesis Testing'){
           if(input$sigmaKnown == 'Known'){
-            nSampOne <- input$sampleSize1 
-            xbarSampOne <- input$sampleMean1 
-            sigmaSampOne <- input$popSD 
+            nSampOne <- input$sampleSize 
+            xbarSampOne <- input$sampleMean 
+            sigmaSampOne <- input$popuSD 
+            hypMeanSampOne <- input$hypMean
             
             source("R/OneSampZTest")
             
-            ZTest(nSampOne, xbarSampOne, sigmaSampOne, mu = 0, alternative = c("two.sided", "less", "greater"), s_level = 0.05)
+            ZTest(nSampOne, xbarSampOne, sigmaSampOne, hypMeanSampOne, alternative = "two.sided", s_level = 0.05)
           }
           else if(input$sigmaKnown == 'Unknown'){
+            nSampOne <- input$sampleSize 
+            xbarSampOne <- input$sampleMean 
+            sigmaSampOne <- input$popuSD 
+            hypMeanSampOne <- input$hypMean
+            
             source("R/OneSampTTest.R")
-            TTest(nSampOne, xbarSampOne, sigmaSampOne, mu=0, alternative = c("two.sided", "less", "greater"),  s_level = 0.05) 
+            TTest(nSampOne, xbarSampOne, sigmaSampOne, hypMeanSampOne, alternative = c("two.sided", "less", "greater"),  s_level = 0.05) 
           }
       
         }
