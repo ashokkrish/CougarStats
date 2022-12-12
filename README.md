@@ -1,4 +1,4 @@
-# COMP5690
+# CougarStats: An R Shiny App for Statistical Analysis
 
 ## Shiny app authors
 
