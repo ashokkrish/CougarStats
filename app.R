@@ -380,18 +380,18 @@ server <- function(input, output) {
   
   iv$add_rule("numSuccessesBinom", sv_required())
   iv$add_rule("numSuccessesBinom", sv_integer())
-  iv$add_rule("numSuccessesBinom", sv_gte(0))
+  iv$add_rule("numSuccessesBinom", sv_gt(0))
   
   #muPoisson
   
   iv$add_rule("muPoisson", sv_required())
-  iv$add_rule("muPoisson", sv_gte(0))
+  iv$add_rule("muPoisson", sv_gt(0))
   
   #xPoisson 
   
   iv$add_rule("xPoisson", sv_required())
   iv$add_rule("xPoisson", sv_integer())
-  iv$add_rule("xPoisson", sv_gte(0))
+  iv$add_rule("xPoisson", sv_gt(0))
   
   #popMean 
   
@@ -400,7 +400,7 @@ server <- function(input, output) {
   #popSD
   
   iv$add_rule("popSD", sv_required())
-  iv$add_rule("popSD", sv_gte(0))
+  iv$add_rule("popSD", sv_gt(0))
   
   #xValue 
   
@@ -441,18 +441,22 @@ server <- function(input, output) {
   #popuSD1 
   
   iv$add_rule("popuSD1", sv_required()) 
+  iv$add_rule("popuSD1", sv_gt(0))
   
   #popuSD2 
   
   iv$add_rule("popuSD2", sv_required()) 
+  iv$add_rule("popSD2", sv_gt(0))
   
   #sampSD1 
   
   iv$add_rule("sampSD1", sv_required())
+  iv$add_rule("sampSD1", sv_gt(0))
   
   #sampSD2 
   
   iv$add_rule("sampSD2", sv_required()) 
+  iv$add_rule("sampSD2", sv_gt(0))
   
   #sample1 
   
