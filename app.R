@@ -351,7 +351,9 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                     div(id = "inferenceMP",
                         conditionalPanel(
                           condition = "input.dropDownMenu == 'Statistical Inference'",
-                            uiOutput("renderInference")
+                          uiOutput("renderInference"),
+                          uiOutput("oneSampConfidKnown")
+                          
                         )
                         )
                     )
@@ -682,50 +684,61 @@ server <- function(input, output) {
     output$renderInference <- renderUI(
       if(input$samplesSelect == '1'){
         if(input$dataAvailability == 'Summarized Data'){
+          
+          nSampOne <- input$sampleSize
+          xbarSampOne <- input$sampleMean
+          
           if(input$inferenceType == 'Confidence Interval'){
+            
+            if(input$confidenceLevel == '90%'){
+              ConfLvl <- 0.9
+            }
+            else if(input$confienceLevel == '95%'){
+              ConfLvl <- 0.95
+            }
+            else{
+              ConfLvl <- 0.99
+            } 
+            
+            
+            
+            
             if(input$sigmaKnown == 'Known'){
 
-              # if(input$confidenceLevel == '90%'){
-              #   ninetyConfLvl <- 0.9
-              # }
-              # else if(input$confienceLevel == '95%'){
-              #   ninetyFiveConfLvl <- 0.95
-              # }
-              # else{
-              #   ninetyNineConfLvl <- 0.99
-              # }
+              
 
               source('R/OneSampZInt.R')
-              nSampOne <- input$sampleSize
-              xbarSampOne <- input$sampleMean
+              
               sigmaSampOne <- input$popuSD
               
               print(input$popuSD)
 
               output$oneSampConfidKnown <- DT::renderDataTable({
-                ZInterval(nSampOne, xbarSampOne, sigmaSampOne, c_level = 0.95)
+                ZInterval(nSampOne, xbarSampOne, sigmaSampOne, ConfLvl)
               })
             }
             else if(input$sigmaKnown == 'Unknown'){
-              nSampOne <- input$sampleSize
-              xbarSampOne <- input$sampleMean
+             
               sSampOne <- input$sampSD
 
               source('R/OneSampTInt.R')
 
               output$oneSampConfidUnknown <- DT::renderDataTable({
-                TInterval(nSampOne, xbarSampOne, sSampOne, c_level = 0.95)
+                TInterval(nSampOne, xbarSampOne, sSampOne, ConfLvl)
               })
 
             }
             else{}
-        }}
+          }}
+        
         else if(input$inferenceType == 'Hypothesis Testing'){
+          
+          hypMeanSampOne <- input$hypMean 
+          
           if(input$sigmaKnown == 'Known'){
-            nSampOne <- input$sampleSize
-            xbarSampOne <- input$sampleMean
+    
             sigmaSampOne <- input$popuSD
-            hypMeanSampOne <- input$hypMean
+            
 
             source("R/OneSampZTest")
 
@@ -735,15 +748,13 @@ server <- function(input, output) {
 
           }
           else if(input$sigmaKnown == 'Unknown'){
-            nSampOne <- input$sampleSize
-            xbarSampOne <- input$sampleMean
-            sigmaSampOne <- input$popuSD
-            hypMeanSampOne <- input$hypMean
+            
+            sSampOne <- input$sampSD
 
             source("R/OneSampTTest.R")
 
             output$OneSampHypUnknown <- DT::renderDataTable({
-              TTest(nSampOne, xbarSampOne, sigmaSampOne, hypMeanSampOne, alternative = c("two.sided", "less", "greater"),  s_level = 0.05)
+              TTest(nSampOne, xbarSampOne, sSampOne, hypMeanSampOne, alternative = c("two.sided", "less", "greater"),  s_level = 0.05)
             })
           }
 
