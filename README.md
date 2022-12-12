@@ -1,3 +1,5 @@
+![CougarStats logo](https://github.com/cwai097/COMP5690/blob/master/www/CougarStats.png)
+
 # CougarStats: An R Shiny App for Statistical Analysis
 
 ## Who is CougarStats for?
