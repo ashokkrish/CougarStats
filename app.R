@@ -5,6 +5,7 @@ library(ggplot2)
 library(shinyjs)
 library(shinyvalidate)
 library(dplyr)
+library(DT)
 
 render <- "
 {
@@ -16,7 +17,7 @@ render <- "
 ui <- fluidPage(theme = shinytheme("flatly"),
                 
                 # Application title
-                titlePanel("Intro to Stats"),
+                titlePanel("Cougar Stats"),
                 
                 sidebarLayout(
                   #shinyjs::useShinyjs(),
@@ -27,7 +28,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                     selectInput(
                       inputId= "dropDownMenu",
                       label= "Choose your test",
-                      choices = c("Descriptive Statistics", "Probability", "Inference"),
+                      choices = c("Descriptive Statistics", "Probability Distributions", "Statistical Inference"),
                     ),
                     conditionalPanel(
                       condition = "input.dropDownMenu == 'Descriptive Statistics'",
@@ -40,10 +41,10 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                     ),
                     conditionalPanel(
                       id = "probPanel",
-                      condition = "input.dropDownMenu == 'Probability'",
+                      condition = "input.dropDownMenu == 'Probability Distributions'",
                       radioButtons("probability", "Distribution", choices = c("Binomial", "Poisson", "Normal"), selected = NULL, inline = TRUE),
                       conditionalPanel(
-                        condition = "input.probability == 'Binomial'",
+                        condition = "input.probability== 'Binomial'",
                         
                         numericInput(inputId = "numTrailsBinom", 
                                      label = "Number of Trials (n):",
@@ -126,7 +127,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                     ),
                     
                     conditionalPanel(
-                      condition = "input.dropDownMenu == 'Inference'",
+                      condition = "input.dropDownMenu == 'Statistical Inference'",
                       
                       radioButtons(inputId = "samplesSelect",
                                    label = strong("Number of samples"),
@@ -298,9 +299,9 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                             inputId = "altHypothesis",
                             label = "Alternate Hypothesis",
                             choices = c(
-                              "<; " = 1,
+                              "< " = 1,
                               "&ne; " = 2,
-                              ">; " = 3
+                              "> " = 3
                             ),
                             selected = 2,
                             options = list(
@@ -327,7 +328,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                     ),
                     div(id="probabilityMP",
                          conditionalPanel(
-                           condition = "input.dropDownMenu == 'Probability'",
+                           condition = "input.dropDownMenu == 'Probability Distributions'",
                            conditionalPanel(
                              condition = "input.probability == 'Binomial'",
                              uiOutput("renderProbabilityBinom"),
@@ -349,7 +350,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                     
                     div(id = "inferenceMP",
                         conditionalPanel(
-                          condition = "input.dropDownMenu == 'Inference'",
+                          condition = "input.dropDownMenu == 'Statistical Inference'",
                             uiOutput("renderInference")
                         )
                         )
@@ -405,6 +406,65 @@ server <- function(input, output) {
   
   iv$add_rule("xValue", sv_required())
   
+  #sampleSize
+  
+  iv$add_rule("sampleSize", sv_required())
+  
+  #sampleMean 
+  
+  iv$add_rule("sampleMean", sv_required())
+  
+  #popuSD
+  
+  iv$add_rule("popuSD", sv_required()) 
+  
+  #sampSD 
+  
+  iv$add_rule("sampSD", sv_required())
+  
+  #sampleSize1 
+  
+  iv$add_rule("sampleSize1", sv_required())
+  
+  #sampleMean1 
+  
+  iv$add_rule("sampleMean1", sv_required())
+  
+  #sampleSize2 
+  
+  iv$add_rule("sampleSize2", sv_required())
+  
+  #sampleMean2 
+  
+  iv$add_rule("sampleMean2", sv_required()) 
+  
+  #popuSD1 
+  
+  iv$add_rule("popuSD1", sv_required()) 
+  
+  #popuSD2 
+  
+  iv$add_rule("popuSD2", sv_required()) 
+  
+  #sampSD1 
+  
+  iv$add_rule("sampSD1", sv_required())
+  
+  #sampSD2 
+  
+  iv$add_rule("sampSD2", sv_required()) 
+  
+  #sample1 
+  
+  iv$add_rule("sample1", sv_required()) 
+  
+  #sample2 
+  
+  iv$add_rule("sample2", sv_required()) 
+  
+  #hypMean 
+  
+  iv$add_rule("hypMean", sv_required()) 
   
   iv$enable() 
   
@@ -620,51 +680,75 @@ server <- function(input, output) {
         if(input$dataAvailability == 'Summarized Data'){
           if(input$inferenceType == 'Confidence Interval'){
             if(input$sigmaKnown == 'Known'){
+
+              # if(input$confidenceLevel == '90%'){
+              #   ninetyConfLvl <- 0.9
+              # }
+              # else if(input$confienceLevel == '95%'){
+              #   ninetyFiveConfLvl <- 0.95
+              # }
+              # else{
+              #   ninetyNineConfLvl <- 0.99
+              # }
+
               source('R/OneSampZInt.R')
               nSampOne <- input$sampleSize
               xbarSampOne <- input$sampleMean
               sigmaSampOne <- input$popuSD
-  
-              print(ZInterval(nSampOne, xbarSampOne, sSampOne, c_level = 0.95))
+              
+              print(input$popuSD)
+
+              output$oneSampConfidKnown <- DT::renderDataTable({
+                ZInterval(nSampOne, xbarSampOne, sigmaSampOne, c_level = 0.95)
+              })
             }
             else if(input$sigmaKnown == 'Unknown'){
               nSampOne <- input$sampleSize
               xbarSampOne <- input$sampleMean
               sSampOne <- input$sampSD
-  
+
               source('R/OneSampTInt.R')
-              print(TInterval(nSampOne, xbarSampOne, sSampOne, c_level = 0.95))
-  
+
+              output$oneSampConfidUnknown <- DT::renderDataTable({
+                TInterval(nSampOne, xbarSampOne, sSampOne, c_level = 0.95)
+              })
+
             }
             else{}
         }}
         else if(input$inferenceType == 'Hypothesis Testing'){
           if(input$sigmaKnown == 'Known'){
-            nSampOne <- input$sampleSize 
-            xbarSampOne <- input$sampleMean 
-            sigmaSampOne <- input$popuSD 
+            nSampOne <- input$sampleSize
+            xbarSampOne <- input$sampleMean
+            sigmaSampOne <- input$popuSD
             hypMeanSampOne <- input$hypMean
-            
+
             source("R/OneSampZTest")
-            
-            ZTest(nSampOne, xbarSampOne, sigmaSampOne, hypMeanSampOne, alternative = "two.sided", s_level = 0.05)
+
+            output$OneSampHypKnown <- DT::renderDataTable({
+              ZTest(nSampOne, xbarSampOne, sigmaSampOne, hypMeanSampOne, alternative = "two.sided", s_level = 0.05)
+            })
+
           }
           else if(input$sigmaKnown == 'Unknown'){
-            nSampOne <- input$sampleSize 
-            xbarSampOne <- input$sampleMean 
-            sigmaSampOne <- input$popuSD 
+            nSampOne <- input$sampleSize
+            xbarSampOne <- input$sampleMean
+            sigmaSampOne <- input$popuSD
             hypMeanSampOne <- input$hypMean
-            
+
             source("R/OneSampTTest.R")
-            TTest(nSampOne, xbarSampOne, sigmaSampOne, hypMeanSampOne, alternative = c("two.sided", "less", "greater"),  s_level = 0.05) 
+
+            output$OneSampHypUnknown <- DT::renderDataTable({
+              TTest(nSampOne, xbarSampOne, sigmaSampOne, hypMeanSampOne, alternative = c("two.sided", "less", "greater"),  s_level = 0.05)
+            })
           }
-      
+
         }
         else{}
       }
     )
   })
-  
+
   
   observeEvent(input$resetAll, {
     shinyjs::reset("sideBar")
