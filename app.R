@@ -419,10 +419,12 @@ server <- function(input, output) {
   #popuSD
   
   iv$add_rule("popuSD", sv_required()) 
+  iv$add_rule("popuSD", sv_gt(0))
   
   #sampSD 
   
   iv$add_rule("sampSD", sv_required())
+  iv$add_rule("sampSD", sv_gt(0))
   
   #sampleSize1 
   
