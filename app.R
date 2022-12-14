@@ -252,7 +252,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                       conditionalPanel(
                         condition = "input.samplesSelect == '2' && input.dataAvailability == 'Enter Raw Data'",
                         
-                        textAreaInput("sample1", "Sample 1", value = NULL, placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                        textAreaInput("sample1.2", "Sample 1", value = NULL, placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
                         
                         textAreaInput("sample2", "Sample 2", value = NULL, placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
                         
@@ -352,8 +352,8 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                         conditionalPanel(
                           condition = "input.dropDownMenu == 'Statistical Inference'",
                           uiOutput("renderInference"),
-                          uiOutput("oneSampConfidKnown")
-                          
+                          uiOutput('oneSamp'), 
+                          uiOutput("oneSampHyp")
                         )
                         )
                     )
@@ -461,10 +461,14 @@ server <- function(input, output) {
   
   iv$add_rule("sampSD2", sv_required()) 
   iv$add_rule("sampSD2", sv_gt(0))
-  
+   
   #sample1 
   
   iv$add_rule("sample1", sv_required()) 
+  
+  #sample1.2
+  
+  iv$add_rule("sample1.2", sv_required())
   
   #sample2 
   
@@ -695,39 +699,52 @@ server <- function(input, output) {
             if(input$confidenceLevel == '90%'){
               ConfLvl <- 0.9
             }
-            else if(input$confienceLevel == '95%'){
+            else if(input$confidenceLevel == '95%'){
               ConfLvl <- 0.95
             }
             else{
               ConfLvl <- 0.99
             } 
             
-            
-            
-            
             if(input$sigmaKnown == 'Known'){
-
-              
 
               source('R/OneSampZInt.R')
               
               sigmaSampOne <- input$popuSD
               
-              print(input$popuSD)
+              zIntPrint <- ZInterval(nSampOne, xbarSampOne, sigmaSampOne, ConfLvl)
+              
+              values <- reactiveValues()
+              values$dfKnown <- data.frame(Variable = character(), Value = character())
+              output$oneSamp <- renderTable(values$dfKnown)
+              row1 <- data.frame(Variable = "Sample Mean", Value = paste(zIntPrint[1]))
+              row2 <- data.frame(Variable = "Z Critical", Value = paste(zIntPrint[2]))
+              row3 <- data.frame(Variable = "Standard Error", Value = paste(zIntPrint[3]))
+              row4 <- data.frame(Variable = "LCL", Value = paste(zIntPrint[4]))
+              row5 <- data.frame(Variable = "UCL", Value = paste(zIntPrint[5]))
+              
+              values$dfKnown <- rbind(row1, row2, row3, row4, row5)
 
-              output$oneSampConfidKnown <- DT::renderDataTable({
-                ZInterval(nSampOne, xbarSampOne, sigmaSampOne, ConfLvl)
-              })
             }
+            
             else if(input$sigmaKnown == 'Unknown'){
              
               sSampOne <- input$sampSD
 
               source('R/OneSampTInt.R')
+              
+              tIntPrint <- TInterval(nSampOne, xbarSampOne, sSampOne, ConfLvl)
+              
+              values <- reactiveValues()
+              values$dfKnown <- data.frame(Variable = character(), Value = character())
+              output$oneSamp <- renderTable(values$dfKnown)
+              row1 <- data.frame(Variable = "Sample Mean", Value = paste(tIntPrint[1]))
+              row2 <- data.frame(Variable = "Z Critical", Value = paste(tIntPrint[2]))
+              row3 <- data.frame(Variable = "Standard Error", Value = paste(tIntPrint[3]))
+              row4 <- data.frame(Variable = "LCL", Value = paste(tIntPrint[4]))
+              row5 <- data.frame(Variable = "UCL", Value = paste(tIntPrint[5]))
 
-              output$oneSampConfidUnknown <- DT::renderDataTable({
-                TInterval(nSampOne, xbarSampOne, sSampOne, ConfLvl)
-              })
+              values$dfKnown <- rbind(row1, row2, row3, row4, row5)
 
             }
             else{}
@@ -737,33 +754,84 @@ server <- function(input, output) {
           
           hypMeanSampOne <- input$hypMean 
           
+          if(input$inferenceType == 'Hypothesis Testing'){
+            if(input$significanceLevel == "10%"){
+              sigLvl <- 0.1 
+            }
+            else if(input$significanceLevel == "5%"){
+              sigLvl <- 0.05
+            }
+            else{
+              sigLvl <- 0.01
+            }
+          }
+          
+          if(input$inferenceType == 'Hypothesis Testing'){
+            if(input$altHypothesis == ">"){
+              alternative <- "greater"
+            }
+            else if(input$altHypothesis == "&ne; "){
+              alternative <- "two.sided"
+            }
+            else{
+              alternative <- "less"
+            }
+          }
+          
           if(input$sigmaKnown == 'Known'){
     
             sigmaSampOne <- input$popuSD
-            
 
             source("R/OneSampZTest")
-
-            output$OneSampHypKnown <- DT::renderDataTable({
-              ZTest(nSampOne, xbarSampOne, sigmaSampOne, hypMeanSampOne, alternative = "two.sided", s_level = 0.05)
-            })
-
+            
+            zTestPrint <- ZTest(nSampOne, xbarSampOne, sigmaSampOne, hypMeanSampOne, alternative, sigLvl)
+            
+            values <- reactiveValues()
+            values$dfKnownHyp <- data.frame(Variable = character(), Value = character())
+            output$oneSampHyp <- renderTable(values$dfKnown)
+            row1 <- data.frame(Variable = "Sample Size", Value = paste(zTestPrint[1]))
+            row2 <- data.frame(Variable = "Sample Mean", Value = paste(zTestPrint[2]))
+            row3 <- data.frame(Variable = "Population SD", Value = paste(zTestPrint[3]))
+            row4 <- data.frame(Variable = "Z Critical", Value = paste(zTestPrint[4]))
+            row5 <- data.frame(Variable = "Standard Error", Value = paste(zTestPrint[5]))
+            row6 <- data.frame(Variable = "Test Statistic", Value = paste(zTestPrint[6]))
+            row7 <- data.frame(Variable = "P-Value", Value = paste(tTestPrint[7]))
+            
+            #"Sample Size", "Sample Mean", "Population SD", "Z Critical", "Std Error", "Test Statistic", "P-Value"
+            
+            values$dfKnownHyp <- rbind(row1, row2, row3, row4, row5, row6, row7) 
+            
           }
           else if(input$sigmaKnown == 'Unknown'){
             
             sSampOne <- input$sampSD
 
             source("R/OneSampTTest.R")
-
-            output$OneSampHypUnknown <- DT::renderDataTable({
-              TTest(nSampOne, xbarSampOne, sSampOne, hypMeanSampOne, alternative = c("two.sided", "less", "greater"),  s_level = 0.05)
-            })
+            
+            tTestPrint <- TTest(nSampOne, xbarSampOne, sSampOne, hypMeanSampOne, alternative, sigLvl)
+            
+            values <- reactiveValues()
+            values$dfUnKnownHyp <- data.frame(Variable = character(), Value = character())
+            output$oneSampHyp <- renderTable(values$dfKnown)
+            row1 <- data.frame(Variable = "Sample Size", Value = paste(tTestPrint[1]))
+            row2 <- data.frame(Variable = "Sample Mean", Value = paste(tTestPrint[2]))
+            row3 <- data.frame(Variable = "Sample SD", Value = paste(tTestPrint[3]))
+            row4 <- data.frame(Variable = "T Critical", Value = paste(tTestPrint[4]))
+            row5 <- data.frame(Variable = "Standard Error", Value = paste(tTestPrint[5]))
+            row6 <- data.frame(Variable = "Test Statistic", Value = paste(tTestPrint[6]))
+            row7 <- data.frame(Variable = "P-Value", Value = paste(tTestPrint[7]))
+            
+            values$dfUnKnownHyp <- rbind(row1, row2, row3, row4, row5, row6, row7) 
+            
           }
 
         }
         else{}
       }
+  
+    
     )
+    
   })
 
   
