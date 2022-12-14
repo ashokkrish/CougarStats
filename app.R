@@ -352,8 +352,14 @@ render <- "
                           conditionalPanel(
                             condition = "input.dropDownMenu == 'Statistical Inference'",
                             uiOutput("renderInference"),
-                            uiOutput('oneSamp'), 
-                            uiOutput("oneSampHyp")
+                            conditionalPanel(
+                              condition = "input.inferenceType = 'Confidence Interval'",
+                              uiOutput('oneSamp')
+                            ), 
+                            conditionalPanel(
+                              condition = "input.inferenceType = 'Hypothesis Testing'",
+                              uiOutput('oneSampHyp')
+                            )
                           )
                       )
                     )
@@ -480,6 +486,7 @@ render <- "
     #hypMean 
     
     iv$add_rule("hypMean", sv_required()) 
+    
     
     # String List to Numeric List
     createNumLst <- function(text) {
@@ -748,34 +755,30 @@ render <- "
                 
               }
               else{}
-            }}
+            }
           
           else if(input$inferenceType == 'Hypothesis Testing'){
             
             hypMeanSampOne <- input$hypMean 
             
-            if(input$inferenceType == 'Hypothesis Testing'){
-              if(input$significanceLevel == "10%"){
-                sigLvl <- 0.1 
-              }
-              else if(input$significanceLevel == "5%"){
-                sigLvl <- 0.05
-              }
-              else{
-                sigLvl <- 0.01
-              }
+            if(input$significanceLevel == "10%"){
+              sigLvl <- 0.1 
+            }
+            else if(input$significanceLevel == "5%"){
+              sigLvl <- 0.05
+            }
+            else{
+              sigLvl <- 0.01
             }
             
-            if(input$inferenceType == 'Hypothesis Testing'){
-              if(input$altHypothesis == ">"){
-                alternative <- "greater"
-              }
-              else if(input$altHypothesis == "&ne; "){
-                alternative <- "two.sided"
-              }
-              else{
-                alternative <- "less"
-              }
+            if(input$altHypothesis == ">"){
+              alternative <- "greater"
+            }
+            else if(input$altHypothesis == "&ne; "){
+              alternative <- "two.sided"
+            }
+            else{
+              alternative <- "less"
             }
             
             if(input$sigmaKnown == 'Known'){
@@ -825,8 +828,8 @@ render <- "
               
             }
             
-          }
-          else{}
+          }}
+          
         }
         
         
