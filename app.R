@@ -180,6 +180,33 @@ render <- "
                         ),
                         
                         conditionalPanel(
+                          condition = "input.samplesSelect == '1' && input.dataAvailability == 'Enter Raw Data'",
+                          
+                          textAreaInput("sample1", "Sample 1", value = NULL, placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                          
+                          radioButtons(inputId = "sigmaKnownRaw",
+                                       label = strong("Population Standard Deviation (sigma)"),
+                                       choiceValues = list("Known","Unknown"),
+                                       choiceNames = list("Known","Unknown"),
+                                       selected = "Known", #character(0), #
+                                       inline = TRUE,
+                                       width = "1000px"),
+                          
+                          conditionalPanel(
+                            condition = "input.sigmaKnownRaw == 'Known'",
+                            
+                            numericInput(inputId = "popuSD",
+                                         label = "Population Standard Deviation (sigma )Value:",
+                                         value = 8.78, min = 0, step = 0.00001)),
+                          
+                          conditionalPanel(
+                            condition = "input.sigmaKnownRaw == 'Unknown'"
+                            
+                            ),
+                        ),
+                        
+                        
+                        conditionalPanel(
                           condition = "input.samplesSelect == '2' && input.dataAvailability == 'Summarized Data'",
                           
                           numericInput(inputId = "sampleSize1",
@@ -201,8 +228,8 @@ render <- "
                           radioButtons(inputId = "bothsigmaKnown",
                                        label = strong("Population Standard Deviations (sigma1 and sigma2)"),
                                        choiceValues = list("bothKnown","bothUnknown"),
-                                       choiceNames = list("bothKnown","bothUnknown"),
-                                       selected = "bothKnown",
+                                       choiceNames = list("Both Known","Both Unknown (Assumed Equal)"),
+                                       selected = "Both Known",
                                        inline = TRUE,
                                        width = "1000px"),
                           
@@ -230,24 +257,20 @@ render <- "
                                          value = 0, min = 0, step = 0.00001),
                           ),
                           
-                          conditionalPanel(
-                            condition = "input.bothsigmaKnown == 'bothUnknown'",
+                          # conditionalPanel(
+                          #   condition = "input.bothsigmaKnown == 'bothUnknown'",
                             
-                            radioButtons(inputId = "bothsigmaEqual",
-                                         label = strong("Assume Population Variances are equal (sigma1^2 = sigma2^2)"),
-                                         choiceValues = list("Yes","No"),
-                                         choiceNames = list("Yes","No"),
-                                         selected = "Yes", # character(0), #
-                                         inline = TRUE,
-                                         width = "1000px"),
-                          ),
+                          #   radioButtons(inputId = "bothsigmaEqual",
+                          #                label = strong("Assume Population Variances are equal (sigma1^2 = sigma2^2)"),
+                          #                choiceValues = list("Yes","No"),
+                          #                choiceNames = list("Yes","No"),
+                          #                selected = "Yes", # character(0), #
+                          #                inline = TRUE,
+                          #                width = "1000px"),
+                          # ),
                         ),
                         
-                        conditionalPanel(
-                          condition = "input.samplesSelect == '1' && input.dataAvailability == 'Enter Raw Data'",
-                          
-                          textAreaInput("sample1", "Sample 1", value = NULL, placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
-                        ),
+                        
                         
                         conditionalPanel(
                           condition = "input.samplesSelect == '2' && input.dataAvailability == 'Enter Raw Data'",
@@ -288,6 +311,8 @@ render <- "
                             radioButtons(inputId = "significanceLevel", "Significance Level", selected = c("5%"), choices = c("10%", "5%","1%"), inline = TRUE),
                           ),
                           
+                          
+                          
                           conditionalPanel(
                             condition = "input.samplesSelect == '1' && input.inferenceType == 'Hypothesis Testing'",
                             
@@ -310,6 +335,25 @@ render <- "
                             )
                           )
                         ),
+                        
+                        conditionalPanel(
+                          condition = "input.samplesSelect == '2' && input.inferenceType == 'Hypothesis Testing'",
+                          
+                          selectizeInput(
+                            inputId = "altHypothesis",
+                            label = "Alternate Hypothesis",
+                            choices = c(
+                              "< " = 1,
+                              "&ne; " = 2,
+                              "> " = 3
+                            ),
+                            selected = 2,
+                            options = list(
+                              render = I(render)
+                            )
+                          )
+                        ),
+                        
                         
                         actionButton(inputId = "goInference", "Calculate",
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
@@ -459,7 +503,7 @@ render <- "
     #popuSD2 
     
     iv$add_rule("popuSD2", sv_required()) 
-    iv$add_rule("popSD2", sv_gt(0))
+    iv$add_rule("popuSD2", sv_gt(0))
     
     #sampSD1 
     
@@ -487,6 +531,7 @@ render <- "
     
     iv$add_rule("hypMean", sv_required()) 
     
+    iv$enable
     
     # String List to Numeric List
     createNumLst <- function(text) {
@@ -830,12 +875,35 @@ render <- "
               
             }}
           
+          if(input$dataAvailability == 'Enter Raw Data'){
+            
+            rawSampleSize <- length()
+            rawSampleMean <- mean()
+            rawSampleStandardDeviation <- sd()
+            
+            if(input$confidenceLevel == 'Confidence Interval'){
+              
+              if(input$confidenceLevel == '90%'){
+                ConfLvl <- 0.9
+              }
+              else if(input$confidenceLevel == '95%'){
+                ConfLvl <- 0.95
+              }
+              else{
+                ConfLvl <- 0.99
+              } 
+              
+            }
+            
+          }
+          
         }
         
         
       )
       
     })
+    
     
     
     observeEvent(input$resetAll, {
