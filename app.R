@@ -354,11 +354,11 @@ render <- "
                             uiOutput("renderInference"),
                             conditionalPanel(
                               condition = "input.inferenceType = 'Confidence Interval'",
-                              uiOutput('oneSamp')
+                              uiOutput('oneSampCI')
                             ), 
                             conditionalPanel(
                               condition = "input.inferenceType = 'Hypothesis Testing'",
-                              uiOutput('oneSampHyp')
+                              uiOutput('oneSampHT')
                             )
                           )
                       )
@@ -723,7 +723,7 @@ render <- "
                 
                 values <- reactiveValues()
                 values$dfKnown <- data.frame(Variable = character(), Value = character())
-                output$oneSamp <- renderTable(values$dfKnown)
+                output$oneSampCI <- renderTable(values$dfKnown)
                 row1 <- data.frame(Variable = "Sample Mean", Value = paste(zIntPrint[1]))
                 row2 <- data.frame(Variable = "Z Critical", Value = paste(zIntPrint[2]))
                 row3 <- data.frame(Variable = "Standard Error", Value = paste(zIntPrint[3]))
@@ -744,7 +744,7 @@ render <- "
                 
                 values <- reactiveValues()
                 values$dfKnown <- data.frame(Variable = character(), Value = character())
-                output$oneSamp <- renderTable(values$dfKnown)
+                output$oneSampCI <- renderTable(values$dfKnown)
                 row1 <- data.frame(Variable = "Sample Mean", Value = paste(tIntPrint[1]))
                 row2 <- data.frame(Variable = "Z Critical", Value = paste(tIntPrint[2]))
                 row3 <- data.frame(Variable = "Standard Error", Value = paste(tIntPrint[3]))
@@ -756,79 +756,79 @@ render <- "
               }
               else{}
             }
-          
-          else if(input$inferenceType == 'Hypothesis Testing'){
             
-            hypMeanSampOne <- input$hypMean 
-            
-            if(input$significanceLevel == "10%"){
-              sigLvl <- 0.1 
-            }
-            else if(input$significanceLevel == "5%"){
-              sigLvl <- 0.05
-            }
-            else{
-              sigLvl <- 0.01
-            }
-            
-            if(input$altHypothesis == ">"){
-              alternative <- "greater"
-            }
-            else if(input$altHypothesis == "&ne; "){
-              alternative <- "two.sided"
-            }
-            else{
-              alternative <- "less"
-            }
-            
-            if(input$sigmaKnown == 'Known'){
+            else if(input$inferenceType == 'Hypothesis Testing'){
               
-              sigmaSampOne <- input$popuSD
+              hypMeanSampOne <- input$hypMean 
               
-              source("R/OneSampZTest")
+              if(input$significanceLevel == "10%"){
+                sigLvl <- 0.1 
+              }
+              else if(input$significanceLevel == "5%"){
+                sigLvl <- 0.05
+              }
+              else{
+                sigLvl <- 0.01
+              }
               
-              zTestPrint <- ZTest(nSampOne, xbarSampOne, sigmaSampOne, hypMeanSampOne, alternative, sigLvl)
+              if(input$altHypothesis == ">"){
+                alternative <- "greater"
+              }
+              else if(input$altHypothesis == "&ne; "){
+                alternative <- "two.sided"
+              }
+              else{
+                alternative <- "less"
+              }
               
-              values <- reactiveValues()
-              values$dfKnownHyp <- data.frame(Variable = character(), Value = character())
-              output$oneSampHyp <- renderTable(values$dfKnown)
-              row1 <- data.frame(Variable = "Sample Size", Value = paste(zTestPrint[1]))
-              row2 <- data.frame(Variable = "Sample Mean", Value = paste(zTestPrint[2]))
-              row3 <- data.frame(Variable = "Population SD", Value = paste(zTestPrint[3]))
-              row4 <- data.frame(Variable = "Z Critical", Value = paste(zTestPrint[4]))
-              row5 <- data.frame(Variable = "Standard Error", Value = paste(zTestPrint[5]))
-              row6 <- data.frame(Variable = "Test Statistic", Value = paste(zTestPrint[6]))
-              row7 <- data.frame(Variable = "P-Value", Value = paste(zTestPrint[7]))
+              if(input$sigmaKnown == 'Known'){
+                
+                sigmaSampOne <- input$popuSD
+                
+                source("R/OneSampZTest.R")
+                
+                zTestPrint <- ZTest(nSampOne, xbarSampOne, sigmaSampOne, hypMeanSampOne, alternative, sigLvl)
+                
+                values <- reactiveValues()
+                values$dfKnownHyp <- data.frame(Variable = character(), Value = character())
+                output$oneSampHT <- renderTable(values$dfKnownHyp)
+                row1 <- data.frame(Variable = "Sample Size", Value = paste(zTestPrint[1]))
+                row2 <- data.frame(Variable = "Sample Mean", Value = paste(zTestPrint[2]))
+                row3 <- data.frame(Variable = "Population SD", Value = paste(zTestPrint[3]))
+                row4 <- data.frame(Variable = "Z Critical", Value = paste(zTestPrint[4]))
+                row5 <- data.frame(Variable = "Standard Error", Value = paste(zTestPrint[5]))
+                row6 <- data.frame(Variable = "Test Statistic", Value = paste(zTestPrint[6]))
+                row7 <- data.frame(Variable = "P-Value", Value = paste(zTestPrint[7]))
+                
+                #"Sample Size", "Sample Mean", "Population SD", "Z Critical", "Std Error", "Test Statistic", "P-Value"
+                
+                values$dfKnownHyp <- rbind(row1, row2, row3, row4, row5, row6, row7) 
+                
+              }
+              else if(input$sigmaKnown == 'Unknown'){
+                
+                sSampOne <- input$sampSD
+                
+                source("R/OneSampTTest.R")
+                
+                tTestPrint <- TTest(nSampOne, xbarSampOne, sSampOne, hypMeanSampOne, alternative, sigLvl)
+                
+                values <- reactiveValues()
+                values$dfUnKnownHyp <- data.frame(Variable = character(), Value = character())
+                output$oneSampHT <- renderTable(values$dfUnKnownHyp)
+                row1 <- data.frame(Variable = "Sample Size", Value = paste(tTestPrint[1]))
+                row2 <- data.frame(Variable = "Sample Mean", Value = paste(tTestPrint[2]))
+                row3 <- data.frame(Variable = "Sample SD", Value = paste(tTestPrint[3]))
+                row4 <- data.frame(Variable = "T Critical", Value = paste(tTestPrint[4]))
+                row5 <- data.frame(Variable = "Standard Error", Value = paste(tTestPrint[5]))
+                row6 <- data.frame(Variable = "Test Statistic", Value = paste(tTestPrint[6]))
+                row7 <- data.frame(Variable = "P-Value", Value = paste(tTestPrint[7]))
+                
+                values$dfUnKnownHyp <- rbind(row1, row2, row3, row4, row5, row6, row7) 
+                
+              }
               
-              #"Sample Size", "Sample Mean", "Population SD", "Z Critical", "Std Error", "Test Statistic", "P-Value"
-              
-              values$dfKnownHyp <- rbind(row1, row2, row3, row4, row5, row6, row7) 
-              
-            }
-            else if(input$sigmaKnown == 'Unknown'){
-              
-              sSampOne <- input$sampSD
-              
-              source("R/OneSampTTest.R")
-              
-              tTestPrint <- TTest(nSampOne, xbarSampOne, sSampOne, hypMeanSampOne, alternative, sigLvl)
-              
-              values <- reactiveValues()
-              values$dfUnKnownHyp <- data.frame(Variable = character(), Value = character())
-              output$oneSampHyp <- renderTable(values$dfKnown)
-              row1 <- data.frame(Variable = "Sample Size", Value = paste(tTestPrint[1]))
-              row2 <- data.frame(Variable = "Sample Mean", Value = paste(tTestPrint[2]))
-              row3 <- data.frame(Variable = "Sample SD", Value = paste(tTestPrint[3]))
-              row4 <- data.frame(Variable = "T Critical", Value = paste(tTestPrint[4]))
-              row5 <- data.frame(Variable = "Standard Error", Value = paste(tTestPrint[5]))
-              row6 <- data.frame(Variable = "Test Statistic", Value = paste(tTestPrint[6]))
-              row7 <- data.frame(Variable = "P-Value", Value = paste(tTestPrint[7]))
-              
-              values$dfUnKnownHyp <- rbind(row1, row2, row3, row4, row5, row6, row7) 
-              
-            }
-            
-          }}
+            }}
           
         }
         
