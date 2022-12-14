@@ -252,9 +252,9 @@ render <- "
                         conditionalPanel(
                           condition = "input.samplesSelect == '2' && input.dataAvailability == 'Enter Raw Data'",
                           
-                          textAreaInput("sample1.2", "Sample 1", value = NULL, placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                          textAreaInput("raw_sample1", "Sample 1", value = NULL, placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
                           
-                          textAreaInput("sample2", "Sample 2", value = NULL, placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                          textAreaInput("raw_sample2", "Sample 2", value = NULL, placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
                           
                           radioButtons(inputId = "samplesType",
                                        label = strong("Type of Samples"),
@@ -399,10 +399,10 @@ render <- "
     
     iv$add_rule("popMean", sv_required())
     
-    #popSD
+    #popuSD
     
-    iv$add_rule("popSD", sv_required())
-    iv$add_rule("popSD", sv_gt(0))
+    iv$add_rule("popuSD", sv_required())
+    iv$add_rule("popuSD", sv_gt(0))
     
     #xValue 
     
@@ -411,6 +411,7 @@ render <- "
     #sampleSize
     
     iv$add_rule("sampleSize", sv_required())
+    iv$add_rule("sampleSize", sv_gt(0))
     
     #sampleMean 
     
@@ -429,6 +430,7 @@ render <- "
     #sampleSize1 
     
     iv$add_rule("sampleSize1", sv_required())
+    iv$add_rule("sampleSize1", sv_gt(0))
     
     #sampleMean1 
     
@@ -437,6 +439,7 @@ render <- "
     #sampleSize2 
     
     iv$add_rule("sampleSize2", sv_required())
+    iv$add_rule("sampleSize2", sv_gt(0))
     
     #sampleMean2 
     
@@ -466,20 +469,17 @@ render <- "
     
     iv$add_rule("sample1", sv_required()) 
     
-    #sample1.2
+    #raw_sample1
     
-    iv$add_rule("sample1.2", sv_required())
+    iv$add_rule("raw_sample1", sv_required())
     
-    #sample2 
+    #raw_sample2 
     
-    iv$add_rule("sample2", sv_required()) 
+    iv$add_rule("raw_sample2", sv_required()) 
     
     #hypMean 
     
     iv$add_rule("hypMean", sv_required()) 
-    
-    iv$enable() 
-    
     
     # String List to Numeric List
     createNumLst <- function(text) {
@@ -795,7 +795,7 @@ render <- "
               row4 <- data.frame(Variable = "Z Critical", Value = paste(zTestPrint[4]))
               row5 <- data.frame(Variable = "Standard Error", Value = paste(zTestPrint[5]))
               row6 <- data.frame(Variable = "Test Statistic", Value = paste(zTestPrint[6]))
-              row7 <- data.frame(Variable = "P-Value", Value = paste(tTestPrint[7]))
+              row7 <- data.frame(Variable = "P-Value", Value = paste(zTestPrint[7]))
               
               #"Sample Size", "Sample Mean", "Population SD", "Z Critical", "Std Error", "Test Statistic", "P-Value"
               
