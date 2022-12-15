@@ -195,7 +195,7 @@ render <- "
                           conditionalPanel(
                             condition = "input.sigmaKnownRaw == 'Known'",
                             
-                            numericInput(inputId = "popuSD",
+                            numericInput(inputId = "popuSDRaw",
                                          label = "Population Standard Deviation (sigma )Value:",
                                          value = 8.78, min = 0, step = 0.00001)),
                           
@@ -416,6 +416,10 @@ render <- "
     # Data validation
     iv <- InputValidator$new()
     
+    #descriptiveStat 
+    
+    iv$add_rule("descriptiveStat", sv_required())
+    
     #numTrailsBinom
     
     iv$add_rule("numTrailsBinom", sv_required())
@@ -443,7 +447,7 @@ render <- "
     
     iv$add_rule("xPoisson", sv_required())
     iv$add_rule("xPoisson", sv_integer())
-    iv$add_rule("xPoisson", sv_gt(0))
+    iv$add_rule("xPoisson", sv_gte(0))
     
     #popMean 
     
@@ -451,8 +455,8 @@ render <- "
     
     #popuSD
     
-    iv$add_rule("popuSD", sv_required())
-    iv$add_rule("popuSD", sv_gt(0))
+    iv$add_rule("popSD", sv_required())
+    iv$add_rule("popSD", sv_gt(0))
     
     #xValue 
     
@@ -471,6 +475,11 @@ render <- "
     
     iv$add_rule("popuSD", sv_required()) 
     iv$add_rule("popuSD", sv_gt(0))
+    
+    #popuSDRaw
+    
+    iv$add_rule("popuSDRaw", sv_required()) 
+    iv$add_rule("popuSDRaw", sv_gt(0))
     
     #sampSD 
     
@@ -531,7 +540,7 @@ render <- "
     
     iv$add_rule("hypMean", sv_required()) 
     
-    iv$enable
+    iv$enable()
     
     # String List to Numeric List
     createNumLst <- function(text) {
@@ -877,9 +886,16 @@ render <- "
           
           if(input$dataAvailability == 'Enter Raw Data'){
             
-            rawSampleSize <- length()
-            rawSampleMean <- mean()
-            rawSampleStandardDeviation <- sd()
+            createNumLst <- function(text) {
+              text <- gsub("","", text)
+              split <- strsplit(text, ",", fixed = FALSE)[[1]]
+              as.numeric(split)
+            }
+            
+            datRawData <- createNumLst(input$sample1)
+            
+            rawSampleSize <- length(datRawData)
+            rawSampleMean <- mean(datRawData)
             
             if(input$confidenceLevel == 'Confidence Interval'){
               
@@ -891,7 +907,15 @@ render <- "
               }
               else{
                 ConfLvl <- 0.99
-              } 
+              }
+              
+              if(input$sigmaKnownRaw == 'Unknown'){
+                rawPopuSD <- sd(datRawData) 
+              }
+              
+              if(input$inferenceType == 'Confidence Interval'){
+                
+              }
               
             }
             
