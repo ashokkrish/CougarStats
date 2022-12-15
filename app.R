@@ -186,21 +186,21 @@ render <- "
                           
                           radioButtons(inputId = "sigmaKnownRaw",
                                        label = strong("Population Standard Deviation (sigma)"),
-                                       choiceValues = list("Known","Unknown"),
+                                       choiceValues = list("rawKnown","rawUnknown"),
                                        choiceNames = list("Known","Unknown"),
-                                       selected = "Known", #character(0), #
+                                       selected = "rawKnown", #character(0), #
                                        inline = TRUE,
                                        width = "1000px"),
                           
                           conditionalPanel(
-                            condition = "input.sigmaKnownRaw == 'Known'",
+                            condition = "input.sigmaKnownRaw == 'rawKnown'",
                             
                             numericInput(inputId = "popuSDRaw",
                                          label = "Population Standard Deviation (sigma )Value:",
                                          value = 8.78, min = 0, step = 0.00001)),
                           
                           conditionalPanel(
-                            condition = "input.sigmaKnownRaw == 'Unknown'"
+                            condition = "input.sigmaKnownRaw == 'rawUnknown'"
                             
                             ),
                         ),
@@ -398,7 +398,8 @@ render <- "
                             uiOutput("renderInference"),
                             conditionalPanel(
                               condition = "input.inferenceType = 'Confidence Interval'",
-                              uiOutput('oneSampCI')
+                              uiOutput('oneSampCI'),
+                              uiOutput("oneSampCIRaw")
                             ), 
                             conditionalPanel(
                               condition = "input.inferenceType = 'Hypothesis Testing'",
@@ -909,13 +910,27 @@ render <- "
                 ConfLvl <- 0.99
               }
               
-              if(input$sigmaKnownRaw == 'Unknown'){
-                rawPopuSD <- sd(datRawData) 
-              }
-              
-              if(input$inferenceType == 'Confidence Interval'){
+              if(input$sigmaKnownRaw == 'rawKnown'){
+                source("R.OneSampTInt.R") 
+                rawSD <- input$popuSDRaw
+                zIntPrintRaw <- ZInterval(rawSampleSize, rawSampleMean, rawSD, ConfLvl)
                 
-              }
+                values <- reactiveValues()
+                values$dfKnownRaw <- data.frame(Variable = character(), Value = character())
+                output$oneSampCIRaw <- renderTable(values$dfKnownRaw)
+                row1 <- data.frame(Variable = "Sample Mean", Value = paste(zIntPrintRaw[1]))
+                row2 <- data.frame(Variable = "Z Critical", Value = paste(zIntPrintRaw[2]))
+                row3 <- data.frame(Variable = "Standard Error", Value = paste(zIntPrintRaw[3]))
+                row4 <- data.frame(Variable = "LCL", Value = paste(zIntPrintRaw[4]))
+                row5 <- data.frame(Variable = "UCL", Value = paste(zIntPrintRaw[5]))
+                
+                values$dfKnownRaw <- rbind(row1, row2, row3, row4, row5)
+              } 
+              
+              else{}
+              
+              
+              
               
             }
             
