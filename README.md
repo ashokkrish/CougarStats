@@ -28,7 +28,7 @@ Alternatively you can send a pull request to download all the files in this repo
 ## Who is CougarStats for?
 
 - Students enrolled in an introductory statistics class
-- Instructors wanting to use an open-sourse tool in their labs
+- Instructors wanting to use an open-source tool in their labs
 
 ## Shiny app authors
 
