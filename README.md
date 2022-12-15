@@ -1,8 +1,8 @@
-![CougarStats logo](https://github.com/cwai097/COMP5690/blob/master/www/CougarStats.png)
+'''![CougarStats logo](https://github.com/cwai097/COMP5690/blob/master/www/CougarStats.png)
 
 # CougarStats: An R Shiny App for Statistical Analysis
 
-<img src="https://github.com/cwai097/COMP5690/blob/master/www/CougarStats.png" width="100" /> 
+<img src="https://github.com/cwai097/COMP5690/blob/master/www/CougarStats.png" width="200" /> 
 
 ## Who is CougarStats for?
 
