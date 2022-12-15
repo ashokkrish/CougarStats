@@ -2,6 +2,8 @@
 
 # CougarStats: An R Shiny App for Statistical Analysis
 
+<img src="https://github.com/cwai097/COMP5690/blob/master/www/CougarStats.png" width="100" /> 
+
 ## Who is CougarStats for?
 
 - Students enrolled in an introductory statistics class
