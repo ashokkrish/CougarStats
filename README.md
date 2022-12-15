@@ -6,7 +6,7 @@
 
 ## Overview
 
-<img align="right" src="https://github.com/cwai097/COMP5690/blob/master/www/CougarStats.png" alt="rank" width="300" style="margin-top: 20px" /> 
+<img align="right" src="https://github.com/cwai097/COMP5690/blob/master/www/CougarStats.png" alt="rank" width="250" style="margin-top: 20px" /> 
 
 **CougarStats** is an open-source platform-independent browser-based interface for statistical data analysis. 
 
