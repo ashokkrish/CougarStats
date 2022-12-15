@@ -1981,9 +1981,9 @@ render <- "
           
         }
         
-      
+        
       )
-        })
+    })
     
     
     
@@ -2040,7 +2040,7 @@ render <- "
   # Run the application 
   shinyApp(ui = ui, server = server)
   
-    
-  }
   
-shinyApp(ui = ui, server = server)
+  }
+    
+    shinyApp(ui = ui, server = server)
