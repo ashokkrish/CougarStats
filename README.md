@@ -4,9 +4,9 @@
 
 # _CougarStats_: An R Shiny App for Statistical Analysis
 
-<img src="https://github.com/cwai097/COMP5690/blob/master/www/CougarStats.png" width="200" /> 
-
 ## Overview
+
+<img align="right" src="https://github.com/cwai097/COMP5690/blob/master/www/CougarStats.png" alt="rank" width="200" style="margin-top: 20px" /> 
 
 **CougarStats** is an open-source platform-independent browser-based interface for statistical data analysis. 
 
