@@ -77,6 +77,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                         ),
                         
                         conditionalPanel(
+                          id = "poissonPanel", 
                           condition = "input.probability == 'Poisson'", 
                           numericInput("muPoisson", "Average (mu)", value = 4),  
                           numericInput("xPoisson", "Number of Successes (x)", value = 3), 
@@ -105,6 +106,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                         
                         conditionalPanel(
                           withMathJax(),
+                          id = "normalPanel",
                           condition = "input.probability == 'Normal'", 
                           numericInput(inputId = "popMean", 
                                        label = "Population Mean (mu):", 
@@ -132,6 +134,8 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                       
                       conditionalPanel(
                         condition = "input.dropDownMenu == 'Statistical Inference'",
+                        
+                        id = "statsPanel",
                         
                         radioButtons(inputId = "samplesSelect",
                                      label = strong("Number of samples"),
@@ -369,6 +373,12 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                     ),
                     
                     mainPanel(
+                      
+                      tags$style(type="text/css",
+                                 ".shiny-output-error { visibility: hidden; }",
+                                 ".shiny-output-error:before { visibility: hidden; }"
+                      ), 
+                      
                       div(id="despStats",
                           conditionalPanel(
                             condition = "input.dropDownMenu == 'Descriptive Statistics'",
@@ -443,44 +453,45 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                               )
                             ), # condition = "input.samplesSelect == '1'",
                             
-                            # conditionalPanel(
-                            #   condition = "input.samplesSelect == '2'",
-                            #   
-                            #   conditionalPanel(
-                            #     condition = "input.inferenceType == 'Confidence Interval'",
-                            #     
-                            #     conditionalPanel(
-                            #       condition = "input.dataAvailability == 'Summarized Data'",
-                            #       
-                            #       uiOutput('twoSampCI')
-                            #     ),
-                            #     
-                            #     conditionalPanel(
-                            #       condition = "input.dataAvailability == 'Enter Raw Data'",
-                            #       
-                            #       uiOutput('twoSampCIRaw')
-                            #     )
-                            #   ),
-                            #   
-                            #   conditionalPanel(
-                            #     condition = "input.inferenceType == 'Hypothesis Testing'",
-                            #     
-                            #     conditionalPanel(
-                            #       condition = "input.dataAvailability == 'Summarized Data'",
-                            #       
-                            #       uiOutput('twoSampHT')
-                            #     ),
-                            #     
-                            #     conditionalPanel(
-                            #       condition = "input.dataAvailability == 'Enter Raw Data'",
-                            #       
-                            #       uiOutput('twoSampHTRaw')
-                            #     )
-                            #   )
-                            # ) #  condition = "input.samplesSelect == '2'"
+                            conditionalPanel(
+                              condition = "input.samplesSelect == '2'",
+
+                              conditionalPanel(
+                                condition = "input.inferenceType == 'Confidence Interval'",
+
+                                conditionalPanel(
+                                  condition = "input.dataAvailability == 'Summarized Data'",
+
+                                  uiOutput('twoSampCI')
+                                ),
+
+                                conditionalPanel(
+                                  condition = "input.dataAvailability == 'Enter Raw Data'",
+
+                                  uiOutput('twoSampCIRaw')
+                                )
+                              ),
+
+                              conditionalPanel(
+                                condition = "input.inferenceType == 'Hypothesis Testing'",
+
+                                conditionalPanel(
+                                  condition = "input.dataAvailability == 'Summarized Data'",
+
+                                  uiOutput('twoSampHT')
+                                ),
+
+                                conditionalPanel(
+                                  condition = "input.dataAvailability == 'Enter Raw Data'",
+
+                                  uiOutput('twoSampHTRaw')
+                                )
+                              )
+                            ) #  condition = "input.samplesSelect == '2'"
                           )
                         )
-                      ) # mainPanel
+                      ), # mainPanel
+                    
                   ) # sidebarLayout
   )
   
@@ -1084,183 +1095,283 @@ server <- function(input, output) {
         
         else if(input$samplesSelect == '2'){
           
-          # if(input$dataAvailability == 'Summarized Data'){
-          #   
-          #   n1 <- input$sampleSize1
-          #   xbar1 <- input$sampleMean1
-          #   
-          #   n2 <- input$sampleSize2
-          #   xbar2 <- input$sampleMean2
-          #   
-          #   if(input$inferenceType == 'Confidence Interval'){
-          #     
-          #     if(input$confidenceLevel == '90%'){
-          #       ConfLvl <- 0.9
-          #     }
-          #     else if(input$confidenceLevel == '95%'){
-          #       ConfLvl <- 0.95
-          #     }
-          #     else{
-          #       ConfLvl <- 0.99
-          #     } 
-          #     
-          #     if(input$bothsigmaKnown == 'bothKnown'){
-          #       
-          #       sigma1 <- input$popuSD1
-          #       sigma2 <- input$popuSD2
-          #       
-          #       source('R/TwoSampZInt.R')
-          #       
-          #       TwoSampZInt(xbar1, sigma1, n1, xbar2, sigma2, n2, ConfLvl)
-          #       
-          #     }
-          #     else if(input$bothsigmaKnown == 'bothUnknown'){
-          #       
-          #       s1 <- input$sampSD1
-          #       s2 <- input$sampSD2
-          #       
-          #       source('R/TwoSampTInt.R')
-          #       
-          #       TwoSampTInt(xbar1, s1, n1, xbar2, s2, n2, var.equal = TRUE, ConfLvl)
-          #       
-          #     }
-          #   }
-          #   
-          #   else if(input$inferenceType == 'Hypothesis Testing'){
-          #     
-          #     if(input$significanceLevel == "10%"){
-          #       sigLvl <- 0.1 
-          #     }
-          #     else if(input$significanceLevel == "5%"){
-          #       sigLvl <- 0.05
-          #     }
-          #     else{
-          #       sigLvl <- 0.01
-          #     }
-          #     
-          #     if(input$altHypothesis == ">"){
-          #       alternative <- "greater"
-          #     }
-          #     else if(input$altHypothesis == "&ne; "){
-          #       alternative <- "two.sided"
-          #     }
-          #     else{
-          #       alternative <- "less"
-          #     }
-          #     
-          #     if(input$bothsigmaKnown == 'bothKnown'){
-          #       
-          #       sigma1 <- input$popuSD1
-          #       sigma2 <- input$popuSD2
-          #       
-          #       source('R/TwoSampZTest.R')
-          #       
-          #       TwoSampZTest(xbar1, sigma1, n1, xbar2, sigma2, n2, alternative, sigLvl)
-          #       
-          #     }
-          #     else if(input$bothsigmaKnown == 'bothUnknown'){
-          #       
-          #       s1 <- input$sampSD1
-          #       s2 <- input$sampSD2
-          #       
-          #       source('R/TwoSampTTest.R')
-          #       
-          #       TwoSampTTest(xbar1, s1, n1, xbar2, s2, n2, var.equal = TRUE, alternative, sigLvl)
-          #       
-          #     }
-          #   }
-          # }
-          # 
-          # else if(input$dataAvailability == 'Enter Raw Data'){
-          #   
-          #   raw_sample1 <- createNumLst(input$raw_sample1)
-          #   
-          #   n1  <- length(raw_sample1)
-          #   xbar1 <- mean(raw_sample1)
-          #   
-          #   raw_sample2 <- createNumLst(input$raw_sample2)
-          #   
-          #   n2  <- length(raw_sample2)
-          #   xbar2 <- mean(raw_sample2)
-          #   
-          #   if(input$inferenceType == 'Confidence Interval'){
-          #     
-          #     if(input$confidenceLevel == '90%'){
-          #       ConfLvl <- 0.9
-          #     }
-          #     else if(input$confidenceLevel == '95%'){
-          #       ConfLvl <- 0.95
-          #     }
-          #     else{
-          #       ConfLvl <- 0.99
-          #     } 
-          #     
-          #     if(input$bothsigmaKnown == 'bothKnown'){
-          #       
-          #       sigma1 <- input$popuSD1
-          #       sigma2 <- input$popuSD2
-          #       
-          #       source('R/TwoSampZInt.R')
-          #       
-          #       TwoSampZInt(xbar1, sigma1, n1, xbar2, sigma2, n2, ConfLvl)
-          #       
-          #     }
-          #     else if(input$bothsigmaKnown == 'bothUnknown'){
-          #       
-          #       s1 <- sd(raw_sample1)
-          #       s2 <- sd(raw_sample2)
-          #       
-          #       source('R/TwoSampTInt.R')
-          #       
-          #       TwoSampTInt(xbar1, s1, n1, xbar2, s2, n2, var.equal = TRUE, ConfLvl)
-          #       
-          #     }
-          #   }
-          #   
-          #   else if(input$inferenceType == 'Hypothesis Testing'){
-          #     
-          #     if(input$significanceLevel == "10%"){
-          #       sigLvl <- 0.1 
-          #     }
-          #     else if(input$significanceLevel == "5%"){
-          #       sigLvl <- 0.05
-          #     }
-          #     else{
-          #       sigLvl <- 0.01
-          #     }
-          #     
-          #     if(input$altHypothesis == ">"){
-          #       alternative <- "greater"
-          #     }
-          #     else if(input$altHypothesis == "&ne; "){
-          #       alternative <- "two.sided"
-          #     }
-          #     else{
-          #       alternative <- "less"
-          #     }
-          #     
-          #     if(input$bothsigmaKnown == 'bothKnown'){
-          #       
-          #       sigma1 <- input$popuSD1
-          #       sigma2 <- input$popuSD2
-          #       
-          #       source('R/TwoSampZTest.R')
-          #       
-          #       TwoSampZTest(xbar1, sigma1, n1, xbar2, sigma2, n2, alternative, sigLvl)
-          #       
-          #     }
-          #     else if(input$bothsigmaKnown == 'bothUnknown'){
-          #       
-          #       s1 <- sd(raw_sample1)
-          #       s2 <- sd(raw_sample2)
-          #       
-          #       source('R/TwoSampTTest.R')
-          #       
-          #       TwoSampTTest(xbar1, s1, n1, xbar2, s2, n2, var.equal = TRUE, alternative, sigLvl)
-          #       
-          #     } # input$bothsigmaKnown == 'bothUnknown'
-          #   } # input$inferenceType == 'Hypothesis Testing'
-          # } # input$dataAvailability == 'Enter Raw Data'  
+          if(input$dataAvailability == 'Summarized Data'){
+
+            n1 <- input$sampleSize1
+            xbar1 <- input$sampleMean1
+
+            n2 <- input$sampleSize2
+            xbar2 <- input$sampleMean2
+
+            if(input$inferenceType == 'Confidence Interval'){
+
+              if(input$confidenceLevel == '90%'){
+                ConfLvl <- 0.9
+              }
+              else if(input$confidenceLevel == '95%'){
+                ConfLvl <- 0.95
+              }
+              else{
+                ConfLvl <- 0.99
+              }
+
+              if(input$bothsigmaKnown == 'bothKnown'){
+
+                sigma1 <- input$popuSD1
+                sigma2 <- input$popuSD2
+
+                source('R/TwoSampZInt.R')
+
+                twoSampKnownConfid <- TwoSampZInt(xbar1, sigma1, n1, xbar2, sigma2, n2, ConfLvl)
+                
+                values <- reactiveValues()
+                values$dfTwoKnownSum <- data.frame(Variable = character(), Value = character())
+                output$twoSampCI <- renderTable(values$dfTwoKnownSum)
+                
+                row1 <- data.frame(Variable = "Difference of means", Value = paste(twoSampKnownConfid[1]))
+                row2 <- data.frame(Variable = "Z Critical", Value = paste(twoSampKnownConfid[2]))
+                row3 <- data.frame(Variable = "Standard Error", Value = paste(twoSampKnownConfid[3]))
+                row4 <- data.frame(Variable = "LCL", Value = paste(twoSampKnownConfid[4]))
+                row5 <- data.frame(Variable = "UCL", Value = paste(twoSampKnownConfid[5]))
+                
+                values$dfTwoKnownSum <- rbind(row1, row2, row3, row4, row5)
+          
+              }
+              else if(input$bothsigmaKnown == 'bothUnknown'){
+
+                s1 <- input$sampSD1
+                s2 <- input$sampSD2
+
+                source('R/TwoSampTInt.R')
+
+                twoSampUnKnownConfid <- TwoSampTInt(xbar1, s1, n1, xbar2, s2, n2, var.equal = TRUE, ConfLvl)
+                
+                values <- reactiveValues()
+                values$dfTwoUnknownRSum <- data.frame(Variable = character(), Value = character())
+                output$twoSampCI <- renderTable(values$dfTwoUnknownRSum )
+                
+                row1 <- data.frame(Variable = "Difference of means", Value = paste(twoSampUnKnownConfid[1]))
+                row2 <- data.frame(Variable = "T Critical", Value = paste(twoSampUnKnownConfid[2]))
+                row3 <- data.frame(Variable = "Standard Error", Value = paste(twoSampUnKnownConfid[3]))
+                row4 <- data.frame(Variable = "LCL", Value = paste(twoSampUnKnownConfid[4]))
+                row5 <- data.frame(Variable = "UCL", Value = paste(twoSampUnKnownConfid[5]))
+                
+                values$dfTwoUnknownRSum  <- rbind(row1, row2, row3, row4, row5)
+
+              }
+            }
+
+            else if(input$inferenceType == 'Hypothesis Testing'){
+
+              if(input$significanceLevel == "10%"){
+                sigLvl <- 0.1
+              }
+              else if(input$significanceLevel == "5%"){
+                sigLvl <- 0.05
+              }
+              else{
+                sigLvl <- 0.01
+              }
+
+              if(input$altHypothesis == ">"){
+                alternative <- "greater"
+              }
+              else if(input$altHypothesis == "&ne; "){
+                alternative <- "two.sided"
+              }
+              else{
+                alternative <- "less"
+              }
+
+              if(input$bothsigmaKnown == 'bothKnown'){
+
+                sigma1 <- input$popuSD1
+                sigma2 <- input$popuSD2
+
+                source('R/TwoSampZTest.R')
+
+                twoSampZTestHyp <- TwoSampZTest(xbar1, sigma1, n1, xbar2, sigma2, n2, alternative, sigLvl)
+                #"Difference of means", "± Z Critical", "Std Error", "TS", "P-Value"
+                
+                values <- reactiveValues()
+                values$dfTwoKnownHyp <- data.frame(Variable = character(), Value = character())
+                output$twoSampHT <- renderTable(values$dfTwoKnownHyp )
+                
+                row1 <- data.frame(Variable = "Difference of means", Value = paste(twoSampZTestHyp[1]))
+                row2 <- data.frame(Variable = "± Z Critical", Value = paste(twoSampZTestHyp[2]))
+                row3 <- data.frame(Variable = "Standard Error", Value = paste(twoSampZTestHyp[3]))
+                row4 <- data.frame(Variable = "TS", Value = paste(twoSampZTestHyp[4]))
+                row5 <- data.frame(Variable = "P-Value", Value = paste(twoSampZTestHyp[5]))
+                
+                values$dfTwoKnownHyp  <- rbind(row1, row2, row3, row4, row5)
+
+              }
+              else if(input$bothsigmaKnown == 'bothUnknown'){
+
+                s1 <- input$sampSD1
+                s2 <- input$sampSD2
+
+                source('R/TwoSampTTest.R')
+
+                twoSampTTestHyp <- TwoSampTTest(xbar1, s1, n1, xbar2, s2, n2, var.equal = TRUE, alternative, sigLvl)
+                #"Difference of means", "df", "T Critical", "Std Error", "Test Statistic", "P-Value"
+                
+                values <- reactiveValues()
+                values$dfTwoUnknownHyp <- data.frame(Variable = character(), Value = character())
+                output$twoSampHT <- renderTable(values$dfTwoUnknownHyp )
+                
+                row1 <- data.frame(Variable = "Difference of means", Value = paste(twoSampTTestHyp[1]))
+                row2 <- data.frame(Variable = "df", Value = paste(twoSampTTestHyp[2]))
+                row3 <- data.frame(Variable = "T Critical", Value = paste(twoSampTTestHyp[3]))
+                row4 <- data.frame(Variable = "Standard Error", Value = paste(twoSampTTestHyp[4]))
+                row5 <- data.frame(Variable = "Test Statistic", Value = paste(twoSampTTestHyp[5]))
+                row6 <- data.frame(Variable = "P-Value", Value = paste(twoSampTTestHyp[6]))
+                
+                values$dfTwoUnknownHyp  <- rbind(row1, row2, row3, row4, row5, row6)
+
+              }
+            }
+          }
+
+          else if(input$dataAvailability == 'Enter Raw Data'){
+
+            raw_sample1 <- createNumLst(input$raw_sample1)
+
+            n1  <- length(raw_sample1)
+            xbar1 <- mean(raw_sample1)
+
+            raw_sample2 <- createNumLst(input$raw_sample2)
+
+            n2  <- length(raw_sample2)
+            xbar2 <- mean(raw_sample2)
+
+            if(input$inferenceType == 'Confidence Interval'){
+
+              if(input$confidenceLevel == '90%'){
+                ConfLvl <- 0.9
+              }
+              else if(input$confidenceLevel == '95%'){
+                ConfLvl <- 0.95
+              }
+              else{
+                ConfLvl <- 0.99
+              }
+
+              if(input$bothsigmaKnown == 'bothKnown'){
+
+                sigma1 <- input$popuSD1
+                sigma2 <- input$popuSD2
+
+                source('R/TwoSampZInt.R')
+
+                twoSampZIntRaw <- TwoSampZInt(xbar1, sigma1, n1, xbar2, sigma2, n2, ConfLvl)
+                
+                values <- reactiveValues()
+                values$dfTwoKnownRaw <- data.frame(Variable = character(), Value = character())
+                output$twoSampCIRaw <- renderTable(values$dfTwoKnownRaw)
+                
+                row1 <- data.frame(Variable = "Difference of means", Value = paste(twoSampZIntRaw[1]))
+                row2 <- data.frame(Variable = "Z Critical", Value = paste(twoSampZIntRaw[2]))
+                row3 <- data.frame(Variable = "Standard Error", Value = paste(twoSampZIntRaw[3]))
+                row4 <- data.frame(Variable = "LCL", Value = paste(twoSampZIntRaw[4]))
+                row5 <- data.frame(Variable = "UCL", Value = paste(twoSampZIntRaw[5]))
+                
+                values$dfTwoKnownRaw <- rbind(row1, row2, row3, row4, row5)
+
+              }
+              else if(input$bothsigmaKnown == 'bothUnknown'){
+
+                s1 <- sd(raw_sample1)
+                s2 <- sd(raw_sample2)
+
+                source('R/TwoSampTInt.R')
+
+                twoSampeTIntRaw <- TwoSampTInt(xbar1, s1, n1, xbar2, s2, n2, var.equal = TRUE, ConfLvl)
+                
+                values <- reactiveValues()
+                values$dfTwoUnknownRaw <- data.frame(Variable = character(), Value = character())
+                output$twoSampCIRaw <- renderTable(values$dfTwoUnknownRaw)
+                
+                row1 <- data.frame(Variable = "Difference of means", Value = paste(twoSampeTIntRaw[1]))
+                row2 <- data.frame(Variable = "T Critical", Value = paste(twoSampeTIntRaw[2]))
+                row3 <- data.frame(Variable = "Standard Error", Value = paste(twoSampeTIntRaw[3]))
+                row4 <- data.frame(Variable = "LCL", Value = paste(twoSampeTIntRaw[4]))
+                row5 <- data.frame(Variable = "UCL", Value = paste(twoSampeTIntRaw[5]))
+                
+                values$dfTwoUnknownRaw  <- rbind(row1, row2, row3, row4, row5)
+
+              }
+            }
+
+            else if(input$inferenceType == 'Hypothesis Testing'){
+
+              if(input$significanceLevel == "10%"){
+                sigLvl <- 0.1
+              }
+              else if(input$significanceLevel == "5%"){
+                sigLvl <- 0.05
+              }
+              else{
+                sigLvl <- 0.01
+              }
+
+              if(input$altHypothesis == ">"){
+                alternative <- "greater"
+              }
+              else if(input$altHypothesis == "&ne; "){
+                alternative <- "two.sided"
+              }
+              else{
+                alternative <- "less"
+              }
+
+              if(input$bothsigmaKnown == 'bothKnown'){
+
+                sigma1 <- input$popuSD1
+                sigma2 <- input$popuSD2
+
+                source('R/TwoSampZTest.R')
+
+                twoSampZTestRaw <- TwoSampZTest(xbar1, sigma1, n1, xbar2, sigma2, n2, alternative, sigLvl)
+                
+                values <- reactiveValues()
+                values$dfTwoKnownHypRaw <- data.frame(Variable = character(), Value = character())
+                output$twoSampHTRaw <- renderTable(values$dfTwoKnownHypRaw )
+                
+                row1 <- data.frame(Variable = "Difference of means", Value = paste(twoSampZTestRaw[1]))
+                row2 <- data.frame(Variable = "± Z Critical", Value = paste(twoSampZTestRaw[2]))
+                row3 <- data.frame(Variable = "Standard Error", Value = paste(twoSampZTestRaw[3]))
+                row4 <- data.frame(Variable = "TS", Value = paste(twoSampZTestRaw[4]))
+                row5 <- data.frame(Variable = "P-Value", Value = paste(twoSampZTestRaw[5]))
+                
+                values$dfTwoKnownHypRaw  <- rbind(row1, row2, row3, row4, row5)
+
+              }
+              else if(input$bothsigmaKnown == 'bothUnknown'){
+
+                s1 <- sd(raw_sample1)
+                s2 <- sd(raw_sample2)
+
+                source('R/TwoSampTTest.R')
+
+                twoSampTTestRaw <- TwoSampTTest(xbar1, s1, n1, xbar2, s2, n2, var.equal = TRUE, alternative, sigLvl)
+                
+                values <- reactiveValues()
+                values$dfTwoUnknownHyp <- data.frame(Variable = character(), Value = character())
+                output$twoSampHTRaw <- renderTable(values$dfTwoUnknownHyp )
+                
+                row1 <- data.frame(Variable = "Difference of means", Value = paste(twoSampTTestRaw[1]))
+                row2 <- data.frame(Variable = "df", Value = paste(twoSampTTestRaw[2]))
+                row3 <- data.frame(Variable = "T Critical", Value = paste(twoSampTTestRaw[3]))
+                row4 <- data.frame(Variable = "Standard Error", Value = paste(twoSampTTestRaw[4]))
+                row5 <- data.frame(Variable = "Test Statistic", Value = paste(twoSampTTestRaw[5]))
+                row6 <- data.frame(Variable = "P-Value", Value = paste(twoSampTTestRaw[6]))
+                
+                values$dfTwoUnknownHyp  <- rbind(row1, row2, row3, row4, row5, row6)
+
+              } # input$bothsigmaKnown == 'bothUnknown'
+            } # input$inferenceType == 'Hypothesis Testing'
+          } # input$dataAvailability == 'Enter Raw Data'
 
         } # samplesSelect == '2'
         
@@ -1269,6 +1380,10 @@ server <- function(input, output) {
     
     observeEvent(input$resetAll, {
       shinyjs::reset("sideBar")
+    })
+    
+    observeEvent(input$resetAllB, {
+      shinyjs::reset("probPanel")
     })
 
     observeEvent(input$resetAll,{
@@ -1283,6 +1398,7 @@ server <- function(input, output) {
       hide(id = 'probabilityMP')
     })
     
+    
     observeEvent(input$goBinom, {
       show(id = 'probabilityMP')
     })
@@ -1293,6 +1409,7 @@ server <- function(input, output) {
     
     observeEvent(input$resetAllP, {
       hide(id = "probabilityMP")
+      shinyjs::reset("poissonPanel")
     })
     
     observeEvent(input$goNormal, {
@@ -1301,6 +1418,7 @@ server <- function(input, output) {
     
     observeEvent(input$resetAllN, {
       hide(id = "probabilityMP")
+      shinyjs::reset("normalPanel")
     })
     
     observeEvent(input$goInference, {
@@ -1309,8 +1427,10 @@ server <- function(input, output) {
     
     observeEvent(input$resetAllI, {
       hide(id = "inferenceMP")
+      shinyjs::reset("statsPanel")
     })
-  }
+  
+    }
   
 shinyApp(ui = ui, server = server)
   
