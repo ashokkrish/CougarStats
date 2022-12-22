@@ -520,7 +520,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                            
                            br(),
                            
-                           p("This interactive Shiny app was developed as a part of a COMP 5690 Senior Computer Sceince Project in Fall 2022"), 
+                           p("This interactive Shiny app was developed as a part of a COMP 5690 Senior Computer Science Project in Fall 2022"), 
                            p(span("Lead Developer", style = "font-weight:bold")),
                            p("Crystal Wai,"), 
                            p("Undergraduate Student,"), 
