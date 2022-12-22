@@ -1,11 +1,13 @@
-library(shiny)
-library(shinythemes)
-library(moments)
-library(ggplot2)
-library(shinyjs)
-library(shinyvalidate)
+library(bslib)
 library(dplyr)
 library(DT)
+library(ggplot2)
+library(moments)
+library(shiny)
+library(shinythemes)
+library(shinyjs)
+library(shinyvalidate)
+library(tinytex)
 
 render <- "
 {
@@ -13,26 +15,26 @@ render <- "
   item: function(data, escape){return '<div class=\"item\">'+data.label+'</div>';}
 }"
   
-ui <- fluidPage(theme = shinytheme("flatly"),
+ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                   
-                  # Application title
-                  titlePanel("Cougar Stats"),
-                  
+  navbarPage(title = span("CougarStats", style = "color:#000000; font-weight:bold; font-size:18pt"),
+
+                tabPanel(title = "Methods",
                   sidebarLayout(
-                    #shinyjs::useShinyjs(),
                     sidebarPanel(
                       withMathJax(),
                       shinyjs::useShinyjs(),
                       id = "sideBar", 
                       selectInput(
-                        inputId= "dropDownMenu",
-                        label= "Choose your test",
-                        choices = c("Descriptive Statistics", "Probability Distributions", "Statistical Inference"),
+                        inputId = "dropDownMenu",
+                        label = strong("Choose Statistical Topic"),
+                        choices = c("Descriptive Statistics", "Probability Distributions", "Statistical Inference", "Regression and Correlation"),
+                        selected = NULL, 
                       ),
                       
                       conditionalPanel(
                         condition = "input.dropDownMenu == 'Descriptive Statistics'",
-                        textAreaInput("descriptiveStat", "Sample", value = "2.14, 2.09, 2.65, 3.56, 5.55, 5.00, 5.55, 3.09, 6.79", placeholder = "Enter values separated by a comma with decimals as points", rows = 6),
+                        textAreaInput("descriptiveStat", label = strong("Sample"), value = "2.14, 2.09, 2.65, 3.56, 5.55, 5.00, 5.55, 3.09, 6.79", placeholder = "Enter values separated by a comma with decimals as points", rows = 6),
                         #checkboxGroupInput(inputId = "checkBoxDescpStats", "Select", selected = c("Mean", "Mode","Median"),choices = c("Mean","Mode","Median","Standard Deviation","Interquartile Range","Box Plot")),
                         
                         actionButton(inputId = "goDescpStats", "Calculate",
@@ -44,27 +46,27 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                       conditionalPanel(
                         id = "probPanel",
                         condition = "input.dropDownMenu == 'Probability Distributions'",
-                        radioButtons("probability", "Distribution", choices = c("Binomial", "Poisson", "Normal"), selected = NULL, inline = TRUE),
+                        radioButtons("probability", label = strong("Distribution"), choices = c("Binomial", "Poisson", "Normal"), selected = NULL, inline = TRUE),
                         conditionalPanel(
-                          condition = "input.probability== 'Binomial'",
+                          condition = "input.probability == 'Binomial'",
                           
                           numericInput(inputId = "numTrailsBinom", 
-                                       label = "Number of Trials (n):",
+                                       label = strong("Number of Trials (n):"),
                                        value = 15, min = 1, step = 1),
                           
                           numericInput(inputId = "successProbBinom", 
-                                       label = "Probability of Success (p):",
+                                       label = strong("Probability of Success (p):"),
                                        value = 0.29, min = 0, max = 1, step = 0.00001),
                           
                           numericInput(inputId = "numSuccessesBinom", 
-                                       label = "Number of Successes (x):",
+                                       label = strong("Number of Successes (x):"),
                                        value = 3, min = 0, step = 1),
                           # checkboxGroupInput(inputId = "calcBinom", 
                           #                    label = "",
                           #                    choiceValues = list("P(X=x)","P(X \\leq x)\\)","P(X>x)"),
                           #                    choiceNames = list("P(X=x)","P(X \\leq x)\\)","P(X>x)")),
                           radioButtons(inputId = "calcBinom", 
-                                       label = "",
+                                       label = strong("Probability"),
                                        choiceValues = list("exact","cumulative","P(X>x)"),
                                        choiceNames = list("\\(P(X = x \\))","\\(P(X \\leq x)\\)","\\(P(X \\gt x)\\)"),
                                        inline = TRUE,
@@ -79,10 +81,10 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                         conditionalPanel(
                           id = "poissonPanel", 
                           condition = "input.probability == 'Poisson'", 
-                          numericInput("muPoisson", "Average (mu)", value = 4),  
-                          numericInput("xPoisson", "Number of Successes (x)", value = 3), 
+                          numericInput("muPoisson", label = strong("Average (\\( \\mu\\))"), value = 4),  
+                          numericInput("xPoisson", label = strong("Number of Successes (x)"), value = 3), 
                           radioButtons(inputId = "calcPoisson",
-                                       label = "", 
+                                       label = strong("Probability"), 
                                        choiceValues = list("exact","lowerTail", "upperTail"),
                                        choiceNames = list("\\(P(X = x\\))","\\(P(X \\leq x)\\)","\\(P(X \\gt x)\\)"),
                                        inline = TRUE,
@@ -109,16 +111,16 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                           id = "normalPanel",
                           condition = "input.probability == 'Normal'", 
                           numericInput(inputId = "popMean", 
-                                       label = "Population Mean (mu):", 
+                                       label = strong("Population Mean (\\( \\mu\\)):"), 
                                        value = 0, step = 0.00001),
                           numericInput(inputId = "popSD",
-                                       label = "Population Standard Deviation (sigma):",
+                                       label = strong("Population Standard Deviation (\\( \\sigma\\)):"),
                                        value = 1, min = 0, step = 0.00001), 
                           numericInput(inputId = "xValue",
-                                       label = "x:",
+                                       label = strong("x:"),
                                        value = 0, step = 0.00001),
                           radioButtons(inputId = "calcNormal",
-                                       label = "", 
+                                       label = strong("Probability"), 
                                        choiceValues = list("P(X \\leq x)", "P(X > x)"),
                                        choiceNames = list("\\(P(X \\leq x)\\)", "\\(P(X \\gt x)\\)"),
                                        inline = TRUE,
@@ -149,26 +151,34 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                                      label = strong("Data Availability"),
                                      choiceValues = list("Summarized Data", "Enter Raw Data"),
                                      choiceNames = list("Summarized Data", "Enter Raw Data"),
-                                     selected = "Summarized Data", # character(0), #
+                                     selected = "Summarized Data",
                                      inline = TRUE,
                                      width = "1000px"),
+                        
+                        # radioButtons(inputId = "popuParameter",
+                        #              label = strong("Parameter of Interest"),
+                        #              choiceValues = list("Population Mean", "Population Standard Deviation"),
+                        #              choiceNames = list("Population Mean(\\( \\mu\\))", "Population Standard Deviation (\\( \\sigma\\))"),
+                        #              selected = "Population Mean",
+                        #              inline = TRUE,
+                        #              width = "1000px"),
                         
                         conditionalPanel(
                           condition = "input.samplesSelect == '1' && input.dataAvailability == 'Summarized Data'",
                           
                           numericInput(inputId = "sampleSize",
-                                       label = "Sample Size (n):",
+                                       label = strong("Sample Size (n):"),
                                        value = 18, min = 1, step = 1),
                           
                           numericInput(inputId = "sampleMean",
-                                       label = "Sample Mean: (xbar)",
+                                       label = strong("Sample Mean: (xbar)"),
                                        value = 103.5375, step = 0.00001),
                           
                           radioButtons(inputId = "sigmaKnown",
-                                       label = strong("Population Standard Deviation (sigma)"),
+                                       label = strong("Population Standard Deviation (\\( \\sigma\\))"),
                                        choiceValues = list("Known", "Unknown"),
                                        choiceNames = list("Known", "Unknown"),
-                                       selected = "Known", #character(0), #
+                                       selected = "Known",
                                        inline = TRUE,
                                        width = "1000px"),
                           
@@ -176,27 +186,27 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                             condition = "input.sigmaKnown == 'Known'",
                             
                             numericInput(inputId = "popuSD",
-                                         label = "Population Standard Deviation (sigma )Value:",
-                                         value = 8.78, min = 0.00001, step = 0.00001)),
+                                         label = strong("Population Standard Deviation (\\( \\sigma\\)) Value:"),
+                                         value = 8.25, min = 0.00001, step = 0.00001)),
                           
                           conditionalPanel(
                             condition = "input.sigmaKnown == 'Unknown'",
                             
                             numericInput(inputId = "sampSD",
-                                         label = "Sample Standard Deviation (s) Value:",
+                                         label = strong("Sample Standard Deviation (s) Value:"),
                                          value = 4.78, min = 0.00001, step = 0.00001)),
                         ),
                         
                         conditionalPanel(
                           condition = "input.samplesSelect == '1' && input.dataAvailability == 'Enter Raw Data'",
                           
-                          textAreaInput("sample1", "Sample 1", value = "101.1,  111.1,  107.6,  98.1,  99.5,  98.7,  103.3,  108.9,  109.1,  103.3", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                          textAreaInput("sample1", "Sample 1", value = "202, 210, 215, 220, 220, 224, 225, 228, 228, 228", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
                           
                           radioButtons(inputId = "sigmaKnownRaw",
-                                       label = strong("Population Standard Deviation (sigma)"),
+                                       label = strong("Population Standard Deviation (\\( \\sigma\\))"),
                                        choiceValues = list("rawKnown", "rawUnknown"),
                                        choiceNames = list("Known", "Unknown"),
-                                       selected = "rawKnown", #character(0), #
+                                       selected = "rawKnown",
                                        inline = TRUE,
                                        width = "1000px"),
                           
@@ -204,44 +214,35 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                             condition = "input.sigmaKnownRaw == 'rawKnown'",
                             
                             numericInput(inputId = "popuSDRaw",
-                                         label = "Population Standard Deviation (sigma) Value:",
-                                         value = 8.78, min = 0.00001, step = 0.00001)),
-                          
-                            # radioButtons(inputId = "inferenceType",
-                            #            label = strong("Inference Type"),
-                            #            choiceValues = list("Raw Confidence Interval","Raw Hypothesis Testing"),
-                            #            choiceNames = list("Confidence Interval","Hypothesis Testing"),
-                            #            selected = "Confidence Interval", # character(0), #
-                            #            inline = TRUE,
-                            #            width = "1000px"),
+                                         label = strong("Population Standard Deviation (\\( \\sigma\\)) Value:"),
+                                         value = 8.25, min = 0.00001, step = 0.00001)),
                           
                             conditionalPanel(
                               condition = "input.sigmaKnownRaw == 'rawUnknown'"
-                            
-                          ),
+                            ),
                         ),
                         
                         conditionalPanel(
                           condition = "input.samplesSelect == '2' && input.dataAvailability == 'Summarized Data'",
                           
                           numericInput(inputId = "sampleSize1",
-                                       label = "Sample Size 1 (n1):",
+                                       label = strong("Sample Size 1 (n1):"),
                                        value = 21, min = 1, step = 1),
                           
                           numericInput(inputId = "sampleMean1",
-                                       label = "Sample Mean 1 (xbar1)",
+                                       label = strong("Sample Mean 1 (xbar1)"),
                                        value = 29.6, step = 0.00001),
                           
                           numericInput(inputId = "sampleSize2",
-                                       label = "Sample Size 2 (n2):",
+                                       label = strong("Sample Size 2 (n2):"),
                                        value = 21, min = 1, step = 1),
                           
                           numericInput(inputId = "sampleMean2",
-                                       label = "Sample Mean 2 (xbar2)",
+                                       label = strong("Sample Mean 2 (xbar2)"),
                                        value = 33.9, step = 0.00001),
                           
                           radioButtons(inputId = "bothsigmaKnown",
-                                       label = strong("Population Standard Deviations (sigma1 and sigma2)"),
+                                       label = strong("Population Standard Deviations (\\( \\sigma\\)1 and \\( \\sigma\\)2)"),
                                        choiceValues = list("bothKnown", "bothUnknown"),
                                        choiceNames = list("Both Known", "Both Unknown (Assumed Equal)"),
                                        selected = "bothKnown",
@@ -252,11 +253,11 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                             condition = "input.bothsigmaKnown == 'bothKnown'",
                             
                             numericInput(inputId = "popuSD1",
-                                         label = "Population Standard Deviation 1 (sigma1) Value:",
+                                         label = strong("Population Standard Deviation 1 (\\( \\sigma\\)1) Value:"),
                                          value = 5.36, min = 0.00001, step = 0.00001),
                             
                             numericInput(inputId = "popuSD2",
-                                         label = "Population Standard Deviation 2 (sigma2) Value:",
+                                         label = strong("Population Standard Deviation 2 (\\( \\sigma\\)2) Value:"),
                                          value = 5.97, min = 0.00001, step = 0.00001),
                           ),
                           
@@ -264,11 +265,11 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                             condition = "input.bothsigmaKnown == 'bothUnknown'",
                             
                             numericInput(inputId = "sampSD1",
-                                         label = "Sample Standard Deviation 1 (s1) Value:",
+                                         label = strong("Sample Standard Deviation 1 (s1) Value:"),
                                          value = 5.36, min = 0.00001, step = 0.00001),
                             
                             numericInput(inputId = "sampSD2",
-                                         label = "Sample Standard Deviation 2 (s2) Value:",
+                                         label = strong("Sample Standard Deviation 2 (s2) Value:"),
                                          value = 5.97, min = 0.00001, step = 0.00001),
                           ),
                           
@@ -276,7 +277,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                           #   condition = "input.bothsigmaKnown == 'bothUnknown'",
                           
                           #   radioButtons(inputId = "bothsigmaEqual",
-                          #                label = strong("Assume Population Variances are equal (sigma1^2 = sigma2^2)"),
+                          #                label = strong("Assume Population Variances are equal (\\( \\sigma\\)1^2 = \\( \\sigma\\)2^2)"),
                           #                choiceValues = list("Yes","No"),
                           #                choiceNames = list("Yes","No"),
                           #                selected = "Yes", # character(0), #
@@ -315,25 +316,25 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                           conditionalPanel(
                             condition = "input.inferenceType == 'Confidence Interval'",
                             
-                            radioButtons(inputId = "confidenceLevel", "Confidence Level", selected = c("95%"), choices = c("90%", "95%","99%"), inline = TRUE)
+                            radioButtons(inputId = "confidenceLevel", label = strong("Confidence Level"), selected = c("95%"), choices = c("90%", "95%","99%"), inline = TRUE)
                           ),
                           
                           conditionalPanel(
                             condition = "input.inferenceType == 'Hypothesis Testing'",
                             
-                            radioButtons(inputId = "significanceLevel", "Significance Level", selected = c("5%"), choices = c("10%", "5%","1%"), inline = TRUE),
+                            radioButtons(inputId = "significanceLevel", label = strong("Significance Level"), selected = c("5%"), choices = c("10%", "5%","1%"), inline = TRUE),
                           ),
                           
                           conditionalPanel(
                             condition = "input.samplesSelect == '1' && input.inferenceType == 'Hypothesis Testing'",
                             
                             numericInput(inputId = "hypMean",
-                                         label = "Hypothesized Population Mean Value:",
-                                         value = 107, step = 0.00001),
+                                         label = strong("Hypothesized Population Mean Value:"),
+                                         value = 216, step = 0.00001),
                             
                             selectizeInput(
                               inputId = "altHypothesis",
-                              label = "Alternate Hypothesis",
+                              label = strong("Alternate Hypothesis"),
                               choices = c(
                                 "< " = 1,
                                 "&ne; " = 2,
@@ -352,7 +353,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                           
                           selectizeInput(
                             inputId = "altHypothesis",
-                            label = "Alternate Hypothesis",
+                            label = strong("Alternate Hypothesis"),
                             choices = c(
                               "< " = 1,
                               "&ne; " = 2,
@@ -369,7 +370,27 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
                         actionButton("resetAllI","Reset Values",
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
-                      )
+                      ),
+                      
+                      conditionalPanel(
+                        condition = "input.dropDownMenu == 'Regression and Correlation'",
+                        
+                        textAreaInput("x", label = strong("x (Independent Variable)"), value = "87, 92, 100, 103, 107, 110, 112, 127", placeholder = "Enter values separated by a comma with decimals as points", rows = 6),
+                        textAreaInput("y", label = strong("y (Dependent Variable)"), value = "39, 47, 60, 50, 60, 65, 115, 118", placeholder = "Enter values separated by a comma with decimals as points", rows = 6),
+                        
+                        radioButtons(inputId = "regressioncorrelation", label = strong("Analyze Data Using"), selected = c("Simple Linear Regression"), choices = c("Simple Linear Regression", "Correlation Coefficient"), inline = TRUE),
+                        
+                        actionButton(inputId = "goRegression", "Calculate",
+                                     style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
+                        actionButton("resetAll","Reset Values",
+                                     style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
+                      ),
+                      
+                      # br(),
+                      # br(),
+                      # downloadButton('describe_download', "Download Report", class="butt" ), br(),
+                      # tags$head(tags$style(".butt{background-color:#337ab7;} .butt{color:#fff;}")), br(),
+                      # radioButtons('format', 'Document format', c('PDF', 'Word'), inline = TRUE),
                     ),
                     
                     mainPanel(
@@ -490,9 +511,42 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                             ) #  condition = "input.samplesSelect == '2'"
                           )
                         )
-                      ), # mainPanel
-                    
-                  ) # sidebarLayout
+                      ) # mainPanel
+                  ), # sidebarLayout
+                ), # Methods Panel
+                  
+                  tabPanel("Authors",
+                           h3("Developement Team", style= "font-weight:bold"),
+                           
+                           br(),
+                           
+                           p("This interactive Shiny app was developed as a part of a COMP 5690 Senior Computer Sceince Project in Fall 2022"), 
+                           p(span("Lead Developer", style = "font-weight:bold")),
+                           p("Crystal Wai,"), 
+                           p("Undergraduate Student,"), 
+                           p("Mount Royal University,"), 
+                           p("Calgary, AB, CANADA"), 
+                           
+                           br(), 
+                           
+                           p(span("Ashok Krishnamurthy, PhD", style= "font-weight:bold")),
+                           p("Project PI,"),
+                           p("Associate Professor, Department of Mathematics and Computing,"),
+                           p("Faculty of Science and Technology,"),
+                           p("Mount Royal University,"), 
+                           p("Calgary, AB, CANADA"),
+                           
+                           br(),
+                           
+                           p("Email:",a("akrishnamurthy@mtroyal.ca", href="mailto:akrishnamurthy@mtroyal.ca")), 
+                           p("Website:", a(href="https://bit.ly/2YKrXjX","https://bit.ly/2YKrXjX", target="_blank")),
+                           p("GitHub:", a(href="https://github.com/cwai097/COMP5690","https://github.com/cwai097/COMP5690", target="_blank")),
+                           
+                           br(),
+
+                           p("This interactive R Shiny app is maintained by Dr. Ashok Krishnamurthy. We welcome questions, insights, and feedback."),
+                  )
+        )
   )
   
 server <- function(input, output) {
@@ -624,7 +678,12 @@ server <- function(input, output) {
     
     #hypMean 
     
-    iv$add_rule("hypMean", sv_required()) 
+    iv$add_rule("hypMean", sv_required())
+    
+    #Regression and Correlation 
+    
+    iv$add_rule("x", sv_required())
+    iv$add_rule("y", sv_required())
     
     iv$enable()
     
@@ -682,6 +741,7 @@ server <- function(input, output) {
           #-------------------
           
           boxplot(dat, horizontal = TRUE)
+          
           ## Add mean line
           # segments(x0 = mean(dat), y0 = 0.8,
           #          x1 = mean(dat), y1 = 1.2,
@@ -822,22 +882,49 @@ server <- function(input, output) {
     observeEvent(input$goInference, {
       output$renderInference <- renderUI(
         if(input$samplesSelect == '1'){
+          
+          if(input$inferenceType == 'Confidence Interval'){
+            
+            if(input$confidenceLevel == '90%'){
+              ConfLvl <- 0.9
+            }
+            else if(input$confidenceLevel == '95%'){
+              ConfLvl <- 0.95
+            }
+            else{
+              ConfLvl <- 0.99
+            }
+          }
+          
+          else if(input$inferenceType == 'Hypothesis Testing'){
+            
+            if(input$significanceLevel == "10%"){
+              sigLvl <- 0.1 
+            }
+            else if(input$significanceLevel == "5%"){
+              sigLvl <- 0.05
+            }
+            else{
+              sigLvl <- 0.01
+            }
+            
+            if(input$altHypothesis == "3"){
+              alternative <- "greater"
+            }
+            else if(input$altHypothesis == "2"){
+              alternative <- "two.sided"
+            }
+            else if(input$altHypothesis == "1"){
+              alternative <- "less"
+            }
+          }
+          
           if(input$dataAvailability == 'Summarized Data'){
             
             nSampOne <- input$sampleSize
             xbarSampOne <- input$sampleMean
             
             if(input$inferenceType == 'Confidence Interval'){
-              
-              if(input$confidenceLevel == '90%'){
-                ConfLvl <- 0.9
-              }
-              else if(input$confidenceLevel == '95%'){
-                ConfLvl <- 0.95
-              }
-              else{
-                ConfLvl <- 0.99
-              } 
               
               if(input$sigmaKnown == 'Known'){
 
@@ -885,27 +972,7 @@ server <- function(input, output) {
             else if(input$inferenceType == 'Hypothesis Testing'){
               
               hypMeanSampOne <- input$hypMean 
-              
-              if(input$significanceLevel == "10%"){
-                sigLvl <- 0.1 
-              }
-              else if(input$significanceLevel == "5%"){
-                sigLvl <- 0.05
-              }
-              else{
-                sigLvl <- 0.01
-              }
-              
-              if(input$altHypothesis == ">"){
-                alternative <- "greater"
-              }
-              else if(input$altHypothesis == "&ne; "){
-                alternative <- "two.sided"
-              }
-              else{
-                alternative <- "less"
-              }
-              
+
               if(input$sigmaKnown == 'Known'){
                 
                 sigmaSampOne <- input$popuSD
@@ -963,16 +1030,6 @@ server <- function(input, output) {
 
             if(input$inferenceType == 'Confidence Interval'){
               
-              if(input$confidenceLevel == '90%'){
-                ConfLvl <- 0.9
-              }
-              else if(input$confidenceLevel == '95%'){
-                ConfLvl <- 0.95
-              }
-              else{
-                ConfLvl <- 0.99
-              }
-              
               if(input$sigmaKnownRaw == 'rawKnown'){
 
                 rawPopuSD <- input$popuSDRaw
@@ -1020,26 +1077,6 @@ server <- function(input, output) {
               
               hypMeanSampOne <- input$hypMean 
               
-              if(input$significanceLevel == "10%"){
-                sigLvl <- 0.1 
-              }
-              else if(input$significanceLevel == "5%"){
-                sigLvl <- 0.05
-              }
-              else{
-                sigLvl <- 0.01
-              }
-              
-              if(input$altHypothesis == ">"){
-                alternative <- "greater"
-              }
-              else if(input$altHypothesis == "&ne; "){
-                alternative <- "two.sided"
-              }
-              else{
-                alternative <- "less"
-              }
-              
               if(input$sigmaKnownRaw == 'rawKnown'){
                 
                 rawPopuSD <- input$popuSDRaw
@@ -1047,7 +1084,7 @@ server <- function(input, output) {
                 source("R/OneSampZTest.R")
                 
                 zTestPrint <- ZTest(rawSampleSize, rawSampleMean, rawPopuSD, hypMeanSampOne, alternative, sigLvl)
-                
+
                 values <- reactiveValues()
                 values$dfKnownHypRaw <- data.frame(Variable = character(), Value = character())
                 output$oneSampHTRaw <- renderTable(values$dfKnownHypRaw)
@@ -1067,10 +1104,6 @@ server <- function(input, output) {
                 
                 rawSampleSD <- sd(datRawData)
 
-                # print(rawSampleSize)
-                # print(rawSampleMean)
-                # print(rawSampleSD)
-                
                 source("R/OneSampTTest.R")
                 
                 tTestPrint <- TTest(rawSampleSize, rawSampleMean, rawSampleSD, hypMeanSampOne, alternative, sigLvl)
@@ -1095,6 +1128,42 @@ server <- function(input, output) {
         
         else if(input$samplesSelect == '2'){
           
+          if(input$inferenceType == 'Confidence Interval'){
+            
+            if(input$confidenceLevel == '90%'){
+              ConfLvl <- 0.9
+            }
+            else if(input$confidenceLevel == '95%'){
+              ConfLvl <- 0.95
+            }
+            else{
+              ConfLvl <- 0.99
+            }
+          }
+          
+          else if(input$inferenceType == 'Hypothesis Testing'){
+            
+            if(input$significanceLevel == "10%"){
+              sigLvl <- 0.1 
+            }
+            else if(input$significanceLevel == "5%"){
+              sigLvl <- 0.05
+            }
+            else{
+              sigLvl <- 0.01
+            }
+            
+            if(input$altHypothesis == "3"){
+              alternative <- "greater"
+            }
+            else if(input$altHypothesis == "2"){
+              alternative <- "two.sided"
+            }
+            else if(input$altHypothesis == "1"){
+              alternative <- "less"
+            }
+          }
+          
           if(input$dataAvailability == 'Summarized Data'){
 
             n1 <- input$sampleSize1
@@ -1104,16 +1173,6 @@ server <- function(input, output) {
             xbar2 <- input$sampleMean2
 
             if(input$inferenceType == 'Confidence Interval'){
-
-              if(input$confidenceLevel == '90%'){
-                ConfLvl <- 0.9
-              }
-              else if(input$confidenceLevel == '95%'){
-                ConfLvl <- 0.95
-              }
-              else{
-                ConfLvl <- 0.99
-              }
 
               if(input$bothsigmaKnown == 'bothKnown'){
 
@@ -1135,8 +1194,8 @@ server <- function(input, output) {
                 row5 <- data.frame(Variable = "UCL", Value = paste(twoSampKnownConfid[5]))
                 
                 values$dfTwoKnownSum <- rbind(row1, row2, row3, row4, row5)
-          
               }
+              
               else if(input$bothsigmaKnown == 'bothUnknown'){
 
                 s1 <- input$sampSD1
@@ -1157,31 +1216,10 @@ server <- function(input, output) {
                 row5 <- data.frame(Variable = "UCL", Value = paste(twoSampUnKnownConfid[5]))
                 
                 values$dfTwoUnknownRSum  <- rbind(row1, row2, row3, row4, row5)
-
               }
             }
 
             else if(input$inferenceType == 'Hypothesis Testing'){
-
-              if(input$significanceLevel == "10%"){
-                sigLvl <- 0.1
-              }
-              else if(input$significanceLevel == "5%"){
-                sigLvl <- 0.05
-              }
-              else{
-                sigLvl <- 0.01
-              }
-
-              if(input$altHypothesis == ">"){
-                alternative <- "greater"
-              }
-              else if(input$altHypothesis == "&ne; "){
-                alternative <- "two.sided"
-              }
-              else{
-                alternative <- "less"
-              }
 
               if(input$bothsigmaKnown == 'bothKnown'){
 
@@ -1204,8 +1242,8 @@ server <- function(input, output) {
                 row5 <- data.frame(Variable = "P-Value", Value = paste(twoSampZTestHyp[5]))
                 
                 values$dfTwoKnownHyp  <- rbind(row1, row2, row3, row4, row5)
-
               }
+              
               else if(input$bothsigmaKnown == 'bothUnknown'){
 
                 s1 <- input$sampSD1
@@ -1228,7 +1266,6 @@ server <- function(input, output) {
                 row6 <- data.frame(Variable = "P-Value", Value = paste(twoSampTTestHyp[6]))
                 
                 values$dfTwoUnknownHyp  <- rbind(row1, row2, row3, row4, row5, row6)
-
               }
             }
           }
@@ -1246,16 +1283,6 @@ server <- function(input, output) {
             xbar2 <- mean(raw_sample2)
 
             if(input$inferenceType == 'Confidence Interval'){
-
-              if(input$confidenceLevel == '90%'){
-                ConfLvl <- 0.9
-              }
-              else if(input$confidenceLevel == '95%'){
-                ConfLvl <- 0.95
-              }
-              else{
-                ConfLvl <- 0.99
-              }
 
               if(input$bothsigmaKnown == 'bothKnown'){
 
@@ -1279,6 +1306,7 @@ server <- function(input, output) {
                 values$dfTwoKnownRaw <- rbind(row1, row2, row3, row4, row5)
 
               }
+              
               else if(input$bothsigmaKnown == 'bothUnknown'){
 
                 s1 <- sd(raw_sample1)
@@ -1286,44 +1314,23 @@ server <- function(input, output) {
 
                 source('R/TwoSampTInt.R')
 
-                twoSampeTIntRaw <- TwoSampTInt(xbar1, s1, n1, xbar2, s2, n2, var.equal = TRUE, ConfLvl)
+                twoSampTIntRaw <- TwoSampTInt(xbar1, s1, n1, xbar2, s2, n2, var.equal = TRUE, ConfLvl)
                 
                 values <- reactiveValues()
                 values$dfTwoUnknownRaw <- data.frame(Variable = character(), Value = character())
                 output$twoSampCIRaw <- renderTable(values$dfTwoUnknownRaw)
                 
-                row1 <- data.frame(Variable = "Difference of means", Value = paste(twoSampeTIntRaw[1]))
-                row2 <- data.frame(Variable = "T Critical", Value = paste(twoSampeTIntRaw[2]))
-                row3 <- data.frame(Variable = "Standard Error", Value = paste(twoSampeTIntRaw[3]))
-                row4 <- data.frame(Variable = "LCL", Value = paste(twoSampeTIntRaw[4]))
-                row5 <- data.frame(Variable = "UCL", Value = paste(twoSampeTIntRaw[5]))
+                row1 <- data.frame(Variable = "Difference of means", Value = paste(twoSampTIntRaw[1]))
+                row2 <- data.frame(Variable = "T Critical", Value = paste(twoSampTIntRaw[2]))
+                row3 <- data.frame(Variable = "Standard Error", Value = paste(twoSampTIntRaw[3]))
+                row4 <- data.frame(Variable = "LCL", Value = paste(twoSampTIntRaw[4]))
+                row5 <- data.frame(Variable = "UCL", Value = paste(twoSampTIntRaw[5]))
                 
                 values$dfTwoUnknownRaw  <- rbind(row1, row2, row3, row4, row5)
-
               }
             }
 
             else if(input$inferenceType == 'Hypothesis Testing'){
-
-              if(input$significanceLevel == "10%"){
-                sigLvl <- 0.1
-              }
-              else if(input$significanceLevel == "5%"){
-                sigLvl <- 0.05
-              }
-              else{
-                sigLvl <- 0.01
-              }
-
-              if(input$altHypothesis == ">"){
-                alternative <- "greater"
-              }
-              else if(input$altHypothesis == "&ne; "){
-                alternative <- "two.sided"
-              }
-              else{
-                alternative <- "less"
-              }
 
               if(input$bothsigmaKnown == 'bothKnown'){
 
@@ -1345,8 +1352,8 @@ server <- function(input, output) {
                 row5 <- data.frame(Variable = "P-Value", Value = paste(twoSampZTestRaw[5]))
                 
                 values$dfTwoKnownHypRaw  <- rbind(row1, row2, row3, row4, row5)
-
               }
+              
               else if(input$bothsigmaKnown == 'bothUnknown'){
 
                 s1 <- sd(raw_sample1)
@@ -1368,13 +1375,10 @@ server <- function(input, output) {
                 row6 <- data.frame(Variable = "P-Value", Value = paste(twoSampTTestRaw[6]))
                 
                 values$dfTwoUnknownHyp  <- rbind(row1, row2, row3, row4, row5, row6)
-
               } # input$bothsigmaKnown == 'bothUnknown'
             } # input$inferenceType == 'Hypothesis Testing'
           } # input$dataAvailability == 'Enter Raw Data'
-
         } # samplesSelect == '2'
-        
       ) # renderInference
     })
     
@@ -1397,7 +1401,6 @@ server <- function(input, output) {
     observeEvent(input$resetAllB, {
       hide(id = 'probabilityMP')
     })
-    
     
     observeEvent(input$goBinom, {
       show(id = 'probabilityMP')
@@ -1430,7 +1433,7 @@ server <- function(input, output) {
       shinyjs::reset("statsPanel")
     })
   
-    }
+}
   
 shinyApp(ui = ui, server = server)
   
