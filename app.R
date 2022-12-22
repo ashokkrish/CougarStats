@@ -16,8 +16,8 @@ render <- "
 }"
   
 ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
-                  
-  navbarPage(title = span("CougarStats", style = "color:#000000; font-weight:bold; font-size:18pt"),
+           
+  navbarPage(title = div(img(src="CougarStats.png", height = 100), span("CougarStats", style = "color:#000000; font-weight:bold; font-size:18pt")),
 
                 tabPanel(title = "Methods",
                   sidebarLayout(
@@ -37,10 +37,10 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                         textAreaInput("descriptiveStat", label = strong("Sample"), value = "2.14, 2.09, 2.65, 3.56, 5.55, 5.00, 5.55, 3.09, 6.79", placeholder = "Enter values separated by a comma with decimals as points", rows = 6),
                         #checkboxGroupInput(inputId = "checkBoxDescpStats", "Select", selected = c("Mean", "Mode","Median"),choices = c("Mean","Mode","Median","Standard Deviation","Interquartile Range","Box Plot")),
                         
-                        actionButton(inputId = "goDescpStats", "Calculate",
+                        actionButton(inputId = "goDescpStats", label = "Calculate",
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
-                        actionButton("resetAll","Reset Values",
-                                     style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
+                        actionButton("resetAll", label = "Reset Values",
+                                     style="color: #fff; background-color: #337ab7; border-color: #2e6da4", onclick = "history.go(0)")
                       ),
                       
                       conditionalPanel(
@@ -72,10 +72,10 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                        inline = TRUE,
                                        width = '1000px'),
                           
-                          actionButton(inputId = "goBinom", "Calculate",
+                          actionButton(inputId = "goBinom", label = "Calculate",
                                        style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
-                          actionButton("resetAllB","Reset Values",
-                                       style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
+                          actionButton("resetAllB", label = "Reset Values",
+                                       style="color: #fff; background-color: #337ab7; border-color: #2e6da4", onclick = "history.go(0)")
                         ),
                         
                         conditionalPanel(
@@ -100,10 +100,10 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                           #   )
                           # ),
                           
-                          actionButton(inputId = "goPoisson", "Calculate",
+                          actionButton(inputId = "goPoisson", label = "Calculate",
                                        style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
-                          actionButton("resetAllP","Reset Values",
-                                       style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
+                          actionButton("resetAllP", label = "Reset Values",
+                                       style="color: #fff; background-color: #337ab7; border-color: #2e6da4", onclick = "history.go(0)")
                         ),
                         
                         conditionalPanel(
@@ -127,10 +127,10 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                        width = "1000px"
                           ),
                           
-                          actionButton(inputId = "goNormal", "Calculate",
+                          actionButton(inputId = "goNormal", label = "Calculate",
                                        style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
-                          actionButton("resetAllN","Reset Values",
-                                       style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
+                          actionButton("resetAllN", label = "Reset Values",
+                                       style="color: #fff; background-color: #337ab7; border-color: #2e6da4", onclick = "history.go(0)")
                         )
                       ),
                       
@@ -366,10 +366,10 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                           )
                         ),
                         
-                        actionButton(inputId = "goInference", "Calculate",
+                        actionButton(inputId = "goInference", label = "Calculate",
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
-                        actionButton("resetAllI","Reset Values",
-                                     style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
+                        actionButton("resetAllI", label = "Reset Values",
+                                     style="color: #fff; background-color: #337ab7; border-color: #2e6da4", onclick = "history.go(0)")
                       ),
                       
                       conditionalPanel(
@@ -380,10 +380,10 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                         
                         radioButtons(inputId = "regressioncorrelation", label = strong("Analyze Data Using"), selected = c("Simple Linear Regression"), choices = c("Simple Linear Regression", "Correlation Coefficient"), inline = TRUE),
                         
-                        actionButton(inputId = "goRegression", "Calculate",
+                        actionButton(inputId = "goRegression", label = "Calculate",
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
-                        actionButton("resetAll","Reset Values",
-                                     style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
+                        actionButton("resetAllRC", label = "Reset Values",
+                                     style="color: #fff; background-color: #337ab7; border-color: #2e6da4", onclick = "history.go(0)")
                       ),
                       
                       # br(),
@@ -545,6 +545,14 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                            br(),
 
                            p("This interactive R Shiny app is maintained by Dr. Ashok Krishnamurthy. We welcome questions, insights, and feedback."),
+                           
+                           hr(),
+
+                           h5("Built with",
+                              img(src = "https://www.rstudio.com/wp-content/uploads/2014/04/shiny.png", height = "35px"),
+                              "by",
+                              img(src = "https://www.rstudio.com/wp-content/uploads/2018/10/RStudio-Logo.png", height = "35px"),
+                              ".")
                   )
         )
   )
