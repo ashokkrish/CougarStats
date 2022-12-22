@@ -24,6 +24,7 @@ Alternatively you can send a pull request to download all the files in this repo
 - Hypothesis test about one population mean
 - Confidence interval for difference between two population means (independent and dependent)
 - Hypothesis test about for difference between two population means (independent and dependent)
+- Simple Linear Regression and Correlation Coefficient
 
 ## Who is CougarStats for?
 
@@ -32,5 +33,5 @@ Alternatively you can send a pull request to download all the files in this repo
 
 ## Shiny app authors
 
-* **Crystal Wai** | *Lead Developer and maintainer*
-* **Ashok Krishnamurthy PhD** | *Template design, model structure and coding tips*
+* **Crystal Wai** | *Lead Developer*
+* **Ashok Krishnamurthy PhD** | *Template design, model structure and maintainer*
