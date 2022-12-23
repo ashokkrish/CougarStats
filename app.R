@@ -40,14 +40,17 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                         actionButton(inputId = "goDescpStats", label = "Calculate",
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
                         actionButton("resetAll", label = "Reset Values",
-                                     style="color: #fff; background-color: #337ab7; border-color: #2e6da4", onclick = "history.go(0)")
+                                     style="color: #fff; background-color: #337ab7; border-color: #2e6da4") #, onclick = "history.go(0)"
                       ),
                       
                       conditionalPanel(
                         id = "probPanel",
                         condition = "input.dropDownMenu == 'Probability Distributions'",
+                        
                         radioButtons("probability", label = strong("Distribution"), choices = c("Binomial", "Poisson", "Normal"), selected = NULL, inline = TRUE),
+                        
                         conditionalPanel(
+                          id = "binomialPanel",
                           condition = "input.probability == 'Binomial'",
                           
                           numericInput(inputId = "numTrailsBinom", 
@@ -74,8 +77,8 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                           
                           actionButton(inputId = "goBinom", label = "Calculate",
                                        style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
-                          actionButton("resetAllB", label = "Reset Values",
-                                       style="color: #fff; background-color: #337ab7; border-color: #2e6da4", onclick = "history.go(0)")
+                          actionButton("resetBinomial", label = "Reset Values",
+                                       style="color: #fff; background-color: #337ab7; border-color: #2e6da4") # , onclick = "history.go(0)"
                         ),
                         
                         conditionalPanel(
@@ -102,8 +105,8 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                           
                           actionButton(inputId = "goPoisson", label = "Calculate",
                                        style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
-                          actionButton("resetAllP", label = "Reset Values",
-                                       style="color: #fff; background-color: #337ab7; border-color: #2e6da4", onclick = "history.go(0)")
+                          actionButton("resetPoisson", label = "Reset Values",
+                                       style="color: #fff; background-color: #337ab7; border-color: #2e6da4") #, onclick = "history.go(0)"
                         ),
                         
                         conditionalPanel(
@@ -129,15 +132,15 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                           
                           actionButton(inputId = "goNormal", label = "Calculate",
                                        style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
-                          actionButton("resetAllN", label = "Reset Values",
-                                       style="color: #fff; background-color: #337ab7; border-color: #2e6da4", onclick = "history.go(0)")
+                          actionButton("resetNormal", label = "Reset Values",
+                                       style="color: #fff; background-color: #337ab7; border-color: #2e6da4") #, onclick = "history.go(0)"
                         )
                       ),
                       
                       conditionalPanel(
                         condition = "input.dropDownMenu == 'Statistical Inference'",
                         
-                        id = "statsPanel",
+                        id = "inferencePanel",
                         
                         radioButtons(inputId = "samplesSelect",
                                      label = strong("Number of samples"),
@@ -200,7 +203,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                         conditionalPanel(
                           condition = "input.samplesSelect == '1' && input.dataAvailability == 'Enter Raw Data'",
                           
-                          textAreaInput("sample1", "Sample 1", value = "202, 210, 215, 220, 220, 224, 225, 228, 228, 228", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                          textAreaInput("sample1", strong("Sample"), value = "202, 210, 215, 220, 220, 224, 225, 228, 228, 228", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
                           
                           radioButtons(inputId = "sigmaKnownRaw",
                                        label = strong("Population Standard Deviation (\\( \\sigma\\))"),
@@ -271,32 +274,28 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                             numericInput(inputId = "sampSD2",
                                          label = strong("Sample Standard Deviation 2 (s2) Value:"),
                                          value = 5.97, min = 0.00001, step = 0.00001),
+                            
+                            radioButtons(inputId = "bothsigmaEqual",
+                                         label = strong("Assume Population Variances are equal (\\( \\sigma\\)1^2 = \\( \\sigma\\)2^2)"),
+                                         choiceValues = list("Yes","No"),
+                                         choiceNames = list("Yes","No"),
+                                         selected = "Yes", # character(0), #
+                                         inline = TRUE,
+                                         width = "1000px"),
                           ),
-                          
-                          # conditionalPanel(
-                          #   condition = "input.bothsigmaKnown == 'bothUnknown'",
-                          
-                          #   radioButtons(inputId = "bothsigmaEqual",
-                          #                label = strong("Assume Population Variances are equal (\\( \\sigma\\)1^2 = \\( \\sigma\\)2^2)"),
-                          #                choiceValues = list("Yes","No"),
-                          #                choiceNames = list("Yes","No"),
-                          #                selected = "Yes", # character(0), #
-                          #                inline = TRUE,
-                          #                width = "1000px"),
-                          # ),
                         ),
                         
                         conditionalPanel(
                           condition = "input.samplesSelect == '2' && input.dataAvailability == 'Enter Raw Data'",
                           
-                          textAreaInput("raw_sample1", "Sample 1", value = "101.1,  111.1,  107.6,  98.1,  99.5,  98.7,  103.3,  108.9,  109.1,  103.3", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                          textAreaInput("raw_sample1", strong("Sample 1"), value = "101.1,  111.1,  107.6,  98.1,  99.5,  98.7,  103.3,  108.9,  109.1,  103.3", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
                           
-                          textAreaInput("raw_sample2", "Sample 2", value = "107.1,  105.0,  98.0,  97.9,  103.3,  104.6,  100.1,  98.2,  97.9", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                          textAreaInput("raw_sample2", strong("Sample 2"), value = "107.1,  105.0,  98.0,  97.9,  103.3,  104.6,  100.1,  98.2,  97.9", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
                           
                           radioButtons(inputId = "samplesType",
                                        label = strong("Type of Samples"),
-                                       choiceValues = list("Independent Samples","Dependent Samples"),
-                                       choiceNames = list("Independent Samples","Dependent Samples (Paired Data)"),
+                                       choiceValues = list("Independent Samples", "Dependent Samples"),
+                                       choiceNames = list("Independent Samples", "Dependent Samples (Paired Data)"),
                                        selected = "Independent Samples", 
                                        inline = TRUE,
                                        width = "1000px"),
@@ -368,8 +367,8 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                         
                         actionButton(inputId = "goInference", label = "Calculate",
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
-                        actionButton("resetAllI", label = "Reset Values",
-                                     style="color: #fff; background-color: #337ab7; border-color: #2e6da4", onclick = "history.go(0)")
+                        actionButton("resetInference", label = "Reset Values",
+                                     style="color: #fff; background-color: #337ab7; border-color: #2e6da4") #, onclick = "history.go(0)"
                       ),
                       
                       conditionalPanel(
@@ -383,7 +382,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                         actionButton(inputId = "goRegression", label = "Calculate",
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
                         actionButton("resetAllRC", label = "Reset Values",
-                                     style="color: #fff; background-color: #337ab7; border-color: #2e6da4", onclick = "history.go(0)")
+                                     style="color: #fff; background-color: #337ab7; border-color: #2e6da4") #, onclick = "history.go(0)"
                       ),
                       
                       # br(),
@@ -395,20 +394,21 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                     
                     mainPanel(
                       
-                      tags$style(type="text/css",
+                      tags$style(type ="text/css",
                                  ".shiny-output-error { visibility: hidden; }",
                                  ".shiny-output-error:before { visibility: hidden; }"
                       ), 
                       
-                      div(id="despStats",
+                      div(id = "descriptiveStatsMP",
                           conditionalPanel(
                             condition = "input.dropDownMenu == 'Descriptive Statistics'",
                             tableOutput("table"),
-                            plotOutput("boxplotDespStats")
+                            br(),
+                            plotOutput("boxplotHorizontal")
                           )
                       ),
                       
-                      div(id="probabilityMP",
+                      div(id = "probabilityMP",
                           conditionalPanel(
                             condition = "input.dropDownMenu == 'Probability Distributions'",
                             
@@ -510,7 +510,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                               )
                             ) #  condition = "input.samplesSelect == '2'"
                           )
-                        )
+                        ) #inferenceMP
                       ) # mainPanel
                   ), # sidebarLayout
                 ), # Methods Panel
@@ -730,7 +730,7 @@ server <- function(input, output) {
         row7 <- data.frame(Variable = "Q3", Value = paste0(quantile(dat, 0.75)))
         row8 <- data.frame(Variable = "Minimum", Value = paste0(min(dat)))
         row9 <- data.frame(Variable = "Maximum", Value = paste0(max(dat)))
-        row10 <- data.frame(Variable = "IQR", Value = paste0(IQR(dat)))
+        row10 <- data.frame(Variable = "Interquartile range (IQR)", Value = paste0(IQR(dat)))
         row11 <- data.frame(Variable = "Range", Value = paste0(range(dat)[2]-range(dat)[1]))
         row12 <- data.frame(Variable = "Sample Standard Deviation", Value = paste0(round(sd(dat),4)))
         row13 <- data.frame(Variable = "Sample Variance", Value = paste0(round(var(dat),4)))
@@ -742,7 +742,7 @@ server <- function(input, output) {
         
         values$df <- rbind(row1, row2, row3, row4, row5, row6, row7, row8, row9, row10, row11, row12, row13, row14, row15, row16, row17, row18)
         
-        output$boxplotDespStats <- renderPlot({
+        output$boxplotHorizontal <- renderPlot({
           
           #-------------------
           # Horizontal boxplot
@@ -762,7 +762,7 @@ server <- function(input, output) {
           #-------------------
           
           # ggplot(as.data.frame(dat), aes(x = "", y = dat)) +    
-          #   geom_boxplot(show.legend = FALSE)
+          # geom_boxplot(show.legend = FALSE)
         })
       }
     })
@@ -948,7 +948,7 @@ server <- function(input, output) {
                 
                 row1 <- data.frame(Variable = "Sample Mean", Value = paste(zIntPrint[1]))
                 row2 <- data.frame(Variable = "Z Critical", Value = paste(zIntPrint[2]))
-                row3 <- data.frame(Variable = "Standard Error", Value = paste(zIntPrint[3]))
+                row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(zIntPrint[3]))
                 row4 <- data.frame(Variable = "LCL", Value = paste(zIntPrint[4]))
                 row5 <- data.frame(Variable = "UCL", Value = paste(zIntPrint[5]))
                 
@@ -969,7 +969,7 @@ server <- function(input, output) {
                 
                 row1 <- data.frame(Variable = "Sample Mean", Value = paste(tIntPrint[1]))
                 row2 <- data.frame(Variable = "T Critical", Value = paste(tIntPrint[2]))
-                row3 <- data.frame(Variable = "Standard Error", Value = paste(tIntPrint[3]))
+                row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(tIntPrint[3]))
                 row4 <- data.frame(Variable = "LCL", Value = paste(tIntPrint[4]))
                 row5 <- data.frame(Variable = "UCL", Value = paste(tIntPrint[5]))
                 
@@ -997,7 +997,7 @@ server <- function(input, output) {
                 row2 <- data.frame(Variable = "Sample Mean", Value = paste(zTestPrint[2]))
                 row3 <- data.frame(Variable = "Population SD", Value = paste(zTestPrint[3]))
                 row4 <- data.frame(Variable = "Z Critical", Value = paste(zTestPrint[4]))
-                row5 <- data.frame(Variable = "Standard Error", Value = paste(zTestPrint[5]))
+                row5 <- data.frame(Variable = "Standard Error (SE)", Value = paste(zTestPrint[5]))
                 row6 <- data.frame(Variable = "Test Statistic", Value = paste(zTestPrint[6]))
                 row7 <- data.frame(Variable = "P-Value", Value = paste(zTestPrint[7]))
                 
@@ -1020,7 +1020,7 @@ server <- function(input, output) {
                 row2 <- data.frame(Variable = "Sample Mean", Value = paste(tTestPrint[2]))
                 row3 <- data.frame(Variable = "Sample SD", Value = paste(tTestPrint[3]))
                 row4 <- data.frame(Variable = "T Critical", Value = paste(tTestPrint[4]))
-                row5 <- data.frame(Variable = "Standard Error", Value = paste(tTestPrint[5]))
+                row5 <- data.frame(Variable = "Standard Error (SE)", Value = paste(tTestPrint[5]))
                 row6 <- data.frame(Variable = "Test Statistic", Value = paste(tTestPrint[6]))
                 row7 <- data.frame(Variable = "P-Value", Value = paste(tTestPrint[7]))
                 
@@ -1052,7 +1052,7 @@ server <- function(input, output) {
                 
                 row1 <- data.frame(Variable = "Sample Mean", Value = paste(zIntPrintRaw[1]))
                 row2 <- data.frame(Variable = "Z Critical", Value = paste(zIntPrintRaw[2]))
-                row3 <- data.frame(Variable = "Standard Error", Value = paste(zIntPrintRaw[3]))
+                row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(zIntPrintRaw[3]))
                 row4 <- data.frame(Variable = "LCL", Value = paste(zIntPrintRaw[4]))
                 row5 <- data.frame(Variable = "UCL", Value = paste(zIntPrintRaw[5]))
                 
@@ -1073,7 +1073,7 @@ server <- function(input, output) {
                 
                 row1 <- data.frame(Variable = "Sample Mean", Value = paste(tIntPrintRaw[1]))
                 row2 <- data.frame(Variable = "T Critical", Value = paste(tIntPrintRaw[2]))
-                row3 <- data.frame(Variable = "Standard Error", Value = paste(tIntPrintRaw[3]))
+                row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(tIntPrintRaw[3]))
                 row4 <- data.frame(Variable = "LCL", Value = paste(tIntPrintRaw[4]))
                 row5 <- data.frame(Variable = "UCL", Value = paste(tIntPrintRaw[5]))
                 
@@ -1101,7 +1101,7 @@ server <- function(input, output) {
                 row2 <- data.frame(Variable = "Sample Mean", Value = paste(zTestPrint[2]))
                 row3 <- data.frame(Variable = "Population SD", Value = paste(zTestPrint[3]))
                 row4 <- data.frame(Variable = "Z Critical", Value = paste(zTestPrint[4]))
-                row5 <- data.frame(Variable = "Standard Error", Value = paste(zTestPrint[5]))
+                row5 <- data.frame(Variable = "Standard Error (SE)", Value = paste(zTestPrint[5]))
                 row6 <- data.frame(Variable = "Test Statistic", Value = paste(zTestPrint[6]))
                 row7 <- data.frame(Variable = "P-Value", Value = paste(zTestPrint[7]))
   
@@ -1124,7 +1124,7 @@ server <- function(input, output) {
                 row2 <- data.frame(Variable = "Sample Mean", Value = paste(tTestPrint[2]))
                 row3 <- data.frame(Variable = "Sample SD", Value = paste(tTestPrint[3]))
                 row4 <- data.frame(Variable = "T Critical", Value = paste(tTestPrint[4]))
-                row5 <- data.frame(Variable = "Standard Error", Value = paste(tTestPrint[5]))
+                row5 <- data.frame(Variable = "Standard Error (SE)", Value = paste(tTestPrint[5]))
                 row6 <- data.frame(Variable = "Test Statistic", Value = paste(tTestPrint[6]))
                 row7 <- data.frame(Variable = "P-Value", Value = paste(tTestPrint[7]))
                 
@@ -1197,7 +1197,7 @@ server <- function(input, output) {
                 
                 row1 <- data.frame(Variable = "Difference of means", Value = paste(twoSampKnownConfid[1]))
                 row2 <- data.frame(Variable = "Z Critical", Value = paste(twoSampKnownConfid[2]))
-                row3 <- data.frame(Variable = "Standard Error", Value = paste(twoSampKnownConfid[3]))
+                row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(twoSampKnownConfid[3]))
                 row4 <- data.frame(Variable = "LCL", Value = paste(twoSampKnownConfid[4]))
                 row5 <- data.frame(Variable = "UCL", Value = paste(twoSampKnownConfid[5]))
                 
@@ -1219,7 +1219,7 @@ server <- function(input, output) {
                 
                 row1 <- data.frame(Variable = "Difference of means", Value = paste(twoSampUnKnownConfid[1]))
                 row2 <- data.frame(Variable = "T Critical", Value = paste(twoSampUnKnownConfid[2]))
-                row3 <- data.frame(Variable = "Standard Error", Value = paste(twoSampUnKnownConfid[3]))
+                row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(twoSampUnKnownConfid[3]))
                 row4 <- data.frame(Variable = "LCL", Value = paste(twoSampUnKnownConfid[4]))
                 row5 <- data.frame(Variable = "UCL", Value = paste(twoSampUnKnownConfid[5]))
                 
@@ -1237,16 +1237,15 @@ server <- function(input, output) {
                 source('R/TwoSampZTest.R')
 
                 twoSampZTestHyp <- TwoSampZTest(xbar1, sigma1, n1, xbar2, sigma2, n2, alternative, sigLvl)
-                #"Difference of means", "± Z Critical", "Std Error", "TS", "P-Value"
-                
+
                 values <- reactiveValues()
                 values$dfTwoKnownHyp <- data.frame(Variable = character(), Value = character())
                 output$twoSampHT <- renderTable(values$dfTwoKnownHyp )
                 
                 row1 <- data.frame(Variable = "Difference of means", Value = paste(twoSampZTestHyp[1]))
-                row2 <- data.frame(Variable = "± Z Critical", Value = paste(twoSampZTestHyp[2]))
-                row3 <- data.frame(Variable = "Standard Error", Value = paste(twoSampZTestHyp[3]))
-                row4 <- data.frame(Variable = "TS", Value = paste(twoSampZTestHyp[4]))
+                row2 <- data.frame(Variable = "Z Critical", Value = paste(twoSampZTestHyp[2]))
+                row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(twoSampZTestHyp[3]))
+                row4 <- data.frame(Variable = "Test Statistic", Value = paste(twoSampZTestHyp[4]))
                 row5 <- data.frame(Variable = "P-Value", Value = paste(twoSampZTestHyp[5]))
                 
                 values$dfTwoKnownHyp  <- rbind(row1, row2, row3, row4, row5)
@@ -1260,8 +1259,7 @@ server <- function(input, output) {
                 source('R/TwoSampTTest.R')
 
                 twoSampTTestHyp <- TwoSampTTest(xbar1, s1, n1, xbar2, s2, n2, var.equal = TRUE, alternative, sigLvl)
-                #"Difference of means", "df", "T Critical", "Std Error", "Test Statistic", "P-Value"
-                
+
                 values <- reactiveValues()
                 values$dfTwoUnknownHyp <- data.frame(Variable = character(), Value = character())
                 output$twoSampHT <- renderTable(values$dfTwoUnknownHyp )
@@ -1269,7 +1267,7 @@ server <- function(input, output) {
                 row1 <- data.frame(Variable = "Difference of means", Value = paste(twoSampTTestHyp[1]))
                 row2 <- data.frame(Variable = "df", Value = paste(twoSampTTestHyp[2]))
                 row3 <- data.frame(Variable = "T Critical", Value = paste(twoSampTTestHyp[3]))
-                row4 <- data.frame(Variable = "Standard Error", Value = paste(twoSampTTestHyp[4]))
+                row4 <- data.frame(Variable = "Standard Error (SE)", Value = paste(twoSampTTestHyp[4]))
                 row5 <- data.frame(Variable = "Test Statistic", Value = paste(twoSampTTestHyp[5]))
                 row6 <- data.frame(Variable = "P-Value", Value = paste(twoSampTTestHyp[6]))
                 
@@ -1307,12 +1305,11 @@ server <- function(input, output) {
                 
                 row1 <- data.frame(Variable = "Difference of means", Value = paste(twoSampZIntRaw[1]))
                 row2 <- data.frame(Variable = "Z Critical", Value = paste(twoSampZIntRaw[2]))
-                row3 <- data.frame(Variable = "Standard Error", Value = paste(twoSampZIntRaw[3]))
+                row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(twoSampZIntRaw[3]))
                 row4 <- data.frame(Variable = "LCL", Value = paste(twoSampZIntRaw[4]))
                 row5 <- data.frame(Variable = "UCL", Value = paste(twoSampZIntRaw[5]))
                 
                 values$dfTwoKnownRaw <- rbind(row1, row2, row3, row4, row5)
-
               }
               
               else if(input$bothsigmaKnown == 'bothUnknown'){
@@ -1330,7 +1327,7 @@ server <- function(input, output) {
                 
                 row1 <- data.frame(Variable = "Difference of means", Value = paste(twoSampTIntRaw[1]))
                 row2 <- data.frame(Variable = "T Critical", Value = paste(twoSampTIntRaw[2]))
-                row3 <- data.frame(Variable = "Standard Error", Value = paste(twoSampTIntRaw[3]))
+                row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(twoSampTIntRaw[3]))
                 row4 <- data.frame(Variable = "LCL", Value = paste(twoSampTIntRaw[4]))
                 row5 <- data.frame(Variable = "UCL", Value = paste(twoSampTIntRaw[5]))
                 
@@ -1354,9 +1351,9 @@ server <- function(input, output) {
                 output$twoSampHTRaw <- renderTable(values$dfTwoKnownHypRaw )
                 
                 row1 <- data.frame(Variable = "Difference of means", Value = paste(twoSampZTestRaw[1]))
-                row2 <- data.frame(Variable = "± Z Critical", Value = paste(twoSampZTestRaw[2]))
-                row3 <- data.frame(Variable = "Standard Error", Value = paste(twoSampZTestRaw[3]))
-                row4 <- data.frame(Variable = "TS", Value = paste(twoSampZTestRaw[4]))
+                row2 <- data.frame(Variable = "Z Critical", Value = paste(twoSampZTestRaw[2]))
+                row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(twoSampZTestRaw[3]))
+                row4 <- data.frame(Variable = "Test Statistic", Value = paste(twoSampZTestRaw[4]))
                 row5 <- data.frame(Variable = "P-Value", Value = paste(twoSampZTestRaw[5]))
                 
                 values$dfTwoKnownHypRaw  <- rbind(row1, row2, row3, row4, row5)
@@ -1378,7 +1375,7 @@ server <- function(input, output) {
                 row1 <- data.frame(Variable = "Difference of means", Value = paste(twoSampTTestRaw[1]))
                 row2 <- data.frame(Variable = "df", Value = paste(twoSampTTestRaw[2]))
                 row3 <- data.frame(Variable = "T Critical", Value = paste(twoSampTTestRaw[3]))
-                row4 <- data.frame(Variable = "Standard Error", Value = paste(twoSampTTestRaw[4]))
+                row4 <- data.frame(Variable = "Standard Error (SE)", Value = paste(twoSampTTestRaw[4]))
                 row5 <- data.frame(Variable = "Test Statistic", Value = paste(twoSampTTestRaw[5]))
                 row6 <- data.frame(Variable = "P-Value", Value = paste(twoSampTTestRaw[6]))
                 
@@ -1390,58 +1387,60 @@ server <- function(input, output) {
       ) # renderInference
     })
     
-    observeEvent(input$resetAll, {
+    # Descriptive Statistics
+    
+    observeEvent(input$goDescpStats, {
+      show(id = 'descriptiveStatsMP')
+    })
+    
+    observeEvent(input$resetAll,{
+      hide(id = 'descriptiveStatsMP')
       shinyjs::reset("sideBar")
     })
     
-    observeEvent(input$resetAllB, {
-      shinyjs::reset("probPanel")
-    })
-
-    observeEvent(input$resetAll,{
-      hide(id = 'despStats')
-    })
-    
-    observeEvent(input$goDescpStats, {
-      show(id = 'despStats')
-    })
-    
-    observeEvent(input$resetAllB, {
-      hide(id = 'probabilityMP')
-    })
+    # Binomial Distribution
     
     observeEvent(input$goBinom, {
       show(id = 'probabilityMP')
     })
     
+    observeEvent(input$resetBinomial, {
+      hide(id = 'probabilityMP')
+      shinyjs::reset("binomialPanel")
+    })
+
+    # Poisson Distribution
+    
     observeEvent(input$goPoisson, {
       show(id = "probabilityMP")
     })
     
-    observeEvent(input$resetAllP, {
+    observeEvent(input$resetPoisson, {
       hide(id = "probabilityMP")
       shinyjs::reset("poissonPanel")
     })
+    
+    # Normal Distribution
     
     observeEvent(input$goNormal, {
       show(id = "probabilityMP")
     })
     
-    observeEvent(input$resetAllN, {
+    observeEvent(input$resetNormal, {
       hide(id = "probabilityMP")
       shinyjs::reset("normalPanel")
     })
+    
+    # Statistical Inference
     
     observeEvent(input$goInference, {
       show(id = "inferenceMP")
     })
     
-    observeEvent(input$resetAllI, {
+    observeEvent(input$resetInference, {
       hide(id = "inferenceMP")
-      shinyjs::reset("statsPanel")
+      shinyjs::reset("inferencePanel")
     })
-  
 }
   
 shinyApp(ui = ui, server = server)
-  
