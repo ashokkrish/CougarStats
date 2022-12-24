@@ -16,15 +16,15 @@ Alternatively you can send a pull request to download all the files in this repo
 
 ## Key features
 
-- Calculate the descriptive statistics (ex. mean, median, mode, quartiles, standard deviation etc.)
+- Calculate the descriptive statistics (ex. mean, median, mode, quartiles, IQR, standard deviation etc.)
 - Construct a Boxplot and identify outliers
 - Calculate exact and cumulative probabilities for Binomial and Poisson distributions
 - Calculate cumulative probability for Normal distribution
 - Confidence interval for one population mean
 - Hypothesis test about one population mean
-- Confidence interval for difference between two population means (independent and dependent)
-- Hypothesis test about for difference between two population means (independent and dependent)
-- Simple Linear Regression and Correlation Coefficient
+- Confidence interval for difference between two population means (independent samples)
+- Hypothesis test about for difference between two population means (independent samples)
+- Simple Linear Regression and Pearson Correlation Coefficient
 
 ## Who is CougarStats for?
 
