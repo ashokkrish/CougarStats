@@ -10,7 +10,7 @@
 
 **CougarStats** is an open-source platform-independent browser-based interface for statistical data analysis. 
 
-Run the app on Shinyapp.io server by clicking 
+Run the app on Shinyapp.io server by clicking <https://cougarstats.shinyapps.io/CougarStats/>
 
 Alternatively you can send a pull request to download all the files in this repository and run the app by loading `app.R` and clicking `Run App`. Note that the ``CougarStats`` project is not on CRAN, just on github.
 
