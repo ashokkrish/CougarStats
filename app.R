@@ -174,7 +174,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                        value = 18, min = 1, step = 1),
                           
                           numericInput(inputId = "sampleMean",
-                                       label = strong("Sample Mean: (xbar)"),
+                                       label = strong("Sample Mean: (\\( \\bar{x}\\))"),
                                        value = 103.5375, step = 0.00001),
                           
                           radioButtons(inputId = "sigmaKnown",
@@ -229,23 +229,23 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                           condition = "input.samplesSelect == '2' && input.dataAvailability == 'Summarized Data'",
                           
                           numericInput(inputId = "sampleSize1",
-                                       label = strong("Sample Size 1 (n1):"),
+                                       label = strong("Sample Size 1 (\\( n_{1}\\)):"),
                                        value = 21, min = 1, step = 1),
                           
                           numericInput(inputId = "sampleMean1",
-                                       label = strong("Sample Mean 1 (xbar1)"),
+                                       label = strong("Sample Mean 1 (\\( \\bar{x}_{1}\\))"),
                                        value = 29.6, step = 0.00001),
                           
                           numericInput(inputId = "sampleSize2",
-                                       label = strong("Sample Size 2 (n2):"),
+                                       label = strong("Sample Size 2 (\\( n_{2}\\)):"),
                                        value = 21, min = 1, step = 1),
                           
                           numericInput(inputId = "sampleMean2",
-                                       label = strong("Sample Mean 2 (xbar2)"),
+                                       label = strong("Sample Mean 2 (\\( \\bar{x}_{2}\\))"),
                                        value = 33.9, step = 0.00001),
                           
                           radioButtons(inputId = "bothsigmaKnown",
-                                       label = strong("Population Standard Deviations (\\( \\sigma\\)1 and \\( \\sigma\\)2)"),
+                                       label = strong("Population Standard Deviations (\\( \\sigma_{1}\\) and \\( \\sigma_{2}\\))"),
                                        choiceValues = list("bothKnown", "bothUnknown"),
                                        choiceNames = list("Both Known", "Both Unknown (Assumed Equal)"),
                                        selected = "bothKnown",
@@ -256,11 +256,11 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                             condition = "input.bothsigmaKnown == 'bothKnown'",
                             
                             numericInput(inputId = "popuSD1",
-                                         label = strong("Population Standard Deviation 1 (\\( \\sigma\\)1) Value:"),
+                                         label = strong("Population Standard Deviation 1 (\\( \\sigma_{1}\\)) Value:"),
                                          value = 5.36, min = 0.00001, step = 0.00001),
                             
                             numericInput(inputId = "popuSD2",
-                                         label = strong("Population Standard Deviation 2 (\\( \\sigma\\)2) Value:"),
+                                         label = strong("Population Standard Deviation 2 (\\( \\sigma_{2}\\)) Value:"),
                                          value = 5.97, min = 0.00001, step = 0.00001),
                           ),
                           
@@ -268,18 +268,18 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                             condition = "input.bothsigmaKnown == 'bothUnknown'",
                             
                             numericInput(inputId = "sampSD1",
-                                         label = strong("Sample Standard Deviation 1 (s1) Value:"),
+                                         label = strong("Sample Standard Deviation 1 (\\( s_{1}\\)) Value:"),
                                          value = 5.36, min = 0.00001, step = 0.00001),
                             
                             numericInput(inputId = "sampSD2",
-                                         label = strong("Sample Standard Deviation 2 (s2) Value:"),
+                                         label = strong("Sample Standard Deviation 2 (\\( s_{2}\\)) Value:"),
                                          value = 5.97, min = 0.00001, step = 0.00001),
                             
                             radioButtons(inputId = "bothsigmaEqual",
-                                         label = strong("Assume Population Variances are equal (\\( \\sigma\\)1^2 = \\( \\sigma\\)2^2)"),
+                                         label = strong("Assume Population Variances are equal (\\( \\sigma_{1}^2\\) = \\( \\sigma_{2}^2\\))"),
                                          choiceValues = list("Yes","No"),
-                                         choiceNames = list("Yes","No"),
-                                         selected = "Yes", # character(0), #
+                                         choiceNames = list("Yes","No (Welch–Satterthwaite df)"),
+                                         selected = "Yes",
                                          inline = TRUE,
                                          width = "1000px"),
                           ),
@@ -1265,7 +1265,7 @@ server <- function(input, output) {
                 output$twoSampHT <- renderTable(values$dfTwoUnknownHyp )
                 
                 row1 <- data.frame(Variable = "Difference of means", Value = paste(twoSampTTestHyp[1]))
-                row2 <- data.frame(Variable = "df", Value = paste(twoSampTTestHyp[2]))
+                row2 <- data.frame(Variable = "Degrees of freedom (df)", Value = paste(twoSampTTestHyp[2]))
                 row3 <- data.frame(Variable = "T Critical", Value = paste(twoSampTTestHyp[3]))
                 row4 <- data.frame(Variable = "Standard Error (SE)", Value = paste(twoSampTTestHyp[4]))
                 row5 <- data.frame(Variable = "Test Statistic", Value = paste(twoSampTTestHyp[5]))
@@ -1373,7 +1373,7 @@ server <- function(input, output) {
                 output$twoSampHTRaw <- renderTable(values$dfTwoUnknownHyp )
                 
                 row1 <- data.frame(Variable = "Difference of means", Value = paste(twoSampTTestRaw[1]))
-                row2 <- data.frame(Variable = "df", Value = paste(twoSampTTestRaw[2]))
+                row2 <- data.frame(Variable = "Degrees of freedom (df)", Value = paste(twoSampTTestRaw[2]))
                 row3 <- data.frame(Variable = "T Critical", Value = paste(twoSampTTestRaw[3]))
                 row4 <- data.frame(Variable = "Standard Error (SE)", Value = paste(twoSampTTestRaw[4]))
                 row5 <- data.frame(Variable = "Test Statistic", Value = paste(twoSampTTestRaw[5]))
