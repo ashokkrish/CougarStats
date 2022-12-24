@@ -247,7 +247,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                           radioButtons(inputId = "bothsigmaKnown",
                                        label = strong("Population Standard Deviations (\\( \\sigma_{1}\\) and \\( \\sigma_{2}\\))"),
                                        choiceValues = list("bothKnown", "bothUnknown"),
-                                       choiceNames = list("Both Known", "Both Unknown (Assumed Equal)"),
+                                       choiceNames = list("Both Known", "Both Unknown"),
                                        selected = "bothKnown",
                                        inline = TRUE,
                                        width = "1000px"),
@@ -329,7 +329,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                             
                             numericInput(inputId = "hypMean",
                                          label = strong("Hypothesized Population Mean Value:"),
-                                         value = 216, step = 0.00001),
+                                         value = 99, step = 0.00001),
                             
                             selectizeInput(
                               inputId = "altHypothesis",
@@ -947,7 +947,7 @@ server <- function(input, output) {
                 output$oneSampCI <- renderTable(values$dfKnown)
                 
                 row1 <- data.frame(Variable = "Sample Mean", Value = paste(zIntPrint[1]))
-                row2 <- data.frame(Variable = "Z Critical", Value = paste(zIntPrint[2]))
+                row2 <- data.frame(Variable = "Z Critical Value", Value = paste(zIntPrint[2]))
                 row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(zIntPrint[3]))
                 row4 <- data.frame(Variable = "LCL", Value = paste(zIntPrint[4]))
                 row5 <- data.frame(Variable = "UCL", Value = paste(zIntPrint[5]))
@@ -968,7 +968,7 @@ server <- function(input, output) {
                 output$oneSampCI <- renderTable(values$dfUnknown)
                 
                 row1 <- data.frame(Variable = "Sample Mean", Value = paste(tIntPrint[1]))
-                row2 <- data.frame(Variable = "T Critical", Value = paste(tIntPrint[2]))
+                row2 <- data.frame(Variable = "T Critical Value", Value = paste(tIntPrint[2]))
                 row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(tIntPrint[3]))
                 row4 <- data.frame(Variable = "LCL", Value = paste(tIntPrint[4]))
                 row5 <- data.frame(Variable = "UCL", Value = paste(tIntPrint[5]))
@@ -996,7 +996,7 @@ server <- function(input, output) {
                 row1 <- data.frame(Variable = "Sample Size", Value = paste(zTestPrint[1]))
                 row2 <- data.frame(Variable = "Sample Mean", Value = paste(zTestPrint[2]))
                 row3 <- data.frame(Variable = "Population SD", Value = paste(zTestPrint[3]))
-                row4 <- data.frame(Variable = "Z Critical", Value = paste(zTestPrint[4]))
+                row4 <- data.frame(Variable = "Z Critical Value", Value = paste(zTestPrint[4]))
                 row5 <- data.frame(Variable = "Standard Error (SE)", Value = paste(zTestPrint[5]))
                 row6 <- data.frame(Variable = "Test Statistic", Value = paste(zTestPrint[6]))
                 row7 <- data.frame(Variable = "P-Value", Value = paste(zTestPrint[7]))
@@ -1019,7 +1019,7 @@ server <- function(input, output) {
                 row1 <- data.frame(Variable = "Sample Size", Value = paste(tTestPrint[1]))
                 row2 <- data.frame(Variable = "Sample Mean", Value = paste(tTestPrint[2]))
                 row3 <- data.frame(Variable = "Sample SD", Value = paste(tTestPrint[3]))
-                row4 <- data.frame(Variable = "T Critical", Value = paste(tTestPrint[4]))
+                row4 <- data.frame(Variable = "T Critical Value", Value = paste(tTestPrint[4]))
                 row5 <- data.frame(Variable = "Standard Error (SE)", Value = paste(tTestPrint[5]))
                 row6 <- data.frame(Variable = "Test Statistic", Value = paste(tTestPrint[6]))
                 row7 <- data.frame(Variable = "P-Value", Value = paste(tTestPrint[7]))
@@ -1051,7 +1051,7 @@ server <- function(input, output) {
                 output$oneSampCIRaw <- renderTable(values$dfKnownRaw)
                 
                 row1 <- data.frame(Variable = "Sample Mean", Value = paste(zIntPrintRaw[1]))
-                row2 <- data.frame(Variable = "Z Critical", Value = paste(zIntPrintRaw[2]))
+                row2 <- data.frame(Variable = "Z Critical Value", Value = paste(zIntPrintRaw[2]))
                 row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(zIntPrintRaw[3]))
                 row4 <- data.frame(Variable = "LCL", Value = paste(zIntPrintRaw[4]))
                 row5 <- data.frame(Variable = "UCL", Value = paste(zIntPrintRaw[5]))
@@ -1072,7 +1072,7 @@ server <- function(input, output) {
                 output$oneSampCIRaw <- renderTable(values$dfUnknownRaw)
                 
                 row1 <- data.frame(Variable = "Sample Mean", Value = paste(tIntPrintRaw[1]))
-                row2 <- data.frame(Variable = "T Critical", Value = paste(tIntPrintRaw[2]))
+                row2 <- data.frame(Variable = "T Critical Value", Value = paste(tIntPrintRaw[2]))
                 row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(tIntPrintRaw[3]))
                 row4 <- data.frame(Variable = "LCL", Value = paste(tIntPrintRaw[4]))
                 row5 <- data.frame(Variable = "UCL", Value = paste(tIntPrintRaw[5]))
@@ -1100,7 +1100,7 @@ server <- function(input, output) {
                 row1 <- data.frame(Variable = "Sample Size", Value = paste(zTestPrint[1]))
                 row2 <- data.frame(Variable = "Sample Mean", Value = paste(zTestPrint[2]))
                 row3 <- data.frame(Variable = "Population SD", Value = paste(zTestPrint[3]))
-                row4 <- data.frame(Variable = "Z Critical", Value = paste(zTestPrint[4]))
+                row4 <- data.frame(Variable = "Z Critical Value", Value = paste(zTestPrint[4]))
                 row5 <- data.frame(Variable = "Standard Error (SE)", Value = paste(zTestPrint[5]))
                 row6 <- data.frame(Variable = "Test Statistic", Value = paste(zTestPrint[6]))
                 row7 <- data.frame(Variable = "P-Value", Value = paste(zTestPrint[7]))
@@ -1123,7 +1123,7 @@ server <- function(input, output) {
                 row1 <- data.frame(Variable = "Sample Size", Value = paste(tTestPrint[1]))
                 row2 <- data.frame(Variable = "Sample Mean", Value = paste(tTestPrint[2]))
                 row3 <- data.frame(Variable = "Sample SD", Value = paste(tTestPrint[3]))
-                row4 <- data.frame(Variable = "T Critical", Value = paste(tTestPrint[4]))
+                row4 <- data.frame(Variable = "T Critical Value", Value = paste(tTestPrint[4]))
                 row5 <- data.frame(Variable = "Standard Error (SE)", Value = paste(tTestPrint[5]))
                 row6 <- data.frame(Variable = "Test Statistic", Value = paste(tTestPrint[6]))
                 row7 <- data.frame(Variable = "P-Value", Value = paste(tTestPrint[7]))
@@ -1196,7 +1196,7 @@ server <- function(input, output) {
                 output$twoSampCI <- renderTable(values$dfTwoKnownSum)
                 
                 row1 <- data.frame(Variable = "Difference of means", Value = paste(twoSampKnownConfid[1]))
-                row2 <- data.frame(Variable = "Z Critical", Value = paste(twoSampKnownConfid[2]))
+                row2 <- data.frame(Variable = "Z Critical Value", Value = paste(twoSampKnownConfid[2]))
                 row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(twoSampKnownConfid[3]))
                 row4 <- data.frame(Variable = "LCL", Value = paste(twoSampKnownConfid[4]))
                 row5 <- data.frame(Variable = "UCL", Value = paste(twoSampKnownConfid[5]))
@@ -1218,7 +1218,7 @@ server <- function(input, output) {
                 output$twoSampCI <- renderTable(values$dfTwoUnknownRSum )
                 
                 row1 <- data.frame(Variable = "Difference of means", Value = paste(twoSampUnKnownConfid[1]))
-                row2 <- data.frame(Variable = "T Critical", Value = paste(twoSampUnKnownConfid[2]))
+                row2 <- data.frame(Variable = "T Critical Value", Value = paste(twoSampUnKnownConfid[2]))
                 row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(twoSampUnKnownConfid[3]))
                 row4 <- data.frame(Variable = "LCL", Value = paste(twoSampUnKnownConfid[4]))
                 row5 <- data.frame(Variable = "UCL", Value = paste(twoSampUnKnownConfid[5]))
@@ -1243,7 +1243,7 @@ server <- function(input, output) {
                 output$twoSampHT <- renderTable(values$dfTwoKnownHyp )
                 
                 row1 <- data.frame(Variable = "Difference of means", Value = paste(twoSampZTestHyp[1]))
-                row2 <- data.frame(Variable = "Z Critical", Value = paste(twoSampZTestHyp[2]))
+                row2 <- data.frame(Variable = "Z Critical Value", Value = paste(twoSampZTestHyp[2]))
                 row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(twoSampZTestHyp[3]))
                 row4 <- data.frame(Variable = "Test Statistic", Value = paste(twoSampZTestHyp[4]))
                 row5 <- data.frame(Variable = "P-Value", Value = paste(twoSampZTestHyp[5]))
@@ -1266,7 +1266,7 @@ server <- function(input, output) {
                 
                 row1 <- data.frame(Variable = "Difference of means", Value = paste(twoSampTTestHyp[1]))
                 row2 <- data.frame(Variable = "Degrees of freedom (df)", Value = paste(twoSampTTestHyp[2]))
-                row3 <- data.frame(Variable = "T Critical", Value = paste(twoSampTTestHyp[3]))
+                row3 <- data.frame(Variable = "T Critical Value", Value = paste(twoSampTTestHyp[3]))
                 row4 <- data.frame(Variable = "Standard Error (SE)", Value = paste(twoSampTTestHyp[4]))
                 row5 <- data.frame(Variable = "Test Statistic", Value = paste(twoSampTTestHyp[5]))
                 row6 <- data.frame(Variable = "P-Value", Value = paste(twoSampTTestHyp[6]))
@@ -1304,7 +1304,7 @@ server <- function(input, output) {
                 output$twoSampCIRaw <- renderTable(values$dfTwoKnownRaw)
                 
                 row1 <- data.frame(Variable = "Difference of means", Value = paste(twoSampZIntRaw[1]))
-                row2 <- data.frame(Variable = "Z Critical", Value = paste(twoSampZIntRaw[2]))
+                row2 <- data.frame(Variable = "Z Critical Value", Value = paste(twoSampZIntRaw[2]))
                 row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(twoSampZIntRaw[3]))
                 row4 <- data.frame(Variable = "LCL", Value = paste(twoSampZIntRaw[4]))
                 row5 <- data.frame(Variable = "UCL", Value = paste(twoSampZIntRaw[5]))
@@ -1326,7 +1326,7 @@ server <- function(input, output) {
                 output$twoSampCIRaw <- renderTable(values$dfTwoUnknownRaw)
                 
                 row1 <- data.frame(Variable = "Difference of means", Value = paste(twoSampTIntRaw[1]))
-                row2 <- data.frame(Variable = "T Critical", Value = paste(twoSampTIntRaw[2]))
+                row2 <- data.frame(Variable = "T Critical Value", Value = paste(twoSampTIntRaw[2]))
                 row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(twoSampTIntRaw[3]))
                 row4 <- data.frame(Variable = "LCL", Value = paste(twoSampTIntRaw[4]))
                 row5 <- data.frame(Variable = "UCL", Value = paste(twoSampTIntRaw[5]))
@@ -1351,7 +1351,7 @@ server <- function(input, output) {
                 output$twoSampHTRaw <- renderTable(values$dfTwoKnownHypRaw )
                 
                 row1 <- data.frame(Variable = "Difference of means", Value = paste(twoSampZTestRaw[1]))
-                row2 <- data.frame(Variable = "Z Critical", Value = paste(twoSampZTestRaw[2]))
+                row2 <- data.frame(Variable = "Z Critical Value", Value = paste(twoSampZTestRaw[2]))
                 row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(twoSampZTestRaw[3]))
                 row4 <- data.frame(Variable = "Test Statistic", Value = paste(twoSampZTestRaw[4]))
                 row5 <- data.frame(Variable = "P-Value", Value = paste(twoSampZTestRaw[5]))
@@ -1374,7 +1374,7 @@ server <- function(input, output) {
                 
                 row1 <- data.frame(Variable = "Difference of means", Value = paste(twoSampTTestRaw[1]))
                 row2 <- data.frame(Variable = "Degrees of freedom (df)", Value = paste(twoSampTTestRaw[2]))
-                row3 <- data.frame(Variable = "T Critical", Value = paste(twoSampTTestRaw[3]))
+                row3 <- data.frame(Variable = "T Critical Value", Value = paste(twoSampTTestRaw[3]))
                 row4 <- data.frame(Variable = "Standard Error (SE)", Value = paste(twoSampTTestRaw[4]))
                 row5 <- data.frame(Variable = "Test Statistic", Value = paste(twoSampTTestRaw[5]))
                 row6 <- data.frame(Variable = "P-Value", Value = paste(twoSampTTestRaw[6]))
