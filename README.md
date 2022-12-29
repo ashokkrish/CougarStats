@@ -10,21 +10,21 @@
 
 **CougarStats** is an open-source platform-independent browser-based interface for statistical data analysis. 
 
-Run the app on Shinyapp.io server by clicking 
+Run the app on Shinyapp.io server by clicking <https://cougarstats.shinyapps.io/CougarStats/>
 
 Alternatively you can send a pull request to download all the files in this repository and run the app by loading `app.R` and clicking `Run App`. Note that the ``CougarStats`` project is not on CRAN, just on github.
 
 ## Key features
 
-- Calculate the descriptive statistics (ex. mean, median, mode, quartiles, standard deviation etc.)
+- Calculate the descriptive statistics (ex. mean, median, mode, quartiles, IQR, standard deviation etc.)
 - Construct a Boxplot and identify outliers
 - Calculate exact and cumulative probabilities for Binomial and Poisson distributions
 - Calculate cumulative probability for Normal distribution
 - Confidence interval for one population mean
 - Hypothesis test about one population mean
-- Confidence interval for difference between two population means (independent and dependent)
-- Hypothesis test about for difference between two population means (independent and dependent)
-- Simple Linear Regression and Correlation Coefficient
+- Confidence interval for difference between two population means (independent samples)
+- Hypothesis test about for difference between two population means (independent samples)
+- Simple Linear Regression and Pearson Correlation Coefficient
 
 ## Who is CougarStats for?
 
