@@ -159,17 +159,22 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                      label = strong("Number of samples"),
                                      choiceValues = list("1", "2"),
                                      choiceNames = list("1", "2"),
-                                     selected = "1", # character(0), #
+                                     selected = character(0), #"1", # 
                                      inline = TRUE,
                                      width = "1000px"),
                         
-                        radioButtons(inputId = "dataAvailability",
-                                     label = strong("Data Availability"),
-                                     choiceValues = list("Summarized Data", "Enter Raw Data"),
-                                     choiceNames = list("Summarized Data", "Enter Raw Data"),
-                                     selected = "Summarized Data",
-                                     inline = TRUE,
-                                     width = "1000px"),
+                        conditionalPanel(
+                          condition = "input.samplesSelect == '1' || input.samplesSelect == '2'",
+                          
+                        
+                          radioButtons(inputId = "dataAvailability",
+                                       label = strong("Data Availability"),
+                                       choiceValues = list("Summarized Data", "Enter Raw Data"),
+                                       choiceNames = list("Summarized Data", "Enter Raw Data"),
+                                       selected = character(0), # "Summarized Data",
+                                       inline = TRUE,
+                                       width = "1000px"),
+                        ),
                         
                         conditionalPanel(
                           condition = "input.samplesSelect == '1' && input.dataAvailability == 'Summarized Data'",
@@ -223,11 +228,12 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                             
                             numericInput(inputId = "popuSDRaw",
                                          label = strong("Population Standard Deviation (\\( \\sigma\\)) Value"),
-                                         value = 8.25, min = 0.00001, step = 0.00001)),
+                                         value = 8.25, min = 0.00001, step = 0.00001)
+                            ),
                           
                             conditionalPanel(
                               condition = "input.sigmaKnownRaw == 'rawUnknown'"
-                            ),
+                            )
                         ),
                         
                         conditionalPanel(
@@ -296,34 +302,38 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                           textAreaInput("raw_sample1", strong("Sample 1"), value = "101.1,  111.1,  107.6,  98.1,  99.5,  98.7,  103.3,  108.9,  109.1,  103.3", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
                           
                           textAreaInput("raw_sample2", strong("Sample 2"), value = "107.1,  105.0,  98.0,  97.9,  103.3,  104.6,  100.1,  98.2,  97.9", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
-                          
-                          radioButtons(inputId = "bothsigmaKnownRaw",
-                                       label = strong("Population Standard Deviations (\\( \\sigma_{1}\\) and \\( \\sigma_{2}\\))"),
-                                       choiceValues = list("bothKnownRaw", "bothUnknownRaw"),
-                                       choiceNames = list("Both Known", "Both Unknown (Assumed Equal)"),
-                                       selected = "bothKnownRaw",
+
+                          radioButtons(inputId = "samplesType",
+                                       label = strong("Type of Samples"),
+                                       choiceValues = list("Independent Samples", "Dependent Samples"),
+                                       choiceNames = list("Independent Samples", "Dependent Samples (Paired Data)"),
+                                       selected = "Independent Samples",
                                        inline = TRUE,
                                        width = "1000px"),
                           
                           conditionalPanel(
-                            condition = "input.bothsigmaKnownRaw == 'bothKnownRaw'",
+                            condition = "input.samplesType == 'Independent Samples'",
                             
-                            numericInput(inputId = "popuSD1",
-                                         label = strong("Population Standard Deviation 1 (\\( \\sigma_{1}\\)) Value"),
-                                         value = 4.54, min = 0.00001, step = 0.00001),
+                              radioButtons(inputId = "bothsigmaKnownRaw",
+                                           label = strong("Population Standard Deviations (\\( \\sigma_{1}\\) and \\( \\sigma_{2}\\))"),
+                                           choiceValues = list("bothKnownRaw", "bothUnknownRaw"),
+                                           choiceNames = list("Both Known", "Both Unknown (Assumed Equal)"),
+                                           selected = "bothKnownRaw",
+                                           inline = TRUE,
+                                           width = "1000px"),
                             
-                            numericInput(inputId = "popuSD2",
-                                         label = strong("Population Standard Deviation 2 (\\( \\sigma_{2}\\)) Value"),
-                                         value = 3.47, min = 0.00001, step = 0.00001),
-                          ),
-
-                          # radioButtons(inputId = "samplesType",
-                          #              label = strong("Type of Samples"),
-                          #              choiceValues = list("Independent Samples", "Dependent Samples"),
-                          #              choiceNames = list("Independent Samples", "Dependent Samples (Paired Data)"),
-                          #              selected = "Independent Samples", 
-                          #              inline = TRUE,
-                          #              width = "1000px"),
+                              conditionalPanel(
+                                condition = "input.bothsigmaKnownRaw == 'bothKnownRaw'",
+                                
+                                numericInput(inputId = "popuSD1",
+                                             label = strong("Population Standard Deviation 1 (\\( \\sigma_{1}\\)) Value"),
+                                             value = 4.54, min = 0.00001, step = 0.00001),
+                                
+                                numericInput(inputId = "popuSD2",
+                                             label = strong("Population Standard Deviation 2 (\\( \\sigma_{2}\\)) Value"),
+                                             value = 3.47, min = 0.00001, step = 0.00001),
+                              )
+                            )
                         ),
                         
                         conditionalPanel(
@@ -333,7 +343,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                        label = strong("Inference Type"),
                                        choiceValues = list("Confidence Interval", "Hypothesis Testing"),
                                        choiceNames = list("Confidence Interval", "Hypothesis Testing"),
-                                       selected = "Confidence Interval", # character(0), # 
+                                       selected = "Confidence Interval",
                                        inline = TRUE,
                                        width = "1000px"),
                           
@@ -431,6 +441,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                       div(id = "descriptiveStatsMP",
                           conditionalPanel(
                             condition = "input.dropDownMenu == 'Descriptive Statistics'",
+                            
                             tableOutput("table"),
                             br(),
                             plotOutput("boxplotHorizontal")
@@ -443,18 +454,21 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                             
                             conditionalPanel(
                               condition = "input.probability == 'Binomial'",
+                              
                               uiOutput("renderProbabilityBinom"),
                               uiOutput("bVal")
                             ),
                             
                             conditionalPanel(
                               condition = "input.probability == 'Poisson'",
+                              
                               uiOutput("renderProbabilityPoisson"),
                               uiOutput("pVal")
                             ),
                             
                             conditionalPanel(
                               condition = "input.probability == 'Normal'",
+                              
                               uiOutput("renderProbabilityNorm"),
                               uiOutput("nVal")
                             )
@@ -560,20 +574,30 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                 conditionalPanel(
                                   condition = "input.dataAvailability == 'Enter Raw Data'",
 
-                                  uiOutput('twoSampCIRaw'),
-                                  
-                                  br(),
-                                  
                                   conditionalPanel(
-                                    condition = "input.bothsigmaKnownRaw == 'bothKnownRaw'",
+                                    condition = "input.samplesType == 'Independent Samples'",
                                     
-                                    img(src ='TwoSampZInt.png', height = '75px')
+                                        uiOutput('twoSampCIRaw'),
+                                        
+                                        br(),
+                                        
+                                        conditionalPanel(
+                                          condition = "input.bothsigmaKnownRaw == 'bothKnownRaw'",
+                                          
+                                          img(src ='TwoSampZInt.png', height = '75px')
+                                        ),
+                                        
+                                        conditionalPanel(
+                                          condition = "input.bothsigmaKnownRaw == 'bothUnknownRaw'",
+                                          
+                                          img(src ='TwoSampTInt.png', height = '75px')
+                                        )
                                   ),
                                   
                                   conditionalPanel(
-                                    condition = "input.bothsigmaKnownRaw == 'bothUnknownRaw'",
+                                    condition = "input.samplesType == 'Dependent Samples'",
                                     
-                                    img(src ='TwoSampTInt.png', height = '75px')
+                                      img(src ='TwoSampTIntPaired.png', height = '100px')
                                   )
                                 )
                               ),
