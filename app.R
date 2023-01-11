@@ -154,255 +154,313 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                         #              selected = "Population Mean",
                         #              #inline = TRUE,
                         #              width = "1000px"),
-
-                        radioButtons(inputId = "samplesSelect",
-                                     label = strong("Number of samples"),
-                                     choiceValues = list("1", "2"),
-                                     choiceNames = list("1", "2"),
-                                     selected = character(0), #"1", # 
+                        
+                        radioButtons(inputId = "popuParameter",
+                                     label = strong("Parameter of Interest"),
+                                     choiceValues = list("Population Mean", "Population Proportion"),
+                                     choiceNames = list("Population Mean (\\( \\mu\\))", "Population Proportion (p)"),
+                                     selected = character(0), #"Population Mean",
                                      inline = TRUE,
                                      width = "1000px"),
-                        
-                        conditionalPanel(
-                          condition = "input.samplesSelect == '1' || input.samplesSelect == '2'",
-                          
-                        
-                          radioButtons(inputId = "dataAvailability",
-                                       label = strong("Data Availability"),
-                                       choiceValues = list("Summarized Data", "Enter Raw Data"),
-                                       choiceNames = list("Summarized Data", "Enter Raw Data"),
-                                       selected = character(0), # "Summarized Data",
-                                       inline = TRUE,
-                                       width = "1000px"),
-                        ),
-                        
-                        conditionalPanel(
-                          condition = "input.samplesSelect == '1' && input.dataAvailability == 'Summarized Data'",
-                          
-                          numericInput(inputId = "sampleSize",
-                                       label = strong("Sample Size (n)"),
-                                       value = 18, min = 1, step = 1),
-                          
-                          numericInput(inputId = "sampleMean",
-                                       label = strong("Sample Mean (\\( \\bar{x}\\))"),
-                                       value = 103.5375, step = 0.00001),
-                          
-                          radioButtons(inputId = "sigmaKnown",
-                                       label = strong("Population Standard Deviation (\\( \\sigma\\))"),
-                                       choiceValues = list("Known", "Unknown"),
-                                       choiceNames = list("Known", "Unknown"),
-                                       selected = "Known",
-                                       inline = TRUE,
-                                       width = "1000px"),
-                          
-                          conditionalPanel(
-                            condition = "input.sigmaKnown == 'Known'",
-                            
-                            numericInput(inputId = "popuSD",
-                                         label = strong("Population Standard Deviation (\\( \\sigma\\)) Value"),
-                                         value = 8.25, min = 0.00001, step = 0.00001)),
-                          
-                          conditionalPanel(
-                            condition = "input.sigmaKnown == 'Unknown'",
-                            
-                            numericInput(inputId = "sampSD",
-                                         label = strong("Sample Standard Deviation (s) Value"),
-                                         value = 4.78, min = 0.00001, step = 0.00001)),
-                        ),
-                        
-                        conditionalPanel(
-                          condition = "input.samplesSelect == '1' && input.dataAvailability == 'Enter Raw Data'",
-                          
-                          textAreaInput("sample1", strong("Sample"), value = "202, 210, 215, 220, 220, 224, 225, 228, 228, 228", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
-                          
-                          radioButtons(inputId = "sigmaKnownRaw",
-                                       label = strong("Population Standard Deviation (\\( \\sigma\\))"),
-                                       choiceValues = list("rawKnown", "rawUnknown"),
-                                       choiceNames = list("Known", "Unknown"),
-                                       selected = "rawKnown",
-                                       inline = TRUE,
-                                       width = "1000px"),
-                          
-                          conditionalPanel(
-                            condition = "input.sigmaKnownRaw == 'rawKnown'",
-                            
-                            numericInput(inputId = "popuSDRaw",
-                                         label = strong("Population Standard Deviation (\\( \\sigma\\)) Value"),
-                                         value = 8.25, min = 0.00001, step = 0.00001)
-                            ),
-                          
-                            conditionalPanel(
-                              condition = "input.sigmaKnownRaw == 'rawUnknown'"
-                            )
-                        ),
-                        
-                        conditionalPanel(
-                          condition = "input.samplesSelect == '2' && input.dataAvailability == 'Summarized Data'",
-                          
-                          numericInput(inputId = "sampleSize1",
-                                       label = strong("Sample Size 1 (\\( n_{1}\\))"),
-                                       value = 21, min = 1, step = 1),
-                          
-                          numericInput(inputId = "sampleMean1",
-                                       label = strong("Sample Mean 1 (\\( \\bar{x}_{1}\\))"),
-                                       value = 29.6, step = 0.00001),
-                          
-                          numericInput(inputId = "sampleSize2",
-                                       label = strong("Sample Size 2 (\\( n_{2}\\))"),
-                                       value = 21, min = 1, step = 1),
-                          
-                          numericInput(inputId = "sampleMean2",
-                                       label = strong("Sample Mean 2 (\\( \\bar{x}_{2}\\))"),
-                                       value = 33.9, step = 0.00001),
-                          
-                          radioButtons(inputId = "bothsigmaKnown",
-                                       label = strong("Population Standard Deviations (\\( \\sigma_{1}\\) and \\( \\sigma_{2}\\))"),
-                                       choiceValues = list("bothKnown", "bothUnknown"),
-                                       choiceNames = list("Both Known", "Both Unknown (Assumed Equal)"),
-                                       selected = "bothKnown",
-                                       inline = TRUE,
-                                       width = "1000px"),
-                          
-                          conditionalPanel(
-                            condition = "input.bothsigmaKnown == 'bothKnown'",
-                            
-                            numericInput(inputId = "popuSD1",
-                                         label = strong("Population Standard Deviation 1 (\\( \\sigma_{1}\\)) Value"),
-                                         value = 5.36, min = 0.00001, step = 0.00001),
-                            
-                            numericInput(inputId = "popuSD2",
-                                         label = strong("Population Standard Deviation 2 (\\( \\sigma_{2}\\)) Value"),
-                                         value = 5.97, min = 0.00001, step = 0.00001),
-                          ),
-                          
-                          conditionalPanel(
-                            condition = "input.bothsigmaKnown == 'bothUnknown'",
-                            
-                            numericInput(inputId = "sampSD1",
-                                         label = strong("Sample Standard Deviation 1 (\\( s_{1}\\)) Value"),
-                                         value = 5.24, min = 0.00001, step = 0.00001),
-                            
-                            numericInput(inputId = "sampSD2",
-                                         label = strong("Sample Standard Deviation 2 (\\( s_{2}\\)) Value"),
-                                         value = 5.85, min = 0.00001, step = 0.00001),
-                            
-                            # radioButtons(inputId = "bothsigmaEqual",
-                            #              label = strong("Assume Population Variances are equal (\\( \\sigma_{1}^2\\) = \\( \\sigma_{2}^2\\))"),
-                            #              choiceValues = list("Yes", "No"),
-                            #              choiceNames = list("Yes", "No (Welch–Satterthwaite df)"),
-                            #              selected = "Yes",
-                            #              inline = TRUE,
-                            #              width = "1000px")
-                          )
-                        ),
-                        
-                        conditionalPanel(
-                          condition = "input.samplesSelect == '2' && input.dataAvailability == 'Enter Raw Data'",
-                          
-                          textAreaInput("raw_sample1", strong("Sample 1"), value = "101.1,  111.1,  107.6,  98.1,  99.5,  98.7,  103.3,  108.9,  109.1,  103.3", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
-                          
-                          textAreaInput("raw_sample2", strong("Sample 2"), value = "107.1,  105.0,  98.0,  97.9,  103.3,  104.6,  100.1,  98.2,  97.9", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
 
-                          radioButtons(inputId = "samplesType",
-                                       label = strong("Type of Samples"),
-                                       choiceValues = list("Independent Samples", "Dependent Samples"),
-                                       choiceNames = list("Independent Samples", "Dependent Samples (Paired Data)"),
-                                       selected = "Independent Samples",
+                        # conditionalPanel(
+                        #   condition = "input.popuParameter == 'Population Mean' || input.popuParameter == 'Population Proportion'",
+                        #     
+                          # radioButtons(inputId = "samplesSelect",
+                          #              label = strong("Number of samples"),
+                          #              choiceValues = list("1", "2"),
+                          #              choiceNames = list("1", "2"),
+                          #              selected = character(0), #"1", # 
+                          #              inline = TRUE,
+                          #              width = "1000px"),
+                        # ),
+                        
+                       conditionalPanel(
+                          condition = "input.popuParameter == 'Population Mean'",
+
+                          radioButtons(inputId = "samplesSelect",
+                                       label = strong("Number of samples"),
+                                       choiceValues = list("1", "2"),
+                                       choiceNames = list("1", "2"),
+                                       selected = character(0), #"1", # 
                                        inline = TRUE,
                                        width = "1000px"),
                           
                           conditionalPanel(
-                            condition = "input.samplesType == 'Independent Samples'",
+                            condition = "input.samplesSelect == '1' || input.samplesSelect == '2'",
                             
-                              radioButtons(inputId = "bothsigmaKnownRaw",
-                                           label = strong("Population Standard Deviations (\\( \\sigma_{1}\\) and \\( \\sigma_{2}\\))"),
-                                           choiceValues = list("bothKnownRaw", "bothUnknownRaw"),
-                                           choiceNames = list("Both Known", "Both Unknown (Assumed Equal)"),
-                                           selected = "bothKnownRaw",
+                          
+                            radioButtons(inputId = "dataAvailability",
+                                         label = strong("Data Availability"),
+                                         choiceValues = list("Summarized Data", "Enter Raw Data"),
+                                         choiceNames = list("Summarized Data", "Enter Raw Data"),
+                                         selected = character(0), # "Summarized Data",
+                                         inline = TRUE,
+                                         width = "1000px"),
+                          ),
+                        
+                            conditionalPanel(
+                              condition = "input.samplesSelect == '1' && input.dataAvailability == 'Summarized Data'",
+                              
+                              numericInput(inputId = "sampleSize",
+                                           label = strong("Sample Size (n)"),
+                                           value = 18, min = 1, step = 1),
+                              
+                              numericInput(inputId = "sampleMean",
+                                           label = strong("Sample Mean (\\( \\bar{x}\\))"),
+                                           value = 103.5375, step = 0.00001),
+                              
+                              radioButtons(inputId = "sigmaKnown",
+                                           label = strong("Population Standard Deviation (\\( \\sigma\\))"),
+                                           choiceValues = list("Known", "Unknown"),
+                                           choiceNames = list("Known", "Unknown"),
+                                           selected = "Known",
                                            inline = TRUE,
                                            width = "1000px"),
-                            
+                              
                               conditionalPanel(
-                                condition = "input.bothsigmaKnownRaw == 'bothKnownRaw'",
+                                condition = "input.sigmaKnown == 'Known'",
+                                
+                                numericInput(inputId = "popuSD",
+                                             label = strong("Population Standard Deviation (\\( \\sigma\\)) Value"),
+                                             value = 8.25, min = 0.00001, step = 0.00001)),
+                              
+                              conditionalPanel(
+                                condition = "input.sigmaKnown == 'Unknown'",
+                                
+                                numericInput(inputId = "sampSD",
+                                             label = strong("Sample Standard Deviation (s) Value"),
+                                             value = 4.78, min = 0.00001, step = 0.00001)),
+                            ),
+                            
+                            conditionalPanel(
+                              condition = "input.samplesSelect == '1' && input.dataAvailability == 'Enter Raw Data'",
+                              
+                              textAreaInput("sample1", strong("Sample"), value = "202, 210, 215, 220, 220, 224, 225, 228, 228, 228", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                              
+                              radioButtons(inputId = "sigmaKnownRaw",
+                                           label = strong("Population Standard Deviation (\\( \\sigma\\))"),
+                                           choiceValues = list("rawKnown", "rawUnknown"),
+                                           choiceNames = list("Known", "Unknown"),
+                                           selected = "rawKnown",
+                                           inline = TRUE,
+                                           width = "1000px"),
+                              
+                              conditionalPanel(
+                                condition = "input.sigmaKnownRaw == 'rawKnown'",
+                                
+                                numericInput(inputId = "popuSDRaw",
+                                             label = strong("Population Standard Deviation (\\( \\sigma\\)) Value"),
+                                             value = 8.25, min = 0.00001, step = 0.00001)
+                                ),
+                              
+                                conditionalPanel(
+                                  condition = "input.sigmaKnownRaw == 'rawUnknown'"
+                                )
+                            ),
+                            
+                            conditionalPanel(
+                              condition = "input.samplesSelect == '2' && input.dataAvailability == 'Summarized Data'",
+                              
+                              numericInput(inputId = "sampleSize1",
+                                           label = strong("Sample Size 1 (\\( n_{1}\\))"),
+                                           value = 21, min = 1, step = 1),
+                              
+                              numericInput(inputId = "sampleMean1",
+                                           label = strong("Sample Mean 1 (\\( \\bar{x}_{1}\\))"),
+                                           value = 29.6, step = 0.00001),
+                              
+                              numericInput(inputId = "sampleSize2",
+                                           label = strong("Sample Size 2 (\\( n_{2}\\))"),
+                                           value = 21, min = 1, step = 1),
+                              
+                              numericInput(inputId = "sampleMean2",
+                                           label = strong("Sample Mean 2 (\\( \\bar{x}_{2}\\))"),
+                                           value = 33.9, step = 0.00001),
+                              
+                              radioButtons(inputId = "bothsigmaKnown",
+                                           label = strong("Population Standard Deviations (\\( \\sigma_{1}\\) and \\( \\sigma_{2}\\))"),
+                                           choiceValues = list("bothKnown", "bothUnknown"),
+                                           choiceNames = list("Both Known", "Both Unknown (Assumed Equal)"),
+                                           selected = "bothKnown",
+                                           inline = TRUE,
+                                           width = "1000px"),
+                              
+                              conditionalPanel(
+                                condition = "input.bothsigmaKnown == 'bothKnown'",
                                 
                                 numericInput(inputId = "popuSD1",
                                              label = strong("Population Standard Deviation 1 (\\( \\sigma_{1}\\)) Value"),
-                                             value = 4.54, min = 0.00001, step = 0.00001),
+                                             value = 5.36, min = 0.00001, step = 0.00001),
                                 
                                 numericInput(inputId = "popuSD2",
                                              label = strong("Population Standard Deviation 2 (\\( \\sigma_{2}\\)) Value"),
-                                             value = 3.47, min = 0.00001, step = 0.00001),
-                              )
-                            )
-                        ),
-                        
-                        conditionalPanel(
-                          condition = "input.dataAvailability == 'Summarized Data' || input.dataAvailability == 'Enter Raw Data'",
-                          
-                          radioButtons(inputId = "inferenceType",
-                                       label = strong("Inference Type"),
-                                       choiceValues = list("Confidence Interval", "Hypothesis Testing"),
-                                       choiceNames = list("Confidence Interval", "Hypothesis Testing"),
-                                       selected = "Confidence Interval",
-                                       inline = TRUE,
-                                       width = "1000px"),
-                          
-                          conditionalPanel(
-                            condition = "input.inferenceType == 'Confidence Interval'",
-                            
-                            radioButtons(inputId = "confidenceLevel", label = strong("Confidence Level"), selected = c("95%"), choices = c("90%", "95%","99%"), inline = TRUE)
-                          ),
-                          
-                          conditionalPanel(
-                            condition = "input.inferenceType == 'Hypothesis Testing'",
-                            
-                            radioButtons(inputId = "significanceLevel", label = strong("Significance Level"), selected = c("5%"), choices = c("10%", "5%","1%"), inline = TRUE),
-                          ),
-                          
-                          # Dropdown for 1-sample HT
-                          
-                          conditionalPanel(
-                            condition = "input.samplesSelect == '1' && input.inferenceType == 'Hypothesis Testing'",
-                            
-                            numericInput(inputId = "hypMean",
-                                         label = strong("Hypothesized Population Mean Value"),
-                                         value = 99, step = 0.00001),
-                            
-                            selectizeInput(
-                              inputId = "altHypothesis",
-                              label = strong("Alternate Hypothesis"),
-                              choices = c(
-                                "< " = 1,
-                                "&ne; " = 2,
-                                "> " = 3
+                                             value = 5.97, min = 0.00001, step = 0.00001),
                               ),
-                              selected = 2,
-                              options = list(
-                                render = I(render)
+                              
+                              conditionalPanel(
+                                condition = "input.bothsigmaKnown == 'bothUnknown'",
+                                
+                                numericInput(inputId = "sampSD1",
+                                             label = strong("Sample Standard Deviation 1 (\\( s_{1}\\)) Value"),
+                                             value = 5.24, min = 0.00001, step = 0.00001),
+                                
+                                numericInput(inputId = "sampSD2",
+                                             label = strong("Sample Standard Deviation 2 (\\( s_{2}\\)) Value"),
+                                             value = 5.85, min = 0.00001, step = 0.00001),
+                                
+                                # radioButtons(inputId = "bothsigmaEqual",
+                                #              label = strong("Assume Population Variances are equal (\\( \\sigma_{1}^2\\) = \\( \\sigma_{2}^2\\))"),
+                                #              choiceValues = list("Yes", "No"),
+                                #              choiceNames = list("Yes", "No (Welch–Satterthwaite df)"),
+                                #              selected = "Yes",
+                                #              inline = TRUE,
+                                #              width = "1000px")
                               )
-                            )
-                          )
-                        ),
-                        
-                        # Dropdown for 2-sample HT
-                        
-                        conditionalPanel(
-                          condition = "input.samplesSelect == '2' && input.inferenceType == 'Hypothesis Testing'",
-                          
-                          selectizeInput(
-                            inputId = "altHypothesis",
-                            label = strong("Alternate Hypothesis"),
-                            choices = c(
-                              "< " = 1,
-                              "&ne; " = 2,
-                              "> " = 3
                             ),
-                            selected = 2,
-                            options = list(
-                              render = I(render)
-                            )
-                          )
+                            
+                            conditionalPanel(
+                              condition = "input.samplesSelect == '2' && input.dataAvailability == 'Enter Raw Data'",
+                              
+                              textAreaInput("raw_sample1", strong("Sample 1"), value = "101.1,  111.1,  107.6,  98.1,  99.5,  98.7,  103.3,  108.9,  109.1,  103.3", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                              
+                              textAreaInput("raw_sample2", strong("Sample 2"), value = "107.1,  105.0,  98.0,  97.9,  103.3,  104.6,  100.1,  98.2,  97.9", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+    
+                              radioButtons(inputId = "samplesType",
+                                           label = strong("Type of Samples"),
+                                           choiceValues = list("Independent Samples", "Dependent Samples"),
+                                           choiceNames = list("Independent Samples", "Dependent Samples (Paired Data)"),
+                                           selected = "Independent Samples",
+                                           inline = TRUE,
+                                           width = "1000px"),
+                              
+                              conditionalPanel(
+                                condition = "input.samplesType == 'Independent Samples'",
+                                
+                                  radioButtons(inputId = "bothsigmaKnownRaw",
+                                               label = strong("Population Standard Deviations (\\( \\sigma_{1}\\) and \\( \\sigma_{2}\\))"),
+                                               choiceValues = list("bothKnownRaw", "bothUnknownRaw"),
+                                               choiceNames = list("Both Known", "Both Unknown (Assumed Equal)"),
+                                               selected = "bothKnownRaw",
+                                               inline = TRUE,
+                                               width = "1000px"),
+                                
+                                  conditionalPanel(
+                                    condition = "input.bothsigmaKnownRaw == 'bothKnownRaw'",
+                                    
+                                    numericInput(inputId = "popuSD1",
+                                                 label = strong("Population Standard Deviation 1 (\\( \\sigma_{1}\\)) Value"),
+                                                 value = 4.54, min = 0.00001, step = 0.00001),
+                                    
+                                    numericInput(inputId = "popuSD2",
+                                                 label = strong("Population Standard Deviation 2 (\\( \\sigma_{2}\\)) Value"),
+                                                 value = 3.47, min = 0.00001, step = 0.00001),
+                                  )
+                                )
+                            ),
+                            
+                            conditionalPanel(
+                              condition = "input.dataAvailability == 'Summarized Data' || input.dataAvailability == 'Enter Raw Data'",
+                              
+                              radioButtons(inputId = "inferenceType",
+                                           label = strong("Inference Type"),
+                                           choiceValues = list("Confidence Interval", "Hypothesis Testing"),
+                                           choiceNames = list("Confidence Interval", "Hypothesis Testing"),
+                                           selected = "Confidence Interval",
+                                           inline = TRUE,
+                                           width = "1000px"),
+                              
+                              conditionalPanel(
+                                condition = "input.inferenceType == 'Confidence Interval'",
+                                
+                                radioButtons(inputId = "confidenceLevel", label = strong("Confidence Level"), selected = c("95%"), choices = c("90%", "95%","99%"), inline = TRUE)
+                              ),
+                              
+                              conditionalPanel(
+                                condition = "input.inferenceType == 'Hypothesis Testing'",
+                                
+                                radioButtons(inputId = "significanceLevel", label = strong("Significance Level"), selected = c("5%"), choices = c("10%", "5%","1%"), inline = TRUE),
+                              ),
+                              
+                              # Dropdown for 1-sample HT
+                              
+                              conditionalPanel(
+                                condition = "input.samplesSelect == '1' && input.inferenceType == 'Hypothesis Testing'",
+                                
+                                numericInput(inputId = "hypMean",
+                                             label = strong("Hypothesized Population Mean Value"),
+                                             value = 99, step = 0.00001),
+                                
+                                selectizeInput(
+                                  inputId = "altHypothesis",
+                                  label = strong("Alternate Hypothesis"),
+                                  choices = c(
+                                    "< " = 1,
+                                    "&ne; " = 2,
+                                    "> " = 3
+                                  ),
+                                  selected = 2,
+                                  options = list(
+                                    render = I(render)
+                                  )
+                                )
+                              )
+                            ),
+                            
+                            # Dropdown for 2-sample HT
+                            
+                            conditionalPanel(
+                              condition = "input.samplesSelect == '2' && input.inferenceType == 'Hypothesis Testing'",
+                              
+                              selectizeInput(
+                                inputId = "altHypothesis",
+                                label = strong("Alternate Hypothesis"),
+                                choices = c(
+                                  "< " = 1,
+                                  "&ne; " = 2,
+                                  "> " = 3
+                                ),
+                                selected = 2,
+                                options = list(
+                                  render = I(render)
+                                )
+                              )
+                            ),
                         ),
+                       
+                       conditionalPanel(
+                         condition = "input.popuParameter == 'Population Proportion'",
+
+                         numericInput(inputId = "numSuccesses", 
+                                      label = strong("Number of Successes (x)"),
+                                      value = 1087, min = 0, step = 1),
+                         
+                         numericInput(inputId = "numTrails", 
+                                      label = strong("Number of Trials (n)"),
+                                      value = 1430, min = 1, step = 1),
+
+                         
+                         
+                         
+                         numericInput(inputId = "numSuccesses", 
+                                      label = strong("Number of Successes 1 (x1)"),
+                                      value = 174, min = 0, step = 1),
+                         
+                         numericInput(inputId = "numTrails", 
+                                      label = strong("Number of Trials 1 (n1)"),
+                                      value = 300, min = 1, step = 1),
+                         
+                         numericInput(inputId = "numSuccesses", 
+                                      label = strong("Number of Successes 2 (x2)"),
+                                      value = 111, min = 0, step = 1),
+                         
+                         numericInput(inputId = "numTrails", 
+                                      label = strong("Number of Trials 2 (n2)"),
+                                      value = 300, min = 1, step = 1),
+                         
+                       ),
+                       
+                       
                         
                         actionButton(inputId = "goInference", label = "Calculate",
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
