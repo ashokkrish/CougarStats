@@ -357,7 +357,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                            label = strong("Inference Type"),
                                            choiceValues = list("Confidence Interval", "Hypothesis Testing"),
                                            choiceNames = list("Confidence Interval", "Hypothesis Testing"),
-                                           selected = "Confidence Interval",
+                                           selected = "Confidence Interval", # character(0), # 
                                            inline = TRUE,
                                            width = "1000px"),
                               
@@ -1054,6 +1054,9 @@ server <- function(input, output) {
     
     observeEvent(input$goInference, {
       output$renderInference <- renderUI(
+        
+      if(input$popuParameter == 'Population Mean'){
+          
         if(input$samplesSelect == '1'){
           
           if(input$inferenceType == 'Confidence Interval'){
@@ -1105,6 +1108,8 @@ server <- function(input, output) {
                 
                 source('R/OneSampZInt.R')
                 
+                print("Confidence Inrerval for One Population Mean when Population Standard Deviation is known")
+                
                 zIntPrint <- ZInterval(nSampOne, xbarSampOne, sigmaSampOne, ConfLvl)
                 
                 values <- reactiveValues()
@@ -1125,6 +1130,8 @@ server <- function(input, output) {
                 sSampOne <- input$sampSD
                 
                 source('R/OneSampTInt.R')
+                
+                print("Confidence Inrerval for One Population Mean when Population Standard Deviation is unknown")
                 
                 tIntPrint <- TInterval(nSampOne, xbarSampOne, sSampOne, ConfLvl)
                 
@@ -1379,8 +1386,8 @@ server <- function(input, output) {
                 twoSampUnKnownConfid <- TwoSampTInt(xbar1, s1, n1, xbar2, s2, n2, var.equal = TRUE, ConfLvl)
                 
                 values <- reactiveValues()
-                values$dfTwoUnknownRSum <- data.frame(Variable = character(), Value = character())
-                output$twoSampCI <- renderTable(values$dfTwoUnknownRSum )
+                values$dfTwoUnknownSum <- data.frame(Variable = character(), Value = character())
+                output$twoSampCI <- renderTable(values$dfTwoUnknownSum )
                 
                 row1 <- data.frame(Variable = "Difference of Sample Means", Value = paste(twoSampUnKnownConfid[1]))
                 row2 <- data.frame(Variable = "T Critical Value", Value = paste(twoSampUnKnownConfid[2]))
@@ -1388,7 +1395,7 @@ server <- function(input, output) {
                 row4 <- data.frame(Variable = "Lower Confidence Limit (LCL)", Value = paste(twoSampUnKnownConfid[4]))
                 row5 <- data.frame(Variable = "Upper Confidence Limit (UCL)", Value = paste(twoSampUnKnownConfid[5]))
                 
-                values$dfTwoUnknownRSum  <- rbind(row1, row2, row3, row4, row5)
+                values$dfTwoUnknownSum  <- rbind(row1, row2, row3, row4, row5)
               }
             }
 
@@ -1465,8 +1472,8 @@ server <- function(input, output) {
                 twoSampZIntRaw <- TwoSampZInt(xbar1, sigma1, n1, xbar2, sigma2, n2, ConfLvl)
                 
                 values <- reactiveValues()
-                values$dfTwoKnownRaw <- data.frame(Variable = character(), Value = character())
-                output$twoSampCIRaw <- renderTable(values$dfTwoKnownRaw)
+                values$dfTwoKnownCIRaw <- data.frame(Variable = character(), Value = character())
+                output$twoSampCIRaw <- renderTable(values$dfTwoKnownCIRaw)
                 
                 row1 <- data.frame(Variable = "Difference of Sample Means", Value = paste(twoSampZIntRaw[1]))
                 row2 <- data.frame(Variable = "Z Critical Value", Value = paste(twoSampZIntRaw[2]))
@@ -1474,7 +1481,7 @@ server <- function(input, output) {
                 row4 <- data.frame(Variable = "Lower Confidence Limit (LCL)", Value = paste(twoSampZIntRaw[4]))
                 row5 <- data.frame(Variable = "Upper Confidence Limit (UCL)", Value = paste(twoSampZIntRaw[5]))
                 
-                values$dfTwoKnownRaw <- rbind(row1, row2, row3, row4, row5)
+                values$dfTwoKnownCIRaw <- rbind(row1, row2, row3, row4, row5)
               }
               
               else if(input$bothsigmaKnown == 'bothUnknown'){
@@ -1487,8 +1494,8 @@ server <- function(input, output) {
                 twoSampTIntRaw <- TwoSampTInt(xbar1, s1, n1, xbar2, s2, n2, var.equal = TRUE, ConfLvl)
                 
                 values <- reactiveValues()
-                values$dfTwoUnknownRaw <- data.frame(Variable = character(), Value = character())
-                output$twoSampCIRaw <- renderTable(values$dfTwoUnknownRaw)
+                values$dfTwoUnknownCIRaw <- data.frame(Variable = character(), Value = character())
+                output$twoSampCIRaw <- renderTable(values$dfTwoUnknownCIRaw)
                 
                 row1 <- data.frame(Variable = "Difference of Sample Means", Value = paste(twoSampTIntRaw[1]))
                 row2 <- data.frame(Variable = "T Critical Value", Value = paste(twoSampTIntRaw[2]))
@@ -1496,7 +1503,7 @@ server <- function(input, output) {
                 row4 <- data.frame(Variable = "Lower Confidence Limit (LCL)", Value = paste(twoSampTIntRaw[4]))
                 row5 <- data.frame(Variable = "Upper Confidence Limit (UCL)", Value = paste(twoSampTIntRaw[5]))
                 
-                values$dfTwoUnknownRaw  <- rbind(row1, row2, row3, row4, row5)
+                values$dfTwoUnknownCIRaw  <- rbind(row1, row2, row3, row4, row5)
               }
             }
 
@@ -1534,8 +1541,8 @@ server <- function(input, output) {
                 twoSampTTestRaw <- TwoSampTTest(xbar1, s1, n1, xbar2, s2, n2, var.equal = TRUE, alternative, sigLvl)
                 
                 values <- reactiveValues()
-                values$dfTwoUnknownHyp <- data.frame(Variable = character(), Value = character())
-                output$twoSampHTRaw <- renderTable(values$dfTwoUnknownHyp )
+                values$dfTwoUnknownHypRaw <- data.frame(Variable = character(), Value = character())
+                output$twoSampHTRaw <- renderTable(values$dfTwoUnknownHypRaw)
                 
                 row1 <- data.frame(Variable = "Difference of Sample Means", Value = paste(twoSampTTestRaw[1]))
                 row2 <- data.frame(Variable = "Degrees of freedom (df)", Value = paste(twoSampTTestRaw[2]))
@@ -1544,12 +1551,63 @@ server <- function(input, output) {
                 row5 <- data.frame(Variable = "Test Statistic", Value = paste(twoSampTTestRaw[5]))
                 row6 <- data.frame(Variable = "P-Value", Value = paste(twoSampTTestRaw[6]))
                 
-                values$dfTwoUnknownHyp  <- rbind(row1, row2, row3, row4, row5, row6)
+                values$dfTwoUnknownHypRaw <- rbind(row1, row2, row3, row4, row5, row6)
               } # input$bothsigmaKnown == 'bothUnknown'
             } # input$inferenceType == 'Hypothesis Testing'
           } # input$dataAvailability == 'Enter Raw Data'
         } # samplesSelect == '2'
-        # input$popuParameter
+       } # input$popuParameter == 'Population Mean'
+      
+      else if(input$popuParameter == 'Population Proportion'){
+        
+        if(input$inferenceType == 'Confidence Interval'){
+          
+          if(input$confidenceLevel == '90%'){
+            ConfLvl <- 0.9
+          }
+          else if(input$confidenceLevel == '95%'){
+            ConfLvl <- 0.95
+          }
+          else{
+            ConfLvl <- 0.99
+          }
+        }
+        
+        else if(input$inferenceType == 'Hypothesis Testing'){
+          
+          if(input$significanceLevel == "10%"){
+            sigLvl <- 0.1 
+          }
+          else if(input$significanceLevel == "5%"){
+            sigLvl <- 0.05
+          }
+          else{
+            sigLvl <- 0.01
+          }
+          
+          if(input$altHypothesis == "3"){
+            alternative <- "greater"
+          }
+          else if(input$altHypothesis == "2"){
+            alternative <- "two.sided"
+          }
+          else if(input$altHypothesis == "1"){
+            alternative <- "less"
+          }
+        }
+        
+        if(input$samplesSelect == '1'){
+          source('R/OnePropZInt.R')
+          source('R/OnePropZTest.R')
+          print("Inference for One Population Proportion")
+        }
+        else if(input$samplesSelect == '2'){
+          source('R/TwoPropZInt.R')
+          source('R/TwoPropZTest.R')
+          print("Inference for the difference between two Population Proportions")
+        }
+      }
+      
       ) # renderInference
     })
     
