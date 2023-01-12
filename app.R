@@ -163,41 +163,32 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                      inline = TRUE,
                                      width = "1000px"),
 
-                        # conditionalPanel(
-                        #   condition = "input.popuParameter == 'Population Mean' || input.popuParameter == 'Population Proportion'",
-                        #     
-                          # radioButtons(inputId = "samplesSelect",
-                          #              label = strong("Number of samples"),
-                          #              choiceValues = list("1", "2"),
-                          #              choiceNames = list("1", "2"),
-                          #              selected = character(0), #"1", # 
-                          #              inline = TRUE,
-                          #              width = "1000px"),
-                        # ),
+                        conditionalPanel(
+                          condition = "input.popuParameter == 'Population Mean' || input.popuParameter == 'Population Proportion'",
+
+                        radioButtons(inputId = "samplesSelect",
+                                     label = strong("Number of samples"),
+                                     choiceValues = list("1", "2"),
+                                     choiceNames = list("1", "2"),
+                                     selected = character(0), #"1", #
+                                     inline = TRUE,
+                                     width = "1000px"),
+                        ),
                         
                        conditionalPanel(
                           condition = "input.popuParameter == 'Population Mean'",
 
-                          radioButtons(inputId = "samplesSelect",
-                                       label = strong("Number of samples"),
-                                       choiceValues = list("1", "2"),
-                                       choiceNames = list("1", "2"),
-                                       selected = character(0), #"1", # 
-                                       inline = TRUE,
-                                       width = "1000px"),
-                          
-                          conditionalPanel(
-                            condition = "input.samplesSelect == '1' || input.samplesSelect == '2'",
-                            
-                          
-                            radioButtons(inputId = "dataAvailability",
-                                         label = strong("Data Availability"),
-                                         choiceValues = list("Summarized Data", "Enter Raw Data"),
-                                         choiceNames = list("Summarized Data", "Enter Raw Data"),
-                                         selected = character(0), # "Summarized Data",
-                                         inline = TRUE,
-                                         width = "1000px"),
-                          ),
+                            conditionalPanel(
+                              condition = "input.samplesSelect == '1' || input.samplesSelect == '2'",
+                              
+                              radioButtons(inputId = "dataAvailability",
+                                           label = strong("Data Availability"),
+                                           choiceValues = list("Summarized Data", "Enter Raw Data"),
+                                           choiceNames = list("Summarized Data", "Enter Raw Data"),
+                                           selected = character(0), # "Summarized Data",
+                                           inline = TRUE,
+                                           width = "1000px"),
+                            ),
                         
                             conditionalPanel(
                               condition = "input.samplesSelect == '1' && input.dataAvailability == 'Summarized Data'",
@@ -431,37 +422,39 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                        conditionalPanel(
                          condition = "input.popuParameter == 'Population Proportion'",
 
-                         numericInput(inputId = "numSuccesses", 
-                                      label = strong("Number of Successes (x)"),
-                                      value = 1087, min = 0, step = 1),
+                         conditionalPanel(
+                           condition = "input.samplesSelect == '1'",
+                           
+                           numericInput(inputId = "numSuccesses", 
+                                        label = strong("Number of Successes (x)"),
+                                        value = 1087, min = 0, step = 1),
+                           
+                           numericInput(inputId = "numTrails", 
+                                        label = strong("Number of Trials (n)"),
+                                        value = 1430, min = 1, step = 1),
+                          ),
                          
-                         numericInput(inputId = "numTrails", 
-                                      label = strong("Number of Trials (n)"),
-                                      value = 1430, min = 1, step = 1),
-
+                         conditionalPanel(
+                           condition = "input.samplesSelect == '2'",
                          
-                         
-                         
-                         numericInput(inputId = "numSuccesses", 
-                                      label = strong("Number of Successes 1 (x1)"),
-                                      value = 174, min = 0, step = 1),
-                         
-                         numericInput(inputId = "numTrails", 
-                                      label = strong("Number of Trials 1 (n1)"),
-                                      value = 300, min = 1, step = 1),
-                         
-                         numericInput(inputId = "numSuccesses", 
-                                      label = strong("Number of Successes 2 (x2)"),
-                                      value = 111, min = 0, step = 1),
-                         
-                         numericInput(inputId = "numTrails", 
-                                      label = strong("Number of Trials 2 (n2)"),
-                                      value = 300, min = 1, step = 1),
-                         
+                           numericInput(inputId = "numSuccesses", 
+                                        label = strong("Number of Successes 1 (x1)"),
+                                        value = 174, min = 0, step = 1),
+                           
+                           numericInput(inputId = "numTrails", 
+                                        label = strong("Number of Trials 1 (n1)"),
+                                        value = 300, min = 1, step = 1),
+                           
+                           numericInput(inputId = "numSuccesses", 
+                                        label = strong("Number of Successes 2 (x2)"),
+                                        value = 111, min = 0, step = 1),
+                           
+                           numericInput(inputId = "numTrails", 
+                                        label = strong("Number of Trials 2 (n2)"),
+                                        value = 300, min = 1, step = 1),
+                         ),
                        ),
                        
-                       
-                        
                         actionButton(inputId = "goInference", label = "Calculate",
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
                         actionButton("resetInference", label = "Reset Values",
@@ -539,6 +532,9 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                             
                             uiOutput("renderInference"),
                             
+                        conditionalPanel(
+                          condition = "input.popuParameter == 'Population Mean'",
+                              
                             conditionalPanel(
                               condition = "input.samplesSelect == '1'",
                               
@@ -667,7 +663,6 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                   condition = "input.dataAvailability == 'Summarized Data'",
 
                                   uiOutput('twoSampHT'),
-                                  
                                   br(),
                                 ),
 
@@ -675,14 +670,14 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                   condition = "input.dataAvailability == 'Enter Raw Data'",
 
                                   uiOutput('twoSampHTRaw'),
-                                  
                                   br(),
                                 )
                               )
                             ) # condition = "input.samplesSelect == '2'"
-                          ) # input.dropDownMenu == 'Statistical Inference'
-                        ) # inferenceMP
-                      ) # mainPanel
+                          ) # condition = "input.popuParameter == 'Population Mean'"
+                        ) # input.dropDownMenu == 'Statistical Inference'
+                      ) # inferenceMP
+                    ) # mainPanel
                   ), # sidebarLayout
                 ), # Methods Panel
                   
@@ -1554,6 +1549,7 @@ server <- function(input, output) {
             } # input$inferenceType == 'Hypothesis Testing'
           } # input$dataAvailability == 'Enter Raw Data'
         } # samplesSelect == '2'
+        # input$popuParameter
       ) # renderInference
     })
     
