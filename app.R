@@ -464,10 +464,21 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                       conditionalPanel(
                         condition = "input.dropDownMenu == 'Regression and Correlation'",
                         
-                        textAreaInput("x", label = strong("x (Independent Variable)"), value = "87, 92, 100, 103, 107, 110, 112, 127", placeholder = "Enter values separated by a comma with decimals as points", rows = 6),
-                        textAreaInput("y", label = strong("y (Dependent Variable)"), value = "39, 47, 60, 50, 60, 65, 115, 118", placeholder = "Enter values separated by a comma with decimals as points", rows = 6),
+                        # textAreaInput("x", label = strong("x (Independent Variable)"), value = "87, 92, 100, 103, 107, 110, 112, 127", placeholder = "Enter values separated by a comma with decimals as points", rows = 6),
+                        # textAreaInput("y", label = strong("y (Dependent Variable)"), value = "39, 47, 60, 50, 60, 65, 115, 118", placeholder = "Enter values separated by a comma with decimals as points", rows = 6),
+                         
+                        textAreaInput("x", label = strong("x (Independent Variable)"), value = "635, 644, 711, 708, 836, 820, 810, 870, 856, 923", placeholder = "Enter values separated by a comma with decimals as points", rows = 6),
+                        textAreaInput("y", label = strong("y (Dependent Variable)"), value = "100, 93, 88, 84, 77, 75, 74, 63, 57, 55", placeholder = "Enter values separated by a comma with decimals as points", rows = 6),
                         
                         radioButtons(inputId = "regressioncorrelation", label = strong("Analyze Data Using"), selected = c("Simple Linear Regression"), choices = c("Simple Linear Regression", "Correlation Coefficient"), inline = TRUE),
+                        
+                        conditionalPanel(
+                          condition = "input.regressioncorrelation == 'Correlation Coefficient'",
+                          
+                          checkboxInput("pearson", "Pearson's Product-Moment Correlation (r)"),
+                          checkboxInput("kendall", "Kendall's Rank Correlation (tau)"),
+                          checkboxInput("spearman", "Spearman's Rank Correlation (rho)"),
+                        ),
                         
                         actionButton(inputId = "goRegression", label = "Calculate",
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
@@ -676,7 +687,40 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                             ) # condition = "input.samplesSelect == '2'"
                           ) # condition = "input.popuParameter == 'Population Mean'"
                         ) # input.dropDownMenu == 'Statistical Inference'
-                      ) # inferenceMP
+                      ), # inferenceMP
+                      
+                      div(id = "RegCorMP",
+                          
+                          conditionalPanel(
+                            condition = "input.regressioncorrelation == 'Simple Linear Regression'",
+
+                            verbatimTextOutput("linearRegression"),
+                            
+                            plotOutput("scatterplot", width = "400px"),
+                          ),
+                          
+                          conditionalPanel(
+                            condition = "input.regressioncorrelation == 'Correlation Coefficient'",
+
+                            conditionalPanel(
+                              condition = "input.pearson == 1",
+                              
+                              verbatimTextOutput("Pearson"),
+                            ),
+                            
+                            conditionalPanel(
+                              condition = "input.kendall == 1",
+                              
+                              verbatimTextOutput("Kendall"),
+                            ),
+                            
+                            conditionalPanel(
+                              condition = "input.spearman == 1",
+                              
+                              verbatimTextOutput("Spearman"),
+                            ),
+                          )
+                      ) # RegCorMP
                     ) # mainPanel
                   ), # sidebarLayout
                 ), # Methods Panel
@@ -1607,8 +1651,48 @@ server <- function(input, output) {
           print("Inference for the difference between two Population Proportions")
         }
       }
+     ) # renderInference
+    }) # input$goInference
+    
+    observeEvent(input$goRegression, {
       
-      ) # renderInference
+      datx <- createNumLst(input$x)
+      daty <- createNumLst(input$y)
+      
+      if(anyNA(datx) | length(datx)<2){
+        "Invalid input or not enough observations"
+      }
+      else{
+        datx <- createNumLst(input$x)
+        daty <- createNumLst(input$y)
+        
+        output$linearRegression <- renderPrint({ 
+          summary(lm(daty ~ datx))
+          #lm(daty ~ datx)$coefficients
+        })
+        
+        output$scatterplot <- renderPlot(
+          plot(datx, daty, main = "Scatter Plot", xlab = "Independent Variable, x (units)", ylab = "Dependent Variable, y (units)", pch = 19) +
+            abline(lm(daty ~ datx), col = "blue")
+        )
+        
+        if(input$regressioncorrelation == "Correlation Coefficient")
+        {
+          output$Pearson <- renderPrint({ 
+            cor.test(datx, daty, method = "pearson")$estimate
+          })
+
+          output$Kendall <- renderPrint({ 
+            cor.test(datx, daty, method = "kendall")$estimate
+          })
+
+          output$Spearman <- renderPrint({ 
+            cor.test(datx, daty, method = "spearman")$estimate
+          })
+        }
+        
+        df <- data.frame(datx, daty)
+      }
     })
     
     # Descriptive Statistics
@@ -1664,6 +1748,17 @@ server <- function(input, output) {
     observeEvent(input$resetInference, {
       hide(id = "inferenceMP")
       shinyjs::reset("inferencePanel")
+    })
+    
+    # Regression and Correlation
+    
+    observeEvent(input$goRegression, {
+      show(id = "RegCorMP")
+    })
+    
+    observeEvent(input$resetAllRC, {
+      hide(id = "RegCorMP")
+      shinyjs::reset("RegCorMP")
     })
 }
   
