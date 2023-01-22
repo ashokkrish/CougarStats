@@ -1,4 +1,5 @@
 library(bslib)
+library(car)
 library(dplyr)
 library(DT)
 library(ggplot2)
@@ -29,12 +30,13 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                         inputId = "dropDownMenu",
                         label = strong("Choose Statistical Topic"),
                         choices = c("Descriptive Statistics", "Probability Distributions", "Statistical Inference", "Regression and Correlation"),
-                        selected = NULL, 
+                        selected = "Regression and Correlation", #NULL, 
                       ),
                       
                       conditionalPanel(
+                        id = "descriptiveStatsPanel",
                         condition = "input.dropDownMenu == 'Descriptive Statistics'",
-                        textAreaInput("descriptiveStat", label = strong("Sample"), value = "2.14, 2.09, 2.65, 3.56, 5.55, 5.00, 5.55, 3.09, 6.79", placeholder = "Enter values separated by a comma with decimals as points", rows = 6),
+                        textAreaInput("descriptiveStat", label = strong("Sample"), value = "2.14, 2.09, 2.65, 3.56, 5.55, 5.00, 5.55, 3.09, 6.79", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
 
                         actionButton(inputId = "goDescpStats", label = "Calculate",
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
@@ -438,19 +440,19 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                            condition = "input.samplesSelect == '2'",
                          
                            numericInput(inputId = "numSuccesses", 
-                                        label = strong("Number of Successes 1 (x1)"),
+                                        label = strong("Number of Successes 1 (\\( x_{1}\\))"),
                                         value = 174, min = 0, step = 1),
                            
                            numericInput(inputId = "numTrails", 
-                                        label = strong("Number of Trials 1 (n1)"),
+                                        label = strong("Number of Trials 1 (\\( n_{1}\\))"),
                                         value = 300, min = 1, step = 1),
                            
                            numericInput(inputId = "numSuccesses", 
-                                        label = strong("Number of Successes 2 (x2)"),
+                                        label = strong("Number of Successes 2 (\\( x_{2}\\))"),
                                         value = 111, min = 0, step = 1),
                            
                            numericInput(inputId = "numTrails", 
-                                        label = strong("Number of Trials 2 (n2)"),
+                                        label = strong("Number of Trials 2 (\\( n_{2}\\))"),
                                         value = 300, min = 1, step = 1),
                          ),
                        ),
@@ -464,11 +466,16 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                       conditionalPanel(
                         condition = "input.dropDownMenu == 'Regression and Correlation'",
                         
-                        # textAreaInput("x", label = strong("x (Independent Variable)"), value = "87, 92, 100, 103, 107, 110, 112, 127", placeholder = "Enter values separated by a comma with decimals as points", rows = 6),
-                        # textAreaInput("y", label = strong("y (Dependent Variable)"), value = "39, 47, 60, 50, 60, 65, 115, 118", placeholder = "Enter values separated by a comma with decimals as points", rows = 6),
+                        id = "RegCorPanel",
+                        
+                        # textAreaInput("x", label = strong("x (Independent Variable)"), value = "87, 92, 100, 103, 107, 110, 112, 127", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                        # textAreaInput("y", label = strong("y (Dependent Variable)"), value = "39, 47, 60, 50, 60, 65, 115, 118", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
                          
-                        textAreaInput("x", label = strong("x (Independent Variable)"), value = "635, 644, 711, 708, 836, 820, 810, 870, 856, 923", placeholder = "Enter values separated by a comma with decimals as points", rows = 6),
-                        textAreaInput("y", label = strong("y (Dependent Variable)"), value = "100, 93, 88, 84, 77, 75, 74, 63, 57, 55", placeholder = "Enter values separated by a comma with decimals as points", rows = 6),
+                        # textAreaInput("x", label = strong("x (Independent Variable)"), value = "635, 644, 711, 708, 836, 820, 810, 870, 856, 923", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                        # textAreaInput("y", label = strong("y (Dependent Variable)"), value = "100, 93, 88, 84, 77, 75, 74, 63, 57, 55", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                        
+                        textAreaInput("x", label = strong("x (Independent Variable)"), value = "61, 111, 125, 134, 169, 173, 244", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                        textAreaInput("y", label = strong("y (Dependent Variable)"), value = "4, 14, 15, 18, 21, 26, 38", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
                         
                         radioButtons(inputId = "regressioncorrelation", label = strong("Analyze Data Using"), selected = c("Simple Linear Regression"), choices = c("Simple Linear Regression", "Correlation Coefficient"), inline = TRUE),
                         
@@ -476,8 +483,8 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                           condition = "input.regressioncorrelation == 'Correlation Coefficient'",
                           
                           checkboxInput("pearson", "Pearson's Product-Moment Correlation (r)"),
-                          checkboxInput("kendall", "Kendall's Rank Correlation (tau)"),
-                          checkboxInput("spearman", "Spearman's Rank Correlation (rho)"),
+                          # checkboxInput("kendall", "Kendall's Rank Correlation (tau)"),
+                          # checkboxInput("spearman", "Spearman's Rank Correlation (rho)"),
                         ),
                         
                         actionButton(inputId = "goRegression", label = "Calculate",
@@ -506,6 +513,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                             
                             tableOutput("table"),
                             br(),
+                            
                             plotOutput("boxplotHorizontal")
                           )
                       ),
@@ -694,9 +702,26 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                           conditionalPanel(
                             condition = "input.regressioncorrelation == 'Simple Linear Regression'",
 
-                            verbatimTextOutput("linearRegression"),
+                            #uiOutput('linearRegression'),
+                            #br(),
                             
-                            plotOutput("scatterplot", width = "400px"),
+                            plotOutput("scatterplot", width = "500px"),
+                            br(),
+                            
+                            verbatimTextOutput("linearRegression"),
+                            br(),
+                            
+                            verbatimTextOutput("confintLinReg"),
+                            br(),
+                            
+                            verbatimTextOutput("anovaLinReg"),
+                            br(),
+                            
+                            # verbatimTextOutput("outlierTest"),
+                            # br(),
+
+                            plotOutput("qqplot", width = "500px"),
+                            br(),
                           ),
                           
                           conditionalPanel(
@@ -1654,29 +1679,63 @@ server <- function(input, output) {
      ) # renderInference
     }) # input$goInference
     
+    #------------------------------------------#
+    # Simple Linear Regression and Correlation #
+    #------------------------------------------#
+    
     observeEvent(input$goRegression, {
       
       datx <- createNumLst(input$x)
       daty <- createNumLst(input$y)
       
-      if(anyNA(datx) | length(datx)<2){
-        "Invalid input or not enough observations"
+      if(anyNA(datx) | length(datx)<2 | anyNA(daty) | length(daty)<2){
+        # output$linearRegression <- renderPrint({ 
+        # "Invalid input or not enough observations"
+        #   })
+        print("Invalid input or not enough observations")
       }
       else{
-        datx <- createNumLst(input$x)
-        daty <- createNumLst(input$y)
-        
-        output$linearRegression <- renderPrint({ 
-          summary(lm(daty ~ datx))
-          #lm(daty ~ datx)$coefficients
+
+        if(input$regressioncorrelation == "Simple Linear Regression")
+        {
+          model <- lm(daty ~ datx)
+          stdres <- rstandard(model)
+
+          output$linearRegression <- renderPrint({ 
+
+          summary(model)
+          
+          # lm(daty ~ datx)$coefficients
+          # shapiro.test(model[['residuals']])
+          # leveragePlots(model) # leverage plots
         })
         
-        output$scatterplot <- renderPlot(
-          plot(datx, daty, main = "Scatter Plot", xlab = "Independent Variable, x (units)", ylab = "Dependent Variable, y (units)", pch = 19) +
+        output$confintLinReg <- renderPrint({ 
+          confint(model) # Prints the 95% confidence interval for the regression parameters
+        })
+          
+        output$anovaLinReg <- renderPrint({ 
+            anova(model) # Prints the ANOVA table
+        })
+          
+        output$outlierTest <- renderPrint({ 
+            outlierTest(model) # Prints the Bonferonni p-value for the most extreme observations
+        })
+          
+        output$scatterplot <- renderPlot({
+          plot(datx, daty, main = "Scatter Plot", xlab = "Independent Variable, x", ylab = "Dependent Variable, y", pch = 19) +
             abline(lm(daty ~ datx), col = "blue")
-        )
+        })
         
-        if(input$regressioncorrelation == "Correlation Coefficient")
+        output$qqplot <- renderPlot({
+          qqnorm(stdres, ylab = "Standardized Residuals", xlab = "Normal Scores", main = "Q-Q plot of Standardized Residuals", pch = 19) #+
+          #qqline(stdres)
+          # qqPlot(model, main = "QQ Plot") #qq plot for studentized residuals
+        })
+        
+      }
+
+    else if(input$regressioncorrelation == "Correlation Coefficient")
         {
           output$Pearson <- renderPrint({ 
             cor.test(datx, daty, method = "pearson")$estimate
@@ -1689,13 +1748,16 @@ server <- function(input, output) {
           output$Spearman <- renderPrint({ 
             cor.test(datx, daty, method = "spearman")$estimate
           })
-        }
+        } # Correlation
         
-        df <- data.frame(datx, daty)
+        print(data.frame(datx, daty))
+        #df <- data.frame(datx, daty)
       }
     })
     
-    # Descriptive Statistics
+    #------------------------#
+    # Descriptive Statistics #
+    #------------------------#
     
     observeEvent(input$goDescpStats, {
       show(id = 'descriptiveStatsMP')
@@ -1703,10 +1765,13 @@ server <- function(input, output) {
     
     observeEvent(input$resetAll,{
       hide(id = 'descriptiveStatsMP')
-      shinyjs::reset("sideBar")
+      shinyjs::reset("descriptiveStatsPanel")
+      #shinyjs::reset("sideBar")
     })
     
-    # Binomial Distribution
+    #-----------------------#
+    # Binomial Distribution #
+    #-----------------------#
     
     observeEvent(input$goBinom, {
       show(id = 'probabilityMP')
@@ -1717,7 +1782,9 @@ server <- function(input, output) {
       shinyjs::reset("binomialPanel")
     })
 
-    # Poisson Distribution
+    #----------------------#
+    # Poisson Distribution #
+    #----------------------#
     
     observeEvent(input$goPoisson, {
       show(id = "probabilityMP")
@@ -1728,7 +1795,9 @@ server <- function(input, output) {
       shinyjs::reset("poissonPanel")
     })
     
-    # Normal Distribution
+    #---------------------#
+    # Normal Distribution #
+    #---------------------#
     
     observeEvent(input$goNormal, {
       show(id = "probabilityMP")
@@ -1739,7 +1808,9 @@ server <- function(input, output) {
       shinyjs::reset("normalPanel")
     })
     
-    # Statistical Inference
+    #-----------------------#
+    # Statistical Inference #
+    #-----------------------#
     
     observeEvent(input$goInference, {
       show(id = "inferenceMP")
@@ -1750,7 +1821,9 @@ server <- function(input, output) {
       shinyjs::reset("inferencePanel")
     })
     
-    # Regression and Correlation
+    #----------------------------#
+    # Regression and Correlation #
+    #----------------------------#
     
     observeEvent(input$goRegression, {
       show(id = "RegCorMP")
@@ -1758,7 +1831,7 @@ server <- function(input, output) {
     
     observeEvent(input$resetAllRC, {
       hide(id = "RegCorMP")
-      shinyjs::reset("RegCorMP")
+      shinyjs::reset("RegCorPanel")
     })
 }
   
