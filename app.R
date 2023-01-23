@@ -1753,7 +1753,7 @@ server <- function(input, output) {
         print(data.frame(datx, daty))
         #df <- data.frame(datx, daty)
       }
-    })
+    }) # input$goRegression
     
     #------------------------#
     # Descriptive Statistics #
