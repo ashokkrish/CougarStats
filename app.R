@@ -168,13 +168,13 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                         conditionalPanel(
                           condition = "input.popuParameter == 'Population Mean' || input.popuParameter == 'Population Proportion'",
 
-                        radioButtons(inputId = "samplesSelect",
-                                     label = strong("Number of samples"),
-                                     choiceValues = list("1", "2"),
-                                     choiceNames = list("1", "2"),
-                                     selected = character(0), #"1", #
-                                     inline = TRUE,
-                                     width = "1000px"),
+                          radioButtons(inputId = "samplesSelect",
+                                       label = strong("Number of samples"),
+                                       choiceValues = list("1", "2"),
+                                       choiceNames = list("1", "2"),
+                                       selected = character(0), #"1", #
+                                       inline = TRUE,
+                                       width = "1000px"),
                         ),
                         
                        conditionalPanel(
@@ -1005,20 +1005,23 @@ server <- function(input, output) {
     
     observeEvent(input$goBinom, {
       output$renderProbabilityBinom <- renderUI({
-        binomNum <- input$numTrailsBinom
-        binomSu <- input$successProbBinom
-        binomNumSu <- input$numSuccessesBinom
+        binom_n <- input$numTrailsBinom
+        binom_p <- input$successProbBinom
+        binom_x <- input$numSuccessesBinom
         
         binomValues <- reactive({
           
           req(input$numTrailsBinom, input$successProbBinom, input$numSuccessesBinom)
           
           validate(
-            need(binomNum > 0, "n must be positive"),
-            need(binomSu > 0, "p must be 0 < p < 1"),
-            need(binomSu < 1, "p must be 0 < p < 1"),
-            need(binomNumSu >= 0, "x must be positve"),
-            need(binomNumSu <= input$numTrailsBinom, "Number of successes(n) must be less than or equal to the number of trials(x)")
+            need(binom_n != "", "Enter a value for the number of trials (n)"),
+            need(binom_p != "", "Enter a value for the probability of successes (p)"),
+            need(binom_x != "", "Enter a value for the number of successes (x)"),
+            need(binom_n > 0, "n must be a positive integer"),
+            need(binom_p > 0, "p must be > 0"),
+            need(binom_p < 1, "p must be < 1"),
+            need(binom_x >= 0, "x must be a positve integer"),
+            need(binom_x <= binom_n, "Number of successes(x) must be less than or equal to the number of trials(n)")
           )
         })
         
@@ -1028,34 +1031,34 @@ server <- function(input, output) {
         
         # if(input$calcBinom == 'exact' && input$calcBinom == 'cumulative' && input$calcBinom == 'P(X>x)'){
         #   withMathJax(
-        #     paste0("\\(P(X = \\)","",binomNumSu,"\\()\\)","\\( = \\)","",round(dbinom(binomNumSu,binomNum,binomSu),4)),
+        #     paste0("\\(P(X = \\)","",binom_x,"\\()\\)","\\( = \\)","",round(dbinom(binom_x,binom_n,binom_p),4)),
         #     br(),
-        #     paste0("\\(P(X \\leq \\)","",binomNumSu,"\\()\\)","","\\( = \\)","",round(pbinom(binomNumSu,binomNum,binomSu,lower.tail = TRUE),4)),
+        #     paste0("\\(P(X \\leq \\)","",binom_x,"\\()\\)","","\\( = \\)","",round(pbinom(binom_x,binom_n,binom_p,lower.tail = TRUE),4)),
         #     br(),
-        #     paste0("\\(P(X > \\)","",binomNumSu,"\\()\\)","","\\( = \\)","",round(pbinom(binomNumSu,binomNum,binomSu,lower.tail = FALSE),4))
+        #     paste0("\\(P(X > \\)","",binom_x,"\\()\\)","","\\( = \\)","",round(pbinom(binom_x,binom_n,binom_p,lower.tail = FALSE),4))
         #   )
         # }
         
         if(input$calcBinom == 'exact' && input$numSuccessesBinom <= input$numTrailsBinom && input$numSuccessesBinom >= 0 && input$successProbBinom < 1 && input$successProbBinom > 0 && input$numTrailsBinom > 0){
           withMathJax(
-            paste0("\\(P(X = \\)","",binomNumSu,"\\()\\)","\\( = \\)","",round(dbinom(binomNumSu,binomNum,binomSu),4))
+            paste0("\\(P(X = \\)","",binom_x,"\\()\\)","\\( = \\)","",round(dbinom(binom_x,binom_n,binom_p),4))
           )
         }
         else if(input$calcBinom == 'cumulative' && input$numSuccessesBinom <= input$numTrailsBinom && input$numSuccessesBinom >= 0 && input$successProbBinom < 1 && input$successProbBinom > 0 && input$numTrailsBinom > 0){
           withMathJax(
-            paste0("\\(P(X \\leq \\)","",binomNumSu,"\\()\\)","","\\( = \\)","",round(pbinom(binomNumSu,binomNum,binomSu,lower.tail = TRUE),4)))
+            paste0("\\(P(X \\leq \\)","",binom_x,"\\()\\)","","\\( = \\)","",round(pbinom(binom_x,binom_n,binom_p,lower.tail = TRUE),4)))
         }
         else if(input$calcBinom == 'P(X>x)' && input$numSuccessesBinom <= input$numTrailsBinom && input$numSuccessesBinom >= 0 && input$successProbBinom < 1 && input$successProbBinom > 0 && input$numTrailsBinom > 0){
           withMathJax(
-            paste0("\\(P(X > \\)","",binomNumSu,"\\()\\)","","\\( = \\)","",round(pbinom(binomNumSu,binomNum,binomSu,lower.tail = FALSE),4)))
+            paste0("\\(P(X > \\)","",binom_x,"\\()\\)","","\\( = \\)","",round(pbinom(binom_x,binom_n,binom_p,lower.tail = FALSE),4)))
         }
       })
     })
     
     observeEvent(input$goPoisson, {
       output$renderProbabilityPoisson <- renderUI({
-        poissonAvg <- input$muPoisson
-        numPoisson <- input$xPoisson 
+        poisson_mu <- input$muPoisson
+        poisson_x <- input$xPoisson 
         # aP <- input$aPoisson
         # bP <- input$bPoisson
         
@@ -1064,8 +1067,8 @@ server <- function(input, output) {
           req(input$muPoisson, input$xPoisson)
           
           validate(
-            need(poissonAvg > 0, "Average must be a positive value"),
-            need(numPoisson != "", "Enter a value for number of successes")
+            need(poisson_mu > 0, "Average must be a positive value"),
+            need(poisson_x != "", "Enter a value for the number of successes (x)")
           )
         })
         
@@ -1074,19 +1077,19 @@ server <- function(input, output) {
         })
         
         if(input$calcPoisson == "exact" && input$muPoisson > 0){
-          withMathJax("\\(P(X =  \\)","  ",numPoisson,"\\()\\)", " ","\\(= \\)", round(dpois(numPoisson,poissonAvg),4))
+          withMathJax("\\(P(X =  \\)","  ",poisson_x,"\\()\\)", " ","\\(= \\)", round(dpois(poisson_x,poisson_mu),4))
         }
         else if(input$calcPoisson == "lowerTail" && input$muPoisson > 0){
-          withMathJax("\\(P(X \\leq \\)"," ",numPoisson," ","\\()\\)", " ", "\\( = \\)",round(ppois(numPoisson,poissonAvg,lower.tail = TRUE),4))
+          withMathJax("\\(P(X \\leq \\)"," ",poisson_x," ","\\()\\)", " ", "\\( = \\)",round(ppois(poisson_x,poisson_mu,lower.tail = TRUE),4))
         }
         else if(input$calcPoisson == "upperTail" && input$muPoisson > 0){
           withMathJax(
-            paste0("\\(P(X > \\)", numPoisson, "\\()\\)", " ", "\\( = \\)" , " ", round(ppois(numPoisson, poissonAvg, lower.tail = FALSE), 4))
+            paste0("\\(P(X > \\)", poisson_x, "\\()\\)", " ", "\\( = \\)" , " ", round(ppois(poisson_x, poisson_mu, lower.tail = FALSE), 4))
           )
         }
         # else if(input$calcPoisson == "interval" && input$muPoisson > 0){
         #   withMathJax(
-        #     paste0("\\(P(\\)",aP," ", "\\(\\leq X\\leq \\)", " ", bP, "\\()\\)"," ", "\\( = \\)", " ", ifelse(input$aP > input$bP, "a must be less than or equal to b", round(ppois(input$bP, poissonAvg, lower.tail = TRUE) - ppois(input$aP - 1, poissonAvg, lower.tail = TRUE), 4)))   
+        #     paste0("\\(P(\\)",aP," ", "\\(\\leq X\\leq \\)", " ", bP, "\\()\\)"," ", "\\( = \\)", " ", ifelse(input$aP > input$bP, "a must be less than or equal to b", round(ppois(input$bP, poisson_mu, lower.tail = TRUE) - ppois(input$aP - 1, poisson_mu, lower.tail = TRUE), 4)))   
         #   )
         # }
       })
@@ -1695,47 +1698,45 @@ server <- function(input, output) {
         print("Invalid input or not enough observations")
       }
       else{
-
-        if(input$regressioncorrelation == "Simple Linear Regression")
-        {
-          model <- lm(daty ~ datx)
-          stdres <- rstandard(model)
-
-          output$linearRegression <- renderPrint({ 
-
-          summary(model)
+          if(input$regressioncorrelation == "Simple Linear Regression")
+          {
+            model <- lm(daty ~ datx)
+            stdres <- rstandard(model)
+  
+            output$linearRegression <- renderPrint({ 
+  
+            summary(model)
+            
+            # lm(daty ~ datx)$coefficients
+            # shapiro.test(model[['residuals']])
+            # leveragePlots(model) # leverage plots
+          })
           
-          # lm(daty ~ datx)$coefficients
-          # shapiro.test(model[['residuals']])
-          # leveragePlots(model) # leverage plots
-        })
-        
-        output$confintLinReg <- renderPrint({ 
-          confint(model) # Prints the 95% confidence interval for the regression parameters
-        })
+          output$confintLinReg <- renderPrint({ 
+            confint(model) # Prints the 95% confidence interval for the regression parameters
+          })
+            
+          output$anovaLinReg <- renderPrint({ 
+              anova(model) # Prints the ANOVA table
+          })
+            
+          output$outlierTest <- renderPrint({ 
+              outlierTest(model) # Prints the Bonferonni p-value for the most extreme observations
+          })
+            
+          output$scatterplot <- renderPlot({
+            plot(datx, daty, main = "Scatter Plot", xlab = "Independent Variable, x", ylab = "Dependent Variable, y", pch = 19) +
+              abline(lm(daty ~ datx), col = "blue")
+          })
           
-        output$anovaLinReg <- renderPrint({ 
-            anova(model) # Prints the ANOVA table
-        })
-          
-        output$outlierTest <- renderPrint({ 
-            outlierTest(model) # Prints the Bonferonni p-value for the most extreme observations
-        })
-          
-        output$scatterplot <- renderPlot({
-          plot(datx, daty, main = "Scatter Plot", xlab = "Independent Variable, x", ylab = "Dependent Variable, y", pch = 19) +
-            abline(lm(daty ~ datx), col = "blue")
-        })
-        
-        output$qqplot <- renderPlot({
-          qqnorm(stdres, ylab = "Standardized Residuals", xlab = "Normal Scores", main = "Q-Q plot of Standardized Residuals", pch = 19) #+
-          #qqline(stdres)
-          # qqPlot(model, main = "QQ Plot") #qq plot for studentized residuals
-        })
-        
-      }
+          output$qqplot <- renderPlot({
+            qqnorm(stdres, ylab = "Standardized Residuals", xlab = "Normal Scores", main = "Q-Q plot of Standardized Residuals", pch = 19) #+
+            #qqline(stdres)
+            #qqPlot(model, main = "QQ Plot") #qq plot for studentized residuals
+          })
+        }
 
-    else if(input$regressioncorrelation == "Correlation Coefficient")
+        else if(input$regressioncorrelation == "Correlation Coefficient")
         {
           output$Pearson <- renderPrint({ 
             cor.test(datx, daty, method = "pearson")$estimate
