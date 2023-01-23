@@ -68,7 +68,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
 
                           radioButtons(inputId = "calcBinom", 
                                        label = strong("Probability"),
-                                       choiceValues = list("exact","cumulative","P(X>x)"),
+                                       choiceValues = list("exact","cumulative","upperTail"),
                                        choiceNames = list("\\(P(X = x \\))","\\(P(X \\leq x)\\)","\\(P(X \\gt x)\\)"),
                                        inline = TRUE,
                                        width = '1000px'),
@@ -91,7 +91,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                           
                           radioButtons(inputId = "calcPoisson",
                                        label = strong("Probability"), 
-                                       choiceValues = list("exact","lowerTail", "upperTail"),
+                                       choiceValues = list("exact","cumulative", "upperTail"),
                                        choiceNames = list("\\(P(X = x\\))","\\(P(X \\leq x)\\)","\\(P(X \\gt x)\\)"),
                                        inline = TRUE,
                                        width = "1000px"
@@ -131,7 +131,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                           
                           radioButtons(inputId = "calcNormal",
                                        label = strong("Probability"), 
-                                       choiceValues = list("P(X \\leq x)", "P(X > x)"),
+                                       choiceValues = list("cumulative", "P(X > x)"),
                                        choiceNames = list("\\(P(X \\leq x)\\)", "\\(P(X \\gt x)\\)"),
                                        inline = TRUE,
                                        width = "1000px"
@@ -937,11 +937,14 @@ server <- function(input, output) {
       as.numeric(split)
     }
     
-    # Function to find the mode
+    # Function to find the mode(s)
     Modes <- function(x) {
       ux <- unique(x)
       tab <- tabulate(match(x, ux))
       ux[tab == max(tab)]
+      if (length(ux[tab == max(tab)]) == length(ux)) {return("No mode exists")}
+      else if (length(ux[tab == max(tab)]) == 1) {return(ux[tab == max(tab)])}
+      else if (length(ux[tab == max(tab)]) > 1 && length(ux[tab == max(tab)]) < length(ux)) {return("There are multiple modes")}
     }
     
     observeEvent(input$goDescpStats, {
@@ -970,8 +973,8 @@ server <- function(input, output) {
         row12 <- data.frame(Variable = "Sample Standard Deviation", Value = paste0(round(sd(dat),4)))
         row13 <- data.frame(Variable = "Sample Variance", Value = paste0(round(var(dat),4)))
         row14 <- data.frame(Variable = "Standard Error of the Mean", Value = paste0(round(sd(dat)/sqrt(length(dat)),4)))
-        row15 <- data.frame(Variable = "Check for Outliers Lower", Value = paste(quantile(dat, 0.25) - (1.5*IQR(dat))))
-        row16 <- data.frame(Variable = "Check for Outliers Upper", Value = paste(quantile(dat, 0.75) + (1.5*IQR(dat))))
+        row15 <- data.frame(Variable = "Check for Outliers: Lower Fence", Value = paste(quantile(dat, 0.25) - (1.5*IQR(dat))))
+        row16 <- data.frame(Variable = "Check for Outliers: Upper Fence", Value = paste(quantile(dat, 0.75) + (1.5*IQR(dat))))
         row17 <- data.frame(Variable = "Number of Outliers", Value = paste("In progress"))
         row18 <- data.frame(Variable = "Skewness", Value = paste0(round(skewness(dat),4)))
         row19 <- data.frame(Variable = "Kurtosis", Value = paste0(round(kurtosis(dat),4)))
@@ -1029,28 +1032,16 @@ server <- function(input, output) {
           if(input$probability == 'Binomial') {head(binomValues())}
         })
         
-        # if(input$calcBinom == 'exact' && input$calcBinom == 'cumulative' && input$calcBinom == 'P(X>x)'){
-        #   withMathJax(
-        #     paste0("\\(P(X = \\)","",binom_x,"\\()\\)","\\( = \\)","",round(dbinom(binom_x,binom_n,binom_p),4)),
-        #     br(),
-        #     paste0("\\(P(X \\leq \\)","",binom_x,"\\()\\)","","\\( = \\)","",round(pbinom(binom_x,binom_n,binom_p,lower.tail = TRUE),4)),
-        #     br(),
-        #     paste0("\\(P(X > \\)","",binom_x,"\\()\\)","","\\( = \\)","",round(pbinom(binom_x,binom_n,binom_p,lower.tail = FALSE),4))
-        #   )
-        # }
-        
-        if(input$calcBinom == 'exact' && input$numSuccessesBinom <= input$numTrailsBinom && input$numSuccessesBinom >= 0 && input$successProbBinom < 1 && input$successProbBinom > 0 && input$numTrailsBinom > 0){
-          withMathJax(
-            paste0("\\(P(X = \\)","",binom_x,"\\()\\)","\\( = \\)","",round(dbinom(binom_x,binom_n,binom_p),4))
-          )
-        }
-        else if(input$calcBinom == 'cumulative' && input$numSuccessesBinom <= input$numTrailsBinom && input$numSuccessesBinom >= 0 && input$successProbBinom < 1 && input$successProbBinom > 0 && input$numTrailsBinom > 0){
-          withMathJax(
-            paste0("\\(P(X \\leq \\)","",binom_x,"\\()\\)","","\\( = \\)","",round(pbinom(binom_x,binom_n,binom_p,lower.tail = TRUE),4)))
-        }
-        else if(input$calcBinom == 'P(X>x)' && input$numSuccessesBinom <= input$numTrailsBinom && input$numSuccessesBinom >= 0 && input$successProbBinom < 1 && input$successProbBinom > 0 && input$numTrailsBinom > 0){
-          withMathJax(
-            paste0("\\(P(X > \\)","",binom_x,"\\()\\)","","\\( = \\)","",round(pbinom(binom_x,binom_n,binom_p,lower.tail = FALSE),4)))
+        if(input$numSuccessesBinom <= input$numTrailsBinom && input$numSuccessesBinom >= 0 && input$successProbBinom < 1 && input$successProbBinom > 0 && input$numTrailsBinom > 0){
+            if(input$calcBinom == 'exact'){
+              withMathJax(paste0("\\(P(X = \\)"," ",binom_x,"\\()\\)"," ","\\( = \\)"," ", round(dbinom(binom_x,binom_n,binom_p),4)))
+            }
+            else if(input$calcBinom == 'cumulative'){
+              withMathJax(paste0("\\(P(X \\leq \\)"," ",binom_x,"\\()\\)"," ","\\( = \\)"," ", round(pbinom(binom_x,binom_n,binom_p,lower.tail = TRUE),4)))
+            }
+            else if(input$calcBinom == 'upperTail'){
+              withMathJax(paste0("\\(P(X > \\)"," ",binom_x,"\\()\\)"," ","\\( = \\)"," ", round(pbinom(binom_x,binom_n,binom_p,lower.tail = FALSE),4)))
+            }
         }
       })
     })
@@ -1063,9 +1054,8 @@ server <- function(input, output) {
         # bP <- input$bPoisson
         
         poissonValues <- reactive({
-          
-          req(input$muPoisson, input$xPoisson)
-          
+        req(input$muPoisson, input$xPoisson)
+
           validate(
             need(poisson_mu > 0, "Average must be a positive value"),
             need(poisson_x != "", "Enter a value for the number of successes (x)")
@@ -1076,16 +1066,16 @@ server <- function(input, output) {
           if(input$probability == 'Poisson') {head(poissonValues())}
         })
         
-        if(input$calcPoisson == "exact" && input$muPoisson > 0){
-          withMathJax("\\(P(X =  \\)","  ",poisson_x,"\\()\\)", " ","\\(= \\)", round(dpois(poisson_x,poisson_mu),4))
-        }
-        else if(input$calcPoisson == "lowerTail" && input$muPoisson > 0){
-          withMathJax("\\(P(X \\leq \\)"," ",poisson_x," ","\\()\\)", " ", "\\( = \\)",round(ppois(poisson_x,poisson_mu,lower.tail = TRUE),4))
-        }
-        else if(input$calcPoisson == "upperTail" && input$muPoisson > 0){
-          withMathJax(
-            paste0("\\(P(X > \\)", poisson_x, "\\()\\)", " ", "\\( = \\)" , " ", round(ppois(poisson_x, poisson_mu, lower.tail = FALSE), 4))
-          )
+        if(input$muPoisson > 0 && !is.na(input$muPoisson)){
+          if(input$calcPoisson == "exact"){
+            withMathJax(paste0("\\(P(X = \\)", " ", poisson_x, "\\()\\)", " ", "\\( = \\)", " ", round(dpois(poisson_x,poisson_mu),4)))
+          }
+          else if(input$calcPoisson == "cumulative"){
+            withMathJax(paste0("\\(P(X \\leq \\)", " ", poisson_x, "\\()\\)", " ", "\\( = \\)", " ", round(ppois(poisson_x,poisson_mu,lower.tail = TRUE),4)))
+          }
+          else if(input$calcPoisson == "upperTail"){
+            withMathJax(paste0(paste0("\\(P(X > \\)", " ", poisson_x, "\\()\\)", " " ,"\\(= \\)", " ", round(ppois(poisson_x, poisson_mu, lower.tail = FALSE), 4))))
+          }
         }
         # else if(input$calcPoisson == "interval" && input$muPoisson > 0){
         #   withMathJax(
@@ -1111,15 +1101,13 @@ server <- function(input, output) {
           if(input$probability == 'Normal') {head(normValues())}
         })
         
-        if(input$calcNormal == "P(X \\leq x)" && input$popSD > 0){
-          withMathJax(
-            paste0("\\(P(X \\leq \\)"," ",normX, "\\()\\)"," ", "\\( = \\)"," ", round(pnorm(normX, normMean, normSd),4))
-          )
-        }
-        else if(input$calcNormal == "P(X > x)" && input$popSD > 0){
-          withMathJax(
-            paste0("\\(P(X > \\)", " ",normX,"\\()\\)", " ", "\\( = \\)", " ", round(1 - pnorm(normX, normMean, normSd),4))
-          )
+        if(input$popSD > 0 && !is.na(input$popSD)){
+          if(input$calcNormal == "cumulative"){
+            withMathJax(paste0("\\(P(X \\leq \\)", " ", normX, "\\()\\)", " ", "\\( = \\)", " ", round(pnorm(normX, normMean, normSd, lower.tail = TRUE),4)))
+          }
+          else if(input$calcNormal == "P(X > x)"){
+            withMathJax(paste0("\\(P(X > \\)", " ", normX, "\\()\\)", " ", "\\( = \\)", " ", round(pnorm(normX, normMean, normSd, lower.tail = FALSE),4)))
+          }
         }
       })
     })
