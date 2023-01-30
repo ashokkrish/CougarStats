@@ -758,16 +758,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                            h3("Developement Team", style= "font-weight:bold"),
                            
                            br(),
-                           
-                           p("This interactive Shiny app was developed as a part of a COMP 5690 Senior Computer Science Project in Fall 2022"), 
-                           p(span("Lead Developer", style = "font-weight:bold")),
-                           p("Crystal Wai,"), 
-                           p("Undergraduate Student,"), 
-                           p("Mount Royal University,"), 
-                           p("Calgary, AB, CANADA"), 
-                           
-                           br(), 
-                           
+
                            p(span("Ashok Krishnamurthy, PhD", style= "font-weight:bold")),
                            p("Project PI,"),
                            p("Associate Professor, Department of Mathematics and Computing,"),
@@ -777,10 +768,20 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                            
                            br(),
                            
+                           p(span("Lead Developer", style = "font-weight:bold")),
+                           p("Crystal Wai,"), 
+                           p("Undergraduate Student,"), 
+                           p("Mount Royal University,"), 
+                           p("Calgary, AB, CANADA"), 
+                           
+                           br(), 
+                           
                            p("Email:",a("akrishnamurthy@mtroyal.ca", href = "mailto:akrishnamurthy@mtroyal.ca")), 
                            p("Website:", a(href = "https://bit.ly/2YKrXjX","https://bit.ly/2YKrXjX", target = "_blank")),
-                           p("GitHub:", a(href = "https://github.com/cwai097/COMP5690","https://github.com/cwai097/COMP5690", target = "_blank")),
+                           p("GitHub:", a(href = "https://github.com/ashokkrish/COMP5690","https://github.com/ashokkrish/COMP5690", target = "_blank")),
+                           br(),
                            
+                           p("An earlier version of this interactive Shiny app was developed as a part of a COMP 5690 Senior Computer Science Project in Fall 2022"), 
                            br(),
 
                            p("This interactive R Shiny app is maintained by Dr. Ashok Krishnamurthy. We welcome questions, insights, and feedback."),
