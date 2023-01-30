@@ -471,11 +471,11 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                         # textAreaInput("x", label = strong("x (Independent Variable)"), value = "87, 92, 100, 103, 107, 110, 112, 127", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
                         # textAreaInput("y", label = strong("y (Dependent Variable)"), value = "39, 47, 60, 50, 60, 65, 115, 118", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
                          
-                        # textAreaInput("x", label = strong("x (Independent Variable)"), value = "635, 644, 711, 708, 836, 820, 810, 870, 856, 923", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
-                        # textAreaInput("y", label = strong("y (Dependent Variable)"), value = "100, 93, 88, 84, 77, 75, 74, 63, 57, 55", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                        textAreaInput("x", label = strong("x (Independent Variable)"), value = "635, 644, 711, 708, 836, 820, 810, 870, 856, 923", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                        textAreaInput("y", label = strong("y (Dependent Variable)"), value = "100, 93, 88, 84, 77, 75, 74, 63, 57, 55", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
                         
-                        textAreaInput("x", label = strong("x (Independent Variable)"), value = "61, 111, 125, 134, 169, 173, 244", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
-                        textAreaInput("y", label = strong("y (Dependent Variable)"), value = "4, 14, 15, 18, 21, 26, 38", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                        # textAreaInput("x", label = strong("x (Independent Variable)"), value = "61, 111, 125, 134, 169, 173, 244", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                        # textAreaInput("y", label = strong("y (Dependent Variable)"), value = "4, 14, 15, 18, 21, 26, 38", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
                         
                         radioButtons(inputId = "regressioncorrelation", label = strong("Analyze Data Using"), selected = c("Simple Linear Regression"), choices = c("Simple Linear Regression", "Correlation Coefficient"), inline = TRUE),
                         
@@ -730,20 +730,24 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                             conditionalPanel(
                               condition = "input.pearson == 1",
                               
-                              verbatimTextOutput("Pearson"),
+                              verbatimTextOutput("PearsonEstimate"),
+                              
+                              verbatimTextOutput("PearsonCorTest"),
+                              
+                              verbatimTextOutput("PearsonConfInt"),
                             ),
                             
-                            conditionalPanel(
-                              condition = "input.kendall == 1",
-                              
-                              verbatimTextOutput("Kendall"),
-                            ),
-                            
-                            conditionalPanel(
-                              condition = "input.spearman == 1",
-                              
-                              verbatimTextOutput("Spearman"),
-                            ),
+                            # conditionalPanel(
+                            #   condition = "input.kendall == 1",
+                            #   
+                            #   verbatimTextOutput("Kendall"),
+                            # ),
+                            # 
+                            # conditionalPanel(
+                            #   condition = "input.spearman == 1",
+                            #   
+                            #   verbatimTextOutput("Spearman"),
+                            # ),
                           )
                       ) # RegCorMP
                     ) # mainPanel
@@ -1726,17 +1730,24 @@ server <- function(input, output) {
 
         else if(input$regressioncorrelation == "Correlation Coefficient")
         {
-          output$Pearson <- renderPrint({ 
+          output$PearsonEstimate <- renderPrint({ 
             cor.test(datx, daty, method = "pearson")$estimate
           })
-
-          output$Kendall <- renderPrint({ 
-            cor.test(datx, daty, method = "kendall")$estimate
+          
+          output$PearsonCorTest <- renderPrint({ 
+            cor.test(datx, daty, method = "pearson")
           })
 
-          output$Spearman <- renderPrint({ 
-            cor.test(datx, daty, method = "spearman")$estimate
+          output$PearsonConfInt <- renderPrint({ 
+            cor.test(datx, daty, method = "pearson")$conf.int
           })
+          # output$Kendall <- renderPrint({ 
+          #   cor.test(datx, daty, method = "kendall")$estimate
+          # })
+          # 
+          # output$Spearman <- renderPrint({ 
+          #   cor.test(datx, daty, method = "spearman")$estimate
+          # })
         } # Correlation
         
         print(data.frame(datx, daty))
