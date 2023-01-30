@@ -730,11 +730,11 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                             conditionalPanel(
                               condition = "input.pearson == 1",
                               
-                              verbatimTextOutput("PearsonEstimate"),
+                              #verbatimTextOutput("PearsonEstimate"),
                               
                               verbatimTextOutput("PearsonCorTest"),
                               
-                              verbatimTextOutput("PearsonConfInt"),
+                              #verbatimTextOutput("PearsonConfInt"),
                             ),
                             
                             # conditionalPanel(
