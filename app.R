@@ -4,11 +4,14 @@ library(dplyr)
 library(DT)
 library(ggplot2)
 library(moments)
+library(nortest)
 library(shiny)
 library(shinythemes)
 library(shinyjs)
 library(shinyvalidate)
 library(tinytex)
+
+options(scipen = 999) # options(scipen = 0)
 
 render <- "
 {
@@ -702,9 +705,6 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                           conditionalPanel(
                             condition = "input.regressioncorrelation == 'Simple Linear Regression'",
 
-                            #uiOutput('linearRegression'),
-                            #br(),
-                            
                             plotOutput("scatterplot", width = "500px"),
                             br(),
                             
@@ -717,11 +717,30 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                             verbatimTextOutput("anovaLinReg"),
                             br(),
                             
-                            # verbatimTextOutput("outlierTest"),
-                            # br(),
+                            #----------------------------------#
+                            # Tests for normality of residuals #
+                            #----------------------------------#
+                            
+                            verbatimTextOutput("AndersonDarlingTest"),
+                            br(),
+                            
+                            verbatimTextOutput("KolmogorovSmirnovTest"),
+                            br(),
+                            
+                            verbatimTextOutput("ShapiroTest"),
+                            br(),
 
+                            #-----------------------------#
+                            # Plots for Residual Analysis #
+                            #-----------------------------#
+                            
                             plotOutput("qqplot", width = "500px"),
                             br(),
+                            
+                            plotOutput("moreplots", width = "500px"),
+                            br(),
+                            
+                            # verbatimTextOutput("outlierTest"),
                           ),
                           
                           conditionalPanel(
@@ -730,11 +749,13 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                             conditionalPanel(
                               condition = "input.pearson == 1",
                               
-                              #verbatimTextOutput("PearsonEstimate"),
+                              verbatimTextOutput("PearsonEstimate"),
+                              br(),
                               
                               verbatimTextOutput("PearsonCorTest"),
+                              br(),
                               
-                              #verbatimTextOutput("PearsonConfInt"),
+                              verbatimTextOutput("PearsonConfInt"),
                             ),
                             
                             # conditionalPanel(
@@ -1696,13 +1717,9 @@ server <- function(input, output) {
             model <- lm(daty ~ datx)
             stdres <- rstandard(model)
   
-            output$linearRegression <- renderPrint({ 
+          output$linearRegression <- renderPrint({ 
   
             summary(model)
-            
-            # lm(daty ~ datx)$coefficients
-            # shapiro.test(model[['residuals']])
-            # leveragePlots(model) # leverage plots
           })
           
           output$confintLinReg <- renderPrint({ 
@@ -1712,21 +1729,51 @@ server <- function(input, output) {
           output$anovaLinReg <- renderPrint({ 
               anova(model) # Prints the ANOVA table
           })
-            
-          output$outlierTest <- renderPrint({ 
-              outlierTest(model) # Prints the Bonferonni p-value for the most extreme observations
-          })
-            
+
           output$scatterplot <- renderPlot({
             plot(datx, daty, main = "Scatter Plot", xlab = "Independent Variable, x", ylab = "Dependent Variable, y", pch = 19) +
               abline(lm(daty ~ datx), col = "blue")
           })
           
           output$qqplot <- renderPlot({
-            qqnorm(stdres, ylab = "Standardized Residuals", xlab = "Normal Scores", main = "Q-Q plot of Standardized Residuals", pch = 19) #+
+            #qqnorm(stdres, ylab = "Residuals", xlab = "Z Scores", main = "Q-Q plot of Standardized Residuals", pch = 19) #+
             #qqline(stdres)
-            #qqPlot(model, main = "QQ Plot") #qq plot for studentized residuals
+            qqPlot(model$residuals, main = "Q-Q Plot", xlab = "Z Scores",  ylab = "Residuals", pch = 19) #Q-Q plot for residuals
           })
+
+          #----------------------------------#
+          # Tests for normality of residuals #
+          #----------------------------------#
+          
+          # Anderson-Darling Normality Test 
+          output$AndersonDarlingTest <- renderPrint({ 
+            ad.test(model$residuals)
+          })
+          
+          # Kolmogorov-Smirnov Normality Test 
+          output$KolmogorovSmirnovTest <- renderPrint({ 
+            ks.test(model$residuals, "pnorm")
+          })
+          
+          # Shapiro-Wilk Normality Test 
+          output$ShapiroTest <- renderPrint({ 
+            shapiro.test(model$residuals) 
+          })
+          
+          output$moreplots <- renderPlot({
+            par(mfrow = c(2,2))
+            plot(model, which=1:4, pch = 19)
+          })
+          
+          # output$outlierTest <- renderPrint({ 
+          #   outlierTest(model) # Prints the Bonferonni p-value for the most extreme observations
+          # })
+          
+          # output$residversusfittedlot <- renderPlot({
+          #   #plot(fitted(reg.model), resid(reg.model), pch = 19, xlab = "Fitted Values", ylab = "Residuals", main = "Residuals vs Fitted")
+          #   #abline(h = 0, col = "red")
+          #   # leveragePlots(model) # leverage plots
+          # })
         }
 
         else if(input$regressioncorrelation == "Correlation Coefficient")
@@ -1751,8 +1798,9 @@ server <- function(input, output) {
           # })
         } # Correlation
         
-        print(data.frame(datx, daty))
-        #df <- data.frame(datx, daty)
+        df <- data.frame(datx, daty, datx*daty, datx^2, daty^2)
+        names(df) <- c("X", "Y", "XY", "X2", "Y2")
+        print(df)
       }
     }) # input$goRegression
     
