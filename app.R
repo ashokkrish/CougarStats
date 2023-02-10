@@ -64,10 +64,6 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                           numericInput(inputId = "successProbBinom", 
                                        label = strong("Probability of Success (p)"),
                                        value = 0.29, min = 0, max = 1, step = 0.00001),
-                          
-                          numericInput(inputId = "numSuccessesBinom", 
-                                       label = strong("Number of Successes (x)"),
-                                       value = 3, min = 0, step = 1),
 
                           radioButtons(inputId = "calcBinom", 
                                        label = strong("Probability"),
@@ -75,6 +71,10 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                        choiceNames = list("\\(P(X = x \\))","\\(P(X \\leq x)\\)","\\(P(X \\gt x)\\)"),
                                        inline = TRUE,
                                        width = '1000px'),
+
+                          numericInput(inputId = "numSuccessesBinom", 
+                                       label = strong("Number of Successes (x)"),
+                                       value = 3, min = 0, step = 1),
                           
                           actionButton(inputId = "goBinom", label = "Calculate",
                                        style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
@@ -88,17 +88,29 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                           
                           numericInput("muPoisson", label = strong("Average (\\( \\mu\\))"),
                                        value = 4),
+
+                          radioButtons(inputId = "calcPoisson",
+                                       label = strong("Probability"),
+                                       choiceValues = list("exact","cumulative","greaterThanEqual", "upperTail", "lessThan", "twoInputprob"),
+                                       choiceNames = list("\\(P(X = x \\))","\\(P(X \\leq x)\\)","\\(P(X \\ge x)\\)", "\\(P(X \\gt x)\\)", "\\(P(X < x)\\)", "\\(P(x_1 \\leq X \\leq x_2)\\)"),
+                                       inline = FALSE,
+                                       width = '1000px'),
                           
                           numericInput("xPoisson", label = strong("Number of Successes (x)"),
                                        value = 3, min = 0, step = 1),
                           
-                          radioButtons(inputId = "calcPoisson",
-                                       label = strong("Probability"), 
-                                       choiceValues = list("exact","cumulative", "upperTail"),
-                                       choiceNames = list("\\(P(X = x\\))","\\(P(X \\leq x)\\)","\\(P(X \\gt x)\\)"),
-                                       inline = TRUE,
-                                       width = "1000px"
-                          ),
+                          # radioButtons(inputId = "calcPoisson",
+                          #              label = strong("Probability"), 
+                          #              choiceValues = list("exact","cumulative", "upperTail"),
+                          #              choiceNames = list("\\(P(X = x\\))","\\(P(X \\leq x)\\)","\\(P(X \\gt x)\\)"),
+                          #              inline = TRUE,
+                          #              width = "1000px"
+                          # ),
+                          
+                          # checkboxInput(inputId = "probDistTable",
+                          #               label = strong("Probability Distribution Table"),
+                          #               value = FALSE,
+                          #               width = NULL),
                           
                           # conditionalPanel(
                           #   condition = "input.calcPoisson = 'interval'",
@@ -127,18 +139,17 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                           numericInput(inputId = "popSD",
                                        label = strong("Population Standard Deviation (\\( \\sigma\\))"),
                                        value = 1, min = 0, step = 0.00001),
+
+                          radioButtons(inputId = "calcNormal",
+                                       label = strong("Probability"), 
+                                       choiceValues = list("cumulative", "P(X > x)", "betweenNormal"),
+                                       choiceNames = list("\\(P(X \\leq x)\\)", "\\(P(X \\gt x)\\)", "\\(P(x_1 \\leq X \\leq x_2)\\)"),
+                                       inline = TRUE,
+                                       width = "1000px"),
                           
                           numericInput(inputId = "xValue",
                                        label = strong("x"),
                                        value = 0, step = 0.00001),
-                          
-                          radioButtons(inputId = "calcNormal",
-                                       label = strong("Probability"), 
-                                       choiceValues = list("cumulative", "P(X > x)"),
-                                       choiceNames = list("\\(P(X \\leq x)\\)", "\\(P(X \\gt x)\\)"),
-                                       inline = TRUE,
-                                       width = "1000px"
-                          ),
                           
                           actionButton(inputId = "goNormal", label = "Calculate",
                                        style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
@@ -482,6 +493,12 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                         
                         radioButtons(inputId = "regressioncorrelation", label = strong("Analyze Data Using"), selected = c("Simple Linear Regression"), choices = c("Simple Linear Regression", "Correlation Coefficient"), inline = TRUE),
                         
+                        # conditionalPanel(
+                        #   condition = "input.regressioncorrelation == 'Simple Linear Regression'",
+                        #   
+                        #   checkboxInput("scatterPlot", "Scatterplot of x versus y"),
+                        # ),
+                        
                         conditionalPanel(
                           condition = "input.regressioncorrelation == 'Correlation Coefficient'",
                           
@@ -701,45 +718,53 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                       ), # inferenceMP
                       
                       div(id = "RegCorMP",
-                          
+
                           conditionalPanel(
                             condition = "input.regressioncorrelation == 'Simple Linear Regression'",
 
-                            plotOutput("scatterplot", width = "500px"),
-                            br(),
+                            tabsetPanel(id = 'tabSet',
+                                tabPanel(id = "SLR", title = "Simple Linear Regression",
+                                     plotOutput("scatterplot", width = "500px"),
+                                     br(),
+                                     
+                                     verbatimTextOutput("linearRegression"),
+                                     br(),
+                                     
+                                     verbatimTextOutput("confintLinReg"),
+                                     br(),
+                                     
+                                     verbatimTextOutput("anovaLinReg"),
+                                     #br(),
+                                 ),
+                                 
+                                tabPanel(id = "normality", title = "Normality of Residuals",
+                                         #----------------------------------#
+                                         # Tests for normality of residuals #
+                                         #----------------------------------#
+                                         
+                                         verbatimTextOutput("AndersonDarlingTest"),
+                                         br(),
+                                         
+                                         verbatimTextOutput("KolmogorovSmirnovTest"),
+                                         br(),
+                                         
+                                         verbatimTextOutput("ShapiroTest"),
+                                         #br(),
+                                ),
+                                
+                                 tabPanel(id = "resid", title = "Residual Plots",
+                                    #-----------------------------#
+                                    # Plots for Residual Analysis #
+                                    #-----------------------------#
+                                    
+                                    plotOutput("qqplot", width = "500px"),
+                                    #br(),
+                                    
+                                    plotOutput("moreplots", width = "500px"),
+                                    #br(),
+                                ),
                             
-                            verbatimTextOutput("linearRegression"),
-                            br(),
-                            
-                            verbatimTextOutput("confintLinReg"),
-                            br(),
-                            
-                            verbatimTextOutput("anovaLinReg"),
-                            br(),
-                            
-                            #----------------------------------#
-                            # Tests for normality of residuals #
-                            #----------------------------------#
-                            
-                            verbatimTextOutput("AndersonDarlingTest"),
-                            br(),
-                            
-                            verbatimTextOutput("KolmogorovSmirnovTest"),
-                            br(),
-                            
-                            verbatimTextOutput("ShapiroTest"),
-                            br(),
-
-                            #-----------------------------#
-                            # Plots for Residual Analysis #
-                            #-----------------------------#
-                            
-                            plotOutput("qqplot", width = "500px"),
-                            br(),
-                            
-                            plotOutput("moreplots", width = "500px"),
-                            br(),
-                            
+                                #selected ="SLR"
                             # verbatimTextOutput("outlierTest"),
                           ),
                           
@@ -769,7 +794,8 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                             #   
                             #   verbatimTextOutput("Spearman"),
                             # ),
-                          )
+                          ),
+                        )
                       ) # RegCorMP
                     ) # mainPanel
                   ), # sidebarLayout
@@ -1715,10 +1741,14 @@ server <- function(input, output) {
           if(input$regressioncorrelation == "Simple Linear Regression")
           {
             model <- lm(daty ~ datx)
-            stdres <- rstandard(model)
+           #rstandard(model)
   
+          output$scatterplot <- renderPlot({
+            plot(datx, daty, main = "Scatter Plot", xlab = "Independent Variable, x", ylab = "Dependent Variable, y", pch = 19) +
+              abline(lm(daty ~ datx), col = "blue")
+          })
+            
           output$linearRegression <- renderPrint({ 
-  
             summary(model)
           })
           
@@ -1728,17 +1758,6 @@ server <- function(input, output) {
             
           output$anovaLinReg <- renderPrint({ 
               anova(model) # Prints the ANOVA table
-          })
-
-          output$scatterplot <- renderPlot({
-            plot(datx, daty, main = "Scatter Plot", xlab = "Independent Variable, x", ylab = "Dependent Variable, y", pch = 19) +
-              abline(lm(daty ~ datx), col = "blue")
-          })
-          
-          output$qqplot <- renderPlot({
-            #qqnorm(stdres, ylab = "Residuals", xlab = "Z Scores", main = "Q-Q plot of Standardized Residuals", pch = 19) #+
-            #qqline(stdres)
-            qqPlot(model$residuals, main = "Q-Q Plot", xlab = "Z Scores",  ylab = "Residuals", pch = 19) #Q-Q plot for residuals
           })
 
           #----------------------------------#
@@ -1758,6 +1777,12 @@ server <- function(input, output) {
           # Shapiro-Wilk Normality Test 
           output$ShapiroTest <- renderPrint({ 
             shapiro.test(model$residuals) 
+          })
+          
+          output$qqplot <- renderPlot({
+            #qqnorm(model$residuals, ylab = "Residuals", xlab = "Z Scores", main = "Q-Q plot of Standardized Residuals", pch = 19) #+
+            #qqline(model$residuals)
+            qqPlot(model$residuals, main = "Q-Q Plot", xlab = "Z Scores",  ylab = "Residuals", pch = 19) #Q-Q plot for residuals
           })
           
           output$moreplots <- renderPlot({
@@ -1803,7 +1828,7 @@ server <- function(input, output) {
         print(df)
       }
     }) # input$goRegression
-    
+
     #------------------------#
     # Descriptive Statistics #
     #------------------------#
@@ -1876,12 +1901,30 @@ server <- function(input, output) {
     
     observeEvent(input$goRegression, {
       show(id = "RegCorMP")
+      showTab(inputId = 'tabSet', target = 'Simple Linear Regression')
+      showTab(inputId = 'tabSet', target = 'Normality of Residuals')
+      showTab(inputId = 'tabSet', target = 'Residual Plots')
     })
     
     observeEvent(input$resetAllRC, {
+      hideTab(inputId = 'tabSet', target = 'Simple Linear Regression')
+      hideTab(inputId = 'tabSet', target = 'Normality of Residuals')
+      hideTab(inputId = 'tabSet', target = 'Residual Plots')
       hide(id = "RegCorMP")
       shinyjs::reset("RegCorPanel")
     })
+    
+    observe(
+      hideTab(inputId = 'tabSet', target = 'Simple Linear Regression')
+    )
+    
+    observe(
+      hideTab(inputId = 'tabSet', target = 'Normality of Residuals')
+    )
+    
+    observe(
+      hideTab(inputId = 'tabSet', target = 'Residual Plots')
+    )
 }
   
 shinyApp(ui = ui, server = server)
