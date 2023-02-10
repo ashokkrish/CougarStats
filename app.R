@@ -509,7 +509,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                         
                         actionButton(inputId = "goRegression", label = "Calculate",
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
-                        actionButton("resetAllRC", label = "Reset Values",
+                        actionButton("resetRegCor", label = "Reset Values",
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4") #, onclick = "history.go(0)"
                       ),
                       
@@ -828,7 +828,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                            p("GitHub:", a(href = "https://github.com/ashokkrish/COMP5690","https://github.com/ashokkrish/COMP5690", target = "_blank")),
                            br(),
                            
-                           p("An earlier version of this interactive Shiny app was developed as a part of a COMP 5690 Senior Computer Science Project in Fall 2022"), 
+                           p("In Fall 2022 an earlier version of this interactive Shiny app was presented as Crystal Wai's COMP 5690 Senior Computer Science Project"), 
                            br(),
 
                            p("This interactive R Shiny app is maintained by Dr. Ashok Krishnamurthy. We welcome questions, insights, and feedback."),
@@ -1741,8 +1741,7 @@ server <- function(input, output) {
           if(input$regressioncorrelation == "Simple Linear Regression")
           {
             model <- lm(daty ~ datx)
-           #rstandard(model)
-  
+
           output$scatterplot <- renderPlot({
             plot(datx, daty, main = "Scatter Plot", xlab = "Independent Variable, x", ylab = "Dependent Variable, y", pch = 19) +
               abline(lm(daty ~ datx), col = "blue")
@@ -1779,10 +1778,11 @@ server <- function(input, output) {
             shapiro.test(model$residuals) 
           })
           
+          # Q-Q plot for residuals
           output$qqplot <- renderPlot({
             #qqnorm(model$residuals, ylab = "Residuals", xlab = "Z Scores", main = "Q-Q plot of Standardized Residuals", pch = 19) #+
             #qqline(model$residuals)
-            qqPlot(model$residuals, main = "Q-Q Plot", xlab = "Z Scores",  ylab = "Residuals", pch = 19) #Q-Q plot for residuals
+            qqPlot(model$residuals, main = "Q-Q Plot", xlab = "Z Scores",  ylab = "Residuals", pch = 19) 
           })
           
           output$moreplots <- renderPlot({
@@ -1797,7 +1797,7 @@ server <- function(input, output) {
           # output$residversusfittedlot <- renderPlot({
           #   #plot(fitted(reg.model), resid(reg.model), pch = 19, xlab = "Fitted Values", ylab = "Residuals", main = "Residuals vs Fitted")
           #   #abline(h = 0, col = "red")
-          #   # leveragePlots(model) # leverage plots
+          #   #leveragePlots(model) # leverage plots
           # })
         }
 
@@ -1824,7 +1824,7 @@ server <- function(input, output) {
         } # Correlation
         
         df <- data.frame(datx, daty, datx*daty, datx^2, daty^2)
-        names(df) <- c("X", "Y", "XY", "X2", "Y2")
+        names(df) <- c("X", "Y", "XY", "X^2", "Y^2")
         print(df)
       }
     }) # input$goRegression
@@ -1906,10 +1906,10 @@ server <- function(input, output) {
       showTab(inputId = 'tabSet', target = 'Residual Plots')
     })
     
-    observeEvent(input$resetAllRC, {
-      hideTab(inputId = 'tabSet', target = 'Simple Linear Regression')
-      hideTab(inputId = 'tabSet', target = 'Normality of Residuals')
-      hideTab(inputId = 'tabSet', target = 'Residual Plots')
+    observeEvent(input$resetRegCor, {
+      # hideTab(inputId = 'tabSet', target = 'Simple Linear Regression')
+      # hideTab(inputId = 'tabSet', target = 'Normality of Residuals')
+      # hideTab(inputId = 'tabSet', target = 'Residual Plots')
       hide(id = "RegCorMP")
       shinyjs::reset("RegCorPanel")
     })
