@@ -158,10 +158,8 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                         )
                       ),
                       
-                      conditionalPanel(
+                      conditionalPanel(id = "inferencePanel",
                         condition = "input.dropDownMenu == 'Statistical Inference'",
-                        
-                        id = "inferencePanel",
 
                         # radioButtons(inputId = "popuParameter",
                         #              label = strong("Parameter of Interest"),
@@ -477,21 +475,22 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4") #, onclick = "history.go(0)"
                       ),
                       
-                      conditionalPanel(
+                      conditionalPanel(id = "RegCorPanel",
                         condition = "input.dropDownMenu == 'Regression and Correlation'",
-                        
-                        id = "RegCorPanel",
+ 
+                        textAreaInput("x", label = strong("x (Independent Variable)"), value = "635, 644, 711, 708, 836, 820, 810, 870, 856, 923", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                        textAreaInput("y", label = strong("y (Dependent Variable)"), value = "100, 93, 88, 84, 77, 75, 74, 63, 57, 55", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
                         
                         # textAreaInput("x", label = strong("x (Independent Variable)"), value = "87, 92, 100, 103, 107, 110, 112, 127", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
                         # textAreaInput("y", label = strong("y (Dependent Variable)"), value = "39, 47, 60, 50, 60, 65, 115, 118", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
-                         
-                        textAreaInput("x", label = strong("x (Independent Variable)"), value = "635, 644, 711, 708, 836, 820, 810, 870, 856, 923", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
-                        textAreaInput("y", label = strong("y (Dependent Variable)"), value = "100, 93, 88, 84, 77, 75, 74, 63, 57, 55", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
                         
                         # textAreaInput("x", label = strong("x (Independent Variable)"), value = "61, 111, 125, 134, 169, 173, 244", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
                         # textAreaInput("y", label = strong("y (Dependent Variable)"), value = "4, 14, 15, 18, 21, 26, 38", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
                         
-                        radioButtons(inputId = "regressioncorrelation", label = strong("Analyze Data Using"), selected = c("Simple Linear Regression"), choices = c("Simple Linear Regression", "Correlation Coefficient"), inline = TRUE),
+                        radioButtons(inputId = "regressioncorrelation", 
+                                     label = strong("Analyze Data Using"), 
+                                     selected = character(0), #selected = c("Simple Linear Regression"), 
+                                     choices = c("Simple Linear Regression", "Correlation Coefficient"), inline = TRUE),
                         
                         # conditionalPanel(
                         #   condition = "input.regressioncorrelation == 'Simple Linear Regression'",
@@ -513,7 +512,6 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4") #, onclick = "history.go(0)"
                       ),
                       
-                      # br(),
                       # br(),
                       # downloadButton('describe_download', "Download Report", class="butt" ), br(),
                       # tags$head(tags$style(".butt{background-color:#337ab7;} .butt{color:#fff;}")), br(),
@@ -718,7 +716,6 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                       ), # inferenceMP
                       
                       div(id = "RegCorMP",
-
                           conditionalPanel(
                             condition = "input.regressioncorrelation == 'Simple Linear Regression'",
 
@@ -766,7 +763,8 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                             
                                 #selected ="SLR"
                             # verbatimTextOutput("outlierTest"),
-                          ),
+                            ),
+                          ), # Simple Linear Regression
                           
                           conditionalPanel(
                             condition = "input.regressioncorrelation == 'Correlation Coefficient'",
@@ -794,8 +792,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                             #   
                             #   verbatimTextOutput("Spearman"),
                             # ),
-                          ),
-                        )
+                          ), # Correlation Coefficient
                       ) # RegCorMP
                     ) # mainPanel
                   ), # sidebarLayout
@@ -1914,17 +1911,17 @@ server <- function(input, output) {
       shinyjs::reset("RegCorPanel")
     })
     
-    observe(
-      hideTab(inputId = 'tabSet', target = 'Simple Linear Regression')
-    )
-    
-    observe(
-      hideTab(inputId = 'tabSet', target = 'Normality of Residuals')
-    )
-    
-    observe(
-      hideTab(inputId = 'tabSet', target = 'Residual Plots')
-    )
+    # observe(
+    #   hideTab(inputId = 'tabSet', target = 'Simple Linear Regression')
+    # )
+    # 
+    # observe(
+    #   hideTab(inputId = 'tabSet', target = 'Normality of Residuals')
+    # )
+    # 
+    # observe(
+    #   hideTab(inputId = 'tabSet', target = 'Residual Plots')
+    # )
 }
   
 shinyApp(ui = ui, server = server)
