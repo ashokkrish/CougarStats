@@ -478,19 +478,39 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                       conditionalPanel(id = "RegCorPanel",
                         condition = "input.dropDownMenu == 'Regression and Correlation'",
  
-                        textAreaInput("x", label = strong("x (Independent Variable)"), value = "635, 644, 711, 708, 836, 820, 810, 870, 856, 923", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
-                        textAreaInput("y", label = strong("y (Dependent Variable)"), value = "100, 93, 88, 84, 77, 75, 74, 63, 57, 55", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                        # radioButtons(inputId = "dataRegCor",
+                        #              label = strong("Data"),
+                        #              choiceValues = list("Enter Raw Data", "Upload Data"),
+                        #              choiceNames = list("Enter Raw Data", "Upload Data"),
+                        #              selected = "Enter Raw Data", # character(0), # 
+                        #              inline = TRUE,
+                        #              width = "1000px"),
                         
-                        # textAreaInput("x", label = strong("x (Independent Variable)"), value = "87, 92, 100, 103, 107, 110, 112, 127", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
-                        # textAreaInput("y", label = strong("y (Dependent Variable)"), value = "39, 47, 60, 50, 60, 65, 115, 118", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                         # conditionalPanel(
+                         #   condition = "input.dataRegCor == 'Enter Raw Data'",
+                           
+                           textAreaInput("x", label = strong("x (Independent Variable)"), value = "635, 644, 711, 708, 836, 820, 810, 870, 856, 923", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                           textAreaInput("y", label = strong("y (Dependent Variable)"), value = "100, 93, 88, 84, 77, 75, 74, 63, 57, 55", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                           
+                           # textAreaInput("x", label = strong("x (Independent Variable)"), value = "87, 92, 100, 103, 107, 110, 112, 127", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                           # textAreaInput("y", label = strong("y (Dependent Variable)"), value = "39, 47, 60, 50, 60, 65, 115, 118", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                           
+                           # textAreaInput("x", label = strong("x (Independent Variable)"), value = "61, 111, 125, 134, 169, 173, 244", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                           # textAreaInput("y", label = strong("y (Dependent Variable)"), value = "4, 14, 15, 18, 21, 26, 38", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                        # ),
                         
-                        # textAreaInput("x", label = strong("x (Independent Variable)"), value = "61, 111, 125, 134, 169, 173, 244", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
-                        # textAreaInput("y", label = strong("y (Dependent Variable)"), value = "4, 14, 15, 18, 21, 26, 38", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
-                        
+                        # conditionalPanel(
+                        #   condition = "input.dataRegCor == 'Upload Data'",
+                        #   fileInput('headerfile', 'Upload data',
+                        #             accept = c('text/csv','text/comma-separated-values','text/tab-separated-values',
+                        #                        'text/plain','.csv','.txt','.xls','.xlsx'))
+                        # ),
+
                         radioButtons(inputId = "regressioncorrelation", 
                                      label = strong("Analyze Data Using"), 
+                                     choices = c("Simple Linear Regression", "Correlation Coefficient"),
                                      selected = c("Simple Linear Regression"), # character(0), #
-                                     choices = c("Simple Linear Regression", "Correlation Coefficient"), inline = TRUE),
+                                     inline = TRUE),
                         
                         # conditionalPanel(
                         #   condition = "input.regressioncorrelation == 'Simple Linear Regression'",
@@ -721,15 +741,19 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
 
                             tabsetPanel(id = 'tabSet',
                                 tabPanel(id = "SLR", title = "Simple Linear Regression",
+                                     titlePanel("Scatterplot"),
                                      plotOutput("scatterplot", width = "500px"),
                                      br(),
                                      
+                                     titlePanel("Estimated equation of the regressio line"),
                                      verbatimTextOutput("linearRegression"),
                                      br(),
                                      
+                                     titlePanel("95% confidence interval for regression parameters"),
                                      verbatimTextOutput("confintLinReg"),
                                      br(),
                                      
+                                     titlePanel("ANOVA for regression"),
                                      verbatimTextOutput("anovaLinReg"),
                                      #br(),
                                  ),
@@ -739,12 +763,15 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                          # Tests for normality of residuals #
                                          #----------------------------------#
                                          
+                                         titlePanel("Anderson–Darling test"),
                                          verbatimTextOutput("AndersonDarlingTest"),
                                          br(),
                                          
+                                         titlePanel("Kolmogorov–Smirnov test"),
                                          verbatimTextOutput("KolmogorovSmirnovTest"),
                                          br(),
                                          
+                                         titlePanel("Shapiro–Wilk test"),
                                          verbatimTextOutput("ShapiroTest"),
                                          #br(),
                                 ),
@@ -771,14 +798,14 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
 
                             conditionalPanel(
                               condition = "input.pearson == 1",
-                              
-                              verbatimTextOutput("PearsonEstimate"),
-                              br(),
-                              
+
                               verbatimTextOutput("PearsonCorTest"),
                               br(),
                               
                               verbatimTextOutput("PearsonConfInt"),
+                              br(),
+                              
+                              verbatimTextOutput("PearsonEstimate"),
                             ),
                             
                             conditionalPanel(
@@ -1803,17 +1830,17 @@ server <- function(input, output) {
           Pearson <- cor.test(datx, daty, method = "pearson")
           Kendall <- cor.test(datx, daty, method = "kendall")
           Spearman <- cor.test(datx, daty, method = "spearman")
-          
-          output$PearsonEstimate <- renderPrint({
-            cat(noquote(paste(c("Pearson's r:", round(Pearson$estimate[[1]], 4)))))
-          })
-          
+
           output$PearsonCorTest <- renderPrint({ 
             Pearson
           })
 
           output$PearsonConfInt <- renderPrint({ 
             Pearson$conf.int
+          })
+          
+          output$PearsonEstimate <- renderPrint({
+            cat(noquote(paste(c("Pearson's r:", round(Pearson$estimate[[1]], 4)))))
           })
           
           output$Kendall <- renderPrint({
