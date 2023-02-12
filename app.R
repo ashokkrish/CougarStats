@@ -489,7 +489,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                         
                         radioButtons(inputId = "regressioncorrelation", 
                                      label = strong("Analyze Data Using"), 
-                                     selected = character(0), #selected = c("Simple Linear Regression"), 
+                                     selected = c("Simple Linear Regression"), # character(0), #
                                      choices = c("Simple Linear Regression", "Correlation Coefficient"), inline = TRUE),
                         
                         # conditionalPanel(
@@ -502,8 +502,8 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                           condition = "input.regressioncorrelation == 'Correlation Coefficient'",
                           
                           checkboxInput("pearson", "Pearson's Product-Moment Correlation (r)"),
-                          # checkboxInput("kendall", "Kendall's Rank Correlation (tau)"),
-                          # checkboxInput("spearman", "Spearman's Rank Correlation (rho)"),
+                          checkboxInput("kendall", "Kendall's Rank Correlation (tau)"),
+                          checkboxInput("spearman", "Spearman's Rank Correlation (rho)"),
                         ),
                         
                         actionButton(inputId = "goRegression", label = "Calculate",
@@ -707,7 +707,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                   condition = "input.dataAvailability == 'Enter Raw Data'",
 
                                   uiOutput('twoSampHTRaw'),
-                                  br(),
+                                  #br(),
                                 )
                               )
                             ) # condition = "input.samplesSelect == '2'"
@@ -781,17 +781,17 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                               verbatimTextOutput("PearsonConfInt"),
                             ),
                             
-                            # conditionalPanel(
-                            #   condition = "input.kendall == 1",
-                            #   
-                            #   verbatimTextOutput("Kendall"),
-                            # ),
-                            # 
-                            # conditionalPanel(
-                            #   condition = "input.spearman == 1",
-                            #   
-                            #   verbatimTextOutput("Spearman"),
-                            # ),
+                            conditionalPanel(
+                              condition = "input.kendall == 1",
+
+                              verbatimTextOutput("Kendall"),
+                            ),
+
+                            conditionalPanel(
+                              condition = "input.spearman == 1",
+
+                              verbatimTextOutput("Spearman"),
+                            ),
                           ), # Correlation Coefficient
                       ) # RegCorMP
                     ) # mainPanel
@@ -1732,7 +1732,7 @@ server <- function(input, output) {
         # output$linearRegression <- renderPrint({ 
         # "Invalid input or not enough observations"
         #   })
-        print("Invalid input or not enough observations")
+        cat(noquote(paste(c("Invalid input or not enough observations"))))
       }
       else{
           if(input$regressioncorrelation == "Simple Linear Regression")
@@ -1800,25 +1800,30 @@ server <- function(input, output) {
 
         else if(input$regressioncorrelation == "Correlation Coefficient")
         {
-          output$PearsonEstimate <- renderPrint({ 
-            cor.test(datx, daty, method = "pearson")$estimate
+          Pearson <- cor.test(datx, daty, method = "pearson")
+          Kendall <- cor.test(datx, daty, method = "kendall")
+          Spearman <- cor.test(datx, daty, method = "spearman")
+          
+          output$PearsonEstimate <- renderPrint({
+            cat(noquote(paste(c("Pearson's r:", round(Pearson$estimate[[1]], 4)))))
           })
           
           output$PearsonCorTest <- renderPrint({ 
-            cor.test(datx, daty, method = "pearson")
+            Pearson
           })
 
           output$PearsonConfInt <- renderPrint({ 
-            cor.test(datx, daty, method = "pearson")$conf.int
+            Pearson$conf.int
           })
-          # output$Kendall <- renderPrint({ 
-          #   cor.test(datx, daty, method = "kendall")$estimate
-          # })
-          # 
-          # output$Spearman <- renderPrint({ 
-          #   cor.test(datx, daty, method = "spearman")$estimate
-          # })
-        } # Correlation
+          
+          output$Kendall <- renderPrint({
+            cat(noquote(paste(c("Kendall's Tau:", round(Kendall$estimate[[1]], 4)))))
+          })
+
+          output$Spearman <- renderPrint({
+            cat(noquote(paste(c("Spearman's rs:", round(Spearman$estimate[[1]], 4)))))
+          })
+        } # Correlation Coefficient
         
         df <- data.frame(datx, daty, datx*daty, datx^2, daty^2)
         names(df) <- c("X", "Y", "XY", "X^2", "Y^2")
