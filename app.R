@@ -741,19 +741,19 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
 
                             tabsetPanel(id = 'tabSet',
                                 tabPanel(id = "SLR", title = "Simple Linear Regression",
-                                     titlePanel("Scatterplot"),
+                                     #titlePanel("Scatterplot"),
                                      plotOutput("scatterplot", width = "500px"),
                                      br(),
                                      
-                                     titlePanel("Estimated equation of the regressio line"),
+                                     #titlePanel("Estimated equation of the regression line"),
                                      verbatimTextOutput("linearRegression"),
                                      br(),
                                      
-                                     titlePanel("95% confidence interval for regression parameters"),
+                                     #titlePanel("95% confidence interval for regression parameters"),
                                      verbatimTextOutput("confintLinReg"),
                                      br(),
                                      
-                                     titlePanel("ANOVA for regression"),
+                                     #titlePanel("ANOVA for regression"),
                                      verbatimTextOutput("anovaLinReg"),
                                      #br(),
                                  ),
@@ -1844,7 +1844,7 @@ server <- function(input, output) {
           })
           
           output$Kendall <- renderPrint({
-            cat(noquote(paste(c("Kendall's Tau:", round(Kendall$estimate[[1]], 4)))))
+            strong(cat(noquote(paste(c("Kendall's Tau:", round(Kendall$estimate[[1]], 4))))))
           })
 
           output$Spearman <- renderPrint({
