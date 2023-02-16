@@ -39,8 +39,8 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                       conditionalPanel(
                         id = "descriptiveStatsPanel",
                         condition = "input.dropDownMenu == 'Descriptive Statistics'",
-                        textAreaInput("descriptiveStat", label = strong("Sample"), value = "2.14, 2.09, 2.65, 3.56, 5.55, 5.00, 5.55, 3.09, 6.79", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
-
+                        textAreaInput("descriptiveStat", label = strong("Sample"), value = "6, 16, 9, 6, 8, 9, 9, 5, 5, 11", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                        # "2.14, 2.09, 2.65, 3.56, 5.55, 5.00, 5.55, 3.09, 6.79"
                         actionButton(inputId = "goDescpStats", label = "Calculate",
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
                         actionButton("resetAll", label = "Reset Values",
@@ -509,7 +509,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                         radioButtons(inputId = "regressioncorrelation", 
                                      label = strong("Analyze Data Using"), 
                                      choices = c("Simple Linear Regression", "Correlation Coefficient"),
-                                     selected = c("Simple Linear Regression"), # character(0), #
+                                     selected = character(0), # c("Simple Linear Regression"), # 
                                      inline = TRUE),
                         
                         # conditionalPanel(
@@ -805,18 +805,21 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                               verbatimTextOutput("PearsonConfInt"),
                               br(),
                               
+                              #titlePanel("Pearson's r"),
                               verbatimTextOutput("PearsonEstimate"),
                             ),
                             
                             conditionalPanel(
                               condition = "input.kendall == 1",
 
+                              #titlePanel("Kendall's Tau"),
                               verbatimTextOutput("Kendall"),
                             ),
 
                             conditionalPanel(
                               condition = "input.spearman == 1",
 
+                              #titlePanel("Spearman's rs"),
                               verbatimTextOutput("Spearman"),
                             ),
                           ), # Correlation Coefficient
@@ -836,7 +839,11 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                            p("Faculty of Science and Technology,"),
                            p("Mount Royal University,"), 
                            p("Calgary, AB, CANADA"),
+                           br(),
                            
+                           p("Email:",a("akrishnamurthy@mtroyal.ca", href = "mailto:akrishnamurthy@mtroyal.ca")), 
+                           p("Website:", a(href = "https://bit.ly/2YKrXjX","https://bit.ly/2YKrXjX", target = "_blank")),
+                           p("GitHub:", a(href = "https://github.com/ashokkrish/COMP5690","https://github.com/ashokkrish/COMP5690", target = "_blank")),
                            br(),
                            
                            p(span("Lead Developer", style = "font-weight:bold")),
@@ -846,12 +853,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                            p("Calgary, AB, CANADA"), 
                            
                            br(), 
-                           
-                           p("Email:",a("akrishnamurthy@mtroyal.ca", href = "mailto:akrishnamurthy@mtroyal.ca")), 
-                           p("Website:", a(href = "https://bit.ly/2YKrXjX","https://bit.ly/2YKrXjX", target = "_blank")),
-                           p("GitHub:", a(href = "https://github.com/ashokkrish/COMP5690","https://github.com/ashokkrish/COMP5690", target = "_blank")),
-                           br(),
-                           
+
                            p("In Fall 2022 an earlier version of this interactive Shiny app was presented as Crystal Wai's COMP 5690 Senior Computer Science Project"), 
                            br(),
 
@@ -1023,6 +1025,11 @@ server <- function(input, output) {
       else if (length(ux[tab == max(tab)]) > 1 && length(ux[tab == max(tab)]) < length(ux)) {return("There are multiple modes")}
     }
     
+    # Function to find the population standard deviation
+    pop.sd <- function(x) {
+      sqrt(sum((x-mean(x))^2)/length(x))
+    }
+    
     observeEvent(input$goDescpStats, {
       dat <- createNumLst(input$descriptiveStat)
       
@@ -1031,39 +1038,57 @@ server <- function(input, output) {
       }
       else{
         dat <- createNumLst(input$descriptiveStat)
-        #print(dat)
+        
+        xbar <- round(mean(dat),4)
+        sampStdDev <- round(sd(dat),4)
+        popuStdDev <- round(pop.sd(dat),4) # round(sqrt((n-1)/n) * sampStdDev(dat), 4)
+        Lower_Fence <- quantile(dat, 0.25) - (1.5*IQR(dat))
+        Upper_Fence <- quantile(dat, 0.75) + (1.5*IQR(dat))
+        Num_Outliers <- sum(dat < Lower_Fence) + sum(dat > Upper_Fence)
+        CoeffVar <- sampStdDev/xbar
+        
+        # print(dat)
+        # print(Lower_Fence)
+        # print(Upper_Fence)
+        # print(sum(dat < Lower_Fence))
+        # print(sum(dat > Upper_Fence))
+        # print(Num_Outliers)
+
         values <- reactiveValues()
         values$df <- data.frame(Variable = character(), Value = character())
         output$table <- renderTable(values$df)
-        row1 <- data.frame(Variable = "Sample Size", Value = paste0(length(dat)))
+        row1 <- data.frame(Variable = "Number of observations", Value = paste0(length(dat)))
         row2 <- data.frame(Variable = "Sum", Value = paste0(sum(dat)))
-        row3 <- data.frame(Variable = "Mean", Value = paste0(round(mean(dat),4)))
+        row3 <- data.frame(Variable = "Mean", Value = xbar)
         row4 <- data.frame(Variable = "Mode", Value = paste(Modes(dat)))
-        row5 <- data.frame(Variable = "Q1", Value = paste0(quantile(dat, 0.25)))
-        row6 <- data.frame(Variable = "Median (Q2)", Value = paste0(median(dat)))
-        row7 <- data.frame(Variable = "Q3", Value = paste0(quantile(dat, 0.75)))
-        row8 <- data.frame(Variable = "Minimum", Value = paste0(min(dat)))
+        row5 <- data.frame(Variable = "Minimum", Value = paste0(min(dat)))
+        row6 <- data.frame(Variable = "*First quartile (Q1)", Value = paste0(quantile(dat, 0.25)))
+        row7 <- data.frame(Variable = "Second quartile or median (Q2)", Value = paste0(median(dat)))
+        row8 <- data.frame(Variable = "*Third quartile (Q3)", Value = paste0(quantile(dat, 0.75)))
         row9 <- data.frame(Variable = "Maximum", Value = paste0(max(dat)))
-        row10 <- data.frame(Variable = "Interquartile range (IQR)", Value = paste0(IQR(dat)))
-        row11 <- data.frame(Variable = "Range", Value = paste0(range(dat)[2]-range(dat)[1]))
-        row12 <- data.frame(Variable = "Sample Standard Deviation", Value = paste0(round(sd(dat),4)))
-        row13 <- data.frame(Variable = "Sample Variance", Value = paste0(round(var(dat),4)))
-        row14 <- data.frame(Variable = "Standard Error of the Mean", Value = paste0(round(sd(dat)/sqrt(length(dat)),4)))
-        row15 <- data.frame(Variable = "Check for Outliers: Lower Fence", Value = paste(quantile(dat, 0.25) - (1.5*IQR(dat))))
-        row16 <- data.frame(Variable = "Check for Outliers: Upper Fence", Value = paste(quantile(dat, 0.75) + (1.5*IQR(dat))))
-        row17 <- data.frame(Variable = "Number of Outliers", Value = paste("In progress"))
-        row18 <- data.frame(Variable = "Skewness", Value = paste0(round(skewness(dat),4)))
-        row19 <- data.frame(Variable = "Kurtosis", Value = paste0(round(kurtosis(dat),4)))
+        row10 <- data.frame(Variable = "*Notes", Value = "Q1 and Q3 are calculated by excluding Q2 on both sides")
+        row11 <- data.frame(Variable = "Interquartile range (IQR)", Value = paste0(IQR(dat)))
+        row12 <- data.frame(Variable = "Check for Outliers: Lower Fence", Value = Lower_Fence)
+        row13 <- data.frame(Variable = "Check for Outliers: Upper Fence", Value = Upper_Fence)
+        row14 <- data.frame(Variable = "Number of Potential Outliers", Value = Num_Outliers)
+        row15 <- data.frame(Variable = "Range", Value = paste0(range(dat)[2]-range(dat)[1]))
+        row16 <- data.frame(Variable = "Sample Standard Deviation", Value = sampStdDev)
+        row17 <- data.frame(Variable = "Sample Variance", Value = paste0(round(var(dat),4)))
+        row18 <- data.frame(Variable = "Standard Error of the Mean", Value = paste0(round(sd(dat)/sqrt(length(dat)),4)))
+        row19 <- data.frame(Variable = "Coefficient of variation", Value = CoeffVar)
+        row20 <- data.frame(Variable = "Population Standard Deviation", Value = popuStdDev)
+        row21 <- data.frame(Variable = "Skewness", Value = paste0(round(skewness(dat),4)))
+        row22 <- data.frame(Variable = "Kurtosis", Value = paste0(round(kurtosis(dat),4)))
         
-        values$df <- rbind(row1, row2, row3, row4, row5, row6, row7, row8, row9, row10, row11, row12, row13, row14, row15, row16, row17, row18, row19)
+        values$df <- rbind(row1, row2, row3, row4, row5, row6, row7, row8, row9, row10, row11, row12, row13, row14, row15, row16, row17, row18, row19, row20, row21, row22)
         
         output$boxplotHorizontal <- renderPlot({
           
-          #-------------------
-          # Horizontal boxplot
-          #-------------------
+          #--------------------#
+          # Horizontal boxplot #
+          #--------------------#
           
-          boxplot(dat, horizontal = TRUE)
+          boxplot(dat, horizontal = TRUE, lty=1,  pch = 8) #pch = 19)
           
           ## Add mean line
           # segments(x0 = mean(dat), y0 = 0.8,
@@ -1072,9 +1097,9 @@ server <- function(input, output) {
           # 
           # points(mean(dat), col = 3, pch = 19)
           
-          #-------------------
-          # ggplot2 boxplot
-          #-------------------
+          #-----------------#
+          # ggplot2 boxplot #
+          #-----------------#
           
           # ggplot(as.data.frame(dat), aes(x = "", y = dat)) +    
           # geom_boxplot(show.legend = FALSE)
@@ -1126,9 +1151,7 @@ server <- function(input, output) {
       output$renderProbabilityPoisson <- renderUI({
         poisson_mu <- input$muPoisson
         poisson_x <- input$xPoisson 
-        # aP <- input$aPoisson
-        # bP <- input$bPoisson
-        
+
         poissonValues <- reactive({
         req(input$muPoisson, input$xPoisson)
 
@@ -1844,7 +1867,7 @@ server <- function(input, output) {
           })
           
           output$Kendall <- renderPrint({
-            strong(cat(noquote(paste(c("Kendall's Tau:", round(Kendall$estimate[[1]], 4))))))
+            cat(noquote(paste(c("Kendall's Tau:", round(Kendall$estimate[[1]], 4)))))
           })
 
           output$Spearman <- renderPrint({
@@ -1930,9 +1953,12 @@ server <- function(input, output) {
     
     observeEvent(input$goRegression, {
       show(id = "RegCorMP")
-      showTab(inputId = 'tabSet', target = 'Simple Linear Regression')
-      showTab(inputId = 'tabSet', target = 'Normality of Residuals')
-      showTab(inputId = 'tabSet', target = 'Residual Plots')
+      if(input$regressioncorrelation == "Simple Linear Regression")
+      {
+        showTab(inputId = 'tabSet', target = 'Simple Linear Regression')
+        showTab(inputId = 'tabSet', target = 'Normality of Residuals')
+        showTab(inputId = 'tabSet', target = 'Residual Plots')
+      }
     })
     
     observeEvent(input$resetRegCor, {
