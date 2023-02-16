@@ -1045,7 +1045,7 @@ server <- function(input, output) {
         Lower_Fence <- quantile(dat, 0.25) - (1.5*IQR(dat))
         Upper_Fence <- quantile(dat, 0.75) + (1.5*IQR(dat))
         Num_Outliers <- sum(dat < Lower_Fence) + sum(dat > Upper_Fence)
-        CoeffVar <- sampStdDev/xbar
+        CoeffVar <- round(sampStdDev/xbar,4)
         
         # print(dat)
         # print(Lower_Fence)
@@ -1076,7 +1076,7 @@ server <- function(input, output) {
         row17 <- data.frame(Variable = "Sample Variance", Value = paste0(round(var(dat),4)))
         row18 <- data.frame(Variable = "Standard Error of the Mean", Value = paste0(round(sd(dat)/sqrt(length(dat)),4)))
         row19 <- data.frame(Variable = "Coefficient of variation", Value = CoeffVar)
-        row20 <- data.frame(Variable = "Population Standard Deviation", Value = popuStdDev)
+        row20 <- data.frame(Variable = "Population Standard Deviation (sigma)", Value = popuStdDev)
         row21 <- data.frame(Variable = "Skewness", Value = paste0(round(skewness(dat),4)))
         row22 <- data.frame(Variable = "Kurtosis", Value = paste0(round(kurtosis(dat),4)))
         
