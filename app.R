@@ -478,52 +478,73 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                       conditionalPanel(id = "RegCorPanel",
                         condition = "input.dropDownMenu == 'Regression and Correlation'",
  
-                        # radioButtons(inputId = "dataRegCor",
-                        #              label = strong("Data"),
-                        #              choiceValues = list("Enter Raw Data", "Upload Data"),
-                        #              choiceNames = list("Enter Raw Data", "Upload Data"),
-                        #              selected = "Enter Raw Data", # character(0), # 
-                        #              inline = TRUE,
-                        #              width = "1000px"),
-                        
-                         # conditionalPanel(
-                         #   condition = "input.dataRegCor == 'Enter Raw Data'",
-                           
-                           textAreaInput("x", label = strong("x (Independent Variable)"), value = "635, 644, 711, 708, 836, 820, 810, 870, 856, 923", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
-                           textAreaInput("y", label = strong("y (Dependent Variable)"), value = "100, 93, 88, 84, 77, 75, 74, 63, 57, 55", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
-                           
-                           # textAreaInput("x", label = strong("x (Independent Variable)"), value = "87, 92, 100, 103, 107, 110, 112, 127", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
-                           # textAreaInput("y", label = strong("y (Dependent Variable)"), value = "39, 47, 60, 50, 60, 65, 115, 118", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
-                           
-                           # textAreaInput("x", label = strong("x (Independent Variable)"), value = "61, 111, 125, 134, 169, 173, 244", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
-                           # textAreaInput("y", label = strong("y (Dependent Variable)"), value = "4, 14, 15, 18, 21, 26, 38", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
-                        # ),
-                        
-                        # conditionalPanel(
-                        #   condition = "input.dataRegCor == 'Upload Data'",
-                        #   fileInput('headerfile', 'Upload data',
-                        #             accept = c('text/csv','text/comma-separated-values','text/tab-separated-values',
-                        #                        'text/plain','.csv','.txt','.xls','.xlsx'))
-                        # ),
-
-                        radioButtons(inputId = "regressioncorrelation", 
-                                     label = strong("Analyze Data Using"), 
-                                     choices = c("Simple Linear Regression", "Correlation Coefficient"),
-                                     selected = character(0), # c("Simple Linear Regression"), # 
-                                     inline = TRUE),
-                        
-                        # conditionalPanel(
-                        #   condition = "input.regressioncorrelation == 'Simple Linear Regression'",
-                        #   
-                        #   checkboxInput("scatterPlot", "Scatterplot of x versus y"),
-                        # ),
+                        radioButtons(inputId = "simple_vs_multiple",
+                                     label = strong("Regression Type"),
+                                     choiceValues = list("SLR", "MLR"),
+                                     choiceNames = list("Simple Linear Regression (SLR)", "Multiple Linear Regression (MLR)"),
+                                     selected = "Simple Linear Regression", # character(0), #
+                                     inline = TRUE,
+                                     width = "1000px"),
                         
                         conditionalPanel(
-                          condition = "input.regressioncorrelation == 'Correlation Coefficient'",
+                          condition = "input.simple_vs_multiple == 'SLR'",
                           
-                          checkboxInput("pearson", "Pearson's Product-Moment Correlation (r)"),
-                          checkboxInput("kendall", "Kendall's Rank Correlation (tau)"),
-                          checkboxInput("spearman", "Spearman's Rank Correlation (rho)"),
+                          radioButtons(inputId = "dataRegCor",
+                                       label = strong("Data"),
+                                       choiceValues = list("Enter Raw Data", "Upload Data"),
+                                       choiceNames = list("Enter Raw Data", "Upload Data"),
+                                       selected = "Enter Raw Data", # character(0), #
+                                       inline = TRUE,
+                                       width = "1000px"),
+
+                           conditionalPanel(
+                             condition = "input.dataRegCor == 'Enter Raw Data'",
+  
+                             textAreaInput("x", label = strong("x (Independent Variable)"), value = "635, 644, 711, 708, 836, 820, 810, 870, 856, 923", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                             textAreaInput("y", label = strong("y (Dependent Variable)"), value = "100, 93, 88, 84, 77, 75, 74, 63, 57, 55", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+  
+                             # textAreaInput("x", label = strong("x (Independent Variable)"), value = "87, 92, 100, 103, 107, 110, 112, 127", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                             # textAreaInput("y", label = strong("y (Dependent Variable)"), value = "39, 47, 60, 50, 60, 65, 115, 118", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+  
+                             # textAreaInput("x", label = strong("x (Independent Variable)"), value = "61, 111, 125, 134, 169, 173, 244", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                             # textAreaInput("y", label = strong("y (Dependent Variable)"), value = "4, 14, 15, 18, 21, 26, 38", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                          ),
+                          
+                          conditionalPanel(
+                            condition = "input.dataRegCor == 'Upload Data'",
+                            fileInput('headerfile', 'Upload data',
+                                      accept = c('text/csv','text/comma-separated-values','text/tab-separated-values',
+                                                 'text/plain','.csv','.txt','.xls','.xlsx'))
+                          ),
+                          
+                          radioButtons(inputId = "regressioncorrelation", 
+                                       label = strong("Analyze Data Using"), 
+                                       choices = c("Simple Linear Regression", "Correlation Coefficient"),
+                                       selected = c("Simple Linear Regression"), # character(0), # 
+                                       inline = TRUE),
+
+                          conditionalPanel(
+                            condition = "input.regressioncorrelation == 'Simple Linear Regression'",
+
+                            checkboxInput("scatterPlot", "Scatterplot of x versus y"),
+                            
+                              conditionalPanel(
+                                condition = "input.scatterPlot == 1",
+                                
+                                textInput("main", label = strong("Main title and axis labels:"), value = "Scatter Plot", placeholder = "main title"),
+                                textInput("xlab", label = NULL, value = "Independent Variable, x", placeholder = "x-axis label"),
+                                textInput("ylab", label = NULL, value = "Dependent Variable, y", placeholder = "y-axis label"),
+                                #hr(),
+                              ),
+                          ),
+                          
+                          conditionalPanel(
+                            condition = "input.regressioncorrelation == 'Correlation Coefficient'",
+                            
+                            checkboxInput("pearson", "Pearson's Product-Moment Correlation (r)"),
+                            checkboxInput("kendall", "Kendall's Rank Correlation (tau)"),
+                            checkboxInput("spearman", "Spearman's Rank Correlation (rho)"),
+                          ),
                         ),
                         
                         actionButton(inputId = "goRegression", label = "Calculate",
@@ -741,9 +762,14 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
 
                             tabsetPanel(id = 'tabSet',
                                 tabPanel(id = "SLR", title = "Simple Linear Regression",
-                                     #titlePanel("Scatterplot"),
-                                     plotOutput("scatterplot", width = "500px"),
-                                     br(),
+                                    
+                                     conditionalPanel(
+                                       condition = "input.scatterPlot == 1",
+
+                                           #titlePanel("Scatterplot"),
+                                           plotOutput("scatterplot", width = "500px"),
+                                           br(),
+                                     ),
                                      
                                      #titlePanel("Estimated equation of the regression line"),
                                      verbatimTextOutput("linearRegression"),
@@ -1088,7 +1114,7 @@ server <- function(input, output) {
           # Horizontal boxplot #
           #--------------------#
           
-          boxplot(dat, horizontal = TRUE, lty=1,  pch = 8) #pch = 19)
+          boxplot(dat, horizontal = TRUE, lty = 1,  pch = 8) #pch = 19)
           
           ## Add mean line
           # segments(x0 = mean(dat), y0 = 0.8,
@@ -1775,110 +1801,117 @@ server <- function(input, output) {
     
     observeEvent(input$goRegression, {
       
-      datx <- createNumLst(input$x)
-      daty <- createNumLst(input$y)
+      if(input$simple_vs_multiple == 'SLR')
+      {
+        datx <- createNumLst(input$x)
+        daty <- createNumLst(input$y)
       
-      if(anyNA(datx) | length(datx)<2 | anyNA(daty) | length(daty)<2){
-        # output$linearRegression <- renderPrint({ 
-        # "Invalid input or not enough observations"
-        #   })
-        cat(noquote(paste(c("Invalid input or not enough observations"))))
-      }
-      else{
-          if(input$regressioncorrelation == "Simple Linear Regression")
-          {
-            model <- lm(daty ~ datx)
-
-          output$scatterplot <- renderPlot({
-            plot(datx, daty, main = "Scatter Plot", xlab = "Independent Variable, x", ylab = "Dependent Variable, y", pch = 19) +
-              abline(lm(daty ~ datx), col = "blue")
-          })
-            
-          output$linearRegression <- renderPrint({ 
-            summary(model)
-          })
-          
-          output$confintLinReg <- renderPrint({ 
-            confint(model) # Prints the 95% confidence interval for the regression parameters
-          })
-            
-          output$anovaLinReg <- renderPrint({ 
-              anova(model) # Prints the ANOVA table
-          })
-
-          #----------------------------------#
-          # Tests for normality of residuals #
-          #----------------------------------#
-          
-          # Anderson-Darling Normality Test 
-          output$AndersonDarlingTest <- renderPrint({ 
-            ad.test(model$residuals)
-          })
-          
-          # Kolmogorov-Smirnov Normality Test 
-          output$KolmogorovSmirnovTest <- renderPrint({ 
-            ks.test(model$residuals, "pnorm")
-          })
-          
-          # Shapiro-Wilk Normality Test 
-          output$ShapiroTest <- renderPrint({ 
-            shapiro.test(model$residuals) 
-          })
-          
-          # Q-Q plot for residuals
-          output$qqplot <- renderPlot({
-            #qqnorm(model$residuals, ylab = "Residuals", xlab = "Z Scores", main = "Q-Q plot of Standardized Residuals", pch = 19) #+
-            #qqline(model$residuals)
-            qqPlot(model$residuals, main = "Q-Q Plot", xlab = "Z Scores",  ylab = "Residuals", pch = 19) 
-          })
-          
-          output$moreplots <- renderPlot({
-            par(mfrow = c(2,2))
-            plot(model, which=1:4, pch = 19)
-          })
-          
-          # output$outlierTest <- renderPrint({ 
-          #   outlierTest(model) # Prints the Bonferonni p-value for the most extreme observations
-          # })
-          
-          # output$residversusfittedlot <- renderPlot({
-          #   #plot(fitted(reg.model), resid(reg.model), pch = 19, xlab = "Fitted Values", ylab = "Residuals", main = "Residuals vs Fitted")
-          #   #abline(h = 0, col = "red")
-          #   #leveragePlots(model) # leverage plots
-          # })
+        if(anyNA(datx) | length(datx)<2 | anyNA(daty) | length(daty)<2){
+          # output$linearRegression <- renderPrint({ 
+          # "Invalid input or not enough observations"
+          #   })
+          cat(noquote(paste(c("Invalid input or not enough observations"))))
         }
+        else{
+            if(input$regressioncorrelation == "Simple Linear Regression")
+            {
+              model <- lm(daty ~ datx)
+  
+              main <- input$main
+              xlab <- input$xlab
+              ylab <- input$ylab
+  
+              output$scatterplot <- renderPlot({
+                plot(datx, daty, main = main, xlab = xlab, ylab = ylab, pch = 19) +
+                  abline(lm(daty ~ datx), col = "blue")
+              })
+                
+              output$linearRegression <- renderPrint({ 
+                summary(model)
+              })
+              
+              output$confintLinReg <- renderPrint({ 
+                confint(model) # Prints the 95% confidence interval for the regression parameters
+              })
+                
+              output$anovaLinReg <- renderPrint({ 
+                  anova(model) # Prints the ANOVA table
+              })
+  
+            #----------------------------------#
+            # Tests for normality of residuals #
+            #----------------------------------#
+            
+            # Anderson-Darling Normality Test 
+            output$AndersonDarlingTest <- renderPrint({ 
+              ad.test(model$residuals)
+            })
+            
+            # Kolmogorov-Smirnov Normality Test 
+            output$KolmogorovSmirnovTest <- renderPrint({ 
+              ks.test(model$residuals, "pnorm")
+            })
+            
+            # Shapiro-Wilk Normality Test 
+            output$ShapiroTest <- renderPrint({ 
+              shapiro.test(model$residuals) 
+            })
+            
+            # Q-Q plot for residuals
+            output$qqplot <- renderPlot({
+              #qqnorm(model$residuals, ylab = "Residuals", xlab = "Z Scores", main = "Q-Q plot of Standardized Residuals", pch = 19) #+
+              #qqline(model$residuals)
+              qqPlot(model$residuals, main = "Q-Q Plot", xlab = "Z Scores",  ylab = "Residuals", pch = 19) 
+            })
+            
+            output$moreplots <- renderPlot({
+              par(mfrow = c(2, 2))
+              plot(model, which = 1:4, pch = 19)
+            })
+            
+            # output$outlierTest <- renderPrint({ 
+            #   outlierTest(model) # Prints the Bonferonni p-value for the most extreme observations
+            # })
+            
+            # output$residversusfittedlot <- renderPlot({
+            #   #plot(fitted(reg.model), resid(reg.model), pch = 19, xlab = "Fitted Values", ylab = "Residuals", main = "Residuals vs Fitted")
+            #   #abline(h = 0, col = "red")
+            #   #leveragePlots(model) # leverage plots
+            # })
+          }
 
-        else if(input$regressioncorrelation == "Correlation Coefficient")
-        {
-          Pearson <- cor.test(datx, daty, method = "pearson")
-          Kendall <- cor.test(datx, daty, method = "kendall")
-          Spearman <- cor.test(datx, daty, method = "spearman")
-
-          output$PearsonCorTest <- renderPrint({ 
-            Pearson
-          })
-
-          output$PearsonConfInt <- renderPrint({ 
-            Pearson$conf.int
-          })
+          else if(input$regressioncorrelation == "Correlation Coefficient")
+          {
+            Pearson <- cor.test(datx, daty, method = "pearson")
+            Kendall <- cor.test(datx, daty, method = "kendall")
+            Spearman <- cor.test(datx, daty, method = "spearman")
+  
+            output$PearsonCorTest <- renderPrint({ 
+              Pearson
+            })
+  
+            output$PearsonConfInt <- renderPrint({ 
+              Pearson$conf.int
+            })
+            
+            output$PearsonEstimate <- renderPrint({
+              cat(noquote(paste(c("Pearson's r:", round(Pearson$estimate[[1]], 4)))))
+            })
+            
+            output$Kendall <- renderPrint({
+              cat(noquote(paste(c("Kendall's Tau:", round(Kendall$estimate[[1]], 4)))))
+            })
+  
+            output$Spearman <- renderPrint({
+              cat(noquote(paste(c("Spearman's rs:", round(Spearman$estimate[[1]], 4)))))
+            })
+          } # Correlation Coefficient
           
-          output$PearsonEstimate <- renderPrint({
-            cat(noquote(paste(c("Pearson's r:", round(Pearson$estimate[[1]], 4)))))
-          })
-          
-          output$Kendall <- renderPrint({
-            cat(noquote(paste(c("Kendall's Tau:", round(Kendall$estimate[[1]], 4)))))
-          })
-
-          output$Spearman <- renderPrint({
-            cat(noquote(paste(c("Spearman's rs:", round(Spearman$estimate[[1]], 4)))))
-          })
-        } # Correlation Coefficient
-        
-        df <- data.frame(datx, daty, datx*daty, datx^2, daty^2)
-        names(df) <- c("X", "Y", "XY", "X^2", "Y^2")
-        print(df)
-      }
+          df <- data.frame(datx, daty, datx*daty, datx^2, daty^2)
+          names(df) <- c("X", "Y", "XY", "X^2", "Y^2")
+          print(df)
+        } # After validation of x and y vectors
+      } # SLR
     }) # input$goRegression
 
     #------------------------#
