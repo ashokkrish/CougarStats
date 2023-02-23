@@ -52,7 +52,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                         inputId = "dropDownMenu",
                         label = strong("Choose Statistical Topic"),
                         choices = c("Descriptive Statistics", "Probability Distributions", "Statistical Inference", "Regression and Correlation"),
-                        selected = "Regression and Correlation", #NULL, 
+                        selected = "Regression and Correlation", # NULL
                       ),
                       
                       conditionalPanel(
@@ -136,40 +136,33 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                           condition = "input.probability == 'Poisson'",
                           
                           numericInput("muPoisson", label = strong("Average (\\( \\mu\\))"),
-                                       value = 4),
-
+                                       value = 4.5),
+                          
                           radioButtons(inputId = "calcPoisson",
                                        label = strong("Probability"),
-                                       choiceValues = list("exact","cumulative","greaterThanEqual", "upperTail", "lessThan", "twoInputprob"),
+                                       choiceValues = list("exact", "cumulative", "upperTail", "greaterThan", "lessThan", "between"),
                                        choiceNames = list("\\(P(X = x \\))","\\(P(X \\leq x)\\)","\\(P(X \\ge x)\\)", "\\(P(X \\gt x)\\)", "\\(P(X < x)\\)", "\\(P(x_1 \\leq X \\leq x_2)\\)"),
                                        inline = FALSE,
                                        width = '1000px'),
                           
-                          numericInput("xPoisson", label = strong("Number of Successes (x)"),
-                                       value = 3, min = 0, step = 1),
+                          conditionalPanel(
+                            condition = "input.calcPoisson != 'between'",
+                            
+                            numericInput("xPoisson", label = strong("Number of Successes (\\( x\\))"),
+                                         value = 4, min = 0, step = 1),
+                          ),
                           
-                          # radioButtons(inputId = "calcPoisson",
-                          #              label = strong("Probability"), 
-                          #              choiceValues = list("exact","cumulative", "upperTail"),
-                          #              choiceNames = list("\\(P(X = x\\))","\\(P(X \\leq x)\\)","\\(P(X \\gt x)\\)"),
-                          #              inline = TRUE,
-                          #              width = "1000px"
-                          # ),
-                          
-                          # checkboxInput(inputId = "probDistTable",
-                          #               label = strong("Probability Distribution Table"),
-                          #               value = FALSE,
-                          #               width = NULL),
-                          
-                          # conditionalPanel(
-                          #   condition = "input.calcPoisson = 'interval'",
-                          #   numericInput("aPoisson", "a",
-                          #                value = 6, min = 0, step = 1
-                          #   ),
-                          #   numericInput("bPoisson", "b \\( (a \\leq b) \\)",
-                          #                value = 10, min = 0, step = 1
-                          #   )
-                          # ),
+                          conditionalPanel(
+                            condition = "input.calcPoisson == 'between'",
+                            
+                            numericInput(inputId = "x1Poisson",
+                                         label = strong("Number of successes (\\( x_{1}\\))"),
+                                         value = 4, min = 0, step = 1),
+                            
+                            numericInput(inputId = "x2Poisson",
+                                         label = strong("Number of successes (\\( x_{2}\\))"),
+                                         value = 6, min = 0, step = 1)
+                          ),
                           
                           actionButton(inputId = "goPoisson", label = "Calculate",
                                        style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
@@ -210,6 +203,24 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                       conditionalPanel(id = "inferencePanel",
                         condition = "input.dropDownMenu == 'Statistical Inference'",
 
+                        # radioButtons(inputId = "popuDistribution",
+                        #              label = strong("Analysis Type"),
+                        #              choiceValues = list("Parametric analysis", "Non-parametric analysis"),
+                        #              choiceNames = list("Parametric analysis", "Non-parametric analysis"),
+                        #              selected = "Parametric analysis", #character(0),
+                        #              inline = TRUE,
+                        #              width = "1000px"),
+                        # 
+                        # conditionalPanel(
+                        #   condition = "input.popuDistribution == 'Non-parametric analysis'",
+                        # 
+                        # ),
+                        # 
+                        # conditionalPanel(
+                        #   condition = "input.popuDistribution == 'Parametric analysis'",
+                        # 
+                        # ),
+                        
                         # radioButtons(inputId = "popuParameter",
                         #              label = strong("Parameter of Interest"),
                         #              choiceValues = list("Population Mean", "Population Standard Deviation", "Sample Size Estimation"),
@@ -636,21 +647,22 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                             conditionalPanel(
                               condition = "input.probability == 'Binomial'",
                               
+                              br(),
                               uiOutput("renderProbabilityBinom"),
                             ),
                             
                             conditionalPanel(
                               condition = "input.probability == 'Poisson'",
                               
+                              br(),
                               uiOutput("renderProbabilityPoisson"),
-                              uiOutput("pVal")
                             ),
                             
                             conditionalPanel(
                               condition = "input.probability == 'Normal'",
                               
+                              br(),
                               uiOutput("renderProbabilityNorm"),
-                              uiOutput("nVal")
                             )
                           )
                       ), 
@@ -962,7 +974,7 @@ server <- function(input, output) {
     iv$add_rule("numTrailsBinom", sv_integer())
     iv$add_rule("numTrailsBinom", sv_gt(0))
     
-    # successProbBinom
+    #successProbBinom
     
     iv$add_rule("successProbBinom", sv_required())
     iv$add_rule("successProbBinom", sv_gte(0))
@@ -994,6 +1006,16 @@ server <- function(input, output) {
     iv$add_rule("xPoisson", sv_required())
     iv$add_rule("xPoisson", sv_integer())
     iv$add_rule("xPoisson", sv_gte(0))
+    
+    #x1Poisson
+    iv$add_rule("x1Poisson", sv_required())
+    iv$add_rule("x1Poisson", sv_integer())
+    iv$add_rule("x1Poisson", sv_gte(0))
+    
+    #x2Poisson
+    iv$add_rule("x2Poisson", sv_required())
+    iv$add_rule("x2Poisson", sv_integer())
+    iv$add_rule("x2Poisson", sv_gte(0))
     
     #popMean 
     
@@ -1294,39 +1316,82 @@ server <- function(input, output) {
     })
 
     observeEvent(input$goPoisson, {
+      
+      Poisson_mu <- input$muPoisson
+      Poisson_x <- input$xPoisson 
+      Poisson_x1 <- input$x1Poisson
+      Poisson_x2 <- input$x2Poisson
+      
       output$renderProbabilityPoisson <- renderUI({
-        poisson_mu <- input$muPoisson
-        poisson_x <- input$xPoisson 
-
-        poissonValues <- reactive({
-        req(input$muPoisson, input$xPoisson)
-
+        
+        validate(
+          need(Poisson_mu != "", "Enter a value for the average number of successes (mu)"),
+          
+          errorClass = "myClass"
+        )
+        
+        if(input$calcPoisson != 'between')
+        {
           validate(
-            need(poisson_mu > 0, "Average must be a positive value"),
-            need(poisson_x != "", "Enter a value for the number of successes (x)")
+            need(Poisson_x != "", "Enter a value for the number of successes (x)"),
+            
+            errorClass = "myClass"
           )
-        })
-        
-        output$pVal <- renderTable({
-          if(input$probability == 'Poisson') {head(poissonValues())}
-        })
-        
-        if(input$muPoisson > 0 && !is.na(input$muPoisson)){
-          if(input$calcPoisson == "exact"){
-            withMathJax(paste0("\\(P(X = \\)", " ", poisson_x, "\\()\\)", " ", "\\( = \\)", " ", round(dpois(poisson_x,poisson_mu),4)))
-          }
-          else if(input$calcPoisson == "cumulative"){
-            withMathJax(paste0("\\(P(X \\leq \\)", " ", poisson_x, "\\()\\)", " ", "\\( = \\)", " ", round(ppois(poisson_x,poisson_mu,lower.tail = TRUE),4)))
-          }
-          else if(input$calcPoisson == "upperTail"){
-            withMathJax(paste0(paste0("\\(P(X > \\)", " ", poisson_x, "\\()\\)", " " ,"\\(= \\)", " ", round(ppois(poisson_x, poisson_mu, lower.tail = FALSE), 4))))
+          
+          if(!is.na(Poisson_mu) && !is.na(Poisson_x)){
+            validate(
+              need(Poisson_mu > 0, "Average must be greater than zero"),
+              
+              need(Poisson_x >= 0, "x must be a positve integer"),
+              need(Poisson_x%%1==0, "x must be a positve integer"),
+              
+              errorClass = "myClass"
+            )
+            
+            if(Poisson_x >= 0){
+              if(input$calcPoisson == 'exact'){
+                withMathJax(paste0("\\(P(X = \\)"," ", Poisson_x,"\\()\\)"," ","\\( = \\)"," ", round(dpois(Poisson_x,Poisson_mu), 4)))
+              }
+              else if(input$calcPoisson == 'cumulative'){
+                withMathJax(paste0("\\(P(X \\leq \\)"," ", Poisson_x,"\\()\\)"," ","\\( = \\)"," ", round(ppois(Poisson_x,Poisson_mu,lower.tail = TRUE), 4)))
+              }
+              else if(input$calcPoisson == 'upperTail'){
+                withMathJax(paste0("\\(P(X \\geq \\)"," ", Poisson_x,"\\()\\)"," ","\\( = \\)"," ", round(ppois(Poisson_x - 1,Poisson_mu,lower.tail = FALSE), 4)))
+              }
+              else if(input$calcPoisson == 'greaterThan'){
+                withMathJax(paste0("\\(P(X > \\)"," ", Poisson_x,"\\()\\)"," ","\\( = \\)"," ", round(ppois(Poisson_x,Poisson_mu,lower.tail = FALSE), 4)))
+              }
+              else if(input$calcPoisson == 'lessThan'){
+                withMathJax(paste0("\\(P(X < \\)"," ", Poisson_x,"\\()\\)"," ","\\( = \\)"," ", round(ppois(Poisson_x - 1,Poisson_mu,lower.tail = TRUE), 4)))
+              }
+            }
           }
         }
-        # else if(input$calcPoisson == "interval" && input$muPoisson > 0){
-        #   withMathJax(
-        #     paste0("\\(P(\\)",aP," ", "\\(\\leq X\\leq \\)", " ", bP, "\\()\\)"," ", "\\( = \\)", " ", ifelse(input$aP > input$bP, "a must be less than or equal to b", round(ppois(input$bP, poisson_mu, lower.tail = TRUE) - ppois(input$aP - 1, poisson_mu, lower.tail = TRUE), 4)))   
-        #   )
-        # }
+        
+        else if(input$calcPoisson == 'between')
+        {
+          validate(
+            need(Poisson_x1 != "", "Enter a value for the number of successes (x1)"),
+            need(Poisson_x2 != "", "Enter a value for the number of successes (x2)"),
+            
+            errorClass = "myClass"
+          )
+          
+          if(!is.na(Poisson_mu) && !is.na(Poisson_x1) && !is.na(Poisson_x2)){
+            validate(
+              need(Poisson_x1 >= 0, "x1 must be a positve integer"),
+              need(Poisson_x1%%1==0, "x1 must be a positve integer"),
+              
+              need(Poisson_x2 >= 0, "x2 must be a positve integer"),
+              need(Poisson_x2%%1==0, "x2 must be a positve integer"),
+              
+              need(Poisson_x1 <= Poisson_x2, "x1 must be less than or equal to x2"),
+              
+              errorClass = "myClass"
+            )
+            withMathJax(paste0("\\(P(", Poisson_x1, " ",  " \\leq X \\leq \\)"," ", Poisson_x2,"\\()\\)"," ","\\( = \\)"," ", round(ppois(Poisson_x2,Poisson_mu,lower.tail = TRUE) - ppois(Poisson_x1 - 1,Poisson_mu,lower.tail = TRUE), 4)))
+          }
+        }
       })
     })
     
@@ -1340,10 +1405,6 @@ server <- function(input, output) {
           validate(
             need(input$popSD > 0, "Standard Deviation must be positive")
           )
-        })
-        
-        output$nVal <- renderTable({
-          if(input$probability == 'Normal') {head(normValues())}
         })
         
         if(input$popSD > 0 && !is.na(input$popSD)){
