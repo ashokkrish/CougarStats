@@ -20,8 +20,17 @@ render <- "
 }"
   
 ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
-           
-  navbarPage(title = div(img(src ="CougarStats.png", height = 100), span("CougarStats", style = "color:#000000; font-weight:bold; font-size:18pt")),
+  
+  tags$head(
+    tags$style(HTML("
+      .shiny-output-error-validation {
+        color: red;
+        font-weight: bold;
+      }
+    "))
+  ),
+                
+  navbarPage(title = div(img(src ="CougarStats.png", height = 100), span("CougarStats", style = "color:#000000; font-weight:bold; font-style: italic; font-size:24pt")),
 
                 tabPanel(title = "Methods",
                   sidebarLayout(
@@ -29,6 +38,16 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                       withMathJax(),
                       shinyjs::useShinyjs(),
                       id = "sideBar", 
+                      
+                      # tags$head(
+                      #   tags$style(HTML("
+                      #   .shiny-output-error-validation {
+                      #     color: #ff0000;
+                      #     font-weight: bold;
+                      #   }
+                      # "))
+                      # ),
+                      
                       selectInput(
                         inputId = "dropDownMenu",
                         label = strong("Choose Statistical Topic"),
@@ -40,7 +59,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                         id = "descriptiveStatsPanel",
                         condition = "input.dropDownMenu == 'Descriptive Statistics'",
                         textAreaInput("descriptiveStat", label = strong("Sample"), value = "6, 16, 9, 6, 8, 9, 9, 5, 5, 11", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
-                        # "2.14, 2.09, 2.65, 3.56, 5.55, 5.00, 5.55, 3.09, 6.79"
+
                         actionButton(inputId = "goDescpStats", label = "Calculate",
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
                         actionButton("resetAll", label = "Reset Values",
@@ -57,29 +76,59 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                           id = "binomialPanel",
                           condition = "input.probability == 'Binomial'",
                           
-                          numericInput(inputId = "numTrailsBinom", 
-                                       label = strong("Number of Trials (n)"),
-                                       value = 15, min = 1, step = 1),
+                          numericInput(inputId = "numTrailsBinom",
+                                       label = strong("Number of Trials (\\( n\\))"),
+                                       value = 10, min = 1, step = 1),
                           
-                          numericInput(inputId = "successProbBinom", 
-                                       label = strong("Probability of Success (p)"),
-                                       value = 0.29, min = 0, max = 1, step = 0.00001),
-
-                          radioButtons(inputId = "calcBinom", 
+                          numericInput(inputId = "successProbBinom",
+                                       label = strong("Probability of Success (\\( p\\))"),
+                                       value = 0.18, min = 0, max = 1, step = 0.00001),
+                          
+                          radioButtons(inputId = "calcBinom",
                                        label = strong("Probability"),
-                                       choiceValues = list("exact","cumulative","upperTail"),
-                                       choiceNames = list("\\(P(X = x \\))","\\(P(X \\leq x)\\)","\\(P(X \\gt x)\\)"),
-                                       inline = TRUE,
+                                       choiceValues = list("exact", "cumulative", "upperTail", "greaterThan", "lessThan", "between"),
+                                       choiceNames = list("\\(P(X = x \\))","\\(P(X \\leq x)\\)","\\(P(X \\ge x)\\)", "\\(P(X \\gt x)\\)", "\\(P(X < x)\\)", "\\(P(x_1 \\leq X \\leq x_2)\\)"),
+                                       inline = FALSE,
                                        width = '1000px'),
-
-                          numericInput(inputId = "numSuccessesBinom", 
-                                       label = strong("Number of Successes (x)"),
-                                       value = 3, min = 0, step = 1),
+                          
+                          conditionalPanel(
+                            condition = "input.calcBinom != 'between'",
+                            
+                            numericInput(inputId = "numSuccessesBinom",
+                                         label = strong("Number of Successes (\\( x\\))"),
+                                         value = 3, min = 0, step = 1)
+                          ),
+                          
+                          conditionalPanel(
+                            condition = "input.calcBinom == 'between'",
+                            
+                            numericInput(inputId = "numSuccessesBinomx1",
+                                         label = strong("Number of successes (\\( x_{1}\\))"),
+                                         value = 3, min = 0, step = 1),
+                            
+                            numericInput(inputId = "numSuccessesBinomx2",
+                                         label = strong("Number of successes (\\( x_{2}\\))"),
+                                         value = 6, min = 0, step = 1)
+                          ),
+                          
+                          # checkboxInput(inputId = "probDistTable",
+                          #               label = strong("Probability Distribution Table"),
+                          #               value = FALSE,
+                          #               width = NULL),
+                          
+                          # checkboxInput(inputId = "mean_and_SD_binom",
+                          #               label = strong("Mean (\\( \\mu\\)) and Standard Deviation (\\( \\sigma\\))"),
+                          #               value = FALSE,
+                          #               width = NULL),
                           
                           actionButton(inputId = "goBinom", label = "Calculate",
                                        style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
                           actionButton("resetBinomial", label = "Reset Values",
-                                       style="color: #fff; background-color: #337ab7; border-color: #2e6da4") # , onclick = "history.go(0)"
+                                       style="color: #fff; background-color: #337ab7; border-color: #2e6da4"), # , onclick = "history.go(0)"
+                          # br(),
+                          # br(),
+                          # br(),
+                          # downloadButton('downloadBinomResults', 'Download Results'),
                         ),
                         
                         conditionalPanel(
@@ -544,6 +593,9 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                             checkboxInput("pearson", "Pearson's Product-Moment Correlation (r)"),
                             checkboxInput("kendall", "Kendall's Rank Correlation (tau)"),
                             checkboxInput("spearman", "Spearman's Rank Correlation (rho)"),
+                            
+                            # br(),
+                            # checkboxGroupInput('corcoeff', strong('Correlation Coefficient'), choices = c("Pearson", "Kendall", "Spearman"), selected = "Pearson"),
                           ),
                         ),
                         
@@ -561,10 +613,10 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                     
                     mainPanel(
                       
-                      tags$style(type ="text/css",
-                                 ".shiny-output-error { visibility: hidden; }",
-                                 ".shiny-output-error:before { visibility: hidden; }"
-                      ), 
+                      # tags$style(type ="text/css",
+                      #            ".shiny-output-error { visibility: hidden; }",
+                      #            ".shiny-output-error:before { visibility: hidden; }"
+                      # ), 
                       
                       div(id = "descriptiveStatsMP",
                           conditionalPanel(
@@ -585,7 +637,6 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                               condition = "input.probability == 'Binomial'",
                               
                               uiOutput("renderProbabilityBinom"),
-                              uiOutput("bVal")
                             ),
                             
                             conditionalPanel(
@@ -923,6 +974,16 @@ server <- function(input, output) {
     iv$add_rule("numSuccessesBinom", sv_integer())
     iv$add_rule("numSuccessesBinom", sv_gte(0))
     
+    #x1
+    iv$add_rule("numSuccessesBinomx1", sv_required())
+    iv$add_rule("numSuccessesBinomx1", sv_integer())
+    iv$add_rule("numSuccessesBinomx1", sv_gte(0))
+    
+    #x2
+    iv$add_rule("numSuccessesBinomx2", sv_required())
+    iv$add_rule("numSuccessesBinomx2", sv_integer())
+    iv$add_rule("numSuccessesBinomx2", sv_gte(0))
+    
     #muPoisson
     
     iv$add_rule("muPoisson", sv_required())
@@ -1134,45 +1195,104 @@ server <- function(input, output) {
     })
     
     observeEvent(input$goBinom, {
+      
+      binom_n <- input$numTrailsBinom
+      binom_p <- input$successProbBinom
+      binom_x <- input$numSuccessesBinom
+      
+      binom_x1 <- input$numSuccessesBinomx1
+      binom_x2 <- input$numSuccessesBinomx2
+      
       output$renderProbabilityBinom <- renderUI({
-        binom_n <- input$numTrailsBinom
-        binom_p <- input$successProbBinom
-        binom_x <- input$numSuccessesBinom
         
-        binomValues <- reactive({
+        validate(
+          need(binom_n != "", "Enter a value for the number of trials (n)"),
+          need(binom_p != "", "Enter a value for the probability of successes (p)"),
           
-          req(input$numTrailsBinom, input$successProbBinom, input$numSuccessesBinom)
-          
+          errorClass = "myClass"
+        )
+        
+        if(input$calcBinom != 'between')
+        {
           validate(
-            need(binom_n != "", "Enter a value for the number of trials (n)"),
-            need(binom_p != "", "Enter a value for the probability of successes (p)"),
             need(binom_x != "", "Enter a value for the number of successes (x)"),
-            need(binom_n > 0, "n must be a positive integer"),
-            need(binom_p > 0, "p must be > 0"),
-            need(binom_p < 1, "p must be < 1"),
-            need(binom_x >= 0, "x must be a positve integer"),
-            need(binom_x <= binom_n, "Number of successes(x) must be less than or equal to the number of trials(n)")
+            
+            errorClass = "myClass"
           )
-        })
-        
-        output$bVal <- renderTable({
-          if(input$probability == 'Binomial') {head(binomValues())}
-        })
-        
-        if(input$numSuccessesBinom <= input$numTrailsBinom && input$numSuccessesBinom >= 0 && input$successProbBinom < 1 && input$successProbBinom > 0 && input$numTrailsBinom > 0){
-            if(input$calcBinom == 'exact'){
-              withMathJax(paste0("\\(P(X = \\)"," ",binom_x,"\\()\\)"," ","\\( = \\)"," ", round(dbinom(binom_x,binom_n,binom_p),4)))
+          
+          if(!is.na(binom_n) && !is.na(binom_p) && !is.na(binom_x)){
+            validate(
+              need(binom_n > 0, "n must be a positive integer"),
+              need(binom_n%%1==0, "n must be a positve integer"),
+              
+              need(binom_p >= 0, "p must be between 0 and 1"),
+              need(binom_p <= 1, "p must be between 0 and 1"),
+              
+              need(binom_x >= 0, "x must be a positve integer"),
+              need(binom_x%%1==0, "x must be a positve integer"),
+              need(binom_x <= binom_n, "Number of successes (x) must be less than or equal to the number of trials (n)"),
+              
+              errorClass = "myClass"
+            )
+            
+            if(binom_x <= binom_n && binom_x >= 0 && binom_p <= 1 && binom_p >= 0 && binom_n > 0){
+              if(input$calcBinom == 'exact'){
+                withMathJax(paste0("\\(P(X = \\)"," ", binom_x,"\\()\\)"," ","\\( = \\)"," ", round(dbinom(binom_x,binom_n,binom_p), 4)))
+              }
+              else if(input$calcBinom == 'cumulative'){
+                withMathJax(paste0("\\(P(X \\leq \\)"," ", binom_x,"\\()\\)"," ","\\( = \\)"," ", round(pbinom(binom_x,binom_n,binom_p,lower.tail = TRUE), 4)))
+              }
+              else if(input$calcBinom == 'upperTail'){
+                withMathJax(paste0("\\(P(X \\geq \\)"," ", binom_x,"\\()\\)"," ","\\( = \\)"," ", round(pbinom(binom_x - 1,binom_n,binom_p,lower.tail = FALSE), 4)))
+              }
+              else if(input$calcBinom == 'greaterThan'){
+                withMathJax(paste0("\\(P(X > \\)"," ", binom_x,"\\()\\)"," ","\\( = \\)"," ", round(pbinom(binom_x,binom_n,binom_p,lower.tail = FALSE), 4)))
+              }
+              else if(input$calcBinom == 'lessThan'){
+                withMathJax(paste0("\\(P(X < \\)"," ", binom_x,"\\()\\)"," ","\\( = \\)"," ", round(pbinom(binom_x - 1,binom_n,binom_p,lower.tail = TRUE), 4)))
+              }
+              
+              # if(input$probDistTable == TRUE){
+              #   output$probabilityTable <- DT::renderDataTable(
+              #     {
+              #       dfBinom <- data.frame("Probability", value = round(dbinom(x = 0:binom_n, size = binom_n, prob = binom_p), 4))
+              #     }
+              #   )
+              # }
             }
-            else if(input$calcBinom == 'cumulative'){
-              withMathJax(paste0("\\(P(X \\leq \\)"," ",binom_x,"\\()\\)"," ","\\( = \\)"," ", round(pbinom(binom_x,binom_n,binom_p,lower.tail = TRUE),4)))
-            }
-            else if(input$calcBinom == 'upperTail'){
-              withMathJax(paste0("\\(P(X > \\)"," ",binom_x,"\\()\\)"," ","\\( = \\)"," ", round(pbinom(binom_x,binom_n,binom_p,lower.tail = FALSE),4)))
-            }
+          }
         }
+        
+        else if(input$calcBinom == 'between')
+        {
+          validate(
+            need(binom_x1 != "", "Enter a value for the number of successes (x1)"),
+            need(binom_x2 != "", "Enter a value for the number of successes (x2)"),
+            
+            errorClass = "myClass"
+          )
+          
+          if(!is.na(binom_n) && !is.na(binom_p) && !is.na(binom_x1) && !is.na(binom_x2)){
+            validate(
+              need(binom_x1 >= 0, "x1 must be a positve integer"),
+              need(binom_x1%%1==0, "x1 must be a positve integer"),
+              need(binom_x1 <= binom_n, "Number of successes (x1) must be less than or equal to the number of trials (n)"),
+              
+              need(binom_x2 >= 0, "x2 must be a positve integer"),
+              need(binom_x2%%1==0, "x2 must be a positve integer"),
+              need(binom_x2 <= binom_n, "Number of successes (x2) must be less than or equal to the number of trials (n)"),
+              
+              need(binom_x1 <= binom_x2, "x1 must be less than or equal to x2"),
+              
+              errorClass = "myClass"
+            )
+            withMathJax(paste0("\\(P(", binom_x1, " ",  " \\leq X \\leq \\)"," ", binom_x2,"\\()\\)"," ","\\( = \\)"," ", round(pbinom(binom_x2,binom_n,binom_p,lower.tail = TRUE) - pbinom(binom_x1 -1,binom_n,binom_p,lower.tail = TRUE), 4)))
+          }
+        }
+        
       })
     })
-    
+
     observeEvent(input$goPoisson, {
       output$renderProbabilityPoisson <- renderUI({
         poisson_mu <- input$muPoisson
@@ -1800,6 +1920,10 @@ server <- function(input, output) {
     #------------------------------------------#
     
     observeEvent(input$goRegression, {
+      
+      # validate(
+      #   need(input$corcoeff, 'Check at least one Correlation Coeeficient'),
+      # )
       
       if(input$simple_vs_multiple == 'SLR')
       {
