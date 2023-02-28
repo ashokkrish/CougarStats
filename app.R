@@ -38,21 +38,12 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                       withMathJax(),
                       shinyjs::useShinyjs(),
                       id = "sideBar", 
-                      
-                      # tags$head(
-                      #   tags$style(HTML("
-                      #   .shiny-output-error-validation {
-                      #     color: #ff0000;
-                      #     font-weight: bold;
-                      #   }
-                      # "))
-                      # ),
-                      
+
                       selectInput(
                         inputId = "dropDownMenu",
                         label = strong("Choose Statistical Topic"),
                         choices = c("Descriptive Statistics", "Probability Distributions", "Statistical Inference", "Regression and Correlation"),
-                        selected = "Regression and Correlation", # NULL
+                        selected = "Statistical Inference", #"Probability Distributions", #"Regression and Correlation", # NULL
                       ),
                       
                       conditionalPanel(
@@ -88,8 +79,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                        label = strong("Probability"),
                                        choiceValues = list("exact", "cumulative", "upperTail", "greaterThan", "lessThan", "between"),
                                        choiceNames = list("\\(P(X = x \\))","\\(P(X \\leq x)\\)","\\(P(X \\ge x)\\)", "\\(P(X \\gt x)\\)", "\\(P(X < x)\\)", "\\(P(x_1 \\leq X \\leq x_2)\\)"),
-                                       inline = FALSE,
-                                       width = '1000px'),
+                                       inline = FALSE), #,width = '1000px'),
                           
                           conditionalPanel(
                             condition = "input.calcBinom != 'between'",
@@ -142,8 +132,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                        label = strong("Probability"),
                                        choiceValues = list("exact", "cumulative", "upperTail", "greaterThan", "lessThan", "between"),
                                        choiceNames = list("\\(P(X = x \\))","\\(P(X \\leq x)\\)","\\(P(X \\ge x)\\)", "\\(P(X \\gt x)\\)", "\\(P(X < x)\\)", "\\(P(x_1 \\leq X \\leq x_2)\\)"),
-                                       inline = FALSE,
-                                       width = '1000px'),
+                                       inline = FALSE), #,width = '1000px'),
                           
                           conditionalPanel(
                             condition = "input.calcPoisson != 'between'",
@@ -184,14 +173,30 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
 
                           radioButtons(inputId = "calcNormal",
                                        label = strong("Probability"), 
-                                       choiceValues = list("cumulative", "P(X > x)", "betweenNormal"),
-                                       choiceNames = list("\\(P(X \\leq x)\\)", "\\(P(X \\gt x)\\)", "\\(P(x_1 \\leq X \\leq x_2)\\)"),
-                                       inline = TRUE,
-                                       width = "1000px"),
+                                       choiceValues = list("cumulative", "upperTail", "between"),
+                                       choiceNames = list("\\(P(X \\leq x)\\) or \\(P(X < x)\\)", "\\(P(X \\ge x)\\) or \\(P(X \\gt x)\\)", "\\(P(x_1 \\leq X \\leq x_2)\\)"),
+                                       inline = FALSE), #,width = '1000px'),
                           
-                          numericInput(inputId = "xValue",
-                                       label = strong("x"),
-                                       value = 0, step = 0.00001),
+                          conditionalPanel(
+                            condition = "input.calcNormal != 'between'",
+                            
+                                numericInput(inputId = "xValue",
+                                             label = strong("Normally distributed variable (\\( x\\))"),
+                                             value = 0, step = 0.00001),
+                          ),
+                          
+                          conditionalPanel(
+                            condition = "input.calcNormal == 'between'",
+                            
+                            numericInput(inputId = "x1Value",
+                                         label = strong("Normally distributed variable (\\( x_{1}\\))"),
+                                         value = -1, step = 0.00001),
+                            
+                            numericInput(inputId = "x2Value",
+                                         label = strong("Normally distributed variable (\\( x_{2}\\))"),
+                                         value = 1, step = 0.00001),
+
+                          ),
                           
                           actionButton(inputId = "goNormal", label = "Calculate",
                                        style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
@@ -208,8 +213,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                         #              choiceValues = list("Parametric analysis", "Non-parametric analysis"),
                         #              choiceNames = list("Parametric analysis", "Non-parametric analysis"),
                         #              selected = "Parametric analysis", #character(0),
-                        #              inline = TRUE,
-                        #              width = "1000px"),
+                        #              inline = TRUE), #,width = '1000px'),
                         # 
                         # conditionalPanel(
                         #   condition = "input.popuDistribution == 'Non-parametric analysis'",
@@ -226,16 +230,14 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                         #              choiceValues = list("Population Mean", "Population Standard Deviation", "Sample Size Estimation"),
                         #              choiceNames = list("Population Mean (\\( \\mu\\))", "Population Standard Deviation (\\( \\sigma\\))", "Sample Size Estimation (n)"),
                         #              selected = "Population Mean",
-                        #              #inline = TRUE,
-                        #              width = "1000px"),
+                        #              #inline = TRUE), #,width = '1000px'),
                         
                         radioButtons(inputId = "popuParameter",
                                      label = strong("Parameter of Interest"),
                                      choiceValues = list("Population Mean", "Population Proportion"),
                                      choiceNames = list("Population Mean (\\( \\mu\\))", "Population Proportion (p)"),
-                                     selected = character(0), #"Population Mean",
-                                     inline = TRUE,
-                                     width = "1000px"),
+                                     selected = "Population Mean", #character(0), #
+                                     inline = TRUE), #,width = '1000px'),
 
                         conditionalPanel(
                           condition = "input.popuParameter == 'Population Mean' || input.popuParameter == 'Population Proportion'",
@@ -245,8 +247,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                        choiceValues = list("1", "2"),
                                        choiceNames = list("1", "2"),
                                        selected = character(0), #"1", #
-                                       inline = TRUE,
-                                       width = "1000px"),
+                                       inline = TRUE), #,width = '1000px'),
                         ),
                         
                        conditionalPanel(
@@ -260,8 +261,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                            choiceValues = list("Summarized Data", "Enter Raw Data"),
                                            choiceNames = list("Summarized Data", "Enter Raw Data"),
                                            selected = character(0), # "Summarized Data",
-                                           inline = TRUE,
-                                           width = "1000px"),
+                                           inline = TRUE), #,width = '1000px'),
                             ),
                         
                             conditionalPanel(
@@ -280,8 +280,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                            choiceValues = list("Known", "Unknown"),
                                            choiceNames = list("Known", "Unknown"),
                                            selected = "Known",
-                                           inline = TRUE,
-                                           width = "1000px"),
+                                           inline = TRUE), #,width = '1000px'),
                               
                               conditionalPanel(
                                 condition = "input.sigmaKnown == 'Known'",
@@ -308,8 +307,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                            choiceValues = list("rawKnown", "rawUnknown"),
                                            choiceNames = list("Known", "Unknown"),
                                            selected = "rawKnown",
-                                           inline = TRUE,
-                                           width = "1000px"),
+                                           inline = TRUE), #,width = '1000px'),
                               
                               conditionalPanel(
                                 condition = "input.sigmaKnownRaw == 'rawKnown'",
@@ -348,8 +346,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                            choiceValues = list("bothKnown", "bothUnknown"),
                                            choiceNames = list("Both Known", "Both Unknown (Assumed Equal)"),
                                            selected = "bothKnown",
-                                           inline = TRUE,
-                                           width = "1000px"),
+                                           inline = TRUE), #,width = '1000px'),
                               
                               conditionalPanel(
                                 condition = "input.bothsigmaKnown == 'bothKnown'",
@@ -379,8 +376,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                 #              choiceValues = list("Yes", "No"),
                                 #              choiceNames = list("Yes", "No (Welch–Satterthwaite df)"),
                                 #              selected = "Yes",
-                                #              inline = TRUE,
-                                #              width = "1000px")
+                                #              inline = TRUE), #,width = '1000px'),
                               )
                             ),
                             
@@ -396,8 +392,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                            choiceValues = list("Independent Samples", "Dependent Samples"),
                                            choiceNames = list("Independent Samples", "Dependent Samples (Paired Data)"),
                                            selected = "Independent Samples",
-                                           inline = TRUE,
-                                           width = "1000px"),
+                                           inline = TRUE), #,width = '1000px'),
                               
                               conditionalPanel(
                                 condition = "input.samplesType == 'Independent Samples'",
@@ -407,8 +402,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                                choiceValues = list("bothKnownRaw", "bothUnknownRaw"),
                                                choiceNames = list("Both Known", "Both Unknown (Assumed Equal)"),
                                                selected = "bothKnownRaw",
-                                               inline = TRUE,
-                                               width = "1000px"),
+                                               inline = TRUE), #,width = '1000px'),
                                 
                                   conditionalPanel(
                                     condition = "input.bothsigmaKnownRaw == 'bothKnownRaw'",
@@ -432,8 +426,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                            choiceValues = list("Confidence Interval", "Hypothesis Testing"),
                                            choiceNames = list("Confidence Interval", "Hypothesis Testing"),
                                            selected = "Confidence Interval", # character(0), # 
-                                           inline = TRUE,
-                                           width = "1000px"),
+                                           inline = TRUE), #,width = '1000px'),
                               
                               conditionalPanel(
                                 condition = "input.inferenceType == 'Confidence Interval'",
@@ -542,9 +535,8 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                      label = strong("Regression Type"),
                                      choiceValues = list("SLR", "MLR"),
                                      choiceNames = list("Simple Linear Regression (SLR)", "Multiple Linear Regression (MLR)"),
-                                     selected = "Simple Linear Regression", # character(0), #
-                                     inline = TRUE,
-                                     width = "1000px"),
+                                     selected = "SLR", # character(0), #
+                                     inline = TRUE), #,width = '1000px'),
                         
                         conditionalPanel(
                           condition = "input.simple_vs_multiple == 'SLR'",
@@ -554,8 +546,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                        choiceValues = list("Enter Raw Data", "Upload Data"),
                                        choiceNames = list("Enter Raw Data", "Upload Data"),
                                        selected = "Enter Raw Data", # character(0), #
-                                       inline = TRUE,
-                                       width = "1000px"),
+                                       inline = TRUE), #,width = '1000px'),
 
                            conditionalPanel(
                              condition = "input.dataRegCor == 'Enter Raw Data'",
@@ -1030,6 +1021,9 @@ server <- function(input, output) {
     
     iv$add_rule("xValue", sv_required())
     
+    iv$add_rule("x1Value", sv_required())
+    iv$add_rule("x2Value", sv_required())
+    
     #sampleSize
     
     iv$add_rule("sampleSize", sv_required())
@@ -1232,7 +1226,7 @@ server <- function(input, output) {
           need(binom_p != "", "Enter a value for the probability of successes (p)"),
           
           errorClass = "myClass"
-        )
+          )
         
         if(input$calcBinom != 'between')
         {
@@ -1240,7 +1234,7 @@ server <- function(input, output) {
             need(binom_x != "", "Enter a value for the number of successes (x)"),
             
             errorClass = "myClass"
-          )
+            )
           
           if(!is.na(binom_n) && !is.na(binom_p) && !is.na(binom_x)){
             validate(
@@ -1255,7 +1249,7 @@ server <- function(input, output) {
               need(binom_x <= binom_n, "Number of successes (x) must be less than or equal to the number of trials (n)"),
               
               errorClass = "myClass"
-            )
+              )
             
             if(binom_x <= binom_n && binom_x >= 0 && binom_p <= 1 && binom_p >= 0 && binom_n > 0){
               if(input$calcBinom == 'exact'){
@@ -1292,7 +1286,7 @@ server <- function(input, output) {
             need(binom_x2 != "", "Enter a value for the number of successes (x2)"),
             
             errorClass = "myClass"
-          )
+            )
           
           if(!is.na(binom_n) && !is.na(binom_p) && !is.na(binom_x1) && !is.na(binom_x2)){
             validate(
@@ -1307,7 +1301,7 @@ server <- function(input, output) {
               need(binom_x1 <= binom_x2, "x1 must be less than or equal to x2"),
               
               errorClass = "myClass"
-            )
+              )
             withMathJax(paste0("\\(P(", binom_x1, " ",  " \\leq X \\leq \\)"," ", binom_x2,"\\()\\)"," ","\\( = \\)"," ", round(pbinom(binom_x2,binom_n,binom_p,lower.tail = TRUE) - pbinom(binom_x1 -1,binom_n,binom_p,lower.tail = TRUE), 4)))
           }
         }
@@ -1328,7 +1322,7 @@ server <- function(input, output) {
           need(Poisson_mu != "", "Enter a value for the average number of successes (mu)"),
           
           errorClass = "myClass"
-        )
+          )
         
         if(input$calcPoisson != 'between')
         {
@@ -1336,7 +1330,7 @@ server <- function(input, output) {
             need(Poisson_x != "", "Enter a value for the number of successes (x)"),
             
             errorClass = "myClass"
-          )
+            )
           
           if(!is.na(Poisson_mu) && !is.na(Poisson_x)){
             validate(
@@ -1346,7 +1340,7 @@ server <- function(input, output) {
               need(Poisson_x%%1==0, "x must be a positve integer"),
               
               errorClass = "myClass"
-            )
+              )
             
             if(Poisson_x >= 0){
               if(input$calcPoisson == 'exact'){
@@ -1375,7 +1369,7 @@ server <- function(input, output) {
             need(Poisson_x2 != "", "Enter a value for the number of successes (x2)"),
             
             errorClass = "myClass"
-          )
+            )
           
           if(!is.na(Poisson_mu) && !is.na(Poisson_x1) && !is.na(Poisson_x2)){
             validate(
@@ -1396,25 +1390,63 @@ server <- function(input, output) {
     })
     
     observeEvent(input$goNormal, {
+      
+      norm_mu <- input$popMean
+      norm_sigma <- input$popSD
+      norm_x <- input$xValue
+      
+      norm_x1 <- input$x1Value
+      norm_x2 <- input$x2Value
+      
       output$renderProbabilityNorm <- renderUI({
-        normMean <- input$popMean
-        normSd <- input$popSD
-        normX <- input$xValue
-        
-        normValues <- reactive({
-          validate(
-            need(input$popSD > 0, "Standard Deviation must be positive")
+
+        validate(
+          need(norm_mu != "", "Enter a value for population mean (mu)"),
+          need(norm_sigma != "", "Enter a value for population standard deviation (sigma)"),
+          
+          errorClass = "myClass"
           )
-        })
-        
-        if(input$popSD > 0 && !is.na(input$popSD)){
-          if(input$calcNormal == "cumulative"){
-            withMathJax(paste0("\\(P(X \\leq \\)", " ", normX, "\\()\\)", " ", "\\( = \\)", " ", round(pnorm(normX, normMean, normSd, lower.tail = TRUE),4)))
-          }
-          else if(input$calcNormal == "P(X > x)"){
-            withMathJax(paste0("\\(P(X > \\)", " ", normX, "\\()\\)", " ", "\\( = \\)", " ", round(pnorm(normX, normMean, normSd, lower.tail = FALSE),4)))
-          }
+
+        if(!is.na(norm_mu) && !is.na(norm_sigma)){
+          
+            validate(
+              need(norm_sigma > 0, "Standard Deviation must be greater than 0"),
+              
+              errorClass = "myClass"
+            )
+          
+            if(input$calcNormal != 'between')
+            {
+              if(input$popSD > 0){
+                if(input$calcNormal == "cumulative"){
+                  withMathJax(paste0("\\(P(X \\leq \\)", " ", norm_x, "\\()\\)", " ", "\\( = \\)", " ", round(pnorm(norm_x, norm_mu, norm_sigma, lower.tail = TRUE),4)))
+                }
+                else if(input$calcNormal == "upperTail"){
+                  withMathJax(paste0("\\(P(X > \\)", " ", norm_x, "\\()\\)", " ", "\\( = \\)", " ", round(pnorm(norm_x, norm_mu, norm_sigma, lower.tail = FALSE),4)))
+                }
+              }
+            }
+            else if(input$calcNormal == 'between')
+            {
+              validate(
+                need(norm_x1 != "", "Enter a value for x1"),
+                need(norm_x2 != "", "Enter a value for x2"),
+                
+                errorClass = "myClass"
+                )
+              
+              if(!is.na(Poisson_mu) && !is.na(Poisson_x1) && !is.na(Poisson_x2)){
+                validate(
+                  need(norm_x1 <= norm_x2, "x1 must be less than or equal to x2"),
+                  
+                  errorClass = "myClass"
+                )
+                #withMathJax(paste0("\\(P(", Poisson_x1, " ",  " \\leq X \\leq \\)"," ", Poisson_x2,"\\()\\)"," ","\\( = \\)"," ", round(ppois(Poisson_x2,Poisson_mu,lower.tail = TRUE) - ppois(Poisson_x1 - 1,Poisson_mu,lower.tail = TRUE), 4)))
+              }
+            }
         }
+
+
       })
     })
     
