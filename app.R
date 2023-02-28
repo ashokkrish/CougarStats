@@ -246,7 +246,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                        label = strong("Number of samples"),
                                        choiceValues = list("1", "2"),
                                        choiceNames = list("1", "2"),
-                                       selected = character(0), #"1", #
+                                       selected = "1", #character(0), #
                                        inline = TRUE), #,width = '1000px'),
                         ),
                         
