@@ -43,7 +43,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                         inputId = "dropDownMenu",
                         label = strong("Choose Statistical Topic"),
                         choices = c("Descriptive Statistics", "Probability Distributions", "Statistical Inference", "Regression and Correlation"),
-                        selected = "Statistical Inference", #"Probability Distributions", #"Regression and Correlation", # NULL
+                        selected = "Statistical Inference", #"Descriptive Statistics", #"Probability Distributions", #"Regression and Correlation", # NULL
                       ),
                       
                       conditionalPanel(
@@ -235,7 +235,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                         radioButtons(inputId = "popuParameter",
                                      label = strong("Parameter of Interest"),
                                      choiceValues = list("Population Mean", "Population Proportion"),
-                                     choiceNames = list("Population Mean (\\( \\mu\\))", "Population Proportion (p)"),
+                                     choiceNames = list("Population Mean (\\( \\mu\\))", "Population Proportion (\\( p\\))"),
                                      selected = "Population Mean", #character(0), #
                                      inline = TRUE), #,width = '1000px'),
 
@@ -260,7 +260,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                            label = strong("Data Availability"),
                                            choiceValues = list("Summarized Data", "Enter Raw Data"),
                                            choiceNames = list("Summarized Data", "Enter Raw Data"),
-                                           selected = character(0), # "Summarized Data",
+                                           selected = "Summarized Data", # character(0), # 
                                            inline = TRUE), #,width = '1000px'),
                             ),
                         
@@ -276,7 +276,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                            value = 103.5375, step = 0.00001),
                               
                               radioButtons(inputId = "sigmaKnown",
-                                           label = strong("Population Standard Deviation (\\( \\sigma\\))"),
+                                           label = strong("Is Population Standard Deviation (\\( \\sigma\\)) known?"),
                                            choiceValues = list("Known", "Unknown"),
                                            choiceNames = list("Known", "Unknown"),
                                            selected = "Known",
@@ -342,7 +342,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                            value = 33.9, step = 0.00001),
                               
                               radioButtons(inputId = "bothsigmaKnown",
-                                           label = strong("Population Standard Deviations (\\( \\sigma_{1}\\) and \\( \\sigma_{2}\\))"),
+                                           label = strong("Are Population Standard Deviations (\\( \\sigma_{1}\\) and \\( \\sigma_{2}\\)) known?"),
                                            choiceValues = list("bothKnown", "bothUnknown"),
                                            choiceNames = list("Both Known", "Both Unknown (Assumed Equal)"),
                                            selected = "bothKnown",
@@ -398,7 +398,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                 condition = "input.samplesType == 'Independent Samples'",
                                 
                                   radioButtons(inputId = "bothsigmaKnownRaw",
-                                               label = strong("Population Standard Deviations (\\( \\sigma_{1}\\) and \\( \\sigma_{2}\\))"),
+                                               label = strong("Are Population Standard Deviations (\\( \\sigma_{1}\\) and \\( \\sigma_{2}\\)) known?"),
                                                choiceValues = list("bothKnownRaw", "bothUnknownRaw"),
                                                choiceNames = list("Both Known", "Both Unknown (Assumed Equal)"),
                                                selected = "bothKnownRaw",
@@ -416,53 +416,6 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                                  value = 3.47, min = 0.00001, step = 0.00001),
                                   )
                                 )
-                            ),
-                            
-                            conditionalPanel(
-                              condition = "input.dataAvailability == 'Summarized Data' || input.dataAvailability == 'Enter Raw Data'",
-                              
-                              radioButtons(inputId = "inferenceType",
-                                           label = strong("Inference Type"),
-                                           choiceValues = list("Confidence Interval", "Hypothesis Testing"),
-                                           choiceNames = list("Confidence Interval", "Hypothesis Testing"),
-                                           selected = "Confidence Interval", # character(0), # 
-                                           inline = TRUE), #,width = '1000px'),
-                              
-                              conditionalPanel(
-                                condition = "input.inferenceType == 'Confidence Interval'",
-                                
-                                radioButtons(inputId = "confidenceLevel", label = strong("Confidence Level"), selected = c("95%"), choices = c("90%", "95%","99%"), inline = TRUE)
-                              ),
-                              
-                              conditionalPanel(
-                                condition = "input.inferenceType == 'Hypothesis Testing'",
-                                
-                                radioButtons(inputId = "significanceLevel", label = strong("Significance Level"), selected = c("5%"), choices = c("10%", "5%","1%"), inline = TRUE),
-                              ),
-                              
-                              # Dropdown for 1-sample HT
-                              
-                              conditionalPanel(
-                                condition = "input.samplesSelect == '1' && input.inferenceType == 'Hypothesis Testing'",
-                                
-                                numericInput(inputId = "hypMean",
-                                             label = strong("Hypothesized Population Mean Value"),
-                                             value = 99, step = 0.00001),
-                                
-                                selectizeInput(
-                                  inputId = "altHypothesis",
-                                  label = strong("Alternate Hypothesis"),
-                                  choices = c(
-                                    "< " = 1,
-                                    "&ne; " = 2,
-                                    "> " = 3
-                                  ),
-                                  selected = 2,
-                                  options = list(
-                                    render = I(render)
-                                  )
-                                )
-                              )
                             ),
                             
                             # Dropdown for 2-sample HT
@@ -493,35 +446,97 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                            condition = "input.samplesSelect == '1'",
                            
                            numericInput(inputId = "numSuccesses", 
-                                        label = strong("Number of Successes (x)"),
+                                        label = strong("Number of Successes (\\( x\\))"),
                                         value = 1087, min = 0, step = 1),
                            
                            numericInput(inputId = "numTrails", 
-                                        label = strong("Number of Trials (n)"),
+                                        label = strong("Number of Trials (\\( n\\))"),
                                         value = 1430, min = 1, step = 1),
                           ),
                          
                          conditionalPanel(
                            condition = "input.samplesSelect == '2'",
                          
-                           numericInput(inputId = "numSuccesses", 
+                           numericInput(inputId = "numSuccesses1", 
                                         label = strong("Number of Successes 1 (\\( x_{1}\\))"),
                                         value = 174, min = 0, step = 1),
                            
-                           numericInput(inputId = "numTrails", 
+                           numericInput(inputId = "numTrails1", 
                                         label = strong("Number of Trials 1 (\\( n_{1}\\))"),
                                         value = 300, min = 1, step = 1),
                            
-                           numericInput(inputId = "numSuccesses", 
+                           numericInput(inputId = "numSuccesses2", 
                                         label = strong("Number of Successes 2 (\\( x_{2}\\))"),
                                         value = 111, min = 0, step = 1),
                            
-                           numericInput(inputId = "numTrails", 
+                           numericInput(inputId = "numTrails2", 
                                         label = strong("Number of Trials 2 (\\( n_{2}\\))"),
                                         value = 300, min = 1, step = 1),
                          ),
                        ),
                        
+                       conditionalPanel(
+                         condition = "input.dataAvailability == 'Summarized Data' || input.dataAvailability == 'Enter Raw Data' || input.popuParameter == 'Population Proportion'",
+                         
+                         radioButtons(inputId = "inferenceType",
+                                      label = strong("Inference Type"),
+                                      choiceValues = list("Confidence Interval", "Hypothesis Testing"),
+                                      choiceNames = list("Confidence Interval", "Hypothesis Testing"),
+                                      selected = "Confidence Interval", # character(0), # 
+                                      inline = TRUE), #,width = '1000px'),
+                         
+                         conditionalPanel(
+                           condition = "input.inferenceType == 'Confidence Interval'",
+                           
+                           radioButtons(inputId = "confidenceLevel", label = strong("Confidence Level"), selected = c("95%"), choices = c("90%", "95%","99%"), inline = TRUE)
+                         ),
+                         
+                         conditionalPanel(
+                           condition = "input.inferenceType == 'Hypothesis Testing'",
+                           
+                           radioButtons(inputId = "significanceLevel", label = strong("Significance Level"), selected = c("5%"), choices = c("10%", "5%","1%"), inline = TRUE),
+                         ),
+                         
+                         # Dropdown for 1-sample HT
+                         
+                         conditionalPanel(
+                           condition = "input.samplesSelect == '1' && input.inferenceType == 'Hypothesis Testing'",
+                           
+                             conditionalPanel(
+                               condition = "input.popuParameter == 'Population Mean'",
+                               
+                                 conditionalPanel(
+                                   condition = "input.dataAvailability == 'Summarized Data' || input.dataAvailability == 'Enter Raw Data'",
+                                   
+                                   numericInput(inputId = "hypMean",
+                                                label = strong("Hypothesized Population Mean (\\( \\mu_{0}\\)) Value"),
+                                                value = 99, step = 0.00001),
+                                 ),
+                             ),
+                           
+                             conditionalPanel(
+                               condition = "input.popuParameter == 'Population Proportion'",
+                               
+                               numericInput(inputId = "hypProportion",
+                                            label = strong("Hypothesized Population Proportion (\\( p_{0}\\)) Value"),
+                                            value = 0.5, min = 0, max = 1, step = 0.00001),
+                             ),
+                           
+                           selectizeInput(
+                             inputId = "altHypothesis",
+                             label = strong("Alternate Hypothesis"),
+                             choices = c(
+                               "< " = 1,
+                               "&ne; " = 2,
+                               "> " = 3
+                             ),
+                             selected = 2,
+                             options = list(
+                               render = I(render)
+                             )
+                           )
+                         )
+                       ),
                         actionButton(inputId = "goInference", label = "Calculate",
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
                         actionButton("resetInference", label = "Reset Values",
@@ -928,13 +943,19 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                            
                            p(span("Lead Developer", style = "font-weight:bold")),
                            p("Crystal Wai,"), 
-                           p("Undergraduate Student,"), 
-                           p("Mount Royal University,"), 
+                           p("Undergraduate Student, Mount Royal University,"), 
+                           p("Calgary, AB, CANADA"), 
+                           
+                           br(),
+                           
+                           p(span("Developer", style = "font-weight:bold")),
+                           p("Michael Myer,"), 
+                           p("Undergraduate Student, Mount Royal University,"), 
                            p("Calgary, AB, CANADA"), 
                            
                            br(), 
 
-                           p("In Fall 2022 an earlier version of this interactive Shiny app was presented as Crystal Wai's COMP 5690 Senior Computer Science Project"), 
+                           p("In Fall 2022 an earlier version of this interactive Shiny app was presented as Crystal Wai's COMP 5690 Senior Computer Science Project. Starting May 2023 this project will be funded by a student research grant awarded by the Faculty of Science and Technology at MRU."), 
                            br(),
 
                            p("This interactive R Shiny app is maintained by Dr. Ashok Krishnamurthy. We welcome questions, insights, and feedback."),
@@ -1100,9 +1121,46 @@ server <- function(input, output) {
     
     iv$add_rule("raw_sample2", sv_required()) 
     
+    #numSuccessesProportion
+    
+    iv$add_rule("numSuccesses", sv_required())
+    iv$add_rule("numSuccesses", sv_integer())
+    iv$add_rule("numSuccesses", sv_gte(0))
+    
+    #x1
+    iv$add_rule("numSuccesses1", sv_required())
+    iv$add_rule("numSuccesses1", sv_integer())
+    iv$add_rule("numSuccesses1", sv_gte(0))
+    
+    #x2
+    iv$add_rule("numSuccesses2", sv_required())
+    iv$add_rule("numSuccesses2", sv_integer())
+    iv$add_rule("numSuccesses2", sv_gte(0))
+    
+    #numTrailsProportion
+    
+    iv$add_rule("numTrails", sv_required())
+    iv$add_rule("numTrails", sv_integer())
+    iv$add_rule("numTrails", sv_gt(0))
+    
+    #n1
+    iv$add_rule("numTrails1", sv_required())
+    iv$add_rule("numTrails1", sv_integer())
+    iv$add_rule("numTrails1", sv_gt(0))
+    
+    #n2
+    iv$add_rule("numTrails2", sv_required())
+    iv$add_rule("numTrails2", sv_integer())
+    iv$add_rule("numTrails2", sv_gt(0))
+    
     #hypMean 
     
     iv$add_rule("hypMean", sv_required())
+    
+    #hypProportion 
+    
+    iv$add_rule("hypProportion", sv_required())
+    iv$add_rule("hypProportion", sv_gte(0))
     
     #Regression and Correlation 
     
