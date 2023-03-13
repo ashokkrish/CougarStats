@@ -20,9 +20,9 @@ OnePropZInterval <- function(x, n, c_level = 0.95)
 }
 
 # Example usage:
-
-OnePropZInterval(348, 1268, 0.90)
-
-OnePropZInterval(1087, 1430, 0.95)
-
-OnePropZInterval(615, 1430, 0.95)
+#
+# OnePropZInterval(348, 1268, 0.90)
+# 
+# OnePropZInterval(1087, 1430, 0.95)
+# 
+# OnePropZInterval(615, 1430, 0.95)
