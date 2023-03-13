@@ -32,12 +32,12 @@ TwoPropZTest <- function(X1, n1, X2, n2, hyp_diff, alternative = c("two.sided", 
   
   dat <- round(c(phat1, phat2, pooled_p, z.crit, se, zstat, p_value), 4)
   
-  names(dat) <- c("Sample Proportion 1", "Sample Proportion 1", "Pooled Proportion", "Z Critical", "Std Error", "Test Statistic", "P-Value")
+  names(dat) <- c("Sample Proportion 1", "Sample Proportion 2", "Pooled Proportion", "Z Critical", "Std Error", "Test Statistic", "P-Value")
   
   return(dat)
 }
 
 # Example usage:
-TwoPropZTest(86, 173, 68, 115, 0, "two.sided", 0.05)
-
-TwoPropZTest(861, 1055, 417, 974, 0, "two.sided", 0.05)
+# TwoPropZTest(86, 173, 68, 115, 0, "two.sided", 0.05)
+# 
+# TwoPropZTest(861, 1055, 417, 974, 0, "two.sided", 0.05)
