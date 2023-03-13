@@ -30,5 +30,5 @@ OnePropZTest <- function(X, n, p0, alternative = c("two.sided", "less", "greater
 }
 
 # Example usage:
-
-OnePropZTest(16, 250, 0.12, "two.sided", 0.05)
+#
+# OnePropZTest(16, 250, 0.12, "two.sided", 0.05)
