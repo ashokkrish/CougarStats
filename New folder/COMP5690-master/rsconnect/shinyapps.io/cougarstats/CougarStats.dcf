@@ -1,0 +1,13 @@
+name: CougarStats
+title: CougarStats
+username:
+account: cougarstats
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 7933669
+bundleId: 6680934
+url: https://cougarstats.shinyapps.io/CougarStats/
+when: 1672312543.34607
+lastSyncTime: 1672312543.34608
+asMultiple: FALSE
+asStatic: FALSE
