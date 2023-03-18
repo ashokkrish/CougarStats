@@ -10,6 +10,7 @@ library(shinythemes)
 library(shinyjs)
 library(shinyvalidate)
 library(tinytex)
+library(writexl)
 
 options(scipen = 999) # options(scipen = 0)
 
@@ -236,7 +237,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                      label = strong("Parameter of Interest"),
                                      choiceValues = list("Population Mean", "Population Proportion"),
                                      choiceNames = list("Population Mean (\\( \\mu\\))", "Population Proportion (\\( p\\))"),
-                                     selected = "Population Mean", #character(0), #
+                                     selected = character(0), #
                                      inline = TRUE), #,width = '1000px'),
 
                         conditionalPanel(
@@ -246,7 +247,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                        label = strong("Number of samples"),
                                        choiceValues = list("1", "2"),
                                        choiceNames = list("1", "2"),
-                                       selected = "1", #character(0), #
+                                       selected = character(0), #
                                        inline = TRUE), #,width = '1000px'),
                         ),
                         
@@ -279,7 +280,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                            label = strong("Is Population Standard Deviation (\\( \\sigma\\)) known?"),
                                            choiceValues = list("Known", "Unknown"),
                                            choiceNames = list("Known", "Unknown"),
-                                           selected = "Known",
+                                           selected = character(0),
                                            inline = TRUE), #,width = '1000px'),
                               
                               conditionalPanel(
@@ -374,7 +375,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                 # radioButtons(inputId = "bothsigmaEqual",
                                 #              label = strong("Assume Population Variances are equal (\\( \\sigma_{1}^2\\) = \\( \\sigma_{2}^2\\))"),
                                 #              choiceValues = list("Yes", "No"),
-                                #              choiceNames = list("Yes", "No (Welch–Satterthwaite df)"),
+                                #              choiceNames = list("Yes", "No (WelchâSatterthwaite df)"),
                                 #              selected = "Yes",
                                 #              inline = TRUE), #,width = '1000px'),
                               )
@@ -482,7 +483,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                       label = strong("Inference Type"),
                                       choiceValues = list("Confidence Interval", "Hypothesis Testing"),
                                       choiceNames = list("Confidence Interval", "Hypothesis Testing"),
-                                      selected = "Confidence Interval", # character(0), # 
+                                      selected = character(0), # 
                                       inline = TRUE), #,width = '1000px'),
                          
                          conditionalPanel(
@@ -642,7 +643,10 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                             tableOutput("table"),
                             br(),
                             
-                            plotOutput("boxplotHorizontal")
+                            plotOutput("boxplotHorizontal"),
+                            br(), 
+                            
+                            #downloadButton('downloadDataDS', 'Download data')
                           )
                       ),
                       
@@ -827,6 +831,8 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                       
                       div(id = "RegCorMP",
                           conditionalPanel(
+                            condition = "input.dropDownMenu == 'Regression and Correlation'",
+                          conditionalPanel(
                             condition = "input.regressioncorrelation == 'Simple Linear Regression'",
 
                             tabsetPanel(id = 'tabSet',
@@ -858,15 +864,15 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                          # Tests for normality of residuals #
                                          #----------------------------------#
                                          
-                                         titlePanel("Anderson–Darling test"),
+                                         titlePanel("AndersonâDarling test"),
                                          verbatimTextOutput("AndersonDarlingTest"),
                                          br(),
                                          
-                                         titlePanel("Kolmogorov–Smirnov test"),
+                                         titlePanel("KolmogorovâSmirnov test"),
                                          verbatimTextOutput("KolmogorovSmirnovTest"),
                                          br(),
                                          
-                                         titlePanel("Shapiro–Wilk test"),
+                                         titlePanel("ShapiroâWilk test"),
                                          verbatimTextOutput("ShapiroTest"),
                                          #br(),
                                 ),
@@ -918,7 +924,8 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                               verbatimTextOutput("Spearman"),
                             ),
                           ), # Correlation Coefficient
-                      ) # RegCorMP
+                      ),# RegCorMP
+                      ) #input.dropdownmenu = regressional and correalation 
                     ) # mainPanel
                   ), # sidebarLayout
                 ), # Methods Panel
@@ -2277,16 +2284,22 @@ server <- function(input, output) {
       shinyjs::reset("RegCorPanel")
     })
     
-    # observe(
-    #   hideTab(inputId = 'tabSet', target = 'Simple Linear Regression')
-    # )
-    # 
-    # observe(
-    #   hideTab(inputId = 'tabSet', target = 'Normality of Residuals')
-    # )
-    # 
-    # observe(
-    #   hideTab(inputId = 'tabSet', target = 'Residual Plots')
+    observe(
+      hideTab(inputId = 'tabSet', target = 'Simple Linear Regression'), 
+    )
+
+    observe(
+      hideTab(inputId = 'tabSet', target = 'Normality of Residuals')
+    )
+
+    observe(
+      hideTab(inputId = 'tabSet', target = 'Residual Plots')
+    )
+    
+    # output$downloadDataDS <- downloadHandler(
+    #   
+    #   filename = function(){"DS_file.xlsx"},
+    #   content = function(file){write.xlsx(df,path = file)}
     # )
 }
   
