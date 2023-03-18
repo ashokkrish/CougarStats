@@ -18,13 +18,13 @@ TwoPropZInt <- function(X1, n1, X2, n2, c_level = 0.95)
   
   UCL <- (phat1 - phat2) + margin_of_error
   
-  dat <- round(c((phat1 - phat2), z.crit, se, margin_of_error, LCL, UCL), 4)
+  dat <- round(c(phat1, phat2, (phat1 - phat2), z.crit, se, margin_of_error, LCL, UCL), 4)
   
-  names(dat) <- c("Difference of proportions", "Z Critical", "Std Error", "Margin of Error", "LCL", "UCL")
+  names(dat) <- c("Sample Proportion 1", "Sample Proportion 2", "Difference of proportions", "Z Critical", "Std Error", "Margin of Error", "LCL", "UCL")
   
   return(dat) 
 }
 
 # Example usage:
-
-TwoPropZInt(174, 300, 111, 300, 0.95)
+#
+# TwoPropZInt(174, 300, 111, 300, 0.95)
