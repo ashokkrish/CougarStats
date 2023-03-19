@@ -261,7 +261,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                            label = strong("Data Availability"),
                                            choiceValues = list("Summarized Data", "Enter Raw Data"),
                                            choiceNames = list("Summarized Data", "Enter Raw Data"),
-                                           selected = "Summarized Data", # character(0), # 
+                                           selected = character(0), # "Summarized Data", # 
                                            inline = TRUE), #,width = '1000px'),
                             ),
                         
@@ -269,7 +269,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                               condition = "input.samplesSelect == '1' && input.dataAvailability == 'Summarized Data'",
                               
                               numericInput(inputId = "sampleSize",
-                                           label = strong("Sample Size (n)"),
+                                           label = strong("Sample Size (\\( n\\))"),
                                            value = 18, min = 1, step = 1),
                               
                               numericInput(inputId = "sampleMean",
@@ -294,7 +294,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                 condition = "input.sigmaKnown == 'Unknown'",
                                 
                                 numericInput(inputId = "sampSD",
-                                             label = strong("Sample Standard Deviation (s) Value"),
+                                             label = strong("Sample Standard Deviation (\\( s\\)) Value"),
                                              value = 4.78, min = 0.00001, step = 0.00001)),
                             ),
                             
@@ -424,9 +424,8 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                             conditionalPanel(
                               condition = "input.samplesSelect == '2' && input.inferenceType == 'Hypothesis Testing'",
                               
-                              selectizeInput(
-                                inputId = "altHypothesis",
-                                label = strong("Alternate Hypothesis"),
+                              selectizeInput(inputId = "altHypothesis",
+                                label = strong("Alternate Hypothesis (\\( H_{a}\\))"),
                                 choices = c(
                                   "< " = 1,
                                   "&ne; " = 2,
@@ -489,13 +488,13 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                          conditionalPanel(
                            condition = "input.inferenceType == 'Confidence Interval'",
                            
-                           radioButtons(inputId = "confidenceLevel", label = strong("Confidence Level"), selected = c("95%"), choices = c("90%", "95%","99%"), inline = TRUE)
+                           radioButtons(inputId = "confidenceLevel", label = strong("Confidence Level (\\( 1- \\alpha\\))"), selected = c("95%"), choices = c("90%", "95%","99%"), inline = TRUE)
                          ),
                          
                          conditionalPanel(
                            condition = "input.inferenceType == 'Hypothesis Testing'",
                            
-                           radioButtons(inputId = "significanceLevel", label = strong("Significance Level"), selected = c("5%"), choices = c("10%", "5%","1%"), inline = TRUE),
+                           radioButtons(inputId = "significanceLevel", label = strong("Significance Level (\\( \\alpha\\))"), selected = c("5%"), choices = c("10%", "5%","1%"), inline = TRUE),
                          ),
                          
                          # Dropdown for 1-sample HT
@@ -523,9 +522,8 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                             value = 0.5, min = 0, max = 1, step = 0.00001),
                              ),
                            
-                           selectizeInput(
-                             inputId = "altHypothesis",
-                             label = strong("Alternate Hypothesis"),
+                           selectizeInput(inputId = "altHypothesis",
+                             label = strong("Alternate Hypothesis (\\( H_{a}\\))"),
                              choices = c(
                                "< " = 1,
                                "&ne; " = 2,
@@ -538,6 +536,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                            )
                          )
                        ),
+                       
                         actionButton(inputId = "goInference", label = "Calculate",
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
                         actionButton("resetInference", label = "Reset Values",
@@ -1500,18 +1499,16 @@ server <- function(input, output) {
                 errorClass = "myClass"
                 )
               
-              if(!is.na(Poisson_mu) && !is.na(Poisson_x1) && !is.na(Poisson_x2)){
+              if(!is.na(norm_mu) && !is.na(norm_x1) && !is.na(norm_x2)){
                 validate(
                   need(norm_x1 <= norm_x2, "x1 must be less than or equal to x2"),
                   
                   errorClass = "myClass"
                 )
-                #withMathJax(paste0("\\(P(", Poisson_x1, " ",  " \\leq X \\leq \\)"," ", Poisson_x2,"\\()\\)"," ","\\( = \\)"," ", round(ppois(Poisson_x2,Poisson_mu,lower.tail = TRUE) - ppois(Poisson_x1 - 1,Poisson_mu,lower.tail = TRUE), 4)))
+                withMathJax(paste0("\\(P(", norm_x1, " ",  " \\leq X \\leq \\)"," ", norm_x2,"\\()\\)"," ","\\( = \\)"," ", round(pnorm(norm_x2,norm_mu,lower.tail = TRUE) - pnorm(norm_x1,norm_mu,lower.tail = TRUE), 4)))
               }
             }
         }
-
-
       })
     })
     
@@ -1580,7 +1577,7 @@ server <- function(input, output) {
                 output$oneSampCI <- renderTable(values$dfKnown)
                 
                 row1 <- data.frame(Variable = "Sample Mean", Value = paste(zIntPrint[1]))
-                row2 <- data.frame(Variable = "Z Critical Value", Value = paste(zIntPrint[2]))
+                row2 <- data.frame(Variable = "Z Critical Value (CV)", Value = paste(zIntPrint[2]))
                 row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(zIntPrint[3]))
                 row4 <- data.frame(Variable = "Lower Confidence Limit (LCL)", Value = paste(zIntPrint[4]))
                 row5 <- data.frame(Variable = "Upper Confidence Limit (UCL)", Value = paste(zIntPrint[5]))
@@ -1603,7 +1600,7 @@ server <- function(input, output) {
                 output$oneSampCI <- renderTable(values$dfUnknown)
                 
                 row1 <- data.frame(Variable = "Sample Mean", Value = paste(tIntPrint[1]))
-                row2 <- data.frame(Variable = "T Critical Value", Value = paste(tIntPrint[2]))
+                row2 <- data.frame(Variable = "T Critical Value (CV)", Value = paste(tIntPrint[2]))
                 row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(tIntPrint[3]))
                 row4 <- data.frame(Variable = "Lower Confidence Limit (LCL)", Value = paste(tIntPrint[4]))
                 row5 <- data.frame(Variable = "Upper Confidence Limit (UCL)", Value = paste(tIntPrint[5]))
@@ -1631,9 +1628,9 @@ server <- function(input, output) {
                 row1 <- data.frame(Variable = "Sample Size", Value = paste(zTestPrint[1]))
                 row2 <- data.frame(Variable = "Sample Mean", Value = paste(zTestPrint[2]))
                 row3 <- data.frame(Variable = "Population SD", Value = paste(zTestPrint[3]))
-                row4 <- data.frame(Variable = "Z Critical Value", Value = paste(zTestPrint[4]))
+                row4 <- data.frame(Variable = "Z Critical Value (CV)", Value = paste(zTestPrint[4]))
                 row5 <- data.frame(Variable = "Standard Error (SE)", Value = paste(zTestPrint[5]))
-                row6 <- data.frame(Variable = "Test Statistic", Value = paste(zTestPrint[6]))
+                row6 <- data.frame(Variable = "Test Statistic (TS)", Value = paste(zTestPrint[6]))
                 row7 <- data.frame(Variable = "P-Value", Value = paste(zTestPrint[7]))
                 
                 values$dfKnownHyp <- rbind(row1, row2, row3, row4, row5, row6, row7) 
@@ -1654,9 +1651,9 @@ server <- function(input, output) {
                 row1 <- data.frame(Variable = "Sample Size", Value = paste(tTestPrint[1]))
                 row2 <- data.frame(Variable = "Sample Mean", Value = paste(tTestPrint[2]))
                 row3 <- data.frame(Variable = "Sample SD", Value = paste(tTestPrint[3]))
-                row4 <- data.frame(Variable = "T Critical Value", Value = paste(tTestPrint[4]))
+                row4 <- data.frame(Variable = "T Critical Value (CV)", Value = paste(tTestPrint[4]))
                 row5 <- data.frame(Variable = "Standard Error (SE)", Value = paste(tTestPrint[5]))
-                row6 <- data.frame(Variable = "Test Statistic", Value = paste(tTestPrint[6]))
+                row6 <- data.frame(Variable = "Test Statistic (TS)", Value = paste(tTestPrint[6]))
                 row7 <- data.frame(Variable = "P-Value", Value = paste(tTestPrint[7]))
                 
                 values$dfUnKnownHyp <- rbind(row1, row2, row3, row4, row5, row6, row7) 
@@ -1686,7 +1683,7 @@ server <- function(input, output) {
                 output$oneSampCIRaw <- renderTable(values$dfKnownRaw)
                 
                 row1 <- data.frame(Variable = "Sample Mean", Value = paste(zIntPrintRaw[1]))
-                row2 <- data.frame(Variable = "Z Critical Value", Value = paste(zIntPrintRaw[2]))
+                row2 <- data.frame(Variable = "Z Critical Value (CV)", Value = paste(zIntPrintRaw[2]))
                 row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(zIntPrintRaw[3]))
                 row4 <- data.frame(Variable = "Lower Confidence Limit (LCL)", Value = paste(zIntPrintRaw[4]))
                 row5 <- data.frame(Variable = "Upper Confidence Limit (UCL)", Value = paste(zIntPrintRaw[5]))
@@ -1707,7 +1704,7 @@ server <- function(input, output) {
                 output$oneSampCIRaw <- renderTable(values$dfUnknownRaw)
                 
                 row1 <- data.frame(Variable = "Sample Mean", Value = paste(tIntPrintRaw[1]))
-                row2 <- data.frame(Variable = "T Critical Value", Value = paste(tIntPrintRaw[2]))
+                row2 <- data.frame(Variable = "T Critical Value (CV)", Value = paste(tIntPrintRaw[2]))
                 row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(tIntPrintRaw[3]))
                 row4 <- data.frame(Variable = "Lower Confidence Limit (LCL)", Value = paste(tIntPrintRaw[4]))
                 row5 <- data.frame(Variable = "Upper Confidence Limit (UCL)", Value = paste(tIntPrintRaw[5]))
@@ -1735,9 +1732,9 @@ server <- function(input, output) {
                 row1 <- data.frame(Variable = "Sample Size", Value = paste(zTestPrint[1]))
                 row2 <- data.frame(Variable = "Sample Mean", Value = paste(zTestPrint[2]))
                 row3 <- data.frame(Variable = "Population SD", Value = paste(zTestPrint[3]))
-                row4 <- data.frame(Variable = "Z Critical Value", Value = paste(zTestPrint[4]))
+                row4 <- data.frame(Variable = "Z Critical Value (CV)", Value = paste(zTestPrint[4]))
                 row5 <- data.frame(Variable = "Standard Error (SE)", Value = paste(zTestPrint[5]))
-                row6 <- data.frame(Variable = "Test Statistic", Value = paste(zTestPrint[6]))
+                row6 <- data.frame(Variable = "Test Statistic (TS)", Value = paste(zTestPrint[6]))
                 row7 <- data.frame(Variable = "P-Value", Value = paste(zTestPrint[7]))
   
                 values$dfKnownHypRaw <- rbind(row1, row2, row3, row4, row5, row6, row7) 
@@ -1758,9 +1755,9 @@ server <- function(input, output) {
                 row1 <- data.frame(Variable = "Sample Size", Value = paste(tTestPrint[1]))
                 row2 <- data.frame(Variable = "Sample Mean", Value = paste(tTestPrint[2]))
                 row3 <- data.frame(Variable = "Sample SD", Value = paste(tTestPrint[3]))
-                row4 <- data.frame(Variable = "T Critical Value", Value = paste(tTestPrint[4]))
+                row4 <- data.frame(Variable = "T Critical Value (CV)", Value = paste(tTestPrint[4]))
                 row5 <- data.frame(Variable = "Standard Error (SE)", Value = paste(tTestPrint[5]))
-                row6 <- data.frame(Variable = "Test Statistic", Value = paste(tTestPrint[6]))
+                row6 <- data.frame(Variable = "Test Statistic (TS)", Value = paste(tTestPrint[6]))
                 row7 <- data.frame(Variable = "P-Value", Value = paste(tTestPrint[7]))
                 
                 values$dfUnKnownHypRaw <- rbind(row1, row2, row3, row4, row5, row6, row7) 
@@ -1831,7 +1828,7 @@ server <- function(input, output) {
                 output$twoSampCI <- renderTable(values$dfTwoKnownSum)
                 
                 row1 <- data.frame(Variable = "Difference of Sample Means", Value = paste(twoSampKnownConfid[1]))
-                row2 <- data.frame(Variable = "Z Critical Value", Value = paste(twoSampKnownConfid[2]))
+                row2 <- data.frame(Variable = "Z Critical Value (CV)", Value = paste(twoSampKnownConfid[2]))
                 row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(twoSampKnownConfid[3]))
                 row4 <- data.frame(Variable = "Lower Confidence Limit (LCL)", Value = paste(twoSampKnownConfid[4]))
                 row5 <- data.frame(Variable = "Upper Confidence Limit (UCL)", Value = paste(twoSampKnownConfid[5]))
@@ -1853,7 +1850,7 @@ server <- function(input, output) {
                 output$twoSampCI <- renderTable(values$dfTwoUnknownSum )
                 
                 row1 <- data.frame(Variable = "Difference of Sample Means", Value = paste(twoSampUnKnownConfid[1]))
-                row2 <- data.frame(Variable = "T Critical Value", Value = paste(twoSampUnKnownConfid[2]))
+                row2 <- data.frame(Variable = "T Critical Value (CV)", Value = paste(twoSampUnKnownConfid[2]))
                 row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(twoSampUnKnownConfid[3]))
                 row4 <- data.frame(Variable = "Lower Confidence Limit (LCL)", Value = paste(twoSampUnKnownConfid[4]))
                 row5 <- data.frame(Variable = "Upper Confidence Limit (UCL)", Value = paste(twoSampUnKnownConfid[5]))
@@ -1878,9 +1875,9 @@ server <- function(input, output) {
                 output$twoSampHT <- renderTable(values$dfTwoKnownHyp )
                 
                 row1 <- data.frame(Variable = "Difference of Sample Means", Value = paste(twoSampZTestHyp[1]))
-                row2 <- data.frame(Variable = "Z Critical Value", Value = paste(twoSampZTestHyp[2]))
+                row2 <- data.frame(Variable = "Z Critical Value (CV)", Value = paste(twoSampZTestHyp[2]))
                 row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(twoSampZTestHyp[3]))
-                row4 <- data.frame(Variable = "Test Statistic", Value = paste(twoSampZTestHyp[4]))
+                row4 <- data.frame(Variable = "Test Statistic (TS)", Value = paste(twoSampZTestHyp[4]))
                 row5 <- data.frame(Variable = "P-Value", Value = paste(twoSampZTestHyp[5]))
                 
                 values$dfTwoKnownHyp  <- rbind(row1, row2, row3, row4, row5)
@@ -1901,9 +1898,9 @@ server <- function(input, output) {
                 
                 row1 <- data.frame(Variable = "Difference of Sample Means", Value = paste(twoSampTTestHyp[1]))
                 row2 <- data.frame(Variable = "Degrees of freedom (df)", Value = paste(twoSampTTestHyp[2]))
-                row3 <- data.frame(Variable = "T Critical Value", Value = paste(twoSampTTestHyp[3]))
+                row3 <- data.frame(Variable = "T Critical Value (CV)", Value = paste(twoSampTTestHyp[3]))
                 row4 <- data.frame(Variable = "Standard Error (SE)", Value = paste(twoSampTTestHyp[4]))
-                row5 <- data.frame(Variable = "Test Statistic", Value = paste(twoSampTTestHyp[5]))
+                row5 <- data.frame(Variable = "Test Statistic (TS)", Value = paste(twoSampTTestHyp[5]))
                 row6 <- data.frame(Variable = "P-Value", Value = paste(twoSampTTestHyp[6]))
                 
                 values$dfTwoUnknownHyp  <- rbind(row1, row2, row3, row4, row5, row6)
@@ -1939,7 +1936,7 @@ server <- function(input, output) {
                 output$twoSampCIRaw <- renderTable(values$dfTwoKnownCIRaw)
                 
                 row1 <- data.frame(Variable = "Difference of Sample Means", Value = paste(twoSampZIntRaw[1]))
-                row2 <- data.frame(Variable = "Z Critical Value", Value = paste(twoSampZIntRaw[2]))
+                row2 <- data.frame(Variable = "Z Critical Value (CV)", Value = paste(twoSampZIntRaw[2]))
                 row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(twoSampZIntRaw[3]))
                 row4 <- data.frame(Variable = "Lower Confidence Limit (LCL)", Value = paste(twoSampZIntRaw[4]))
                 row5 <- data.frame(Variable = "Upper Confidence Limit (UCL)", Value = paste(twoSampZIntRaw[5]))
@@ -1961,7 +1958,7 @@ server <- function(input, output) {
                 output$twoSampCIRaw <- renderTable(values$dfTwoUnknownCIRaw)
                 
                 row1 <- data.frame(Variable = "Difference of Sample Means", Value = paste(twoSampTIntRaw[1]))
-                row2 <- data.frame(Variable = "T Critical Value", Value = paste(twoSampTIntRaw[2]))
+                row2 <- data.frame(Variable = "T Critical Value (CV)", Value = paste(twoSampTIntRaw[2]))
                 row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(twoSampTIntRaw[3]))
                 row4 <- data.frame(Variable = "Lower Confidence Limit (LCL)", Value = paste(twoSampTIntRaw[4]))
                 row5 <- data.frame(Variable = "Upper Confidence Limit (UCL)", Value = paste(twoSampTIntRaw[5]))
@@ -1986,9 +1983,9 @@ server <- function(input, output) {
                 output$twoSampHTRaw <- renderTable(values$dfTwoKnownHypRaw )
                 
                 row1 <- data.frame(Variable = "Difference of Sample Means", Value = paste(twoSampZTestRaw[1]))
-                row2 <- data.frame(Variable = "Z Critical Value", Value = paste(twoSampZTestRaw[2]))
+                row2 <- data.frame(Variable = "Z Critical Value (CV)", Value = paste(twoSampZTestRaw[2]))
                 row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(twoSampZTestRaw[3]))
-                row4 <- data.frame(Variable = "Test Statistic", Value = paste(twoSampZTestRaw[4]))
+                row4 <- data.frame(Variable = "Test Statistic (TS)", Value = paste(twoSampZTestRaw[4]))
                 row5 <- data.frame(Variable = "P-Value", Value = paste(twoSampZTestRaw[5]))
                 
                 values$dfTwoKnownHypRaw  <- rbind(row1, row2, row3, row4, row5)
@@ -2009,9 +2006,9 @@ server <- function(input, output) {
                 
                 row1 <- data.frame(Variable = "Difference of Sample Means", Value = paste(twoSampTTestRaw[1]))
                 row2 <- data.frame(Variable = "Degrees of freedom (df)", Value = paste(twoSampTTestRaw[2]))
-                row3 <- data.frame(Variable = "T Critical Value", Value = paste(twoSampTTestRaw[3]))
+                row3 <- data.frame(Variable = "T Critical Value (CV)", Value = paste(twoSampTTestRaw[3]))
                 row4 <- data.frame(Variable = "Standard Error (SE)", Value = paste(twoSampTTestRaw[4]))
-                row5 <- data.frame(Variable = "Test Statistic", Value = paste(twoSampTTestRaw[5]))
+                row5 <- data.frame(Variable = "Test Statistic (TS)", Value = paste(twoSampTTestRaw[5]))
                 row6 <- data.frame(Variable = "P-Value", Value = paste(twoSampTTestRaw[6]))
                 
                 values$dfTwoUnknownHypRaw <- rbind(row1, row2, row3, row4, row5, row6)
