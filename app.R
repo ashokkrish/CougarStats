@@ -44,7 +44,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                         inputId = "dropDownMenu",
                         label = strong("Choose Statistical Topic"),
                         choices = c("Descriptive Statistics", "Probability Distributions", "Statistical Inference", "Regression and Correlation"),
-                        selected = "Statistical Inference", #"Descriptive Statistics", #"Probability Distributions", #"Regression and Correlation", # NULL
+                        selected = "Probability Distributions", #"Statistical Inference", #"Descriptive Statistics", # "Regression and Correlation", # NULL
                       ),
                       
                       conditionalPanel(
@@ -550,7 +550,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                      label = strong("Regression Type"),
                                      choiceValues = list("SLR", "MLR"),
                                      choiceNames = list("Simple Linear Regression (SLR)", "Multiple Linear Regression (MLR)"),
-                                     selected = "SLR", # character(0), #
+                                     selected = character(0), #"SLR", # 
                                      inline = TRUE), #,width = '1000px'),
                         
                         conditionalPanel(
@@ -566,19 +566,19 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                            conditionalPanel(
                              condition = "input.dataRegCor == 'Enter Raw Data'",
   
-                             textAreaInput("x", label = strong("x (Independent Variable)"), value = "635, 644, 711, 708, 836, 820, 810, 870, 856, 923", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
-                             textAreaInput("y", label = strong("y (Dependent Variable)"), value = "100, 93, 88, 84, 77, 75, 74, 63, 57, 55", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                             textAreaInput("x", label = strong("\\( x\\) (Independent Variable)"), value = "635, 644, 711, 708, 836, 820, 810, 870, 856, 923", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                             textAreaInput("y", label = strong("\\( y\\) (Dependent Variable)"), value = "100, 93, 88, 84, 77, 75, 74, 63, 57, 55", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
   
-                             # textAreaInput("x", label = strong("x (Independent Variable)"), value = "87, 92, 100, 103, 107, 110, 112, 127", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
-                             # textAreaInput("y", label = strong("y (Dependent Variable)"), value = "39, 47, 60, 50, 60, 65, 115, 118", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                             # textAreaInput("x", label = strong("\\( x\\) (Independent Variable)"), value = "87, 92, 100, 103, 107, 110, 112, 127", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                             # textAreaInput("y", label = strong("\\( y\\) (Dependent Variable)"), value = "39, 47, 60, 50, 60, 65, 115, 118", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
   
-                             # textAreaInput("x", label = strong("x (Independent Variable)"), value = "61, 111, 125, 134, 169, 173, 244", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
-                             # textAreaInput("y", label = strong("y (Dependent Variable)"), value = "4, 14, 15, 18, 21, 26, 38", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                             # textAreaInput("x", label = strong("\\( x\\) (Independent Variable)"), value = "61, 111, 125, 134, 169, 173, 244", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                             # textAreaInput("y", label = strong("\\( y\\) (Dependent Variable)"), value = "4, 14, 15, 18, 21, 26, 38", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
                           ),
                           
                           conditionalPanel(
                             condition = "input.dataRegCor == 'Upload Data'",
-                            fileInput('headerfile', 'Upload data',
+                            fileInput('headerfileSLR', 'Upload data',
                                       accept = c('text/csv','text/comma-separated-values','text/tab-separated-values',
                                                  'text/plain','.csv','.txt','.xls','.xlsx'))
                           ),
@@ -586,18 +586,18 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                           radioButtons(inputId = "regressioncorrelation", 
                                        label = strong("Analyze Data Using"), 
                                        choices = c("Simple Linear Regression", "Correlation Coefficient"),
-                                       selected = c("Simple Linear Regression"), # character(0), # 
+                                       selected = character(0), # c("Simple Linear Regression"), # 
                                        inline = TRUE),
 
                           conditionalPanel(
                             condition = "input.regressioncorrelation == 'Simple Linear Regression'",
 
-                            checkboxInput("scatterPlot", "Scatterplot of x versus y"),
+                            checkboxInput("scatterPlot", "Scatterplot of \\( x\\) versus \\( y\\)"),
                             
                               conditionalPanel(
                                 condition = "input.scatterPlot == 1",
                                 
-                                textInput("main", label = strong("Main title and axis labels:"), value = "Scatter Plot", placeholder = "main title"),
+                                textInput("main", label = strong("Main title and axes labels:"), value = "Scatter Plot", placeholder = "main title"),
                                 textInput("xlab", label = NULL, value = "Independent Variable, x", placeholder = "x-axis label"),
                                 textInput("ylab", label = NULL, value = "Dependent Variable, y", placeholder = "y-axis label"),
                                 #hr(),
@@ -608,12 +608,20 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                             condition = "input.regressioncorrelation == 'Correlation Coefficient'",
                             
                             checkboxInput("pearson", "Pearson's Product-Moment Correlation (r)"),
-                            checkboxInput("kendall", "Kendall's Rank Correlation (tau)"),
-                            checkboxInput("spearman", "Spearman's Rank Correlation (rho)"),
+                            checkboxInput("kendall", "Kendall's Rank Correlation (\\( \\tau\\))"),
+                            checkboxInput("spearman", "Spearman's Rank Correlation (\\( \\rho\\))"),
                             
                             # br(),
                             # checkboxGroupInput('corcoeff', strong('Correlation Coefficient'), choices = c("Pearson", "Kendall", "Spearman"), selected = "Pearson"),
                           ),
+                        ),
+                        
+                        conditionalPanel(
+                          condition = "input.simple_vs_multiple == 'MLR'",
+                          
+                          fileInput('headerfileMLR', 'Upload data',
+                                    accept = c('text/csv','text/comma-separated-values','text/tab-separated-values',
+                                               'text/plain','.csv','.txt','.xls','.xlsx'))
                         ),
                         
                         actionButton(inputId = "goRegression", label = "Calculate",
@@ -676,166 +684,167 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                           )
                       ), 
                       
-                      div(id = "inferenceMP",
+                    div(id = "inferenceMP",
+                      conditionalPanel(
+                        condition = "input.dropDownMenu == 'Statistical Inference'",
+                          
+                          uiOutput("renderInference"),
+                            
                           conditionalPanel(
-                            condition = "input.dropDownMenu == 'Statistical Inference'",
-                            
-                            uiOutput("renderInference"),
-                            
-                        conditionalPanel(
-                          condition = "input.popuParameter == 'Population Mean'",
-                              
-                            conditionalPanel(
-                              condition = "input.samplesSelect == '1'",
-                              
+                            condition = "input.popuParameter == 'Population Mean'",
+                                
                               conditionalPanel(
-                                condition = "input.inferenceType == 'Confidence Interval'",
+                                condition = "input.samplesSelect == '1'",
+                                
+                                conditionalPanel(
+                                  condition = "input.inferenceType == 'Confidence Interval'",
+                                
+                                    conditionalPanel(
+                                      condition = "input.dataAvailability == 'Summarized Data'",
+                                  
+                                      uiOutput('oneSampCI'),
+                                      
+                                      br(),
+                                      
+                                      conditionalPanel(
+                                        condition = "input.sigmaKnown == 'Known'",
+                                        
+                                        img(src ='OneSampZInt.png', height = '100px')
+                                      ),
+                                      
+                                      conditionalPanel(
+                                        condition = "input.sigmaKnown == 'Unknown'",
+                                        
+                                        img(src ='OneSampTInt.png', height = '90px')
+                                      )
+                                    ),
+                                
+                                    conditionalPanel(
+                                      condition = "input.dataAvailability == 'Enter Raw Data'",
+  
+                                      uiOutput('oneSampCIRaw'),
+                                      
+                                      br(),
+                                      
+                                      conditionalPanel(
+                                        condition = "input.sigmaKnownRaw == 'rawKnown'",
+                                        
+                                        img(src ='OneSampZInt.png', height = '100px')
+                                      ),
+                                      
+                                      conditionalPanel(
+                                        condition = "input.sigmaKnownRaw == 'rawUnknown'",
+                                        
+                                        img(src ='OneSampTInt.png', height = '90px')
+                                      )
+                                    )
+                                ),
                               
+                                conditionalPanel(
+                                  condition = "input.inferenceType == 'Hypothesis Testing'",
+                                  
                                   conditionalPanel(
                                     condition = "input.dataAvailability == 'Summarized Data'",
-                                
-                                    uiOutput('oneSampCI'),
                                     
-                                    br(),
-                                    
-                                    conditionalPanel(
-                                      condition = "input.sigmaKnown == 'Known'",
-                                      
-                                      img(src ='OneSampZInt.png', height = '100px')
-                                    ),
-                                    
-                                    conditionalPanel(
-                                      condition = "input.sigmaKnown == 'Unknown'",
-                                      
-                                      img(src ='OneSampTInt.png', height = '90px')
-                                    )
+                                    uiOutput('oneSampHT')
                                   ),
-                              
+                                  
                                   conditionalPanel(
                                     condition = "input.dataAvailability == 'Enter Raw Data'",
-
-                                    uiOutput('oneSampCIRaw'),
+                                    
+                                    uiOutput('oneSampHTRaw')
+                                  )
+                                )
+                              ), # condition = "input.samplesSelect == '1'",
+                              
+                              conditionalPanel(
+                                condition = "input.samplesSelect == '2'",
+  
+                                conditionalPanel(
+                                  condition = "input.inferenceType == 'Confidence Interval'",
+  
+                                  conditionalPanel(
+                                    condition = "input.dataAvailability == 'Summarized Data'",
+  
+                                    uiOutput('twoSampCI'),
                                     
                                     br(),
                                     
                                     conditionalPanel(
-                                      condition = "input.sigmaKnownRaw == 'rawKnown'",
+                                      condition = "input.bothsigmaKnown == 'bothKnown'",
                                       
-                                      img(src ='OneSampZInt.png', height = '100px')
+                                      img(src ='TwoSampZInt.png', height = '75px')
                                     ),
                                     
                                     conditionalPanel(
-                                      condition = "input.sigmaKnownRaw == 'rawUnknown'",
+                                      condition = "input.bothsigmaKnown == 'bothUnknown'",
                                       
-                                      img(src ='OneSampTInt.png', height = '90px')
+                                      img(src ='TwoSampTInt.png', height = '75px')
+                                    )
+                                  ),
+  
+                                  conditionalPanel(
+                                    condition = "input.dataAvailability == 'Enter Raw Data'",
+  
+                                    conditionalPanel(
+                                      condition = "input.samplesType == 'Independent Samples'",
+                                      
+                                          uiOutput('twoSampCIRaw'),
+                                          
+                                          br(),
+                                          
+                                          conditionalPanel(
+                                            condition = "input.bothsigmaKnownRaw == 'bothKnownRaw'",
+                                            
+                                            img(src ='TwoSampZInt.png', height = '75px')
+                                          ),
+                                          
+                                          conditionalPanel(
+                                            condition = "input.bothsigmaKnownRaw == 'bothUnknownRaw'",
+                                            
+                                            img(src ='TwoSampTInt.png', height = '75px')
+                                          )
+                                    ),
+                                    
+                                    conditionalPanel(
+                                      condition = "input.samplesType == 'Dependent Samples'",
+                                      
+                                        img(src ='TwoSampTIntPaired.png', height = '100px')
                                     )
                                   )
-                              ),
-                            
-                              conditionalPanel(
-                                condition = "input.inferenceType == 'Hypothesis Testing'",
-                                
-                                conditionalPanel(
-                                  condition = "input.dataAvailability == 'Summarized Data'",
-                                  
-                                  uiOutput('oneSampHT')
                                 ),
-                                
+  
                                 conditionalPanel(
-                                  condition = "input.dataAvailability == 'Enter Raw Data'",
-                                  
-                                  uiOutput('oneSampHTRaw')
-                                )
-                              )
-                            ), # condition = "input.samplesSelect == '1'",
-                            
-                            conditionalPanel(
-                              condition = "input.samplesSelect == '2'",
-
-                              conditionalPanel(
-                                condition = "input.inferenceType == 'Confidence Interval'",
-
-                                conditionalPanel(
-                                  condition = "input.dataAvailability == 'Summarized Data'",
-
-                                  uiOutput('twoSampCI'),
-                                  
-                                  br(),
-                                  
+                                  condition = "input.inferenceType == 'Hypothesis Testing'",
+  
                                   conditionalPanel(
-                                    condition = "input.bothsigmaKnown == 'bothKnown'",
-                                    
-                                    img(src ='TwoSampZInt.png', height = '75px')
+                                    condition = "input.dataAvailability == 'Summarized Data'",
+  
+                                    uiOutput('twoSampHT'),
+                                    br(),
                                   ),
-                                  
+  
                                   conditionalPanel(
-                                    condition = "input.bothsigmaKnown == 'bothUnknown'",
-                                    
-                                    img(src ='TwoSampTInt.png', height = '75px')
-                                  )
-                                ),
-
-                                conditionalPanel(
-                                  condition = "input.dataAvailability == 'Enter Raw Data'",
-
-                                  conditionalPanel(
-                                    condition = "input.samplesType == 'Independent Samples'",
-                                    
-                                        uiOutput('twoSampCIRaw'),
-                                        
-                                        br(),
-                                        
-                                        conditionalPanel(
-                                          condition = "input.bothsigmaKnownRaw == 'bothKnownRaw'",
-                                          
-                                          img(src ='TwoSampZInt.png', height = '75px')
-                                        ),
-                                        
-                                        conditionalPanel(
-                                          condition = "input.bothsigmaKnownRaw == 'bothUnknownRaw'",
-                                          
-                                          img(src ='TwoSampTInt.png', height = '75px')
-                                        )
-                                  ),
-                                  
-                                  conditionalPanel(
-                                    condition = "input.samplesType == 'Dependent Samples'",
-                                    
-                                      img(src ='TwoSampTIntPaired.png', height = '100px')
+                                    condition = "input.dataAvailability == 'Enter Raw Data'",
+  
+                                    uiOutput('twoSampHTRaw'),
+                                    #br(),
                                   )
                                 )
-                              ),
-
-                              conditionalPanel(
-                                condition = "input.inferenceType == 'Hypothesis Testing'",
-
-                                conditionalPanel(
-                                  condition = "input.dataAvailability == 'Summarized Data'",
-
-                                  uiOutput('twoSampHT'),
-                                  br(),
-                                ),
-
-                                conditionalPanel(
-                                  condition = "input.dataAvailability == 'Enter Raw Data'",
-
-                                  uiOutput('twoSampHTRaw'),
-                                  #br(),
-                                )
-                              )
-                            ) # condition = "input.samplesSelect == '2'"
-                          ) # condition = "input.popuParameter == 'Population Mean'"
-                        ) # input.dropDownMenu == 'Statistical Inference'
+                              ) # condition = "input.samplesSelect == '2'"
+                            ) # condition = "input.popuParameter == 'Population Mean'"
+                          ) # input.dropDownMenu == 'Statistical Inference'
                       ), # inferenceMP
                       
                       div(id = "RegCorMP",
                           conditionalPanel(
                             condition = "input.dropDownMenu == 'Regression and Correlation'",
-                          conditionalPanel(
-                            condition = "input.regressioncorrelation == 'Simple Linear Regression'",
+                            
+                              conditionalPanel(
+                                condition = "input.regressioncorrelation == 'Simple Linear Regression'",
 
-                            tabsetPanel(id = 'tabSet',
-                                tabPanel(id = "SLR", title = "Simple Linear Regression",
+                                tabsetPanel(id = 'tabSet',
+                                  tabPanel(id = "SLR", title = "Simple Linear Regression",
                                     
                                      conditionalPanel(
                                        condition = "input.scatterPlot == 1",
@@ -863,15 +872,15 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                          # Tests for normality of residuals #
                                          #----------------------------------#
                                          
-                                         titlePanel("AndersonâDarling test"),
+                                         titlePanel("Anderson-Darling test"),
                                          verbatimTextOutput("AndersonDarlingTest"),
                                          br(),
                                          
-                                         titlePanel("KolmogorovâSmirnov test"),
+                                         titlePanel("Kolmogorov-Smirnov test"),
                                          verbatimTextOutput("KolmogorovSmirnovTest"),
                                          br(),
                                          
-                                         titlePanel("ShapiroâWilk test"),
+                                         titlePanel("Shapiro-Wilk test"),
                                          verbatimTextOutput("ShapiroTest"),
                                          #br(),
                                 ),
@@ -888,7 +897,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                     #br(),
                                 ),
                             
-                                #selected ="SLR"
+                                # selected = "SLR"
                             # verbatimTextOutput("outlierTest"),
                             ),
                           ), # Simple Linear Regression
@@ -923,8 +932,11 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                               verbatimTextOutput("Spearman"),
                             ),
                           ), # Correlation Coefficient
-                      ),# RegCorMP
-                      ) #input.dropdownmenu = regressional and correalation 
+                          
+                          
+                          
+                        ), # RegCorMP
+                      ) # input.dropdownmenu = regression and correlation 
                     ) # mainPanel
                   ), # sidebarLayout
                 ), # Methods Panel
@@ -1447,7 +1459,7 @@ server <- function(input, output) {
               
               errorClass = "myClass"
             )
-            withMathJax(paste0("\\(P(", Poisson_x1, " ",  " \\leq X \\leq \\)"," ", Poisson_x2,"\\()\\)"," ","\\( = \\)"," ", round(ppois(Poisson_x2,Poisson_mu,lower.tail = TRUE) - ppois(Poisson_x1 - 1,Poisson_mu,lower.tail = TRUE), 4)))
+            withMathJax(paste0("\\(P(", Poisson_x1, " ",  " \\leq X \\leq \\)"," ", Poisson_x2,"\\()\\)"," ","\\( = \\)"," ", round(ppois(Poisson_x2, Poisson_mu, lower.tail = TRUE), 4), "\\( - \\)", round(ppois(Poisson_x1 - 1, Poisson_mu, lower.tail = TRUE), 4), " ","\\( = \\)"," ", round(ppois(Poisson_x2, Poisson_mu, lower.tail = TRUE) - ppois(Poisson_x1 - 1, Poisson_mu, lower.tail = TRUE), 4)))
           }
         }
       })
@@ -1457,6 +1469,7 @@ server <- function(input, output) {
       
       norm_mu <- input$popMean
       norm_sigma <- input$popSD
+      
       norm_x <- input$xValue
       
       norm_x1 <- input$x1Value
@@ -1505,7 +1518,8 @@ server <- function(input, output) {
                   
                   errorClass = "myClass"
                 )
-                withMathJax(paste0("\\(P(", norm_x1, " ",  " \\leq X \\leq \\)"," ", norm_x2,"\\()\\)"," ","\\( = \\)"," ", round(pnorm(norm_x2,norm_mu,lower.tail = TRUE) - pnorm(norm_x1,norm_mu,lower.tail = TRUE), 4)))
+
+                withMathJax(paste0("\\(P(", norm_x1, " ",  " \\leq X \\leq \\)"," ", norm_x2,"\\()\\)"," ","\\( = \\)"," ", round(pnorm(norm_x2,norm_mu, norm_sigma,lower.tail = TRUE), 4), "\\( - \\)", round(pnorm(norm_x1,norm_mu, norm_sigma,lower.tail = TRUE), 4), " ","\\( = \\)"," ",round(pnorm(norm_x2,norm_mu, norm_sigma,lower.tail = TRUE) - pnorm(norm_x1,norm_mu, norm_sigma,lower.tail = TRUE), 4)))
               }
             }
         }
