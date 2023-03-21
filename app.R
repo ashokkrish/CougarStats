@@ -44,14 +44,45 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                         inputId = "dropDownMenu",
                         label = strong("Choose Statistical Topic"),
                         choices = c("Descriptive Statistics", "Probability Distributions", "Statistical Inference", "Regression and Correlation"),
-                        selected = "Probability Distributions", #"Statistical Inference", #"Descriptive Statistics", # "Regression and Correlation", # NULL
+                        selected = "Descriptive Statistics", # "Probability Distributions", #"Statistical Inference", #"Regression and Correlation", # NULL
                       ),
                       
                       conditionalPanel(
                         id = "descriptiveStatsPanel",
                         condition = "input.dropDownMenu == 'Descriptive Statistics'",
-                        textAreaInput("descriptiveStat", label = strong("Sample"), value = "6, 16, 9, 6, 8, 9, 9, 5, 5, 11", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
-
+                        
+                        radioButtons(inputId = "dataInput",
+                                     label = strong("Data"),
+                                     choiceValues = list("Enter Raw Data", "Upload Data"),
+                                     choiceNames = list("Enter Raw Data", "Upload Data"),
+                                     selected = "Enter Raw Data", # character(0), #
+                                     inline = TRUE), #,width = '1000px'),
+                        
+                        conditionalPanel(
+                          condition = "input.dataInput == 'Enter Raw Data'",
+                        
+                            textAreaInput("descriptiveStat", label = strong("Sample"), value = "6, 16, 9, 6, 8, 9, 9, 5, 5, 11", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                                        ),
+                        
+                        conditionalPanel(
+                          condition = "input.dataInput == 'Upload Data'",
+                          fileInput('DS_data', 'Upload data',
+                                    accept = c('text/csv','text/comma-separated-values','text/tab-separated-values',
+                                               'text/plain','.csv','.txt','.xls','.xlsx'))
+                        ),
+                        
+                        checkboxInput("boxPlot", strong("Add a Boxplot")),
+                        
+                        conditionalPanel(
+                          condition = "input.boxPlot == 1",
+                          
+                          textInput("main", label = strong("Main title and axes labels:"), value = "Box Plot", placeholder = "main title"),
+                          textInput("xlab", label = NULL, value = "x", placeholder = "x-axis label"),
+                          textInput("ylab", label = NULL, value = "y", placeholder = "y-axis label"),
+                          #hr(),
+                        ),
+                        
+                        
                         actionButton(inputId = "goDescpStats", label = "Calculate",
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
                         actionButton("resetAll", label = "Reset Values",
