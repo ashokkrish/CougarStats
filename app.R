@@ -147,8 +147,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                        style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
                           actionButton("resetBinomial", label = "Reset Values",
                                        style="color: #fff; background-color: #337ab7; border-color: #2e6da4"), # , onclick = "history.go(0)"
-                          # br(),
-                          # br(),
+
                           # br(),
                           # downloadButton('downloadBinomResults', 'Download Results'),
                         ),
@@ -669,10 +668,10 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                     
                     mainPanel(
                       
-                      # tags$style(type ="text/css",
-                      #            ".shiny-output-error { visibility: hidden; }",
-                      #            ".shiny-output-error:before { visibility: hidden; }"
-                      # ), 
+                      tags$style(type ="text/css",
+                                 ".shiny-output-error { visibility: hidden; }",
+                                 ".shiny-output-error:before { visibility: hidden; }"
+                      ),
                       
                       div(id = "descriptiveStatsMP",
                           conditionalPanel(
@@ -1672,7 +1671,7 @@ server <- function(input, output) {
                 
                 row1 <- data.frame(Variable = "Sample Size", Value = paste(zTestPrint[1]))
                 row2 <- data.frame(Variable = "Sample Mean", Value = paste(zTestPrint[2]))
-                row3 <- data.frame(Variable = "Population SD", Value = paste(zTestPrint[3]))
+                row3 <- data.frame(Variable = "Population Standard Deviation", Value = paste(zTestPrint[3]))
                 row4 <- data.frame(Variable = "Z Critical Value (CV)", Value = paste(zTestPrint[4]))
                 row5 <- data.frame(Variable = "Standard Error (SE)", Value = paste(zTestPrint[5]))
                 row6 <- data.frame(Variable = "Test Statistic (TS)", Value = paste(zTestPrint[6]))
@@ -1695,7 +1694,7 @@ server <- function(input, output) {
                 
                 row1 <- data.frame(Variable = "Sample Size", Value = paste(tTestPrint[1]))
                 row2 <- data.frame(Variable = "Sample Mean", Value = paste(tTestPrint[2]))
-                row3 <- data.frame(Variable = "Sample SD", Value = paste(tTestPrint[3]))
+                row3 <- data.frame(Variable = "Sample Standard Deviation", Value = paste(tTestPrint[3]))
                 row4 <- data.frame(Variable = "T Critical Value (CV)", Value = paste(tTestPrint[4]))
                 row5 <- data.frame(Variable = "Standard Error (SE)", Value = paste(tTestPrint[5]))
                 row6 <- data.frame(Variable = "Test Statistic (TS)", Value = paste(tTestPrint[6]))
@@ -1776,7 +1775,7 @@ server <- function(input, output) {
                 
                 row1 <- data.frame(Variable = "Sample Size", Value = paste(zTestPrint[1]))
                 row2 <- data.frame(Variable = "Sample Mean", Value = paste(zTestPrint[2]))
-                row3 <- data.frame(Variable = "Population SD", Value = paste(zTestPrint[3]))
+                row3 <- data.frame(Variable = "Population Standard Deviation", Value = paste(zTestPrint[3]))
                 row4 <- data.frame(Variable = "Z Critical Value (CV)", Value = paste(zTestPrint[4]))
                 row5 <- data.frame(Variable = "Standard Error (SE)", Value = paste(zTestPrint[5]))
                 row6 <- data.frame(Variable = "Test Statistic (TS)", Value = paste(zTestPrint[6]))
@@ -1799,7 +1798,7 @@ server <- function(input, output) {
                 
                 row1 <- data.frame(Variable = "Sample Size", Value = paste(tTestPrint[1]))
                 row2 <- data.frame(Variable = "Sample Mean", Value = paste(tTestPrint[2]))
-                row3 <- data.frame(Variable = "Sample SD", Value = paste(tTestPrint[3]))
+                row3 <- data.frame(Variable = "Sample Standard Deviation", Value = paste(tTestPrint[3]))
                 row4 <- data.frame(Variable = "T Critical Value (CV)", Value = paste(tTestPrint[4]))
                 row5 <- data.frame(Variable = "Standard Error (SE)", Value = paste(tTestPrint[5]))
                 row6 <- data.frame(Variable = "Test Statistic (TS)", Value = paste(tTestPrint[6]))
