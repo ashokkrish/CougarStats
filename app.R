@@ -71,17 +71,16 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                                'text/plain','.csv','.txt','.xls','.xlsx'))
                         ),
                         
-                        checkboxInput("boxPlot", strong("Add a Boxplot")),
+                        #checkboxInput("boxPlot", strong("Add a Boxplot")),
                         
-                        conditionalPanel(
-                          condition = "input.boxPlot == 1",
-                          
-                          textInput("main", label = strong("Main title and axes labels:"), value = "Box Plot", placeholder = "main title"),
-                          textInput("xlab", label = NULL, value = "x", placeholder = "x-axis label"),
-                          textInput("ylab", label = NULL, value = "y", placeholder = "y-axis label"),
-                          #hr(),
-                        ),
-                        
+                        # conditionalPanel(
+                        #   condition = "input.boxPlot == 1",
+                        #   
+                        #   textInput("main", label = strong("Main title and axes labels:"), value = "Box Plot", placeholder = "main title"),
+                        #   textInput("xlab", label = NULL, value = "x", placeholder = "x-axis label"),
+                        #   textInput("ylab", label = NULL, value = "y", placeholder = "y-axis label"),
+                        #   #hr(),
+                        # ),
                         
                         actionButton(inputId = "goDescpStats", label = "Calculate",
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
@@ -966,7 +965,65 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                           
                           
                         ), # RegCorMP
-                      ) # input.dropdownmenu = regression and correlation 
+                      ), # input.dropdownmenu = regression and correlation 
+                    
+                    # checkboxInput(
+                    #   inputId = "themeToggle",
+                    #   label = icon("cog")
+                    # ),
+                    # 
+                    # tags$script(
+                    #                           "
+                    #             // define css theme filepaths
+                    #             const themes = {
+                    #                 dark: 'shinythemes/css/darkly.min.css',
+                    #                 light: 'shinythemes/css/flatly.min.css'
+                    #             }
+                    #     
+                    #             // function that creates a new link element
+                    #             function newLink(theme) {
+                    #                 let el = document.createElement('link');
+                    #                 el.setAttribute('rel', 'stylesheet');
+                    #                 el.setAttribute('text', 'text/css');
+                    #                 el.setAttribute('href', theme);
+                    #                 return el;
+                    #             }
+                    #     
+                    #             // function that remove <link> of current theme by href
+                    #             function removeLink(theme) {
+                    #                 let el = document.querySelector(`link[href='${theme}']`)
+                    #                 return el.parentNode.removeChild(el);
+                    #             }
+                    #     
+                    #             // define vars
+                    #             const darkTheme = newLink(themes.dark);
+                    #             const lightTheme = newLink(themes.light);
+                    #             const head = document.getElementsByTagName('head')[0];
+                    #             const toggle = document.getElementById('themeToggle');
+                    #     
+                    #             // define extra css and add as default
+                    #             const extraDarkThemeCSS = '.dataTables_length label, .dataTables_filter label, .dataTables_info {       color: white!important;} .paginate_button { background: white!important;} thead { color: white;}'
+                    #             const extraDarkThemeElement = document.createElement('style');
+                    #             extraDarkThemeElement.appendChild(document.createTextNode(extraDarkThemeCSS));
+                    #             head.appendChild(extraDarkThemeElement);
+                    #     
+                    #     
+                    #             // define event - checked === 'light'
+                    #             toggle.addEventListener('input', function(event) {
+                    #                 // if checked, switch to light theme
+                    #                 if (toggle.checked) {
+                    #                     removeLink(themes.dark);
+                    #                     head.removeChild(extraDarkThemeElement);
+                    #                     head.appendChild(lightTheme);
+                    #                 }  else {
+                    #                     // else add darktheme
+                    #                     removeLink(themes.light);
+                    #                     head.appendChild(extraDarkThemeElement)
+                    #                     head.appendChild(darkTheme);
+                    #                 }
+                    #             })
+                    #             "
+                    #   )
                     ) # mainPanel
                   ), # sidebarLayout
                 ), # Methods Panel
@@ -1015,7 +1072,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                               "by",
                               img(src = "https://www.rstudio.com/wp-content/uploads/2018/10/RStudio-Logo.png", height = "35px"),
                               ".")
-                  )
+                  ) # Authors Panel
         )
   )
   
