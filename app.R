@@ -44,7 +44,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                         inputId = "dropDownMenu",
                         label = strong("Choose Statistical Topic"),
                         choices = c("Descriptive Statistics", "Probability Distributions", "Statistical Inference", "Regression and Correlation"),
-                        selected = "Descriptive Statistics", # "Probability Distributions", #"Statistical Inference", #"Regression and Correlation", # NULL
+                        selected = "Statistical Inference", #"Descriptive Statistics", # "Probability Distributions", #"Regression and Correlation", # NULL
                       ),
                       
                       conditionalPanel(
@@ -1777,17 +1777,17 @@ server <- function(input, output) {
                 
                 source("R/OneSampZInt.R")
                 
-                zIntPrintRaw <- ZInterval(rawSampleSize, rawSampleMean, rawPopuSD, ConfLvl)
+                ZIntervalRaw <- ZInterval(rawSampleSize, rawSampleMean, rawPopuSD, ConfLvl)
                 
                 values <- reactiveValues()
                 values$dfKnownRaw <- data.frame(Variable = character(), Value = character())
                 output$oneSampCIRaw <- renderTable(values$dfKnownRaw)
                 
-                row1 <- data.frame(Variable = "Sample Mean", Value = paste(zIntPrintRaw[1]))
-                row2 <- data.frame(Variable = "Z Critical Value (CV)", Value = paste(zIntPrintRaw[2]))
-                row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(zIntPrintRaw[3]))
-                row4 <- data.frame(Variable = "Lower Confidence Limit (LCL)", Value = paste(zIntPrintRaw[4]))
-                row5 <- data.frame(Variable = "Upper Confidence Limit (UCL)", Value = paste(zIntPrintRaw[5]))
+                row1 <- data.frame(Variable = "Sample Mean", Value = paste(ZIntervalRaw[1]))
+                row2 <- data.frame(Variable = "Z Critical Value (CV)", Value = paste(ZIntervalRaw[2]))
+                row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(ZIntervalRaw[3]))
+                row4 <- data.frame(Variable = "Lower Confidence Limit (LCL)", Value = paste(ZIntervalRaw[4]))
+                row5 <- data.frame(Variable = "Upper Confidence Limit (UCL)", Value = paste(ZIntervalRaw[5]))
                 
                 values$dfKnownRaw <- rbind(row1, row2, row3, row4, row5)
               }
@@ -1922,17 +1922,17 @@ server <- function(input, output) {
 
                 source('R/TwoSampZInt.R')
 
-                twoSampKnownConfid <- TwoSampZInt(xbar1, sigma1, n1, xbar2, sigma2, n2, ConfLvl)
+                TwoSampZInt <- TwoSampZInt(xbar1, sigma1, n1, xbar2, sigma2, n2, ConfLvl)
                 
                 values <- reactiveValues()
                 values$dfTwoKnownSum <- data.frame(Variable = character(), Value = character())
                 output$twoSampCI <- renderTable(values$dfTwoKnownSum)
                 
-                row1 <- data.frame(Variable = "Difference of Sample Means", Value = paste(twoSampKnownConfid[1]))
-                row2 <- data.frame(Variable = "Z Critical Value (CV)", Value = paste(twoSampKnownConfid[2]))
-                row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(twoSampKnownConfid[3]))
-                row4 <- data.frame(Variable = "Lower Confidence Limit (LCL)", Value = paste(twoSampKnownConfid[4]))
-                row5 <- data.frame(Variable = "Upper Confidence Limit (UCL)", Value = paste(twoSampKnownConfid[5]))
+                row1 <- data.frame(Variable = "Difference of Sample Means", Value = paste(TwoSampZInt[1]))
+                row2 <- data.frame(Variable = "Z Critical Value (CV)", Value = paste(TwoSampZInt[2]))
+                row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(TwoSampZInt[3]))
+                row4 <- data.frame(Variable = "Lower Confidence Limit (LCL)", Value = paste(TwoSampZInt[4]))
+                row5 <- data.frame(Variable = "Upper Confidence Limit (UCL)", Value = paste(TwoSampZInt[5]))
                 
                 values$dfTwoKnownSum <- rbind(row1, row2, row3, row4, row5)
               }
@@ -1944,17 +1944,17 @@ server <- function(input, output) {
 
                 source('R/TwoSampTInt.R')
 
-                twoSampUnKnownConfid <- TwoSampTInt(xbar1, s1, n1, xbar2, s2, n2, var.equal = TRUE, ConfLvl)
+                TwoSampTInt <- TwoSampTInt(xbar1, s1, n1, xbar2, s2, n2, var.equal = TRUE, ConfLvl)
                 
                 values <- reactiveValues()
                 values$dfTwoUnknownSum <- data.frame(Variable = character(), Value = character())
                 output$twoSampCI <- renderTable(values$dfTwoUnknownSum )
                 
-                row1 <- data.frame(Variable = "Difference of Sample Means", Value = paste(twoSampUnKnownConfid[1]))
-                row2 <- data.frame(Variable = "T Critical Value (CV)", Value = paste(twoSampUnKnownConfid[2]))
-                row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(twoSampUnKnownConfid[3]))
-                row4 <- data.frame(Variable = "Lower Confidence Limit (LCL)", Value = paste(twoSampUnKnownConfid[4]))
-                row5 <- data.frame(Variable = "Upper Confidence Limit (UCL)", Value = paste(twoSampUnKnownConfid[5]))
+                row1 <- data.frame(Variable = "Difference of Sample Means", Value = paste(TwoSampTInt[1]))
+                row2 <- data.frame(Variable = "T Critical Value (CV)", Value = paste(TwoSampTInt[2]))
+                row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(TwoSampTInt[3]))
+                row4 <- data.frame(Variable = "Lower Confidence Limit (LCL)", Value = paste(TwoSampTInt[4]))
+                row5 <- data.frame(Variable = "Upper Confidence Limit (UCL)", Value = paste(TwoSampTInt[5]))
                 
                 values$dfTwoUnknownSum  <- rbind(row1, row2, row3, row4, row5)
               }
@@ -1969,17 +1969,17 @@ server <- function(input, output) {
 
                 source('R/TwoSampZTest.R')
 
-                twoSampZTestHyp <- TwoSampZTest(xbar1, sigma1, n1, xbar2, sigma2, n2, alternative, sigLvl)
+                TwoSampZTest <- TwoSampZTest(xbar1, sigma1, n1, xbar2, sigma2, n2, alternative, sigLvl)
 
                 values <- reactiveValues()
                 values$dfTwoKnownHyp <- data.frame(Variable = character(), Value = character())
                 output$twoSampHT <- renderTable(values$dfTwoKnownHyp )
                 
-                row1 <- data.frame(Variable = "Difference of Sample Means", Value = paste(twoSampZTestHyp[1]))
-                row2 <- data.frame(Variable = "Z Critical Value (CV)", Value = paste(twoSampZTestHyp[2]))
-                row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(twoSampZTestHyp[3]))
-                row4 <- data.frame(Variable = "Test Statistic (TS)", Value = paste(twoSampZTestHyp[4]))
-                row5 <- data.frame(Variable = "P-Value", Value = paste(twoSampZTestHyp[5]))
+                row1 <- data.frame(Variable = "Difference of Sample Means", Value = paste(TwoSampZTest[1]))
+                row2 <- data.frame(Variable = "Z Critical Value (CV)", Value = paste(TwoSampZTest[2]))
+                row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(TwoSampZTest[3]))
+                row4 <- data.frame(Variable = "Test Statistic (TS)", Value = paste(TwoSampZTest[4]))
+                row5 <- data.frame(Variable = "P-Value", Value = paste(TwoSampZTest[5]))
                 
                 values$dfTwoKnownHyp  <- rbind(row1, row2, row3, row4, row5)
               }
@@ -1991,18 +1991,18 @@ server <- function(input, output) {
 
                 source('R/TwoSampTTest.R')
 
-                twoSampTTestHyp <- TwoSampTTest(xbar1, s1, n1, xbar2, s2, n2, var.equal = TRUE, alternative, sigLvl)
+                TwoSampTTest <- TwoSampTTest(xbar1, s1, n1, xbar2, s2, n2, var.equal = TRUE, alternative, sigLvl)
 
                 values <- reactiveValues()
                 values$dfTwoUnknownHyp <- data.frame(Variable = character(), Value = character())
                 output$twoSampHT <- renderTable(values$dfTwoUnknownHyp )
                 
-                row1 <- data.frame(Variable = "Difference of Sample Means", Value = paste(twoSampTTestHyp[1]))
-                row2 <- data.frame(Variable = "Degrees of freedom (df)", Value = paste(twoSampTTestHyp[2]))
-                row3 <- data.frame(Variable = "T Critical Value (CV)", Value = paste(twoSampTTestHyp[3]))
-                row4 <- data.frame(Variable = "Standard Error (SE)", Value = paste(twoSampTTestHyp[4]))
-                row5 <- data.frame(Variable = "Test Statistic (TS)", Value = paste(twoSampTTestHyp[5]))
-                row6 <- data.frame(Variable = "P-Value", Value = paste(twoSampTTestHyp[6]))
+                row1 <- data.frame(Variable = "Difference of Sample Means", Value = paste(TwoSampTTest[1]))
+                row2 <- data.frame(Variable = "Degrees of freedom (df)", Value = paste(TwoSampTTest[2]))
+                row3 <- data.frame(Variable = "T Critical Value (CV)", Value = paste(TwoSampTTest[3]))
+                row4 <- data.frame(Variable = "Standard Error (SE)", Value = paste(TwoSampTTest[4]))
+                row5 <- data.frame(Variable = "Test Statistic (TS)", Value = paste(TwoSampTTest[5]))
+                row6 <- data.frame(Variable = "P-Value", Value = paste(TwoSampTTest[6]))
                 
                 values$dfTwoUnknownHyp  <- rbind(row1, row2, row3, row4, row5, row6)
               }
@@ -2030,17 +2030,17 @@ server <- function(input, output) {
 
                 source('R/TwoSampZInt.R')
 
-                twoSampZIntRaw <- TwoSampZInt(xbar1, sigma1, n1, xbar2, sigma2, n2, ConfLvl)
+                TwoSampZIntRaw <- TwoSampZInt(xbar1, sigma1, n1, xbar2, sigma2, n2, ConfLvl)
                 
                 values <- reactiveValues()
                 values$dfTwoKnownCIRaw <- data.frame(Variable = character(), Value = character())
                 output$twoSampCIRaw <- renderTable(values$dfTwoKnownCIRaw)
                 
-                row1 <- data.frame(Variable = "Difference of Sample Means", Value = paste(twoSampZIntRaw[1]))
-                row2 <- data.frame(Variable = "Z Critical Value (CV)", Value = paste(twoSampZIntRaw[2]))
-                row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(twoSampZIntRaw[3]))
-                row4 <- data.frame(Variable = "Lower Confidence Limit (LCL)", Value = paste(twoSampZIntRaw[4]))
-                row5 <- data.frame(Variable = "Upper Confidence Limit (UCL)", Value = paste(twoSampZIntRaw[5]))
+                row1 <- data.frame(Variable = "Difference of Sample Means", Value = paste(TwoSampZIntRaw[1]))
+                row2 <- data.frame(Variable = "Z Critical Value (CV)", Value = paste(TwoSampZIntRaw[2]))
+                row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(TwoSampZIntRaw[3]))
+                row4 <- data.frame(Variable = "Lower Confidence Limit (LCL)", Value = paste(TwoSampZIntRaw[4]))
+                row5 <- data.frame(Variable = "Upper Confidence Limit (UCL)", Value = paste(TwoSampZIntRaw[5]))
                 
                 values$dfTwoKnownCIRaw <- rbind(row1, row2, row3, row4, row5)
               }
@@ -2052,17 +2052,17 @@ server <- function(input, output) {
 
                 source('R/TwoSampTInt.R')
 
-                twoSampTIntRaw <- TwoSampTInt(xbar1, s1, n1, xbar2, s2, n2, var.equal = TRUE, ConfLvl)
+                TwoSampTIntRaw <- TwoSampTInt(xbar1, s1, n1, xbar2, s2, n2, var.equal = TRUE, ConfLvl)
                 
                 values <- reactiveValues()
                 values$dfTwoUnknownCIRaw <- data.frame(Variable = character(), Value = character())
                 output$twoSampCIRaw <- renderTable(values$dfTwoUnknownCIRaw)
                 
-                row1 <- data.frame(Variable = "Difference of Sample Means", Value = paste(twoSampTIntRaw[1]))
-                row2 <- data.frame(Variable = "T Critical Value (CV)", Value = paste(twoSampTIntRaw[2]))
-                row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(twoSampTIntRaw[3]))
-                row4 <- data.frame(Variable = "Lower Confidence Limit (LCL)", Value = paste(twoSampTIntRaw[4]))
-                row5 <- data.frame(Variable = "Upper Confidence Limit (UCL)", Value = paste(twoSampTIntRaw[5]))
+                row1 <- data.frame(Variable = "Difference of Sample Means", Value = paste(TwoSampTIntRaw[1]))
+                row2 <- data.frame(Variable = "T Critical Value (CV)", Value = paste(TwoSampTIntRaw[2]))
+                row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(TwoSampTIntRaw[3]))
+                row4 <- data.frame(Variable = "Lower Confidence Limit (LCL)", Value = paste(TwoSampTIntRaw[4]))
+                row5 <- data.frame(Variable = "Upper Confidence Limit (UCL)", Value = paste(TwoSampTIntRaw[5]))
                 
                 values$dfTwoUnknownCIRaw  <- rbind(row1, row2, row3, row4, row5)
               }
@@ -2077,17 +2077,17 @@ server <- function(input, output) {
 
                 source('R/TwoSampZTest.R')
 
-                twoSampZTestRaw <- TwoSampZTest(xbar1, sigma1, n1, xbar2, sigma2, n2, alternative, sigLvl)
+                TwoSampZTestRaw <- TwoSampZTest(xbar1, sigma1, n1, xbar2, sigma2, n2, alternative, sigLvl)
                 
                 values <- reactiveValues()
                 values$dfTwoKnownHypRaw <- data.frame(Variable = character(), Value = character())
                 output$twoSampHTRaw <- renderTable(values$dfTwoKnownHypRaw )
                 
-                row1 <- data.frame(Variable = "Difference of Sample Means", Value = paste(twoSampZTestRaw[1]))
-                row2 <- data.frame(Variable = "Z Critical Value (CV)", Value = paste(twoSampZTestRaw[2]))
-                row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(twoSampZTestRaw[3]))
-                row4 <- data.frame(Variable = "Test Statistic (TS)", Value = paste(twoSampZTestRaw[4]))
-                row5 <- data.frame(Variable = "P-Value", Value = paste(twoSampZTestRaw[5]))
+                row1 <- data.frame(Variable = "Difference of Sample Means", Value = paste(TwoSampZTestRaw[1]))
+                row2 <- data.frame(Variable = "Z Critical Value (CV)", Value = paste(TwoSampZTestRaw[2]))
+                row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(TwoSampZTestRaw[3]))
+                row4 <- data.frame(Variable = "Test Statistic (TS)", Value = paste(TwoSampZTestRaw[4]))
+                row5 <- data.frame(Variable = "P-Value", Value = paste(TwoSampZTestRaw[5]))
                 
                 values$dfTwoKnownHypRaw  <- rbind(row1, row2, row3, row4, row5)
               }
@@ -2099,18 +2099,18 @@ server <- function(input, output) {
 
                 source('R/TwoSampTTest.R')
 
-                twoSampTTestRaw <- TwoSampTTest(xbar1, s1, n1, xbar2, s2, n2, var.equal = TRUE, alternative, sigLvl)
+                TwoSampTTestRaw <- TwoSampTTest(xbar1, s1, n1, xbar2, s2, n2, var.equal = TRUE, alternative, sigLvl)
                 
                 values <- reactiveValues()
                 values$dfTwoUnknownHypRaw <- data.frame(Variable = character(), Value = character())
                 output$twoSampHTRaw <- renderTable(values$dfTwoUnknownHypRaw)
                 
-                row1 <- data.frame(Variable = "Difference of Sample Means", Value = paste(twoSampTTestRaw[1]))
-                row2 <- data.frame(Variable = "Degrees of freedom (df)", Value = paste(twoSampTTestRaw[2]))
-                row3 <- data.frame(Variable = "T Critical Value (CV)", Value = paste(twoSampTTestRaw[3]))
-                row4 <- data.frame(Variable = "Standard Error (SE)", Value = paste(twoSampTTestRaw[4]))
-                row5 <- data.frame(Variable = "Test Statistic (TS)", Value = paste(twoSampTTestRaw[5]))
-                row6 <- data.frame(Variable = "P-Value", Value = paste(twoSampTTestRaw[6]))
+                row1 <- data.frame(Variable = "Difference of Sample Means", Value = paste(TwoSampTTestRaw[1]))
+                row2 <- data.frame(Variable = "Degrees of freedom (df)", Value = paste(TwoSampTTestRaw[2]))
+                row3 <- data.frame(Variable = "T Critical Value (CV)", Value = paste(TwoSampTTestRaw[3]))
+                row4 <- data.frame(Variable = "Standard Error (SE)", Value = paste(TwoSampTTestRaw[4]))
+                row5 <- data.frame(Variable = "Test Statistic (TS)", Value = paste(TwoSampTTestRaw[5]))
+                row6 <- data.frame(Variable = "P-Value", Value = paste(TwoSampTTestRaw[6]))
                 
                 values$dfTwoUnknownHypRaw <- rbind(row1, row2, row3, row4, row5, row6)
               } # input$bothsigmaKnown == 'bothUnknown'
@@ -2178,7 +2178,7 @@ server <- function(input, output) {
     observeEvent(input$goRegression, {
       
       # validate(
-      #   need(input$corcoeff, 'Check at least one Correlation Coeeficient'),
+      #   need(input$corcoeff, 'Check at least one Correlation Coefficient'),
       # )
       
       if(input$simple_vs_multiple == 'SLR')
@@ -2211,7 +2211,7 @@ server <- function(input, output) {
               })
               
               output$confintLinReg <- renderPrint({ 
-                confint(model) # Prints the 95% confidence interval for the regression parameters
+                confint(model) # Prints the 95% CI for the regression parameters
               })
                 
               output$anovaLinReg <- renderPrint({ 
