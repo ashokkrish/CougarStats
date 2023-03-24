@@ -40,15 +40,25 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                       shinyjs::useShinyjs(),
                       id = "sideBar", 
 
-                      selectInput(
+                      # selectInput(
+                      #   inputId = "dropDownMenu",
+                      #   label = strong("Choose Statistical Topic"),
+                      #   choices = c("Descriptive Statistics", "Probability Distributions", "Statistical Inference", "Regression and Correlation"),
+                      #   selected = NULL,
+                      #   multiple = F
+                      #   #selected = NULL, #"Descriptive Statistics", # "Statistical Inference", #"Probability Distributions", #"Regression and Correlation", # NULL
+                      # ),
+                      
+                      selectizeInput(
                         inputId = "dropDownMenu",
                         label = strong("Choose Statistical Topic"),
                         choices = c("Descriptive Statistics", "Probability Distributions", "Statistical Inference", "Regression and Correlation"),
-                        selected = "Statistical Inference", #"Descriptive Statistics", # "Probability Distributions", #"Regression and Correlation", # NULL
+                        multiple = TRUE, 
+                        options = list(maxItems = 1)
+                        #selected = NULL, #"Descriptive Statistics", # "Statistical Inference", #"Probability Distributions", #"Regression and Correlation", # NULL
                       ),
                       
-                      conditionalPanel(
-                        id = "descriptiveStatsPanel",
+                      conditionalPanel(id = "descriptiveStatsPanel",
                         condition = "input.dropDownMenu == 'Descriptive Statistics'",
                         
                         radioButtons(inputId = "dataInput",
@@ -62,13 +72,14 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                           condition = "input.dataInput == 'Enter Raw Data'",
                         
                             textAreaInput("descriptiveStat", label = strong("Sample"), value = "6, 16, 9, 6, 8, 9, 9, 5, 5, 11", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
-                                        ),
+                        ),
                         
                         conditionalPanel(
                           condition = "input.dataInput == 'Upload Data'",
-                          fileInput('DS_data', 'Upload data',
-                                    accept = c('text/csv','text/comma-separated-values','text/tab-separated-values',
-                                               'text/plain','.csv','.txt','.xls','.xlsx'))
+                          
+                            fileInput('DS_data', 'Upload data',
+                                      accept = c('text/csv','text/comma-separated-values','text/tab-separated-values',
+                                                 'text/plain','.csv','.txt','.xls','.xlsx'))
                         ),
                         
                         #checkboxInput("boxPlot", strong("Add a Boxplot")),
@@ -88,14 +99,12 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4") #, onclick = "history.go(0)"
                       ),
                       
-                      conditionalPanel(
-                        id = "probPanel",
+                      conditionalPanel(id = "probPanel",
                         condition = "input.dropDownMenu == 'Probability Distributions'",
                         
                         radioButtons("probability", label = strong("Distribution"), choices = c("Binomial", "Poisson", "Normal"), selected = NULL, inline = TRUE),
                         
-                        conditionalPanel(
-                          id = "binomialPanel",
+                        conditionalPanel(id = "binomialPanel",
                           condition = "input.probability == 'Binomial'",
                           
                           numericInput(inputId = "numTrailsBinom",
@@ -151,8 +160,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                           # downloadButton('downloadBinomResults', 'Download Results'),
                         ),
                         
-                        conditionalPanel(
-                          id = "poissonPanel", 
+                        conditionalPanel(id = "poissonPanel", 
                           condition = "input.probability == 'Poisson'",
                           
                           numericInput("muPoisson", label = strong("Average (\\( \\mu\\))"),
@@ -189,8 +197,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                        style="color: #fff; background-color: #337ab7; border-color: #2e6da4") #, onclick = "history.go(0)"
                         ),
                         
-                        conditionalPanel(
-                          id = "normalPanel",
+                        conditionalPanel(id = "normalPanel",
                           condition = "input.probability == 'Normal'",
                           
                           numericInput(inputId = "popMean", 
@@ -401,12 +408,12 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                              label = strong("Sample Standard Deviation 2 (\\( s_{2}\\)) Value"),
                                              value = 5.85, min = 0.00001, step = 0.00001),
                                 
-                                # radioButtons(inputId = "bothsigmaEqual",
-                                #              label = strong("Assume Population Variances are equal (\\( \\sigma_{1}^2\\) = \\( \\sigma_{2}^2\\))"),
-                                #              choiceValues = list("Yes", "No"),
-                                #              choiceNames = list("Yes", "No (WelchâSatterthwaite df)"),
-                                #              selected = "Yes",
-                                #              inline = TRUE), #,width = '1000px'),
+                                radioButtons(inputId = "bothsigmaEqual",
+                                             label = strong("Assume Population Variances are equal (\\( \\sigma_{1}^2\\) = \\( \\sigma_{2}^2\\))?"),
+                                             choiceValues = list("Yes", "No"),
+                                             choiceNames = list("Yes (Pooled)", "No (Welch-Satterthwaite df)"),
+                                             selected = "Yes",
+                                             inline = TRUE), #,width = '1000px'),
                               )
                             ),
                             
@@ -445,7 +452,12 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                                  label = strong("Population Standard Deviation 2 (\\( \\sigma_{2}\\)) Value"),
                                                  value = 3.47, min = 0.00001, step = 0.00001),
                                   )
-                                )
+                                ),
+                              
+                              conditionalPanel(
+                                condition = "input.samplesType == 'Independent Samples'",
+                              
+                              ),
                             ),
                             
                             # Dropdown for 2-sample HT
@@ -579,7 +591,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                      label = strong("Regression Type"),
                                      choiceValues = list("SLR", "MLR"),
                                      choiceNames = list("Simple Linear Regression (SLR)", "Multiple Linear Regression (MLR)"),
-                                     selected = character(0), #"SLR", # 
+                                     selected = "SLR", #character(0), # 
                                      inline = TRUE), #,width = '1000px'),
                         
                         conditionalPanel(
@@ -615,7 +627,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                           radioButtons(inputId = "regressioncorrelation", 
                                        label = strong("Analyze Data Using"), 
                                        choices = c("Simple Linear Regression", "Correlation Coefficient"),
-                                       selected = character(0), # c("Simple Linear Regression"), # 
+                                       selected = NULL, # c("Simple Linear Regression"), # 
                                        inline = TRUE),
 
                           conditionalPanel(
@@ -667,23 +679,32 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                     
                     mainPanel(
                       
-                      tags$style(type ="text/css",
-                                 ".shiny-output-error { visibility: hidden; }",
-                                 ".shiny-output-error:before { visibility: hidden; }"
-                      ),
+                      # tags$style(type ="text/css",
+                      #            ".shiny-output-error { visibility: hidden; }",
+                      #            ".shiny-output-error:before { visibility: hidden; }"
+                      # ),
                       
                       div(id = "descriptiveStatsMP",
+                        conditionalPanel(
+                          condition = "input.dropDownMenu == 'Descriptive Statistics'",
+                            
+                            conditionalPanel(
+                              condition = "input.dataInput == 'Enter Raw Data'",
+                              
+                                tableOutput("table"),
+                                br(),
+                                
+                                plotOutput("boxplotHorizontal"),
+                                br(), 
+                                
+                                #downloadButton('downloadDataDS', 'Download data')
+                            ),
+                          
                           conditionalPanel(
-                            condition = "input.dropDownMenu == 'Descriptive Statistics'",
-                            
-                            tableOutput("table"),
-                            br(),
-                            
-                            plotOutput("boxplotHorizontal"),
-                            br(), 
-                            
-                            #downloadButton('downloadDataDS', 'Download data')
-                          )
+                            condition = "input.dataInput == 'Upload Data'",
+                          
+                          ),
+                        )
                       ),
                       
                       div(id = "probabilityMP",
@@ -869,6 +890,9 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                           conditionalPanel(
                             condition = "input.dropDownMenu == 'Regression and Correlation'",
                             
+                            conditionalPanel(
+                              condition = "input.simple_vs_multiple == 'SLR'",
+                              
                               conditionalPanel(
                                 condition = "input.regressioncorrelation == 'Simple Linear Regression'",
 
@@ -883,15 +907,15 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                            br(),
                                      ),
                                      
-                                     #titlePanel("Estimated equation of the regression line"),
+                                     titlePanel("Estimated equation of the regression line"),
                                      verbatimTextOutput("linearRegression"),
                                      br(),
                                      
-                                     #titlePanel("95% confidence interval for regression parameters"),
+                                     titlePanel("95% confidence interval for regression parameters"),
                                      verbatimTextOutput("confintLinReg"),
                                      br(),
                                      
-                                     #titlePanel("ANOVA for regression"),
+                                     titlePanel("ANOVA for regression"),
                                      verbatimTextOutput("anovaLinReg"),
                                      #br(),
                                  ),
@@ -919,14 +943,16 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                     # Plots for Residual Analysis #
                                     #-----------------------------#
                                     
+                                    titlePanel("Q-Q plot"),
                                     plotOutput("qqplot", width = "500px"),
                                     #br(),
                                     
+                                    titlePanel("Other diagnostic plots"),
                                     plotOutput("moreplots", width = "500px"),
                                     #br(),
                                 ),
                             
-                                # selected = "SLR"
+                            # selected = "SLR"
                             # verbatimTextOutput("outlierTest"),
                             ),
                           ), # Simple Linear Regression
@@ -961,11 +987,15 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                               verbatimTextOutput("Spearman"),
                             ),
                           ), # Correlation Coefficient
+                        ),
                           
-                          
-                          
-                        ), # RegCorMP
-                      ), # input.dropdownmenu = regression and correlation 
+                      conditionalPanel(
+                        condition = "input.simple_vs_multiple == 'MLR'",
+                        
+                      ), # Multiple Linear Regression
+
+                    ), # RegCorMP
+                  ), # input.dropdownmenu = regression and correlation 
                     
                     # checkboxInput(
                     #   inputId = "themeToggle",
@@ -1153,6 +1183,7 @@ server <- function(input, output) {
     #sampleSize
     
     iv$add_rule("sampleSize", sv_required())
+    iv$add_rule("sampleSize", sv_integer())
     iv$add_rule("sampleSize", sv_gt(0))
     
     #sampleMean 
@@ -1386,7 +1417,7 @@ server <- function(input, output) {
         
         validate(
           need(binom_n != "", "Enter a value for the number of trials (n)"),
-          need(binom_p != "", "Enter a value for the probability of successes (p)"),
+          need(binom_p != "", "Enter a value for the probability of success (p)"),
           
           errorClass = "myClass"
           )
@@ -1465,10 +1496,9 @@ server <- function(input, output) {
               
               errorClass = "myClass"
               )
-            withMathJax(paste0("\\(P(", binom_x1, " ",  " \\leq X \\leq \\)"," ", binom_x2,"\\()\\)"," ","\\( = \\)"," ", round(pbinom(binom_x2,binom_n,binom_p,lower.tail = TRUE) - pbinom(binom_x1 -1,binom_n,binom_p,lower.tail = TRUE), 4)))
+            withMathJax(paste0("\\(P(", binom_x1, " ",  " \\leq X \\leq \\)"," ", binom_x2,"\\()\\)"," ","\\( = \\)"," ", round(pbinom(binom_x2,binom_n,binom_p,lower.tail = TRUE), 4),"\\( - \\)",round(pbinom(binom_x1-1,binom_n,binom_p,lower.tail = TRUE), 4)," ","\\( = \\)"," ", round(pbinom(binom_x2,binom_n,binom_p,lower.tail = TRUE) - pbinom(binom_x1 -1,binom_n,binom_p,lower.tail = TRUE), 4)))
           }
         }
-        
       })
     })
 
@@ -1669,7 +1699,7 @@ server <- function(input, output) {
                 
                 source('R/OneSampZInt.R')
                 
-                print("Confidence Inrerval for One Population Mean when Population Standard Deviation is known")
+                print("Confidence Interval for One Population Mean when Population Standard Deviation is known")
                 
                 zIntPrint <- ZInterval(nSampOne, xbarSampOne, sigmaSampOne, ConfLvl)
                 
@@ -1692,7 +1722,7 @@ server <- function(input, output) {
                 
                 source('R/OneSampTInt.R')
                 
-                print("Confidence Inrerval for One Population Mean when Population Standard Deviation is unknown")
+                print("Confidence Interval for One Population Mean when Population Standard Deviation is unknown")
                 
                 tIntPrint <- TInterval(nSampOne, xbarSampOne, sSampOne, ConfLvl)
                 
