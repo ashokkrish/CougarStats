@@ -522,6 +522,12 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                              label = strong("Population Standard Deviation 2 (\\( \\sigma_{2}\\)) Value"),
                                              value = 3.47, min = 0.00001, step = 0.00001),
                               ),
+                              
+                              conditionalPanel(
+                                condition = "input.bothsigmaKnownRaw == 'bothUnknownRaw'",
+                                
+                                #print("Inference about two independent samples when populations variances are unknown but assumed equal")
+                              ),
                             ),
                           ), # Two Independent Samples
                           
@@ -762,152 +768,236 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                       conditionalPanel(
                         condition = "input.dropDownMenu == 'Statistical Inference'",
                           
-                          uiOutput("renderInference"),
-                            
+                        uiOutput("renderInference"),
+
+                        conditionalPanel(
+                          condition = "input.samplesSelect == '1'",
+                          
                           conditionalPanel(
                             condition = "input.popuParameter == 'Population Mean'",
-                                
+                            
+                            conditionalPanel(
+                              condition = "input.dataAvailability == 'Summarized Data'",
+                              
+                                conditionalPanel(
+                                  condition = "input.sigmaKnown == 'Known'",
+                                  
+                                  conditionalPanel(
+                                    condition = "input.inferenceType == 'Confidence Interval'",
+                                    
+                                    uiOutput('oneSampCI'),
+                                    br(),
+                                    img(src ='OneSampZInt.png', height = '100px')
+                                  ), # One Sample CI
+                                  
+                                  conditionalPanel(
+                                    condition = "input.inferenceType == 'Hypothesis Testing'",
+                                    
+                                    uiOutput('oneSampHT'),
+                                    br(),
+                                  ), # One Sample HT
+                                ),  # One Sample Sigma known
+                              
+                                conditionalPanel(
+                                  condition = "input.sigmaKnown == 'Unknown'",
+                                  
+                                  conditionalPanel(
+                                    condition = "input.inferenceType == 'Confidence Interval'",
+                                    
+                                    uiOutput('oneSampCIUnknown'),
+                                    br(),
+                                    img(src ='OneSampTInt.png', height = '90px')
+                                  ), # One Sample CI
+                                  
+                                  conditionalPanel(
+                                    condition = "input.inferenceType == 'Hypothesis Testing'",
+                                    
+                                    uiOutput('oneSampHTUnknown'),
+                                    br(),
+                                  ), # One Sample HT
+                                ), # One Sample Sigma unknown
+                              
+                            ), # One Sample Summarized Data
+                            
+                            conditionalPanel(
+                              condition = "input.dataAvailability == 'Enter Raw Data'",
+                              
                               conditionalPanel(
-                                condition = "input.samplesSelect == '1'",
+                                condition = "input.sigmaKnownRaw == 'rawKnown'",
                                 
                                 conditionalPanel(
                                   condition = "input.inferenceType == 'Confidence Interval'",
-                                
-                                    conditionalPanel(
-                                      condition = "input.dataAvailability == 'Summarized Data'",
                                   
-                                      uiOutput('oneSampCI'),
-                                      
-                                      br(),
-                                      
-                                      conditionalPanel(
-                                        condition = "input.sigmaKnown == 'Known'",
-                                        
-                                        img(src ='OneSampZInt.png', height = '100px')
-                                      ),
-                                      
-                                      conditionalPanel(
-                                        condition = "input.sigmaKnown == 'Unknown'",
-                                        
-                                        img(src ='OneSampTInt.png', height = '90px')
-                                      )
-                                    ),
+                                  uiOutput('oneSampCIRaw'),
+                                  br(),
+                                  img(src ='OneSampZInt.png', height = '100px')
+                                ), # One Sample CI Raw
                                 
-                                    conditionalPanel(
-                                      condition = "input.dataAvailability == 'Enter Raw Data'",
-  
-                                      uiOutput('oneSampCIRaw'),
-                                      
-                                      br(),
-                                      
-                                      conditionalPanel(
-                                        condition = "input.sigmaKnownRaw == 'rawKnown'",
-                                        
-                                        img(src ='OneSampZInt.png', height = '100px')
-                                      ),
-                                      
-                                      conditionalPanel(
-                                        condition = "input.sigmaKnownRaw == 'rawUnknown'",
-                                        
-                                        img(src ='OneSampTInt.png', height = '90px')
-                                      )
-                                    )
-                                ),
-                              
                                 conditionalPanel(
                                   condition = "input.inferenceType == 'Hypothesis Testing'",
                                   
-                                  conditionalPanel(
-                                    condition = "input.dataAvailability == 'Summarized Data'",
-                                    
-                                    uiOutput('oneSampHT')
-                                  ),
-                                  
-                                  conditionalPanel(
-                                    condition = "input.dataAvailability == 'Enter Raw Data'",
-                                    
-                                    uiOutput('oneSampHTRaw')
-                                  )
-                                )
-                              ), # condition = "input.samplesSelect == '1'",
+                                  uiOutput('oneSampHTRaw'),
+                                  br(),
+                                ), # One Sample HT Raw
+                              ), # One Sample Sigma known Raw
                               
                               conditionalPanel(
-                                condition = "input.samplesSelect == '2'",
-  
+                                condition = "input.sigmaKnownRaw == 'rawUnknown'",
+                                
                                 conditionalPanel(
                                   condition = "input.inferenceType == 'Confidence Interval'",
-  
-                                  conditionalPanel(
-                                    condition = "input.dataAvailability == 'Summarized Data'",
-  
-                                    uiOutput('twoSampCI'),
-                                    
-                                    br(),
-                                    
-                                    conditionalPanel(
-                                      condition = "input.bothsigmaKnown == 'bothKnown'",
-                                      
-                                      img(src ='TwoSampZInt.png', height = '75px')
-                                    ),
-                                    
-                                    conditionalPanel(
-                                      condition = "input.bothsigmaKnown == 'bothUnknown'",
-                                      
-                                      img(src ='TwoSampTInt.png', height = '75px')
-                                    )
-                                  ),
-  
-                                  conditionalPanel(
-                                    condition = "input.dataAvailability == 'Enter Raw Data'",
-  
-                                    conditionalPanel(
-                                      condition = "input.samplesType == 'Independent Samples'",
-                                      
-                                          uiOutput('twoSampCIRaw'),
-                                          
-                                          br(),
-                                          
-                                          conditionalPanel(
-                                            condition = "input.bothsigmaKnownRaw == 'bothKnownRaw'",
-                                            
-                                            img(src ='TwoSampZInt.png', height = '75px')
-                                          ),
-                                          
-                                          conditionalPanel(
-                                            condition = "input.bothsigmaKnownRaw == 'bothUnknownRaw'",
-                                            
-                                            img(src ='TwoSampTInt.png', height = '75px')
-                                          )
-                                    ),
-                                    
-                                    conditionalPanel(
-                                      condition = "input.samplesType == 'Dependent Samples'",
-                                      
-                                        img(src ='TwoSampTIntPaired.png', height = '100px')
-                                    )
-                                  )
-                                ),
-  
+                                  
+                                  uiOutput('oneSampCIRawUnknown'),
+                                  br(),
+                                  img(src ='OneSampTInt.png', height = '90px')
+                                ), # One Sample CI Raw
+                                
                                 conditionalPanel(
                                   condition = "input.inferenceType == 'Hypothesis Testing'",
-  
+                                  
+                                  uiOutput('oneSampHTRawUnknown'),
+                                  br(),
+                                ),  # One Sample HT Raw
+                              ), # One Sample Sigma unknown Raw
+                            ), # One Sample Raw Data
+                          ), # One Population Mean
+                          
+                          conditionalPanel(
+                            condition = "input.popuParameter == 'Population Proportion'",
+                            
+                          ), # One Population Proportion
+                        ), # "input.samplesSelect == '1'"
+
+                          conditionalPanel(
+                            condition = "input.samplesSelect == '2'",
+                            
+                            conditionalPanel(
+                              condition = "input.popuParameters == 'Independent Population Means'",
+                              
+                              conditionalPanel(
+                                condition = "input.dataAvailability2 == 'Summarized Data'",
+                                
+                                conditionalPanel(
+                                  condition = "input.bothsigmaKnown == 'bothKnown'",
+                                  
                                   conditionalPanel(
-                                    condition = "input.dataAvailability == 'Summarized Data'",
-  
-                                    uiOutput('twoSampHT'),
+                                    condition = "input.inferenceType2 == 'Confidence Interval'",
+                                    
+                                    uiOutput('twoSampCIbothKnown'),
                                     br(),
-                                  ),
-  
+                                    img(src ='TwoSampZInt.png', height = '75px')
+                                  ), # CI
+                                  
                                   conditionalPanel(
-                                    condition = "input.dataAvailability == 'Enter Raw Data'",
-  
-                                    uiOutput('twoSampHTRaw'),
-                                    #br(),
-                                  )
+                                    condition = "input.inferenceType2 == 'Hypothesis Testing'",
+                                    
+                                    uiOutput('twoSampHTbothKnown'),
+                                    br(),
+                                  ), # HT
+                                ),
+                                
+                                conditionalPanel(
+                                  condition = "input.bothsigmaKnown == 'bothUnknown'",
+                                  
+                                  conditionalPanel(
+                                    condition = "input.inferenceType2 == 'Confidence Interval'",
+                                    
+                                    uiOutput('twoSampCIbothUnknown'),
+                                    br(),
+                                    img(src ='TwoSampTInt.png', height = '75px')
+                                  ), # CI
+                                  
+                                  conditionalPanel(
+                                    condition = "input.inferenceType2 == 'Hypothesis Testing'",
+                                    
+                                    uiOutput('twoSampHTbothUnknown'),
+                                    br(),
+                                  ), # HT
                                 )
-                              ) # condition = "input.samplesSelect == '2'"
-                            ) # condition = "input.popuParameter == 'Population Mean'"
-                          ) # input.dropDownMenu == 'Statistical Inference'
+                              ),
+                              
+                              conditionalPanel(
+                                condition = "input.dataAvailability2 == 'Enter Raw Data'",
+                                
+                                conditionalPanel(
+                                  condition = "input.bothsigmaKnownRaw == 'bothKnownRaw'",
+                                  
+                                  conditionalPanel(
+                                    condition = "input.inferenceType2 == 'Confidence Interval'",
+                                    
+                                    uiOutput('twoSampCIRawbothKnown'),
+                                    br(),
+                                    img(src ='TwoSampZInt.png', height = '75px')
+                                  ), # CI
+                                  
+                                  conditionalPanel(
+                                    condition = "input.inferenceType2 == 'Hypothesis Testing'",
+                                    
+                                    uiOutput('twoSampHTRawbothKnown'),
+                                    br(),
+                                  ), # HT
+                                ),
+                                
+                                conditionalPanel(
+                                  condition = "input.bothsigmaKnownRaw == 'bothUnknownRaw'",
+                                  
+                                  conditionalPanel(
+                                    condition = "input.inferenceType2 == 'Confidence Interval'",
+                                    
+                                    uiOutput('twoSampCIRawbothUnknown'),
+                                    br(),
+                                    img(src ='TwoSampTInt.png', height = '75px')
+                                  ), # CI
+                                  
+                                  conditionalPanel(
+                                    condition = "input.inferenceType2 == 'Hypothesis Testing'",
+                                    
+                                    uiOutput('twoSampHTRawbothUnknown'),
+                                    br(),
+                                  ), # HT
+                                ),
+                              ),
+                            ), # Two Independent Samples
+                            
+                            #-------------#
+                            # PAIRED DATA #
+                            #-------------#
+                            
+                            conditionalPanel(
+                              condition = "input.popuParameters == 'Dependent Population Means'",
+                              
+                              conditionalPanel(
+                                condition = "input.inferenceType2 == 'Confidence Interval'",
+                                
+                                img(src ='TwoSampTIntPaired.png', height = '100px')
+                              ), # CI
+                              
+                              conditionalPanel(
+                                condition = "input.inferenceType2 == 'Hypothesis Testing'",
+                                
+                              ), # HT
+                              
+                            ), # Two Dependent Samples
+                            
+                            #----------------------------#
+                            # TWO POPULATION PROPORTIONS #
+                            #----------------------------#
+
+                            conditionalPanel(
+                              condition = "input.popuParameters == 'Population Proportions'",
+                              
+                              conditionalPanel(
+                                condition = "input.inferenceType2 == 'Confidence Interval'",
+                                
+                              ), # CI
+                              
+                              conditionalPanel(
+                                condition = "input.inferenceType2 == 'Hypothesis Testing'",
+                                
+                              ), # HT
+                            ), # Two Population Proportions
+                          ), # "input.samplesSelect == '2'"
+                        ) # input.dropDownMenu == 'Statistical Inference'
                       ), # inferenceMP
                       
                       div(id = "RegCorMP",
@@ -1769,7 +1859,7 @@ server <- function(input, output) {
                 
                 values <- reactiveValues()
                 values$dfUnknown <- data.frame(Variable = character(), Value = character())
-                output$oneSampCI <- renderTable(values$dfUnknown)
+                output$oneSampCIUnknown <- renderTable(values$dfUnknown)
                 
                 row1 <- data.frame(Variable = "Sample Mean", Value = paste(tIntPrint[1]))
                 row2 <- data.frame(Variable = "T Critical Value (CV)", Value = paste(tIntPrint[2]))
@@ -1791,19 +1881,19 @@ server <- function(input, output) {
                 
                 source("R/OneSampZTest.R")
                 
-                zTestPrint <- ZTest(nSampOne, xbarSampOne, sigmaSampOne, hypMeanSampOne, alternative, sigLvl)
+                ZTest <- ZTest(nSampOne, xbarSampOne, sigmaSampOne, hypMeanSampOne, alternative, sigLvl)
                 
                 values <- reactiveValues()
                 values$dfKnownHyp <- data.frame(Variable = character(), Value = character())
                 output$oneSampHT <- renderTable(values$dfKnownHyp)
                 
-                row1 <- data.frame(Variable = "Sample Size", Value = paste(zTestPrint[1]))
-                row2 <- data.frame(Variable = "Sample Mean", Value = paste(zTestPrint[2]))
-                row3 <- data.frame(Variable = "Population Standard Deviation", Value = paste(zTestPrint[3]))
-                row4 <- data.frame(Variable = "Z Critical Value (CV)", Value = paste(zTestPrint[4]))
-                row5 <- data.frame(Variable = "Standard Error (SE)", Value = paste(zTestPrint[5]))
-                row6 <- data.frame(Variable = "Test Statistic (TS)", Value = paste(zTestPrint[6]))
-                row7 <- data.frame(Variable = "P-Value", Value = paste(zTestPrint[7]))
+                row1 <- data.frame(Variable = "Sample Size", Value = paste(ZTest[1]))
+                row2 <- data.frame(Variable = "Sample Mean", Value = paste(ZTest[2]))
+                row3 <- data.frame(Variable = "Population Standard Deviation", Value = paste(ZTest[3]))
+                row4 <- data.frame(Variable = "Z Critical Value (CV)", Value = paste(ZTest[4]))
+                row5 <- data.frame(Variable = "Standard Error (SE)", Value = paste(ZTest[5]))
+                row6 <- data.frame(Variable = "Test Statistic (TS)", Value = paste(ZTest[6]))
+                row7 <- data.frame(Variable = "P-Value", Value = paste(ZTest[7]))
                 
                 values$dfKnownHyp <- rbind(row1, row2, row3, row4, row5, row6, row7) 
               }
@@ -1814,19 +1904,19 @@ server <- function(input, output) {
                 
                 source("R/OneSampTTest.R")
                 
-                tTestPrint <- TTest(nSampOne, xbarSampOne, sSampOne, hypMeanSampOne, alternative, sigLvl)
+                TTest <- TTest(nSampOne, xbarSampOne, sSampOne, hypMeanSampOne, alternative, sigLvl)
                 
                 values <- reactiveValues()
                 values$dfUnKnownHyp <- data.frame(Variable = character(), Value = character())
-                output$oneSampHT <- renderTable(values$dfUnKnownHyp)
+                output$oneSampHTUnknown <- renderTable(values$dfUnKnownHyp)
                 
-                row1 <- data.frame(Variable = "Sample Size", Value = paste(tTestPrint[1]))
-                row2 <- data.frame(Variable = "Sample Mean", Value = paste(tTestPrint[2]))
-                row3 <- data.frame(Variable = "Sample Standard Deviation", Value = paste(tTestPrint[3]))
-                row4 <- data.frame(Variable = "T Critical Value (CV)", Value = paste(tTestPrint[4]))
-                row5 <- data.frame(Variable = "Standard Error (SE)", Value = paste(tTestPrint[5]))
-                row6 <- data.frame(Variable = "Test Statistic (TS)", Value = paste(tTestPrint[6]))
-                row7 <- data.frame(Variable = "P-Value", Value = paste(tTestPrint[7]))
+                row1 <- data.frame(Variable = "Sample Size", Value = paste(TTest[1]))
+                row2 <- data.frame(Variable = "Sample Mean", Value = paste(TTest[2]))
+                row3 <- data.frame(Variable = "Sample Standard Deviation", Value = paste(TTest[3]))
+                row4 <- data.frame(Variable = "T Critical Value (CV)", Value = paste(TTest[4]))
+                row5 <- data.frame(Variable = "Standard Error (SE)", Value = paste(TTest[5]))
+                row6 <- data.frame(Variable = "Test Statistic (TS)", Value = paste(TTest[6]))
+                row7 <- data.frame(Variable = "P-Value", Value = paste(TTest[7]))
                 
                 values$dfUnKnownHyp <- rbind(row1, row2, row3, row4, row5, row6, row7) 
               } # input$sigmaKnown == 'Unknown'
@@ -1873,7 +1963,7 @@ server <- function(input, output) {
                 
                 values <- reactiveValues()
                 values$dfUnknownRaw <- data.frame(Variable = character(), Value = character())
-                output$oneSampCIRaw <- renderTable(values$dfUnknownRaw)
+                output$oneSampCIRawUnknown <- renderTable(values$dfUnknownRaw)
                 
                 row1 <- data.frame(Variable = "Sample Mean", Value = paste(TIntervalRaw[1]))
                 row2 <- data.frame(Variable = "T Critical Value (CV)", Value = paste(TIntervalRaw[2]))
@@ -1895,19 +1985,19 @@ server <- function(input, output) {
                 
                 source("R/OneSampZTest.R")
                 
-                zTestPrint <- ZTest(rawSampleSize, rawSampleMean, rawPopuSD, hypMeanSampOne, alternative, sigLvl)
+                ZTestRaw <- ZTest(rawSampleSize, rawSampleMean, rawPopuSD, hypMeanSampOne, alternative, sigLvl)
 
                 values <- reactiveValues()
                 values$dfKnownHypRaw <- data.frame(Variable = character(), Value = character())
                 output$oneSampHTRaw <- renderTable(values$dfKnownHypRaw)
                 
-                row1 <- data.frame(Variable = "Sample Size", Value = paste(zTestPrint[1]))
-                row2 <- data.frame(Variable = "Sample Mean", Value = paste(zTestPrint[2]))
-                row3 <- data.frame(Variable = "Population Standard Deviation", Value = paste(zTestPrint[3]))
-                row4 <- data.frame(Variable = "Z Critical Value (CV)", Value = paste(zTestPrint[4]))
-                row5 <- data.frame(Variable = "Standard Error (SE)", Value = paste(zTestPrint[5]))
-                row6 <- data.frame(Variable = "Test Statistic (TS)", Value = paste(zTestPrint[6]))
-                row7 <- data.frame(Variable = "P-Value", Value = paste(zTestPrint[7]))
+                row1 <- data.frame(Variable = "Sample Size", Value = paste(ZTestRaw[1]))
+                row2 <- data.frame(Variable = "Sample Mean", Value = paste(ZTestRaw[2]))
+                row3 <- data.frame(Variable = "Population Standard Deviation", Value = paste(ZTestRaw[3]))
+                row4 <- data.frame(Variable = "Z Critical Value (CV)", Value = paste(ZTestRaw[4]))
+                row5 <- data.frame(Variable = "Standard Error (SE)", Value = paste(ZTestRaw[5]))
+                row6 <- data.frame(Variable = "Test Statistic (TS)", Value = paste(ZTestRaw[6]))
+                row7 <- data.frame(Variable = "P-Value", Value = paste(ZTestRaw[7]))
   
                 values$dfKnownHypRaw <- rbind(row1, row2, row3, row4, row5, row6, row7) 
               }
@@ -1918,19 +2008,19 @@ server <- function(input, output) {
 
                 source("R/OneSampTTest.R")
                 
-                tTestPrint <- TTest(rawSampleSize, rawSampleMean, rawSampleSD, hypMeanSampOne, alternative, sigLvl)
+                TTestRaw <- TTest(rawSampleSize, rawSampleMean, rawSampleSD, hypMeanSampOne, alternative, sigLvl)
                 
                 values <- reactiveValues()
                 values$dfUnKnownHypRaw <- data.frame(Variable = character(), Value = character())
-                output$oneSampHTRaw <- renderTable(values$dfUnKnownHypRaw)
+                output$oneSampHTRawUnknown <- renderTable(values$dfUnKnownHypRaw)
                 
-                row1 <- data.frame(Variable = "Sample Size", Value = paste(tTestPrint[1]))
-                row2 <- data.frame(Variable = "Sample Mean", Value = paste(tTestPrint[2]))
-                row3 <- data.frame(Variable = "Sample Standard Deviation", Value = paste(tTestPrint[3]))
-                row4 <- data.frame(Variable = "T Critical Value (CV)", Value = paste(tTestPrint[4]))
-                row5 <- data.frame(Variable = "Standard Error (SE)", Value = paste(tTestPrint[5]))
-                row6 <- data.frame(Variable = "Test Statistic (TS)", Value = paste(tTestPrint[6]))
-                row7 <- data.frame(Variable = "P-Value", Value = paste(tTestPrint[7]))
+                row1 <- data.frame(Variable = "Sample Size", Value = paste(TTestRaw[1]))
+                row2 <- data.frame(Variable = "Sample Mean", Value = paste(TTestRaw[2]))
+                row3 <- data.frame(Variable = "Sample Standard Deviation", Value = paste(TTestRaw[3]))
+                row4 <- data.frame(Variable = "T Critical Value (CV)", Value = paste(TTestRaw[4]))
+                row5 <- data.frame(Variable = "Standard Error (SE)", Value = paste(TTestRaw[5]))
+                row6 <- data.frame(Variable = "Test Statistic (TS)", Value = paste(TTestRaw[6]))
+                row7 <- data.frame(Variable = "P-Value", Value = paste(TTestRaw[7]))
                 
                 values$dfUnKnownHypRaw <- rbind(row1, row2, row3, row4, row5, row6, row7) 
               } # input$sigmaKnownRaw == 'rawUnknown'
@@ -1961,7 +2051,7 @@ server <- function(input, output) {
                 
                 values <- reactiveValues()
                 values$dfTwoKnownSum <- data.frame(Variable = character(), Value = character())
-                output$twoSampCI <- renderTable(values$dfTwoKnownSum)
+                output$twoSampCIbothKnown <- renderTable(values$dfTwoKnownSum)
                 
                 row1 <- data.frame(Variable = "Difference of Sample Means", Value = paste(TwoSampZInt[1]))
                 row2 <- data.frame(Variable = "Z Critical Value (CV)", Value = paste(TwoSampZInt[2]))
@@ -1983,7 +2073,7 @@ server <- function(input, output) {
                 
                 values <- reactiveValues()
                 values$dfTwoUnknownSum <- data.frame(Variable = character(), Value = character())
-                output$twoSampCI <- renderTable(values$dfTwoUnknownSum )
+                output$twoSampCIbothUnknown <- renderTable(values$dfTwoUnknownSum )
                 
                 row1 <- data.frame(Variable = "Difference of Sample Means", Value = paste(TwoSampTInt[1]))
                 row2 <- data.frame(Variable = "T Critical Value (CV)", Value = paste(TwoSampTInt[2]))
@@ -2008,7 +2098,7 @@ server <- function(input, output) {
 
                 values <- reactiveValues()
                 values$dfTwoKnownHyp <- data.frame(Variable = character(), Value = character())
-                output$twoSampHT <- renderTable(values$dfTwoKnownHyp )
+                output$twoSampHTbothKnown <- renderTable(values$dfTwoKnownHyp )
                 
                 row1 <- data.frame(Variable = "Difference of Sample Means", Value = paste(TwoSampZTest[1]))
                 row2 <- data.frame(Variable = "Z Critical Value (CV)", Value = paste(TwoSampZTest[2]))
@@ -2030,7 +2120,7 @@ server <- function(input, output) {
 
                 values <- reactiveValues()
                 values$dfTwoUnknownHyp <- data.frame(Variable = character(), Value = character())
-                output$twoSampHT <- renderTable(values$dfTwoUnknownHyp )
+                output$twoSampHTbothUnknown <- renderTable(values$dfTwoUnknownHyp )
                 
                 row1 <- data.frame(Variable = "Difference of Sample Means", Value = paste(TwoSampTTest[1]))
                 row2 <- data.frame(Variable = "Degrees of freedom (df)", Value = paste(TwoSampTTest[2]))
@@ -2069,7 +2159,7 @@ server <- function(input, output) {
                 
                 values <- reactiveValues()
                 values$dfTwoKnownCIRaw <- data.frame(Variable = character(), Value = character())
-                output$twoSampCIRaw <- renderTable(values$dfTwoKnownCIRaw)
+                output$twoSampCIRawbothKnown <- renderTable(values$dfTwoKnownCIRaw)
                 
                 row1 <- data.frame(Variable = "Difference of Sample Means", Value = paste(TwoSampZIntRaw[1]))
                 row2 <- data.frame(Variable = "Z Critical Value (CV)", Value = paste(TwoSampZIntRaw[2]))
@@ -2091,7 +2181,7 @@ server <- function(input, output) {
                 
                 values <- reactiveValues()
                 values$dfTwoUnknownCIRaw <- data.frame(Variable = character(), Value = character())
-                output$twoSampCIRaw <- renderTable(values$dfTwoUnknownCIRaw)
+                output$twoSampCIRawbothUnknown <- renderTable(values$dfTwoUnknownCIRaw)
                 
                 row1 <- data.frame(Variable = "Difference of Sample Means", Value = paste(TwoSampTIntRaw[1]))
                 row2 <- data.frame(Variable = "T Critical Value (CV)", Value = paste(TwoSampTIntRaw[2]))
@@ -2116,7 +2206,7 @@ server <- function(input, output) {
                 
                 values <- reactiveValues()
                 values$dfTwoKnownHypRaw <- data.frame(Variable = character(), Value = character())
-                output$twoSampHTRaw <- renderTable(values$dfTwoKnownHypRaw )
+                output$twoSampHTRawbothKnown <- renderTable(values$dfTwoKnownHypRaw )
                 
                 row1 <- data.frame(Variable = "Difference of Sample Means", Value = paste(TwoSampZTestRaw[1]))
                 row2 <- data.frame(Variable = "Z Critical Value (CV)", Value = paste(TwoSampZTestRaw[2]))
@@ -2138,7 +2228,7 @@ server <- function(input, output) {
                 
                 values <- reactiveValues()
                 values$dfTwoUnknownHypRaw <- data.frame(Variable = character(), Value = character())
-                output$twoSampHTRaw <- renderTable(values$dfTwoUnknownHypRaw)
+                output$twoSampHTRawbothUnknown <- renderTable(values$dfTwoUnknownHypRaw)
                 
                 row1 <- data.frame(Variable = "Difference of Sample Means", Value = paste(TwoSampTTestRaw[1]))
                 row2 <- data.frame(Variable = "Degrees of freedom (df)", Value = paste(TwoSampTTestRaw[2]))
