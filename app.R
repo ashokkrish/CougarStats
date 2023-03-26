@@ -100,11 +100,11 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                           
                           numericInput(inputId = "numTrailsBinom",
                                        label = strong("Number of Trials (\\( n\\))"),
-                                       value = 10, min = 1, step = 1),
+                                       value = 7, min = 1, step = 1),
                           
                           numericInput(inputId = "successProbBinom",
                                        label = strong("Probability of Success (\\( p\\))"),
-                                       value = 0.18, min = 0, max = 1, step = 0.00001),
+                                       value = 0.15, min = 0, max = 1, step = 0.00001),
                           
                           radioButtons(inputId = "calcBinom",
                                        label = strong("Probability"),
@@ -117,7 +117,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                             
                             numericInput(inputId = "numSuccessesBinom",
                                          label = strong("Number of Successes (\\( x\\))"),
-                                         value = 3, min = 0, step = 1)
+                                         value = 2, min = 0, step = 1)
                           ),
                           
                           conditionalPanel(
@@ -125,11 +125,11 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                             
                             numericInput(inputId = "numSuccessesBinomx1",
                                          label = strong("Number of successes (\\( x_{1}\\))"),
-                                         value = 3, min = 0, step = 1),
+                                         value = 2, min = 0, step = 1),
                             
                             numericInput(inputId = "numSuccessesBinomx2",
                                          label = strong("Number of successes (\\( x_{2}\\))"),
-                                         value = 6, min = 0, step = 1)
+                                         value = 4, min = 0, step = 1)
                           ),
                           
                           # checkboxInput(inputId = "probDistTable",
@@ -634,8 +634,11 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                            conditionalPanel(
                              condition = "input.dataRegCor == 'Enter Raw Data'",
   
-                             textAreaInput("x", label = strong("\\( x\\) (Independent Variable)"), value = "635, 644, 711, 708, 836, 820, 810, 870, 856, 923", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
-                             textAreaInput("y", label = strong("\\( y\\) (Dependent Variable)"), value = "100, 93, 88, 84, 77, 75, 74, 63, 57, 55", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                             textAreaInput("x", label = strong("\\( x\\) (Independent Variable)"), value = "10, 13, 18, 19, 22, 24, 27, 29, 35, 38", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                             textAreaInput("y", label = strong("\\( y\\) (Dependent Variable)"), value = "66, 108, 161, 177, 228, 235, 268, 259, 275, 278", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                             
+                             # textAreaInput("x", label = strong("\\( x\\) (Independent Variable)"), value = "635, 644, 711, 708, 836, 820, 810, 870, 856, 923", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                             # textAreaInput("y", label = strong("\\( y\\) (Dependent Variable)"), value = "100, 93, 88, 84, 77, 75, 74, 63, 57, 55", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
   
                              # textAreaInput("x", label = strong("\\( x\\) (Independent Variable)"), value = "87, 92, 100, 103, 107, 110, 112, 127", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
                              # textAreaInput("y", label = strong("\\( y\\) (Dependent Variable)"), value = "39, 47, 60, 50, 60, 65, 115, 118", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
@@ -727,7 +730,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                 #plotOutput("boxplotgg"),
                                 #br(), 
                               
-                                downloadButton('downloadDataDS', 'Download Results')
+                                #downloadButton('downloadDataDS', 'Download Results')
                                 
                             ),
 
@@ -1461,8 +1464,11 @@ server <- function(input, output) {
         xbar <- round(mean(dat),4)
         sampStdDev <- round(sd(dat),4)
         popuStdDev <- round(pop.sd(dat),4) # round(sqrt((n-1)/n) * sampStdDev(dat), 4)
-        Lower_Fence <- quantile(dat, 0.25) - (1.5*IQR(dat))
-        Upper_Fence <- quantile(dat, 0.75) + (1.5*IQR(dat))
+        Quartile1 <- fivenum(dat)[2] #quantile(dat, 0.25, type = 5)
+        Quartile3 <- fivenum(dat)[4] #quantile(dat, 0.75, type = 5)
+        IQR <- Quartile3 - Quartile1
+        Lower_Fence <- Quartile1 - (1.5*IQR)
+        Upper_Fence <- Quartile3 + (1.5*IQR)
         Num_Outliers <- sum(dat < Lower_Fence) + sum(dat > Upper_Fence)
         CoeffVar <- round(sampStdDev/xbar,4)
         
@@ -1474,31 +1480,32 @@ server <- function(input, output) {
         # print(Num_Outliers)
 
         values <- reactiveValues()
-        dataDS <- reactive(values)
+        #dataDS <- reactive(values)
         values$df <- data.frame(Variable = character(), Value = character())
         output$table <- renderTable(values$df)
         row1 <- data.frame(Variable = "Number of observations", Value = paste0(length(dat)))
         row2 <- data.frame(Variable = "Sum", Value = paste0(sum(dat)))
-        row3 <- data.frame(Variable = "Mean", Value = xbar)
-        row4 <- data.frame(Variable = "Mode", Value = paste(Modes(dat)))
-        row5 <- data.frame(Variable = "Minimum", Value = paste0(min(dat)))
-        row6 <- data.frame(Variable = "*First quartile (Q1)", Value = paste0(quantile(dat, 0.25)))
-        row7 <- data.frame(Variable = "Second quartile or median (Q2)", Value = paste0(median(dat)))
-        row8 <- data.frame(Variable = "*Third quartile (Q3)", Value = paste0(quantile(dat, 0.75)))
-        row9 <- data.frame(Variable = "Maximum", Value = paste0(max(dat)))
-        row10 <- data.frame(Variable = "*Notes", Value = "Q1 and Q3 are calculated by excluding Q2 on both sides")
-        row11 <- data.frame(Variable = "Interquartile range (IQR)", Value = paste0(IQR(dat)))
-        row12 <- data.frame(Variable = "Check for Outliers: Lower Fence", Value = Lower_Fence)
-        row13 <- data.frame(Variable = "Check for Outliers: Upper Fence", Value = Upper_Fence)
-        row14 <- data.frame(Variable = "Number of Potential Outliers", Value = Num_Outliers)
-        row15 <- data.frame(Variable = "Range", Value = paste0(range(dat)[2]-range(dat)[1]))
-        row16 <- data.frame(Variable = "Sample Standard Deviation", Value = sampStdDev)
-        row17 <- data.frame(Variable = "Sample Variance", Value = paste0(round(var(dat),4)))
-        row18 <- data.frame(Variable = "Standard Error of the Mean", Value = paste0(round(sd(dat)/sqrt(length(dat)),4)))
-        row19 <- data.frame(Variable = "Coefficient of variation", Value = CoeffVar)
-        row20 <- data.frame(Variable = "Population Standard Deviation (sigma)", Value = popuStdDev)
+        row3 <- data.frame(Variable = "Sum of squares", Value = paste0(sum(dat^2)))
+        row4 <- data.frame(Variable = "Mean", Value = xbar)
+        row5 <- data.frame(Variable = "Mode", Value = paste(Modes(dat)))
+        row6 <- data.frame(Variable = "Minimum", Value = paste0(min(dat)))
+        row7 <- data.frame(Variable = "*First quartile (Q1)", Value = Quartile1)
+        row8 <- data.frame(Variable = "Second quartile or median (Q2)", Value = paste0(median(dat)))
+        row9 <- data.frame(Variable = "*Third quartile (Q3)", Value = Quartile3)
+        row10 <- data.frame(Variable = "Maximum", Value = paste0(max(dat)))
+        row11 <- data.frame(Variable = "*Notes", Value = "Q1 and Q3 are calculated by excluding Q2 on both sides")
+        row12 <- data.frame(Variable = "Interquartile range (IQR)", Value = IQR)
+        row13 <- data.frame(Variable = "Check for Outliers: Lower Fence", Value = Lower_Fence)
+        row14 <- data.frame(Variable = "Check for Outliers: Upper Fence", Value = Upper_Fence)
+        row15 <- data.frame(Variable = "Number of Potential Outliers", Value = Num_Outliers)
+        row16 <- data.frame(Variable = "Range", Value = paste0(range(dat)[2]-range(dat)[1]))
+        row17 <- data.frame(Variable = "Sample Standard Deviation", Value = sampStdDev)
+        row18 <- data.frame(Variable = "Sample Variance", Value = paste0(round(var(dat),4)))
+        row19 <- data.frame(Variable = "Standard Error of the Mean", Value = paste0(round(sd(dat)/sqrt(length(dat)),4)))
+        row20 <- data.frame(Variable = "Coefficient of variation", Value = CoeffVar)
         row21 <- data.frame(Variable = "Skewness", Value = paste0(round(skewness(dat),4)))
         row22 <- data.frame(Variable = "Kurtosis", Value = paste0(round(kurtosis(dat),4)))
+        #row23 <- data.frame(Variable = "Population Standard Deviation (sigma)", Value = popuStdDev)
         
         values$df <- rbind(row1, row2, row3, row4, row5, row6, row7, row8, row9, row10, row11, row12, row13, row14, row15, row16, row17, row18, row19, row20, row21, row22)
         
@@ -2522,12 +2529,10 @@ server <- function(input, output) {
       hideTab(inputId = 'tabSet', target = 'Residual Plots')
     )
     
-    output$downloadDataDS <- downloadHandler(
-      filename = function(){"DS_file.xlsx"},
-      content = function(file){write_xlsx(dataDS, file)}
-    )
-    
-   
+    # output$downloadDataDS <- downloadHandler(
+    #   filename = function(){"DS_file.xlsx"},
+    #   content = function(file){write_xlsx(dataDS, file)}
+    # )
 }
   
 shinyApp(ui = ui, server = server)
