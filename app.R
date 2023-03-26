@@ -726,14 +726,16 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                               
                                 #plotOutput("boxplotgg"),
                                 #br(), 
+                              
+                                downloadButton('downloadDataDS', 'Download Results')
                                 
-                                #downloadButton('downloadDataDS', 'Download Results')
                             ),
 
                           conditionalPanel(
                             condition = "input.dataInput == 'Upload Data'",
                           
                           ),
+                          
                         )
                       ),
                       
@@ -1472,6 +1474,7 @@ server <- function(input, output) {
         # print(Num_Outliers)
 
         values <- reactiveValues()
+        dataDS <- reactive(values)
         values$df <- data.frame(Variable = character(), Value = character())
         output$table <- renderTable(values$df)
         row1 <- data.frame(Variable = "Number of observations", Value = paste0(length(dat)))
@@ -2519,11 +2522,12 @@ server <- function(input, output) {
       hideTab(inputId = 'tabSet', target = 'Residual Plots')
     )
     
-    # output$downloadDataDS <- downloadHandler(
-    #   
-    #   filename = function(){"DS_file.xlsx"},
-    #   content = function(file){write.xlsx(df,path = file)}
-    # )
+    output$downloadDataDS <- downloadHandler(
+      filename = function(){"DS_file.xlsx"},
+      content = function(file){write_xlsx(dataDS, file)}
+    )
+    
+   
 }
   
 shinyApp(ui = ui, server = server)
