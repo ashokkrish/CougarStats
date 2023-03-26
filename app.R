@@ -62,7 +62,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                         conditionalPanel(
                           condition = "input.dataInput == 'Enter Raw Data'",
                         
-                            textAreaInput("descriptiveStat", label = strong("Sample"), value = "6, 16, 9, 6, 8, 9, 9, 5, 5, 11", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                            textAreaInput("descriptiveStat", label = strong("Sample"), value = "2.14,   2.09,   2.65,   3.56,   5.55,   5.00,   5.55,   8.09,   10.79", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
                         ),
                         
                         conditionalPanel(
