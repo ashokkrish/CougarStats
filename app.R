@@ -1184,7 +1184,6 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                            p(span("Crystal Wai,", style= "font-weight:bold")),
                            p("Lead Developer"),
                            #p(span("Lead Developer", style = "font-weight:bold")),
-                           #p("Crystal Wai,"), 
                            p("Undergraduate Student, Mount Royal University,"), 
                            p("Calgary, AB, CANADA"), 
                            
