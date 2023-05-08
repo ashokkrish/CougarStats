@@ -1206,12 +1206,12 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                            p("GitHub:", a(href = "https://github.com/ashokkrish/COMP5690","https://github.com/ashokkrish/COMP5690", target = "_blank")),
                            br(),
                            
-                           # p(span("Developer", style = "font-weight:bold")),
-                           # p("Michael Myer,"), 
-                           # p("Undergraduate Student, Mount Royal University,"), 
-                           # p("Calgary, AB, CANADA"), 
-                           # 
-                           # br(), 
+                           p(span("Developer", style = "font-weight:bold")),
+                           p("Michael Myer,"),
+                           p("Undergraduate Student, Mount Royal University,"),
+                           p("Calgary, AB, CANADA"),
+
+                           br(),
 
                            p("In Fall 2022 an earlier version of this interactive Shiny app was presented as Crystal Wai's COMP 5690 Senior Computer Science Project. Starting May 2023 this project will be funded by a student research grant awarded by the Faculty of Science and Technology at MRU."), 
                            br(),
