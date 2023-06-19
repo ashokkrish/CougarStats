@@ -11,6 +11,7 @@ library(shinyjs)
 library(shinyvalidate)
 library(tinytex)
 library(writexl)
+library(MASS)
 
 options(scipen = 999) # options(scipen = 0)
 
