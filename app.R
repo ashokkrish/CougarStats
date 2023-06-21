@@ -20,7 +20,10 @@ render <- "
   option: function(data, escape){return '<div class=\"option\">'+data.label+'</div>';},
   item: function(data, escape){return '<div class=\"item\">'+data.label+'</div>';}
 }"
-  
+
+# ----------------------- #  
+# ---- UI components ---- 
+# ----------------------- #
 ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
   
   tags$head(
@@ -33,8 +36,15 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
   ),
                 
   navbarPage(title = div(img(src ="CougarStats.png", height = 100), span("CougarStats", style = "color:#000000; font-weight:bold; font-style: italic; font-size:24pt")),
-
+             
+                # -------------------------- #  
+                # ---- Methods tabPanel ---- 
+                # -------------------------- #
                 tabPanel(title = "Methods",
+                         
+                  # --------------------------- #  
+                  ## ---- Methods sidebar ---- 
+                  # --------------------------- #       
                   sidebarLayout(
                     sidebarPanel(
                       withMathJax(),
@@ -50,6 +60,10 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                         #selected = NULL, #"Descriptive Statistics", # "Statistical Inference", #"Probability Distributions", #"Regression and Correlation", # NULL
                       ),
                       
+                      
+                      # ------------------------------------- #  
+                      ### ---- Descriptive Stats sidebar ---- 
+                      # ------------------------------------- #
                       conditionalPanel(id = "descriptiveStatsPanel",
                         condition = "input.dropDownMenu == 'Descriptive Statistics'",
                         
@@ -91,6 +105,9 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4") #, onclick = "history.go(0)"
                       ),
                       
+                      # --------------------------------------------- #  
+                      ### ---- Probability Distributions sidebar ---- 
+                      # --------------------------------------------- #
                       conditionalPanel(id = "probPanel",
                         condition = "input.dropDownMenu == 'Probability Distributions'",
                         
@@ -99,7 +116,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                         conditionalPanel(id = "binomialPanel",
                           condition = "input.probability == 'Binomial'",
                           
-                          numericInput(inputId = "numTrailsBinom",
+                          numericInput(inputId = "numTrialsBinom",
                                        label = strong("Number of Trials (\\( n\\))"),
                                        value = 7, min = 1, step = 1),
                           
@@ -234,6 +251,9 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                         )
                       ),
                       
+                      # ----------------------------------------- #  
+                      ### ---- Statistical Inference sidebar ---- 
+                      # ----------------------------------------- #
                       conditionalPanel(id = "inferencePanel",
                         condition = "input.dropDownMenu == 'Statistical Inference'",
 
@@ -354,7 +374,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                            label = strong("Number of Successes (\\( x\\))"),
                                            value = 1087, min = 0, step = 1),
 
-                              numericInput(inputId = "numTrails",
+                              numericInput(inputId = "numTrials",
                                            label = strong("Number of Trials (\\( n\\))"),
                                            value = 1430, min = 1, step = 1),
                           ), #One Population Proportion
@@ -552,7 +572,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                              label = strong("Number of Successes 1 (\\( x_{1}\\))"),
                                              value = 174, min = 0, step = 1),
 
-                                numericInput(inputId = "numTrails1",
+                                numericInput(inputId = "numTrials1",
                                              label = strong("Number of Trials 1 (\\( n_{1}\\))"),
                                              value = 300, min = 1, step = 1),
 
@@ -560,7 +580,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                              label = strong("Number of Successes 2 (\\( x_{2}\\))"),
                                              value = 111, min = 0, step = 1),
 
-                                numericInput(inputId = "numTrails2",
+                                numericInput(inputId = "numTrials2",
                                              label = strong("Number of Trials 2 (\\( n_{2}\\))"),
                                              value = 300, min = 1, step = 1),
                           ), # Two Population Proportions
@@ -616,6 +636,9 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4") #, onclick = "history.go(0)"
                       ),
                       
+                      # ---------------------------------------------- #  
+                      ### ---- Regression and Correlation sidebar ---- 
+                      # ---------------------------------------------- #
                       conditionalPanel(id = "RegCorPanel",
                         condition = "input.dropDownMenu == 'Regression and Correlation'",
  
@@ -712,6 +735,9 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                       # radioButtons('format', 'Document format', c('PDF', 'Word'), inline = TRUE),
                     ),
                     
+                    # ---------------------------- #  
+                    ## ---- Methods mainPanel ---- 
+                    # ---------------------------- #
                     mainPanel(
                       
                       # tags$style(type ="text/css",
@@ -719,6 +745,9 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                       #            ".shiny-output-error:before { visibility: hidden; }"
                       # ),
                       
+                      # ---------------------------------- #  
+                      ### ---- Descriptive Stats main ---- 
+                      # ---------------------------------- #
                       div(id = "descriptiveStatsMP",
                         conditionalPanel(
                           condition = "input.dropDownMenu == 'Descriptive Statistics'",
@@ -743,444 +772,454 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                             condition = "input.dataInput == 'Upload Data'",
                           
                           ),
-                          
                         )
                       ),
                       
+                      # ------------------------------------------ #  
+                      ### ---- Probability Distributions main ---- 
+                      # ------------------------------------------ #
                       div(id = "probabilityMP",
-                          conditionalPanel(
-                            condition = "input.dropDownMenu == 'Probability Distributions'",
+                        conditionalPanel(
+                          condition = "input.dropDownMenu == 'Probability Distributions'",
                             
-                              conditionalPanel(
-                                condition = "input.probability == 'Binomial'",
+                            conditionalPanel(
+                              condition = "input.probability == 'Binomial'",
                                 
-                                br(),
-                                uiOutput("renderProbabilityBinom"),
-                              ),
+                              br(),
+                              uiOutput("renderProbabilityBinom"),
+                            ),
                               
-                              conditionalPanel(
-                                condition = "input.probability == 'Poisson'",
+                            conditionalPanel(
+                              condition = "input.probability == 'Poisson'",
                                 
-                                br(),
-                                uiOutput("renderProbabilityPoisson"),
-                              ),
+                              br(),
+                              uiOutput("renderProbabilityPoisson"),
+                            ),
                               
-                              conditionalPanel(
-                                condition = "input.probability == 'Normal'",
+                            conditionalPanel(
+                              condition = "input.probability == 'Normal'",
                                 
-                                br(),
-                                uiOutput("renderProbabilityNorm"),
-                              )
+                              br(),
+                              uiOutput("renderProbabilityNorm"),
                             )
+                        )
                       ), 
                       
-                    div(id = "inferenceMP",
-                      conditionalPanel(
-                        condition = "input.dropDownMenu == 'Statistical Inference'",
-                          
-                        uiOutput("renderInference"),
-
+                      # -------------------------------------- #  
+                      ### ---- Statistical Inference main ---- 
+                      # -------------------------------------- #
+                      div(id = "inferenceMP",
                         conditionalPanel(
-                          condition = "input.samplesSelect == '1'",
-                          
+                          condition = "input.dropDownMenu == 'Statistical Inference'",
+                            
+                          uiOutput("renderInference"),
+  
                           conditionalPanel(
-                            condition = "input.popuParameter == 'Population Mean'",
+                            condition = "input.samplesSelect == '1'",
                             
                             conditionalPanel(
-                              condition = "input.dataAvailability == 'Summarized Data'",
+                              condition = "input.popuParameter == 'Population Mean'",
                               
+                              conditionalPanel(
+                                condition = "input.dataAvailability == 'Summarized Data'",
+                                
+                                  conditionalPanel(
+                                    condition = "input.sigmaKnown == 'Known'",
+                                    
+                                    conditionalPanel(
+                                      condition = "input.inferenceType == 'Confidence Interval'",
+                                      
+                                      uiOutput('oneSampCI'),
+                                      br(),
+                                      img(src ='OneSampZInt.png', height = '100px')
+                                    ), # One Sample CI
+                                    
+                                    conditionalPanel(
+                                      condition = "input.inferenceType == 'Hypothesis Testing'",
+                                      
+                                      uiOutput('oneSampHT'),
+                                      br(),
+                                    ), # One Sample HT
+                                  ),  # One Sample Sigma known
+                                
+                                  conditionalPanel(
+                                    condition = "input.sigmaKnown == 'Unknown'",
+                                    
+                                    conditionalPanel(
+                                      condition = "input.inferenceType == 'Confidence Interval'",
+                                      
+                                      uiOutput('oneSampCIUnknown'),
+                                      br(),
+                                      img(src ='OneSampTInt.png', height = '90px')
+                                    ), # One Sample CI
+                                    
+                                    conditionalPanel(
+                                      condition = "input.inferenceType == 'Hypothesis Testing'",
+                                      
+                                      uiOutput('oneSampHTUnknown'),
+                                      br(),
+                                    ), # One Sample HT
+                                  ), # One Sample Sigma unknown
+                                
+                              ), # One Sample Summarized Data
+                              
+                              conditionalPanel(
+                                condition = "input.dataAvailability == 'Enter Raw Data'",
+                                
                                 conditionalPanel(
-                                  condition = "input.sigmaKnown == 'Known'",
+                                  condition = "input.sigmaKnownRaw == 'rawKnown'",
                                   
                                   conditionalPanel(
                                     condition = "input.inferenceType == 'Confidence Interval'",
                                     
-                                    uiOutput('oneSampCI'),
+                                    uiOutput('oneSampCIRaw'),
                                     br(),
                                     img(src ='OneSampZInt.png', height = '100px')
-                                  ), # One Sample CI
+                                  ), # One Sample CI Raw
                                   
                                   conditionalPanel(
                                     condition = "input.inferenceType == 'Hypothesis Testing'",
                                     
-                                    uiOutput('oneSampHT'),
+                                    uiOutput('oneSampHTRaw'),
                                     br(),
-                                  ), # One Sample HT
-                                ),  # One Sample Sigma known
-                              
+                                  ), # One Sample HT Raw
+                                ), # One Sample Sigma known Raw
+                                
                                 conditionalPanel(
-                                  condition = "input.sigmaKnown == 'Unknown'",
+                                  condition = "input.sigmaKnownRaw == 'rawUnknown'",
                                   
                                   conditionalPanel(
                                     condition = "input.inferenceType == 'Confidence Interval'",
                                     
-                                    uiOutput('oneSampCIUnknown'),
+                                    uiOutput('oneSampCIRawUnknown'),
                                     br(),
                                     img(src ='OneSampTInt.png', height = '90px')
-                                  ), # One Sample CI
+                                  ), # One Sample CI Raw
                                   
                                   conditionalPanel(
                                     condition = "input.inferenceType == 'Hypothesis Testing'",
                                     
-                                    uiOutput('oneSampHTUnknown'),
+                                    uiOutput('oneSampHTRawUnknown'),
                                     br(),
-                                  ), # One Sample HT
-                                ), # One Sample Sigma unknown
-                              
-                            ), # One Sample Summarized Data
+                                  ),  # One Sample HT Raw
+                                ), # One Sample Sigma unknown Raw
+                              ), # One Sample Raw Data
+                            ), # One Population Mean
                             
                             conditionalPanel(
-                              condition = "input.dataAvailability == 'Enter Raw Data'",
+                              condition = "input.popuParameter == 'Population Proportion'",
                               
-                              conditionalPanel(
-                                condition = "input.sigmaKnownRaw == 'rawKnown'",
-                                
-                                conditionalPanel(
-                                  condition = "input.inferenceType == 'Confidence Interval'",
-                                  
-                                  uiOutput('oneSampCIRaw'),
-                                  br(),
-                                  img(src ='OneSampZInt.png', height = '100px')
-                                ), # One Sample CI Raw
-                                
-                                conditionalPanel(
-                                  condition = "input.inferenceType == 'Hypothesis Testing'",
-                                  
-                                  uiOutput('oneSampHTRaw'),
-                                  br(),
-                                ), # One Sample HT Raw
-                              ), # One Sample Sigma known Raw
-                              
-                              conditionalPanel(
-                                condition = "input.sigmaKnownRaw == 'rawUnknown'",
-                                
-                                conditionalPanel(
-                                  condition = "input.inferenceType == 'Confidence Interval'",
-                                  
-                                  uiOutput('oneSampCIRawUnknown'),
-                                  br(),
-                                  img(src ='OneSampTInt.png', height = '90px')
-                                ), # One Sample CI Raw
-                                
-                                conditionalPanel(
-                                  condition = "input.inferenceType == 'Hypothesis Testing'",
-                                  
-                                  uiOutput('oneSampHTRawUnknown'),
-                                  br(),
-                                ),  # One Sample HT Raw
-                              ), # One Sample Sigma unknown Raw
-                            ), # One Sample Raw Data
-                          ), # One Population Mean
-                          
-                          conditionalPanel(
-                            condition = "input.popuParameter == 'Population Proportion'",
-                            
-                          ), # One Population Proportion
-                        ), # "input.samplesSelect == '1'"
-
+                            ), # One Population Proportion
+                          ), # "input.samplesSelect == '1'"
+  
                           conditionalPanel(
                             condition = "input.samplesSelect == '2'",
-                            
+                              
                             conditionalPanel(
                               condition = "input.popuParameters == 'Independent Population Means'",
-                              
+                                
                               conditionalPanel(
                                 condition = "input.dataAvailability2 == 'Summarized Data'",
-                                
+                                  
                                 conditionalPanel(
                                   condition = "input.bothsigmaKnown == 'bothKnown'",
-                                  
+                                    
                                   conditionalPanel(
                                     condition = "input.inferenceType2 == 'Confidence Interval'",
-                                    
+                                      
                                     uiOutput('twoSampCIbothKnown'),
                                     br(),
                                     img(src ='TwoSampZInt.png', height = '75px')
                                   ), # CI
-                                  
+                                    
                                   conditionalPanel(
                                     condition = "input.inferenceType2 == 'Hypothesis Testing'",
-                                    
+                                      
                                     uiOutput('twoSampHTbothKnown'),
                                     br(),
                                   ), # HT
                                 ),
-                                
+                                  
                                 conditionalPanel(
                                   condition = "input.bothsigmaKnown == 'bothUnknown'",
-                                  
+                                    
                                   conditionalPanel(
                                     condition = "input.inferenceType2 == 'Confidence Interval'",
-                                    
+                                      
                                     uiOutput('twoSampCIbothUnknown'),
                                     br(),
                                     img(src ='TwoSampTInt.png', height = '75px')
                                   ), # CI
-                                  
+                                    
                                   conditionalPanel(
                                     condition = "input.inferenceType2 == 'Hypothesis Testing'",
-                                    
+                                      
                                     uiOutput('twoSampHTbothUnknown'),
                                     br(),
                                   ), # HT
-                                )
-                              ),
-                              
+                                ) # both unknown
+                              ), #summarized data
+                                
                               conditionalPanel(
                                 condition = "input.dataAvailability2 == 'Enter Raw Data'",
-                                
+                                  
                                 conditionalPanel(
                                   condition = "input.bothsigmaKnownRaw == 'bothKnownRaw'",
-                                  
+                                    
                                   conditionalPanel(
                                     condition = "input.inferenceType2 == 'Confidence Interval'",
-                                    
+                                      
                                     uiOutput('twoSampCIRawbothKnown'),
                                     br(),
                                     img(src ='TwoSampZInt.png', height = '75px')
                                   ), # CI
-                                  
+                                    
                                   conditionalPanel(
                                     condition = "input.inferenceType2 == 'Hypothesis Testing'",
-                                    
+                                      
                                     uiOutput('twoSampHTRawbothKnown'),
                                     br(),
                                   ), # HT
-                                ),
-                                
+                                ), #both known raw
+                                  
                                 conditionalPanel(
                                   condition = "input.bothsigmaKnownRaw == 'bothUnknownRaw'",
-                                  
+                                    
                                   conditionalPanel(
                                     condition = "input.inferenceType2 == 'Confidence Interval'",
-                                    
+                                      
                                     uiOutput('twoSampCIRawbothUnknown'),
                                     br(),
                                     img(src ='TwoSampTInt.png', height = '75px')
                                   ), # CI
-                                  
+                                    
                                   conditionalPanel(
                                     condition = "input.inferenceType2 == 'Hypothesis Testing'",
-                                    
+                                      
                                     uiOutput('twoSampHTRawbothUnknown'),
                                     br(),
                                   ), # HT
-                                ),
-                              ),
+                                ), #both unknown raw
+                              ), #raw data
                             ), # Two Independent Samples
-                            
+                              
                             #-------------#
                             # PAIRED DATA #
                             #-------------#
-                            
+                              
                             conditionalPanel(
                               condition = "input.popuParameters == 'Dependent Population Means'",
-                              
+                                
                               conditionalPanel(
                                 condition = "input.inferenceType2 == 'Confidence Interval'",
-                                
+                                  
                                 img(src ='TwoSampTIntPaired.png', height = '100px')
                               ), # CI
-                              
+                                
                               conditionalPanel(
                                 condition = "input.inferenceType2 == 'Hypothesis Testing'",
-                                
+                                  
                               ), # HT
-                              
                             ), # Two Dependent Samples
-                            
+                              
                             #----------------------------#
                             # TWO POPULATION PROPORTIONS #
                             #----------------------------#
-
                             conditionalPanel(
                               condition = "input.popuParameters == 'Population Proportions'",
-                              
+                                
                               conditionalPanel(
                                 condition = "input.inferenceType2 == 'Confidence Interval'",
-                                
+                                  
                               ), # CI
-                              
+                                
                               conditionalPanel(
                                 condition = "input.inferenceType2 == 'Hypothesis Testing'",
-                                
+                                  
                               ), # HT
                             ), # Two Population Proportions
                           ), # "input.samplesSelect == '2'"
                         ) # input.dropDownMenu == 'Statistical Inference'
                       ), # inferenceMP
                       
+                      # ------------------------------------------- #  
+                      ### ---- Regression and Correlation main ---- 
+                      # ------------------------------------------- #
                       div(id = "RegCorMP",
-                          conditionalPanel(
-                            condition = "input.dropDownMenu == 'Regression and Correlation'",
+                        conditionalPanel(
+                          condition = "input.dropDownMenu == 'Regression and Correlation'",
                             
-                            conditionalPanel(
-                              condition = "input.simple_vs_multiple == 'SLR'",
+                          conditionalPanel(
+                            condition = "input.simple_vs_multiple == 'SLR'",
                               
-                              conditionalPanel(
-                                condition = "input.regressioncorrelation == 'Simple Linear Regression'",
+                            conditionalPanel(
+                              condition = "input.regressioncorrelation == 'Simple Linear Regression'",
 
-                                tabsetPanel(id = 'tabSet',
-                                  tabPanel(id = "SLR", title = "Simple Linear Regression",
+                              tabsetPanel(id = 'tabSet', selected = "SLR",
+                                tabPanel(id = "SLR", title = "Simple Linear Regression",
                                     
-                                     conditionalPanel(
-                                       condition = "input.scatterPlot == 1",
+                                  conditionalPanel(
+                                    condition = "input.scatterPlot == 1",
 
-                                           #titlePanel("Scatterplot"),
-                                           plotOutput("scatterplot", width = "500px"),
-                                           br(),
-                                     ),
+                                    #titlePanel("Scatterplot"),
+                                    plotOutput("scatterplot", width = "500px"),
+                                    br(),
+                                  ),
                                      
-                                     titlePanel("Estimated equation of the regression line"),
-                                     verbatimTextOutput("linearRegression"),
-                                     br(),
+                                  titlePanel("Estimated equation of the regression line"),
+                                  verbatimTextOutput("linearRegression"),
+                                  br(),
                                      
-                                     titlePanel("95% confidence interval for regression parameters"),
-                                     verbatimTextOutput("confintLinReg"),
-                                     br(),
+                                  titlePanel("95% confidence interval for regression parameters"),
+                                  verbatimTextOutput("confintLinReg"),
+                                  br(),
                                      
-                                     titlePanel("ANOVA for regression"),
-                                     verbatimTextOutput("anovaLinReg"),
-                                     #br(),
-                                 ),
+                                  titlePanel("ANOVA for regression"),
+                                  verbatimTextOutput("anovaLinReg"),
+                                  #br(),
+                                ), 
                                  
                                 tabPanel(id = "normality", title = "Normality of Residuals",
-                                         #----------------------------------#
-                                         # Tests for normality of residuals #
-                                         #----------------------------------#
                                          
-                                         titlePanel("Anderson-Darling test"),
-                                         verbatimTextOutput("AndersonDarlingTest"),
-                                         br(),
-                                         
-                                         titlePanel("Kolmogorov-Smirnov test"),
-                                         verbatimTextOutput("KolmogorovSmirnovTest"),
-                                         br(),
-                                         
-                                         titlePanel("Shapiro-Wilk test"),
-                                         verbatimTextOutput("ShapiroTest"),
-                                         #br(),
+                                        #----------------------------------#
+                                        # Tests for normality of residuals #
+                                        #----------------------------------#
+                                        titlePanel("Anderson-Darling test"),
+                                        verbatimTextOutput("AndersonDarlingTest"),
+                                        br(),
+                                               
+                                        titlePanel("Kolmogorov-Smirnov test"),
+                                        verbatimTextOutput("KolmogorovSmirnovTest"),
+                                        br(),
+                                               
+                                        titlePanel("Shapiro-Wilk test"),
+                                        verbatimTextOutput("ShapiroTest"),
+                                        #br(),
                                 ),
                                 
-                                 tabPanel(id = "resid", title = "Residual Plots",
-                                    #-----------------------------#
-                                    # Plots for Residual Analysis #
-                                    #-----------------------------#
+                                tabPanel(id = "resid", title = "Residual Plots",
                                     
-                                    titlePanel("Q-Q plot"),
-                                    plotOutput("qqplot", width = "500px"),
-                                    #br(),
-                                    
-                                    titlePanel("Other diagnostic plots"),
-                                    plotOutput("moreplots", width = "500px"),
-                                    #br(),
+                                        #-----------------------------#
+                                        # Plots for Residual Analysis #
+                                        #-----------------------------#
+                                        titlePanel("Q-Q plot"),
+                                        plotOutput("qqplot", width = "500px"),
+                                        #br(),
+                                          
+                                        titlePanel("Other diagnostic plots"),
+                                        plotOutput("moreplots", width = "500px"),
+                                        #br(),
                                 ),
                             
-                            # selected = "SLR"
-                            # verbatimTextOutput("outlierTest"),
-                            ),
-                          ), # Simple Linear Regression
+                                # selected = "SLR"
+                                # verbatimTextOutput("outlierTest"),
+                              ), #tabset
+                              uiOutput("regcorvalidationerror"),
+                            ), # Simple Linear Regression
+                          
+                            conditionalPanel(
+                              condition = "input.regressioncorrelation == 'Correlation Coefficient'",
+
+                              conditionalPanel(
+                                condition = "input.pearson == 1",
+
+                                verbatimTextOutput("PearsonCorTest"),
+                                br(),
+                              
+                                verbatimTextOutput("PearsonConfInt"),
+                                br(),
+                              
+                                #titlePanel("Pearson's r"),
+                                verbatimTextOutput("PearsonEstimate"),
+                              ),
+                            
+                              conditionalPanel(
+                                condition = "input.kendall == 1",
+
+                                #titlePanel("Kendall's Tau"),
+                                verbatimTextOutput("Kendall"),
+                              ),
+
+                              conditionalPanel(
+                                condition = "input.spearman == 1",
+
+                                #titlePanel("Spearman's rs"),
+                                verbatimTextOutput("Spearman"),
+                              ),
+                            ), # Correlation Coefficient
+                          ), # sLR
                           
                           conditionalPanel(
-                            condition = "input.regressioncorrelation == 'Correlation Coefficient'",
-
-                            conditionalPanel(
-                              condition = "input.pearson == 1",
-
-                              verbatimTextOutput("PearsonCorTest"),
-                              br(),
-                              
-                              verbatimTextOutput("PearsonConfInt"),
-                              br(),
-                              
-                              #titlePanel("Pearson's r"),
-                              verbatimTextOutput("PearsonEstimate"),
-                            ),
-                            
-                            conditionalPanel(
-                              condition = "input.kendall == 1",
-
-                              #titlePanel("Kendall's Tau"),
-                              verbatimTextOutput("Kendall"),
-                            ),
-
-                            conditionalPanel(
-                              condition = "input.spearman == 1",
-
-                              #titlePanel("Spearman's rs"),
-                              verbatimTextOutput("Spearman"),
-                            ),
-                          ), # Correlation Coefficient
-                        ), # sLR
-                          
-                      conditionalPanel(
-                        condition = "input.simple_vs_multiple == 'MLR'",
+                            condition = "input.simple_vs_multiple == 'MLR'",
                         
-                      ), # MLR
-                    ), # RegCorMP
-                  ), # input.dropdownmenu = regression and correlation 
+                          ), # MLR
+                        ), # input.dropdownmenu = regression and correlation 
+                      ), # RegCorMP 
                     
-                    # checkboxInput(
-                    #   inputId = "themeToggle",
-                    #   label = icon("cog")
-                    # ),
-                    # 
-                    # tags$script(
-                    #                           "
-                    #             // define css theme filepaths
-                    #             const themes = {
-                    #                 dark: 'shinythemes/css/darkly.min.css',
-                    #                 light: 'shinythemes/css/flatly.min.css'
-                    #             }
-                    #     
-                    #             // function that creates a new link element
-                    #             function newLink(theme) {
-                    #                 let el = document.createElement('link');
-                    #                 el.setAttribute('rel', 'stylesheet');
-                    #                 el.setAttribute('text', 'text/css');
-                    #                 el.setAttribute('href', theme);
-                    #                 return el;
-                    #             }
-                    #     
-                    #             // function that remove <link> of current theme by href
-                    #             function removeLink(theme) {
-                    #                 let el = document.querySelector(`link[href='${theme}']`)
-                    #                 return el.parentNode.removeChild(el);
-                    #             }
-                    #     
-                    #             // define vars
-                    #             const darkTheme = newLink(themes.dark);
-                    #             const lightTheme = newLink(themes.light);
-                    #             const head = document.getElementsByTagName('head')[0];
-                    #             const toggle = document.getElementById('themeToggle');
-                    #     
-                    #             // define extra css and add as default
-                    #             const extraDarkThemeCSS = '.dataTables_length label, .dataTables_filter label, .dataTables_info {       color: white!important;} .paginate_button { background: white!important;} thead { color: white;}'
-                    #             const extraDarkThemeElement = document.createElement('style');
-                    #             extraDarkThemeElement.appendChild(document.createTextNode(extraDarkThemeCSS));
-                    #             head.appendChild(extraDarkThemeElement);
-                    #     
-                    #     
-                    #             // define event - checked === 'light'
-                    #             toggle.addEventListener('input', function(event) {
-                    #                 // if checked, switch to light theme
-                    #                 if (toggle.checked) {
-                    #                     removeLink(themes.dark);
-                    #                     head.removeChild(extraDarkThemeElement);
-                    #                     head.appendChild(lightTheme);
-                    #                 }  else {
-                    #                     // else add darktheme
-                    #                     removeLink(themes.light);
-                    #                     head.appendChild(extraDarkThemeElement)
-                    #                     head.appendChild(darkTheme);
-                    #                 }
-                    #             })
-                    #             "
-                    #   )
-                    ) # mainPanel
-                  ), # sidebarLayout
-                ), # Methods Panel
+                      # checkboxInput(
+                      #   inputId = "themeToggle",
+                      #   label = icon("cog")
+                      # ),
+                      # 
+                      # tags$script(
+                      #                           "
+                      #             // define css theme filepaths
+                      #             const themes = {
+                      #                 dark: 'shinythemes/css/darkly.min.css',
+                      #                 light: 'shinythemes/css/flatly.min.css'
+                      #             }
+                      #     
+                      #             // function that creates a new link element
+                      #             function newLink(theme) {
+                      #                 let el = document.createElement('link');
+                      #                 el.setAttribute('rel', 'stylesheet');
+                      #                 el.setAttribute('text', 'text/css');
+                      #                 el.setAttribute('href', theme);
+                      #                 return el;
+                      #             }
+                      #     
+                      #             // function that remove <link> of current theme by href
+                      #             function removeLink(theme) {
+                      #                 let el = document.querySelector(`link[href='${theme}']`)
+                      #                 return el.parentNode.removeChild(el);
+                      #             }
+                      #     
+                      #             // define vars
+                      #             const darkTheme = newLink(themes.dark);
+                      #             const lightTheme = newLink(themes.light);
+                      #             const head = document.getElementsByTagName('head')[0];
+                      #             const toggle = document.getElementById('themeToggle');
+                      #     
+                      #             // define extra css and add as default
+                      #             const extraDarkThemeCSS = '.dataTables_length label, .dataTables_filter label, .dataTables_info {       color: white!important;} .paginate_button { background: white!important;} thead { color: white;}'
+                      #             const extraDarkThemeElement = document.createElement('style');
+                      #             extraDarkThemeElement.appendChild(document.createTextNode(extraDarkThemeCSS));
+                      #             head.appendChild(extraDarkThemeElement);
+                      #     
+                      #     
+                      #             // define event - checked === 'light'
+                      #             toggle.addEventListener('input', function(event) {
+                      #                 // if checked, switch to light theme
+                      #                 if (toggle.checked) {
+                      #                     removeLink(themes.dark);
+                      #                     head.removeChild(extraDarkThemeElement);
+                      #                     head.appendChild(lightTheme);
+                      #                 }  else {
+                      #                     // else add darktheme
+                      #                     removeLink(themes.light);
+                      #                     head.appendChild(extraDarkThemeElement)
+                      #                     head.appendChild(darkTheme);
+                      #                 }
+                      #             })
+                      #             "
+                      #   )
+                      ) # mainPanel
+                    ), # sidebarLayout
+                  ), # Methods Panel
                   
+                  # -------------------------- #  
+                  # ---- Authors tabPanel ---- 
+                  # -------------------------- #
                   tabPanel("Authors",
                            h3("Developement Team", style= "font-weight:bold"),
                            
@@ -1228,207 +1267,225 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                               img(src = "https://www.rstudio.com/wp-content/uploads/2018/10/RStudio-Logo.png", height = "35px"),
                               ".")
                   ) # Authors Panel
-        )
-  )
-  
+    ) #navbarPage
+  ) #UI 
+
+# --------------------------- #
+# ---- Server components ----
+# --------------------------- #
 server <- function(input, output) {
     
-    # Data validation
+    # ------------------------- #
+    # ---- Data Validation ----
+    # ------------------------- #
+
     iv <- InputValidator$new()
+    regcor_iv <- InputValidator$new()
     
-    #descriptiveStat 
+    ## DS rules ----
+    
+    # descriptiveStat
     
     iv$add_rule("descriptiveStat", sv_required())
     
-    #numTrailsBinom
+    ## PD rules ----
     
-    iv$add_rule("numTrailsBinom", sv_required())
-    iv$add_rule("numTrailsBinom", sv_integer())
-    iv$add_rule("numTrailsBinom", sv_gt(0))
+    # numTrialsBinom 
     
-    #successProbBinom
+    iv$add_rule("numTrialsBinom", sv_required())
+    iv$add_rule("numTrialsBinom", sv_integer())
+    iv$add_rule("numTrialsBinom", sv_gt(0))
+    
+    # successProbBinom (PD)
     
     iv$add_rule("successProbBinom", sv_required())
     iv$add_rule("successProbBinom", sv_gte(0))
     iv$add_rule("successProbBinom", sv_lte(1))
     
-    #numSuccessesBinom
+    # numSuccessesBinom (PD)
     
     iv$add_rule("numSuccessesBinom", sv_required())
     iv$add_rule("numSuccessesBinom", sv_integer())
     iv$add_rule("numSuccessesBinom", sv_gte(0))
     
-    #x1
+    # numSuccessesBinomx1 (PD)
     iv$add_rule("numSuccessesBinomx1", sv_required())
     iv$add_rule("numSuccessesBinomx1", sv_integer())
     iv$add_rule("numSuccessesBinomx1", sv_gte(0))
     
-    #x2
+    # numSuccessesBinomx2 (PD)
     iv$add_rule("numSuccessesBinomx2", sv_required())
     iv$add_rule("numSuccessesBinomx2", sv_integer())
     iv$add_rule("numSuccessesBinomx2", sv_gte(0))
     
-    #muPoisson
+    # muPoisson (PD)
     
     iv$add_rule("muPoisson", sv_required())
     iv$add_rule("muPoisson", sv_gt(0))
     
-    #xPoisson 
+    # xPoisson (PD)
     
     iv$add_rule("xPoisson", sv_required())
     iv$add_rule("xPoisson", sv_integer())
     iv$add_rule("xPoisson", sv_gte(0))
     
-    #x1Poisson
+    # x1Poisson (PD)
     iv$add_rule("x1Poisson", sv_required())
     iv$add_rule("x1Poisson", sv_integer())
     iv$add_rule("x1Poisson", sv_gte(0))
     
-    #x2Poisson
+    # x2Poisson (PD)
     iv$add_rule("x2Poisson", sv_required())
     iv$add_rule("x2Poisson", sv_integer())
     iv$add_rule("x2Poisson", sv_gte(0))
     
-    #popMean 
+    # popMean (PD)
     
     iv$add_rule("popMean", sv_required())
     
-    #popuSD
+    # popuSD (PD)
     
     iv$add_rule("popSD", sv_required())
     iv$add_rule("popSD", sv_gt(0))
     
-    #xValue 
+    # xValue (PD)
     
     iv$add_rule("xValue", sv_required())
     
     iv$add_rule("x1Value", sv_required())
     iv$add_rule("x2Value", sv_required())
     
-    #sampleSize
+    ## SI rules ----
+    
+    # sampleSize 
     
     iv$add_rule("sampleSize", sv_required())
     iv$add_rule("sampleSize", sv_integer())
     iv$add_rule("sampleSize", sv_gt(0))
     
-    #sampleMean 
+    # sampleMean 
     
     iv$add_rule("sampleMean", sv_required())
     
-    #popuSD
+    # popuSD 
     
     iv$add_rule("popuSD", sv_required()) 
     iv$add_rule("popuSD", sv_gt(0))
     
-    #popuSDRaw
+    # popuSDRaw 
     
     iv$add_rule("popuSDRaw", sv_required()) 
     iv$add_rule("popuSDRaw", sv_gt(0))
     
-    #sampSD 
+    # sampSD 
     
     iv$add_rule("sampSD", sv_required())
     iv$add_rule("sampSD", sv_gt(0))
     
-    #sampleSize1 
+    # sampleSize1 
     
     iv$add_rule("sampleSize1", sv_required())
     iv$add_rule("sampleSize1", sv_integer())
     iv$add_rule("sampleSize1", sv_gt(0))
     
-    #sampleMean1 
+    # sampleMean1 
     
     iv$add_rule("sampleMean1", sv_required())
     
-    #sampleSize2 
+    # sampleSize2 
     
     iv$add_rule("sampleSize2", sv_required())
     iv$add_rule("sampleSize2", sv_integer())
     iv$add_rule("sampleSize2", sv_gt(0))
     
-    #sampleMean2 
+    # sampleMean2 
     
     iv$add_rule("sampleMean2", sv_required()) 
     
-    #popuSD1 
+    # popuSD1 
     
     iv$add_rule("popuSD1", sv_required()) 
     iv$add_rule("popuSD1", sv_gt(0))
     
-    #popuSD2 
+    # popuSD2 
     
     iv$add_rule("popuSD2", sv_required()) 
     iv$add_rule("popuSD2", sv_gt(0))
     
-    #sampSD1 
+    # sampSD1 
     
     iv$add_rule("sampSD1", sv_required())
     iv$add_rule("sampSD1", sv_gt(0))
     
-    #sampSD2 
+    # sampSD2 
     
     iv$add_rule("sampSD2", sv_required()) 
     iv$add_rule("sampSD2", sv_gt(0))
     
-    #sample1 
+    # sample1 
     
     iv$add_rule("sample1", sv_required()) 
     
-    #raw_sample1
+    # raw_sample1
     
     iv$add_rule("raw_sample1", sv_required())
     
-    #raw_sample2 
+    # raw_sample2 
     
     iv$add_rule("raw_sample2", sv_required()) 
     
-    #numSuccessesProportion
+    # numSuccessesProportion
     
     iv$add_rule("numSuccesses", sv_required())
     iv$add_rule("numSuccesses", sv_integer())
     iv$add_rule("numSuccesses", sv_gte(0))
     
-    #x1
+    # x1
     iv$add_rule("numSuccesses1", sv_required())
     iv$add_rule("numSuccesses1", sv_integer())
     iv$add_rule("numSuccesses1", sv_gte(0))
     
-    #x2
+    # x2
     iv$add_rule("numSuccesses2", sv_required())
     iv$add_rule("numSuccesses2", sv_integer())
     iv$add_rule("numSuccesses2", sv_gte(0))
     
-    #numTrailsProportion
+    # numTrialsProportion
     
-    iv$add_rule("numTrails", sv_required())
-    iv$add_rule("numTrails", sv_integer())
-    iv$add_rule("numTrails", sv_gt(0))
+    iv$add_rule("numTrials", sv_required())
+    iv$add_rule("numTrials", sv_integer())
+    iv$add_rule("numTrials", sv_gt(0))
     
-    #n1
-    iv$add_rule("numTrails1", sv_required())
-    iv$add_rule("numTrails1", sv_integer())
-    iv$add_rule("numTrails1", sv_gt(0))
+    # n1
+    iv$add_rule("numTrials1", sv_required())
+    iv$add_rule("numTrials1", sv_integer())
+    iv$add_rule("numTrials1", sv_gt(0))
     
-    #n2
-    iv$add_rule("numTrails2", sv_required())
-    iv$add_rule("numTrails2", sv_integer())
-    iv$add_rule("numTrails2", sv_gt(0))
+    # n2
+    iv$add_rule("numTrials2", sv_required())
+    iv$add_rule("numTrials2", sv_integer())
+    iv$add_rule("numTrials2", sv_gt(0))
     
-    #hypMean 
+    # hypMean 
     
     iv$add_rule("hypMean", sv_required())
     
-    #hypProportion 
+    # hypProportion 
     
     iv$add_rule("hypProportion", sv_required())
     iv$add_rule("hypProportion", sv_gte(0))
     
-    #Regression and Correlation 
+    ## RC rules ---- 
     
-    iv$add_rule("x", sv_required())
-    iv$add_rule("y", sv_required())
+    regcor_iv$add_rule("x", sv_required())
+    #iv$add_rule("x", sv_regex("^[0-9]+(.[0-9]+)?(, [0-9](.[0-9]+)?)+$", "Data can only be numeric values seperated by commas"))
+    regcor_iv$add_rule("x", sv_regex("^([0-9]+(\\.[0-9]+)?)(, [0-9]+(\\.[0-9]+)?)+$", "Data must be numeric values seperated by a comma and a space (ie: 2, 3)"))
+    
+    regcor_iv$add_rule("y", sv_required())
+    regcor_iv$add_rule("y", sv_regex("^([0-9]+(\\.[0-9]+)?)(, [0-9]+(\\.[0-9]+)?)+$", "Data must be numeric values seperated by a comma and a space (ie: 2, 3)"))
     
     iv$enable()
+    regcor_iv$enable()
     
     # String List to Numeric List
     createNumLst <- function(text) {
@@ -1452,6 +1509,9 @@ server <- function(input, output) {
       sqrt(sum((x-mean(x))^2)/length(x))
     }
     
+    # ------------------------------------- #
+    # ---- Descriptive Stats functions ----
+    # ------------------------------------- #
     observeEvent(input$goDescpStats, {
       dat <- createNumLst(input$descriptiveStat)
       
@@ -1545,9 +1605,14 @@ server <- function(input, output) {
       }
     })
     
+    # -------------------------------------------- #
+    # ---- Probability Distribution functions ----
+    # -------------------------------------------- #
+    
+    ## Binomial ----
     observeEvent(input$goBinom, {
       
-      binom_n <- input$numTrailsBinom
+      binom_n <- input$numTrialsBinom
       
       binom_p <- input$successProbBinom
       
@@ -1646,6 +1711,7 @@ server <- function(input, output) {
       })
     })
 
+    ## Poisson ----
     observeEvent(input$goPoisson, {
       
       Poisson_mu <- input$muPoisson
@@ -1729,6 +1795,7 @@ server <- function(input, output) {
       })
     })
     
+    ## Normal ----
     observeEvent(input$goNormal, {
       
       norm_mu <- input$popMean
@@ -1792,6 +1859,9 @@ server <- function(input, output) {
       })
     })
     
+    # ----------------------------------------- #
+    # ---- Statistical Inference functions ----
+    # ----------------------------------------- #
     observeEvent(input$goInference, {
       output$renderInference <- renderDataTable(
 
@@ -2309,9 +2379,9 @@ server <- function(input, output) {
        ) # renderInference
     }) # input$goInference
     
-    #-----------------------------------#
-    # Linear Regression and Correlation #
-    #-----------------------------------#
+    # ------------------------------------------- #
+    # ---- Linear Regression and Correlation ----
+    # ------------------------------------------- #
     
     observeEvent(input$goRegression, {
       
@@ -2323,112 +2393,125 @@ server <- function(input, output) {
       {
         datx <- createNumLst(input$x)
         daty <- createNumLst(input$y)
-      
-        if(anyNA(datx) | length(datx)<2 | anyNA(daty) | length(daty)<2){
-          # output$linearRegression <- renderPrint({ 
-          # "Invalid input or not enough observations"
-          #   })
-          cat(noquote(paste(c("Invalid input or not enough observations"))))
-        }
-        else{
-            if(input$regressioncorrelation == "Simple Linear Regression")
-            {
-              model <- lm(daty ~ datx)
+        
+        output$regcorvalidationerror <- renderUI({
+          validate(
+            need(length(datx) >= 2, "Need at least one pair of data"),
+            need(length(daty) >= 2, "Need at least one pair of data"),
+            need(!anyNA(datx), "Data must be numeric"),
+            need(!anyNA(daty), "Data must be numeric"),
+            need(length(datx) == length(daty), "x and y must have the same number of values"),
+            
+            errorClass = "myclass"
+          )
+        })
+        
+        #if(anyNA(datx) | anyNA(daty)){
+        #  validate("Invalid input", 
+        #           errorClass = "myClass"
+        #          )
+        #}
+        #else if(length(datx)<2 | length(daty)<2){
+        #  validate("Invalid input")
+        #}
+        
+        if(regcor_iv$is_valid() && input$regressioncorrelation == "Simple Linear Regression")
+        {
+          model <- lm(daty ~ datx)
   
-              main <- input$main
-              xlab <- input$xlab
-              ylab <- input$ylab
+          main <- input$main
+          xlab <- input$xlab
+          ylab <- input$ylab
   
-              output$scatterplot <- renderPlot({
-                plot(datx, daty, main = main, xlab = xlab, ylab = ylab, pch = 19) +
-                  abline(lm(daty ~ datx), col = "blue")
-              })
+          output$scatterplot <- renderPlot({
+            plot(datx, daty, main = main, xlab = xlab, ylab = ylab, pch = 19) +
+              abline(lm(daty ~ datx), col = "blue")
+          })
                 
-              output$linearRegression <- renderPrint({ 
-                summary(model)
-              })
+          output$linearRegression <- renderPrint({ 
+            summary(model)
+          })
               
-              output$confintLinReg <- renderPrint({ 
-                confint(model) # Prints the 95% CI for the regression parameters
-              })
+          output$confintLinReg <- renderPrint({ 
+            confint(model) # Prints the 95% CI for the regression parameters
+          })
                 
-              output$anovaLinReg <- renderPrint({ 
-                  anova(model) # Prints the ANOVA table
-              })
+          output$anovaLinReg <- renderPrint({ 
+              anova(model) # Prints the ANOVA table
+          })
   
-            #----------------------------------#
-            # Tests for normality of residuals #
-            #----------------------------------#
+          #----------------------------------#
+          # Tests for normality of residuals #
+          #----------------------------------#
             
-            # Anderson-Darling Normality Test 
-            output$AndersonDarlingTest <- renderPrint({ 
-              ad.test(model$residuals)
-            })
+          # Anderson-Darling Normality Test 
+          output$AndersonDarlingTest <- renderPrint({ 
+            ad.test(model$residuals)
+          })
             
-            # Kolmogorov-Smirnov Normality Test 
-            output$KolmogorovSmirnovTest <- renderPrint({ 
-              ks.test(model$residuals, "pnorm")
-            })
+          # Kolmogorov-Smirnov Normality Test 
+          output$KolmogorovSmirnovTest <- renderPrint({ 
+            ks.test(model$residuals, "pnorm")
+          })
             
-            # Shapiro-Wilk Normality Test 
-            output$ShapiroTest <- renderPrint({ 
-              shapiro.test(model$residuals) 
-            })
+          # Shapiro-Wilk Normality Test 
+          output$ShapiroTest <- renderPrint({ 
+            shapiro.test(model$residuals) 
+          })
             
-            # Q-Q plot for residuals
-            output$qqplot <- renderPlot({
-              #qqnorm(model$residuals, ylab = "Residuals", xlab = "Z Scores", main = "Q-Q plot of Standardized Residuals", pch = 19) #+
-              #qqline(model$residuals)
-              qqPlot(model$residuals, main = "Q-Q Plot", xlab = "Z Scores",  ylab = "Residuals", pch = 19) 
-            })
+          # Q-Q plot for residuals
+          output$qqplot <- renderPlot({
+            #qqnorm(model$residuals, ylab = "Residuals", xlab = "Z Scores", main = "Q-Q plot of Standardized Residuals", pch = 19) #+
+            #qqline(model$residuals)
+            qqPlot(model$residuals, main = "Q-Q Plot", xlab = "Z Scores",  ylab = "Residuals", pch = 19) 
+          })
             
-            output$moreplots <- renderPlot({
-              par(mfrow = c(2, 2))
-              plot(model, which = 1:4, pch = 19)
-            })
+          output$moreplots <- renderPlot({
+            par(mfrow = c(2, 2))
+            plot(model, which = 1:4, pch = 19)
+          })
             
-            # output$outlierTest <- renderPrint({ 
-            #   outlierTest(model) # Prints the Bonferonni p-value for the most extreme observations
-            # })
+          # output$outlierTest <- renderPrint({ 
+          #   outlierTest(model) # Prints the Bonferonni p-value for the most extreme observations
+          # })
             
-            # output$residversusfittedlot <- renderPlot({
-            #   #plot(fitted(reg.model), resid(reg.model), pch = 19, xlab = "Fitted Values", ylab = "Residuals", main = "Residuals vs Fitted")
-            #   #abline(h = 0, col = "red")
-            #   #leveragePlots(model) # leverage plots
-            # })
-          }
+          # output$residversusfittedlot <- renderPlot({
+          #   #plot(fitted(reg.model), resid(reg.model), pch = 19, xlab = "Fitted Values", ylab = "Residuals", main = "Residuals vs Fitted")
+          #   #abline(h = 0, col = "red")
+          #   #leveragePlots(model) # leverage plots
+          # })
+        }
 
-          else if(input$regressioncorrelation == "Correlation Coefficient")
-          {
-            Pearson <- cor.test(datx, daty, method = "pearson")
-            Kendall <- cor.test(datx, daty, method = "kendall")
-            Spearman <- cor.test(datx, daty, method = "spearman")
+        else if(input$regressioncorrelation == "Correlation Coefficient")
+        {
+          Pearson <- cor.test(datx, daty, method = "pearson")
+          Kendall <- cor.test(datx, daty, method = "kendall")
+          Spearman <- cor.test(datx, daty, method = "spearman")
   
-            output$PearsonCorTest <- renderPrint({ 
-              Pearson
-            })
+          output$PearsonCorTest <- renderPrint({ 
+            Pearson
+          })
   
-            output$PearsonConfInt <- renderPrint({ 
-              Pearson$conf.int
-            })
+          output$PearsonConfInt <- renderPrint({ 
+            Pearson$conf.int
+          })
             
-            output$PearsonEstimate <- renderPrint({
-              cat(noquote(paste(c("Pearson's r:", round(Pearson$estimate[[1]], 4)))))
-            })
+          output$PearsonEstimate <- renderPrint({
+            cat(noquote(paste(c("Pearson's r:", round(Pearson$estimate[[1]], 4)))))
+          })
             
-            output$Kendall <- renderPrint({
-              cat(noquote(paste(c("Kendall's Tau:", round(Kendall$estimate[[1]], 4)))))
-            })
+          output$Kendall <- renderPrint({
+            cat(noquote(paste(c("Kendall's Tau:", round(Kendall$estimate[[1]], 4)))))
+          })
   
-            output$Spearman <- renderPrint({
-              cat(noquote(paste(c("Spearman's rs:", round(Spearman$estimate[[1]], 4)))))
-            })
-          } # Correlation Coefficient
+          output$Spearman <- renderPrint({
+            cat(noquote(paste(c("Spearman's rs:", round(Spearman$estimate[[1]], 4)))))
+          })
+        } # Correlation Coefficient
           
-          df <- data.frame(datx, daty, datx*daty, datx^2, daty^2)
-          names(df) <- c("X", "Y", "XY", "X^2", "Y^2")
-          print(df)
-        } # After validation of x and y vectors
+        df <- data.frame(datx, daty, datx*daty, datx^2, daty^2)
+        names(df) <- c("X", "Y", "XY", "X^2", "Y^2")
+        print(df)
       } # SLR
     }) # input$goRegression
 
@@ -2504,11 +2587,21 @@ server <- function(input, output) {
     
     observeEvent(input$goRegression, {
       show(id = "RegCorMP")
-      if(input$regressioncorrelation == "Simple Linear Regression")
-      {
-        showTab(inputId = 'tabSet', target = 'Simple Linear Regression')
+      if(regcor_iv$is_valid() && input$regressioncorrelation == "Simple Linear Regression"){
+        #show(id = "SLR")
+        #show(id = "normality")
+        #show(id = "resid")
+        showTab(inputId = 'tabSet', target = 'Simple Linear Regression', select = TRUE)
         showTab(inputId = 'tabSet', target = 'Normality of Residuals')
         showTab(inputId = 'tabSet', target = 'Residual Plots')
+      }
+      else{
+        #hide(id = "SLR")
+        #hide(id = "normality")
+        #hide(id = "resid")
+        hideTab(inputId = 'tabSet', target = 'Simple Linear Regression')
+        hideTab(inputId = 'tabSet', target = 'Normality of Residuals')
+        hideTab(inputId = 'tabSet', target = 'Residual Plots')
       }
     })
     
@@ -2521,14 +2614,17 @@ server <- function(input, output) {
     })
     
     observe(
+      #hide(id = "SLR")
       hideTab(inputId = 'tabSet', target = 'Simple Linear Regression'), 
     )
 
     observe(
+      #hide(id = "normality")
       hideTab(inputId = 'tabSet', target = 'Normality of Residuals')
     )
 
     observe(
+      #hide(id = "resid")
       hideTab(inputId = 'tabSet', target = 'Residual Plots')
     )
     
