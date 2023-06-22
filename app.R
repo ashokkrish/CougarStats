@@ -1052,101 +1052,102 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                           conditionalPanel(
                             condition = "input.simple_vs_multiple == 'SLR'",
                               
-                            conditionalPanel(
-                              condition = "input.regressioncorrelation == 'Simple Linear Regression'",
-
-                              tabsetPanel(id = 'tabSet', selected = "SLR",
-                                tabPanel(id = "SLR", title = "Simple Linear Regression",
+                            uiOutput("slrTabs"),
+                            
+                            #conditionalPanel(
+                              #condition = "input.regressioncorrelation == 'Simple Linear Regression'",
+                              
+                              #tabsetPanel(id = 'tabSet', selected = "SLR",
+                              #  tabPanel(id = "SLR", title = "Simple Linear Regression",
                                     
-                                  conditionalPanel(
-                                    condition = "input.scatterPlot == 1",
+                              #    conditionalPanel(
+                               #     condition = "input.scatterPlot == 1",
 
-                                    #titlePanel("Scatterplot"),
-                                    plotOutput("scatterplot", width = "500px"),
-                                    br(),
-                                  ),
+                                #    titlePanel("Scatterplot"),
+                                 #   plotOutput("scatterplot", width = "500px"),
+                                  #  br(),
+                                  #),
                                      
-                                  titlePanel("Estimated equation of the regression line"),
-                                  verbatimTextOutput("linearRegression"),
-                                  br(),
-                                     
-                                  titlePanel("95% confidence interval for regression parameters"),
-                                  verbatimTextOutput("confintLinReg"),
-                                  br(),
-                                     
-                                  titlePanel("ANOVA for regression"),
-                                  verbatimTextOutput("anovaLinReg"),
+                                  #titlePanel("Estimated equation of the regression line"),
+                                  #verbatimTextOutput("linearRegression"),
                                   #br(),
-                                ), 
+                                     
+                                  #titlePanel("95% confidence interval for regression parameters"),
+                                  #verbatimTextOutput("confintLinReg"),
+                                  #br(),
+                                     
+                                  #titlePanel("ANOVA for regression"),
+                                  #verbatimTextOutput("anovaLinReg"),
+                                  #br(),
+                                #), 
                                  
-                                tabPanel(id = "normality", title = "Normality of Residuals",
+                                #tabPanel(id = "normality", title = "Normality of Residuals",
                                          
                                         #----------------------------------#
                                         # Tests for normality of residuals #
                                         #----------------------------------#
-                                        titlePanel("Anderson-Darling test"),
-                                        verbatimTextOutput("AndersonDarlingTest"),
-                                        br(),
+                                 #       titlePanel("Anderson-Darling test"),
+                                  #      verbatimTextOutput("AndersonDarlingTest"),
+                                   #     br(),
                                                
-                                        titlePanel("Kolmogorov-Smirnov test"),
-                                        verbatimTextOutput("KolmogorovSmirnovTest"),
-                                        br(),
+                                    #    titlePanel("Kolmogorov-Smirnov test"),
+                                    #    verbatimTextOutput("KolmogorovSmirnovTest"),
+                                     #   br(),
                                                
-                                        titlePanel("Shapiro-Wilk test"),
-                                        verbatimTextOutput("ShapiroTest"),
+                                      #  titlePanel("Shapiro-Wilk test"),
+                                       # verbatimTextOutput("ShapiroTest"),
                                         #br(),
-                                ),
+                                #),
                                 
-                                tabPanel(id = "resid", title = "Residual Plots",
+                                #tabPanel(id = "resid", title = "Residual Plots",
                                     
                                         #-----------------------------#
                                         # Plots for Residual Analysis #
                                         #-----------------------------#
-                                        titlePanel("Q-Q plot"),
-                                        plotOutput("qqplot", width = "500px"),
+                                 #       titlePanel("Q-Q plot"),
+                                #        plotOutput("qqplot", width = "500px"),
                                         #br(),
                                           
-                                        titlePanel("Other diagnostic plots"),
-                                        plotOutput("moreplots", width = "500px"),
+                                 #       titlePanel("Other diagnostic plots"),
+                                #        plotOutput("moreplots", width = "500px"),
                                         #br(),
-                                ),
+                                #),
                             
                                 # selected = "SLR"
                                 # verbatimTextOutput("outlierTest"),
-                              ), #tabset
-                              uiOutput("regcorvalidationerror"),
-                            ), # Simple Linear Regression
+                              #), #tabset
+                            #), # Simple Linear Regression
                           
-                            conditionalPanel(
-                              condition = "input.regressioncorrelation == 'Correlation Coefficient'",
+                            #conditionalPanel(
+                            #  condition = "input.regressioncorrelation == 'Correlation Coefficient'",
 
-                              conditionalPanel(
-                                condition = "input.pearson == 1",
+                            #  conditionalPanel(
+                            #    condition = "input.pearson == 1",
 
-                                verbatimTextOutput("PearsonCorTest"),
-                                br(),
+                            #    verbatimTextOutput("PearsonCorTest"),
+                            #    br(),
                               
-                                verbatimTextOutput("PearsonConfInt"),
-                                br(),
+                            #    verbatimTextOutput("PearsonConfInt"),
+                            #    br(),
                               
                                 #titlePanel("Pearson's r"),
-                                verbatimTextOutput("PearsonEstimate"),
-                              ),
+                            #    verbatimTextOutput("PearsonEstimate"),
+                            #  ),
                             
-                              conditionalPanel(
-                                condition = "input.kendall == 1",
+                            #  conditionalPanel(
+                            #    condition = "input.kendall == 1",
 
                                 #titlePanel("Kendall's Tau"),
-                                verbatimTextOutput("Kendall"),
-                              ),
+                            #    verbatimTextOutput("Kendall"),
+                            #  ),
 
-                              conditionalPanel(
-                                condition = "input.spearman == 1",
+                            #  conditionalPanel(
+                            #    condition = "input.spearman == 1",
 
                                 #titlePanel("Spearman's rs"),
-                                verbatimTextOutput("Spearman"),
-                              ),
-                            ), # Correlation Coefficient
+                            #    verbatimTextOutput("Spearman"),
+                            #  ),
+                            #), # Correlation Coefficient
                           ), # sLR
                           
                           conditionalPanel(
@@ -2394,124 +2395,244 @@ server <- function(input, output) {
         datx <- createNumLst(input$x)
         daty <- createNumLst(input$y)
         
-        output$regcorvalidationerror <- renderUI({
-          validate(
-            need(length(datx) >= 2, "Need at least one pair of data"),
-            need(length(daty) >= 2, "Need at least one pair of data"),
-            need(!anyNA(datx), "Data must be numeric"),
-            need(!anyNA(daty), "Data must be numeric"),
-            need(length(datx) == length(daty), "x and y must have the same number of values"),
-            
-            errorClass = "myclass"
-          )
-        })
         
-        #if(anyNA(datx) | anyNA(daty)){
-        #  validate("Invalid input", 
-        #           errorClass = "myClass"
-        #          )
-        #}
-        #else if(length(datx)<2 | length(daty)<2){
-        #  validate("Invalid input")
-        #}
-        
-        if(regcor_iv$is_valid() && input$regressioncorrelation == "Simple Linear Regression")
-        {
-          model <- lm(daty ~ datx)
-  
-          main <- input$main
-          xlab <- input$xlab
-          ylab <- input$ylab
-  
-          output$scatterplot <- renderPlot({
-            plot(datx, daty, main = main, xlab = xlab, ylab = ylab, pch = 19) +
-              abline(lm(daty ~ datx), col = "blue")
-          })
-                
-          output$linearRegression <- renderPrint({ 
-            summary(model)
-          })
+          output$slrTabs <- renderUI({
+            validate(
+              need(length(datx) >= 2, "Must have at least 2 observations for x"),
+              need(length(daty) >= 2, "Must have at least 2 observations for y"),
+              need(!anyNA(datx), "Data must be numeric"),
+              need(!anyNA(daty), "Data must be numeric"),
+              need(length(datx) == length(daty), "x and y must have the same number of observations"),
               
-          output$confintLinReg <- renderPrint({ 
-            confint(model) # Prints the 95% CI for the regression parameters
-          })
+              errorClass = "myclass"
+            )
+            
+            tagList(
+              conditionalPanel(
+                condition = "input.regressioncorrelation == 'Simple Linear Regression'",
                 
-          output$anovaLinReg <- renderPrint({ 
-              anova(model) # Prints the ANOVA table
+                tabsetPanel(id = "tabSet", selected = "Simple Linear Regression",
+                            tabPanel(id = "slr", title = "Simple Linear Regression",
+                                     
+                                     conditionalPanel(
+                                       condition = "input.scatterPlot == 1",
+                                       
+                                       titlePanel("Scatterplot"),
+                                       plotOutput("scatterplot", width = "500px"),
+                                       br(),
+                                     ),
+                                     
+                                     titlePanel("Estimated equation of the regression line"),
+                                     verbatimTextOutput("linearRegression"),
+                                     br(),
+                                     
+                                     titlePanel("95% confidence interval for regression parameters"),
+                                     verbatimTextOutput("confintLinReg"),
+                                     br(),
+                                     
+                                     titlePanel("ANOVA for regression"),
+                                     verbatimTextOutput("anovaLinReg"),
+                                     #br(),
+                            ), 
+                            
+                            tabPanel(id = "normality", title = "Normality of Residuals",
+                                     
+                                     #----------------------------------#
+                                     # Tests for normality of residuals #
+                                     #----------------------------------#
+                                     titlePanel("Anderson-Darling test"),
+                                     verbatimTextOutput("AndersonDarlingTest"),
+                                     br(),
+                                     
+                                     titlePanel("Kolmogorov-Smirnov test"),
+                                     verbatimTextOutput("KolmogorovSmirnovTest"),
+                                     br(),
+                                     
+                                     titlePanel("Shapiro-Wilk test"),
+                                     verbatimTextOutput("ShapiroTest"),
+                                     #br(),
+                            ),
+                            
+                            tabPanel(id = "resid", title = "Residual Plots",
+                                     
+                                     #-----------------------------#
+                                     # Plots for Residual Analysis #
+                                     #-----------------------------#
+                                     titlePanel("Q-Q plot"),
+                                     plotOutput("qqplot", width = "500px"),
+                                     #br(),
+                                     
+                                     titlePanel("Other diagnostic plots"),
+                                     plotOutput("moreplots", width = "500px"),
+                                     #br(),
+                            ),
+                ) #tabset
+              ), #simple lienar regression
+            
+              conditionalPanel(
+                condition = "input.regressioncorrelation == 'Correlation Coefficient'",
+                
+                conditionalPanel(
+                  condition = "input.pearson == 1",
+                  
+                  verbatimTextOutput("PearsonCorTest"),
+                  br(),
+                  
+                  verbatimTextOutput("PearsonConfInt"),
+                  br(),
+                  
+                  #titlePanel("Pearson's r"),
+                  verbatimTextOutput("PearsonEstimate"),
+                ),
+                
+                conditionalPanel(
+                  condition = "input.kendall == 1",
+                  
+                  #titlePanel("Kendall's Tau"),
+                  verbatimTextOutput("Kendall"),
+                ),
+                
+                conditionalPanel(
+                  condition = "input.spearman == 1",
+                  
+                  #titlePanel("Spearman's rs"),
+                  verbatimTextOutput("Spearman"),
+                ),
+              ), # Correlation Coefficient
+            )
           })
-  
-          #----------------------------------#
-          # Tests for normality of residuals #
-          #----------------------------------#
-            
-          # Anderson-Darling Normality Test 
-          output$AndersonDarlingTest <- renderPrint({ 
-            ad.test(model$residuals)
-          })
-            
-          # Kolmogorov-Smirnov Normality Test 
-          output$KolmogorovSmirnovTest <- renderPrint({ 
-            ks.test(model$residuals, "pnorm")
-          })
-            
-          # Shapiro-Wilk Normality Test 
-          output$ShapiroTest <- renderPrint({ 
-            shapiro.test(model$residuals) 
-          })
-            
-          # Q-Q plot for residuals
-          output$qqplot <- renderPlot({
-            #qqnorm(model$residuals, ylab = "Residuals", xlab = "Z Scores", main = "Q-Q plot of Standardized Residuals", pch = 19) #+
-            #qqline(model$residuals)
-            qqPlot(model$residuals, main = "Q-Q Plot", xlab = "Z Scores",  ylab = "Residuals", pch = 19) 
-          })
-            
-          output$moreplots <- renderPlot({
-            par(mfrow = c(2, 2))
-            plot(model, which = 1:4, pch = 19)
-          })
-            
-          # output$outlierTest <- renderPrint({ 
-          #   outlierTest(model) # Prints the Bonferonni p-value for the most extreme observations
-          # })
-            
-          # output$residversusfittedlot <- renderPlot({
-          #   #plot(fitted(reg.model), resid(reg.model), pch = 19, xlab = "Fitted Values", ylab = "Residuals", main = "Residuals vs Fitted")
-          #   #abline(h = 0, col = "red")
-          #   #leveragePlots(model) # leverage plots
-          # })
-        }
-
-        else if(input$regressioncorrelation == "Correlation Coefficient")
+        
+          #}
+        #else if(length(datx) != length(daty))
+        #{
+        #  output$regcorvalidationerror <- renderUI({
+        #    validate(
+        #      need(length(datx) == length(daty), "x and y must have the same number of observations"),
+              
+        #      errorClass = "myclass"
+        #    )
+        #  })
+        #}
+        #else
+        if(length(datx) == length(daty) && regcor_iv$is_valid())
         {
-          Pearson <- cor.test(datx, daty, method = "pearson")
-          Kendall <- cor.test(datx, daty, method = "kendall")
-          Spearman <- cor.test(datx, daty, method = "spearman")
-  
-          output$PearsonCorTest <- renderPrint({ 
-            Pearson
-          })
-  
-          output$PearsonConfInt <- renderPrint({ 
-            Pearson$conf.int
-          })
+          if(input$regressioncorrelation == "Simple Linear Regression")
+          {
+            model <- lm(daty ~ datx)
             
-          output$PearsonEstimate <- renderPrint({
-            cat(noquote(paste(c("Pearson's r:", round(Pearson$estimate[[1]], 4)))))
-          })
+            main <- input$main
+            xlab <- input$xlab
+            ylab <- input$ylab
             
-          output$Kendall <- renderPrint({
-            cat(noquote(paste(c("Kendall's Tau:", round(Kendall$estimate[[1]], 4)))))
-          })
-  
-          output$Spearman <- renderPrint({
-            cat(noquote(paste(c("Spearman's rs:", round(Spearman$estimate[[1]], 4)))))
-          })
-        } # Correlation Coefficient
+            output$scatterplot <- renderPlot({
+              plot(datx, daty, main = main, xlab = xlab, ylab = ylab, pch = 19) +
+                abline(lm(daty ~ datx), col = "blue")
+            })
+            
+            output$linearRegression <- renderPrint({ 
+              summary(model)
+            })
+            
+            output$confintLinReg <- renderPrint({ 
+              confint(model) # Prints the 95% CI for the regression parameters
+            })
+            
+            output$anovaLinReg <- renderPrint({ 
+              anova(model) # Prints the ANOVA table
+            })
+            
+            #----------------------------------#
+            # Tests for normality of residuals #
+            #----------------------------------#
+            
+            # Anderson-Darling Normality Test 
+            output$AndersonDarlingTest <- renderPrint({ 
+              ad.test(model$residuals)
+            })
+            
+            # Kolmogorov-Smirnov Normality Test 
+            output$KolmogorovSmirnovTest <- renderPrint({ 
+              ks.test(model$residuals, "pnorm")
+            })
+            
+            # Shapiro-Wilk Normality Test 
+            output$ShapiroTest <- renderPrint({ 
+              shapiro.test(model$residuals) 
+            })
+            
+            # Q-Q plot for residuals
+            output$qqplot <- renderPlot({
+              #qqnorm(model$residuals, ylab = "Residuals", xlab = "Z Scores", main = "Q-Q plot of Standardized Residuals", pch = 19) #+
+              #qqline(model$residuals)
+              qqPlot(model$residuals, main = "Q-Q Plot", xlab = "Z Scores",  ylab = "Residuals", pch = 19) 
+            })
+            
+            output$moreplots <- renderPlot({
+              par(mfrow = c(2, 2))
+              plot(model, which = 1:4, pch = 19)
+            })
+            
+            # output$outlierTest <- renderPrint({ 
+            #   outlierTest(model) # Prints the Bonferonni p-value for the most extreme observations
+            # })
+            
+            # output$residversusfittedlot <- renderPlot({
+            #   #plot(fitted(reg.model), resid(reg.model), pch = 19, xlab = "Fitted Values", ylab = "Residuals", main = "Residuals vs Fitted")
+            #   #abline(h = 0, col = "red")
+            #   #leveragePlots(model) # leverage plots
+            # })
+          }
+          else if(input$regressioncorrelation == "Correlation Coefficient")
+          {
+            if(length(datx) > 2)
+            {
+              Pearson <- cor.test(datx, daty, method = "pearson")
+              
+              output$PearsonCorTest <- renderPrint({ 
+                Pearson
+              })
+              
+              if(length(datx) > 3)
+              {
+                output$PearsonConfInt <- renderPrint({ 
+                  Pearson$conf.int
+                })
+              }
+              else
+              {
+                output$PearsonConfInt <- renderPrint ({
+                  noquote("Computation of the Confidence Interval requires a minimum sample size of 4")
+                })
+              }
+              
+              output$PearsonEstimate <- renderPrint({
+                cat(noquote(paste(c("Pearson's r:", round(Pearson$estimate[[1]], 4)))))
+              })
+            }
+            else
+            {
+              #showNotification("Error: sample size must be greater than 2 for Pearson's", duration = NULL, closeButton = TRUE)
+              output$PearsonCorTest <- renderPrint ({
+                noquote("Pearson's Product-Moment Correlation requires a minimum sample size of 3 for computation")
+              })
+            }
+            
+            Kendall <- cor.test(datx, daty, method = "kendall")
+            Spearman <- cor.test(datx, daty, method = "spearman")
+            
+            output$Kendall <- renderPrint({
+              cat(noquote(paste(c("Kendall's Tau:", round(Kendall$estimate[[1]], 4)))))
+            })
+            
+            output$Spearman <- renderPrint({
+              cat(noquote(paste(c("Spearman's rs:", round(Spearman$estimate[[1]], 4)))))
+            })
+          } # Correlation Coefficient
           
         df <- data.frame(datx, daty, datx*daty, datx^2, daty^2)
         names(df) <- c("X", "Y", "XY", "X^2", "Y^2")
         print(df)
+        }
       } # SLR
     }) # input$goRegression
 
