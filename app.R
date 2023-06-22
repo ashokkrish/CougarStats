@@ -37,14 +37,14 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                 
   navbarPage(title = div(img(src ="CougarStats.png", height = 100), span("CougarStats", style = "color:#000000; font-weight:bold; font-style: italic; font-size:24pt")),
              
-                # -------------------------- #  
-                # ---- Methods tabPanel ---- 
-                # -------------------------- #
+                # --------------------- #  
+                # ---- Methods Tab ---- 
+                # --------------------- #
                 tabPanel(title = "Methods",
                          
-                  # --------------------------- #  
+                  #  ------------------------- #  
                   ## ---- Methods sidebar ---- 
-                  # --------------------------- #       
+                  #  ------------------------- #       
                   sidebarLayout(
                     sidebarPanel(
                       withMathJax(),
@@ -61,9 +61,9 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                       ),
                       
                       
-                      # ------------------------------------- #  
+                      #   ----------------------------------- #  
                       ### ---- Descriptive Stats sidebar ---- 
-                      # ------------------------------------- #
+                      #   ----------------------------------- #
                       conditionalPanel(id = "descriptiveStatsPanel",
                         condition = "input.dropDownMenu == 'Descriptive Statistics'",
                         
@@ -105,9 +105,9 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4") #, onclick = "history.go(0)"
                       ),
                       
-                      # --------------------------------------------- #  
+                      #   ------------------------------------------- #  
                       ### ---- Probability Distributions sidebar ---- 
-                      # --------------------------------------------- #
+                      #   ------------------------------------------- #
                       conditionalPanel(id = "probPanel",
                         condition = "input.dropDownMenu == 'Probability Distributions'",
                         
@@ -251,9 +251,9 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                         )
                       ),
                       
-                      # ----------------------------------------- #  
+                      #   --------------------------------------- #  
                       ### ---- Statistical Inference sidebar ---- 
-                      # ----------------------------------------- #
+                      #   --------------------------------------- #
                       conditionalPanel(id = "inferencePanel",
                         condition = "input.dropDownMenu == 'Statistical Inference'",
 
@@ -636,9 +636,9 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4") #, onclick = "history.go(0)"
                       ),
                       
-                      # ---------------------------------------------- #  
+                      #   -------------------------------------------- #  
                       ### ---- Regression and Correlation sidebar ---- 
-                      # ---------------------------------------------- #
+                      #   -------------------------------------------- #
                       conditionalPanel(id = "RegCorPanel",
                         condition = "input.dropDownMenu == 'Regression and Correlation'",
  
@@ -735,9 +735,9 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                       # radioButtons('format', 'Document format', c('PDF', 'Word'), inline = TRUE),
                     ),
                     
-                    # ---------------------------- #  
+                    #  --------------------------- #  
                     ## ---- Methods mainPanel ---- 
-                    # ---------------------------- #
+                    #  --------------------------- #
                     mainPanel(
                       
                       # tags$style(type ="text/css",
@@ -745,9 +745,9 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                       #            ".shiny-output-error:before { visibility: hidden; }"
                       # ),
                       
-                      # ---------------------------------- #  
+                      #   -------------------------------- #  
                       ### ---- Descriptive Stats main ---- 
-                      # ---------------------------------- #
+                      #   -------------------------------- #
                       div(id = "descriptiveStatsMP",
                         conditionalPanel(
                           condition = "input.dropDownMenu == 'Descriptive Statistics'",
@@ -775,9 +775,9 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                         )
                       ),
                       
-                      # ------------------------------------------ #  
+                      #   ---------------------------------------- #  
                       ### ---- Probability Distributions main ---- 
-                      # ------------------------------------------ #
+                      #   ---------------------------------------- #
                       div(id = "probabilityMP",
                         conditionalPanel(
                           condition = "input.dropDownMenu == 'Probability Distributions'",
@@ -805,9 +805,9 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                         )
                       ), 
                       
-                      # -------------------------------------- #  
+                      #   ------------------------------------ #  
                       ### ---- Statistical Inference main ---- 
-                      # -------------------------------------- #
+                      #   ------------------------------------ #
                       div(id = "inferenceMP",
                         conditionalPanel(
                           condition = "input.dropDownMenu == 'Statistical Inference'",
@@ -1042,9 +1042,9 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                         ) # input.dropDownMenu == 'Statistical Inference'
                       ), # inferenceMP
                       
-                      # ------------------------------------------- #  
+                      #   ----------------------------------------- #  
                       ### ---- Regression and Correlation main ---- 
-                      # ------------------------------------------- #
+                      #   ----------------------------------------- #
                       div(id = "RegCorMP",
                         conditionalPanel(
                           condition = "input.dropDownMenu == 'Regression and Correlation'",
@@ -1219,7 +1219,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                   ), # Methods Panel
                   
                   # -------------------------- #  
-                  # ---- Authors tabPanel ---- 
+                  # ---- Authors Tab ---- 
                   # -------------------------- #
                   tabPanel("Authors",
                            h3("Developement Team", style= "font-weight:bold"),
@@ -1488,6 +1488,10 @@ server <- function(input, output) {
     iv$enable()
     regcor_iv$enable()
     
+    # -------------------------- #
+    # ---- Functions/Output ----
+    # -------------------------- #
+    
     # String List to Numeric List
     createNumLst <- function(text) {
       text <- gsub("","", text)
@@ -1510,9 +1514,9 @@ server <- function(input, output) {
       sqrt(sum((x-mean(x))^2)/length(x))
     }
     
-    # ------------------------------------- #
-    # ---- Descriptive Stats functions ----
-    # ------------------------------------- #
+    #  ------------------------------------- #
+    ## ---- Descriptive Stats functions ----
+    #  ------------------------------------- #
     observeEvent(input$goDescpStats, {
       dat <- createNumLst(input$descriptiveStat)
       
@@ -1606,11 +1610,11 @@ server <- function(input, output) {
       }
     })
     
-    # -------------------------------------------- #
-    # ---- Probability Distribution functions ----
-    # -------------------------------------------- #
+    #  -------------------------------------------- #
+    ## ---- Probability Distribution functions ----
+    #  -------------------------------------------- #
     
-    ## Binomial ----
+    ### Binomial ----
     observeEvent(input$goBinom, {
       
       binom_n <- input$numTrialsBinom
@@ -1712,7 +1716,7 @@ server <- function(input, output) {
       })
     })
 
-    ## Poisson ----
+    ### Poisson ----
     observeEvent(input$goPoisson, {
       
       Poisson_mu <- input$muPoisson
@@ -1796,7 +1800,7 @@ server <- function(input, output) {
       })
     })
     
-    ## Normal ----
+    ### Normal ----
     observeEvent(input$goNormal, {
       
       norm_mu <- input$popMean
@@ -1860,9 +1864,9 @@ server <- function(input, output) {
       })
     })
     
-    # ----------------------------------------- #
-    # ---- Statistical Inference functions ----
-    # ----------------------------------------- #
+    #  ----------------------------------------- #
+    ## ---- Statistical Inference functions ----
+    #  ----------------------------------------- #
     observeEvent(input$goInference, {
       output$renderInference <- renderDataTable(
 
@@ -2380,9 +2384,9 @@ server <- function(input, output) {
        ) # renderInference
     }) # input$goInference
     
-    # ------------------------------------------- #
-    # ---- Linear Regression and Correlation ----
-    # ------------------------------------------- #
+    #  ------------------------------------------- #
+    ## ---- Linear Regression and Correlation ----
+    #  ------------------------------------------- #
     
     observeEvent(input$goRegression, {
       
@@ -2636,9 +2640,13 @@ server <- function(input, output) {
       } # SLR
     }) # input$goRegression
 
-    #------------------------#
-    # Descriptive Statistics #
-    #------------------------#
+    # --------------------------- #
+    # ---- Component Display ----
+    # --------------------------- #
+    
+    #  -------------------------------- #
+    ## ---- Descriptive Statistics ----
+    #  -------------------------------- #
     
     observeEvent(input$goDescpStats, {
       show(id = 'descriptiveStatsMP')
@@ -2649,6 +2657,10 @@ server <- function(input, output) {
       shinyjs::reset("descriptiveStatsPanel")
       #shinyjs::reset("sideBar")
     })
+    
+    #  ----------------------------------- #
+    ## ---- Probability Distributions ----
+    #  ----------------------------------- #
     
     #-----------------------#
     # Binomial Distribution #
@@ -2689,9 +2701,9 @@ server <- function(input, output) {
       shinyjs::reset("normalPanel")
     })
     
-    #-----------------------#
-    # Statistical Inference #
-    #-----------------------#
+    #  ------------------------------- #
+    ## ---- Statistical Inference ----
+    #  ------------------------------- #
     
     observeEvent(input$goInference, {
       show(id = "inferenceMP")
@@ -2702,9 +2714,13 @@ server <- function(input, output) {
       shinyjs::reset("inferencePanel")
     })
     
-    #----------------------------#
-    # Regression and Correlation #
-    #----------------------------#
+    #  ------------------------------------ #
+    ## ---- Regression and Correlation ----
+    #  ------------------------------------ #
+    
+    observeEvent(input$dataRegCor, {
+      hide(id = "RegCorMP")
+    })
     
     observeEvent(input$goRegression, {
       show(id = "RegCorMP")
