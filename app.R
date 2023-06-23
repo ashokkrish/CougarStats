@@ -2397,7 +2397,7 @@ server <- function(input, output) {
     #  ------------------------------------------- #
     
     slrData <- eventReactive(input$slrUserData, {
-      ext <- file_ext(input$slrUserData$name)
+      ext <- tools::file_ext(input$slrUserData$name)
       
       switch(ext, 
              csv = read_csv(input$slrUserData$datapath),
