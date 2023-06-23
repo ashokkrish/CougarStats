@@ -5,6 +5,8 @@ library(DT)
 library(ggplot2)
 library(moments)
 library(nortest)
+library(readr)
+library(readxl)
 library(shiny)
 library(shinythemes)
 library(shinyjs)
@@ -677,9 +679,15 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                           
                           conditionalPanel(
                             condition = "input.dataRegCor == 'Upload Data'",
-                            fileInput('headerfileSLR', 'Upload data',
-                                      accept = c('text/csv','text/comma-separated-values','text/tab-separated-values',
-                                                 'text/plain','.csv','.txt','.xls','.xlsx'))
+                            #fileInput('headerfileSLR', 'Upload data',
+                            #          accept = c('text/csv','text/comma-separated-values','text/tab-separated-values',
+                            #                     'text/plain','.csv','.txt','.xls','.xlsx'))
+                            
+                            fileInput(inputId = "slrUserData", "Upload your data (.csv or .xls or .xlsx)", 
+                                      accept = c("text/csv","text/comma-separated-values", "text/plain", ".csv",".xls",".xlsx")
+                            ),
+                            
+                            uiOutput("slrUploadVars"),
                           ),
                           
                           radioButtons(inputId = "regressioncorrelation", 
@@ -2388,6 +2396,53 @@ server <- function(input, output) {
     ## ---- Linear Regression and Correlation ----
     #  ------------------------------------------- #
     
+    slrData <- eventReactive(input$slrUserData, {
+      ext <- file_ext(input$slrUserData$name)
+      
+      switch(ext, 
+             csv = read_csv(input$slrUserData$datapath),
+             xls = read_excel(input$slrUserData$datapath),
+             xlsx = read_excel(input$slrUserData$datapath),
+             validate("Improper file format")
+             #showModal( modalDialog(
+             # title = "Warning",
+             # "Improper File Format",
+             # easyClose = TRUE
+             #))
+      )
+    })
+    
+    observeEvent(input$slrUserData, {
+      output$slrUploadVars <- renderUI({
+        #req(input$slrUserData)
+        #slrData <- read_csv(input$slrUserData$datapath)
+        
+        validate(
+          need(nrow(slrData()) != 0, "File is empty"),
+          
+          errorClass = "myClass"
+        )
+        
+        tagList(
+          selectizeInput(
+            inputId = "slrExplanatory",
+            label = strong("Choose the Explanatory Variable (x)"),
+            choices = c(colnames(slrData())),
+            multiple = TRUE, 
+            options = list(maxItems = 1)
+          ),
+          
+          selectizeInput(
+            inputId = "slrResponse",
+            label = strong("Choose the Response Variable (y)"),
+            choices = c(colnames(slrData())),
+            multiple = TRUE, 
+            options = list(maxItems = 1)
+          ),
+        )
+      })
+    })
+    
     observeEvent(input$goRegression, {
       
       # validate(
@@ -2396,10 +2451,18 @@ server <- function(input, output) {
       
       if(input$simple_vs_multiple == 'SLR')
       {
-        datx <- createNumLst(input$x)
-        daty <- createNumLst(input$y)
-        
-        
+        if(input$dataRegCor == 'Upload Data')
+        {
+          req(nrow(slrData()) > 0)
+          datx <- as.data.frame(slrData())[, input$slrExplanatory]
+          daty <- as.data.frame(slrData())[, input$slrResponse]
+        }
+        else
+        {
+          datx <- createNumLst(input$x)
+          daty <- createNumLst(input$y)
+        }
+      
           output$slrTabs <- renderUI({
             validate(
               need(length(datx) >= 2, "Must have at least 2 observations for x"),
@@ -2588,7 +2651,7 @@ server <- function(input, output) {
           }
           else if(input$regressioncorrelation == "Correlation Coefficient")
           {
-            if(length(datx) > 2)
+            if(length(datx) > 2 && length(daty) > 2)
             {
               Pearson <- cor.test(datx, daty, method = "pearson")
               
@@ -2596,7 +2659,7 @@ server <- function(input, output) {
                 Pearson
               })
               
-              if(length(datx) > 3)
+              if(length(datx) > 3 && length(daty) > 3)
               {
                 output$PearsonConfInt <- renderPrint({ 
                   Pearson$conf.int
