@@ -12,6 +12,7 @@ library(shinythemes)
 library(shinyjs)
 library(shinyvalidate)
 library(tinytex)
+library(tools)
 library(writexl)
 library(MASS)
 
@@ -690,37 +691,41 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                             uiOutput("slrUploadVars"),
                           ),
                           
-                          radioButtons(inputId = "regressioncorrelation", 
-                                       label = strong("Analyze Data Using"), 
-                                       choices = c("Simple Linear Regression", "Correlation Coefficient"),
-                                       selected = NULL, # c("Simple Linear Regression"), # 
-                                       inline = TRUE),
+                          #radioButtons(inputId = "regressioncorrelation", 
+                          #             label = strong("Analyze Data Using"), 
+                          #             choices = c("Simple Linear Regression", "Correlation Coefficient"),
+                          #             selected = NULL, # c("Simple Linear Regression"), # 
+                          #             inline = TRUE),
 
-                          conditionalPanel(
-                            condition = "input.regressioncorrelation == 'Simple Linear Regression'",
+                          #conditionalPanel(
+                          #  condition = "input.regressioncorrelation == 'Simple Linear Regression'",
 
-                            checkboxInput("scatterPlot", "Scatterplot of \\( x\\) versus \\( y\\)"),
-                            
-                              conditionalPanel(
-                                condition = "input.scatterPlot == 1",
-                                
-                                textInput("main", label = strong("Main title and axes labels:"), value = "Scatter Plot", placeholder = "main title"),
-                                textInput("xlab", label = NULL, value = "Independent Variable, x", placeholder = "x-axis label"),
-                                textInput("ylab", label = NULL, value = "Dependent Variable, y", placeholder = "y-axis label"),
-                                #hr(),
-                              ),
-                          ),
+                          br(),
+                          p(strong("Options")),
+                          hr(),
                           
-                          conditionalPanel(
-                            condition = "input.regressioncorrelation == 'Correlation Coefficient'",
+                          checkboxInput("scatterPlot", "Scatterplot of \\( x\\) versus \\( y\\)", value = TRUE),
                             
-                            checkboxInput("pearson", "Pearson's Product-Moment Correlation (r)"),
-                            checkboxInput("kendall", "Kendall's Rank Correlation (\\( \\tau\\))"),
-                            checkboxInput("spearman", "Spearman's Rank Correlation (\\( \\rho\\))"),
+                          conditionalPanel(
+                            condition = "input.scatterPlot == 1",
+                                
+                            textInput("main", label = strong("Main title and axes labels:"), value = "Scatter Plot", placeholder = "main title"),
+                            textInput("xlab", label = NULL, value = "Independent Variable, x", placeholder = "x-axis label"),
+                            textInput("ylab", label = NULL, value = "Dependent Variable, y", placeholder = "y-axis label"),
+                                #hr(),
+                          ),
+                          #),
+                          
+                          #conditionalPanel(
+                          #  condition = "input.regressioncorrelation == 'Correlation Coefficient'",
+                            
+                          #  checkboxInput("pearson", "Pearson's Product-Moment Correlation (r)"),
+                          checkboxInput("kendall", "Kendall's Rank Correlation (\\( \\tau\\))"),
+                          checkboxInput("spearman", "Spearman's Rank Correlation (\\( \\rho\\))"),
                             
                             # br(),
                             # checkboxGroupInput('corcoeff', strong('Correlation Coefficient'), choices = c("Pearson", "Kendall", "Spearman"), selected = "Pearson"),
-                          ),
+                          #),
                         ),
                         
                         conditionalPanel(
@@ -1290,6 +1295,9 @@ server <- function(input, output) {
 
     iv <- InputValidator$new()
     regcor_iv <- InputValidator$new()
+    slrraw_iv <- InputValidator$new()
+    slrupload_iv <- InputValidator$new()
+    slruploadvars_iv <- InputValidator$new()
     
     ## DS rules ----
     
@@ -1486,15 +1494,56 @@ server <- function(input, output) {
     
     ## RC rules ---- 
     
-    regcor_iv$add_rule("x", sv_required())
+    slrraw_iv$add_rule("x", sv_required())
     #iv$add_rule("x", sv_regex("^[0-9]+(.[0-9]+)?(, [0-9](.[0-9]+)?)+$", "Data can only be numeric values seperated by commas"))
-    regcor_iv$add_rule("x", sv_regex("^([0-9]+(\\.[0-9]+)?)(, [0-9]+(\\.[0-9]+)?)+$", "Data must be numeric values seperated by a comma and a space (ie: 2, 3)"))
+    slrraw_iv$add_rule("x", sv_regex("^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+$", 
+                                     "Data must be numeric values seperated by a comma (ie: 2,3,4)"))
+    slrraw_iv$add_rule("x", ~ if(sampleDiffRaw() != 0) "x and y must have the same number of observations")
     
-    regcor_iv$add_rule("y", sv_required())
-    regcor_iv$add_rule("y", sv_regex("^([0-9]+(\\.[0-9]+)?)(, [0-9]+(\\.[0-9]+)?)+$", "Data must be numeric values seperated by a comma and a space (ie: 2, 3)"))
+    slrraw_iv$add_rule("y", sv_required())
+    slrraw_iv$add_rule("y", sv_regex("^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+$", 
+                                     "Data must be numeric values seperated by a comma (ie: 2,3,4)"))
+    slrraw_iv$add_rule("y", ~ if(sampleDiffRaw() != 0) "x and y must have the same number of observations")
+    
+    slrupload_iv$add_rule("slrUserData", sv_required())
+    slrupload_iv$add_rule("slrUserData", ~ if(nrow(slrUploadData()) == 0) "File is empty")
+    slrupload_iv$add_rule("slrUserData", ~ if(ncol(slrUploadData()) < 2) "Data must include one response and (at least) one explanatory variable")
+    slrupload_iv$add_rule("slrUserData", ~ if(nrow(slrUploadData()) < 3) "Samples must include at least 2 observations")
+    
+    slruploadvars_iv$add_rule("slrResponse", sv_required())
+    slruploadvars_iv$add_rule("slrExplanatory", sv_required())
+    slruploadvars_iv$add_rule("slrResponse", ~ if(sampleDiffUpload() != 0) "Missing values detected, x and y must have the same number of observations")
+    
+    slrraw_iv$condition(~ isTRUE(input$dataRegCor == 'Enter Raw Data'))
+    slrupload_iv$condition(~ isTRUE(input$dataRegCor == 'Upload Data'))
+    slruploadvars_iv$condition(function() {isTRUE(input$dataRegCor == 'Upload Data' && slrupload_iv$is_valid()) })
+    
+    
+    regcor_iv$add_validator(slrraw_iv)
+    regcor_iv$add_validator(slrupload_iv)
+    regcor_iv$add_validator(slruploadvars_iv)
     
     iv$enable()
     regcor_iv$enable()
+    slrraw_iv$enable()
+    slrupload_iv$enable()
+    slruploadvars_iv$enable()
+    #slruploadvars_iv$disable()
+    
+    
+    #observeEvent(input$dataRegCor, {
+      
+      #if(input$dataRegCor == 'Enter Raw Data')
+      #{
+        #regcor_iv$enable()
+        #uploaddata_iv$disable()
+      #}
+      #else
+      #{
+        #uploaddata_iv$enable()
+        #regcor_iv$disable()
+      #}
+    #})
     
     # -------------------------- #
     # ---- Functions/Output ----
@@ -1807,8 +1856,8 @@ server <- function(input, output) {
         }
       })
     })
-    
-    ### Normal ----
+
+       ### Normal ----
     observeEvent(input$goNormal, {
       
       norm_mu <- input$popMean
@@ -2396,7 +2445,7 @@ server <- function(input, output) {
     ## ---- Linear Regression and Correlation ----
     #  ------------------------------------------- #
     
-    slrData <- eventReactive(input$slrUserData, {
+    slrUploadData <- eventReactive(input$slrUserData, {
       ext <- tools::file_ext(input$slrUserData$name)
       
       switch(ext, 
@@ -2412,73 +2461,136 @@ server <- function(input, output) {
       )
     })
     
-    observeEvent(input$slrUserData, {
-      output$slrUploadVars <- renderUI({
-        #req(input$slrUserData)
-        #slrData <- read_csv(input$slrUserData$datapath)
-        
-        validate(
-          need(nrow(slrData()) != 0, "File is empty"),
-          
-          errorClass = "myClass"
-        )
-        
-        tagList(
-          selectizeInput(
-            inputId = "slrExplanatory",
-            label = strong("Choose the Explanatory Variable (x)"),
-            choices = c(colnames(slrData())),
-            multiple = TRUE, 
-            options = list(maxItems = 1)
-          ),
-          
-          selectizeInput(
-            inputId = "slrResponse",
-            label = strong("Choose the Response Variable (y)"),
-            choices = c(colnames(slrData())),
-            multiple = TRUE, 
-            options = list(maxItems = 1)
-          ),
-        )
+    sampleDiffRaw <- eventReactive({input$x
+      input$y}, {
+        datx <- createNumLst(input$x)
+        daty <- createNumLst(input$y)
+        return(length(datx) - length(daty))
       })
+    
+    sampleDiffUpload <- eventReactive (c(input$slrExplanatory, 
+                                         input$slrResponse), {
+      if(input$slrResponse == "")
+      {
+        return()
+      }
+      else
+      {
+        datx <- as.data.frame(slrUploadData())[, input$slrExplanatory]
+        daty <- as.data.frame(slrUploadData())[, input$slrResponse]
+        difference <- length(na.omit(datx)) - length(na.omit(daty))
+        return(difference)
+      }
     })
+    
+    observeEvent(input$slrUserData, {
+      hide(id = "RegCorMP")
+      if(slrupload_iv$is_valid())
+      {
+        output$slrUploadVars <- renderUI({
+          
+          tagList(
+            
+            selectizeInput(
+              inputId = "slrExplanatory",
+              label = strong("Choose the Explanatory Variable (x)"),
+              choices = c(colnames(slrUploadData())),
+              options = list(
+                placeholder = 'Select a variable',
+                onInitialize = I('function() { this.setValue(""); }')
+              )
+            ),
+            
+            selectizeInput(
+              inputId = "slrResponse",
+              label = strong("Choose the Response Variable (y)"),
+              choices = c(colnames(slrUploadData())),
+              options = list(
+                placeholder = 'Select a variable',
+                onInitialize = I('function() { this.setValue(""); }')
+              )
+            ),
+          )
+        })
+        
+        #slruploadvars_iv$add_rule("slrResponse", sv_required())
+        #slruploadvars_iv$add_rule("slrExplanatory", sv_required())
+        #slruploadvars_iv$add_rule("slrResponse", ~ if(sampleDiffUpload() != 0) "Missing values detected, x and y must have the same number of observations")
+      
+        #slruploadvars_iv$condition(function() {isTRUE(input$dataRegCor == 'Upload Data' && slrupload_iv$is_valid()) })
+        
+        #regcor_iv$add_validator(slruploadvars_iv)
+        
+        #slruploadvars_iv$enable()
+      }
+      else
+      {
+        output$slrUploadVars <- renderUI({
+          ""
+        })
+      }
+    })
+    
+    observeEvent(input$slrExplanatory, {
+      updateTextInput(inputId = "xlab", value = input$slrExplanatory)
+    })
+    
+    observeEvent(input$slrResponse, {
+      updateTextInput(inputId = "ylab", value = input$slrResponse)
+    })
+    
     
     observeEvent(input$goRegression, {
       
-      # validate(
-      #   need(input$corcoeff, 'Check at least one Correlation Coefficient'),
-      # )
-      
       if(input$simple_vs_multiple == 'SLR')
       {
-        if(input$dataRegCor == 'Upload Data')
+        #if(input$dataRegCor == 'Upload Data')
+        #{
+        if(!slrupload_iv$is_valid())
         {
-          req(nrow(slrData()) > 0)
-          datx <- as.data.frame(slrData())[, input$slrExplanatory]
-          daty <- as.data.frame(slrData())[, input$slrResponse]
+          output$slrTabs <- renderUI({
+            validate(
+              need(input$slrUserData, "Please upload your data to continue"),
+              need(nrow(slrUploadData()) != 0, "File is empty"),
+              need(ncol(slrUploadData()) > 1, "Data must include one response and (at least) one explanatory variable"),
+              need(nrow(slrUploadData()) > 2, "Samples must include at least 2 observations"),
+              errorClass = "myClass"
+            )
+          })
+        }
+        else if(!slruploadvars_iv$is_valid())
+        {
+          output$slrTabs <- renderUI({
+            validate(
+              need(input$slrExplanatory != "", "Please select an explanatory variable (x)"),
+              need(input$slrResponse != "", "Please select a response variable (y)"),
+              need(sampleDiffUpload() == 0, "x and y must have the same number of observations"),
+              
+              errorClass = "myClass"
+            )
+          })
         }
         else
         {
-          datx <- createNumLst(input$x)
-          daty <- createNumLst(input$y)
-        }
-      
-          output$slrTabs <- renderUI({
-            validate(
-              need(length(datx) >= 2, "Must have at least 2 observations for x"),
-              need(length(daty) >= 2, "Must have at least 2 observations for y"),
-              need(!anyNA(datx), "Data must be numeric"),
-              need(!anyNA(daty), "Data must be numeric"),
-              need(length(datx) == length(daty), "x and y must have the same number of observations"),
+          if(input$dataRegCor == 'Upload Data')
+          {
+            datx <- as.data.frame(slrUploadData())[, input$slrExplanatory]
+            daty <- as.data.frame(slrUploadData())[, input$slrResponse]
+          }
+          else
+          {
+            datx <- createNumLst(input$x)
+            daty <- createNumLst(input$y)
+          }
+          
+          if(regcor_iv$is_valid())
+          {
+            output$slrTabs <- renderUI({ ###tab generation ----
               
-              errorClass = "myclass"
-            )
-            
-            tagList(
-              conditionalPanel(
-                condition = "input.regressioncorrelation == 'Simple Linear Regression'",
+              tagList(
                 
-                tabsetPanel(id = "tabSet", selected = "Simple Linear Regression",
+                tabsetPanel(id = "slrTabset", selected = "Simple Linear Regression",
+                            
                             tabPanel(id = "slr", title = "Simple Linear Regression",
                                      
                                      conditionalPanel(
@@ -2521,7 +2633,6 @@ server <- function(input, output) {
                             ),
                             
                             tabPanel(id = "resid", title = "Residual Plots",
-                                     
                                      #-----------------------------#
                                      # Plots for Residual Analysis #
                                      #-----------------------------#
@@ -2533,58 +2644,40 @@ server <- function(input, output) {
                                      plotOutput("moreplots", width = "500px"),
                                      #br(),
                             ),
-                ) #tabset
-              ), #simple lienar regression
+                            
+                            tabPanel(id = "correlation", title = "Correlation Analysis",
+                                     
+                                     #----------------------------------#
+                                     # Correlation Coefficient Analysis #
+                                     #----------------------------------#
+                                     titlePanel("Pearson's Product-Moment Correlation"),
+                                     verbatimTextOutput("PearsonCorTest"),
+                                     br(),
+                                     verbatimTextOutput("PearsonConfInt"),
+                                     br(),
+                                     verbatimTextOutput("PearsonEstimate"),
+                                     br(),
+                                     
+                                     conditionalPanel(
+                                       condition = "input.kendall == 1",
+                                       
+                                       titlePanel("Kendall's Rank Correlation"),
+                                       verbatimTextOutput("Kendall"),
+                                       br(),
+                                     ),
+                                     
+                                     conditionalPanel(
+                                       condition = "input.spearman == 1",
+                                       
+                                       titlePanel("Spearman's Rank Correlation"),
+                                       verbatimTextOutput("Spearman"),
+                                     ),
+                                     #br(),
+                            ),
+                ),
+              )
+            })
             
-              conditionalPanel(
-                condition = "input.regressioncorrelation == 'Correlation Coefficient'",
-                
-                conditionalPanel(
-                  condition = "input.pearson == 1",
-                  
-                  verbatimTextOutput("PearsonCorTest"),
-                  br(),
-                  
-                  verbatimTextOutput("PearsonConfInt"),
-                  br(),
-                  
-                  #titlePanel("Pearson's r"),
-                  verbatimTextOutput("PearsonEstimate"),
-                ),
-                
-                conditionalPanel(
-                  condition = "input.kendall == 1",
-                  
-                  #titlePanel("Kendall's Tau"),
-                  verbatimTextOutput("Kendall"),
-                ),
-                
-                conditionalPanel(
-                  condition = "input.spearman == 1",
-                  
-                  #titlePanel("Spearman's rs"),
-                  verbatimTextOutput("Spearman"),
-                ),
-              ), # Correlation Coefficient
-            )
-          })
-        
-          #}
-        #else if(length(datx) != length(daty))
-        #{
-        #  output$regcorvalidationerror <- renderUI({
-        #    validate(
-        #      need(length(datx) == length(daty), "x and y must have the same number of observations"),
-              
-        #      errorClass = "myclass"
-        #    )
-        #  })
-        #}
-        #else
-        if(length(datx) == length(daty) && regcor_iv$is_valid())
-        {
-          if(input$regressioncorrelation == "Simple Linear Regression")
-          {
             model <- lm(daty ~ datx)
             
             main <- input$main
@@ -2648,10 +2741,11 @@ server <- function(input, output) {
             #   #abline(h = 0, col = "red")
             #   #leveragePlots(model) # leverage plots
             # })
-          }
-          else if(input$regressioncorrelation == "Correlation Coefficient")
-          {
-            if(length(datx) > 2 && length(daty) > 2)
+            #}
+            #else if(input$regressioncorrelation == "Correlation Coefficient") 
+            #{
+            req(length(datx) > 1) ## correlation coefficient ----
+            if(length(datx) > 2)
             {
               Pearson <- cor.test(datx, daty, method = "pearson")
               
@@ -2659,7 +2753,7 @@ server <- function(input, output) {
                 Pearson
               })
               
-              if(length(datx) > 3 && length(daty) > 3)
+              if(length(datx) > 3)
               {
                 output$PearsonConfInt <- renderPrint({ 
                   Pearson$conf.int
@@ -2694,13 +2788,34 @@ server <- function(input, output) {
             output$Spearman <- renderPrint({
               cat(noquote(paste(c("Spearman's rs:", round(Spearman$estimate[[1]], 4)))))
             })
-          } # Correlation Coefficient
-          
-        df <- data.frame(datx, daty, datx*daty, datx^2, daty^2)
-        names(df) <- c("X", "Y", "XY", "X^2", "Y^2")
-        print(df)
+            #} # Correlation Coefficient
+            
+            df <- data.frame(datx, daty, datx*daty, datx^2, daty^2)
+            names(df) <- c("X", "Y", "XY", "X^2", "Y^2")
+            print(df)
+            
+          } #if regcor_iv is valid
+          else
+          {
+            output$slrTabs <- renderUI({
+              
+              validate(
+                need(length(datx) >= 2, "Must have at least 2 observations for x"),
+                need(length(daty) >= 2, "Must have at least 2 observations for y"),
+                need(!anyNA(datx), "Data must be numeric"),
+                need(!anyNA(daty), "Data must be numeric"),
+                need(length(datx) == length(daty), "x and y must have the same number of observations"),
+                
+                errorClass = "myclass"
+              )
+            })
+          }
         }
-      } # SLR
+      }
+      
+      #cut here
+      show(id = "RegCorMP")
+      
     }) # input$goRegression
 
     # --------------------------- #
@@ -2785,25 +2900,27 @@ server <- function(input, output) {
       hide(id = "RegCorMP")
     })
     
-    observeEvent(input$goRegression, {
-      show(id = "RegCorMP")
-      if(regcor_iv$is_valid() && input$regressioncorrelation == "Simple Linear Regression"){
+    #observeEvent(input$goRegression, {
+      #show(id = "RegCorMP")
+      #if(regcor_iv$is_valid())
+      #{
         #show(id = "SLR")
         #show(id = "normality")
         #show(id = "resid")
-        showTab(inputId = 'tabSet', target = 'Simple Linear Regression', select = TRUE)
-        showTab(inputId = 'tabSet', target = 'Normality of Residuals')
-        showTab(inputId = 'tabSet', target = 'Residual Plots')
-      }
-      else{
+        #showTab(inputId = 'tabSet', target = 'Simple Linear Regression', select = TRUE)
+        #showTab(inputId = 'tabSet', target = 'Normality of Residuals')
+        #showTab(inputId = 'tabSet', target = 'Residual Plots')
+      #}
+      #else
+      #{
         #hide(id = "SLR")
         #hide(id = "normality")
         #hide(id = "resid")
-        hideTab(inputId = 'tabSet', target = 'Simple Linear Regression')
-        hideTab(inputId = 'tabSet', target = 'Normality of Residuals')
-        hideTab(inputId = 'tabSet', target = 'Residual Plots')
-      }
-    })
+        #hideTab(inputId = 'tabSet', target = 'Simple Linear Regression')
+        #hideTab(inputId = 'tabSet', target = 'Normality of Residuals')
+        #hideTab(inputId = 'tabSet', target = 'Residual Plots')
+      #}
+    #})
     
     observeEvent(input$resetRegCor, {
       # hideTab(inputId = 'tabSet', target = 'Simple Linear Regression')
@@ -2813,20 +2930,20 @@ server <- function(input, output) {
       shinyjs::reset("RegCorPanel")
     })
     
-    observe(
+    #observe(
       #hide(id = "SLR")
-      hideTab(inputId = 'tabSet', target = 'Simple Linear Regression'), 
-    )
+      #hideTab(inputId = 'tabSet', target = 'Simple Linear Regression'), 
+    #)
 
-    observe(
+    #observe(
       #hide(id = "normality")
-      hideTab(inputId = 'tabSet', target = 'Normality of Residuals')
-    )
+      #hideTab(inputId = 'tabSet', target = 'Normality of Residuals')
+    #)
 
-    observe(
+    #observe(
       #hide(id = "resid")
-      hideTab(inputId = 'tabSet', target = 'Residual Plots')
-    )
+      #hideTab(inputId = 'tabSet', target = 'Residual Plots')
+    #)
     
     # output$downloadDataDS <- downloadHandler(
     #   filename = function(){"DS_file.xlsx"},
