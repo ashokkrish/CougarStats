@@ -18,6 +18,10 @@ library(MASS)
 
 options(scipen = 999) # options(scipen = 0)
 
+`%then%` <- function(a, b) {
+  if (is.null(a)) b else a
+}
+
 render <- "
 {
   option: function(data, escape){return '<div class=\"option\">'+data.label+'</div>';},
@@ -714,14 +718,15 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                             textInput("ylab", label = NULL, value = "Dependent Variable, y", placeholder = "y-axis label"),
                                 #hr(),
                           ),
+                          br(),
                           #),
                           
                           #conditionalPanel(
                           #  condition = "input.regressioncorrelation == 'Correlation Coefficient'",
                             
                           #  checkboxInput("pearson", "Pearson's Product-Moment Correlation (r)"),
-                          checkboxInput("kendall", "Kendall's Rank Correlation (\\( \\tau\\))"),
-                          checkboxInput("spearman", "Spearman's Rank Correlation (\\( \\rho\\))"),
+                          #checkboxInput("kendall", "Kendall's Rank Correlation (\\( \\tau\\))"),
+                          #checkboxInput("spearman", "Spearman's Rank Correlation (\\( \\rho\\))"),
                             
                             # br(),
                             # checkboxGroupInput('corcoeff', strong('Correlation Coefficient'), choices = c("Pearson", "Kendall", "Spearman"), selected = "Pearson"),
@@ -2563,7 +2568,7 @@ server <- function(input, output) {
           output$slrTabs <- renderUI({
             validate(
               need(input$slrExplanatory != "", "Please select an explanatory variable (x)"),
-              need(input$slrResponse != "", "Please select a response variable (y)"),
+              need(input$slrResponse != "", "Please select a response variable (y)") %then%
               need(sampleDiffUpload() == 0, "x and y must have the same number of observations"),
               
               errorClass = "myClass"
@@ -2600,6 +2605,10 @@ server <- function(input, output) {
                                        plotOutput("scatterplot", width = "500px"),
                                        br(),
                                      ),
+                                     
+                                     titlePanel("Data"),
+                                     dataTableOutput("slrDataTable"),
+                                     br(),
                                      
                                      titlePanel("Estimated equation of the regression line"),
                                      verbatimTextOutput("linearRegression"),
@@ -2658,20 +2667,20 @@ server <- function(input, output) {
                                      verbatimTextOutput("PearsonEstimate"),
                                      br(),
                                      
-                                     conditionalPanel(
-                                       condition = "input.kendall == 1",
+                                     #conditionalPanel(
+                                       #condition = "input.kendall == 1",
                                        
-                                       titlePanel("Kendall's Rank Correlation"),
-                                       verbatimTextOutput("Kendall"),
-                                       br(),
-                                     ),
+                                     titlePanel("Kendall's Rank Correlation"),
+                                     verbatimTextOutput("Kendall"),
+                                     br(),
+                                     #),
                                      
-                                     conditionalPanel(
-                                       condition = "input.spearman == 1",
+                                     #conditionalPanel(
+                                       #condition = "input.spearman == 1",
                                        
-                                       titlePanel("Spearman's Rank Correlation"),
-                                       verbatimTextOutput("Spearman"),
-                                     ),
+                                     titlePanel("Spearman's Rank Correlation"),
+                                     verbatimTextOutput("Spearman"),
+                                     #),
                                      #br(),
                             ),
                 ),
@@ -2683,6 +2692,14 @@ server <- function(input, output) {
             main <- input$main
             xlab <- input$xlab
             ylab <- input$ylab
+            
+            df <- data.frame(datx, daty, datx*daty, datx^2, daty^2)
+            names(df) <- c("X", "Y", "XY", "X^2", "Y^2")
+            
+            output$slrDataTable <- renderDataTable({
+              df %>% 
+                bind_rows(summarise(., across(where(is.numeric), sum)))
+            })
             
             output$scatterplot <- renderPlot({
               plot(datx, daty, main = main, xlab = xlab, ylab = ylab, pch = 19) +
@@ -2790,9 +2807,9 @@ server <- function(input, output) {
             })
             #} # Correlation Coefficient
             
-            df <- data.frame(datx, daty, datx*daty, datx^2, daty^2)
-            names(df) <- c("X", "Y", "XY", "X^2", "Y^2")
-            print(df)
+            #df <- data.frame(datx, daty, datx*daty, datx^2, daty^2)
+            #names(df) <- c("X", "Y", "XY", "X^2", "Y^2")
+            #print(df)
             
           } #if regcor_iv is valid
           else
