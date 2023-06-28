@@ -2715,7 +2715,7 @@ server <- function(input, output) {
             rownames(dfTotaled)[nrow(dfTotaled)] <- "Totals"
             
             output$slrDataTable <- DT::renderDataTable(
-              dfTotaled,
+              round(dfTotaled, digits = 3),
               options = list(pageLength = -1, 
                              lengthMenu = list(c(-1, 10, 25, 50, 100), c("All", "10", "25", "50", "100"))
                              )
