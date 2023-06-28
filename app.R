@@ -652,7 +652,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                         radioButtons(inputId = "simple_vs_multiple",
                                      label = strong("Regression Type"),
                                      choiceValues = list("SLR", "MLR"),
-                                     choiceNames = list("Simple Linear Regression (SLR)", "Multiple Linear Regression (MLR)"),
+                                     choiceNames = list("Simple Linear Regression and Correlation Analysis", "Multiple Linear Regression"),
                                      selected = "SLR", #character(0), # 
                                      inline = TRUE), #,width = '1000px'),
                         
@@ -2181,11 +2181,27 @@ server <- function(input, output) {
               } # input$inferenceType == 'Hypothesis Testing'
             } # input$dataAvailability == 'Enter Raw Data'
           }
-          # else if(input$popuParameter == 'Population Proportion'){
+          else if(input$popuParameter == 'Population Proportion'){
           #   source('R/OnePropZInt.R')
           #   source('R/OnePropZTest.R')
           #   print("Inferences for One Population Proportion are under contruction")
-          # }
+            output$renderInference <- renderUI({
+             validate(
+               need(input$numSuccesses, "Number of Successes required"),
+               need(input$numTrials, "Number of Trials required"),
+             
+               errorClass = "myClass"
+             )
+              
+              validate(
+                  need(input$numTrials > 0, "Number of Trials must be greater than 0"),
+                  need(input$numSuccesses >= 0, "Number of Successes cannot be negative") %then%
+                  need(input$numSuccesses <= input$numTrials, "Number of Successes cannot be greater than Number of Trials"),
+                
+                errorClass = "myClass"
+              )
+            })  
+          }
         }
         
         else if(input$samplesSelect == '2'){
@@ -2694,12 +2710,16 @@ server <- function(input, output) {
             ylab <- input$ylab
             
             df <- data.frame(datx, daty, datx*daty, datx^2, daty^2)
-            names(df) <- c("X", "Y", "XY", "X^2", "Y^2")
+            names(df) <- c("x", "y", "xy", "x^2", "y^2")
+            dfTotaled <- bind_rows(df, summarise(df, across(where(is.numeric), sum)))
+            rownames(dfTotaled)[nrow(dfTotaled)] <- "Totals"
             
-            output$slrDataTable <- renderDataTable({
-              df %>% 
-                bind_rows(summarise(., across(where(is.numeric), sum)))
-            })
+            output$slrDataTable <- DT::renderDataTable(
+              dfTotaled,
+              options = list(pageLength = -1, 
+                             lengthMenu = list(c(-1, 10, 25, 50, 100), c("All", "10", "25", "50", "100"))
+                             )
+            )
             
             output$scatterplot <- renderPlot({
               plot(datx, daty, main = main, xlab = xlab, ylab = ylab, pch = 19) +
@@ -2899,6 +2919,10 @@ server <- function(input, output) {
     #  ------------------------------- #
     ## ---- Statistical Inference ----
     #  ------------------------------- #
+    
+    observeEvent(input$samplesSelect, {
+      hide(id = "inferenceMP")
+    })
     
     observeEvent(input$goInference, {
       show(id = "inferenceMP")
