@@ -288,7 +288,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                         # 
                         # ),
                         
-                        conditionalPanel(
+                        conditionalPanel( #### 1 Sample ----
                           condition = "input.samplesSelect == '1'",
                           
                           radioButtons(inputId = "popuParameter",
@@ -305,7 +305,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                           #              selected = "Population Mean",
                           #              #inline = TRUE), #,width = '1000px'),
 
-                          conditionalPanel(
+                          conditionalPanel( ##### Mean ----
                             condition = "input.popuParameter == 'Population Mean'",
                             
                             radioButtons(inputId = "dataAvailability",
@@ -315,7 +315,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                          selected = "Summarized Data", # character(0), # 
                                          inline = TRUE), #,width = '1000px'),
                             
-                            conditionalPanel(
+                            conditionalPanel( ###### Summarized ----
                               condition = "input.dataAvailability == 'Summarized Data'",
                               
                               numericInput(inputId = "sampleSize",
@@ -333,14 +333,14 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                            selected = "Known", #character(0),
                                            inline = TRUE), #,width = '1000px'),
                               
-                              conditionalPanel(
+                              conditionalPanel( ####### " Known ----
                                 condition = "input.sigmaKnown == 'Known'",
                                 
                                 numericInput(inputId = "popuSD",
                                              label = strong("Population Standard Deviation (\\( \\sigma\\)) Value"),
                                              value = 8.25, min = 0.00001, step = 0.00001)),
                               
-                              conditionalPanel(
+                              conditionalPanel( ####### " Unknown ----
                                 condition = "input.sigmaKnown == 'Unknown'",
                                 
                                 numericInput(inputId = "sampSD",
@@ -348,7 +348,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                              value = 4.78, min = 0.00001, step = 0.00001)),
                             ), # One Sample Summarized Data
                             
-                            conditionalPanel(
+                            conditionalPanel( ###### Raw ----
                               condition = "input.dataAvailability == 'Enter Raw Data'",
                               
                               textAreaInput("sample1", strong("Sample"), value = "202, 210, 215, 220, 220, 224, 225, 228, 228, 228", placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
@@ -360,7 +360,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                            selected = "rawKnown",
                                            inline = TRUE), #,width = '1000px'),
                               
-                              conditionalPanel(
+                              conditionalPanel( ###### " Known ----
                                 condition = "input.sigmaKnownRaw == 'rawKnown'",
                                 
                                 numericInput(inputId = "popuSDRaw",
@@ -368,13 +368,13 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                              value = 8.25, min = 0.00001, step = 0.00001)
                               ),
                               
-                              conditionalPanel(
+                              conditionalPanel( ###### " Unknown
                                 condition = "input.sigmaKnownRaw == 'rawUnknown'"
                               )
                             ), # One Sample Raw Data
                           ), # One Population Mean
                           
-                          conditionalPanel(
+                          conditionalPanel(##### Proportion ----
                             condition = "input.popuParameter == 'Population Proportion'",
 
                               numericInput(inputId = "numSuccesses",
@@ -386,8 +386,8 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                            value = 1430, min = 1, step = 1),
                           ), #One Population Proportion
                           
-                          conditionalPanel(
-                            condition = "input.dataAvailability == 'Summarized Data' || input.dataAvailability == 'Enter Raw Data' || input.popuParameter == 'Population Proportion'",
+                          #conditionalPanel(
+                            #condition = "input.dataAvailability == 'Summarized Data' || input.dataAvailability == 'Enter Raw Data' || input.popuParameter == 'Population Proportion'",
                             
                               radioButtons(inputId = "inferenceType",
                                            label = strong("Inference Type"),
@@ -448,7 +448,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                                ),
                                 ),
                               ), # Dropdown for 1-sample HT
-                          ), # CI vs HT for 1 sample
+                          #), # CI vs HT for 1 sample
                         ), #"input.samplesSelect == '1'"
    
                         conditionalPanel(
@@ -2710,7 +2710,7 @@ server <- function(input, output) {
             ylab <- input$ylab
             
             df <- data.frame(datx, daty, datx*daty, datx^2, daty^2)
-            names(df) <- c("x", "y", "xy", "x^2", "y^2")
+            names(df) <- c("x", "y", "xy", "x<sup>2</sup>", "y<sup>2</sup>")
             dfTotaled <- bind_rows(df, summarise(df, across(where(is.numeric), sum)))
             rownames(dfTotaled)[nrow(dfTotaled)] <- "Totals"
             
@@ -2718,7 +2718,8 @@ server <- function(input, output) {
               datatable(round(dfTotaled, digits = 3),
                         options = list(pageLength = -1, 
                                       lengthMenu = list(c(-1, 10, 25, 50, 100), c("All", "10", "25", "50", "100"))
-                                      )
+                                      ),
+                        escape = FALSE
               ) %>% formatStyle(
                                 names(dfTotaled),
                                 target = 'row',
