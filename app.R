@@ -2623,7 +2623,7 @@ server <- function(input, output) {
                                      ),
                                      
                                      titlePanel("Data"),
-                                     dataTableOutput("slrDataTable"),
+                                     DTOutput("slrDataTable", width = "750px"),
                                      br(),
                                      
                                      titlePanel("Estimated equation of the regression line"),
@@ -2714,11 +2714,16 @@ server <- function(input, output) {
             dfTotaled <- bind_rows(df, summarise(df, across(where(is.numeric), sum)))
             rownames(dfTotaled)[nrow(dfTotaled)] <- "Totals"
             
-            output$slrDataTable <- DT::renderDataTable(
-              round(dfTotaled, digits = 3),
-              options = list(pageLength = -1, 
-                             lengthMenu = list(c(-1, 10, 25, 50, 100), c("All", "10", "25", "50", "100"))
-                             )
+            output$slrDataTable <- renderDT(
+              datatable(round(dfTotaled, digits = 3),
+                        options = list(pageLength = -1, 
+                                      lengthMenu = list(c(-1, 10, 25, 50, 100), c("All", "10", "25", "50", "100"))
+                                      )
+              ) %>% formatStyle(
+                                names(dfTotaled),
+                                target = 'row',
+                                fontWeight = styleRow(dim(dfTotaled)[1], "bold")
+              )
             )
             
             output$scatterplot <- renderPlot({
