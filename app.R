@@ -14,6 +14,7 @@ library(shinyvalidate)
 library(tinytex)
 library(tools)
 library(writexl)
+library(xtable)
 library(MASS)
 
 options(scipen = 999) # options(scipen = 0)
@@ -757,7 +758,6 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                     ## ---- Methods mainPanel ---- 
                     #  --------------------------- #
                     mainPanel(
-                      
                       # tags$style(type ="text/css",
                       #            ".shiny-output-error { visibility: hidden; }",
                       #            ".shiny-output-error:before { visibility: hidden; }"
@@ -926,6 +926,35 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                             
                             conditionalPanel(
                               condition = "input.popuParameter == 'Population Proportion'",
+                              
+                              uiOutput('oneSampProportion'),
+                              
+                              #titlePanel("Sample Data Summary"),
+                              #br(),
+                              #withMathJax(tableOutput('oneSampPropData')),
+                              #br(),
+                              #hr(),
+                              #br(),
+                              
+                              #conditionalPanel(
+                                #condition = "input.inferenceType == 'Confidence Interval'",
+                                
+                                #titlePanel("Confidence Interval"),
+                                #br(),
+                                #uiOutput('oneSampPropCI'),
+                                #br(),
+                              #),
+                              
+                              #conditionalPanel(
+                                #condition = "input.inferenceType == 'Hypothesis Testing'",
+                                
+                                #titlePanel("Hypothesis Test"),
+                                #br(),
+                                #uiOutput('oneSampPropHT'),
+                                #br(),
+                                #plotOutput('oneSampPropHTPlot')
+                                #br(),
+                              #),
                               
                             ), # One Population Proportion
                           ), # "input.samplesSelect == '1'"
@@ -1930,7 +1959,7 @@ server <- function(input, output) {
     ## ---- Statistical Inference functions ----
     #  ----------------------------------------- #
     observeEvent(input$goInference, {
-      output$renderInference <- renderDataTable(
+      #output$renderInference <- renderDataTable(
 
         if(input$samplesSelect == '1'){
           
@@ -1946,7 +1975,6 @@ server <- function(input, output) {
               ConfLvl <- 0.99
             }
           }
-          
           else if(input$inferenceType == 'Hypothesis Testing'){
             
             if(input$significanceLevel == "10%"){
@@ -1961,12 +1989,18 @@ server <- function(input, output) {
             
             if(input$altHypothesis == "3"){
               alternative <- "greater"
+              nullHyp <- "\\leq"
+              altHyp <- "\\gt"
             }
             else if(input$altHypothesis == "2"){
               alternative <- "two.sided"
+              nullHyp <- "="
+              altHyp <- "\\neq"
             }
             else{
               alternative <- "less"
+              nullHyp <- "\\geq"
+              altHyp <- "\\lt"
             }
           }
           
@@ -2181,28 +2215,210 @@ server <- function(input, output) {
               } # input$inferenceType == 'Hypothesis Testing'
             } # input$dataAvailability == 'Enter Raw Data'
           }
-          else if(input$popuParameter == 'Population Proportion'){
+          else if(input$popuParameter == 'Population Proportion'){ ###### prop ----
           #   source('R/OnePropZInt.R')
           #   source('R/OnePropZTest.R')
           #   print("Inferences for One Population Proportion are under contruction")
-            output$renderInference <- renderUI({
-             validate(
-               need(input$numSuccesses, "Number of Successes required"),
-               need(input$numTrials, "Number of Trials required"),
-             
-               errorClass = "myClass"
-             )
+            #output$renderInference <- renderUI({
+            
+            if(iv$is_valid() && input$numTrials >= input$numSuccesses)
+            {
+              output$oneSampProportion <- renderUI({
+                
+                tagList(
+                  titlePanel("Sample Data Summary"),
+                  br(),
+                  withMathJax(tableOutput('oneSampPropData')),
+                  br(),
+                  hr(),
+                  br(),
+                  
+                  conditionalPanel(
+                    condition = "input.inferenceType == 'Confidence Interval'",
+                    
+                    titlePanel("Confidence Interval"),
+                    br(),
+                    uiOutput('oneSampPropCI'),
+                    br(),
+                  ),
+                  
+                  conditionalPanel(
+                    condition = "input.inferenceType == 'Hypothesis Testing'",
+                    
+                    titlePanel("Hypothesis Test"),
+                    br(),
+                    uiOutput('oneSampPropHT'),
+                    br(),
+                    plotOutput('oneSampPropHTPlot'),
+                    br(),
+                  ),
+                )
+                
+              })
               
-              validate(
+              oneSampPropSucc <- input$numSuccesses
+              oneSampPropTrials <- input$numTrials
+              
+              if(input$inferenceType == 'Confidence Interval')
+              {
+                source('R/OnePropZInt.R')
+                
+                oneSampPropZInt <- OnePropZInterval(oneSampPropSucc, oneSampPropTrials, ConfLvl)
+                
+              # (\\( n\\))  (\\( x\\))  (\\(\\hat{p}\\))  ( 1 - \\(\\hat{p}\\))
+                dataRow1 <- data.frame(Variable = "Number of Trials (n)", Value = paste(oneSampPropTrials))
+                dataRow2 <- data.frame(Variable = "Number of Successes (x)", Value = paste(oneSampPropSucc))
+                dataRow3 <- data.frame(Variable = "Sample Proportion of Success", Value = paste(oneSampPropZInt["phat"]))
+                dataRow4 <- data.frame(Variable = "Sample Proportion of Failure", Value = paste(1 - oneSampPropZInt["phat"]))
+                dataRow5 <- data.frame(Variable = "Confidence Level", Value = paste(ConfLvl*100, "%"))
+                dataRow6 <- data.frame(Variable = "Z Critical Value", Value = paste(oneSampPropZInt["Z Critical"]))
+                dataRow7 <- data.frame(Variable = "Standard Error (SE)", Value = paste(oneSampPropZInt["Std Error"]))
+                dataRow8 <- data.frame(Variable = "Margin of Error (ME)", Value = paste(oneSampPropZInt["Z Critical"]*oneSampPropZInt["Std Error"]))
+                dataRow9 <- data.frame(Variable = "Lower Confidence Limit (LCL)", Value = paste(oneSampPropZInt["LCL"]))
+                dataRow10 <- data.frame(Variable = "Upper Confidence Limit (UCL)", Value = paste(oneSampPropZInt["UCL"]))
+                
+                propIntData <- rbind(dataRow1, dataRow2, dataRow3, dataRow4, dataRow5, dataRow6, dataRow7, dataRow8, dataRow9, dataRow10)
+                
+                #row4 <- data.frame(Variable = "T Critical Value (CV)", Value = paste(TTestRaw[4]))
+                #row5 <- data.frame(Variable = "Standard Error (SE)", Value = paste(TTestRaw[5]))
+                #row6 <- data.frame(Variable = "Test Statistic (TS)", Value = paste(TTestRaw[6]))
+                #row7 <- data.frame(Variable = "P-Value", Value = paste(TTestRaw[7]))
+                
+                output$oneSampPropData <- renderTable(propIntData)
+                
+                output$oneSampPropCI <- renderUI({
+                  p(
+                      withMathJax(
+                      sprintf("We are %1.0f%% confident that the population proportion (\\( p\\)) is between %0.3f and %0.3f",
+                             ConfLvl*100,
+                             oneSampPropZInt["LCL"],
+                             oneSampPropZInt["UCL"]),
+                      br(),
+                      br(),
+                      h4(tags$u("Constructing the Confidence Interval:")),
+                      br(),
+                      sprintf("CI \\(= \\hat{p} \\pm z_{\\alpha/2} \\sqrt{\\dfrac{\\hat{p}(1-\\hat{p})}{n}}\\)"),
+                      br(),
+                      br(),
+                      sprintf("CI \\(= %0.3f \\pm %0.3f \\sqrt{\\dfrac{%0.3f(1-%0.3f)}{%1.0f}}\\)",
+                              oneSampPropZInt["phat"],
+                              oneSampPropZInt["Z Critical"],
+                              oneSampPropZInt["phat"],
+                              oneSampPropZInt["phat"],
+                              oneSampPropTrials),
+                      br(),
+                      br(),
+                      sprintf("CI \\(= (%0.3f, %0.3f)\\)",
+                              oneSampPropZInt["LCL"],
+                              oneSampPropZInt["UCL"])
+                    )
+                  )
+                })
+                
+                
+                
+              } # input$inferenceType == 'Confidence Interval'
+              else if(input$inferenceType == 'Hypothesis Testing')
+              {
+                oneSampHypProp <- input$hypProportion
+                
+                source('R/OnePropZTest.R')
+                
+                oneSampPropZTest <- OnePropZTest(oneSampPropSucc, oneSampPropTrials, oneSampHypProp, alternative, sigLvl)
+                
+                # (\\( n\\))  (\\( x\\))  (\\(\\hat{p}\\))  ( 1 - \\(\\hat{p}\\))
+                dataRow1 <- data.frame(Variable = "Number of Trials (n)", Value = paste(oneSampPropTrials))
+                dataRow2 <- data.frame(Variable = "Number of Successes (x)", Value = paste(oneSampPropSucc))
+                dataRow3 <- data.frame(Variable = "Sample Proportion of Success", Value = paste(oneSampPropZTest["Sample Proportion"]))
+                dataRow4 <- data.frame(Variable = "Sample Proportion of Failure", Value = paste(1 - oneSampPropZTest["Sample Proportion"]))
+                dataRow5 <- data.frame(Variable = "Significance Level", Value = paste(sigLvl*100, "%"))
+                dataRow6 <- data.frame(Variable = "Z Critical Value (CV)", Value = paste(oneSampPropZTest["Z Critical"]))
+                dataRow7 <- data.frame(Variable = "Standard Error (SE)", Value = paste(oneSampPropZTest["Std Error"]))
+                dataRow8 <- data.frame(Variable = "Test Statistic (Z)", Value = paste(oneSampPropZTest["Test Statistic"]))
+                dataRow9 <- data.frame(Variable = "P-Value", Value = paste(oneSampPropZTest["P-Value"]))
+                
+                propTestData <- rbind(dataRow1, dataRow2, dataRow3, dataRow4, dataRow5, dataRow6, dataRow7, dataRow8, dataRow9)
+                
+                #row4 <- data.frame(Variable = "T Critical Value (CV)", Value = paste(TTestRaw[4]))
+                #row5 <- data.frame(Variable = "Standard Error (SE)", Value = paste(TTestRaw[5]))
+                #row6 <- data.frame(Variable = "Test Statistic (TS)", Value = paste(TTestRaw[6]))
+                #row7 <- data.frame(Variable = "P-Value", Value = paste(TTestRaw[7]))
+                
+                output$oneSampPropData <- renderTable(propTestData)
+                
+                if(oneSampPropZTest["P-Value"] > sigLvl)
+                {
+                  reject <- "do not provide"
+                }
+                else
+                {
+                  reject <- "provide"
+                }
+                
+                output$oneSampPropHT <- renderUI({
+                  p(
+                    withMathJax(
+                      sprintf("At the %1.0f%% level, the data %s sufficient evidence to reject the null hypothesis (\\( H_{0}\\)) that the population 
+                              proportion (\\( p\\)) \\( %s\\) %0.2f",
+                              sigLvl*100,
+                              reject,
+                              nullHyp,
+                              oneSampHypProp),
+                      br(),
+                      br(),
+                      h4(tags$u("Performing the Hypothesis Test:")),
+                      br(),
+                      sprintf("\\( H_{0}: p %s %0.2f\\)",
+                              nullHyp,
+                              oneSampHypProp),
+                      br(),
+                      sprintf("\\( H_{a}: p %s %0.2f\\)",
+                              altHyp,
+                              oneSampHypProp),
+                      br(),
+                      br(),
+                      sprintf("\\(z = \\dfrac{\\hat{p} - p_{0}}{\\sqrt{p_{0}(1 - p_{0})/n}}\\)"),
+                      br(),
+                      br(),
+                      sprintf("\\(z = \\dfrac{%0.3f - %0.3f}{\\sqrt{%0.3f(1 - %0.3f)/%1.0f}}\\)",
+                              oneSampPropZTest["Sample Proportion"],
+                              oneSampHypProp,
+                              oneSampHypProp,
+                              oneSampHypProp,
+                              oneSampPropTrials),
+                      br(),
+                      br(),
+                      sprintf("\\(z = %0.3f\\)",
+                              oneSampPropZTest["Test Statistic"])
+                    )
+                  )
+                })
+                
+  
+                
+              } # input$inferenceType == 'Hypothesis Test'
+            }
+            else
+            {
+              output$oneSampProportion <- renderUI({ 
+                validate(
+                  need(input$numSuccesses, "Number of Successes required"),
+                  need(input$numTrials, "Number of Trials required"),
+                  
+                  errorClass = "myClass"
+                )
+                
+                validate(
                   need(input$numTrials > 0, "Number of Trials must be greater than 0"),
                   need(input$numSuccesses >= 0, "Number of Successes cannot be negative") %then%
-                  need(input$numSuccesses <= input$numTrials, "Number of Successes cannot be greater than Number of Trials"),
-                
-                errorClass = "myClass"
-              )
-            })  
-          }
-        }
+                    need(input$numSuccesses <= input$numTrials, "Number of Successes cannot be greater than Number of Trials"),
+                  
+                  errorClass = "myClass"
+                )
+              })
+            }
+          } # input$popuParameter == 'Population Proportion'
+        } # one sample
         
         else if(input$samplesSelect == '2'){
           
@@ -2459,7 +2675,7 @@ server <- function(input, output) {
           #   print("Inference for the difference between two Population Proportions")
           # }
         }
-       ) # renderInference
+       #) # renderInference
     }) # input$goInference
     
     #  ------------------------------------------- #
@@ -2927,6 +3143,10 @@ server <- function(input, output) {
     #  ------------------------------- #
     
     observeEvent(input$samplesSelect, {
+      hide(id = "inferenceMP")
+    })
+    
+    observeEvent(input$inferenceType, {
       hide(id = "inferenceMP")
     })
     
