@@ -387,7 +387,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                               numericInput(inputId = "numTrials",
                                            label = strong("Number of Trials (\\( n\\))"),
                                            value = 1430, min = 1, step = 1),
-                          ), #One Population Proportion
+                          ), #One Population Proportion 
                           
                           #conditionalPanel(
                             #condition = "input.dataAvailability == 'Summarized Data' || input.dataAvailability == 'Enter Raw Data' || input.popuParameter == 'Population Proportion'",
@@ -848,6 +848,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                       ### ---- Statistical Inference main ---- 
                       #   ------------------------------------ #
                       div(id = "inferenceMP",
+                          withMathJax(
                         conditionalPanel(
                           condition = "input.dropDownMenu == 'Statistical Inference'",
                             
@@ -1122,15 +1123,16 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                             conditionalPanel(
                               condition = "input.popuParameters == 'Population Proportions'",
                                 
-                              conditionalPanel(
-                                condition = "input.inferenceType2 == 'Confidence Interval'",
+                              uiOutput('twoSampProportion'),
+                              #conditionalPanel(
+                              #  condition = "input.inferenceType2 == 'Confidence Interval'",
                                   
-                              ), # CI
+                              #), # CI
                                 
-                              conditionalPanel(
-                                condition = "input.inferenceType2 == 'Hypothesis Testing'",
+                              #conditionalPanel(
+                              #  condition = "input.inferenceType2 == 'Hypothesis Testing'",
                                   
-                              ), # HT
+                              #), # HT
                             ), # Two Population Proportions
                           ), # "input.samplesSelect == '2'"
                         ) # input.dropDownMenu == 'Statistical Inference'
@@ -1308,7 +1310,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                       #             })
                       #             "
                       #   )
-                      ) # mainPanel
+                      )) # mainPanel
                     ), # sidebarLayout
                   ), # Methods Panel
                   
@@ -3040,16 +3042,323 @@ server <- function(input, output) {
           # else if(input$popuParameters == 'Dependent Population Means'){
           #   print("Inference for the two Dependent Populations")
           # }
-          # else if(input$popuParameters == 'Population Proportions'){
+          else if(input$popuParameters == 'Population Proportions'){
+            
+            if(iv$is_valid())
+            {
+              if(input$numTrials1 >= input$numSuccesses1 && input$numTrials2 >= input$numSuccesses2)
+              {
+                output$twoSampProportion <- renderUI({
+                  
+                  tagList(
+                    
+                    fluidRow(
+                      column(width = 4,
+                             titlePanel("Sample Data Summary"),
+                             hr(),
+                             withMathJax(DTOutput('twoSampPropData', width = "90%")),
+                      ),
+                      column(width = 8,
+                             titlePanel('Summary Details'),
+                             hr(),
+                             
+                             conditionalPanel(
+                               condition = "input.twoSampPropData_rows_selected == 0",
+                               
+                               p("Select one or more variables from the summary table for more information"),
+                             ),
+                             
+                             conditionalPanel(
+                               condition = "input.twoSampPropData_rows_selected != 0",
+                               
+                               uiOutput('twoSampPropDataNOneDetails'),
+                               uiOutput('twoSampPropDataXOneDetails'),
+                               uiOutput('twoSampPropDataNTwoDetails'),
+                               uiOutput('twoSampPropDataXTwoDetails'),
+                               uiOutput('twoSampPropDataPhatOneDetails'),
+                               uiOutput('twoSampPropDataQhatOneDetails'),
+                               uiOutput('twoSampPropDataPhatTwoDetails'),
+                               uiOutput('twoSampPropDataQhatTwoDetails'),
+                               uiOutput('twoSampPropDataPhatDiffDetails'),
+                               uiOutput('twoSampPropDataConfLvlDetails'),
+                               uiOutput('twoSampPropDataSigLvlDetails'),
+                               uiOutput('twoSampPropDataCVDetails'),
+                               uiOutput('twoSampPropDataSEDetails'),
+                               uiOutput('twoSampPropDataMEDetails'),
+                               uiOutput('twoSampPropDataLCLDetails'),
+                               uiOutput('twoSampPropDataUCLDetails'),
+                               uiOutput('twoSampPropDataHypDetails'),
+                               uiOutput('twoSampPropDataTSDetails'),
+                               uiOutput('twoSampPropDataPValDetails'),
+                             )
+                      )
+                    ),
+                    
+                    br(),
+                    hr(),
+                    br(),
+                    
+                    conditionalPanel(
+                      condition = "input.inferenceType == 'Confidence Interval'",
+                      
+                      titlePanel("Confidence Interval"),
+                      br(),
+                      uiOutput('twoSampPropCI'),
+                      br(),
+                    ),
+                    
+                    conditionalPanel(
+                      condition = "input.inferenceType == 'Hypothesis Testing'",
+                      
+                      titlePanel("Hypothesis Test"),
+                      br(),
+                      uiOutput('twoSampPropHT'),
+                      br(),
+                      plotOutput('twoSampPropHTPlot'),
+                      br(),
+                    ),
+                  )
+                  
+                })
+                
+                twoSampPropSucc1 <- input$numSuccesses1
+                twoSampPropTrial1 <- input$numTrials1
+                twoSampPropSucc2 <- input$numSuccesses2
+                twoSampPropTrial2 <- input$numTrials2
+                
+                if(input$inferenceType2 == 'Confidence Interval') ### twosamppropconf ----
+                {
+                  source('R/TwoPropZInt.R')
+                  
+                  twoSampPropZInt <- TwoPropZInt(twoSampPropSucc1, twoSampPropTrial1, twoSampPropSucc2, twoSampPropTrial2, ConfLvl)
+                  
+                  # (\\( n\\))  (\\( x\\))  (\\(\\hat{p}\\))  ( 1 - \\(\\hat{p}\\))
+                  dataRow1 <- data.frame(Variable = "Number of Trials 1 \\( (n_{1})\\)", Value = paste(twoSampPropTrial1))
+                  dataRow2 <- data.frame(Variable = "Number of Successes 1 \\( (x_{1})\\)", Value = paste(twoSampPropSucc1))
+                  dataRow3 <- data.frame(Variable = "Number of Trials 2 \\( (n_{2})\\)", Value = paste(twoSampPropTrial2))
+                  dataRow4 <- data.frame(Variable = "Number of Successes 2 \\( (x_{2})\\)", Value = paste(twoSampPropSucc2))
+                  dataRow5 <- data.frame(Variable = "Sample Proportion of Success 1 \\( (\\hat{p}_{1})\\)", Value = paste(round(twoSampPropZInt["Sample Proportion 1"], digits = 3)))
+                  dataRow6 <- data.frame(Variable = "Sample Proportion of Failure 1 \\( (\\hat{q}_{1})\\)", Value = paste(round((1 - twoSampPropZInt["Sample Proportion 1"]), digits = 3)))
+                  dataRow7 <- data.frame(Variable = "Sample Proportion of Success 2 \\( (\\hat{p}_{2})\\)", Value = paste(round(twoSampPropZInt["Sample Proportion 2"], digits = 3)))
+                  dataRow8 <- data.frame(Variable = "Sample Proportion of Failure 2 \\( (\\hat{q}_{2})\\)", Value = paste(round((1 - twoSampPropZInt["Sample Proportion 2"]), digits = 3)))
+                  dataRow9 <- data.frame(Variable = "Difference of Proportions \\( (\\hat{p}_{1} - \\hat{q}_{2})\\)", Value = paste(round(twoSampPropZInt["Difference of proportions"], digits = 3)))
+                  dataRow10 <- data.frame(Variable = "Confidence Level \\( (1 - \\alpha)\\)", Value = paste(ConfLvl*100, "%"))
+                  dataRow11 <- data.frame(Variable = "Z Critical Value \\((CV)\\)", Value = paste(twoSampPropZInt["Z Critical"]))
+                  dataRow12 <- data.frame(Variable = "Standard Error \\( (SE)\\)", Value = paste(round(twoSampPropZInt["Std Error"], digits = 3)))
+                  dataRow13 <- data.frame(Variable = "Margin of Error \\( (ME)\\)", Value = paste(round(twoSampPropZInt["Margin of Error"], digits = 3)))
+                  dataRow14 <- data.frame(Variable = "Lower Confidence Limit \\( (LCL)\\)", Value = paste(round(twoSampPropZInt["LCL"], digits = 3)))
+                  dataRow15 <- data.frame(Variable = "Upper Confidence Limit \\( (UCL)\\)", Value = paste(round(twoSampPropZInt["UCL"], digits = 3)))
+                  
+                  twoPropIntData <- rbind(dataRow1, dataRow2, dataRow3, dataRow4, dataRow5, dataRow6, dataRow7, dataRow8, dataRow9, dataRow10, dataRow11, dataRow12, dataRow13, dataRow14, dataRow15)
+                  
+                  #row4 <- data.frame(Variable = "T Critical Value (CV)", Value = paste(TTestRaw[4]))
+                  #row5 <- data.frame(Variable = "Standard Error (SE)", Value = paste(TTestRaw[5]))
+                  #row6 <- data.frame(Variable = "Test Statistic (TS)", Value = paste(TTestRaw[6]))
+                  #row7 <- data.frame(Variable = "P-Value", Value = paste(TTestRaw[7]))
+                  
+                  output$twoSampPropData <- renderDT(
+                    datatable(twoPropIntData,
+                              options = list(
+                                dom = 't',
+                                pageLength = -1,
+                                ordering = FALSE,
+                                searching = FALSE,
+                                paging = FALSE
+                              ),
+                              rownames = FALSE,
+                              filter = "none"
+                    )
+                  )
+                  
+                  output$twoSampPropDataNOneDetails <- renderUI({
+                    p(sprintf("\\( n_{1}\\) denotes the number of trials, or sample size taken from population 1."),
+                      hr())
+                  })
+                  
+                  output$twoSampPropDataXOneDetails <- renderUI({
+                    p(sprintf("\\( x_{1}\\) denotes the number of 'successful' trials, or the number of observations with a desired attribute in \\( n_{1}\\)."),
+                      hr())
+                  })
+                  
+                  output$twoSampPropDataNTwoDetails <- renderUI({
+                    p(sprintf("\\( n_{2}\\) denotes the number of trials, or sample size taken from population 2."),
+                      hr())
+                  })
+                  
+                  output$twoSampPropDataXTwoDetails <- renderUI({
+                    p(sprintf("\\( x_{2}\\) denotes the number of 'successful' trials, or the number of observations with a desired attribute in \\( n_{2}\\)."),
+                      hr())
+                  })
+                  
+                  output$twoSampPropDataPhatOneDetails <- renderUI({
+                    p(sprintf("\\( \\hat{p}_{1} = \\dfrac{x_{1}}{n_{1}} = \\dfrac{%1.0f}{%1.0f} = %0.3f\\)",
+                              twoSampPropSucc1,
+                              twoSampPropTrial1,
+                              twoSampPropZInt["Sample Proportion 1"]),
+                      hr())
+                  })
+                  
+                  output$twoSampPropDataQhatOneDetails <- renderUI({
+                    p(sprintf("\\( \\hat{q}_{1} = 1 - \\hat{p}_{1} = 1 - %0.3f = %0.3f\\)",
+                              twoSampPropZInt["Sample Proportion 1"],
+                              (1 - twoSampPropZInt["Sample Proportion 1"])),
+                      hr())
+                  })
+                  
+                  output$twoSampPropDataPhatTwoDetails <- renderUI({
+                    p(sprintf("\\( \\hat{p}_{2} = \\dfrac{x_{2}}{n_{2}} = \\dfrac{%1.0f}{%1.0f} = %0.3f\\)",
+                              twoSampPropSucc2,
+                              twoSampPropTrial2,
+                              twoSampPropZInt["Sample Proportion 2"]),
+                      hr())
+                  })
+                  
+                  output$twoSampPropDataQhatTwoDetails <- renderUI({
+                    p(sprintf("\\( \\hat{q}_{2} = 1 - \\hat{p}_{2} = 1 - %0.3f = %0.3f\\)",
+                              twoSampPropZInt["Sample Proportion 2"],
+                              (1 - twoSampPropZInt["Sample Proportion 2"])),
+                      hr())
+                  })
+                  
+                  output$twoSampPropDataPhatDiffDetails <- renderUI({
+                    p(sprintf("\\( (\\hat{p}_{1} - \\hat{p}_{2}) = %0.3f - %0.3f = %0.3f\\)",
+                              twoSampPropZInt["Sample Proportion 1"],
+                              twoSampPropZInt["Sample Proportion 2"],
+                              twoSampPropZInt["Difference of proportions"]),
+                      hr())
+                  })
+                  
+                  output$twoSampPropDataConfLvlDetails <- renderUI({
+                    p(sprintf("The confidence level \\(( 1 - \\alpha\\)) or \\( C\\) is the probability that the produced interval contains the unknown parameter."),
+                      hr())
+                  })
+                  
+                  output$twoSampPropDataCVDetails <- renderUI({
+                    p(sprintf("\\(CV = z_{\\alpha/2} = %0.3f\\)",
+                              twoSampPropZInt["Z Critical"]),
+                      hr())
+                  })
+                  
+                  output$twoSampPropDataSEDetails <- renderUI({
+                    p(sprintf("\\(SE = \\sqrt{\\dfrac{\\hat{p}_{1}(1-\\hat{p}_{1})}{n_{1}} + \\dfrac{\\hat{p}_{2}(1-\\hat{p}_{2})}{n_{2}}} = 
+                              \\sqrt{\\dfrac{%0.3f(1-%0.3f)}{%1.0f} + \\dfrac{%0.3f(1-%0.3f)}{%1.0f}} = %0.3f\\)",
+                              twoSampPropZInt["Sample Proportion 1"],
+                              twoSampPropZInt["Sample Proportion 1"],
+                              twoSampPropTrial1,
+                              twoSampPropZInt["Sample Proportion 2"],
+                              twoSampPropZInt["Sample Proportion 2"],
+                              twoSampPropTrial2,
+                              twoSampPropZInt["Std Error"]),
+                      hr())
+                  })
+                  
+                  output$twoSampPropDataMEDetails <- renderUI({
+                    p(sprintf("\\(ME = CV * SE = %0.3f * %0.3f = %0.3f\\)",
+                              twoSampPropZInt["Z Critical"],
+                              twoSampPropZInt["Std Error"],
+                              twoSampPropZInt["Margin of Error"]),
+                      hr())
+                  })
+                  
+                  output$twoSampPropDataLCLDetails <- renderUI({
+                    p(sprintf("\\(LCL = (\\hat{p}_{1} - \\hat{p}_{2}) - ME = %0.3f - %0.3f = %0.3f\\)",
+                              twoSampPropZInt["Difference of proportions"],
+                              twoSampPropZInt["Margin of Error"],
+                              twoSampPropZInt["LCL"]),
+                      hr())
+                  })
+                  
+                  output$twoSampPropDataUCLDetails <- renderUI({
+                    p(sprintf("\\(UCL = (\\hat{p}_{1} - \\hat{p}_{2}) + ME = %0.3f + %0.3f = %0.3f\\)",
+                              twoSampPropZInt["Difference of proportions"],
+                              twoSampPropZInt["Margin of Error"],
+                              twoSampPropZInt["UCL"]),
+                      hr())
+                  })
+                  
+                  output$twoSampPropCI <- renderUI({
+                    p(
+                      withMathJax(
+                        sprintf("We are %1.0f%% confident that the difference in proportions \\( (\\hat{p}_{1} - \\hat{p}_{2}) \\) is between %0.3f and %0.3f",
+                                ConfLvl*100,
+                                twoSampPropZInt["LCL"],
+                                twoSampPropZInt["UCL"]),
+                        br(),
+                        br(),
+                        h4(tags$u("Constructing the Confidence Interval:")),
+                        br(),
+                        sprintf("\\( CI = (\\hat{p}_{1} - \\hat{p}_{2}) \\pm z_{\\alpha/2} \\sqrt{\\dfrac{\\hat{p}_{1}(1-\\hat{p}_{1})}{n_{1}} + \\dfrac{\\hat{p}_{2}(1-\\hat{p}_{2})}{n_{2}}}\\)"),
+                        br(),
+                        br(),
+                        sprintf("\\( CI = %0.3f \\pm %0.3f \\sqrt{\\dfrac{%0.3f(1-%0.3f)}{%1.0f} + \\dfrac{%0.3f(1-%0.3f)}{%1.0f}}\\)",
+                                twoSampPropZInt["Difference of proportions"],
+                                twoSampPropZInt["Z Critical"],
+                                twoSampPropZInt["Sample Proportion 1"],
+                                twoSampPropZInt["Sample Proportion 1"],
+                                twoSampPropTrial1,
+                                twoSampPropZInt["Sample Proportion 2"],
+                                twoSampPropZInt["Sample Proportion 2"],
+                                twoSampPropTrial2),
+                        br(),
+                        br(),
+                        sprintf("\\( CI = (%0.3f, %0.3f)\\)",
+                                twoSampPropZInt["LCL"],
+                                twoSampPropZInt["UCL"])
+                      )
+                    )
+                  })
+                  
+                  
+                  
+                } # input$inferenceType == 'Confidence Interval'
+              }
+              else
+              {
+                output$twoSampProportion <- renderUI({
+                  validate(
+                    need(input$numSuccesses1 <= input$numTrials1, "Number of Successes 1 (x1) cannot be greater than Number of Trials 1 (n1)"),
+                    need(input$numSuccesses2 <= input$numTrials2, "Number of Successes 2 (x2) cannot be greater than Number of Trials 2 (n2)"),
+                    
+                    errorClass = "myClass"
+                  )
+                })
+              }
+            }
+            else
+            {
+              output$twoSampProportion <- renderUI({ 
+                validate(
+                  need(input$numSuccesses1, "Numeric value for Number of Successes 1 (x1) required"),
+                  need(input$numTrials1, "Numeric value for Number of Trials 1 (n1) required"),
+                  need(input$numSuccesses2, "Numeric value for Number of Successes 2 (x2) required"),
+                  need(input$numTrials2, "Numeric value for Number of Trials 2 (n2) required"),
+                  
+                  errorClass = "myClass"
+                )
+                
+                validate(
+                  need(input$numSuccesses1 %% 1 == 0, "Number of Successes 1 (x1) must be an integer"),
+                  need(input$numSuccesses1 >= 0, "Number of Successes 1 (x1) cannot be negative"),
+                  need(input$numTrials1 %% 1 == 0, "Number of Trials 1 (n1) must be an integer"),
+                  need(input$numTrials1 > 0, "Number of Trials 1 (n1) must be greater than 0"),
+                  need(input$numSuccesses2 %% 1 == 0, "Number of Successes 1 (x2) must be an integer"),
+                  need(input$numSuccesses2 >= 0, "Number of Successes 1 (x2) cannot be negative"),
+                  need(input$numTrials2 %% 1 == 0, "Number of Trials 2 (n2) must be an integer"),
+                  need(input$numTrials2 > 0, "Number of Trials 2 (n2) must be greater than 0"),
+                  
+                  errorClass = "myClass"
+                )
+              })
+            }
           #   # source('R/TwoPropZInt.R')
           #   # source('R/TwoPropZTest.R')
           #   print("Inference for the difference between two Population Proportions")
-          # }
+          }
         }
        #) # renderInference
     }) # input$goInference
     
-    observeEvent(input$oneSampPropData_rows_selected, { ### dataTable details display ----
+    observeEvent(input$oneSampPropData_rows_selected, { ### 1samp dataTable details display ----
       
       s = input$oneSampPropData_rows_selected
       
@@ -3192,6 +3501,197 @@ server <- function(input, output) {
           {
             hide(id = "oneSampPropDataPValDetails")
           }
+      }
+    })
+    
+    observeEvent(input$twoSampPropData_rows_selected, { ### 2samp dataTable details display ----
+      
+      s = input$twoSampPropData_rows_selected
+      
+      if(1 %in% input$twoSampPropData_rows_selected)
+      {
+        show(id = "twoSampPropDataNOneDetails")
+      }
+      else
+      {
+        hide(id = "twoSampPropDataNOneDetails")
+      }
+      
+      if(2 %in% input$twoSampPropData_rows_selected)
+      {
+        show(id = "twoSampPropDataXOneDetails")
+      }
+      else
+      {
+        hide(id = "twoSampPropDataXOneDetails")
+      }
+      
+      if(3 %in% input$twoSampPropData_rows_selected)
+      {
+        show(id = "twoSampPropDataNTwoDetails")
+      }
+      else
+      {
+        hide(id = "twoSampPropDataNTwoDetails")
+      }
+      
+      if(4 %in% input$twoSampPropData_rows_selected)
+      {
+        show(id = "twoSampPropDataXTwoDetails")
+      }
+      else
+      {
+        hide(id = "twoSampPropDataXTwoDetails")
+      }
+      
+      if(5 %in% input$twoSampPropData_rows_selected)
+      {
+        show(id = "twoSampPropDataPhatOneDetails")
+      }
+      else
+      {
+        hide(id = "twoSampPropDataPhatOneDetails")
+      }
+      
+      if(6 %in% input$twoSampPropData_rows_selected)
+      {
+        show(id = "twoSampPropDataQhatOneDetails")
+      }
+      else
+      {
+        hide(id = "twoSampPropDataQhatOneDetails")
+      }
+      
+      if(7 %in% input$twoSampPropData_rows_selected)
+      {
+        show(id = "twoSampPropDataPhatTwoDetails")
+      }
+      else
+      {
+        hide(id = "twoSampPropDataPhatTwoDetails")
+      }
+      
+      if(8 %in% input$twoSampPropData_rows_selected)
+      {
+        show(id = "twoSampPropDataQhatTwoDetails")
+      }
+      else
+      {
+        hide(id = "twoSampPropDataQhatTwoDetails")
+      }
+      
+      if(9 %in% input$twoSampPropData_rows_selected)
+      {
+        show(id = "twoSampPropDataPhatDiffDetails")
+      }
+      else
+      {
+        hide(id = "twoSampPropDataPhatDiffDetails")
+      }
+      
+      if(11 %in% input$twoSampPropData_rows_selected)
+      {
+        show(id = "twoSampPropDataCVDetails")
+      }
+      else
+      {
+        hide(id = "twoSampPropDataCVDetails")
+      }
+      
+      if(12 %in% input$twoSampPropData_rows_selected)
+      {
+        show(id = "twoSampPropDataSEDetails")
+      }
+      else
+      {
+        hide(id = "twoSampPropDataSEDetails")
+      }
+      
+      if(input$inferenceType2 == 'Confidence Interval')
+      {
+        hide(id = "twoSampPropDataSigLvlDetails")
+        hide(id = "twoSampPropDataHypDetails")
+        hide(id = "twoSampPropDataTSDetails")
+        hide(id = "twoSampPropDataPValDetails")
+        
+        if(10 %in% input$twoSampPropData_rows_selected)
+        {
+          show(id = "twoSampPropDataConfLvlDetails")
+        }
+        else
+        {
+          hide(id = "twoSampPropDataConfLvlDetails")
+        }
+        
+        if(13 %in% input$twoSampPropData_rows_selected)
+        {
+          show(id = "twoSampPropDataMEDetails")
+        }
+        else
+        {
+          hide(id = "twoSampPropDataMEDetails")
+        }
+        
+        if(14 %in% input$twoSampPropData_rows_selected)
+        {
+          show(id = "twoSampPropDataLCLDetails")
+        }
+        else
+        {
+          hide(id = "twoSampPropDataLCLDetails")
+        }
+        
+        if(15 %in% input$twoSampPropData_rows_selected)
+        {
+          show(id = "twoSampPropDataUCLDetails")
+        }
+        else
+        {
+          hide(id = "twoSampPropDataUCLDetails")
+        }
+      }
+      else if(input$inferenceType == 'Hypothesis Testing')
+      {
+        hide(id = "oneSampPropDataConfLvlDetails")
+        hide(id = "oneSampPropDataMEDetails")
+        hide(id = "oneSampPropDataLCLDetails")
+        hide(id = "oneSampPropDataUCLDetails")
+        
+        if(10 %in% input$twoSampPropData_rows_selected)
+        {
+          show(id = "twoSampPropDataSigLvlDetails")
+        }
+        else
+        {
+          hide(id = "twoSampPropDataSigLvlDetails")
+        }
+        
+        if(13 %in% input$twoSampPropData_rows_selected)
+        {
+          show(id = "twoSampPropDataHypDetails")
+        }
+        else
+        {
+          hide(id = "twoSampPropDataHypDetails")
+        }
+        
+        if(14 %in% input$twoSampPropData_rows_selected)
+        {
+          show(id = "twoSampPropDataTSDetails")
+        }
+        else
+        {
+          hide(id = "twoSampPropDataTSDetails")
+        }
+        
+        if(15 %in% input$twoSampPropData_rows_selected)
+        {
+          show(id = "twoSampPropDataPValDetails")
+        }
+        else
+        {
+          hide(id = "twoSampPropDataPValDetails")
+        }
       }
     })
     #observeEvent(input$oneSampPropData_rows_selected, {
