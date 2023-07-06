@@ -2771,16 +2771,16 @@ server <- function(input, output) {
             {
               output$oneSampProportion <- renderUI({ 
                 validate(
-                  need(input$numSuccesses, "Number of Successes required"),
-                  need(input$numTrials, "Number of Trials required"),
+                  need(input$numSuccesses, "Number of Successes (x) required"),
+                  need(input$numTrials, "Number of Trials (n) required"),
                   
                   errorClass = "myClass"
                 )
                 
                 validate(
-                  need(input$numTrials > 0, "Number of Trials must be greater than 0"),
-                  need(input$numSuccesses >= 0, "Number of Successes cannot be negative") %then%
-                    need(input$numSuccesses <= input$numTrials, "Number of Successes cannot be greater than Number of Trials"),
+                  need(input$numTrials > 0, "Number of Trials (n) must be greater than 0"),
+                  need(input$numSuccesses >= 0, "Number of Successes (x) cannot be negative") %then%
+                    need(input$numSuccesses <= input$numTrials, "Number of Successes (x) cannot be greater than Number of Trials (n)"),
                   
                   errorClass = "myClass"
                 )
