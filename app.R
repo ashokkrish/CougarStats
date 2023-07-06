@@ -1,7 +1,9 @@
+library(base)
 library(bslib)
 library(car)
 library(dplyr)
 library(DT)
+library(generics)
 library(ggplot2)
 library(moments)
 library(nortest)
@@ -693,7 +695,26 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                       accept = c("text/csv","text/comma-separated-values", "text/plain", ".csv",".xls",".xlsx")
                             ),
                             
-                            uiOutput("slrUploadVars"),
+                              selectizeInput(
+                                inputId = "slrExplanatory",
+                                label = strong("Choose the Explanatory Variable (x)"),
+                                choices = c(""),
+                                options = list(
+                                  placeholder = 'Select a variable',
+                                  onInitialize = I('function() { this.setValue(""); }')
+                                )
+                              ),
+                              
+                              selectizeInput(
+                                inputId = "slrResponse",
+                                label = strong("Choose the Response Variable (y)"),
+                                choices = c(""),
+                                options = list(
+                                  placeholder = 'Select a variable',
+                                  onInitialize = I('function() { this.setValue(""); }')
+                                )
+                              ),
+                            #uiOutput("slrUploadVars"),
                           ),
                           
                           #radioButtons(inputId = "regressioncorrelation", 
@@ -927,7 +948,33 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                             conditionalPanel(
                               condition = "input.popuParameter == 'Population Proportion'",
                               
+                              #uiOutput('oneSampPropErrors'),
+                              
+                              #div(id = 'oneSampPropMP',
+                                  
+                                  #fluidRow(
+                                    #column(width = 4,
+                                           #titlePanel("Sample Data Summary"),
+                                           #br(),
+                                           #withMathJax(DTOutput('oneSampPropData')),
+                                    #),
+                                    #column(width = 8,
+                                           #conditionalPanel(
+                                             #condition = "input.oneSampPropData_rows_selected != 0",
+                                             
+                                             #titlePanel('Details'),
+                                             #br(),
+                                             
+                                             #conditionalPanel(
+                                               #condition = "1 %in% input$oneSampPropData_rows_selected",
+                                               #uiOutput('oneSampPropDataNDetails'),
+                                          #),
+                                    #),
+                                  #),
+                                #),
+                                  
                               uiOutput('oneSampProportion'),
+                    
                               
                               #titlePanel("Sample Data Summary"),
                               #br(),
@@ -1605,6 +1652,75 @@ server <- function(input, output) {
       sqrt(sum((x-mean(x))^2)/length(x))
     }
     
+    shadeArea <- function(x, critValues, altHypothesis){
+      area <- dnorm(x, 0, 1)
+      
+      if(altHypothesis == 1) #less
+      {
+        area[x > critValues] <- NA
+      }
+      else if(altHypothesis == 2) #twosided
+      {
+        area[x > critValues[1] & x < critValues[2]] <- NA
+      }
+      else if(altHypothesis == 3) #greater
+      {
+        area[x < critValues] <- NA
+      }
+      return(area)
+    }
+    
+    hypTestPlot <- function(testStatistic, critValues, altHypothesis){
+      normTail = qnorm(0.999, mean = 0, sd = 1, lower.tail = FALSE)
+      normHead = qnorm(0.999, mean = 0, sd = 1, lower.tail = TRUE)
+      #xSeq = seq(normTail, normHead, by = 0.005)
+      xSeq = sort(c(normTail, normHead, testStatistic, critValues, 0))
+      
+      if(testStatistic < normTail)
+      {
+        normTail = testStatistic
+        
+      } else if(testStatistic > normHead)
+      {
+        normHead = testStatistic
+      } 
+      
+      df <- data.frame(x = xSeq, y = dnorm(xSeq))
+      cvDF <- filter(df, x %in% critValues)
+      tsDF <- filter(df, x %in% testStatistic)
+      centerDF <- filter(df, x %in% c(0))
+      
+      
+      htPlot <- ggplot(df, aes(x = x, y = y)) +
+                  stat_function(fun = dnorm, geom = "density",
+                                xlim = c(normTail, normHead),
+                                fill = "#03376d",
+                                alpha = 0.3) + 
+                  stat_function(fun = shadeArea, args = list(critValues, altHypothesis), geom = "area",
+                                xlim = c(normTail, normHead),
+                                fill = "#03376d",
+                                alpha = 0.7) +
+                  theme( plot.background = element_blank() ,
+                         panel.grid.major = element_blank() ,
+                         panel.grid.minor = element_blank() ,  
+                         panel.border = element_blank()) +
+                         #panel.background = element_blank() )  +
+                  scale_x_continuous(breaks = floor(normTail):ceiling(normHead)) +
+                  scale_y_continuous(breaks = NULL) +
+                  ylab("") + xlab("z") +
+                  geom_segment(data = filter(df, x %in% c(0)), aes(x = x, xend = x, y = 0, yend = y), linetype = "dotted", size = 0.75, color='#03376d') +
+                  geom_text(data = filter(df, x %in% c(0)), aes(x = x, y = y/2, label = "A R"), size = 16 / .pt, fontface = "bold") +
+                  geom_segment(data = tsDF, aes(x = x, xend = x, y = -0.01, yend = y + .03), linetype = "solid", linewidth = 1.25, color='#03376d') +
+                  geom_text(data = tsDF, aes(x = x, y = y, label = "TS"), size = 16 / .pt, fontface = "bold", nudge_y = .04) +
+                  geom_text(data = tsDF, aes(x = x, y = 0, label = x), fontface = "bold", nudge_y = -.02) +
+                  geom_segment(data = cvDF, aes(x = x, xend = x, y = 0, yend = y), linetype = "blank", lineend = 'round', size = 1.5, color='#03376d') +
+                  geom_text(data = cvDF, aes(x = x, y = 0, label = x), fontface = "bold", nudge_y = -.01) +
+                  geom_text(data = cvDF, aes(x = x + x/4, y = y, label = "RR"), size = 16 / .pt, fontface = "bold") +
+                  theme(plot.background = element_rect(color = 1, linewidth = 1)) # Left margin
+    
+      htPlot
+    }
+    
     #  ------------------------------------- #
     ## ---- Descriptive Stats functions ----
     #  ------------------------------------- #
@@ -1958,6 +2074,7 @@ server <- function(input, output) {
     #  ----------------------------------------- #
     ## ---- Statistical Inference functions ----
     #  ----------------------------------------- #
+
     observeEvent(input$goInference, {
       #output$renderInference <- renderDataTable(
 
@@ -1991,16 +2108,19 @@ server <- function(input, output) {
               alternative <- "greater"
               nullHyp <- "\\leq"
               altHyp <- "\\gt"
+              critZVal <- "z_{\\alpha}"
             }
             else if(input$altHypothesis == "2"){
               alternative <- "two.sided"
               nullHyp <- "="
               altHyp <- "\\neq"
+              critZVal <- "z_{\\alpha/2}"
             }
             else{
               alternative <- "less"
               nullHyp <- "\\geq"
               altHyp <- "\\lt"
+              critZVal <- "-z_{\\alpha}"
             }
           }
           
@@ -2221,14 +2341,51 @@ server <- function(input, output) {
           #   print("Inferences for One Population Proportion are under contruction")
             #output$renderInference <- renderUI({
             
+            #hide('oneSampPropMP')
+            
             if(iv$is_valid() && input$numTrials >= input$numSuccesses)
             {
               output$oneSampProportion <- renderUI({
                 
                 tagList(
-                  titlePanel("Sample Data Summary"),
-                  br(),
-                  withMathJax(tableOutput('oneSampPropData')),
+                  
+                  fluidRow(
+                    column(width = 4,
+                           titlePanel("Sample Data Summary"),
+                           hr(),
+                           withMathJax(DTOutput('oneSampPropData', width = "90%")),
+                    ),
+                    column(width = 8,
+                           titlePanel('Summary Details'),
+                           hr(),
+                           
+                           conditionalPanel(
+                             condition = "input.oneSampPropData_rows_selected == 0",
+                             
+                             p("Select one or more variables from the summary table for more information"),
+                           ),
+                           
+                           conditionalPanel(
+                             condition = "input.oneSampPropData_rows_selected != 0",
+                             
+                             uiOutput('oneSampPropDataNDetails'),
+                             uiOutput('oneSampPropDataXDetails'),
+                             uiOutput('oneSampPropDataPhatDetails'),
+                             uiOutput('oneSampPropDataQhatDetails'),
+                             uiOutput('oneSampPropDataConfLvlDetails'),
+                             uiOutput('oneSampPropDataSigLvlDetails'),
+                             uiOutput('oneSampPropDataCVDetails'),
+                             uiOutput('oneSampPropDataSEDetails'),
+                             uiOutput('oneSampPropDataMEDetails'),
+                             uiOutput('oneSampPropDataLCLDetails'),
+                             uiOutput('oneSampPropDataUCLDetails'),
+                             uiOutput('oneSampPropDataHypDetails'),
+                             uiOutput('oneSampPropDataTSDetails'),
+                             uiOutput('oneSampPropDataPValDetails'),
+                           )
+                    )
+                  ),
+
                   br(),
                   hr(),
                   br(),
@@ -2264,18 +2421,19 @@ server <- function(input, output) {
                 source('R/OnePropZInt.R')
                 
                 oneSampPropZInt <- OnePropZInterval(oneSampPropSucc, oneSampPropTrials, ConfLvl)
+                oneSampPropME <- oneSampPropZInt["Z Critical"] * oneSampPropZInt["Std Error"]
                 
               # (\\( n\\))  (\\( x\\))  (\\(\\hat{p}\\))  ( 1 - \\(\\hat{p}\\))
-                dataRow1 <- data.frame(Variable = "Number of Trials (n)", Value = paste(oneSampPropTrials))
-                dataRow2 <- data.frame(Variable = "Number of Successes (x)", Value = paste(oneSampPropSucc))
-                dataRow3 <- data.frame(Variable = "Sample Proportion of Success", Value = paste(oneSampPropZInt["phat"]))
-                dataRow4 <- data.frame(Variable = "Sample Proportion of Failure", Value = paste(1 - oneSampPropZInt["phat"]))
-                dataRow5 <- data.frame(Variable = "Confidence Level", Value = paste(ConfLvl*100, "%"))
-                dataRow6 <- data.frame(Variable = "Z Critical Value", Value = paste(oneSampPropZInt["Z Critical"]))
-                dataRow7 <- data.frame(Variable = "Standard Error (SE)", Value = paste(oneSampPropZInt["Std Error"]))
-                dataRow8 <- data.frame(Variable = "Margin of Error (ME)", Value = paste(oneSampPropZInt["Z Critical"]*oneSampPropZInt["Std Error"]))
-                dataRow9 <- data.frame(Variable = "Lower Confidence Limit (LCL)", Value = paste(oneSampPropZInt["LCL"]))
-                dataRow10 <- data.frame(Variable = "Upper Confidence Limit (UCL)", Value = paste(oneSampPropZInt["UCL"]))
+                dataRow1 <- data.frame(Variable = "Number of Trials (\\( n\\))", Value = paste(oneSampPropTrials))
+                dataRow2 <- data.frame(Variable = "Number of Successes (\\( x\\))", Value = paste(oneSampPropSucc))
+                dataRow3 <- data.frame(Variable = "Sample Proportion of Success \\((\\hat{p})\\)", Value = paste(round(oneSampPropZInt["phat"], digits = 3)))
+                dataRow4 <- data.frame(Variable = "Sample Proportion of Failure \\((\\hat{q})\\)", Value = paste(round((1 - oneSampPropZInt["phat"]), digits = 3)))
+                dataRow5 <- data.frame(Variable = "Confidence Level \\(( 1 - \\alpha)\\)", Value = paste(ConfLvl*100, "%"))
+                dataRow6 <- data.frame(Variable = "Z Critical Value \\((CV)\\)", Value = paste(oneSampPropZInt["Z Critical"]))
+                dataRow7 <- data.frame(Variable = "Standard Error \\(( SE)\\)", Value = paste(round(oneSampPropZInt["Std Error"], digits = 3)))
+                dataRow8 <- data.frame(Variable = "Margin of Error (\\( ME\\))", Value = paste(round(oneSampPropME, digits = 3)))
+                dataRow9 <- data.frame(Variable = "Lower Confidence Limit (\\( LCL\\))", Value = paste(round(oneSampPropZInt["LCL"], digits = 3)))
+                dataRow10 <- data.frame(Variable = "Upper Confidence Limit (\\( UCL\\))", Value = paste(round(oneSampPropZInt["UCL"], digits = 3)))
                 
                 propIntData <- rbind(dataRow1, dataRow2, dataRow3, dataRow4, dataRow5, dataRow6, dataRow7, dataRow8, dataRow9, dataRow10)
                 
@@ -2284,33 +2442,114 @@ server <- function(input, output) {
                 #row6 <- data.frame(Variable = "Test Statistic (TS)", Value = paste(TTestRaw[6]))
                 #row7 <- data.frame(Variable = "P-Value", Value = paste(TTestRaw[7]))
                 
-                output$oneSampPropData <- renderTable(propIntData)
+                output$oneSampPropData <- renderDT(
+                  datatable(propIntData,
+                            options = list(
+                              dom = 't',
+                              pageLength = -1,
+                              ordering = FALSE,
+                              searching = FALSE,
+                              paging = FALSE
+                              ),
+                            rownames = FALSE,
+                            filter = "none"
+                            )
+                )
+                
+                output$oneSampPropDataNDetails <- renderUI({
+                  p(sprintf("\\( n\\) denotes the number of trials, or sample size."),
+                    hr())
+                })
+                
+                output$oneSampPropDataXDetails <- renderUI({
+                  p(sprintf("\\( x\\) denotes the number of 'successful' trials, or the number of observations in the sample with a desired attribute."),
+                    hr())
+                })
+                
+                output$oneSampPropDataPhatDetails <- renderUI({
+                  p(sprintf("\\( \\hat{p} = \\dfrac{x}{n} = \\dfrac{%1.0f}{%1.0f} = %0.3f\\)",
+                            oneSampPropSucc,
+                            oneSampPropTrials,
+                            oneSampPropZInt["phat"]),
+                    hr())
+                })
+                
+                output$oneSampPropDataQhatDetails <- renderUI({
+                  p(sprintf("\\(1 - \\hat{p} = 1 - %0.3f = %0.3f\\)",
+                            oneSampPropZInt["phat"],
+                            (1 - oneSampPropZInt["phat"])),
+                    hr())
+                })
+                
+                output$oneSampPropDataConfLvlDetails <- renderUI({
+                  p(sprintf("The confidence level \\(( 1 - \\alpha\\)) or \\( C\\) is the probability that the produced interval contains the unknown parameter."),
+                    hr())
+                })
+                
+                output$oneSampPropDataCVDetails <- renderUI({
+                  p(sprintf("\\(CV = z_{\\alpha/2} = %0.3f\\)",
+                            oneSampPropZInt["Z Critical"]),
+                    hr())
+                })
+                
+                output$oneSampPropDataSEDetails <- renderUI({
+                  p(sprintf("\\(SE = \\sqrt{\\dfrac{\\hat{p}(1-\\hat{p})}{n}} = \\sqrt{\\dfrac{%0.3f(1-%0.3f)}{%1.0f}} = %0.3f\\)",
+                            oneSampPropZInt["phat"],
+                            oneSampPropZInt["phat"],
+                            oneSampPropTrials,
+                            oneSampPropZInt["Std Error"]),
+                    hr())
+                })
+                
+                output$oneSampPropDataMEDetails <- renderUI({
+                  p(sprintf("\\(ME = CV * SE = %0.3f * %0.3f = %0.3f\\)",
+                            oneSampPropZInt["Z Critical"],
+                            oneSampPropZInt["Std Error"],
+                            oneSampPropME),
+                    hr())
+                })
+                
+                output$oneSampPropDataLCLDetails <- renderUI({
+                  p(sprintf("\\(LCL = \\hat{p} - ME = %0.3f - %0.3f = %0.3f\\)",
+                            oneSampPropZInt["phat"],
+                            oneSampPropME,
+                            oneSampPropZInt["LCL"]),
+                    hr())
+                })
+                
+                output$oneSampPropDataUCLDetails <- renderUI({
+                  p(sprintf("\\(UCL = \\hat{p} + ME = %0.3f + %0.3f = %0.3f\\)",
+                            oneSampPropZInt["phat"],
+                            oneSampPropME,
+                            oneSampPropZInt["UCL"]),
+                    hr())
+                })
                 
                 output$oneSampPropCI <- renderUI({
                   p(
-                      withMathJax(
-                      sprintf("We are %1.0f%% confident that the population proportion (\\( p\\)) is between %0.3f and %0.3f",
-                             ConfLvl*100,
-                             oneSampPropZInt["LCL"],
-                             oneSampPropZInt["UCL"]),
-                      br(),
-                      br(),
-                      h4(tags$u("Constructing the Confidence Interval:")),
-                      br(),
-                      sprintf("CI \\(= \\hat{p} \\pm z_{\\alpha/2} \\sqrt{\\dfrac{\\hat{p}(1-\\hat{p})}{n}}\\)"),
-                      br(),
-                      br(),
-                      sprintf("CI \\(= %0.3f \\pm %0.3f \\sqrt{\\dfrac{%0.3f(1-%0.3f)}{%1.0f}}\\)",
-                              oneSampPropZInt["phat"],
-                              oneSampPropZInt["Z Critical"],
-                              oneSampPropZInt["phat"],
-                              oneSampPropZInt["phat"],
-                              oneSampPropTrials),
-                      br(),
-                      br(),
-                      sprintf("CI \\(= (%0.3f, %0.3f)\\)",
-                              oneSampPropZInt["LCL"],
-                              oneSampPropZInt["UCL"])
+                    withMathJax(
+                        sprintf("We are %1.0f%% confident that the population proportion (\\( p\\)) is between %0.3f and %0.3f",
+                               ConfLvl*100,
+                               oneSampPropZInt["LCL"],
+                               oneSampPropZInt["UCL"]),
+                        br(),
+                        br(),
+                        h4(tags$u("Constructing the Confidence Interval:")),
+                        br(),
+                        sprintf("CI \\(= \\hat{p} \\pm z_{\\alpha/2} \\sqrt{\\dfrac{\\hat{p}(1-\\hat{p})}{n}}\\)"),
+                        br(),
+                        br(),
+                        sprintf("CI \\(= %0.3f \\pm %0.3f \\sqrt{\\dfrac{%0.3f(1-%0.3f)}{%1.0f}}\\)",
+                                oneSampPropZInt["phat"],
+                                oneSampPropZInt["Z Critical"],
+                                oneSampPropZInt["phat"],
+                                oneSampPropZInt["phat"],
+                                oneSampPropTrials),
+                        br(),
+                        br(),
+                        sprintf("CI \\(= (%0.3f, %0.3f)\\)",
+                                oneSampPropZInt["LCL"],
+                                oneSampPropZInt["UCL"])
                     )
                   )
                 })
@@ -2327,24 +2566,139 @@ server <- function(input, output) {
                 oneSampPropZTest <- OnePropZTest(oneSampPropSucc, oneSampPropTrials, oneSampHypProp, alternative, sigLvl)
                 
                 # (\\( n\\))  (\\( x\\))  (\\(\\hat{p}\\))  ( 1 - \\(\\hat{p}\\))
-                dataRow1 <- data.frame(Variable = "Number of Trials (n)", Value = paste(oneSampPropTrials))
-                dataRow2 <- data.frame(Variable = "Number of Successes (x)", Value = paste(oneSampPropSucc))
-                dataRow3 <- data.frame(Variable = "Sample Proportion of Success", Value = paste(oneSampPropZTest["Sample Proportion"]))
-                dataRow4 <- data.frame(Variable = "Sample Proportion of Failure", Value = paste(1 - oneSampPropZTest["Sample Proportion"]))
-                dataRow5 <- data.frame(Variable = "Significance Level", Value = paste(sigLvl*100, "%"))
-                dataRow6 <- data.frame(Variable = "Z Critical Value (CV)", Value = paste(oneSampPropZTest["Z Critical"]))
-                dataRow7 <- data.frame(Variable = "Standard Error (SE)", Value = paste(oneSampPropZTest["Std Error"]))
-                dataRow8 <- data.frame(Variable = "Test Statistic (Z)", Value = paste(oneSampPropZTest["Test Statistic"]))
-                dataRow9 <- data.frame(Variable = "P-Value", Value = paste(oneSampPropZTest["P-Value"]))
+                dataRow1 <- data.frame(Variable = "Number of Trials (\\( n\\))", Value = paste(oneSampPropTrials))
+                dataRow2 <- data.frame(Variable = "Number of Successes (\\( x\\))", Value = paste(oneSampPropSucc))
+                dataRow3 <- data.frame(Variable = "Sample Proportion of Success (\\(\\hat{p}\\))", Value = paste(round(oneSampPropZTest["phat"], digits = 3)))
+                dataRow4 <- data.frame(Variable = "Sample Proportion of Failure (\\(\\hat{q}\\))", Value = paste(round((1 - oneSampPropZTest["phat"]), digits = 3)))
+                dataRow5 <- data.frame(Variable = "Significance Level (\\(\\alpha\\))", Value = paste(sigLvl*100, "%"))
+                dataRow6 <- data.frame(Variable = "Z Critical Value (\\( CV\\))", Value = paste(oneSampPropZTest["Z Critical"]))
+                dataRow7 <- data.frame(Variable = "Standard Error (\\( SE\\))", Value = paste(oneSampPropZTest["Std Error"]))
+                dataRow8 <- data.frame(Variable = "Hypothesized Proportion (\\( p_{0}\\))", Value = paste(oneSampHypProp))
+                dataRow9 <- data.frame(Variable = "Test Statistic (\\( Z\\))", Value = paste(oneSampPropZTest["Test Statistic"]))
+                dataRow10 <- data.frame(Variable = "P-Value", Value = paste(oneSampPropZTest["P-Value"]))
                 
-                propTestData <- rbind(dataRow1, dataRow2, dataRow3, dataRow4, dataRow5, dataRow6, dataRow7, dataRow8, dataRow9)
+                propTestData <- rbind(dataRow1, dataRow2, dataRow3, dataRow4, dataRow5, dataRow6, dataRow7, dataRow8, dataRow9, dataRow10)
                 
                 #row4 <- data.frame(Variable = "T Critical Value (CV)", Value = paste(TTestRaw[4]))
                 #row5 <- data.frame(Variable = "Standard Error (SE)", Value = paste(TTestRaw[5]))
                 #row6 <- data.frame(Variable = "Test Statistic (TS)", Value = paste(TTestRaw[6]))
                 #row7 <- data.frame(Variable = "P-Value", Value = paste(TTestRaw[7]))
                 
-                output$oneSampPropData <- renderTable(propTestData)
+                output$oneSampPropData <- renderDT(
+                  datatable(propTestData,
+                            options = list(
+                              dom = 't',
+                              pageLength = -1,
+                              ordering = FALSE,
+                              searching = FALSE,
+                              paging = FALSE
+                            ),
+                            rownames = FALSE,
+                            filter = "none")
+                )
+                
+                output$oneSampPropDataNDetails <- renderUI({
+                  p(
+                    withMathJax(
+                      sprintf("\\( n\\) denotes the number of trials, or sample size."),
+                      hr()
+                    )
+                  )
+                })
+                
+                output$oneSampPropDataXDetails <- renderUI({
+                  p(
+                    withMathJax(
+                      sprintf("\\( x\\) denotes the number of 'successful' trials, or the number of observations in the sample with a desired attribute."),
+                      hr()
+                    )
+                  )
+                })
+                
+                output$oneSampPropDataPhatDetails <- renderUI({
+                  p(
+                    withMathJax(
+                      sprintf("\\( \\hat{p} = \\dfrac{x}{n} = \\dfrac{%1.0f}{%1.0f} = %0.3f\\)",
+                            oneSampPropSucc,
+                            oneSampPropTrials,
+                            oneSampPropZTest["Sample Proportion"]),
+                      hr()
+                    )
+                  )
+                })
+                
+                output$oneSampPropDataQhatDetails <- renderUI({
+                  p(
+                    withMathJax(
+                      sprintf("\\(1 - \\hat{p} = 1 - %0.3f = %0.3f\\)",
+                            oneSampPropZTest["Sample Proportion"],
+                            (1 - oneSampPropZTest["Sample Proportion"])),
+                      hr()
+                    )
+                  )
+                })
+                
+                output$oneSampPropDataSigLvlDetails <- renderUI({
+                  p(
+                    withMathJax(
+                      sprintf("The significance level \\(( \\alpha\\)) is the probability that the null hypothesis \\( H_{0}\\) is true; that is, the maximum allowable 
+                            probability of \\( H_{0}\\) being true evidenced by the data in order to reject \\( H_{0}\\) in favour of the 
+                            alternative hypothesis \\( H_{a}\\)."),
+                      hr()
+                   )
+                  )
+                })
+                
+                output$oneSampPropDataCVDetails <- renderUI({
+                  p(
+                    withMathJax(
+                      sprintf("\\(CV = %s = %0.3f\\)",
+                            critZVal,
+                            oneSampPropZTest["Z Critical"]),
+                      hr()
+                    )
+                  )
+                })
+                
+                output$oneSampPropDataSEDetails <- renderUI({
+                  p(
+                    withMathJax(
+                      sprintf("\\(SE = \\sqrt{\\dfrac{p_{0}(1 - p_{0})}{n}} = \\sqrt{\\dfrac{%0.3f(1 - %0.3f)}{%1.0f}} = %0.3f\\)",
+                            oneSampHypProp,
+                            oneSampHypProp,
+                            oneSampPropTrials,
+                            oneSampPropZTest["Std Error"]),
+                      hr()
+                    )
+                  )
+                })
+                
+                output$oneSampPropDataHypDetails <- renderUI({
+                  p(
+                    withMathJax(
+                      sprintf("\\(p_{0}\\) placeholder"),
+                      hr()
+                    )
+                  )
+                })
+                
+                output$oneSampPropDataTSDetails <- renderUI({
+                  p(
+                    withMathJax(
+                      sprintf("\\(TS\\) placeholder"),
+                      hr()
+                    )
+                  )
+                })
+                
+                output$oneSampPropDataPValDetails <- renderUI({
+                  p(
+                    withMathJax(
+                      sprintf("P value placeholder"),
+                      hr()
+                    )
+                  )
+                })
                 
                 if(oneSampPropZTest["P-Value"] > sigLvl)
                 {
@@ -2394,9 +2748,24 @@ server <- function(input, output) {
                   )
                 })
                 
+                output$oneSampPropHTPlot <- renderPlot({
+                  if(input$altHypothesis == 2)
+                  {
+                    critVals <- c(-oneSampPropZTest["Z Critical"], oneSampPropZTest["Z Critical"])  
+                  }
+                  else
+                  {
+                    critVals <- oneSampPropZTest["Z Critical"]
+                  }
+                  
+                  htPlot <- hypTestPlot(oneSampPropZTest["Test Statistic"], critVals, input$altHypothesis)
+                  htPlot
+                })
+                
   
                 
               } # input$inferenceType == 'Hypothesis Test'
+              #show('oneSampPropMP')
             }
             else
             {
@@ -2678,6 +3047,166 @@ server <- function(input, output) {
        #) # renderInference
     }) # input$goInference
     
+    observeEvent(input$oneSampPropData_rows_selected, { ### dataTable details display ----
+      
+      s = input$oneSampPropData_rows_selected
+      
+      if(1 %in% input$oneSampPropData_rows_selected)
+      {
+        show(id = "oneSampPropDataNDetails")
+      }
+      else
+      {
+        hide(id = "oneSampPropDataNDetails")
+      }
+      
+      if(2 %in% input$oneSampPropData_rows_selected)
+      {
+        show(id = "oneSampPropDataXDetails")
+      }
+      else
+      {
+        hide(id = "oneSampPropDataXDetails")
+      }
+      
+      if(3 %in% input$oneSampPropData_rows_selected)
+      {
+        show(id = "oneSampPropDataPhatDetails")
+      }
+      else
+      {
+        hide(id = "oneSampPropDataPhatDetails")
+      }
+      
+      if(4 %in% input$oneSampPropData_rows_selected)
+      {
+        show(id = "oneSampPropDataQhatDetails")
+      }
+      else
+      {
+        hide(id = "oneSampPropDataQhatDetails")
+      }
+      
+      if(6 %in% input$oneSampPropData_rows_selected)
+      {
+        show(id = "oneSampPropDataCVDetails")
+      }
+      else
+      {
+        hide(id = "oneSampPropDataCVDetails")
+      }
+      
+      if(7 %in% input$oneSampPropData_rows_selected)
+      {
+        show(id = "oneSampPropDataSEDetails")
+      }
+      else
+      {
+        hide(id = "oneSampPropDataSEDetails")
+      }
+      
+      if(input$inferenceType == 'Confidence Interval')
+      {
+          hide(id = "oneSampPropDataSigLvlDetails")
+          hide(id = "oneSampPropDataHypDetails")
+          hide(id = "oneSampPropDataTSDetails")
+          hide(id = "oneSampPropDataPValDetails")
+        
+          if(5 %in% input$oneSampPropData_rows_selected)
+          {
+            show(id = "oneSampPropDataConfLvlDetails")
+          }
+          else
+          {
+            hide(id = "oneSampPropDataConfLvlDetails")
+          }
+          
+          if(8 %in% input$oneSampPropData_rows_selected)
+          {
+            show(id = "oneSampPropDataMEDetails")
+          }
+          else
+          {
+            hide(id = "oneSampPropDataMEDetails")
+          }
+          
+          if(9 %in% input$oneSampPropData_rows_selected)
+          {
+            show(id = "oneSampPropDataLCLDetails")
+          }
+          else
+          {
+            hide(id = "oneSampPropDataLCLDetails")
+          }
+          
+          if(10 %in% input$oneSampPropData_rows_selected)
+          {
+            show(id = "oneSampPropDataUCLDetails")
+          }
+          else
+          {
+            hide(id = "oneSampPropDataUCLDetails")
+          }
+      }
+      else if(input$inferenceType == 'Hypothesis Testing')
+      {
+          hide(id = "oneSampPropDataConfLvlDetails")
+          hide(id = "oneSampPropDataMEDetails")
+          hide(id = "oneSampPropDataLCLDetails")
+          hide(id = "oneSampPropDataUCLDetails")
+          
+          if(5 %in% input$oneSampPropData_rows_selected)
+          {
+            show(id = "oneSampPropDataSigLvlDetails")
+          }
+          else
+          {
+            hide(id = "oneSampPropDataSigLvlDetails")
+          }
+          
+          if(8 %in% input$oneSampPropData_rows_selected)
+          {
+            show(id = "oneSampPropDataHypDetails")
+          }
+          else
+          {
+            hide(id = "oneSampPropDataHypDetails")
+          }
+          
+          if(9 %in% input$oneSampPropData_rows_selected)
+          {
+            show(id = "oneSampPropDataTSDetails")
+          }
+          else
+          {
+            hide(id = "oneSampPropDataTSDetails")
+          }
+          
+          if(10 %in% input$oneSampPropData_rows_selected)
+          {
+            show(id = "oneSampPropDataPValDetails")
+          }
+          else
+          {
+            hide(id = "oneSampPropDataPValDetails")
+          }
+      }
+    })
+    #observeEvent(input$oneSampPropData_rows_selected, {
+      
+      #rows <- input$oneSampPropData_rows_selected
+      
+      #output$oneSampPropDataDetails <- renderUI({
+        
+        #tagList(
+          #titlePanel('Details'),
+          #br(),
+          
+          
+        #)
+      #})
+    #})
+    
     #  ------------------------------------------- #
     ## ---- Linear Regression and Correlation ----
     #  ------------------------------------------- #
@@ -2722,33 +3251,48 @@ server <- function(input, output) {
     
     observeEvent(input$slrUserData, {
       hide(id = "RegCorMP")
+      hide(id = "slrResponse")
+      hide(id = "slrExplanatory")
       if(slrupload_iv$is_valid())
       {
-        output$slrUploadVars <- renderUI({
+        freezeReactiveValue(input, "slrExplanatory")
+        updateSelectInput(session = getDefaultReactiveDomain(),
+                          "slrExplanatory",
+                          choices = c(colnames(slrUploadData()))
+                          )
+        freezeReactiveValue(input, "slrResponse")
+        updateSelectInput(session = getDefaultReactiveDomain(),
+                          "slrResponse",
+                          choices = c(colnames(slrUploadData()))
+                          )
+        show(id = "slrResponse")
+        show(id = "slrExplanatory")
+      }
+        #output$slrUploadVars <- renderUI({
           
-          tagList(
+          #tagList(
             
-            selectizeInput(
-              inputId = "slrExplanatory",
-              label = strong("Choose the Explanatory Variable (x)"),
-              choices = c(colnames(slrUploadData())),
-              options = list(
-                placeholder = 'Select a variable',
-                onInitialize = I('function() { this.setValue(""); }')
-              )
-            ),
+            #selectizeInput(
+              #inputId = "slrExplanatory",
+              #label = strong("Choose the Explanatory Variable (x)"),
+              #choices = c(colnames(slrUploadData())),
+              #options = list(
+                #placeholder = 'Select a variable',
+                #onInitialize = I('function() { this.setValue(""); }')
+              #)
+            #),
             
-            selectizeInput(
-              inputId = "slrResponse",
-              label = strong("Choose the Response Variable (y)"),
-              choices = c(colnames(slrUploadData())),
-              options = list(
-                placeholder = 'Select a variable',
-                onInitialize = I('function() { this.setValue(""); }')
-              )
-            ),
-          )
-        })
+            #selectizeInput(
+              #inputId = "slrResponse",
+              #label = strong("Choose the Response Variable (y)"),
+              #choices = c(colnames(slrUploadData())),
+              #options = list(
+                #placeholder = 'Select a variable',
+                #onInitialize = I('function() { this.setValue(""); }')
+              #)
+            #),
+          #)
+        #})
         
         #slruploadvars_iv$add_rule("slrResponse", sv_required())
         #slruploadvars_iv$add_rule("slrExplanatory", sv_required())
@@ -2759,13 +3303,13 @@ server <- function(input, output) {
         #regcor_iv$add_validator(slruploadvars_iv)
         
         #slruploadvars_iv$enable()
-      }
-      else
-      {
-        output$slrUploadVars <- renderUI({
-          ""
-        })
-      }
+      #}
+      #else
+      #{
+        #output$slrUploadVars <- renderUI({
+          #""
+        #})
+      #}
     })
     
     observeEvent(input$slrExplanatory, {
@@ -3150,6 +3694,14 @@ server <- function(input, output) {
       hide(id = "inferenceMP")
     })
     
+    observeEvent(input$significanceLevel, {
+      hide(id = "inferenceMP")
+    })
+    
+    observeEvent(input$confidenceLevel, {
+      hide(id = "inferenceMP")
+    })
+    
     observeEvent(input$goInference, {
       show(id = "inferenceMP")
     })
@@ -3165,6 +3717,8 @@ server <- function(input, output) {
     
     observeEvent(input$dataRegCor, {
       hide(id = "RegCorMP")
+      hide(id = "slrResponse")
+      hide(id = "slrExplanatory")
     })
     
     #observeEvent(input$goRegression, {
