@@ -1534,7 +1534,7 @@ server <- function(input, output) {
     
     # numSuccessesProportion
     
-    iv$add_rule("numSuccesses", sv_required())
+    iv$add_rule("numSuccesses", sv_required(message = "Numeric value required"))
     iv$add_rule("numSuccesses", sv_integer())
     iv$add_rule("numSuccesses", sv_gte(0))
     
@@ -1550,7 +1550,7 @@ server <- function(input, output) {
     
     # numTrialsProportion
     
-    iv$add_rule("numTrials", sv_required())
+    iv$add_rule("numTrials", sv_required(message = "Numeric value required"))
     iv$add_rule("numTrials", sv_integer())
     iv$add_rule("numTrials", sv_gt(0))
     
@@ -2771,15 +2771,17 @@ server <- function(input, output) {
             {
               output$oneSampProportion <- renderUI({ 
                 validate(
-                  need(input$numSuccesses, "Number of Successes (x) required"),
-                  need(input$numTrials, "Number of Trials (n) required"),
+                  need(input$numSuccesses, "Numeric value for Number of Successes (x) required"),
+                  need(input$numTrials, "Numeric value for Number of Trials (n) required"),
                   
                   errorClass = "myClass"
                 )
                 
                 validate(
-                  need(input$numTrials > 0, "Number of Trials (n) must be greater than 0"),
-                  need(input$numSuccesses >= 0, "Number of Successes (x) cannot be negative") %then%
+                  need(input$numSuccesses %% 1 == 0, "Number of Successes (x) must be an integer"),
+                  need(input$numSuccesses >= 0, "Number of Successes (x) cannot be negative"),
+                  need(input$numTrials %% 1 == 0, "Number of Trials (n) must be an integer"),
+                  need(input$numTrials > 0, "Number of Trials (n) must be greater than 0") %then%
                     need(input$numSuccesses <= input$numTrials, "Number of Successes (x) cannot be greater than Number of Trials (n)"),
                   
                   errorClass = "myClass"
