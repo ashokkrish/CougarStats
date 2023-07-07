@@ -1710,12 +1710,12 @@ server <- function(input, output) {
                   scale_x_continuous(breaks = floor(normTail):ceiling(normHead)) +
                   scale_y_continuous(breaks = NULL) +
                   ylab("") + xlab("z") +
-                  geom_segment(data = filter(df, x %in% c(0)), aes(x = x, xend = x, y = 0, yend = y), linetype = "dotted", size = 0.75, color='#03376d') +
+                  geom_segment(data = filter(df, x %in% c(0)), aes(x = x, xend = x, y = 0, yend = y), linetype = "dotted", linewidth = 0.75, color='#03376d') +
                   geom_text(data = filter(df, x %in% c(0)), aes(x = x, y = y/2, label = "A R"), size = 16 / .pt, fontface = "bold") +
                   geom_segment(data = tsDF, aes(x = x, xend = x, y = -0.01, yend = y + .03), linetype = "solid", linewidth = 1.25, color='#03376d') +
                   geom_text(data = tsDF, aes(x = x, y = y, label = "TS"), size = 16 / .pt, fontface = "bold", nudge_y = .04) +
                   geom_text(data = tsDF, aes(x = x, y = 0, label = x), fontface = "bold", nudge_y = -.02) +
-                  geom_segment(data = cvDF, aes(x = x, xend = x, y = 0, yend = y), linetype = "blank", lineend = 'round', size = 1.5, color='#03376d') +
+                  geom_segment(data = cvDF, aes(x = x, xend = x, y = 0, yend = y), linetype = "blank", lineend = 'round', linewidth = 1.5, color='#03376d') +
                   geom_text(data = cvDF, aes(x = x, y = 0, label = x), fontface = "bold", nudge_y = -.01) +
                   geom_text(data = cvDF, aes(x = x + x/4, y = y, label = "RR"), size = 16 / .pt, fontface = "bold") +
                   theme(plot.background = element_rect(color = 1, linewidth = 1)) # Left margin
@@ -2459,72 +2459,112 @@ server <- function(input, output) {
                 )
                 
                 output$oneSampPropDataNDetails <- renderUI({
-                  p(sprintf("\\( n\\) denotes the number of trials, or sample size."),
-                    hr())
+                  p(
+                    withMathJax(
+                      sprintf("\\( n\\) denotes the number of trials, or sample size."),
+                    hr()
+                    )
+                  )
                 })
                 
                 output$oneSampPropDataXDetails <- renderUI({
-                  p(sprintf("\\( x\\) denotes the number of 'successful' trials, or the number of observations in the sample with a desired attribute."),
-                    hr())
+                  p(
+                    withMathJax(
+                      sprintf("\\( x\\) denotes the number of 'successful' trials, or the number of observations in the sample with a desired attribute."),
+                    hr()
+                    )
+                  )
                 })
                 
                 output$oneSampPropDataPhatDetails <- renderUI({
-                  p(sprintf("\\( \\hat{p} = \\dfrac{x}{n} = \\dfrac{%1.0f}{%1.0f} = %0.3f\\)",
+                  p(
+                    withMathJax(
+                      sprintf("\\( \\hat{p} = \\dfrac{x}{n} = \\dfrac{%1.0f}{%1.0f} = %0.3f\\)",
                             oneSampPropSucc,
                             oneSampPropTrials,
                             oneSampPropZInt["phat"]),
-                    hr())
+                    hr()
+                    )
+                  )
                 })
                 
                 output$oneSampPropDataQhatDetails <- renderUI({
-                  p(sprintf("\\(1 - \\hat{p} = 1 - %0.3f = %0.3f\\)",
+                  p(
+                    withMathJax(
+                      sprintf("\\(1 - \\hat{p} = 1 - %0.3f = %0.3f\\)",
                             oneSampPropZInt["phat"],
                             (1 - oneSampPropZInt["phat"])),
-                    hr())
+                    hr()
+                    )
+                  )
                 })
                 
                 output$oneSampPropDataConfLvlDetails <- renderUI({
-                  p(sprintf("The confidence level \\(( 1 - \\alpha\\)) or \\( C\\) is the probability that the produced interval contains the unknown parameter."),
-                    hr())
+                  p(
+                    withMathJax(
+                      sprintf("The confidence level \\(( 1 - \\alpha\\)) or \\( C\\) is the probability that the produced interval contains the unknown parameter."),
+                    hr()
+                    )
+                  )
                 })
                 
                 output$oneSampPropDataCVDetails <- renderUI({
-                  p(sprintf("\\(CV = z_{\\alpha/2} = %0.3f\\)",
+                  p(
+                    withMathJax(
+                      sprintf("\\(CV = z_{\\alpha/2} = %0.3f\\)",
                             oneSampPropZInt["Z Critical"]),
-                    hr())
+                    hr()
+                    )
+                  )
                 })
                 
                 output$oneSampPropDataSEDetails <- renderUI({
-                  p(sprintf("\\(SE = \\sqrt{\\dfrac{\\hat{p}(1-\\hat{p})}{n}} = \\sqrt{\\dfrac{%0.3f(1-%0.3f)}{%1.0f}} = %0.3f\\)",
+                  p(
+                    withMathJax(
+                      sprintf("\\(SE = \\sqrt{\\dfrac{\\hat{p}(1-\\hat{p})}{n}} = \\sqrt{\\dfrac{%0.3f(1-%0.3f)}{%1.0f}} = %0.3f\\)",
                             oneSampPropZInt["phat"],
                             oneSampPropZInt["phat"],
                             oneSampPropTrials,
                             oneSampPropZInt["Std Error"]),
-                    hr())
+                    hr()
+                    )
+                  )
                 })
                 
                 output$oneSampPropDataMEDetails <- renderUI({
-                  p(sprintf("\\(ME = CV * SE = %0.3f * %0.3f = %0.3f\\)",
+                  p(
+                    withMathJax(
+                      sprintf("\\(ME = CV * SE = %0.3f * %0.3f = %0.3f\\)",
                             oneSampPropZInt["Z Critical"],
                             oneSampPropZInt["Std Error"],
                             oneSampPropME),
-                    hr())
+                    hr()
+                    )
+                  )
                 })
                 
                 output$oneSampPropDataLCLDetails <- renderUI({
-                  p(sprintf("\\(LCL = \\hat{p} - ME = %0.3f - %0.3f = %0.3f\\)",
+                  p(
+                    withMathJax(
+                      sprintf("\\(LCL = \\hat{p} - ME = %0.3f - %0.3f = %0.3f\\)",
                             oneSampPropZInt["phat"],
                             oneSampPropME,
                             oneSampPropZInt["LCL"]),
-                    hr())
+                    hr()
+                    )
+                  )
                 })
                 
                 output$oneSampPropDataUCLDetails <- renderUI({
-                  p(sprintf("\\(UCL = \\hat{p} + ME = %0.3f + %0.3f = %0.3f\\)",
+                  p(
+                    withMathJax(
+                      sprintf("\\(UCL = \\hat{p} + ME = %0.3f + %0.3f = %0.3f\\)",
                             oneSampPropZInt["phat"],
                             oneSampPropME,
                             oneSampPropZInt["UCL"]),
-                    hr())
+                    hr()
+                    )
+                  )
                 })
                 
                 output$oneSampPropCI <- renderUI({
@@ -3099,7 +3139,7 @@ server <- function(input, output) {
                     br(),
                     
                     conditionalPanel(
-                      condition = "input.inferenceType == 'Confidence Interval'",
+                      condition = "input.inferenceType2 == 'Confidence Interval'",
                       
                       titlePanel("Confidence Interval"),
                       br(),
@@ -3108,7 +3148,7 @@ server <- function(input, output) {
                     ),
                     
                     conditionalPanel(
-                      condition = "input.inferenceType == 'Hypothesis Testing'",
+                      condition = "input.inferenceType2 == 'Hypothesis Testing'",
                       
                       titlePanel("Hypothesis Test"),
                       br(),
