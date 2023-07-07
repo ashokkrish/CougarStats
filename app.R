@@ -1693,7 +1693,7 @@ server <- function(input, output) {
       centerDF <- filter(df, x %in% c(0))
       
       
-      htPlot <- ggplot(df, aes(x = x, y = y)) +
+      htPlot <- ggplot(df, aes(x = x, y = y), border) +
                   stat_function(fun = dnorm, geom = "density",
                                 xlim = c(normTail, normHead),
                                 fill = "#03376d",
@@ -1705,8 +1705,8 @@ server <- function(input, output) {
                   theme( plot.background = element_blank() ,
                          panel.grid.major = element_blank() ,
                          panel.grid.minor = element_blank() ,  
-                         panel.border = element_blank()) +
-                         #panel.background = element_blank() )  +
+                         panel.border = element_rect(linetype = 'blank', fill = NA),
+                         panel.background = element_blank() )  +
                   scale_x_continuous(breaks = floor(normTail):ceiling(normHead)) +
                   scale_y_continuous(breaks = NULL) +
                   ylab("") + xlab("z") +
@@ -2085,13 +2085,13 @@ server <- function(input, output) {
           if(input$inferenceType == 'Confidence Interval'){
             
             if(input$confidenceLevel == '90%'){
-              ConfLvl <- 0.9
+              confLvl <- 0.9
             }
             else if(input$confidenceLevel == '95%'){
-              ConfLvl <- 0.95
+              confLvl <- 0.95
             }
             else{
-              ConfLvl <- 0.99
+              confLvl <- 0.99
             }
           }
           else if(input$inferenceType == 'Hypothesis Testing'){
@@ -2110,19 +2110,19 @@ server <- function(input, output) {
               alternative <- "greater"
               nullHyp <- "\\leq"
               altHyp <- "\\gt"
-              critZVal <- "z_{\\alpha}"
+              critZAlph <- "z_{\\alpha}"
             }
             else if(input$altHypothesis == "2"){
               alternative <- "two.sided"
               nullHyp <- "="
               altHyp <- "\\neq"
-              critZVal <- "z_{\\alpha/2}"
+              critZAlph <- "\\pm z_{\\alpha/2}"
             }
             else{
               alternative <- "less"
               nullHyp <- "\\geq"
               altHyp <- "\\lt"
-              critZVal <- "-z_{\\alpha}"
+              critZAlph <- "-z_{\\alpha}"
             }
           }
           
@@ -2142,7 +2142,7 @@ server <- function(input, output) {
                   
                   print("Confidence Interval for One Population Mean when Population Standard Deviation is known")
                   
-                  zIntPrint <- ZInterval(nSampOne, xbarSampOne, sigmaSampOne, ConfLvl)
+                  zIntPrint <- ZInterval(nSampOne, xbarSampOne, sigmaSampOne, confLvl)
                   
                   values <- reactiveValues()
                   values$dfKnown <- data.frame(Variable = character(), Value = character())
@@ -2165,7 +2165,7 @@ server <- function(input, output) {
                   
                   print("Confidence Interval for One Population Mean when Population Standard Deviation is unknown")
                   
-                  tIntPrint <- TInterval(nSampOne, xbarSampOne, sSampOne, ConfLvl)
+                  tIntPrint <- TInterval(nSampOne, xbarSampOne, sSampOne, confLvl)
                   
                   values <- reactiveValues()
                   values$dfUnknown <- data.frame(Variable = character(), Value = character())
@@ -2248,7 +2248,7 @@ server <- function(input, output) {
                   
                   source("R/OneSampZInt.R")
                   
-                  ZIntervalRaw <- ZInterval(rawSampleSize, rawSampleMean, rawPopuSD, ConfLvl)
+                  ZIntervalRaw <- ZInterval(rawSampleSize, rawSampleMean, rawPopuSD, confLvl)
                   
                   values <- reactiveValues()
                   values$dfKnownRaw <- data.frame(Variable = character(), Value = character())
@@ -2269,7 +2269,7 @@ server <- function(input, output) {
                   
                   source("R/OneSampTInt.R")
                   
-                  TIntervalRaw <- TInterval(rawSampleSize, rawSampleMean, rawSampleSD, ConfLvl)
+                  TIntervalRaw <- TInterval(rawSampleSize, rawSampleMean, rawSampleSD, confLvl)
                   
                   values <- reactiveValues()
                   values$dfUnknownRaw <- data.frame(Variable = character(), Value = character())
@@ -2337,7 +2337,7 @@ server <- function(input, output) {
               } # input$inferenceType == 'Hypothesis Testing'
             } # input$dataAvailability == 'Enter Raw Data'
           }
-          else if(input$popuParameter == 'Population Proportion'){ ###### prop ----
+          else if(input$popuParameter == 'Population Proportion'){ ###### 1samp prop ----
           #   source('R/OnePropZInt.R')
           #   source('R/OnePropZTest.R')
           #   print("Inferences for One Population Proportion are under contruction")
@@ -2355,7 +2355,7 @@ server <- function(input, output) {
                     column(width = 4,
                            titlePanel("Sample Data Summary"),
                            hr(),
-                           withMathJax(DTOutput('oneSampPropData', width = "90%")),
+                           withMathJax(DTOutput('oneSampPropData', width = "95%")),
                     ),
                     column(width = 8,
                            titlePanel('Summary Details'),
@@ -2418,24 +2418,24 @@ server <- function(input, output) {
               oneSampPropSucc <- input$numSuccesses
               oneSampPropTrials <- input$numTrials
               
-              if(input$inferenceType == 'Confidence Interval')
+              if(input$inferenceType == 'Confidence Interval') ###### conf ----
               {
                 source('R/OnePropZInt.R')
                 
-                oneSampPropZInt <- OnePropZInterval(oneSampPropSucc, oneSampPropTrials, ConfLvl)
+                oneSampPropZInt <- OnePropZInterval(oneSampPropSucc, oneSampPropTrials, confLvl)
                 oneSampPropME <- oneSampPropZInt["Z Critical"] * oneSampPropZInt["Std Error"]
                 
               # (\\( n\\))  (\\( x\\))  (\\(\\hat{p}\\))  ( 1 - \\(\\hat{p}\\))
-                dataRow1 <- data.frame(Variable = "Number of Trials (\\( n\\))", Value = paste(oneSampPropTrials))
-                dataRow2 <- data.frame(Variable = "Number of Successes (\\( x\\))", Value = paste(oneSampPropSucc))
-                dataRow3 <- data.frame(Variable = "Sample Proportion of Success \\((\\hat{p})\\)", Value = paste(round(oneSampPropZInt["phat"], digits = 3)))
-                dataRow4 <- data.frame(Variable = "Sample Proportion of Failure \\((\\hat{q})\\)", Value = paste(round((1 - oneSampPropZInt["phat"]), digits = 3)))
-                dataRow5 <- data.frame(Variable = "Confidence Level \\(( 1 - \\alpha)\\)", Value = paste(ConfLvl*100, "%"))
-                dataRow6 <- data.frame(Variable = "Z Critical Value \\((CV)\\)", Value = paste(oneSampPropZInt["Z Critical"]))
-                dataRow7 <- data.frame(Variable = "Standard Error \\(( SE)\\)", Value = paste(round(oneSampPropZInt["Std Error"], digits = 3)))
-                dataRow8 <- data.frame(Variable = "Margin of Error (\\( ME\\))", Value = paste(round(oneSampPropME, digits = 3)))
-                dataRow9 <- data.frame(Variable = "Lower Confidence Limit (\\( LCL\\))", Value = paste(round(oneSampPropZInt["LCL"], digits = 3)))
-                dataRow10 <- data.frame(Variable = "Upper Confidence Limit (\\( UCL\\))", Value = paste(round(oneSampPropZInt["UCL"], digits = 3)))
+                dataRow1 <- data.frame(Variable = "Number of Trials \\( (n)\\)", Value = paste(oneSampPropTrials))
+                dataRow2 <- data.frame(Variable = "Number of Successes \\( (x)\\)", Value = paste(oneSampPropSucc))
+                dataRow3 <- data.frame(Variable = "Sample Proportion of Success \\( (\\hat{p})\\)", Value = paste(round(oneSampPropZInt["phat"], digits = 3)))
+                dataRow4 <- data.frame(Variable = "Sample Proportion of Failure \\( (\\hat{q})\\)", Value = paste(round((1 - oneSampPropZInt["phat"]), digits = 3)))
+                dataRow5 <- data.frame(Variable = "Confidence Level \\( (1 - \\alpha)\\)", Value = paste(confLvl*100, "%"))
+                dataRow6 <- data.frame(Variable = "Z Critical Value \\( (CV)\\)", Value = paste(oneSampPropZInt["Z Critical"]))
+                dataRow7 <- data.frame(Variable = "Standard Error \\( (SE)\\)", Value = paste(round(oneSampPropZInt["Std Error"], digits = 3)))
+                dataRow8 <- data.frame(Variable = "Margin of Error \\( (ME)\\)", Value = paste(round(oneSampPropME, digits = 3)))
+                dataRow9 <- data.frame(Variable = "Lower Confidence Limit \\( (LCL)\\)", Value = paste(round(oneSampPropZInt["LCL"], digits = 3)))
+                dataRow10 <- data.frame(Variable = "Upper Confidence Limit \\( (UCL)\\)", Value = paste(round(oneSampPropZInt["UCL"], digits = 3)))
                 
                 propIntData <- rbind(dataRow1, dataRow2, dataRow3, dataRow4, dataRow5, dataRow6, dataRow7, dataRow8, dataRow9, dataRow10)
                 
@@ -2502,7 +2502,7 @@ server <- function(input, output) {
                 output$oneSampPropDataConfLvlDetails <- renderUI({
                   p(
                     withMathJax(
-                      sprintf("The confidence level \\(( 1 - \\alpha\\)) or \\( C\\) is the probability that the produced interval contains the unknown parameter."),
+                      sprintf("The confidence level \\( (1 - \\alpha)\\) or \\( C\\) is the probability that the produced interval contains the unknown parameter."),
                     hr()
                     )
                   )
@@ -2571,7 +2571,7 @@ server <- function(input, output) {
                   p(
                     withMathJax(
                         sprintf("We are %1.0f%% confident that the population proportion (\\( p\\)) is between %0.3f and %0.3f",
-                               ConfLvl*100,
+                               confLvl*100,
                                oneSampPropZInt["LCL"],
                                oneSampPropZInt["UCL"]),
                         br(),
@@ -2599,7 +2599,7 @@ server <- function(input, output) {
                 
                 
               } # input$inferenceType == 'Confidence Interval'
-              else if(input$inferenceType == 'Hypothesis Testing')
+              else if(input$inferenceType == 'Hypothesis Testing') ###### ht ----
               {
                 oneSampHypProp <- input$hypProportion
                 
@@ -2607,24 +2607,36 @@ server <- function(input, output) {
                 
                 oneSampPropZTest <- OnePropZTest(oneSampPropSucc, oneSampPropTrials, oneSampHypProp, alternative, sigLvl)
                 
-                # (\\( n\\))  (\\( x\\))  (\\(\\hat{p}\\))  ( 1 - \\(\\hat{p}\\))
-                dataRow1 <- data.frame(Variable = "Number of Trials (\\( n\\))", Value = paste(oneSampPropTrials))
-                dataRow2 <- data.frame(Variable = "Number of Successes (\\( x\\))", Value = paste(oneSampPropSucc))
-                dataRow3 <- data.frame(Variable = "Sample Proportion of Success (\\(\\hat{p}\\))", Value = paste(round(oneSampPropZTest["Sample Proportion"], digits = 3)))
-                dataRow4 <- data.frame(Variable = "Sample Proportion of Failure (\\(\\hat{q}\\))", Value = paste(round((1 - oneSampPropZTest["Sample Proportion"]), digits = 3)))
-                dataRow5 <- data.frame(Variable = "Significance Level (\\(\\alpha\\))", Value = paste(sigLvl*100, "%"))
-                dataRow6 <- data.frame(Variable = "Z Critical Value (\\( CV\\))", Value = paste(oneSampPropZTest["Z Critical"]))
-                dataRow7 <- data.frame(Variable = "Standard Error (\\( SE\\))", Value = paste(oneSampPropZTest["Std Error"]))
-                dataRow8 <- data.frame(Variable = "Hypothesized Proportion (\\( p_{0}\\))", Value = paste(oneSampHypProp))
-                dataRow9 <- data.frame(Variable = "Test Statistic (\\( Z\\))", Value = paste(oneSampPropZTest["Test Statistic"]))
-                dataRow10 <- data.frame(Variable = "P-Value", Value = paste(oneSampPropZTest["P-Value"]))
+                if(oneSampPropZTest["P-Value"] < 0.0001)
+                {
+                  pValue <- "\\( P \\lt\\) 0.0001"
+                }
+                else
+                {
+                  pValue <- paste("\\( P =\\)", oneSampPropZTest["P-Value"])
+                }
+                
+                if(alternative == "two.sided")
+                {
+                  critZVal <- paste("\\( \\pm\\)", oneSampPropZTest["Z Critical"])
+                }
+                else
+                {
+                  critZVal <- paste(oneSampPropZTest["Z Critical"])
+                }
+                
+                dataRow1 <- data.frame(Variable = "Number of Trials \\( (n)\\)", Value = paste(oneSampPropTrials))
+                dataRow2 <- data.frame(Variable = "Number of Successes \\( (x)\\)", Value = paste(oneSampPropSucc))
+                dataRow3 <- data.frame(Variable = "Sample Proportion of Success \\( (\\hat{p})\\)", Value = paste(round(oneSampPropZTest["Sample Proportion"], digits = 3)))
+                dataRow4 <- data.frame(Variable = "Sample Proportion of Failure \\( (\\hat{q})\\)", Value = paste(round((1 - oneSampPropZTest["Sample Proportion"]), digits = 3)))
+                dataRow5 <- data.frame(Variable = "Significance Level \\( (\\alpha)\\)", Value = paste(sigLvl*100, "%"))
+                dataRow6 <- data.frame(Variable = "Z Critical Value \\( (CV)\\)", Value = paste(critZVal))
+                dataRow7 <- data.frame(Variable = "Standard Error \\( (SE)\\)", Value = paste(oneSampPropZTest["Std Error"]))
+                dataRow8 <- data.frame(Variable = "Hypothesized Proportion \\( (p_{0})\\)", Value = paste(oneSampHypProp))
+                dataRow9 <- data.frame(Variable = "Test Statistic \\( (Z)\\)", Value = paste(oneSampPropZTest["Test Statistic"]))
+                dataRow10 <- data.frame(Variable = "P-Value \\( (P)\\)", Value = paste(pValue))
                 
                 propTestData <- rbind(dataRow1, dataRow2, dataRow3, dataRow4, dataRow5, dataRow6, dataRow7, dataRow8, dataRow9, dataRow10)
-                
-                #row4 <- data.frame(Variable = "T Critical Value (CV)", Value = paste(TTestRaw[4]))
-                #row5 <- data.frame(Variable = "Standard Error (SE)", Value = paste(TTestRaw[5]))
-                #row6 <- data.frame(Variable = "Test Statistic (TS)", Value = paste(TTestRaw[6]))
-                #row7 <- data.frame(Variable = "P-Value", Value = paste(TTestRaw[7]))
                 
                 output$oneSampPropData <- renderDT(
                   datatable(propTestData,
@@ -2694,9 +2706,9 @@ server <- function(input, output) {
                 output$oneSampPropDataCVDetails <- renderUI({
                   p(
                     withMathJax(
-                      sprintf("\\(CV = %s = %0.3f\\)",
-                            critZVal,
-                            oneSampPropZTest["Z Critical"]),
+                      sprintf("\\(CV = %s =\\) %s",
+                            critZAlph,
+                            critZVal),
                       hr()
                     )
                   )
@@ -2736,7 +2748,8 @@ server <- function(input, output) {
                 output$oneSampPropDataPValDetails <- renderUI({
                   p(
                     withMathJax(
-                      sprintf("P value placeholder"),
+                      sprintf("The smaller the P-Value, the stronger the evidence against \\( H_{0}\\). If \\( P \\leq \\alpha\\),
+                              then we can say at level \\( \\alpha\\) the data are statistically significant and we reject \\( H_{0}\\)"),
                       hr()
                     )
                   )
@@ -2744,11 +2757,17 @@ server <- function(input, output) {
                 
                 if(oneSampPropZTest["P-Value"] > sigLvl)
                 {
-                  reject <- "do not provide"
+                  pvalSymbol <- "\\( \\gt\\)"
+                  suffEvidence <- "do not provide"
+                  reject <- "do not reject"
+                  region <- "acceptance"
                 }
                 else
                 {
-                  reject <- "provide"
+                  pvalSymbol <- "\\( \\leq\\)"
+                  suffEvidence <- "provide"
+                  reject <- "reject"
+                  region <- "rejection"
                 }
                 
                 output$oneSampPropHT <- renderUI({
@@ -2757,7 +2776,7 @@ server <- function(input, output) {
                       sprintf("At the %1.0f%% level, the data %s sufficient evidence to reject the null hypothesis (\\( H_{0}\\)) that the population 
                               proportion (\\( p\\)) \\( %s\\) %0.2f",
                               sigLvl*100,
-                              reject,
+                              suffEvidence,
                               nullHyp,
                               oneSampHypProp),
                       br(),
@@ -2785,7 +2804,28 @@ server <- function(input, output) {
                       br(),
                       br(),
                       sprintf("\\(z = %0.3f\\)",
-                              oneSampPropZTest["Test Statistic"])
+                              oneSampPropZTest["Test Statistic"]),
+                      br(),
+                      br(),
+                      br(),
+                      p(tags$b("Using P-Value Method:")),
+                      p(pValue),
+                      sprintf("Since \\( P\\) %s %0.2f, %s \\( H_{0}\\).",
+                              pvalSymbol,
+                              sigLvl,
+                              reject),
+                      br(),
+                      br(),
+                      br(),
+                      p(tags$b("Using Critical Value Method:")),
+                      sprintf("Critical Value(s) = %s",
+                              critZVal),
+                      br(),
+                      br(),
+                      sprintf("Since \\( z\\) falls within the %s region, %s \\( H_{0}\\).",
+                              region,
+                              reject)
+                      
                     )
                   )
                 })
@@ -2838,13 +2878,13 @@ server <- function(input, output) {
           if(input$inferenceType2 == 'Confidence Interval'){
             
             if(input$confidenceLevel2 == '90%'){
-              ConfLvl <- 0.9
+              confLvl <- 0.9
             }
             else if(input$confidenceLevel2 == '95%'){
-              ConfLvl <- 0.95
+              confLvl <- 0.95
             }
             else{
-              ConfLvl <- 0.99
+              confLvl <- 0.99
             }
           }
           
@@ -2887,7 +2927,7 @@ server <- function(input, output) {
                   
                   source('R/TwoSampZInt.R')
                   
-                  TwoSampZInt <- TwoSampZInt(xbar1, sigma1, n1, xbar2, sigma2, n2, ConfLvl)
+                  TwoSampZInt <- TwoSampZInt(xbar1, sigma1, n1, xbar2, sigma2, n2, confLvl)
                   
                   values <- reactiveValues()
                   values$dfTwoKnownSum <- data.frame(Variable = character(), Value = character())
@@ -2909,7 +2949,7 @@ server <- function(input, output) {
                   
                   source('R/TwoSampTInt.R')
                   
-                  TwoSampTInt <- TwoSampTInt(xbar1, s1, n1, xbar2, s2, n2, var.equal = TRUE, ConfLvl)
+                  TwoSampTInt <- TwoSampTInt(xbar1, s1, n1, xbar2, s2, n2, var.equal = TRUE, confLvl)
                   
                   values <- reactiveValues()
                   values$dfTwoUnknownSum <- data.frame(Variable = character(), Value = character())
@@ -2992,7 +3032,7 @@ server <- function(input, output) {
                   
                   source('R/TwoSampZInt.R')
                   
-                  TwoSampZIntRaw <- TwoSampZInt(xbar1, sigma1, n1, xbar2, sigma2, n2, ConfLvl)
+                  TwoSampZIntRaw <- TwoSampZInt(xbar1, sigma1, n1, xbar2, sigma2, n2, confLvl)
                   
                   values <- reactiveValues()
                   values$dfTwoKnownCIRaw <- data.frame(Variable = character(), Value = character())
@@ -3014,7 +3054,7 @@ server <- function(input, output) {
                   
                   source('R/TwoSampTInt.R')
                   
-                  TwoSampTIntRaw <- TwoSampTInt(xbar1, s1, n1, xbar2, s2, n2, var.equal = TRUE, ConfLvl)
+                  TwoSampTIntRaw <- TwoSampTInt(xbar1, s1, n1, xbar2, s2, n2, var.equal = TRUE, confLvl)
                   
                   values <- reactiveValues()
                   values$dfTwoUnknownCIRaw <- data.frame(Variable = character(), Value = character())
@@ -3082,7 +3122,7 @@ server <- function(input, output) {
           # else if(input$popuParameters == 'Dependent Population Means'){
           #   print("Inference for the two Dependent Populations")
           # }
-          else if(input$popuParameters == 'Population Proportions'){
+          else if(input$popuParameters == 'Population Proportions'){ ##### 2samp prop ----
             
             if(iv$is_valid())
             {
@@ -3166,11 +3206,11 @@ server <- function(input, output) {
                 twoSampPropSucc2 <- input$numSuccesses2
                 twoSampPropTrial2 <- input$numTrials2
                 
-                if(input$inferenceType2 == 'Confidence Interval') ### twosamppropconf ----
+                if(input$inferenceType2 == 'Confidence Interval') ###### conf ----
                 {
                   source('R/TwoPropZInt.R')
                   
-                  twoSampPropZInt <- TwoPropZInt(twoSampPropSucc1, twoSampPropTrial1, twoSampPropSucc2, twoSampPropTrial2, ConfLvl)
+                  twoSampPropZInt <- TwoPropZInt(twoSampPropSucc1, twoSampPropTrial1, twoSampPropSucc2, twoSampPropTrial2, confLvl)
                   
                   # (\\( n\\))  (\\( x\\))  (\\(\\hat{p}\\))  ( 1 - \\(\\hat{p}\\))
                   dataRow1 <- data.frame(Variable = "Number of Trials 1 \\( (n_{1})\\)", Value = paste(twoSampPropTrial1))
@@ -3182,7 +3222,7 @@ server <- function(input, output) {
                   dataRow7 <- data.frame(Variable = "Sample Proportion of Success 2 \\( (\\hat{p}_{2})\\)", Value = paste(round(twoSampPropZInt["Sample Proportion 2"], digits = 3)))
                   dataRow8 <- data.frame(Variable = "Sample Proportion of Failure 2 \\( (\\hat{q}_{2})\\)", Value = paste(round((1 - twoSampPropZInt["Sample Proportion 2"]), digits = 3)))
                   dataRow9 <- data.frame(Variable = "Difference of Proportions \\( (\\hat{p}_{1} - \\hat{q}_{2})\\)", Value = paste(round(twoSampPropZInt["Difference of proportions"], digits = 3)))
-                  dataRow10 <- data.frame(Variable = "Confidence Level \\( (1 - \\alpha)\\)", Value = paste(ConfLvl*100, "%"))
+                  dataRow10 <- data.frame(Variable = "Confidence Level \\( (1 - \\alpha)\\)", Value = paste(confLvl*100, "%"))
                   dataRow11 <- data.frame(Variable = "Z Critical Value \\((CV)\\)", Value = paste(twoSampPropZInt["Z Critical"]))
                   dataRow12 <- data.frame(Variable = "Standard Error \\( (SE)\\)", Value = paste(round(twoSampPropZInt["Std Error"], digits = 3)))
                   dataRow13 <- data.frame(Variable = "Margin of Error \\( (ME)\\)", Value = paste(round(twoSampPropZInt["Margin of Error"], digits = 3)))
@@ -3320,7 +3360,7 @@ server <- function(input, output) {
                     p(
                       withMathJax(
                         sprintf("We are %1.0f%% confident that the difference in proportions \\( (\\hat{p}_{1} - \\hat{p}_{2}) \\) is between %0.3f and %0.3f",
-                                ConfLvl*100,
+                                confLvl*100,
                                 twoSampPropZInt["LCL"],
                                 twoSampPropZInt["UCL"]),
                         br(),
