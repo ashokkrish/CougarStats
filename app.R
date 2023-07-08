@@ -113,7 +113,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
                         actionButton("resetAll", label = "Reset Values",
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4") #, onclick = "history.go(0)"
-                      ),
+                      ), #DescriptiveStats Panel
                       
                       #   ------------------------------------------- #  
                       ### ---- Probability Distributions sidebar ---- 
@@ -259,7 +259,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                           actionButton("resetNormal", label = "Reset Values",
                                        style="color: #fff; background-color: #337ab7; border-color: #2e6da4") #, onclick = "history.go(0)"
                         )
-                      ),
+                      ), #ProbPanel
                       
                       #   --------------------------------------- #  
                       ### ---- Statistical Inference sidebar ---- 
@@ -644,7 +644,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
                         actionButton("resetInference", label = "Reset Values",
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4") #, onclick = "history.go(0)"
-                      ),
+                      ), #inferencePanel
                       
                       #   -------------------------------------------- #  
                       ### ---- Regression and Correlation sidebar ---- 
@@ -767,13 +767,13 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
                         actionButton("resetRegCor", label = "Reset Values",
                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4") #, onclick = "history.go(0)"
-                      ),
+                      ), #RegCorPanel
                       
                       # br(),
                       # downloadButton('describe_download', "Download Report", class="butt" ), br(),
                       # tags$head(tags$style(".butt{background-color:#337ab7;} .butt{color:#fff;}")), br(),
                       # radioButtons('format', 'Document format', c('PDF', 'Word'), inline = TRUE),
-                    ),
+                    ), #SidebarPanel
                     
                     #  --------------------------- #  
                     ## ---- Methods mainPanel ---- 
@@ -791,28 +791,28 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                         conditionalPanel(
                           condition = "input.dropDownMenu == 'Descriptive Statistics'",
                             
-                            conditionalPanel(
-                              condition = "input.dataInput == 'Enter Raw Data'",
+                          conditionalPanel(
+                            condition = "input.dataInput == 'Enter Raw Data'",
                               
-                                tableOutput("table"),
-                                br(),
+                              tableOutput("table"),
+                              br(),
                                 
-                                plotOutput("boxplotHorizontal"),
-                                br(),
+                              plotOutput("boxplotHorizontal"),
+                              br(),
                               
-                                #plotOutput("boxplotgg"),
-                                #br(), 
+                              #plotOutput("boxplotgg"),
+                              #br(), 
                               
-                                #downloadButton('downloadDataDS', 'Download Results')
+                              #downloadButton('downloadDataDS', 'Download Results')
                                 
-                            ),
+                          ),
 
                           conditionalPanel(
                             condition = "input.dataInput == 'Upload Data'",
                           
                           ),
                         )
-                      ),
+                      ), #DescriptiveStats Main Panel
                       
                       #   ---------------------------------------- #  
                       ### ---- Probability Distributions main ---- 
@@ -821,34 +821,34 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                         conditionalPanel(
                           condition = "input.dropDownMenu == 'Probability Distributions'",
                             
-                            conditionalPanel(
-                              condition = "input.probability == 'Binomial'",
+                          conditionalPanel(
+                            condition = "input.probability == 'Binomial'",
                                 
-                              br(),
-                              uiOutput("renderProbabilityBinom"),
-                            ),
+                            br(),
+                            uiOutput("renderProbabilityBinom"),
+                          ),
                               
-                            conditionalPanel(
-                              condition = "input.probability == 'Poisson'",
+                          conditionalPanel(
+                            condition = "input.probability == 'Poisson'",
                                 
-                              br(),
-                              uiOutput("renderProbabilityPoisson"),
-                            ),
+                            br(),
+                            uiOutput("renderProbabilityPoisson"),
+                          ),
                               
-                            conditionalPanel(
-                              condition = "input.probability == 'Normal'",
+                          conditionalPanel(
+                            condition = "input.probability == 'Normal'",
                                 
-                              br(),
-                              uiOutput("renderProbabilityNorm"),
-                            )
+                            br(),
+                            uiOutput("renderProbabilityNorm"),
+                          )
                         )
-                      ), 
+                      ), #Probability MainPanel 
                       
                       #   ------------------------------------ #  
                       ### ---- Statistical Inference main ---- 
                       #   ------------------------------------ #
                       div(id = "inferenceMP",
-                          withMathJax(
+                          
                         conditionalPanel(
                           condition = "input.dropDownMenu == 'Statistical Inference'",
                             
@@ -1310,7 +1310,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                       #             })
                       #             "
                       #   )
-                      )) # mainPanel
+                      ) # mainPanel
                     ), # sidebarLayout
                   ), # Methods Panel
                   
@@ -1365,7 +1365,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                               ".")
                   ) # Authors Panel
     ) #navbarPage
-  ) #UI 
+ )#UI 
 
 # --------------------------- #
 # ---- Server components ----
