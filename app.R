@@ -1380,6 +1380,13 @@ server <- function(input, output) {
     # ------------------------- #
 
     iv <- InputValidator$new()
+    pd_iv <- InputValidator$new()
+    binom_iv <- InputValidator$new()
+    binomprob_iv <- InputValidator$new()
+    binombetween_iv <- InputValidator$new()
+    poiss_iv <- InputValidator$new()
+    poissprob_iv <- InputValidator$new()
+    poissbetween_iv <- InputValidator$new()
     si_iv <- InputValidator$new()
     onemean_iv <- InputValidator$new()
     onemeansdknown_iv <- InputValidator$new()
@@ -1403,68 +1410,100 @@ server <- function(input, output) {
     
     # numTrialsBinom 
     
-    iv$add_rule("numTrialsBinom", sv_required())
-    iv$add_rule("numTrialsBinom", sv_integer())
-    iv$add_rule("numTrialsBinom", sv_gt(0))
+    binom_iv$add_rule("numTrialsBinom", sv_required())
+    binom_iv$add_rule("numTrialsBinom", sv_integer())
+    binom_iv$add_rule("numTrialsBinom", sv_gt(0))
     
     # successProbBinom (PD)
     
-    iv$add_rule("successProbBinom", sv_required())
-    iv$add_rule("successProbBinom", sv_gte(0))
-    iv$add_rule("successProbBinom", sv_lte(1))
+    binom_iv$add_rule("successProbBinom", sv_required())
+    binom_iv$add_rule("successProbBinom", sv_gte(0))
+    binom_iv$add_rule("successProbBinom", sv_lte(1))
     
     # numSuccessesBinom (PD)
     
-    iv$add_rule("numSuccessesBinom", sv_required())
-    iv$add_rule("numSuccessesBinom", sv_integer())
-    iv$add_rule("numSuccessesBinom", sv_gte(0))
+    binomprob_iv$add_rule("numSuccessesBinom", sv_required())
+    binomprob_iv$add_rule("numSuccessesBinom", sv_integer())
+    binomprob_iv$add_rule("numSuccessesBinom", sv_gte(0))
     
     # numSuccessesBinomx1 (PD)
-    iv$add_rule("numSuccessesBinomx1", sv_required())
-    iv$add_rule("numSuccessesBinomx1", sv_integer())
-    iv$add_rule("numSuccessesBinomx1", sv_gte(0))
+    binombetween_iv$add_rule("numSuccessesBinomx1", sv_required())
+    binombetween_iv$add_rule("numSuccessesBinomx1", sv_integer())
+    binombetween_iv$add_rule("numSuccessesBinomx1", sv_gte(0))
     
     # numSuccessesBinomx2 (PD)
-    iv$add_rule("numSuccessesBinomx2", sv_required())
-    iv$add_rule("numSuccessesBinomx2", sv_integer())
-    iv$add_rule("numSuccessesBinomx2", sv_gte(0))
+    binombetween_iv$add_rule("numSuccessesBinomx2", sv_required())
+    binombetween_iv$add_rule("numSuccessesBinomx2", sv_integer())
+    binombetween_iv$add_rule("numSuccessesBinomx2", sv_gte(0))
     
     # muPoisson (PD)
     
-    iv$add_rule("muPoisson", sv_required())
-    iv$add_rule("muPoisson", sv_gt(0))
+    poiss_iv$add_rule("muPoisson", sv_required())
+    poiss_iv$add_rule("muPoisson", sv_gt(0))
     
     # xPoisson (PD)
     
-    iv$add_rule("xPoisson", sv_required())
-    iv$add_rule("xPoisson", sv_integer())
-    iv$add_rule("xPoisson", sv_gte(0))
+    poissprob_iv$add_rule("xPoisson", sv_required())
+    poissprob_iv$add_rule("xPoisson", sv_integer())
+    poissprob_iv$add_rule("xPoisson", sv_gte(0))
     
     # x1Poisson (PD)
-    iv$add_rule("x1Poisson", sv_required())
-    iv$add_rule("x1Poisson", sv_integer())
-    iv$add_rule("x1Poisson", sv_gte(0))
+    poissbetween_iv$add_rule("x1Poisson", sv_required())
+    poissbetween_iv$add_rule("x1Poisson", sv_integer())
+    poissbetween_iv$add_rule("x1Poisson", sv_gte(0))
     
     # x2Poisson (PD)
-    iv$add_rule("x2Poisson", sv_required())
-    iv$add_rule("x2Poisson", sv_integer())
-    iv$add_rule("x2Poisson", sv_gte(0))
+    poissbetween_iv$add_rule("x2Poisson", sv_required())
+    poissbetween_iv$add_rule("x2Poisson", sv_integer())
+    poissbetween_iv$add_rule("x2Poisson", sv_gte(0))
     
     # popMean (PD)
     
-    iv$add_rule("popMean", sv_required())
+    pd_iv$add_rule("popMean", sv_required())
     
     # popuSD (PD)
     
-    iv$add_rule("popSD", sv_required())
-    iv$add_rule("popSD", sv_gt(0))
+    pd_iv$add_rule("popSD", sv_required())
+    pd_iv$add_rule("popSD", sv_gt(0))
     
     # xValue (PD)
     
-    iv$add_rule("xValue", sv_required())
+    pd_iv$add_rule("xValue", sv_required())
     
-    iv$add_rule("x1Value", sv_required())
-    iv$add_rule("x2Value", sv_required())
+    pd_iv$add_rule("x1Value", sv_required())
+    pd_iv$add_rule("x2Value", sv_required())
+    
+    # ------------------ #
+    #     Conditions     #
+    # ------------------ #
+    binombetween_iv$condition(~ isTRUE(input$probability == 'Binomial' && input$calcBinom == 'between'))
+    binomprob_iv$condition(~ isTRUE(input$probability == 'Binomial' && input$calcBinom != 'between'))
+    
+    poissbetween_iv$condition(~ isTRUE(input$probability == 'Poisson' && input$calcPoisson == 'between'))
+    poissprob_iv$condition(~ isTRUE(input$probability == 'Poisson' && input$calcPoisson != 'between'))
+    
+    # ------------------ #
+    #     Dependency     #
+    # ------------------ #
+    binom_iv$add_validator(binomprob_iv)
+    binom_iv$add_validator(binombetween_iv)
+    
+    poiss_iv$add_validator(poissprob_iv)
+    poiss_iv$add_validator(poissbetween_iv)
+    
+    pd_iv$add_validator(binom_iv)
+    pd_iv$add_validator(poiss_iv)
+    
+    # ------------------ #
+    #     Activation     #
+    # ------------------ #
+    pd_iv$enable()
+    binom_iv$enable()
+    binomprob_iv$enable()
+    binombetween_iv$enable()
+    poiss_iv$enable()
+    poissprob_iv$enable()
+    poissbetween_iv$enable()
     
     #--------------- #
     ## SI rules ----
@@ -1864,65 +1903,131 @@ server <- function(input, output) {
     #  -------------------------------------------- #
     
     ### Binomial ----
+    ### Binomial ----
     observeEvent(input$goBinom, {
       
-      binom_n <- input$numTrialsBinom
-      
-      binom_p <- input$successProbBinom
-      
-      binom_x <- input$numSuccessesBinom
-      
-      binom_x1 <- input$numSuccessesBinomx1
-      
-      binom_x2 <- input$numSuccessesBinomx2
-      
       output$renderProbabilityBinom <- renderUI({
-        
-        validate(
-          need(binom_n != "", "Enter a value for the number of trials (n)"),
-          need(binom_p != "", "Enter a value for the probability of success (p)"),
-          
-          errorClass = "myClass"
-          )
-        
-        if(input$calcBinom != 'between')
-        {
-          validate(
-            need(binom_x != "", "Enter a value for the number of successes (x)"),
-            
-            errorClass = "myClass"
-            )
-          
-          if(!is.na(binom_n) && !is.na(binom_p) && !is.na(binom_x)){
-            validate(
-              need(binom_n > 0, "n must be a positive integer"),
-              need(binom_n%%1==0, "n must be a positive integer"),
-              
-              need(binom_p >= 0, "p must be between 0 and 1"),
-              need(binom_p <= 1, "p must be between 0 and 1"),
-              
-              need(binom_x >= 0, "x must be a positive integer"),
-              need(binom_x%%1==0, "x must be a positive integer"),
-              need(binom_x <= binom_n, "Number of successes (x) must be less than or equal to the number of trials (n)"),
-              
-              errorClass = "myClass"
+        withMathJax(
+          if(!pd_iv$is_valid())
+          {
+            if(!binom_iv$is_valid())
+            {
+              validate(
+                need(input$numTrialsBinom, "Enter a value for the Number of Trials (n)"),
+                need(input$successProbBinom, "Enter a value for the Probability of Success (p)"),
+                
+                errorClass = "myClass"
               )
+              
+              validate(
+                need(binom_n > 0, "Number of Trials (n) must be a positive integer"),
+                need(binom_n%%1==0, "Number of Trials (n) must be a positive integer"),
+                
+                need(binom_p >= 0, "Probability of Success (p) must be between 0 and 1"),
+                need(binom_p <= 1, "Probability of Success (p) must be between 0 and 1"),
+                
+                errorClass = "myClass"
+              )
+            }
             
-            if(binom_x <= binom_n && binom_x >= 0 && binom_p <= 1 && binom_p >= 0 && binom_n > 0){
+            if(!binomprob_iv$is_valid())
+            {
+              validate(
+                need(binom_x != "", "Enter a value for the Number of Successes (x)"),
+                
+                errorClass = "myClass"
+              )
+              
+              validate(
+                need(binom_x >= 0, "x must be a positive integer"),
+                need(binom_x%%1==0, "x must be a positive integer"),
+                
+                errorClass = "myClass"
+              )
+            }
+            
+            if(!binombetween_iv$is_valid())
+            {
+              validate(
+                need(binom_x1 != "", "Enter a value for the Number of Successes (x1)"),
+                need(binom_x2 != "", "Enter a value for the Number of Successes (x2)"),
+                
+                errorClass = "myClass"
+              )
+              
+              validate(
+                need(binom_x1 >= 0, "x1 must be a positive integer"),
+                need(binom_x1%%1==0, "x1 must be a positive integer"),
+                
+                
+                need(binom_x2 >= 0, "x2 must be a positive integer"),
+                need(binom_x2%%1==0, "x2 must be a positive integer"),
+                
+                errorClass = "myClass"
+              )
+            }
+          }
+          else
+          {
+            binom_n <- input$numTrialsBinom
+            
+            binom_p <- input$successProbBinom
+            
+            if(input$calcBinom != 'between')
+            {
+              binom_x <- input$numSuccessesBinom
+              
+              validate(
+                need(binom_x <= binom_n, "Number of Successes (x) must be less than or equal to the Number of Trials (n)"),
+                
+                errorClass = "myClass"
+              )
+              
               if(input$calcBinom == 'exact'){
-                withMathJax(paste0("\\(P(X = \\)"," ", binom_x,"\\()\\)"," ","\\( = \\)"," ", round(dbinom(binom_x,binom_n,binom_p), 4)))
+                #sprintf("\\(P(X = %1.0f) = %0.4f\\)",
+                #        binom_x,
+                #        dbinom(binom_x,binom_n,binom_p)
+                #        )
+                binomProb <- paste("P(X = ", binom_x, ")") #= ", dbinom(binom_x,binom_n,binom_p))
+                binomForm <- paste("\\binom{", binom_n, "}{", binom_x, "}", binom_p, "^", binom_x, "(1-", binom_p, ")^{", binom_n, "-", binom_x, "}")
+                binomVal <- dbinom(binom_x,binom_n,binom_p)
               }
               else if(input$calcBinom == 'cumulative'){
-                withMathJax(paste0("\\(P(X \\leq \\)"," ", binom_x,"\\()\\)"," ","\\( = \\)"," ", round(pbinom(binom_x,binom_n,binom_p,lower.tail = TRUE), 4)))
+                #sprintf("\\(P(X \\leq %1.0f) = %0.4f\\)",
+                #        binom_x,
+                #        pbinom(binom_x,binom_n,binom_p,lower.tail = TRUE)
+                #        )
+                binomProb <- paste("P(X \\leq ", binom_x, ")") # = ", pbinom(binom_x,binom_n,binom_p,lower.tail = TRUE))
+                binomForm <- paste("\\sum_{x = 0}^", binom_x, " \\binom{", binom_n, "}{x}", binom_p, "^x (1-", binom_p, ")^{", binom_n, "- x}")
+                binomVal <- pbinom(binom_x,binom_n,binom_p,lower.tail = TRUE)
               }
               else if(input$calcBinom == 'upperTail'){
-                withMathJax(paste0("\\(P(X \\geq \\)"," ", binom_x,"\\()\\)"," ","\\( = \\)"," ", round(pbinom(binom_x - 1,binom_n,binom_p,lower.tail = FALSE), 4)))
+                #sprintf("\\(P(X \\geq %1.0f) = %0.4f\\)",
+                #        binom_x,
+                #        pbinom(binom_x - 1,binom_n,binom_p,lower.tail = FALSE)
+                #        )
+                binomProb <- paste("P(X \\geq ", binom_x, ")") # = ", pbinom(binom_x - 1,binom_n,binom_p,lower.tail = FALSE))
+                binomForm <- paste("\\sum_{x = ", binom_x, "}^", binom_n, " \\binom{", binom_n, "}{x}", binom_p, "^x (1-", binom_p, ")^{", binom_n, "- x}")
+                binomVal <- pbinom(binom_x - 1,binom_n,binom_p,lower.tail = FALSE)
+                
               }
               else if(input$calcBinom == 'greaterThan'){
-                withMathJax(paste0("\\(P(X > \\)"," ", binom_x,"\\()\\)"," ","\\( = \\)"," ", round(pbinom(binom_x,binom_n,binom_p,lower.tail = FALSE), 4)))
+                #sprintf("\\(P(X \\gt %1.0f) = %0.4f\\)",
+                #        binom_x,
+                #        pbinom(binom_x,binom_n,binom_p,lower.tail = FALSE)
+                #        )
+                binomProb <- paste("P(X \\gt ", binom_x, ")") # = ", pbinom(binom_x,binom_n,binom_p,lower.tail = FALSE))
+                binomForm <- paste("\\sum_{x = ", binom_x + 1, "}^", binom_n, " \\binom{", binom_n, "}{x}", binom_p, "^x (1-", binom_p, ")^{", binom_n, "- x}")
+                binomVal <- pbinom(binom_x,binom_n,binom_p,lower.tail = FALSE)
               }
               else if(input$calcBinom == 'lessThan'){
-                withMathJax(paste0("\\(P(X < \\)"," ", binom_x,"\\()\\)"," ","\\( = \\)"," ", round(pbinom(binom_x - 1,binom_n,binom_p,lower.tail = TRUE), 4)))
+                #sprintf("\\(P(X \\lt %1.0f) = %0.4f\\)",
+                #        binom_x,
+                #        pbinom(binom_x - 1,binom_n,binom_p,lower.tail = TRUE)
+                #        )
+                binomProb <- paste("P(X \\lt ", binom_x, ")") # = ", pbinom(binom_x - 1,binom_n,binom_p,lower.tail = TRUE))
+                binomForm <- paste("\\sum_{x = 0}^", binom_x - 1, " \\binom{", binom_n, "}{x}", binom_p, "^x (1-", binom_p, ")^{", binom_n, "- x}")
+                binomVal <- pbinom(binom_x - 1,binom_n,binom_p,lower.tail = TRUE)
               }
               
               # if(input$probDistTable == TRUE){
@@ -1933,35 +2038,62 @@ server <- function(input, output) {
               #   )
               # }
             }
-          }
-        }
-        
-        else if(input$calcBinom == 'between')
-        {
-          validate(
-            need(binom_x1 != "", "Enter a value for the number of successes (x1)"),
-            need(binom_x2 != "", "Enter a value for the number of successes (x2)"),
-            
-            errorClass = "myClass"
-            )
-          
-          if(!is.na(binom_n) && !is.na(binom_p) && !is.na(binom_x1) && !is.na(binom_x2)){
-            validate(
-              need(binom_x1 >= 0, "x1 must be a positive integer"),
-              need(binom_x1%%1==0, "x1 must be a positive integer"),
-              need(binom_x1 <= binom_n, "Number of successes (x1) must be less than or equal to the number of trials (n)"),
+            else if(input$calcBinom == 'between')
+            {
+              binom_x1 <- input$numSuccessesBinomx1
               
-              need(binom_x2 >= 0, "x2 must be a positive integer"),
-              need(binom_x2%%1==0, "x2 must be a positive integer"),
-              need(binom_x2 <= binom_n, "Number of successes (x2) must be less than or equal to the number of trials (n)"),
+              binom_x2 <- input$numSuccessesBinomx2
               
-              need(binom_x1 <= binom_x2, "x1 must be less than or equal to x2"),
-              
-              errorClass = "myClass"
+              validate(
+                need(binom_x1 <= binom_n, "Number of Successes (x1) must be less than or equal to the Number of Trials (n)"),
+                need(binom_x2 <= binom_n, "Number of Successes (x2) must be less than or equal to the Number of Trials (n)"),
+                need(binom_x1 <= binom_x2, "Number of Successes (x1) must be less than or equal to Number of Successes (x2)"),
+                
+                errorClass = "myClass"
               )
-            withMathJax(paste0("\\(P(", binom_x1, " ",  " \\leq X \\leq \\)"," ", binom_x2,"\\()\\)"," ","\\( = \\)"," ", round(pbinom(binom_x2,binom_n,binom_p,lower.tail = TRUE), 4),"\\( - \\)",round(pbinom(binom_x1-1,binom_n,binom_p,lower.tail = TRUE), 4)," ","\\( = \\)"," ", round(pbinom(binom_x2,binom_n,binom_p,lower.tail = TRUE) - pbinom(binom_x1 -1,binom_n,binom_p,lower.tail = TRUE), 4)))
+              
+              #sprintf("\\(P(%1.0f \\leq X \\leq %1.0f) = %0.4f - %0.4f = %0.4f\\)",
+              #        binom_x1,
+              #        binom_x2,
+              #        pbinom(binom_x2,binom_n,binom_p,lower.tail = TRUE),
+              #        pbinom(binom_x1-1,binom_n,binom_p,lower.tail = TRUE),
+              #        pbinom(binom_x2,binom_n,binom_p,lower.tail = TRUE) - pbinom(binom_x1-1,binom_n,binom_p,lower.tail = TRUE)
+              #       )
+              binomProb <- paste("P(", binom_x1, " \\leq X \\leq ", binom_x2, ")")
+              binomForm <- paste("\\sum_{x = ", binom_x1, "}^", binom_x2, " \\binom{", binom_n, "}{x}", binom_p, "^x (1-", binom_p, ")^{", binom_n, "- x}")
+              binomVal <- pbinom(binom_x2,binom_n,binom_p,lower.tail = TRUE) - pbinom(binom_x1-1,binom_n,binom_p,lower.tail = TRUE)
+            }
+            
+            tagList(
+              withMathJax(
+                div(
+                  h4(
+                    #sprintf("\\(Calculating \\enspace  %s \\enspace  when \\enspace  X \\sim B(%1.0f,%g): \\)",
+                    sprintf("Calculating  \\( %s \\)   when  \\(  X \\sim B(%1.0f,%g): \\)",
+                            binomProb,
+                            binom_n,
+                            binom_p)
+                  ),
+                  hr(),
+                  br(),
+                  p("Using the Probability Mass Function: "),
+                  sprintf("\\( \\qquad \\qquad P(X = x) = \\binom{n}{x} p^x (1-p)^{n-x} \\)"),
+                  br(),
+                  br(),
+                  br(),
+                  sprintf("\\( \\displaystyle %s = %s\\)",
+                          binomProb,
+                          binomForm),
+                  br(),
+                  br(),
+                  sprintf("\\( %s = %0.4f\\)",
+                          binomProb,
+                          binomVal),
+                )
+              )
+            )
           }
-        }
+        )
       })
     })
 
