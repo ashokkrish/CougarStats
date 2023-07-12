@@ -1903,7 +1903,6 @@ server <- function(input, output) {
     #  -------------------------------------------- #
     
     ### Binomial ----
-    ### Binomial ----
     observeEvent(input$goBinom, {
       
       output$renderProbabilityBinom <- renderUI({
@@ -1990,7 +1989,7 @@ server <- function(input, output) {
                 #        )
                 binomProb <- paste("P(X = ", binom_x, ")") #= ", dbinom(binom_x,binom_n,binom_p))
                 binomForm <- paste("\\binom{", binom_n, "}{", binom_x, "}", binom_p, "^", binom_x, "(1-", binom_p, ")^{", binom_n, "-", binom_x, "}")
-                binomVal <- dbinom(binom_x,binom_n,binom_p)
+                binomVal <- round(dbinom(binom_x,binom_n,binom_p), 4)
               }
               else if(input$calcBinom == 'cumulative'){
                 #sprintf("\\(P(X \\leq %1.0f) = %0.4f\\)",
@@ -1999,7 +1998,7 @@ server <- function(input, output) {
                 #        )
                 binomProb <- paste("P(X \\leq ", binom_x, ")") # = ", pbinom(binom_x,binom_n,binom_p,lower.tail = TRUE))
                 binomForm <- paste("\\sum_{x = 0}^", binom_x, " \\binom{", binom_n, "}{x}", binom_p, "^x (1-", binom_p, ")^{", binom_n, "- x}")
-                binomVal <- pbinom(binom_x,binom_n,binom_p,lower.tail = TRUE)
+                binomVal <- round(pbinom(binom_x,binom_n,binom_p,lower.tail = TRUE), 4)
               }
               else if(input$calcBinom == 'upperTail'){
                 #sprintf("\\(P(X \\geq %1.0f) = %0.4f\\)",
@@ -2008,7 +2007,7 @@ server <- function(input, output) {
                 #        )
                 binomProb <- paste("P(X \\geq ", binom_x, ")") # = ", pbinom(binom_x - 1,binom_n,binom_p,lower.tail = FALSE))
                 binomForm <- paste("\\sum_{x = ", binom_x, "}^", binom_n, " \\binom{", binom_n, "}{x}", binom_p, "^x (1-", binom_p, ")^{", binom_n, "- x}")
-                binomVal <- pbinom(binom_x - 1,binom_n,binom_p,lower.tail = FALSE)
+                binomVal <- round(pbinom(binom_x - 1,binom_n,binom_p,lower.tail = FALSE), 4)
                 
               }
               else if(input$calcBinom == 'greaterThan'){
@@ -2018,7 +2017,7 @@ server <- function(input, output) {
                 #        )
                 binomProb <- paste("P(X \\gt ", binom_x, ")") # = ", pbinom(binom_x,binom_n,binom_p,lower.tail = FALSE))
                 binomForm <- paste("\\sum_{x = ", binom_x + 1, "}^", binom_n, " \\binom{", binom_n, "}{x}", binom_p, "^x (1-", binom_p, ")^{", binom_n, "- x}")
-                binomVal <- pbinom(binom_x,binom_n,binom_p,lower.tail = FALSE)
+                binomVal <- round(pbinom(binom_x,binom_n,binom_p,lower.tail = FALSE), 4)
               }
               else if(input$calcBinom == 'lessThan'){
                 #sprintf("\\(P(X \\lt %1.0f) = %0.4f\\)",
@@ -2027,7 +2026,7 @@ server <- function(input, output) {
                 #        )
                 binomProb <- paste("P(X \\lt ", binom_x, ")") # = ", pbinom(binom_x - 1,binom_n,binom_p,lower.tail = TRUE))
                 binomForm <- paste("\\sum_{x = 0}^", binom_x - 1, " \\binom{", binom_n, "}{x}", binom_p, "^x (1-", binom_p, ")^{", binom_n, "- x}")
-                binomVal <- pbinom(binom_x - 1,binom_n,binom_p,lower.tail = TRUE)
+                binomVal <- round(pbinom(binom_x - 1,binom_n,binom_p,lower.tail = TRUE), 4)
               }
               
               # if(input$probDistTable == TRUE){
@@ -2061,7 +2060,7 @@ server <- function(input, output) {
               #       )
               binomProb <- paste("P(", binom_x1, " \\leq X \\leq ", binom_x2, ")")
               binomForm <- paste("\\sum_{x = ", binom_x1, "}^", binom_x2, " \\binom{", binom_n, "}{x}", binom_p, "^x (1-", binom_p, ")^{", binom_n, "- x}")
-              binomVal <- pbinom(binom_x2,binom_n,binom_p,lower.tail = TRUE) - pbinom(binom_x1-1,binom_n,binom_p,lower.tail = TRUE)
+              binomVal <- round(pbinom(binom_x2,binom_n,binom_p,lower.tail = TRUE) - pbinom(binom_x1-1,binom_n,binom_p,lower.tail = TRUE), 4)
             }
             
             tagList(
@@ -2100,84 +2099,145 @@ server <- function(input, output) {
     ### Poisson ----
     observeEvent(input$goPoisson, {
       
-      Poisson_mu <- input$muPoisson
-      
-      Poisson_x <- input$xPoisson
-      
-      Poisson_x1 <- input$x1Poisson
-      
-      Poisson_x2 <- input$x2Poisson
-      
       output$renderProbabilityPoisson <- renderUI({
         
-        validate(
-          need(Poisson_mu != "", "Enter a value for the average number of successes (mu)"),
+        withMathJax(
           
-          errorClass = "myClass"
-          )
-        
-        if(input$calcPoisson != 'between')
-        {
-          validate(
-            need(Poisson_x != "", "Enter a value for the number of successes (x)"),
-            
-            errorClass = "myClass"
-            )
-          
-          if(!is.na(Poisson_mu) && !is.na(Poisson_x)){
-            validate(
-              need(Poisson_mu > 0, "Average must be greater than zero"),
-              
-              need(Poisson_x >= 0, "x must be a positive integer"),
-              need(Poisson_x%%1==0, "x must be a positive integer"),
-              
-              errorClass = "myClass"
+          if(!pd_iv$is_valid())
+          {
+            if(!poiss_iv$is_valid())
+            {
+              validate(
+                need(input$muPoisson, "Enter a value for the Average Number of Successes (mu)"),
+                
+                errorClass = "myClass"
               )
+              
+              validate(
+                need(input$muPoisson > 0, "Average Number of Successes (mu) must be greater than zero"),
+                
+                errorClass = "myClass"
+              )
+            }
             
-            if(Poisson_x >= 0){
-              if(input$calcPoisson == 'exact'){
-                withMathJax(paste0("\\(P(X = \\)"," ", Poisson_x,"\\()\\)"," ","\\( = \\)"," ", round(dpois(Poisson_x,Poisson_mu), 4)))
-              }
-              else if(input$calcPoisson == 'cumulative'){
-                withMathJax(paste0("\\(P(X \\leq \\)"," ", Poisson_x,"\\()\\)"," ","\\( = \\)"," ", round(ppois(Poisson_x,Poisson_mu,lower.tail = TRUE), 4)))
-              }
-              else if(input$calcPoisson == 'upperTail'){
-                withMathJax(paste0("\\(P(X \\geq \\)"," ", Poisson_x,"\\()\\)"," ","\\( = \\)"," ", round(ppois(Poisson_x - 1,Poisson_mu,lower.tail = FALSE), 4)))
-              }
-              else if(input$calcPoisson == 'greaterThan'){
-                withMathJax(paste0("\\(P(X > \\)"," ", Poisson_x,"\\()\\)"," ","\\( = \\)"," ", round(ppois(Poisson_x,Poisson_mu,lower.tail = FALSE), 4)))
-              }
-              else if(input$calcPoisson == 'lessThan'){
-                withMathJax(paste0("\\(P(X < \\)"," ", Poisson_x,"\\()\\)"," ","\\( = \\)"," ", round(ppois(Poisson_x - 1,Poisson_mu,lower.tail = TRUE), 4)))
-              }
+            if(!poissprob_iv$is_valid())
+            {
+              validate(
+                need(input$xPoisson , "Enter a value for the Number of Successes (x)"),
+                
+                errorClass = "myClass"
+              )
+              
+              validate(
+                need(input$xPoisson >= 0, "Number of Successes (x) must be a positive integer"),
+                need(input$xPoisson %% 1 == 0, "Number of Successes (x) must be a positive integer"),
+                
+                errorClass = "myClass"
+              )
+            }
+            
+            if(!poissbetween_iv$is_valid())
+            {
+              validate(
+                need(input$x2Poisson, "Enter a value for the Number of Successes (x1)"),
+                need(input$x2Poisson, "Enter a value for the Number of Successes (x2)"),
+                
+                errorClass = "myClass"
+              )
+              
+              validate(
+                need(input$x1Poisson >= 0, "Number of Successes (x1) must be a positive integer"),
+                need(input$x1Poisson %% 1 == 0, "Number of Successes (x1) must be a positive integer"),
+                
+                need(input$x2Poisson >= 0, "Number of Successes (x2) must be a positive integer"),
+                need(input$x2Poisson %% 1 == 0, "Number of Successes (x2) must be a positive integer"),
+                
+                need(input$x1Poisson <= input$x2Poisson, "Number of Successes (x1) must be less than or equal to Number of Successes (x2)"),
+                
+                errorClass = "myClass"
+              )
             }
           }
-        }
-        
-        else if(input$calcPoisson == 'between')
-        {
-          validate(
-            need(Poisson_x1 != "", "Enter a value for the number of successes (x1)"),
-            need(Poisson_x2 != "", "Enter a value for the number of successes (x2)"),
+          else
+          {
+            poisson_mu <- input$muPoisson
             
-            errorClass = "myClass"
+            if(input$calcPoisson != 'between')
+            {
+              poisson_x <- input$xPoisson
+              
+              if(input$calcPoisson == 'exact'){
+                #withMathJax(paste0("\\(P(X = \\)"," ", Poisson_x,"\\()\\)"," ","\\( = \\)"," ", round(dpois(Poisson_x,Poisson_mu), 4)))
+                poissProb <- paste("P(X = ", poisson_x, ")") #= ", dbinom(binom_x,binom_n,binom_p))
+                poissForm <- paste("\\dfrac{e^{-", poisson_mu, "}", poisson_mu, "^", poisson_x, "}{", poisson_x, "!}")
+                poissVal <- round(dpois(poisson_x,poisson_mu), 4)
+              }
+              else if(input$calcPoisson == 'cumulative'){
+                #withMathJax(paste0("\\(P(X \\leq \\)"," ", Poisson_x,"\\()\\)"," ","\\( = \\)"," ", round(ppois(Poisson_x,Poisson_mu,lower.tail = TRUE), 4)))
+                poissProb <- paste("P(X \\leq ", poisson_x, ")") # = ", pbinom(binom_x,binom_n,binom_p,lower.tail = TRUE))
+                poissForm <- paste("\\sum_{x = 0}^", poisson_x, "\\dfrac{e^{-", poisson_mu, "}", poisson_mu, "^x}{x!}")
+                poissVal <- round(ppois(poisson_x,poisson_mu,lower.tail = TRUE), 4)
+              }
+              else if(input$calcPoisson == 'upperTail'){
+                #withMathJax(paste0("\\(P(X \\geq \\)"," ", Poisson_x,"\\()\\)"," ","\\( = \\)"," ", round(ppois(Poisson_x - 1,Poisson_mu,lower.tail = FALSE), 4)))
+                poissProb <- paste("P(X \\geq ", poisson_x, ")") # = ", pbinom(binom_x,binom_n,binom_p,lower.tail = TRUE))
+                poissForm <- paste("1 - \\sum_{x = 0}^", poisson_x - 1, "\\dfrac{e^{-", poisson_mu, "}", poisson_mu, "^x}{x!}")
+                poissVal <- round(ppois(poisson_x - 1,poisson_mu,lower.tail = FALSE), 4)
+              }
+              else if(input$calcPoisson == 'greaterThan'){
+                #withMathJax(paste0("\\(P(X > \\)"," ", Poisson_x,"\\()\\)"," ","\\( = \\)"," ", round(ppois(Poisson_x,Poisson_mu,lower.tail = FALSE), 4)))
+                poissProb <- paste("P(X \\gt ", poisson_x, ")") # = ", pbinom(binom_x,binom_n,binom_p,lower.tail = TRUE))
+                poissForm <- paste("1 - \\sum_{x = 0}^", poisson_x, "\\dfrac{e^{-", poisson_mu, "}", poisson_mu, "^x}{x!}")
+                poissVal <- round(ppois(poisson_x,poisson_mu,lower.tail = FALSE), 4)
+              }
+              else if(input$calcPoisson == 'lessThan'){
+                #withMathJax(paste0("\\(P(X < \\)"," ", Poisson_x,"\\()\\)"," ","\\( = \\)"," ", round(ppois(Poisson_x - 1,Poisson_mu,lower.tail = TRUE), 4)))
+                poissProb <- paste("P(X \\lt ", poisson_x, ")") # = ", pbinom(binom_x,binom_n,binom_p,lower.tail = TRUE))
+                poissForm <- paste("\\sum_{x = 0}^", poisson_x - 1, "\\dfrac{e^{-", poisson_mu, "}", poisson_mu, "^x}{x!}")
+                poissVal <- round(ppois(poisson_x - 1,poisson_mu,lower.tail = TRUE), 4)
+              }
+            }
+            else if(input$calcPoisson == 'between')
+            {
+              poisson_x1 <- input$x1Poisson
+              
+              poisson_x2 <- input$x2Poisson
+              
+              #withMathJax(paste0("\\(P(", Poisson_x1, " ",  " \\leq X \\leq \\)"," ", Poisson_x2,"\\()\\)"," ","\\( = \\)"," ", round(ppois(Poisson_x2, Poisson_mu, lower.tail = TRUE), 4), "\\( - \\)", round(ppois(Poisson_x1 - 1, Poisson_mu, lower.tail = TRUE), 4), " ","\\( = \\)"," ", round(ppois(Poisson_x2, Poisson_mu, lower.tail = TRUE) - ppois(Poisson_x1 - 1, Poisson_mu, lower.tail = TRUE), 4)))
+              poissProb <- paste("P(", poisson_x1, " \\leq X \\leq ", poisson_x2, ")")
+              poissForm <- paste("\\sum_{x = ", poisson_x1, "}^", poisson_x2, "\\dfrac{e^{-", poisson_mu, "}", poisson_mu, "^x}{x!}")
+              poissVal <- round(ppois(poisson_x2, poisson_mu, lower.tail = TRUE) - ppois(poisson_x1 - 1, poisson_mu, lower.tail = TRUE), 4)
+            }
+            
+            tagList(
+              withMathJax(
+                div(
+                  h4(
+                    #sprintf("\\(Calculating \\enspace  %s \\enspace  when \\enspace  X \\sim B(%1.0f,%g): \\)",
+                    sprintf("Calculating  \\( %s \\)   when  \\(  X \\sim Pois(%g): \\)",
+                            poissProb,
+                            poisson_mu)
+                  ),
+                  hr(),
+                  br(),
+                  p("Using the Poisson Probability Function: "),
+                  sprintf("\\( \\qquad \\qquad P(X = x) = \\dfrac{e^{-\\mu} \\mu^x}{x!} \\)"),
+                  br(),
+                  br(),
+                  br(),
+                  sprintf("\\( \\displaystyle %s = %s\\)",
+                          poissProb,
+                          poissForm),
+                  br(),
+                  br(),
+                  sprintf("\\( %s = %0.4f\\)",
+                          poissProb,
+                          poissVal),
+                )
+              )
             )
-          
-          if(!is.na(Poisson_mu) && !is.na(Poisson_x1) && !is.na(Poisson_x2)){
-            validate(
-              need(Poisson_x1 >= 0, "x1 must be a positive integer"),
-              need(Poisson_x1%%1==0, "x1 must be a positive integer"),
-              
-              need(Poisson_x2 >= 0, "x2 must be a positive integer"),
-              need(Poisson_x2%%1==0, "x2 must be a positive integer"),
-              
-              need(Poisson_x1 <= Poisson_x2, "x1 must be less than or equal to x2"),
-              
-              errorClass = "myClass"
-            )
-            withMathJax(paste0("\\(P(", Poisson_x1, " ",  " \\leq X \\leq \\)"," ", Poisson_x2,"\\()\\)"," ","\\( = \\)"," ", round(ppois(Poisson_x2, Poisson_mu, lower.tail = TRUE), 4), "\\( - \\)", round(ppois(Poisson_x1 - 1, Poisson_mu, lower.tail = TRUE), 4), " ","\\( = \\)"," ", round(ppois(Poisson_x2, Poisson_mu, lower.tail = TRUE) - ppois(Poisson_x1 - 1, Poisson_mu, lower.tail = TRUE), 4)))
           }
-        }
+        )
       })
     })
 
