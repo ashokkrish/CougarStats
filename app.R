@@ -2069,7 +2069,7 @@ server <- function(input, output) {
                 div(
                   h4(
                     #sprintf("\\(Calculating \\enspace  %s \\enspace  when \\enspace  X \\sim B(%1.0f,%g): \\)",
-                    sprintf("Calculating  \\( %s \\)   when  \\(  X \\sim B(%1.0f,%g): \\)",
+                    sprintf("Calculating  \\( %s \\)   when  \\(  X \\sim Bin(%1.0f,%g): \\)",
                             binomProb,
                             binom_n,
                             binom_p)
