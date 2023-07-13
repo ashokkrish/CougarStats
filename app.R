@@ -4908,11 +4908,23 @@ server <- function(input, output) {
       hide(id = "inferenceMP")
     })
     
+    observeEvent(input$inferenceType2, {
+      hide(id = "inferenceMP")
+    })
+    
     observeEvent(input$significanceLevel, {
       hide(id = "inferenceMP")
     })
     
+    observeEvent(input$significanceLevel2, {
+      hide(id = "inferenceMP")
+    })
+    
     observeEvent(input$confidenceLevel, {
+      hide(id = "inferenceMP")
+    })
+    
+    observeEvent(input$confidenceLevel2, {
       hide(id = "inferenceMP")
     })
     
