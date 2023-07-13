@@ -1914,11 +1914,11 @@ server <- function(input, output) {
               )
               
               validate(
-                need(binom_n > 0, "Number of Trials (n) must be a positive integer"),
-                need(binom_n%%1==0, "Number of Trials (n) must be a positive integer"),
+                need(input$numTrialsBinom > 0, "Number of Trials (n) must be a positive integer"),
+                need(input$numTrialsBinom %% 1 == 0, "Number of Trials (n) must be a positive integer"),
                 
-                need(binom_p >= 0, "Probability of Success (p) must be between 0 and 1"),
-                need(binom_p <= 1, "Probability of Success (p) must be between 0 and 1"),
+                need(input$successProbBinom >= 0, "Probability of Success (p) must be between 0 and 1"),
+                need(input$successProbBinom <= 1, "Probability of Success (p) must be between 0 and 1"),
                 
                 errorClass = "myClass"
               )
@@ -1927,14 +1927,14 @@ server <- function(input, output) {
             if(!binomprob_iv$is_valid())
             {
               validate(
-                need(binom_x != "", "Enter a value for the Number of Successes (x)"),
+                need(input$numSuccessesBinom != "", "Enter a value for the Number of Successes (x)"),
                 
                 errorClass = "myClass"
               )
               
               validate(
-                need(binom_x >= 0, "x must be a positive integer"),
-                need(binom_x%%1==0, "x must be a positive integer"),
+                need(input$numSuccessesBinom >= 0, "Number of Successes (x) must be a positive integer"),
+                need(input$numSuccessesBinom %% 1 == 0, "Number of Successes (x) must be a positive integer"),
                 
                 errorClass = "myClass"
               )
@@ -1943,19 +1943,19 @@ server <- function(input, output) {
             if(!binombetween_iv$is_valid())
             {
               validate(
-                need(binom_x1 != "", "Enter a value for the Number of Successes (x1)"),
-                need(binom_x2 != "", "Enter a value for the Number of Successes (x2)"),
+                need(input$numSuccessesBinomx1, "Enter a value for the Number of Successes (x1)"),
+                need(input$numSuccessesBinomx2, "Enter a value for the Number of Successes (x2)"),
                 
                 errorClass = "myClass"
               )
               
               validate(
-                need(binom_x1 >= 0, "x1 must be a positive integer"),
-                need(binom_x1%%1==0, "x1 must be a positive integer"),
+                need(input$numSuccessesBinomx1 >= 0, "Number of Successes (x1) must be a positive integer"),
+                need(input$numSuccessesBinomx1 %% 1 == 0, "Number of Successes (x1) must be a positive integer"),
                 
                 
-                need(binom_x2 >= 0, "x2 must be a positive integer"),
-                need(binom_x2%%1==0, "x2 must be a positive integer"),
+                need(input$numSuccessesBinomx2 >= 0, "Number of Successes (x2) must be a positive integer"),
+                need(input$numSuccessesBinomx2 %% 1 == 0, "Number of Successes (x2) must be a positive integer"),
                 
                 errorClass = "myClass"
               )
