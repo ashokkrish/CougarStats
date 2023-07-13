@@ -1736,15 +1736,15 @@ server <- function(input, output) {
     shadeArea <- function(x, critValues, altHypothesis){
       area <- dnorm(x, 0, 1)
       
-      if(altHypothesis == 1) #less
+      if(altHypothesis == "less") #less
       {
         area[x > critValues] <- NA
       }
-      else if(altHypothesis == 2) #twosided
+      else if(altHypothesis == "two.sided") #twosided
       {
         area[x > critValues[1] & x < critValues[2]] <- NA
       }
-      else if(altHypothesis == 3) #greater
+      else if(altHypothesis == "greater") #greater
       {
         area[x < critValues] <- NA
       }
@@ -1766,13 +1766,12 @@ server <- function(input, output) {
         normHead = testStatistic
       } 
       
-      df <- data.frame(x = xSeq, y = dnorm(xSeq))
+      df <- data.frame(x = xSeq, y = dnorm(xSeq, 0, 1))
       cvDF <- filter(df, x %in% critValues)
       tsDF <- filter(df, x %in% testStatistic)
       centerDF <- filter(df, x %in% c(0))
       
-      
-      htPlot <- ggplot(df, aes(x = x, y = y), border) +
+      htPlot <- ggplot(df, aes(x = x, y = y)) +
                   stat_function(fun = dnorm, geom = "density",
                                 xlim = c(normTail, normHead),
                                 fill = "#03376d",
@@ -1781,25 +1780,21 @@ server <- function(input, output) {
                                 xlim = c(normTail, normHead),
                                 fill = "#03376d",
                                 alpha = 0.7) +
-                  theme( plot.background = element_blank() ,
-                         panel.grid.major = element_blank() ,
-                         panel.grid.minor = element_blank() ,  
-                         panel.border = element_rect(linetype = 'blank', fill = NA),
-                         panel.background = element_blank() )  +
+                  theme_void()  +
                   scale_x_continuous(breaks = floor(normTail):ceiling(normHead)) +
                   scale_y_continuous(breaks = NULL) +
                   ylab("") + xlab("z") +
                   geom_segment(data = filter(df, x %in% c(0)), aes(x = x, xend = x, y = 0, yend = y), linetype = "dotted", linewidth = 0.75, color='#03376d') +
                   geom_text(data = filter(df, x %in% c(0)), aes(x = x, y = y/2, label = "A R"), size = 16 / .pt, fontface = "bold") +
+                  geom_text(data = filter(df, x %in% c(0)), aes(x = x, y = 0, label = "0"), fontface = "bold", nudge_y = -.01) +
                   geom_segment(data = tsDF, aes(x = x, xend = x, y = -0.01, yend = y + .03), linetype = "solid", linewidth = 1.25, color='#03376d') +
                   geom_text(data = tsDF, aes(x = x, y = y, label = "TS"), size = 16 / .pt, fontface = "bold", nudge_y = .04) +
                   geom_text(data = tsDF, aes(x = x, y = 0, label = x), fontface = "bold", nudge_y = -.02) +
                   geom_segment(data = cvDF, aes(x = x, xend = x, y = 0, yend = y), linetype = "blank", lineend = 'round', linewidth = 1.5, color='#03376d') +
                   geom_text(data = cvDF, aes(x = x, y = 0, label = x), fontface = "bold", nudge_y = -.01) +
-                  geom_text(data = cvDF, aes(x = x + x/4, y = y, label = "RR"), size = 16 / .pt, fontface = "bold") +
-                  theme(plot.background = element_rect(color = 1, linewidth = 1)) # Left margin
-    
-      htPlot
+                  geom_text(data = cvDF, aes(x = x + x/4, y = y, label = "RR"), size = 16 / .pt, fontface = "bold") 
+      
+      return(htPlot)
     }
     
     #  ------------------------------------- #
@@ -2908,10 +2903,12 @@ server <- function(input, output) {
                 if(alternative == "two.sided")
                 {
                   critZVal <- paste("\\( \\pm\\)", oneSampPropZTest["Z Critical"])
+                  htPlotCritVals <- c(-oneSampPropZTest["Z Critical"], oneSampPropZTest["Z Critical"]) 
                 }
                 else
                 {
                   critZVal <- paste(oneSampPropZTest["Z Critical"])
+                  htPlotCritVals <- oneSampPropZTest["Z Critical"]
                 }
                 
                 dataRow1 <- data.frame(Variable = "Number of Trials \\( (n)\\)", Value = paste(oneSampPropTrials))
@@ -3124,16 +3121,8 @@ server <- function(input, output) {
                 })
                 
                 output$oneSampPropHTPlot <- renderPlot({
-                  if(input$altHypothesis == 2)
-                  {
-                    critVals <- c(-oneSampPropZTest["Z Critical"], oneSampPropZTest["Z Critical"])  
-                  }
-                  else
-                  {
-                    critVals <- oneSampPropZTest["Z Critical"]
-                  }
                   
-                  htPlot <- hypTestPlot(oneSampPropZTest["Test Statistic"], critVals, input$altHypothesis)
+                  htPlot <- hypTestPlot(oneSampPropZTest["Test Statistic"], htPlotCritVals, alternative)
                   htPlot
                 })
                 
@@ -3812,10 +3801,12 @@ server <- function(input, output) {
                   if(alternative == "two.sided")
                   {
                     critZVal <- paste("\\( \\pm\\)", twoSampPropZTest["Z Critical"])
+                    htPlotCritVals <- c(-twoSampPropZTest["Z Critical"], twoSampPropZTest["Z Critical"])
                   }
                   else
                   {
                     critZVal <- paste(twoSampPropZTest["Z Critical"])
+                    htPlotCritVals <- twoSampPropZTest["Z Critical"]
                   }
                   
                   propDiff <- twoSampPropZTest["Sample Proportion 1"] - twoSampPropZTest["Sample Proportion 2"]
@@ -4026,16 +4017,8 @@ server <- function(input, output) {
                   })
                   
                   output$twoSampPropHTPlot <- renderPlot({
-                    if(input$altHypothesis2 == 2)
-                    {
-                      critVals <- c(-twoSampPropZTest["Z Critical"], twoSampPropZTest["Z Critical"])  
-                    }
-                    else
-                    {
-                      critVals <- twoSampPropZTest["Z Critical"]
-                    }
                     
-                    htPlot <- hypTestPlot(twoSampPropZTest["Test Statistic"], critVals, input$altHypothesis2)
+                    htPlot <- hypTestPlot(twoSampPropZTest["Test Statistic"], htPlotCritVals, alternative)
                     htPlot
                   })
                   
