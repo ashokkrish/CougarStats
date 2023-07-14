@@ -1783,16 +1783,17 @@ server <- function(input, output) {
                   theme_void()  +
                   scale_x_continuous(breaks = floor(normTail):ceiling(normHead)) +
                   scale_y_continuous(breaks = NULL) +
-                  ylab("") + xlab("z") +
+                  ylab("") + xlab("Z") +
                   geom_segment(data = filter(df, x %in% c(0)), aes(x = x, xend = x, y = 0, yend = y), linetype = "dotted", linewidth = 0.75, color='#03376d') +
                   geom_text(data = filter(df, x %in% c(0)), aes(x = x, y = y/2, label = "A R"), size = 16 / .pt, fontface = "bold") +
-                  geom_text(data = filter(df, x %in% c(0)), aes(x = x, y = 0, label = "0"), fontface = "bold", nudge_y = -.01) +
+                  geom_text(data = filter(df, x %in% c(0)), aes(x = x, y = 0, label = "0"), size = 14 / .pt, fontface = "bold", nudge_y = -.01) +
                   geom_segment(data = tsDF, aes(x = x, xend = x, y = -0.01, yend = y + .03), linetype = "solid", linewidth = 1.25, color='#03376d') +
                   geom_text(data = tsDF, aes(x = x, y = y, label = "TS"), size = 16 / .pt, fontface = "bold", nudge_y = .04) +
-                  geom_text(data = tsDF, aes(x = x, y = 0, label = x), fontface = "bold", nudge_y = -.02) +
+                  geom_text(data = tsDF, aes(x = x, y = 0, label = x), size = 14 / .pt, fontface = "bold", nudge_y = -.02) +
                   geom_segment(data = cvDF, aes(x = x, xend = x, y = 0, yend = y), linetype = "blank", lineend = 'round', linewidth = 1.5, color='#03376d') +
-                  geom_text(data = cvDF, aes(x = x, y = 0, label = x), fontface = "bold", nudge_y = -.01) +
-                  geom_text(data = cvDF, aes(x = x + x/4, y = y, label = "RR"), size = 16 / .pt, fontface = "bold") 
+                  geom_text(data = cvDF, aes(x = x, y = 0, label = x), size = 14 / .pt, fontface = "bold", nudge_y = -.01) +
+                  geom_text(data = cvDF, aes(x = x + x/4, y = y, label = "RR"), size = 16 / .pt, fontface = "bold") +
+                  theme(axis.title.x = element_text(size = 16, face = "bold"))
       
       return(htPlot)
     }
