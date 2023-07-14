@@ -2362,6 +2362,10 @@ server <- function(input, output) {
           if(input$popuParameter == 'Population Mean'){
             if(si_iv$is_valid())
             {
+              output$renderInference <- renderUI({
+                ""
+              })
+              
               if(input$dataAvailability == 'Summarized Data'){
                 
                 nSampOne <- input$sampleSize
@@ -2580,8 +2584,8 @@ server <- function(input, output) {
                 if(!onemean_iv$is_valid())
                 {
                   validate(
-                    need(input$sampleSize, "Integer value for Sample size (n) required"),
-                    need(input$sampleSize > 0, "Sample size (n) must be greater than 0"),
+                    need(input$sampleSize & input$sampleSize > 0, "Sample size (n) must be a positive integer"),
+                    #need(input$sampleSize > 0, "Sample size (n) must be greater than 0"),
                     need(input$sampleMean, "Sample mean required"),
                     
                     errorClass = "myClass"
@@ -2591,8 +2595,8 @@ server <- function(input, output) {
                 if(!onemeansdknown_iv$is_valid())
                 {
                   validate(
-                    need(input$popuSD, "Population Standard Deviation required"),
-                    need(input$popuSD > 0, "Population Standard Deviation must be greater than 0"),
+                    need(input$popuSD & input$popuSD > 0, "Population Standard Deviation must be a positive integer"),
+                    #need(input$popuSD > 0, "Population Standard Deviation must be greater than 0"),
                     
                     errorClass = "myClass"
                   )
@@ -2602,8 +2606,8 @@ server <- function(input, output) {
                 {
                   validate(
                     need(input$sample1, "Sample Data required"),
-                    need(input$popuSDRaw, "Population Standard Deviation required"),
-                    need(input$popuSDRaw > 0, "Population Standard Deviation must be greater than 0"),
+                    need(input$popuSDRaw & input$popuSDRaw > 0, "Population Standard Deviation must be a positive integer"),
+                    #need(input$popuSDRaw > 0, "Population Standard Deviation must be greater than 0"),
                     
                     errorClass = "myClass"
                   )
@@ -4907,33 +4911,41 @@ server <- function(input, output) {
     ## ---- Statistical Inference ----
     #  ------------------------------- #
     
-    observeEvent(input$samplesSelect, {
+    observeEvent({input$samplesSelect
+      input$dataAvailability
+      input$dataAvailability2
+      input$inferenceType
+      input$inferenceType2
+      input$significanceLevel
+      input$significanceLevel2
+      input$confidenceLevel
+      input$confidenceLevel2}, {
       hide(id = "inferenceMP")
     })
     
-    observeEvent(input$inferenceType, {
-      hide(id = "inferenceMP")
-    })
+    #observeEvent(input$inferenceType, {
+    #  hide(id = "inferenceMP")
+    #})
     
-    observeEvent(input$inferenceType2, {
-      hide(id = "inferenceMP")
-    })
+    #observeEvent(input$inferenceType2, {
+    #  hide(id = "inferenceMP")
+    #})
     
-    observeEvent(input$significanceLevel, {
-      hide(id = "inferenceMP")
-    })
+    #observeEvent(input$significanceLevel, {
+    #  hide(id = "inferenceMP")
+    #})
     
-    observeEvent(input$significanceLevel2, {
-      hide(id = "inferenceMP")
-    })
+    #observeEvent(input$significanceLevel2, {
+    #  hide(id = "inferenceMP")
+    #})
     
-    observeEvent(input$confidenceLevel, {
-      hide(id = "inferenceMP")
-    })
+    #observeEvent(input$confidenceLevel, {
+    #  hide(id = "inferenceMP")
+    #})
     
-    observeEvent(input$confidenceLevel2, {
-      hide(id = "inferenceMP")
-    })
+    #observeEvent(input$confidenceLevel2, {
+    #  hide(id = "inferenceMP")
+    #})
     
     observeEvent(input$goInference, {
       show(id = "inferenceMP")
