@@ -2855,7 +2855,7 @@ server <- function(input, output) {
                 output$oneSampPropCI <- renderUI({
                   p(
                     withMathJax(
-                        sprintf("We are %1.0f%% confident that the population proportion (\\( p\\)) is between %0.3f and %0.3f",
+                        sprintf("We are %1.0f%% confident that the population proportion (\\( p\\)) is between %0.3f and %0.3f.",
                                confLvl*100,
                                oneSampPropZInt["LCL"],
                                oneSampPropZInt["UCL"]),
@@ -3065,7 +3065,7 @@ server <- function(input, output) {
                   p(
                     withMathJax(
                       sprintf("At the %1.0f%% level, the data %s sufficient evidence to reject the null hypothesis (\\( H_{0}\\)) that the population 
-                              proportion (\\( p\\)) \\( %s\\) %0.2f",
+                              proportion (\\( p\\)) \\( %s\\) %0.2f.",
                               sigLvl*100,
                               suffEvidence,
                               nullHyp,
@@ -3113,7 +3113,7 @@ server <- function(input, output) {
                               critZVal),
                       br(),
                       br(),
-                      sprintf("Since \\( z\\) falls within the %s region, %s \\( H_{0}\\).",
+                      sprintf("Since the test statistic \\( (z)\\) falls within the %s region, %s \\( H_{0}\\).",
                               region,
                               reject)
                       
@@ -3752,7 +3752,7 @@ server <- function(input, output) {
                   output$twoSampPropCI <- renderUI({
                     p(
                       withMathJax(
-                        sprintf("We are %1.0f%% confident that the difference in proportions \\( (\\hat{p}_{1} - \\hat{p}_{2}) \\) is between %0.3f and %0.3f",
+                        sprintf("We are %1.0f%% confident that the difference in population proportions \\( (p_{1} - p_{2}) \\) is between %0.3f and %0.3f.",
                                 confLvl*100,
                                 twoSampPropZInt["LCL"],
                                 twoSampPropZInt["UCL"]),
@@ -3963,7 +3963,7 @@ server <- function(input, output) {
                     p(
                       withMathJax(
                         sprintf("At the %1.0f%% level, the data %s sufficient evidence to reject the null hypothesis (\\( H_{0}\\)) that the population 
-                              proportion \\( p_{1} %s p_{2}\\)",
+                              proportion \\( p_{1} %s p_{2}\\).",
                                 sigLvl*100,
                                 suffEvidence,
                                 nullHyp),
@@ -4009,7 +4009,7 @@ server <- function(input, output) {
                                 critZVal),
                         br(),
                         br(),
-                        sprintf("Since \\( z\\) falls within the %s region, %s \\( H_{0}\\).",
+                        sprintf("Since the test statistic \\( (z)\\) falls within the %s region, %s \\( H_{0}\\).",
                                 region,
                                 reject)
                         
