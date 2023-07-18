@@ -152,11 +152,11 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                             condition = "input.calcBinom == 'between'",
                             
                             numericInput(inputId = "numSuccessesBinomx1",
-                                         label = strong("Number of successes (\\( x_{1}\\))"),
+                                         label = strong("Number of Successes (\\( x_{1}\\))"),
                                          value = 2, min = 0, step = 1),
                             
                             numericInput(inputId = "numSuccessesBinomx2",
-                                         label = strong("Number of successes (\\( x_{2}\\))"),
+                                         label = strong("Number of Successes (\\( x_{2}\\))"),
                                          value = 4, min = 0, step = 1)
                           ),
 
@@ -208,11 +208,11 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                             condition = "input.calcPoisson == 'between'",
                             
                             numericInput(inputId = "x1Poisson",
-                                         label = strong("Number of successes (\\( x_{1}\\))"),
+                                         label = strong("Number of Successes (\\( x_{1}\\))"),
                                          value = 4, min = 0, step = 1),
                             
                             numericInput(inputId = "x2Poisson",
-                                         label = strong("Number of successes (\\( x_{2}\\))"),
+                                         label = strong("Number of Successes (\\( x_{2}\\))"),
                                          value = 6, min = 0, step = 1)
                           ),
                           
@@ -249,7 +249,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                             condition = "input.calcNormal != 'between'",
                             
                                 numericInput(inputId = "xValue",
-                                             label = strong("Normally distributed variable (\\( x\\))"),
+                                             label = strong("Normally Distributed Variable (\\( x\\))"),
                                              value = 0, step = 0.00001),
                           ),
                           
@@ -257,11 +257,11 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                             condition = "input.calcNormal == 'between'",
                             
                             numericInput(inputId = "x1Value",
-                                         label = strong("Normally distributed variable (\\( x_{1}\\))"),
+                                         label = strong("Normally Distributed Variable (\\( x_{1}\\))"),
                                          value = -1, step = 0.00001),
                             
                             numericInput(inputId = "x2Value",
-                                         label = strong("Normally distributed variable (\\( x_{2}\\))"),
+                                         label = strong("Normally Distributed Variable (\\( x_{2}\\))"),
                                          value = 1, step = 0.00001),
 
                           ),
@@ -2247,7 +2247,7 @@ server <- function(input, output) {
           else
           {
             poisson_mu <- input$muPoisson
-            poisson_sd <- round(sqrt(input$muPoisson))
+            poisson_sd <- round(sqrt(input$muPoisson), 4)
             
             if(input$calcPoisson != 'between')
             {
@@ -2377,8 +2377,8 @@ server <- function(input, output) {
       output$renderProbabilityNorm <- renderUI({
 
         validate(
-          need(norm_mu != "", "Enter a value for population mean (mu)"),
-          need(norm_sigma != "", "Enter a value for population standard deviation (sigma)"),
+          need(norm_mu != "", "Enter a value for Population Mean (mu)"),
+          need(norm_sigma != "", "Enter a value for Population Standard Deviation (sigma)"),
           
           errorClass = "myClass"
           )
@@ -2393,6 +2393,12 @@ server <- function(input, output) {
           
             if(input$calcNormal != 'between')
             {
+              validate(
+                need(norm_x != "", "Enter a value for Normally Distributed Variable (x)"),
+                
+                errorClass = "myClass"
+              )
+              
               if(input$popSD > 0){
                 if(input$calcNormal == "cumulative"){
                   withMathJax(paste0("\\(P(X \\leq \\)", " ", norm_x, "\\()\\)", " ", "\\( = \\)", " ", round(pnorm(norm_x, norm_mu, norm_sigma, lower.tail = TRUE),4)))
@@ -2405,15 +2411,15 @@ server <- function(input, output) {
             else if(input$calcNormal == 'between')
             {
               validate(
-                need(norm_x1 != "", "Enter a value for x1"),
-                need(norm_x2 != "", "Enter a value for x2"),
+                need(norm_x1 != "", "Enter a value for Normally Distributed Variable (x1)"),
+                need(norm_x2 != "", "Enter a value for Normally Distributed Variable (x2)"),
                 
                 errorClass = "myClass"
                 )
               
               if(!is.na(norm_mu) && !is.na(norm_x1) && !is.na(norm_x2)){
                 validate(
-                  need(norm_x1 <= norm_x2, "x1 must be less than or equal to x2"),
+                  need(norm_x1 <= norm_x2, "Normally Distributed Variable (x1) must be less than or equal to Normally Distributed Variable (x2)"),
                   
                   errorClass = "myClass"
                 )
