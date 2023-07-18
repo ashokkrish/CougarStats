@@ -2127,8 +2127,10 @@ server <- function(input, output) {
                   sprintf("Mean \\( (\\mu) = np = %g\\)",
                           binom_mu),
                   br(),
-                  sprintf("SD \\( (\\sigma) = \\sqrt{np(1 - p)} = %g\\)",
+                  br(),
+                  sprintf("Standard Deviation \\( (\\sigma) = \\sqrt{np(1 - p)} = %g\\)",
                           binom_sd),
+                  br(),
                   br(),
                   sprintf("Variance \\( (\\sigma^{2}) = np(1 - p) = %g\\)",
                           binom_var)
@@ -2324,8 +2326,10 @@ server <- function(input, output) {
                   sprintf("Mean \\( (\\mu) = \\mu = %g\\)",
                           poisson_mu),
                   br(),
-                  sprintf("SD \\( (\\sigma) = \\sqrt{\\mu} = %g\\)",
+                  br(),
+                  sprintf("Standard Deviation \\( (\\sigma) = \\sqrt{\\mu} = %g\\)",
                           poisson_sd),
+                  br(),
                   br(),
                   sprintf("Variance \\( (\\sigma^{2}) = \\mu = %g\\)",
                           poisson_mu)
