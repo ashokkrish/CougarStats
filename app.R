@@ -1665,8 +1665,8 @@ server <- function(input, output) {
     si_iv$add_rule("hypProportion", sv_gte(0))
     
     onemean_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$dataAvailability == 'Summarized Data'))
-    onemeansdknown_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$sigmaKnown == 'Known'))
-    onemeansdunk_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$dataAvailability == 'Summarized Data'&& input$sigmaKnown == 'Unknown'))
+    onemeansdknown_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$dataAvailability == 'Summarized Data' && input$sigmaKnown == 'Known'))
+    onemeansdunk_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$dataAvailability == 'Summarized Data' && input$sigmaKnown == 'Unknown'))
     onemeanraw_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$dataAvailability == 'Enter Raw Data'))
     onemeanht_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$inferenceType == 'Hypothesis Testing'))
     oneprop_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Proportion'))
@@ -2813,7 +2813,7 @@ server <- function(input, output) {
                   conditionalPanel(
                     condition = "input.inferenceType == 'Confidence Interval'",
                     
-                    titlePanel("Confidence Interval"),
+                    titlePanel(tags$u("Confidence Interval")),
                     br(),
                     uiOutput('oneSampPropCI'),
                     br(),
@@ -2822,7 +2822,7 @@ server <- function(input, output) {
                   conditionalPanel(
                     condition = "input.inferenceType == 'Hypothesis Testing'",
                     
-                    titlePanel("Hypothesis Test"),
+                    titlePanel(tags$u("Hypothesis Test")),
                     br(),
                     uiOutput('oneSampPropHT'),
                     br(),
@@ -2990,14 +2990,6 @@ server <- function(input, output) {
                 output$oneSampPropCI <- renderUI({
                   p(
                     withMathJax(
-                        sprintf("We are %1.0f%% confident that the population proportion (\\( p\\)) is between %0.3f and %0.3f.",
-                               confLvl*100,
-                               oneSampPropZInt["LCL"],
-                               oneSampPropZInt["UCL"]),
-                        br(),
-                        br(),
-                        h4(tags$u("Constructing the Confidence Interval:")),
-                        br(),
                         sprintf("CI \\(= \\hat{p} \\pm z_{\\alpha/2} \\sqrt{\\dfrac{\\hat{p}(1-\\hat{p})}{n}}\\)"),
                         br(),
                         br(),
@@ -3010,6 +3002,13 @@ server <- function(input, output) {
                         br(),
                         br(),
                         sprintf("CI \\(= (%0.3f, %0.3f)\\)",
+                                oneSampPropZInt["LCL"],
+                                oneSampPropZInt["UCL"]),
+                        br(),
+                        br(),
+                        p(tags$b("Interpretation:")),
+                        sprintf("We are %1.0f%% confident that the population proportion (\\( p\\)) is between %0.3f and %0.3f.",
+                                confLvl*100,
                                 oneSampPropZInt["LCL"],
                                 oneSampPropZInt["UCL"])
                     )
@@ -3261,6 +3260,7 @@ server <- function(input, output) {
                 
                 output$oneSampPropHTIntrp <- renderUI({
                   p(
+                    p(tags$b("Interpretation:")),
                     sprintf("At the %1.0f%% level, the data %s sufficient evidence to reject the null hypothesis (\\( H_{0}\\)) that the population 
                               proportion (\\( p\\)) \\( %s\\) %0.2f.",
                             sigLvl*100,
@@ -3613,13 +3613,14 @@ server <- function(input, output) {
                     ),
                     
                     br(),
+                    br(),
                     hr(),
                     br(),
                     
                     conditionalPanel(
                       condition = "input.inferenceType2 == 'Confidence Interval'",
                       
-                      titlePanel("Confidence Interval"),
+                      titlePanel(tags$u("Confidence Interval")),
                       br(),
                       uiOutput('twoSampPropCI'),
                       br(),
@@ -3919,6 +3920,7 @@ server <- function(input, output) {
                         br(),
                         br(),
                         br(),
+                        p(tags$b("Interpretation:")),
                         sprintf("We are %1.0f%% confident that the difference in population proportions \\( (p_{1} - p_{2}) \\) is between %0.3f and %0.3f.",
                                 confLvl*100,
                                 twoSampPropZInt["LCL"],
@@ -4152,7 +4154,7 @@ server <- function(input, output) {
                         p(tags$b("Using Critical Value Method:")),
                         sprintf("Critical Value(s) = %s",
                                 critZVal),
-                        br(),
+                        
                         br(),
                         sprintf("Since the test statistic \\( (z)\\) falls within the %s region, %s \\( H_{0}\\).",
                                 region,
@@ -4170,6 +4172,7 @@ server <- function(input, output) {
                   
                   output$twoSampPropHTIntrp <- renderUI({
                     p(
+                      p(tags$b("Interpretation:")),
                       sprintf("At the %1.0f%% significance level, the data %s sufficient evidence to reject the null hypothesis (\\( H_{0}\\)) that the population 
                               proportion \\( p_{1} %s p_{2}\\).",
                               sigLvl*100,
