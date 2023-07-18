@@ -1666,7 +1666,7 @@ server <- function(input, output) {
     
     onemean_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$dataAvailability == 'Summarized Data'))
     onemeansdknown_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$sigmaKnown == 'Known'))
-    onemeansdunk_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$sigmaKnown == 'Unknown'))
+    onemeansdunk_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$dataAvailability == 'Summarized Data'&& input$sigmaKnown == 'Unknown'))
     onemeanraw_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$dataAvailability == 'Enter Raw Data'))
     onemeanht_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$inferenceType == 'Hypothesis Testing'))
     oneprop_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Proportion'))
@@ -2746,9 +2746,8 @@ server <- function(input, output) {
                 if(!onemeansdunk_iv$is_valid())
                 {
                   validate(
-                    need(input$sampSD, "Sample Standard Deviation required"),
-                    need(input$sampSD > 0, "Sample Standard Deviation must be greater than 0"),
-                    
+                    need(input$sampSD && input$sampSD > 0, "Sample Standard Deviation (s) must be a positive integer"),
+
                     errorClass = "myClass"
                   )
                 }
@@ -3629,7 +3628,7 @@ server <- function(input, output) {
                     conditionalPanel(
                       condition = "input.inferenceType2 == 'Hypothesis Testing'",
                       
-                      titlePanel("Hypothesis Test"),
+                      titlePanel(tags$u("Hypothesis Test")),
                       br(),
                       uiOutput('twoSampPropHT'),
                       br(),
@@ -3900,14 +3899,6 @@ server <- function(input, output) {
                   output$twoSampPropCI <- renderUI({
                     p(
                       withMathJax(
-                        sprintf("We are %1.0f%% confident that the difference in population proportions \\( (p_{1} - p_{2}) \\) is between %0.3f and %0.3f.",
-                                confLvl*100,
-                                twoSampPropZInt["LCL"],
-                                twoSampPropZInt["UCL"]),
-                        br(),
-                        br(),
-                        h4(tags$u("Constructing the Confidence Interval:")),
-                        br(),
                         sprintf("\\( CI = (\\hat{p}_{1} - \\hat{p}_{2}) \\pm z_{\\alpha/2} \\sqrt{\\dfrac{\\hat{p}_{1}(1-\\hat{p}_{1})}{n_{1}} + \\dfrac{\\hat{p}_{2}(1-\\hat{p}_{2})}{n_{2}}}\\)"),
                         br(),
                         br(),
@@ -3923,6 +3914,13 @@ server <- function(input, output) {
                         br(),
                         br(),
                         sprintf("\\( CI = (%0.3f, %0.3f)\\)",
+                                twoSampPropZInt["LCL"],
+                                twoSampPropZInt["UCL"]),
+                        br(),
+                        br(),
+                        br(),
+                        sprintf("We are %1.0f%% confident that the difference in population proportions \\( (p_{1} - p_{2}) \\) is between %0.3f and %0.3f.",
+                                confLvl*100,
                                 twoSampPropZInt["LCL"],
                                 twoSampPropZInt["UCL"])
                       )
