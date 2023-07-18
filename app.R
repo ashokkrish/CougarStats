@@ -159,6 +159,12 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                          label = strong("Number of successes (\\( x_{2}\\))"),
                                          value = 4, min = 0, step = 1)
                           ),
+
+                          br(),
+                          p(strong("Options")),
+                          hr(),
+                          checkboxInput("showBinomTable", "Display Probability Distribution Table", value = TRUE),
+
                           
                           # checkboxInput(inputId = "probDistTable",
                           #               label = strong("Probability Distribution Table"),
@@ -210,11 +216,17 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                          value = 6, min = 0, step = 1)
                           ),
                           
+                          br(),
+                          p(strong("Options")),
+                          hr(),
+                          checkboxInput("showPoissTable", "Display Probability Distribution Table", value = TRUE),
+                          
                           actionButton(inputId = "goPoisson", label = "Calculate",
                                        style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
                           actionButton("resetPoisson", label = "Reset Values",
                                        style="color: #fff; background-color: #337ab7; border-color: #2e6da4") #, onclick = "history.go(0)"
                         ),
+                        
                         
                         conditionalPanel(id = "normalPanel",
                           condition = "input.probability == 'Normal'",
@@ -435,7 +447,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                   
                                   numericInput(inputId = "hypProportion",
                                                label = strong("Hypothesized Population Proportion (\\( p_{0}\\)) Value"),
-                                               value = 0.5, min = 0, max = 1, step = 0.00001),
+                                               value = 0.73, min = 0, max = 1, step = 0.00001),
                                 ),
                                 
                                 selectizeInput(inputId = "altHypothesis",
@@ -826,6 +838,19 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                 
                             br(),
                             uiOutput("renderProbabilityBinom"),
+                            br(),
+    
+                            conditionalPanel(
+                              condition = "input.showBinomTable == 1",
+                              
+                              br(),
+                              titlePanel("Probability Distribution Table"),
+                              hr(),
+                              DTOutput("binomDistrTable", width = "25%"),
+                              br()
+                            )
+                            
+
                           ),
                               
                           conditionalPanel(
@@ -833,6 +858,16 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                 
                             br(),
                             uiOutput("renderProbabilityPoisson"),
+                            br(),
+                            conditionalPanel(
+                              condition = "input.showPoissTable == 1",
+                              
+                              br(),
+                              titlePanel("Probability Distribution Table"),
+                              hr(),
+                              DTOutput("poissDistrTable", width = "25%"),
+                              br()
+                            )
                           ),
                               
                           conditionalPanel(
@@ -856,10 +891,10 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
   
                           div(id = "inferenceData",
                               
-                          conditionalPanel(
+                          conditionalPanel( #### One samp ----
                             condition = "input.samplesSelect == '1'",
                             
-                            conditionalPanel(
+                            conditionalPanel( ##### Pop Mean ----
                               condition = "input.popuParameter == 'Population Mean'",
                               
                               conditionalPanel(
@@ -948,7 +983,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                               ), # One Sample Raw Data
                             ), # One Population Mean
                             
-                            conditionalPanel(
+                            conditionalPanel( ##### Pop Prop ----
                               condition = "input.popuParameter == 'Population Proportion'",
                               
                               #uiOutput('oneSampPropErrors'),
@@ -1009,10 +1044,10 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                             ), # One Population Proportion
                           ), # "input.samplesSelect == '1'"
   
-                          conditionalPanel(
+                          conditionalPanel( #### Two Samp ----
                             condition = "input.samplesSelect == '2'",
                               
-                            conditionalPanel(
+                            conditionalPanel( ##### Ind Pop Means ----
                               condition = "input.popuParameters == 'Independent Population Means'",
                                 
                               conditionalPanel(
@@ -1104,7 +1139,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                             # PAIRED DATA #
                             #-------------#
                               
-                            conditionalPanel(
+                            conditionalPanel( ##### Dep Pop Means ----
                               condition = "input.popuParameters == 'Dependent Population Means'",
                                 
                               conditionalPanel(
@@ -1122,7 +1157,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                             #----------------------------#
                             # TWO POPULATION PROPORTIONS #
                             #----------------------------#
-                            conditionalPanel(
+                            conditionalPanel( ##### Pop Props ----
                               condition = "input.popuParameters == 'Population Proportions'",
                                 
                               uiOutput('twoSampProportion'),
@@ -1788,11 +1823,11 @@ server <- function(input, output) {
                   geom_text(data = filter(df, x %in% c(0)), aes(x = x, y = y/2, label = "A R"), size = 16 / .pt, fontface = "bold") +
                   geom_text(data = filter(df, x %in% c(0)), aes(x = x, y = 0, label = "0"), size = 14 / .pt, fontface = "bold", nudge_y = -.01) +
                   geom_segment(data = tsDF, aes(x = x, xend = x, y = -0.01, yend = y + .03), linetype = "solid", linewidth = 1.25, color='#03376d') +
-                  geom_text(data = tsDF, aes(x = x, y = y, label = "TS"), size = 16 / .pt, fontface = "bold", nudge_y = .04) +
+                  geom_text(data = tsDF, aes(x = x, y = y, label = "TS"), size = 16 / .pt, fontface = "bold", nudge_y = .045) +
                   geom_text(data = tsDF, aes(x = x, y = 0, label = x), size = 14 / .pt, fontface = "bold", nudge_y = -.02) +
                   geom_segment(data = cvDF, aes(x = x, xend = x, y = 0, yend = y), linetype = "blank", lineend = 'round', linewidth = 1.5, color='#03376d') +
                   geom_text(data = cvDF, aes(x = x, y = 0, label = x), size = 14 / .pt, fontface = "bold", nudge_y = -.01) +
-                  geom_text(data = cvDF, aes(x = x + x/4, y = y, label = "RR"), size = 16 / .pt, fontface = "bold") +
+                  geom_text(data = cvDF, aes(x = x + x/4, y = y, label = "RR"), size = 16 / .pt, fontface = "bold", nudge_y = .03) +
                   theme(axis.title.x = element_text(size = 16, face = "bold"))
       
       return(htPlot)
@@ -1965,8 +2000,10 @@ server <- function(input, output) {
           else
           {
             binom_n <- input$numTrialsBinom
-            
             binom_p <- input$successProbBinom
+            binom_mu <- round(binom_n * binom_p, 4)
+            binom_var <- round(binom_mu * (1 - binom_p), 4)
+            binom_sd <- round(sqrt(binom_var), 4)
             
             if(input$calcBinom != 'between')
             {
@@ -2062,7 +2099,7 @@ server <- function(input, output) {
             tagList(
               withMathJax(
                 div(
-                  h4(
+                  h3(
                     #sprintf("\\(Calculating \\enspace  %s \\enspace  when \\enspace  X \\sim B(%1.0f,%g): \\)",
                     sprintf("Calculating  \\( %s \\)   when  \\(  X \\sim Bin(%1.0f,%g): \\)",
                             binomProb,
@@ -2084,11 +2121,42 @@ server <- function(input, output) {
                   sprintf("\\( %s = %0.4f\\)",
                           binomProb,
                           binomVal),
+                  br(),
+                  br(),
+                  br(),
+                  sprintf("Mean \\( (\\mu) = np = %g\\)",
+                          binom_mu),
+                  br(),
+                  sprintf("SD \\( (\\sigma) = \\sqrt{np(1 - p)} = %g\\)",
+                          binom_sd),
+                  br(),
+                  sprintf("Variance \\( (\\sigma^{2}) = np(1 - p) = %g\\)",
+                          binom_var)
                 )
               )
             )
           }
         )
+      })
+      
+      output$binomDistrTable <- DT::renderDT({
+        req(pd_iv$is_valid())
+          
+        dfBinom <- data.frame(value = seq(0, input$numTrialsBinom), value = round(dbinom(x = 0:input$numTrialsBinom, size = input$numTrialsBinom, prob = input$successProbBinom), 4))
+        colnames(dfBinom) <- c("X", "P(X = x)")
+        
+        datatable(dfBinom,
+                  options = list(
+                    dom = 't',
+                    pageLength = -1,
+                    ordering = FALSE,
+                    searching = FALSE,
+                    paging = FALSE
+                  ),
+                  rownames = FALSE,
+                  filter = "none"
+        )
+               
       })
     })
 
@@ -2157,6 +2225,7 @@ server <- function(input, output) {
           else
           {
             poisson_mu <- input$muPoisson
+            poisson_sd <- round(sqrt(input$muPoisson))
             
             if(input$calcPoisson != 'between')
             {
@@ -2216,7 +2285,7 @@ server <- function(input, output) {
                   ),
                   hr(),
                   br(),
-                  p("Using the Poisson Probability Function: "),
+                  p("Using the Probability Mass Function: "),
                   sprintf("\\( \\qquad \\qquad P(X = x) = \\dfrac{e^{-\\mu} \\mu^x}{x!} \\)"),
                   br(),
                   br(),
@@ -2229,11 +2298,42 @@ server <- function(input, output) {
                   sprintf("\\( %s = %0.4f\\)",
                           poissProb,
                           poissVal),
+                  br(),
+                  br(),
+                  br(),
+                  sprintf("Mean \\( (\\mu) = \\mu = %g\\)",
+                          poisson_mu),
+                  br(),
+                  sprintf("SD \\( (\\sigma) = \\sqrt{\\mu} = %g\\)",
+                          poisson_sd),
+                  br(),
+                  sprintf("Variance \\( (\\sigma^{2}) = \\mu = %g\\)",
+                          poisson_mu)
                 )
               )
             )
           }
         )
+      })
+      
+      output$poissDistrTable <- DT::renderDT({
+        req(pd_iv$is_valid())
+        
+        dfPoiss <- data.frame(value = seq(qpois(0.0001, input$muPoisson), qpois(0.9999, input$muPoisson)), value = round(dpois(x = qpois(0.0001, input$muPoisson):qpois(0.9999, input$muPoisson), lambda = input$muPoisson), 4))
+        colnames(dfPoiss) <- c("X", "P(X = x)")
+        
+        datatable(dfPoiss,
+                  options = list(
+                    dom = 't',
+                    pageLength = -1,
+                    ordering = FALSE,
+                    searching = FALSE,
+                    paging = FALSE
+                  ),
+                  rownames = FALSE,
+                  filter = "none"
+        )
+        
       })
     })
 
@@ -2359,7 +2459,7 @@ server <- function(input, output) {
             }
           }
           
-          if(input$popuParameter == 'Population Mean'){
+          if(input$popuParameter == 'Population Mean'){ ### 1samp mean ----
             if(si_iv$is_valid())
             {
               output$renderInference <- renderUI({
@@ -2584,10 +2684,10 @@ server <- function(input, output) {
                 if(!onemean_iv$is_valid())
                 {
                   validate(
-                    need(input$sampleSize & input$sampleSize > 0, "Sample size (n) must be a positive integer"),
-                    #need(input$sampleSize > 0, "Sample size (n) must be greater than 0"),
+                    need(input$sampleSize, "Sample size (n) must be a positive integer") %then%
+                      need(input$sampleSize > 0 & input$sampleSize %% 1 == 0, "Sample size (n) must be a positive integer"),
                     need(input$sampleMean, "Sample mean required"),
-                    
+
                     errorClass = "myClass"
                   )
                 }
@@ -2626,7 +2726,7 @@ server <- function(input, output) {
               
             }
           }
-          else if(input$popuParameter == 'Population Proportion'){ ###### 1samp prop ----
+          else if(input$popuParameter == 'Population Proportion'){ ## 1samp prop ----
           #   source('R/OnePropZInt.R')
           #   source('R/OnePropZTest.R')
           #   print("Inferences for One Population Proportion are under contruction")
@@ -2697,7 +2797,9 @@ server <- function(input, output) {
                     br(),
                     uiOutput('oneSampPropHT'),
                     br(),
-                    plotOutput('oneSampPropHTPlot'),
+                    plotOutput('oneSampPropHTPlot', width = "75%", height = "300px"),
+                    br(),
+                    uiOutput('oneSampPropHTIntrp'),
                     br(),
                   ),
                 )
@@ -2707,7 +2809,7 @@ server <- function(input, output) {
               oneSampPropSucc <- input$numSuccesses
               oneSampPropTrials <- input$numTrials
               
-              if(input$inferenceType == 'Confidence Interval') ###### conf ----
+              if(input$inferenceType == 'Confidence Interval') #### conf ----
               {
                 source('R/OnePropZInt.R')
                 
@@ -2888,7 +2990,7 @@ server <- function(input, output) {
                 
                 
               } # input$inferenceType == 'Confidence Interval'
-              else if(input$inferenceType == 'Hypothesis Testing') ###### ht ----
+              else if(input$inferenceType == 'Hypothesis Testing') ### ht ----
               {
                 oneSampHypProp <- input$hypProportion
                 
@@ -2942,6 +3044,7 @@ server <- function(input, output) {
                             filter = "none")
                 )
                 
+                ##### details ----
                 output$oneSampPropDataNDetails <- renderUI({
                   p(
                     withMathJax(
@@ -3050,6 +3153,7 @@ server <- function(input, output) {
                   )
                 })
                 
+                ##### results ----
                 if(oneSampPropZTest["P-Value"] > sigLvl)
                 {
                   pvalSymbol <- "\\( \\gt\\)"
@@ -3068,16 +3172,8 @@ server <- function(input, output) {
                 output$oneSampPropHT <- renderUI({
                   p(
                     withMathJax(
-                      sprintf("At the %1.0f%% level, the data %s sufficient evidence to reject the null hypothesis (\\( H_{0}\\)) that the population 
-                              proportion (\\( p\\)) \\( %s\\) %0.2f.",
-                              sigLvl*100,
-                              suffEvidence,
-                              nullHyp,
-                              oneSampHypProp),
-                      br(),
-                      br(),
-                      h4(tags$u("Performing the Hypothesis Test:")),
-                      br(),
+                      #h4(tags$u("Performing the Hypothesis Test:")),
+                      #br(),
                       sprintf("\\( H_{0}: p %s %0.2f\\)",
                               nullHyp,
                               oneSampHypProp),
@@ -3132,6 +3228,18 @@ server <- function(input, output) {
                   
                   htPlot <- hypTestPlot(oneSampPropZTest["Test Statistic"], htPlotCritVals, alternative)
                   htPlot
+                })
+                
+                output$oneSampPropHTIntrp <- renderUI({
+                  p(
+                    sprintf("At the %1.0f%% level, the data %s sufficient evidence to reject the null hypothesis (\\( H_{0}\\)) that the population 
+                              proportion (\\( p\\)) \\( %s\\) %0.2f.",
+                            sigLvl*100,
+                            suffEvidence,
+                            nullHyp,
+                            oneSampHypProp),
+                    br(),
+                  )
                 })
                 
   
@@ -3421,7 +3529,7 @@ server <- function(input, output) {
           # else if(input$popuParameters == 'Dependent Population Means'){
           #   print("Inference for the two Dependent Populations")
           # }
-          else if(input$popuParameters == 'Population Proportions'){ ##### 2samp prop ----
+          else if(input$popuParameters == 'Population Proportions'){ ### 2samp prop ----
             
             if(si_iv$is_valid())
             {
@@ -3495,7 +3603,9 @@ server <- function(input, output) {
                       br(),
                       uiOutput('twoSampPropHT'),
                       br(),
-                      plotOutput('twoSampPropHTPlot'),
+                      plotOutput('twoSampPropHTPlot', width = "75%", height = "300px"),
+                      br(),
+                      uiOutput('twoSampPropHTIntrp'),
                       br(),
                     ),
                   )
@@ -3507,7 +3617,7 @@ server <- function(input, output) {
                 twoSampPropSucc2 <- input$numSuccesses2
                 twoSampPropTrial2 <- input$numTrials2
                 
-                if(input$inferenceType2 == 'Confidence Interval') ###### conf ----
+                if(input$inferenceType2 == 'Confidence Interval') #### conf ----
                 {
                   source('R/TwoPropZInt.R')
                   
@@ -3555,6 +3665,7 @@ server <- function(input, output) {
                     
                     tagList(
                       hidden(
+                        withMathJax(),
                         div(id = "twoSampPropDataNOneDetails",
                             sprintf("\\( n_{1}\\) denotes the number of trials, or sample size taken from population 1."),
                             hr()),
@@ -3605,7 +3716,7 @@ server <- function(input, output) {
                             hr()),
                         
                         div(id = "twoSampPropDataConfLvlDetails",
-                            sprintf("The confidence level \\(( 1 - \\alpha\\)) or \\( C\\) is the probability that the produced interval contains the unknown parameter."),
+                            sprintf("The confidence level \\(( 1 - \\alpha)\\) or \\( C\\) is the probability that the produced interval contains the unknown parameter."),
                             hr()),
                         
                         div(id = "twoSampPropDataCVDetails",
@@ -3791,7 +3902,7 @@ server <- function(input, output) {
                   
                   
                 } # input$inferenceType2 == 'Confidence Interval'
-                else if(input$inferenceType2 == 'Hypothesis Testing') ###### ht ----
+                else if(input$inferenceType2 == 'Hypothesis Testing') #### ht ----
                 {
                   source('R/TwoPropZTest.R')
                   
@@ -3851,10 +3962,12 @@ server <- function(input, output) {
                               filter = "none")
                   )
                   
+                  ##### details output ----
                   output$twoSampPropDetails <- renderUI({
                     
                     tagList(
                       hidden(
+                        withMathJax(),
                         div(id = "twoSampPropDataNOneDetails",
                             sprintf("\\( n_{1}\\) denotes the number of trials, or sample size taken from population 1."),
                             hr()),
@@ -3951,6 +4064,7 @@ server <- function(input, output) {
                     
                   })
                   
+                  #### Results output ----
                   if(twoSampPropZTest["P-Value"] > sigLvl)
                   {
                     pvalSymbol <- "\\( \\gt\\)"
@@ -3969,15 +4083,8 @@ server <- function(input, output) {
                   output$twoSampPropHT <- renderUI({
                     p(
                       withMathJax(
-                        sprintf("At the %1.0f%% level, the data %s sufficient evidence to reject the null hypothesis (\\( H_{0}\\)) that the population 
-                              proportion \\( p_{1} %s p_{2}\\).",
-                                sigLvl*100,
-                                suffEvidence,
-                                nullHyp),
-                        br(),
-                        br(),
-                        h4(tags$u("Performing the Hypothesis Test:")),
-                        br(),
+                        #h4(tags$u("Performing the Hypothesis Test:")),
+                        #br(),
                         sprintf("\\( H_{0}: p_{1} %s p_{2}\\)",
                                 nullHyp),
                         br(),
@@ -4031,6 +4138,17 @@ server <- function(input, output) {
                     
                     htPlot <- hypTestPlot(twoSampPropZTest["Test Statistic"], htPlotCritVals, alternative)
                     htPlot
+                  })
+                  
+                  output$twoSampPropHTIntrp <- renderUI({
+                    p(
+                      sprintf("At the %1.0f%% significance level, the data %s sufficient evidence to reject the null hypothesis (\\( H_{0}\\)) that the population 
+                              proportion \\( p_{1} %s p_{2}\\).",
+                              sigLvl*100,
+                              suffEvidence,
+                              nullHyp),
+                      br(),
+                    )
                   })
                   
                   
@@ -4874,6 +4992,10 @@ server <- function(input, output) {
     
     observeEvent(input$goBinom, {
       show(id = 'probabilityMP')
+    })
+    
+    observeEvent(input$probability, {
+      hide(id = 'probabilityMP')
     })
     
     observeEvent(input$resetBinomial, {
