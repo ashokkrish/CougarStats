@@ -2141,21 +2141,41 @@ server <- function(input, output) {
       
       output$binomDistrTable <- DT::renderDT({
         req(pd_iv$is_valid())
-          
-        dfBinom <- data.frame(value = seq(0, input$numTrialsBinom), value = round(dbinom(x = 0:input$numTrialsBinom, size = input$numTrialsBinom, prob = input$successProbBinom), 4))
-        colnames(dfBinom) <- c("X", "P(X = x)")
         
-        datatable(dfBinom,
-                  options = list(
-                    dom = 't',
-                    pageLength = -1,
-                    ordering = FALSE,
-                    searching = FALSE,
-                    paging = FALSE
-                  ),
-                  rownames = FALSE,
-                  filter = "none"
-        )
+        if(input$numTrialsBinom < 50)
+        {
+          dfBinom <- data.frame(value = seq(0, input$numTrialsBinom), value = round(dbinom(x = 0:input$numTrialsBinom, size = input$numTrialsBinom, prob = input$successProbBinom), 4))
+          colnames(dfBinom) <- c("X", "P(X = x)")
+          
+          datatable(dfBinom,
+                    options = list(
+                      dom = 't',
+                      pageLength = -1,
+                      ordering = FALSE,
+                      searching = FALSE,
+                      paging = FALSE
+                    ),
+                    rownames = FALSE,
+                    filter = "none"
+          )
+        }
+        else
+        {
+          dfBinom <- data.frame(value = "Probability distribution table limited to sample sizes less than 50")
+          colnames(dfBinom) <- c("Sample Size Too Large")
+          datatable(dfBinom,
+                    options = list(
+                      dom = '',
+                      pageLength = -1,
+                      ordering = FALSE,
+                      searching = FALSE,
+                      paging = FALSE
+                    ),
+                    rownames = FALSE,
+                    filter = "none"
+          )
+        }
+        
                
       })
     })
