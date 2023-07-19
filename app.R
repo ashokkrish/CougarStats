@@ -1924,18 +1924,13 @@ server <- function(input, output) {
         withMathJax(
           if(!pd_iv$is_valid())
           {
-            validate(
-              need(input$numTrialsBinom, "Number of Trials (n) must be a positive integer") %then%
-                need(input$numTrialsBinom > 0 && input$numTrialsBinom %% 1 == 0, "Number of Trials (n) must be a positive integer"),
-              need(input$successProbBinom, "Probability of Success (p) must be between 0 and 1") %then%
-                need(input$successProbBinom >= 0 && input$successProbBinom <= 1, "Probability of Success (p) must be between 0 and 1"),
-                
-              errorClass = "myClass"
-            )
-            
             if(!binomprob_iv$is_valid())
             {
               validate(
+                need(input$numTrialsBinom, "Number of Trials (n) must be a positive integer") %then%
+                  need(input$numTrialsBinom > 0 && input$numTrialsBinom %% 1 == 0, "Number of Trials (n) must be a positive integer"),
+                need(input$successProbBinom, "Probability of Success (p) must be between 0 and 1") %then%
+                  need(input$successProbBinom >= 0 && input$successProbBinom <= 1, "Probability of Success (p) must be between 0 and 1"),
                 need(input$numSuccessesBinom != "", "Enter a value for the Number of Successes (x)") %then%
                   need(input$numSuccessesBinom >= 0 && input$numSuccessesBinom %% 1 == 0, "Number of Successes (x) must be a positive integer"),
                 
@@ -1946,6 +1941,10 @@ server <- function(input, output) {
             if(!binombetween_iv$is_valid())
             {
               validate(
+                need(input$numTrialsBinom, "Number of Trials (n) must be a positive integer") %then%
+                  need(input$numTrialsBinom > 0 && input$numTrialsBinom %% 1 == 0, "Number of Trials (n) must be a positive integer"),
+                need(input$successProbBinom, "Probability of Success (p) must be between 0 and 1") %then%
+                  need(input$successProbBinom >= 0 && input$successProbBinom <= 1, "Probability of Success (p) must be between 0 and 1"),
                 need(input$numSuccessesBinomx1, "Number of Successes (x1) must be a positive integer") %then%
                   need(input$numSuccessesBinomx1 >= 0 && input$numSuccessesBinomx1 %% 1 == 0, "Number of Successes (x1) must be a positive integer"),
                 need(input$numSuccessesBinomx2, "Enter a value for the Number of Successes (x2)") %then%
@@ -1954,6 +1953,15 @@ server <- function(input, output) {
                 errorClass = "myClass"
               )
             }
+            
+            validate(
+              need(input$numTrialsBinom, "Number of Trials (n) must be a positive integer") %then%
+                need(input$numTrialsBinom > 0 && input$numTrialsBinom %% 1 == 0, "Number of Trials (n) must be a positive integer"),
+              need(input$successProbBinom, "Probability of Success (p) must be between 0 and 1") %then%
+                need(input$successProbBinom >= 0 && input$successProbBinom <= 1, "Probability of Success (p) must be between 0 and 1"),
+              
+              errorClass = "myClass"
+            )
           }
           else
           {
@@ -2160,32 +2168,12 @@ server <- function(input, output) {
           
           if(!pd_iv$is_valid())
           {
-            if(!poiss_iv$is_valid())
-            {
-              validate(
-                need(input$muPoisson, "Enter a value for the Average Number of Successes (mu)"),
-                
-                errorClass = "myClass"
-              )
-              
-              validate(
-                need(input$muPoisson > 0, "Average Number of Successes (mu) must be greater than zero"),
-                
-                errorClass = "myClass"
-              )
-            }
-            
             if(!poissprob_iv$is_valid())
             {
               validate(
-                need(input$xPoisson , "Enter a value for the Number of Successes (x)"),
-                
-                errorClass = "myClass"
-              )
-              
-              validate(
-                need(input$xPoisson >= 0, "Number of Successes (x) must be a positive integer"),
-                need(input$xPoisson %% 1 == 0, "Number of Successes (x) must be a positive integer"),
+                need(input$muPoisson && input$muPoisson > 0, "Average Number of Successes (mu) must be greater than zero"),
+                need(input$xPoisson , "Number of Successes (x) must be a positive integer") %then%
+                  need(input$xPoisson >= 0 && input$xPoisson %% 1 == 0, "Number of Successes (x) must be a positive integer"),
                 
                 errorClass = "myClass"
               )
@@ -2194,24 +2182,21 @@ server <- function(input, output) {
             if(!poissbetween_iv$is_valid())
             {
               validate(
-                need(input$x2Poisson, "Enter a value for the Number of Successes (x1)"),
-                need(input$x2Poisson, "Enter a value for the Number of Successes (x2)"),
-                
-                errorClass = "myClass"
-              )
-              
-              validate(
-                need(input$x1Poisson >= 0, "Number of Successes (x1) must be a positive integer"),
-                need(input$x1Poisson %% 1 == 0, "Number of Successes (x1) must be a positive integer"),
-                
-                need(input$x2Poisson >= 0, "Number of Successes (x2) must be a positive integer"),
-                need(input$x2Poisson %% 1 == 0, "Number of Successes (x2) must be a positive integer"),
-                
-                need(input$x1Poisson <= input$x2Poisson, "Number of Successes (x1) must be less than or equal to Number of Successes (x2)"),
+                need(input$muPoisson && input$muPoisson > 0, "Average Number of Successes (mu) must be greater than zero"),
+                need(input$x2Poisson, "Enter a value for the Number of Successes (x1)") %then%
+                  need(input$x1Poisson >= 0 && input$x1Poisson %% 1 == 0, "Number of Successes (x1) must be a positive integer"),
+                need(input$x2Poisson, "Enter a value for the Number of Successes (x2)") %then%
+                  need(input$x2Poisson >= 0 && input$x2Poisson %% 1 == 0, "Number of Successes (x2) must be a positive integer"),
                 
                 errorClass = "myClass"
               )
             }
+            
+            validate(
+              need(input$muPoisson && input$muPoisson > 0, "Average Number of Successes (mu) must be greater than zero"),
+              
+              errorClass = "myClass"
+            )
           }
           else
           {
@@ -2255,8 +2240,13 @@ server <- function(input, output) {
             }
             else if(input$calcPoisson == 'between')
             {
-              poisson_x1 <- input$x1Poisson
+              validate(
+                need(input$x1Poisson <= input$x2Poisson, "Number of Successes (x1) must be less than or equal to Number of Successes (x2)"),
+                
+                errorClass = "myClass"
+              )
               
+              poisson_x1 <- input$x1Poisson
               poisson_x2 <- input$x2Poisson
               
               #withMathJax(paste0("\\(P(", Poisson_x1, " ",  " \\leq X \\leq \\)"," ", Poisson_x2,"\\()\\)"," ","\\( = \\)"," ", round(ppois(Poisson_x2, Poisson_mu, lower.tail = TRUE), 4), "\\( - \\)", round(ppois(Poisson_x1 - 1, Poisson_mu, lower.tail = TRUE), 4), " ","\\( = \\)"," ", round(ppois(Poisson_x2, Poisson_mu, lower.tail = TRUE) - ppois(Poisson_x1 - 1, Poisson_mu, lower.tail = TRUE), 4)))
