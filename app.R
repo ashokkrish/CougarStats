@@ -839,18 +839,6 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                             br(),
                             uiOutput("renderProbabilityBinom"),
                             br(),
-    
-                            conditionalPanel(
-                              condition = "input.showBinomTable == 1",
-                              
-                              br(),
-                              titlePanel("Probability Distribution Table"),
-                              hr(),
-                              DTOutput("binomDistrTable", width = "25%"),
-                              br()
-                            )
-                            
-
                           ),
                               
                           conditionalPanel(
@@ -859,15 +847,6 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                             br(),
                             uiOutput("renderProbabilityPoisson"),
                             br(),
-                            conditionalPanel(
-                              condition = "input.showPoissTable == 1",
-                              
-                              br(),
-                              titlePanel("Probability Distribution Table"),
-                              hr(),
-                              DTOutput("poissDistrTable", width = "25%"),
-                              br()
-                            )
                           ),
                               
                           conditionalPanel(
@@ -1945,37 +1924,20 @@ server <- function(input, output) {
         withMathJax(
           if(!pd_iv$is_valid())
           {
-            if(!binom_iv$is_valid())
-            {
-              validate(
-                need(input$numTrialsBinom, "Enter a value for the Number of Trials (n)"),
-                need(input$successProbBinom, "Enter a value for the Probability of Success (p)"),
+            validate(
+              need(input$numTrialsBinom, "Number of Trials (n) must be a positive integer") %then%
+                need(input$numTrialsBinom > 0 && input$numTrialsBinom %% 1 == 0, "Number of Trials (n) must be a positive integer"),
+              need(input$successProbBinom, "Probability of Success (p) must be between 0 and 1") %then%
+                need(input$successProbBinom >= 0 && input$successProbBinom <= 1, "Probability of Success (p) must be between 0 and 1"),
                 
-                errorClass = "myClass"
-              )
-              
-              validate(
-                need(input$numTrialsBinom > 0, "Number of Trials (n) must be a positive integer"),
-                need(input$numTrialsBinom %% 1 == 0, "Number of Trials (n) must be a positive integer"),
-                
-                need(input$successProbBinom >= 0, "Probability of Success (p) must be between 0 and 1"),
-                need(input$successProbBinom <= 1, "Probability of Success (p) must be between 0 and 1"),
-                
-                errorClass = "myClass"
-              )
-            }
+              errorClass = "myClass"
+            )
             
             if(!binomprob_iv$is_valid())
             {
               validate(
-                need(input$numSuccessesBinom != "", "Enter a value for the Number of Successes (x)"),
-                
-                errorClass = "myClass"
-              )
-              
-              validate(
-                need(input$numSuccessesBinom >= 0, "Number of Successes (x) must be a positive integer"),
-                need(input$numSuccessesBinom %% 1 == 0, "Number of Successes (x) must be a positive integer"),
+                need(input$numSuccessesBinom != "", "Enter a value for the Number of Successes (x)") %then%
+                  need(input$numSuccessesBinom >= 0 && input$numSuccessesBinom %% 1 == 0, "Number of Successes (x) must be a positive integer"),
                 
                 errorClass = "myClass"
               )
@@ -1984,19 +1946,10 @@ server <- function(input, output) {
             if(!binombetween_iv$is_valid())
             {
               validate(
-                need(input$numSuccessesBinomx1, "Enter a value for the Number of Successes (x1)"),
-                need(input$numSuccessesBinomx2, "Enter a value for the Number of Successes (x2)"),
-                
-                errorClass = "myClass"
-              )
-              
-              validate(
-                need(input$numSuccessesBinomx1 >= 0, "Number of Successes (x1) must be a positive integer"),
-                need(input$numSuccessesBinomx1 %% 1 == 0, "Number of Successes (x1) must be a positive integer"),
-                
-                
-                need(input$numSuccessesBinomx2 >= 0, "Number of Successes (x2) must be a positive integer"),
-                need(input$numSuccessesBinomx2 %% 1 == 0, "Number of Successes (x2) must be a positive integer"),
+                need(input$numSuccessesBinomx1, "Number of Successes (x1) must be a positive integer") %then%
+                  need(input$numSuccessesBinomx1 >= 0 && input$numSuccessesBinomx1 %% 1 == 0, "Number of Successes (x1) must be a positive integer"),
+                need(input$numSuccessesBinomx2, "Enter a value for the Number of Successes (x2)") %then%
+                  need(input$numSuccessesBinomx2 >= 0 && input$numSuccessesBinomx2 %% 1 == 0, "Number of Successes (x2) must be a positive integer"),
                 
                 errorClass = "myClass"
               )
@@ -2115,6 +2068,7 @@ server <- function(input, output) {
                   br(),
                   p("Using the Probability Mass Function: "),
                   sprintf("\\( \\qquad \\qquad P(X = x) = \\binom{n}{x} p^x (1-p)^{n-x} \\)"),
+                  sprintf("\\( \\qquad \\) for \\( x = 0, 1, 2, ... n\\)"),
                   br(),
                   br(),
                   br(),
@@ -2139,6 +2093,16 @@ server <- function(input, output) {
                   br(),
                   sprintf("Variance \\( (\\sigma^{2}) = np(1 - p) = %g\\)",
                           binom_var)
+                ),
+                br(),
+                conditionalPanel(
+                  condition = "input.showBinomTable == 1",
+                  
+                  br(),
+                  titlePanel("Probability Distribution Table"),
+                  hr(),
+                  DTOutput("binomDistrTable", width = "25%"),
+                  br()
                 )
               )
             )
@@ -2314,6 +2278,7 @@ server <- function(input, output) {
                   br(),
                   p("Using the Probability Mass Function: "),
                   sprintf("\\( \\qquad \\qquad P(X = x) = \\dfrac{e^{-\\mu} \\mu^x}{x!} \\)"),
+                  sprintf("\\( \\qquad \\) for \\( x = 0, 1, 2, ... \\)"),
                   br(),
                   br(),
                   br(),
@@ -2338,6 +2303,16 @@ server <- function(input, output) {
                   br(),
                   sprintf("Variance \\( (\\sigma^{2}) = \\mu = %g\\)",
                           poisson_mu)
+                ),
+                br(),
+                conditionalPanel(
+                  condition = "input.showPoissTable == 1",
+                  
+                  br(),
+                  titlePanel("Probability Distribution Table"),
+                  hr(),
+                  DTOutput("poissDistrTable", width = "25%"),
+                  br()
                 )
               )
             )
