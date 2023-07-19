@@ -1429,6 +1429,7 @@ server <- function(input, output) {
     onemeanraw_iv <- InputValidator$new()
     onemeanht_iv <- InputValidator$new()
     oneprop_iv <- InputValidator$new()
+    onepropht_iv <- InputValidator$new()
     twoprop_iv <- InputValidator$new()
     regcor_iv <- InputValidator$new()
     slrraw_iv <- InputValidator$new()
@@ -1661,8 +1662,9 @@ server <- function(input, output) {
     
     # hypProportion 
     
-    si_iv$add_rule("hypProportion", sv_required())
-    si_iv$add_rule("hypProportion", sv_gte(0))
+    onepropht_iv$add_rule("hypProportion", sv_required())
+    onepropht_iv$add_rule("hypProportion", sv_gte(0))
+    onepropht_iv$add_rule("hypProportion", sv_lte(1))
     
     onemean_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$dataAvailability == 'Summarized Data'))
     onemeansdknown_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$dataAvailability == 'Summarized Data' && input$sigmaKnown == 'Known'))
@@ -1670,6 +1672,7 @@ server <- function(input, output) {
     onemeanraw_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$dataAvailability == 'Enter Raw Data'))
     onemeanht_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$inferenceType == 'Hypothesis Testing'))
     oneprop_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Proportion'))
+    onepropht_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Proportion' && input$inferenceType == 'Hypothesis Testing'))
     twoprop_iv$condition(~ isTRUE(input$samplesSelect == '2' && input$popuParameters == 'Population Proportions'))
     
     si_iv$add_validator(onemean_iv)
@@ -1678,6 +1681,7 @@ server <- function(input, output) {
     si_iv$add_validator(onemeanraw_iv)
     si_iv$add_validator(onemeanht_iv)
     si_iv$add_validator(oneprop_iv)
+    si_iv$add_validator(onepropht_iv)
     si_iv$add_validator(twoprop_iv)
     
     si_iv$enable()
@@ -1687,6 +1691,7 @@ server <- function(input, output) {
     onemeanraw_iv$enable()
     onemeanht_iv$enable()
     oneprop_iv$enable()
+    onepropht_iv$enable()
     twoprop_iv$enable()
     
     ## RC rules ---- 
@@ -2751,6 +2756,15 @@ server <- function(input, output) {
                     errorClass = "myClass"
                   )
                 }
+                
+                if(!onemeanht_iv$is_valid())
+                {
+                  validate(
+                    need(input$hypMean, "Hypothesized Population Mean value required"),
+                    
+                    errorClass = "myClass"
+                  )
+                }
               })
               
             }
@@ -3210,6 +3224,7 @@ server <- function(input, output) {
                               altHyp,
                               oneSampHypProp),
                       br(),
+                      br(),
                       sprintf("\\( \\alpha = %g \\)",
                               sigLvl),
                       br(),
@@ -3260,7 +3275,7 @@ server <- function(input, output) {
                 
                 output$oneSampPropHTIntrp <- renderUI({
                   p(
-                    p(tags$b("Interpretation:")),
+                    p(tags$b("Conclusion:")),
                     sprintf("At the %1.0f%% level, the data %s sufficient evidence to reject the null hypothesis (\\( H_{0}\\)) that the population 
                               proportion (\\( p\\)) \\( %s\\) %0.2f.",
                             sigLvl*100,
@@ -3295,6 +3310,16 @@ server <- function(input, output) {
                   
                   errorClass = "myClass"
                 )
+                
+                if(!onepropht_iv$is_valid())
+                {
+                  validate(
+                    need(input$hypProportion, "Hypothesized Population Proportion must be between 0 and 1") %then%
+                      need(input$hypProportion >= 0 && input$hypProportion <= 1, "Hypothesized Population Proportion must be between 0 and 1"),
+                    
+                    errorClass = "myClass"
+                  )
+                }
               })
             }
           } # input$popuParameter == 'Population Proportion'
@@ -4121,6 +4146,7 @@ server <- function(input, output) {
                         sprintf("\\( H_{a}: p_{1} %s p_{2}\\)",
                                 altHyp),
                         br(),
+                        br(),
                         sprintf("\\( \\alpha = %g \\)",
                                 sigLvl),
                         br(),
@@ -4172,7 +4198,7 @@ server <- function(input, output) {
                   
                   output$twoSampPropHTIntrp <- renderUI({
                     p(
-                      p(tags$b("Interpretation:")),
+                      p(tags$b("Conclusion:")),
                       sprintf("At the %1.0f%% significance level, the data %s sufficient evidence to reject the null hypothesis (\\( H_{0}\\)) that the population 
                               proportion \\( p_{1} %s p_{2}\\).",
                               sigLvl*100,
