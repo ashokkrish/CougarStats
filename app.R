@@ -836,6 +836,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                 
                             br(),
                             uiOutput("renderProbabilityNorm"),
+                            br(),
                           )
                         )
                       ), #Probability MainPanel 
@@ -1384,6 +1385,9 @@ server <- function(input, output) {
     poiss_iv <- InputValidator$new()
     poissprob_iv <- InputValidator$new()
     poissbetween_iv <- InputValidator$new()
+    norm_iv <- InputValidator$new()
+    normprob_iv <- InputValidator$new()
+    normbetween_iv <- InputValidator$new()
     si_iv <- InputValidator$new()
     onemean_iv <- InputValidator$new()
     onemeansdknown_iv <- InputValidator$new()
@@ -1463,29 +1467,34 @@ server <- function(input, output) {
     
     # popMean (PD)
     
-    pd_iv$add_rule("popMean", sv_required())
+    norm_iv$add_rule("popMean", sv_required())
     
     # popuSD (PD)
     
-    pd_iv$add_rule("popSD", sv_required())
-    pd_iv$add_rule("popSD", sv_gt(0))
+    norm_iv$add_rule("popSD", sv_required())
+    norm_iv$add_rule("popSD", sv_gt(0))
     
     # xValue (PD)
     
-    pd_iv$add_rule("xValue", sv_required())
+    normprob_iv$add_rule("xValue", sv_required())
     
-    pd_iv$add_rule("x1Value", sv_required())
-    pd_iv$add_rule("x2Value", sv_required())
+    normbetween_iv$add_rule("x1Value", sv_required())
+    normbetween_iv$add_rule("x2Value", sv_required())
     
     # ------------------ #
     #     Conditions     #
     # ------------------ #
-    binombetween_iv$condition(~ isTRUE(input$probability == 'Binomial' && input$calcBinom == 'between'))
+    binom_iv$condition(~ isTRUE(input$probability == 'Binomial'))
     binomprob_iv$condition(~ isTRUE(input$probability == 'Binomial' && input$calcBinom != 'between'))
+    binombetween_iv$condition(~ isTRUE(input$probability == 'Binomial' && input$calcBinom == 'between'))
     
-    poissbetween_iv$condition(~ isTRUE(input$probability == 'Poisson' && input$calcPoisson == 'between'))
+    poiss_iv$condition(~ isTRUE(input$probability == 'Poisson'))
     poissprob_iv$condition(~ isTRUE(input$probability == 'Poisson' && input$calcPoisson != 'between'))
+    poissbetween_iv$condition(~ isTRUE(input$probability == 'Poisson' && input$calcPoisson == 'between'))
     
+    norm_iv$condition(~ isTRUE(input$probability == 'Normal'))
+    normprob_iv$condition(~ isTRUE(input$probability == 'Normal' && input$calcNormal != 'between'))
+    normbetween_iv$condition(~ isTRUE(input$probability == 'Normal' && input$calcNormal == 'between'))
     # ------------------ #
     #     Dependency     #
     # ------------------ #
@@ -1495,8 +1504,12 @@ server <- function(input, output) {
     poiss_iv$add_validator(poissprob_iv)
     poiss_iv$add_validator(poissbetween_iv)
     
+    norm_iv$add_validator(normprob_iv)
+    norm_iv$add_validator(normbetween_iv)
+    
     pd_iv$add_validator(binom_iv)
     pd_iv$add_validator(poiss_iv)
+    pd_iv$add_validator(norm_iv)
     
     # ------------------ #
     #     Activation     #
@@ -1508,6 +1521,9 @@ server <- function(input, output) {
     poiss_iv$enable()
     poissprob_iv$enable()
     poissbetween_iv$enable()
+    norm_iv$enable()
+    normprob_iv$enable()
+    normbetween_iv$enable()
     
     #--------------- #
     ## SI rules ----
@@ -2347,70 +2363,119 @@ server <- function(input, output) {
        ### Normal ----
     observeEvent(input$goNormal, {
       
-      norm_mu <- input$popMean
-      
-      norm_sigma <- input$popSD
-      
-      norm_x <- input$xValue
-      
-      norm_x1 <- input$x1Value
-      
-      norm_x2 <- input$x2Value
-      
       output$renderProbabilityNorm <- renderUI({
-
-        validate(
-          need(norm_mu != "", "Enter a value for Population Mean (mu)"),
-          need(norm_sigma != "", "Enter a value for Population Standard Deviation (sigma)"),
-          
-          errorClass = "myClass"
-          )
-
-        if(!is.na(norm_mu) && !is.na(norm_sigma)){
-          
+        
+        if(!pd_iv$is_valid())
+        {
+          if(!normprob_iv$is_valid())
+          {
             validate(
-              need(norm_sigma > 0, "Standard Deviation must be greater than 0"),
+              need(input$popMean, "Enter a value for Population Mean (mu)"),
+              need(input$popSD && input$popSD > 0, "Population Standard Deviation (sigma) must be greater than 0"),
+              need(input$xValue, "Enter a value for Normally Distributed Variable (x)"),
               
               errorClass = "myClass"
             )
+          }
           
-            if(input$calcNormal != 'between')
-            {
-              validate(
-                need(norm_x != "", "Enter a value for Normally Distributed Variable (x)"),
-                
-                errorClass = "myClass"
-              )
+          if(!normbetween_iv$is_valid())
+          {
+            validate(
+              need(input$popMean, "Enter a value for Population Mean (mu)"),
+              need(input$popSD && input$popSD > 0, "Population Standard Deviation (sigma) must be greater than 0"),
+              need(input$x1Value, "Enter a value for Normally Distributed Variable (x)"),
+              need(input$x2Value, "Enter a value for Normally Distributed Variable (x)"),
               
-              if(input$popSD > 0){
-                if(input$calcNormal == "cumulative"){
-                  withMathJax(paste0("\\(P(X \\leq \\)", " ", norm_x, "\\()\\)", " ", "\\( = \\)", " ", round(pnorm(norm_x, norm_mu, norm_sigma, lower.tail = TRUE),4)))
-                }
-                else if(input$calcNormal == "upperTail"){
-                  withMathJax(paste0("\\(P(X > \\)", " ", norm_x, "\\()\\)", " ", "\\( = \\)", " ", round(pnorm(norm_x, norm_mu, norm_sigma, lower.tail = FALSE),4)))
-                }
-              }
-            }
-            else if(input$calcNormal == 'between')
-            {
-              validate(
-                need(norm_x1 != "", "Enter a value for Normally Distributed Variable (x1)"),
-                need(norm_x2 != "", "Enter a value for Normally Distributed Variable (x2)"),
-                
-                errorClass = "myClass"
-                )
-              
-              if(!is.na(norm_mu) && !is.na(norm_x1) && !is.na(norm_x2)){
-                validate(
-                  need(norm_x1 <= norm_x2, "Normally Distributed Variable (x1) must be less than or equal to Normally Distributed Variable (x2)"),
-                  
-                  errorClass = "myClass"
-                )
-
-                withMathJax(paste0("\\(P(", norm_x1, " ",  " \\leq X \\leq \\)"," ", norm_x2,"\\()\\)"," ","\\( = \\)"," ", round(pnorm(norm_x2,norm_mu, norm_sigma,lower.tail = TRUE), 4), "\\( - \\)", round(pnorm(norm_x1,norm_mu, norm_sigma,lower.tail = TRUE), 4), " ","\\( = \\)"," ",round(pnorm(norm_x2,norm_mu, norm_sigma,lower.tail = TRUE) - pnorm(norm_x1,norm_mu, norm_sigma,lower.tail = TRUE), 4)))
-              }
-            }
+              errorClass = "myClass"
+            )
+          }
+          
+          validate(
+            need(input$popMean, "Enter a value for Population Mean (mu)"),
+            need(input$popSD && input$popSD > 0, "Population Standard Deviation (sigma) must be greater than 0"),
+            
+            errorClass = "myClass"
+          )
         }
+        
+        norm_mu <- input$popMean
+        norm_sigma <- input$popSD
+          
+        if(input$calcNormal != 'between')
+        {
+          norm_x <- input$xValue
+              
+          if(input$calcNormal == "cumulative"){
+            normProb <- paste("P(X \\leq ", norm_x,")")
+            normProbTransform <- paste("P \\left( \\dfrac{X - \\mu}{\\sigma} \\leq \\dfrac{", norm_x, " - ", norm_mu, "}{", norm_sigma, "} \\right)")
+            normForm <- paste("= P(Z \\leq", round((norm_x - norm_mu)/norm_sigma, 4), ")")
+            normValue <- round(pnorm(norm_x, norm_mu, norm_sigma, lower.tail = TRUE),4)
+            #paste("\\(P(X \\leq \\)", " ", norm_x, "\\()\\)", " ", "\\( = \\)", " ", round(pnorm(norm_x, norm_mu, norm_sigma, lower.tail = TRUE),4))
+          }
+          else if(input$calcNormal == "upperTail"){
+            normProb <- paste("P(X \\gt ", norm_x,")")
+            normProbTransform <- paste("P \\left( \\dfrac{X - \\mu}{\\sigma} \\gt \\dfrac{", norm_x, " - ", norm_mu, "}{", norm_sigma, "} \\right)")
+            normForm <- paste("= P(Z \\gt", round((norm_x - norm_mu)/norm_sigma, 4), ")")
+            normValue <- round(pnorm(norm_x, norm_mu, norm_sigma, lower.tail = FALSE),4)
+            #paste("\\(P(X > \\)", " ", norm_x, "\\()\\)", " ", "\\( = \\)", " ", round(pnorm(norm_x, norm_mu, norm_sigma, lower.tail = FALSE),4))
+          }
+        }
+        else if(input$calcNormal == 'between')
+        {
+          norm_x1 <- input$x1Value
+          norm_x2 <- input$x2Value
+            
+          validate(
+            need(norm_x1 <= norm_x2, "Normally Distributed Variable (x1) must be less than or equal to Normally Distributed Variable (x2)"),
+              
+            errorClass = "myClass"
+          )
+  
+          normProb <- paste("P(", norm_x1, " ",  " \\leq X \\leq"," ", norm_x2,")") 
+          normProbTransform <- paste("P \\left( \\dfrac{", norm_x1, " - ", norm_mu, "}{", norm_sigma, "} \\leq \\dfrac{X - \\mu}{\\sigma} \\leq",
+                             "\\dfrac{", norm_x2, " - ", norm_mu, "}{", norm_sigma, "} \\right)")
+          normForm <- paste("= P(", (norm_x1 - norm_mu)/norm_sigma, "\\leq Z \\leq", round((norm_x2 - norm_mu)/norm_sigma, 4), ") = ", 
+                            round(pnorm(norm_x2,norm_mu, norm_sigma,lower.tail = TRUE), 4), " - ", round(pnorm(norm_x1,norm_mu, norm_sigma,lower.tail = TRUE), 4))
+          normValue <- round(pnorm(norm_x2,norm_mu, norm_sigma,lower.tail = TRUE) - pnorm(norm_x1,norm_mu, norm_sigma,lower.tail = TRUE), 4)
+          #paste("\\(P(", norm_x1, " ",  " \\leq X \\leq \\)"," ", norm_x2,"\\()\\)"," ","\\( = \\)"," ", round(pnorm(norm_x2,norm_mu, norm_sigma,lower.tail = TRUE), 4), "\\( - \\)", round(pnorm(norm_x1,norm_mu, norm_sigma,lower.tail = TRUE), 4), " ","\\( = \\)"," ",round(pnorm(norm_x2,norm_mu, norm_sigma,lower.tail = TRUE) - pnorm(norm_x1,norm_mu, norm_sigma,lower.tail = TRUE), 4))
+        }
+        
+        tagList(
+          withMathJax(
+            div(
+              h4(
+                #sprintf("\\(Calculating \\enspace  %s \\enspace  when \\enspace  X \\sim B(%1.0f,%g): \\)",
+                sprintf("Calculating  \\( %s \\)   when  \\(  X \\sim N(\\mu = %g, \\sigma^2 = %g): \\)",
+                        normProb,
+                        norm_mu,
+                        norm_sigma^2)
+              ),
+              hr(),
+              br(),
+              sprintf("\\( \\displaystyle %s = %s\\)",
+                      normProb,
+                      normProbTransform),
+              br(),
+              br(),
+              sprintf("\\( \\displaystyle %s = %g\\)",
+                      normForm,
+                      normValue),
+              br(),
+              br(),
+              br(),
+              sprintf("Mean \\( (\\mu) = \\mu = %g\\)",
+                      norm_mu),
+              br(),
+              br(),
+              sprintf("Standard Deviation \\( (\\sigma) = \\sqrt{\\mu} = %g\\)",
+                      norm_sigma),
+              br(),
+              br(),
+              sprintf("Variance \\( (\\sigma^{2}) = \\mu = %g\\)",
+                      norm_sigma^2)
+            )
+          )
+        )
       })
     })
     
