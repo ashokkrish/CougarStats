@@ -803,26 +803,8 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                         conditionalPanel(
                           condition = "input.dropDownMenu == 'Descriptive Statistics'",
                             
-                          conditionalPanel(
-                            condition = "input.dataInput == 'Enter Raw Data'",
-                              
-                              tableOutput("table"),
-                              br(),
-                                
-                              plotOutput("boxplotHorizontal"),
-                              br(),
-                              
-                              #plotOutput("boxplotgg"),
-                              #br(), 
-                              
-                              #downloadButton('downloadDataDS', 'Download Results')
-                                
-                          ),
-
-                          conditionalPanel(
-                            condition = "input.dataInput == 'Upload Data'",
-                          
-                          ),
+                          uiOutput('renderDescrStats')
+    
                         )
                       ), #DescriptiveStats Main Panel
                       
@@ -1394,6 +1376,7 @@ server <- function(input, output) {
     # ------------------------- #
 
     iv <- InputValidator$new()
+    ds_iv <- InputValidator$new()
     pd_iv <- InputValidator$new()
     binom_iv <- InputValidator$new()
     binomprob_iv <- InputValidator$new()
@@ -1419,7 +1402,13 @@ server <- function(input, output) {
     
     # descriptiveStat
     
-    iv$add_rule("descriptiveStat", sv_required())
+    ds_iv$add_rule("descriptiveStat", sv_required())
+    ds_iv$add_rule("descriptiveStat", sv_regex("^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+$", 
+                                     "Data must be numeric values seperated by a comma (ie: 2,3,4)"))
+    
+    ds_iv$condition(~ isTRUE(input$dropDownMenu == 'Descriptive Statistics'))
+    
+    ds_iv$enable()
     
     ## PD rules ----
     
@@ -1821,21 +1810,43 @@ server <- function(input, output) {
     ## ---- Descriptive Stats functions ----
     #  ------------------------------------- #
     observeEvent(input$goDescpStats, {
+      
       dat <- createNumLst(input$descriptiveStat)
       
-      print(sort(dat))
-      
-      if(anyNA(dat) | length(dat)<2){
-        # validate(
-        #   need(dat != "", "Enter a sample data"),
-        # 
-        #   errorClass = "myClass"
-        # )
-        print("Invalid input or not enough observations")
-      }
-      else{
-        dat <- createNumLst(input$descriptiveStat)
+      output$renderDescrStats <- renderUI({
+        validate(
+          need(!anyNA(dat), "Sample Data must be numeric"),
+          need(length(dat) >= 2, "Sample Data must include at least 2 observations"),
+
+          errorClass = "myClass"
+        )
         
+        tagList(
+          conditionalPanel(
+            condition = "input.dataInput == 'Enter Raw Data'",
+            
+            tableOutput("table"),
+            br(),
+            
+            plotOutput("boxplotHorizontal"),
+            br(),
+            
+            #plotOutput("boxplotgg"),
+            #br(), 
+            
+            #downloadButton('downloadDataDS', 'Download Results')
+            
+          ),
+          
+          conditionalPanel(
+            condition = "input.dataInput == 'Upload Data'",
+            
+          ),
+        )
+      })
+      
+      if(ds_iv$is_valid())
+      {
         xbar <- round(mean(dat),4)
         sampStdDev <- round(sd(dat),4)
         #popuStdDev <- round(pop.sd(dat),4) # round(sqrt((n-1)/n) * sampStdDev(dat), 4)
@@ -1853,7 +1864,7 @@ server <- function(input, output) {
         # print(sum(dat < Lower_Fence))
         # print(sum(dat > Upper_Fence))
         # print(Num_Outliers)
-
+        
         values <- reactiveValues()
         #dataDS <- reactive(values)
         values$df <- data.frame(Variable = character(), Value = character())
@@ -1905,12 +1916,14 @@ server <- function(input, output) {
           #-----------------#
           # ggplot2 boxplot #
           #-----------------#
-
+          
           ggplot(as.data.frame(dat), aes(x = "", y = dat)) +
-          geom_boxplot(show.legend = FALSE)
+            geom_boxplot(show.legend = FALSE)
         })
-        
       }
+      #print(sort(dat)
+        
+        
     })
     
     #  -------------------------------------------- #
