@@ -34,5 +34,5 @@ Alternatively you can send a pull request to download all the files in this repo
 ## Shiny app authors
 
 * **Ashok Krishnamurthy PhD** | *Template design, model structure and maintainer*
-* * **Michael Myer** | *Developer*
-* * **Crystal Wai** | *Developer*
+* **Michael Myer** | *Developer*
+* **Crystal Wai** | *Developer*
