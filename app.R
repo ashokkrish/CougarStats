@@ -2695,7 +2695,7 @@ server <- function(input, output) {
                 if(!onemeansdknown_iv$is_valid())
                 {
                   validate(
-                    need(input$popuSD & input$popuSD > 0, "Population Standard Deviation must be a positive integer"),
+                    need(input$popuSD & input$popuSD > 0, "Population Standard Deviation must be positive"),
                     #need(input$popuSD > 0, "Population Standard Deviation must be greater than 0"),
                     
                     errorClass = "myClass"
@@ -2706,7 +2706,7 @@ server <- function(input, output) {
                 {
                   validate(
                     need(input$sample1, "Sample Data required"),
-                    need(input$popuSDRaw & input$popuSDRaw > 0, "Population Standard Deviation must be a positive integer"),
+                    need(input$popuSDRaw & input$popuSDRaw > 0, "Population Standard Deviation must be positive"),
                     #need(input$popuSDRaw > 0, "Population Standard Deviation must be greater than 0"),
                     
                     errorClass = "myClass"
@@ -2716,7 +2716,7 @@ server <- function(input, output) {
                 if(!onemeansdunk_iv$is_valid())
                 {
                   validate(
-                    need(input$sampSD && input$sampSD > 0, "Sample Standard Deviation (s) must be a positive integer"),
+                    need(input$sampSD && input$sampSD > 0, "Sample Standard Deviation (s) must be positive"),
 
                     errorClass = "myClass"
                   )
