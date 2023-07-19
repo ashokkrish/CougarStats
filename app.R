@@ -1331,7 +1331,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                            
                            p("Email:",a("akrishnamurthy@mtroyal.ca", href = "mailto:akrishnamurthy@mtroyal.ca")), 
                            p("Website:", a(href = "https://bit.ly/2YKrXjX","https://bit.ly/2YKrXjX", target = "_blank")),
-                           p("GitHub:", a(href = "https://github.com/ashokkrish/COMP5690","https://github.com/ashokkrish/COMP5690", target = "_blank")),
+                           p("GitHub:", a(href = "https://github.com/ashokkrish/CougarStats","https://github.com/ashokkrish/CougarStats", target = "_blank")),
                            br(),
                            
                            p(span("Michael Myer,", style= "font-weight:bold")),
@@ -1919,7 +1919,7 @@ server <- function(input, output) {
           
           ggplot(as.data.frame(dat), aes(x = "", y = dat)) +
             geom_boxplot(show.legend = FALSE)
-        })
+        }) 
       }
       #print(sort(dat)
         
@@ -2149,7 +2149,7 @@ server <- function(input, output) {
                     ),
                     rownames = FALSE,
                     filter = "none"
-          )
+          ) %>% formatRound(2, digits = 4)
         }
         else
         {
@@ -2339,7 +2339,7 @@ server <- function(input, output) {
                   ),
                   rownames = FALSE,
                   filter = "none"
-        )
+        ) %>% formatRound(2, digits = 4)
         
       })
     })
