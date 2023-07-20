@@ -1792,11 +1792,11 @@ server <- function(input, output) {
         
         if(input$calcNormal == "cumulative")
         {
-          probXLab <- (input$xValue + normTail)/2 
+          probXLab <- (input$xValue - normHead/4)
         }
         else if(input$calcNormal == "upperTail")
         {
-          probXLab <- (input$xValue + normHead/2)/2 
+          probXLab <- (input$xValue + normHead/4)
         }
       }
       xSeq = sort(c(normTail, normHead, normLines, probXLab))
@@ -1819,9 +1819,9 @@ server <- function(input, output) {
               axis.text.x.bottom = element_text(size = 14)) +
         scale_x_continuous(breaks = waiver()) +
         scale_y_continuous(breaks = NULL) +
-        ylab("") + xlab(paste("N(", input$popMean, ",", input$popSD^2, ")")) +
-        geom_text(data = lineDF, aes(x = x, y = 0, label = x), size = 14 / .pt, fontface = "bold", vjust = "outward") +
-        geom_text(data = probDF, aes(x = x, y = y/2, label = normValue), size = 24 / .pt, fontface = "bold")
+        ylab("") + xlab(paste("X")) +
+        geom_text(data = lineDF, aes(x = x, y = 0, label = x), size = 14 / .pt, fontface = "bold", vjust = "outward") 
+        #geom_text(data = probDF, aes(x = x, y = y/2, label = normValue), size = 24 / .pt, fontface = "bold")
         
       
       return(nPlot)
