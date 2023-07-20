@@ -1792,7 +1792,7 @@ server <- function(input, output) {
         
         if(input$calcNormal == "cumulative")
         {
-          probXLab <- (input$xValue + normTail/2)/2 
+          probXLab <- (input$xValue + normTail)/2 
         }
         else if(input$calcNormal == "upperTail")
         {
@@ -1807,11 +1807,11 @@ server <- function(input, output) {
       
       nPlot <- ggplot(df, aes(x = x, y = y)) +
         stat_function(fun = dnorm, args = list(mean = input$popMean, sd = input$popSD), geom = "density",
-                      xlim = c(normTail, normHead),
+                      #xlim = c(normTail, normHead),
                       fill = "#03376d",
                       alpha = 0.3) + 
         stat_function(fun = shadeNormArea, geom = "area",
-                      xlim = c(normTail, normHead),
+                      #xlim = c(normTail, normHead),
                       fill = "#03376d",
                       alpha = 0.7) +
         theme_minimal()  +
@@ -2032,6 +2032,7 @@ server <- function(input, output) {
       }
       else if(input$calcNormal == 'between')
       {
+        req(input$x1Value <= input$x2Value)
         normValue <- round(pnorm(input$x2Value, input$popMean, input$popSD, lower.tail = TRUE) - pnorm(input$x1Value, input$popMean, input$popSD, lower.tail = TRUE), 4)
       }
     })
@@ -2499,14 +2500,14 @@ server <- function(input, output) {
             normProb <- paste("P(X \\leq ", norm_x,")")
             normProbTransform <- paste("P \\left( \\dfrac{X - \\mu}{\\sigma} \\leq \\dfrac{", norm_x, " - ", norm_mu, "}{", norm_sigma, "} \\right)")
             normForm <- paste("= P(Z \\leq", round((norm_x - norm_mu)/norm_sigma, 4), ")")
-            normValue <- round(pnorm(norm_x, norm_mu, norm_sigma, lower.tail = TRUE),4)
+            #normValue <- round(pnorm(norm_x, norm_mu, norm_sigma, lower.tail = TRUE),4)
             #paste("\\(P(X \\leq \\)", " ", norm_x, "\\()\\)", " ", "\\( = \\)", " ", round(pnorm(norm_x, norm_mu, norm_sigma, lower.tail = TRUE),4))
           }
           else if(input$calcNormal == "upperTail"){
             normProb <- paste("P(X \\gt ", norm_x,")")
             normProbTransform <- paste("P \\left( \\dfrac{X - \\mu}{\\sigma} \\gt \\dfrac{", norm_x, " - ", norm_mu, "}{", norm_sigma, "} \\right)")
             normForm <- paste("= P(Z \\gt", round((norm_x - norm_mu)/norm_sigma, 4), ")")
-            normValue <- round(pnorm(norm_x, norm_mu, norm_sigma, lower.tail = FALSE),4)
+            #normValue <- round(pnorm(norm_x, norm_mu, norm_sigma, lower.tail = FALSE),4)
             #paste("\\(P(X > \\)", " ", norm_x, "\\()\\)", " ", "\\( = \\)", " ", round(pnorm(norm_x, norm_mu, norm_sigma, lower.tail = FALSE),4))
           }
         }
@@ -2524,9 +2525,9 @@ server <- function(input, output) {
           normProb <- paste("P(", norm_x1, " ",  " \\leq X \\leq"," ", norm_x2,")") 
           normProbTransform <- paste("P \\left( \\dfrac{", norm_x1, " - ", norm_mu, "}{", norm_sigma, "} \\leq \\dfrac{X - \\mu}{\\sigma} \\leq",
                              "\\dfrac{", norm_x2, " - ", norm_mu, "}{", norm_sigma, "} \\right)")
-          normForm <- paste("= P(", (norm_x1 - norm_mu)/norm_sigma, "\\leq Z \\leq", round((norm_x2 - norm_mu)/norm_sigma, 4), ") = ", 
+          normForm <- paste("= P(", round((norm_x1 - norm_mu)/norm_sigma, 4), "\\leq Z \\leq", round((norm_x2 - norm_mu)/norm_sigma, 4), ") = ", 
                             round(pnorm(norm_x2,norm_mu, norm_sigma,lower.tail = TRUE), 4), " - ", round(pnorm(norm_x1,norm_mu, norm_sigma,lower.tail = TRUE), 4))
-          normValue <- round(pnorm(norm_x2,norm_mu, norm_sigma,lower.tail = TRUE) - pnorm(norm_x1,norm_mu, norm_sigma,lower.tail = TRUE), 4)
+          #normValue <- round(pnorm(norm_x2,norm_mu, norm_sigma,lower.tail = TRUE) - pnorm(norm_x1,norm_mu, norm_sigma,lower.tail = TRUE), 4)
           #paste("\\(P(", norm_x1, " ",  " \\leq X \\leq \\)"," ", norm_x2,"\\()\\)"," ","\\( = \\)"," ", round(pnorm(norm_x2,norm_mu, norm_sigma,lower.tail = TRUE), 4), "\\( - \\)", round(pnorm(norm_x1,norm_mu, norm_sigma,lower.tail = TRUE), 4), " ","\\( = \\)"," ",round(pnorm(norm_x2,norm_mu, norm_sigma,lower.tail = TRUE) - pnorm(norm_x1,norm_mu, norm_sigma,lower.tail = TRUE), 4))
         }
         
@@ -2549,7 +2550,7 @@ server <- function(input, output) {
               br(),
               sprintf("\\( \\displaystyle %s = %g\\)",
                       normForm,
-                      normValue),
+                      getNormValue()),
               br(),
               br(),
               br(),
