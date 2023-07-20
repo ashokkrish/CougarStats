@@ -93,10 +93,22 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                         conditionalPanel(
                           condition = "input.dataInput == 'Upload Data'",
                           
-                            fileInput('DS_data', 'Upload data',
-                                      accept = c('text/csv','text/comma-separated-values','text/tab-separated-values',
-                                                 'text/plain','.csv','.txt','.xls','.xlsx'))
+                          fileInput('dsUserData', 'Upload your data (.csv or .xls or .xlsx)',
+                                    accept = c('text/csv','text/comma-separated-values','text/tab-separated-values',
+                                                 'text/plain','.csv','.txt','.xls','.xlsx')
+                                    ),
+                          
+                          selectizeInput(
+                            inputId = "dsUploadVars",
+                            label = strong("Choose a Variable"),
+                            choices = c(""),
+                            options = list(
+                              placeholder = 'Select a variable',
+                              onInitialize = I('function() { this.setValue(""); }')
+                            )
+                          ),
                         ),
+                        
                         
                         #checkboxInput("boxPlot", strong("Add a Boxplot")),
                         
@@ -1378,6 +1390,9 @@ server <- function(input, output) {
 
     iv <- InputValidator$new()
     ds_iv <- InputValidator$new()
+    dsraw_iv <- InputValidator$new()
+    dsupload_iv <- InputValidator$new()
+    dsuploadvars_iv <- InputValidator$new()
     pd_iv <- InputValidator$new()
     binom_iv <- InputValidator$new()
     binomprob_iv <- InputValidator$new()
@@ -1406,13 +1421,29 @@ server <- function(input, output) {
     
     # descriptiveStat
     
-    ds_iv$add_rule("descriptiveStat", sv_required())
-    ds_iv$add_rule("descriptiveStat", sv_regex("^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+$", 
+    dsraw_iv$add_rule("descriptiveStat", sv_required())
+    dsraw_iv$add_rule("descriptiveStat", sv_regex("^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+$", 
                                      "Data must be numeric values seperated by a comma (ie: 2,3,4)"))
     
+    dsupload_iv$add_rule("dsUserData", sv_required())
+    dsupload_iv$add_rule("dsUserData", ~ if(ncol(dsUploadData()) < 1) "Data must include one variable")
+    dsupload_iv$add_rule("dsUserData", ~ if(nrow(dsUploadData()) < 2) "Samples must include at least 2 observations")
+    
+    dsuploadvars_iv$add_rule("dsUploadVars", sv_required())
+    
     ds_iv$condition(~ isTRUE(input$dropDownMenu == 'Descriptive Statistics'))
+    dsraw_iv$condition(~ isTRUE(input$dataInput == 'Enter Raw Data'))
+    dsupload_iv$condition(~ isTRUE(input$dataInput == 'Upload Data'))
+    dsuploadvars_iv$condition(function() {isTRUE(input$dataInput == 'Upload Data' && dsupload_iv$is_valid()) })
+    
+    ds_iv$add_validator(dsraw_iv)
+    ds_iv$add_validator(dsupload_iv)
+    ds_iv$add_validator(dsuploadvars_iv)
     
     ds_iv$enable()
+    dsraw_iv$enable()
+    dsupload_iv$enable()
+    dsuploadvars_iv$enable()
     
     ## PD rules ----
     
@@ -1896,44 +1927,112 @@ server <- function(input, output) {
     #  ------------------------------------- #
     ## ---- Descriptive Stats functions ----
     #  ------------------------------------- #
+    dsRawData <- reactive ({
+      dat <- createNumLst(input$descriptiveStat)
+    })
+    
+    dsUploadData <- eventReactive(input$dsUserData, {
+      ext <- tools::file_ext(input$dsUserData$name)
+      
+      switch(ext, 
+             csv = read_csv(input$dsUserData$datapath),
+             xls = read_excel(input$dsUserData$datapath),
+             xlsx = read_excel(input$dsUserData$datapath),
+             validate("Improper file format")
+             #showModal( modalDialog(
+             # title = "Warning",
+             # "Improper File Format",
+             # easyClose = TRUE
+             #))
+      )
+    })
+    
+    
+    observeEvent(input$dsUserData, {
+      hide(id = "descriptiveStatsMP")
+      hide(id = "dsUploadVars")
+      
+      if(dsupload_iv$is_valid())
+      {
+        freezeReactiveValue(input, "dsUploadVars")
+        updateSelectInput(session = getDefaultReactiveDomain(),
+                          "dsUploadVars",
+                          choices = c(colnames(dsUploadData()))
+                          )
+
+        show(id = "dsUploadVars")
+      }
+    })
+    
+    
     observeEvent(input$goDescpStats, {
       
-      dat <- createNumLst(input$descriptiveStat)
-      
       output$renderDescrStats <- renderUI({
-        validate(
-          need(!anyNA(dat), "Sample Data must be numeric"),
-          need(length(dat) >= 2, "Sample Data must include at least 2 observations"),
+        if(!dsupload_iv$is_valid())
+        {
+          validate(
+            need(!is.null(input$dsUserData), "Please upload your data to continue"),
+            need(nrow(dsUploadData()) != 0 && ncol(dsUploadData()) > 0, "File is empty"),
+            need(nrow(dsUploadData()) > 1, "Sample Data must include at least 2 observations"),
+          
+            errorClass = "myClass"
+          )
+        }
+        else if(!dsuploadvars_iv$is_valid())
+        {
+          validate(
+            need(input$dsUploadVars != "", "Please select a variable"),
+              
+            errorClass = "myClass"
+          )
 
-          errorClass = "myClass"
-        )
+        }
+        else if(!dsraw_iv$is_valid())
+        {
+          validate(
+            need(!anyNA(dsRawData()), "Sample Data must be numeric"),
+            need(length(dsRawData()) >= 2, "Sample Data must include at least 2 observations"),
+            
+            errorClass = "myClass"
+          )
+        }
+        
         
         tagList(
-          conditionalPanel(
-            condition = "input.dataInput == 'Enter Raw Data'",
+          # conditionalPanel(
+          #   condition = "input.dataInput == 'Enter Raw Data'",
             
-            tableOutput("table"),
-            br(),
+          tableOutput("table"),
+          br(),
             
-            plotOutput("boxplotHorizontal"),
-            br(),
+          plotOutput("boxplotHorizontal"),
+          br(),
             
             #plotOutput("boxplotgg"),
             #br(), 
             
             #downloadButton('downloadDataDS', 'Download Results')
             
-          ),
+          #),
           
-          conditionalPanel(
-            condition = "input.dataInput == 'Upload Data'",
-            
-          ),
+          # conditionalPanel(
+          #   condition = "input.dataInput == 'Upload Data'",
+          #   
+          # ),
         )
       })
       
       if(ds_iv$is_valid())
       {
+        if(input$dataInput == 'Upload Data')
+        {
+          dat <- as.data.frame(dsUploadData())[, input$dsUploadVars]
+        }
+        else
+        {
+          dat <- dsRawData()
+        }
+        
         xbar <- round(mean(dat),4)
         sampStdDev <- round(sd(dat),4)
         #popuStdDev <- round(pop.sd(dat),4) # round(sqrt((n-1)/n) * sampStdDev(dat), 4)
@@ -5174,6 +5273,11 @@ server <- function(input, output) {
     
     observeEvent(input$goDescpStats, {
       show(id = 'descriptiveStatsMP')
+    })
+    
+    observeEvent(input$dataInput, {
+      hide(id = 'descriptiveStatsMP')
+      hide(id = 'dsUploadVars')
     })
     
     observeEvent(input$resetAll,{
