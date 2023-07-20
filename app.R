@@ -1757,7 +1757,78 @@ server <- function(input, output) {
       sqrt(sum((x-mean(x))^2)/length(x))
     }
     
-    shadeArea <- function(x, critValues, altHypothesis){
+    
+    shadeNormArea <- function(x){
+      area <- dnorm(x, input$popMean, input$popSD)
+      
+      if(input$calcNormal == "cumulative") #less
+      {
+        area[x > input$xValue] <- NA
+      }
+      else if(input$calcNormal == "between") #twosided
+      {
+        area[x <= input$x1Value | x >= input$x2Value] <- NA
+      }
+      else if(input$calcNormal == "upperTail") #greater
+      {
+        area[x < input$xValue] <- NA
+      }
+      return(area)
+    }
+    
+    normPlot <- function(normValue){
+      normTail = qnorm(0.999, mean = input$popMean, sd = input$popSD, lower.tail = FALSE)
+      normHead = qnorm(0.999, mean = input$popMean, sd = input$popSD, lower.tail = TRUE)
+      #xSeq = seq(normTail, normHead, by = 0.005)
+      
+      if(input$calcNormal == "between")
+      {
+        normLines <- c(input$x1Value, input$x2Value)
+        probXLab <- (input$x2Value + input$x1Value)/2 
+      }
+      else
+      {
+        normLines <- input$xValue
+        
+        if(input$calcNormal == "cumulative")
+        {
+          probXLab <- (input$xValue + normTail/2)/2 
+        }
+        else if(input$calcNormal == "upperTail")
+        {
+          probXLab <- (input$xValue + normHead/2)/2 
+        }
+      }
+      xSeq = sort(c(normTail, normHead, normLines, probXLab))
+      
+      df <- data.frame(x = xSeq, y = dnorm(xSeq, mean = input$popMean, sd = input$popSD))
+      lineDF <- filter(df, x %in% normLines)
+      probDF <- filter(df, x %in% probXLab)
+      
+      nPlot <- ggplot(df, aes(x = x, y = y)) +
+        stat_function(fun = dnorm, args = list(mean = input$popMean, sd = input$popSD), geom = "density",
+                      xlim = c(normTail, normHead),
+                      fill = "#03376d",
+                      alpha = 0.3) + 
+        stat_function(fun = shadeNormArea, geom = "area",
+                      xlim = c(normTail, normHead),
+                      fill = "#03376d",
+                      alpha = 0.7) +
+        theme_minimal()  +
+        theme(axis.title.x = element_text(size = 16, face = "bold"),
+              axis.text.x.bottom = element_text(size = 14)) +
+        scale_x_continuous(breaks = waiver()) +
+        scale_y_continuous(breaks = NULL) +
+        ylab("") + xlab(paste("N(", input$popMean, ",", input$popSD^2, ")")) +
+        geom_text(data = lineDF, aes(x = x, y = 0, label = x), size = 14 / .pt, fontface = "bold", vjust = "outward") +
+        geom_text(data = probDF, aes(x = x, y = y/2, label = normValue), size = 24 / .pt, fontface = "bold")
+        
+      
+      return(nPlot)
+    }
+    
+    
+    shadeHTArea <- function(x, critValues, altHypothesis){
       area <- dnorm(x, 0, 1)
       
       if(altHypothesis == "less") #less
@@ -1800,7 +1871,7 @@ server <- function(input, output) {
                                 xlim = c(normTail, normHead),
                                 fill = "#03376d",
                                 alpha = 0.3) + 
-                  stat_function(fun = shadeArea, args = list(critValues, altHypothesis), geom = "area",
+                  stat_function(fun = shadeHTArea, args = list(critValues, altHypothesis), geom = "area",
                                 xlim = c(normTail, normHead),
                                 fill = "#03376d",
                                 alpha = 0.7) +
@@ -1945,6 +2016,25 @@ server <- function(input, output) {
     #  -------------------------------------------- #
     ## ---- Probability Distribution functions ----
     #  -------------------------------------------- #
+    
+    getNormValue <- reactive({
+      req(pd_iv$is_valid())
+      
+      if(input$calcNormal == "cumulative")
+      {
+        normValue <- round(pnorm(input$xValue, input$popMean, input$popSD, lower.tail = TRUE),4)
+        #paste("\\(P(X \\leq \\)", " ", norm_x, "\\()\\)", " ", "\\( = \\)", " ", round(pnorm(norm_x, norm_mu, norm_sigma, lower.tail = TRUE),4))
+      }
+      else if(input$calcNormal == "upperTail")
+      {
+        normValue <- round(pnorm(input$xValue, input$popMean, input$popSD, lower.tail = FALSE),4)
+        #paste("\\(P(X > \\)", " ", norm_x, "\\()\\)", " ", "\\( = \\)", " ", round(pnorm(norm_x, norm_mu, norm_sigma, lower.tail = FALSE),4))
+      }
+      else if(input$calcNormal == 'between')
+      {
+        normValue <- round(pnorm(input$x2Value, input$popMean, input$popSD, lower.tail = TRUE) - pnorm(input$x1Value, input$popMean, input$popSD, lower.tail = TRUE), 4)
+      }
+    })
     
     ### Binomial ----
     observeEvent(input$goBinom, {
@@ -2473,10 +2563,19 @@ server <- function(input, output) {
               br(),
               sprintf("Variance \\( (\\sigma^{2}) = \\mu = %g\\)",
                       norm_sigma^2)
-            )
+            ),
+            br(),
+            hr(),
+            br(),
+            plotOutput('normDistrPlot', width = "75%", height = "300px"),
+            br()
           )
         )
       })
+    })
+    
+    output$normDistrPlot <- renderPlot({
+      normPlot(getNormValue())
     })
     
     #  ----------------------------------------- #
