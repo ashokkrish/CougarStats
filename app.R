@@ -102,6 +102,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                             inputId = "dsUploadVars",
                             label = strong("Choose a Variable"),
                             choices = c(""),
+                            multiple = TRUE,
                             options = list(
                               placeholder = 'Select a variable',
                               onInitialize = I('function() { this.setValue(""); }')
@@ -1788,6 +1789,26 @@ server <- function(input, output) {
       sqrt(sum((x-mean(x))^2)/length(x))
     }
     
+    createDSColumn <- function(dat) ({
+      
+      xbar <- round(mean(dat),4)
+      sampStdDev <- round(sd(dat),4)
+      #popuStdDev <- round(pop.sd(dat),4) # round(sqrt((n-1)/n) * sampStdDev(dat), 4)
+      Quartile1 <- fivenum(dat)[2] #quantile(dat, 0.25, type = 5)
+      Quartile3 <- fivenum(dat)[4] #quantile(dat, 0.75, type = 5)
+      IQR <- Quartile3 - Quartile1
+      Lower_Fence <- Quartile1 - (1.5*IQR)
+      Upper_Fence <- Quartile3 + (1.5*IQR)
+      Num_Outliers <- sum(dat < Lower_Fence) + sum(dat > Upper_Fence)
+      CoeffVar <- round(sampStdDev/xbar,4)
+
+      dfCol <- data.frame(Value = c(paste0(length(dat)), paste0(sum(dat)), paste0(sum(dat^2)), xbar, paste(Modes(dat)), paste0(min(dat)), 
+                                    Quartile1, paste0(median(dat)), Quartile3, paste0(max(dat)), IQR, Lower_Fence, Upper_Fence,
+                                    Num_Outliers, paste0(range(dat)[2]-range(dat)[1]), sampStdDev, paste0(round(var(dat),4)), 
+                                    paste0(round(sd(dat)/sqrt(length(dat)),4)), CoeffVar, paste0(round(skewness(dat),4)), paste0(round(kurtosis(dat),4))
+                                    ))
+    })
+    
     
     shadeNormArea <- function(x){
       area <- dnorm(x, input$popMean, input$popSD)
@@ -1971,7 +1992,7 @@ server <- function(input, output) {
         if(!dsupload_iv$is_valid())
         {
           validate(
-            need(!is.null(input$dsUserData), "Please upload your data to continue"),
+            need(input$dsUserData, "Please upload your data to continue"),
             need(nrow(dsUploadData()) != 0 && ncol(dsUploadData()) > 0, "File is empty"),
             need(nrow(dsUploadData()) > 1, "Sample Data must include at least 2 observations"),
           
@@ -1997,12 +2018,14 @@ server <- function(input, output) {
           )
         }
         
-        
         tagList(
           # conditionalPanel(
           #   condition = "input.dataInput == 'Enter Raw Data'",
-            
-          tableOutput("table"),
+          fluidRow(
+            column(align = "center", width = 12, DTOutput("table"))
+          ),
+          br(),
+          p("* Note: Q1 and Q3 are calculated by excluding Q2 on both sides"),
           br(),
             
           plotOutput("boxplotHorizontal"),
@@ -2024,25 +2047,44 @@ server <- function(input, output) {
       
       if(ds_iv$is_valid())
       {
+        
+        df <- data.frame(Category = c("Descriptives", "Descriptives", "Descriptives", "Descriptives", "Descriptives", "Five Number Summary", "Five Number Summary",
+                                      "Five Number Summary", "Five Number Summary", "Five Number Summary", "Outliers", "Outliers", "Outliers", "Outliers", 
+                                      "Dispersion", "Dispersion", "Dispersion", "Dispersion", "Dispersion", "Distribution", "Distribution"),
+                         Variable = c("Number of Observations", "Sum", "Sum of Squares", "Mean", "Mode", "Minimum", "First quartile (Q1)*", 
+                                      "Second quartile or median (Q2)", "Third quartile (Q3)*", "Maximum", "Interquartile range (IQR)", 
+                                      "Check for Outliers: Lower Fence", "Check for Outliers: Upper Fence", "Number of Potential Outliers", "Range", 
+                                      "Sample Standard Deviation", "Sample Variance", "Standard Error of the Mean", "Coefficient of variation",
+                                      "Skewness", "Kurtosis"))
+        
+        
         if(input$dataInput == 'Upload Data')
         {
-          dat <- as.data.frame(dsUploadData())[, input$dsUploadVars]
+          for( x in input$dsUploadVars)
+          {
+            dat <- as.data.frame(dsUploadData())[, x]
+            newCol <- createDSColumn(dat)
+            df[x] <- newCol
+          }
+          colnames(df) <- c("Category", "Variable", input$dsUploadVars)
         }
         else
         {
           dat <- dsRawData()
+          newCol <- createDSColumn(dat)
+          df$Value <-newCol
         }
         
-        xbar <- round(mean(dat),4)
-        sampStdDev <- round(sd(dat),4)
-        #popuStdDev <- round(pop.sd(dat),4) # round(sqrt((n-1)/n) * sampStdDev(dat), 4)
-        Quartile1 <- fivenum(dat)[2] #quantile(dat, 0.25, type = 5)
-        Quartile3 <- fivenum(dat)[4] #quantile(dat, 0.75, type = 5)
-        IQR <- Quartile3 - Quartile1
-        Lower_Fence <- Quartile1 - (1.5*IQR)
-        Upper_Fence <- Quartile3 + (1.5*IQR)
-        Num_Outliers <- sum(dat < Lower_Fence) + sum(dat > Upper_Fence)
-        CoeffVar <- round(sampStdDev/xbar,4)
+        # xbar <- round(mean(dat),4)
+        # sampStdDev <- round(sd(dat),4)
+        # #popuStdDev <- round(pop.sd(dat),4) # round(sqrt((n-1)/n) * sampStdDev(dat), 4)
+        # Quartile1 <- fivenum(dat)[2] #quantile(dat, 0.25, type = 5)
+        # Quartile3 <- fivenum(dat)[4] #quantile(dat, 0.75, type = 5)
+        # IQR <- Quartile3 - Quartile1
+        # Lower_Fence <- Quartile1 - (1.5*IQR)
+        # Upper_Fence <- Quartile3 + (1.5*IQR)
+        # Num_Outliers <- sum(dat < Lower_Fence) + sum(dat > Upper_Fence)
+        # CoeffVar <- round(sampStdDev/xbar,4)
         
         # print(dat)
         # print(Lower_Fence)
@@ -2051,35 +2093,52 @@ server <- function(input, output) {
         # print(sum(dat > Upper_Fence))
         # print(Num_Outliers)
         
-        values <- reactiveValues()
+ 
         #dataDS <- reactive(values)
-        values$df <- data.frame(Variable = character(), Value = character())
-        output$table <- renderTable(values$df)
-        row1 <- data.frame(Variable = "Number of observations", Value = paste0(length(dat)))
-        row2 <- data.frame(Variable = "Sum", Value = paste0(sum(dat)))
-        row3 <- data.frame(Variable = "Sum of squares", Value = paste0(sum(dat^2)))
-        row4 <- data.frame(Variable = "Mean", Value = xbar)
-        row5 <- data.frame(Variable = "Mode", Value = paste(Modes(dat)))
-        row6 <- data.frame(Variable = "Minimum", Value = paste0(min(dat)))
-        row7 <- data.frame(Variable = "*First quartile (Q1)", Value = Quartile1)
-        row8 <- data.frame(Variable = "Second quartile or median (Q2)", Value = paste0(median(dat)))
-        row9 <- data.frame(Variable = "*Third quartile (Q3)", Value = Quartile3)
-        row10 <- data.frame(Variable = "Maximum", Value = paste0(max(dat)))
-        row11 <- data.frame(Variable = "*Notes", Value = "Q1 and Q3 are calculated by excluding Q2 on both sides")
-        row12 <- data.frame(Variable = "Interquartile range (IQR)", Value = IQR)
-        row13 <- data.frame(Variable = "Check for Outliers: Lower Fence", Value = Lower_Fence)
-        row14 <- data.frame(Variable = "Check for Outliers: Upper Fence", Value = Upper_Fence)
-        row15 <- data.frame(Variable = "Number of Potential Outliers", Value = Num_Outliers)
-        row16 <- data.frame(Variable = "Range", Value = paste0(range(dat)[2]-range(dat)[1]))
-        row17 <- data.frame(Variable = "Sample Standard Deviation", Value = sampStdDev)
-        row18 <- data.frame(Variable = "Sample Variance", Value = paste0(round(var(dat),4)))
-        row19 <- data.frame(Variable = "Standard Error of the Mean", Value = paste0(round(sd(dat)/sqrt(length(dat)),4)))
-        row20 <- data.frame(Variable = "Coefficient of variation", Value = CoeffVar)
-        row21 <- data.frame(Variable = "Skewness", Value = paste0(round(skewness(dat),4)))
-        row22 <- data.frame(Variable = "Kurtosis", Value = paste0(round(kurtosis(dat),4)))
+        # row1 <- data.frame(Category = "Descriptives", Variable = "Number of observations", Value = paste0(length(dat)))
+        # row2 <- data.frame(Category = "Descriptives", Variable = "Sum", Value = paste0(sum(dat)))
+        # row3 <- data.frame(Category = "Descriptives", Variable = "Sum of squares", Value = paste0(sum(dat^2)))
+        # row4 <- data.frame(Category = "Descriptives", Variable = "Mean", Value = xbar)
+        # row5 <- data.frame(Category = "Descriptives", Variable = "Mode", Value = paste(Modes(dat)))
+        # row6 <- data.frame(Category = "Five Number Summary", Variable = "Minimum", Value = paste0(min(dat)))
+        # row7 <- data.frame(Category = "Five Number Summary", Variable = "First quartile (Q1)*", Value = Quartile1)
+        # row8 <- data.frame(Category = "Five Number Summary", Variable = "Second quartile or median (Q2)", Value = paste0(median(dat)))
+        # row9 <- data.frame(Category = "Five Number Summary", Variable = "Third quartile (Q3)*", Value = Quartile3)
+        # row10 <- data.frame(Category = "Five Number Summary", Variable = "Maximum", Value = paste0(max(dat)))
+        # row11 <- data.frame(Category = "Outliers", Variable = "Interquartile range (IQR)", Value = IQR)
+        # row12 <- data.frame(Category = "Outliers", Variable = "Check for Outliers: Lower Fence", Value = Lower_Fence)
+        # row13 <- data.frame(Category = "Outliers", Variable = "Check for Outliers: Upper Fence", Value = Upper_Fence)
+        # row14 <- data.frame(Category = "Outliers", Variable = "Number of Potential Outliers", Value = Num_Outliers)
+        # row15 <- data.frame(Category = "Dispersion", Variable = "Range", Value = paste0(range(dat)[2]-range(dat)[1]))
+        # row16 <- data.frame(Category = "Dispersion", Variable = "Sample Standard Deviation", Value = sampStdDev)
+        # row17 <- data.frame(Category = "Dispersion", Variable = "Sample Variance", Value = paste0(round(var(dat),4)))
+        # row18 <- data.frame(Category = "Dispersion", Variable = "Standard Error of the Mean", Value = paste0(round(sd(dat)/sqrt(length(dat)),4)))
+        # row19 <- data.frame(Category = "Dispersion", Variable = "Coefficient of variation", Value = CoeffVar)
+        # row20 <- data.frame(Category = "Distribution", Variable = "Skewness", Value = paste0(round(skewness(dat),4)))
+        # row21 <- data.frame(Category = "Distribution", Variable = "Kurtosis", Value = paste0(round(kurtosis(dat),4)))
         #row23 <- data.frame(Variable = "Population Standard Deviation (sigma)", Value = popuStdDev)
         
-        values$df <- rbind(row1, row2, row3, row4, row5, row6, row7, row8, row9, row10, row11, row12, row13, row14, row15, row16, row17, row18, row19, row20, row21, row22)
+        # df <- rbind(row1, row2, row3, row4, row5, row6, row7, row8, row9, row10, row11, row12, row13, row14, row15, row16, row17, row18, row19, row20, row21)
+        # rownames(df) <- c("size", "sum", "sumSquares", "mean", "mode", "min", "q1", "median", "q3", "max", "iqr", "outliersLow", "outliersUpp", 
+        #                   "outliersNum", "range", "sd", "variance", "meanSE", "coeffVariation", "skewness", "kurtosis")
+        
+        output$table <- renderDT(datatable(df,
+                                           extensions = 'RowGroup',
+                                           options = list(
+                                             rowGroup = list(dataSrc = 0),
+                                             columnDefs = list(list(visible=FALSE, targets=c(0))),
+                                             dom = 't',
+                                             pageLength = -1,
+                                             ordering = FALSE,
+                                             searching = FALSE,
+                                             paging = FALSE,
+                                             autoWidth = TRUE,
+                                             scrollX = TRUE
+                                           ),
+                                           rownames = FALSE,
+                                           filter = "none",
+                                           
+        ))
         
         output$boxplotHorizontal <- renderPlot({
           
@@ -2108,8 +2167,7 @@ server <- function(input, output) {
         }) 
       }
       #print(sort(dat)
-        
-        
+      show(id = 'descriptiveStatsMP') 
     })
     
     #  -------------------------------------------- #
@@ -5271,8 +5329,12 @@ server <- function(input, output) {
     ## ---- Descriptive Statistics ----
     #  -------------------------------- #
     
-    observeEvent(input$goDescpStats, {
-      show(id = 'descriptiveStatsMP')
+    observeEvent(input$descriptiveStat, {
+      hide(id = 'descriptiveStatsMP')                
+    })
+    
+    observeEvent(input$dsUploadVars, {
+      hide(id = 'descriptiveStatsMP')                
     })
     
     observeEvent(input$dataInput, {
