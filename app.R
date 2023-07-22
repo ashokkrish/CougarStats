@@ -1,3 +1,4 @@
+library(aplpack)
 library(base)
 library(bslib)
 library(car)
@@ -42,6 +43,14 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
       .shiny-output-error-validation {
         color: red;
         font-weight: bold;
+      }
+      .dropdown-item:hover,
+      .dropdown-menu>li>a:hover,
+      .dropdown-item:focus,
+      .dropdown-menu>li>a:focus {
+        color:#fff;
+        text-decoration:none;
+        background-color:#428BCA
       }
     "))
   ),
@@ -111,191 +120,229 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                           ),
                         ),
                         br(),
-                        p(strong("Display Options")),
-                        hr(),
+                        #p(strong("Display Options")),
+                        #hr(),
 
                         
-                        prettyToggle(inputId = "descriptivesToggle",
-                                     label_on = tags$u(strong("Descriptives")),
-                                     label_off = strong("Descriptives"),
-                                     status_on = 'primary',
-                                     status_off = 'default',
-                                     icon_on = icon("chevron-down", lib = "font-awesome"),
-                                     icon_off = icon("chevron-up", lib = "font-awesome"),
-                                     shape = 'curve',
-                                     animation = 'smooth',
-                                     thick = TRUE,
-                                     outline = FALSE,
-                                     fill = FALSE,
-                                     value = TRUE),
-                        
-                        conditionalPanel(
-                          condition = 'input.descriptivesToggle',
-                          
-                          prettyCheckboxGroup(inputId = "descriptives",
-                                              label = NULL,
-                                              choices = c("Observations", "Sum", "Sum of Squares", "Mean", "Mode"),
-                                              selected = c("Observations", "Mean"),
-                                              inline = TRUE,
-                                              icon = icon("check"),
-                                              status = "primary",
-                                              shape = 'curve',
-                                              animation = "smooth"
-                          )
-                        ),
-                        
-                        #br(),
-                        
-                        prettyToggle(inputId = "fiveNumSummaryToggle",
-                                     label_on = tags$u(strong("Five Number Summary")),
-                                     label_off = strong("Five Number Summary"),
-                                     status_on = 'primary',
-                                     status_off = 'default',
-                                     icon_on = icon("chevron-down", lib = "font-awesome"),
-                                     icon_off = icon("chevron-up", lib = "font-awesome"),
-                                     shape = 'curve',
-                                     animation = 'smooth',
-                                     thick = TRUE,
-                                     outline = FALSE,
-                                     fill = FALSE,
-                                     value = TRUE),
-
-                        
-                        conditionalPanel(
-                          condition = 'input.fiveNumSummaryToggle',
-                          
-                          prettyCheckboxGroup(inputId = "fiveNumSummary",
-                                              label = NULL,
-                                              choices = c("Min", "First Quartile (Q1)", "Median", "Third Quartile (Q3)", "Max"),
-                                              selected = c("Min", "First Quartile (Q1)", "Median", "Third Quartile (Q3)", "Max"),
-                                              inline = TRUE,
-                                              icon = icon("check"),
-                                              status = "primary",
-                                              shape = 'curve',
-                                              animation = "smooth"
-                          )
-                        ),
-                        #br(),
-                        # checkboxGroupInput(inputId = "fiveNumSummary",
-                        #                    label = NULL,
-                        #                    choices = c("Min", "First Quartile (Q1)", "Median", "Third Quartile (Q3)", "Max"),
-                        #                    selected = c("Min", "First Quartile (Q1)", "Median", "Third Quartile (Q3)", "Max"),
-                        #                    inline = TRUE
-                        # ),
                         
                         
-                        prettyToggle(inputId = "outliersToggle",
-                                     label_on = tags$u(strong("Outliers")),
-                                     label_off = strong("Outliers"),
-                                     status_on = 'primary',
-                                     status_off = 'default',
-                                     icon_on = icon("chevron-down", lib = "font-awesome"),
-                                     icon_off = icon("chevron-up", lib = "font-awesome"),
-                                     shape = 'curve',
-                                     animation = 'smooth',
-                                     thick = TRUE,
-                                     outline = FALSE,
-                                     fill = FALSE,
-                                     value = FALSE),
-                        
-                        
-                        conditionalPanel(
-                          condition = 'input.outliersToggle',
-                          
-                          prettyCheckboxGroup(inputId = "outliers",
-                                              label = NULL,
-                                              choices = c("IQR", "Lower Fence", "Upper Fence", "Potential Outliers"),
-                                              selected = c(""),
-                                              inline = TRUE,
-                                              icon = icon("check"),
-                                              status = "primary",
-                                              shape = 'curve',
-                                              animation = "smooth"
-                          )
-                        ),
-                        #br(),
-                        
-                        # checkboxGroupInput(inputId = "outliers",
-                        #                    label = strong("Outliers:"),
-                        #                    choices = c("IQR", "Lower Fence", "Upper Fence", "Potential Outliers"),
-                        #                    selected = c(""),
-                        #                    inline = TRUE
-                        # ),
-                        
-                        
-                        
-                        prettyToggle(inputId = "dispersionToggle",
-                                     label_on = tags$u(strong("Dispersion")),
-                                     label_off = strong("Dispersion"),
-                                     status_on = 'primary',
-                                     status_off = 'default',
-                                     icon_on = icon("chevron-down", lib = "font-awesome"),
-                                     icon_off = icon("chevron-up", lib = "font-awesome"),
-                                     shape = 'curve',
-                                     animation = 'smooth',
-                                     thick = TRUE,
-                                     outline = FALSE,
-                                     fill = FALSE,
-                                     value = TRUE),
-                        
-                        
-                        conditionalPanel(
-                          condition = 'input.dispersionToggle',
-                          
-                          prettyCheckboxGroup(inputId = "dispersion",
-                                              label = NULL,
-                                              choices = c("Range", "Sample Standard Deviation", "Sample Variance", "Standard Error of the Mean", "Coefficient of Variation"),
-                                              selected = c("Sample Standard Deviation"),
-                                              inline = TRUE,
-                                              icon = icon("check"),
-                                              status = "primary",
-                                              shape = 'curve',
-                                              animation = "smooth"
-                          )
-                        ),
-                        #br(),
-                        
-                        
-                        
-                        # checkboxGroupInput(inputId = "dispersion",
-                        #                    label = strong("Dispersion:"),
-                        #                    choices = c("Range", "Sample Standard Deviation", "Sample Variance", "Standard Error of the Mean", "Coefficient of Variation"),
-                        #                    selected = c("Sample Standard Deviation"),
-                        #                    inline = TRUE
-                        # ),
-                        
-                        
-                        
-                        prettyToggle(inputId = "distributionToggle",
-                                     label_on = tags$u(strong("Distribution")),
-                                     label_off = strong("Distribution"),
-                                     status_on = 'primary',
-                                     status_off = 'default',
-                                     icon_on = icon("chevron-down", lib = "font-awesome"),
-                                     icon_off = icon("chevron-up", lib = "font-awesome"),
-                                     shape = 'curve',
-                                     animation = 'smooth',
-                                     thick = TRUE,
-                                     outline = FALSE,
-                                     fill = FALSE,
-                                     value = FALSE),
-                        
-                        
-                        conditionalPanel(
-                          condition = 'input.distributionToggle',
-                          
-                          prettyCheckboxGroup(inputId = "distribution",
-                                              label = NULL,
-                                              choices = c("Skewness", "Kurtosis"),
-                                              selected = c(""),
-                                              inline = TRUE,
-                                              icon = icon("check"),
-                                              status = "primary",
-                                              shape = 'curve',
-                                              animation = "smooth"
-                          )
+                        pickerInput(
+                          inputId = "dsTableFilters",
+                          label = strong("Options"), 
+                          choices = list(
+                            Descriptives = c("Observations", "Sum", "Sum of Squares", "Mean", "Mode"),
+                            'Five Number Summary' = c("Min", "First Quartile (Q1)", "Median", "Third Quartile (Q3)", "Max"),
+                            Outliers = c("IQR", "Lower Fence", "Upper Fence", "Potential Outliers"),
+                            Dispersion = c("Range", "Sample Standard Deviation", "Sample Variance", "Standard Error of the Mean", "Coefficient of Variation"),
+                            Distribution = c("Skewness", "Kurtosis")
+                            ),
+                          selected = c("Observations", "Min", "First Quartile (Q1)", "Median", "Third Quartile (Q3)", "Max", "Sample Standard Deviation"),
+                          options = list(
+                            `actions-box` = TRUE,
+                            'selected-text-format' = 'count',
+                            style = 'primary'
+                            ),
+                          multiple = TRUE
                         ),
                         br(),
+                        
+                        pickerInput(
+                          inputId = "dsGraphOptions",
+                          label = strong("Graph Options"), 
+                          choices = c("Boxplot", "Histogram", "Stem and Leaf Plot"),
+                          selected = c("Boxplot"),
+                          options = list(
+                            `actions-box` = TRUE,
+                            'selected-text-format' = 'count',
+                            style = 'primary'
+                          ),
+                          multiple = TRUE
+                        ),
+                        br(),
+                        
+                        
+                        
+                        # prettyToggle(inputId = "descriptivesToggle",
+                        #              label_on = tags$u(strong("Descriptives")),
+                        #              label_off = strong("Descriptives"),
+                        #              status_on = 'primary',
+                        #              status_off = 'default',
+                        #              icon_on = icon("chevron-down", lib = "font-awesome"),
+                        #              icon_off = icon("chevron-up", lib = "font-awesome"),
+                        #              shape = 'curve',
+                        #              animation = 'smooth',
+                        #              thick = TRUE,
+                        #              outline = FALSE,
+                        #              fill = FALSE,
+                        #              value = TRUE),
+                        # 
+                        # conditionalPanel(
+                        #   condition = 'input.descriptivesToggle',
+                        #   
+                        #   prettyCheckboxGroup(inputId = "descriptives",
+                        #                       label = NULL,
+                        #                       choices = c("Observations", "Sum", "Sum of Squares", "Mean", "Mode"),
+                        #                       selected = c("Observations", "Mean"),
+                        #                       inline = TRUE,
+                        #                       icon = icon("check"),
+                        #                       status = "primary",
+                        #                       shape = 'curve',
+                        #                       animation = "smooth"
+                        #   )
+                        # ),
+                        # 
+                        # #br(),
+                        # 
+                        # prettyToggle(inputId = "fiveNumSummaryToggle",
+                        #              label_on = tags$u(strong("Five Number Summary")),
+                        #              label_off = strong("Five Number Summary"),
+                        #              status_on = 'primary',
+                        #              status_off = 'default',
+                        #              icon_on = icon("chevron-down", lib = "font-awesome"),
+                        #              icon_off = icon("chevron-up", lib = "font-awesome"),
+                        #              shape = 'curve',
+                        #              animation = 'smooth',
+                        #              thick = TRUE,
+                        #              outline = FALSE,
+                        #              fill = FALSE,
+                        #              value = TRUE),
+                        # 
+                        # 
+                        # conditionalPanel(
+                        #   condition = 'input.fiveNumSummaryToggle',
+                        #   
+                        #   prettyCheckboxGroup(inputId = "fiveNumSummary",
+                        #                       label = NULL,
+                        #                       choices = c("Min", "First Quartile (Q1)", "Median", "Third Quartile (Q3)", "Max"),
+                        #                       selected = c("Min", "First Quartile (Q1)", "Median", "Third Quartile (Q3)", "Max"),
+                        #                       inline = TRUE,
+                        #                       icon = icon("check"),
+                        #                       status = "primary",
+                        #                       shape = 'curve',
+                        #                       animation = "smooth"
+                        #   )
+                        # ),
+                        # #br(),
+                        # # checkboxGroupInput(inputId = "fiveNumSummary",
+                        # #                    label = NULL,
+                        # #                    choices = c("Min", "First Quartile (Q1)", "Median", "Third Quartile (Q3)", "Max"),
+                        # #                    selected = c("Min", "First Quartile (Q1)", "Median", "Third Quartile (Q3)", "Max"),
+                        # #                    inline = TRUE
+                        # # ),
+                        # 
+                        # 
+                        # prettyToggle(inputId = "outliersToggle",
+                        #              label_on = tags$u(strong("Outliers")),
+                        #              label_off = strong("Outliers"),
+                        #              status_on = 'primary',
+                        #              status_off = 'default',
+                        #              icon_on = icon("chevron-down", lib = "font-awesome"),
+                        #              icon_off = icon("chevron-up", lib = "font-awesome"),
+                        #              shape = 'curve',
+                        #              animation = 'smooth',
+                        #              thick = TRUE,
+                        #              outline = FALSE,
+                        #              fill = FALSE,
+                        #              value = FALSE),
+                        # 
+                        # 
+                        # conditionalPanel(
+                        #   condition = 'input.outliersToggle',
+                        #   
+                        #   prettyCheckboxGroup(inputId = "outliers",
+                        #                       label = NULL,
+                        #                       choices = c("IQR", "Lower Fence", "Upper Fence", "Potential Outliers"),
+                        #                       selected = c(""),
+                        #                       inline = TRUE,
+                        #                       icon = icon("check"),
+                        #                       status = "primary",
+                        #                       shape = 'curve',
+                        #                       animation = "smooth"
+                        #   )
+                        # ),
+                        # #br(),
+                        # 
+                        # # checkboxGroupInput(inputId = "outliers",
+                        # #                    label = strong("Outliers:"),
+                        # #                    choices = c("IQR", "Lower Fence", "Upper Fence", "Potential Outliers"),
+                        # #                    selected = c(""),
+                        # #                    inline = TRUE
+                        # # ),
+                        # 
+                        # 
+                        # 
+                        # prettyToggle(inputId = "dispersionToggle",
+                        #              label_on = tags$u(strong("Dispersion")),
+                        #              label_off = strong("Dispersion"),
+                        #              status_on = 'primary',
+                        #              status_off = 'default',
+                        #              icon_on = icon("chevron-down", lib = "font-awesome"),
+                        #              icon_off = icon("chevron-up", lib = "font-awesome"),
+                        #              shape = 'curve',
+                        #              animation = 'smooth',
+                        #              thick = TRUE,
+                        #              outline = FALSE,
+                        #              fill = FALSE,
+                        #              value = TRUE),
+                        # 
+                        # 
+                        # conditionalPanel(
+                        #   condition = 'input.dispersionToggle',
+                        #   
+                        #   prettyCheckboxGroup(inputId = "dispersion",
+                        #                       label = NULL,
+                        #                       choices = c("Range", "Sample Standard Deviation", "Sample Variance", "Standard Error of the Mean", "Coefficient of Variation"),
+                        #                       selected = c("Sample Standard Deviation"),
+                        #                       inline = TRUE,
+                        #                       icon = icon("check"),
+                        #                       status = "primary",
+                        #                       shape = 'curve',
+                        #                       animation = "smooth"
+                        #   )
+                        # ),
+                        # #br(),
+                        # 
+                        # 
+                        # 
+                        # # checkboxGroupInput(inputId = "dispersion",
+                        # #                    label = strong("Dispersion:"),
+                        # #                    choices = c("Range", "Sample Standard Deviation", "Sample Variance", "Standard Error of the Mean", "Coefficient of Variation"),
+                        # #                    selected = c("Sample Standard Deviation"),
+                        # #                    inline = TRUE
+                        # # ),
+                        # 
+                        # 
+                        # 
+                        # prettyToggle(inputId = "distributionToggle",
+                        #              label_on = tags$u(strong("Distribution")),
+                        #              label_off = strong("Distribution"),
+                        #              status_on = 'primary',
+                        #              status_off = 'default',
+                        #              icon_on = icon("chevron-down", lib = "font-awesome"),
+                        #              icon_off = icon("chevron-up", lib = "font-awesome"),
+                        #              shape = 'curve',
+                        #              animation = 'smooth',
+                        #              thick = TRUE,
+                        #              outline = FALSE,
+                        #              fill = FALSE,
+                        #              value = FALSE),
+                        # 
+                        # 
+                        # conditionalPanel(
+                        #   condition = 'input.distributionToggle',
+                        #   
+                        #   prettyCheckboxGroup(inputId = "distribution",
+                        #                       label = NULL,
+                        #                       choices = c("Skewness", "Kurtosis"),
+                        #                       selected = c(""),
+                        #                       inline = TRUE,
+                        #                       icon = icon("check"),
+                        #                       status = "primary",
+                        #                       shape = 'curve',
+                        #                       animation = "smooth"
+                        #   )
+                        # ),
+                        # br(),
                         
                         # checkboxGroupInput(inputId = "distribution",
                         #                    label = NULL,
@@ -1626,6 +1673,8 @@ server <- function(input, output) {
     
     dsuploadvars_iv$add_rule("dsUploadVars", sv_required())
     
+    #ds_iv$add_rule("dsTableFilters", sv_required())
+    
     ds_iv$condition(~ isTRUE(input$dropDownMenu == 'Descriptive Statistics'))
     dsraw_iv$condition(~ isTRUE(input$dataInput == 'Enter Raw Data'))
     dsupload_iv$condition(~ isTRUE(input$dataInput == 'Upload Data'))
@@ -2180,16 +2229,54 @@ server <- function(input, output) {
     })
     
     
-    dsTableFilters <- reactive({
-      filters <- list()
+    # dsTableFilters <- reactive({
+    #   filters <- list()
+    #   
+    #   filters <- c(filters, input$descriptives)
+    #   filters <- c(filters, input$fiveNumSummary)
+    #   filters <- c(filters, input$outliers)
+    #   filters <- c(filters, input$dispersion)
+    #   filters <- c(filters, input$distribution)
+    #   
+    #   return(filters)
+    # })
+    
+    getDsDataframe <- reactive({
       
-      filters <- c(filters, input$descriptives)
-      filters <- c(filters, input$fiveNumSummary)
-      filters <- c(filters, input$outliers)
-      filters <- c(filters, input$dispersion)
-      filters <- c(filters, input$distribution)
+      req(ds_iv$is_valid())
       
-      return(filters)
+      df <- data.frame(Category = c("Descriptives", "Descriptives", "Descriptives", "Descriptives", "Descriptives", "Five Number Summary", "Five Number Summary",
+                                    "Five Number Summary", "Five Number Summary", "Five Number Summary", "Outliers", "Outliers", "Outliers", "Outliers", 
+                                    "Dispersion", "Dispersion", "Dispersion", "Dispersion", "Dispersion", "Distribution", "Distribution"),
+                       Variable = c("Number of Observations", "Sum", "Sum of Squares", "Mean", "Mode", "Minimum", "First Quartile (Q1)*", 
+                                    "Second Quartile or Median (Q2)", "Third Quartile (Q3)*", "Maximum", "Interquartile Range (IQR)", 
+                                    "Check for Outliers: Lower Fence", "Check for Outliers: Upper Fence", "Number of Potential Outliers", "Range", 
+                                    "Sample Standard Deviation", "Sample Variance", "Standard Error of the Mean", "Coefficient of Variation",
+                                    "Skewness", "Kurtosis"))
+      
+      
+      if(input$dataInput == 'Upload Data')
+      {
+        for( x in input$dsUploadVars)
+        {
+          dat <- as.data.frame(dsUploadData())[, x]
+          newCol <- createDSColumn(dat)
+          df[x] <- newCol
+        }
+        colnames(df) <- c("Category", "Variable", input$dsUploadVars)
+      }
+      else
+      {
+        dat <- dsRawData()
+        newCol <- createDSColumn(dat)
+        df$Value <-newCol
+      }
+      
+      rownames(df) <- c("Observations", "Sum", "Sum of Squares", "Mean", "Mode", "Min", "First Quartile (Q1)", "Median", "Third Quartile (Q3)", "Max", "IQR", 
+                        "Lower Fence", "Upper Fence", "Potential Outliers", "Range", "Sample Standard Deviation", "Sample Variance", "Standard Error of the Mean", 
+                        "Coefficient of Variation", "Skewness", "Kurtosis")
+      
+      return(df)
     })
     
     observeEvent(input$goDescpStats, {
@@ -2227,16 +2314,75 @@ server <- function(input, output) {
         tagList(
           # conditionalPanel(
           #   condition = "input.dataInput == 'Enter Raw Data'",
-          fluidRow(
-            column(align = "center", width = 12, DTOutput("table"))
-          ),
-          br(),
-          p("* Note: Q1 and Q3 are calculated by excluding Q2 on both sides"),
-          br(),
-            
-          plotOutput("boxplotHorizontal"),
-          br(),
-            
+          tabsetPanel(id = "dsTabset", selected = "Table",
+                      
+            tabPanel(id = "dsTable", title = "Table",
+              h3("Descriptive Statistics"),
+              fluidRow(
+                column(align = "center", width = 12, DTOutput("dsTable"))
+              ),
+              br(),
+              conditionalPanel(
+                condition = "input.dsTableFilters.indexOf('First Quartile (Q1)') > -1 | input.dsTableFilters.indexOf('Third Quartile (Q3)') > -1",
+                
+                p("* Note: Q1 and Q3 are calculated by excluding Q2 on both sides"),
+                br(),
+              ),
+              
+            ),
+          
+            tabPanel(id = "dsGraphs", title = "Graphs",
+                    conditionalPanel(
+                      condition = "input.dsGraphOptions == ''",
+                      
+                      br(),
+                      p("Select one or more options from the Graph Options menu to see more information.")
+                    ),
+                     
+                    conditionalPanel(
+                      condition = "input.dsGraphOptions.indexOf('Boxplot') > -1",
+                       
+                      h3("Boxplot"),
+                      fluidRow(
+                       column(align = "center", width = 12, plotOutput("dsBoxplot", width = '75%'))
+                      ),
+                      br(),
+                      br(),
+                      hr(),
+                      br(),
+                    ),
+                     
+                    conditionalPanel(
+                      condition = "input.dsGraphOptions.indexOf('Histogram') > -1",
+                     
+                      h3("Histogram"),
+                      fluidRow(
+                       column(align = "center", width = 12, plotOutput("dsHistogram", width = '75%'))
+                      ),
+                      br(),
+                      hr(),
+                      br(),
+                    ),
+                     
+                    conditionalPanel(
+                      condition = "input.dsGraphOptions.indexOf('Stem and Leaf Plot') > -1",
+                      
+                      h3("Stem and Leaf Plot"),
+                      br(),
+                      fluidRow(
+                        column(width = 2, div("")),
+                        column(width = 8, 
+                               verbatimTextOutput('dsStemLeaf'),
+                               br(),
+                               p("** Note: Outlier values are listed under the HI/LO lists.")),
+                        column(width = 2, div(""))
+                      ),
+                      br(),
+                    ),
+
+              
+            )
+          )
             #plotOutput("boxplotgg"),
             #br(), 
             
@@ -2253,32 +2399,34 @@ server <- function(input, output) {
       
       if(ds_iv$is_valid())
       {
-        df <- data.frame(Category = c("Descriptives", "Descriptives", "Descriptives", "Descriptives", "Descriptives", "Five Number Summary", "Five Number Summary",
-                                      "Five Number Summary", "Five Number Summary", "Five Number Summary", "Outliers", "Outliers", "Outliers", "Outliers", 
-                                      "Dispersion", "Dispersion", "Dispersion", "Dispersion", "Dispersion", "Distribution", "Distribution"),
-                         Variable = c("Number of Observations", "Sum", "Sum of Squares", "Mean", "Mode", "Minimum", "First Quartile (Q1)*", 
-                                      "Second Quartile or Median (Q2)", "Third Quartile (Q3)*", "Maximum", "Interquartile Range (IQR)", 
-                                      "Check for Outliers: Lower Fence", "Check for Outliers: Upper Fence", "Number of Potential Outliers", "Range", 
-                                      "Sample Standard Deviation", "Sample Variance", "Standard Error of the Mean", "Coefficient of Variation",
-                                      "Skewness", "Kurtosis"))
-        
-        
-        if(input$dataInput == 'Upload Data')
-        {
-          for( x in input$dsUploadVars)
-          {
-            dat <- as.data.frame(dsUploadData())[, x]
-            newCol <- createDSColumn(dat)
-            df[x] <- newCol
-          }
-          colnames(df) <- c("Category", "Variable", input$dsUploadVars)
-        }
-        else
-        {
-          dat <- dsRawData()
-          newCol <- createDSColumn(dat)
-          df$Value <-newCol
-        }
+        # df <- data.frame(Category = c("Descriptives", "Descriptives", "Descriptives", "Descriptives", "Descriptives", "Five Number Summary", "Five Number Summary",
+        #                               "Five Number Summary", "Five Number Summary", "Five Number Summary", "Outliers", "Outliers", "Outliers", "Outliers", 
+        #                               "Dispersion", "Dispersion", "Dispersion", "Dispersion", "Dispersion", "Distribution", "Distribution"),
+        #                  Variable = c("Number of Observations", "Sum", "Sum of Squares", "Mean", "Mode", "Minimum", "First Quartile (Q1)*", 
+        #                               "Second Quartile or Median (Q2)", "Third Quartile (Q3)*", "Maximum", "Interquartile Range (IQR)", 
+        #                               "Check for Outliers: Lower Fence", "Check for Outliers: Upper Fence", "Number of Potential Outliers", "Range", 
+        #                               "Sample Standard Deviation", "Sample Variance", "Standard Error of the Mean", "Coefficient of Variation",
+        #                               "Skewness", "Kurtosis"))
+        # 
+        # 
+        # if(input$dataInput == 'Upload Data')
+        # {
+        #   for( x in input$dsUploadVars)
+        #   {
+        #     dat <- as.data.frame(dsUploadData())[, x]
+        #     print(dat)
+        #     newCol <- createDSColumn(dat)
+        #     df[x] <- newCol
+        #   }
+        #   colnames(df) <- c("Category", "Variable", input$dsUploadVars)
+        # }
+        # else
+        # {
+        #   dat <- dsRawData()
+        #   print(dat)
+        #   newCol <- createDSColumn(dat)
+        #   df$Value <-newCol
+        # }
         
         # xbar <- round(mean(dat),4)
         # sampStdDev <- round(sd(dat),4)
@@ -2324,13 +2472,13 @@ server <- function(input, output) {
         #row23 <- data.frame(Variable = "Population Standard Deviation (sigma)", Value = popuStdDev)
         
         # df <- rbind(row1, row2, row3, row4, row5, row6, row7, row8, row9, row10, row11, row12, row13, row14, row15, row16, row17, row18, row19, row20, row21)
-        rownames(df) <- c("Observations", "Sum", "Sum of Squares", "Mean", "Mode", "Min", "First Quartile (Q1)", "Median", "Third Quartile (Q3)", "Max", "IQR", 
-                          "Lower Fence", "Upper Fence", "Potential Outliers", "Range", "Sample Standard Deviation", "Sample Variance", "Standard Error of the Mean", 
-                          "Coefficient of Variation", "Skewness", "Kurtosis")
+        # rownames(df) <- c("Observations", "Sum", "Sum of Squares", "Mean", "Mode", "Min", "First Quartile (Q1)", "Median", "Third Quartile (Q3)", "Max", "IQR", 
+        #                   "Lower Fence", "Upper Fence", "Potential Outliers", "Range", "Sample Standard Deviation", "Sample Variance", "Standard Error of the Mean", 
+        #                   "Coefficient of Variation", "Skewness", "Kurtosis")
+        df <- getDsDataframe()
+        filteredDf <- filter(df, rownames(df) %in% input$dsTableFilters)
         
-        #filteredDf <- filter(df, rownames(df) %in% dsTableFilters())
-        
-        output$table <- renderDT(datatable(filter(df, rownames(df) %in% dsTableFilters()),
+        output$dsTable <- renderDT(datatable(filteredDf,
                                            extensions = 'RowGroup',
                                            options = list(
                                              rowGroup = list(dataSrc = 0),
@@ -2348,13 +2496,40 @@ server <- function(input, output) {
                                            
         ))
         
-        output$boxplotHorizontal <- renderPlot({
+        if(input$dataInput == 'Upload Data')
+        {
+          for( x in input$dsUploadVars)
+          {
+            dat <- as.data.frame(dsUploadData())[, x]
+          }
+          colnames(df) <- c("Category", "Variable", input$dsUploadVars)
+        }
+        else
+        {
+          dat <- dsRawData()
+        }
+        
+        output$dsBoxplot <- renderPlot({
           
           #--------------------#
           # Horizontal boxplot #
           #--------------------#
           
-          boxplot(dat, horizontal = TRUE, lty = 1,  pch = 8) #pch = 19)
+          #boxplot(dat, horizontal = TRUE, lty = 1,  pch = 8, col = "#819BB6") #pch = 19)
+          
+          ggplot(data.frame(x = dat), aes(x = x, y = 0)) +
+            geom_boxplot(fill = "#03376d",
+                         alpha = .5,
+                         outlier.size = 3) +
+            labs(x = "Values",
+                 y = "") +
+            theme_minimal() +
+            theme(axis.title.x = element_text(size = 16, face = "bold", vjust = -1.5),
+                  axis.text.x.bottom = element_text(size = 14),
+                  axis.text.y.left = element_blank()) +
+            scale_x_continuous(breaks = seq(floor(min(dat)), to = ceiling(max(dat)), by = ceiling( (max(dat) - min(dat))/10 ) )) +
+            ylim(-1, 1)
+          
           
           ## Add mean line
           # segments(x0 = mean(dat), y0 = 0.8,
@@ -2364,18 +2539,50 @@ server <- function(input, output) {
           # points(mean(dat), col = 3, pch = 19)
         })
         
-        output$boxplotgg <- renderPlot({
+        # output$dsBoxplot <- renderPlot({
+        #   
+        #   #-----------------#
+        #   # ggplot2 boxplot #
+        #   #-----------------#
+        #   
+        #   ggplot(as.data.frame(dat), aes(x = "", y = dat)) +
+        #     geom_boxplot(show.legend = FALSE)
+        # })
+        
+        output$dsHistogram <- renderPlot({
+          pp <- ggplot(data.frame(x = dat)) +
+            geom_histogram(aes(x = x),
+                           bins = 15,
+                           fill = "#03376d",
+                           color = "black",
+                           alpha = .5) +
+            labs(x = "Values",
+                 y = "Frequency") +
+            theme_minimal() +
+            theme(axis.title.x = element_text(size = 16, face = "bold", vjust = -1.5),
+                  axis.title.y = element_text(size = 16, face = "bold", vjust = 1.5),
+                  axis.text.x.bottom = element_text(size = 14),
+                  axis.text.y.left = element_text(size = 14)) +
+            scale_x_continuous(breaks = seq(floor(min(dat)), to = ceiling(max(dat)), by = ceiling( (max(dat) - min(dat))/10 ) )) 
           
-          #-----------------#
-          # ggplot2 boxplot #
-          #-----------------#
-          
-          ggplot(as.data.frame(dat), aes(x = "", y = dat)) +
-            geom_boxplot(show.legend = FALSE)
-        }) 
+          pp
+        })
+        
+        output$dsStemLeaf <- renderPrint({
+          stem.leaf(dat, m = 1, depths = FALSE)
+        })
       }
       #print(sort(dat)
       show(id = 'descriptiveStatsMP') 
+    })
+    
+    dsTableProxy <- dataTableProxy('dsTable')
+    
+    observeEvent(input$dsTableFilters, {
+      df <- getDsDataframe()
+      newFilter <- filter(df, rownames(df) %in% input$dsTableFilters)
+      
+      replaceData(dsTableProxy, newFilter, resetPaging = FALSE, rownames = FALSE)
     })
     
     #  -------------------------------------------- #
