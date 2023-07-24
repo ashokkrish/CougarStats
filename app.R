@@ -6,7 +6,7 @@ library(dplyr)
 library(DT)
 library(generics)
 library(ggplot2)
-library(moments)
+library(e1071)
 library(nortest)
 library(readr)
 library(readxl)
@@ -74,10 +74,11 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                       selectizeInput(
                         inputId = "dropDownMenu",
                         label = strong("Choose Statistical Topic"),
-                        choices = c("Descriptive Statistics", "Probability Distributions", "Statistical Inference", "Regression and Correlation"),
-                        multiple = TRUE, 
-                        options = list(maxItems = 1)
-                        #selected = NULL, #"Descriptive Statistics", # "Statistical Inference", #"Probability Distributions", #"Regression and Correlation", # NULL
+                        choices = c("", "Descriptive Statistics", "Probability Distributions", "Statistical Inference", "Regression and Correlation"),
+                        #multiple = TRUE, 
+                        options = list(
+                          placeholder = 'Please select a topic below'),
+                        #selected = NULL #"Descriptive Statistics", # "Statistical Inference", #"Probability Distributions", #"Regression and Correlation", # NULL
                       ),
                       
                       
@@ -85,7 +86,8 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                       ### ---- Descriptive Stats sidebar ---- 
                       #   ----------------------------------- #
                       conditionalPanel(id = "descriptiveStatsPanel",
-                        condition = "input.dropDownMenu == 'Descriptive Statistics'",
+                                       condition = "input.dropDownMenu == 'Descriptive Statistics'",
+                                       style = "display: none;",
                         
                         radioButtons(inputId = "dataInput",
                                      label = strong("Data"),
@@ -123,7 +125,6 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                         #p(strong("Display Options")),
                         #hr(),
 
-                        
                         
                         
                         pickerInput(
@@ -373,7 +374,8 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                       ### ---- Probability Distributions sidebar ---- 
                       #   ------------------------------------------- #
                       conditionalPanel(id = "probPanel",
-                        condition = "input.dropDownMenu == 'Probability Distributions'",
+                                       condition = "input.dropDownMenu == 'Probability Distributions'",
+                                       style = "display: none;",
                         
                         radioButtons("probability", label = strong("Distribution"), choices = c("Binomial", "Poisson", "Normal"), selected = NULL, inline = TRUE),
                         
@@ -531,7 +533,8 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                       ### ---- Statistical Inference sidebar ---- 
                       #   --------------------------------------- #
                       conditionalPanel(id = "inferencePanel",
-                        condition = "input.dropDownMenu == 'Statistical Inference'",
+                                       condition = "input.dropDownMenu == 'Statistical Inference'",
+                                       style = "display: none;",
 
                         radioButtons(inputId = "samplesSelect",
                                      label = strong("Number of samples"),
@@ -916,7 +919,8 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                       ### ---- Regression and Correlation sidebar ---- 
                       #   -------------------------------------------- #
                       conditionalPanel(id = "RegCorPanel",
-                        condition = "input.dropDownMenu == 'Regression and Correlation'",
+                                       condition = "input.dropDownMenu == 'Regression and Correlation'",
+                                       style = "display: none;",
  
                         radioButtons(inputId = "simple_vs_multiple",
                                      label = strong("Regression Type"),
@@ -2027,30 +2031,13 @@ server <- function(input, output) {
       else if (length(ux[tab == max(tab)]) > 1 && length(ux[tab == max(tab)]) < length(ux)) {return("There are multiple modes")}
     }
     
+    
     # Function to find the population standard deviation
     pop.sd <- function(x) {
       sqrt(sum((x-mean(x))^2)/length(x))
     }
     
-    createDSColumn <- function(dat) ({
-      
-      xbar <- round(mean(dat),4)
-      sampStdDev <- round(sd(dat),4)
-      #popuStdDev <- round(pop.sd(dat),4) # round(sqrt((n-1)/n) * sampStdDev(dat), 4)
-      Quartile1 <- fivenum(dat)[2] #quantile(dat, 0.25, type = 5)
-      Quartile3 <- fivenum(dat)[4] #quantile(dat, 0.75, type = 5)
-      IQR <- Quartile3 - Quartile1
-      Lower_Fence <- Quartile1 - (1.5*IQR)
-      Upper_Fence <- Quartile3 + (1.5*IQR)
-      Num_Outliers <- sum(dat < Lower_Fence) + sum(dat > Upper_Fence)
-      CoeffVar <- round(sampStdDev/xbar,4)
-
-      dfCol <- data.frame(Value = c(paste0(length(dat)), paste0(sum(dat)), paste0(sum(dat^2)), xbar, paste(Modes(dat)), paste0(min(dat)), 
-                                    Quartile1, paste0(median(dat)), Quartile3, paste0(max(dat)), IQR, Lower_Fence, Upper_Fence,
-                                    Num_Outliers, paste0(range(dat)[2]-range(dat)[1]), sampStdDev, paste0(round(var(dat),4)), 
-                                    paste0(round(sd(dat)/sqrt(length(dat)),4)), CoeffVar, paste0(round(skewness(dat),4)), paste0(round(kurtosis(dat),4))
-                                    ))
-    })
+    
     
     
     shadeNormArea <- function(x){
@@ -2248,8 +2235,8 @@ server <- function(input, output) {
       df <- data.frame(Category = c("Descriptives", "Descriptives", "Descriptives", "Descriptives", "Descriptives", "Five Number Summary", "Five Number Summary",
                                     "Five Number Summary", "Five Number Summary", "Five Number Summary", "Outliers", "Outliers", "Outliers", "Outliers", 
                                     "Dispersion", "Dispersion", "Dispersion", "Dispersion", "Dispersion", "Distribution", "Distribution"),
-                       Variable = c("Number of Observations", "Sum", "Sum of Squares", "Mean", "Mode", "Minimum", "First Quartile (Q1)*", 
-                                    "Second Quartile or Median (Q2)", "Third Quartile (Q3)*", "Maximum", "Interquartile Range (IQR)", 
+                       Variable = c("Number of Observations", "Sum", "Sum of Squares", "Mean", "Mode", "Minimum", "First Quartile \\( (Q_{1}) \\)*", 
+                                    "Second Quartile or Median \\( (Q_{2}) \\)", "Third Quartile \\( (Q_{3}) \\)*", "Maximum", "Interquartile Range (IQR)", 
                                     "Check for Outliers: Lower Fence", "Check for Outliers: Upper Fence", "Number of Potential Outliers", "Range", 
                                     "Sample Standard Deviation", "Sample Variance", "Standard Error of the Mean", "Coefficient of Variation",
                                     "Skewness", "Kurtosis"))
@@ -2278,6 +2265,39 @@ server <- function(input, output) {
       
       return(df)
     })
+    
+    
+    createDSColumn <- function(dat) ({
+      
+      sampSize <- length(dat)
+      sampSum <- sum(dat)
+      sumSquares <- sum(dat^2)
+      xbar <- round(mean(dat),4)
+      sampMode <- Modes(dat)
+      sampMin <- min(dat)
+      #popuStdDev <- round(pop.sd(dat),4) # round(sqrt((n-1)/n) * sampStdDev(dat), 4)
+      quartile1 <-  quantile(dat, 0.25, type = 6) #fivenum(dat)[2]
+      sampMedian <- median(dat)
+      quartile3 <-  quantile(dat, 0.75, type = 6) #fivenum(dat)[4]
+      sampMax <- max(dat)
+      sampIQR <- quartile3 - quartile1
+      lowerFence <- round(quartile1 - (1.5*sampIQR), 4)
+      upperFence <- round(quartile3 + (1.5*sampIQR), 4)
+      numOutliers <- sum(dat < lowerFence) + sum(dat > upperFence)
+      sampRange <- range(dat)[2]-range(dat)[1]
+      sampStdDev <- round(sd(dat),4)
+      sampVar <- round(var(dat),4)
+      sampMeanSE <- round(sd(dat)/sqrt(length(dat)), 4)
+      coeffVar <- round(sampStdDev/xbar, 4)
+      sampSkewness <- round(skewness(dat, type = 2), 4)
+      sampKurtosis <- round(kurtosis(dat, type = 2), 4)
+      
+      dfCol <- data.frame(Value = c(sampSize, sampSum, sumSquares, xbar, sampMode, sampMin, quartile1, sampMedian, quartile3, sampMax, 
+                                    sampIQR, lowerFence, upperFence, numOutliers, sampRange, sampStdDev, sampVar, sampMeanSE, 
+                                    coeffVar, sampSkewness, sampKurtosis)
+      )
+    })
+    
     
     observeEvent(input$goDescpStats, {
       
@@ -2319,7 +2339,8 @@ server <- function(input, output) {
             tabPanel(id = "dsTable", title = "Table",
               h3("Descriptive Statistics"),
               fluidRow(
-                column(align = "center", width = 12, DTOutput("dsTable"))
+                withMathJax(),
+                column(align = "center", width = 12, withMathJax(DTOutput("dsTable")))
               ),
               br(),
               conditionalPanel(
@@ -2374,7 +2395,7 @@ server <- function(input, output) {
                         column(width = 8, 
                                verbatimTextOutput('dsStemLeaf'),
                                br(),
-                               p("** Note: Outlier values are listed under the HI/LO lists.")),
+                               p("* Note: Outlier values are listed under the HI/LO lists.")),
                         column(width = 2, div(""))
                       ),
                       br(),
@@ -2579,9 +2600,10 @@ server <- function(input, output) {
     dsTableProxy <- dataTableProxy('dsTable')
     
     observeEvent(input$dsTableFilters, {
+
       df <- getDsDataframe()
       newFilter <- filter(df, rownames(df) %in% input$dsTableFilters)
-      
+
       replaceData(dsTableProxy, newFilter, resetPaging = FALSE, rownames = FALSE)
     })
     
