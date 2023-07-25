@@ -12,9 +12,9 @@ TInterval <- function(n, xbar, s, c_level = 0.95)
   
   UCL_t <- xbar + margin_of_error
 
-  dat <- round(c(xbar, t.crit, se, LCL_t, UCL_t), 4)
+  dat <- round(c(n, xbar, s, t.crit, se, LCL_t, UCL_t), 4)
   
-  names(dat) <- c("Sample Mean", "T Critical", "Std Error", "LCL", "UCL")
+  names(dat) <- c("Sample Size", "Sample Mean", "Sample SD", "T Critical", "Std Error", "LCL", "UCL")
   
   return(dat)
 }

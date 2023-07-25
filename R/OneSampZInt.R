@@ -10,9 +10,9 @@ ZInterval <- function(n, xbar, sigma, c_level = 0.95)
   
   UCL_z <- xbar + margin_of_error
   
-  dat <- round(c(xbar, z.crit, se, LCL_z, UCL_z), 4)
+  dat <- round(c(n, xbar, sigma, z.crit, se, LCL_z, UCL_z), 4)
   
-  names(dat) <- c("Sample Mean", "Z Critical", "Std Error", "LCL", "UCL")
+  names(dat) <- c("Sample Size", "Sample Mean", "Population SD", "Z Critical", "Std Error", "LCL", "UCL")
   
   return(dat)
 }
