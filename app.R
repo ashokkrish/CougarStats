@@ -1060,6 +1060,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                       div(id = "descriptiveStatsMP",
                         conditionalPanel(
                           condition = "input.dropDownMenu == 'Descriptive Statistics'",
+                          style = "display: none;",
                             
                           uiOutput('renderDescrStats')
     
@@ -1072,6 +1073,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                       div(id = "probabilityMP",
                         conditionalPanel(
                           condition = "input.dropDownMenu == 'Probability Distributions'",
+                          style = "display: none;",
                             
                           conditionalPanel(
                             condition = "input.probability == 'Binomial'",
@@ -1106,6 +1108,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                           
                         conditionalPanel(
                           condition = "input.dropDownMenu == 'Statistical Inference'",
+                          style = "display: none;",
                             
                           uiOutput("renderInference"),
   
@@ -1117,90 +1120,132 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                             conditionalPanel( ##### Pop Mean ----
                               condition = "input.popuParameter == 'Population Mean'",
                               
-                              conditionalPanel(
-                                condition = "input.dataAvailability == 'Summarized Data'",
-                                
-                                  conditionalPanel(
-                                    condition = "input.sigmaKnown == 'Known'",
-                                    
-                                    conditionalPanel(
-                                      condition = "input.inferenceType == 'Confidence Interval'",
-                                      
-                                      uiOutput('oneSampCI'),
-                                      br(),
-                                      #img(src ='OneSampZInt.png', height = '100px')
-                                    ), # One Sample CI
-                                    
-                                    conditionalPanel(
-                                      condition = "input.inferenceType == 'Hypothesis Testing'",
-                                      
-                                      uiOutput('oneSampHT'),
-                                      br(),
-                                    ), # One Sample HT
-                                  ),  # One Sample Sigma known
-                                
-                                  conditionalPanel(
-                                    condition = "input.sigmaKnown == 'Unknown'",
-                                    
-                                    conditionalPanel(
-                                      condition = "input.inferenceType == 'Confidence Interval'",
-                                      
-                                      uiOutput('oneSampCIUnknown'),
-                                      br(),
-                                      #img(src ='OneSampTInt.png', height = '90px')
-                                    ), # One Sample CI
-                                    
-                                    conditionalPanel(
-                                      condition = "input.inferenceType == 'Hypothesis Testing'",
-                                      
-                                      uiOutput('oneSampHTUnknown'),
-                                      br(),
-                                    ), # One Sample HT
-                                  ), # One Sample Sigma unknown
-                                
-                              ), # One Sample Summarized Data
+                              fluidRow(
+                                column(width = 4,
+                                       titlePanel("Sample Data Summary"),
+                                       hr(),
+                                       uiOutput('oneSampMeanTable'),
+                                       br(),
+                                ),
+                                column(width = 8,
+                                       titlePanel('Summary Details'),
+                                       hr(),
+                                       
+                                       conditionalPanel(
+                                         condition = "input.oneSampMeanData_rows_selected == 0",
+                                         
+                                         p("Select one or more variables from the summary table for more information"),
+                                       ),
+                                       
+                                )
+                              ),
+                              
+                              br(),
+                              hr(),
+                              br(),
                               
                               conditionalPanel(
-                                condition = "input.dataAvailability == 'Enter Raw Data'",
+                                condition = "input.inferenceType == 'Confidence Interval'",
                                 
-                                conditionalPanel(
-                                  condition = "input.sigmaKnownRaw == 'rawKnown'",
-                                  
-                                  conditionalPanel(
-                                    condition = "input.inferenceType == 'Confidence Interval'",
-                                    
-                                    uiOutput('oneSampCIRaw'),
-                                    br(),
-                                    #img(src ='OneSampZInt.png', height = '100px')
-                                  ), # One Sample CI Raw
-                                  
-                                  conditionalPanel(
-                                    condition = "input.inferenceType == 'Hypothesis Testing'",
-                                    
-                                    uiOutput('oneSampHTRaw'),
-                                    br(),
-                                  ), # One Sample HT Raw
-                                ), # One Sample Sigma known Raw
+                                titlePanel(tags$u("Confidence Interval")),
+                                br(),
+                                uiOutput('oneMeanCI'),
+                                br(),
+                              ),
+                              
+                              conditionalPanel(
+                                condition = "input.inferenceType == 'Hypothesis Testing'",
                                 
-                                conditionalPanel(
-                                  condition = "input.sigmaKnownRaw == 'rawUnknown'",
-                                  
-                                  conditionalPanel(
-                                    condition = "input.inferenceType == 'Confidence Interval'",
-                                    
-                                    uiOutput('oneSampCIRawUnknown'),
-                                    br(),
-                                    #img(src ='OneSampTInt.png', height = '90px')
-                                  ), # One Sample CI Raw
-                                  
-                                  conditionalPanel(
-                                    condition = "input.inferenceType == 'Hypothesis Testing'",
-                                    
-                                    uiOutput('oneSampHTRawUnknown'),
-                                    br(),
-                                  ),  # One Sample HT Raw
-                                ), # One Sample Sigma unknown Raw
-                              ), # One Sample Raw Data
+                                titlePanel(tags$u("Hypothesis Test")),
+                                br(),
+                                uiOutput('oneMeanHT'),
+                                br(),
+                              ),
+                              
+                              # conditionalPanel(
+                              #   condition = "input.dataAvailability == 'Summarized Data'",
+                              #   
+                              #     conditionalPanel(
+                              #       condition = "input.sigmaKnown == 'Known'",
+                              #       
+                              #       conditionalPanel(
+                              #         condition = "input.inferenceType == 'Confidence Interval'",
+                              #         
+                              #         uiOutput('oneSampCI'),
+                              #         br(),
+                              #         #img(src ='OneSampZInt.png', height = '100px')
+                              #       ), # One Sample CI
+                              #       
+                              #       conditionalPanel(
+                              #         condition = "input.inferenceType == 'Hypothesis Testing'",
+                              #         
+                              #         uiOutput('oneSampHT'),
+                              #         br(),
+                              #       ), # One Sample HT
+                              #     ),  # One Sample Sigma known
+                              #   
+                              #     conditionalPanel(
+                              #       condition = "input.sigmaKnown == 'Unknown'",
+                              #       
+                              #       conditionalPanel(
+                              #         condition = "input.inferenceType == 'Confidence Interval'",
+                              #         
+                              #         uiOutput('oneSampCIUnknown'),
+                              #         br(),
+                              #         #img(src ='OneSampTInt.png', height = '90px')
+                              #       ), # One Sample CI
+                              #       
+                              #       conditionalPanel(
+                              #         condition = "input.inferenceType == 'Hypothesis Testing'",
+                              #         
+                              #         uiOutput('oneSampHTUnknown'),
+                              #         br(),
+                              #       ), # One Sample HT
+                              #     ), # One Sample Sigma unknown
+                              #   
+                              # ), # One Sample Summarized Data
+                              # 
+                              # conditionalPanel(
+                              #   condition = "input.dataAvailability == 'Enter Raw Data'",
+                              #   
+                              #   conditionalPanel(
+                              #     condition = "input.sigmaKnownRaw == 'rawKnown'",
+                              #     
+                              #     conditionalPanel(
+                              #       condition = "input.inferenceType == 'Confidence Interval'",
+                              #       
+                              #       uiOutput('oneSampCIRaw'),
+                              #       br(),
+                              #       #img(src ='OneSampZInt.png', height = '100px')
+                              #     ), # One Sample CI Raw
+                              #     
+                              #     conditionalPanel(
+                              #       condition = "input.inferenceType == 'Hypothesis Testing'",
+                              #       
+                              #       uiOutput('oneSampHTRaw'),
+                              #       br(),
+                              #     ), # One Sample HT Raw
+                              #   ), # One Sample Sigma known Raw
+                              #   
+                              #   conditionalPanel(
+                              #     condition = "input.sigmaKnownRaw == 'rawUnknown'",
+                              #     
+                              #     conditionalPanel(
+                              #       condition = "input.inferenceType == 'Confidence Interval'",
+                              #       
+                              #       uiOutput('oneSampCIRawUnknown'),
+                              #       br(),
+                              #       #img(src ='OneSampTInt.png', height = '90px')
+                              #     ), # One Sample CI Raw
+                              #     
+                              #     conditionalPanel(
+                              #       condition = "input.inferenceType == 'Hypothesis Testing'",
+                              #       
+                              #       uiOutput('oneSampHTRawUnknown'),
+                              #       br(),
+                              #     ),  # One Sample HT Raw
+                              #   ), # One Sample Sigma unknown Raw
+                              # ), # One Sample Raw Data
                             ), # One Population Mean
                             
                             conditionalPanel( ##### Pop Prop ----
@@ -1402,6 +1447,7 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                       div(id = "RegCorMP",
                         conditionalPanel(
                           condition = "input.dropDownMenu == 'Regression and Correlation'",
+                          style = "display: none;",
                             
                           conditionalPanel(
                             condition = "input.simple_vs_multiple == 'SLR'",
@@ -2021,6 +2067,11 @@ server <- function(input, output) {
       as.numeric(split)
     }
     
+    
+    #  ------------------------------------- #
+    ## ---- Descriptive Stats functions ----
+    #  ------------------------------------- #
+    
     # Function to find the mode(s)
     Modes <- function(x) {
       ux <- unique(x)
@@ -2038,149 +2089,10 @@ server <- function(input, output) {
     }
     
     
-    
-    
-    shadeNormArea <- function(x){
-      area <- dnorm(x, input$popMean, input$popSD)
-      
-      if(input$calcNormal == "cumulative") #less
-      {
-        area[x > input$xValue] <- NA
-      }
-      else if(input$calcNormal == "between") #twosided
-      {
-        area[x <= input$x1Value | x >= input$x2Value] <- NA
-      }
-      else if(input$calcNormal == "upperTail") #greater
-      {
-        area[x < input$xValue] <- NA
-      }
-      return(area)
-    }
-    
-    normPlot <- function(normValue){
-      normTail = qnorm(0.999, mean = input$popMean, sd = input$popSD, lower.tail = FALSE)
-      normHead = qnorm(0.999, mean = input$popMean, sd = input$popSD, lower.tail = TRUE)
-      #xSeq = seq(normTail, normHead, by = 0.005)
-      
-      if(input$calcNormal == "between")
-      {
-        normLines <- c(input$x1Value, input$x2Value)
-        probXLab <- (input$x2Value + input$x1Value)/2 
-      }
-      else
-      {
-        normLines <- input$xValue
-        
-        if(input$calcNormal == "cumulative")
-        {
-          probXLab <- (input$xValue - normHead/4)
-        }
-        else if(input$calcNormal == "upperTail")
-        {
-          probXLab <- (input$xValue + normHead/4)
-        }
-      }
-      xSeq = sort(c(normTail, normHead, normLines, probXLab))
-      
-      df <- data.frame(x = xSeq, y = dnorm(xSeq, mean = input$popMean, sd = input$popSD))
-      lineDF <- filter(df, x %in% normLines)
-      probDF <- filter(df, x %in% probXLab)
-      
-      nPlot <- ggplot(df, aes(x = x, y = y)) +
-        stat_function(fun = dnorm, args = list(mean = input$popMean, sd = input$popSD), geom = "density",
-                      #xlim = c(normTail, normHead),
-                      fill = "#03376d",
-                      alpha = 0.3) + 
-        stat_function(fun = shadeNormArea, geom = "area",
-                      #xlim = c(normTail, normHead),
-                      fill = "#03376d",
-                      alpha = 0.7) +
-        theme_minimal()  +
-        theme(axis.title.x = element_text(size = 16, face = "bold"),
-              axis.text.x.bottom = element_text(size = 14)) +
-        scale_x_continuous(breaks = waiver()) +
-        scale_y_continuous(breaks = NULL) +
-        ylab("") + xlab(paste("X")) +
-        geom_text(data = lineDF, aes(x = x, y = 0, label = x), size = 14 / .pt, fontface = "bold", vjust = "outward") 
-        #geom_text(data = probDF, aes(x = x, y = y/2, label = normValue), size = 24 / .pt, fontface = "bold")
-        
-      
-      return(nPlot)
-    }
-    
-    
-    shadeHTArea <- function(x, critValues, altHypothesis){
-      area <- dnorm(x, 0, 1)
-      
-      if(altHypothesis == "less") #less
-      {
-        area[x > critValues] <- NA
-      }
-      else if(altHypothesis == "two.sided") #twosided
-      {
-        area[x > critValues[1] & x < critValues[2]] <- NA
-      }
-      else if(altHypothesis == "greater") #greater
-      {
-        area[x < critValues] <- NA
-      }
-      return(area)
-    }
-    
-    hypTestPlot <- function(testStatistic, critValues, altHypothesis){
-      normTail = qnorm(0.999, mean = 0, sd = 1, lower.tail = FALSE)
-      normHead = qnorm(0.999, mean = 0, sd = 1, lower.tail = TRUE)
-      #xSeq = seq(normTail, normHead, by = 0.005)
-      xSeq = sort(c(normTail, normHead, testStatistic, critValues, 0))
-      
-      if(testStatistic < normTail)
-      {
-        normTail = testStatistic
-        
-      } else if(testStatistic > normHead)
-      {
-        normHead = testStatistic
-      } 
-      
-      df <- data.frame(x = xSeq, y = dnorm(xSeq, 0, 1))
-      cvDF <- filter(df, x %in% critValues)
-      tsDF <- filter(df, x %in% testStatistic)
-      centerDF <- filter(df, x %in% c(0))
-      
-      htPlot <- ggplot(df, aes(x = x, y = y)) +
-                  stat_function(fun = dnorm, geom = "density",
-                                xlim = c(normTail, normHead),
-                                fill = "#03376d",
-                                alpha = 0.3) + 
-                  stat_function(fun = shadeHTArea, args = list(critValues, altHypothesis), geom = "area",
-                                xlim = c(normTail, normHead),
-                                fill = "#03376d",
-                                alpha = 0.7) +
-                  theme_void()  +
-                  scale_x_continuous(breaks = floor(normTail):ceiling(normHead)) +
-                  scale_y_continuous(breaks = NULL) +
-                  ylab("") + xlab("Z") +
-                  geom_segment(data = filter(df, x %in% c(0)), aes(x = x, xend = x, y = 0, yend = y), linetype = "dotted", linewidth = 0.75, color='#03376d') +
-                  geom_text(data = filter(df, x %in% c(0)), aes(x = x, y = y/2, label = "A R"), size = 16 / .pt, fontface = "bold") +
-                  geom_text(data = filter(df, x %in% c(0)), aes(x = x, y = 0, label = "0"), size = 14 / .pt, fontface = "bold", nudge_y = -.01) +
-                  geom_segment(data = tsDF, aes(x = x, xend = x, y = -0.01, yend = y + .03), linetype = "solid", linewidth = 1.25, color='#03376d') +
-                  geom_text(data = tsDF, aes(x = x, y = y, label = "TS"), size = 16 / .pt, fontface = "bold", nudge_y = .045) +
-                  geom_text(data = tsDF, aes(x = x, y = 0, label = x), size = 14 / .pt, fontface = "bold", nudge_y = -.02) +
-                  geom_segment(data = cvDF, aes(x = x, xend = x, y = 0, yend = y), linetype = "blank", lineend = 'round', linewidth = 1.5, color='#03376d') +
-                  geom_text(data = cvDF, aes(x = x, y = 0, label = x), size = 14 / .pt, fontface = "bold", nudge_y = -.01) +
-                  geom_text(data = cvDF, aes(x = x + x/4, y = y, label = "RR"), size = 16 / .pt, fontface = "bold", nudge_y = .03) +
-                  theme(axis.title.x = element_text(size = 16, face = "bold"))
-      
-      return(htPlot)
-    }
-    
-    #  ------------------------------------- #
-    ## ---- Descriptive Stats functions ----
-    #  ------------------------------------- #
     dsRawData <- reactive ({
       dat <- createNumLst(input$descriptiveStat)
     })
+    
     
     dsUploadData <- eventReactive(input$dsUserData, {
       ext <- tools::file_ext(input$dsUserData$name)
@@ -2611,6 +2523,8 @@ server <- function(input, output) {
     ## ---- Probability Distribution functions ----
     #  -------------------------------------------- #
     
+    
+    
     getNormValue <- reactive({
       req(pd_iv$is_valid())
       
@@ -2630,6 +2544,78 @@ server <- function(input, output) {
         normValue <- round(pnorm(input$x2Value, input$popMean, input$popSD, lower.tail = TRUE) - pnorm(input$x1Value, input$popMean, input$popSD, lower.tail = TRUE), 4)
       }
     })
+    
+    
+    shadeNormArea <- function(x){
+      area <- dnorm(x, input$popMean, input$popSD)
+      
+      if(input$calcNormal == "cumulative") #less
+      {
+        area[x > input$xValue] <- NA
+      }
+      else if(input$calcNormal == "between") #twosided
+      {
+        area[x <= input$x1Value | x >= input$x2Value] <- NA
+      }
+      else if(input$calcNormal == "upperTail") #greater
+      {
+        area[x < input$xValue] <- NA
+      }
+      return(area)
+    }
+    
+    normPlot <- function(normValue){
+      normTail = qnorm(0.999, mean = input$popMean, sd = input$popSD, lower.tail = FALSE)
+      normHead = qnorm(0.999, mean = input$popMean, sd = input$popSD, lower.tail = TRUE)
+      #xSeq = seq(normTail, normHead, by = 0.005)
+      
+      if(input$calcNormal == "between")
+      {
+        normLines <- c(input$x1Value, input$x2Value)
+        probXLab <- (input$x2Value + input$x1Value)/2 
+      }
+      else
+      {
+        normLines <- input$xValue
+        
+        if(input$calcNormal == "cumulative")
+        {
+          probXLab <- (input$xValue - normHead/4)
+        }
+        else if(input$calcNormal == "upperTail")
+        {
+          probXLab <- (input$xValue + normHead/4)
+        }
+      }
+      xSeq = sort(c(normTail, normHead, normLines, probXLab))
+      
+      df <- data.frame(x = xSeq, y = dnorm(xSeq, mean = input$popMean, sd = input$popSD))
+      lineDF <- filter(df, x %in% normLines)
+      probDF <- filter(df, x %in% probXLab)
+      
+      nPlot <- ggplot(df, aes(x = x, y = y)) +
+        stat_function(fun = dnorm, args = list(mean = input$popMean, sd = input$popSD), geom = "density",
+                      #xlim = c(normTail, normHead),
+                      fill = "#03376d",
+                      alpha = 0.3) + 
+        stat_function(fun = shadeNormArea, geom = "area",
+                      #xlim = c(normTail, normHead),
+                      fill = "#03376d",
+                      alpha = 0.7) +
+        theme_minimal()  +
+        theme(axis.title.x = element_text(size = 16, face = "bold"),
+              axis.text.x.bottom = element_text(size = 14)) +
+        scale_x_continuous(breaks = waiver()) +
+        scale_y_continuous(breaks = NULL) +
+        ylab("") + xlab(paste("X")) +
+        geom_text(data = lineDF, aes(x = x, y = 0, label = x), size = 14 / .pt, fontface = "bold", vjust = "outward") 
+      #geom_text(data = probDF, aes(x = x, y = y/2, label = normValue), size = 24 / .pt, fontface = "bold")
+      
+      
+      return(nPlot)
+    }
+    
+    
     
     ### Binomial ----
     observeEvent(input$goBinom, {
@@ -3173,10 +3159,899 @@ server <- function(input, output) {
       normPlot(getNormValue())
     })
     
-    #  ----------------------------------------- #
-    ## ---- Statistical Inference functions ----
-    #  ----------------------------------------- #
+    #  -------------------------------- #
+    ## ---- Statistical Inference  ----
+    #  -------------------------------- #
+    
+    
+    # ---------------------------------- #
+    ### ---- Non-Reactive Functions ----
+    # ---------------------------------- #
+    
+    shadeHtZArea <- function(x, critValues, altHypothesis){
+      area <- dnorm(x, 0, 1)
+      
+      if(altHypothesis == "less") #less
+      {
+        area[x > critValues] <- NA
+      }
+      else if(altHypothesis == "two.sided") #twosided
+      {
+        area[x > critValues[1] & x < critValues[2]] <- NA
+      }
+      else if(altHypothesis == "greater") #greater
+      {
+        area[x < critValues] <- NA
+      }
+      return(area)
+    }
+    
+    hypZTestPlot <- function(testStatistic, critValues, altHypothesis){
+      normTail = qnorm(0.999, mean = 0, sd = 1, lower.tail = FALSE)
+      normHead = qnorm(0.999, mean = 0, sd = 1, lower.tail = TRUE)
+      #xSeq = seq(normTail, normHead, by = 0.005)
+      xSeq = sort(c(normTail, normHead, testStatistic, critValues, 0))
+      
+      if(testStatistic < normTail)
+      {
+        normTail = testStatistic
+        
+      } else if(testStatistic > normHead)
+      {
+        normHead = testStatistic
+      } 
+      
+      df <- data.frame(x = xSeq, y = dnorm(xSeq, 0, 1))
+      cvDF <- filter(df, x %in% critValues)
+      tsDF <- filter(df, x %in% testStatistic)
+      centerDF <- filter(df, x %in% c(0))
+      
+      htPlot <- ggplot(df, aes(x = x, y = y)) +
+        stat_function(fun = dnorm, 
+                      geom = "density",
+                      xlim = c(normTail, normHead),
+                      fill = "#03376d",
+                      alpha = 0.3) + 
+        stat_function(fun = shadeHtZArea, 
+                      args = list(critValues, altHypothesis), 
+                      geom = "area",
+                      xlim = c(normTail, normHead),
+                      fill = "#03376d",
+                      alpha = 0.7) +
+        theme_void()  +
+        scale_x_continuous(breaks = floor(normTail):ceiling(normHead)) +
+        scale_y_continuous(breaks = NULL) +
+        ylab("") + xlab("Z") +
+        geom_segment(data = filter(df, x %in% c(0)), 
+                     aes(x = x, xend = x, y = 0, yend = y), 
+                     linetype = "dotted", 
+                     linewidth = 0.75, 
+                     color='#03376d') +
+        geom_text(data = filter(df, x %in% c(0)), 
+                  aes(x = x, y = y/2, label = "A R"), 
+                  size = 16 / .pt, 
+                  fontface = "bold") +
+        geom_text(data = filter(df, x %in% c(0)), 
+                  aes(x = x, y = 0, label = "0"), 
+                  size = 14 / .pt, 
+                  fontface = "bold", 
+                  nudge_y = -.01) +
+        geom_segment(data = tsDF, 
+                     aes(x = x, xend = x, y = -0.01, yend = y + .03), 
+                     linetype = "solid", 
+                     linewidth = 1.25, 
+                     color='#03376d') +
+        geom_text(data = tsDF, 
+                  aes(x = x, y = y, label = "TS"), 
+                  size = 16 / .pt, 
+                  fontface = "bold", 
+                  nudge_y = .045) +
+        geom_text(data = tsDF, 
+                  aes(x = x, y = 0, label = x), 
+                  size = 14 / .pt, 
+                  fontface = "bold", 
+                  nudge_y = -.02) +
+        geom_segment(data = cvDF, 
+                     aes(x = x, xend = x, y = 0, yend = y), 
+                     linetype = "blank", 
+                     lineend = 'round', 
+                     linewidth = 1.5, 
+                     color='#03376d') +
+        geom_text(data = cvDF, 
+                  aes(x = x, y = 0, label = x), 
+                  size = 14 / .pt, 
+                  fontface = "bold", 
+                  nudge_y = -.01) +
+        geom_text(data = cvDF, 
+                  aes(x = x + x/4, y = y, label = "RR"), 
+                  size = 16 / .pt, 
+                  fontface = "bold", 
+                  nudge_y = .03) +
+        theme(axis.title.x = element_text(size = 16, face = "bold"))
+      
+      return(htPlot)
+    }
+    
+    shadeHtTArea <- function(x, testStatistic, critValues, altHypothesis){
+      area <- dt(x, testStatistic)
+      
+      if(altHypothesis == "less") #less
+      {
+        area[x > critValues] <- NA
+      }
+      else if(altHypothesis == "two.sided") #twosided
+      {
+        area[x > critValues[1] & x < critValues[2]] <- NA
+      }
+      else if(altHypothesis == "greater") #greater
+      {
+        area[x < critValues] <- NA
+      }
+      return(area)
+    }
+    
+    
+    hypTTestPlot <- function(testStatistic, critValues, altHypothesis){
+      tTail = qt(0.999, df = testStatistic, lower.tail = FALSE)
+      tHead = qt(0.999, df = testStatistic, lower.tail = TRUE)
+      #xSeq = seq(normTail, normHead, by = 0.005)
+      xSeq = sort(c(tTail, tHead, testStatistic, critValues, 0))
+      
+      if(testStatistic < tTail)
+      {
+        tTail = testStatistic
+        
+      } else if(testStatistic > tHead)
+      {
+        tHead = testStatistic
+      } 
+      
+      df <- data.frame(x = xSeq, y = dt(xSeq, testStatistic))
+      cvDF <- filter(df, x %in% critValues)
+      tsDF <- filter(df, x %in% testStatistic)
+      centerDF <- filter(df, x %in% c(0))
+      
+      htPlot <- ggplot(df, aes(x = x, y = y)) +
+        stat_function(fun = dt, 
+                      args = list(df = testStatistic), 
+                      geom = "density",
+                      xlim = c(tTail, tHead),
+                      fill = "#03376d",
+                      alpha = 0.3) + 
+        stat_function(fun = shadeHtTArea, 
+                      args = list(testStatistic, critValues, altHypothesis), 
+                      geom = "area",
+                      xlim = c(tTail, tHead),
+                      fill = "#03376d",
+                      alpha = 0.7) +
+        theme_void()  +
+        scale_x_continuous(breaks = floor(tTail):ceiling(tHead) ) +
+        scale_y_continuous(breaks = NULL) +
+        ylab("") + 
+        xlab("t") +
+        geom_segment(data = filter(df, x %in% c(0)), 
+                     aes(x = x, xend = x, y = 0, yend = y), 
+                     linetype = "dotted", 
+                     linewidth = 0.75, color='#03376d') +
+        geom_text(data = filter(df, x %in% c(0)), 
+                  aes(x = x, y = y/2, label = "A R"), 
+                  size = 16 / .pt, 
+                  fontface = "bold") +
+        geom_text(data = filter(df, x %in% c(0)), 
+                  aes(x = x, y = 0, label = "0"), 
+                  size = 14 / .pt, 
+                  fontface = "bold", 
+                  nudge_y = -.01) +
+        geom_segment(data = tsDF, 
+                     aes(x = x, xend = x, y = -0.01, yend = y + .03), 
+                     linetype = "solid", 
+                     linewidth = 1.25, 
+                     color='#03376d') +
+        geom_text(data = tsDF, 
+                  aes(x = x, y = y, label = "TS"), 
+                  size = 16 / .pt, 
+                  fontface = "bold", 
+                  nudge_y = .045) +
+        geom_text(data = tsDF, 
+                  aes(x = x, y = 0, label = x), 
+                  size = 14 / .pt, 
+                  fontface = "bold", 
+                  nudge_y = -.02) +
+        geom_segment(data = cvDF, 
+                     aes(x = x, xend = x, y = 0, yend = y), 
+                     linetype = "blank", 
+                     lineend = 'round', 
+                     linewidth = 1.5, 
+                     color='#03376d') +
+        geom_text(data = cvDF, 
+                  aes(x = x, y = 0, label = x), 
+                  size = 14 / .pt, 
+                  fontface = "bold", 
+                  nudge_y = -.01) +
+        geom_text(data = cvDF, 
+                  aes(x = x + x/4, y = y, label = "RR"), 
+                  size = 16 / .pt, 
+                  fontface = "bold", 
+                  nudge_y = .03) +
+        theme(axis.title.x = element_text(size = 16, face = "bold"))
+      
+      return(htPlot)
+    }
+    
 
+    # --------------------- #
+    ### ---- Reactives ----
+    # --------------------- #
+    
+    ConfLvl <- reactive({
+      
+      if(input$confidenceLevel == '90%'){
+        confLvl <- 0.9
+      }
+      else if(input$confidenceLevel == '95%'){
+        confLvl <- 0.95
+      }
+      else{
+        confLvl <- 0.99
+      }
+      
+      return(confLvl)
+    })
+    
+    
+    SigLvl <- reactive({
+      
+      if(input$significanceLevel == "10%"){
+        sigLvl <- 0.1 
+      }
+      else if(input$significanceLevel == "5%"){
+        sigLvl <- 0.05
+      }
+      else{
+        sigLvl <- 0.01
+      }
+      
+      return(sigLvl)
+    })
+    
+    
+    GetOneMeanHTData <- reactive({
+      hypTestSymbols <- list()
+      
+      if(input$altHypothesis == "3"){
+        hypTestSymbols$alternative <- "greater"
+        hypTestSymbols$nullHyp <- "\\leq"
+        hypTestSymbols$altHyp <- "\\gt"
+        hypTestSymbols$critZAlph <- "z_{\\alpha}"
+      }
+      else if(input$altHypothesis == "2"){
+        hypTestSymbols$alternative <- "two.sided"
+        hypTestSymbols$nullHyp <- "="
+        hypTestSymbols$altHyp <- "\\neq"
+        hypTestSymbols$critZAlph <- "\\pm z_{\\alpha/2}"
+      }
+      else{
+        hypTestSymbols$alternative <- "less"
+        hypTestSymbols$nullHyp <- "\\geq"
+        hypTestSymbols$altHyp <- "\\lt"
+        hypTestSymbols$critZAlph <- "-z_{\\alpha}"
+      }
+      
+      return(hypTestSymbols)
+    })
+    
+    
+    OneMeanZIntSumm <- reactive({
+      req(si_iv$is_valid())
+      
+      nSampOne <- input$sampleSize
+      xbarSampOne <- input$sampleMean
+      sigmaSampOne <- input$popuSD
+      
+      source('R/OneSampZInt.R')
+      
+      oneMeanZInt <- ZInterval(nSampOne, xbarSampOne, sigmaSampOne, ConfLvl())
+      
+      return(oneMeanZInt)
+    })
+    
+    
+    OneMeanZIntRaw <- reactive({
+      req(si_iv$is_valid())
+      
+      datRawData <- createNumLst(input$sample1)
+      rawSampleSize <- length(datRawData)
+      rawSampleMean <- mean(datRawData)
+      rawPopuSD <- input$popuSDRaw
+      
+      source("R/OneSampZInt.R")
+      
+      oneMeanZInt <- ZInterval(rawSampleSize, rawSampleMean, rawPopuSD, 
+                               ConfLvl())
+      
+      return(oneMeanZInt)
+    })
+    
+    
+    OneMeanTIntSumm <- reactive({
+      req(si_iv$is_valid())
+      
+      nSampOne <- input$sampleSize
+      xbarSampOne <- input$sampleMean  
+      sSampOne <- input$sampSD
+      
+      source('R/OneSampTInt.R')
+      
+      oneMeanTInt <- TInterval(nSampOne, xbarSampOne, sSampOne, ConfLvl())
+      
+      return(oneMeanTInt)
+    })
+    
+    
+    OneMeanTIntRaw <- reactive({
+      req(si_iv$is_valid())
+      
+      datRawData <- createNumLst(input$sample1)
+      rawSampleSize <- length(datRawData)
+      rawSampleMean <- mean(datRawData)
+      rawSampleSD <- sd(datRawData)
+      
+      source("R/OneSampTInt.R")
+      
+      oneMeanTInt <- TInterval(rawSampleSize, rawSampleMean, rawSampleSD, 
+                               ConfLvl())
+      
+      return(oneMeanTInt) 
+    })
+    
+    
+    OneMeanZTestSumm <- reactive({
+      req(si_iv$is_valid())
+      
+      nSampOne <- input$sampleSize
+      xbarSampOne <- input$sampleMean 
+      hypMeanSampOne <- input$hypMean 
+      sigmaSampOne <- input$popuSD
+      
+      source("R/OneSampZTest.R")
+      
+      oneMeanZTest <- ZTest(nSampOne, xbarSampOne, sigmaSampOne, hypMeanSampOne,
+                            GetOneMeanHTData()$alternative, SigLvl())
+      
+      return (oneMeanZTest)
+    }) 
+    
+    OneMeanZTestRaw <- reactive({
+      req(si_iv$is_valid())
+      
+      datRawData <- createNumLst(input$sample1)
+      rawSampleSize <- length(datRawData)
+      rawSampleMean <- mean(datRawData)
+      rawPopuSD <- input$popuSDRaw
+      hypMeanSampOne <- input$hypMean 
+      
+      source("R/OneSampZTest.R")
+      
+      oneMeanZTest <- ZTest(rawSampleSize, rawSampleMean, rawPopuSD, 
+                            hypMeanSampOne, GetOneMeanHTData()$alternative, 
+                            SigLvl())
+      
+      return (oneMeanZTest) 
+    })
+    
+    
+    OneMeanTTestSumm <- reactive({
+      req(si_iv$is_valid())
+      
+      nSampOne <- input$sampleSize
+      xbarSampOne <- input$sampleMean
+      hypMeanSampOne <- input$hypMean 
+      sSampOne <- input$sampSD
+      
+      source("R/OneSampTTest.R")
+      
+      oneMeanTTest <- TTest(nSampOne, xbarSampOne, sSampOne, hypMeanSampOne, 
+                            GetOneMeanHTData()$alternative, SigLvl())
+      
+      return(oneMeanTTest)
+    })
+    
+    
+    OneMeanTTestRaw <- reactive({
+      req(si_iv$is_valid())
+      
+      datRawData <- createNumLst(input$sample1)
+      rawSampleSize <- length(datRawData)
+      rawSampleMean <- mean(datRawData)
+      rawSampleSD <- sd(datRawData)
+      hypMeanSampOne <- input$hypMean 
+      
+      
+      source("R/OneSampTTest.R")
+      
+      oneMeanTTest <- TTest(rawSampleSize, rawSampleMean, rawSampleSD, 
+                            hypMeanSampOne, GetOneMeanHTData()$alternative, 
+                            SigLvl())
+      
+      return(oneMeanTTest)
+    })
+    
+    
+    # ------------------- #
+    ### ---- Outputs ----
+    # ------------------- #
+    
+    output$renderInference <- renderUI({
+      
+      if(!onemean_iv$is_valid())
+      {
+        validate(
+          need(input$sampleSize, "Sample size (n) must be a positive integer") %then%
+            need(input$sampleSize > 0 & input$sampleSize %% 1 == 0, "Sample size (n) must be a positive integer"),
+          need(input$sampleMean, "Sample mean required"),
+          
+          errorClass = "myClass"
+        )
+      }
+      
+      if(!onemeansdknown_iv$is_valid())
+      {
+        validate(
+          need(input$popuSD & input$popuSD > 0, "Population Standard Deviation must be positive"),
+          #need(input$popuSD > 0, "Population Standard Deviation must be greater than 0"),
+          
+          errorClass = "myClass"
+        )
+      }
+      
+      if(!onemeanraw_iv$is_valid())
+      {
+        validate(
+          need(input$sample1, "Sample Data required"),
+          need(input$popuSDRaw & input$popuSDRaw > 0, "Population Standard Deviation must be positive"),
+          #need(input$popuSDRaw > 0, "Population Standard Deviation must be greater than 0"),
+          
+          errorClass = "myClass"
+        )
+      }
+      
+      if(!onemeansdunk_iv$is_valid())
+      {
+        validate(
+          need(input$sampSD && input$sampSD > 0, "Sample Standard Deviation (s) must be positive"),
+          
+          errorClass = "myClass"
+        )
+      }
+      
+      if(!onemeanht_iv$is_valid())
+      {
+        validate(
+          need(input$hypMean, "Hypothesized Population Mean value required"),
+          
+          errorClass = "myClass"
+        )
+      }
+    })
+    
+    
+    
+    output$oneSampMeanData <- renderDT({
+      withMathJax()
+      oneMeanData <- data.frame(Variable = character(), Value = character())
+      
+      if(input$inferenceType == 'Confidence Interval'){
+        
+        if(input$dataAvailability == 'Summarized Data'){
+          
+          if(input$sigmaKnown == 'Known'){
+            
+            oneMeanZInt <- OneMeanZIntSumm()
+            
+            row1 <- data.frame(Variable = "Sample Mean \\( (\\bar{x}) \\)", Value = oneMeanZInt["Sample Mean"])
+            row2 <- data.frame(Variable = "Z Critical Value \\( (CV) \\)", Value = oneMeanZInt["Z Critical"])
+            row3 <- data.frame(Variable = "Standard Error \\( (SE) \\)", Value = oneMeanZInt["Std Error"])
+            row4 <- data.frame(Variable = "Lower Confidence Limit \\( (LCL) \\)", Value = oneMeanZInt["LCL"])
+            row5 <- data.frame(Variable = "Upper Confidence Limit \\( (UCL) \\)", Value = oneMeanZInt["UCL"])
+            
+            oneMeanData <- rbind(row1, row2, row3, row4, row5)
+            
+          }
+          else if(input$sigmaKnown == 'Unknown'){
+            
+            oneMeanTInt <- OneMeanTIntSumm()
+            
+            row1 <- data.frame(Variable = "Sample Mean \\( (\\bar{x})\\)", Value = oneMeanTInt["Sample Mean"])
+            row2 <- data.frame(Variable = "T Critical Value \\( (CV)\\)", Value = oneMeanTInt["T Critical"])
+            row3 <- data.frame(Variable = "Standard Error \\( (SE)\\)", Value = oneMeanTInt["Std Error"])
+            row4 <- data.frame(Variable = "Lower Confidence Limit \\( (LCL)\\)", Value = oneMeanTInt["LCL"])
+            row5 <- data.frame(Variable = "Upper Confidence Limit \\( (UCL)\\)", Value = oneMeanTInt["UCL"])
+            
+            oneMeanData <- rbind(row1, row2, row3, row4, row5)
+            
+          } 
+        }
+        else if(input$dataAvailability == 'Enter Raw Data'){
+          
+          if(input$sigmaKnownRaw == 'rawKnown'){
+            
+            oneMeanZInt <- OneMeanZIntRaw()
+            
+            row1 <- data.frame(Variable = "Sample Mean \\( (\\bar{x})\\)", Value = oneMeanZInt["Sample Mean"])
+            row2 <- data.frame(Variable = "Z Critical Value \\( (CV)\\)", Value = oneMeanZInt["Z Critical"])
+            row3 <- data.frame(Variable = "Standard Error \\( (SE)\\)", Value = oneMeanZInt["Std Error"])
+            row4 <- data.frame(Variable = "Lower Confidence Limit \\( (LCL)\\)", Value = oneMeanZInt["LCL"])
+            row5 <- data.frame(Variable = "Upper Confidence Limit \\( (UCL)\\)", Value = oneMeanZInt["UCL"])
+            
+            oneMeanData <- rbind(row1, row2, row3, row4, row5)
+            
+          }
+          else if(input$sigmaKnownRaw == 'rawUnknown'){
+            
+            oneMeanTInt <- OneMeanTIntRaw()
+            
+            row1 <- data.frame(Variable = "Sample Mean \\( (\\bar{x})\\)", Value = oneMeanTInt["Sample Mean"])
+            row2 <- data.frame(Variable = "T Critical Value \\( (CV)\\)", Value = oneMeanTInt["T Critical"])
+            row3 <- data.frame(Variable = "Standard Error \\( (SE)\\)", Value = oneMeanTInt["Std Error"])
+            row4 <- data.frame(Variable = "Lower Confidence Limit \\( (LCL)\\)", Value = oneMeanTInt["LCL"])
+            row5 <- data.frame(Variable = "Upper Confidence Limit \\( (UCL)\\)", Value = oneMeanTInt["UCL"])
+            
+            oneMeanData <- rbind(row1, row2, row3, row4, row5)
+            
+          }
+        }
+      }
+      else if(input$inferenceType == 'Hypothesis Testing'){
+        
+        if(input$dataAvailability == 'Summarized Data'){
+          
+          if(input$sigmaKnown == 'Known'){
+            
+            oneMeanZTest <- OneMeanZTestSumm()
+            
+            row1 <- data.frame(Variable = "Sample Size \\( (n)\\)", Value = oneMeanZTest["Sample Size"])
+            row2 <- data.frame(Variable = "Sample Mean \\( (\\bar{x})\\)", Value = oneMeanZTest["Sample Mean"])
+            row3 <- data.frame(Variable = "Population Standard Deviation \\( (\\sigma)\\)", Value = oneMeanZTest["Population SD"])
+            row4 <- data.frame(Variable = "Z Critical Value \\( (CV)\\)", Value = oneMeanZTest["Z Critical"])
+            row5 <- data.frame(Variable = "Standard Error \\( (SE)\\)", Value = oneMeanZTest["Std Error"])
+            row6 <- data.frame(Variable = "Test Statistic \\( (TS)\\)", Value = oneMeanZTest["Test Statistic"])
+            row7 <- data.frame(Variable = "P-Value \\( (P)\\)", Value = oneMeanZTest["P-Value"])
+            
+            oneMeanData <- rbind(row1, row2, row3, row4, row5, row6, row7) 
+            
+          }
+          else if(input$sigmaKnown == 'Unknown'){
+            
+            oneMeanTTest <- OneMeanTTestSumm()
+            
+            row1 <- data.frame(Variable = "Sample Size \\( (n)\\)", Value = oneMeanTTest["Sample Size"])
+            row2 <- data.frame(Variable = "Sample Mean \\( (\\bar{x})\\)", Value = oneMeanTTest["Sample Mean"])
+            row3 <- data.frame(Variable = "Sample Standard Deviation \\( (s)\\)", Value = oneMeanTTest["Sample SD"])
+            row4 <- data.frame(Variable = "T Critical Value \\( (CV)\\)", Value = oneMeanTTest["T Critical"])
+            row5 <- data.frame(Variable = "Standard Error \\( (SE)\\)", Value = oneMeanTTest["Std Error"])
+            row6 <- data.frame(Variable = "Test Statistic \\( (TS)\\)", Value = oneMeanTTest["Test Statistic"])
+            row7 <- data.frame(Variable = "P-Value \\( (P) \\)", Value = oneMeanTTest["P-Value"])
+            
+            oneMeanData <- rbind(row1, row2, row3, row4, row5, row6, row7)
+            
+          } 
+        }
+        else if(input$dataAvailability == 'Enter Raw Data'){
+          
+          if(input$sigmaKnownRaw == 'rawKnown'){
+            
+            oneMeanZTest <- OneMeanZTestRaw()
+            
+            row1 <- data.frame(Variable = "Sample Size \\( (n)\\)", Value = oneMeanZTest["Sample Size"])
+            row2 <- data.frame(Variable = "Sample Mean \\( (\\bar{x})\\)", Value = oneMeanZTest["Sample Mean"])
+            row3 <- data.frame(Variable = "Population Standard Deviation \\( (\\sigma)\\)", Value = oneMeanZTest["Population SD"])
+            row4 <- data.frame(Variable = "Z Critical Value \\( (CV)\\)", Value = oneMeanZTest["Z Critical"])
+            row5 <- data.frame(Variable = "Standard Error \\( (SE)\\)", Value = oneMeanZTest["Std Error"])
+            row6 <- data.frame(Variable = "Test Statistic \\( (TS)\\)", Value = oneMeanZTest["Test Statistic"])
+            row7 <- data.frame(Variable = "P-Value \\( (P)\\)", Value = oneMeanZTest["P-Value"])
+            
+            oneMeanData <- rbind(row1, row2, row3, row4, row5, row6, row7) 
+            
+            
+          }
+          else if(input$sigmaKnownRaw == 'rawUnknown'){
+            
+            oneMeanTTest <- OneMeanTTestRaw()
+            
+            row1 <- data.frame(Variable = "Sample Size \\( n \\)", Value = oneMeanTTest["Sample Size"])
+            row2 <- data.frame(Variable = "Sample Mean \\((\\bar{x})\\)", Value = oneMeanTTest["Sample Mean"])
+            row3 <- data.frame(Variable = "Sample Standard Deviation \\((s)\\)", Value = oneMeanTTest["Sample SD"])
+            row4 <- data.frame(Variable = "T Critical Value \\((CV)\\)", Value = oneMeanTTest["T Critical"])
+            row5 <- data.frame(Variable = "Standard Error \\( (SE) \\)", Value = oneMeanTTest["Std Error"])
+            row6 <- data.frame(Variable = "Test Statistic \\((TS)\\)", Value = oneMeanTTest["Test Statistic"])
+            row7 <- data.frame(Variable = "P-Value \\((P)\\)", Value = oneMeanTTest["P-Value"])
+            
+            oneMeanData <- rbind(row1, row2, row3, row4, row5, row6, row7)
+            
+          } 
+        }
+      }
+      withMathJax()
+      datatable(oneMeanData,
+                options = list(
+                  dom = 't',
+                  pageLength = -1,
+                  ordering = FALSE,
+                  searching = FALSE,
+                  paging = FALSE
+                ),
+                rownames = FALSE,
+                filter = "none"
+      )
+      
+    })
+    
+    
+    output$oneMeanCI <- renderUI({
+      if(input$dataAvailability == 'Summarized Data'){
+        
+        if(input$sigmaKnown == 'Known'){
+          
+          oneMeanData <- OneMeanZIntSumm()
+          sdSymbol <- "\\sigma"
+          testStat <- "z"
+          critVal <- oneMeanData["Z Critical"]
+          
+        } else if(input$sigmaKnown == 'Unknown'){
+          
+          oneMeanData <- OneMeanTIntSumm()
+          sdSymbol <- "s"
+          testStat <- "t"
+          critVal <- oneMeanData["T Critical"]
+          
+        } 
+      } else if(input$dataAvailability == 'Enter Raw Data'){
+        
+        if(input$sigmaKnownRaw == 'rawKnown'){
+          
+          oneMeanData <- OneMeanZIntRaw()
+          sdSymbol <- "\\sigma"
+          testStat <- "z"
+          critVal <- oneMeanData["Z Critical"]
+          
+        } else if(input$sigmaKnownRaw == 'rawUnknown'){
+          
+          oneMeanData <- OneMeanTIntRaw()
+          sdSymbol <- "s"
+          testStat <- "t"
+          critVal <- oneMeanData["T Critical"]
+        } 
+      }
+      
+      p(
+        withMathJax(
+          sprintf("CI \\(= \\bar{x} \\pm %s_{\\alpha/2} * \\dfrac{%s}{\\sqrt{n}}\\)",
+                  testStat,
+                  sdSymbol),
+          br(),
+          br(),
+          sprintf("CI \\( \\displaystyle = %g \\pm \\left( %g \\cdot \\dfrac{%g}{\\sqrt{%g}} \\right) \\)",
+                  oneMeanData["Sample Mean"],
+                  critVal,
+                  oneMeanData[3],
+                  oneMeanData['Sample Size']),
+          br(),
+          br(),
+          sprintf("CI \\(= (%g, %g)\\)",
+                  oneMeanData["LCL"],
+                  oneMeanData["UCL"]),
+          br(),
+          br(),
+          br(),
+          p(tags$b("Interpretation:")),
+          sprintf("We are %1.0f%% confident that the population mean \\( (\\mu)\\) is between %g and %g.",
+                  ConfLvl()*100,
+                  oneMeanData["LCL"],
+                  oneMeanData["UCL"]),
+          br()
+        )
+      )
+    })
+    
+    
+    output$oneMeanHT <- renderUI({
+      withMathJax()
+      
+      if(input$dataAvailability == 'Summarized Data'){
+        
+        if(input$sigmaKnown == 'Known'){
+          oneMeanData <- OneMeanZTestSumm()
+          sdSymbol <- "\\sigma"
+          testStat <- "z"
+        }
+        else if(input$sigmaKnown == 'Unknown'){
+          oneMeanData <- OneMeanTTestSumm()
+          sdSymbol <- "s"
+          testStat <- "t"
+        } 
+      }
+      else if(input$dataAvailability == 'Enter Raw Data'){
+        
+        if(input$sigmaKnownRaw == 'rawKnown'){
+          oneMeanData <- OneMeanZTestRaw()
+          sdSymbol <- "\\sigma"
+          testStat <- "z"
+        }
+        else if(input$sigmaKnownRaw == 'rawUnknown'){
+          oneMeanData <- OneMeanTTestRaw()
+          sdSymbol <- "s"
+          testStat <- "t"
+        } 
+      }
+      
+      intrpInfo <- GetOneMeanHTData()
+      
+      if(oneMeanData[7] < 0.0001)
+      {
+        pValue <- "\\lt 0.0001"
+      }
+      else
+      {
+        pValue <- paste(oneMeanData[7])
+      }
+      
+      if(oneMeanData[7] > SigLvl())
+      {
+        pvalSymbol <- "\\( \\gt\\)"
+        suffEvidence <- "do not provide"
+        reject <- "do not reject"
+        region <- "acceptance"
+      }
+      else
+      {
+        pvalSymbol <- "\\( \\leq\\)"
+        suffEvidence <- "provide"
+        reject <- "reject"
+        region <- "rejection"
+      }
+      
+      if(intrpInfo$alternative == "two.sided")
+      {
+        if(testStat == 'z') {
+          critVal <- paste("\\( \\pm\\)", oneMeanData["Z Critical"])
+        } else {
+          critVal <- paste("\\( \\pm\\)", oneMeanData["T Critical"])
+        }
+        
+      }
+      else
+      {
+        if(testStat == 'z') {
+          critVal <- paste(oneMeanData["Z Critical"])
+        } else {
+          critVal <- paste(oneMeanData["T Critical"])
+        }
+        
+      }
+      
+      tagList(
+        
+        p(
+          withMathJax(
+            #h4(tags$u("Performing the Hypothesis Test:")),
+            #br(),
+            sprintf("\\( H_{0}: \n \\mu %s %s\\)",
+                    intrpInfo$nullHyp,
+                    input$hypMean),
+            br(),
+            sprintf("\\( H_{a}: \\mu %s %s\\)",
+                    intrpInfo$altHyp,
+                    input$hypMean),
+            br(),
+            br(),
+            sprintf("\\( \\alpha = %s \\)",
+                    SigLvl()),
+            br(),
+            br(),
+            sprintf("\\(%s = \\dfrac{\\bar{x} - \\mu_{0}}{%s / \\sqrt{n}} = \\dfrac{%s - %s}{%s / \\sqrt{%s}}\\)",
+                    testStat,
+                    sdSymbol,
+                    oneMeanData[2],
+                    input$hypMean,
+                    oneMeanData[3],
+                    oneMeanData[1]),
+            br(),
+            br(),
+            sprintf("\\(%s = %g\\)",
+                    testStat,
+                    oneMeanData[6]),
+            br(),
+            br(),
+            br(),
+            p(tags$b("Using P-Value Method:")),
+            sprintf("\\(P = %s\\)",
+                    pValue),
+            br(),
+            sprintf("Since \\( P\\) %s %0.2f, %s \\( H_{0}\\).",
+                    pvalSymbol,
+                    SigLvl(),
+                    reject),
+            br(),
+            br(),
+            br(),
+            p(tags$b("Using Critical Value Method:")),
+            sprintf("Critical Value(s) = %s",
+                    critVal),
+            br(),
+            sprintf("Since the test statistic \\( (%s)\\) falls within the %s region, %s \\( H_{0}\\).",
+                    testStat,
+                    region,
+                    reject)
+            
+          )
+        ),
+        
+        plotOutput('oneMeanHTPlot', width = "75%", height = "300px"),
+        br(),
+        
+        withMathJax(
+          p(tags$b("Conclusion:")),
+          p(
+            sprintf("At the %1.0f%% significance level, the data %s sufficient evidence to reject the null hypothesis \\( (H_{0}) \\) that the population 
+                              mean \\( (\\mu) \\) \\( %s \\) %g.",
+                    SigLvl()*100,
+                    suffEvidence,
+                    intrpInfo$nullHyp,
+                    input$hypMean),
+            br(),
+          )
+        )
+      )
+    })
+    
+    
+    output$oneMeanHTPlot <- renderPlot({
+      
+      if(input$dataAvailability == 'Summarized Data'){
+        
+        if(input$sigmaKnown == 'Known'){
+          oneMeanData <- OneMeanZTestSumm()
+        }
+        else if(input$sigmaKnown == 'Unknown'){
+          oneMeanData <- OneMeanTTestSumm()
+        }
+      }
+      else if(input$dataAvailability == 'Enter Raw Data'){
+        
+        if(input$sigmaKnownRaw == 'rawKnown'){
+          oneMeanData <- OneMeanZTestRaw()
+        }
+        else if(input$sigmaKnownRaw == 'rawUnknown'){
+          oneMeanData <- OneMeanTTestRaw()
+        }
+      }
+      
+      intrpInfo <- GetOneMeanHTData()
+      
+      if(intrpInfo$alternative == "two.sided")
+      {
+        critZVal <- paste("\\( \\pm\\)", oneMeanData[4])
+        htPlotCritVals <- c(-oneMeanData[4], oneMeanData[4])
+      }
+      else
+      {
+        critZVal <- paste(oneMeanData[4])
+        htPlotCritVals <- oneMeanData[4]
+      }
+      
+      if(input$sigmaKnown == 'Known' || input$sigmaKnownRaw == 'rawKnown')
+      {
+        oneMeanPlot <- hypZTestPlot(oneMeanData[6], htPlotCritVals, intrpInfo$alternative)
+      }
+      else
+      {
+        oneMeanPlot <- hypTTestPlot(oneMeanData[6], htPlotCritVals, intrpInfo$alternative)
+      }
+      
+      oneMeanPlot
+    })
+    
+    
     observeEvent(input$goInference, {
       #output$renderInference <- renderDataTable(
       
@@ -3234,276 +4109,230 @@ server <- function(input, output) {
           if(input$popuParameter == 'Population Mean'){ ### 1samp mean ----
             if(si_iv$is_valid())
             {
-              output$renderInference <- renderUI({
-                ""
+              # output$renderInference <- renderUI({
+              #   ""
+              # })
+              
+              output$oneSampMeanTable <- renderUI({
+                tagList(
+                  withMathJax(),
+                  withMathJax(DTOutput('oneSampMeanData', width = "95%"))
+                )
               })
               
-              if(input$dataAvailability == 'Summarized Data'){
-                
-                nSampOne <- input$sampleSize
-                xbarSampOne <- input$sampleMean
-                
-                if(input$inferenceType == 'Confidence Interval'){
-                  
-                  if(input$sigmaKnown == 'Known'){
-                    
-                    sigmaSampOne <- input$popuSD
-                    
-                    source('R/OneSampZInt.R')
-                    
-                    print("Confidence Interval for One Population Mean when Population Standard Deviation is known")
-                    
-                    zIntPrint <- ZInterval(nSampOne, xbarSampOne, sigmaSampOne, confLvl)
-                    
-                    values <- reactiveValues()
-                    values$dfKnown <- data.frame(Variable = character(), Value = character())
-                    output$oneSampCI <- renderTable(values$dfKnown)
-                    
-                    row1 <- data.frame(Variable = "Sample Mean", Value = paste(zIntPrint[1]))
-                    row2 <- data.frame(Variable = "Z Critical Value (CV)", Value = paste(zIntPrint[2]))
-                    row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(zIntPrint[3]))
-                    row4 <- data.frame(Variable = "Lower Confidence Limit (LCL)", Value = paste(zIntPrint[4]))
-                    row5 <- data.frame(Variable = "Upper Confidence Limit (UCL)", Value = paste(zIntPrint[5]))
-                    
-                    values$dfKnown <- rbind(row1, row2, row3, row4, row5)
-                  }
-                  
-                  else if(input$sigmaKnown == 'Unknown'){
-                    
-                    sSampOne <- input$sampSD
-                    
-                    source('R/OneSampTInt.R')
-                    
-                    print("Confidence Interval for One Population Mean when Population Standard Deviation is unknown")
-                    
-                    tIntPrint <- TInterval(nSampOne, xbarSampOne, sSampOne, confLvl)
-                    
-                    values <- reactiveValues()
-                    values$dfUnknown <- data.frame(Variable = character(), Value = character())
-                    output$oneSampCIUnknown <- renderTable(values$dfUnknown)
-                    
-                    row1 <- data.frame(Variable = "Sample Mean", Value = paste(tIntPrint[1]))
-                    row2 <- data.frame(Variable = "T Critical Value (CV)", Value = paste(tIntPrint[2]))
-                    row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(tIntPrint[3]))
-                    row4 <- data.frame(Variable = "Lower Confidence Limit (LCL)", Value = paste(tIntPrint[4]))
-                    row5 <- data.frame(Variable = "Upper Confidence Limit (UCL)", Value = paste(tIntPrint[5]))
-                    
-                    values$dfUnknown <- rbind(row1, row2, row3, row4, row5)
-                  } # input$sigmaKnown == 'Unknown'
-                } # input$inferenceType == 'Confidence Interval'
-                
-                else if(input$inferenceType == 'Hypothesis Testing'){
-                  
-                  hypMeanSampOne <- input$hypMean 
-                  
-                  if(input$sigmaKnown == 'Known'){
-                    
-                    sigmaSampOne <- input$popuSD
-                    
-                    source("R/OneSampZTest.R")
-                    
-                    ZTest <- ZTest(nSampOne, xbarSampOne, sigmaSampOne, hypMeanSampOne, alternative, sigLvl)
-                    
-                    values <- reactiveValues()
-                    values$dfKnownHyp <- data.frame(Variable = character(), Value = character())
-                    output$oneSampHT <- renderTable(values$dfKnownHyp)
-                    
-                    row1 <- data.frame(Variable = "Sample Size", Value = paste(ZTest[1]))
-                    row2 <- data.frame(Variable = "Sample Mean", Value = paste(ZTest[2]))
-                    row3 <- data.frame(Variable = "Population Standard Deviation", Value = paste(ZTest[3]))
-                    row4 <- data.frame(Variable = "Z Critical Value (CV)", Value = paste(ZTest[4]))
-                    row5 <- data.frame(Variable = "Standard Error (SE)", Value = paste(ZTest[5]))
-                    row6 <- data.frame(Variable = "Test Statistic (TS)", Value = paste(ZTest[6]))
-                    row7 <- data.frame(Variable = "P-Value", Value = paste(ZTest[7]))
-                    
-                    values$dfKnownHyp <- rbind(row1, row2, row3, row4, row5, row6, row7) 
-                  }
-                  
-                  else if(input$sigmaKnown == 'Unknown'){
-                    
-                    sSampOne <- input$sampSD
-                    
-                    source("R/OneSampTTest.R")
-                    
-                    TTest <- TTest(nSampOne, xbarSampOne, sSampOne, hypMeanSampOne, alternative, sigLvl)
-                    
-                    values <- reactiveValues()
-                    values$dfUnKnownHyp <- data.frame(Variable = character(), Value = character())
-                    output$oneSampHTUnknown <- renderTable(values$dfUnKnownHyp)
-                    
-                    row1 <- data.frame(Variable = "Sample Size", Value = paste(TTest[1]))
-                    row2 <- data.frame(Variable = "Sample Mean", Value = paste(TTest[2]))
-                    row3 <- data.frame(Variable = "Sample Standard Deviation", Value = paste(TTest[3]))
-                    row4 <- data.frame(Variable = "T Critical Value (CV)", Value = paste(TTest[4]))
-                    row5 <- data.frame(Variable = "Standard Error (SE)", Value = paste(TTest[5]))
-                    row6 <- data.frame(Variable = "Test Statistic (TS)", Value = paste(TTest[6]))
-                    row7 <- data.frame(Variable = "P-Value", Value = paste(TTest[7]))
-                    
-                    values$dfUnKnownHyp <- rbind(row1, row2, row3, row4, row5, row6, row7) 
-                  } # input$sigmaKnown == 'Unknown'
-                } # input$inferenceType == 'Hypothesis Testing'
-              } # input$dataAvailability == 'Summarized Data'
-              
-              else if(input$dataAvailability == 'Enter Raw Data'){
-                
-                datRawData <- createNumLst(input$sample1)
-                
-                rawSampleSize <- length(datRawData)
-                rawSampleMean <- mean(datRawData)
-                
-                if(input$inferenceType == 'Confidence Interval'){
-                  
-                  if(input$sigmaKnownRaw == 'rawKnown'){
-                    
-                    rawPopuSD <- input$popuSDRaw
-                    
-                    source("R/OneSampZInt.R")
-                    
-                    ZIntervalRaw <- ZInterval(rawSampleSize, rawSampleMean, rawPopuSD, confLvl)
-                    
-                    values <- reactiveValues()
-                    values$dfKnownRaw <- data.frame(Variable = character(), Value = character())
-                    output$oneSampCIRaw <- renderTable(values$dfKnownRaw)
-                    
-                    row1 <- data.frame(Variable = "Sample Mean", Value = paste(ZIntervalRaw[1]))
-                    row2 <- data.frame(Variable = "Z Critical Value (CV)", Value = paste(ZIntervalRaw[2]))
-                    row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(ZIntervalRaw[3]))
-                    row4 <- data.frame(Variable = "Lower Confidence Limit (LCL)", Value = paste(ZIntervalRaw[4]))
-                    row5 <- data.frame(Variable = "Upper Confidence Limit (UCL)", Value = paste(ZIntervalRaw[5]))
-                    
-                    values$dfKnownRaw <- rbind(row1, row2, row3, row4, row5)
-                  }
-                  
-                  else if(input$sigmaKnownRaw == 'rawUnknown'){
-                    
-                    rawSampleSD <- sd(datRawData)
-                    
-                    source("R/OneSampTInt.R")
-                    
-                    TIntervalRaw <- TInterval(rawSampleSize, rawSampleMean, rawSampleSD, confLvl)
-                    
-                    values <- reactiveValues()
-                    values$dfUnknownRaw <- data.frame(Variable = character(), Value = character())
-                    output$oneSampCIRawUnknown <- renderTable(values$dfUnknownRaw)
-                    
-                    row1 <- data.frame(Variable = "Sample Mean", Value = paste(TIntervalRaw[1]))
-                    row2 <- data.frame(Variable = "T Critical Value (CV)", Value = paste(TIntervalRaw[2]))
-                    row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(TIntervalRaw[3]))
-                    row4 <- data.frame(Variable = "Lower Confidence Limit (LCL)", Value = paste(TIntervalRaw[4]))
-                    row5 <- data.frame(Variable = "Upper Confidence Limit (UCL)", Value = paste(TIntervalRaw[5]))
-                    
-                    values$dfUnknownRaw <- rbind(row1, row2, row3, row4, row5) 
-                  } # input$sigmaKnownRaw == 'rawUnknown'
-                } # input$inferenceType == 'Confidence Interval'
-                
-                else if(input$inferenceType == 'Hypothesis Testing'){
-                  
-                  hypMeanSampOne <- input$hypMean 
-                  
-                  if(input$sigmaKnownRaw == 'rawKnown'){
-                    
-                    rawPopuSD <- input$popuSDRaw
-                    
-                    source("R/OneSampZTest.R")
-                    
-                    ZTestRaw <- ZTest(rawSampleSize, rawSampleMean, rawPopuSD, hypMeanSampOne, alternative, sigLvl)
-                    
-                    values <- reactiveValues()
-                    values$dfKnownHypRaw <- data.frame(Variable = character(), Value = character())
-                    output$oneSampHTRaw <- renderTable(values$dfKnownHypRaw)
-                    
-                    row1 <- data.frame(Variable = "Sample Size", Value = paste(ZTestRaw[1]))
-                    row2 <- data.frame(Variable = "Sample Mean", Value = paste(ZTestRaw[2]))
-                    row3 <- data.frame(Variable = "Population Standard Deviation", Value = paste(ZTestRaw[3]))
-                    row4 <- data.frame(Variable = "Z Critical Value (CV)", Value = paste(ZTestRaw[4]))
-                    row5 <- data.frame(Variable = "Standard Error (SE)", Value = paste(ZTestRaw[5]))
-                    row6 <- data.frame(Variable = "Test Statistic (TS)", Value = paste(ZTestRaw[6]))
-                    row7 <- data.frame(Variable = "P-Value", Value = paste(ZTestRaw[7]))
-                    
-                    values$dfKnownHypRaw <- rbind(row1, row2, row3, row4, row5, row6, row7) 
-                  }
-                  
-                  else if(input$sigmaKnownRaw == 'rawUnknown'){
-                    
-                    rawSampleSD <- sd(datRawData)
-                    
-                    source("R/OneSampTTest.R")
-                    
-                    TTestRaw <- TTest(rawSampleSize, rawSampleMean, rawSampleSD, hypMeanSampOne, alternative, sigLvl)
-                    
-                    values <- reactiveValues()
-                    values$dfUnKnownHypRaw <- data.frame(Variable = character(), Value = character())
-                    output$oneSampHTRawUnknown <- renderTable(values$dfUnKnownHypRaw)
-                    
-                    row1 <- data.frame(Variable = "Sample Size", Value = paste(TTestRaw[1]))
-                    row2 <- data.frame(Variable = "Sample Mean", Value = paste(TTestRaw[2]))
-                    row3 <- data.frame(Variable = "Sample Standard Deviation", Value = paste(TTestRaw[3]))
-                    row4 <- data.frame(Variable = "T Critical Value (CV)", Value = paste(TTestRaw[4]))
-                    row5 <- data.frame(Variable = "Standard Error (SE)", Value = paste(TTestRaw[5]))
-                    row6 <- data.frame(Variable = "Test Statistic (TS)", Value = paste(TTestRaw[6]))
-                    row7 <- data.frame(Variable = "P-Value", Value = paste(TTestRaw[7]))
-                    
-                    values$dfUnKnownHypRaw <- rbind(row1, row2, row3, row4, row5, row6, row7) 
-                  } # input$sigmaKnownRaw == 'rawUnknown'
-                } # input$inferenceType == 'Hypothesis Testing'
-              } # input$dataAvailability == 'Enter Raw Data'
+            #   if(input$dataAvailability == 'Summarized Data'){
+            #     
+            #     nSampOne <- input$sampleSize
+            #     xbarSampOne <- input$sampleMean
+            #     
+            #     if(input$inferenceType == 'Confidence Interval'){
+            #       
+            #       if(input$sigmaKnown == 'Known'){
+            #         
+            #         sigmaSampOne <- input$popuSD
+            #         
+            #         source('R/OneSampZInt.R')
+            #         
+            #         print("Confidence Interval for One Population Mean when Population Standard Deviation is known")
+            #         
+            #         zIntPrint <- ZInterval(nSampOne, xbarSampOne, sigmaSampOne, confLvl)
+            #         
+            #         values <- reactiveValues()
+            #         values$dfKnown <- data.frame(Variable = character(), Value = character())
+            #         output$oneSampCI <- renderTable(values$dfKnown)
+            #         
+            #         row1 <- data.frame(Variable = "Sample Mean", Value = paste(zIntPrint[1]))
+            #         row2 <- data.frame(Variable = "Z Critical Value (CV)", Value = paste(zIntPrint[2]))
+            #         row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(zIntPrint[3]))
+            #         row4 <- data.frame(Variable = "Lower Confidence Limit (LCL)", Value = paste(zIntPrint[4]))
+            #         row5 <- data.frame(Variable = "Upper Confidence Limit (UCL)", Value = paste(zIntPrint[5]))
+            #         
+            #         values$dfKnown <- rbind(row1, row2, row3, row4, row5)
+            #       }
+            #       
+            #       else if(input$sigmaKnown == 'Unknown'){
+            #         
+            #         sSampOne <- input$sampSD
+            #         
+            #         source('R/OneSampTInt.R')
+            #         
+            #         print("Confidence Interval for One Population Mean when Population Standard Deviation is unknown")
+            #         
+            #         tIntPrint <- TInterval(nSampOne, xbarSampOne, sSampOne, confLvl)
+            #         
+            #         values <- reactiveValues()
+            #         values$dfUnknown <- data.frame(Variable = character(), Value = character())
+            #         output$oneSampCIUnknown <- renderTable(values$dfUnknown)
+            #         
+            #         row1 <- data.frame(Variable = "Sample Mean", Value = paste(tIntPrint[1]))
+            #         row2 <- data.frame(Variable = "T Critical Value (CV)", Value = paste(tIntPrint[2]))
+            #         row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(tIntPrint[3]))
+            #         row4 <- data.frame(Variable = "Lower Confidence Limit (LCL)", Value = paste(tIntPrint[4]))
+            #         row5 <- data.frame(Variable = "Upper Confidence Limit (UCL)", Value = paste(tIntPrint[5]))
+            #         
+            #         values$dfUnknown <- rbind(row1, row2, row3, row4, row5)
+            #       } # input$sigmaKnown == 'Unknown'
+            #     } # input$inferenceType == 'Confidence Interval'
+            #     
+            #     else if(input$inferenceType == 'Hypothesis Testing'){
+            #       
+            #       hypMeanSampOne <- input$hypMean 
+            #       
+            #       if(input$sigmaKnown == 'Known'){
+            #         
+            #         sigmaSampOne <- input$popuSD
+            #         
+            #         source("R/OneSampZTest.R")
+            #         
+            #         ZTest <- ZTest(nSampOne, xbarSampOne, sigmaSampOne, hypMeanSampOne, alternative, sigLvl)
+            #         
+            #         values <- reactiveValues()
+            #         values$dfKnownHyp <- data.frame(Variable = character(), Value = character())
+            #         output$oneSampHT <- renderTable(values$dfKnownHyp)
+            #         
+            #         row1 <- data.frame(Variable = "Sample Size", Value = paste(ZTest[1]))
+            #         row2 <- data.frame(Variable = "Sample Mean", Value = paste(ZTest[2]))
+            #         row3 <- data.frame(Variable = "Population Standard Deviation", Value = paste(ZTest[3]))
+            #         row4 <- data.frame(Variable = "Z Critical Value (CV)", Value = paste(ZTest[4]))
+            #         row5 <- data.frame(Variable = "Standard Error (SE)", Value = paste(ZTest[5]))
+            #         row6 <- data.frame(Variable = "Test Statistic (TS)", Value = paste(ZTest[6]))
+            #         row7 <- data.frame(Variable = "P-Value", Value = paste(ZTest[7]))
+            #         
+            #         values$dfKnownHyp <- rbind(row1, row2, row3, row4, row5, row6, row7) 
+            #       }
+            #       
+            #       else if(input$sigmaKnown == 'Unknown'){
+            #         
+            #         sSampOne <- input$sampSD
+            #         
+            #         source("R/OneSampTTest.R")
+            #         
+            #         TTest <- TTest(nSampOne, xbarSampOne, sSampOne, hypMeanSampOne, alternative, sigLvl)
+            #         
+            #         values <- reactiveValues()
+            #         values$dfUnKnownHyp <- data.frame(Variable = character(), Value = character())
+            #         output$oneSampHTUnknown <- renderTable(values$dfUnKnownHyp)
+            #         
+            #         row1 <- data.frame(Variable = "Sample Size", Value = paste(TTest[1]))
+            #         row2 <- data.frame(Variable = "Sample Mean", Value = paste(TTest[2]))
+            #         row3 <- data.frame(Variable = "Sample Standard Deviation", Value = paste(TTest[3]))
+            #         row4 <- data.frame(Variable = "T Critical Value (CV)", Value = paste(TTest[4]))
+            #         row5 <- data.frame(Variable = "Standard Error (SE)", Value = paste(TTest[5]))
+            #         row6 <- data.frame(Variable = "Test Statistic (TS)", Value = paste(TTest[6]))
+            #         row7 <- data.frame(Variable = "P-Value", Value = paste(TTest[7]))
+            #         
+            #         values$dfUnKnownHyp <- rbind(row1, row2, row3, row4, row5, row6, row7) 
+            #       } # input$sigmaKnown == 'Unknown'
+            #     } # input$inferenceType == 'Hypothesis Testing'
+            #   } # input$dataAvailability == 'Summarized Data'
+            #   
+            #   else if(input$dataAvailability == 'Enter Raw Data'){
+            #     
+            #     datRawData <- createNumLst(input$sample1)
+            #     
+            #     rawSampleSize <- length(datRawData)
+            #     rawSampleMean <- mean(datRawData)
+            #     
+            #     if(input$inferenceType == 'Confidence Interval'){
+            #       
+            #       if(input$sigmaKnownRaw == 'rawKnown'){
+            #         
+            #         rawPopuSD <- input$popuSDRaw
+            #         
+            #         source("R/OneSampZInt.R")
+            #         
+            #         ZIntervalRaw <- ZInterval(rawSampleSize, rawSampleMean, rawPopuSD, confLvl)
+            #         
+            #         values <- reactiveValues()
+            #         values$dfKnownRaw <- data.frame(Variable = character(), Value = character())
+            #         output$oneSampCIRaw <- renderTable(values$dfKnownRaw)
+            #         
+            #         row1 <- data.frame(Variable = "Sample Mean", Value = paste(ZIntervalRaw[1]))
+            #         row2 <- data.frame(Variable = "Z Critical Value (CV)", Value = paste(ZIntervalRaw[2]))
+            #         row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(ZIntervalRaw[3]))
+            #         row4 <- data.frame(Variable = "Lower Confidence Limit (LCL)", Value = paste(ZIntervalRaw[4]))
+            #         row5 <- data.frame(Variable = "Upper Confidence Limit (UCL)", Value = paste(ZIntervalRaw[5]))
+            #         
+            #         values$dfKnownRaw <- rbind(row1, row2, row3, row4, row5)
+            #       }
+            #       
+            #       else if(input$sigmaKnownRaw == 'rawUnknown'){
+            #         
+            #         rawSampleSD <- sd(datRawData)
+            #         
+            #         source("R/OneSampTInt.R")
+            #         
+            #         TIntervalRaw <- TInterval(rawSampleSize, rawSampleMean, rawSampleSD, confLvl)
+            #         
+            #         values <- reactiveValues()
+            #         values$dfUnknownRaw <- data.frame(Variable = character(), Value = character())
+            #         output$oneSampCIRawUnknown <- renderTable(values$dfUnknownRaw)
+            #         
+            #         row1 <- data.frame(Variable = "Sample Mean", Value = paste(TIntervalRaw[1]))
+            #         row2 <- data.frame(Variable = "T Critical Value (CV)", Value = paste(TIntervalRaw[2]))
+            #         row3 <- data.frame(Variable = "Standard Error (SE)", Value = paste(TIntervalRaw[3]))
+            #         row4 <- data.frame(Variable = "Lower Confidence Limit (LCL)", Value = paste(TIntervalRaw[4]))
+            #         row5 <- data.frame(Variable = "Upper Confidence Limit (UCL)", Value = paste(TIntervalRaw[5]))
+            #         
+            #         values$dfUnknownRaw <- rbind(row1, row2, row3, row4, row5) 
+            #       } # input$sigmaKnownRaw == 'rawUnknown'
+            #     } # input$inferenceType == 'Confidence Interval'
+            #     
+            #     else if(input$inferenceType == 'Hypothesis Testing'){
+            #       
+            #       hypMeanSampOne <- input$hypMean 
+            #       
+            #       if(input$sigmaKnownRaw == 'rawKnown'){
+            #         
+            #         rawPopuSD <- input$popuSDRaw
+            #         
+            #         source("R/OneSampZTest.R")
+            #         
+            #         ZTestRaw <- ZTest(rawSampleSize, rawSampleMean, rawPopuSD, hypMeanSampOne, alternative, sigLvl)
+            #         
+            #         values <- reactiveValues()
+            #         values$dfKnownHypRaw <- data.frame(Variable = character(), Value = character())
+            #         output$oneSampHTRaw <- renderTable(values$dfKnownHypRaw)
+            #         
+            #         row1 <- data.frame(Variable = "Sample Size", Value = paste(ZTestRaw[1]))
+            #         row2 <- data.frame(Variable = "Sample Mean", Value = paste(ZTestRaw[2]))
+            #         row3 <- data.frame(Variable = "Population Standard Deviation", Value = paste(ZTestRaw[3]))
+            #         row4 <- data.frame(Variable = "Z Critical Value (CV)", Value = paste(ZTestRaw[4]))
+            #         row5 <- data.frame(Variable = "Standard Error (SE)", Value = paste(ZTestRaw[5]))
+            #         row6 <- data.frame(Variable = "Test Statistic (TS)", Value = paste(ZTestRaw[6]))
+            #         row7 <- data.frame(Variable = "P-Value", Value = paste(ZTestRaw[7]))
+            #         
+            #         values$dfKnownHypRaw <- rbind(row1, row2, row3, row4, row5, row6, row7) 
+            #       }
+            #       
+            #       else if(input$sigmaKnownRaw == 'rawUnknown'){
+            #         
+            #         rawSampleSD <- sd(datRawData)
+            #         
+            #         source("R/OneSampTTest.R")
+            #         
+            #         TTestRaw <- TTest(rawSampleSize, rawSampleMean, rawSampleSD, hypMeanSampOne, alternative, sigLvl)
+            #         
+            #         values <- reactiveValues()
+            #         values$dfUnKnownHypRaw <- data.frame(Variable = character(), Value = character())
+            #         output$oneSampHTRawUnknown <- renderTable(values$dfUnKnownHypRaw)
+            #         
+            #         row1 <- data.frame(Variable = "Sample Size", Value = paste(TTestRaw[1]))
+            #         row2 <- data.frame(Variable = "Sample Mean", Value = paste(TTestRaw[2]))
+            #         row3 <- data.frame(Variable = "Sample Standard Deviation", Value = paste(TTestRaw[3]))
+            #         row4 <- data.frame(Variable = "T Critical Value (CV)", Value = paste(TTestRaw[4]))
+            #         row5 <- data.frame(Variable = "Standard Error (SE)", Value = paste(TTestRaw[5]))
+            #         row6 <- data.frame(Variable = "Test Statistic (TS)", Value = paste(TTestRaw[6]))
+            #         row7 <- data.frame(Variable = "P-Value", Value = paste(TTestRaw[7]))
+            #         
+            #         values$dfUnKnownHypRaw <- rbind(row1, row2, row3, row4, row5, row6, row7) 
+            #       } # input$sigmaKnownRaw == 'rawUnknown'
+            #     } # input$inferenceType == 'Hypothesis Testing'
+            #   } # input$dataAvailability == 'Enter Raw Data'
             }
             else
             {
               hide(id = "inferenceData")
-              output$renderInference <- renderUI({
-                
-                if(!onemean_iv$is_valid())
-                {
-                  validate(
-                    need(input$sampleSize, "Sample size (n) must be a positive integer") %then%
-                      need(input$sampleSize > 0 & input$sampleSize %% 1 == 0, "Sample size (n) must be a positive integer"),
-                    need(input$sampleMean, "Sample mean required"),
-
-                    errorClass = "myClass"
-                  )
-                }
-                
-                if(!onemeansdknown_iv$is_valid())
-                {
-                  validate(
-                    need(input$popuSD & input$popuSD > 0, "Population Standard Deviation must be positive"),
-                    #need(input$popuSD > 0, "Population Standard Deviation must be greater than 0"),
-                    
-                    errorClass = "myClass"
-                  )
-                }
-                
-                if(!onemeanraw_iv$is_valid())
-                {
-                  validate(
-                    need(input$sample1, "Sample Data required"),
-                    need(input$popuSDRaw & input$popuSDRaw > 0, "Population Standard Deviation must be positive"),
-                    #need(input$popuSDRaw > 0, "Population Standard Deviation must be greater than 0"),
-                    
-                    errorClass = "myClass"
-                  )
-                }
-                
-                if(!onemeansdunk_iv$is_valid())
-                {
-                  validate(
-                    need(input$sampSD && input$sampSD > 0, "Sample Standard Deviation (s) must be positive"),
-
-                    errorClass = "myClass"
-                  )
-                }
-                
-                if(!onemeanht_iv$is_valid())
-                {
-                  validate(
-                    need(input$hypMean, "Hypothesized Population Mean value required"),
-                    
-                    errorClass = "myClass"
-                  )
-                }
-              })
-              
             }
           }
           else if(input$popuParameter == 'Population Proportion'){ ## 1samp prop ----
@@ -3758,7 +4587,7 @@ server <- function(input, output) {
                         br(),
                         br(),
                         p(tags$b("Interpretation:")),
-                        sprintf("We are %1.0f%% confident that the population proportion (\\( p\\)) is between %0.3f and %0.3f.",
+                        sprintf("We are %1.0f%% confident that the population proportion \\( (p) \\) is between %0.3f and %0.3f.",
                                 confLvl*100,
                                 oneSampPropZInt["LCL"],
                                 oneSampPropZInt["UCL"])
@@ -4006,15 +4835,15 @@ server <- function(input, output) {
                 
                 output$oneSampPropHTPlot <- renderPlot({
                   
-                  htPlot <- hypTestPlot(oneSampPropZTest["Test Statistic"], htPlotCritVals, alternative)
+                  htPlot <- hypZTestPlot(oneSampPropZTest["Test Statistic"], htPlotCritVals, alternative)
                   htPlot
                 })
                 
                 output$oneSampPropHTIntrp <- renderUI({
                   p(
                     p(tags$b("Conclusion:")),
-                    sprintf("At the %1.0f%% level, the data %s sufficient evidence to reject the null hypothesis (\\( H_{0}\\)) that the population 
-                              proportion (\\( p\\)) \\( %s\\) %0.2f.",
+                    sprintf("At the %1.0f%% level, the data %s sufficient evidence to reject the null hypothesis \\( (H_{0}) \\) that the population 
+                              proportion \\( (p) \\) \\( %s\\) %0.2f.",
                             sigLvl*100,
                             suffEvidence,
                             nullHyp,
@@ -4929,14 +5758,14 @@ server <- function(input, output) {
                   
                   output$twoSampPropHTPlot <- renderPlot({
                     
-                    htPlot <- hypTestPlot(twoSampPropZTest["Test Statistic"], htPlotCritVals, alternative)
+                    htPlot <- hypZTestPlot(twoSampPropZTest["Test Statistic"], htPlotCritVals, alternative)
                     htPlot
                   })
                   
                   output$twoSampPropHTIntrp <- renderUI({
                     p(
                       p(tags$b("Conclusion:")),
-                      sprintf("At the %1.0f%% significance level, the data %s sufficient evidence to reject the null hypothesis (\\( H_{0}\\)) that the population 
+                      sprintf("At the %1.0f%% significance level, the data %s sufficient evidence to reject the null hypothesis \\( (H_{0}) \\) that the population 
                               proportion \\( p_{1} %s p_{2}\\).",
                               sigLvl*100,
                               suffEvidence,
@@ -5837,16 +6666,34 @@ server <- function(input, output) {
     #  ------------------------------- #
     
     observeEvent({input$samplesSelect
+      input$sampleSize
+      input$sampleMean
+      input$popuParameter
       input$dataAvailability
       input$dataAvailability2
+      input$sigmaKnown
+      input$sigmaKnownRaw
+      input$popuSD
+      input$popuSDRaw
+      input$sampSD
       input$inferenceType
       input$inferenceType2
-      input$significanceLevel
       input$significanceLevel2
-      input$confidenceLevel
       input$confidenceLevel2}, {
-      hide(id = "inferenceMP")
-    })
+        hide(id = "inferenceData")
+      })
+    
+    # observeEvent({input$samplesSelect
+    #   input$dataAvailability
+    #   input$dataAvailability2
+    #   input$inferenceType
+    #   input$inferenceType2
+    #   input$significanceLevel
+    #   input$significanceLevel2
+    #   input$confidenceLevel
+    #   input$confidenceLevel2}, {
+    #   hide(id = "inferenceMP")
+    # })
     
     #observeEvent(input$inferenceType, {
     #  hide(id = "inferenceMP")
