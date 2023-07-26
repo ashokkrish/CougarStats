@@ -1062,7 +1062,81 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                           condition = "input.dropDownMenu == 'Descriptive Statistics'",
                           style = "display: none;",
                             
-                          uiOutput('renderDescrStats')
+                          uiOutput('renderDescrStats'),
+                          
+                          div(id = "descrStatsData",
+                              tabsetPanel(id = "dsTabset", selected = "Table",
+                                          
+                                          tabPanel(id = "dsTable", title = "Table", value = 'Table',
+                                                   h3("Descriptive Statistics"),
+                                                   fluidRow(
+                                                     withMathJax(),
+                                                     column(align = "center", width = 12, uiOutput('dsDataTable'))
+                                                   ),
+                                                   br(),
+                                                   conditionalPanel(
+                                                     condition = "input.dsTableFilters.indexOf('First Quartile (Q1)') > -1 | input.dsTableFilters.indexOf('Third Quartile (Q3)') > -1",
+                                                     
+                                                     p("* Note: Q1 and Q3 are calculated by excluding Q2 on both sides"),
+                                                     br(),
+                                                   ),
+                                                   
+                                          ),
+                                          
+                                          tabPanel(id = "dsGraphs", title = "Graphs", value = 'Graphs',
+                                                   conditionalPanel(
+                                                     condition = "input.dsGraphOptions == ''",
+                                                     
+                                                     br(),
+                                                     p("Select one or more options from the Graph Options menu to see more information.")
+                                                   ),
+                                                   
+                                                   conditionalPanel(
+                                                     condition = "input.dsGraphOptions.indexOf('Boxplot') > -1",
+                                                     
+                                                     h3("Boxplot"),
+                                                     fluidRow(
+                                                       column(align = "center", width = 12, plotOutput("dsBoxplot", width = '75%'))
+                                                     ),
+                                                     br(),
+                                                     br(),
+                                                     hr(),
+                                                     br(),
+                                                   ),
+                                                   
+                                                   conditionalPanel(
+                                                     condition = "input.dsGraphOptions.indexOf('Histogram') > -1",
+                                                     
+                                                     h3("Histogram"),
+                                                     fluidRow(
+                                                       column(align = "center", width = 12, plotOutput("dsHistogram", width = '75%'))
+                                                     ),
+                                                     br(),
+                                                     hr(),
+                                                     br(),
+                                                   ),
+                                                   
+                                                   conditionalPanel(
+                                                     condition = "input.dsGraphOptions.indexOf('Stem and Leaf Plot') > -1",
+                                                     
+                                                     h3("Stem and Leaf Plot"),
+                                                     br(),
+                                                     fluidRow(
+                                                       column(width = 2, div("")),
+                                                       column(width = 8, 
+                                                              verbatimTextOutput('dsStemLeaf'),
+                                                              br(),
+                                                              p("* Note: Outlier values are listed under the HI/LO lists.")),
+                                                       column(width = 2, div(""))
+                                                     ),
+                                                     br(),
+                                                   ),
+                                                   
+                                                   
+                                          )
+                              )
+                              
+                              )
     
                         )
                       ), #DescriptiveStats Main Panel
@@ -2243,91 +2317,91 @@ server <- function(input, output) {
           )
         }
         
-        tagList(
-          # conditionalPanel(
-          #   condition = "input.dataInput == 'Enter Raw Data'",
-          tabsetPanel(id = "dsTabset", selected = "Table",
-                      
-            tabPanel(id = "dsTable", title = "Table",
-              h3("Descriptive Statistics"),
-              fluidRow(
-                withMathJax(),
-                column(align = "center", width = 12, withMathJax(DTOutput("dsTable")))
-              ),
-              br(),
-              conditionalPanel(
-                condition = "input.dsTableFilters.indexOf('First Quartile (Q1)') > -1 | input.dsTableFilters.indexOf('Third Quartile (Q3)') > -1",
-                
-                p("* Note: Q1 and Q3 are calculated by excluding Q2 on both sides"),
-                br(),
-              ),
-              
-            ),
-          
-            tabPanel(id = "dsGraphs", title = "Graphs",
-                    conditionalPanel(
-                      condition = "input.dsGraphOptions == ''",
-                      
-                      br(),
-                      p("Select one or more options from the Graph Options menu to see more information.")
-                    ),
-                     
-                    conditionalPanel(
-                      condition = "input.dsGraphOptions.indexOf('Boxplot') > -1",
-                       
-                      h3("Boxplot"),
-                      fluidRow(
-                       column(align = "center", width = 12, plotOutput("dsBoxplot", width = '75%'))
-                      ),
-                      br(),
-                      br(),
-                      hr(),
-                      br(),
-                    ),
-                     
-                    conditionalPanel(
-                      condition = "input.dsGraphOptions.indexOf('Histogram') > -1",
-                     
-                      h3("Histogram"),
-                      fluidRow(
-                       column(align = "center", width = 12, plotOutput("dsHistogram", width = '75%'))
-                      ),
-                      br(),
-                      hr(),
-                      br(),
-                    ),
-                     
-                    conditionalPanel(
-                      condition = "input.dsGraphOptions.indexOf('Stem and Leaf Plot') > -1",
-                      
-                      h3("Stem and Leaf Plot"),
-                      br(),
-                      fluidRow(
-                        column(width = 2, div("")),
-                        column(width = 8, 
-                               verbatimTextOutput('dsStemLeaf'),
-                               br(),
-                               p("* Note: Outlier values are listed under the HI/LO lists.")),
-                        column(width = 2, div(""))
-                      ),
-                      br(),
-                    ),
-
-              
-            )
-          )
-            #plotOutput("boxplotgg"),
-            #br(), 
-            
-            #downloadButton('downloadDataDS', 'Download Results')
-            
-          #),
-          
-          # conditionalPanel(
-          #   condition = "input.dataInput == 'Upload Data'",
-          #   
-          # ),
-        )
+        # tagList(
+        #   # conditionalPanel(
+        #   #   condition = "input.dataInput == 'Enter Raw Data'",
+        #   tabsetPanel(id = "dsTabset", selected = "Table",
+        #               
+        #     tabPanel(id = "dsTable", title = "Table", value = 'Table',
+        #       h3("Descriptive Statistics"),
+        #       fluidRow(
+        #         withMathJax(),
+        #         column(align = "center", width = 12, withMathJax(DTOutput("dsTable")))
+        #       ),
+        #       br(),
+        #       conditionalPanel(
+        #         condition = "input.dsTableFilters.indexOf('First Quartile (Q1)') > -1 | input.dsTableFilters.indexOf('Third Quartile (Q3)') > -1",
+        #         
+        #         p("* Note: Q1 and Q3 are calculated by excluding Q2 on both sides"),
+        #         br(),
+        #       ),
+        #       
+        #     ),
+        #   
+        #     tabPanel(id = "dsGraphs", title = "Graphs", value = 'Graphs',
+        #             conditionalPanel(
+        #               condition = "input.dsGraphOptions == ''",
+        #               
+        #               br(),
+        #               p("Select one or more options from the Graph Options menu to see more information.")
+        #             ),
+        #              
+        #             conditionalPanel(
+        #               condition = "input.dsGraphOptions.indexOf('Boxplot') > -1",
+        #                
+        #               h3("Boxplot"),
+        #               fluidRow(
+        #                column(align = "center", width = 12, plotOutput("dsBoxplot", width = '75%'))
+        #               ),
+        #               br(),
+        #               br(),
+        #               hr(),
+        #               br(),
+        #             ),
+        #              
+        #             conditionalPanel(
+        #               condition = "input.dsGraphOptions.indexOf('Histogram') > -1",
+        #              
+        #               h3("Histogram"),
+        #               fluidRow(
+        #                column(align = "center", width = 12, plotOutput("dsHistogram", width = '75%'))
+        #               ),
+        #               br(),
+        #               hr(),
+        #               br(),
+        #             ),
+        #              
+        #             conditionalPanel(
+        #               condition = "input.dsGraphOptions.indexOf('Stem and Leaf Plot') > -1",
+        #               
+        #               h3("Stem and Leaf Plot"),
+        #               br(),
+        #               fluidRow(
+        #                 column(width = 2, div("")),
+        #                 column(width = 8, 
+        #                        verbatimTextOutput('dsStemLeaf'),
+        #                        br(),
+        #                        p("* Note: Outlier values are listed under the HI/LO lists.")),
+        #                 column(width = 2, div(""))
+        #               ),
+        #               br(),
+        #             ),
+        # 
+        #       
+        #     )
+        #   )
+        #     #plotOutput("boxplotgg"),
+        #     #br(), 
+        #     
+        #     #downloadButton('downloadDataDS', 'Download Results')
+        #     
+        #   #),
+        #   
+        #   # conditionalPanel(
+        #   #   condition = "input.dataInput == 'Upload Data'",
+        #   #   
+        #   # ),
+        # )
       })
       
       if(ds_iv$is_valid())
@@ -2408,10 +2482,34 @@ server <- function(input, output) {
         # rownames(df) <- c("Observations", "Sum", "Sum of Squares", "Mean", "Mode", "Min", "First Quartile (Q1)", "Median", "Third Quartile (Q3)", "Max", "IQR", 
         #                   "Lower Fence", "Upper Fence", "Potential Outliers", "Range", "Sample Standard Deviation", "Sample Variance", "Standard Error of the Mean", 
         #                   "Coefficient of Variation", "Skewness", "Kurtosis")
+        
+        # if(is.null(input$dsGraphOptions)) {
+        #   hideTab(inputId = "dsTabset", target = "Graphs")
+        # }
+        output$dsDataTable <- renderUI({
+          tagList(
+            
+            conditionalPanel(
+              condition = "input.dsTableFilters == ''",
+
+              br(),
+              p("Select one or more options from the Options menu to see more information.")
+            ),
+            
+            conditionalPanel(
+              condition = "input.dsTableFilters != ''",
+              
+              withMathJax(),
+              withMathJax(DTOutput("dsTableData"))
+            ),
+            
+          )
+        })
+        
         df <- getDsDataframe()
         filteredDf <- filter(df, rownames(df) %in% input$dsTableFilters)
         
-        output$dsTable <- renderDT(datatable(filteredDf,
+        output$dsTableData <- renderDT(datatable(filteredDf,
                                            extensions = 'RowGroup',
                                            options = list(
                                              rowGroup = list(dataSrc = 0),
@@ -2504,12 +2602,14 @@ server <- function(input, output) {
         output$dsStemLeaf <- renderPrint({
           stem.leaf(dat, m = 1, depths = FALSE)
         })
+      
+        show(id = 'descrStatsData')
       }
       #print(sort(dat)
-      show(id = 'descriptiveStatsMP') 
+      # show(id = 'descriptiveStatsMP') 
     })
     
-    dsTableProxy <- dataTableProxy('dsTable')
+    dsTableProxy <- dataTableProxy('dsTableData')
     
     observeEvent(input$dsTableFilters, {
 
@@ -6332,7 +6432,7 @@ server <- function(input, output) {
           
           if(regcor_iv$is_valid())
           {
-            output$slrTabs <- renderUI({ ###tab generation ----
+            output$slrTabs <- renderUI({ ####tab generation ----
               
               tagList(
                 
@@ -6596,16 +6696,29 @@ server <- function(input, output) {
     #  -------------------------------- #
     
     observeEvent(input$descriptiveStat, {
-      hide(id = 'descriptiveStatsMP')                
+      hide(id = 'descrStatsData')                
     })
     
     observeEvent(input$dsUploadVars, {
-      hide(id = 'descriptiveStatsMP')                
+      hide(id = 'descrStatsData')                
     })
     
     observeEvent(input$dataInput, {
-      hide(id = 'descriptiveStatsMP')
+      hide(id = 'descrStatsData')
       hide(id = 'dsUploadVars')
+    })
+    
+    observe({
+      if(is.null(input$dsGraphOptions)) {
+        hideTab(inputId = 'dsTabset', target = 'Graphs')
+        updateTabsetPanel(inputId = 'dsTabset', selected = 'Table')
+      } else {
+        showTab(inputId = 'dsTabset', target = 'Graphs')
+      }
+    })
+    
+    observeEvent(input$goDescpStats, {
+      show(id = 'descriptiveStatsMP')
     })
     
     observeEvent(input$resetAll,{
