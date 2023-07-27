@@ -1078,8 +1078,18 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                                      condition = "input.dsTableFilters.indexOf('First Quartile (Q1)') > -1 | input.dsTableFilters.indexOf('Third Quartile (Q3)') > -1",
                                                      
                                                      p("* Note: Q1 and Q3 are calculated by excluding Q2 on both sides"),
-                                                     br(),
                                                    ),
+                                                   conditionalPanel(
+                                                     condition = "input.dsTableFilters.indexOf('Skewness') > -1 | input.dsTableFilters.indexOf('Third Quartile (Q3)') > -1",
+                                                     
+                                                     p("** Note: Skewness calculations requires at least 3 complete observations."),
+                                                   ),
+                                                   conditionalPanel(
+                                                     condition = "input.dsTableFilters.indexOf('Kurtosis') > -1 | input.dsTableFilters.indexOf('Third Quartile (Q3)') > -1",
+                                                     
+                                                     p("*** Note: Kurtosis calculation requires at least 4 complete observations."),
+                                                   ),
+                                                   br()
                                                    
                                           ),
                                           
@@ -2306,7 +2316,7 @@ server <- function(input, output) {
                                     "Second Quartile or Median \\( (Q_{2}) \\)", "Third Quartile \\( (Q_{3}) \\)*", "Maximum", "Interquartile Range (IQR)", 
                                     "Check for Outliers: Lower Fence", "Check for Outliers: Upper Fence", "Number of Potential Outliers", "Range", 
                                     "Sample Standard Deviation", "Sample Variance", "Standard Error of the Mean", "Coefficient of Variation",
-                                    "Skewness", "Kurtosis"))
+                                    "Skewness**", "Kurtosis***"))
       
       
       if(input$dataInput == 'Upload Data')
@@ -2356,8 +2366,17 @@ server <- function(input, output) {
       sampVar <- round(var(dat),4)
       sampMeanSE <- round(sd(dat)/sqrt(length(dat)), 4)
       coeffVar <- round(sampStdDev/xbar, 4)
-      sampSkewness <- round(skewness(dat, type = 2), 4)
-      sampKurtosis <- round(kurtosis(dat, type = 2), 4)
+      if(sampSize < 3){
+        sampSkewness <- "Not enough observations."
+      } else {
+        sampSkewness <- round(skewness(dat, type = 2), 4)
+      }
+      if(sampSize < 4){
+        sampKurtosis <- "Not enough observations."
+      } else {
+        sampKurtosis <- round(kurtosis(dat, type = 2), 4)
+      }
+      
       
       dfCol <- data.frame(Value = c(sampSize, sampSum, sumSquares, xbar, sampMode, sampMin, quartile1, sampMedian, quartile3, sampMax, 
                                     sampIQR, lowerFence, upperFence, numOutliers, sampRange, sampStdDev, sampVar, sampMeanSE, 
@@ -6832,17 +6851,30 @@ server <- function(input, output) {
     # ---- Component Display ----
     # --------------------------- #
     
+    # observeEvent(input$dropDownMenu, {
+    #   hide(id = 'descriptiveStatsMP')
+    #   hide(id = "probabilityMP")
+    #   hide(id = "inferenceMP")
+    #   hide(id = "RegCorMP")
+    # })
+    
     #  -------------------------------- #
     ## ---- Descriptive Statistics ----
     #  -------------------------------- #
     
-    observeEvent(input$descriptiveStat, {
+    observeEvent(!ds_iv$is_valid(), {
+      hide(id = "descriptiveStatsMP")
+    })
+    
+    observeEvent({input$descriptiveStat
+                  input$dsUploadVars}, {
       hide(id = 'descrStatsData')                
     })
     
-    observeEvent(input$dsUploadVars, {
-      hide(id = 'descrStatsData')                
-    })
+    
+    # observeEvent(input$dsUploadVars, {
+    #   hide(id = 'descrStatsData')                
+    # })
     
     observeEvent(input$dataInput, {
       hide(id = 'descrStatsData')
@@ -6871,6 +6903,10 @@ server <- function(input, output) {
     #  ----------------------------------- #
     ## ---- Probability Distributions ----
     #  ----------------------------------- #
+    
+    observeEvent(!pd_iv$is_valid(), {
+      hide(id = 'probabilityMP')
+    })
     
     #-----------------------#
     # Binomial Distribution #
@@ -6919,6 +6955,10 @@ server <- function(input, output) {
     ## ---- Statistical Inference ----
     #  ------------------------------- #
     
+    observeEvent(!si_iv$is_valid(), {
+      hide(id = "inferenceMP")
+    })
+    
     observeEvent({input$samplesSelect
       input$sampleSize
       input$sampleMean
@@ -6933,8 +6973,7 @@ server <- function(input, output) {
       input$inferenceType
       input$inferenceType2
       input$significanceLevel2
-      input$confidenceLevel2
-      !si_iv$is_valid()}, {
+      input$confidenceLevel2}, {
         hide(id = "inferenceData")
       })
     
@@ -6986,6 +7025,10 @@ server <- function(input, output) {
     #  ------------------------------------ #
     ## ---- Regression and Correlation ----
     #  ------------------------------------ #
+    
+    observeEvent(!regcor_iv$is_valid(), {
+      hide(id = "RegCorMP")
+    })
     
     observeEvent(input$dataRegCor, {
       hide(id = "RegCorMP")
