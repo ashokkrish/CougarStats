@@ -810,25 +810,25 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                               
                               radioButtons(inputId = "bothsigmaKnownRaw",
                                            label = strong("Are Population Standard Deviations (\\( \\sigma_{1}\\) and \\( \\sigma_{2}\\)) known?"),
-                                           choiceValues = list("bothKnownRaw", "bothUnknownRaw"),
+                                           choiceValues = list("bothKnown", "bothUnknown"),
                                            choiceNames = list("Both Known", "Both Unknown (Assumed Equal)"),
-                                           selected = "bothKnownRaw",
+                                           selected = "bothKnown",
                                            inline = TRUE), #,width = '1000px'),
                               
                               conditionalPanel(
-                                condition = "input.bothsigmaKnownRaw == 'bothKnownRaw'",
+                                condition = "input.bothsigmaKnownRaw == 'bothKnown'",
                                 
-                                numericInput(inputId = "popuSD1",
+                                numericInput(inputId = "popuSDRaw1",
                                              label = strong("Population Standard Deviation 1 (\\( \\sigma_{1}\\)) Value"),
                                              value = 4.54, min = 0.00001, step = 0.00001),
                                 
-                                numericInput(inputId = "popuSD2",
+                                numericInput(inputId = "popuSDRaw2",
                                              label = strong("Population Standard Deviation 2 (\\( \\sigma_{2}\\)) Value"),
                                              value = 3.47, min = 0.00001, step = 0.00001),
                               ),
                               
                               conditionalPanel(
-                                condition = "input.bothsigmaKnownRaw == 'bothUnknownRaw'",
+                                condition = "input.bothsigmaKnownRaw == 'bothUnknown'",
                                 
                                 #print("Inference about two independent samples when populations variances are unknown but assumed equal")
                               ),
@@ -1389,84 +1389,128 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                             conditionalPanel( ##### Ind Pop Means ----
                               condition = "input.popuParameters == 'Independent Population Means'",
                                 
+                              # fluidRow(
+                              #   column(width = 4,
+                              #          titlePanel("Sample Data Summary"),
+                              #          hr(),
+                              #          uiOutput('indMeansTable'),
+                              #          br(),
+                              #   ),
+                              #   column(width = 8,
+                              #          titlePanel('Summary Details'),
+                              #          hr(),
+                              #          
+                              #          conditionalPanel(
+                              #            condition = "input.oneSampMeanData_rows_selected == 0",
+                              #            
+                              #            p("Select one or more variables from the summary table for more information"),
+                              #          ),
+                              #          
+                              #   )
+                              # ),
+                              # 
+                              # br(),
+                              # hr(),
+                              # br(),
+                              # 
+                              # conditionalPanel(
+                              #   condition = "input.inferenceType == 'Confidence Interval'",
+                              #   
+                              #   titlePanel(tags$u("Confidence Interval")),
+                              #   br(),
+                              #   uiOutput('indMeansCI'),
+                              #   br(),
+                              # ),
+                              # 
+                              # conditionalPanel(
+                              #   condition = "input.inferenceType == 'Hypothesis Testing'",
+                              #   
+                              #   titlePanel(tags$u("Hypothesis Test")),
+                              #   br(),
+                              #   uiOutput('indMeansHT'),
+                              #   br(),
+                              # ),
+                              
+                              
+                              
                               conditionalPanel(
                                 condition = "input.dataAvailability2 == 'Summarized Data'",
-                                  
+
                                 conditionalPanel(
                                   condition = "input.bothsigmaKnown == 'bothKnown'",
-                                    
+
                                   conditionalPanel(
                                     condition = "input.inferenceType2 == 'Confidence Interval'",
-                                      
+
                                     uiOutput('twoSampCIbothKnown'),
                                     br(),
                                     #img(src ='TwoSampZInt.png', height = '75px')
                                   ), # CI
-                                    
+
                                   conditionalPanel(
                                     condition = "input.inferenceType2 == 'Hypothesis Testing'",
-                                      
+
                                     uiOutput('twoSampHTbothKnown'),
                                     br(),
                                   ), # HT
                                 ),
-                                  
+
                                 conditionalPanel(
                                   condition = "input.bothsigmaKnown == 'bothUnknown'",
-                                    
+
                                   conditionalPanel(
                                     condition = "input.inferenceType2 == 'Confidence Interval'",
-                                      
+
                                     uiOutput('twoSampCIbothUnknown'),
                                     br(),
                                     #img(src ='TwoSampTInt.png', height = '75px')
                                   ), # CI
-                                    
+
                                   conditionalPanel(
                                     condition = "input.inferenceType2 == 'Hypothesis Testing'",
-                                      
+
                                     uiOutput('twoSampHTbothUnknown'),
                                     br(),
                                   ), # HT
                                 ) # both unknown
                               ), #summarized data
-                                
+
                               conditionalPanel(
                                 condition = "input.dataAvailability2 == 'Enter Raw Data'",
-                                  
+
                                 conditionalPanel(
-                                  condition = "input.bothsigmaKnownRaw == 'bothKnownRaw'",
-                                    
+                                  condition = "input.bothsigmaKnownRaw == 'bothKnown'",
+
                                   conditionalPanel(
                                     condition = "input.inferenceType2 == 'Confidence Interval'",
-                                      
+
                                     uiOutput('twoSampCIRawbothKnown'),
                                     br(),
                                     #img(src ='TwoSampZInt.png', height = '75px')
                                   ), # CI
-                                    
+
                                   conditionalPanel(
                                     condition = "input.inferenceType2 == 'Hypothesis Testing'",
-                                      
+
                                     uiOutput('twoSampHTRawbothKnown'),
                                     br(),
                                   ), # HT
                                 ), #both known raw
-                                  
+
                                 conditionalPanel(
-                                  condition = "input.bothsigmaKnownRaw == 'bothUnknownRaw'",
-                                    
+                                  condition = "input.bothsigmaKnownRaw == 'bothUnknown'",
+
                                   conditionalPanel(
                                     condition = "input.inferenceType2 == 'Confidence Interval'",
-                                      
+
                                     uiOutput('twoSampCIRawbothUnknown'),
                                     br(),
                                     #img(src ='TwoSampTInt.png', height = '75px')
                                   ), # CI
-                                    
+
                                   conditionalPanel(
                                     condition = "input.inferenceType2 == 'Hypothesis Testing'",
-                                      
+
                                     uiOutput('twoSampHTRawbothUnknown'),
                                     br(),
                                   ), # HT
@@ -1759,6 +1803,7 @@ server <- function(input, output) {
     dsraw_iv <- InputValidator$new()
     dsupload_iv <- InputValidator$new()
     dsuploadvars_iv <- InputValidator$new()
+    
     pd_iv <- InputValidator$new()
     binom_iv <- InputValidator$new()
     binomprob_iv <- InputValidator$new()
@@ -1769,15 +1814,22 @@ server <- function(input, output) {
     norm_iv <- InputValidator$new()
     normprob_iv <- InputValidator$new()
     normbetween_iv <- InputValidator$new()
+    
     si_iv <- InputValidator$new()
     onemean_iv <- InputValidator$new()
     onemeansdknown_iv <- InputValidator$new()
     onemeansdunk_iv <- InputValidator$new()
     onemeanraw_iv <- InputValidator$new()
     onemeanht_iv <- InputValidator$new()
+    indmeanssumm_iv <- InputValidator$new()
+    indmeansraw_iv <- InputValidator$new()
+    indmeanssdknown_iv <- InputValidator$new()
+    indmeanssdunk_iv <- InputValidator$new()
+    indmeansrawsd_iv <- InputValidator$new()
     oneprop_iv <- InputValidator$new()
     onepropht_iv <- InputValidator$new()
     twoprop_iv <- InputValidator$new()
+    
     regcor_iv <- InputValidator$new()
     slrraw_iv <- InputValidator$new()
     slrupload_iv <- InputValidator$new()
@@ -1938,6 +1990,12 @@ server <- function(input, output) {
     
     onemean_iv$add_rule("sampleMean", sv_required())
     
+    # sample1 
+    
+    onemeanraw_iv$add_rule("sample1", sv_required())
+    onemeanraw_iv$add_rule("sample1", sv_regex("^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+$", 
+                                               "Data must be numeric values seperated by a comma (ie: 2,3,4)"))
+    
     # popuSD 
     
     onemeansdknown_iv$add_rule("popuSD", sv_required()) 
@@ -1948,6 +2006,7 @@ server <- function(input, output) {
     onemeanraw_iv$add_rule("popuSDRaw", sv_required()) 
     onemeanraw_iv$add_rule("popuSDRaw", sv_gt(0))
     
+    
     # sampSD 
     
     onemeansdunk_iv$add_rule("sampSD", sv_required())
@@ -1955,58 +2014,62 @@ server <- function(input, output) {
     
     # sampleSize1 
     
-    iv$add_rule("sampleSize1", sv_required())
-    iv$add_rule("sampleSize1", sv_integer())
-    iv$add_rule("sampleSize1", sv_gt(0))
+    indmeanssumm_iv$add_rule("sampleSize1", sv_required())
+    indmeanssumm_iv$add_rule("sampleSize1", sv_integer())
+    indmeanssumm_iv$add_rule("sampleSize1", sv_gt(0))
     
     # sampleMean1 
     
-    iv$add_rule("sampleMean1", sv_required())
+    indmeanssumm_iv$add_rule("sampleMean1", sv_required())
     
     # sampleSize2 
     
-    iv$add_rule("sampleSize2", sv_required())
-    iv$add_rule("sampleSize2", sv_integer())
-    iv$add_rule("sampleSize2", sv_gt(0))
+    indmeanssumm_iv$add_rule("sampleSize2", sv_required())
+    indmeanssumm_iv$add_rule("sampleSize2", sv_integer())
+    indmeanssumm_iv$add_rule("sampleSize2", sv_gt(0))
     
     # sampleMean2 
     
-    iv$add_rule("sampleMean2", sv_required()) 
+    indmeanssumm_iv$add_rule("sampleMean2", sv_required()) 
     
     # popuSD1 
     
-    iv$add_rule("popuSD1", sv_required()) 
-    iv$add_rule("popuSD1", sv_gt(0))
+    indmeanssdknown_iv$add_rule("popuSD1", sv_required()) 
+    indmeanssdknown_iv$add_rule("popuSD1", sv_gt(0))
     
     # popuSD2 
     
-    iv$add_rule("popuSD2", sv_required()) 
-    iv$add_rule("popuSD2", sv_gt(0))
+    indmeanssdknown_iv$add_rule("popuSD2", sv_required()) 
+    indmeanssdknown_iv$add_rule("popuSD2", sv_gt(0))
     
     # sampSD1 
     
-    iv$add_rule("sampSD1", sv_required())
-    iv$add_rule("sampSD1", sv_gt(0))
+    indmeanssdunk_iv$add_rule("sampSD1", sv_required())
+    indmeanssdunk_iv$add_rule("sampSD1", sv_gt(0))
     
     # sampSD2 
     
-    iv$add_rule("sampSD2", sv_required()) 
-    iv$add_rule("sampSD2", sv_gt(0))
-    
-    # sample1 
-    
-    onemeanraw_iv$add_rule("sample1", sv_required())
-    onemeanraw_iv$add_rule("sample1", sv_regex("^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+$", 
-                                     "Data must be numeric values seperated by a comma (ie: 2,3,4)"))
+    indmeanssdunk_iv$add_rule("sampSD2", sv_required()) 
+    indmeanssdunk_iv$add_rule("sampSD2", sv_gt(0))
     
     # raw_sample1
     
-    iv$add_rule("raw_sample1", sv_required())
+    indmeansraw_iv$add_rule("raw_sample1", sv_required())
+    indmeansraw_iv$add_rule("raw_sample1", sv_regex("^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+$", 
+                                                    "Data must be at least 3 numeric values seperated by a comma (ie: 2,3,4)"))
     
     # raw_sample2 
     
-    iv$add_rule("raw_sample2", sv_required()) 
+    indmeansraw_iv$add_rule("raw_sample2", sv_required())
+    indmeansraw_iv$add_rule("raw_sample2", sv_regex("^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+$", 
+                                                    "Data must be at least 3 numeric values seperated by a comma (ie: 2,3,4)"))
     
+    indmeansrawsd_iv$add_rule("popuSDRaw1", sv_required()) 
+    indmeansrawsd_iv$add_rule("popuSDRaw1", sv_gt(0))
+    
+    
+    indmeansrawsd_iv$add_rule("popuSDRaw2", sv_required()) 
+    indmeansrawsd_iv$add_rule("popuSDRaw2", sv_gt(0))
     # numSuccessesProportion
     
     oneprop_iv$add_rule("numSuccesses", sv_required(message = "Numeric value required"))
@@ -2054,6 +2117,11 @@ server <- function(input, output) {
     onemeansdunk_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$dataAvailability == 'Summarized Data' && input$sigmaKnown == 'Unknown'))
     onemeanraw_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$dataAvailability == 'Enter Raw Data'))
     onemeanht_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$inferenceType == 'Hypothesis Testing'))
+    indmeanssumm_iv$condition(~ isTRUE(input$samplesSelect == '2' && input$popuParameters == 'Independent Population Means' && input$dataAvailability2 == 'Summarized Data'))
+    indmeansraw_iv$condition(~ isTRUE(input$samplesSelect == '2' && input$popuParameters == 'Independent Population Means' && input$dataAvailability2 == 'Enter Raw Data'))
+    indmeanssdknown_iv$condition(~ isTRUE(input$samplesSelect == '2' && input$popuParameters == 'Independent Population Means' && input$dataAvailability2 == 'Summarized Data' && input$bothsigmaKnown == 'bothKnown'))
+    indmeanssdunk_iv$condition(~ isTRUE(input$samplesSelect == '2' && input$popuParameters == 'Independent Population Means' && input$dataAvailability2 == 'Summarized Data' && input$bothsigmaKnown == 'bothUnknown'))
+    indmeansrawsd_iv$condition(~ isTRUE(input$samplesSelect == '2' && input$popuParameters == 'Independent Population Means' && input$dataAvailability2 == 'Enter Raw Data' && input$bothsigmaKnownRaw == 'bothKnown'))
     oneprop_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Proportion'))
     onepropht_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Proportion' && input$inferenceType == 'Hypothesis Testing'))
     twoprop_iv$condition(~ isTRUE(input$samplesSelect == '2' && input$popuParameters == 'Population Proportions'))
@@ -2063,6 +2131,11 @@ server <- function(input, output) {
     si_iv$add_validator(onemeansdunk_iv)
     si_iv$add_validator(onemeanraw_iv)
     si_iv$add_validator(onemeanht_iv)
+    si_iv$add_validator(indmeanssumm_iv)
+    si_iv$add_validator(indmeansraw_iv)
+    si_iv$add_validator(indmeanssdknown_iv)
+    si_iv$add_validator(indmeanssdunk_iv)
+    si_iv$add_validator(indmeansrawsd_iv)
     si_iv$add_validator(oneprop_iv)
     si_iv$add_validator(onepropht_iv)
     si_iv$add_validator(twoprop_iv)
@@ -2073,6 +2146,11 @@ server <- function(input, output) {
     onemeansdunk_iv$enable()
     onemeanraw_iv$enable()
     onemeanht_iv$enable()
+    indmeanssumm_iv$enable()
+    indmeansraw_iv$enable()
+    indmeanssdknown_iv$enable()
+    indmeanssdunk_iv$enable()
+    indmeansrawsd_iv$enable()
     oneprop_iv$enable()
     onepropht_iv$enable()
     twoprop_iv$enable()
@@ -2136,7 +2214,10 @@ server <- function(input, output) {
     
     # String List to Numeric List
     createNumLst <- function(text) {
-      text <- gsub("","", text)
+      text <- gsub("[^0-9.,]","", text)
+      text <- gsub("^,", "", text)
+      text <- gsub(",(,)+", ",", text)
+      text <- gsub(",$", "", text)
       split <- strsplit(text, ",", fixed = FALSE)[[1]]
       as.numeric(split)
     }
@@ -3686,19 +3767,9 @@ server <- function(input, output) {
       if(!onemean_iv$is_valid())
       {
         validate(
-          need(input$sampleSize, "Sample size (n) must be a positive integer") %then%
-            need(input$sampleSize > 0 & input$sampleSize %% 1 == 0, "Sample size (n) must be a positive integer"),
-          need(input$sampleMean, "Sample mean required"),
-          
-          errorClass = "myClass"
-        )
-      }
-      
-      if(!onemeansdknown_iv$is_valid())
-      {
-        validate(
-          need(input$popuSD & input$popuSD > 0, "Population Standard Deviation must be positive"),
-          #need(input$popuSD > 0, "Population Standard Deviation must be greater than 0"),
+          need(input$sampleSize, "Sample size (n) must be a positive integer.") %then%
+            need(input$sampleSize > 0 & input$sampleSize %% 1 == 0, "Sample size (n) must be a positive integer."),
+          need(input$sampleMean, "Sample mean required."),
           
           errorClass = "myClass"
         )
@@ -3707,9 +3778,20 @@ server <- function(input, output) {
       if(!onemeanraw_iv$is_valid())
       {
         validate(
-          need(input$sample1, "Sample Data required"),
-          need(input$popuSDRaw & input$popuSDRaw > 0, "Population Standard Deviation must be positive"),
+          need(input$sample1, "Sample Data required.") %then%
+            need(length(createNumLst(input$sample1)) > 1, "Sample Data requires a minimum of 2 data points."),
+          need(input$popuSDRaw & input$popuSDRaw > 0, "Population Standard Deviation must be positive."),
           #need(input$popuSDRaw > 0, "Population Standard Deviation must be greater than 0"),
+          
+          errorClass = "myClass"
+        )
+      }
+      
+      if(!onemeansdknown_iv$is_valid())
+      {
+        validate(
+          need(input$popuSD & input$popuSD > 0, "Population Standard Deviation must be positive."),
+          #need(input$popuSD > 0, "Population Standard Deviation must be greater than 0"),
           
           errorClass = "myClass"
         )
@@ -3718,7 +3800,7 @@ server <- function(input, output) {
       if(!onemeansdunk_iv$is_valid())
       {
         validate(
-          need(input$sampSD && input$sampSD > 0, "Sample Standard Deviation (s) must be positive"),
+          need(input$sampSD && input$sampSD > 0, "Sample Standard Deviation (s) must be positive."),
           
           errorClass = "myClass"
         )
@@ -3727,7 +3809,66 @@ server <- function(input, output) {
       if(!onemeanht_iv$is_valid())
       {
         validate(
-          need(input$hypMean, "Hypothesized Population Mean value required"),
+          need(input$hypMean, "Hypothesized Population Mean value required."),
+          
+          errorClass = "myClass"
+        )
+      }
+      
+      if(!indmeanssumm_iv$is_valid()) {
+        
+        validate(
+          need(input$sampleSize1, "Sample Size 1 (n1) must be a positive integer.") %then%
+            need(input$sampleSize1 > 0 & input$sampleSize1 %% 1 == 0, "Sample Size 1 (n1) must be a positive integer."),
+          need(input$sampleMean1, "Sample Mean 1 required."),
+          
+          need(input$sampleSize2, "Sample Size 2 (n2) must be a positive integer.") %then%
+            need(input$sampleSize2 > 0 & input$sampleSize2 %% 1 == 0, "Sample Size 2 (n2) must be a positive integer."),
+          need(input$sampleMean2, "Sample Mean 2 required."),
+          
+          errorClass = "myClass"
+        )
+      }
+      
+      if(!indmeanssdknown_iv$is_valid())
+      {
+        validate(
+          need(input$popuSD1 & input$popuSD1 > 0, "Population Standard Deviation 1 must be positive."),
+          need(input$popuSD2 & input$popuSD2 > 0, "Population Standard Deviation 2 must be positive."),
+          
+          errorClass = "myClass"
+        )
+      }
+      
+      if(!indmeanssdunk_iv$is_valid())
+      {
+        validate(
+          need(input$sampSD1 && input$sampSD1 > 0, "Sample Standard Deviation (s1) must be positive."),
+          need(input$sampSD2 && input$sampSD2 > 0, "Sample Standard Deviation (s2) must be positive."),
+          
+          errorClass = "myClass"
+        )
+      }
+      
+      if(!indmeansraw_iv$is_valid()) {
+        
+        validate(
+          need(input$raw_sample1, "Sample 1 requires a minimum of 3 data points.") %then%
+            need(length(createNumLst(input$raw_sample1)) > 2, "Sample Data requires a minimum of 3 data points."),
+          need(input$raw_sample2, "Sample 2 requires a minimum of 3 data points.") %then%
+            need(length(createNumLst(input$raw_sample2)) > 2, "Sample Data requires a minimum of 3 data points."),
+          
+          errorClass = "myClass"
+        )
+        
+        validate("Samples require a minimum of 3 data points.")
+      }
+      
+      if(!indmeansrawsd_iv$is_valid()) {
+        
+        validate(
+          need(input$popuSDRaw1 & input$popuSD1 > 0, "Population Standard Deviation 1 must be positive."),
+          need(input$popuSDRaw2 & input$popuSD2 > 0, "Population Standard Deviation 2 must be positive."),
           
           errorClass = "myClass"
         )
@@ -5152,10 +5293,10 @@ server <- function(input, output) {
               
               if(input$inferenceType2 == 'Confidence Interval'){
                 
-                if(input$bothsigmaKnown == 'bothKnown'){
+                if(input$bothsigmaKnownRaw == 'bothKnown'){
                   
-                  sigma1 <- input$popuSD1
-                  sigma2 <- input$popuSD2
+                  sigma1 <- input$popuSDRaw1
+                  sigma2 <- input$popuSDRaw2
                   
                   source('R/TwoSampZInt.R')
                   
@@ -5174,7 +5315,7 @@ server <- function(input, output) {
                   values$dfTwoKnownCIRaw <- rbind(row1, row2, row3, row4, row5)
                 }
                 
-                else if(input$bothsigmaKnown == 'bothUnknown'){
+                else if(input$bothsigmaKnownRaw == 'bothUnknown'){
                   
                   s1 <- sd(raw_sample1)
                   s2 <- sd(raw_sample2)
@@ -5199,10 +5340,10 @@ server <- function(input, output) {
               
               else if(input$inferenceType2 == 'Hypothesis Testing'){
                 
-                if(input$bothsigmaKnown == 'bothKnown'){
+                if(input$bothsigmaKnownRaw == 'bothKnown'){
                   
-                  sigma1 <- input$popuSD1
-                  sigma2 <- input$popuSD2
+                  sigma1 <- input$popuSDRaw1
+                  sigma2 <- input$popuSDRaw2
                   
                   source('R/TwoSampZTest.R')
                   
@@ -5221,7 +5362,7 @@ server <- function(input, output) {
                   values$dfTwoKnownHypRaw  <- rbind(row1, row2, row3, row4, row5)
                 }
                 
-                else if(input$bothsigmaKnown == 'bothUnknown'){
+                else if(input$bothsigmaKnownRaw == 'bothUnknown'){
                   
                   s1 <- sd(raw_sample1)
                   s2 <- sd(raw_sample2)
@@ -6792,7 +6933,8 @@ server <- function(input, output) {
       input$inferenceType
       input$inferenceType2
       input$significanceLevel2
-      input$confidenceLevel2}, {
+      input$confidenceLevel2
+      !si_iv$is_valid()}, {
         hide(id = "inferenceData")
       })
     
