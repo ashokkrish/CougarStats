@@ -5199,6 +5199,7 @@ server <- function(input, output) {
           }
           
           if(input$popuParameters == 'Independent Population Means'){
+
             if(input$dataAvailability2 == 'Summarized Data'){
               n1 <- input$sampleSize1
               xbar1 <- input$sampleMean1
@@ -6957,6 +6958,7 @@ server <- function(input, output) {
     
     observeEvent(!si_iv$is_valid(), {
       hide(id = "inferenceMP")
+      hide(id = "inferenceData")
     })
     
     observeEvent({input$samplesSelect
@@ -6977,42 +6979,6 @@ server <- function(input, output) {
         hide(id = "inferenceData")
       })
     
-    # observeEvent({input$samplesSelect
-    #   input$dataAvailability
-    #   input$dataAvailability2
-    #   input$inferenceType
-    #   input$inferenceType2
-    #   input$significanceLevel
-    #   input$significanceLevel2
-    #   input$confidenceLevel
-    #   input$confidenceLevel2}, {
-    #   hide(id = "inferenceMP")
-    # })
-    
-    #observeEvent(input$inferenceType, {
-    #  hide(id = "inferenceMP")
-    #})
-    
-    #observeEvent(input$inferenceType2, {
-    #  hide(id = "inferenceMP")
-    #})
-    
-    #observeEvent(input$significanceLevel, {
-    #  hide(id = "inferenceMP")
-    #})
-    
-    #observeEvent(input$significanceLevel2, {
-    #  hide(id = "inferenceMP")
-    #})
-    
-    #observeEvent(input$confidenceLevel, {
-    #  hide(id = "inferenceMP")
-    #})
-    
-    #observeEvent(input$confidenceLevel2, {
-    #  hide(id = "inferenceMP")
-    #})
-    
     observeEvent(input$goInference, {
       show(id = "inferenceMP")
     })
@@ -7021,6 +6987,7 @@ server <- function(input, output) {
       hide(id = "inferenceMP")
       shinyjs::reset("inferencePanel")
     })
+  
     
     #  ------------------------------------ #
     ## ---- Regression and Correlation ----
