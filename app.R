@@ -6086,50 +6086,50 @@ server <- function(input, output) {
         
         else if(input$samplesSelect == '2'){
           
-          # if(input$inferenceType2 == 'Confidence Interval'){
-          # 
-          #   if(input$confidenceLevel2 == '90%'){
-          #     confLvl <- 0.9
-          #   }
-          #   else if(input$confidenceLevel2 == '95%'){
-          #     confLvl <- 0.95
-          #   }
-          #   else{
-          #     confLvl <- 0.99
-          #   }
-          # }
-          # 
-          # else if(input$inferenceType2 == 'Hypothesis Testing'){
-          # 
-          #   if(input$significanceLevel2 == "10%"){
-          #     sigLvl <- 0.1
-          #   }
-          #   else if(input$significanceLevel2 == "5%"){
-          #     sigLvl <- 0.05
-          #   }
-          #   else{
-          #     sigLvl <- 0.01
-          #   }
-          # 
-          #   if(input$altHypothesis2 == "3"){
-          #     alternative <- "greater"
-          #     nullHyp <- "\\leq"
-          #     altHyp <- "\\gt"
-          #     critZAlph <- "z_{\\alpha}"
-          #   }
-          #   else if(input$altHypothesis2 == "2"){
-          #     alternative <- "two.sided"
-          #     nullHyp <- "="
-          #     altHyp <- "\\neq"
-          #     critZAlph <- "\\pm z_{\\alpha/2}"
-          #   }
-          #   else{
-          #     alternative <- "less"
-          #     nullHyp <- "\\geq"
-          #     altHyp <- "\\lt"
-          #     critZAlph <- "-z_{\\alpha}"
-          #   }
-          # }
+          if(input$inferenceType2 == 'Confidence Interval'){
+
+            if(input$confidenceLevel2 == '90%'){
+              confLvl <- 0.9
+            }
+            else if(input$confidenceLevel2 == '95%'){
+              confLvl <- 0.95
+            }
+            else{
+              confLvl <- 0.99
+            }
+          }
+
+          else if(input$inferenceType2 == 'Hypothesis Testing'){
+
+            if(input$significanceLevel2 == "10%"){
+              sigLvl <- 0.1
+            }
+            else if(input$significanceLevel2 == "5%"){
+              sigLvl <- 0.05
+            }
+            else{
+              sigLvl <- 0.01
+            }
+
+            if(input$altHypothesis2 == "3"){
+              alternative <- "greater"
+              nullHyp <- "\\leq"
+              altHyp <- "\\gt"
+              critZAlph <- "z_{\\alpha}"
+            }
+            else if(input$altHypothesis2 == "2"){
+              alternative <- "two.sided"
+              nullHyp <- "="
+              altHyp <- "\\neq"
+              critZAlph <- "\\pm z_{\\alpha/2}"
+            }
+            else{
+              alternative <- "less"
+              nullHyp <- "\\geq"
+              altHyp <- "\\lt"
+              critZAlph <- "-z_{\\alpha}"
+            }
+          }
           
           if(input$popuParameters == 'Independent Population Means'){
             if(si_iv$is_valid()) {
@@ -6353,7 +6353,7 @@ server <- function(input, output) {
           # else if(input$popuParameters == 'Dependent Population Means'){
           #   print("Inference for the two Dependent Populations")
           #}
-          else if(input$popuParameters == 'Population Proportions'){ -
+          else if(input$popuParameters == 'Population Proportions'){
             
             if(si_iv$is_valid())
             {
@@ -6446,7 +6446,7 @@ server <- function(input, output) {
                 {
                   source('R/TwoPropZInt.R')
                   
-                  twoSampPropZInt <- TwoPropZInt(twoSampPropSucc1, twoSampPropTrial1, twoSampPropSucc2, twoSampPropTrial2, confLvl)
+                  twoSampPropZInt <- TwoPropZInt(twoSampPropSucc1, twoSampPropTrial1, twoSampPropSucc2, twoSampPropTrial2, ConfLvl())
                   
                   # (\\( n\\))  (\\( x\\))  (\\(\\hat{p}\\))  ( 1 - \\(\\hat{p}\\))
                   dataRow1 <- data.frame(Variable = "Number of Trials 1 \\( (n_{1})\\)", Value = paste(twoSampPropTrial1))
@@ -6717,7 +6717,7 @@ server <- function(input, output) {
                         br(),
                         p(tags$b("Interpretation:")),
                         sprintf("We are %1.0f%% confident that the difference in population proportions \\( (p_{1} - p_{2}) \\) is between %0.3f and %0.3f.",
-                                confLvl*100,
+                                ConfLvl()*100,
                                 twoSampPropZInt["LCL"],
                                 twoSampPropZInt["UCL"])
                       )
@@ -6731,7 +6731,7 @@ server <- function(input, output) {
                 {
                   source('R/TwoPropZTest.R')
                   
-                  twoSampPropZTest <- TwoPropZTest(twoSampPropSucc1, twoSampPropTrial1, twoSampPropSucc2, twoSampPropTrial2, 0, alternative, sigLvl)
+                  twoSampPropZTest <- TwoPropZTest(twoSampPropSucc1, twoSampPropTrial1, twoSampPropSucc2, twoSampPropTrial2, 0, alternative, SigLvl())
                   
                   if(twoSampPropZTest["P-Value"] < 0.0001)
                   {
@@ -6764,7 +6764,7 @@ server <- function(input, output) {
                   dataRow7 <- data.frame(Variable = "Sample Proportion of Success 2 \\( (\\hat{p}_{2})\\)", Value = paste(twoSampPropZTest["Sample Proportion 2"]))
                   dataRow8 <- data.frame(Variable = "Sample Proportion of Failure 2 \\( (\\hat{q}_{2})\\)", Value = paste(1 - twoSampPropZTest["Sample Proportion 2"]))
                   dataRow9 <- data.frame(Variable = "Difference of Proportions \\( (\\hat{p}_{1} - \\hat{p}_{2})\\)", Value = paste(propDiff))
-                  dataRow10 <- data.frame(Variable = "Significance Level \\( (\\alpha)\\)", Value = paste(sigLvl*100, "%"))
+                  dataRow10 <- data.frame(Variable = "Significance Level \\( (\\alpha)\\)", Value = paste(SigLvl()*100, "%"))
                   dataRow11 <- data.frame(Variable = "Z Critical Value \\((CV)\\)", Value = paste(twoSampPropZTest["Z Critical"]))
                   dataRow12 <- data.frame(Variable = "Standard Error \\( (SE_{D_{P}})\\)", Value = paste(twoSampPropZTest["Std Error"]))
                   dataRow13 <- data.frame(Variable = "Pooled Proportion \\( (\\hat{p})\\)", Value = paste(twoSampPropZTest["Pooled Proportion"]))
@@ -7938,6 +7938,7 @@ server <- function(input, output) {
       input$sampleSize
       input$sampleMean
       input$popuParameter
+      input$popuParameters
       input$dataAvailability
       input$dataAvailability2
       input$sigmaKnown
@@ -7953,6 +7954,13 @@ server <- function(input, output) {
       input$confidenceLevel2}, {
         hide(id = "inferenceData")
       })
+    
+    observeEvent(input$significanceLevel2, {
+      
+      if(input$samplesSelect == '2' && input$popuParameters == 'Population Proportions') {
+        hide(id = "inferenceData")
+      }
+    })
     
     observeEvent(input$goInference, {
       show(id = "inferenceMP")
