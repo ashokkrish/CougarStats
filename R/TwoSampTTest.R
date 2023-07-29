@@ -39,9 +39,9 @@ TwoSampTTest <- function(xbar1, s1, n1, xbar2, s2, n2, var.equal = TRUE, alterna
   
   #If var.equal == TRUE then sp must be printed in dat: PENDING
   
-  dat <- round(c((xbar1 - xbar2), df, t.crit, se, tstat, p_value), 4)
+  dat <- round(c((xbar1 - xbar2), t.crit, df, se, tstat, p_value), 4)
   
-  names(dat) <- c("Difference of means", "df", "T Critical", "Std Error", "Test Statistic", "P-Value")
+  names(dat) <- c("Difference of means", "T Critical", "df", "Std Error", "Test Statistic", "P-Value")
   
   return(dat) 
 }
