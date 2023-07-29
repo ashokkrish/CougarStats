@@ -7945,11 +7945,11 @@ server <- function(input, output) {
       input$popuSD
       input$popuSDRaw
       input$sampSD
-      input$bothsigmaEqual
-      input$bothsigmaEqualRaw
+      # input$bothsigmaEqual
+      # input$bothsigmaEqualRaw
       input$inferenceType
       input$inferenceType2
-      input$significanceLevel2
+      # input$significanceLevel2
       input$confidenceLevel2}, {
         hide(id = "inferenceData")
       })
