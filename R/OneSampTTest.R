@@ -19,9 +19,9 @@ TTest <- function(n, xbar, s, mu = 0, alternative = c("two.sided", "less", "grea
     t.crit <- qt(1 - s_level, df)
   }
   
-  dat <- round(c(n, xbar, s, t.crit, se, tstat, p_value), 4)
+  dat <- round(c(n, xbar, s, t.crit, se, tstat, p_value, df), 4)
   
-  names(dat) <- c("Sample Size", "Sample Mean", "Sample SD", "T Critical", "Std Error", "Test Statistic", "P-Value")
+  names(dat) <- c("Sample Size", "Sample Mean", "Sample SD", "T Critical", "Std Error", "Test Statistic", "P-Value", "df")
   
   return(dat)
 }
