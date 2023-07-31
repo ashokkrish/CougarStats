@@ -15,9 +15,9 @@ TwoSampZInt <- function(xbar1, sigma1, n1, xbar2, sigma2, n2, c_level = 0.95)
   
   UCL <- (xbar1 - xbar2) + margin_of_error
   
-  dat <- round(c((xbar1 - xbar2), z.crit, se, LCL, UCL), 4)
+  dat <- round(c((xbar1 - xbar2), z.crit, se, margin_of_error, LCL, UCL), 4)
   
-  names(dat) <- c("Difference of means", "Z Critical", "Std Error", "LCL", "UCL")
+  names(dat) <- c("Difference of means", "Z Critical", "Std Error", "ME", "LCL", "UCL")
   
   return(dat) 
 }
