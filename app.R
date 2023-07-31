@@ -1326,16 +1326,6 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                                                      
                                                      p("* Note: Q1 and Q3 are calculated by excluding Q2 on both sides"),
                                                    ),
-                                                   conditionalPanel(
-                                                     condition = "input.dsTableFilters.indexOf('Skewness') > -1 | input.dsTableFilters.indexOf('Third Quartile (Q3)') > -1",
-                                                     
-                                                     p("** Note: Skewness calculations requires at least 3 complete observations."),
-                                                   ),
-                                                   conditionalPanel(
-                                                     condition = "input.dsTableFilters.indexOf('Kurtosis') > -1 | input.dsTableFilters.indexOf('Third Quartile (Q3)') > -1",
-                                                     
-                                                     p("*** Note: Kurtosis calculation requires at least 4 complete observations."),
-                                                   ),
                                                    
                                                    br()
                                                    
@@ -1478,49 +1468,62 @@ ui <- fluidPage(theme = bs_theme(version = 4, bootswatch = "minty"),
                             conditionalPanel( ##### Pop Mean ----
                               condition = "input.popuParameter == 'Population Mean'",
                               
-                              fluidRow(
-                                column(width = 4,
-                                       
-                                       titlePanel("Sample Data Summary"),
-                                       hr(),
-                                       uiOutput('oneSampMeanTable'),
-                                       br(),
-                                ),
-                                column(width = 8,
-                                       
-                                       titlePanel('Summary Details'),
-                                       hr(),
-                                       
-                                       conditionalPanel(
-                                         condition = "input.oneSampMeanData_rows_selected == 0",
-                                         
-                                         p("Select one or more variables from the summary table for more information"),
-                                       ),
-                                       
-                                )
+                              tabsetPanel(id = "oneMeanTabset", selected = "Inference Results",
+                                          
+                                          tabPanel(id = "oneMeanResults", title = "Inference Results",
+                                          
+                                                   conditionalPanel(
+                                                     condition = "input.inferenceType == 'Confidence Interval'",
+                                                     
+                                                     titlePanel(tags$u("Confidence Interval")),
+                                                     br(),
+                                                     uiOutput('oneMeanCI'),
+                                                     br(),
+                                                   ),
+                                                   
+                                                   conditionalPanel(
+                                                     condition = "input.inferenceType == 'Hypothesis Testing'",
+                                                     
+                                                     titlePanel(tags$u("Hypothesis Test")),
+                                                     br(),
+                                                     uiOutput('oneMeanHT'),
+                                                     br(),
+                                                   ),
+                                          ),
+                                          
+                                          tabPanel(id = "oneMeanSummary", title = "Summary Data", 
+                                                   
+                                                   fluidRow(
+                                                     column(width = 4,
+                                                            
+                                                            titlePanel("Sample Data Summary"),
+                                                            hr(),
+                                                            uiOutput('oneSampMeanTable'),
+                                                            br(),
+                                                     ),
+                                                     column(width = 8,
+                                                            
+                                                            titlePanel('Summary Details'),
+                                                            hr(),
+                                                            
+                                                            conditionalPanel(
+                                                              condition = "input.oneSampMeanData_rows_selected == 0",
+                                                              
+                                                              p("Select one or more variables from the summary table for more information"),
+                                                            ),
+                                                            
+                                                     )
+                                                   ),
+                                          ),
                               ),
                               
-                              br(),
-                              hr(),
-                              br(),
                               
-                              conditionalPanel(
-                                condition = "input.inferenceType == 'Confidence Interval'",
-                                
-                                titlePanel(tags$u("Confidence Interval")),
-                                br(),
-                                uiOutput('oneMeanCI'),
-                                br(),
-                              ),
                               
-                              conditionalPanel(
-                                condition = "input.inferenceType == 'Hypothesis Testing'",
-                                
-                                titlePanel(tags$u("Hypothesis Test")),
-                                br(),
-                                uiOutput('oneMeanHT'),
-                                br(),
-                              ),
+                              # br(),
+                              # hr(),
+                              # br(),
+                              
+                              
                               
                               # conditionalPanel(
                               #   condition = "input.dataAvailability == 'Summarized Data'",
@@ -2570,12 +2573,12 @@ server <- function(input, output) {
       sampMeanSE <- round(sd(dat)/sqrt(length(dat)), 4)
       coeffVar <- round(sampStdDev/xbar, 4)
       if(sampSize < 3){
-        sampSkewness <- "Not enough observations."
+        sampSkewness <- round(skewness(dat, type = 1), 4)
       } else {
         sampSkewness <- round(skewness(dat, type = 2), 4)
       }
       if(sampSize < 4){
-        sampKurtosis <- "Not enough observations."
+        sampKurtosis <- round(kurtosis(dat, type = 1), 4)
       } else {
         sampKurtosis <- round(kurtosis(dat, type = 2), 4)
       }
@@ -2664,8 +2667,8 @@ server <- function(input, output) {
                                     "Sample Variance", 
                                     "Standard Error of the Mean", 
                                     "Coefficient of Variation",
-                                    "Skewness**", 
-                                    "Kurtosis***"))
+                                    "Skewness", 
+                                    "Kurtosis"))
       
       
       if(input$dataInput == 'Upload Data')
@@ -2777,6 +2780,8 @@ server <- function(input, output) {
             
             errorClass = "myClass"
           )
+          
+          validate("Sample Data must be numeric")
         }
         
         # tagList(
@@ -3070,6 +3075,8 @@ server <- function(input, output) {
         })
       
         show(id = 'descrStatsData')
+      } else {
+        hide(id = 'descrStatsData')
       }
       #print(sort(dat)
       # show(id = 'descriptiveStatsMP') 
@@ -4298,7 +4305,6 @@ server <- function(input, output) {
       source('R/TwoSampZInt.R')
 
       twoSampZInt <- TwoSampZInt(data$xbar1, data$sd1, data$n1, data$xbar2, data$sd2, data$n2, ConfLvl())
-      
       return(twoSampZInt)
     })
 
@@ -4627,6 +4633,7 @@ server <- function(input, output) {
     
     ##### CI ----
     output$oneMeanCI <- renderUI({
+      withMathJax()
       if(input$dataAvailability == 'Summarized Data'){
         
         if(input$sigmaKnown == 'Known'){
@@ -4664,19 +4671,30 @@ server <- function(input, output) {
       
       p(
         withMathJax(
-          sprintf("CI \\(= \\bar{x} \\pm %s_{\\alpha/2} * \\dfrac{%s}{\\sqrt{n}}\\)",
+          sprintf("\\( CI = \\bar{x} \\pm %s_{\\alpha/2} \\cdot \\dfrac{%s}{\\sqrt{n}}\\)",
                   testStat,
                   sdSymbol),
           br(),
           br(),
-          sprintf("CI \\( \\displaystyle = %g \\pm \\left( %g \\cdot \\dfrac{%g}{\\sqrt{%g}} \\right) \\)",
+          sprintf("\\( \\displaystyle \\quad = %g \\pm \\left( %g \\cdot \\dfrac{%g}{\\sqrt{%g}} \\right) \\)",
                   oneMeanData["Sample Mean"],
                   critVal,
                   oneMeanData[3],
                   oneMeanData['Sample Size']),
           br(),
           br(),
-          sprintf("CI \\(= (%g, %g)\\)",
+          sprintf("\\( \\displaystyle \\quad = %g \\pm \\left( %g \\cdot %g \\right) \\)",
+                  oneMeanData["Sample Mean"],
+                  critVal,
+                  oneMeanData['Std Error']),
+          br(),
+          br(),
+          sprintf("\\( \\displaystyle \\quad = %g \\pm %g \\)",
+                  oneMeanData["Sample Mean"],
+                  oneMeanData['ME']),
+          br(),
+          br(),
+          sprintf("\\( \\quad = (%g, %g)\\)",
                   oneMeanData["LCL"],
                   oneMeanData["UCL"]),
           br(),
@@ -4981,34 +4999,261 @@ server <- function(input, output) {
     })
     
     
+    ##### CI ----
+    output$indMeansCI <- renderUI({
+  
+      if(IndMeansSigmaKnown() == 'bothKnown'){
+        cInt <- IndMeansZInt() 
+        sdSymbol <- "\\sigma"
+        testStat <- "z"
+      }
+      else if(IndMeansSigmaKnown() == 'bothUnknown'){
+        cInt <- IndMeansTInt()
+        sdSymbol <- "s"
+        testStat <- "t"
+      }
+      
+      tagList(
+        
+        p(
+          withMathJax(
+            conditionalPanel(
+              condition = "(input.dataAvailability2 == 'Summarized Data' && input.bothsigmaKnown == 'bothKnown') || (input.dataAvailability2 == 'Enter Raw Data' && input.bothsigmaKnownRaw == 'bothKnown')",
+              
+              uiOutput('sigmaKnownCIFormula')
+            ),
+            conditionalPanel(
+              condition = "(input.dataAvailability2 == 'Summarized Data' && input.bothsigmaKnown == 'bothUnknown') || (input.dataAvailability2 == 'Enter Raw Data' && input.bothsigmaKnownRaw == 'bothUnknown')",
+              
+              uiOutput('sigmaUnknownCIFormula')
+            ),
+            br(),
+            sprintf("\\( \\quad = (%g, %g)\\)",
+                    cInt["LCL"],
+                    cInt["UCL"]),
+            br(),
+            br(),
+            br(),
+            p(tags$b("Interpretation:")),
+            sprintf("We are %1.0f%% confident that the difference in population means \\( (\\mu_{1} - \\mu_{2}) \\) is between %g and %g.",
+                    ConfLvl()*100,
+                    cInt["LCL"],
+                    cInt["UCL"]),
+            br()
+          )
+        )
+        
+      )
+      
+          
+    })
+  
+    
+    output$sigmaKnownCIFormula <- renderUI({
+      
+      if (input$dataAvailability2 == 'Summarized Data') {
+        data <- IndMeansSummData()
+      } else if(input$dataAvailability2 == 'Enter Raw Data') {
+        data <- IndMeansRawData()
+      }
+      zInt <- IndMeansZInt()
+      
+      tagList(
+        
+        p(
+          withMathJax(
+            sprintf("\\( CI = (\\bar{x}_{1} - \\bar{x}_{2}) \\pm z_{\\alpha/2} \\cdot \\sqrt{ \\dfrac{\\sigma_{1}^2}{n_{1}} + \\dfrac{\\sigma_{2}^2}{n_{2}} } \\)"),
+            br(),
+            br(),
+            sprintf("\\( \\displaystyle \\quad = (%g - %g) \\pm \\left( %g \\cdot \\sqrt{ \\dfrac{%g}{%g} + \\dfrac{%g}{%g} } \\right) \\)",
+                    data$xbar1,
+                    data$xbar2,
+                    zInt['Z Critical'],
+                    data$sd1,
+                    data$n1,
+                    data$sd2,
+                    data$n2),
+            br(),
+            br(),
+            sprintf("\\( \\displaystyle \\quad = %g \\pm \\left( %g \\cdot %g \\right) \\)",
+                    zInt['Difference of means'],
+                    zInt['Z Critical'],
+                    zInt['Std Error']),
+            br(),
+            br(),
+            sprintf("\\( \\displaystyle \\quad = %g \\pm %g \\)",
+                    zInt['Difference of means'],
+                    zInt['ME'])
+          )
+        )
+        
+      )
+    })
+    
+    
+    output$sigmaUnknownCIFormula <- renderUI({
+      
+      if (input$dataAvailability2 == 'Summarized Data') {
+        data <- IndMeansSummData()
+      } else if(input$dataAvailability2 == 'Enter Raw Data') {
+        data <- IndMeansRawData()
+      }
+      tInt <- IndMeansTInt()
+      
+      if(data$sigmaEqual) {
+        sp <- round(sqrt(((data$n1-1) * data$sd1^2 + (data$n2-1) * data$sd2^2) / (data$n1 + data$n2 - 2)), 4)
+        
+        tagList(
+          withMathJax(
+            sprintf("\\( CI = (\\bar{x}_{1} - \\bar{x}_{2}) \\pm t_{\\alpha/2,n_{1} + n_{2} - 2} \\cdot s_{p} \\sqrt{ \\dfrac{1}{n_{1}} + \\dfrac{1}{n_{2}} } \\)"),
+            br(),
+            br(),
+            p(tags$b("where")),
+            sprintf("\\( \\displaystyle \\qquad s_{p} = \\sqrt{\\dfrac{(n_{1} - 1)s_{1}^2 + (n_{2} - 1)s_{2}^2}{n_{1} + n_{2} - 2}} \\)"),
+            sprintf("\\( = \\sqrt{\\dfrac{(%g - 1)%g + (%g - 1)%g}{%g + %g - 2}} = %g \\)",
+                    data$n1,
+                    data$sd1^2,
+                    data$n2,
+                    data$sd2^2,
+                    data$n1,
+                    data$n2,
+                    sp),
+            br(),
+            p(tags$b("and")),
+            sprintf("\\( \\qquad t_{\\alpha/2,n_{1} + n_{2} - 2} = t_{\\alpha/2,%g} = %g \\)",
+                    tInt['df'],
+                    tInt['T Critical']),
+            br(),
+            br(),
+            br(),
+            br(),
+            sprintf("\\( \\displaystyle CI = (%g - %g) \\pm \\left( %g \\cdot %g \\sqrt{ \\dfrac{1}{%g} + \\dfrac{1}{%g} } \\right) \\)",
+                    data$xbar1,
+                    data$xbar2,
+                    tInt['T Critical'],
+                    sp,
+                    data$n1,
+                    data$n2),
+            br(),
+            br(),
+            sprintf("\\( \\displaystyle \\quad = %g \\pm \\left( %g \\cdot %g \\right) \\)",
+                    tInt['Difference of means'],
+                    tInt['T Critical'],
+                    tInt['Std Error']),
+            br(),
+            br(),
+            sprintf("\\( \\displaystyle \\quad = %g \\pm %g \\)",
+                    tInt['Difference of means'],
+                    tInt['ME'])
+            
+          )
+        )
+      } else {
+        
+        tagList(
+          withMathJax(
+            sprintf("\\( CI = (\\bar{x}_{1} - \\bar{x}_{2}) \\pm t_{\\alpha/2,\\nu} \\cdot \\sqrt{ \\dfrac{s^2_{1}}{n_{1}} + \\dfrac{s^2_{2}}{n_{2}} } \\)"),
+            br(),
+            br(),
+            p(tags$b("where")),
+            sprintf("\\( \\displaystyle \\qquad \\nu = \\: \\dfrac{ \\left( \\dfrac{s^2_{1}}{n_{1}} + \\dfrac{s^2_{2}}{n_{2}} \\right)^2 }
+                    { \\dfrac{ \\left( \\dfrac{s^2_{1}}{n_{1}} \\right)^2 }{n_{1} - 1} + \\dfrac{ \\left( \\dfrac{s^2_{2}}{n_{2}} \\right)^2 }{n_{2} - 1} } \\)"),
+            sprintf("\\( \\displaystyle \\: = \\: \\dfrac{ \\left( \\dfrac{%g^2}{%g} + \\dfrac{%g^2}{%g} \\right)^2 }
+                    { \\dfrac{ \\left( \\dfrac{%g^2}{%g} \\right)^2 }{%g - 1} + \\dfrac{ \\left( \\dfrac{%g^2}{%g} \\right)^2 }{%g - 1} } \\)",
+                    data$sd1,
+                    data$n1,
+                    data$sd2,
+                    data$n2,
+                    data$sd1,
+                    data$n1,
+                    data$n1,
+                    data$sd2,
+                    data$n2,
+                    data$n2),
+            sprintf("\\( \\displaystyle \\: = \\: \\dfrac{ \\left( %g + %g \\right)^2 }
+                    { \\dfrac{ %g^2 }{%g} + \\dfrac{ %g^2 }{%g} } \\)",
+                    (data$sd1^2) / data$n1,
+                    (data$sd2^2) / data$n2,
+                    (data$sd1^2) / data$n1,
+                    data$n1 - 1,
+                    (data$sd2^2) / data$n2,
+                    data$n2 - 1),
+            sprintf("\\( \\: = \\: %g \\)",
+                    tInt['df']),
+            br(),
+            p(tags$b("and")),
+            sprintf("\\( \\qquad t_{\\alpha/2,\\nu} = t_{\\alpha/2,%g} = %g \\)",
+                    tInt['df'],
+                    tInt['T Critical']),
+            br(),
+            br(),
+            br(),
+            br(),
+            sprintf("\\( CI = (%g - %g) \\pm \\left( %g \\cdot \\sqrt{ \\dfrac{%g}{%g} + \\dfrac{%g}{%g} } \\right) \\)",
+                    data$xbar1,
+                    data$xbar2,
+                    tInt['T Critical'],
+                    data$sd1,
+                    data$n1,
+                    data$sd2,
+                    data$n2),
+            br(),
+            br(),
+            sprintf("\\( \\displaystyle \\quad = %g \\pm \\left( %g \\cdot %g \\right) \\)",
+                    tInt['Difference of means'],
+                    tInt['T Critical'],
+                    tInt['Std Error']),
+            br(),
+            br(),
+            sprintf("\\( \\displaystyle \\quad = %g \\pm %g \\)",
+                    tInt['Difference of means'],
+                    tInt['ME'])
+          )
+        )
+      }
+      
+      
+    })
+    
+    
     ##### HT ----
     output$indMeansHT <- renderUI({
       
         withMathJax()
-        
+      
+      #get test type and results based on sigma known/unknown
         if(IndMeansSigmaKnown() == 'bothKnown'){
-          data <- IndMeansZTest() 
-          sdSymbol <- "\\sigma"
+          hTest <- IndMeansZTest() 
           testStat <- "z"
+          critValDF <- "z_{\\alpha/2}"
         }
         else if(IndMeansSigmaKnown() == 'bothUnknown'){
-          data <- IndMeansTTest()
-          sdSymbol <- "s"
+          hTest <- IndMeansTTest()
           testStat <- "t"
+          
+          if (input$dataAvailability2 == 'Summarized Data') {
+            sigmaEqual <- IndMeansSummData()$sigmaEqual
+          } else if(input$dataAvailability2 == 'Enter Raw Data') {
+            sigmaEqual <- IndMeansRawData()$sigmaEqual
+          }
+          
+          if(sigmaEqual) {
+            critValDF <- "z_{\\alpha/2, \\, n_{1} + n_{2} - 2}"
+          } else {
+            critValDF <- "z_{\\alpha/2, \\, \\nu}"
+          }
         }
         
-        intrpInfo <- IndMeansHypInfo()
-        
-        if(data["P-Value"] < 0.0001)
+        if(hTest["P-Value"] < 0.0001)
         {
           pValue <- "\\lt 0.0001"
         }
         else
         {
-          pValue <- data["P-Value"]
+          pValue <- hTest["P-Value"]
         }
         
-        if(data["P-Value"] > SigLvl())
+        if(hTest["P-Value"] > SigLvl())
         {
           pvalSymbol <- "\\gt"
           suffEvidence <- "do not provide"
@@ -5023,21 +5268,23 @@ server <- function(input, output) {
           region <- "rejection"
         }
         
+      intrpInfo <- IndMeansHypInfo()
+      
         if(intrpInfo$alternative == "two.sided")
         {
           if(testStat == 'z') {
-            critVal <- paste("\\pm", data[2])
+            critVal <- paste("\\pm", hTest[2])
           } else {
-            critVal <- paste("\\pm", data[2])
+            critVal <- paste("\\pm", hTest[2])
           }
           
         }
         else
         {
           if(testStat == 'z') {
-            critVal <- data[2]
+            critVal <- hTest[2]
           } else {
-            critVal <- data[2]
+            critVal <- hTest[2]
           }
           
         }
@@ -5061,12 +5308,12 @@ server <- function(input, output) {
               conditionalPanel(
                 condition = "(input.dataAvailability2 == 'Summarized Data' && input.bothsigmaKnown == 'bothKnown') || (input.dataAvailability2 == 'Enter Raw Data' && input.bothsigmaKnownRaw == 'bothKnown')",
                 
-                uiOutput('sigmaKnownFormula')
+                uiOutput('sigmaKnownHTFormula')
               ),
               conditionalPanel(
                 condition = "(input.dataAvailability2 == 'Summarized Data' && input.bothsigmaKnown == 'bothUnknown') || (input.dataAvailability2 == 'Enter Raw Data' && input.bothsigmaKnownRaw == 'bothUnknown')",
                 
-                uiOutput('sigmaUnknownFormula')
+                uiOutput('sigmaUnknownHTFormula')
               ),
               br(),
               br(),
@@ -5083,7 +5330,8 @@ server <- function(input, output) {
               br(),
               br(),
               p(tags$b("Using Critical Value Method:")),
-              sprintf("Critical Value(s) = \\( %s \\)",
+              sprintf("Critical Value(s) \\( = %s = %s \\)",
+                      critValDF,
                       critVal),
               br(),
               sprintf("Since the test statistic \\( (%s)\\) falls within the %s region, %s \\( H_{0}\\).",
@@ -5113,7 +5361,7 @@ server <- function(input, output) {
     })
     
     
-    output$sigmaKnownFormula <- renderUI({
+    output$sigmaKnownHTFormula <- renderUI({
       
       if (input$dataAvailability2 == 'Summarized Data') {
         data <- IndMeansSummData()
@@ -5123,26 +5371,27 @@ server <- function(input, output) {
       zTest <- IndMeansZTest()
       
       tagList(
-        
-        sprintf("\\( z = \\dfrac{\\bar{x}_{1} - \\bar{x}_{2}}{ \\sqrt{ \\dfrac{\\sigma_{1}^2}{n_{1}} + \\dfrac{\\sigma_{2}^2}{n_{2}} } } \\)"),
-        br(),
-        br(),
-        sprintf("\\( z = \\dfrac{%g - %g}{ \\sqrt{ \\dfrac{%g^2}{%g} + \\dfrac{%g^2}{%g} } } = \\dfrac{%g}{%g} = %g \\)",
-                data$xbar1,
-                data$xbar2,
-                data$sd1,
-                data$n1,
-                data$sd2,
-                data$n2,
-                zTest['Difference of means'],
-                zTest['Std Error'],
-                zTest['Test Statistic']),
-        br(),
+        withMathJax(
+          sprintf("\\( z = \\dfrac{\\bar{x}_{1} - \\bar{x}_{2}}{ \\sqrt{ \\dfrac{\\sigma_{1}^2}{n_{1}} + \\dfrac{\\sigma_{2}^2}{n_{2}} } } \\)"),
+          br(),
+          br(),
+          sprintf("\\( z = \\dfrac{%g - %g}{ \\sqrt{ \\dfrac{%g^2}{%g} + \\dfrac{%g^2}{%g} } } = \\dfrac{%g}{%g} = %g \\)",
+                  data$xbar1,
+                  data$xbar2,
+                  data$sd1,
+                  data$n1,
+                  data$sd2,
+                  data$n2,
+                  zTest['Difference of means'],
+                  zTest['Std Error'],
+                  zTest['Test Statistic']),
+          br()
+        )
       )
     })
     
     
-    output$sigmaUnknownFormula <- renderUI({
+    output$sigmaUnknownHTFormula <- renderUI({
       
       if (input$dataAvailability2 == 'Summarized Data') {
         data <- IndMeansSummData()
@@ -5155,53 +5404,56 @@ server <- function(input, output) {
         sp <- round(sqrt(((data$n1-1) * data$sd1^2 + (data$n2-1) * data$sd2^2) / (data$n1 + data$n2 - 2)), 4)
 
         tagList(
-          
-          sprintf("\\( t = \\dfrac{ \\bar{x}_{1} - \\bar{x}_{2} }{ s_{p} \\sqrt{ \\dfrac{1}{n_{1}} + \\dfrac{1}{n_{2}} } } \\)"),
-          br(),
-          br(),
-          p(tags$b("where")),
-          sprintf("\\( \\displaystyle \\qquad s_{p} = \\sqrt{\\dfrac{(n_{1} - 1)s_{1}^2 + (n_{2} - 1)s_{2}^2}{n_{1} + n_{2} - 2}} \\)"),
-          sprintf("\\( = \\sqrt{\\dfrac{(%g - 1)%g + (%g - 1)%g}{%g + %g - 2}} = %g \\)",
-                  data$n1,
-                  data$sd1^2,
-                  data$n2,
-                  data$sd2^2,
-                  data$n1,
-                  data$n2,
-                  sp),
-          br(),
-          br(),
-          br(),
-          sprintf("\\( t = \\dfrac{ %g - %g }{ %g \\sqrt{ \\dfrac{1}{%g} + \\dfrac{1}{%g} } } \\)",
-                  data$xbar1,
-                  data$xbar2,
-                  sp,
-                  data$n1,
-                  data$n2),
-          sprintf("\\( = \\dfrac{%g}{%g} = %g \\)",
-                  tTest['Difference of means'],
-                  tTest['Std Error'],
-                  tTest['Test Statistic']),
-          br()
+          withMathJax(
+            sprintf("\\( t = \\dfrac{ \\bar{x}_{1} - \\bar{x}_{2} }{ s_{p} \\sqrt{ \\dfrac{1}{n_{1}} + \\dfrac{1}{n_{2}} } } \\)"),
+            br(),
+            br(),
+            p(tags$b("where")),
+            sprintf("\\( \\displaystyle \\qquad s_{p} = \\sqrt{\\dfrac{(n_{1} - 1)s_{1}^2 + (n_{2} - 1)s_{2}^2}{n_{1} + n_{2} - 2}} \\)"),
+            sprintf("\\( = \\sqrt{\\dfrac{(%g - 1)%g + (%g - 1)%g}{%g + %g - 2}} = %g \\)",
+                    data$n1,
+                    data$sd1^2,
+                    data$n2,
+                    data$sd2^2,
+                    data$n1,
+                    data$n2,
+                    sp),
+            br(),
+            br(),
+            br(),
+            br(),
+            sprintf("\\( t = \\dfrac{ %g - %g }{ %g \\sqrt{ \\dfrac{1}{%g} + \\dfrac{1}{%g} } } \\)",
+                    data$xbar1,
+                    data$xbar2,
+                    sp,
+                    data$n1,
+                    data$n2),
+            sprintf("\\( = \\dfrac{%g}{%g} = %g \\)",
+                    tTest['Difference of means'],
+                    tTest['Std Error'],
+                    tTest['Test Statistic']),
+            br()
+          )
         )
         
       } else {
         tagList(
-          
-          sprintf("\\( t = \\dfrac{\\bar{x}_{1} - \\bar{x}_{2}}{ \\sqrt{ \\dfrac{s_{1}^2}{n_{1}} + \\dfrac{s_{2}^2}{n_{2}} } } \\)"),
-          br(),
-          br(),
-          sprintf("\\( t = \\dfrac{%g - %g}{ \\sqrt{ \\dfrac{%g^2}{%g} + \\dfrac{%g^2}{%g} } } = \\dfrac{%g}{%g} = %g \\)",
-                  data$xbar1,
-                  data$xbar2,
-                  data$sd1,
-                  data$n1,
-                  data$sd2,
-                  data$n2,
-                  tTest['Difference of means'],
-                  tTest['Std Error'],
-                  tTest['Test Statistic']),
-          br(),
+          withMathJax(
+            sprintf("\\( t = \\dfrac{\\bar{x}_{1} - \\bar{x}_{2}}{ \\sqrt{ \\dfrac{s_{1}^2}{n_{1}} + \\dfrac{s_{2}^2}{n_{2}} } } \\)"),
+            br(),
+            br(),
+            sprintf("\\( t = \\dfrac{%g - %g}{ \\sqrt{ \\dfrac{%g^2}{%g} + \\dfrac{%g^2}{%g} } } = \\dfrac{%g}{%g} = %g \\)",
+                    data$xbar1,
+                    data$xbar2,
+                    data$sd1,
+                    data$n1,
+                    data$sd2,
+                    data$n2,
+                    tTest['Difference of means'],
+                    tTest['Std Error'],
+                    tTest['Test Statistic']),
+            br()
+          )
         )
       }
       
@@ -5538,71 +5790,84 @@ server <- function(input, output) {
             if(si_iv$is_valid() && input$numTrials >= input$numSuccesses)
             {
               output$oneSampProportion <- renderUI({
-                
+                withMathJax()
                 tagList(
+                  withMathJax(),
                   
-                  fluidRow(
-                    column(width = 4,
-                           titlePanel("Sample Data Summary"),
-                           hr(),
-                           withMathJax(DTOutput('oneSampPropData', width = "95%")),
-                    ),
-                    column(width = 8,
-                           titlePanel('Summary Details'),
-                           hr(),
-                           
-                           conditionalPanel(
-                             condition = "input.oneSampPropData_rows_selected == 0",
-                             
-                             p("Select one or more variables from the summary table for more information"),
-                           ),
-                           
-                           conditionalPanel(
-                             condition = "input.oneSampPropData_rows_selected != 0",
-                             
-                             uiOutput('oneSampPropDataNDetails'),
-                             uiOutput('oneSampPropDataXDetails'),
-                             uiOutput('oneSampPropDataPhatDetails'),
-                             uiOutput('oneSampPropDataQhatDetails'),
-                             uiOutput('oneSampPropDataConfLvlDetails'),
-                             uiOutput('oneSampPropDataSigLvlDetails'),
-                             uiOutput('oneSampPropDataCVDetails'),
-                             uiOutput('oneSampPropDataSEDetails'),
-                             uiOutput('oneSampPropDataMEDetails'),
-                             uiOutput('oneSampPropDataLCLDetails'),
-                             uiOutput('oneSampPropDataUCLDetails'),
-                             uiOutput('oneSampPropDataHypDetails'),
-                             uiOutput('oneSampPropDataTSDetails'),
-                             uiOutput('oneSampPropDataPValDetails'),
-                           )
-                    )
+                  tabsetPanel(id = "indMeansTabset", selected = "Inference Results",
+                              
+                              tabPanel(id = "onePropResults", title = "Inference Results",
+                                       
+                                       conditionalPanel(
+                                         condition = "input.inferenceType == 'Confidence Interval'",
+                                         
+                                         titlePanel(tags$u("Confidence Interval")),
+                                         br(),
+                                         uiOutput('oneSampPropCI'),
+                                         br(),
+                                       ),
+                                       
+                                       conditionalPanel(
+                                         condition = "input.inferenceType == 'Hypothesis Testing'",
+                                         
+                                         titlePanel(tags$u("Hypothesis Test")),
+                                         br(),
+                                         uiOutput('oneSampPropHT'),
+                                         br(),
+                                         plotOutput('oneSampPropHTPlot', width = "75%", height = "300px"),
+                                         br(),
+                                         uiOutput('oneSampPropHTIntrp'),
+                                         br(),
+                                       ),
+                              ),
+                              
+                              tabPanel(id = "onePropSummary", title = "Summary Data",
+                                       
+                                       fluidRow(
+                                         column(width = 4,
+                                                titlePanel("Sample Data Summary"),
+                                                hr(),
+                                                withMathJax(DTOutput('oneSampPropData', width = "95%")),
+                                         ),
+                                         column(width = 8,
+                                                titlePanel('Summary Details'),
+                                                hr(),
+                                                
+                                                conditionalPanel(
+                                                  condition = "input.oneSampPropData_rows_selected == 0",
+                                                  
+                                                  p("Select one or more variables from the summary table for more information"),
+                                                ),
+                                                
+                                                conditionalPanel(
+                                                  condition = "input.oneSampPropData_rows_selected != 0",
+                                                  
+                                                  uiOutput('oneSampPropDataNDetails'),
+                                                  uiOutput('oneSampPropDataXDetails'),
+                                                  uiOutput('oneSampPropDataPhatDetails'),
+                                                  uiOutput('oneSampPropDataQhatDetails'),
+                                                  uiOutput('oneSampPropDataConfLvlDetails'),
+                                                  uiOutput('oneSampPropDataSigLvlDetails'),
+                                                  uiOutput('oneSampPropDataCVDetails'),
+                                                  uiOutput('oneSampPropDataSEDetails'),
+                                                  uiOutput('oneSampPropDataMEDetails'),
+                                                  uiOutput('oneSampPropDataLCLDetails'),
+                                                  uiOutput('oneSampPropDataUCLDetails'),
+                                                  uiOutput('oneSampPropDataHypDetails'),
+                                                  uiOutput('oneSampPropDataTSDetails'),
+                                                  uiOutput('oneSampPropDataPValDetails'),
+                                                )
+                                         )
+                                       ),
+                              ),
                   ),
+                  
 
-                  br(),
-                  hr(),
-                  br(),
+                  # br(),
+                  # hr(),
+                  # br(),
                   
-                  conditionalPanel(
-                    condition = "input.inferenceType == 'Confidence Interval'",
-                    
-                    titlePanel(tags$u("Confidence Interval")),
-                    br(),
-                    uiOutput('oneSampPropCI'),
-                    br(),
-                  ),
                   
-                  conditionalPanel(
-                    condition = "input.inferenceType == 'Hypothesis Testing'",
-                    
-                    titlePanel(tags$u("Hypothesis Test")),
-                    br(),
-                    uiOutput('oneSampPropHT'),
-                    br(),
-                    plotOutput('oneSampPropHTPlot', width = "75%", height = "300px"),
-                    br(),
-                    uiOutput('oneSampPropHTIntrp'),
-                    br(),
-                  ),
                 )
                 
               })
@@ -6362,77 +6627,90 @@ server <- function(input, output) {
                 output$twoSampProportion <- renderUI({
                   
                   tagList(
-                    
-                    fluidRow(
-                      column(width = 4,
-                             titlePanel("Sample Data Summary"),
-                             hr(),
-                             withMathJax(DTOutput('twoSampPropData', width = "100%")),
-                      ),
-                      column(width = 8,
-                            titlePanel('Summary Details'),
-                            hr(),
-                             
-                            conditionalPanel(
-                              condition = "input.twoSampPropData_rows_selected == 0",
-                               
-                              p("Select one or more variables from the summary table for more information"),
-                            ),
-                             
-                            conditionalPanel(
-                              condition = "input.twoSampPropData_rows_selected != 0",
-                              
-                              uiOutput('twoSampPropDetails')
-                               
-                               #uiOutput('twoSampPropDataNOneDetails'),
-                               #uiOutput('twoSampPropDataXOneDetails'),
-                               #uiOutput('twoSampPropDataNTwoDetails'),
-                               #uiOutput('twoSampPropDataXTwoDetails'),
-                               #uiOutput('twoSampPropDataPhatOneDetails'),
-                               #uiOutput('twoSampPropDataQhatOneDetails'),
-                               #uiOutput('twoSampPropDataPhatTwoDetails'),
-                               #uiOutput('twoSampPropDataQhatTwoDetails'),
-                               #uiOutput('twoSampPropDataPhatDiffDetails'),
-                               #uiOutput('twoSampPropDataConfLvlDetails'),
-                               #uiOutput('twoSampPropDataSigLvlDetails'),
-                               #uiOutput('twoSampPropDataCVDetails'),
-                               #uiOutput('twoSampPropDataSEDetails'),
-                               #uiOutput('twoSampPropDataMEDetails'),
-                               #uiOutput('twoSampPropDataLCLDetails'),
-                               #uiOutput('twoSampPropDataUCLDetails'),
-                               #uiOutput('twoSampPropDataHypDetails'),
-                               #uiOutput('twoSampPropDataTSDetails'),
-                               #uiOutput('twoSampPropDataPValDetails'),
-                            )
-                      )
+                    withMathJax(),
+                    tabsetPanel(id = "indMeansTabset", selected = "Inference Results",
+                                
+                                tabPanel(id = "twoPropResults", title = "Inference Results",
+                                
+                                         conditionalPanel(
+                                           condition = "input.inferenceType2 == 'Confidence Interval'",
+                                           
+                                           titlePanel(tags$u("Confidence Interval")),
+                                           br(),
+                                           uiOutput('twoSampPropCI'),
+                                           br(),
+                                         ),
+                                         
+                                         conditionalPanel(
+                                           condition = "input.inferenceType2 == 'Hypothesis Testing'",
+                                           
+                                           titlePanel(tags$u("Hypothesis Test")),
+                                           br(),
+                                           uiOutput('twoSampPropHT'),
+                                           br(),
+                                           plotOutput('twoSampPropHTPlot', width = "75%", height = "300px"),
+                                           br(),
+                                           uiOutput('twoSampPropHTIntrp'),
+                                           br(),
+                                         ),
+                                ),
+                                
+                                tabPanel(id = "twoPropSummary", title = "Summary Data",
+                                         withMathJax(),
+                                         fluidRow(
+                                           column(width = 4,
+                                                  titlePanel("Sample Data Summary"),
+                                                  hr(),
+                                                  withMathJax(DTOutput('twoSampPropData', width = "100%")),
+                                           ),
+                                           column(width = 8,
+                                                  titlePanel('Summary Details'),
+                                                  hr(),
+                                                  
+                                                  conditionalPanel(
+                                                    condition = "input.twoSampPropData_rows_selected == 0",
+                                                    
+                                                    p("Select one or more variables from the summary table for more information"),
+                                                  ),
+                                                  
+                                                  conditionalPanel(
+                                                    condition = "input.twoSampPropData_rows_selected != 0",
+                                                    
+                                                    uiOutput('twoSampPropDetails')
+                                                    
+                                                    #uiOutput('twoSampPropDataNOneDetails'),
+                                                    #uiOutput('twoSampPropDataXOneDetails'),
+                                                    #uiOutput('twoSampPropDataNTwoDetails'),
+                                                    #uiOutput('twoSampPropDataXTwoDetails'),
+                                                    #uiOutput('twoSampPropDataPhatOneDetails'),
+                                                    #uiOutput('twoSampPropDataQhatOneDetails'),
+                                                    #uiOutput('twoSampPropDataPhatTwoDetails'),
+                                                    #uiOutput('twoSampPropDataQhatTwoDetails'),
+                                                    #uiOutput('twoSampPropDataPhatDiffDetails'),
+                                                    #uiOutput('twoSampPropDataConfLvlDetails'),
+                                                    #uiOutput('twoSampPropDataSigLvlDetails'),
+                                                    #uiOutput('twoSampPropDataCVDetails'),
+                                                    #uiOutput('twoSampPropDataSEDetails'),
+                                                    #uiOutput('twoSampPropDataMEDetails'),
+                                                    #uiOutput('twoSampPropDataLCLDetails'),
+                                                    #uiOutput('twoSampPropDataUCLDetails'),
+                                                    #uiOutput('twoSampPropDataHypDetails'),
+                                                    #uiOutput('twoSampPropDataTSDetails'),
+                                                    #uiOutput('twoSampPropDataPValDetails'),
+                                                  )
+                                           )
+                                         ),
+                              ),
                     ),
                     
-                    br(),
-                    br(),
-                    hr(),
-                    br(),
                     
-                    conditionalPanel(
-                      condition = "input.inferenceType2 == 'Confidence Interval'",
-                      
-                      titlePanel(tags$u("Confidence Interval")),
-                      br(),
-                      uiOutput('twoSampPropCI'),
-                      br(),
-                    ),
                     
-                    conditionalPanel(
-                      condition = "input.inferenceType2 == 'Hypothesis Testing'",
-                      
-                      titlePanel(tags$u("Hypothesis Test")),
-                      br(),
-                      uiOutput('twoSampPropHT'),
-                      br(),
-                      plotOutput('twoSampPropHTPlot', width = "75%", height = "300px"),
-                      br(),
-                      uiOutput('twoSampPropHTIntrp'),
-                      br(),
-                    ),
+                    # br(),
+                    # br(),
+                    # hr(),
+                    # br(),
+                    
+                    
                   )
                   
                 })
@@ -6698,6 +6976,7 @@ server <- function(input, output) {
                         sprintf("\\( CI = (\\hat{p}_{1} - \\hat{p}_{2}) \\pm z_{\\alpha/2} \\sqrt{\\dfrac{\\hat{p}_{1}(1-\\hat{p}_{1})}{n_{1}} + \\dfrac{\\hat{p}_{2}(1-\\hat{p}_{2})}{n_{2}}}\\)"),
                         br(),
                         br(),
+                        br(),
                         sprintf("\\( CI = %0.3f \\pm %0.3f \\sqrt{\\dfrac{%0.3f(1-%0.3f)}{%1.0f} + \\dfrac{%0.3f(1-%0.3f)}{%1.0f}}\\)",
                                 twoSampPropZInt["Difference of proportions"],
                                 twoSampPropZInt["Z Critical"],
@@ -6709,7 +6988,18 @@ server <- function(input, output) {
                                 twoSampPropTrial2),
                         br(),
                         br(),
-                        sprintf("\\( CI = (%0.3f, %0.3f)\\)",
+                        sprintf("\\( \\quad = %g \\pm %g \\cdot %g \\)",
+                                twoSampPropZInt["Difference of proportions"],
+                                twoSampPropZInt["Z Critical"],
+                                twoSampPropZInt["Std Error"]),
+                        br(),
+                        br(),
+                        sprintf("\\( \\quad = %g \\pm %g \\)",
+                                twoSampPropZInt["Difference of proportions"],
+                                twoSampPropZInt["Margin of Error"]),
+                        br(),
+                        br(),
+                        sprintf("\\( \\quad = (%0.3f, %0.3f)\\)",
                                 twoSampPropZInt["LCL"],
                                 twoSampPropZInt["UCL"]),
                         br(),
@@ -7949,13 +8239,12 @@ server <- function(input, output) {
       # input$bothsigmaEqual
       # input$bothsigmaEqualRaw
       input$inferenceType
-      input$inferenceType2
-      # input$significanceLevel2
-      input$confidenceLevel2}, {
+      input$inferenceType2}, {
         hide(id = "inferenceData")
       })
     
-    observeEvent(input$significanceLevel2, {
+    observeEvent({input$significanceLevel2
+                  input$confidenceLevel2}, {
       
       if(input$samplesSelect == '2' && input$popuParameters == 'Population Proportions') {
         hide(id = "inferenceData")
