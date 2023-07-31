@@ -30,9 +30,9 @@ TwoSampTInt <- function(xbar1, s1, n1, xbar2, s2, n2, var.equal = TRUE, c_level 
   
   UCL <- (xbar1 - xbar2) + margin_of_error
   
-  dat <- round(c((xbar1 - xbar2), t.crit, se, LCL, UCL), 4)
+  dat <- round(c((xbar1 - xbar2), t.crit, df, se, margin_of_error, LCL, UCL), 4)
   
-  names(dat) <- c("Difference of means", "T Critical", "Std Error", "LCL", "UCL")
+  names(dat) <- c("Difference of means", "T Critical", "df", "Std Error", "ME", "LCL", "UCL")
   
   return(dat) 
 }
