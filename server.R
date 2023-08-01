@@ -720,21 +720,29 @@ server <- function(input, output) {
         dat <- dsRawData()
       }
       
+      df_boxplot <- data.frame(x = dat)
+      
       output$dsBoxplot <- renderPlot({
         
         #--------------------#
         # Horizontal boxplot #
         #--------------------#
         
-        ggplot(data.frame(x = dat), aes(x = x, y = 0)) +
+        ggplot(df_boxplot, aes(x = x, y = 0)) +
           geom_boxplot(fill = "#03376d",
                        alpha = .5,
-                       outlier.size = 3) +
+                       outlier.shape = NA) +
+          geom_point(data = filter(df_boxplot, x %in% boxplot.stats(dat)$out),
+                     size = 5) +
+          geom_text(data = filter(df_boxplot, x %in% boxplot.stats(dat)$out),
+                    aes(x = x, y = 0, label = x),
+                    size = 15 / .pt,
+                    vjust = -1.25) +
           labs(x = "Values",
                y = "") +
           theme_minimal() +
-          theme(axis.title.x = element_text(size = 16, face = "bold", vjust = -1.5),
-                axis.text.x.bottom = element_text(size = 14),
+          theme(axis.title.x = element_text(size = 18, face = "bold", vjust = -1.5),
+                axis.text.x.bottom = element_text(size = 16),
                 axis.text.y.left = element_blank()) +
           scale_x_continuous(breaks = seq(floor(min(dat)), to = ceiling(max(dat)), by = ceiling( (max(dat) - min(dat))/10 ) )) +
           ylim(-1, 1)
