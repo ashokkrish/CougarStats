@@ -411,7 +411,7 @@ server <- function(input, output) {
     text <- gsub(",(,)+", ",", text)  #transform multiple consecutive commas into a single comma
     text <- gsub(",$", "", text)      #purge any trailing commas
     split <- strsplit(text, ",", fixed = FALSE)[[1]]
-    as.numeric(split)
+    suppressWarnings(na.omit(as.numeric(split)))
   }
   
   # **************************************************************************** #
@@ -426,12 +426,17 @@ server <- function(input, output) {
   
   # Function to find the mode(s)
   Modes <- function(x) {
-    ux <- unique(x)
-    tab <- tabulate(match(x, ux))
-    ux[tab == max(tab)]
-    if (length(ux[tab == max(tab)]) == length(ux)) {return("No mode exists")}
-    else if (length(ux[tab == max(tab)]) == 1) {return(ux[tab == max(tab)])}
-    else if (length(ux[tab == max(tab)]) > 1 && length(ux[tab == max(tab)]) < length(ux)) {return("There are multiple modes")}
+    modes <- Mode(x)
+    if (anyNA(modes)) {return("No mode exists")}
+    else if (length(modes) == 1) {return(paste(modes))}
+    else if (length(modes) > 1) {
+      modesList <- paste(modes[1])
+      
+      for(index in 2:length(modes)) {
+        modesList <- paste0(modesList, ", ", modes[index])
+      }
+      return(modesList)
+      }
   }
   
   
@@ -655,8 +660,7 @@ server <- function(input, output) {
           
           errorClass = "myClass"
         )
-        
-        validate("Sample Data must be numeric")
+
       }
     })
     
