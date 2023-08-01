@@ -1,0 +1,4392 @@
+server <- function(input, output) {
+  
+  # ------------------------- #
+  # ---- Data Validation ----
+  # ------------------------- #
+  
+  iv <- InputValidator$new()
+  ds_iv <- InputValidator$new()
+  dsraw_iv <- InputValidator$new()
+  dsupload_iv <- InputValidator$new()
+  dsuploadvars_iv <- InputValidator$new()
+  
+  pd_iv <- InputValidator$new()
+  binom_iv <- InputValidator$new()
+  binomprob_iv <- InputValidator$new()
+  binombetween_iv <- InputValidator$new()
+  poiss_iv <- InputValidator$new()
+  poissprob_iv <- InputValidator$new()
+  poissbetween_iv <- InputValidator$new()
+  norm_iv <- InputValidator$new()
+  normprob_iv <- InputValidator$new()
+  normbetween_iv <- InputValidator$new()
+  
+  si_iv <- InputValidator$new()
+  onemean_iv <- InputValidator$new()
+  onemeansdknown_iv <- InputValidator$new()
+  onemeansdunk_iv <- InputValidator$new()
+  onemeanraw_iv <- InputValidator$new()
+  onemeanht_iv <- InputValidator$new()
+  indmeanssumm_iv <- InputValidator$new()
+  indmeansraw_iv <- InputValidator$new()
+  indmeanssdknown_iv <- InputValidator$new()
+  indmeanssdunk_iv <- InputValidator$new()
+  indmeansrawsd_iv <- InputValidator$new()
+  oneprop_iv <- InputValidator$new()
+  onepropht_iv <- InputValidator$new()
+  twoprop_iv <- InputValidator$new()
+  
+  regcor_iv <- InputValidator$new()
+  slrraw_iv <- InputValidator$new()
+  slrupload_iv <- InputValidator$new()
+  slruploadvars_iv <- InputValidator$new()
+  
+  ## DS rules ----
+  
+  # descriptiveStat
+  
+  dsraw_iv$add_rule("descriptiveStat", sv_required())
+  dsraw_iv$add_rule("descriptiveStat", sv_regex("^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+$", 
+                                                "Data must be numeric values seperated by a comma (ie: 2,3,4)"))
+  
+  dsupload_iv$add_rule("dsUserData", sv_required())
+  dsupload_iv$add_rule("dsUserData", ~ if(ncol(dsUploadData()) < 1) "Data must include one variable")
+  dsupload_iv$add_rule("dsUserData", ~ if(nrow(dsUploadData()) < 2) "Samples must include at least 2 observations")
+  
+  dsuploadvars_iv$add_rule("dsUploadVars", sv_required())
+  
+  #ds_iv$add_rule("dsTableFilters", sv_required())
+  
+  ds_iv$condition(~ isTRUE(input$dropDownMenu == 'Descriptive Statistics'))
+  dsraw_iv$condition(~ isTRUE(input$dataInput == 'Enter Raw Data'))
+  dsupload_iv$condition(~ isTRUE(input$dataInput == 'Upload Data'))
+  dsuploadvars_iv$condition(function() {isTRUE(input$dataInput == 'Upload Data' && dsupload_iv$is_valid()) })
+  
+  ds_iv$add_validator(dsraw_iv)
+  ds_iv$add_validator(dsupload_iv)
+  ds_iv$add_validator(dsuploadvars_iv)
+  
+  ds_iv$enable()
+  dsraw_iv$enable()
+  dsupload_iv$enable()
+  dsuploadvars_iv$enable()
+  
+  ## PD rules ----
+  
+  # numTrialsBinom 
+  
+  binom_iv$add_rule("numTrialsBinom", sv_required())
+  binom_iv$add_rule("numTrialsBinom", sv_integer())
+  binom_iv$add_rule("numTrialsBinom", sv_gt(0))
+  
+  # successProbBinom (PD)
+  
+  binom_iv$add_rule("successProbBinom", sv_required())
+  binom_iv$add_rule("successProbBinom", sv_gte(0))
+  binom_iv$add_rule("successProbBinom", sv_lte(1))
+  
+  # numSuccessesBinom (PD)
+  
+  binomprob_iv$add_rule("numSuccessesBinom", sv_required())
+  binomprob_iv$add_rule("numSuccessesBinom", sv_integer())
+  binomprob_iv$add_rule("numSuccessesBinom", sv_gte(0))
+  
+  # numSuccessesBinomx1 (PD)
+  binombetween_iv$add_rule("numSuccessesBinomx1", sv_required())
+  binombetween_iv$add_rule("numSuccessesBinomx1", sv_integer())
+  binombetween_iv$add_rule("numSuccessesBinomx1", sv_gte(0))
+  
+  # numSuccessesBinomx2 (PD)
+  binombetween_iv$add_rule("numSuccessesBinomx2", sv_required())
+  binombetween_iv$add_rule("numSuccessesBinomx2", sv_integer())
+  binombetween_iv$add_rule("numSuccessesBinomx2", sv_gte(0))
+  
+  # muPoisson (PD)
+  
+  poiss_iv$add_rule("muPoisson", sv_required())
+  poiss_iv$add_rule("muPoisson", sv_gt(0))
+  
+  # xPoisson (PD)
+  
+  poissprob_iv$add_rule("xPoisson", sv_required())
+  poissprob_iv$add_rule("xPoisson", sv_integer())
+  poissprob_iv$add_rule("xPoisson", sv_gte(0))
+  
+  # x1Poisson (PD)
+  poissbetween_iv$add_rule("x1Poisson", sv_required())
+  poissbetween_iv$add_rule("x1Poisson", sv_integer())
+  poissbetween_iv$add_rule("x1Poisson", sv_gte(0))
+  
+  # x2Poisson (PD)
+  poissbetween_iv$add_rule("x2Poisson", sv_required())
+  poissbetween_iv$add_rule("x2Poisson", sv_integer())
+  poissbetween_iv$add_rule("x2Poisson", sv_gte(0))
+  
+  # popMean (PD)
+  
+  norm_iv$add_rule("popMean", sv_required())
+  
+  # popuSD (PD)
+  
+  norm_iv$add_rule("popSD", sv_required())
+  norm_iv$add_rule("popSD", sv_gt(0))
+  
+  # xValue (PD)
+  
+  normprob_iv$add_rule("xValue", sv_required())
+  
+  normbetween_iv$add_rule("x1Value", sv_required())
+  normbetween_iv$add_rule("x2Value", sv_required())
+  
+  # ------------------ #
+  #     Conditions     #
+  # ------------------ #
+  binom_iv$condition(~ isTRUE(input$probability == 'Binomial'))
+  binomprob_iv$condition(~ isTRUE(input$probability == 'Binomial' && input$calcBinom != 'between'))
+  binombetween_iv$condition(~ isTRUE(input$probability == 'Binomial' && input$calcBinom == 'between'))
+  
+  poiss_iv$condition(~ isTRUE(input$probability == 'Poisson'))
+  poissprob_iv$condition(~ isTRUE(input$probability == 'Poisson' && input$calcPoisson != 'between'))
+  poissbetween_iv$condition(~ isTRUE(input$probability == 'Poisson' && input$calcPoisson == 'between'))
+  
+  norm_iv$condition(~ isTRUE(input$probability == 'Normal'))
+  normprob_iv$condition(~ isTRUE(input$probability == 'Normal' && input$calcNormal != 'between'))
+  normbetween_iv$condition(~ isTRUE(input$probability == 'Normal' && input$calcNormal == 'between'))
+  # ------------------ #
+  #     Dependency     #
+  # ------------------ #
+  binom_iv$add_validator(binomprob_iv)
+  binom_iv$add_validator(binombetween_iv)
+  
+  poiss_iv$add_validator(poissprob_iv)
+  poiss_iv$add_validator(poissbetween_iv)
+  
+  norm_iv$add_validator(normprob_iv)
+  norm_iv$add_validator(normbetween_iv)
+  
+  pd_iv$add_validator(binom_iv)
+  pd_iv$add_validator(poiss_iv)
+  pd_iv$add_validator(norm_iv)
+  
+  # ------------------ #
+  #     Activation     #
+  # ------------------ #
+  pd_iv$enable()
+  binom_iv$enable()
+  binomprob_iv$enable()
+  binombetween_iv$enable()
+  poiss_iv$enable()
+  poissprob_iv$enable()
+  poissbetween_iv$enable()
+  norm_iv$enable()
+  normprob_iv$enable()
+  normbetween_iv$enable()
+  
+  #--------------- #
+  ## SI rules ----
+  #--------------- #
+  
+  # sampleSize 
+  
+  onemean_iv$add_rule("sampleSize", sv_required())
+  onemean_iv$add_rule("sampleSize", sv_integer())
+  onemean_iv$add_rule("sampleSize", sv_gt(1))
+  
+  # sampleMean 
+  
+  onemean_iv$add_rule("sampleMean", sv_required())
+  
+  # sample1 
+  
+  onemeanraw_iv$add_rule("sample1", sv_required())
+  onemeanraw_iv$add_rule("sample1", sv_regex("^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+$", 
+                                             "Data must be numeric values seperated by a comma (ie: 2,3,4)"))
+  
+  # popuSD 
+  
+  onemeansdknown_iv$add_rule("popuSD", sv_required()) 
+  onemeansdknown_iv$add_rule("popuSD", sv_gt(0))
+  
+  # popuSDRaw 
+  
+  onemeanraw_iv$add_rule("popuSDRaw", sv_required()) 
+  onemeanraw_iv$add_rule("popuSDRaw", sv_gt(0))
+  
+  
+  # sampSD 
+  
+  onemeansdunk_iv$add_rule("sampSD", sv_required())
+  onemeansdunk_iv$add_rule("sampSD", sv_gt(0))
+  
+  # sampleSize1 
+  
+  indmeanssumm_iv$add_rule("sampleSize1", sv_required())
+  indmeanssumm_iv$add_rule("sampleSize1", sv_integer())
+  indmeanssumm_iv$add_rule("sampleSize1", sv_gt(1))
+  
+  # sampleMean1 
+  
+  indmeanssumm_iv$add_rule("sampleMean1", sv_required())
+  
+  # sampleSize2 
+  
+  indmeanssumm_iv$add_rule("sampleSize2", sv_required())
+  indmeanssumm_iv$add_rule("sampleSize2", sv_integer())
+  indmeanssumm_iv$add_rule("sampleSize2", sv_gt(1))
+  
+  # sampleMean2 
+  
+  indmeanssumm_iv$add_rule("sampleMean2", sv_required()) 
+  
+  # popuSD1 
+  
+  indmeanssdknown_iv$add_rule("popuSD1", sv_required()) 
+  indmeanssdknown_iv$add_rule("popuSD1", sv_gt(0))
+  
+  # popuSD2 
+  
+  indmeanssdknown_iv$add_rule("popuSD2", sv_required()) 
+  indmeanssdknown_iv$add_rule("popuSD2", sv_gt(0))
+  
+  # sampSD1 
+  
+  indmeanssdunk_iv$add_rule("sampSD1", sv_required())
+  indmeanssdunk_iv$add_rule("sampSD1", sv_gt(0))
+  
+  # sampSD2 
+  
+  indmeanssdunk_iv$add_rule("sampSD2", sv_required()) 
+  indmeanssdunk_iv$add_rule("sampSD2", sv_gt(0))
+  
+  # raw_sample1
+  
+  indmeansraw_iv$add_rule("raw_sample1", sv_required())
+  indmeansraw_iv$add_rule("raw_sample1", sv_regex("^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+$", 
+                                                  "Data must be at least 3 numeric values seperated by a comma (ie: 2,3,4)"))
+  
+  # raw_sample2 
+  
+  indmeansraw_iv$add_rule("raw_sample2", sv_required())
+  indmeansraw_iv$add_rule("raw_sample2", sv_regex("^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+$", 
+                                                  "Data must be at least 3 numeric values seperated by a comma (ie: 2,3,4)"))
+  
+  indmeansrawsd_iv$add_rule("popuSDRaw1", sv_required()) 
+  indmeansrawsd_iv$add_rule("popuSDRaw1", sv_gt(0))
+  
+  
+  indmeansrawsd_iv$add_rule("popuSDRaw2", sv_required()) 
+  indmeansrawsd_iv$add_rule("popuSDRaw2", sv_gt(0))
+  # numSuccessesProportion
+  
+  oneprop_iv$add_rule("numSuccesses", sv_required(message = "Numeric value required"))
+  oneprop_iv$add_rule("numSuccesses", sv_integer())
+  oneprop_iv$add_rule("numSuccesses", sv_gte(0))
+  
+  # x1
+  twoprop_iv$add_rule("numSuccesses1", sv_required())
+  twoprop_iv$add_rule("numSuccesses1", sv_integer())
+  twoprop_iv$add_rule("numSuccesses1", sv_gte(0))
+  
+  # x2
+  twoprop_iv$add_rule("numSuccesses2", sv_required())
+  twoprop_iv$add_rule("numSuccesses2", sv_integer())
+  twoprop_iv$add_rule("numSuccesses2", sv_gte(0))
+  
+  # numTrialsProportion
+  
+  oneprop_iv$add_rule("numTrials", sv_required(message = "Numeric value required"))
+  oneprop_iv$add_rule("numTrials", sv_integer())
+  oneprop_iv$add_rule("numTrials", sv_gt(0))
+  
+  # n1
+  twoprop_iv$add_rule("numTrials1", sv_required())
+  twoprop_iv$add_rule("numTrials1", sv_integer())
+  twoprop_iv$add_rule("numTrials1", sv_gt(0))
+  
+  # n2
+  twoprop_iv$add_rule("numTrials2", sv_required())
+  twoprop_iv$add_rule("numTrials2", sv_integer())
+  twoprop_iv$add_rule("numTrials2", sv_gt(0))
+  
+  # hypMean 
+  
+  onemeanht_iv$add_rule("hypMean", sv_required())
+  
+  # hypProportion 
+  
+  onepropht_iv$add_rule("hypProportion", sv_required())
+  onepropht_iv$add_rule("hypProportion", sv_gte(0))
+  onepropht_iv$add_rule("hypProportion", sv_lte(1))
+  
+  onemean_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$dataAvailability == 'Summarized Data'))
+  onemeansdknown_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$dataAvailability == 'Summarized Data' && input$sigmaKnown == 'Known'))
+  onemeansdunk_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$dataAvailability == 'Summarized Data' && input$sigmaKnown == 'Unknown'))
+  onemeanraw_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$dataAvailability == 'Enter Raw Data'))
+  onemeanht_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$inferenceType == 'Hypothesis Testing'))
+  indmeanssumm_iv$condition(~ isTRUE(input$samplesSelect == '2' && input$popuParameters == 'Independent Population Means' && input$dataAvailability2 == 'Summarized Data'))
+  indmeansraw_iv$condition(~ isTRUE(input$samplesSelect == '2' && input$popuParameters == 'Independent Population Means' && input$dataAvailability2 == 'Enter Raw Data'))
+  indmeanssdknown_iv$condition(~ isTRUE(input$samplesSelect == '2' && input$popuParameters == 'Independent Population Means' && input$dataAvailability2 == 'Summarized Data' && input$bothsigmaKnown == 'bothKnown'))
+  indmeanssdunk_iv$condition(~ isTRUE(input$samplesSelect == '2' && input$popuParameters == 'Independent Population Means' && input$dataAvailability2 == 'Summarized Data' && input$bothsigmaKnown == 'bothUnknown'))
+  indmeansrawsd_iv$condition(~ isTRUE(input$samplesSelect == '2' && input$popuParameters == 'Independent Population Means' && input$dataAvailability2 == 'Enter Raw Data' && input$bothsigmaKnownRaw == 'bothKnown'))
+  oneprop_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Proportion'))
+  onepropht_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Proportion' && input$inferenceType == 'Hypothesis Testing'))
+  twoprop_iv$condition(~ isTRUE(input$samplesSelect == '2' && input$popuParameters == 'Population Proportions'))
+  
+  si_iv$add_validator(onemean_iv)
+  si_iv$add_validator(onemeansdknown_iv)
+  si_iv$add_validator(onemeansdunk_iv)
+  si_iv$add_validator(onemeanraw_iv)
+  si_iv$add_validator(onemeanht_iv)
+  si_iv$add_validator(indmeanssumm_iv)
+  si_iv$add_validator(indmeansraw_iv)
+  si_iv$add_validator(indmeanssdknown_iv)
+  si_iv$add_validator(indmeanssdunk_iv)
+  si_iv$add_validator(indmeansrawsd_iv)
+  si_iv$add_validator(oneprop_iv)
+  si_iv$add_validator(onepropht_iv)
+  si_iv$add_validator(twoprop_iv)
+  
+  si_iv$enable()
+  onemean_iv$enable()
+  onemeansdknown_iv$enable()
+  onemeansdunk_iv$enable()
+  onemeanraw_iv$enable()
+  onemeanht_iv$enable()
+  indmeanssumm_iv$enable()
+  indmeansraw_iv$enable()
+  indmeanssdknown_iv$enable()
+  indmeanssdunk_iv$enable()
+  indmeansrawsd_iv$enable()
+  oneprop_iv$enable()
+  onepropht_iv$enable()
+  twoprop_iv$enable()
+  
+  ## RC rules ---- 
+  
+  slrraw_iv$add_rule("x", sv_required())
+  #iv$add_rule("x", sv_regex("^[0-9]+(.[0-9]+)?(, [0-9](.[0-9]+)?)+$", "Data can only be numeric values separated by commas"))
+  slrraw_iv$add_rule("x", sv_regex("^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+$", 
+                                   "Data must be numeric values seperated by a comma (ie: 2,3,4)"))
+  slrraw_iv$add_rule("x", ~ if(sampleDiffRaw() != 0) "x and y must have the same number of observations")
+  
+  slrraw_iv$add_rule("y", sv_required())
+  slrraw_iv$add_rule("y", sv_regex("^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+$", 
+                                   "Data must be numeric values seperated by a comma (ie: 2,3,4)"))
+  slrraw_iv$add_rule("y", ~ if(sampleDiffRaw() != 0) "x and y must have the same number of observations")
+  
+  slrupload_iv$add_rule("slrUserData", sv_required())
+  slrupload_iv$add_rule("slrUserData", ~ if(nrow(slrUploadData()) == 0) "File is empty")
+  slrupload_iv$add_rule("slrUserData", ~ if(ncol(slrUploadData()) < 2) "Data must include one response and (at least) one explanatory variable")
+  slrupload_iv$add_rule("slrUserData", ~ if(nrow(slrUploadData()) < 3) "Samples must include at least 2 observations")
+  
+  slruploadvars_iv$add_rule("slrResponse", sv_required())
+  slruploadvars_iv$add_rule("slrExplanatory", sv_required())
+  slruploadvars_iv$add_rule("slrResponse", ~ if(sampleDiffUpload() != 0) "Missing values detected, x and y must have the same number of observations")
+  
+  slrraw_iv$condition(~ isTRUE(input$dataRegCor == 'Enter Raw Data'))
+  slrupload_iv$condition(~ isTRUE(input$dataRegCor == 'Upload Data'))
+  slruploadvars_iv$condition(function() {isTRUE(input$dataRegCor == 'Upload Data' && slrupload_iv$is_valid()) })
+  
+  
+  regcor_iv$add_validator(slrraw_iv)
+  regcor_iv$add_validator(slrupload_iv)
+  regcor_iv$add_validator(slruploadvars_iv)
+  
+  iv$enable()
+  regcor_iv$enable()
+  slrraw_iv$enable()
+  slrupload_iv$enable()
+  slruploadvars_iv$enable()
+  #slruploadvars_iv$disable()
+  
+  
+  # -------------------------- #
+  # ---- Functions/Output ----
+  # -------------------------- #
+  
+  # String List to Numeric List
+  createNumLst <- function(text) {
+    text <- gsub("[^0-9.,-]","", text) #purge non-numeric characters 
+    text <- gsub("^,", "", text)      #purge any leading commas
+    text <- gsub(",(,)+", ",", text)  #transform multiple consecutive commas into a single comma
+    text <- gsub(",$", "", text)      #purge any trailing commas
+    split <- strsplit(text, ",", fixed = FALSE)[[1]]
+    as.numeric(split)
+  }
+  
+  # **************************************************************************** #
+  
+  #  -------------------------------------------------------------------- #
+  ## ------------------- Descriptive Stats functions --------------------
+  #  -------------------------------------------------------------------- #
+  
+  
+  ### Non-Reactive Functions ----
+  # --------------------------------------------------------------------- #
+  
+  # Function to find the mode(s)
+  Modes <- function(x) {
+    ux <- unique(x)
+    tab <- tabulate(match(x, ux))
+    ux[tab == max(tab)]
+    if (length(ux[tab == max(tab)]) == length(ux)) {return("No mode exists")}
+    else if (length(ux[tab == max(tab)]) == 1) {return(ux[tab == max(tab)])}
+    else if (length(ux[tab == max(tab)]) > 1 && length(ux[tab == max(tab)]) < length(ux)) {return("There are multiple modes")}
+  }
+  
+  
+  # Function to find the population standard deviation
+  pop.sd <- function(x) {
+    sqrt(sum((x-mean(x))^2)/length(x))
+  }
+  
+  
+  # Function for populating the value column of the datatable
+  createDSColumn <- function(dat) ({
+    
+    sampSize <- length(dat)
+    sampSum <- sum(dat)
+    sumSquares <- sum(dat^2)
+    xbar <- round(mean(dat),4)
+    sampMode <- Modes(dat)
+    sampMin <- min(dat)
+    #popuStdDev <- round(pop.sd(dat),4) # round(sqrt((n-1)/n) * sampStdDev(dat), 4)
+    quartile1 <-  quantile(dat, 0.25, type = 6) #fivenum(dat)[2]
+    sampMedian <- median(dat)
+    quartile3 <-  quantile(dat, 0.75, type = 6) #fivenum(dat)[4]
+    sampMax <- max(dat)
+    sampIQR <- round(quartile3 - quartile1, 4)
+    lowerFence <- round(quartile1 - (1.5*sampIQR), 4)
+    upperFence <- round(quartile3 + (1.5*sampIQR), 4)
+    numOutliers <- sum(dat < lowerFence) + sum(dat > upperFence)
+    sampRange <- range(dat)[2]-range(dat)[1]
+    sampStdDev <- round(sd(dat),4)
+    sampVar <- round(var(dat),4)
+    sampMeanSE <- round(sd(dat)/sqrt(length(dat)), 4)
+    coeffVar <- round(sampStdDev/xbar, 4)
+    if(sampSize < 3){
+      sampSkewness <- round(skewness(dat, type = 1), 4)
+    } else {
+      sampSkewness <- round(skewness(dat, type = 2), 4)
+    }
+    if(sampSize < 4){
+      sampKurtosis <- round(kurtosis(dat, type = 1), 4)
+    } else {
+      sampKurtosis <- round(kurtosis(dat, type = 2), 4)
+    }
+    
+    
+    dfCol <- data.frame(Value = c(sampSize, 
+                                  sampSum, 
+                                  sumSquares, 
+                                  xbar, 
+                                  sampMode, 
+                                  sampMin, 
+                                  quartile1, 
+                                  sampMedian, 
+                                  quartile3, 
+                                  sampMax, 
+                                  sampIQR, 
+                                  lowerFence, 
+                                  upperFence, 
+                                  numOutliers, 
+                                  sampRange, 
+                                  sampStdDev, 
+                                  sampVar, 
+                                  sampMeanSE, 
+                                  coeffVar, 
+                                  sampSkewness, 
+                                  sampKurtosis)
+    )
+  })
+  
+  
+  # --------------------------------------------------------------------- #
+  
+  
+  ### Reactives ----
+  # --------------------------------------------------------------------- #
+  
+  # Function to convert the raw data input into a numeric list
+  dsRawData <- reactive ({
+    dat <- createNumLst(input$descriptiveStat)
+  })
+  
+  
+  # Function to read the uploaded data file
+  dsUploadData <- eventReactive(input$dsUserData, {
+    ext <- tools::file_ext(input$dsUserData$name)
+    
+    switch(ext, 
+           csv = read_csv(input$dsUserData$datapath),
+           xls = read_excel(input$dsUserData$datapath),
+           xlsx = read_excel(input$dsUserData$datapath),
+           validate("Improper file format")
+    )
+  })
+  
+  
+  getDsDataframe <- reactive({
+    
+    req(ds_iv$is_valid())
+    
+    df <- data.frame(Category = c("Descriptives", "Descriptives", "Descriptives", "Descriptives", "Descriptives", 
+                                  "Five Number Summary", "Five Number Summary", "Five Number Summary", "Five Number Summary", "Five Number Summary", 
+                                  "Outliers", "Outliers", "Outliers", "Outliers", 
+                                  "Dispersion", "Dispersion", "Dispersion", "Dispersion", "Dispersion", 
+                                  "Distribution", "Distribution"),
+                     Variable = c("Number of Observations", 
+                                  "Sum", 
+                                  "Sum of Squares", 
+                                  "Mean", 
+                                  "Mode", 
+                                  "Minimum", 
+                                  "First Quartile \\( (Q_{1}) \\)*", 
+                                  "Second Quartile or Median \\( (Q_{2}) \\)", 
+                                  "Third Quartile \\( (Q_{3}) \\)*", 
+                                  "Maximum", 
+                                  "Interquartile Range (IQR)", 
+                                  "Check for Outliers: Lower Fence", 
+                                  "Check for Outliers: Upper Fence", 
+                                  "Number of Potential Outliers", 
+                                  "Range", 
+                                  "Sample Standard Deviation", 
+                                  "Sample Variance", 
+                                  "Standard Error of the Mean", 
+                                  "Coefficient of Variation",
+                                  "Skewness", 
+                                  "Kurtosis"))
+    
+    
+    if(input$dataInput == 'Upload Data')
+    {
+      for( x in input$dsUploadVars)
+      {
+        dat <- as.data.frame(dsUploadData())[, x]
+        newCol <- createDSColumn(dat)
+        df[x] <- newCol
+      }
+      colnames(df) <- c("Category", "Variable", input$dsUploadVars)
+    }
+    else
+    {
+      dat <- dsRawData()
+      newCol <- createDSColumn(dat)
+      df$Value <-newCol
+    }
+    
+    rownames(df) <- c("Observations", 
+                      "Sum", 
+                      "Sum of Squares", 
+                      "Mean", 
+                      "Mode", 
+                      "Min", 
+                      "First Quartile (Q1)", 
+                      "Median", 
+                      "Third Quartile (Q3)", 
+                      "Max", 
+                      "IQR", 
+                      "Lower Fence", 
+                      "Upper Fence", 
+                      "Potential Outliers", 
+                      "Range", 
+                      "Sample Standard Deviation", 
+                      "Sample Variance", 
+                      "Standard Error of the Mean", 
+                      "Coefficient of Variation", 
+                      "Skewness", 
+                      "Kurtosis")
+    
+    return(df)
+  })
+  
+  # --------------------------------------------------------------------- #
+  
+  
+  ### Observers ----
+  # --------------------------------------------------------------------- #
+  
+  # Fills the variable selection options based on data file columns
+  observeEvent(input$dsUserData, {
+    hide(id = "descriptiveStatsMP")
+    hide(id = "dsUploadVars")
+    
+    if(dsupload_iv$is_valid())
+    {
+      freezeReactiveValue(input, "dsUploadVars")
+      updateSelectInput(session = getDefaultReactiveDomain(),
+                        "dsUploadVars",
+                        choices = c(colnames(dsUploadData()))
+      )
+      
+      show(id = "dsUploadVars")
+    }
+  })
+  
+  
+  
+  observeEvent(input$goDescpStats, {
+    
+    output$renderDescrStats <- renderUI({
+      if(!dsupload_iv$is_valid())
+      {
+        validate(
+          need(input$dsUserData, "Please upload your data to continue"),
+          need(nrow(dsUploadData()) != 0 && ncol(dsUploadData()) > 0, "File is empty"),
+          need(nrow(dsUploadData()) > 1, "Sample Data must include at least 2 observations"),
+          
+          errorClass = "myClass"
+        )
+      }
+      else if(!dsuploadvars_iv$is_valid())
+      {
+        validate(
+          need(input$dsUploadVars != "", "Please select a variable"),
+          
+          errorClass = "myClass"
+        )
+        
+      }
+      else if(!dsraw_iv$is_valid())
+      {
+        validate(
+          need(!anyNA(dsRawData()), "Sample Data must be numeric"),
+          need(length(dsRawData()) >= 2, "Sample Data must include at least 2 observations"),
+          
+          errorClass = "myClass"
+        )
+        
+        validate("Sample Data must be numeric")
+      }
+    })
+    
+    if(ds_iv$is_valid())
+    {
+      output$dsDataTable <- renderUI({
+        tagList(
+          
+          conditionalPanel(
+            condition = "input.dsTableFilters == ''",
+            
+            br(),
+            p("Select one or more options from the Options menu to see more information.")
+          ),
+          
+          conditionalPanel(
+            condition = "input.dsTableFilters != ''",
+            
+            withMathJax(),
+            withMathJax(DTOutput("dsTableData"))
+          ),
+          
+        )
+      })
+      
+      df <- getDsDataframe()
+      filteredDf <- filter(df, rownames(df) %in% input$dsTableFilters)
+      
+      output$dsTableData <- renderDT(datatable(filteredDf,
+                                               extensions = 'RowGroup',
+                                               options = list(
+                                                 rowGroup = list(dataSrc = 0),
+                                                 columnDefs = list(list(visible=FALSE, targets=c(0))),
+                                                 dom = 't',
+                                                 pageLength = -1,
+                                                 ordering = FALSE,
+                                                 searching = FALSE,
+                                                 paging = FALSE,
+                                                 autoWidth = TRUE,
+                                                 scrollX = TRUE
+                                               ),
+                                               rownames = FALSE,
+                                               filter = "none",
+                                               
+      ))
+      
+      if(input$dataInput == 'Upload Data')
+      {
+        for( x in input$dsUploadVars)
+        {
+          dat <- as.data.frame(dsUploadData())[, x]
+        }
+        colnames(df) <- c("Category", "Variable", input$dsUploadVars)
+      }
+      else
+      {
+        dat <- dsRawData()
+      }
+      
+      output$dsBoxplot <- renderPlot({
+        
+        #--------------------#
+        # Horizontal boxplot #
+        #--------------------#
+        
+        ggplot(data.frame(x = dat), aes(x = x, y = 0)) +
+          geom_boxplot(fill = "#03376d",
+                       alpha = .5,
+                       outlier.size = 3) +
+          labs(x = "Values",
+               y = "") +
+          theme_minimal() +
+          theme(axis.title.x = element_text(size = 16, face = "bold", vjust = -1.5),
+                axis.text.x.bottom = element_text(size = 14),
+                axis.text.y.left = element_blank()) +
+          scale_x_continuous(breaks = seq(floor(min(dat)), to = ceiling(max(dat)), by = ceiling( (max(dat) - min(dat))/10 ) )) +
+          ylim(-1, 1)
+        
+      })
+      
+      
+      output$dsHistogram <- renderPlot({
+        pp <- ggplot(data.frame(x = dat)) +
+          geom_histogram(aes(x = x),
+                         bins = 15,
+                         fill = "#03376d",
+                         color = "black",
+                         alpha = .5) +
+          labs(x = "Values",
+               y = "Frequency") +
+          theme_minimal() +
+          theme(axis.title.x = element_text(size = 16, 
+                                            face = "bold", 
+                                            vjust = -1.5),
+                axis.title.y = element_text(size = 16, 
+                                            face = "bold", 
+                                            vjust = 1.5),
+                axis.text.x.bottom = element_text(size = 14),
+                axis.text.y.left = element_text(size = 14)) +
+          scale_x_continuous(breaks = seq(floor(min(dat)), to = ceiling(max(dat)), by = ceiling( (max(dat) - min(dat))/10 ) )) 
+        
+        pp
+      })
+      
+      
+      output$dsStemLeaf <- renderPrint({
+        stem.leaf(dat, m = 1, depths = FALSE)
+      })
+      
+      show(id = 'descrStatsData')
+    } else {
+      hide(id = 'descrStatsData')
+    }
+    # show(id = 'descriptiveStatsMP') 
+  })
+  
+  dsTableProxy <- dataTableProxy('dsTableData')
+  
+  observeEvent(input$dsTableFilters, {
+    
+    df <- getDsDataframe()
+    newFilter <- filter(df, rownames(df) %in% input$dsTableFilters)
+    
+    replaceData(dsTableProxy, newFilter, resetPaging = FALSE, rownames = FALSE)
+  })
+  
+  # --------------------------------------------------------------------- #
+  
+  
+  # **************************************************************************** #
+  
+  
+  #  -------------------------------------------------------------------- #
+  ## --------------- Probability Distribution functions -----------------
+  #  -------------------------------------------------------------------- #
+  
+  
+  ### Non-Reactive Functions ----
+  # --------------------------------------------------------------------- #
+  
+  shadeNormArea <- function(x){
+    area <- dnorm(x, input$popMean, input$popSD)
+    
+    if(input$calcNormal == "cumulative") #less
+    {
+      area[x > input$xValue] <- NA
+    }
+    else if(input$calcNormal == "between") #twosided
+    {
+      area[x <= input$x1Value | x >= input$x2Value] <- NA
+    }
+    else if(input$calcNormal == "upperTail") #greater
+    {
+      area[x < input$xValue] <- NA
+    }
+    return(area)
+  }
+  
+  normPlot <- function(normValue){
+    normTail = qnorm(0.999, mean = input$popMean, sd = input$popSD, lower.tail = FALSE)
+    normHead = qnorm(0.999, mean = input$popMean, sd = input$popSD, lower.tail = TRUE)
+    #xSeq = seq(normTail, normHead, by = 0.005)
+    
+    if(input$calcNormal == "between")
+    {
+      normLines <- c(input$x1Value, input$x2Value)
+      probXLab <- (input$x2Value + input$x1Value)/2 
+    }
+    else
+    {
+      normLines <- input$xValue
+      
+      if(input$calcNormal == "cumulative")
+      {
+        probXLab <- (input$xValue - normHead/4)
+      }
+      else if(input$calcNormal == "upperTail")
+      {
+        probXLab <- (input$xValue + normHead/4)
+      }
+    }
+    xSeq = sort(c(normTail, normHead, normLines, probXLab))
+    
+    df <- data.frame(x = xSeq, y = dnorm(xSeq, mean = input$popMean, sd = input$popSD))
+    lineDF <- filter(df, x %in% normLines)
+    probDF <- filter(df, x %in% probXLab)
+    
+    nPlot <- ggplot(df, aes(x = x, y = y)) +
+      stat_function(fun = dnorm, 
+                    args = list(mean = input$popMean, sd = input$popSD), 
+                    geom = "density",
+                    #xlim = c(normTail, normHead),
+                    fill = "#03376d",
+                    alpha = 0.3) + 
+      stat_function(fun = shadeNormArea, 
+                    geom = "area",
+                    #xlim = c(normTail, normHead),
+                    fill = "#03376d",
+                    alpha = 0.7) +
+      theme_minimal()  +
+      theme(axis.title.x = element_text(size = 16, 
+                                        face = "bold"),
+            axis.text.x.bottom = element_text(size = 14)) +
+      scale_x_continuous(breaks = waiver()) +
+      scale_y_continuous(breaks = NULL) +
+      ylab("") + xlab(paste("X")) +
+      geom_text(data = lineDF, 
+                aes(x = x, y = 0, label = x), 
+                size = 14 / .pt, 
+                fontface = "bold", 
+                vjust = "outward") 
+    #geom_text(data = probDF, aes(x = x, y = y/2, label = normValue), size = 24 / .pt, fontface = "bold")
+    
+    
+    return(nPlot)
+  }
+  
+  # --------------------------------------------------------------------- #
+  
+  
+  ### Reactives ----
+  # --------------------------------------------------------------------- #
+  
+  getNormValue <- reactive({
+    req(pd_iv$is_valid())
+    
+    if(input$calcNormal == "cumulative")
+    {
+      normValue <- round(pnorm(input$xValue, input$popMean, input$popSD, lower.tail = TRUE),4)
+      #paste("\\(P(X \\leq \\)", " ", norm_x, "\\()\\)", " ", "\\( = \\)", " ", round(pnorm(norm_x, norm_mu, norm_sigma, lower.tail = TRUE),4))
+    }
+    else if(input$calcNormal == "upperTail")
+    {
+      normValue <- round(pnorm(input$xValue, input$popMean, input$popSD, lower.tail = FALSE),4)
+      #paste("\\(P(X > \\)", " ", norm_x, "\\()\\)", " ", "\\( = \\)", " ", round(pnorm(norm_x, norm_mu, norm_sigma, lower.tail = FALSE),4))
+    }
+    else if(input$calcNormal == 'between')
+    {
+      req(input$x1Value <= input$x2Value)
+      normValue <- round(pnorm(input$x2Value, input$popMean, input$popSD, lower.tail = TRUE) - pnorm(input$x1Value, input$popMean, input$popSD, lower.tail = TRUE), 4)
+    }
+  })
+  
+  # --------------------------------------------------------------------- #
+  
+  
+  ### Observers ----
+  # --------------------------------------------------------------------- #
+  
+  
+  #### Binomial ----
+  observeEvent(input$goBinom, {
+    
+    output$renderProbabilityBinom <- renderUI({
+      withMathJax(
+        if(!pd_iv$is_valid())
+        {
+          if(!binomprob_iv$is_valid())
+          {
+            validate(
+              need(input$numTrialsBinom, "Number of Trials (n) must be a positive integer") %then%
+                need(input$numTrialsBinom > 0 && input$numTrialsBinom %% 1 == 0, "Number of Trials (n) must be a positive integer"),
+              need(input$successProbBinom, "Probability of Success (p) must be between 0 and 1") %then%
+                need(input$successProbBinom >= 0 && input$successProbBinom <= 1, "Probability of Success (p) must be between 0 and 1"),
+              need(input$numSuccessesBinom != "", "Enter a value for the Number of Successes (x)") %then%
+                need(input$numSuccessesBinom >= 0 && input$numSuccessesBinom %% 1 == 0, "Number of Successes (x) must be a positive integer"),
+              
+              errorClass = "myClass"
+            )
+          }
+          
+          if(!binombetween_iv$is_valid())
+          {
+            validate(
+              need(input$numTrialsBinom, "Number of Trials (n) must be a positive integer") %then%
+                need(input$numTrialsBinom > 0 && input$numTrialsBinom %% 1 == 0, "Number of Trials (n) must be a positive integer"),
+              need(input$successProbBinom, "Probability of Success (p) must be between 0 and 1") %then%
+                need(input$successProbBinom >= 0 && input$successProbBinom <= 1, "Probability of Success (p) must be between 0 and 1"),
+              need(input$numSuccessesBinomx1, "Number of Successes (x1) must be a positive integer") %then%
+                need(input$numSuccessesBinomx1 >= 0 && input$numSuccessesBinomx1 %% 1 == 0, "Number of Successes (x1) must be a positive integer"),
+              need(input$numSuccessesBinomx2, "Enter a value for the Number of Successes (x2)") %then%
+                need(input$numSuccessesBinomx2 >= 0 && input$numSuccessesBinomx2 %% 1 == 0, "Number of Successes (x2) must be a positive integer"),
+              
+              errorClass = "myClass"
+            )
+          }
+          
+          validate(
+            need(input$numTrialsBinom, "Number of Trials (n) must be a positive integer") %then%
+              need(input$numTrialsBinom > 0 && input$numTrialsBinom %% 1 == 0, "Number of Trials (n) must be a positive integer"),
+            need(input$successProbBinom, "Probability of Success (p) must be between 0 and 1") %then%
+              need(input$successProbBinom >= 0 && input$successProbBinom <= 1, "Probability of Success (p) must be between 0 and 1"),
+            
+            errorClass = "myClass"
+          )
+        }
+        else
+        {
+          binom_n <- input$numTrialsBinom
+          binom_p <- input$successProbBinom
+          binom_mu <- round(binom_n * binom_p, 4)
+          binom_var <- round(binom_mu * (1 - binom_p), 4)
+          binom_sd <- round(sqrt(binom_var), 4)
+          
+          if(input$calcBinom != 'between')
+          {
+            binom_x <- input$numSuccessesBinom
+            
+            validate(
+              need(binom_x <= binom_n, "Number of Successes (x) must be less than or equal to the Number of Trials (n)"),
+              
+              errorClass = "myClass"
+            )
+            
+            if(input$calcBinom == 'exact'){
+              binomProb <- paste("P(X = ", binom_x, ")") #= ", dbinom(binom_x,binom_n,binom_p))
+              binomForm <- paste("\\binom{", binom_n, "}{", binom_x, "}", binom_p, "^", binom_x, "(1-", binom_p, ")^{", binom_n, "-", binom_x, "}")
+              binomVal <- round(dbinom(binom_x,binom_n,binom_p), 4)
+            }
+            else if(input$calcBinom == 'cumulative'){
+              binomProb <- paste("P(X \\leq ", binom_x, ")") # = ", pbinom(binom_x,binom_n,binom_p,lower.tail = TRUE))
+              binomForm <- paste("\\sum_{x = 0}^", binom_x, " \\binom{", binom_n, "}{x}", binom_p, "^x (1-", binom_p, ")^{", binom_n, "- x}")
+              binomVal <- round(pbinom(binom_x,binom_n,binom_p,lower.tail = TRUE), 4)
+            }
+            else if(input$calcBinom == 'upperTail'){
+              binomProb <- paste("P(X \\geq ", binom_x, ")") # = ", pbinom(binom_x - 1,binom_n,binom_p,lower.tail = FALSE))
+              binomForm <- paste("\\sum_{x = ", binom_x, "}^", binom_n, " \\binom{", binom_n, "}{x}", binom_p, "^x (1-", binom_p, ")^{", binom_n, "- x}")
+              binomVal <- round(pbinom(binom_x - 1,binom_n,binom_p,lower.tail = FALSE), 4)
+              
+            }
+            else if(input$calcBinom == 'greaterThan'){
+              binomProb <- paste("P(X \\gt ", binom_x, ")") # = ", pbinom(binom_x,binom_n,binom_p,lower.tail = FALSE))
+              binomForm <- paste("\\sum_{x = ", binom_x + 1, "}^", binom_n, " \\binom{", binom_n, "}{x}", binom_p, "^x (1-", binom_p, ")^{", binom_n, "- x}")
+              binomVal <- round(pbinom(binom_x,binom_n,binom_p,lower.tail = FALSE), 4)
+            }
+            else if(input$calcBinom == 'lessThan'){
+              binomProb <- paste("P(X \\lt ", binom_x, ")") # = ", pbinom(binom_x - 1,binom_n,binom_p,lower.tail = TRUE))
+              binomForm <- paste("\\sum_{x = 0}^", binom_x - 1, " \\binom{", binom_n, "}{x}", binom_p, "^x (1-", binom_p, ")^{", binom_n, "- x}")
+              binomVal <- round(pbinom(binom_x - 1,binom_n,binom_p,lower.tail = TRUE), 4)
+            }
+            
+          }
+          else if(input$calcBinom == 'between')
+          {
+            binom_x1 <- input$numSuccessesBinomx1
+            
+            binom_x2 <- input$numSuccessesBinomx2
+            
+            validate(
+              need(binom_x1 <= binom_n, "Number of Successes (x1) must be less than or equal to the Number of Trials (n)"),
+              need(binom_x2 <= binom_n, "Number of Successes (x2) must be less than or equal to the Number of Trials (n)"),
+              need(binom_x1 <= binom_x2, "Number of Successes (x1) must be less than or equal to Number of Successes (x2)"),
+              
+              errorClass = "myClass"
+            )
+            
+            binomProb <- paste("P(", binom_x1, " \\leq X \\leq ", binom_x2, ")")
+            binomForm <- paste("\\sum_{x = ", binom_x1, "}^", binom_x2, " \\binom{", binom_n, "}{x}", binom_p, "^x (1-", binom_p, ")^{", binom_n, "- x}")
+            binomVal <- round(pbinom(binom_x2,binom_n,binom_p,lower.tail = TRUE) - pbinom(binom_x1-1,binom_n,binom_p,lower.tail = TRUE), 4)
+          }
+          
+          tagList(
+            withMathJax(
+              div(
+                h3(
+                  sprintf("Calculating  \\( %s \\)   when  \\(  X \\sim Bin(%1.0f,%g): \\)",
+                          binomProb,
+                          binom_n,
+                          binom_p)
+                ),
+                hr(),
+                br(),
+                p(tags$b("Using the Probability Mass Function: ")),
+                sprintf("\\( \\qquad \\qquad P(X = x) = \\binom{n}{x} p^x (1-p)^{n-x} \\)"),
+                sprintf("\\( \\qquad \\) for \\( x = 0, 1, 2, ... n\\)"),
+                br(),
+                br(),
+                br(),
+                sprintf("\\( \\displaystyle %s = %s\\)",
+                        binomProb,
+                        binomForm),
+                br(),
+                br(),
+                sprintf("\\( %s = %0.4f\\)",
+                        binomProb,
+                        binomVal),
+                br(),
+                br(),
+                br(),
+                sprintf("Mean \\( (\\mu) = np = %g\\)",
+                        binom_mu),
+                br(),
+                br(),
+                sprintf("Standard Deviation \\( (\\sigma) = \\sqrt{np(1 - p)} = %g\\)",
+                        binom_sd),
+                br(),
+                br(),
+                sprintf("Variance \\( (\\sigma^{2}) = np(1 - p) = %g\\)",
+                        binom_var)
+              ),
+              br(),
+              conditionalPanel(
+                condition = "input.showBinomTable == 1",
+                
+                br(),
+                titlePanel("Probability Distribution Table"),
+                hr(),
+                DTOutput("binomDistrTable", width = "25%"),
+                br()
+              )
+            )
+          )
+        }
+      )
+    })
+    
+    output$binomDistrTable <- DT::renderDT({
+      req(pd_iv$is_valid())
+      
+      if(input$numTrialsBinom < 50)
+      {
+        dfBinom <- data.frame(value = seq(0, input$numTrialsBinom), value = round(dbinom(x = 0:input$numTrialsBinom, size = input$numTrialsBinom, prob = input$successProbBinom), 4))
+        colnames(dfBinom) <- c("X", "P(X = x)")
+        
+        datatable(dfBinom,
+                  options = list(
+                    dom = 't',
+                    pageLength = -1,
+                    ordering = FALSE,
+                    searching = FALSE,
+                    paging = FALSE
+                  ),
+                  rownames = FALSE,
+                  filter = "none"
+        ) %>% formatRound(2, digits = 4)
+      }
+      else
+      {
+        dfBinom <- data.frame(value = "Probability distribution table limited to sample sizes less than 50")
+        colnames(dfBinom) <- c("Sample Size Too Large")
+        datatable(dfBinom,
+                  options = list(
+                    dom = '',
+                    pageLength = -1,
+                    ordering = FALSE,
+                    searching = FALSE,
+                    paging = FALSE
+                  ),
+                  rownames = FALSE,
+                  filter = "none"
+        )
+      }
+      
+      
+    })
+  })
+  
+  #### Poisson ----
+  observeEvent(input$goPoisson, {
+    
+    output$renderProbabilityPoisson <- renderUI({
+      
+      withMathJax(
+        
+        if(!pd_iv$is_valid())
+        {
+          if(!poissprob_iv$is_valid())
+          {
+            validate(
+              need(input$muPoisson && input$muPoisson > 0, "Average Number of Successes (mu) must be greater than zero"),
+              need(input$xPoisson , "Number of Successes (x) must be a positive integer") %then%
+                need(input$xPoisson >= 0 && input$xPoisson %% 1 == 0, "Number of Successes (x) must be a positive integer"),
+              
+              errorClass = "myClass"
+            )
+          }
+          
+          if(!poissbetween_iv$is_valid())
+          {
+            validate(
+              need(input$muPoisson && input$muPoisson > 0, "Average Number of Successes (mu) must be greater than zero"),
+              need(input$x2Poisson, "Enter a value for the Number of Successes (x1)") %then%
+                need(input$x1Poisson >= 0 && input$x1Poisson %% 1 == 0, "Number of Successes (x1) must be a positive integer"),
+              need(input$x2Poisson, "Enter a value for the Number of Successes (x2)") %then%
+                need(input$x2Poisson >= 0 && input$x2Poisson %% 1 == 0, "Number of Successes (x2) must be a positive integer"),
+              
+              errorClass = "myClass"
+            )
+          }
+          
+          validate(
+            need(input$muPoisson && input$muPoisson > 0, "Average Number of Successes (mu) must be greater than zero"),
+            
+            errorClass = "myClass"
+          )
+        }
+        else
+        {
+          poisson_mu <- input$muPoisson
+          poisson_sd <- round(sqrt(input$muPoisson), 4)
+          
+          if(input$calcPoisson != 'between')
+          {
+            poisson_x <- input$xPoisson
+            
+            if(input$calcPoisson == 'exact'){
+              poissProb <- paste("P(X = ", poisson_x, ")") #= ", dbinom(binom_x,binom_n,binom_p))
+              poissForm <- paste("\\dfrac{e^{-", poisson_mu, "}", poisson_mu, "^", poisson_x, "}{", poisson_x, "!}")
+              poissVal <- round(dpois(poisson_x,poisson_mu), 4)
+            }
+            else if(input$calcPoisson == 'cumulative'){
+              poissProb <- paste("P(X \\leq ", poisson_x, ")") # = ", pbinom(binom_x,binom_n,binom_p,lower.tail = TRUE))
+              poissForm <- paste("\\sum_{x = 0}^", poisson_x, "\\dfrac{e^{-", poisson_mu, "}", poisson_mu, "^x}{x!}")
+              poissVal <- round(ppois(poisson_x,poisson_mu,lower.tail = TRUE), 4)
+            }
+            else if(input$calcPoisson == 'upperTail'){
+              poissProb <- paste("P(X \\geq ", poisson_x, ")") # = ", pbinom(binom_x,binom_n,binom_p,lower.tail = TRUE))
+              poissForm <- paste("1 - \\sum_{x = 0}^", poisson_x - 1, "\\dfrac{e^{-", poisson_mu, "}", poisson_mu, "^x}{x!}")
+              poissVal <- round(ppois(poisson_x - 1,poisson_mu,lower.tail = FALSE), 4)
+            }
+            else if(input$calcPoisson == 'greaterThan'){
+              poissProb <- paste("P(X \\gt ", poisson_x, ")") # = ", pbinom(binom_x,binom_n,binom_p,lower.tail = TRUE))
+              poissForm <- paste("1 - \\sum_{x = 0}^", poisson_x, "\\dfrac{e^{-", poisson_mu, "}", poisson_mu, "^x}{x!}")
+              poissVal <- round(ppois(poisson_x,poisson_mu,lower.tail = FALSE), 4)
+            }
+            else if(input$calcPoisson == 'lessThan'){
+              poissProb <- paste("P(X \\lt ", poisson_x, ")") # = ", pbinom(binom_x,binom_n,binom_p,lower.tail = TRUE))
+              poissForm <- paste("\\sum_{x = 0}^", poisson_x - 1, "\\dfrac{e^{-", poisson_mu, "}", poisson_mu, "^x}{x!}")
+              poissVal <- round(ppois(poisson_x - 1,poisson_mu,lower.tail = TRUE), 4)
+            }
+          }
+          else if(input$calcPoisson == 'between')
+          {
+            validate(
+              need(input$x1Poisson <= input$x2Poisson, "Number of Successes (x1) must be less than or equal to Number of Successes (x2)"),
+              
+              errorClass = "myClass"
+            )
+            
+            poisson_x1 <- input$x1Poisson
+            poisson_x2 <- input$x2Poisson
+            
+            poissProb <- paste("P(", poisson_x1, " \\leq X \\leq ", poisson_x2, ")")
+            poissForm <- paste("\\sum_{x = ", poisson_x1, "}^", poisson_x2, "\\dfrac{e^{-", poisson_mu, "}", poisson_mu, "^x}{x!}")
+            poissVal <- round(ppois(poisson_x2, poisson_mu, lower.tail = TRUE) - ppois(poisson_x1 - 1, poisson_mu, lower.tail = TRUE), 4)
+          }
+          
+          tagList(
+            withMathJax(
+              div(
+                h4(
+                  sprintf("Calculating  \\( %s \\)   when  \\(  X \\sim Pois(%g): \\)",
+                          poissProb,
+                          poisson_mu)
+                ),
+                hr(),
+                br(),
+                p(tags$b("Using the Probability Mass Function: ")),
+                sprintf("\\( \\qquad \\qquad P(X = x) = \\dfrac{e^{-\\mu} \\mu^x}{x!} \\)"),
+                sprintf("\\( \\qquad \\) for \\( x = 0, 1, 2, ... \\)"),
+                br(),
+                br(),
+                br(),
+                sprintf("\\( \\displaystyle %s = %s\\)",
+                        poissProb,
+                        poissForm),
+                br(),
+                br(),
+                sprintf("\\( %s = %0.4f\\)",
+                        poissProb,
+                        poissVal),
+                br(),
+                br(),
+                br(),
+                sprintf("Mean \\( (\\mu) = \\mu = %g\\)",
+                        poisson_mu),
+                br(),
+                br(),
+                sprintf("Standard Deviation \\( (\\sigma) = \\sqrt{\\mu} = %g\\)",
+                        poisson_sd),
+                br(),
+                br(),
+                sprintf("Variance \\( (\\sigma^{2}) = \\mu = %g\\)",
+                        poisson_mu)
+              ),
+              br(),
+              conditionalPanel(
+                condition = "input.showPoissTable == 1",
+                
+                br(),
+                titlePanel("Probability Distribution Table"),
+                hr(),
+                DTOutput("poissDistrTable", width = "25%"),
+                br()
+              )
+            )
+          )
+        }
+      )
+    })
+    
+    output$poissDistrTable <- DT::renderDT({
+      req(pd_iv$is_valid())
+      
+      dfPoiss <- data.frame(value = seq(qpois(0.0001, input$muPoisson), qpois(0.9999, input$muPoisson)), value = round(dpois(x = qpois(0.0001, input$muPoisson):qpois(0.9999, input$muPoisson), lambda = input$muPoisson), 4))
+      colnames(dfPoiss) <- c("X", "P(X = x)")
+      
+      datatable(dfPoiss,
+                options = list(
+                  dom = 't',
+                  pageLength = -1,
+                  ordering = FALSE,
+                  searching = FALSE,
+                  paging = FALSE
+                ),
+                rownames = FALSE,
+                filter = "none"
+      ) %>% formatRound(2, digits = 4)
+      
+    })
+  })
+  
+  ### Normal ----
+  observeEvent(input$goNormal, {
+    
+    output$renderProbabilityNorm <- renderUI({
+      
+      if(!pd_iv$is_valid())
+      {
+        if(!normprob_iv$is_valid())
+        {
+          validate(
+            need(input$popMean, "Enter a value for Population Mean (mu)"),
+            need(input$popSD && input$popSD > 0, "Population Standard Deviation (sigma) must be greater than 0"),
+            need(input$xValue, "Enter a value for Normally Distributed Variable (x)"),
+            
+            errorClass = "myClass"
+          )
+        }
+        
+        if(!normbetween_iv$is_valid())
+        {
+          validate(
+            need(input$popMean, "Enter a value for Population Mean (mu)"),
+            need(input$popSD && input$popSD > 0, "Population Standard Deviation (sigma) must be greater than 0"),
+            need(input$x1Value, "Enter a value for Normally Distributed Variable (x)"),
+            need(input$x2Value, "Enter a value for Normally Distributed Variable (x)"),
+            
+            errorClass = "myClass"
+          )
+        }
+        
+        validate(
+          need(input$popMean, "Enter a value for Population Mean (mu)"),
+          need(input$popSD && input$popSD > 0, "Population Standard Deviation (sigma) must be greater than 0"),
+          
+          errorClass = "myClass"
+        )
+      }
+      
+      norm_mu <- input$popMean
+      norm_sigma <- input$popSD
+      
+      if(input$calcNormal != 'between')
+      {
+        norm_x <- input$xValue
+        
+        if(input$calcNormal == "cumulative"){
+          normProb <- paste("P(X \\leq ", norm_x,")")
+          normProbTransform <- paste("P \\left( \\dfrac{X - \\mu}{\\sigma} \\leq \\dfrac{", norm_x, " - ", norm_mu, "}{", norm_sigma, "} \\right)")
+          normForm <- paste("= P(Z \\leq", round((norm_x - norm_mu)/norm_sigma, 4), ")")
+        }
+        else if(input$calcNormal == "upperTail"){
+          normProb <- paste("P(X \\gt ", norm_x,")")
+          normProbTransform <- paste("P \\left( \\dfrac{X - \\mu}{\\sigma} \\gt \\dfrac{", norm_x, " - ", norm_mu, "}{", norm_sigma, "} \\right)")
+          normForm <- paste("= P(Z \\gt", round((norm_x - norm_mu)/norm_sigma, 4), ")")
+        }
+      }
+      else if(input$calcNormal == 'between')
+      {
+        norm_x1 <- input$x1Value
+        norm_x2 <- input$x2Value
+        
+        validate(
+          need(norm_x1 <= norm_x2, "Normally Distributed Variable (x1) must be less than or equal to Normally Distributed Variable (x2)"),
+          
+          errorClass = "myClass"
+        )
+        
+        normProb <- paste("P(", norm_x1, " ",  " \\leq X \\leq"," ", norm_x2,")") 
+        normProbTransform <- paste("P \\left( \\dfrac{", norm_x1, " - ", norm_mu, "}{", norm_sigma, "} \\leq \\dfrac{X - \\mu}{\\sigma} \\leq",
+                                   "\\dfrac{", norm_x2, " - ", norm_mu, "}{", norm_sigma, "} \\right)")
+        normForm <- paste("= P(", round((norm_x1 - norm_mu)/norm_sigma, 4), "\\leq Z \\leq", round((norm_x2 - norm_mu)/norm_sigma, 4), ") = ", 
+                          round(pnorm(norm_x2,norm_mu, norm_sigma,lower.tail = TRUE), 4), " - ", round(pnorm(norm_x1,norm_mu, norm_sigma,lower.tail = TRUE), 4))
+      }
+      
+      tagList(
+        withMathJax(
+          div(
+            h4(
+              sprintf("Calculating  \\( %s \\)   when  \\(  X \\sim N(\\mu = %g, \\sigma^2 = %g): \\)",
+                      normProb,
+                      norm_mu,
+                      norm_sigma^2)
+            ),
+            hr(),
+            br(),
+            sprintf("\\( \\displaystyle %s = %s\\)",
+                    normProb,
+                    normProbTransform),
+            br(),
+            br(),
+            sprintf("\\( \\displaystyle %s = %g\\)",
+                    normForm,
+                    getNormValue()),
+            br(),
+            br(),
+            br(),
+            sprintf("Mean \\( (\\mu) = %g\\)",
+                    norm_mu),
+            br(),
+            br(),
+            sprintf("Standard Deviation \\( (\\sigma) = %g\\)",
+                    norm_sigma),
+            br(),
+            br(),
+            sprintf("Variance \\( (\\sigma^{2}) = %g\\)",
+                    norm_sigma^2)
+          ),
+          br(),
+          hr(),
+          br(),
+          plotOutput('normDistrPlot', width = "75%", height = "300px"),
+          br()
+        )
+      )
+    })
+  })
+  
+  output$normDistrPlot <- renderPlot({
+    normPlot(getNormValue())
+  })
+  
+  # --------------------------------------------------------------------- #
+  
+  
+  # **************************************************************************** #
+  
+  
+  #  -------------------------------------------------------------------- #
+  ## ----------------- Statistical Inference functions ------------------
+  #  -------------------------------------------------------------------- #
+  
+  
+  ### Non-Reactive Functions ----
+  # --------------------------------------------------------------------- #
+  
+  shadeHtZArea <- function(x, critValues, altHypothesis){
+    area <- dnorm(x, 0, 1)
+    
+    if(altHypothesis == "less") #less
+    {
+      area[x > critValues] <- NA
+    }
+    else if(altHypothesis == "two.sided") #twosided
+    {
+      area[x > critValues[1] & x < critValues[2]] <- NA
+    }
+    else if(altHypothesis == "greater") #greater
+    {
+      area[x < critValues] <- NA
+    }
+    return(area)
+  }
+  
+  hypZTestPlot <- function(testStatistic, critValues, altHypothesis){
+    normTail = qnorm(0.999, mean = 0, sd = 1, lower.tail = FALSE)
+    normHead = qnorm(0.999, mean = 0, sd = 1, lower.tail = TRUE)
+    xSeq = sort(c(normTail, normHead, testStatistic, critValues, 0))
+    
+    if(testStatistic < normTail)
+    {
+      normTail = testStatistic
+      
+    } else if(testStatistic > normHead)
+    {
+      normHead = testStatistic
+    } 
+    
+    df <- data.frame(x = xSeq, y = dnorm(xSeq, 0, 1))
+    cvDF <- filter(df, x %in% critValues)
+    tsDF <- filter(df, x %in% testStatistic)
+    centerDF <- filter(df, x %in% c(0))
+    
+    htPlot <- ggplot(df, aes(x = x, y = y)) +
+      stat_function(fun = dnorm, 
+                    geom = "density",
+                    xlim = c(normTail, normHead),
+                    fill = "#03376d",
+                    alpha = 0.3) + 
+      stat_function(fun = shadeHtZArea, 
+                    args = list(critValues, altHypothesis), 
+                    geom = "area",
+                    xlim = c(normTail, normHead),
+                    fill = "#03376d",
+                    alpha = 0.7) +
+      theme_void()  +
+      scale_x_continuous(breaks = floor(normTail):ceiling(normHead)) +
+      scale_y_continuous(breaks = NULL) +
+      ylab("") + xlab("Z") +
+      geom_segment(data = filter(df, x %in% c(0)), 
+                   aes(x = x, xend = x, y = 0, yend = y), 
+                   linetype = "dotted", 
+                   linewidth = 0.75, 
+                   color='#03376d') +
+      geom_text(data = filter(df, x %in% c(0)), 
+                aes(x = x, y = y/2, label = "A R"), 
+                size = 16 / .pt, 
+                fontface = "bold") +
+      geom_text(data = filter(df, x %in% c(0)), 
+                aes(x = x, y = 0, label = "0"), 
+                size = 14 / .pt, 
+                fontface = "bold", 
+                nudge_y = -.01) +
+      geom_segment(data = tsDF, 
+                   aes(x = x, xend = x, y = -0.01, yend = y + .03), 
+                   linetype = "solid", 
+                   linewidth = 1.25, 
+                   color='#03376d') +
+      geom_text(data = tsDF, 
+                aes(x = x, y = y, label = "TS"), 
+                size = 16 / .pt, 
+                fontface = "bold", 
+                nudge_y = .045) +
+      geom_text(data = tsDF, 
+                aes(x = x, y = 0, label = x), 
+                size = 14 / .pt, 
+                fontface = "bold", 
+                nudge_y = -.02) +
+      geom_segment(data = cvDF, 
+                   aes(x = x, xend = x, y = 0, yend = y), 
+                   linetype = "blank", 
+                   lineend = 'round', 
+                   linewidth = 1.5, 
+                   color='#03376d') +
+      geom_text(data = cvDF, 
+                aes(x = x, y = 0, label = x), 
+                size = 14 / .pt, 
+                fontface = "bold", 
+                nudge_y = -.01) +
+      geom_text(data = cvDF, 
+                aes(x = x + x/4, y = y, label = "RR"), 
+                size = 16 / .pt, 
+                fontface = "bold", 
+                nudge_y = .03) +
+      theme(axis.title.x = element_text(size = 16, face = "bold"))
+    
+    return(htPlot)
+  }
+  
+  
+  shadeHtTArea <- function(x, testStatistic, df, critValues, altHypothesis){
+    area <- dt(x, df)
+    
+    if(altHypothesis == "less") #less
+    {
+      area[x > critValues] <- NA
+    }
+    else if(altHypothesis == "two.sided") #twosided
+    {
+      area[x > critValues[1] & x < critValues[2]] <- NA
+    }
+    else if(altHypothesis == "greater") #greater
+    {
+      area[x < critValues] <- NA
+    }
+    return(area)
+  }
+  
+  
+  hypTTestPlot <- function(testStatistic, degfree, critValues, altHypothesis){
+    tTail = qt(0.999, df = degfree, lower.tail = FALSE)
+    tHead = qt(0.999, df = degfree, lower.tail = TRUE)
+    #xSeq = seq(normTail, normHead, by = 0.005)
+    xSeq = sort(c(tTail, tHead, testStatistic, critValues, 0))
+    
+    if(testStatistic < tTail)
+    {
+      tTail = testStatistic
+      
+    } else if(testStatistic > tHead)
+    {
+      tHead = testStatistic
+    } 
+    
+    df <- data.frame(x = xSeq, y = dt(xSeq, degfree))
+    cvDF <- filter(df, x %in% critValues)
+    tsDF <- filter(df, x %in% testStatistic)
+    centerDF <- filter(df, x %in% c(0))
+    
+    htPlot <- ggplot(df, aes(x = x, y = y)) +
+      stat_function(fun = dt, 
+                    args = list(df = degfree), 
+                    geom = "density",
+                    xlim = c(tTail, tHead),
+                    fill = "#03376d",
+                    alpha = 0.3) + 
+      stat_function(fun = shadeHtTArea, 
+                    args = list(testStatistic, degfree, critValues, altHypothesis), 
+                    geom = "area",
+                    xlim = c(tTail, tHead),
+                    fill = "#03376d",
+                    alpha = 0.7) +
+      theme_void()  +
+      scale_x_continuous(breaks = floor(tTail):ceiling(tHead) ) +
+      scale_y_continuous(breaks = NULL) +
+      ylab("") + 
+      xlab("t") +
+      geom_segment(data = filter(df, x %in% c(0)), 
+                   aes(x = x, xend = x, y = 0, yend = y), 
+                   linetype = "dotted", 
+                   linewidth = 0.75, color='#03376d') +
+      geom_text(data = filter(df, x %in% c(0)), 
+                aes(x = x, y = y/2, label = "A R"), 
+                size = 16 / .pt, 
+                fontface = "bold") +
+      geom_text(data = filter(df, x %in% c(0)), 
+                aes(x = x, y = 0, label = "0"), 
+                size = 14 / .pt, 
+                fontface = "bold", 
+                nudge_y = -.01) +
+      geom_segment(data = tsDF, 
+                   aes(x = x, xend = x, y = -0.01, yend = y + .03), 
+                   linetype = "solid", 
+                   linewidth = 1.25, 
+                   color='#03376d') +
+      geom_text(data = tsDF, 
+                aes(x = x, y = y, label = "TS"), 
+                size = 16 / .pt, 
+                fontface = "bold", 
+                nudge_y = .045) +
+      geom_text(data = tsDF, 
+                aes(x = x, y = 0, label = x), 
+                size = 14 / .pt, 
+                fontface = "bold", 
+                nudge_y = -.02) +
+      geom_segment(data = cvDF, 
+                   aes(x = x, xend = x, y = 0, yend = y), 
+                   linetype = "blank", 
+                   lineend = 'round', 
+                   linewidth = 1.5, 
+                   color='#03376d') +
+      geom_text(data = cvDF, 
+                aes(x = x, y = 0, label = x), 
+                size = 14 / .pt, 
+                fontface = "bold", 
+                nudge_y = -.01) +
+      geom_text(data = cvDF, 
+                aes(x = x + x/4, y = y, label = "RR"), 
+                size = 16 / .pt, 
+                fontface = "bold", 
+                nudge_y = .03) +
+      theme(axis.title.x = element_text(size = 16, face = "bold"))
+    
+    return(htPlot)
+  }
+  
+  # --------------------------------------------------------------------- #
+  
+  
+  ### Reactives ----
+  # --------------------------------------------------------------------- #
+  
+  ConfLvl <- reactive({
+    
+    if(input$samplesSelect == '1') {
+      
+      if(input$confidenceLevel == '90%') {
+        confLvl <- 0.9
+      } else if(input$confidenceLevel == '95%') {
+        confLvl <- 0.95
+      } else {
+        confLvl <- 0.99
+      }
+      
+    } else if(input$samplesSelect == '2') {
+      
+      if(input$confidenceLevel2 == '90%') {
+        confLvl <- 0.9
+      } else if(input$confidenceLevel2 == '95%') {
+        confLvl <- 0.95
+      } else {
+        confLvl <- 0.99
+      }
+    } 
+    
+    return(confLvl)
+  })
+  
+  
+  SigLvl <- reactive({
+    
+    if(input$samplesSelect == '1') {
+      
+      if(input$significanceLevel == "10%") {
+        sigLvl <- 0.1 
+      } else if(input$significanceLevel == "5%") {
+        sigLvl <- 0.05
+      } else {
+        sigLvl <- 0.01
+      }
+      
+    } else if (input$samplesSelect == '2') {
+      
+      if(input$significanceLevel2 == "10%") {
+        sigLvl <- 0.1 
+      } else if(input$significanceLevel2 == "5%") {
+        sigLvl <- 0.05
+      } else {
+        sigLvl <- 0.01
+      }
+      
+    }
+    
+    return(sigLvl)
+  })
+  
+  #### One Mean reactives ----
+  
+  OneMeanHypInfo <- reactive({
+    hypTestSymbols <- list()
+    
+    if(input$altHypothesis == "3"){
+      hypTestSymbols$alternative <- "greater"
+      hypTestSymbols$nullHyp <- "\\leq"
+      hypTestSymbols$altHyp <- "\\gt"
+      hypTestSymbols$critZAlph <- "z_{\\alpha}"
+    }
+    else if(input$altHypothesis == "2"){
+      hypTestSymbols$alternative <- "two.sided"
+      hypTestSymbols$nullHyp <- "="
+      hypTestSymbols$altHyp <- "\\neq"
+      hypTestSymbols$critZAlph <- "\\pm z_{\\alpha/2}"
+    }
+    else{
+      hypTestSymbols$alternative <- "less"
+      hypTestSymbols$nullHyp <- "\\geq"
+      hypTestSymbols$altHyp <- "\\lt"
+      hypTestSymbols$critZAlph <- "-z_{\\alpha}"
+    }
+    
+    return(hypTestSymbols)
+  })
+  
+  
+  OneMeanZIntSumm <- reactive({
+    req(si_iv$is_valid())
+    
+    nSampOne <- input$sampleSize
+    xbarSampOne <- input$sampleMean
+    sigmaSampOne <- input$popuSD
+    
+    source('R/OneSampZInt.R')
+    
+    oneMeanZInt <- ZInterval(nSampOne, xbarSampOne, sigmaSampOne, ConfLvl())
+    
+    return(oneMeanZInt)
+  })
+  
+  
+  OneMeanZIntRaw <- reactive({
+    req(si_iv$is_valid())
+    
+    datRawData <- createNumLst(input$sample1)
+    rawSampleSize <- length(datRawData)
+    rawSampleMean <- mean(datRawData)
+    rawPopuSD <- input$popuSDRaw
+    
+    source("R/OneSampZInt.R")
+    
+    oneMeanZInt <- ZInterval(rawSampleSize, rawSampleMean, rawPopuSD, 
+                             ConfLvl())
+    
+    return(oneMeanZInt)
+  })
+  
+  
+  OneMeanTIntSumm <- reactive({
+    req(si_iv$is_valid())
+    
+    nSampOne <- input$sampleSize
+    xbarSampOne <- input$sampleMean  
+    sSampOne <- input$sampSD
+    
+    source('R/OneSampTInt.R')
+    
+    oneMeanTInt <- TInterval(nSampOne, xbarSampOne, sSampOne, ConfLvl())
+    
+    return(oneMeanTInt)
+  })
+  
+  
+  OneMeanTIntRaw <- reactive({
+    req(si_iv$is_valid())
+    
+    datRawData <- createNumLst(input$sample1)
+    rawSampleSize <- length(datRawData)
+    rawSampleMean <- mean(datRawData)
+    rawSampleSD <- sd(datRawData)
+    
+    source("R/OneSampTInt.R")
+    
+    oneMeanTInt <- TInterval(rawSampleSize, rawSampleMean, rawSampleSD, 
+                             ConfLvl())
+    
+    return(oneMeanTInt) 
+  })
+  
+  
+  OneMeanZTestSumm <- reactive({
+    req(si_iv$is_valid())
+    
+    nSampOne <- input$sampleSize
+    xbarSampOne <- input$sampleMean 
+    hypMeanSampOne <- input$hypMean 
+    sigmaSampOne <- input$popuSD
+    
+    source("R/OneSampZTest.R")
+    
+    oneMeanZTest <- ZTest(nSampOne, xbarSampOne, sigmaSampOne, hypMeanSampOne,
+                          OneMeanHypInfo()$alternative, SigLvl())
+    
+    return (oneMeanZTest)
+  }) 
+  
+  OneMeanZTestRaw <- reactive({
+    req(si_iv$is_valid())
+    
+    datRawData <- createNumLst(input$sample1)
+    rawSampleSize <- length(datRawData)
+    rawSampleMean <- mean(datRawData)
+    rawPopuSD <- input$popuSDRaw
+    hypMeanSampOne <- input$hypMean 
+    
+    source("R/OneSampZTest.R")
+    
+    oneMeanZTest <- ZTest(rawSampleSize, rawSampleMean, rawPopuSD, 
+                          hypMeanSampOne, OneMeanHypInfo()$alternative, 
+                          SigLvl())
+    
+    return (oneMeanZTest) 
+  })
+  
+  
+  OneMeanTTestSumm <- reactive({
+    req(si_iv$is_valid())
+    
+    nSampOne <- input$sampleSize
+    xbarSampOne <- input$sampleMean
+    hypMeanSampOne <- input$hypMean 
+    sSampOne <- input$sampSD
+    
+    source("R/OneSampTTest.R")
+    
+    oneMeanTTest <- TTest(nSampOne, xbarSampOne, sSampOne, hypMeanSampOne, 
+                          OneMeanHypInfo()$alternative, SigLvl())
+    
+    return(oneMeanTTest)
+  })
+  
+  
+  OneMeanTTestRaw <- reactive({
+    req(si_iv$is_valid())
+    
+    datRawData <- createNumLst(input$sample1)
+    rawSampleSize <- length(datRawData)
+    rawSampleMean <- mean(datRawData)
+    rawSampleSD <- sd(datRawData)
+    hypMeanSampOne <- input$hypMean 
+    
+    
+    source("R/OneSampTTest.R")
+    
+    oneMeanTTest <- TTest(rawSampleSize, rawSampleMean, rawSampleSD, 
+                          hypMeanSampOne, OneMeanHypInfo()$alternative, 
+                          SigLvl())
+    
+    return(oneMeanTTest)
+  })
+  
+  
+  #### Independent Sample Means reactives ----
+  
+  IndMeansSummData <- reactive({
+    req(si_iv$is_valid())
+    
+    summData <- list()
+    
+    summData$n1 <- input$sampleSize1
+    summData$xbar1 <- input$sampleMean1
+    summData$n2 <- input$sampleSize2
+    summData$xbar2 <- input$sampleMean2
+    summData$sigmaEqual <- input$bothsigmaEqual
+    
+    if(input$bothsigmaKnown == 'bothKnown'){
+      summData$sd1 <- input$popuSD1
+      summData$sd2 <- input$popuSD2
+    } else {
+      summData$sd1 <- input$sampSD1
+      summData$sd2 <- input$sampSD2
+    }
+    
+    return(summData)
+  })
+  
+  IndMeansRawData <- reactive({
+    req(si_iv$is_valid())
+    
+    rawData <- list()
+    
+    raw_sample1 <- createNumLst(input$raw_sample1)
+    raw_sample2 <- createNumLst(input$raw_sample2)
+    
+    rawData$n1  <- length(raw_sample1)
+    rawData$xbar1 <- mean(raw_sample1)
+    rawData$n2  <- length(raw_sample2)
+    rawData$xbar2 <- mean(raw_sample2)
+    rawData$sigmaEqual <- input$bothsigmaEqualRaw
+    
+    if(input$bothsigmaKnownRaw == 'bothKnown'){
+      rawData$sd1 <- input$popuSDRaw1
+      rawData$sd2 <- input$popuSDRaw2
+    } else {
+      rawData$sd1 <- sd(raw_sample1)
+      rawData$sd2 <- sd(raw_sample2)
+    }
+    
+    return(rawData)
+  })
+  
+  
+  IndMeansSigmaKnown <- reactive({
+    
+    if (input$dataAvailability2 == 'Summarized Data') {
+      sigmaKnown <- input$bothsigmaKnown
+    } else if(input$dataAvailability2 == 'Enter Raw Data'){
+      sigmaKnown <- input$bothsigmaKnownRaw
+    }
+    
+    return(sigmaKnown)
+  })
+  
+  
+  IndMeansHypInfo <- reactive({
+    hypTestSymbols <- list()
+    
+    if(input$altHypothesis2 == "3"){
+      hypTestSymbols$alternative <- "greater"
+      hypTestSymbols$nullHyp <- "\\leq"
+      hypTestSymbols$altHyp <- "\\gt"
+      hypTestSymbols$critAlph <- "\\alpha"
+    }
+    else if(input$altHypothesis2 == "2"){
+      hypTestSymbols$alternative <- "two.sided"
+      hypTestSymbols$nullHyp <- "="
+      hypTestSymbols$altHyp <- "\\neq"
+      hypTestSymbols$critAlph <- "\\alpha/2"
+    }
+    else{
+      hypTestSymbols$alternative <- "less"
+      hypTestSymbols$nullHyp <- "\\geq"
+      hypTestSymbols$altHyp <- "\\lt"
+      hypTestSymbols$critAlph <- "\\alpha"
+    }
+    
+    return(hypTestSymbols)
+  })
+  
+  
+  IndMeansZInt <- reactive({
+    
+    if (input$dataAvailability2 == 'Summarized Data') {
+      data <- IndMeansSummData()
+    } else if(input$dataAvailability2 == 'Enter Raw Data'){
+      data <- IndMeansRawData()
+    }
+    
+    source('R/TwoSampZInt.R')
+    
+    twoSampZInt <- TwoSampZInt(data$xbar1, data$sd1, data$n1, data$xbar2, data$sd2, data$n2, ConfLvl())
+    
+    return(twoSampZInt)
+  })
+  
+  
+  IndMeansTInt <- reactive({
+    
+    if(input$dataAvailability2 == 'Summarized Data') {
+      data <- IndMeansSummData()
+    } else if(input$dataAvailability2 == 'Enter Raw Data'){
+      data <- IndMeansRawData()
+    }
+    
+    source('R/TwoSampTInt.R')
+    
+    twoSampTInt <- TwoSampTInt(data$xbar1, data$sd1, data$n1, data$xbar2, data$sd2, data$n2, data$sigmaEqual, ConfLvl())
+    
+    return(twoSampTInt)
+  })
+  
+  
+  IndMeansZTest <- reactive({
+    
+    if(input$dataAvailability2 == 'Summarized Data') {
+      data <- IndMeansSummData()
+    } else if(input$dataAvailability2 == 'Enter Raw Data'){
+      data <- IndMeansRawData()
+    }
+    
+    source('R/TwoSampZTest.R')
+    
+    twoSampZTest <- TwoSampZTest(data$xbar1, data$sd1, data$n1, data$xbar2, data$sd2, data$n2, IndMeansHypInfo()$alternative, SigLvl())
+    
+    return(twoSampZTest)
+  })
+  
+  
+  IndMeansTTest <- reactive({
+    
+    if(input$dataAvailability2 == 'Summarized Data') {
+      data <- IndMeansSummData()
+    } else if(input$dataAvailability2 == 'Enter Raw Data'){
+      data <- IndMeansRawData()
+    }
+    
+    source('R/TwoSampTTest.R')
+    
+    twoSampTTest <- TwoSampTTest(data$xbar1, data$sd1, data$n1, data$xbar2, data$sd2, data$n2, data$sigmaEqual, IndMeansHypInfo()$alternative, SigLvl())
+    
+    return(twoSampTTest)
+  })
+  
+  # --------------------------------------------------------------------- #
+  
+  
+  
+  ### Outputs ----
+  # --------------------------------------------------------------------- #
+  
+  output$renderInference <- renderUI({
+    
+    if(!onemean_iv$is_valid())
+    {
+      validate(
+        need(input$sampleSize, "Sample size (n) must be an integer greater than 1.") %then%
+          need(input$sampleSize > 1 & input$sampleSize %% 1 == 0, "Sample size (n) must be an integer greater than 1."),
+        need(input$sampleMean, "Sample mean required."),
+        
+        errorClass = "myClass"
+      )
+    }
+    
+    if(!onemeanraw_iv$is_valid())
+    {
+      validate(
+        need(input$sample1, "Sample Data required.") %then%
+          need(length(createNumLst(input$sample1)) > 1, "Sample Data requires a minimum of 2 data points."),
+        need(input$popuSDRaw & input$popuSDRaw > 0, "Population Standard Deviation must be positive."),
+        #need(input$popuSDRaw > 0, "Population Standard Deviation must be greater than 0"),
+        
+        errorClass = "myClass"
+      )
+    }
+    
+    if(!onemeansdknown_iv$is_valid())
+    {
+      validate(
+        need(input$popuSD & input$popuSD > 0, "Population Standard Deviation must be positive."),
+        #need(input$popuSD > 0, "Population Standard Deviation must be greater than 0"),
+        
+        errorClass = "myClass"
+      )
+    }
+    
+    if(!onemeansdunk_iv$is_valid())
+    {
+      validate(
+        need(input$sampSD && input$sampSD > 0, "Sample Standard Deviation (s) must be positive."),
+        
+        errorClass = "myClass"
+      )
+    }
+    
+    if(!onemeanht_iv$is_valid())
+    {
+      validate(
+        need(input$hypMean, "Hypothesized Population Mean value required."),
+        
+        errorClass = "myClass"
+      )
+    }
+    
+    if(!indmeanssumm_iv$is_valid()) {
+      
+      validate(
+        need(input$sampleSize1, "Sample Size 1 (n1) must be an integer greater than 1.") %then%
+          need(input$sampleSize1 > 1 & input$sampleSize1 %% 1 == 0, "Sample Size 1 (n1) must be an integer greater than 1."),
+        need(input$sampleMean1, "Sample Mean 1 required."),
+        
+        need(input$sampleSize2, "Sample Size 2 (n2) must be an integer greater than 1.") %then%
+          need(input$sampleSize2 > 1 & input$sampleSize2 %% 1 == 0, "Sample Size 2 (n2) must be an integer greater than 1."),
+        need(input$sampleMean2, "Sample Mean 2 required."),
+        
+        errorClass = "myClass"
+      )
+    }
+    
+    if(!indmeanssdknown_iv$is_valid())
+    {
+      validate(
+        need(input$popuSD1 & input$popuSD1 > 0, "Population Standard Deviation 1 must be positive."),
+        need(input$popuSD2 & input$popuSD2 > 0, "Population Standard Deviation 2 must be positive."),
+        
+        errorClass = "myClass"
+      )
+    }
+    
+    if(!indmeanssdunk_iv$is_valid())
+    {
+      validate(
+        need(input$sampSD1 && input$sampSD1 > 0, "Sample Standard Deviation (s1) must be positive."),
+        need(input$sampSD2 && input$sampSD2 > 0, "Sample Standard Deviation (s2) must be positive."),
+        
+        errorClass = "myClass"
+      )
+    }
+    
+    if(!indmeansraw_iv$is_valid()) {
+      
+      validate(
+        need(input$raw_sample1, "Sample 1 requires a minimum of 3 data points.") %then%
+          need(length(createNumLst(input$raw_sample1)) > 2, "Sample Data requires a minimum of 3 data points."),
+        need(input$raw_sample2, "Sample 2 requires a minimum of 3 data points.") %then%
+          need(length(createNumLst(input$raw_sample2)) > 2, "Sample Data requires a minimum of 3 data points."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate("Samples require a minimum of 3 data points.")
+    }
+    
+    if(!indmeansrawsd_iv$is_valid()) {
+      
+      validate(
+        need(input$popuSDRaw1 & input$popuSD1 > 0, "Population Standard Deviation 1 must be positive."),
+        need(input$popuSDRaw2 & input$popuSD2 > 0, "Population Standard Deviation 2 must be positive."),
+        
+        errorClass = "myClass"
+      )
+    }
+  })
+  
+  
+  #### One Mean outputs ----
+  
+  ##### Datatable ----
+  output$oneSampMeanData <- renderDT({
+    withMathJax()
+    oneMeanData <- data.frame(Variable = character(), Value = character())
+    
+    if(input$inferenceType == 'Confidence Interval'){
+      
+      if(input$dataAvailability == 'Summarized Data'){
+        
+        if(input$sigmaKnown == 'Known'){
+          
+          oneMeanZInt <- OneMeanZIntSumm()
+          
+          row1 <- data.frame(Variable = "Sample Mean \\( (\\bar{x}) \\)", Value = oneMeanZInt["Sample Mean"])
+          row2 <- data.frame(Variable = "Z Critical Value \\( (CV) \\)", Value = oneMeanZInt["Z Critical"])
+          row3 <- data.frame(Variable = "Standard Error \\( (SE) \\)", Value = oneMeanZInt["Std Error"])
+          row4 <- data.frame(Variable = "Lower Confidence Limit \\( (LCL) \\)", Value = oneMeanZInt["LCL"])
+          row5 <- data.frame(Variable = "Upper Confidence Limit \\( (UCL) \\)", Value = oneMeanZInt["UCL"])
+          
+          oneMeanData <- rbind(row1, row2, row3, row4, row5)
+          
+        }
+        else if(input$sigmaKnown == 'Unknown'){
+          
+          oneMeanTInt <- OneMeanTIntSumm()
+          
+          row1 <- data.frame(Variable = "Sample Mean \\( (\\bar{x})\\)", Value = oneMeanTInt["Sample Mean"])
+          row2 <- data.frame(Variable = "T Critical Value \\( (CV)\\)", Value = oneMeanTInt["T Critical"])
+          row3 <- data.frame(Variable = "Standard Error \\( (SE)\\)", Value = oneMeanTInt["Std Error"])
+          row4 <- data.frame(Variable = "Lower Confidence Limit \\( (LCL)\\)", Value = oneMeanTInt["LCL"])
+          row5 <- data.frame(Variable = "Upper Confidence Limit \\( (UCL)\\)", Value = oneMeanTInt["UCL"])
+          
+          oneMeanData <- rbind(row1, row2, row3, row4, row5)
+          
+        } 
+      }
+      else if(input$dataAvailability == 'Enter Raw Data'){
+        
+        if(input$sigmaKnownRaw == 'rawKnown'){
+          
+          oneMeanZInt <- OneMeanZIntRaw()
+          
+          row1 <- data.frame(Variable = "Sample Mean \\( (\\bar{x})\\)", Value = oneMeanZInt["Sample Mean"])
+          row2 <- data.frame(Variable = "Z Critical Value \\( (CV)\\)", Value = oneMeanZInt["Z Critical"])
+          row3 <- data.frame(Variable = "Standard Error \\( (SE)\\)", Value = oneMeanZInt["Std Error"])
+          row4 <- data.frame(Variable = "Lower Confidence Limit \\( (LCL)\\)", Value = oneMeanZInt["LCL"])
+          row5 <- data.frame(Variable = "Upper Confidence Limit \\( (UCL)\\)", Value = oneMeanZInt["UCL"])
+          
+          oneMeanData <- rbind(row1, row2, row3, row4, row5)
+          
+        }
+        else if(input$sigmaKnownRaw == 'rawUnknown'){
+          
+          oneMeanTInt <- OneMeanTIntRaw()
+          
+          row1 <- data.frame(Variable = "Sample Mean \\( (\\bar{x})\\)", Value = oneMeanTInt["Sample Mean"])
+          row2 <- data.frame(Variable = "T Critical Value \\( (CV)\\)", Value = oneMeanTInt["T Critical"])
+          row3 <- data.frame(Variable = "Standard Error \\( (SE)\\)", Value = oneMeanTInt["Std Error"])
+          row4 <- data.frame(Variable = "Lower Confidence Limit \\( (LCL)\\)", Value = oneMeanTInt["LCL"])
+          row5 <- data.frame(Variable = "Upper Confidence Limit \\( (UCL)\\)", Value = oneMeanTInt["UCL"])
+          
+          oneMeanData <- rbind(row1, row2, row3, row4, row5)
+          
+        }
+      }
+    }
+    else if(input$inferenceType == 'Hypothesis Testing'){
+      
+      if(input$dataAvailability == 'Summarized Data'){
+        
+        if(input$sigmaKnown == 'Known'){
+          
+          oneMeanZTest <- OneMeanZTestSumm()
+          
+          row1 <- data.frame(Variable = "Sample Size \\( (n)\\)", Value = oneMeanZTest["Sample Size"])
+          row2 <- data.frame(Variable = "Sample Mean \\( (\\bar{x})\\)", Value = oneMeanZTest["Sample Mean"])
+          row3 <- data.frame(Variable = "Population Standard Deviation \\( (\\sigma)\\)", Value = oneMeanZTest["Population SD"])
+          row4 <- data.frame(Variable = "Z Critical Value \\( (CV)\\)", Value = oneMeanZTest["Z Critical"])
+          row5 <- data.frame(Variable = "Standard Error \\( (SE)\\)", Value = oneMeanZTest["Std Error"])
+          row6 <- data.frame(Variable = "Test Statistic \\( (TS)\\)", Value = oneMeanZTest["Test Statistic"])
+          row7 <- data.frame(Variable = "P-Value \\( (P)\\)", Value = oneMeanZTest["P-Value"])
+          
+          oneMeanData <- rbind(row1, row2, row3, row4, row5, row6, row7) 
+          
+        }
+        else if(input$sigmaKnown == 'Unknown'){
+          
+          oneMeanTTest <- OneMeanTTestSumm()
+          
+          row1 <- data.frame(Variable = "Sample Size \\( (n)\\)", Value = oneMeanTTest["Sample Size"])
+          row2 <- data.frame(Variable = "Sample Mean \\( (\\bar{x})\\)", Value = oneMeanTTest["Sample Mean"])
+          row3 <- data.frame(Variable = "Sample Standard Deviation \\( (s)\\)", Value = oneMeanTTest["Sample SD"])
+          row4 <- data.frame(Variable = "T Critical Value \\( (CV)\\)", Value = oneMeanTTest["T Critical"])
+          row5 <- data.frame(Variable = "Standard Error \\( (SE)\\)", Value = oneMeanTTest["Std Error"])
+          row6 <- data.frame(Variable = "Test Statistic \\( (TS)\\)", Value = oneMeanTTest["Test Statistic"])
+          row7 <- data.frame(Variable = "P-Value \\( (P) \\)", Value = oneMeanTTest["P-Value"])
+          
+          oneMeanData <- rbind(row1, row2, row3, row4, row5, row6, row7)
+          
+        } 
+      }
+      else if(input$dataAvailability == 'Enter Raw Data'){
+        
+        if(input$sigmaKnownRaw == 'rawKnown'){
+          
+          oneMeanZTest <- OneMeanZTestRaw()
+          
+          row1 <- data.frame(Variable = "Sample Size \\( (n)\\)", Value = oneMeanZTest["Sample Size"])
+          row2 <- data.frame(Variable = "Sample Mean \\( (\\bar{x})\\)", Value = oneMeanZTest["Sample Mean"])
+          row3 <- data.frame(Variable = "Population Standard Deviation \\( (\\sigma)\\)", Value = oneMeanZTest["Population SD"])
+          row4 <- data.frame(Variable = "Z Critical Value \\( (CV)\\)", Value = oneMeanZTest["Z Critical"])
+          row5 <- data.frame(Variable = "Standard Error \\( (SE)\\)", Value = oneMeanZTest["Std Error"])
+          row6 <- data.frame(Variable = "Test Statistic \\( (TS)\\)", Value = oneMeanZTest["Test Statistic"])
+          row7 <- data.frame(Variable = "P-Value \\( (P)\\)", Value = oneMeanZTest["P-Value"])
+          
+          oneMeanData <- rbind(row1, row2, row3, row4, row5, row6, row7) 
+          
+          
+        }
+        else if(input$sigmaKnownRaw == 'rawUnknown'){
+          
+          oneMeanTTest <- OneMeanTTestRaw()
+          
+          row1 <- data.frame(Variable = "Sample Size \\( n \\)", Value = oneMeanTTest["Sample Size"])
+          row2 <- data.frame(Variable = "Sample Mean \\((\\bar{x})\\)", Value = oneMeanTTest["Sample Mean"])
+          row3 <- data.frame(Variable = "Sample Standard Deviation \\((s)\\)", Value = oneMeanTTest["Sample SD"])
+          row4 <- data.frame(Variable = "T Critical Value \\((CV)\\)", Value = oneMeanTTest["T Critical"])
+          row5 <- data.frame(Variable = "Standard Error \\( (SE) \\)", Value = oneMeanTTest["Std Error"])
+          row6 <- data.frame(Variable = "Test Statistic \\((TS)\\)", Value = oneMeanTTest["Test Statistic"])
+          row7 <- data.frame(Variable = "P-Value \\((P)\\)", Value = oneMeanTTest["P-Value"])
+          
+          oneMeanData <- rbind(row1, row2, row3, row4, row5, row6, row7)
+          
+        } 
+      }
+    }
+    withMathJax()
+    datatable(oneMeanData,
+              options = list(
+                dom = 't',
+                pageLength = -1,
+                ordering = FALSE,
+                searching = FALSE,
+                paging = FALSE
+              ),
+              rownames = FALSE,
+              filter = "none"
+    )
+    
+  })
+  
+  
+  ##### CI ----
+  output$oneMeanCI <- renderUI({
+    withMathJax()
+    if(input$dataAvailability == 'Summarized Data'){
+      
+      if(input$sigmaKnown == 'Known'){
+        
+        oneMeanData <- OneMeanZIntSumm()
+        sdSymbol <- "\\sigma"
+        testStat <- "z"
+        critVal <- oneMeanData["Z Critical"]
+        
+      } else if(input$sigmaKnown == 'Unknown'){
+        
+        oneMeanData <- OneMeanTIntSumm()
+        sdSymbol <- "s"
+        testStat <- "t"
+        critVal <- oneMeanData["T Critical"]
+        
+      } 
+    } else if(input$dataAvailability == 'Enter Raw Data'){
+      
+      if(input$sigmaKnownRaw == 'rawKnown'){
+        
+        oneMeanData <- OneMeanZIntRaw()
+        sdSymbol <- "\\sigma"
+        testStat <- "z"
+        critVal <- oneMeanData["Z Critical"]
+        
+      } else if(input$sigmaKnownRaw == 'rawUnknown'){
+        
+        oneMeanData <- OneMeanTIntRaw()
+        sdSymbol <- "s"
+        testStat <- "t"
+        critVal <- oneMeanData["T Critical"]
+      } 
+    }
+    
+    p(
+      withMathJax(
+        sprintf("\\( CI = \\bar{x} \\pm %s_{\\alpha/2} \\cdot \\dfrac{%s}{\\sqrt{n}}\\)",
+                testStat,
+                sdSymbol),
+        br(),
+        br(),
+        sprintf("\\( \\displaystyle \\quad = %g \\pm \\left( %g \\cdot \\dfrac{%g}{\\sqrt{%g}} \\right) \\)",
+                oneMeanData["Sample Mean"],
+                critVal,
+                oneMeanData[3],
+                oneMeanData['Sample Size']),
+        br(),
+        br(),
+        sprintf("\\( \\displaystyle \\quad = %g \\pm \\left( %g \\cdot %g \\right) \\)",
+                oneMeanData["Sample Mean"],
+                critVal,
+                oneMeanData['Std Error']),
+        br(),
+        br(),
+        sprintf("\\( \\displaystyle \\quad = %g \\pm %g \\)",
+                oneMeanData["Sample Mean"],
+                oneMeanData['ME']),
+        br(),
+        br(),
+        sprintf("\\( \\quad = (%g, %g)\\)",
+                oneMeanData["LCL"],
+                oneMeanData["UCL"]),
+        br(),
+        br(),
+        br(),
+        p(tags$b("Interpretation:")),
+        sprintf("We are %1.0f%% confident that the population mean \\( (\\mu)\\) is between %g and %g.",
+                ConfLvl()*100,
+                oneMeanData["LCL"],
+                oneMeanData["UCL"]),
+        br()
+      )
+    )
+  })
+  
+  
+  ##### HT ----
+  output$oneMeanHT <- renderUI({
+    withMathJax()
+    
+    if(input$dataAvailability == 'Summarized Data'){
+      
+      if(input$sigmaKnown == 'Known'){
+        oneMeanData <- OneMeanZTestSumm()
+        sdSymbol <- "\\sigma"
+        testStat <- "z"
+      }
+      else if(input$sigmaKnown == 'Unknown'){
+        oneMeanData <- OneMeanTTestSumm()
+        sdSymbol <- "s"
+        testStat <- "t"
+      } 
+    }
+    else if(input$dataAvailability == 'Enter Raw Data'){
+      
+      if(input$sigmaKnownRaw == 'rawKnown'){
+        oneMeanData <- OneMeanZTestRaw()
+        sdSymbol <- "\\sigma"
+        testStat <- "z"
+      }
+      else if(input$sigmaKnownRaw == 'rawUnknown'){
+        oneMeanData <- OneMeanTTestRaw()
+        sdSymbol <- "s"
+        testStat <- "t"
+      } 
+    }
+    
+    intrpInfo <- OneMeanHypInfo()
+    
+    if(oneMeanData[7] < 0.0001)
+    {
+      pValue <- "\\lt 0.0001"
+    }
+    else
+    {
+      pValue <- paste(oneMeanData[7])
+    }
+    
+    if(oneMeanData[7] > SigLvl())
+    {
+      pvalSymbol <- "\\( \\gt\\)"
+      suffEvidence <- "do not provide"
+      reject <- "do not reject"
+      region <- "acceptance"
+    }
+    else
+    {
+      pvalSymbol <- "\\( \\leq\\)"
+      suffEvidence <- "provide"
+      reject <- "reject"
+      region <- "rejection"
+    }
+    
+    if(intrpInfo$alternative == "two.sided")
+    {
+      if(testStat == 'z') {
+        critVal <- paste("\\( \\pm\\)", oneMeanData["Z Critical"])
+      } else {
+        critVal <- paste("\\( \\pm\\)", oneMeanData["T Critical"])
+      }
+      
+    }
+    else
+    {
+      if(testStat == 'z') {
+        critVal <- paste(oneMeanData["Z Critical"])
+      } else {
+        critVal <- paste(oneMeanData["T Critical"])
+      }
+      
+    }
+    
+    tagList(
+      
+      p(
+        withMathJax(
+          #h4(tags$u("Performing the Hypothesis Test:")),
+          #br(),
+          sprintf("\\( H_{0}: \n \\mu %s %s\\)",
+                  intrpInfo$nullHyp,
+                  input$hypMean),
+          br(),
+          sprintf("\\( H_{a}: \\mu %s %s\\)",
+                  intrpInfo$altHyp,
+                  input$hypMean),
+          br(),
+          br(),
+          sprintf("\\( \\alpha = %s \\)",
+                  SigLvl()),
+          br(),
+          br(),
+          br(),
+          sprintf("\\(%s = \\dfrac{\\bar{x} - \\mu_{0}}{ \\dfrac{%s}{\\sqrt{n}} } = \\dfrac{%s - %s}{ \\dfrac{%s}{\\sqrt{%s}} }\\)",
+                  testStat,
+                  sdSymbol,
+                  oneMeanData[2],
+                  input$hypMean,
+                  oneMeanData[3],
+                  oneMeanData[1]),
+          br(),
+          br(),
+          sprintf("\\(%s = %g\\)",
+                  testStat,
+                  oneMeanData[6]),
+          br(),
+          br(),
+          br(),
+          p(tags$b("Using P-Value Method:")),
+          sprintf("\\(P = %s\\)",
+                  pValue),
+          br(),
+          sprintf("Since \\( P\\) %s %0.2f, %s \\( H_{0}\\).",
+                  pvalSymbol,
+                  SigLvl(),
+                  reject),
+          br(),
+          br(),
+          br(),
+          p(tags$b("Using Critical Value Method:")),
+          sprintf("Critical Value(s) = %s",
+                  critVal),
+          br(),
+          sprintf("Since the test statistic \\( (%s)\\) falls within the %s region, %s \\( H_{0}\\).",
+                  testStat,
+                  region,
+                  reject)
+          
+        )
+      ),
+      
+      plotOutput('oneMeanHTPlot', width = "75%", height = "300px"),
+      br(),
+      
+      withMathJax(
+        p(tags$b("Conclusion:")),
+        p(
+          sprintf("At the %1.0f%% significance level, the data %s sufficient evidence to reject the null hypothesis \\( (H_{0}) \\) that the population 
+                              mean \\( (\\mu) \\) \\( %s \\) %g.",
+                  SigLvl()*100,
+                  suffEvidence,
+                  intrpInfo$nullHyp,
+                  input$hypMean),
+          br(),
+        )
+      )
+    )
+  })
+  
+  
+  ##### HT Plot ----
+  output$oneMeanHTPlot <- renderPlot({
+    
+    if(input$dataAvailability == 'Summarized Data') {
+      
+      if(input$sigmaKnown == 'Known') {
+        oneMeanData <- OneMeanZTestSumm()
+        sigmaKnown <- 'Known'
+        
+      } else if(input$sigmaKnown == 'Unknown') {
+        oneMeanData <- OneMeanTTestSumm()
+        sigmaKnown <- 'Unknown'
+      }
+    }
+    else if(input$dataAvailability == 'Enter Raw Data') {
+      
+      if(input$sigmaKnownRaw == 'rawKnown'){
+        oneMeanData <- OneMeanZTestRaw()
+        sigmaKnown <- 'Known'
+        
+      } else if(input$sigmaKnownRaw == 'rawUnknown') {
+        oneMeanData <- OneMeanTTestRaw()
+        sigmaKnown <- 'Unknown'
+      }
+    }
+    
+    intrpInfo <- OneMeanHypInfo()
+    
+    if(intrpInfo$alternative == "two.sided") {
+      critZVal <- paste("\\( \\pm\\)", oneMeanData[4])
+      htPlotCritVals <- c(-oneMeanData[4], oneMeanData[4])
+      
+    } else {
+      critZVal <- paste(oneMeanData[4])
+      htPlotCritVals <- oneMeanData[4]
+    }
+    
+    if(sigmaKnown== 'Known') {
+      oneMeanPlot <- hypZTestPlot(oneMeanData[6], htPlotCritVals, intrpInfo$alternative)
+      
+    } else {
+      oneMeanPlot <- hypTTestPlot(oneMeanData[6], oneMeanData[8], htPlotCritVals, intrpInfo$alternative)
+    }
+    
+    oneMeanPlot
+  })
+  
+  
+  #### Ind Means outputs ----
+  
+  ##### Datatable ----
+  output$indMeansData <- renderDT({
+    
+    df_IndMeansData <- data.frame(Variable = character(), Value = character())
+    
+    
+    if(input$inferenceType2 == 'Confidence Interval') {
+      
+      if(IndMeansSigmaKnown() == 'bothKnown') {
+        
+        source('R/TwoSampZInt.R')
+        
+        twoSampZInt <- IndMeansZInt()
+        
+        row1 <- data.frame(Variable = "Difference of Sample Means \\( (\\bar{x}_{1} - \\bar{x}_{2}) \\)", Value = paste(twoSampZInt["Difference of means"]))
+        row2 <- data.frame(Variable = "Z Critical Value \\( (CV) \\)", Value = paste(twoSampZInt["Z Critical"]))
+        row3 <- data.frame(Variable = "Standard Error \\( (SE) \\)", Value = paste(twoSampZInt["Std Error"]))
+        row4 <- data.frame(Variable = "Lower Confidence Limit \\( (LCL) \\)", Value = paste(twoSampZInt["LCL"]))
+        row5 <- data.frame(Variable = "Upper Confidence Limit \\( (UCL) \\)", Value = paste(twoSampZInt["UCL"]))
+        
+        df_IndMeansData <- rbind(row1, row2, row3, row4, row5)
+        
+      } else if(IndMeansSigmaKnown() == 'bothUnknown') {
+        
+        source('R/TwoSampTInt.R')
+        
+        twoSampTInt <- IndMeansTInt()
+        
+        row1 <- data.frame(Variable = "Difference of Sample Means \\( (\\bar{x}_{1} - \\bar{x}_{2}) \\)", Value = paste(twoSampTInt["Difference of means"]))
+        row2 <- data.frame(Variable = "T Critical Value \\( (CV) \\)", Value = paste(twoSampTInt["T Critical"]))
+        row3 <- data.frame(Variable = "Standard Error \\( (SE) \\)", Value = paste(twoSampTInt["Std Error"]))
+        row4 <- data.frame(Variable = "Lower Confidence Limit \\( (LCL) \\)", Value = paste(twoSampTInt["LCL"]))
+        row5 <- data.frame(Variable = "Upper Confidence Limit \\( (UCL) \\)", Value = paste(twoSampTInt["UCL"]))
+        
+        df_IndMeansData  <- rbind(row1, row2, row3, row4, row5)
+      }
+      
+    } else if(input$inferenceType2 == 'Hypothesis Testing') {
+      
+      if(IndMeansSigmaKnown() == 'bothKnown') {
+        
+        source('R/TwoSampZTest.R')
+        
+        twoSampZTest <- IndMeansZTest()
+        
+        row1 <- data.frame(Variable = "Difference of Sample Means \\( (\\bar{x}_{1} - \\bar{x}_{2}) \\)", Value = paste(twoSampZTest["Difference of means"]))
+        row2 <- data.frame(Variable = "Z Critical Value \\( (CV) \\)", Value = paste(twoSampZTest["Z Critical"]))
+        row3 <- data.frame(Variable = "Standard Error \\( (SE) \\)", Value = paste(twoSampZTest["Std Error"]))
+        row4 <- data.frame(Variable = "Test Statistic \\( (TS) \\)", Value = paste(twoSampZTest["Test Statistic"]))
+        row5 <- data.frame(Variable = "P-Value \\( (P) \\)", Value = paste(twoSampZTest["P-Value"]))
+        
+        df_IndMeansData  <- rbind(row1, row2, row3, row4, row5)
+        
+      } else if(IndMeansSigmaKnown() == 'bothUnknown') {
+        
+        source('R/TwoSampTTest.R')
+        
+        twoSampTTest <- IndMeansTTest()
+        
+        row1 <- data.frame(Variable = "Difference of Sample Means \\( (\\bar{x}_{1} - \\bar{x}_{2}) \\)", Value = paste(twoSampTTest["Difference of means"]))
+        row2 <- data.frame(Variable = "Degrees of Freedom \\( (df) \\)", Value = paste(twoSampTTest["df"]))
+        row3 <- data.frame(Variable = "T Critical Value \\( (CV) \\)", Value = paste(twoSampTTest["T Critical"]))
+        row4 <- data.frame(Variable = "Standard Error \\( (SE) \\)", Value = paste(twoSampTTest["Std Error"]))
+        row5 <- data.frame(Variable = "Test Statistic \\( (TS) \\)", Value = paste(twoSampTTest["Test Statistic"]))
+        row6 <- data.frame(Variable = "P-Value \\( (P) \\)", Value = paste(twoSampTTest["P-Value"]))
+        
+        df_IndMeansData  <- rbind(row1, row2, row3, row4, row5, row6)
+      }
+    }
+    
+    withMathJax()
+    datatable(df_IndMeansData,
+              options = list(
+                dom = 't',
+                pageLength = -1,
+                ordering = FALSE,
+                searching = FALSE,
+                paging = FALSE
+              ),
+              rownames = FALSE,
+              filter = "none"
+    )
+    
+  })
+  
+  
+  ##### CI ----
+  output$indMeansCI <- renderUI({
+    
+    if(IndMeansSigmaKnown() == 'bothKnown'){
+      cInt <- IndMeansZInt() 
+      sdSymbol <- "\\sigma"
+      testStat <- "z"
+    }
+    else if(IndMeansSigmaKnown() == 'bothUnknown'){
+      cInt <- IndMeansTInt()
+      sdSymbol <- "s"
+      testStat <- "t"
+    }
+    
+    tagList(
+      
+      p(
+        withMathJax(
+          conditionalPanel(
+            condition = "(input.dataAvailability2 == 'Summarized Data' && input.bothsigmaKnown == 'bothKnown') || (input.dataAvailability2 == 'Enter Raw Data' && input.bothsigmaKnownRaw == 'bothKnown')",
+            
+            uiOutput('sigmaKnownCIFormula')
+          ),
+          conditionalPanel(
+            condition = "(input.dataAvailability2 == 'Summarized Data' && input.bothsigmaKnown == 'bothUnknown') || (input.dataAvailability2 == 'Enter Raw Data' && input.bothsigmaKnownRaw == 'bothUnknown')",
+            
+            uiOutput('sigmaUnknownCIFormula')
+          ),
+          br(),
+          sprintf("\\( \\quad = (%g, %g)\\)",
+                  cInt["LCL"],
+                  cInt["UCL"]),
+          br(),
+          br(),
+          br(),
+          p(tags$b("Interpretation:")),
+          sprintf("We are %1.0f%% confident that the difference in population means \\( (\\mu_{1} - \\mu_{2}) \\) is between %g and %g.",
+                  ConfLvl()*100,
+                  cInt["LCL"],
+                  cInt["UCL"]),
+          br()
+        )
+      )
+      
+    )
+    
+    
+  })
+  
+  
+  output$sigmaKnownCIFormula <- renderUI({
+    
+    if (input$dataAvailability2 == 'Summarized Data') {
+      data <- IndMeansSummData()
+    } else if(input$dataAvailability2 == 'Enter Raw Data') {
+      data <- IndMeansRawData()
+    }
+    zInt <- IndMeansZInt()
+    
+    tagList(
+      
+      p(
+        withMathJax(
+          sprintf("\\( CI = (\\bar{x}_{1} - \\bar{x}_{2}) \\pm z_{\\alpha/2} \\cdot \\sqrt{ \\dfrac{\\sigma_{1}^2}{n_{1}} + \\dfrac{\\sigma_{2}^2}{n_{2}} } \\)"),
+          br(),
+          br(),
+          sprintf("\\( \\displaystyle \\quad = (%g - %g) \\pm \\left( %g \\cdot \\sqrt{ \\dfrac{%g^2}{%g} + \\dfrac{%g^2}{%g} } \\right) \\)",
+                  data$xbar1,
+                  data$xbar2,
+                  zInt['Z Critical'],
+                  data$sd1,
+                  data$n1,
+                  data$sd2,
+                  data$n2),
+          br(),
+          br(),
+          sprintf("\\( \\displaystyle \\quad = %g \\pm \\left( %g \\cdot %g \\right) \\)",
+                  zInt['Difference of means'],
+                  zInt['Z Critical'],
+                  zInt['Std Error']),
+          br(),
+          br(),
+          sprintf("\\( \\displaystyle \\quad = %g \\pm %g \\)",
+                  zInt['Difference of means'],
+                  zInt['ME'])
+        )
+      )
+      
+    )
+  })
+  
+  
+  output$sigmaUnknownCIFormula <- renderUI({
+    
+    if (input$dataAvailability2 == 'Summarized Data') {
+      data <- IndMeansSummData()
+    } else if(input$dataAvailability2 == 'Enter Raw Data') {
+      data <- IndMeansRawData()
+    }
+    tInt <- IndMeansTInt()
+    
+    if(data$sigmaEqual) {
+      sp <- round(sqrt(((data$n1-1) * data$sd1^2 + (data$n2-1) * data$sd2^2) / (data$n1 + data$n2 - 2)), 4)
+      
+      tagList(
+        withMathJax(
+          sprintf("\\( CI = (\\bar{x}_{1} - \\bar{x}_{2}) \\pm t_{\\alpha/2, \\, n_{1} + n_{2} - 2} \\cdot s_{p} \\sqrt{ \\dfrac{1}{n_{1}} + \\dfrac{1}{n_{2}} } \\)"),
+          br(),
+          br(),
+          p(tags$b("where")),
+          sprintf("\\( \\displaystyle \\qquad s_{p} = \\sqrt{\\dfrac{(n_{1} - 1)s_{1}^2 + (n_{2} - 1)s_{2}^2}{n_{1} + n_{2} - 2}} \\)"),
+          sprintf("\\( = \\sqrt{\\dfrac{(%g - 1)%g + (%g - 1)%g}{%g + %g - 2}} = %g \\)",
+                  data$n1,
+                  data$sd1^2,
+                  data$n2,
+                  data$sd2^2,
+                  data$n1,
+                  data$n2,
+                  sp),
+          br(),
+          p(tags$b("and")),
+          sprintf("\\( \\qquad t_{\\alpha/2, \\, n_{1} + n_{2} - 2} = t_{%g, \\, %g} = %g \\)",
+                  (1 - ConfLvl()) / 2,
+                  tInt['df'],
+                  tInt['T Critical']),
+          br(),
+          br(),
+          br(),
+          br(),
+          sprintf("\\( \\displaystyle CI = (%g - %g) \\pm \\left( %g \\cdot %g \\sqrt{ \\dfrac{1}{%g} + \\dfrac{1}{%g} } \\right) \\)",
+                  data$xbar1,
+                  data$xbar2,
+                  tInt['T Critical'],
+                  sp,
+                  data$n1,
+                  data$n2),
+          br(),
+          br(),
+          sprintf("\\( \\displaystyle \\quad = %g \\pm \\left( %g \\cdot %g \\right) \\)",
+                  tInt['Difference of means'],
+                  tInt['T Critical'],
+                  tInt['Std Error']),
+          br(),
+          br(),
+          sprintf("\\( \\displaystyle \\quad = %g \\pm %g \\)",
+                  tInt['Difference of means'],
+                  tInt['ME'])
+          
+        )
+      )
+    } else {
+      
+      tagList(
+        withMathJax(
+          sprintf("\\( CI = (\\bar{x}_{1} - \\bar{x}_{2}) \\pm t_{\\alpha/2, \\, \\nu} \\cdot \\sqrt{ \\dfrac{s^2_{1}}{n_{1}} + \\dfrac{s^2_{2}}{n_{2}} } \\)"),
+          br(),
+          br(),
+          p(tags$b("where")),
+          sprintf("\\( \\displaystyle \\qquad \\nu = \\: \\dfrac{ \\left( \\dfrac{s^2_{1}}{n_{1}} + \\dfrac{s^2_{2}}{n_{2}} \\right)^2 }
+                    { \\dfrac{ \\left( \\dfrac{s^2_{1}}{n_{1}} \\right)^2 }{n_{1} - 1} + \\dfrac{ \\left( \\dfrac{s^2_{2}}{n_{2}} \\right)^2 }{n_{2} - 1} } \\)"),
+          sprintf("\\( \\displaystyle \\: = \\: \\dfrac{ \\left( \\dfrac{%g^2}{%g} + \\dfrac{%g^2}{%g} \\right)^2 }
+                    { \\dfrac{ \\left( \\dfrac{%g^2}{%g} \\right)^2 }{%g - 1} + \\dfrac{ \\left( \\dfrac{%g^2}{%g} \\right)^2 }{%g - 1} } \\)",
+                  data$sd1,
+                  data$n1,
+                  data$sd2,
+                  data$n2,
+                  data$sd1,
+                  data$n1,
+                  data$n1,
+                  data$sd2,
+                  data$n2,
+                  data$n2),
+          sprintf("\\( \\displaystyle \\: = \\: \\dfrac{ \\left( %g + %g \\right)^2 }
+                    { \\dfrac{ %g^2 }{%g} + \\dfrac{ %g^2 }{%g} } \\)",
+                  (data$sd1^2) / data$n1,
+                  (data$sd2^2) / data$n2,
+                  (data$sd1^2) / data$n1,
+                  data$n1 - 1,
+                  (data$sd2^2) / data$n2,
+                  data$n2 - 1),
+          sprintf("\\( \\: = \\: %g \\)",
+                  tInt['df']),
+          br(),
+          p(tags$b("and")),
+          sprintf("\\( \\qquad t_{\\alpha/2, \\, \\nu} = t_{%g, \\, %g} = %g \\)",
+                  (1- ConfLvl()) / 2,
+                  tInt['df'],
+                  tInt['T Critical']),
+          br(),
+          br(),
+          br(),
+          br(),
+          sprintf("\\( CI = (%g - %g) \\pm \\left( %g \\cdot \\sqrt{ \\dfrac{%g}{%g} + \\dfrac{%g}{%g} } \\right) \\)",
+                  data$xbar1,
+                  data$xbar2,
+                  tInt['T Critical'],
+                  data$sd1,
+                  data$n1,
+                  data$sd2,
+                  data$n2),
+          br(),
+          br(),
+          sprintf("\\( \\displaystyle \\quad = %g \\pm \\left( %g \\cdot %g \\right) \\)",
+                  tInt['Difference of means'],
+                  tInt['T Critical'],
+                  tInt['Std Error']),
+          br(),
+          br(),
+          sprintf("\\( \\displaystyle \\quad = %g \\pm %g \\)",
+                  tInt['Difference of means'],
+                  tInt['ME'])
+        )
+      )
+    }
+    
+    
+  })
+  
+  
+  ##### HT ----
+  output$indMeansHT <- renderUI({
+    
+    withMathJax()
+    
+    intrpInfo <- IndMeansHypInfo()
+    #get test type and results based on sigma known/unknown
+    if(IndMeansSigmaKnown() == 'bothKnown'){
+      hTest <- IndMeansZTest() 
+      testStat <- "z"
+      critValDF <- paste("z_{", intrpInfo$critAlph, "}")
+    }
+    else if(IndMeansSigmaKnown() == 'bothUnknown'){
+      hTest <- IndMeansTTest()
+      testStat <- "t"
+      
+      if (input$dataAvailability2 == 'Summarized Data') {
+        sigmaEqual <- IndMeansSummData()$sigmaEqual
+      } else if(input$dataAvailability2 == 'Enter Raw Data') {
+        sigmaEqual <- IndMeansRawData()$sigmaEqual
+      }
+      
+      if(sigmaEqual) {
+        critValDF <- paste("t_{", intrpInfo$critAlph, ", \\, n_{1} + n_{2} - 2}")
+      } else {
+        critValDF <- paste("t_{", intrpInfo$critAlph, ", \\, \\nu}")
+      }
+    }
+    
+    if(hTest["P-Value"] < 0.0001)
+    {
+      pValue <- "\\lt 0.0001"
+    }
+    else
+    {
+      pValue <- hTest["P-Value"]
+    }
+    
+    if(hTest["P-Value"] > SigLvl())
+    {
+      pvalSymbol <- "\\gt"
+      suffEvidence <- "do not provide"
+      reject <- "do not reject"
+      region <- "acceptance"
+    }
+    else
+    {
+      pvalSymbol <- "\\leq"
+      suffEvidence <- "provide"
+      reject <- "reject"
+      region <- "rejection"
+    }
+    
+    if(intrpInfo$alternative == "two.sided") {
+      critVal <- paste("\\pm", hTest[2])
+      
+    } else {
+      critVal <- hTest[2]
+    }
+    
+    tagList(
+      
+      p(
+        withMathJax(
+          #h4(tags$u("Performing the Hypothesis Test:")),
+          #br(),
+          sprintf("\\( H_{0}: \n \\mu_{1} = \\mu_{2}\\)"),
+          br(),
+          sprintf("\\( H_{a}: \\mu_{1} %s \\mu_{2}\\)",
+                  intrpInfo$altHyp),
+          br(),
+          br(),
+          sprintf("\\( \\alpha = %s \\)",
+                  SigLvl()),
+          br(),
+          br(),
+          conditionalPanel(
+            condition = "(input.dataAvailability2 == 'Summarized Data' && input.bothsigmaKnown == 'bothKnown') || (input.dataAvailability2 == 'Enter Raw Data' && input.bothsigmaKnownRaw == 'bothKnown')",
+            
+            uiOutput('sigmaKnownHTFormula')
+          ),
+          conditionalPanel(
+            condition = "(input.dataAvailability2 == 'Summarized Data' && input.bothsigmaKnown == 'bothUnknown') || (input.dataAvailability2 == 'Enter Raw Data' && input.bothsigmaKnownRaw == 'bothUnknown')",
+            
+            uiOutput('sigmaUnknownHTFormula')
+          ),
+          br(),
+          br(),
+          br(),
+          p(tags$b("Using P-Value Method:")),
+          sprintf("\\( P = %s \\)",
+                  pValue),
+          br(),
+          sprintf("Since \\( P %s %0.2f \\), %s \\( H_{0}\\).",
+                  pvalSymbol,
+                  SigLvl(),
+                  reject),
+          br(),
+          br(),
+          br(),
+          p(tags$b("Using Critical Value Method:")),
+          sprintf("Critical Value(s) \\( = %s = %s \\)",
+                  critValDF,
+                  critVal),
+          br(),
+          sprintf("Since the test statistic \\( (%s)\\) falls within the %s region, %s \\( H_{0}\\).",
+                  testStat,
+                  region,
+                  reject),
+          br(),
+          br()
+          
+        )
+      ),
+      
+      plotOutput('indMeansHTPlot', width = "75%", height = "300px"),
+      br(),
+      
+      withMathJax(
+        p(tags$b("Conclusion:")),
+        p(
+          sprintf("At the %1.0f%% significance level, the data %s sufficient evidence to reject the null hypothesis
+                                \\( (H_{0}) \\) that \\( \\mu_{1} = \\mu_{2} \\).",
+                  SigLvl()*100,
+                  suffEvidence),
+          br(),
+        )
+      )
+    )
+  })
+  
+  
+  output$sigmaKnownHTFormula <- renderUI({
+    
+    if (input$dataAvailability2 == 'Summarized Data') {
+      data <- IndMeansSummData()
+    } else if(input$dataAvailability2 == 'Enter Raw Data') {
+      data <- IndMeansRawData()
+    }
+    zTest <- IndMeansZTest()
+    
+    tagList(
+      withMathJax(
+        sprintf("\\( z = \\dfrac{\\bar{x}_{1} - \\bar{x}_{2}}{ \\sqrt{ \\dfrac{\\sigma_{1}^2}{n_{1}} + \\dfrac{\\sigma_{2}^2}{n_{2}} } } \\)"),
+        br(),
+        br(),
+        sprintf("\\( z = \\dfrac{%g - %g}{ \\sqrt{ \\dfrac{%g^2}{%g} + \\dfrac{%g^2}{%g} } } = \\dfrac{%g}{%g} = %g \\)",
+                data$xbar1,
+                data$xbar2,
+                data$sd1,
+                data$n1,
+                data$sd2,
+                data$n2,
+                zTest['Difference of means'],
+                zTest['Std Error'],
+                zTest['Test Statistic']),
+        br()
+      )
+    )
+  })
+  
+  
+  output$sigmaUnknownHTFormula <- renderUI({
+    
+    if (input$dataAvailability2 == 'Summarized Data') {
+      data <- IndMeansSummData()
+    } else if(input$dataAvailability2 == 'Enter Raw Data') {
+      data <- IndMeansRawData()
+    }
+    tTest <- IndMeansTTest()
+    
+    if(data$sigmaEqual == TRUE) {
+      sp <- round(sqrt(((data$n1-1) * data$sd1^2 + (data$n2-1) * data$sd2^2) / (data$n1 + data$n2 - 2)), 4)
+      
+      tagList(
+        withMathJax(
+          sprintf("\\( t = \\dfrac{ \\bar{x}_{1} - \\bar{x}_{2} }{ s_{p} \\sqrt{ \\dfrac{1}{n_{1}} + \\dfrac{1}{n_{2}} } } \\)"),
+          br(),
+          br(),
+          p(tags$b("where")),
+          sprintf("\\( \\displaystyle \\qquad s_{p} = \\sqrt{\\dfrac{(n_{1} - 1)s_{1}^2 + (n_{2} - 1)s_{2}^2}{n_{1} + n_{2} - 2}} \\)"),
+          sprintf("\\( = \\sqrt{\\dfrac{(%g - 1)%g + (%g - 1)%g}{%g + %g - 2}} = %g \\)",
+                  data$n1,
+                  data$sd1^2,
+                  data$n2,
+                  data$sd2^2,
+                  data$n1,
+                  data$n2,
+                  sp),
+          br(),
+          br(),
+          br(),
+          br(),
+          sprintf("\\( t = \\dfrac{ %g - %g }{ %g \\sqrt{ \\dfrac{1}{%g} + \\dfrac{1}{%g} } } \\)",
+                  data$xbar1,
+                  data$xbar2,
+                  sp,
+                  data$n1,
+                  data$n2),
+          sprintf("\\( = \\dfrac{%g}{%g} = %g \\)",
+                  tTest['Difference of means'],
+                  tTest['Std Error'],
+                  tTest['Test Statistic']),
+          br()
+        )
+      )
+      
+    } else {
+      tagList(
+        withMathJax(
+          sprintf("\\( t = \\dfrac{\\bar{x}_{1} - \\bar{x}_{2}}{ \\sqrt{ \\dfrac{s_{1}^2}{n_{1}} + \\dfrac{s_{2}^2}{n_{2}} } } \\)"),
+          br(),
+          br(),
+          sprintf("\\( t = \\dfrac{%g - %g}{ \\sqrt{ \\dfrac{%g^2}{%g} + \\dfrac{%g^2}{%g} } } = \\dfrac{%g}{%g} = %g \\)",
+                  data$xbar1,
+                  data$xbar2,
+                  data$sd1,
+                  data$n1,
+                  data$sd2,
+                  data$n2,
+                  tTest['Difference of means'],
+                  tTest['Std Error'],
+                  tTest['Test Statistic']),
+          br()
+        )
+      )
+    }
+    
+    
+  })
+  
+  
+  ##### HT Plot ----
+  output$indMeansHTPlot <- renderPlot({
+    
+    if(IndMeansSigmaKnown() == 'bothKnown'){
+      data <- IndMeansZTest() 
+    }
+    else if(IndMeansSigmaKnown() == 'bothUnknown'){
+      data <- IndMeansTTest()
+    }
+    
+    intrpInfo <- IndMeansHypInfo()
+    
+    if(intrpInfo$alternative == "two.sided") {
+      htPlotCritVals <- c(-data[2], data[2])
+      
+    } else {
+      htPlotCritVals <- data[2]
+    }
+    
+    if(IndMeansSigmaKnown() == 'bothKnown') {
+      indMeansPlot <- hypZTestPlot(data['Test Statistic'], htPlotCritVals, intrpInfo$alternative)
+      
+    } else {
+      indMeansPlot <- hypTTestPlot(data['Test Statistic'], data['df'], htPlotCritVals, intrpInfo$alternative)
+    }
+    
+    indMeansPlot
+  })
+  
+  # --------------------------------------------------------------------- #
+  
+  
+  ### Observers ----
+  # --------------------------------------------------------------------- #
+  
+  observeEvent(input$goInference, {
+    #output$renderInference <- renderDataTable(
+    
+    if(si_iv$is_valid())
+    {
+      show(id = "inferenceData")
+    }
+    
+    if(input$samplesSelect == '1'){
+      
+      if(input$inferenceType == 'Confidence Interval'){
+        
+        if(input$confidenceLevel == '90%'){
+          confLvl <- 0.9
+        }
+        else if(input$confidenceLevel == '95%'){
+          confLvl <- 0.95
+        }
+        else{
+          confLvl <- 0.99
+        }
+      }
+      else if(input$inferenceType == 'Hypothesis Testing'){
+        
+        if(input$significanceLevel == "10%"){
+          sigLvl <- 0.1 
+        }
+        else if(input$significanceLevel == "5%"){
+          sigLvl <- 0.05
+        }
+        else{
+          sigLvl <- 0.01
+        }
+        
+        if(input$altHypothesis == "3"){
+          alternative <- "greater"
+          nullHyp <- "\\leq"
+          altHyp <- "\\gt"
+          critZAlph <- "z_{\\alpha}"
+        }
+        else if(input$altHypothesis == "2"){
+          alternative <- "two.sided"
+          nullHyp <- "="
+          altHyp <- "\\neq"
+          critZAlph <- "\\pm z_{\\alpha/2}"
+        }
+        else{
+          alternative <- "less"
+          nullHyp <- "\\geq"
+          altHyp <- "\\lt"
+          critZAlph <- "-z_{\\alpha}"
+        }
+      }
+      
+      if(input$popuParameter == 'Population Mean'){ 
+        if(si_iv$is_valid()) {
+          output$oneSampMeanTable <- renderUI({
+            tagList(
+              withMathJax(),
+              withMathJax(DTOutput('oneSampMeanData', width = "95%"))
+            )
+          })
+          
+        } else {
+          hide(id = "inferenceData")
+        }
+      }
+      else if(input$popuParameter == 'Population Proportion') {
+        
+        if(si_iv$is_valid() && input$numTrials >= input$numSuccesses) {
+          output$oneSampProportion <- renderUI({
+            withMathJax()
+            tagList(
+              withMathJax(),
+              
+              conditionalPanel(
+                condition = "input.inferenceType == 'Confidence Interval'",
+                
+                titlePanel(tags$u("Confidence Interval")),
+                br(),
+                uiOutput('oneSampPropCI'),
+                br(),
+              ),
+              
+              conditionalPanel(
+                condition = "input.inferenceType == 'Hypothesis Testing'",
+                
+                titlePanel(tags$u("Hypothesis Test")),
+                br(),
+                uiOutput('oneSampPropHT'),
+                br(),
+                plotOutput('oneSampPropHTPlot', width = "75%", height = "300px"),
+                br(),
+                uiOutput('oneSampPropHTIntrp'),
+                br(),
+              ),
+            )
+            
+          })
+          
+          oneSampPropSucc <- input$numSuccesses
+          oneSampPropTrials <- input$numTrials
+          
+          
+          if(input$inferenceType == 'Confidence Interval') {
+            source('R/OnePropZInt.R')
+            
+            oneSampPropZInt <- OnePropZInterval(oneSampPropSucc, oneSampPropTrials, confLvl)
+            oneSampPropME <- oneSampPropZInt["Z Critical"] * oneSampPropZInt["Std Error"]
+            
+            dataRow1 <- data.frame(Variable = "Number of Trials \\( (n)\\)", Value = paste(oneSampPropTrials))
+            dataRow2 <- data.frame(Variable = "Number of Successes \\( (x)\\)", Value = paste(oneSampPropSucc))
+            dataRow3 <- data.frame(Variable = "Sample Proportion of Success \\( (\\hat{p})\\)", Value = paste(round(oneSampPropZInt["phat"], digits = 3)))
+            dataRow4 <- data.frame(Variable = "Sample Proportion of Failure \\( (\\hat{q})\\)", Value = paste(round((1 - oneSampPropZInt["phat"]), digits = 3)))
+            dataRow5 <- data.frame(Variable = "Confidence Level \\( (1 - \\alpha)\\)", Value = paste(confLvl*100, "%"))
+            dataRow6 <- data.frame(Variable = "Z Critical Value \\( (CV)\\)", Value = paste(oneSampPropZInt["Z Critical"]))
+            dataRow7 <- data.frame(Variable = "Standard Error \\( (SE)\\)", Value = paste(round(oneSampPropZInt["Std Error"], digits = 3)))
+            dataRow8 <- data.frame(Variable = "Margin of Error \\( (ME)\\)", Value = paste(round(oneSampPropME, digits = 3)))
+            dataRow9 <- data.frame(Variable = "Lower Confidence Limit \\( (LCL)\\)", Value = paste(round(oneSampPropZInt["LCL"], digits = 3)))
+            dataRow10 <- data.frame(Variable = "Upper Confidence Limit \\( (UCL)\\)", Value = paste(round(oneSampPropZInt["UCL"], digits = 3)))
+            
+            propIntData <- rbind(dataRow1, dataRow2, dataRow3, dataRow4, dataRow5, dataRow6, dataRow7, dataRow8, dataRow9, dataRow10)
+            
+            output$oneSampPropData <- renderDT(
+              datatable(propIntData,
+                        options = list(
+                          dom = 't',
+                          pageLength = -1,
+                          ordering = FALSE,
+                          searching = FALSE,
+                          paging = FALSE
+                        ),
+                        rownames = FALSE,
+                        filter = "none"
+              )
+            )
+            
+            
+            output$oneSampPropCI <- renderUI({
+              p(
+                withMathJax(
+                  sprintf("CI \\(= \\hat{p} \\pm z_{\\alpha/2} \\sqrt{\\dfrac{\\hat{p}(1-\\hat{p})}{n}}\\)"),
+                  br(),
+                  br(),
+                  sprintf("CI \\(= %0.3f \\pm %0.3f \\sqrt{\\dfrac{%0.3f(1-%0.3f)}{%1.0f}}\\)",
+                          oneSampPropZInt["phat"],
+                          oneSampPropZInt["Z Critical"],
+                          oneSampPropZInt["phat"],
+                          oneSampPropZInt["phat"],
+                          oneSampPropTrials),
+                  br(),
+                  br(),
+                  sprintf("CI \\(= (%0.3f, %0.3f)\\)",
+                          oneSampPropZInt["LCL"],
+                          oneSampPropZInt["UCL"]),
+                  br(),
+                  br(),
+                  p(tags$b("Interpretation:")),
+                  sprintf("We are %1.0f%% confident that the population proportion \\( (p) \\) is between %0.3f and %0.3f.",
+                          confLvl*100,
+                          oneSampPropZInt["LCL"],
+                          oneSampPropZInt["UCL"])
+                )
+              )
+            })
+            
+            
+            
+          } else if(input$inferenceType == 'Hypothesis Testing') {
+            oneSampHypProp <- input$hypProportion
+            
+            source('R/OnePropZTest.R')
+            
+            oneSampPropZTest <- OnePropZTest(oneSampPropSucc, oneSampPropTrials, oneSampHypProp, alternative, sigLvl)
+            
+            if(oneSampPropZTest["P-Value"] < 0.0001) {
+              pValue <- "\\( P \\lt\\) 0.0001"
+            } else {
+              pValue <- paste("\\( P =\\)", oneSampPropZTest["P-Value"])
+            }
+            
+            if(alternative == "two.sided") {
+              critZVal <- paste("\\( \\pm\\)", oneSampPropZTest["Z Critical"])
+              htPlotCritVals <- c(-oneSampPropZTest["Z Critical"], oneSampPropZTest["Z Critical"]) 
+            } else {
+              critZVal <- paste(oneSampPropZTest["Z Critical"])
+              htPlotCritVals <- oneSampPropZTest["Z Critical"]
+            }
+            
+            dataRow1 <- data.frame(Variable = "Number of Trials \\( (n)\\)", Value = paste(oneSampPropTrials))
+            dataRow2 <- data.frame(Variable = "Number of Successes \\( (x)\\)", Value = paste(oneSampPropSucc))
+            dataRow3 <- data.frame(Variable = "Sample Proportion of Success \\( (\\hat{p})\\)", Value = paste(round(oneSampPropZTest["Sample Proportion"], digits = 3)))
+            dataRow4 <- data.frame(Variable = "Sample Proportion of Failure \\( (\\hat{q})\\)", Value = paste(round((1 - oneSampPropZTest["Sample Proportion"]), digits = 3)))
+            dataRow5 <- data.frame(Variable = "Significance Level \\( (\\alpha)\\)", Value = paste(sigLvl*100, "%"))
+            dataRow6 <- data.frame(Variable = "Z Critical Value \\( (CV)\\)", Value = paste(critZVal))
+            dataRow7 <- data.frame(Variable = "Standard Error \\( (SE)\\)", Value = paste(oneSampPropZTest["Std Error"]))
+            dataRow8 <- data.frame(Variable = "Hypothesized Proportion \\( (p_{0})\\)", Value = paste(oneSampHypProp))
+            dataRow9 <- data.frame(Variable = "Test Statistic \\( (Z)\\)", Value = paste(oneSampPropZTest["Test Statistic"]))
+            dataRow10 <- data.frame(Variable = "P-Value \\( (P)\\)", Value = paste(pValue))
+            
+            propTestData <- rbind(dataRow1, dataRow2, dataRow3, dataRow4, dataRow5, dataRow6, dataRow7, dataRow8, dataRow9, dataRow10)
+            
+            output$oneSampPropData <- renderDT(
+              datatable(propTestData,
+                        options = list(
+                          dom = 't',
+                          pageLength = -1,
+                          ordering = FALSE,
+                          searching = FALSE,
+                          paging = FALSE
+                        ),
+                        rownames = FALSE,
+                        filter = "none")
+            )
+            
+            
+            if(oneSampPropZTest["P-Value"] > sigLvl) {
+              pvalSymbol <- "\\( \\gt\\)"
+              suffEvidence <- "do not provide"
+              reject <- "do not reject"
+              region <- "acceptance"
+            } else {
+              pvalSymbol <- "\\( \\leq\\)"
+              suffEvidence <- "provide"
+              reject <- "reject"
+              region <- "rejection"
+            }
+            
+            output$oneSampPropHT <- renderUI({
+              p(
+                withMathJax(
+                  #h4(tags$u("Performing the Hypothesis Test:")),
+                  #br(),
+                  sprintf("\\( H_{0}: p %s %0.2f\\)",
+                          nullHyp,
+                          oneSampHypProp),
+                  br(),
+                  sprintf("\\( H_{a}: p %s %0.2f\\)",
+                          altHyp,
+                          oneSampHypProp),
+                  br(),
+                  br(),
+                  sprintf("\\( \\alpha = %g \\)",
+                          sigLvl),
+                  br(),
+                  br(),
+                  br(),
+                  sprintf("\\(z = \\dfrac{\\hat{p} - p_{0}}{ \\sqrt{ \\dfrac{p_{0}(1 - p_{0})}{n} } }\\)"),
+                  br(),
+                  br(),
+                  sprintf("\\(z = \\dfrac{%0.3f - %0.3f}{ \\sqrt{ \\dfrac{%0.3f(1 - %0.3f)}{%1.0f} } }\\)",
+                          oneSampPropZTest["Sample Proportion"],
+                          oneSampHypProp,
+                          oneSampHypProp,
+                          oneSampHypProp,
+                          oneSampPropTrials),
+                  br(),
+                  br(),
+                  sprintf("\\(z = %0.3f\\)",
+                          oneSampPropZTest["Test Statistic"]),
+                  br(),
+                  br(),
+                  br(),
+                  p(tags$b("Using P-Value Method:")),
+                  p(pValue),
+                  sprintf("Since \\( P\\) %s %0.2f, %s \\( H_{0}\\).",
+                          pvalSymbol,
+                          sigLvl,
+                          reject),
+                  br(),
+                  br(),
+                  br(),
+                  p(tags$b("Using Critical Value Method:")),
+                  sprintf("Critical Value(s) = %s",
+                          critZVal),
+                  br(),
+                  br(),
+                  sprintf("Since the test statistic \\( (z)\\) falls within the %s region, %s \\( H_{0}\\).",
+                          region,
+                          reject)
+                  
+                )
+              )
+            })
+            
+            output$oneSampPropHTPlot <- renderPlot({
+              
+              htPlot <- hypZTestPlot(oneSampPropZTest["Test Statistic"], htPlotCritVals, alternative)
+              htPlot
+            })
+            
+            output$oneSampPropHTIntrp <- renderUI({
+              p(
+                p(tags$b("Conclusion:")),
+                sprintf("At the %1.0f%% level, the data %s sufficient evidence to reject the null hypothesis \\( (H_{0}) \\) that the population 
+                              proportion \\( (p) \\) \\( %s\\) %0.2f.",
+                        sigLvl*100,
+                        suffEvidence,
+                        nullHyp,
+                        oneSampHypProp),
+                br(),
+              )
+            })
+            
+            
+            
+          } # input$inferenceType == 'Hypothesis Test'
+          
+        } else {
+          output$oneSampProportion <- renderUI({ 
+            validate(
+              need(input$numSuccesses, "Numeric value for Number of Successes (x) required"),
+              need(input$numTrials, "Numeric value for Number of Trials (n) required"),
+              
+              errorClass = "myClass"
+            )
+            
+            validate(
+              need(input$numSuccesses %% 1 == 0, "Number of Successes (x) must be an integer"),
+              need(input$numSuccesses >= 0, "Number of Successes (x) cannot be negative"),
+              need(input$numTrials %% 1 == 0, "Number of Trials (n) must be an integer"),
+              need(input$numTrials > 0, "Number of Trials (n) must be greater than 0") %then%
+                need(input$numSuccesses <= input$numTrials, "Number of Successes (x) cannot be greater than Number of Trials (n)"),
+              
+              errorClass = "myClass"
+            )
+            
+            if(!onepropht_iv$is_valid()) {
+              validate(
+                need(input$hypProportion, "Hypothesized Population Proportion must be between 0 and 1") %then%
+                  need(input$hypProportion >= 0 && input$hypProportion <= 1, "Hypothesized Population Proportion must be between 0 and 1"),
+                
+                errorClass = "myClass"
+              )
+            }
+          })
+        }
+      } # input$popuParameter == 'Population Proportion'
+    } # one sample
+    
+    else if(input$samplesSelect == '2') {
+      
+      if(input$inferenceType2 == 'Confidence Interval') {
+        
+        if(input$confidenceLevel2 == '90%') {
+          confLvl <- 0.9
+        } else if(input$confidenceLevel2 == '95%') {
+          confLvl <- 0.95
+        } else{
+          confLvl <- 0.99
+        }
+      }
+      
+      else if(input$inferenceType2 == 'Hypothesis Testing') {
+        
+        if(input$significanceLevel2 == "10%") {
+          sigLvl <- 0.1
+        } else if(input$significanceLevel2 == "5%") {
+          sigLvl <- 0.05
+        } else {
+          sigLvl <- 0.01
+        }
+        
+        if(input$altHypothesis2 == "3") {
+          alternative <- "greater"
+          nullHyp <- "\\leq"
+          altHyp <- "\\gt"
+          critZAlph <- "z_{\\alpha}"
+        } else if(input$altHypothesis2 == "2") {
+          alternative <- "two.sided"
+          nullHyp <- "="
+          altHyp <- "\\neq"
+          critZAlph <- "\\pm z_{\\alpha/2}"
+        } else {
+          alternative <- "less"
+          nullHyp <- "\\geq"
+          altHyp <- "\\lt"
+          critZAlph <- "-z_{\\alpha}"
+        }
+      }
+      
+      if(input$popuParameters == 'Independent Population Means'){
+        if(si_iv$is_valid()) {
+          
+          output$indMeansTable <- renderUI({
+            tagList(
+              withMathJax(),
+              withMathJax(DTOutput('indMeansData', width = "95%"))
+            )
+          })
+          
+        }
+      } # input$popuParameters == 'Independent Population Means'
+      # else if(input$popuParameters == 'Dependent Population Means'){
+      #   print("Inference for the two Dependent Populations")
+      #}
+      else if(input$popuParameters == 'Population Proportions'){
+        
+        if(si_iv$is_valid())
+        {
+          if(input$numTrials1 >= input$numSuccesses1 && input$numTrials2 >= input$numSuccesses2)
+          {
+            output$twoSampProportion <- renderUI({
+              
+              tagList(
+                withMathJax(),
+                
+                conditionalPanel(
+                  condition = "input.inferenceType2 == 'Confidence Interval'",
+                  
+                  titlePanel(tags$u("Confidence Interval")),
+                  br(),
+                  uiOutput('twoSampPropCI'),
+                  br(),
+                ),
+                
+                conditionalPanel(
+                  condition = "input.inferenceType2 == 'Hypothesis Testing'",
+                  
+                  titlePanel(tags$u("Hypothesis Test")),
+                  br(),
+                  uiOutput('twoSampPropHT'),
+                  br(),
+                  plotOutput('twoSampPropHTPlot', width = "75%", height = "300px"),
+                  br(),
+                  uiOutput('twoSampPropHTIntrp'),
+                  br(),
+                ),
+                
+              )
+            })
+            
+            twoSampPropSucc1 <- input$numSuccesses1
+            twoSampPropTrial1 <- input$numTrials1
+            twoSampPropSucc2 <- input$numSuccesses2
+            twoSampPropTrial2 <- input$numTrials2
+            
+            if(input$inferenceType2 == 'Confidence Interval')
+            {
+              source('R/TwoPropZInt.R')
+              
+              twoSampPropZInt <- TwoPropZInt(twoSampPropSucc1, twoSampPropTrial1, twoSampPropSucc2, twoSampPropTrial2, ConfLvl())
+              
+              # (\\( n\\))  (\\( x\\))  (\\(\\hat{p}\\))  ( 1 - \\(\\hat{p}\\))
+              dataRow1 <- data.frame(Variable = "Number of Trials 1 \\( (n_{1})\\)", Value = paste(twoSampPropTrial1))
+              dataRow2 <- data.frame(Variable = "Number of Successes 1 \\( (x_{1})\\)", Value = paste(twoSampPropSucc1))
+              dataRow3 <- data.frame(Variable = "Number of Trials 2 \\( (n_{2})\\)", Value = paste(twoSampPropTrial2))
+              dataRow4 <- data.frame(Variable = "Number of Successes 2 \\( (x_{2})\\)", Value = paste(twoSampPropSucc2))
+              dataRow5 <- data.frame(Variable = "Sample Proportion of Success 1 \\( (\\hat{p}_{1})\\)", Value = paste(round(twoSampPropZInt["Sample Proportion 1"], digits = 3)))
+              dataRow6 <- data.frame(Variable = "Sample Proportion of Failure 1 \\( (\\hat{q}_{1})\\)", Value = paste(round((1 - twoSampPropZInt["Sample Proportion 1"]), digits = 3)))
+              dataRow7 <- data.frame(Variable = "Sample Proportion of Success 2 \\( (\\hat{p}_{2})\\)", Value = paste(round(twoSampPropZInt["Sample Proportion 2"], digits = 3)))
+              dataRow8 <- data.frame(Variable = "Sample Proportion of Failure 2 \\( (\\hat{q}_{2})\\)", Value = paste(round((1 - twoSampPropZInt["Sample Proportion 2"]), digits = 3)))
+              dataRow9 <- data.frame(Variable = "Difference of Proportions \\( (\\hat{p}_{1} - \\hat{p}_{2})\\)", Value = paste(round(twoSampPropZInt["Difference of proportions"], digits = 3)))
+              dataRow10 <- data.frame(Variable = "Confidence Level \\( (1 - \\alpha)\\)", Value = paste(confLvl*100, "%"))
+              dataRow11 <- data.frame(Variable = "Z Critical Value \\((CV)\\)", Value = paste(twoSampPropZInt["Z Critical"]))
+              dataRow12 <- data.frame(Variable = "Standard Error \\( (SE)\\)", Value = paste(round(twoSampPropZInt["Std Error"], digits = 3)))
+              dataRow13 <- data.frame(Variable = "Margin of Error \\( (ME)\\)", Value = paste(round(twoSampPropZInt["Margin of Error"], digits = 3)))
+              dataRow14 <- data.frame(Variable = "Lower Confidence Limit \\( (LCL)\\)", Value = paste(round(twoSampPropZInt["LCL"], digits = 3)))
+              dataRow15 <- data.frame(Variable = "Upper Confidence Limit \\( (UCL)\\)", Value = paste(round(twoSampPropZInt["UCL"], digits = 3)))
+              
+              twoPropIntData <- rbind(dataRow1, dataRow2, dataRow3, dataRow4, dataRow5, dataRow6, dataRow7, dataRow8, dataRow9, dataRow10, dataRow11, dataRow12, dataRow13, dataRow14, dataRow15)
+              
+              
+              output$twoSampPropData <- renderDT(
+                datatable(twoPropIntData,
+                          options = list(
+                            dom = 't',
+                            pageLength = -1,
+                            ordering = FALSE,
+                            searching = FALSE,
+                            paging = FALSE
+                          ),
+                          rownames = FALSE,
+                          filter = "none"
+                )
+              )
+              
+              
+              output$twoSampPropCI <- renderUI({
+                p(
+                  withMathJax(
+                    sprintf("\\( CI = (\\hat{p}_{1} - \\hat{p}_{2}) \\pm z_{\\alpha/2} \\sqrt{\\dfrac{\\hat{p}_{1}(1-\\hat{p}_{1})}{n_{1}} + \\dfrac{\\hat{p}_{2}(1-\\hat{p}_{2})}{n_{2}}}\\)"),
+                    br(),
+                    br(),
+                    br(),
+                    sprintf("\\( CI = %0.3f \\pm %0.3f \\sqrt{\\dfrac{%0.3f(1-%0.3f)}{%1.0f} + \\dfrac{%0.3f(1-%0.3f)}{%1.0f}}\\)",
+                            twoSampPropZInt["Difference of proportions"],
+                            twoSampPropZInt["Z Critical"],
+                            twoSampPropZInt["Sample Proportion 1"],
+                            twoSampPropZInt["Sample Proportion 1"],
+                            twoSampPropTrial1,
+                            twoSampPropZInt["Sample Proportion 2"],
+                            twoSampPropZInt["Sample Proportion 2"],
+                            twoSampPropTrial2),
+                    br(),
+                    br(),
+                    sprintf("\\( \\quad = %g \\pm %g \\cdot %g \\)",
+                            twoSampPropZInt["Difference of proportions"],
+                            twoSampPropZInt["Z Critical"],
+                            twoSampPropZInt["Std Error"]),
+                    br(),
+                    br(),
+                    sprintf("\\( \\quad = %g \\pm %g \\)",
+                            twoSampPropZInt["Difference of proportions"],
+                            twoSampPropZInt["Margin of Error"]),
+                    br(),
+                    br(),
+                    sprintf("\\( \\quad = (%0.3f, %0.3f)\\)",
+                            twoSampPropZInt["LCL"],
+                            twoSampPropZInt["UCL"]),
+                    br(),
+                    br(),
+                    br(),
+                    p(tags$b("Interpretation:")),
+                    sprintf("We are %1.0f%% confident that the difference in population proportions \\( (p_{1} - p_{2}) \\) is between %0.3f and %0.3f.",
+                            ConfLvl()*100,
+                            twoSampPropZInt["LCL"],
+                            twoSampPropZInt["UCL"])
+                  )
+                )
+              })
+              
+              
+              
+            } # input$inferenceType2 == 'Confidence Interval'
+            else if(input$inferenceType2 == 'Hypothesis Testing')
+            {
+              source('R/TwoPropZTest.R')
+              
+              twoSampPropZTest <- TwoPropZTest(twoSampPropSucc1, twoSampPropTrial1, twoSampPropSucc2, twoSampPropTrial2, 0, alternative, SigLvl())
+              
+              if(twoSampPropZTest["P-Value"] < 0.0001)
+              {
+                pValue <- "\\( P \\lt\\) 0.0001"
+              }
+              else
+              {
+                pValue <- paste("\\( P =\\)", twoSampPropZTest["P-Value"])
+              }
+              
+              if(alternative == "two.sided")
+              {
+                critZVal <- paste("\\( \\pm\\)", twoSampPropZTest["Z Critical"])
+                htPlotCritVals <- c(-twoSampPropZTest["Z Critical"], twoSampPropZTest["Z Critical"])
+              }
+              else
+              {
+                critZVal <- paste(twoSampPropZTest["Z Critical"])
+                htPlotCritVals <- twoSampPropZTest["Z Critical"]
+              }
+              
+              propDiff <- twoSampPropZTest["Sample Proportion 1"] - twoSampPropZTest["Sample Proportion 2"]
+              
+              dataRow1 <- data.frame(Variable = "Number of Trials 1 \\( (n_{1})\\)", Value = paste(twoSampPropTrial1))
+              dataRow2 <- data.frame(Variable = "Number of Successes 1 \\( (x_{1})\\)", Value = paste(twoSampPropSucc1))
+              dataRow3 <- data.frame(Variable = "Number of Trials 2 \\( (n_{2})\\)", Value = paste(twoSampPropTrial2))
+              dataRow4 <- data.frame(Variable = "Number of Successes 2 \\( (x_{2})\\)", Value = paste(twoSampPropSucc2))
+              dataRow5 <- data.frame(Variable = "Sample Proportion of Success 1 \\( (\\hat{p}_{1})\\)", Value = paste(twoSampPropZTest["Sample Proportion 1"]))
+              dataRow6 <- data.frame(Variable = "Sample Proportion of Failure 1 \\( (\\hat{q}_{1})\\)", Value = paste(1 - twoSampPropZTest["Sample Proportion 1"]))
+              dataRow7 <- data.frame(Variable = "Sample Proportion of Success 2 \\( (\\hat{p}_{2})\\)", Value = paste(twoSampPropZTest["Sample Proportion 2"]))
+              dataRow8 <- data.frame(Variable = "Sample Proportion of Failure 2 \\( (\\hat{q}_{2})\\)", Value = paste(1 - twoSampPropZTest["Sample Proportion 2"]))
+              dataRow9 <- data.frame(Variable = "Difference of Proportions \\( (\\hat{p}_{1} - \\hat{p}_{2})\\)", Value = paste(propDiff))
+              dataRow10 <- data.frame(Variable = "Significance Level \\( (\\alpha)\\)", Value = paste(SigLvl()*100, "%"))
+              dataRow11 <- data.frame(Variable = "Z Critical Value \\((CV)\\)", Value = paste(twoSampPropZTest["Z Critical"]))
+              dataRow12 <- data.frame(Variable = "Standard Error \\( (SE_{D_{P}})\\)", Value = paste(twoSampPropZTest["Std Error"]))
+              dataRow13 <- data.frame(Variable = "Pooled Proportion \\( (\\hat{p})\\)", Value = paste(twoSampPropZTest["Pooled Proportion"]))
+              dataRow14 <- data.frame(Variable = "Test Statistic \\( (z)\\)", Value = paste(twoSampPropZTest["Test Statistic"]))
+              dataRow15 <- data.frame(Variable = "P-Value \\( (P)\\)", Value = paste(pValue))
+              
+              twoPropTestData <- rbind(dataRow1, dataRow2, dataRow3, dataRow4, dataRow5, dataRow6, dataRow7, dataRow8, dataRow9, dataRow10, dataRow11, dataRow12, dataRow13, dataRow14, dataRow15)
+              
+              
+              output$twoSampPropData <- renderDT(
+                datatable(twoPropTestData,
+                          options = list(
+                            dom = 't',
+                            pageLength = -1,
+                            ordering = FALSE,
+                            searching = FALSE,
+                            paging = FALSE
+                          ),
+                          rownames = FALSE,
+                          filter = "none")
+              )
+              
+              
+              if(twoSampPropZTest["P-Value"] > sigLvl)
+              {
+                pvalSymbol <- "\\( \\gt\\)"
+                suffEvidence <- "do not provide"
+                reject <- "do not reject"
+                region <- "acceptance"
+              }
+              else
+              {
+                pvalSymbol <- "\\( \\leq\\)"
+                suffEvidence <- "provide"
+                reject <- "reject"
+                region <- "rejection"
+              }
+              
+              output$twoSampPropHT <- renderUI({
+                p(
+                  withMathJax(
+                    sprintf("\\( H_{0}: p_{1} %s p_{2}\\)",
+                            nullHyp),
+                    br(),
+                    sprintf("\\( H_{a}: p_{1} %s p_{2}\\)",
+                            altHyp),
+                    br(),
+                    br(),
+                    sprintf("\\( \\alpha = %g \\)",
+                            sigLvl),
+                    br(),
+                    br(),
+                    sprintf("\\(z = \\dfrac{\\hat{p}_{1} - \\hat{p}_{2}}{\\sqrt{\\hat{p}(1-\\hat{p})(\\dfrac{1}{n_{1}} + \\dfrac{1}{n_{2}})}}\\)"),
+                    br(),
+                    br(),
+                    sprintf("\\(z = \\dfrac{%0.3f - %0.3f}{\\sqrt{%0.3f(1-%0.3f)(\\dfrac{1}{%1.0f} + \\dfrac{1}{%1.0f})}}\\)",
+                            twoSampPropZTest["Sample Proportion 1"],
+                            twoSampPropZTest["Sample Proportion 2"],
+                            twoSampPropZTest["Pooled Proportion"],
+                            twoSampPropZTest["Pooled Proportion"],
+                            twoSampPropTrial1,
+                            twoSampPropTrial2),
+                    br(),
+                    br(),
+                    sprintf("\\(z = %0.3f\\)",
+                            twoSampPropZTest["Test Statistic"]),
+                    br(),
+                    br(),
+                    br(),
+                    p(tags$b("Using P-Value Method:")),
+                    p(pValue),
+                    sprintf("Since \\( P\\) %s %0.2f, %s \\( H_{0}\\).",
+                            pvalSymbol,
+                            sigLvl,
+                            reject),
+                    br(),
+                    br(),
+                    br(),
+                    p(tags$b("Using Critical Value Method:")),
+                    sprintf("Critical Value(s) = %s",
+                            critZVal),
+                    
+                    br(),
+                    sprintf("Since the test statistic \\( (z)\\) falls within the %s region, %s \\( H_{0}\\).",
+                            region,
+                            reject)
+                    
+                  )
+                )
+              })
+              
+              
+              output$twoSampPropHTPlot <- renderPlot({
+                
+                htPlot <- hypZTestPlot(twoSampPropZTest["Test Statistic"], htPlotCritVals, alternative)
+                htPlot
+              })
+              
+              
+              output$twoSampPropHTIntrp <- renderUI({
+                p(
+                  p(tags$b("Conclusion:")),
+                  sprintf("At the %1.0f%% significance level, the data %s sufficient evidence to reject the null hypothesis \\( (H_{0}) \\) that the population 
+                              proportion \\( p_{1} %s p_{2}\\).",
+                          sigLvl*100,
+                          suffEvidence,
+                          nullHyp),
+                  br(),
+                )
+              })
+              
+              
+              
+            } # input$inferenceType2 == 'Hypothesis Test'
+          }
+          else
+          {
+            output$twoSampProportion <- renderUI({
+              validate(
+                need(input$numSuccesses1 <= input$numTrials1, "Number of Successes 1 (x1) cannot be greater than Number of Trials 1 (n1)"),
+                need(input$numSuccesses2 <= input$numTrials2, "Number of Successes 2 (x2) cannot be greater than Number of Trials 2 (n2)"),
+                
+                errorClass = "myClass"
+              )
+            })
+          }
+        }
+        else
+        {
+          output$twoSampProportion <- renderUI({ 
+            validate(
+              need(input$numSuccesses1, "Numeric value for Number of Successes 1 (x1) required"),
+              need(input$numTrials1, "Numeric value for Number of Trials 1 (n1) required"),
+              need(input$numSuccesses2, "Numeric value for Number of Successes 2 (x2) required"),
+              need(input$numTrials2, "Numeric value for Number of Trials 2 (n2) required"),
+              
+              errorClass = "myClass"
+            )
+            
+            validate(
+              need(input$numSuccesses1 %% 1 == 0, "Number of Successes 1 (x1) must be an integer"),
+              need(input$numSuccesses1 >= 0, "Number of Successes 1 (x1) cannot be negative"),
+              need(input$numTrials1 %% 1 == 0, "Number of Trials 1 (n1) must be an integer"),
+              need(input$numTrials1 > 0, "Number of Trials 1 (n1) must be greater than 0"),
+              need(input$numSuccesses2 %% 1 == 0, "Number of Successes 1 (x2) must be an integer"),
+              need(input$numSuccesses2 >= 0, "Number of Successes 1 (x2) cannot be negative"),
+              need(input$numTrials2 %% 1 == 0, "Number of Trials 2 (n2) must be an integer"),
+              need(input$numTrials2 > 0, "Number of Trials 2 (n2) must be greater than 0"),
+              
+              errorClass = "myClass"
+            )
+          })
+        }
+      }
+    }
+    #) # renderInference
+  }) # input$goInference
+  
+  
+  
+  # --------------------------------------------------------------------- #
+  
+  
+  # **************************************************************************** #
+  
+  
+  #  -------------------------------------------------------------------- #
+  ## ----------- Linear Regression and Correlation functions ------------
+  #  -------------------------------------------------------------------- #
+  
+  
+  ### Reactives ----
+  # --------------------------------------------------------------------- #
+  
+  slrUploadData <- eventReactive(input$slrUserData, {
+    ext <- tools::file_ext(input$slrUserData$name)
+    
+    switch(ext, 
+           csv = read_csv(input$slrUserData$datapath),
+           xls = read_excel(input$slrUserData$datapath),
+           xlsx = read_excel(input$slrUserData$datapath),
+           validate("Improper file format")
+    )
+  })
+  
+  sampleDiffRaw <- eventReactive({input$x
+    input$y}, {
+      datx <- createNumLst(input$x)
+      daty <- createNumLst(input$y)
+      return(length(datx) - length(daty))
+    })
+  
+  sampleDiffUpload <- eventReactive (c(input$slrExplanatory, 
+                                       input$slrResponse), {
+                                         if(input$slrResponse == "")
+                                         {
+                                           return()
+                                         }
+                                         else
+                                         {
+                                           datx <- as.data.frame(slrUploadData())[, input$slrExplanatory]
+                                           daty <- as.data.frame(slrUploadData())[, input$slrResponse]
+                                           difference <- length(na.omit(datx)) - length(na.omit(daty))
+                                           return(difference)
+                                         }
+                                       })
+  
+  # --------------------------------------------------------------------- #
+  
+  
+  ### Observers ----
+  # --------------------------------------------------------------------- #
+  
+  observeEvent(input$slrUserData, {
+    hide(id = "RegCorMP")
+    hide(id = "slrResponse")
+    hide(id = "slrExplanatory")
+    if(slrupload_iv$is_valid())
+    {
+      freezeReactiveValue(input, "slrExplanatory")
+      updateSelectInput(session = getDefaultReactiveDomain(),
+                        "slrExplanatory",
+                        choices = c(colnames(slrUploadData()))
+      )
+      freezeReactiveValue(input, "slrResponse")
+      updateSelectInput(session = getDefaultReactiveDomain(),
+                        "slrResponse",
+                        choices = c(colnames(slrUploadData()))
+      )
+      show(id = "slrResponse")
+      show(id = "slrExplanatory")
+    }
+  })
+  
+  observeEvent(input$slrExplanatory, {
+    updateTextInput(inputId = "xlab", value = input$slrExplanatory)
+  })
+  
+  observeEvent(input$slrResponse, {
+    updateTextInput(inputId = "ylab", value = input$slrResponse)
+  })
+  
+  
+  observeEvent(input$goRegression, {
+    
+    if(input$simple_vs_multiple == 'SLR')
+    {
+      if(!slrupload_iv$is_valid())
+      {
+        output$slrTabs <- renderUI({
+          validate(
+            need(input$slrUserData, "Please upload your data to continue"),
+            need(nrow(slrUploadData()) != 0, "File is empty"),
+            need(ncol(slrUploadData()) > 1, "Data must include one response and (at least) one explanatory variable"),
+            need(nrow(slrUploadData()) > 2, "Samples must include at least 2 observations"),
+            errorClass = "myClass"
+          )
+        })
+      }
+      else if(!slruploadvars_iv$is_valid())
+      {
+        output$slrTabs <- renderUI({
+          validate(
+            need(input$slrExplanatory != "", "Please select an explanatory variable (x)"),
+            need(input$slrResponse != "", "Please select a response variable (y)") %then%
+              need(sampleDiffUpload() == 0, "x and y must have the same number of observations"),
+            
+            errorClass = "myClass"
+          )
+        })
+      }
+      else
+      {
+        if(input$dataRegCor == 'Upload Data')
+        {
+          datx <- as.data.frame(slrUploadData())[, input$slrExplanatory]
+          daty <- as.data.frame(slrUploadData())[, input$slrResponse]
+        }
+        else
+        {
+          datx <- createNumLst(input$x)
+          daty <- createNumLst(input$y)
+        }
+        
+        if(regcor_iv$is_valid())
+        {
+          output$slrTabs <- renderUI({ ####tab generation ----
+            
+            tagList(
+              
+              tabsetPanel(id = "slrTabset", selected = "Simple Linear Regression",
+                          
+                          tabPanel(id = "slr", title = "Simple Linear Regression",
+                                   
+                                   conditionalPanel(
+                                     condition = "input.scatterPlot == 1",
+                                     
+                                     titlePanel("Scatterplot"),
+                                     plotOutput("scatterplot", width = "500px"),
+                                     br(),
+                                   ),
+                                   
+                                   titlePanel("Data"),
+                                   DTOutput("slrDataTable", width = "750px"),
+                                   br(),
+                                   
+                                   titlePanel("Estimated equation of the regression line"),
+                                   verbatimTextOutput("linearRegression"),
+                                   br(),
+                                   
+                                   titlePanel("95% confidence interval for regression parameters"),
+                                   verbatimTextOutput("confintLinReg"),
+                                   br(),
+                                   
+                                   titlePanel("ANOVA for regression"),
+                                   verbatimTextOutput("anovaLinReg"),
+                                   #br(),
+                          ), 
+                          
+                          tabPanel(id = "normality", title = "Normality of Residuals",
+                                   
+                                   #----------------------------------#
+                                   # Tests for normality of residuals #
+                                   #----------------------------------#
+                                   titlePanel("Anderson-Darling test"),
+                                   verbatimTextOutput("AndersonDarlingTest"),
+                                   br(),
+                                   
+                                   titlePanel("Kolmogorov-Smirnov test"),
+                                   verbatimTextOutput("KolmogorovSmirnovTest"),
+                                   br(),
+                                   
+                                   titlePanel("Shapiro-Wilk test"),
+                                   verbatimTextOutput("ShapiroTest"),
+                                   #br(),
+                          ),
+                          
+                          tabPanel(id = "resid", title = "Residual Plots",
+                                   #-----------------------------#
+                                   # Plots for Residual Analysis #
+                                   #-----------------------------#
+                                   titlePanel("Q-Q plot"),
+                                   plotOutput("qqplot", width = "500px"),
+                                   #br(),
+                                   
+                                   titlePanel("Other diagnostic plots"),
+                                   plotOutput("moreplots", width = "500px"),
+                                   #br(),
+                          ),
+                          
+                          tabPanel(id = "correlation", title = "Correlation Analysis",
+                                   
+                                   #----------------------------------#
+                                   # Correlation Coefficient Analysis #
+                                   #----------------------------------#
+                                   titlePanel("Pearson's Product-Moment Correlation"),
+                                   verbatimTextOutput("PearsonCorTest"),
+                                   br(),
+                                   verbatimTextOutput("PearsonConfInt"),
+                                   br(),
+                                   verbatimTextOutput("PearsonEstimate"),
+                                   br(),
+                                   
+                                   #conditionalPanel(
+                                   #condition = "input.kendall == 1",
+                                   
+                                   titlePanel("Kendall's Rank Correlation"),
+                                   verbatimTextOutput("Kendall"),
+                                   br(),
+                                   #),
+                                   
+                                   #conditionalPanel(
+                                   #condition = "input.spearman == 1",
+                                   
+                                   titlePanel("Spearman's Rank Correlation"),
+                                   verbatimTextOutput("Spearman"),
+                                   #),
+                                   #br(),
+                          ),
+              ),
+            )
+          })
+          
+          model <- lm(daty ~ datx)
+          
+          main <- input$main
+          xlab <- input$xlab
+          ylab <- input$ylab
+          
+          df <- data.frame(datx, daty, datx*daty, datx^2, daty^2)
+          names(df) <- c("x", "y", "xy", "x<sup>2</sup>", "y<sup>2</sup>")
+          dfTotaled <- bind_rows(df, summarise(df, across(where(is.numeric), sum)))
+          rownames(dfTotaled)[nrow(dfTotaled)] <- "Totals"
+          
+          output$slrDataTable <- renderDT(
+            datatable(round(dfTotaled, digits = 3),
+                      options = list(pageLength = -1, 
+                                     lengthMenu = list(c(-1, 10, 25, 50, 100), c("All", "10", "25", "50", "100"))
+                      ),
+                      escape = FALSE
+            ) %>% formatStyle(
+              names(dfTotaled),
+              target = 'row',
+              fontWeight = styleRow(dim(dfTotaled)[1], "bold")
+            )
+          )
+          
+          output$scatterplot <- renderPlot({
+            plot(datx, daty, main = main, xlab = xlab, ylab = ylab, pch = 19) +
+              abline(lm(daty ~ datx), col = "blue")
+          })
+          
+          output$linearRegression <- renderPrint({ 
+            summary(model)
+          })
+          
+          output$confintLinReg <- renderPrint({ 
+            confint(model) # Prints the 95% CI for the regression parameters
+          })
+          
+          output$anovaLinReg <- renderPrint({ 
+            anova(model) # Prints the ANOVA table
+          })
+          
+          #----------------------------------#
+          # Tests for normality of residuals #
+          #----------------------------------#
+          
+          # Anderson-Darling Normality Test 
+          output$AndersonDarlingTest <- renderPrint({ 
+            ad.test(model$residuals)
+          })
+          
+          # Kolmogorov-Smirnov Normality Test 
+          output$KolmogorovSmirnovTest <- renderPrint({ 
+            ks.test(model$residuals, "pnorm")
+          })
+          
+          # Shapiro-Wilk Normality Test 
+          output$ShapiroTest <- renderPrint({ 
+            shapiro.test(model$residuals) 
+          })
+          
+          # Q-Q plot for residuals
+          output$qqplot <- renderPlot({
+            #qqnorm(model$residuals, ylab = "Residuals", xlab = "Z Scores", main = "Q-Q plot of Standardized Residuals", pch = 19) #+
+            #qqline(model$residuals)
+            qqPlot(model$residuals, main = "Q-Q Plot", xlab = "Z Scores",  ylab = "Residuals", pch = 19) 
+          })
+          
+          output$moreplots <- renderPlot({
+            par(mfrow = c(2, 2))
+            plot(model, which = 1:4, pch = 19)
+          })
+          
+          
+          req(length(datx) > 1) ## correlation coefficient ----
+          if(length(datx) > 2)
+          {
+            Pearson <- cor.test(datx, daty, method = "pearson")
+            
+            output$PearsonCorTest <- renderPrint({ 
+              Pearson
+            })
+            
+            if(length(datx) > 3)
+            {
+              output$PearsonConfInt <- renderPrint({ 
+                Pearson$conf.int
+              })
+            }
+            else
+            {
+              output$PearsonConfInt <- renderPrint ({
+                noquote("Computation of the Confidence Interval requires a minimum sample size of 4")
+              })
+            }
+            
+            output$PearsonEstimate <- renderPrint({
+              cat(noquote(paste(c("Pearson's r:", round(Pearson$estimate[[1]], 4)))))
+            })
+          }
+          else
+          {
+            output$PearsonCorTest <- renderPrint ({
+              noquote("Pearson's Product-Moment Correlation requires a minimum sample size of 3 for computation")
+            })
+          }
+          
+          Kendall <- cor.test(datx, daty, method = "kendall")
+          Spearman <- cor.test(datx, daty, method = "spearman")
+          
+          output$Kendall <- renderPrint({
+            cat(noquote(paste(c("Kendall's Tau:", round(Kendall$estimate[[1]], 4)))))
+          })
+          
+          output$Spearman <- renderPrint({
+            cat(noquote(paste(c("Spearman's rs:", round(Spearman$estimate[[1]], 4)))))
+          })
+          
+        } #if regcor_iv is valid
+        else
+        {
+          output$slrTabs <- renderUI({
+            
+            validate(
+              need(length(datx) >= 2, "Must have at least 2 observations for x"),
+              need(length(daty) >= 2, "Must have at least 2 observations for y"),
+              need(!anyNA(datx), "Data must be numeric"),
+              need(!anyNA(daty), "Data must be numeric"),
+              need(length(datx) == length(daty), "x and y must have the same number of observations"),
+              
+              errorClass = "myclass"
+            )
+          })
+        }
+      }
+    }
+    
+    #cut here
+    show(id = "RegCorMP")
+    
+  }) # input$goRegression
+  
+  # --------------------------------------------------------------------- #
+  
+  
+  # **************************************************************************** #
+  
+  
+  #  -------------------------------------------------------------------- #
+  #  ------------------------ Component Display -------------------------
+  #  -------------------------------------------------------------------- #
+  
+  
+  #### Descriptive Statistics ----
+  #  -------------------------------------------------------------------- #
+  
+  observeEvent(!ds_iv$is_valid(), {
+    hide(id = "descriptiveStatsMP")
+  })
+  
+  observeEvent({input$descriptiveStat
+    input$dsUploadVars}, {
+      hide(id = 'descrStatsData')                
+    })
+  
+  observeEvent(input$dataInput, {
+    hide(id = 'descrStatsData')
+    hide(id = 'dsUploadVars')
+  })
+  
+  observe({
+    if(is.null(input$dsGraphOptions)) {
+      hideTab(inputId = 'dsTabset', target = 'Graphs')
+      updateTabsetPanel(inputId = 'dsTabset', selected = 'Descriptive Statistics')
+    } else {
+      showTab(inputId = 'dsTabset', target = 'Graphs')
+    }
+  })
+  
+  observeEvent(input$goDescpStats, {
+    show(id = 'descriptiveStatsMP')
+  })
+  
+  observeEvent(input$resetAll,{
+    hide(id = 'descriptiveStatsMP')
+    shinyjs::reset("descriptiveStatsPanel")
+  })
+  
+  #  -------------------------------------------------------------------- #
+  
+  
+  
+  #### Probability Distributions ----
+  #  -------------------------------------------------------------------- #
+  
+  observeEvent(!pd_iv$is_valid(), {
+    hide(id = 'probabilityMP')
+  })
+  
+  #-----------------------#
+  # Binomial Distribution #
+  #-----------------------#
+  
+  observeEvent(input$goBinom, {
+    show(id = 'probabilityMP')
+  })
+  
+  observeEvent(input$probability, {
+    hide(id = 'probabilityMP')
+  })
+  
+  observeEvent(input$resetBinomial, {
+    hide(id = 'probabilityMP')
+    shinyjs::reset("binomialPanel")
+  })
+  
+  #----------------------#
+  # Poisson Distribution #
+  #----------------------#
+  
+  observeEvent(input$goPoisson, {
+    show(id = "probabilityMP")
+  })
+  
+  observeEvent(input$resetPoisson, {
+    hide(id = "probabilityMP")
+    shinyjs::reset("poissonPanel")
+  })
+  
+  #---------------------#
+  # Normal Distribution #
+  #---------------------#
+  
+  observeEvent(input$goNormal, {
+    show(id = "probabilityMP")
+  })
+  
+  observeEvent(input$resetNormal, {
+    hide(id = "probabilityMP")
+    shinyjs::reset("normalPanel")
+  })
+  
+  #  -------------------------------------------------------------------- #
+  
+  
+  
+  #### Statistical Inference ----
+  #  -------------------------------------------------------------------- #
+  
+  observeEvent(!si_iv$is_valid(), {
+    hide(id = "inferenceMP")
+    hide(id = "inferenceData")
+  })
+  
+  observeEvent({input$samplesSelect
+    input$sampleSize
+    input$sampleMean
+    input$popuParameter
+    input$popuParameters
+    input$dataAvailability
+    input$dataAvailability2
+    input$sigmaKnown
+    input$sigmaKnownRaw
+    input$popuSD
+    input$popuSDRaw
+    input$sampSD
+    input$inferenceType
+    input$inferenceType2}, {
+      hide(id = "inferenceData")
+    })
+  
+  observeEvent({input$significanceLevel2
+    input$confidenceLevel2}, {
+      
+      if(input$samplesSelect == '2' && input$popuParameters == 'Population Proportions') {
+        hide(id = "inferenceData")
+      }
+    })
+  
+  observeEvent(input$goInference, {
+    show(id = "inferenceMP")
+  })
+  
+  observeEvent(input$resetInference, {
+    hide(id = "inferenceMP")
+    shinyjs::reset("inferencePanel")
+  })
+  
+  #  -------------------------------------------------------------------- #
+  
+  
+  
+  #### Regression and Correlation ----
+  #  -------------------------------------------------------------------- #
+  
+  observeEvent(!regcor_iv$is_valid(), {
+    hide(id = "RegCorMP")
+  })
+  
+  observeEvent(input$dataRegCor, {
+    hide(id = "RegCorMP")
+    hide(id = "slrResponse")
+    hide(id = "slrExplanatory")
+  })
+  
+  
+  observeEvent(input$resetRegCor, {
+    # hideTab(inputId = 'tabSet', target = 'Simple Linear Regression')
+    # hideTab(inputId = 'tabSet', target = 'Normality of Residuals')
+    # hideTab(inputId = 'tabSet', target = 'Residual Plots')
+    hide(id = "RegCorMP")
+    shinyjs::reset("RegCorPanel")
+  })
+  
+  #  -------------------------------------------------------------------- #
+}
