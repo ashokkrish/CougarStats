@@ -3005,10 +3005,10 @@ server <- function(input, output) {
     
     tagList(
       withMathJax(
-        sprintf("\\( z = \\dfrac{\\bar{x}_{1} - \\bar{x}_{2}}{ \\sqrt{ \\dfrac{\\sigma_{1}^2}{n_{1}} + \\dfrac{\\sigma_{2}^2}{n_{2}} } } \\)"),
+        sprintf("\\( z = \\dfrac{ (\\bar{x}_{1} - \\bar{x}_{2}) - (\\mu_{1} - \\mu_{2})_{0} }{ \\sqrt{ \\dfrac{\\sigma_{1}^2}{n_{1}} + \\dfrac{\\sigma_{2}^2}{n_{2}} } } \\)"),
         br(),
         br(),
-        sprintf("\\( z = \\dfrac{%g - %g}{ \\sqrt{ \\dfrac{%g^2}{%g} + \\dfrac{%g^2}{%g} } } = \\dfrac{%g}{%g} = %g \\)",
+        sprintf("\\( z = \\dfrac{ (%g - %g) - 0}{ \\sqrt{ \\dfrac{%g^2}{%g} + \\dfrac{%g^2}{%g} } } = \\dfrac{%g}{%g} = %g \\)",
                 data$xbar1,
                 data$xbar2,
                 data$sd1,
@@ -3038,7 +3038,7 @@ server <- function(input, output) {
       
       tagList(
         withMathJax(
-          sprintf("\\( t = \\dfrac{ \\bar{x}_{1} - \\bar{x}_{2} }{ s_{p} \\sqrt{ \\dfrac{1}{n_{1}} + \\dfrac{1}{n_{2}} } } \\)"),
+          sprintf("\\( t = \\dfrac{ (\\bar{x}_{1} - \\bar{x}_{2}) - (\\mu_{1} - \\mu_{2})_{0} }{ s_{p} \\sqrt{ \\dfrac{1}{n_{1}} + \\dfrac{1}{n_{2}} } } \\)"),
           br(),
           br(),
           p(tags$b("where")),
@@ -3055,7 +3055,7 @@ server <- function(input, output) {
           br(),
           br(),
           br(),
-          sprintf("\\( t = \\dfrac{ %g - %g }{ %g \\sqrt{ \\dfrac{1}{%g} + \\dfrac{1}{%g} } } \\)",
+          sprintf("\\( t = \\dfrac{ (%g - %g) - 0 }{ %g \\sqrt{ \\dfrac{1}{%g} + \\dfrac{1}{%g} } } \\)",
                   data$xbar1,
                   data$xbar2,
                   sp,
@@ -3072,10 +3072,10 @@ server <- function(input, output) {
     } else {
       tagList(
         withMathJax(
-          sprintf("\\( t = \\dfrac{\\bar{x}_{1} - \\bar{x}_{2}}{ \\sqrt{ \\dfrac{s_{1}^2}{n_{1}} + \\dfrac{s_{2}^2}{n_{2}} } } \\)"),
+          sprintf("\\( t = \\dfrac{ (\\bar{x}_{1} - \\bar{x}_{2}) - (\\mu_{1} - \\mu_{2})_{0} }{ \\sqrt{ \\dfrac{s_{1}^2}{n_{1}} + \\dfrac{s_{2}^2}{n_{2}} } } \\)"),
           br(),
           br(),
-          sprintf("\\( t = \\dfrac{%g - %g}{ \\sqrt{ \\dfrac{%g^2}{%g} + \\dfrac{%g^2}{%g} } } = \\dfrac{%g}{%g} = %g \\)",
+          sprintf("\\( t = \\dfrac{ (%g - %g) - 0 }{ \\sqrt{ \\dfrac{%g^2}{%g} + \\dfrac{%g^2}{%g} } } = \\dfrac{%g}{%g} = %g \\)",
                   data$xbar1,
                   data$xbar2,
                   data$sd1,
