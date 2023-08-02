@@ -469,6 +469,7 @@ server <- function(input, output) {
     sampVar <- round(var(dat),4)
     sampMeanSE <- round(sd(dat)/sqrt(length(dat)), 4)
     coeffVar <- round(sampStdDev/xbar, 4)
+    
     if(sampSize < 3){
       sampSkewness <- round(skewness(dat, type = 1), 4)
     } else {
@@ -478,6 +479,14 @@ server <- function(input, output) {
       sampKurtosis <- round(kurtosis(dat, type = 1), 4)
     } else {
       sampKurtosis <- round(kurtosis(dat, type = 2), 4)
+    }
+    
+    if(is.nan(sampSkewness)) {
+      sampSkewness <- "Not enough variability or data points in the dataset."
+    }
+    
+    if(is.nan(sampKurtosis)) {
+      sampKurtosis <- "Not enough variability or data points in the dataset."
     }
     
     
@@ -667,8 +676,9 @@ server <- function(input, output) {
     if(ds_iv$is_valid())
     {
       output$dsDataTable <- renderUI({
+
         tagList(
-          
+          withMathJax(),
           conditionalPanel(
             condition = "input.dsTableFilters == ''",
             
@@ -679,7 +689,6 @@ server <- function(input, output) {
           conditionalPanel(
             condition = "input.dsTableFilters != ''",
             
-            withMathJax(),
             withMathJax(DTOutput("dsTableData"))
           ),
           
@@ -772,10 +781,18 @@ server <- function(input, output) {
         
         pp
       })
+
+      
       
       
       output$dsStemLeaf <- renderPrint({
-        stem.leaf(dat, m = 1, depths = FALSE)
+        
+        if(length(unique(dat)) > 1) {
+          stem.leaf(dat, m = 1, depths = FALSE)
+        } else {
+          stem(dat, scale = 1)
+        }
+        
       })
       
       show(id = 'descrStatsData')

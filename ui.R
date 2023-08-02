@@ -7,19 +7,19 @@
                   
                   tags$head(
                     tags$style(HTML("
-      .shiny-output-error-validation {
-        color: red;
-        font-weight: bold;
-      }
-      .dropdown-item:hover,
-      .dropdown-menu>li>a:hover,
-      .dropdown-item:focus,
-      .dropdown-menu>li>a:focus {
-        color:#fff;
-        text-decoration:none;
-        background-color:#428BCA
-      }
-    "))
+                      .shiny-output-error-validation {
+                        color: red;
+                        font-weight: bold;
+                      }
+                      .dropdown-item:hover,
+                      .dropdown-menu>li>a:hover,
+                      .dropdown-item:focus,
+                      .dropdown-menu>li>a:focus {
+                        color:#fff;
+                        text-decoration:none;
+                        background-color:#428BCA
+                      }
+                      "))
                   ),
                   
                   navbarPage(title = div(img(src ="CougarStats.png", height = 100), span("CougarStats", style = "color:#000000; font-weight:bold; font-style: italic; font-size:24pt")),
@@ -423,7 +423,7 @@
                                                                                           label = strong("Parameter of Interest"),
                                                                                           choiceValues = list("Population Mean", 
                                                                                                               "Population Proportion"),
-                                                                                          choiceNames = list("Population Mean (\\( \\mu\\))", 
+                                                                                          choiceNames = list("Population Mean (\\( \\mu \\)) ", 
                                                                                                              "Population Proportion (\\( p\\))"),
                                                                                           selected = "Population Mean", #character(0), #
                                                                                           inline = TRUE), #,width = '1000px'),
