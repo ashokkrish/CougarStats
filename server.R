@@ -1947,18 +1947,24 @@ server <- function(input, output) {
       hypTestSymbols$nullHyp <- "\\leq"
       hypTestSymbols$altHyp <- "\\gt"
       hypTestSymbols$critAlph <- "\\alpha"
+      hypTestSymbols$critSign <- ""
+      hypTestSymbols$alphaVal <- SigLvl()
     }
     else if(input$altHypothesis2 == "2"){
       hypTestSymbols$alternative <- "two.sided"
       hypTestSymbols$nullHyp <- "="
       hypTestSymbols$altHyp <- "\\neq"
       hypTestSymbols$critAlph <- "\\alpha/2"
+      hypTestSymbols$critSign <- "\\pm"
+      hypTestSymbols$alphaVal <- SigLvl()/2
     }
     else{
       hypTestSymbols$alternative <- "less"
       hypTestSymbols$nullHyp <- "\\geq"
       hypTestSymbols$altHyp <- "\\lt"
       hypTestSymbols$critAlph <- "\\alpha"
+      hypTestSymbols$critSign <- "-"
+      hypTestSymbols$alphaVal <- SigLvl()
     }
     
     return(hypTestSymbols)
@@ -2897,26 +2903,27 @@ server <- function(input, output) {
     withMathJax()
     
     intrpInfo <- IndMeansHypInfo()
+    
+    if (input$dataAvailability2 == 'Summarized Data') {
+      data <- IndMeansSummData()
+    } else if(input$dataAvailability2 == 'Enter Raw Data') {
+      data <- IndMeansRawData()
+    }
+    
     #get test type and results based on sigma known/unknown
     if(IndMeansSigmaKnown() == 'bothKnown'){
       hTest <- IndMeansZTest() 
       testStat <- "z"
-      critValDF <- paste("z_{", intrpInfo$critAlph, "}")
+      critValDF <- paste(intrpInfo$critSign, "z_{", intrpInfo$critAlph, "}")
     }
     else if(IndMeansSigmaKnown() == 'bothUnknown'){
       hTest <- IndMeansTTest()
       testStat <- "t"
       
-      if (input$dataAvailability2 == 'Summarized Data') {
-        sigmaEqual <- IndMeansSummData()$sigmaEqual
-      } else if(input$dataAvailability2 == 'Enter Raw Data') {
-        sigmaEqual <- IndMeansRawData()$sigmaEqual
-      }
-      
-      if(sigmaEqual) {
-        critValDF <- paste("t_{", intrpInfo$critAlph, ", \\, n_{1} + n_{2} - 2}")
+      if(data$sigmaEqual) {
+        critValDF <- paste(intrpInfo$critSign, "t_{", intrpInfo$critAlph, ", \\, n_{1} + n_{2} - 2} = ", intrpInfo$critSign, "t_{", intrpInfo$alphaVal, ", \\, ", hTest['df'], "}")
       } else {
-        critValDF <- paste("t_{", intrpInfo$critAlph, ", \\, \\nu}")
+        critValDF <- paste(intrpInfo$critSign, "t_{", intrpInfo$critAlph, ", \\, \\nu} = ", "\n", intrpInfo$critSign, "t_{", intrpInfo$alphaVal, ", \\, ", hTest['df'], "}")
       }
     }
     
@@ -2992,9 +2999,45 @@ server <- function(input, output) {
           br(),
           br(),
           p(tags$b("Using Critical Value Method:")),
-          sprintf("Critical Value(s) \\( = %s = %s \\)",
+          sprintf("Critical Value(s) \\( = %s = %s\\)",
                   critValDF,
                   critVal),
+          br(),
+          
+          conditionalPanel(
+            condition = "(input.dataAvailability2 == 'Summarized Data' && input.bothsigmaKnown == 'bothUnknown' && input.bothsigmaEqual == 'FALSE') || 
+                         (input.dataAvailability2 == 'Enter Raw Data' && input.bothsigmaKnownRaw == 'bothUnknown' && input.bothsigmaEqualRaw == 'FALSE')
+                         ",
+
+            br(),
+            p(tags$b("where")),
+            sprintf("\\( \\displaystyle \\qquad \\nu = \\: \\dfrac{ \\left( \\dfrac{s^2_{1}}{n_{1}} + \\dfrac{s^2_{2}}{n_{2}} \\right)^2 }
+                    { \\dfrac{ \\left( \\dfrac{s^2_{1}}{n_{1}} \\right)^2 }{n_{1} - 1} + \\dfrac{ \\left( \\dfrac{s^2_{2}}{n_{2}} \\right)^2 }{n_{2} - 1} } \\)"),
+            sprintf("\\( \\displaystyle \\: = \\: \\dfrac{ \\left( \\dfrac{%g^2}{%g} + \\dfrac{%g^2}{%g} \\right)^2 }
+                    { \\dfrac{ \\left( \\dfrac{%g^2}{%g} \\right)^2 }{%g - 1} + \\dfrac{ \\left( \\dfrac{%g^2}{%g} \\right)^2 }{%g - 1} }\\)",
+                    data$sd1,
+                    data$n1,
+                    data$sd2,
+                    data$n2,
+                    data$sd1,
+                    data$n1,
+                    data$n1,
+                    data$sd2,
+                    data$n2,
+                    data$n2),
+            sprintf("\\( \\displaystyle \\: = \\: \\dfrac{ \\left( %g + %g \\right)^2 }
+                    { \\dfrac{ %g^2 }{%g} + \\dfrac{ %g^2 }{%g} } = %s\\)",
+                    (data$sd1^2) / data$n1,
+                    (data$sd2^2) / data$n2,
+                    (data$sd1^2) / data$n1,
+                    data$n1 - 1,
+                    (data$sd2^2) / data$n2,
+                    data$n2 - 1,
+                    hTest['df']),
+            br(),
+            br()
+          ),
+          
           br(),
           sprintf("Since the test statistic \\( (%s)\\) falls within the %s region, %s \\( H_{0}\\).",
                   testStat,
