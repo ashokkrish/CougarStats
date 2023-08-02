@@ -468,7 +468,11 @@ server <- function(input, output) {
     sampStdDev <- round(sd(dat),4)
     sampVar <- round(var(dat),4)
     sampMeanSE <- round(sd(dat)/sqrt(length(dat)), 4)
+    
     coeffVar <- round(sampStdDev/xbar, 4)
+    if(is.infinite(coeffVar)) {
+      coeffVar <- "Infinity"
+    }
     
     if(sampSize < 3){
       sampSkewness <- round(skewness(dat, type = 1), 4)
@@ -3734,16 +3738,16 @@ server <- function(input, output) {
               
               if(twoSampPropZTest["P-Value"] < 0.0001)
               {
-                pValue <- "\\( P \\lt\\) 0.0001"
+                pValue <- "P \\lt 0.0001"
               }
               else
               {
-                pValue <- paste("\\( P =\\)", twoSampPropZTest["P-Value"])
+                pValue <- paste("P = ", twoSampPropZTest["P-Value"])
               }
               
               if(alternative == "two.sided")
               {
-                critZVal <- paste("\\( \\pm\\)", twoSampPropZTest["Z Critical"])
+                critZVal <- paste("\\pm", twoSampPropZTest["Z Critical"])
                 htPlotCritVals <- c(-twoSampPropZTest["Z Critical"], twoSampPropZTest["Z Critical"])
               }
               else
@@ -3789,14 +3793,14 @@ server <- function(input, output) {
               
               if(twoSampPropZTest["P-Value"] > sigLvl)
               {
-                pvalSymbol <- "\\( \\gt\\)"
+                pvalSymbol <- "\\gt"
                 suffEvidence <- "do not provide"
                 reject <- "do not reject"
                 region <- "acceptance"
               }
               else
               {
-                pvalSymbol <- "\\( \\leq\\)"
+                pvalSymbol <- "\\leq"
                 suffEvidence <- "provide"
                 reject <- "reject"
                 region <- "rejection"
@@ -3816,26 +3820,45 @@ server <- function(input, output) {
                             sigLvl),
                     br(),
                     br(),
+                    br(),
                     sprintf("\\(z = \\dfrac{\\hat{p}_{1} - \\hat{p}_{2}}{\\sqrt{\\hat{p}(1-\\hat{p})(\\dfrac{1}{n_{1}} + \\dfrac{1}{n_{2}})}}\\)"),
                     br(),
                     br(),
-                    sprintf("\\(z = \\dfrac{%0.3f - %0.3f}{\\sqrt{%0.3f(1-%0.3f)(\\dfrac{1}{%1.0f} + \\dfrac{1}{%1.0f})}}\\)",
+                    p(tags$b("where")),
+                    sprintf("\\( \\displaystyle \\qquad \\hat{p} = \\dfrac{x_{1} + x_{2}}{n_{1} + n_{2}} \\)"),
+                    sprintf("\\( = \\dfrac{%g + %g}{%g + %g} = %g \\)",
+                            twoSampPropSucc1,
+                            twoSampPropSucc2,
+                            twoSampPropTrial1,
+                            twoSampPropTrial2,
+                            twoSampPropZTest["Pooled Proportion"]),
+                    br(),
+                    br(),
+                    br(),
+                    sprintf("\\(z = \\dfrac{%g - %g}{\\sqrt{%g(1-%g)(\\dfrac{1}{%g} + \\dfrac{1}{%g})}}\\)",
                             twoSampPropZTest["Sample Proportion 1"],
                             twoSampPropZTest["Sample Proportion 2"],
                             twoSampPropZTest["Pooled Proportion"],
                             twoSampPropZTest["Pooled Proportion"],
                             twoSampPropTrial1,
                             twoSampPropTrial2),
+                      sprintf("\\( = \\dfrac{%g}{%g} = %g\\)",
+                            twoSampPropZTest["Sample Proportion 1"] - twoSampPropZTest["Sample Proportion 2"],
+                            twoSampPropZTest["Std Error"],
+                            twoSampPropZTest["Test Statistic"]),
                     br(),
                     br(),
-                    sprintf("\\(z = %0.3f\\)",
+                    sprintf("\\(z = %g\\)",
                             twoSampPropZTest["Test Statistic"]),
                     br(),
                     br(),
                     br(),
+                    br(),
                     p(tags$b("Using P-Value Method:")),
-                    p(pValue),
-                    sprintf("Since \\( P\\) %s %0.2f, %s \\( H_{0}\\).",
+                    sprintf("\\( %s \\)",
+                            pValue),
+                    br(),
+                    sprintf("Since \\( P %s %0.2f \\), %s \\( H_{0}\\).",
                             pvalSymbol,
                             sigLvl,
                             reject),
@@ -3843,7 +3866,8 @@ server <- function(input, output) {
                     br(),
                     br(),
                     p(tags$b("Using Critical Value Method:")),
-                    sprintf("Critical Value(s) = %s",
+                    sprintf("Critical Value(s) \\( = %s = %s \\)",
+                            critZAlph,
                             critZVal),
                     
                     br(),
