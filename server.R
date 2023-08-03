@@ -1787,8 +1787,6 @@ server <- function(input, output) {
     xbarSampOne <- input$sampleMean
     sigmaSampOne <- input$popuSD
     
-    source('R/OneSampZInt.R')
-    
     oneMeanZInt <- ZInterval(nSampOne, xbarSampOne, sigmaSampOne, ConfLvl())
     
     return(oneMeanZInt)
@@ -1803,10 +1801,7 @@ server <- function(input, output) {
     rawSampleMean <- mean(datRawData)
     rawPopuSD <- input$popuSDRaw
     
-    source("R/OneSampZInt.R")
-    
-    oneMeanZInt <- ZInterval(rawSampleSize, rawSampleMean, rawPopuSD, 
-                             ConfLvl())
+    oneMeanZInt <- ZInterval(rawSampleSize, rawSampleMean, rawPopuSD, ConfLvl())
     
     return(oneMeanZInt)
   })
@@ -1818,8 +1813,6 @@ server <- function(input, output) {
     nSampOne <- input$sampleSize
     xbarSampOne <- input$sampleMean  
     sSampOne <- input$sampSD
-    
-    source('R/OneSampTInt.R')
     
     oneMeanTInt <- TInterval(nSampOne, xbarSampOne, sSampOne, ConfLvl())
     
@@ -1834,8 +1827,6 @@ server <- function(input, output) {
     rawSampleSize <- length(datRawData)
     rawSampleMean <- mean(datRawData)
     rawSampleSD <- sd(datRawData)
-    
-    source("R/OneSampTInt.R")
     
     oneMeanTInt <- TInterval(rawSampleSize, rawSampleMean, rawSampleSD, 
                              ConfLvl())
@@ -1852,8 +1843,6 @@ server <- function(input, output) {
     hypMeanSampOne <- input$hypMean 
     sigmaSampOne <- input$popuSD
     
-    source("R/OneSampZTest.R")
-    
     oneMeanZTest <- ZTest(nSampOne, xbarSampOne, sigmaSampOne, hypMeanSampOne,
                           OneMeanHypInfo()$alternative, SigLvl())
     
@@ -1868,8 +1857,6 @@ server <- function(input, output) {
     rawSampleMean <- mean(datRawData)
     rawPopuSD <- input$popuSDRaw
     hypMeanSampOne <- input$hypMean 
-    
-    source("R/OneSampZTest.R")
     
     oneMeanZTest <- ZTest(rawSampleSize, rawSampleMean, rawPopuSD, 
                           hypMeanSampOne, OneMeanHypInfo()$alternative, 
@@ -1887,8 +1874,6 @@ server <- function(input, output) {
     hypMeanSampOne <- input$hypMean 
     sSampOne <- input$sampSD
     
-    source("R/OneSampTTest.R")
-    
     oneMeanTTest <- TTest(nSampOne, xbarSampOne, sSampOne, hypMeanSampOne, 
                           OneMeanHypInfo()$alternative, SigLvl())
     
@@ -1904,9 +1889,6 @@ server <- function(input, output) {
     rawSampleMean <- mean(datRawData)
     rawSampleSD <- sd(datRawData)
     hypMeanSampOne <- input$hypMean 
-    
-    
-    source("R/OneSampTTest.R")
     
     oneMeanTTest <- TTest(rawSampleSize, rawSampleMean, rawSampleSD, 
                           hypMeanSampOne, OneMeanHypInfo()$alternative, 
@@ -2018,8 +2000,6 @@ server <- function(input, output) {
       data <- IndMeansRawData()
     }
     
-    source('R/TwoSampZInt.R')
-    
     twoSampZInt <- TwoSampZInt(data$xbar1, data$sd1, data$n1, data$xbar2, data$sd2, data$n2, ConfLvl())
     
     return(twoSampZInt)
@@ -2033,8 +2013,6 @@ server <- function(input, output) {
     } else if(input$dataAvailability2 == 'Enter Raw Data'){
       data <- IndMeansRawData()
     }
-    
-    source('R/TwoSampTInt.R')
     
     twoSampTInt <- TwoSampTInt(data$xbar1, data$sd1, data$n1, data$xbar2, data$sd2, data$n2, data$sigmaEqual, ConfLvl())
     
@@ -2050,8 +2028,6 @@ server <- function(input, output) {
       data <- IndMeansRawData()
     }
     
-    source('R/TwoSampZTest.R')
-    
     twoSampZTest <- TwoSampZTest(data$xbar1, data$sd1, data$n1, data$xbar2, data$sd2, data$n2, IndMeansHypInfo()$alternative, SigLvl())
     
     return(twoSampZTest)
@@ -2066,8 +2042,6 @@ server <- function(input, output) {
       data <- IndMeansRawData()
     }
     
-    source('R/TwoSampTTest.R')
-    
     twoSampTTest <- TwoSampTTest(data$xbar1, data$sd1, data$n1, data$xbar2, data$sd2, data$n2, data$sigmaEqual, IndMeansHypInfo()$alternative, SigLvl())
     
     return(twoSampTTest)
@@ -2080,6 +2054,11 @@ server <- function(input, output) {
   ### Outputs ----
   # --------------------------------------------------------------------- #
   
+  
+  #### Validation ----
+  
+  # One Mean Validation 
+  # ------------------------------------------------------------------------ #
   output$inferenceValidation <- renderUI({
     
     if(!onemean_iv$is_valid())
@@ -2133,8 +2112,8 @@ server <- function(input, output) {
       )
     }
     
-# One Prop Validation 
-# ---------------------------------------------------------------------------- #
+  # One Prop Validation 
+  # ------------------------------------------------------------------------ #
     
     if(!oneprop_iv$is_valid()) {
       validate(
@@ -2172,6 +2151,9 @@ server <- function(input, output) {
       )
     }
     
+    
+  # Independent Population Means Validation 
+  # ------------------------------------------------------------------------ #
     
     if(!indmeanssumm_iv$is_valid()) {
       
@@ -2231,8 +2213,48 @@ server <- function(input, output) {
         errorClass = "myClass"
       )
     }
+    
+    
+  # Two Population Proportion Validation 
+  # ------------------------------------------------------------------------ #
+    
+    if(!twoprop_iv$is_valid()) {
+      
+      validate(
+        need(input$numSuccesses1, "Numeric value for Number of Successes 1 (x1) required"),
+        need(input$numTrials1, "Numeric value for Number of Trials 1 (n1) required"),
+        need(input$numSuccesses2, "Numeric value for Number of Successes 2 (x2) required"),
+        need(input$numTrials2, "Numeric value for Number of Trials 2 (n2) required"),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(input$numSuccesses1 %% 1 == 0, "Number of Successes 1 (x1) must be an integer"),
+        need(input$numSuccesses1 >= 0, "Number of Successes 1 (x1) cannot be negative"),
+        need(input$numTrials1 %% 1 == 0, "Number of Trials 1 (n1) must be an integer"),
+        need(input$numTrials1 > 0, "Number of Trials 1 (n1) must be greater than 0"),
+        need(input$numSuccesses2 %% 1 == 0, "Number of Successes 1 (x2) must be an integer"),
+        need(input$numSuccesses2 >= 0, "Number of Successes 1 (x2) cannot be negative"),
+        need(input$numTrials2 %% 1 == 0, "Number of Trials 2 (n2) must be an integer"),
+        need(input$numTrials2 > 0, "Number of Trials 2 (n2) must be greater than 0"),
+        
+        errorClass = "myClass"
+      )
+    
+    } else if (input$samplesSelect == '2' && input$popuParameters == 'Population Proportions') {
+      req(input$numSuccesses1 && input$numTrials1)
+      req(input$numSuccesses2 && input$numTrials2)
+      
+      validate(
+        need(input$numSuccesses1 <= input$numTrials1, "Number of Successes 1 (x1) cannot be greater than Number of Trials 1 (n1)"),
+        need(input$numSuccesses2 <= input$numTrials2, "Number of Successes 2 (x2) cannot be greater than Number of Trials 2 (n2)"),
+        
+        errorClass = "myClass"
+      )
+    }
   })
-  
+ 
   
   #### One Mean outputs ----
   
@@ -2307,7 +2329,7 @@ server <- function(input, output) {
         br(),
         br(),
         p(tags$b("Interpretation:")),
-        sprintf("We are %1.0f%% confident that the population mean \\( (\\mu)\\) is between %g and %g.",
+        sprintf("We are %1.0f%% confident that the population mean \\( (\\mu)\\) is between \\( %g \\) and \\( %g \\).",
                 ConfLvl()*100,
                 oneMeanData["LCL"],
                 oneMeanData["UCL"]),
@@ -2361,14 +2383,14 @@ server <- function(input, output) {
     
     if(oneMeanData[7] > SigLvl())
     {
-      pvalSymbol <- "\\( \\gt\\)"
+      pvalSymbol <- "\\gt"
       suffEvidence <- "do not provide"
       reject <- "do not reject"
       region <- "acceptance"
     }
     else
     {
-      pvalSymbol <- "\\( \\leq\\)"
+      pvalSymbol <- "\\leq"
       suffEvidence <- "provide"
       reject <- "reject"
       region <- "rejection"
@@ -2377,9 +2399,9 @@ server <- function(input, output) {
     if(intrpInfo$alternative == "two.sided")
     {
       if(testStat == 'z') {
-        critVal <- paste("\\( \\pm\\)", oneMeanData["Z Critical"])
+        critVal <- paste("\\pm", oneMeanData["Z Critical"])
       } else {
-        critVal <- paste("\\( \\pm\\)", oneMeanData["T Critical"])
+        critVal <- paste("\\pm", oneMeanData["T Critical"])
       }
       
     }
@@ -2432,7 +2454,7 @@ server <- function(input, output) {
           sprintf("\\(P = %s\\)",
                   pValue),
           br(),
-          sprintf("Since \\( P\\) %s %0.2f, %s \\( H_{0}\\).",
+          sprintf("Since \\( P %s %0.2f \\), %s \\( H_{0}\\).",
                   pvalSymbol,
                   SigLvl(),
                   reject),
@@ -2440,7 +2462,13 @@ server <- function(input, output) {
           br(),
           br(),
           p(tags$b("Using Critical Value Method:")),
-          sprintf("Critical Value(s) = %s",
+          sprintf("Critical Value(s) \\( = %s %s_{%s} = %s %s_{%s} = %s \\)",
+                  OneMeanHypInfo()$critSign,
+                  testStat,
+                  OneMeanHypInfo()$critAlph,
+                  OneMeanHypInfo()$critSign,
+                  testStat,
+                  OneMeanHypInfo()$alphaVal,
                   critVal),
           br(),
           sprintf("Since the test statistic \\( (%s)\\) falls within the %s region, %s \\( H_{0}\\).",
@@ -2458,7 +2486,7 @@ server <- function(input, output) {
         p(tags$b("Conclusion:")),
         p(
           sprintf("At the %1.0f%% significance level, the data %s sufficient evidence to reject the null hypothesis \\( (H_{0}) \\) that the population 
-                              mean \\( (\\mu) \\) \\( %s \\) %g.",
+                              mean \\( (\\mu) \\) \\( %s %g\\).",
                   SigLvl()*100,
                   suffEvidence,
                   intrpInfo$nullHyp,
@@ -2547,7 +2575,7 @@ server <- function(input, output) {
         br(),
         br(),
         p(tags$b("Interpretation:")),
-        sprintf("We are %1.0f%% confident that the population proportion \\( (p) \\) is between %0.3f and %0.3f.",
+        sprintf("We are %1.0f%% confident that the population proportion \\( (p) \\) is between \\( %g \\) and \\( %g \\).",
                 ConfLvl()*100,
                 oneSampPropZInt["LCL"],
                 oneSampPropZInt["UCL"])
@@ -2630,9 +2658,11 @@ server <- function(input, output) {
         br(),
         br(),
         p(tags$b("Using Critical Value Method:")),
-        sprintf("Critical Value(s) \\( = %s z_{%s} = %s \\)",
+        sprintf("Critical Value(s) \\( = %s z_{%s} = %s z_{%s} = %s \\)",
                 OneMeanHypInfo()$critSign,
                 OneMeanHypInfo()$critAlph,
+                OneMeanHypInfo()$critSign,
+                OneMeanHypInfo()$alphaVal,
                 critZVal),
         br(),
         sprintf("Since the test statistic \\( (z)\\) falls within the %s region, %s \\( H_{0}\\).",
@@ -2644,7 +2674,7 @@ server <- function(input, output) {
         br(),
         p(tags$b("Conclusion:")),
         sprintf("At the %1.0f%% level, the data %s sufficient evidence to reject the null hypothesis \\( (H_{0}) \\) that the population 
-                              proportion \\( (p) \\) \\( %s\\) %0.2f.",
+                              proportion \\( (p) \\) \\( %s %0.2f \\).",
                 SigLvl()*100,
                 suffEvidence,
                 OneMeanHypInfo()$nullHyp,
@@ -2654,6 +2684,7 @@ server <- function(input, output) {
     )
   })
   
+  ##### HT Plot ----
   output$onePropHTPlot <- renderPlot({
     
     oneSampPropZTest <- OnePropZTest(input$numSuccesses, input$numTrials, input$hypProportion, OneMeanHypInfo()$alternative, SigLvl())
@@ -2709,7 +2740,7 @@ server <- function(input, output) {
           br(),
           br(),
           p(tags$b("Interpretation:")),
-          sprintf("We are %1.0f%% confident that the difference in population means \\( (\\mu_{1} - \\mu_{2}) \\) is between %g and %g.",
+          sprintf("We are %1.0f%% confident that the difference in population means \\( (\\mu_{1} - \\mu_{2}) \\) is between \\( %g \\) and \\( %g \\).",
                   ConfLvl()*100,
                   cInt["LCL"],
                   cInt["UCL"]),
@@ -2909,7 +2940,7 @@ server <- function(input, output) {
     if(IndMeansSigmaKnown() == 'bothKnown'){
       hTest <- IndMeansZTest() 
       testStat <- "z"
-      critValDF <- paste(intrpInfo$critSign, "z_{", intrpInfo$critAlph, "}")
+      critValDF <- paste(intrpInfo$critSign, "z_{", intrpInfo$critAlph, "} = ", intrpInfo$critSign, "z_{", intrpInfo$alphaVal, "}")
     }
     else if(IndMeansSigmaKnown() == 'bothUnknown'){
       hTest <- IndMeansTTest()
@@ -3190,6 +3221,210 @@ server <- function(input, output) {
     indMeansPlot
   })
   
+  
+  
+  #### Two Prop outputs ----
+  
+  
+  ##### CI ----
+  output$twoPropCI <- renderUI({
+    
+    
+    twoSampPropZInt <- TwoPropZInt(input$numSuccesses1, input$numTrials1, input$numSuccesses2, input$numTrials2, ConfLvl())
+    
+    p(
+      withMathJax(
+        sprintf("\\( CI = (\\hat{p}_{1} - \\hat{p}_{2}) \\pm z_{\\alpha/2} \\sqrt{\\dfrac{\\hat{p}_{1}(1-\\hat{p}_{1})}{n_{1}} + \\dfrac{\\hat{p}_{2}(1-\\hat{p}_{2})}{n_{2}}}\\)"),
+        br(),
+        br(),
+        br(),
+        sprintf("\\( CI = %0.3f \\pm %0.3f \\sqrt{\\dfrac{%0.3f(1-%0.3f)}{%1.0f} + \\dfrac{%0.3f(1-%0.3f)}{%1.0f}}\\)",
+                twoSampPropZInt["Difference of proportions"],
+                twoSampPropZInt["Z Critical"],
+                twoSampPropZInt["Sample Proportion 1"],
+                twoSampPropZInt["Sample Proportion 1"],
+                input$numTrials1,
+                twoSampPropZInt["Sample Proportion 2"],
+                twoSampPropZInt["Sample Proportion 2"],
+                input$numTrials2),
+        br(),
+        br(),
+        sprintf("\\( \\quad = %g \\pm %g \\cdot %g \\)",
+                twoSampPropZInt["Difference of proportions"],
+                twoSampPropZInt["Z Critical"],
+                twoSampPropZInt["Std Error"]),
+        br(),
+        br(),
+        sprintf("\\( \\quad = %g \\pm %g \\)",
+                twoSampPropZInt["Difference of proportions"],
+                twoSampPropZInt["Margin of Error"]),
+        br(),
+        br(),
+        sprintf("\\( \\quad = (%0.3f, %0.3f)\\)",
+                twoSampPropZInt["LCL"],
+                twoSampPropZInt["UCL"]),
+        br(),
+        br(),
+        br(),
+        p(tags$b("Interpretation:")),
+        sprintf("We are %1.0f%% confident that the difference in population proportions \\( (p_{1} - p_{2}) \\) is between \\( %0.3f \\) and \\( %0.3f \\).",
+                ConfLvl()*100,
+                twoSampPropZInt["LCL"],
+                twoSampPropZInt["UCL"])
+      )
+    )
+  })
+  
+  
+  
+  ##### HT ----
+  output$twoPropHT <- renderUI({
+    
+    
+    
+    twoPropZTest <- TwoPropZTest(input$numSuccesses1, input$numTrials1, input$numSuccesses2, input$numTrials2, 0, IndMeansHypInfo()$alternative, SigLvl())
+    
+    if(twoPropZTest["P-Value"] < 0.0001)
+    {
+      pValue <- "P \\lt 0.0001"
+    }
+    else
+    {
+      pValue <- paste("P = ", twoPropZTest["P-Value"])
+    }
+    
+    if(IndMeansHypInfo()$alternative == "two.sided")
+    {
+      critZVal <- paste("\\pm", twoPropZTest["Z Critical"])
+      htPlotCritVals <- c(-twoPropZTest["Z Critical"], twoPropZTest["Z Critical"])
+    }
+    else
+    {
+      critZVal <- paste(twoPropZTest["Z Critical"])
+      htPlotCritVals <- twoPropZTest["Z Critical"]
+    }
+    
+    propDiff <- twoPropZTest["Sample Proportion 1"] - twoPropZTest["Sample Proportion 2"]
+    
+    if(twoPropZTest["P-Value"] > SigLvl())
+    {
+      pvalSymbol <- "\\gt"
+      suffEvidence <- "do not provide"
+      reject <- "do not reject"
+      region <- "acceptance"
+    }
+    else
+    {
+      pvalSymbol <- "\\leq"
+      suffEvidence <- "provide"
+      reject <- "reject"
+      region <- "rejection"
+    }
+    
+    p(
+      withMathJax(
+        sprintf("\\( H_{0}: p_{1} %s p_{2}\\)",
+                IndMeansHypInfo()$nullHyp),
+        br(),
+        sprintf("\\( H_{a}: p_{1} %s p_{2}\\)",
+                IndMeansHypInfo()$altHyp),
+        br(),
+        br(),
+        sprintf("\\( \\alpha = %g \\)",
+                SigLvl()),
+        br(),
+        br(),
+        br(),
+        sprintf("\\(z = \\dfrac{ (\\hat{p}_{1} - \\hat{p}_{2}) - (p_{1} - p_{2})_{0} }{\\sqrt{\\hat{p}(1-\\hat{p})(\\dfrac{1}{n_{1}} + \\dfrac{1}{n_{2}})}}\\)"),
+        br(),
+        br(),
+        p(tags$b("where")),
+        sprintf("\\( \\displaystyle \\qquad \\hat{p} = \\dfrac{x_{1} + x_{2}}{n_{1} + n_{2}} \\)"),
+        sprintf("\\( = \\dfrac{%g + %g}{%g + %g} = %g \\)",
+                input$numSuccesses1,
+                input$numSuccesses2,
+                input$numTrials1,
+                input$numTrials2,
+                twoPropZTest["Pooled Proportion"]),
+        br(),
+        br(),
+        br(),
+        sprintf("\\(z = \\dfrac{ (%g - %g) - 0}{\\sqrt{%g(1-%g)(\\dfrac{1}{%g} + \\dfrac{1}{%g})}}\\)",
+                twoPropZTest["Sample Proportion 1"],
+                twoPropZTest["Sample Proportion 2"],
+                twoPropZTest["Pooled Proportion"],
+                twoPropZTest["Pooled Proportion"],
+                input$numTrials1,
+                input$numTrials2),
+        sprintf("\\( = \\dfrac{%g}{%g} = %g\\)",
+                twoPropZTest["Sample Proportion 1"] - twoPropZTest["Sample Proportion 2"],
+                twoPropZTest["Std Error"],
+                twoPropZTest["Test Statistic"]),
+        br(),
+        br(),
+        sprintf("\\(z = %g\\)",
+                twoPropZTest["Test Statistic"]),
+        br(),
+        br(),
+        br(),
+        br(),
+        p(tags$b("Using P-Value Method:")),
+        sprintf("\\( %s \\)",
+                pValue),
+        br(),
+        sprintf("Since \\( P %s %0.2f \\), %s \\( H_{0}\\).",
+                pvalSymbol,
+                SigLvl(),
+                reject),
+        br(),
+        br(),
+        br(),
+        p(tags$b("Using Critical Value Method:")),
+        sprintf("Critical Value(s) \\( = %s z_{%s} = %s z_{%s} = %s \\)",
+                IndMeansHypInfo()$critSign,
+                IndMeansHypInfo()$critAlph,
+                IndMeansHypInfo()$critSign,
+                IndMeansHypInfo()$alphaVal,
+                critZVal),
+        
+        br(),
+        sprintf("Since the test statistic \\( (z)\\) falls within the %s region, %s \\( H_{0}\\).",
+                region,
+                reject),
+        br(),
+        br(),
+        plotOutput('twoPropHTPlot'),
+        br(),
+        p(tags$b("Conclusion:")),
+        sprintf("At the %1.0f%% significance level, the data %s sufficient evidence to reject the null hypothesis \\( (H_{0}) \\) that the population 
+                              proportion \\( p_{1} %s p_{2}\\).",
+                SigLvl()*100,
+                suffEvidence,
+                IndMeansHypInfo()$nullHyp),
+        br()
+      )
+    )
+  })
+  
+  
+  ##### HT Plot ----
+  output$twoPropHTPlot <- renderPlot({
+    
+    twoPropZTest <- TwoPropZTest(input$numSuccesses1, input$numTrials1, input$numSuccesses2, input$numTrials2, 0, IndMeansHypInfo()$alternative, SigLvl())
+    
+    if(IndMeansHypInfo()$alternative == "two.sided")
+    {
+      htPlotCritVals <- c(-twoPropZTest["Z Critical"], twoPropZTest["Z Critical"])
+    }
+    else
+    {
+      htPlotCritVals <- twoPropZTest["Z Critical"]
+    }
+    
+    htPlot <- hypZTestPlot(twoPropZTest["Test Statistic"], htPlotCritVals, IndMeansHypInfo()$alternative)
+    htPlot
+  })
+  
   # --------------------------------------------------------------------- #
   
   
@@ -3217,401 +3452,15 @@ server <- function(input, output) {
     } # one sample
     
     else if(input$samplesSelect == '2') {
-      
-      if(input$inferenceType2 == 'Confidence Interval') {
+ 
+      if(input$popuParameters == 'Population Proportions') {
+        req(input$numSuccesses1 && input$numTrials1)
+        req(input$numSuccesses2 && input$numTrials2)
         
-        if(input$confidenceLevel2 == '90%') {
-          confLvl <- 0.9
-        } else if(input$confidenceLevel2 == '95%') {
-          confLvl <- 0.95
-        } else{
-          confLvl <- 0.99
-        }
-      }
-      
-      else if(input$inferenceType2 == 'Hypothesis Testing') {
-        
-        if(input$significanceLevel2 == "10%") {
-          sigLvl <- 0.1
-        } else if(input$significanceLevel2 == "5%") {
-          sigLvl <- 0.05
-        } else {
-          sigLvl <- 0.01
+        if(input$numSuccesses1 > input$numTrials1 | input$numSuccesses2 > input$numTrials2) {
+         hide(id = 'inferenceData') 
         }
         
-        if(input$altHypothesis2 == "3") {
-          alternative <- "greater"
-          nullHyp <- "\\leq"
-          altHyp <- "\\gt"
-          critZAlph <- "z_{\\alpha}"
-        } else if(input$altHypothesis2 == "2") {
-          alternative <- "two.sided"
-          nullHyp <- "="
-          altHyp <- "\\neq"
-          critZAlph <- "\\pm z_{\\alpha/2}"
-        } else {
-          alternative <- "less"
-          nullHyp <- "\\geq"
-          altHyp <- "\\lt"
-          critZAlph <- "-z_{\\alpha}"
-        }
-      }
-      
-      if(input$popuParameters == 'Independent Population Means'){
-        if(si_iv$is_valid()) {
-          
-          output$indMeansTable <- renderUI({
-            tagList(
-              withMathJax(),
-              withMathJax(DTOutput('indMeansData', width = "95%"))
-            )
-          })
-          
-        }
-      } # input$popuParameters == 'Independent Population Means'
-      # else if(input$popuParameters == 'Dependent Population Means'){
-      #   print("Inference for the two Dependent Populations")
-      #}
-      else if(input$popuParameters == 'Population Proportions'){
-        
-        if(si_iv$is_valid())
-        {
-          if(input$numTrials1 >= input$numSuccesses1 && input$numTrials2 >= input$numSuccesses2)
-          {
-            output$twoSampProportion <- renderUI({
-              
-              tagList(
-                withMathJax(),
-                
-                conditionalPanel(
-                  condition = "input.inferenceType2 == 'Confidence Interval'",
-                  
-                  titlePanel(tags$u("Confidence Interval")),
-                  br(),
-                  uiOutput('twoSampPropCI'),
-                  br(),
-                ),
-                
-                conditionalPanel(
-                  condition = "input.inferenceType2 == 'Hypothesis Testing'",
-                  
-                  titlePanel(tags$u("Hypothesis Test")),
-                  br(),
-                  uiOutput('twoSampPropHT'),
-                  br(),
-                  plotOutput('twoSampPropHTPlot', width = "75%", height = "300px"),
-                  br(),
-                  uiOutput('twoSampPropHTIntrp'),
-                  br(),
-                ),
-                
-              )
-            })
-            
-            twoSampPropSucc1 <- input$numSuccesses1
-            twoSampPropTrial1 <- input$numTrials1
-            twoSampPropSucc2 <- input$numSuccesses2
-            twoSampPropTrial2 <- input$numTrials2
-            
-            if(input$inferenceType2 == 'Confidence Interval')
-            {
-              source('R/TwoPropZInt.R')
-              
-              twoSampPropZInt <- TwoPropZInt(twoSampPropSucc1, twoSampPropTrial1, twoSampPropSucc2, twoSampPropTrial2, ConfLvl())
-              
-              # (\\( n\\))  (\\( x\\))  (\\(\\hat{p}\\))  ( 1 - \\(\\hat{p}\\))
-              dataRow1 <- data.frame(Variable = "Number of Trials 1 \\( (n_{1})\\)", Value = paste(twoSampPropTrial1))
-              dataRow2 <- data.frame(Variable = "Number of Successes 1 \\( (x_{1})\\)", Value = paste(twoSampPropSucc1))
-              dataRow3 <- data.frame(Variable = "Number of Trials 2 \\( (n_{2})\\)", Value = paste(twoSampPropTrial2))
-              dataRow4 <- data.frame(Variable = "Number of Successes 2 \\( (x_{2})\\)", Value = paste(twoSampPropSucc2))
-              dataRow5 <- data.frame(Variable = "Sample Proportion of Success 1 \\( (\\hat{p}_{1})\\)", Value = paste(round(twoSampPropZInt["Sample Proportion 1"], digits = 3)))
-              dataRow6 <- data.frame(Variable = "Sample Proportion of Failure 1 \\( (\\hat{q}_{1})\\)", Value = paste(round((1 - twoSampPropZInt["Sample Proportion 1"]), digits = 3)))
-              dataRow7 <- data.frame(Variable = "Sample Proportion of Success 2 \\( (\\hat{p}_{2})\\)", Value = paste(round(twoSampPropZInt["Sample Proportion 2"], digits = 3)))
-              dataRow8 <- data.frame(Variable = "Sample Proportion of Failure 2 \\( (\\hat{q}_{2})\\)", Value = paste(round((1 - twoSampPropZInt["Sample Proportion 2"]), digits = 3)))
-              dataRow9 <- data.frame(Variable = "Difference of Proportions \\( (\\hat{p}_{1} - \\hat{p}_{2})\\)", Value = paste(round(twoSampPropZInt["Difference of proportions"], digits = 3)))
-              dataRow10 <- data.frame(Variable = "Confidence Level \\( (1 - \\alpha)\\)", Value = paste(confLvl*100, "%"))
-              dataRow11 <- data.frame(Variable = "Z Critical Value \\((CV)\\)", Value = paste(twoSampPropZInt["Z Critical"]))
-              dataRow12 <- data.frame(Variable = "Standard Error \\( (SE)\\)", Value = paste(round(twoSampPropZInt["Std Error"], digits = 3)))
-              dataRow13 <- data.frame(Variable = "Margin of Error \\( (ME)\\)", Value = paste(round(twoSampPropZInt["Margin of Error"], digits = 3)))
-              dataRow14 <- data.frame(Variable = "Lower Confidence Limit \\( (LCL)\\)", Value = paste(round(twoSampPropZInt["LCL"], digits = 3)))
-              dataRow15 <- data.frame(Variable = "Upper Confidence Limit \\( (UCL)\\)", Value = paste(round(twoSampPropZInt["UCL"], digits = 3)))
-              
-              twoPropIntData <- rbind(dataRow1, dataRow2, dataRow3, dataRow4, dataRow5, dataRow6, dataRow7, dataRow8, dataRow9, dataRow10, dataRow11, dataRow12, dataRow13, dataRow14, dataRow15)
-              
-              
-              output$twoSampPropData <- renderDT(
-                datatable(twoPropIntData,
-                          options = list(
-                            dom = 't',
-                            pageLength = -1,
-                            ordering = FALSE,
-                            searching = FALSE,
-                            paging = FALSE
-                          ),
-                          rownames = FALSE,
-                          filter = "none"
-                )
-              )
-              
-              
-              output$twoSampPropCI <- renderUI({
-                p(
-                  withMathJax(
-                    sprintf("\\( CI = (\\hat{p}_{1} - \\hat{p}_{2}) \\pm z_{\\alpha/2} \\sqrt{\\dfrac{\\hat{p}_{1}(1-\\hat{p}_{1})}{n_{1}} + \\dfrac{\\hat{p}_{2}(1-\\hat{p}_{2})}{n_{2}}}\\)"),
-                    br(),
-                    br(),
-                    br(),
-                    sprintf("\\( CI = %0.3f \\pm %0.3f \\sqrt{\\dfrac{%0.3f(1-%0.3f)}{%1.0f} + \\dfrac{%0.3f(1-%0.3f)}{%1.0f}}\\)",
-                            twoSampPropZInt["Difference of proportions"],
-                            twoSampPropZInt["Z Critical"],
-                            twoSampPropZInt["Sample Proportion 1"],
-                            twoSampPropZInt["Sample Proportion 1"],
-                            twoSampPropTrial1,
-                            twoSampPropZInt["Sample Proportion 2"],
-                            twoSampPropZInt["Sample Proportion 2"],
-                            twoSampPropTrial2),
-                    br(),
-                    br(),
-                    sprintf("\\( \\quad = %g \\pm %g \\cdot %g \\)",
-                            twoSampPropZInt["Difference of proportions"],
-                            twoSampPropZInt["Z Critical"],
-                            twoSampPropZInt["Std Error"]),
-                    br(),
-                    br(),
-                    sprintf("\\( \\quad = %g \\pm %g \\)",
-                            twoSampPropZInt["Difference of proportions"],
-                            twoSampPropZInt["Margin of Error"]),
-                    br(),
-                    br(),
-                    sprintf("\\( \\quad = (%0.3f, %0.3f)\\)",
-                            twoSampPropZInt["LCL"],
-                            twoSampPropZInt["UCL"]),
-                    br(),
-                    br(),
-                    br(),
-                    p(tags$b("Interpretation:")),
-                    sprintf("We are %1.0f%% confident that the difference in population proportions \\( (p_{1} - p_{2}) \\) is between %0.3f and %0.3f.",
-                            ConfLvl()*100,
-                            twoSampPropZInt["LCL"],
-                            twoSampPropZInt["UCL"])
-                  )
-                )
-              })
-              
-              
-              
-            } # input$inferenceType2 == 'Confidence Interval'
-            else if(input$inferenceType2 == 'Hypothesis Testing')
-            {
-              source('R/TwoPropZTest.R')
-              
-              twoSampPropZTest <- TwoPropZTest(twoSampPropSucc1, twoSampPropTrial1, twoSampPropSucc2, twoSampPropTrial2, 0, alternative, SigLvl())
-              
-              if(twoSampPropZTest["P-Value"] < 0.0001)
-              {
-                pValue <- "P \\lt 0.0001"
-              }
-              else
-              {
-                pValue <- paste("P = ", twoSampPropZTest["P-Value"])
-              }
-              
-              if(alternative == "two.sided")
-              {
-                critZVal <- paste("\\pm", twoSampPropZTest["Z Critical"])
-                htPlotCritVals <- c(-twoSampPropZTest["Z Critical"], twoSampPropZTest["Z Critical"])
-              }
-              else
-              {
-                critZVal <- paste(twoSampPropZTest["Z Critical"])
-                htPlotCritVals <- twoSampPropZTest["Z Critical"]
-              }
-              
-              propDiff <- twoSampPropZTest["Sample Proportion 1"] - twoSampPropZTest["Sample Proportion 2"]
-              
-              dataRow1 <- data.frame(Variable = "Number of Trials 1 \\( (n_{1})\\)", Value = paste(twoSampPropTrial1))
-              dataRow2 <- data.frame(Variable = "Number of Successes 1 \\( (x_{1})\\)", Value = paste(twoSampPropSucc1))
-              dataRow3 <- data.frame(Variable = "Number of Trials 2 \\( (n_{2})\\)", Value = paste(twoSampPropTrial2))
-              dataRow4 <- data.frame(Variable = "Number of Successes 2 \\( (x_{2})\\)", Value = paste(twoSampPropSucc2))
-              dataRow5 <- data.frame(Variable = "Sample Proportion of Success 1 \\( (\\hat{p}_{1})\\)", Value = paste(twoSampPropZTest["Sample Proportion 1"]))
-              dataRow6 <- data.frame(Variable = "Sample Proportion of Failure 1 \\( (\\hat{q}_{1})\\)", Value = paste(1 - twoSampPropZTest["Sample Proportion 1"]))
-              dataRow7 <- data.frame(Variable = "Sample Proportion of Success 2 \\( (\\hat{p}_{2})\\)", Value = paste(twoSampPropZTest["Sample Proportion 2"]))
-              dataRow8 <- data.frame(Variable = "Sample Proportion of Failure 2 \\( (\\hat{q}_{2})\\)", Value = paste(1 - twoSampPropZTest["Sample Proportion 2"]))
-              dataRow9 <- data.frame(Variable = "Difference of Proportions \\( (\\hat{p}_{1} - \\hat{p}_{2})\\)", Value = paste(propDiff))
-              dataRow10 <- data.frame(Variable = "Significance Level \\( (\\alpha)\\)", Value = paste(SigLvl()*100, "%"))
-              dataRow11 <- data.frame(Variable = "Z Critical Value \\((CV)\\)", Value = paste(twoSampPropZTest["Z Critical"]))
-              dataRow12 <- data.frame(Variable = "Standard Error \\( (SE_{D_{P}})\\)", Value = paste(twoSampPropZTest["Std Error"]))
-              dataRow13 <- data.frame(Variable = "Pooled Proportion \\( (\\hat{p})\\)", Value = paste(twoSampPropZTest["Pooled Proportion"]))
-              dataRow14 <- data.frame(Variable = "Test Statistic \\( (z)\\)", Value = paste(twoSampPropZTest["Test Statistic"]))
-              dataRow15 <- data.frame(Variable = "P-Value \\( (P)\\)", Value = paste(pValue))
-              
-              twoPropTestData <- rbind(dataRow1, dataRow2, dataRow3, dataRow4, dataRow5, dataRow6, dataRow7, dataRow8, dataRow9, dataRow10, dataRow11, dataRow12, dataRow13, dataRow14, dataRow15)
-              
-              
-              output$twoSampPropData <- renderDT(
-                datatable(twoPropTestData,
-                          options = list(
-                            dom = 't',
-                            pageLength = -1,
-                            ordering = FALSE,
-                            searching = FALSE,
-                            paging = FALSE
-                          ),
-                          rownames = FALSE,
-                          filter = "none")
-              )
-              
-              
-              if(twoSampPropZTest["P-Value"] > sigLvl)
-              {
-                pvalSymbol <- "\\gt"
-                suffEvidence <- "do not provide"
-                reject <- "do not reject"
-                region <- "acceptance"
-              }
-              else
-              {
-                pvalSymbol <- "\\leq"
-                suffEvidence <- "provide"
-                reject <- "reject"
-                region <- "rejection"
-              }
-              
-              output$twoSampPropHT <- renderUI({
-                p(
-                  withMathJax(
-                    sprintf("\\( H_{0}: p_{1} %s p_{2}\\)",
-                            nullHyp),
-                    br(),
-                    sprintf("\\( H_{a}: p_{1} %s p_{2}\\)",
-                            altHyp),
-                    br(),
-                    br(),
-                    sprintf("\\( \\alpha = %g \\)",
-                            sigLvl),
-                    br(),
-                    br(),
-                    br(),
-                    sprintf("\\(z = \\dfrac{ (\\hat{p}_{1} - \\hat{p}_{2}) - (p_{1} - p_{2})_{0} }{\\sqrt{\\hat{p}(1-\\hat{p})(\\dfrac{1}{n_{1}} + \\dfrac{1}{n_{2}})}}\\)"),
-                    br(),
-                    br(),
-                    p(tags$b("where")),
-                    sprintf("\\( \\displaystyle \\qquad \\hat{p} = \\dfrac{x_{1} + x_{2}}{n_{1} + n_{2}} \\)"),
-                    sprintf("\\( = \\dfrac{%g + %g}{%g + %g} = %g \\)",
-                            twoSampPropSucc1,
-                            twoSampPropSucc2,
-                            twoSampPropTrial1,
-                            twoSampPropTrial2,
-                            twoSampPropZTest["Pooled Proportion"]),
-                    br(),
-                    br(),
-                    br(),
-                    sprintf("\\(z = \\dfrac{ (%g - %g) - 0}{\\sqrt{%g(1-%g)(\\dfrac{1}{%g} + \\dfrac{1}{%g})}}\\)",
-                            twoSampPropZTest["Sample Proportion 1"],
-                            twoSampPropZTest["Sample Proportion 2"],
-                            twoSampPropZTest["Pooled Proportion"],
-                            twoSampPropZTest["Pooled Proportion"],
-                            twoSampPropTrial1,
-                            twoSampPropTrial2),
-                      sprintf("\\( = \\dfrac{%g}{%g} = %g\\)",
-                            twoSampPropZTest["Sample Proportion 1"] - twoSampPropZTest["Sample Proportion 2"],
-                            twoSampPropZTest["Std Error"],
-                            twoSampPropZTest["Test Statistic"]),
-                    br(),
-                    br(),
-                    sprintf("\\(z = %g\\)",
-                            twoSampPropZTest["Test Statistic"]),
-                    br(),
-                    br(),
-                    br(),
-                    br(),
-                    p(tags$b("Using P-Value Method:")),
-                    sprintf("\\( %s \\)",
-                            pValue),
-                    br(),
-                    sprintf("Since \\( P %s %0.2f \\), %s \\( H_{0}\\).",
-                            pvalSymbol,
-                            sigLvl,
-                            reject),
-                    br(),
-                    br(),
-                    br(),
-                    p(tags$b("Using Critical Value Method:")),
-                    sprintf("Critical Value(s) \\( = %s = %s \\)",
-                            critZAlph,
-                            critZVal),
-                    
-                    br(),
-                    sprintf("Since the test statistic \\( (z)\\) falls within the %s region, %s \\( H_{0}\\).",
-                            region,
-                            reject)
-                    
-                  )
-                )
-              })
-              
-              
-              output$twoSampPropHTPlot <- renderPlot({
-                
-                htPlot <- hypZTestPlot(twoSampPropZTest["Test Statistic"], htPlotCritVals, alternative)
-                htPlot
-              })
-              
-              
-              output$twoSampPropHTIntrp <- renderUI({
-                p(
-                  p(tags$b("Conclusion:")),
-                  sprintf("At the %1.0f%% significance level, the data %s sufficient evidence to reject the null hypothesis \\( (H_{0}) \\) that the population 
-                              proportion \\( p_{1} %s p_{2}\\).",
-                          sigLvl*100,
-                          suffEvidence,
-                          nullHyp),
-                  br(),
-                )
-              })
-              
-              
-              
-            } # input$inferenceType2 == 'Hypothesis Test'
-          }
-          else
-          {
-            output$twoSampProportion <- renderUI({
-              validate(
-                need(input$numSuccesses1 <= input$numTrials1, "Number of Successes 1 (x1) cannot be greater than Number of Trials 1 (n1)"),
-                need(input$numSuccesses2 <= input$numTrials2, "Number of Successes 2 (x2) cannot be greater than Number of Trials 2 (n2)"),
-                
-                errorClass = "myClass"
-              )
-            })
-          }
-        }
-        else
-        {
-          output$twoSampProportion <- renderUI({ 
-            validate(
-              need(input$numSuccesses1, "Numeric value for Number of Successes 1 (x1) required"),
-              need(input$numTrials1, "Numeric value for Number of Trials 1 (n1) required"),
-              need(input$numSuccesses2, "Numeric value for Number of Successes 2 (x2) required"),
-              need(input$numTrials2, "Numeric value for Number of Trials 2 (n2) required"),
-              
-              errorClass = "myClass"
-            )
-            
-            validate(
-              need(input$numSuccesses1 %% 1 == 0, "Number of Successes 1 (x1) must be an integer"),
-              need(input$numSuccesses1 >= 0, "Number of Successes 1 (x1) cannot be negative"),
-              need(input$numTrials1 %% 1 == 0, "Number of Trials 1 (n1) must be an integer"),
-              need(input$numTrials1 > 0, "Number of Trials 1 (n1) must be greater than 0"),
-              need(input$numSuccesses2 %% 1 == 0, "Number of Successes 1 (x2) must be an integer"),
-              need(input$numSuccesses2 >= 0, "Number of Successes 1 (x2) cannot be negative"),
-              need(input$numTrials2 %% 1 == 0, "Number of Trials 2 (n2) must be an integer"),
-              need(input$numTrials2 > 0, "Number of Trials 2 (n2) must be greater than 0"),
-              
-              errorClass = "myClass"
-            )
-          })
-        }
       }
     }
     #) # renderInference
@@ -4110,14 +3959,6 @@ server <- function(input, output) {
     input$inferenceType
     input$inferenceType2}, {
       hide(id = "inferenceData")
-    })
-  
-  observeEvent({input$significanceLevel2
-    input$confidenceLevel2}, {
-      
-      if(input$samplesSelect == '2' && input$popuParameters == 'Population Proportions') {
-        hide(id = "inferenceData")
-      }
     })
   
   observeEvent(input$goInference, {

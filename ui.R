@@ -1289,7 +1289,23 @@
                                                                       conditionalPanel( ##### Pop Props ----
                                                                                         condition = "input.popuParameters == 'Population Proportions'",
                                                                                         
-                                                                                        uiOutput('twoSampProportion'),
+                                                                                        conditionalPanel(
+                                                                                          condition = "input.inferenceType2 == 'Confidence Interval'",
+                                                                                          
+                                                                                          titlePanel(tags$u("Confidence Interval")),
+                                                                                          br(),
+                                                                                          uiOutput('twoPropCI'),
+                                                                                          br(),
+                                                                                        ),
+                                                                                        
+                                                                                        conditionalPanel(
+                                                                                          condition = "input.inferenceType2 == 'Hypothesis Testing'",
+                                                                                          
+                                                                                          titlePanel(tags$u("Hypothesis Test")),
+                                                                                          br(),
+                                                                                          uiOutput('twoPropHT'),
+                                                                                          br(),
+                                                                                        ),
                                                                                         
                                                                       ), # Two Population Proportions
                                                     ), # "input.samplesSelect == '2'"
