@@ -439,6 +439,18 @@ server <- function(input, output) {
       }
   }
   
+  GetOutliers <- function(dat, lower, upper) {
+    outliers <- c()
+    
+    for(x in dat) {
+      if(x < lower | x > upper) {
+        outliers <-c(outliers, x)
+      }
+    }
+
+    return(sort(outliers))
+  }
+  
   
   # Function to find the population standard deviation
   pop.sd <- function(x) {
@@ -464,6 +476,13 @@ server <- function(input, output) {
     lowerFence <- round(quartile1 - (1.5*sampIQR), 4)
     upperFence <- round(quartile3 + (1.5*sampIQR), 4)
     numOutliers <- sum(dat < lowerFence) + sum(dat > upperFence)
+    
+    if(numOutliers == 0) {
+      outliers <- "There are no outliers."
+    } else {
+      outliers <- paste(as.character(GetOutliers(dat, lowerFence, upperFence)), collapse=", ")
+    }
+    
     sampRange <- range(dat)[2]-range(dat)[1]
     sampStdDev <- round(sd(dat),4)
     sampVar <- round(var(dat),4)
@@ -507,7 +526,8 @@ server <- function(input, output) {
                                   sampIQR, 
                                   lowerFence, 
                                   upperFence, 
-                                  numOutliers, 
+                                  numOutliers,
+                                  outliers,
                                   sampRange, 
                                   sampStdDev, 
                                   sampVar, 
@@ -550,7 +570,7 @@ server <- function(input, output) {
     
     df <- data.frame(Category = c("Descriptives", "Descriptives", "Descriptives", "Descriptives", "Descriptives", 
                                   "Five Number Summary", "Five Number Summary", "Five Number Summary", "Five Number Summary", "Five Number Summary", 
-                                  "Outliers", "Outliers", "Outliers", "Outliers", 
+                                  "Outliers", "Outliers", "Outliers", "Outliers", "Outliers", 
                                   "Dispersion", "Dispersion", "Dispersion", "Dispersion", "Dispersion", 
                                   "Distribution", "Distribution"),
                      Variable = c("Number of Observations", 
@@ -566,7 +586,8 @@ server <- function(input, output) {
                                   "Interquartile Range (IQR)", 
                                   "Check for Outliers: Lower Fence", 
                                   "Check for Outliers: Upper Fence", 
-                                  "Number of Potential Outliers", 
+                                  "Number of Potential Outliers",
+                                  "Outlier Values",
                                   "Range", 
                                   "Sample Standard Deviation", 
                                   "Sample Variance", 
@@ -606,7 +627,8 @@ server <- function(input, output) {
                       "IQR", 
                       "Lower Fence", 
                       "Upper Fence", 
-                      "Potential Outliers", 
+                      "Potential Outliers",
+                      "Outlier Values",
                       "Range", 
                       "Sample Standard Deviation", 
                       "Sample Variance", 
@@ -735,6 +757,13 @@ server <- function(input, output) {
       
       df_boxplot <- data.frame(x = dat)
       
+      if(df[15,3] != "There are no outliers.") {
+        df_outliers <- createNumLst(df[15,3])
+      } else {
+        df_outliers <- data.frame()
+      }
+      
+      
       output$dsBoxplot <- renderPlot({
         
         #--------------------#
@@ -745,9 +774,9 @@ server <- function(input, output) {
           geom_boxplot(fill = "#03376d",
                        alpha = .5,
                        outlier.shape = NA) +
-          geom_point(data = filter(df_boxplot, x %in% boxplot.stats(dat)$out),
+          geom_point(data = filter(df_boxplot, x %in% df_outliers),
                      size = 5) +
-          geom_text(data = filter(df_boxplot, x %in% boxplot.stats(dat)$out),
+          geom_text(data = filter(df_boxplot, x %in% df_outliers),
                     aes(x = x, y = 0, label = x),
                     size = 15 / .pt,
                     vjust = -1.25) +
