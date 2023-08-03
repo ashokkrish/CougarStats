@@ -1180,7 +1180,7 @@
                                                 condition = "input.dropDownMenu == 'Statistical Inference'",
                                                 style = "display: none;",
                                                 
-                                                uiOutput("renderInference"),
+                                                uiOutput("inferenceValidation"),
                                                 
                                                 div(id = "inferenceData",
                                                     
@@ -1213,8 +1213,24 @@
                                                                       
                                                                       conditionalPanel( ##### Pop Prop ----
                                                                                         condition = "input.popuParameter == 'Population Proportion'",
+      
+                                                                                        conditionalPanel(
+                                                                                          condition = "input.inferenceType == 'Confidence Interval'",
+                                                                                          
+                                                                                          titlePanel(tags$u("Confidence Interval")),
+                                                                                          br(),
+                                                                                          uiOutput('onePropCI'),
+                                                                                          br(),
+                                                                                        ),
                                                                                         
-                                                                                        uiOutput('oneSampProportion'),
+                                                                                        conditionalPanel(
+                                                                                          condition = "input.inferenceType == 'Hypothesis Testing'",
+                                                                                          
+                                                                                          titlePanel(tags$u("Hypothesis Test")),
+                                                                                          br(),
+                                                                                          uiOutput('onePropHT'),
+                                                                                          br(),
+                                                                                        ),
                                                                                         
                                                                       ), # One Population Proportion
                                                     ), # "input.samplesSelect == '1'"
