@@ -3616,21 +3616,30 @@ server <- function(input, output) {
                                      titlePanel("Scatterplot"),
                                      plotOutput("scatterplot", width = "500px"),
                                      br(),
+                                     hr(),
                                    ),
                                    
                                    titlePanel("Data"),
+                                   br(),
                                    DTOutput("slrDataTable", width = "750px"),
                                    br(),
+                                   hr(),
                                    
                                    titlePanel("Estimated equation of the regression line"),
+                                   br(),
+                                   uiOutput('regLineEquation'),
                                    verbatimTextOutput("linearRegression"),
                                    br(),
+                                   hr(),
                                    
                                    titlePanel("95% confidence interval for regression parameters"),
+                                   br(),
                                    verbatimTextOutput("confintLinReg"),
                                    br(),
+                                   hr(),
                                    
                                    titlePanel("ANOVA for regression"),
+                                   br(),
                                    verbatimTextOutput("anovaLinReg"),
                                    #br(),
                           ), 
@@ -3728,10 +3737,69 @@ server <- function(input, output) {
               abline(lm(daty ~ datx), col = "blue")
           })
           
+          output$regLineEquation <- renderUI({
+            withMathJax()
+            p(
+              withMathJax(),
+              p(tags$b("The equation of the regression line is given by ")),
+              sprintf("\\( \\qquad \\hat{y} = \\hat{\\beta}_{0} + \\hat{\\beta}_{1} x \\)"),
+              br(),
+              br(),
+              p(tags$b("where")),
+              sprintf("\\( \\qquad \\hat{\\beta}_{1} = \\dfrac{ \\sum xy - \\dfrac{ (\\sum x)(\\sum y) }{ n } }{ \\sum x^2 - \\dfrac{ (\\sum x)^2 }{ n } } \\)"),
+              sprintf("\\( \\, = \\, \\dfrac{ %g - \\dfrac{ (%g)(%g) }{ %g } }{ %g - \\dfrac{ (%g)^2 }{ %g } } \\)",
+                      dfTotaled["Totals", "xy"],
+                      dfTotaled["Totals", "x"],
+                      dfTotaled["Totals", "y"],
+                      length(datx),
+                      dfTotaled["Totals", "x<sup>2</sup>"],
+                      dfTotaled["Totals", "x"],
+                      length(datx)),
+              sprintf("\\( \\, = \\, \\dfrac{ %g - \\dfrac{ %g }{ %g } }{ %g - \\dfrac{ %g }{ %g } } \\)",
+                      dfTotaled["Totals", "xy"],
+                      dfTotaled["Totals", "x"] * dfTotaled["Totals", "y"],
+                      length(datx),
+                      dfTotaled["Totals", "x<sup>2</sup>"],
+                      dfTotaled["Totals", "x"]^2,
+                      length(datx)),
+              sprintf("\\( \\, = \\, \\dfrac{ %g - %g }{ %g - %g } \\)",
+                      dfTotaled["Totals", "xy"],
+                      (dfTotaled["Totals", "x"] * dfTotaled["Totals", "y"]) / length(datx),
+                      dfTotaled["Totals", "x<sup>2</sup>"],
+                      (dfTotaled["Totals", "x"]^2) / length(datx)),
+              sprintf("\\( \\, = \\, \\dfrac{ %g }{ %g } \\)",
+                      dfTotaled["Totals", "xy"] - (dfTotaled["Totals", "x"] * dfTotaled["Totals", "y"]) / length(datx),
+                      dfTotaled["Totals", "x<sup>2</sup>"] - (dfTotaled["Totals", "x"]^2) / length(datx)),
+              sprintf("\\( \\, = \\, %0.4f \\)",
+                      summary(model)$coefficients["datx", "Estimate"] ),
+              br(),
+              br(),
+              p(tags$b("and")),
+              sprintf("\\( \\qquad \\hat{\\beta}_{0} = \\bar{y} - \\hat{\\beta}_{1} \\bar{x}\\)"),
+              sprintf("\\( \\, = \\, %g - %0.4f (%g) \\)",
+                      mean(daty),
+                      summary(model)$coefficients["datx", "Estimate"],
+                      mean(datx)),
+              sprintf("\\( \\, = \\, %g - %0.4f\\)",
+                      mean(daty),
+                      summary(model)$coefficients["datx", "Estimate"] * mean(datx)),
+              sprintf("\\( \\, = \\, %0.4f \\)",
+                      summary(model)$coefficients["(Intercept)", "Estimate"]),
+              br(),
+              br(),
+              br(),
+              sprintf("\\( \\hat{y} = %0.4f + %0.4f x \\)",
+                      summary(model)$coefficients["(Intercept)", "Estimate"],
+                      summary(model)$coefficients["datx", "Estimate"]),
+              br(),
+              br()
+            )
+          })
+          
           output$linearRegression <- renderPrint({ 
             summary(model)
           })
-          
+ 
           output$confintLinReg <- renderPrint({ 
             confint(model) # Prints the 95% CI for the regression parameters
           })
