@@ -763,14 +763,13 @@ server <- function(input, output) {
         df_outliers <- data.frame()
       }
       
-      
       output$dsBoxplot <- renderPlot({
         
         #--------------------#
         # Horizontal boxplot #
         #--------------------#
         
-        ggplot(df_boxplot, aes(x = x, y = 0)) +
+        bp <- ggplot(df_boxplot, aes(x = x, y = 0)) +
           geom_boxplot(fill = "#03376d",
                        alpha = .5,
                        outlier.shape = NA) +
@@ -786,14 +785,19 @@ server <- function(input, output) {
           theme(axis.title.x = element_text(size = 18, face = "bold", vjust = -1.5),
                 axis.text.x.bottom = element_text(size = 16),
                 axis.text.y.left = element_blank()) +
-          scale_x_continuous(breaks = seq(floor(min(dat)), to = ceiling(max(dat)), by = ceiling( (max(dat) - min(dat))/10 ) )) +
           ylim(-1, 1)
+        
+        if(length(unique(dat)) == 1) {
+          bp + scale_x_continuous(breaks = dat, limits = c(dat[1] - 1, dat[1] + 1))
+        } else {
+          bp + scale_x_continuous(n.breaks = 8) 
+        }
         
       })
       
       
       output$dsHistogram <- renderPlot({
-        pp <- ggplot(data.frame(x = dat)) +
+        hist <- ggplot(data.frame(x = dat)) +
           geom_histogram(aes(x = x),
                          bins = 15,
                          fill = "#03376d",
@@ -809,10 +813,14 @@ server <- function(input, output) {
                                             face = "bold", 
                                             vjust = 1.5),
                 axis.text.x.bottom = element_text(size = 14),
-                axis.text.y.left = element_text(size = 14)) +
-          scale_x_continuous(breaks = seq(floor(min(dat)), to = ceiling(max(dat)), by = ceiling( (max(dat) - min(dat))/10 ) )) 
+                axis.text.y.left = element_text(size = 14))
         
-        pp
+        # if(length(unique(dat)) == 1) {
+        #   hist + scale_x_continuous(breaks = dat, limits = c(dat[1] - 1, dat[1] + 1))
+        # } else {
+          hist + scale_x_continuous(n.breaks = 10) 
+        # }
+
       })
 
       
