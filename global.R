@@ -22,8 +22,18 @@ library(writexl)
 library(xtable)
 library(MASS)
 
+source('R/OneSampZInt.R')
+source('R/OneSampTInt.R')
+source("R/OneSampZTest.R")
+source("R/OneSampTTest.R")
 source('R/OnePropZInt.R')
 source('R/OnePropZTest.R')
+source('R/TwoSampZInt.R')
+source('R/TwoSampTInt.R')
+source('R/TwoSampZTest.R')
+source('R/TwoSampTTest.R')
+source('R/TwoPropZInt.R')
+source('R/TwoPropZTest.R')
 
 options(scipen = 999) # options(scipen = 0)
 
