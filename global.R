@@ -22,6 +22,9 @@ library(writexl)
 library(xtable)
 library(MASS)
 
+source('R/OnePropZInt.R')
+source('R/OnePropZTest.R')
+
 options(scipen = 999) # options(scipen = 0)
 
 `%then%` <- function(a, b) {
