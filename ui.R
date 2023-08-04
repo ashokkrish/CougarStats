@@ -437,9 +437,11 @@
                                                                                                radioButtons(inputId = "dataAvailability",
                                                                                                             label = strong("Data Availability"),
                                                                                                             choiceValues = list("Summarized Data", 
-                                                                                                                                "Enter Raw Data"),
+                                                                                                                                "Enter Raw Data",
+                                                                                                                                "Upload Data"),
                                                                                                             choiceNames = list("Summarized Data", 
-                                                                                                                               "Enter Raw Data"),
+                                                                                                                               "Enter Raw Data",
+                                                                                                                               "Upload Data"),
                                                                                                             selected = "Summarized Data", # character(0), # 
                                                                                                             inline = TRUE), #,width = '1000px'),
                                                                                                
@@ -517,6 +519,50 @@
                                                                                                                    condition = "input.sigmaKnownRaw == 'rawUnknown'"
                                                                                                                  )
                                                                                                ), # One Sample Raw Data
+                                                                                               
+                                                                                               conditionalPanel( ###### Upload ----
+                                                                                                 condition = "input.dataAvailability == 'Upload Data'",
+                                                                                                 
+                                                                                                 
+                                                                                                 fileInput(inputId = "oneMeanUserData", 
+                                                                                                           label = strong("Upload your Data (.csv or .xls or .xlsx)"), 
+                                                                                                           accept = c("text/csv",
+                                                                                                                      "text/comma-separated-values", 
+                                                                                                                      "text/plain", 
+                                                                                                                      ".csv",
+                                                                                                                      ".xls",
+                                                                                                                      ".xlsx")
+                                                                                                 ),
+                                                                                                 
+                                                                                                 selectizeInput(
+                                                                                                   inputId = "oneMeanVariable",
+                                                                                                   label = strong("Choose a Column for Analysis"),
+                                                                                                   choices = c(""),
+                                                                                                   options = list(
+                                                                                                     placeholder = 'Select a column',
+                                                                                                     onInitialize = I('function() { this.setValue(""); }')
+                                                                                                   )
+                                                                                                 ),
+                                                                                                 
+                                                                                                 radioButtons(inputId = "sigmaKnownUpload",
+                                                                                                              label = strong("Population Standard Deviation (\\( \\sigma\\))"),
+                                                                                                              choiceValues = list("Known", 
+                                                                                                                                  "Unknown"),
+                                                                                                              choiceNames = list("Known", 
+                                                                                                                                 "Unknown"),
+                                                                                                              selected = "Known",
+                                                                                                              inline = TRUE),
+                                                                                                 
+                                                                                                 conditionalPanel( ###### " Known ----
+                                                                                                                   condition = "input.sigmaKnownUpload == 'Known'",
+                                                                                                                   
+                                                                                                                   numericInput(inputId = "popuSDUpload",
+                                                                                                                                label = strong("Population Standard Deviation (\\( \\sigma\\)) Value"),
+                                                                                                                                value = 5, 
+                                                                                                                                min = 0.00001, 
+                                                                                                                                step = 0.00001)
+                                                                                                 ),
+                                                                                               ), # One Sample upload data
                                                                              ), # One Population Mean
                                                                              
                                                                              conditionalPanel(##### Proportion ----
@@ -573,14 +619,13 @@
                                                                                conditionalPanel(
                                                                                  condition = "input.popuParameter == 'Population Mean'",
                                                                                  
-                                                                                 conditionalPanel(
-                                                                                   condition = "input.dataAvailability == 'Summarized Data' || input.dataAvailability == 'Enter Raw Data'",
+                                                                                 
                                                                                    
                                                                                    numericInput(inputId = "hypMean",
                                                                                                 label = strong("Hypothesized Population Mean (\\( \\mu_{0}\\)) Value"),
                                                                                                 value = 99, 
                                                                                                 step = 0.00001),
-                                                                                 ),
+                                                                                 
                                                                                ),
                                                                                
                                                                                conditionalPanel(
@@ -629,9 +674,11 @@
                                                                radioButtons(inputId = "dataAvailability2",
                                                                             label = strong("Data Availability"),
                                                                             choiceValues = list("Summarized Data", 
-                                                                                                "Enter Raw Data"),
+                                                                                                "Enter Raw Data",
+                                                                                                "Upload Data"),
                                                                             choiceNames = list("Summarized Data", 
-                                                                                               "Enter Raw Data"),
+                                                                                               "Enter Raw Data",
+                                                                                               "Upload Data"),
                                                                             selected = "Summarized Data", #character(0), # 
                                                                             inline = TRUE), #,width = '1000px'),
                                                                

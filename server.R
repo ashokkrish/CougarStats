@@ -27,6 +27,9 @@ server <- function(input, output) {
   onemeansdunk_iv <- InputValidator$new()
   onemeanraw_iv <- InputValidator$new()
   onemeanht_iv <- InputValidator$new()
+  onemeanupload_iv <- InputValidator$new()
+  onemeanuploadvar_iv <- InputValidator$new()
+  onemeanuploadsd_iv <- InputValidator$new()
   indmeanssumm_iv <- InputValidator$new()
   indmeansraw_iv <- InputValidator$new()
   indmeanssdknown_iv <- InputValidator$new()
@@ -202,6 +205,12 @@ server <- function(input, output) {
   onemeanraw_iv$add_rule("sample1", sv_regex("^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+$", 
                                              "Data must be numeric values seperated by a comma (ie: 2,3,4)"))
   
+  # One Mean Upload Data
+  onemeanupload_iv$add_rule("oneMeanUserData", sv_required())
+  onemeanupload_iv$add_rule("oneMeanUserData", ~ if(nrow(OneMeanUploadData()) == 0) "File is empty")
+  onemeanupload_iv$add_rule("oneMeanUserData", ~ if(ncol(OneMeanUploadData()) < 2) "Data must include one response and (at least) one explanatory variable")
+  onemeanupload_iv$add_rule("oneMeanUserData", ~ if(nrow(OneMeanUploadData()) < 3) "Samples must include at least 2 observations")
+  
   # popuSD 
   
   onemeansdknown_iv$add_rule("popuSD", sv_required()) 
@@ -212,6 +221,14 @@ server <- function(input, output) {
   onemeanraw_iv$add_rule("popuSDRaw", sv_required()) 
   onemeanraw_iv$add_rule("popuSDRaw", sv_gt(0))
   
+  # popuSDUpload
+  
+  onemeanuploadsd_iv$add_rule("popuSDUpload", sv_required()) 
+  onemeanuploadsd_iv$add_rule("popuSDUpload", sv_gt(0))
+  
+  # oneMeanVariable
+  
+  onemeanuploadvar_iv$add_rule("oneMeanVariable", sv_required())
   
   # sampSD 
   
@@ -322,6 +339,9 @@ server <- function(input, output) {
   onemeansdknown_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$dataAvailability == 'Summarized Data' && input$sigmaKnown == 'Known'))
   onemeansdunk_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$dataAvailability == 'Summarized Data' && input$sigmaKnown == 'Unknown'))
   onemeanraw_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$dataAvailability == 'Enter Raw Data'))
+  onemeanupload_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$dataAvailability == 'Upload Data'))
+  onemeanuploadvar_iv$condition(function() {isTRUE(input$dataAvailability == 'Upload Data' && slrupload_iv$is_valid()) })
+  onemeanuploadsd_iv$condition(function() {isTRUE(input$dataAvailability == 'Upload Data' && input$sigmaKnownUpload == 'Known' && slrupload_iv$is_valid()) })
   onemeanht_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$inferenceType == 'Hypothesis Testing'))
   indmeanssumm_iv$condition(~ isTRUE(input$samplesSelect == '2' && input$popuParameters == 'Independent Population Means' && input$dataAvailability2 == 'Summarized Data'))
   indmeansraw_iv$condition(~ isTRUE(input$samplesSelect == '2' && input$popuParameters == 'Independent Population Means' && input$dataAvailability2 == 'Enter Raw Data'))
@@ -337,6 +357,9 @@ server <- function(input, output) {
   si_iv$add_validator(onemeansdunk_iv)
   si_iv$add_validator(onemeanraw_iv)
   si_iv$add_validator(onemeanht_iv)
+  si_iv$add_validator(onemeanupload_iv)
+  si_iv$add_validator(onemeanuploadvar_iv)
+  si_iv$add_validator(onemeanuploadsd_iv)
   si_iv$add_validator(indmeanssumm_iv)
   si_iv$add_validator(indmeansraw_iv)
   si_iv$add_validator(indmeanssdknown_iv)
@@ -352,6 +375,9 @@ server <- function(input, output) {
   onemeansdunk_iv$enable()
   onemeanraw_iv$enable()
   onemeanht_iv$enable()
+  onemeanupload_iv$enable()
+  onemeanuploadvar_iv$enable()
+  onemeanuploadsd_iv$enable()
   indmeanssumm_iv$enable()
   indmeansraw_iv$enable()
   indmeanssdknown_iv$enable()
@@ -1756,6 +1782,19 @@ server <- function(input, output) {
   
   #### One Mean reactives ----
   
+  OneMeanUploadData <- eventReactive(input$oneMeanUserData, {
+    
+    ext <- tools::file_ext(input$oneMeanUserData$name)
+    
+    switch(ext, 
+           csv = read_csv(input$oneMeanUserData$datapath),
+           xls = read_excel(input$oneMeanUserData$datapath),
+           xlsx = read_excel(input$oneMeanUserData$datapath),
+           validate("Improper file format")
+    )
+  })
+  
+  
   OneMeanHypInfo <- reactive({
     hypTestSymbols <- list()
     
@@ -1804,12 +1843,20 @@ server <- function(input, output) {
   OneMeanZIntRaw <- reactive({
     req(si_iv$is_valid())
     
-    datRawData <- createNumLst(input$sample1)
-    rawSampleSize <- length(datRawData)
-    rawSampleMean <- mean(datRawData)
-    rawPopuSD <- input$popuSDRaw
+    if(input$dataAvailability == 'Enter Raw Data') {
+      dat <- createNumLst(input$sample1)
+      popuSD <- input$popuSDRaw
+      print(dat)
+    } else if(input$dataAvailability == 'Upload Data') {
+      dat <- unlist(OneMeanUploadData()[,input$oneMeanVariable])
+      popuSD <- input$popuSDUpload
+    }
     
-    oneMeanZInt <- ZInterval(rawSampleSize, rawSampleMean, rawPopuSD, ConfLvl())
+    sampleSize <- length(dat)
+    sampleMean <- mean(dat)
+    
+    oneMeanZInt <- ZInterval(sampleSize, sampleMean, popuSD, ConfLvl())
+    print(oneMeanZInt)
     
     return(oneMeanZInt)
   })
@@ -1831,12 +1878,18 @@ server <- function(input, output) {
   OneMeanTIntRaw <- reactive({
     req(si_iv$is_valid())
     
-    datRawData <- createNumLst(input$sample1)
-    rawSampleSize <- length(datRawData)
-    rawSampleMean <- mean(datRawData)
-    rawSampleSD <- sd(datRawData)
+    if(input$dataAvailability == 'Enter Raw Data') {
+      dat <- createNumLst(input$sample1)
+
+    } else if(input$dataAvailability == 'Upload Data') {
+      dat <- unlist(OneMeanUploadData()[,input$oneMeanVariable])
+    }
     
-    oneMeanTInt <- TInterval(rawSampleSize, rawSampleMean, rawSampleSD, 
+    sampleSize <- length(dat)
+    sampleMean <- mean(dat)
+    sampleSD <- sd(dat)
+    
+    oneMeanTInt <- TInterval(sampleSize, sampleMean, sampleSD, 
                              ConfLvl())
     
     return(oneMeanTInt) 
@@ -1860,14 +1913,21 @@ server <- function(input, output) {
   OneMeanZTestRaw <- reactive({
     req(si_iv$is_valid())
     
-    datRawData <- createNumLst(input$sample1)
-    rawSampleSize <- length(datRawData)
-    rawSampleMean <- mean(datRawData)
-    rawPopuSD <- input$popuSDRaw
-    hypMeanSampOne <- input$hypMean 
+    if(input$dataAvailability == 'Enter Raw Data') {
+      dat <- createNumLst(input$sample1)
+      popuSD <- input$popuSDRaw
+    } else if (input$dataAvailability == 'Upload Data') {
+      dat <- unlist(OneMeanUploadData()[,input$oneMeanVariable])
+      popuSD <- input$popuSDUpload
+    }
     
-    oneMeanZTest <- ZTest(rawSampleSize, rawSampleMean, rawPopuSD, 
-                          hypMeanSampOne, OneMeanHypInfo()$alternative, 
+    
+    sampleSize <- length(dat)
+    sampleMean <- mean(dat)
+    hypMeanVal <- input$hypMean 
+    
+    oneMeanZTest <- ZTest(sampleSize, sampleMean, popuSD, 
+                          hypMeanVal, OneMeanHypInfo()$alternative, 
                           SigLvl())
     
     return (oneMeanZTest) 
@@ -1889,17 +1949,25 @@ server <- function(input, output) {
   })
   
   
+  
+  
   OneMeanTTestRaw <- reactive({
     req(si_iv$is_valid())
     
-    datRawData <- createNumLst(input$sample1)
-    rawSampleSize <- length(datRawData)
-    rawSampleMean <- mean(datRawData)
-    rawSampleSD <- sd(datRawData)
-    hypMeanSampOne <- input$hypMean 
+    if(input$dataAvailability == 'Enter Raw Data') {
+      dat <- createNumLst(input$sample1)
+
+    } else if (input$dataAvailability == 'Upload Data') {
+      dat <- unlist(OneMeanUploadData()[,input$oneMeanVariable])
+    }
     
-    oneMeanTTest <- TTest(rawSampleSize, rawSampleMean, rawSampleSD, 
-                          hypMeanSampOne, OneMeanHypInfo()$alternative, 
+    sampleSize <- length(dat)
+    sampleMean <- mean(dat)
+    sampleSD <- sd(dat)
+    hypMeanVal <- input$hypMean 
+    
+    oneMeanTTest <- TTest(sampleSize, sampleMean, sampleSD, 
+                          hypMeanVal, OneMeanHypInfo()$alternative, 
                           SigLvl())
     
     return(oneMeanTTest)
@@ -2069,8 +2137,7 @@ server <- function(input, output) {
   # ------------------------------------------------------------------------ #
   output$inferenceValidation <- renderUI({
     
-    if(!onemean_iv$is_valid())
-    {
+    if(!onemean_iv$is_valid()) {
       validate(
         need(input$sampleSize, "Sample size (n) must be an integer greater than 1.") %then%
           need(input$sampleSize > 1 & input$sampleSize %% 1 == 0, "Sample size (n) must be an integer greater than 1."),
@@ -2080,8 +2147,7 @@ server <- function(input, output) {
       )
     }
     
-    if(!onemeanraw_iv$is_valid())
-    {
+    if(!onemeanraw_iv$is_valid()) {
       validate(
         need(input$sample1, "Sample Data required.") %then%
           need(length(createNumLst(input$sample1)) > 1, "Sample Data requires a minimum of 2 data points."),
@@ -2092,8 +2158,7 @@ server <- function(input, output) {
       )
     }
     
-    if(!onemeansdknown_iv$is_valid())
-    {
+    if(!onemeansdknown_iv$is_valid()) {
       validate(
         need(input$popuSD & input$popuSD > 0, "Population Standard Deviation must be positive."),
         #need(input$popuSD > 0, "Population Standard Deviation must be greater than 0"),
@@ -2102,8 +2167,7 @@ server <- function(input, output) {
       )
     }
     
-    if(!onemeansdunk_iv$is_valid())
-    {
+    if(!onemeansdunk_iv$is_valid()) {
       validate(
         need(input$sampSD && input$sampSD > 0, "Sample Standard Deviation (s) must be positive."),
         
@@ -2111,8 +2175,34 @@ server <- function(input, output) {
       )
     }
     
-    if(!onemeanht_iv$is_valid())
-    {
+    if(!onemeanupload_iv$is_valid()) {
+      validate(
+        need(input$oneMeanUserData, "Please upload your data to continue."),
+        need(nrow(OneMeanUploadData()) != 0, "File is empty."),
+        need(ncol(OneMeanUploadData()) > 1, "Data must include one response and (at least) one explanatory variable."),
+        need(nrow(OneMeanUploadData()) > 2, "Samples must include at least 2 observations."),
+        
+        errorClass = "myClass"
+      )
+    }
+    
+    if(!onemeanuploadvar_iv$is_valid()) {
+      validate(
+        need(input$oneMeanVariable != "", "Please select a column for analysis."),
+          
+        errorClass = "myClass"
+      )
+    }
+    
+    if(!onemeanuploadsd_iv$is_valid()) {
+      validate(
+        need(input$popuSDUpload && input$popuSDUpload > 0, "Population Standard Deviation must be positive."),
+      
+        errorClass = "myClass"
+      )
+    }
+    
+    if(!onemeanht_iv$is_valid()) {
       validate(
         need(input$hypMean, "Hypothesized Population Mean value required."),
         
@@ -2303,6 +2393,22 @@ server <- function(input, output) {
         testStat <- "t"
         critVal <- oneMeanData["T Critical"]
       } 
+    } else if(input$dataAvailability == 'Upload Data'){
+      
+      if(input$sigmaKnownUpload == 'Known'){
+        
+        oneMeanData <- OneMeanZIntRaw()
+        sdSymbol <- "\\sigma"
+        testStat <- "z"
+        critVal <- oneMeanData["Z Critical"]
+        
+      } else if(input$sigmaKnownUpload == 'Unknown'){
+        
+        oneMeanData <- OneMeanTIntRaw()
+        sdSymbol <- "s"
+        testStat <- "t"
+        critVal <- oneMeanData["T Critical"]
+      } 
     }
     
     p(
@@ -2363,8 +2469,7 @@ server <- function(input, output) {
         sdSymbol <- "s"
         testStat <- "t"
       } 
-    }
-    else if(input$dataAvailability == 'Enter Raw Data'){
+    } else if(input$dataAvailability == 'Enter Raw Data'){
       
       if(input$sigmaKnownRaw == 'rawKnown'){
         oneMeanData <- OneMeanZTestRaw()
@@ -2375,6 +2480,22 @@ server <- function(input, output) {
         oneMeanData <- OneMeanTTestRaw()
         sdSymbol <- "s"
         testStat <- "t"
+      } 
+    } else if(input$dataAvailability == 'Upload Data'){
+      
+      if(input$sigmaKnownUpload == 'Known'){
+        
+        oneMeanData <- OneMeanZTestRaw()
+        sdSymbol <- "\\sigma"
+        testStat <- "z"
+        critVal <- oneMeanData["Z Critical"]
+        
+      } else if(input$sigmaKnownUpload == 'Unknown'){
+        
+        oneMeanData <- OneMeanTTestRaw()
+        sdSymbol <- "s"
+        testStat <- "t"
+        critVal <- oneMeanData["T Critical"]
       } 
     }
     
@@ -2519,8 +2640,7 @@ server <- function(input, output) {
         oneMeanData <- OneMeanTTestSumm()
         sigmaKnown <- 'Unknown'
       }
-    }
-    else if(input$dataAvailability == 'Enter Raw Data') {
+    } else if(input$dataAvailability == 'Enter Raw Data') {
       
       if(input$sigmaKnownRaw == 'rawKnown'){
         oneMeanData <- OneMeanZTestRaw()
@@ -2530,6 +2650,16 @@ server <- function(input, output) {
         oneMeanData <- OneMeanTTestRaw()
         sigmaKnown <- 'Unknown'
       }
+    } else if(input$dataAvailability == 'Upload Data'){
+      
+      if(input$sigmaKnownUpload == 'Known'){
+        oneMeanData <- OneMeanZTestRaw()
+        sigmaKnown <- 'Known'
+        
+      } else if(input$sigmaKnownUpload == 'Unknown'){
+        oneMeanData <- OneMeanTTestRaw()
+        sigmaKnown <- 'Unknown'
+      } 
     }
     
     intrpInfo <- OneMeanHypInfo()
@@ -3149,7 +3279,7 @@ server <- function(input, output) {
           br(),
           p(tags$b("where")),
           sprintf("\\( \\displaystyle \\qquad s_{p} = \\sqrt{\\dfrac{(n_{1} - 1)s_{1}^2 + (n_{2} - 1)s_{2}^2}{n_{1} + n_{2} - 2}} \\)"),
-          sprintf("\\( = \\sqrt{\\dfrac{(%g - 1)%g + (%g - 1)%g}{%g + %g - 2}} = %g \\)",
+          sprintf("\\( = \\sqrt{\\dfrac{(%g - 1)%s + (%g - 1)%s}{%g + %g - 2}} = %g \\)",
                   data$n1,
                   data$sd1^2,
                   data$n2,
@@ -3438,6 +3568,22 @@ server <- function(input, output) {
   
   ### Observers ----
   # --------------------------------------------------------------------- #
+  
+  observeEvent(input$oneMeanUserData, {
+    hide(id = "inferenceData")
+    hide(id = "oneMeanVariable")
+    # if(onemeanupload_iv$is_valid())
+    # {
+      freezeReactiveValue(input, "oneMeanVariable")
+      updateSelectInput(session = getDefaultReactiveDomain(),
+                        "oneMeanVariable",
+                        choices = c(colnames(OneMeanUploadData()))
+      )
+
+      show(id = "oneMeanVariable")
+    # }
+  })
+  
   
   observeEvent(input$goInference, {
     #output$renderInference <- renderDataTable(
@@ -4036,6 +4182,10 @@ server <- function(input, output) {
     input$inferenceType2}, {
       hide(id = "inferenceData")
     })
+  
+  observeEvent(input$dataAvailability, {
+    hide(id = "oneMeanVariable")
+  })
   
   observeEvent(input$goInference, {
     show(id = "inferenceMP")
