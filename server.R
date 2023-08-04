@@ -340,8 +340,8 @@ server <- function(input, output) {
   onemeansdunk_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$dataAvailability == 'Summarized Data' && input$sigmaKnown == 'Unknown'))
   onemeanraw_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$dataAvailability == 'Enter Raw Data'))
   onemeanupload_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$dataAvailability == 'Upload Data'))
-  onemeanuploadvar_iv$condition(function() {isTRUE(input$dataAvailability == 'Upload Data' && slrupload_iv$is_valid()) })
-  onemeanuploadsd_iv$condition(function() {isTRUE(input$dataAvailability == 'Upload Data' && input$sigmaKnownUpload == 'Known' && slrupload_iv$is_valid()) })
+  onemeanuploadvar_iv$condition(function() {isTRUE(input$samplesSelect == '1' && input$dataAvailability == 'Upload Data' && slrupload_iv$is_valid()) })
+  onemeanuploadsd_iv$condition(function() {isTRUE(input$samplesSelect == '1' &&input$dataAvailability == 'Upload Data' && input$sigmaKnownUpload == 'Known' && slrupload_iv$is_valid()) })
   onemeanht_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$inferenceType == 'Hypothesis Testing'))
   indmeanssumm_iv$condition(~ isTRUE(input$samplesSelect == '2' && input$popuParameters == 'Independent Population Means' && input$dataAvailability2 == 'Summarized Data'))
   indmeansraw_iv$condition(~ isTRUE(input$samplesSelect == '2' && input$popuParameters == 'Independent Population Means' && input$dataAvailability2 == 'Enter Raw Data'))
@@ -2908,7 +2908,7 @@ server <- function(input, output) {
           sprintf("\\( CI = (\\bar{x}_{1} - \\bar{x}_{2}) \\pm z_{\\alpha/2} \\cdot \\sqrt{ \\dfrac{\\sigma_{1}^2}{n_{1}} + \\dfrac{\\sigma_{2}^2}{n_{2}} } \\)"),
           br(),
           br(),
-          sprintf("\\( \\displaystyle \\quad = (%s - %s) \\pm \\left( %g \\cdot \\sqrt{ \\dfrac{%g^2}{%g} + \\dfrac{%g^2}{%g} } \\right) \\)",
+          sprintf("\\( \\displaystyle \\quad = (%g - %g) \\pm \\left( %g \\cdot \\sqrt{ \\dfrac{%g^2}{%g} + \\dfrac{%g^2}{%g} } \\right) \\)",
                   data$xbar1,
                   data$xbar2,
                   zInt['Z Critical'],

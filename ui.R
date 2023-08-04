@@ -674,11 +674,9 @@
                                                                radioButtons(inputId = "dataAvailability2",
                                                                             label = strong("Data Availability"),
                                                                             choiceValues = list("Summarized Data", 
-                                                                                                "Enter Raw Data",
-                                                                                                "Upload Data"),
+                                                                                                "Enter Raw Data"),
                                                                             choiceNames = list("Summarized Data", 
-                                                                                               "Enter Raw Data",
-                                                                                               "Upload Data"),
+                                                                                               "Enter Raw Data"),
                                                                             selected = "Summarized Data", #character(0), # 
                                                                             inline = TRUE), #,width = '1000px'),
                                                                
