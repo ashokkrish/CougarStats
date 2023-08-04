@@ -1093,7 +1093,7 @@
                                                                          conditionalPanel(
                                                                            condition = "input.dsTableFilters.indexOf('First Quartile (Q1)') > -1 | input.dsTableFilters.indexOf('Third Quartile (Q3)') > -1",
                                                                            
-                                                                           p("* Note: Q1 and Q3 are calculated by excluding Q2 on both sides"),
+                                                                           helpText("* Note: Quartiles are calculated using the inclusionary (Tukey) approach."),
                                                                          ),
                                                                          
                                                                          br()
@@ -1121,8 +1121,9 @@
                                                                                     plotOutput("dsBoxplot", width = '75%')
                                                                              )
                                                                            ),
-                                                                           
+ 
                                                                            br(),
+                                                                           helpText("*** Using Tukey's hinges"),
                                                                            br(),
                                                                            hr(),
                                                                            br(),

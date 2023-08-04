@@ -208,7 +208,6 @@ server <- function(input, output) {
   # One Mean Upload Data
   onemeanupload_iv$add_rule("oneMeanUserData", sv_required())
   onemeanupload_iv$add_rule("oneMeanUserData", ~ if(nrow(OneMeanUploadData()) == 0) "File is empty")
-  onemeanupload_iv$add_rule("oneMeanUserData", ~ if(ncol(OneMeanUploadData()) < 2) "Data must include one response and (at least) one explanatory variable")
   onemeanupload_iv$add_rule("oneMeanUserData", ~ if(nrow(OneMeanUploadData()) < 3) "Samples must include at least 2 observations")
   
   # popuSD 
@@ -494,9 +493,9 @@ server <- function(input, output) {
     sampMode <- Modes(dat)
     sampMin <- min(dat)
     #popuStdDev <- round(pop.sd(dat),4) # round(sqrt((n-1)/n) * sampStdDev(dat), 4)
-    quartile1 <-  quantile(dat, 0.25, type = 6) #fivenum(dat)[2]
+    quartile1 <-  fivenum(dat)[2]
     sampMedian <- median(dat)
-    quartile3 <-  quantile(dat, 0.75, type = 6) #fivenum(dat)[4]
+    quartile3 <-  fivenum(dat)[4]
     sampMax <- max(dat)
     sampIQR <- round(quartile3 - quartile1, 4)
     lowerFence <- round(quartile1 - (1.5*sampIQR), 4)
@@ -606,7 +605,7 @@ server <- function(input, output) {
                                   "Mode", 
                                   "Minimum", 
                                   "First Quartile \\( (Q_{1}) \\)*", 
-                                  "Second Quartile or Median \\( (Q_{2}) \\)", 
+                                  "Second Quartile or Median \\( (Q_{2}) \\)*", 
                                   "Third Quartile \\( (Q_{3}) \\)*", 
                                   "Maximum", 
                                   "Interquartile Range (IQR)", 
@@ -1787,9 +1786,10 @@ server <- function(input, output) {
     ext <- tools::file_ext(input$oneMeanUserData$name)
     
     switch(ext, 
-           csv = read_csv(input$oneMeanUserData$datapath),
+           csv = read_csv(input$oneMeanUserData$datapath, show_col_types = FALSE),
            xls = read_excel(input$oneMeanUserData$datapath),
            xlsx = read_excel(input$oneMeanUserData$datapath),
+           txt = read_delim(input$oneMeanUserData$datapath, delim = ",", show_col_types = FALSE),
            validate("Improper file format")
     )
   })
@@ -1846,7 +1846,7 @@ server <- function(input, output) {
     if(input$dataAvailability == 'Enter Raw Data') {
       dat <- createNumLst(input$sample1)
       popuSD <- input$popuSDRaw
-      print(dat)
+      
     } else if(input$dataAvailability == 'Upload Data') {
       dat <- unlist(OneMeanUploadData()[,input$oneMeanVariable])
       popuSD <- input$popuSDUpload
@@ -1856,7 +1856,6 @@ server <- function(input, output) {
     sampleMean <- mean(dat)
     
     oneMeanZInt <- ZInterval(sampleSize, sampleMean, popuSD, ConfLvl())
-    print(oneMeanZInt)
     
     return(oneMeanZInt)
   })
@@ -2179,7 +2178,6 @@ server <- function(input, output) {
       validate(
         need(input$oneMeanUserData, "Please upload your data to continue."),
         need(nrow(OneMeanUploadData()) != 0, "File is empty."),
-        need(ncol(OneMeanUploadData()) > 1, "Data must include one response and (at least) one explanatory variable."),
         need(nrow(OneMeanUploadData()) > 2, "Samples must include at least 2 observations."),
         
         errorClass = "myClass"
@@ -3569,7 +3567,7 @@ server <- function(input, output) {
   ### Observers ----
   # --------------------------------------------------------------------- #
   
-  observeEvent(input$oneMeanUserData, {
+  observeEvent(input$oneMeanUserData, priority = 5, {
     hide(id = "inferenceData")
     hide(id = "oneMeanVariable")
     # if(onemeanupload_iv$is_valid())
