@@ -38,8 +38,8 @@ TwoSampTTest <- function(xbar1, s1, n1, xbar2, s2, n2, var.equal = TRUE, alterna
   }
   
   #If var.equal == TRUE then sp must be printed in dat: PENDING
-  
-  dat <- round(c((xbar1 - xbar2), t.crit, df, se, tstat, p_value), 4)
+
+  dat <- sapply(c((xbar1 - xbar2), t.crit, df, se, tstat, p_value), function(x){ if(x < 0.0001 && x > 0) {signif(x,1)} else {round(x, 4)}})
   
   names(dat) <- c("Difference of means", "T Critical", "df", "Std Error", "Test Statistic", "P-Value")
   
@@ -48,10 +48,10 @@ TwoSampTTest <- function(xbar1, s1, n1, xbar2, s2, n2, var.equal = TRUE, alterna
 
 # Example usage:
 
-TwoSampTTest(98, 3.76, 16, 96.3, 3.85, 15, TRUE, "greater", 0.05)
-
-TwoSampTTest(29.6, 4.36, 25, 33.9, 4.97, 25, TRUE, "less", 0.01)
-
-TwoSampTTest(29.6, 5.36, 21, 33.9, 5.97, 21, TRUE, "two.sided", 0.05)
-
-TwoSampTTest(145.75, 24.3706, 8, 146.5, 21.2939, 8, TRUE, "two.sided", 0.01)
+# TwoSampTTest(98, 3.76, 16, 96.3, 3.85, 15, TRUE, "greater", 0.05)
+# 
+# TwoSampTTest(29.6, 4.36, 25, 33.9, 4.97, 25, TRUE, "less", 0.01)
+# 
+# TwoSampTTest(29.6, 5.36, 21, 33.9, 5.97, 21, TRUE, "two.sided", 0.05)
+# 
+# TwoSampTTest(145.75, 24.3706, 8, 146.5, 21.2939, 8, TRUE, "two.sided", 0.01)

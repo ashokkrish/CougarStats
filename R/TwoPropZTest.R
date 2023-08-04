@@ -29,8 +29,8 @@ TwoPropZTest <- function(X1, n1, X2, n2, hyp_diff, alternative = c("two.sided", 
     p_value <- pnorm(zstat, lower.tail = FALSE)
     z.crit <- qnorm(1 - s_level)
   }
-  
-  dat <- round(c(phat1, phat2, pooled_p, z.crit, se, zstat, p_value), 4)
+
+  dat <- sapply(c(phat1, phat2, pooled_p, z.crit, se, zstat, p_value), function(x){ if(x < 0.0001 && x > 0) {signif(x,1)} else {round(x, 4)}})
   
   names(dat) <- c("Sample Proportion 1", "Sample Proportion 2", "Pooled Proportion", "Z Critical", "Std Error", "Test Statistic", "P-Value")
   

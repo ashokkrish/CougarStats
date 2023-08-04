@@ -10,7 +10,7 @@ ZInterval <- function(n, xbar, sigma, c_level = 0.95)
   
   UCL_z <- xbar + margin_of_error
   
-  dat <- round(c(n, xbar, sigma, z.crit, se, margin_of_error, LCL_z, UCL_z), 4)
+  dat <- sapply(c(n, xbar, sigma, z.crit, se, margin_of_error, LCL_z, UCL_z), function(x){ if(x < 0.0001 && x > 0) {signif(x,1)} else {round(x, 4)}})
   
   names(dat) <- c("Sample Size", "Sample Mean", "Population SD", "Z Critical", "Std Error", "ME", "LCL", "UCL")
   

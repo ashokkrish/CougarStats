@@ -22,7 +22,7 @@ OnePropZTest <- function(X, n, p0, alternative = c("two.sided", "less", "greater
     z.crit <- qnorm(1 - s_level)
   }
   
-  dat <- round(c(X, n, phat, z.crit, se, zstat, p_value), 4)
+  dat <- sapply(c(X, n, phat, z.crit, se, zstat, p_value), function(x){ if(x < 0.0001 && x > 0) {signif(x,1)} else {round(x, 4)}})
   
   names(dat) <- c("X", "n", "Sample Proportion", "Z Critical", "Std Error", "Test Statistic", "P-Value")
   

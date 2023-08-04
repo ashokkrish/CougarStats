@@ -30,7 +30,7 @@ TwoSampTInt <- function(xbar1, s1, n1, xbar2, s2, n2, var.equal = TRUE, c_level 
   
   UCL <- (xbar1 - xbar2) + margin_of_error
   
-  dat <- round(c((xbar1 - xbar2), t.crit, df, se, margin_of_error, LCL, UCL), 4)
+  dat <- sapply(c((xbar1 - xbar2), t.crit, df, se, margin_of_error, LCL, UCL), function(x){ if(x < 0.0001 && x > 0) {signif(x,1)} else {round(x, 4)}})
   
   names(dat) <- c("Difference of means", "T Critical", "df", "Std Error", "ME", "LCL", "UCL")
   
@@ -39,10 +39,10 @@ TwoSampTInt <- function(xbar1, s1, n1, xbar2, s2, n2, var.equal = TRUE, c_level 
 
 # Example usage:
 
-TwoSampTInt(10, 2.1, 15, 12, 2.3, 15, TRUE, 0.95)
-
-TwoSampTInt(0.0297, 0.01, 10, 0.0313, 0.01, 10, TRUE, 0.95)
-
-TwoSampTInt(29.6, 5.36, 21, 33.9, 5.97, 21, TRUE, 0.95)
-
-TwoSampTInt(14.6, 0.43, 19, 15.36, 0.50, 17, TRUE, 0.90)
+# TwoSampTInt(10, 2.1, 15, 12, 2.3, 15, TRUE, 0.95)
+# 
+# TwoSampTInt(0.0297, 0.01, 10, 0.0313, 0.01, 10, TRUE, 0.95)
+# 
+# TwoSampTInt(29.6, 5.36, 21, 33.9, 5.97, 21, TRUE, 0.95)
+# 
+# TwoSampTInt(14.6, 0.43, 19, 15.36, 0.50, 17, TRUE, 0.90)

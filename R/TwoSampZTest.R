@@ -23,19 +23,14 @@ TwoSampZTest <- function(xbar1, sigma1, n1, xbar2, sigma2, n2, alternative = c("
     z.crit <- qnorm(1 - s_level)
   }
   
-  dat <- round(c((xbar1 - xbar2), z.crit, se, zstat, p_value), 4)
+  dat <- sapply(c((xbar1 - xbar2), z.crit, se, zstat, p_value), function(x){ if(x < 0.0001 && x > 0) {signif(x,1)} else {round(x, 4)}})
   
-  # if(alternative == 'two.sided'){
-  #   names(dat) <- c("Difference of means", "± Z Critical", "Std Error", "TS", "P-Value")
-  # }
-  # else
-  # {
-    names(dat) <- c("Difference of means", "Z Critical", "Std Error", "Test Statistic", "P-Value")
-  # }
+  names(dat) <- c("Difference of means", "Z Critical", "Std Error", "Test Statistic", "P-Value")
+  
   return(dat) 
 }
 
 # Example usage:
 
-TwoSampZTest(10, 2.1, 15, 12, 2.3, 15, "two.sided", 0.05)
+# TwoSampZTest(10, 2.1, 15, 12, 2.3, 15, "two.sided", 0.05)
 
