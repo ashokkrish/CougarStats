@@ -675,13 +675,13 @@
                                                                    numericInput(inputId = "popuSD1",
                                                                                 label = strong("Population Standard Deviation 1 (\\( \\sigma_{1}\\)) Value"),
                                                                                 value = 5.36, 
-                                                                                min = 0.0001, 
+                                                                                min = 0.00001, 
                                                                                 step = 0.00001),
                                                                    
                                                                    numericInput(inputId = "popuSD2",
                                                                                 label = strong("Population Standard Deviation 2 (\\( \\sigma_{2}\\)) Value"),
                                                                                 value = 5.97, 
-                                                                                min = 0.0001, 
+                                                                                min = 0.00001, 
                                                                                 step = 0.00001),
                                                                  ),
                                                                  
