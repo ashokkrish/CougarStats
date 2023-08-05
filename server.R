@@ -32,9 +32,12 @@ server <- function(input, output) {
   onemeanuploadsd_iv <- InputValidator$new()
   indmeanssumm_iv <- InputValidator$new()
   indmeansraw_iv <- InputValidator$new()
+  indmeansupload_iv <- InputValidator$new()
+  indmeansuploadvar_iv <- InputValidator$new()
   indmeanssdknown_iv <- InputValidator$new()
   indmeanssdunk_iv <- InputValidator$new()
   indmeansrawsd_iv <- InputValidator$new()
+  indmeansuploadsd_iv <- InputValidator$new()
   oneprop_iv <- InputValidator$new()
   onepropht_iv <- InputValidator$new()
   twoprop_iv <- InputValidator$new()
@@ -297,11 +300,22 @@ server <- function(input, output) {
   
   #indMeansUserData
   
-  # indmeansupload_iv$add_rule("indMeansUserData", sv_required())
-  # indmeansupload_iv$add_rule("indMeansUserData", ~ if(nrow(OneMeanUploadData()) == 0) "File is empty.")
-  # indmeansupload_iv$add_rule("indMeansUserData", ~ if(ncol(OneMeanUploadData()) < 2) "File must contain at least 2 distinct samples to choose from for analysis.")
-  # indmeansupload_iv$add_rule("indMeansUserData", ~ if(nrow(OneMeanUploadData()) < 3) "Samples must include at least 2 observations.")
+  indmeansupload_iv$add_rule("indMeansUserData", sv_required())
+  indmeansupload_iv$add_rule("indMeansUserData", ~ if(!(tools::file_ext(input$indMeansUserData$name) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+  indmeansupload_iv$add_rule("indMeansUserData", ~ if(nrow(IndMeansUploadData()) == 0) "File is empty.")
+  indmeansupload_iv$add_rule("indMeansUserData", ~ if(ncol(IndMeansUploadData()) < 2) "File must contain at least 2 distinct samples to choose from for analysis.")
+  indmeansupload_iv$add_rule("indMeansUserData", ~ if(nrow(IndMeansUploadData()) < 3) "Samples must include at least 2 observations.")
   
+  indmeansuploadsd_iv$add_rule("popuSDUpload1", sv_required()) 
+  indmeansuploadsd_iv$add_rule("popuSDUpload1", sv_gt(0))
+  
+  indmeansuploadsd_iv$add_rule("popuSDUpload2", sv_required()) 
+  indmeansuploadsd_iv$add_rule("popuSDUpload2", sv_gt(0))
+  
+  indmeansuploadvar_iv$add_rule("indMeansUplSample1", sv_required())
+  indmeansuploadvar_iv$add_rule("indMeansUplSample2", sv_required())
+  
+
   # numSuccessesProportion
   
   oneprop_iv$add_rule("numSuccesses", sv_required(message = "Numeric value required."))
@@ -349,14 +363,19 @@ server <- function(input, output) {
   onemeansdunk_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$dataAvailability == 'Summarized Data' && input$sigmaKnown == 'Unknown'))
   onemeanraw_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$dataAvailability == 'Enter Raw Data'))
   onemeanupload_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$dataAvailability == 'Upload Data'))
-  onemeanuploadvar_iv$condition(function() {isTRUE(input$samplesSelect == '1' && input$dataAvailability == 'Upload Data' && slrupload_iv$is_valid()) })
-  onemeanuploadsd_iv$condition(function() {isTRUE(input$samplesSelect == '1' &&input$dataAvailability == 'Upload Data' && input$sigmaKnownUpload == 'Known' && slrupload_iv$is_valid()) })
+  onemeanuploadvar_iv$condition(function() {isTRUE(input$samplesSelect == '1' && input$dataAvailability == 'Upload Data' && onemeanupload_iv$is_valid()) })
+  onemeanuploadsd_iv$condition(function() {isTRUE(input$samplesSelect == '1' &&input$dataAvailability == 'Upload Data' && input$sigmaKnownUpload == 'Known' && onemeanupload_iv$is_valid()) })
   onemeanht_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$inferenceType == 'Hypothesis Testing'))
   indmeanssumm_iv$condition(~ isTRUE(input$samplesSelect == '2' && input$popuParameters == 'Independent Population Means' && input$dataAvailability2 == 'Summarized Data'))
   indmeansraw_iv$condition(~ isTRUE(input$samplesSelect == '2' && input$popuParameters == 'Independent Population Means' && input$dataAvailability2 == 'Enter Raw Data'))
   indmeanssdknown_iv$condition(~ isTRUE(input$samplesSelect == '2' && input$popuParameters == 'Independent Population Means' && input$dataAvailability2 == 'Summarized Data' && input$bothsigmaKnown == 'bothKnown'))
   indmeanssdunk_iv$condition(~ isTRUE(input$samplesSelect == '2' && input$popuParameters == 'Independent Population Means' && input$dataAvailability2 == 'Summarized Data' && input$bothsigmaKnown == 'bothUnknown'))
   indmeansrawsd_iv$condition(~ isTRUE(input$samplesSelect == '2' && input$popuParameters == 'Independent Population Means' && input$dataAvailability2 == 'Enter Raw Data' && input$bothsigmaKnownRaw == 'bothKnown'))
+  
+  indmeansupload_iv$condition(~ isTRUE(input$samplesSelect == '2' && input$popuParameters == 'Independent Population Means' && input$dataAvailability2 == 'Upload Data'))
+  indmeansuploadvar_iv$condition(function() {isTRUE(input$samplesSelect == '2' && input$dataAvailability2 == 'Upload Data' && indmeansupload_iv$is_valid()) })
+  indmeansuploadsd_iv$condition(function() {isTRUE(input$samplesSelect == '2' && input$dataAvailability2 == 'Upload Data' && input$bothsigmaKnownUpload == 'bothKnown' && indmeansupload_iv$is_valid()) })
+  
   oneprop_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Proportion'))
   onepropht_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Proportion' && input$inferenceType == 'Hypothesis Testing'))
   twoprop_iv$condition(~ isTRUE(input$samplesSelect == '2' && input$popuParameters == 'Population Proportions'))
@@ -374,6 +393,9 @@ server <- function(input, output) {
   si_iv$add_validator(indmeanssdknown_iv)
   si_iv$add_validator(indmeanssdunk_iv)
   si_iv$add_validator(indmeansrawsd_iv)
+  si_iv$add_validator(indmeansupload_iv)
+  si_iv$add_validator(indmeansuploadvar_iv)
+  si_iv$add_validator(indmeansuploadsd_iv)
   si_iv$add_validator(oneprop_iv)
   si_iv$add_validator(onepropht_iv)
   si_iv$add_validator(twoprop_iv)
@@ -392,6 +414,9 @@ server <- function(input, output) {
   indmeanssdknown_iv$enable()
   indmeanssdunk_iv$enable()
   indmeansrawsd_iv$enable()
+  indmeansupload_iv$enable()
+  indmeansuploadvar_iv$enable()
+  indmeansuploadsd_iv$enable()
   oneprop_iv$enable()
   onepropht_iv$enable()
   twoprop_iv$enable()
@@ -1803,6 +1828,7 @@ server <- function(input, output) {
            xls = read_excel(input$oneMeanUserData$datapath),
            xlsx = read_excel(input$oneMeanUserData$datapath),
            txt = read_tsv(input$oneMeanUserData$datapath, show_col_types = FALSE),
+           
            validate("Improper file format.")
     )
   })
@@ -2044,9 +2070,36 @@ server <- function(input, output) {
            xls = read_excel(input$indMeansUserData$datapath),
            xlsx = read_excel(input$indMeansUserData$datapath),
            txt = read_tsv(input$indMeansUserData$datapath, show_col_types = FALSE),
+           
            validate("Improper file format")
     )
   })
+  
+  GetMeansUploadData <- reactive({
+    req(si_iv$is_valid())
+    
+    dat <- list()
+    
+    sample1 <- unlist(IndMeansUploadData()[,input$indMeansUplSample1])
+    sample2 <- unlist(IndMeansUploadData()[,input$indMeansUplSample2])
+    
+    dat$n1  <- length(sample1)
+    dat$xbar1 <- mean(sample1)
+    dat$n2  <- length(sample2)
+    dat$xbar2 <- mean(sample2)
+    dat$sigmaEqual <- input$bothsigmaEqualUpload
+    
+    if(input$bothsigmaKnownUpload == 'bothKnown'){
+      dat$sd1 <- input$popuSDUpload1
+      dat$sd2 <- input$popuSDUpload2
+    } else {
+      dat$sd1 <- sd(sample1)
+      dat$sd2 <- sd(sample2)
+    }
+
+    return(dat)
+  })
+  
   
   
   IndMeansSigmaKnown <- reactive({
@@ -2055,6 +2108,8 @@ server <- function(input, output) {
       sigmaKnown <- input$bothsigmaKnown
     } else if(input$dataAvailability2 == 'Enter Raw Data'){
       sigmaKnown <- input$bothsigmaKnownRaw
+    } else if(input$dataAvailability2 == 'Upload Data'){
+      sigmaKnown <- input$bothsigmaKnownUpload
     }
     
     return(sigmaKnown)
@@ -2094,11 +2149,14 @@ server <- function(input, output) {
   
   
   IndMeansZInt <- reactive({
+    req(si_iv$is_valid())
     
     if (input$dataAvailability2 == 'Summarized Data') {
       data <- IndMeansSummData()
-    } else if(input$dataAvailability2 == 'Enter Raw Data'){
+    } else if(input$dataAvailability2 == 'Enter Raw Data') {
       data <- IndMeansRawData()
+    } else if(input$dataAvailability2 == 'Upload Data') {
+      data <- GetMeansUploadData()
     }
     
     twoSampZInt <- TwoSampZInt(data$xbar1, data$sd1, data$n1, data$xbar2, data$sd2, data$n2, ConfLvl())
@@ -2108,11 +2166,14 @@ server <- function(input, output) {
   
   
   IndMeansTInt <- reactive({
+    req(si_iv$is_valid())
     
     if(input$dataAvailability2 == 'Summarized Data') {
       data <- IndMeansSummData()
     } else if(input$dataAvailability2 == 'Enter Raw Data'){
       data <- IndMeansRawData()
+    } else if(input$dataAvailability2 == 'Upload Data') {
+      data <- GetMeansUploadData()
     }
     
     twoSampTInt <- TwoSampTInt(data$xbar1, data$sd1, data$n1, data$xbar2, data$sd2, data$n2, data$sigmaEqual, ConfLvl())
@@ -2122,11 +2183,14 @@ server <- function(input, output) {
   
   
   IndMeansZTest <- reactive({
+    req(si_iv$is_valid())
     
     if(input$dataAvailability2 == 'Summarized Data') {
       data <- IndMeansSummData()
     } else if(input$dataAvailability2 == 'Enter Raw Data'){
       data <- IndMeansRawData()
+    } else if(input$dataAvailability2 == 'Upload Data') {
+      data <- GetMeansUploadData()
     }
     
     twoSampZTest <- TwoSampZTest(data$xbar1, data$sd1, data$n1, data$xbar2, data$sd2, data$n2, IndMeansHypInfo()$alternative, SigLvl())
@@ -2136,11 +2200,14 @@ server <- function(input, output) {
   
   
   IndMeansTTest <- reactive({
+    req(si_iv$is_valid())
     
     if(input$dataAvailability2 == 'Summarized Data') {
       data <- IndMeansSummData()
     } else if(input$dataAvailability2 == 'Enter Raw Data'){
       data <- IndMeansRawData()
+    } else if(input$dataAvailability2 == 'Upload Data') {
+      data <- GetMeansUploadData()
     }
     
     twoSampTTest <- TwoSampTTest(data$xbar1, data$sd1, data$n1, data$xbar2, data$sd2, data$n2, data$sigmaEqual, IndMeansHypInfo()$alternative, SigLvl())
@@ -2331,6 +2398,38 @@ server <- function(input, output) {
       validate(
         need(input$popuSDRaw1 & input$popuSD1 > 0, "Population Standard Deviation 1 must be positive."),
         need(input$popuSDRaw2 & input$popuSD2 > 0, "Population Standard Deviation 2 must be positive."),
+        
+        errorClass = "myClass"
+      )
+    }
+    
+    if(!indmeansupload_iv$is_valid()) {
+
+      validate(
+        need(input$indMeansUserData, "Please upload your data to continue."),
+        need(nrow(IndMeansUploadData()) != 0, "File is empty."),
+        need(ncol(IndMeansUploadData()) > 1, "File must contain at least 2 distinct samples to choose from for analysis."),
+        need(nrow(IndMeansUploadData()) > 2, "Samples must include at least 2 observations."),
+        
+        errorClass = "myClass"
+      )
+    }
+    
+    if(!indmeansuploadvar_iv$is_valid()) {
+      
+      validate(
+        need(input$indMeansUplSample1, "Please select a column for Sample 1."),
+        need(input$indMeansUplSample2, "Please select a column for Sample 2."),
+        
+        errorClass = "myClass"
+      )
+    }
+    
+    if(!indmeansuploadsd_iv$is_valid()) {
+      
+      validate(
+        need(input$popuSDUpload1 && input$popuSDUpload1 > 0, "Population Standard Deviation 1 must be positive."),
+        need(input$popuSDUpload2 && input$popuSDUpload2 > 0, "Population Standard Deviation 2 must be positive."),
         
         errorClass = "myClass"
       )
@@ -2885,12 +2984,16 @@ server <- function(input, output) {
       p(
         withMathJax(
           conditionalPanel(
-            condition = "(input.dataAvailability2 == 'Summarized Data' && input.bothsigmaKnown == 'bothKnown') || (input.dataAvailability2 == 'Enter Raw Data' && input.bothsigmaKnownRaw == 'bothKnown')",
+            condition = "(input.dataAvailability2 == 'Summarized Data' && input.bothsigmaKnown == 'bothKnown') 
+                         || (input.dataAvailability2 == 'Enter Raw Data' && input.bothsigmaKnownRaw == 'bothKnown')
+                         || (input.dataAvailability2 == 'Upload Data' && input.bothsigmaKnownUpload == 'bothKnown')",
             
             uiOutput('sigmaKnownCIFormula')
           ),
           conditionalPanel(
-            condition = "(input.dataAvailability2 == 'Summarized Data' && input.bothsigmaKnown == 'bothUnknown') || (input.dataAvailability2 == 'Enter Raw Data' && input.bothsigmaKnownRaw == 'bothUnknown')",
+            condition = "(input.dataAvailability2 == 'Summarized Data' && input.bothsigmaKnown == 'bothUnknown') 
+                         || (input.dataAvailability2 == 'Enter Raw Data' && input.bothsigmaKnownRaw == 'bothUnknown')
+                         || (input.dataAvailability2 == 'Upload Data' && input.bothsigmaKnownUpload == 'bothUnknown')",
             
             uiOutput('sigmaUnknownCIFormula')
           ),
@@ -2922,7 +3025,10 @@ server <- function(input, output) {
       data <- IndMeansSummData()
     } else if(input$dataAvailability2 == 'Enter Raw Data') {
       data <- IndMeansRawData()
+    } else if(input$dataAvailability2 == 'Upload Data') {
+      data <- GetMeansUploadData()
     }
+    
     zInt <- IndMeansZInt()
     
     tagList(
@@ -2964,7 +3070,10 @@ server <- function(input, output) {
       data <- IndMeansSummData()
     } else if(input$dataAvailability2 == 'Enter Raw Data') {
       data <- IndMeansRawData()
+    } else if(input$dataAvailability2 == 'Upload Data') {
+      data <- GetMeansUploadData()
     }
+    
     tInt <- IndMeansTInt()
     
     if(data$sigmaEqual) {
@@ -3096,6 +3205,8 @@ server <- function(input, output) {
       data <- IndMeansSummData()
     } else if(input$dataAvailability2 == 'Enter Raw Data') {
       data <- IndMeansRawData()
+    } else if(input$dataAvailability2 == 'Upload Data') {
+      data <- GetMeansUploadData()
     }
     
     #get test type and results based on sigma known/unknown
@@ -3163,12 +3274,16 @@ server <- function(input, output) {
           br(),
           br(),
           conditionalPanel(
-            condition = "(input.dataAvailability2 == 'Summarized Data' && input.bothsigmaKnown == 'bothKnown') || (input.dataAvailability2 == 'Enter Raw Data' && input.bothsigmaKnownRaw == 'bothKnown')",
+            condition = "(input.dataAvailability2 == 'Summarized Data' && input.bothsigmaKnown == 'bothKnown') 
+                         || (input.dataAvailability2 == 'Enter Raw Data' && input.bothsigmaKnownRaw == 'bothKnown')
+                         || (input.dataAvailability2 == 'Upload Data' && input.bothsigmaKnownUpload == 'bothKnown')",
             
             uiOutput('sigmaKnownHTFormula')
           ),
           conditionalPanel(
-            condition = "(input.dataAvailability2 == 'Summarized Data' && input.bothsigmaKnown == 'bothUnknown') || (input.dataAvailability2 == 'Enter Raw Data' && input.bothsigmaKnownRaw == 'bothUnknown')",
+            condition = "(input.dataAvailability2 == 'Summarized Data' && input.bothsigmaKnown == 'bothUnknown') 
+                         || (input.dataAvailability2 == 'Enter Raw Data' && input.bothsigmaKnownRaw == 'bothUnknown')
+                         || (input.dataAvailability2 == 'Upload Data' && input.bothsigmaKnownUpload == 'bothUnknown')",
             
             uiOutput('sigmaUnknownHTFormula')
           ),
@@ -3260,7 +3375,10 @@ server <- function(input, output) {
       data <- IndMeansSummData()
     } else if(input$dataAvailability2 == 'Enter Raw Data') {
       data <- IndMeansRawData()
+    } else if(input$dataAvailability2 == 'Upload Data') {
+      data <- GetMeansUploadData()
     }
+    
     zTest <- IndMeansZTest()
     
     tagList(
@@ -3290,6 +3408,8 @@ server <- function(input, output) {
       data <- IndMeansSummData()
     } else if(input$dataAvailability2 == 'Enter Raw Data') {
       data <- IndMeansRawData()
+    } else if(input$dataAvailability2 == 'Upload Data') {
+      data <- GetMeansUploadData()
     }
     tTest <- IndMeansTTest()
     
@@ -3362,7 +3482,7 @@ server <- function(input, output) {
     }
     else if(IndMeansSigmaKnown() == 'bothUnknown'){
       data <- IndMeansTTest()
-    }
+    } 
     
     intrpInfo <- IndMeansHypInfo()
     
@@ -3608,10 +3728,32 @@ server <- function(input, output) {
     # }
   })
   
+  observeEvent(input$indMeansUserData, priority = 5, {
+    hide(id = "inferenceData")
+    hide(id = "indMeansUplSample1")
+    hide(id = "indMeansUplSample2")
+    # if(onemeanupload_iv$is_valid())
+    # {
+    freezeReactiveValue(input, "indMeansUplSample1")
+    updateSelectInput(session = getDefaultReactiveDomain(),
+                      "indMeansUplSample1",
+                      choices = c(colnames(IndMeansUploadData()))
+    )
+    
+    freezeReactiveValue(input, "indMeansUplSample2")
+    updateSelectInput(session = getDefaultReactiveDomain(),
+                      "indMeansUplSample2",
+                      choices = c(colnames(IndMeansUploadData()))
+    )
+    show(id = "indMeansUplSample1")
+    show(id = "indMeansUplSample2")
+    # }
+  })
+  
   
   observeEvent(input$goInference, {
     #output$renderInference <- renderDataTable(
-    
+
     if(si_iv$is_valid()) {
       show(id = "inferenceData")
       
@@ -4211,6 +4353,11 @@ server <- function(input, output) {
   
   observeEvent(input$dataAvailability, {
     hide(id = "oneMeanVariable")
+  })
+  
+  observeEvent(input$dataAvailability2, {
+    hide(id = "indMeansUplSample1")
+    hide(id = "indMeansUplSample2")
   })
   
   observeEvent(input$goInference, {

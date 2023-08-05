@@ -674,9 +674,11 @@
                                                                radioButtons(inputId = "dataAvailability2",
                                                                             label = strong("Data Availability"),
                                                                             choiceValues = list("Summarized Data", 
-                                                                                                "Enter Raw Data"),
+                                                                                                "Enter Raw Data",
+                                                                                                "Upload Data"),
                                                                             choiceNames = list("Summarized Data", 
-                                                                                               "Enter Raw Data"),
+                                                                                               "Enter Raw Data",
+                                                                                               "Upload Data"),
                                                                             selected = "Summarized Data", #character(0), # 
                                                                             inline = TRUE), #,width = '1000px'),
                                                                
@@ -813,7 +815,7 @@
                                                                  condition = "input.dataAvailability2 == 'Upload Data'",
                                                                  
                                                                  fileInput(inputId = "indMeansUserData", 
-                                                                           label = strong("Upload your Data (.csv or .xls or .xlsx)"), 
+                                                                           label = strong("Upload your Data (.csv or .xls or .xlsx or .txt)"), 
                                                                            accept = c("text/csv",
                                                                                       "text/comma-separated-values", 
                                                                                       "text/plain", 
@@ -840,6 +842,43 @@
                                                                       placeholder = 'Select a column',
                                                                       onInitialize = I('function() { this.setValue(""); }')
                                                                     )
+                                                                 ),
+                                                                 
+                                                                 radioButtons(inputId = "bothsigmaKnownUpload",
+                                                                              label = strong("Are Population Standard Deviations (\\( \\sigma_{1}\\) and \\( \\sigma_{2}\\)) known?"),
+                                                                              choiceValues = list("bothKnown", 
+                                                                                                  "bothUnknown"),
+                                                                              choiceNames = list("Both Known", 
+                                                                                                 "Both Unknown"),
+                                                                              selected = "bothKnown",
+                                                                              inline = TRUE), #,width = '1000px'),
+                                                                 
+                                                                 conditionalPanel(
+                                                                   condition = "input.bothsigmaKnownUpload == 'bothUnknown'",
+                                                                   
+                                                                   radioButtons(inputId = "bothsigmaEqualUpload",
+                                                                                label = strong("Assume Population Variances are equal (\\( \\sigma_{1}^2\\) = \\( \\sigma_{2}^2\\))?"),
+                                                                                choiceValues = list("TRUE", "FALSE"),
+                                                                                choiceNames = list("Yes (Pooled)", "No (Welch-Satterthwaite df)"),
+                                                                                selected = "TRUE",
+                                                                                inline = TRUE)
+                                                                   
+                                                                 ),
+                                                                 
+                                                                 conditionalPanel(
+                                                                   condition = "input.bothsigmaKnownUpload == 'bothKnown'",
+                                                                   
+                                                                   numericInput(inputId = "popuSDUpload1",
+                                                                                label = strong("Population Standard Deviation 1 (\\( \\sigma_{1}\\)) Value"),
+                                                                                value = 1, 
+                                                                                min = 0.00001, 
+                                                                                step = 0.00001),
+                                                                   
+                                                                   numericInput(inputId = "popuSDUpload2",
+                                                                                label = strong("Population Standard Deviation 2 (\\( \\sigma_{2}\\)) Value"),
+                                                                                value = 1, 
+                                                                                min = 0.00001, 
+                                                                                step = 0.00001),
                                                                  ),
                                                                    
                                                                ),
