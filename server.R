@@ -53,6 +53,7 @@ server <- function(input, output) {
                                                 "Data must be numeric values seperated by a comma (ie: 2,3,4)"))
   
   dsupload_iv$add_rule("dsUserData", sv_required())
+  dsupload_iv$add_rule("dsUserData", ~ if(!(tools::file_ext(input$dsUserData$name) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
   dsupload_iv$add_rule("dsUserData", ~ if(ncol(dsUploadData()) < 1) "Data must include one variable")
   dsupload_iv$add_rule("dsUserData", ~ if(nrow(dsUploadData()) < 2) "Samples must include at least 2 observations")
   
@@ -207,6 +208,7 @@ server <- function(input, output) {
   
   # One Mean Upload Data
   onemeanupload_iv$add_rule("oneMeanUserData", sv_required())
+  onemeanupload_iv$add_rule("oneMeanUserData", ~ if(!(tools::file_ext(input$oneMeanUserData$name) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
   onemeanupload_iv$add_rule("oneMeanUserData", ~ if(nrow(OneMeanUploadData()) == 0) "File is empty")
   onemeanupload_iv$add_rule("oneMeanUserData", ~ if(nrow(OneMeanUploadData()) < 3) "Samples must include at least 2 observations")
   
@@ -284,7 +286,7 @@ server <- function(input, output) {
   
   indmeansraw_iv$add_rule("raw_sample2", sv_required())
   indmeansraw_iv$add_rule("raw_sample2", sv_regex("^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+$", 
-                                                  "Data must be at least 3 numeric values seperated by a comma (ie: 2,3,4)"))
+                                                  "Data must be at least 3 numeric values seperated by a comma (ie: 2,3,4)."))
   
   indmeansrawsd_iv$add_rule("popuSDRaw1", sv_required()) 
   indmeansrawsd_iv$add_rule("popuSDRaw1", sv_gt(0))
@@ -292,9 +294,17 @@ server <- function(input, output) {
   
   indmeansrawsd_iv$add_rule("popuSDRaw2", sv_required()) 
   indmeansrawsd_iv$add_rule("popuSDRaw2", sv_gt(0))
+  
+  #indMeansUserData
+  
+  # indmeansupload_iv$add_rule("indMeansUserData", sv_required())
+  # indmeansupload_iv$add_rule("indMeansUserData", ~ if(nrow(OneMeanUploadData()) == 0) "File is empty.")
+  # indmeansupload_iv$add_rule("indMeansUserData", ~ if(ncol(OneMeanUploadData()) < 2) "File must contain at least 2 distinct samples to choose from for analysis.")
+  # indmeansupload_iv$add_rule("indMeansUserData", ~ if(nrow(OneMeanUploadData()) < 3) "Samples must include at least 2 observations.")
+  
   # numSuccessesProportion
   
-  oneprop_iv$add_rule("numSuccesses", sv_required(message = "Numeric value required"))
+  oneprop_iv$add_rule("numSuccesses", sv_required(message = "Numeric value required."))
   oneprop_iv$add_rule("numSuccesses", sv_integer())
   oneprop_iv$add_rule("numSuccesses", sv_gte(0))
   
@@ -310,7 +320,7 @@ server <- function(input, output) {
   
   # numTrialsProportion
   
-  oneprop_iv$add_rule("numTrials", sv_required(message = "Numeric value required"))
+  oneprop_iv$add_rule("numTrials", sv_required(message = "Numeric value required."))
   oneprop_iv$add_rule("numTrials", sv_integer())
   oneprop_iv$add_rule("numTrials", sv_gt(0))
   
@@ -400,6 +410,7 @@ server <- function(input, output) {
   slrraw_iv$add_rule("y", ~ if(sampleDiffRaw() != 0) "x and y must have the same number of observations")
   
   slrupload_iv$add_rule("slrUserData", sv_required())
+  slrupload_iv$add_rule("slrUserData", ~ if(!(tools::file_ext(input$slrUserData$name) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
   slrupload_iv$add_rule("slrUserData", ~ if(nrow(slrUploadData()) == 0) "File is empty")
   slrupload_iv$add_rule("slrUserData", ~ if(ncol(slrUploadData()) < 2) "Data must include one response and (at least) one explanatory variable")
   slrupload_iv$add_rule("slrUserData", ~ if(nrow(slrUploadData()) < 3) "Samples must include at least 2 observations")
@@ -581,10 +592,12 @@ server <- function(input, output) {
     ext <- tools::file_ext(input$dsUserData$name)
     
     switch(ext, 
-           csv = read_csv(input$dsUserData$datapath),
+           csv = read_csv(input$dsUserData$datapath, show_col_types = FALSE),
            xls = read_excel(input$dsUserData$datapath),
            xlsx = read_excel(input$dsUserData$datapath),
-           validate("Improper file format")
+           txt = read_tsv(input$dsUserData$datapath, show_col_types = FALSE),
+           
+           validate("Improper file format.")
     )
   })
   
@@ -1789,8 +1802,8 @@ server <- function(input, output) {
            csv = read_csv(input$oneMeanUserData$datapath, show_col_types = FALSE),
            xls = read_excel(input$oneMeanUserData$datapath),
            xlsx = read_excel(input$oneMeanUserData$datapath),
-           txt = read_delim(input$oneMeanUserData$datapath, delim = ",", show_col_types = FALSE),
-           validate("Improper file format")
+           txt = read_tsv(input$oneMeanUserData$datapath, show_col_types = FALSE),
+           validate("Improper file format.")
     )
   })
   
@@ -2020,6 +2033,19 @@ server <- function(input, output) {
     }
     
     return(rawData)
+  })
+  
+  IndMeansUploadData <- eventReactive(input$indMeansUserData, {
+    
+    ext <- tools::file_ext(input$indMeansUserData$name)
+    
+    switch(ext, 
+           csv = read_csv(input$indMeansUserData$datapath, show_col_types = FALSE),
+           xls = read_excel(input$indMeansUserData$datapath),
+           xlsx = read_excel(input$indMeansUserData$datapath),
+           txt = read_tsv(input$indMeansUserData$datapath, show_col_types = FALSE),
+           validate("Improper file format")
+    )
   })
   
   
@@ -3638,9 +3664,11 @@ server <- function(input, output) {
     ext <- tools::file_ext(input$slrUserData$name)
     
     switch(ext, 
-           csv = read_csv(input$slrUserData$datapath),
+           csv = read_csv(input$slrUserData$datapath, show_col_types = FALSE),
            xls = read_excel(input$slrUserData$datapath),
            xlsx = read_excel(input$slrUserData$datapath),
+           txt = read_tsv(input$slrUserData$datapath, show_col_types = FALSE),
+           
            validate("Improper file format")
     )
   })

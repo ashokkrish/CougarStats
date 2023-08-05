@@ -81,7 +81,7 @@
                                                              condition = "input.dataInput == 'Upload Data'",
                                                              
                                                              fileInput(inputId = 'dsUserData', 
-                                                                       label = 'Upload your data (.csv or .xls or .xlsx)',
+                                                                       label = strong('Upload your data (.csv or .xls or .xlsx or .txt)'),
                                                                        accept = c('text/csv','text/comma-separated-values',
                                                                                   'text/tab-separated-values',
                                                                                   'text/plain',
@@ -525,7 +525,7 @@
                                                                                                  
                                                                                                  
                                                                                                  fileInput(inputId = "oneMeanUserData", 
-                                                                                                           label = strong("Upload your Data (.csv or .xls or .xlsx)"), 
+                                                                                                           label = strong("Upload your Data (.csv or .xls or .xlsx or .txt)"), 
                                                                                                            accept = c("text/csv",
                                                                                                                       "text/comma-separated-values", 
                                                                                                                       "text/plain", 
@@ -674,9 +674,11 @@
                                                                radioButtons(inputId = "dataAvailability2",
                                                                             label = strong("Data Availability"),
                                                                             choiceValues = list("Summarized Data", 
-                                                                                                "Enter Raw Data"),
+                                                                                                "Enter Raw Data",
+                                                                                                "Upload Data"),
                                                                             choiceNames = list("Summarized Data", 
-                                                                                               "Enter Raw Data"),
+                                                                                               "Enter Raw Data",
+                                                                                               "Upload Data"),
                                                                             selected = "Summarized Data", #character(0), # 
                                                                             inline = TRUE), #,width = '1000px'),
                                                                
@@ -808,8 +810,43 @@
                                                                  ),
                                                                  
                                                                ),
+                                                               
+                                                               conditionalPanel(
+                                                                 condition = "input.dataAvailability2 == 'Upload Data'",
+                                                                 
+                                                                 fileInput(inputId = "indMeansUserData", 
+                                                                           label = strong("Upload your Data (.csv or .xls or .xlsx)"), 
+                                                                           accept = c("text/csv",
+                                                                                      "text/comma-separated-values", 
+                                                                                      "text/plain", 
+                                                                                      ".csv",
+                                                                                      ".xls",
+                                                                                      ".xlsx")
+                                                                 ),
+                                                                 
+                                                                 selectizeInput(
+                                                                   inputId = "indMeansUplSample1",
+                                                                   label = strong("Choose a Column for Sample 1"),
+                                                                   choices = c(""),
+                                                                   options = list(
+                                                                     placeholder = 'Select a column',
+                                                                     onInitialize = I('function() { this.setValue(""); }')
+                                                                   ),
+                                                                 ),
+                                                                   
+                                                                 selectizeInput(
+                                                                    inputId = "indMeansUplSample2",
+                                                                    label = strong("Choose a Column for Sample 2"),
+                                                                    choices = c(""),
+                                                                    options = list(
+                                                                      placeholder = 'Select a column',
+                                                                      onInitialize = I('function() { this.setValue(""); }')
+                                                                    )
+                                                                 ),
+                                                                   
+                                                               ),
                                                              ), # Two Independent Samples
-                                                             
+
                                                              conditionalPanel(
                                                                condition = "input.popuParameters == 'Dependent Population Means'",
                                                                
@@ -853,56 +890,52 @@
                                                                             min = 1, 
                                                                             step = 1),
                                                              ), # Two Population Proportions
-                                                             
+
+                                                             radioButtons(inputId = "inferenceType2",
+                                                                          label = strong("Inference Type"),
+                                                                          choiceValues = list("Confidence Interval", 
+                                                                                              "Hypothesis Testing"),
+                                                                          choiceNames = list("Confidence Interval", 
+                                                                                             "Hypothesis Testing"),
+                                                                          selected = "Confidence Interval", #character(0), # 
+                                                                          inline = TRUE), #,width = '1000px'),
+                                                               
                                                              conditionalPanel(
-                                                               condition = "input.dataAvailability2 == 'Summarized Data' || input.dataAvailability2 == 'Enter Raw Data' || input.popuParameters == 'Dependent Population Means' || input.popuParameters == 'Population Proportions'",
-                                                               
-                                                               radioButtons(inputId = "inferenceType2",
-                                                                            label = strong("Inference Type"),
-                                                                            choiceValues = list("Confidence Interval", 
-                                                                                                "Hypothesis Testing"),
-                                                                            choiceNames = list("Confidence Interval", 
-                                                                                               "Hypothesis Testing"),
-                                                                            selected = "Confidence Interval", #character(0), # 
-                                                                            inline = TRUE), #,width = '1000px'),
-                                                               
-                                                               conditionalPanel(
-                                                                 condition = "input.inferenceType2 == 'Confidence Interval'",
+                                                               condition = "input.inferenceType2 == 'Confidence Interval'",
                                                                  
-                                                                 radioButtons(inputId = "confidenceLevel2",
-                                                                              label = strong("Confidence Level (\\( 1- \\alpha\\))"),
-                                                                              choices = c("90%", 
-                                                                                          "95%",
-                                                                                          "99%"),
-                                                                              selected = c("95%"),
-                                                                              inline = TRUE)
-                                                               ),
+                                                               radioButtons(inputId = "confidenceLevel2",
+                                                                            label = strong("Confidence Level (\\( 1- \\alpha\\))"),
+                                                                            choices = c("90%", 
+                                                                                        "95%",
+                                                                                        "99%"),
+                                                                            selected = c("95%"),
+                                                                            inline = TRUE)
+                                                             ),
                                                                
-                                                               conditionalPanel(
-                                                                 condition = "input.inferenceType2 == 'Hypothesis Testing'",
+                                                             conditionalPanel(
+                                                               condition = "input.inferenceType2 == 'Hypothesis Testing'",
                                                                  
-                                                                 radioButtons(inputId = "significanceLevel2", 
-                                                                              label = strong("Significance Level (\\( \\alpha\\))"), 
-                                                                              choices = c("10%", 
-                                                                                          "5%",
-                                                                                          "1%"),
-                                                                              selected = c("5%"),
-                                                                              inline = TRUE),
+                                                               radioButtons(inputId = "significanceLevel2", 
+                                                                            label = strong("Significance Level (\\( \\alpha\\))"), 
+                                                                            choices = c("10%", 
+                                                                                        "5%",
+                                                                                        "1%"),
+                                                                            selected = c("5%"),
+                                                                            inline = TRUE),
                                                                  
-                                                                 selectizeInput(inputId = "altHypothesis2",
-                                                                                label = strong("Alternate Hypothesis (\\( H_{a}\\))"),
-                                                                                choices = c(
-                                                                                  "< " = 1,
-                                                                                  "&ne; " = 2,
-                                                                                  "> " = 3
-                                                                                ),
-                                                                                selected = 2,
-                                                                                options = list(
-                                                                                  render = I(render)
-                                                                                )
-                                                                 ), 
-                                                               ), # Dropdown for 2-sample HT
-                                                             ) # CI vs HT for 2 samples
+                                                               selectizeInput(inputId = "altHypothesis2",
+                                                                              label = strong("Alternate Hypothesis (\\( H_{a}\\))"),
+                                                                              choices = c(
+                                                                                "< " = 1,
+                                                                                "&ne; " = 2,
+                                                                                "> " = 3
+                                                                              ),
+                                                                              selected = 2,
+                                                                              options = list(
+                                                                                render = I(render)
+                                                                              )
+                                                               ), 
+                                                             ), # Dropdown for 2-sample HT
                                                            ), # "input.samplesSelect == '2'",
                                                            
                                                            actionButton(inputId = "goInference", 
@@ -969,7 +1002,8 @@
                                                                condition = "input.dataRegCor == 'Upload Data'",
                                                                
                                                                
-                                                               fileInput(inputId = "slrUserData", "Upload your data (.csv or .xls or .xlsx)", 
+                                                               fileInput(inputId = "slrUserData", 
+                                                                         label = strong("Upload your data (.csv or .xls or .xlsx or .txt)"), 
                                                                          accept = c("text/csv",
                                                                                     "text/comma-separated-values", 
                                                                                     "text/plain", 
