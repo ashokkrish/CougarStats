@@ -316,6 +316,7 @@ server <- function(input, output) {
   indmeansuploadvar_iv$add_rule("indMeansUplSample1", sv_required())
   indmeansuploadvar_iv$add_rule("indMeansUplSample2", sv_required())
   
+  
 
   # numSuccessesProportion
   
@@ -3415,6 +3416,21 @@ server <- function(input, output) {
     } else if(input$dataAvailability2 == 'Upload Data') {
       data <- GetMeansUploadData()
     }
+    
+    sd1Sqrd <- data$sd1^2
+    if( sd1Sqrd >= 0.0001) {
+      sd1Sqrd <- round(sd1Sqrd, 4)
+    } else {
+      sd1Sqrd <- signif(sd1Sqrd, 1)
+    }
+    
+    sd2Sqrd <- data$sd2^2
+    if( sd1Sqrd >= 0.0001) {
+      sd2Sqrd <- round(sd2Sqrd, 4)
+    } else {
+      sd2Sqrd <- signif(sd2Sqrd, 1)
+    }
+    
     tTest <- IndMeansTTest()
     
     if(data$sigmaEqual == TRUE) {
@@ -3429,9 +3445,9 @@ server <- function(input, output) {
           sprintf("\\( \\displaystyle \\qquad s_{p} = \\sqrt{\\dfrac{(n_{1} - 1)s_{1}^2 + (n_{2} - 1)s_{2}^2}{n_{1} + n_{2} - 2}} \\)"),
           sprintf("\\( = \\sqrt{\\dfrac{(%g - 1)%s + (%g - 1)%s}{%g + %g - 2}} = %g \\)",
                   data$n1,
-                  data$sd1^2,
+                  sd1Sqrd,
                   data$n2,
-                  data$sd2^2,
+                  sd2Sqrd,
                   data$n1,
                   data$n2,
                   sp),
@@ -4007,28 +4023,20 @@ server <- function(input, output) {
                                    br(),
                                    verbatimTextOutput("PearsonConfInt"),
                                    br(),
-                                   # verbatimTextOutput("PearsonEstimate"),
-                                   # br(),
                                    hr(),
-                                   
-                                   #conditionalPanel(
-                                   #condition = "input.kendall == 1",
-                                   
+
                                    titlePanel("Kendall's Rank Correlation"),
                                    br(),
-                                   verbatimTextOutput("Kendall"),
+                                   uiOutput("kendallEstimate"),
                                    br(),
                                    hr(),
-                                   #),
-                                   
-                                   #conditionalPanel(
-                                   #condition = "input.spearman == 1",
                                    
                                    titlePanel("Spearman's Rank Correlation"),
                                    br(),
-                                   verbatimTextOutput("Spearman"),
-                                   #),
-                                   #br(),
+                                   uiOutput("spearmanEstimate"),
+                                   br(),
+                                   br()
+
                           ),
               ),
             )
@@ -4197,7 +4205,10 @@ server <- function(input, output) {
                        dfTotaled["Totals", "y<sup>2</sup>"],
                        dfTotaled["Totals", "y"],
                        length(datx)),
-                sprintf("\\( \\; = \\; \\dfrac
+                br(),
+                br(),
+                br(),
+                sprintf("\\( \\quad = \\; \\dfrac
                                         {%g - \\dfrac{ %g }{ %g } }
                                         {\\sqrt{ %g - \\dfrac{ %g }{ %g } } \\sqrt{ %g - \\dfrac{ %s }{ %g } } } \\)",
                         dfTotaled["Totals", "xy"],
@@ -4209,7 +4220,10 @@ server <- function(input, output) {
                         dfTotaled["Totals", "y<sup>2</sup>"],
                         sumYSqrd,
                         length(datx)),
-                sprintf("\\( \\; = \\; \\dfrac
+                br(),
+                br(),
+                br(),
+                sprintf("\\( \\quad = \\; \\dfrac
                                         {%g - %g }
                                         {\\sqrt{ %g - %g } \\sqrt{ %g - %g } } \\)",
                         dfTotaled["Totals", "xy"],
@@ -4218,19 +4232,38 @@ server <- function(input, output) {
                         sumXSqrd / length(datx),
                         dfTotaled["Totals", "y<sup>2</sup>"],
                         sumYSqrd / length(datx)),
-                sprintf("\\( \\; = \\; \\dfrac
+                br(),
+                br(),
+                br(),
+                sprintf("\\( \\quad = \\; \\dfrac
                                         { %g }
                                         {\\sqrt{ %g } \\sqrt{ %g } } \\)",
                         dfTotaled["Totals", "xy"] - sumXSumY / length(datx),
                         dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx),
                         dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx)),
-                sprintf("\\( \\; = \\; %0.4f \\)",
+                br(),
+                br(),
+                br(),
+                sprintf("\\( \\quad = \\; \\dfrac
+                                        { %g }
+                                        { (%g) (%g) } \\)",
+                        dfTotaled["Totals", "xy"] - sumXSumY / length(datx),
+                        sqrt(dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx)),
+                        sqrt(dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx))),
+                br(),
+                br(),
+                br(),
+                sprintf("\\( \\quad = \\; \\dfrac
+                                        { %g }
+                                        { %g } \\)",
+                        dfTotaled["Totals", "xy"] - sumXSumY / length(datx),
+                        sqrt(dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx)) * sqrt(dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx))),
+                br(),
+                br(),
+                br(),
+                sprintf("\\( \\quad = \\; %0.4f \\)",
                         pearson$estimate),
                 br(),
-                br(),
-                br(),
-                sprintf("\\( r \\; = \\; %0.4f \\)",
-                        pearson$estimate)
               )
               
             })
@@ -4263,15 +4296,17 @@ server <- function(input, output) {
             })
           }
           
-          Kendall <- cor.test(datx, daty, method = "kendall")
-          Spearman <- cor.test(datx, daty, method = "spearman")
+          kendall <- cor.test(datx, daty, method = "kendall")
+          spearman <- cor.test(datx, daty, method = "spearman")
           
-          output$Kendall <- renderPrint({
-            cat(noquote(paste(c("Kendall's Tau:", round(Kendall$estimate[[1]], 4)))))
+          output$kendallEstimate <- renderUI({
+            sprintf("\\( \\tau = %0.4f \\)", 
+                    kendall$estimate)
           })
           
-          output$Spearman <- renderPrint({
-            cat(noquote(paste(c("Spearman's rs:", round(Spearman$estimate[[1]], 4)))))
+          output$spearmanEstimate <- renderUI({
+            sprintf("\\( r_{s} = %0.4f \\)", 
+                    spearman$estimate)
           })
           
         } #if regcor_iv is valid
