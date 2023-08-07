@@ -316,9 +316,6 @@ server <- function(input, output) {
   indmeansuploadvar_iv$add_rule("indMeansUplSample1", sv_required())
   indmeansuploadvar_iv$add_rule("indMeansUplSample2", sv_required())
   
-  
-
-  
 
   # numSuccessesProportion
   
@@ -379,8 +376,7 @@ server <- function(input, output) {
   indmeansupload_iv$condition(~ isTRUE(input$samplesSelect == '2' && input$popuParameters == 'Independent Population Means' && input$dataAvailability2 == 'Upload Data'))
   indmeansuploadvar_iv$condition(function() {isTRUE(input$samplesSelect == '2' && input$dataAvailability2 == 'Upload Data' && indmeansupload_iv$is_valid()) })
   indmeansuploadsd_iv$condition(function() {isTRUE(input$samplesSelect == '2' && input$dataAvailability2 == 'Upload Data' && input$bothsigmaKnownUpload == 'bothKnown' && indmeansupload_iv$is_valid()) })
-  
-  
+
   oneprop_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Proportion'))
   onepropht_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Proportion' && input$inferenceType == 'Hypothesis Testing'))
   
@@ -1602,54 +1598,53 @@ server <- function(input, output) {
                     xlim = c(normTail, normHead),
                     fill = "#03376d",
                     alpha = 0.7) +
-      theme_void()  +
-      scale_x_continuous(breaks = floor(normTail):ceiling(normHead)) +
+      theme_void() +  
       scale_y_continuous(breaks = NULL) +
       ylab("") + xlab("Z") +
-      geom_segment(data = filter(df, x %in% c(0)), 
-                   aes(x = x, xend = x, y = 0, yend = y), 
-                   linetype = "dotted", 
-                   linewidth = 0.75, 
+      geom_segment(data = filter(df, x %in% c(0)),
+                   aes(x = x, xend = x, y = 0, yend = y),
+                   linetype = "dotted",
+                   linewidth = 0.75,
                    color='#03376d') +
-      geom_text(data = filter(df, x %in% c(0)), 
-                aes(x = x, y = y/2, label = "A R"), 
-                size = 16 / .pt, 
+      geom_text(data = filter(df, x %in% c(0)),
+                aes(x = x, y = y/2, label = "A R"),
+                size = 16 / .pt,
                 fontface = "bold") +
-      geom_text(data = filter(df, x %in% c(0)), 
-                aes(x = x, y = 0, label = "0"), 
-                size = 14 / .pt, 
-                fontface = "bold", 
+      geom_text(data = filter(df, x %in% c(0)),
+                aes(x = x, y = 0, label = "0"),
+                size = 14 / .pt,
+                fontface = "bold",
                 nudge_y = -.01) +
-      geom_segment(data = tsDF, 
-                   aes(x = x, xend = x, y = -0.01, yend = y + .03), 
-                   linetype = "solid", 
-                   linewidth = 1.25, 
+      geom_segment(data = tsDF,
+                   aes(x = x, xend = x, y = -0.01, yend = y + .03),
+                   linetype = "solid",
+                   linewidth = 1.25,
                    color='#03376d') +
-      geom_text(data = tsDF, 
-                aes(x = x, y = y, label = "TS"), 
-                size = 16 / .pt, 
-                fontface = "bold", 
+      geom_text(data = tsDF,
+                aes(x = x, y = y, label = "TS"),
+                size = 16 / .pt,
+                fontface = "bold",
                 nudge_y = .045) +
-      geom_text(data = tsDF, 
-                aes(x = x, y = 0, label = x), 
-                size = 14 / .pt, 
-                fontface = "bold", 
+      geom_text(data = tsDF,
+                aes(x = x, y = 0, label = x),
+                size = 14 / .pt,
+                fontface = "bold",
                 nudge_y = -.02) +
-      geom_segment(data = cvDF, 
-                   aes(x = x, xend = x, y = 0, yend = y), 
-                   linetype = "blank", 
-                   lineend = 'round', 
-                   linewidth = 1.5, 
+      geom_segment(data = cvDF,
+                   aes(x = x, xend = x, y = 0, yend = y),
+                   linetype = "blank",
+                   lineend = 'round',
+                   linewidth = 1.5,
                    color='#03376d') +
-      geom_text(data = cvDF, 
-                aes(x = x, y = 0, label = x), 
-                size = 14 / .pt, 
-                fontface = "bold", 
+      geom_text(data = cvDF,
+                aes(x = x, y = 0, label = x),
+                size = 14 / .pt,
+                fontface = "bold",
                 nudge_y = -.01) +
-      geom_text(data = cvDF, 
-                aes(x = x + x/4, y = y, label = "RR"), 
-                size = 16 / .pt, 
-                fontface = "bold", 
+      geom_text(data = cvDF,
+                aes(x = x + x/4, y = y, label = "RR"),
+                size = 16 / .pt,
+                fontface = "bold",
                 nudge_y = .03) +
       theme(axis.title.x = element_text(size = 16, face = "bold"))
     
@@ -1710,7 +1705,6 @@ server <- function(input, output) {
                     fill = "#03376d",
                     alpha = 0.7) +
       theme_void()  +
-      scale_x_continuous(breaks = floor(tTail):ceiling(tHead) ) +
       scale_y_continuous(breaks = NULL) +
       ylab("") + 
       xlab("t") +
@@ -2224,7 +2218,6 @@ server <- function(input, output) {
   
   #### Dependent Means Reactives ----
   
-
   
   # --------------------------------------------------------------------- #
   
@@ -3489,28 +3482,28 @@ server <- function(input, output) {
   output$indMeansHTPlot <- renderPlot({
     
     if(IndMeansSigmaKnown() == 'bothKnown'){
-      data <- IndMeansZTest() 
+      data <- IndMeansZTest()
     }
     else if(IndMeansSigmaKnown() == 'bothUnknown'){
       data <- IndMeansTTest()
-    } 
-    
+    }
+
     intrpInfo <- IndMeansHypInfo()
-    
+
     if(intrpInfo$alternative == "two.sided") {
       htPlotCritVals <- c(-data[2], data[2])
-      
+
     } else {
       htPlotCritVals <- data[2]
     }
-    
+
     if(IndMeansSigmaKnown() == 'bothKnown') {
       indMeansPlot <- hypZTestPlot(data['Test Statistic'], htPlotCritVals, intrpInfo$alternative)
-      
-    } else {
+
+    } else if(IndMeansSigmaKnown() == 'bothUnknown'){
       indMeansPlot <- hypTTestPlot(data['Test Statistic'], data['df'], htPlotCritVals, intrpInfo$alternative)
     }
-    
+
     indMeansPlot
   })
   
