@@ -654,7 +654,7 @@
                                                                              ), # Dropdown for 1-sample HT
                                                            ), #"input.samplesSelect == '1'"
                                                            
-                                                           conditionalPanel(
+                                                           conditionalPanel( #### 2 Sample ----
                                                              condition = "input.samplesSelect == '2'",
                                                              
                                                              radioButtons(inputId = "popuParameters",
@@ -668,7 +668,7 @@
                                                                           selected = "Independent Population Means", #character(0), #
                                                                           inline = FALSE), #,width = '1000px'),
                                                              
-                                                             conditionalPanel(
+                                                             conditionalPanel( ##### Ind Pop Means ----
                                                                condition = "input.popuParameters == 'Independent Population Means'",
                                                                
                                                                radioButtons(inputId = "dataAvailability2",
@@ -884,23 +884,16 @@
                                                                ),
                                                              ), # Two Independent Samples
 
-                                                             conditionalPanel(
-                                                               condition = "input.popuParameters == 'Dependent Population Means'",
-                                                               
-                                                               textAreaInput(inputId = "before", 
-                                                                             label = strong("Before"), 
-                                                                             value = "484, 478, 492, 444, 436, 398, 464, 476", 
-                                                                             placeholder = "Enter values separated by a comma with decimals as points", 
-                                                                             rows = 3),
-                                                               
-                                                               textAreaInput(inputId = "after", 
-                                                                             label = strong("After"), 
-                                                                             value = "488, 478, 480, 426, 440, 410, 458, 460", 
-                                                                             placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
-                                                               
+                                                             conditionalPanel( ##### Dep Pop Means ----
+                                                                              condition = "input.popuParameters == 'Dependent Population Means'",
+                                                                              
+                                                                              
+                                                                             
+                                                                              
+                                                                
                                                              ), # Two Dependent Samples
                                                              
-                                                             conditionalPanel(
+                                                             conditionalPanel( ##### Pop Props ----
                                                                condition = "input.popuParameters == 'Population Proportions'",
                                                                
                                                                numericInput(inputId = "numSuccesses1",

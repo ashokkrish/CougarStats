@@ -38,6 +38,7 @@ server <- function(input, output) {
   indmeanssdunk_iv <- InputValidator$new()
   indmeansrawsd_iv <- InputValidator$new()
   indmeansuploadsd_iv <- InputValidator$new()
+  depmeansraw_iv <- InputValidator$new()
   oneprop_iv <- InputValidator$new()
   onepropht_iv <- InputValidator$new()
   twoprop_iv <- InputValidator$new()
@@ -315,6 +316,9 @@ server <- function(input, output) {
   indmeansuploadvar_iv$add_rule("indMeansUplSample1", sv_required())
   indmeansuploadvar_iv$add_rule("indMeansUplSample2", sv_required())
   
+  
+
+  
 
   # numSuccessesProportion
   
@@ -366,18 +370,20 @@ server <- function(input, output) {
   onemeanuploadvar_iv$condition(function() {isTRUE(input$samplesSelect == '1' && input$dataAvailability == 'Upload Data' && onemeanupload_iv$is_valid()) })
   onemeanuploadsd_iv$condition(function() {isTRUE(input$samplesSelect == '1' &&input$dataAvailability == 'Upload Data' && input$sigmaKnownUpload == 'Known' && onemeanupload_iv$is_valid()) })
   onemeanht_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$inferenceType == 'Hypothesis Testing'))
+  
   indmeanssumm_iv$condition(~ isTRUE(input$samplesSelect == '2' && input$popuParameters == 'Independent Population Means' && input$dataAvailability2 == 'Summarized Data'))
   indmeansraw_iv$condition(~ isTRUE(input$samplesSelect == '2' && input$popuParameters == 'Independent Population Means' && input$dataAvailability2 == 'Enter Raw Data'))
   indmeanssdknown_iv$condition(~ isTRUE(input$samplesSelect == '2' && input$popuParameters == 'Independent Population Means' && input$dataAvailability2 == 'Summarized Data' && input$bothsigmaKnown == 'bothKnown'))
   indmeanssdunk_iv$condition(~ isTRUE(input$samplesSelect == '2' && input$popuParameters == 'Independent Population Means' && input$dataAvailability2 == 'Summarized Data' && input$bothsigmaKnown == 'bothUnknown'))
   indmeansrawsd_iv$condition(~ isTRUE(input$samplesSelect == '2' && input$popuParameters == 'Independent Population Means' && input$dataAvailability2 == 'Enter Raw Data' && input$bothsigmaKnownRaw == 'bothKnown'))
-  
   indmeansupload_iv$condition(~ isTRUE(input$samplesSelect == '2' && input$popuParameters == 'Independent Population Means' && input$dataAvailability2 == 'Upload Data'))
   indmeansuploadvar_iv$condition(function() {isTRUE(input$samplesSelect == '2' && input$dataAvailability2 == 'Upload Data' && indmeansupload_iv$is_valid()) })
   indmeansuploadsd_iv$condition(function() {isTRUE(input$samplesSelect == '2' && input$dataAvailability2 == 'Upload Data' && input$bothsigmaKnownUpload == 'bothKnown' && indmeansupload_iv$is_valid()) })
   
+  
   oneprop_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Proportion'))
   onepropht_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Proportion' && input$inferenceType == 'Hypothesis Testing'))
+  
   twoprop_iv$condition(~ isTRUE(input$samplesSelect == '2' && input$popuParameters == 'Population Proportions'))
   
   si_iv$add_validator(onemean_iv)
@@ -2215,6 +2221,11 @@ server <- function(input, output) {
     return(twoSampTTest)
   })
   
+  
+  #### Dependent Means Reactives ----
+  
+
+  
   # --------------------------------------------------------------------- #
   
   
@@ -3995,25 +4006,33 @@ server <- function(input, output) {
                                    # Correlation Coefficient Analysis #
                                    #----------------------------------#
                                    titlePanel("Pearson's Product-Moment Correlation"),
+                                   br(),
+                                   br(),
+                                   uiOutput('pearsonCorFormula'),
+                                   br(),
                                    verbatimTextOutput("PearsonCorTest"),
                                    br(),
                                    verbatimTextOutput("PearsonConfInt"),
                                    br(),
-                                   verbatimTextOutput("PearsonEstimate"),
-                                   br(),
+                                   # verbatimTextOutput("PearsonEstimate"),
+                                   # br(),
+                                   hr(),
                                    
                                    #conditionalPanel(
                                    #condition = "input.kendall == 1",
                                    
                                    titlePanel("Kendall's Rank Correlation"),
+                                   br(),
                                    verbatimTextOutput("Kendall"),
                                    br(),
+                                   hr(),
                                    #),
                                    
                                    #conditionalPanel(
                                    #condition = "input.spearman == 1",
                                    
                                    titlePanel("Spearman's Rank Correlation"),
+                                   br(),
                                    verbatimTextOutput("Spearman"),
                                    #),
                                    #br(),
@@ -4032,6 +4051,10 @@ server <- function(input, output) {
           names(df) <- c("x", "y", "xy", "x<sup>2</sup>", "y<sup>2</sup>")
           dfTotaled <- bind_rows(df, summarise(df, across(where(is.numeric), sum)))
           rownames(dfTotaled)[nrow(dfTotaled)] <- "Totals"
+          
+          sumXSumY <- dfTotaled["Totals", "x"] * dfTotaled["Totals", "y"]
+          sumXSqrd <- dfTotaled["Totals", "x"] ^ 2
+          sumYSqrd <- dfTotaled["Totals", "y"] ^ 2
           
           output$slrDataTable <- renderDT(
             datatable(round(dfTotaled, digits = 3),
@@ -4071,19 +4094,19 @@ server <- function(input, output) {
                       length(datx)),
               sprintf("\\( \\, = \\, \\dfrac{ %g - \\dfrac{ %g }{ %g } }{ %g - \\dfrac{ %g }{ %g } } \\)",
                       dfTotaled["Totals", "xy"],
-                      dfTotaled["Totals", "x"] * dfTotaled["Totals", "y"],
+                      sumXSumY,
                       length(datx),
                       dfTotaled["Totals", "x<sup>2</sup>"],
-                      dfTotaled["Totals", "x"]^2,
+                      sumXSqrd,
                       length(datx)),
               sprintf("\\( \\, = \\, \\dfrac{ %g - %g }{ %g - %g } \\)",
                       dfTotaled["Totals", "xy"],
-                      (dfTotaled["Totals", "x"] * dfTotaled["Totals", "y"]) / length(datx),
+                      sumXSumY / length(datx),
                       dfTotaled["Totals", "x<sup>2</sup>"],
-                      (dfTotaled["Totals", "x"]^2) / length(datx)),
+                      sumXSqrd / length(datx)),
               sprintf("\\( \\, = \\, \\dfrac{ %g }{ %g } \\)",
-                      dfTotaled["Totals", "xy"] - (dfTotaled["Totals", "x"] * dfTotaled["Totals", "y"]) / length(datx),
-                      dfTotaled["Totals", "x<sup>2</sup>"] - (dfTotaled["Totals", "x"]^2) / length(datx)),
+                      dfTotaled["Totals", "xy"] - (sumXSumY) / length(datx),
+                      dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx)),
               sprintf("\\( \\, = \\, %0.4f \\)",
                       summary(model)$coefficients["datx", "Estimate"] ),
               br(),
@@ -4157,16 +4180,76 @@ server <- function(input, output) {
           req(length(datx) > 1) ## correlation coefficient ----
           if(length(datx) > 2)
           {
-            Pearson <- cor.test(datx, daty, method = "pearson")
+            pearson <- cor.test(datx, daty, method = "pearson")
+            
+            output$pearsonCorFormula <- renderUI({
+              p(
+                withMathJax(),
+                sprintf("\\( r \\; = \\; \\dfrac
+                                        {\\sum xy - \\dfrac{ (\\sum x)(\\sum y) }{ n } }
+                                        {\\sqrt{ \\sum x^2 - \\dfrac{ (\\sum x)^2 }{ n } } \\sqrt{ \\sum y^2 - \\dfrac{ (\\sum y) ^2 }{ n } } } \\)"),
+                br(),
+                br(),
+                br(),
+                sprintf("\\( \\quad = \\; \\dfrac
+                                        {%g - \\dfrac{ (%g)(%g) }{ %g } }
+                                        {\\sqrt{ %g - \\dfrac{ (%g)^2 }{ %g } } \\sqrt{ %g - \\dfrac{ (%g) ^2 }{ %g } } } \\)",
+                       dfTotaled["Totals", "xy"],
+                       dfTotaled["Totals", "x"],
+                       dfTotaled["Totals", "y"],
+                       length(datx),
+                       dfTotaled["Totals", "x<sup>2</sup>"],
+                       dfTotaled["Totals", "x"],
+                       length(datx),
+                       dfTotaled["Totals", "y<sup>2</sup>"],
+                       dfTotaled["Totals", "y"],
+                       length(datx)),
+                sprintf("\\( \\; = \\; \\dfrac
+                                        {%g - \\dfrac{ %g }{ %g } }
+                                        {\\sqrt{ %g - \\dfrac{ %g }{ %g } } \\sqrt{ %g - \\dfrac{ %s }{ %g } } } \\)",
+                        dfTotaled["Totals", "xy"],
+                        sumXSumY,
+                        length(datx),
+                        dfTotaled["Totals", "x<sup>2</sup>"],
+                        sumXSqrd,
+                        length(datx),
+                        dfTotaled["Totals", "y<sup>2</sup>"],
+                        sumYSqrd,
+                        length(datx)),
+                sprintf("\\( \\; = \\; \\dfrac
+                                        {%g - %g }
+                                        {\\sqrt{ %g - %g } \\sqrt{ %g - %g } } \\)",
+                        dfTotaled["Totals", "xy"],
+                        sumXSumY / length(datx),
+                        dfTotaled["Totals", "x<sup>2</sup>"],
+                        sumXSqrd / length(datx),
+                        dfTotaled["Totals", "y<sup>2</sup>"],
+                        sumYSqrd / length(datx)),
+                sprintf("\\( \\; = \\; \\dfrac
+                                        { %g }
+                                        {\\sqrt{ %g } \\sqrt{ %g } } \\)",
+                        dfTotaled["Totals", "xy"] - sumXSumY / length(datx),
+                        dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx),
+                        dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx)),
+                sprintf("\\( \\; = \\; %0.4f \\)",
+                        pearson$estimate),
+                br(),
+                br(),
+                br(),
+                sprintf("\\( r \\; = \\; %0.4f \\)",
+                        pearson$estimate)
+              )
+              
+            })
             
             output$PearsonCorTest <- renderPrint({ 
-              Pearson
+              pearson
             })
             
             if(length(datx) > 3)
             {
               output$PearsonConfInt <- renderPrint({ 
-                Pearson$conf.int
+                pearson$conf.int
               })
             }
             else
@@ -4176,9 +4259,9 @@ server <- function(input, output) {
               })
             }
             
-            output$PearsonEstimate <- renderPrint({
-              cat(noquote(paste(c("Pearson's r:", round(Pearson$estimate[[1]], 4)))))
-            })
+            # output$PearsonEstimate <- renderPrint({
+            #   cat(noquote(paste(c("Pearson's r:", round(pearson$estimate[[1]], 4)))))
+            # })
           }
           else
           {
