@@ -887,7 +887,63 @@
                                                              conditionalPanel( ##### Dep Pop Means ----
                                                                               condition = "input.popuParameters == 'Dependent Population Means'",
                                                                               
+                                                                              radioButtons(inputId = "dataTypeDependent",
+                                                                                           label = strong("Data Availability"),
+                                                                                           choiceValues = list("Enter Raw Data",
+                                                                                                               "Upload Data"),
+                                                                                           choiceNames = list("Enter Raw Data",
+                                                                                                              "Upload Data"),
+                                                                                           selected = "Enter Raw Data", #character(0), # 
+                                                                                           inline = TRUE), #,width = '1000px'),
                                                                               
+                                                                              conditionalPanel(
+                                                                                               condition = "input.dataTypeDependent == 'Enter Raw Data'",
+                                                                                               
+                                                                                               textAreaInput(inputId = "before", 
+                                                                                                             label = strong("Before"), 
+                                                                                                             value = "484, 478, 492, 444, 436, 398, 464, 476", 
+                                                                                                             placeholder = "Enter values separated by a comma with decimals as points", 
+                                                                                                             rows = 3),
+                                                                                               
+                                                                                               textAreaInput(inputId = "after", 
+                                                                                                             label = strong("After"), 
+                                                                                                             value = "488, 478, 480, 426, 440, 410, 458, 460", 
+                                                                                                             placeholder = "Enter values separated by a comma with decimals as points", rows = 3),
+                                                                              ),
+                                                                              
+                                                                              conditionalPanel(
+                                                                                               condition = "input.dataTypeDependent == 'Upload Data'",
+                                                                                
+                                                                                               fileInput(inputId = "depMeansUserData", 
+                                                                                                         label = strong("Upload your Data (.csv or .xls or .xlsx or .txt)"), 
+                                                                                                         accept = c("text/csv",
+                                                                                                                    "text/comma-separated-values", 
+                                                                                                                    "text/plain", 
+                                                                                                                    ".csv",
+                                                                                                                    ".xls",
+                                                                                                                    ".xlsx")
+                                                                                               ),
+                                                                                               
+                                                                                               selectizeInput(
+                                                                                                 inputId = "depMeansUplSample1",
+                                                                                                 label = strong("Choose a Column for 'Before' Sample Data"),
+                                                                                                 choices = c(""),
+                                                                                                 options = list(
+                                                                                                   placeholder = 'Select a column',
+                                                                                                   onInitialize = I('function() { this.setValue(""); }')
+                                                                                                 ),
+                                                                                               ),
+                                                                                               
+                                                                                               selectizeInput(
+                                                                                                 inputId = "depMeansUplSample2",
+                                                                                                 label = strong("Choose a Column for 'After' Sample Data"),
+                                                                                                 choices = c(""),
+                                                                                                 options = list(
+                                                                                                   placeholder = 'Select a column',
+                                                                                                   onInitialize = I('function() { this.setValue(""); }')
+                                                                                                 )
+                                                                                               ),
+                                                                              )
                                                                              
                                                                               
                                                                 

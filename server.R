@@ -39,6 +39,8 @@ server <- function(input, output) {
   indmeansrawsd_iv <- InputValidator$new()
   indmeansuploadsd_iv <- InputValidator$new()
   depmeansraw_iv <- InputValidator$new()
+  depmeansupload_iv <- InputValidator$new()
+  depmeansuploadvars_iv <- InputValidator$new()
   oneprop_iv <- InputValidator$new()
   onepropht_iv <- InputValidator$new()
   twoprop_iv <- InputValidator$new()
@@ -65,15 +67,28 @@ server <- function(input, output) {
   
   #ds_iv$add_rule("dsTableFilters", sv_required())
   
+  
+  # ------------------ #
+  #     Conditions     #
+  # ------------------ #
   ds_iv$condition(~ isTRUE(input$dropDownMenu == 'Descriptive Statistics'))
   dsraw_iv$condition(~ isTRUE(input$dataInput == 'Enter Raw Data'))
   dsupload_iv$condition(~ isTRUE(input$dataInput == 'Upload Data'))
-  dsuploadvars_iv$condition(function() {isTRUE(input$dataInput == 'Upload Data' && dsupload_iv$is_valid()) })
+  dsuploadvars_iv$condition(function() {isTRUE(input$dataInput == 'Upload Data' && 
+                                               dsupload_iv$is_valid()) })
   
+  
+  # ------------------ #
+  #     Dependency     #
+  # ------------------ #
   ds_iv$add_validator(dsraw_iv)
   ds_iv$add_validator(dsupload_iv)
   ds_iv$add_validator(dsuploadvars_iv)
   
+  
+  # ------------------ #
+  #     Activation     #
+  # ------------------ #
   ds_iv$enable()
   dsraw_iv$enable()
   dsupload_iv$enable()
@@ -150,16 +165,28 @@ server <- function(input, output) {
   #     Conditions     #
   # ------------------ #
   binom_iv$condition(~ isTRUE(input$probability == 'Binomial'))
-  binomprob_iv$condition(~ isTRUE(input$probability == 'Binomial' && input$calcBinom != 'between'))
-  binombetween_iv$condition(~ isTRUE(input$probability == 'Binomial' && input$calcBinom == 'between'))
+  
+  binomprob_iv$condition(~ isTRUE(input$probability == 'Binomial' && 
+                                  input$calcBinom != 'between'))
+  
+  binombetween_iv$condition(~ isTRUE(input$probability == 'Binomial' && 
+                                     input$calcBinom == 'between'))
   
   poiss_iv$condition(~ isTRUE(input$probability == 'Poisson'))
-  poissprob_iv$condition(~ isTRUE(input$probability == 'Poisson' && input$calcPoisson != 'between'))
-  poissbetween_iv$condition(~ isTRUE(input$probability == 'Poisson' && input$calcPoisson == 'between'))
+  
+  poissprob_iv$condition(~ isTRUE(input$probability == 'Poisson' && 
+                                  input$calcPoisson != 'between'))
+  
+  poissbetween_iv$condition(~ isTRUE(input$probability == 'Poisson' && 
+                                     input$calcPoisson == 'between'))
   
   norm_iv$condition(~ isTRUE(input$probability == 'Normal'))
-  normprob_iv$condition(~ isTRUE(input$probability == 'Normal' && input$calcNormal != 'between'))
-  normbetween_iv$condition(~ isTRUE(input$probability == 'Normal' && input$calcNormal == 'between'))
+  
+  normprob_iv$condition(~ isTRUE(input$probability == 'Normal' && 
+                                 input$calcNormal != 'between'))
+  
+  normbetween_iv$condition(~ isTRUE(input$probability == 'Normal' && 
+                                    input$calcNormal == 'between'))
   # ------------------ #
   #     Dependency     #
   # ------------------ #
@@ -317,6 +344,34 @@ server <- function(input, output) {
   indmeansuploadvar_iv$add_rule("indMeansUplSample2", sv_required())
   
   
+  # before
+  
+  depmeansraw_iv$add_rule("before", sv_required())
+  depmeansraw_iv$add_rule("before", sv_regex("^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+$", 
+                                                  "Data must be at least 3 numeric values seperated by a comma (ie: 2,3,4)"))
+  
+  # after
+  
+  depmeansraw_iv$add_rule("after", sv_required())
+  depmeansraw_iv$add_rule("after", sv_regex("^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+$", 
+                                                  "Data must be at least 3 numeric values seperated by a comma (ie: 2,3,4)."))
+  
+  
+  depmeansraw_iv$add_rule("before", ~ if(length(createNumLst(input$before)) != length(createNumLst(input$after))) "Before and After must have the same number of observations.")
+  depmeansraw_iv$add_rule("after", ~ if(length(createNumLst(input$before)) != length(createNumLst(input$after))) "Before and After must have the same number of observations.")
+  
+  
+  depmeansupload_iv$add_rule("depMeansUserData", sv_required())
+  depmeansupload_iv$add_rule("depMeansUserData", ~ if(!(tools::file_ext(input$depMeansUserData$name) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+  depmeansupload_iv$add_rule("depMeansUserData", ~ if(nrow(DepMeansUploadData()) == 0) "File is empty.")
+  depmeansupload_iv$add_rule("depMeansUserData", ~ if(ncol(DepMeansUploadData()) < 2) "File must contain at least 2 distinct 'Before' and 'After' sets of data to choose from for analysis.")
+  depmeansupload_iv$add_rule("depMeansUserData", ~ if(nrow(DepMeansUploadData()) < 4) "Samples must include at least 3 observations.")
+
+  
+  depmeansuploadvars_iv$add_rule("depMeansUplSample1", sv_required())
+  depmeansuploadvars_iv$add_rule("depMeansUplSample2", sv_required())
+  depmeansuploadvars_iv$add_rule("depMeansUplSample1", ~ if(DepSamplesDiff() != 0) "Before and After must have the same number of observations.")
+  depmeansuploadvars_iv$add_rule("depMeansUplSample2", ~ if(DepSamplesDiff() != 0) "Before and After must have the same number of observations.")
 
   # numSuccessesProportion
   
@@ -360,29 +415,110 @@ server <- function(input, output) {
   onepropht_iv$add_rule("hypProportion", sv_gt(0))
   onepropht_iv$add_rule("hypProportion", sv_lt(1))
   
-  onemean_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$dataAvailability == 'Summarized Data'))
-  onemeansdknown_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$dataAvailability == 'Summarized Data' && input$sigmaKnown == 'Known'))
-  onemeansdunk_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$dataAvailability == 'Summarized Data' && input$sigmaKnown == 'Unknown'))
-  onemeanraw_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$dataAvailability == 'Enter Raw Data'))
-  onemeanupload_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$dataAvailability == 'Upload Data'))
-  onemeanuploadvar_iv$condition(function() {isTRUE(input$samplesSelect == '1' && input$dataAvailability == 'Upload Data' && onemeanupload_iv$is_valid()) })
-  onemeanuploadsd_iv$condition(function() {isTRUE(input$samplesSelect == '1' &&input$dataAvailability == 'Upload Data' && input$sigmaKnownUpload == 'Known' && onemeanupload_iv$is_valid()) })
-  onemeanht_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Mean' && input$inferenceType == 'Hypothesis Testing'))
   
-  indmeanssumm_iv$condition(~ isTRUE(input$samplesSelect == '2' && input$popuParameters == 'Independent Population Means' && input$dataAvailability2 == 'Summarized Data'))
-  indmeansraw_iv$condition(~ isTRUE(input$samplesSelect == '2' && input$popuParameters == 'Independent Population Means' && input$dataAvailability2 == 'Enter Raw Data'))
-  indmeanssdknown_iv$condition(~ isTRUE(input$samplesSelect == '2' && input$popuParameters == 'Independent Population Means' && input$dataAvailability2 == 'Summarized Data' && input$bothsigmaKnown == 'bothKnown'))
-  indmeanssdunk_iv$condition(~ isTRUE(input$samplesSelect == '2' && input$popuParameters == 'Independent Population Means' && input$dataAvailability2 == 'Summarized Data' && input$bothsigmaKnown == 'bothUnknown'))
-  indmeansrawsd_iv$condition(~ isTRUE(input$samplesSelect == '2' && input$popuParameters == 'Independent Population Means' && input$dataAvailability2 == 'Enter Raw Data' && input$bothsigmaKnownRaw == 'bothKnown'))
-  indmeansupload_iv$condition(~ isTRUE(input$samplesSelect == '2' && input$popuParameters == 'Independent Population Means' && input$dataAvailability2 == 'Upload Data'))
-  indmeansuploadvar_iv$condition(function() {isTRUE(input$samplesSelect == '2' && input$dataAvailability2 == 'Upload Data' && indmeansupload_iv$is_valid()) })
-  indmeansuploadsd_iv$condition(function() {isTRUE(input$samplesSelect == '2' && input$dataAvailability2 == 'Upload Data' && input$bothsigmaKnownUpload == 'bothKnown' && indmeansupload_iv$is_valid()) })
-
-  oneprop_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Proportion'))
-  onepropht_iv$condition(~ isTRUE(input$samplesSelect == '1' && input$popuParameter == 'Population Proportion' && input$inferenceType == 'Hypothesis Testing'))
+  # ------------------ #
+  #     Conditions     #
+  # ------------------ #
+  onemean_iv$condition(~ isTRUE(input$samplesSelect == '1' && 
+                                input$popuParameter == 'Population Mean' && 
+                                input$dataAvailability == 'Summarized Data'))
   
-  twoprop_iv$condition(~ isTRUE(input$samplesSelect == '2' && input$popuParameters == 'Population Proportions'))
+  onemeansdknown_iv$condition(~ isTRUE(input$samplesSelect == '1' && 
+                                       input$popuParameter == 'Population Mean' && 
+                                       input$dataAvailability == 'Summarized Data' && 
+                                       input$sigmaKnown == 'Known'))
   
+  onemeansdunk_iv$condition(~ isTRUE(input$samplesSelect == '1' && 
+                                     input$popuParameter == 'Population Mean' && 
+                                     input$dataAvailability == 'Summarized Data' && 
+                                     input$sigmaKnown == 'Unknown'))
+  
+  onemeanraw_iv$condition(~ isTRUE(input$samplesSelect == '1' && 
+                                   input$popuParameter == 'Population Mean' && 
+                                   input$dataAvailability == 'Enter Raw Data'))
+  
+  onemeanupload_iv$condition(~ isTRUE(input$samplesSelect == '1' && 
+                                      input$popuParameter == 'Population Mean' && 
+                                      input$dataAvailability == 'Upload Data'))
+  
+  onemeanuploadvar_iv$condition(function() {isTRUE(input$samplesSelect == '1' && 
+                                                   input$dataAvailability == 'Upload Data' && 
+                                                   onemeanupload_iv$is_valid()) })
+  
+  onemeanuploadsd_iv$condition(function() {isTRUE(input$samplesSelect == '1' &&
+                                                  input$dataAvailability == 'Upload Data' && 
+                                                  input$sigmaKnownUpload == 'Known' && 
+                                                  onemeanupload_iv$is_valid()) })
+  
+  onemeanht_iv$condition(~ isTRUE(input$samplesSelect == '1' && 
+                                  input$popuParameter == 'Population Mean' && 
+                                  input$inferenceType == 'Hypothesis Testing'))
+  
+  indmeanssumm_iv$condition(~ isTRUE(input$samplesSelect == '2' && 
+                                     input$popuParameters == 'Independent Population Means' && 
+                                     input$dataAvailability2 == 'Summarized Data'))
+  
+  indmeansraw_iv$condition(~ isTRUE(input$samplesSelect == '2' && 
+                                    input$popuParameters == 'Independent Population Means' && 
+                                    input$dataAvailability2 == 'Enter Raw Data'))
+  
+  indmeanssdknown_iv$condition(~ isTRUE(input$samplesSelect == '2' && 
+                                        input$popuParameters == 'Independent Population Means' && 
+                                        input$dataAvailability2 == 'Summarized Data' && 
+                                        input$bothsigmaKnown == 'bothKnown'))
+  
+  indmeanssdunk_iv$condition(~ isTRUE(input$samplesSelect == '2' && 
+                                      input$popuParameters == 'Independent Population Means' && 
+                                      input$dataAvailability2 == 'Summarized Data' && 
+                                        input$bothsigmaKnown == 'bothUnknown'))
+  
+  indmeansrawsd_iv$condition(~ isTRUE(input$samplesSelect == '2' && 
+                                      input$popuParameters == 'Independent Population Means' && 
+                                      input$dataAvailability2 == 'Enter Raw Data' && 
+                                      input$bothsigmaKnownRaw == 'bothKnown'))
+  
+  indmeansupload_iv$condition(~ isTRUE(input$samplesSelect == '2' && 
+                                       input$popuParameters == 'Independent Population Means' && 
+                                       input$dataAvailability2 == 'Upload Data'))
+  
+  indmeansuploadvar_iv$condition(function() {isTRUE(input$samplesSelect == '2' && 
+                                                    input$popuParameters == 'Independent Population Means' && 
+                                                    input$dataAvailability2 == 'Upload Data' && 
+                                                    indmeansupload_iv$is_valid()) })
+  
+  indmeansuploadsd_iv$condition(function() {isTRUE(input$samplesSelect == '2' && 
+                                                   input$popuParameters == 'Independent Population Means' && 
+                                                   input$dataAvailability2 == 'Upload Data' && 
+                                                   input$bothsigmaKnownUpload == 'bothKnown' && 
+                                                   indmeansupload_iv$is_valid()) })
+  
+  depmeansraw_iv$condition(~ isTRUE(input$samplesSelect == '2' && 
+                                    input$popuParameters == 'Dependent Population Means' && 
+                                    input$dataTypeDependent == 'Enter Raw Data'))
+  
+  depmeansupload_iv$condition(~ isTRUE(input$samplesSelect == '2' && 
+                                       input$popuParameters == 'Dependent Population Means' && 
+                                       input$dataTypeDependent == 'Upload Data'))
+  
+  depmeansuploadvars_iv$condition(~ isTRUE(input$samplesSelect == '2' && 
+                                           input$popuParameters == 'Dependent Population Means' && 
+                                           input$dataTypeDependent == 'Upload Data') &&
+                                           depmeansupload_iv$is_valid())
+  
+  oneprop_iv$condition(~ isTRUE(input$samplesSelect == '1' && 
+                                input$popuParameter == 'Population Proportion'))
+  
+  onepropht_iv$condition(~ isTRUE(input$samplesSelect == '1' && 
+                                  input$popuParameter == 'Population Proportion' && 
+                                  input$inferenceType == 'Hypothesis Testing'))
+  
+  twoprop_iv$condition(~ isTRUE(input$samplesSelect == '2' && 
+                                input$popuParameters == 'Population Proportions'))
+  
+  
+  # ------------------ #
+  #     Dependency     #
+  # ------------------ #
   si_iv$add_validator(onemean_iv)
   si_iv$add_validator(onemeansdknown_iv)
   si_iv$add_validator(onemeansdunk_iv)
@@ -399,10 +535,17 @@ server <- function(input, output) {
   si_iv$add_validator(indmeansupload_iv)
   si_iv$add_validator(indmeansuploadvar_iv)
   si_iv$add_validator(indmeansuploadsd_iv)
+  si_iv$add_validator(depmeansraw_iv)
+  si_iv$add_validator(depmeansupload_iv)
+  si_iv$add_validator(depmeansuploadvars_iv)
   si_iv$add_validator(oneprop_iv)
   si_iv$add_validator(onepropht_iv)
   si_iv$add_validator(twoprop_iv)
   
+  
+  # ------------------ #
+  #     activation     #
+  # ------------------ #
   si_iv$enable()
   onemean_iv$enable()
   onemeansdknown_iv$enable()
@@ -420,9 +563,13 @@ server <- function(input, output) {
   indmeansupload_iv$enable()
   indmeansuploadvar_iv$enable()
   indmeansuploadsd_iv$enable()
+  depmeansraw_iv$enable
+  depmeansupload_iv$enable()
+  depmeansuploadvars_iv$enable()
   oneprop_iv$enable()
   onepropht_iv$enable()
   twoprop_iv$enable()
+  
   
   ## RC rules ---- 
   
@@ -2219,6 +2366,67 @@ server <- function(input, output) {
   
   #### Dependent Means Reactives ----
   
+  DepMeansRawData <- eventReactive({input$before
+                                    input$after},{
+    req(si_iv$is_valid())
+    
+    rawData <- list()
+    
+    rawBefore <- createNumLst(input$before)
+    rawAfter <- createNumLst(input$after)
+    
+    rawData$n1  <- length(rawBefore)
+    rawData$n2  <- length(rawAfter)
+    rawData$diff <- rawData$n1 - rawData$n2
+    print(rawData)
+    return(rawData)
+  })
+  
+  
+  DepMeansUploadData <- eventReactive(input$depMeansUserData, {
+    
+    ext <- tools::file_ext(input$depMeansUserData$name)
+    
+    switch(ext, 
+           csv = read_csv(input$depMeansUserData$datapath, show_col_types = FALSE),
+           xls = read_excel(input$depMeansUserData$datapath),
+           xlsx = read_excel(input$depMeansUserData$datapath),
+           txt = read_tsv(input$depMeansUserData$datapath, show_col_types = FALSE),
+           
+           validate("Improper file format")
+    )
+  })
+  
+  GetDepMeansUplData <- reactive({
+    req(si_iv$is_valid())
+    
+    dat <- list()
+    
+    sampBefore <- unlist(DepMeansUploadData()[,input$depMeansUplSample1])
+    sampAfter <- unlist(DepMeansUploadData()[,input$depMeansUplSample2])
+    
+    dat$n1  <- length(sampBefore)
+    dat$xbar1 <- mean(sampBefore)
+    dat$n2  <- length(sampAfter)
+    dat$xbar2 <- mean(sampAfter)
+  
+    return(dat)
+  })
+  
+  DepSamplesDiff <- eventReactive (c(input$depMeansUplSample1, 
+                                       input$depMeansUplSample2), {
+                                         if(input$depMeansUplSample1 == "" | input$depMeansUplSample2 == "")
+                                         {
+                                           return(0)
+                                         }
+                                         else
+                                         {
+                                           before <- unlist(DepMeansUploadData()[, input$depMeansUplSample1])
+                                           after <- unlist(DepMeansUploadData()[, input$depMeansUplSample2])
+                                           difference <- length(na.omit(before)) - length(na.omit(after))
+                                           return(difference)
+                                         }
+                                       })
   
   # --------------------------------------------------------------------- #
   
@@ -2440,6 +2648,49 @@ server <- function(input, output) {
       )
     }
     
+  # Dependent Population Means Validation 
+  # ------------------------------------------------------------------------ #
+    
+    if(!depmeansraw_iv$is_valid()) {
+      
+      validate(
+        need(input$before, "'Before' sample data requires a minimum of 3 data points.") %then%
+          need(length(createNumLst(input$before)) > 2, "'Before' sample Data requires a minimum of 3 data points."),
+        need(input$after, "'After' sample data requires a minimum of 3 data points.") %then%
+          need(length(createNumLst(input$after)) > 2, "'After' sample Data requires a minimum of 3 data points."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(length(createNumLst(input$before)) == length(createNumLst(input$after)), "Same number of data points required for 'Before' and 'After' sample data."),
+
+        errorClass = "myClass"
+      )
+    } 
+    
+    if(!depmeansupload_iv$is_valid()) {
+      
+      validate(
+        need(input$depMeansUserData, "Please upload your data to continue"),
+        need(nrow(DepMeansUploadData()) > 0, "File is empty."),
+        need(ncol(DepMeansUploadData()) >= 2, "File must contain at least 2 distinct 'Before' and 'After' sets of data to choose from for analysis."),
+        need(nrow(DepMeansUploadData()) >= 3, "Samples must include at least 3 observations."),
+        
+        errorClass = "myClass"
+      )
+    }
+    
+    if(!depmeansuploadvars_iv$is_valid()) {
+      
+      validate(
+        need(input$depMeansUplSample1, "Please select a column for the 'Before' sample data."),
+        need(input$depMeansUplSample2, "Please select a column for the 'After' sample data."),
+        need(DepSamplesDiff() == 0, "Same number of data points required for 'Before' and 'After' sample data."),
+        
+        errorClass = "myClass"
+      )
+    }
     
   # Two Population Proportion Validation 
   # ------------------------------------------------------------------------ #
@@ -3770,6 +4021,28 @@ server <- function(input, output) {
     # }
   })
   
+  observeEvent(input$depMeansUserData, priority = 5, {
+    hide(id = "inferenceData")
+    hide(id = "depMeansUplSample1")
+    hide(id = "depMeansUplSample2")
+    
+    if(depmeansupload_iv$is_valid()) {
+      freezeReactiveValue(input, "depMeansUplSample1")
+      updateSelectInput(session = getDefaultReactiveDomain(),
+                        "depMeansUplSample1",
+                        choices = c(colnames(DepMeansUploadData()))
+      )
+  
+      freezeReactiveValue(input, "depMeansUplSample2")
+      updateSelectInput(session = getDefaultReactiveDomain(),
+                        "depMeansUplSample2",
+                        choices = c(colnames(DepMeansUploadData()))
+      )
+      show(id = "depMeansUplSample1")
+      show(id = "depMeansUplSample2")
+    }
+  })
+  
   
   observeEvent(input$goInference, {
     #output$renderInference <- renderDataTable(
@@ -3844,7 +4117,7 @@ server <- function(input, output) {
   
   sampleDiffUpload <- eventReactive (c(input$slrExplanatory, 
                                        input$slrResponse), {
-                                         if(input$slrResponse == "")
+                                         if(input$slrResponse == "" | input$slrExplanatory == "")
                                          {
                                            return()
                                          }
@@ -4446,21 +4719,21 @@ server <- function(input, output) {
   })
   
   observeEvent({input$samplesSelect
-    input$sampleSize
-    input$sampleMean
-    input$popuParameter
-    input$popuParameters
-    input$dataAvailability
-    input$dataAvailability2
-    input$sigmaKnown
-    input$sigmaKnownRaw
-    input$popuSD
-    input$popuSDRaw
-    input$sampSD
-    input$inferenceType
-    input$inferenceType2}, {
-      hide(id = "inferenceData")
-    })
+                input$sampleSize
+                input$sampleMean
+                input$popuParameter
+                input$popuParameters
+                input$dataAvailability
+                input$dataAvailability2
+                input$sigmaKnown
+                input$sigmaKnownRaw
+                input$popuSD
+                input$popuSDRaw
+                input$sampSD
+                input$inferenceType
+                input$inferenceType2}, {
+    hide(id = "inferenceData")
+  })
   
   observeEvent(input$dataAvailability, {
     hide(id = "oneMeanVariable")
@@ -4469,6 +4742,8 @@ server <- function(input, output) {
   observeEvent(input$dataAvailability2, {
     hide(id = "indMeansUplSample1")
     hide(id = "indMeansUplSample2")
+    hide(id = "depMeansUplSample1")
+    hide(id = "depMeansUplSample2")
   })
   
   observeEvent(input$goInference, {
