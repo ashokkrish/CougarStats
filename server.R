@@ -2481,6 +2481,11 @@ server <- function(input, output) {
     }
     
     if(!onemeanupload_iv$is_valid()) {
+      
+      if(is.null(input$oneMeanUserData)) {
+        validate("Please upload your data to continue")
+      }
+      
       validate(
         need(input$oneMeanUserData, "Please upload your data to continue."),
         need(nrow(OneMeanUploadData()) != 0, "File is empty."),
@@ -2617,9 +2622,12 @@ server <- function(input, output) {
     }
     
     if(!indmeansupload_iv$is_valid()) {
+      
+      if(is.null(input$indMeansUserData)) {
+        validate("Please upload your data to continue")
+      }
 
       validate(
-        need(input$indMeansUserData, "Please upload your data to continue."),
         need(nrow(IndMeansUploadData()) != 0, "File is empty."),
         need(ncol(IndMeansUploadData()) > 1, "File must contain at least 2 distinct samples to choose from for analysis."),
         need(nrow(IndMeansUploadData()) > 2, "Samples must include at least 2 observations."),
@@ -2671,8 +2679,11 @@ server <- function(input, output) {
     
     if(!depmeansupload_iv$is_valid()) {
       
+      if(is.null(input$depMeansUserData)) {
+        validate("Please upload your data to continue")
+      }
+      
       validate(
-        need(input$depMeansUserData, "Please upload your data to continue"),
         need(nrow(DepMeansUploadData()) > 0, "File is empty."),
         need(ncol(DepMeansUploadData()) >= 2, "File must contain at least 2 distinct 'Before' and 'After' sets of data to choose from for analysis."),
         need(nrow(DepMeansUploadData()) >= 3, "Samples must include at least 3 observations."),
@@ -4173,8 +4184,12 @@ server <- function(input, output) {
       if(!slrupload_iv$is_valid())
       {
         output$slrTabs <- renderUI({
+          
+          if(is.null(input$slrUserData)) {
+            validate("Please upload your data to continue")
+          }
+          
           validate(
-            need(input$slrUserData, "Please upload your data to continue"),
             need(nrow(slrUploadData()) != 0, "File is empty"),
             need(ncol(slrUploadData()) > 1, "Data must include one response and (at least) one explanatory variable"),
             need(nrow(slrUploadData()) > 2, "Samples must include at least 2 observations"),
@@ -4536,6 +4551,7 @@ server <- function(input, output) {
                 br(),
                 sprintf("\\( \\quad = \\; %0.4f \\)",
                         pearson$estimate),
+                br(),
                 br(),
               )
               

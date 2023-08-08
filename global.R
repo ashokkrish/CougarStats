@@ -36,6 +36,7 @@ source('R/TwoPropZInt.R')
 source('R/TwoPropZTest.R')
 
 options(scipen = 999) # options(scipen = 0)
+# options(shiny.reactlog = TRUE)
 
 `%then%` <- function(a, b) {
   if (is.null(a)) b else a
