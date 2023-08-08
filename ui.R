@@ -1235,12 +1235,9 @@
                                                                            
                                                                            h3("Boxplot"),
                                                                            
-                                                                           fluidRow(
-                                                                             column(align = "center", width = 12, 
-                                                                                    
-                                                                                    plotOutput("dsBoxplot", width = '75%')
-                                                                             )
-                                                                           ),
+                                                                           plotOutput("dsBoxplot"),
+                                                                           
+                 
  
                                                                            br(),
                                                                            helpText("*** Using Tukey's hinges"),
@@ -1254,12 +1251,9 @@
                                                                            
                                                                            h3("Histogram"),
                                                                            
-                                                                           fluidRow(
-                                                                             column(align = "center", width = 12, 
-                                                                                    
-                                                                                    plotOutput("dsHistogram", width = '75%')
-                                                                             )
-                                                                           ),
+                   
+                                                                                    plotOutput("dsHistogram"),
+                                                                   
                                                                            
                                                                            br(),
                                                                            hr(),
