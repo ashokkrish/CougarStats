@@ -59,7 +59,7 @@ server <- function(input, output) {
                                                 "Data must be numeric values seperated by a comma (ie: 2,3,4)"))
   
   dsupload_iv$add_rule("dsUserData", sv_required())
-  dsupload_iv$add_rule("dsUserData", ~ if(!(tools::file_ext(input$dsUserData$name) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+  dsupload_iv$add_rule("dsUserData", ~ if(!(tolower(tools::file_ext(input$dsUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
   dsupload_iv$add_rule("dsUserData", ~ if(ncol(dsUploadData()) < 1) "Data must include one variable")
   dsupload_iv$add_rule("dsUserData", ~ if(nrow(dsUploadData()) < 2) "Samples must include at least 2 observations")
   
@@ -240,7 +240,7 @@ server <- function(input, output) {
   
   # One Mean Upload Data
   onemeanupload_iv$add_rule("oneMeanUserData", sv_required())
-  onemeanupload_iv$add_rule("oneMeanUserData", ~ if(!(tools::file_ext(input$oneMeanUserData$name) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+  onemeanupload_iv$add_rule("oneMeanUserData", ~ if(!(tolower(tools::file_ext(input$oneMeanUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
   onemeanupload_iv$add_rule("oneMeanUserData", ~ if(nrow(OneMeanUploadData()) == 0) "File is empty")
   onemeanupload_iv$add_rule("oneMeanUserData", ~ if(nrow(OneMeanUploadData()) < 3) "Samples must include at least 2 observations")
   
@@ -330,7 +330,7 @@ server <- function(input, output) {
   #indMeansUserData
   
   indmeansupload_iv$add_rule("indMeansUserData", sv_required())
-  indmeansupload_iv$add_rule("indMeansUserData", ~ if(!(tools::file_ext(input$indMeansUserData$name) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+  indmeansupload_iv$add_rule("indMeansUserData", ~ if(!(tolower(tools::file_ext(input$indMeansUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
   indmeansupload_iv$add_rule("indMeansUserData", ~ if(nrow(IndMeansUploadData()) == 0) "File is empty.")
   indmeansupload_iv$add_rule("indMeansUserData", ~ if(ncol(IndMeansUploadData()) < 2) "File must contain at least 2 distinct samples to choose from for analysis.")
   indmeansupload_iv$add_rule("indMeansUserData", ~ if(nrow(IndMeansUploadData()) < 3) "Samples must include at least 2 observations.")
@@ -363,7 +363,7 @@ server <- function(input, output) {
   
   
   depmeansupload_iv$add_rule("depMeansUserData", sv_required())
-  depmeansupload_iv$add_rule("depMeansUserData", ~ if(!(tools::file_ext(input$depMeansUserData$name) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+  depmeansupload_iv$add_rule("depMeansUserData", ~ if(!(tolower(tools::file_ext(input$depMeansUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
   depmeansupload_iv$add_rule("depMeansUserData", ~ if(nrow(DepMeansUploadData()) == 0) "File is empty.")
   depmeansupload_iv$add_rule("depMeansUserData", ~ if(ncol(DepMeansUploadData()) < 2) "File must contain at least 2 distinct 'Before' and 'After' sets of data to choose from for analysis.")
   depmeansupload_iv$add_rule("depMeansUserData", ~ if(nrow(DepMeansUploadData()) < 4) "Samples must include at least 3 observations.")
@@ -588,7 +588,7 @@ server <- function(input, output) {
   slrraw_iv$add_rule("y", ~ if(sampleDiffRaw() != 0) "x and y must have the same number of observations")
   
   slrupload_iv$add_rule("slrUserData", sv_required())
-  slrupload_iv$add_rule("slrUserData", ~ if(!(tools::file_ext(input$slrUserData$name) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+  slrupload_iv$add_rule("slrUserData", ~ if(!(tolower(tools::file_ext(input$slrUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
   slrupload_iv$add_rule("slrUserData", ~ if(nrow(slrUploadData()) == 0) "File is empty")
   slrupload_iv$add_rule("slrUserData", ~ if(ncol(slrUploadData()) < 2) "Data must include one response and (at least) one explanatory variable")
   slrupload_iv$add_rule("slrUserData", ~ if(nrow(slrUploadData()) < 3) "Samples must include at least 2 observations")
@@ -769,11 +769,12 @@ server <- function(input, output) {
   # Function to read the uploaded data file
   dsUploadData <- eventReactive(input$dsUserData, {
     ext <- tools::file_ext(input$dsUserData$name)
+    ext <- tolower(ext)
     
     switch(ext, 
            csv = read_csv(input$dsUserData$datapath, show_col_types = FALSE),
-           xls = read_excel(input$dsUserData$datapath),
-           xlsx = read_excel(input$dsUserData$datapath),
+           xls = read_xls(input$dsUserData$datapath),
+           xlsx = read_xlsx(input$dsUserData$datapath),
            txt = read_tsv(input$dsUserData$datapath, show_col_types = FALSE),
            
            validate("Improper file format.")
@@ -818,7 +819,7 @@ server <- function(input, output) {
     {
       for( x in input$dsUploadVars)
       {
-        dat <- as.data.frame(dsUploadData())[, x]
+        dat <- na.omit(as.data.frame(dsUploadData())[, x])
         newCol <- createDSColumn(dat)
         df[x] <- newCol
       }
@@ -1978,11 +1979,12 @@ server <- function(input, output) {
   OneMeanUploadData <- eventReactive(input$oneMeanUserData, {
     
     ext <- tools::file_ext(input$oneMeanUserData$name)
+    ext <- tolower(ext)
     
     switch(ext, 
            csv = read_csv(input$oneMeanUserData$datapath, show_col_types = FALSE),
-           xls = read_excel(input$oneMeanUserData$datapath),
-           xlsx = read_excel(input$oneMeanUserData$datapath),
+           xls = read_xls(input$oneMeanUserData$datapath),
+           xlsx = read_xlsx(input$oneMeanUserData$datapath),
            txt = read_tsv(input$oneMeanUserData$datapath, show_col_types = FALSE),
            
            validate("Improper file format.")
@@ -2043,7 +2045,7 @@ server <- function(input, output) {
       popuSD <- input$popuSDRaw
       
     } else if(input$dataAvailability == 'Upload Data') {
-      dat <- unlist(OneMeanUploadData()[,input$oneMeanVariable])
+      dat <- na.omit(unlist(OneMeanUploadData()[,input$oneMeanVariable]))
       popuSD <- input$popuSDUpload
     }
     
@@ -2220,6 +2222,7 @@ server <- function(input, output) {
   IndMeansUploadData <- eventReactive(input$indMeansUserData, {
     
     ext <- tools::file_ext(input$indMeansUserData$name)
+    ext <- tolower(ext)
     
     switch(ext, 
            csv = read_csv(input$indMeansUserData$datapath, show_col_types = FALSE),
@@ -2236,9 +2239,9 @@ server <- function(input, output) {
     
     dat <- list()
     
-    sample1 <- unlist(IndMeansUploadData()[,input$indMeansUplSample1])
-    sample2 <- unlist(IndMeansUploadData()[,input$indMeansUplSample2])
-    
+    sample1 <- na.omit(unlist(IndMeansUploadData()[,input$indMeansUplSample1]))
+    sample2 <- na.omit(unlist(IndMeansUploadData()[,input$indMeansUplSample2]))
+
     dat$n1  <- length(sample1)
     dat$xbar1 <- mean(sample1)
     dat$n2  <- length(sample2)
@@ -2394,11 +2397,12 @@ server <- function(input, output) {
   DepMeansUploadData <- eventReactive(input$depMeansUserData, {
     
     ext <- tools::file_ext(input$depMeansUserData$name)
+    ext <- tolower(ext)
     
     switch(ext, 
            csv = read_csv(input$depMeansUserData$datapath, show_col_types = FALSE),
-           xls = read_excel(input$depMeansUserData$datapath),
-           xlsx = read_excel(input$depMeansUserData$datapath),
+           xls = read_xls(input$depMeansUserData$datapath),
+           xlsx = read_xlsx(input$depMeansUserData$datapath),
            txt = read_tsv(input$depMeansUserData$datapath, show_col_types = FALSE),
            
            validate("Improper file format")
@@ -2410,8 +2414,8 @@ server <- function(input, output) {
     
     dat <- list()
     
-    sampBefore <- unlist(DepMeansUploadData()[,input$depMeansUplSample1])
-    sampAfter <- unlist(DepMeansUploadData()[,input$depMeansUplSample2])
+    sampBefore <- na.omit(unlist(DepMeansUploadData()[,input$depMeansUplSample1]))
+    sampAfter <- na.omit(unlist(DepMeansUploadData()[,input$depMeansUplSample2]))
     
     dat$n1  <- length(sampBefore)
     dat$xbar1 <- mean(sampBefore)
@@ -4115,11 +4119,12 @@ server <- function(input, output) {
   
   slrUploadData <- eventReactive(input$slrUserData, {
     ext <- tools::file_ext(input$slrUserData$name)
+    ext <- tolower(ext)
     
     switch(ext, 
            csv = read_csv(input$slrUserData$datapath, show_col_types = FALSE),
-           xls = read_excel(input$slrUserData$datapath),
-           xlsx = read_excel(input$slrUserData$datapath),
+           xls = read_xls(input$slrUserData$datapath),
+           xlsx = read_xlsx(input$slrUserData$datapath),
            txt = read_tsv(input$slrUserData$datapath, show_col_types = FALSE),
            
            validate("Improper file format")
@@ -4141,9 +4146,9 @@ server <- function(input, output) {
                                          }
                                          else
                                          {
-                                           datx <- as.data.frame(slrUploadData())[, input$slrExplanatory]
-                                           daty <- as.data.frame(slrUploadData())[, input$slrResponse]
-                                           difference <- length(na.omit(datx)) - length(na.omit(daty))
+                                           datx <- na.omit(as.data.frame(slrUploadData())[, input$slrExplanatory])
+                                           daty <- na.omit(as.data.frame(slrUploadData())[, input$slrResponse])
+                                           difference <- length(datx) - length(daty)
                                            return(difference)
                                          }
                                        })
