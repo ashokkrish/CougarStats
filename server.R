@@ -74,7 +74,8 @@ server <- function(input, output) {
   ds_iv$condition(~ isTRUE(input$dropDownMenu == 'Descriptive Statistics'))
   dsraw_iv$condition(~ isTRUE(input$dataInput == 'Enter Raw Data'))
   dsupload_iv$condition(~ isTRUE(input$dataInput == 'Upload Data'))
-  dsuploadvars_iv$condition(function() {isTRUE(input$dataInput == 'Upload Data' && 
+  dsuploadvars_iv$condition(function() {isTRUE(input$dropDownMenu == 'Descriptive Statistics' &&
+                                               input$dataInput == 'Upload Data' && 
                                                dsupload_iv$is_valid()) })
   
   
@@ -442,10 +443,12 @@ server <- function(input, output) {
                                       input$dataAvailability == 'Upload Data'))
   
   onemeanuploadvar_iv$condition(function() {isTRUE(input$samplesSelect == '1' && 
+                                                   input$popuParameter == 'Population Mean' &&
                                                    input$dataAvailability == 'Upload Data' && 
                                                    onemeanupload_iv$is_valid()) })
   
   onemeanuploadsd_iv$condition(function() {isTRUE(input$samplesSelect == '1' &&
+                                                  input$popuParameter == 'Population Mean' &&
                                                   input$dataAvailability == 'Upload Data' && 
                                                   input$sigmaKnownUpload == 'Known' && 
                                                   onemeanupload_iv$is_valid()) })
@@ -502,8 +505,8 @@ server <- function(input, output) {
   
   depmeansuploadvars_iv$condition(~ isTRUE(input$samplesSelect == '2' && 
                                            input$popuParameters == 'Dependent Population Means' && 
-                                           input$dataTypeDependent == 'Upload Data') &&
-                                           depmeansupload_iv$is_valid())
+                                           input$dataTypeDependent == 'Upload Data' &&
+                                           depmeansupload_iv$is_valid()))
   
   oneprop_iv$condition(~ isTRUE(input$samplesSelect == '1' && 
                                 input$popuParameter == 'Population Proportion'))
@@ -596,7 +599,8 @@ server <- function(input, output) {
   
   slrraw_iv$condition(~ isTRUE(input$dataRegCor == 'Enter Raw Data'))
   slrupload_iv$condition(~ isTRUE(input$dataRegCor == 'Upload Data'))
-  slruploadvars_iv$condition(function() {isTRUE(input$dataRegCor == 'Upload Data' && slrupload_iv$is_valid()) })
+  slruploadvars_iv$condition(function() {isTRUE(input$dataRegCor == 'Upload Data' && 
+                                                slrupload_iv$is_valid()) })
   
   
   regcor_iv$add_validator(slrraw_iv)
