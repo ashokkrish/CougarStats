@@ -883,8 +883,12 @@ server <- function(input, output) {
     output$renderDescrStats <- renderUI({
       if(!dsupload_iv$is_valid())
       {
+        if(is.null(input$dsUserData)) {
+          
+          validate("Please upload a file.")
+        }
+        
         validate(
-          need(input$dsUserData, "Please upload your data to continue"),
           need(nrow(dsUploadData()) != 0 && ncol(dsUploadData()) > 0, "File is empty"),
           need(nrow(dsUploadData()) > 1, "Sample Data must include at least 2 observations"),
           
@@ -2483,11 +2487,10 @@ server <- function(input, output) {
     if(!onemeanupload_iv$is_valid()) {
       
       if(is.null(input$oneMeanUserData)) {
-        validate("Please upload your data to continue")
+        validate("Please upload a file.")
       }
       
       validate(
-        need(input$oneMeanUserData, "Please upload your data to continue."),
         need(nrow(OneMeanUploadData()) != 0, "File is empty."),
         need(nrow(OneMeanUploadData()) > 2, "Samples must include at least 2 observations."),
         
@@ -2624,7 +2627,7 @@ server <- function(input, output) {
     if(!indmeansupload_iv$is_valid()) {
       
       if(is.null(input$indMeansUserData)) {
-        validate("Please upload your data to continue")
+        validate("Please upload a file.")
       }
 
       validate(
@@ -2680,7 +2683,7 @@ server <- function(input, output) {
     if(!depmeansupload_iv$is_valid()) {
       
       if(is.null(input$depMeansUserData)) {
-        validate("Please upload your data to continue")
+        validate("Please upload a file.")
       }
       
       validate(
@@ -4186,7 +4189,7 @@ server <- function(input, output) {
         output$slrTabs <- renderUI({
           
           if(is.null(input$slrUserData)) {
-            validate("Please upload your data to continue")
+            validate("Please upload a file.")
           }
           
           validate(
@@ -4470,6 +4473,19 @@ server <- function(input, output) {
           if(length(datx) > 2)
           {
             pearson <- cor.test(datx, daty, method = "pearson")
+            if(pearson$estimate < 0) {
+              pearsonSign <- "negative"
+            } else {
+              pearsonSign <- "positive"
+            }
+            
+            if(abs(pearson$estimate) > 0.6) {
+              pearsonStrength <- "strong"
+            } else if (abs(pearson$estimate) > 0.3) {
+              pearsonStrength <- "moderate"
+            } else {
+              pearsonStrength <- "weak"
+            }
             
             output$pearsonCorFormula <- renderUI({
               p(
@@ -4553,6 +4569,12 @@ server <- function(input, output) {
                         pearson$estimate),
                 br(),
                 br(),
+                br(),
+                p(tags$b("Interpretation:")),
+                sprintf("There is a %s %s linear relationship between \\(x\\) and \\(y\\).",
+                        pearsonStrength,
+                        pearsonSign),
+                br()
               )
               
             })
