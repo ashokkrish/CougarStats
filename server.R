@@ -2814,12 +2814,12 @@ server <- function(input, output) {
     
     p(
       withMathJax(
-        sprintf("\\( CI = \\bar{x} \\pm %s_{\\alpha/2} \\cdot \\dfrac{%s}{\\sqrt{n}}\\)",
+        sprintf("\\( \\displaystyle CI = \\bar{x} \\pm \\left( %s_{\\alpha/2}  \\dfrac{%s}{\\sqrt{n}} \\right) \\)",
                 testStat,
                 sdSymbol),
         br(),
         br(),
-        sprintf("\\( \\displaystyle \\quad = %s \\pm \\left( %g \\cdot \\dfrac{%g}{\\sqrt{%g}} \\right) \\)",
+        sprintf("\\( \\displaystyle \\quad = %s \\pm \\left( %g \\dfrac{%g}{\\sqrt{%g}} \\right) \\)",
                 oneMeanData["Sample Mean"],
                 critVal,
                 oneMeanData[3],
@@ -3097,10 +3097,10 @@ server <- function(input, output) {
 
     p(
       withMathJax(
-        sprintf("CI \\(= \\hat{p} \\pm z_{\\alpha/2} \\sqrt{\\dfrac{\\hat{p}(1-\\hat{p})}{n}}\\)"),
+        sprintf("\\( \\displaystyle CI = \\hat{p} \\pm \\left( z_{\\alpha/2} \\sqrt{\\dfrac{\\hat{p}(1-\\hat{p})}{n}} \\right) \\)"),
         br(),
         br(),
-        sprintf("CI \\(= %s \\pm %0.3f \\sqrt{\\dfrac{%0.3f(1-%0.3f)}{%1.0f}}\\)",
+        sprintf("\\( \\displaystyle CI = %s \\pm \\left( %0.3f \\sqrt{\\dfrac{%0.3f(1-%0.3f)}{%1.0f}} \\right) \\)",
                 oneSampPropZInt["phat"],
                 oneSampPropZInt["Z Critical"],
                 oneSampPropZInt["phat"],
@@ -3108,7 +3108,7 @@ server <- function(input, output) {
                 input$numTrials),
         br(),
         br(),
-        sprintf("CI \\(= (%0.3f, %0.3f)\\)",
+        sprintf("\\(CI = (%0.3f, %0.3f)\\)",
                 oneSampPropZInt["LCL"],
                 oneSampPropZInt["UCL"]),
         br(),
@@ -3313,10 +3313,10 @@ server <- function(input, output) {
       
       p(
         withMathJax(
-          sprintf("\\( CI = (\\bar{x}_{1} - \\bar{x}_{2}) \\pm z_{\\alpha/2} \\cdot \\sqrt{ \\dfrac{\\sigma_{1}^2}{n_{1}} + \\dfrac{\\sigma_{2}^2}{n_{2}} } \\)"),
+          sprintf("\\( \\displaystyle CI = (\\bar{x}_{1} - \\bar{x}_{2}) \\pm \\left( z_{\\alpha/2} \\sqrt{ \\dfrac{\\sigma_{1}^2}{n_{1}} + \\dfrac{\\sigma_{2}^2}{n_{2}} } \\right) \\)"),
           br(),
           br(),
-          sprintf("\\( \\displaystyle \\quad = (%g - %g) \\pm \\left( %g \\cdot \\sqrt{ \\dfrac{%g^2}{%g} + \\dfrac{%g^2}{%g} } \\right) \\)",
+          sprintf("\\( \\displaystyle \\quad = (%g - %g) \\pm \\left( %g \\sqrt{ \\dfrac{%g^2}{%g} + \\dfrac{%g^2}{%g} } \\right) \\)",
                   data$xbar1,
                   data$xbar2,
                   zInt['Z Critical'],
@@ -3359,7 +3359,7 @@ server <- function(input, output) {
       
       tagList(
         withMathJax(
-          sprintf("\\( CI = (\\bar{x}_{1} - \\bar{x}_{2}) \\pm t_{\\alpha/2, \\, n_{1} + n_{2} - 2} \\cdot s_{p} \\sqrt{ \\dfrac{1}{n_{1}} + \\dfrac{1}{n_{2}} } \\)"),
+          sprintf("\\( \\displaystyle CI = (\\bar{x}_{1} - \\bar{x}_{2}) \\pm \\left( t_{\\alpha/2, \\, n_{1} + n_{2} - 2} \\cdot s_{p} \\sqrt{ \\dfrac{1}{n_{1}} + \\dfrac{1}{n_{2}} } \\right) \\)"),
           br(),
           br(),
           p(tags$b("where")),
@@ -3407,7 +3407,7 @@ server <- function(input, output) {
       
       tagList(
         withMathJax(
-          sprintf("\\( CI = (\\bar{x}_{1} - \\bar{x}_{2}) \\pm t_{\\alpha/2, \\, \\nu} \\cdot \\sqrt{ \\dfrac{s^2_{1}}{n_{1}} + \\dfrac{s^2_{2}}{n_{2}} } \\)"),
+          sprintf("\\( \\displaystyle CI = (\\bar{x}_{1} - \\bar{x}_{2}) \\pm \\left( t_{\\alpha/2, \\, \\nu} \\cdot \\sqrt{ \\dfrac{s^2_{1}}{n_{1}} + \\dfrac{s^2_{2}}{n_{2}} } \\right) \\)"),
           br(),
           br(),
           p(tags$b("where")),
@@ -3809,11 +3809,11 @@ server <- function(input, output) {
     
     p(
       withMathJax(
-        sprintf("\\( CI = (\\hat{p}_{1} - \\hat{p}_{2}) \\pm z_{\\alpha/2} \\sqrt{\\dfrac{\\hat{p}_{1}(1-\\hat{p}_{1})}{n_{1}} + \\dfrac{\\hat{p}_{2}(1-\\hat{p}_{2})}{n_{2}}}\\)"),
+        sprintf("\\( \\displaystyle CI = (\\hat{p}_{1} - \\hat{p}_{2}) \\pm \\left( z_{\\alpha/2} \\sqrt{\\dfrac{\\hat{p}_{1}(1-\\hat{p}_{1})}{n_{1}} + \\dfrac{\\hat{p}_{2}(1-\\hat{p}_{2})}{n_{2}}} \\right) \\)"),
         br(),
         br(),
         br(),
-        sprintf("\\( CI = %s \\pm %0.3f \\sqrt{\\dfrac{%0.3f(1-%0.3f)}{%1.0f} + \\dfrac{%0.3f(1-%0.3f)}{%1.0f}}\\)",
+        sprintf("\\( \\displaystyle CI = %s \\pm \\left( %0.3f \\sqrt{\\dfrac{%0.3f(1-%0.3f)}{%1.0f} + \\dfrac{%0.3f(1-%0.3f)}{%1.0f}} \\right) \\)",
                 twoSampPropZInt["Difference of proportions"],
                 twoSampPropZInt["Z Critical"],
                 twoSampPropZInt["Sample Proportion 1"],
@@ -3824,7 +3824,7 @@ server <- function(input, output) {
                 input$numTrials2),
         br(),
         br(),
-        sprintf("\\( \\quad = %s \\pm %g \\cdot %g \\)",
+        sprintf("\\( \\quad = %s \\pm ( %g \\cdot %g ) \\)",
                 twoSampPropZInt["Difference of proportions"],
                 twoSampPropZInt["Z Critical"],
                 twoSampPropZInt["Std Error"]),
