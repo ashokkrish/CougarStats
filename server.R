@@ -4611,12 +4611,12 @@ server <- function(input, output) {
           spearman <- cor.test(datx, daty, method = "spearman")
           
           output$kendallEstimate <- renderUI({
-            sprintf("\\( \\tau = %0.4f \\)", 
+            sprintf("\\( \\tau \\; = \\; %0.4f \\)", 
                     kendall$estimate)
           })
           
           output$spearmanEstimate <- renderUI({
-            sprintf("\\( r_{s} = %0.4f \\)", 
+            sprintf("\\( \\displaystyle r_{s} \\; = \\; 1 - \\dfrac{ 6 \\, \\sum\\limits_{i=1}^n d^2_{i}}{ n(n^2 - 1)} \\; = \\; %0.4f \\)", 
                     spearman$estimate)
           })
           
