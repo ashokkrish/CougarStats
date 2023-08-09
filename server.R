@@ -1314,7 +1314,7 @@ server <- function(input, output) {
             withMathJax(
               div(
                 h3(
-                  sprintf("Calculating  \\( %s \\)   when  \\(  X \\sim Bin(%1.0f,%g): \\)",
+                  sprintf("Calculating  \\( %s \\)   when  \\(  X \\sim Bin(n = %1.0f, p = %g): \\)",
                           binomProb,
                           binom_n,
                           binom_p)
@@ -1500,7 +1500,7 @@ server <- function(input, output) {
             withMathJax(
               div(
                 h4(
-                  sprintf("Calculating  \\( %s \\)   when  \\(  X \\sim Pois(%g): \\)",
+                  sprintf("Calculating  \\( %s \\)   when  \\(  X \\sim Pois(\\mu = %g): \\)",
                           poissProb,
                           poisson_mu)
                 ),
@@ -1571,7 +1571,7 @@ server <- function(input, output) {
     })
   })
   
-  ### Normal ----
+  #### Normal ----
   observeEvent(input$goNormal, {
     
     output$renderProbabilityNorm <- renderUI({
