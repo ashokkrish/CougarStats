@@ -4819,6 +4819,12 @@ server <- function(input, output) {
     hide(id = 'probabilityMP')
   })
   
+  observeEvent(input$calcBinom, {
+    if(input$calcBinom == 'between') {
+      hide(id = "probabilityMP")
+    }
+  })
+  
   observeEvent(input$resetBinomial, {
     hide(id = 'probabilityMP')
     shinyjs::reset("binomialPanel")
@@ -4837,6 +4843,12 @@ server <- function(input, output) {
                 input$x1Poisson
                 input$x2Poisson}, {
     hide(id = 'probabilityMP')
+  })
+  
+  observeEvent(input$calcPoisson, {
+    if(input$calcPoisson == 'between') {
+      hide(id = "probabilityMP")
+    }
   })
   
   observeEvent(input$resetPoisson, {
@@ -4858,6 +4870,12 @@ server <- function(input, output) {
                 input$x1Value
                 input$x2Value}, {
     hide(id = 'probabilityMP')
+  })
+  
+  observeEvent(input$calcNormal, {
+    if(input$calcNormal == 'between') {
+      hide(id = "probabilityMP")
+    }
   })
   
   observeEvent(input$resetNormal, {
