@@ -4910,6 +4910,8 @@ server <- function(input, output) {
     hide(id = "RegCorMP")
     hide(id = "slrResponse")
     hide(id = "slrExplanatory")
+    updateTextInput(inputId = "xlab", value = "x")
+    updateTextInput(inputId = "ylab", value = "y")
   })
   
   

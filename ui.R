@@ -1122,7 +1122,7 @@
                                                              
                                                              
                                                              br(),
-                                                             p(strong("Options")),
+                                                             p(strong("Graph Options")),
                                                              hr(),
                                                              
                                                              checkboxInput(inputId = "scatterPlot", 
@@ -1138,11 +1138,11 @@
                                                                          placeholder = "main title"),
                                                                textInput(inputId = "xlab", 
                                                                          label = NULL, 
-                                                                         value = "Independent Variable, x", 
+                                                                         value = "x", 
                                                                          placeholder = "x-axis label"),
                                                                textInput(inputId = "ylab", 
                                                                          label = NULL, 
-                                                                         value = "Dependent Variable, y", 
+                                                                         value = "y", 
                                                                          placeholder = "y-axis label"),
                                                                #hr(),
                                                              ),
