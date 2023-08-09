@@ -3812,7 +3812,8 @@ server <- function(input, output) {
     datatable(round(df_depData, digits = 4),
               options = list(dom = 'lftp',
                              pageLength = -1,
-                             lengthMenu = list(c(-1, 10, 25, 50), c("All", "10", "25", "50"))
+                             lengthMenu = list(c(-1, 10, 25, 50), c("All", "10", "25", "50")),
+                             ordering = FALSE
               ),
               escape = FALSE
     ) %>% formatStyle(
