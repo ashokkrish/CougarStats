@@ -1434,13 +1434,10 @@
                                                                                         titlePanel(tags$u("Data")),
                                                                                         br(),
                                                                                         fluidRow(
-                                                                                          column( width = 2,
-                                                                                                  br(),
-                                                                                                 ),
-                                                                                          column(align = "center", width = 8, 
+                                                                                          column(width = 8, 
                                                                                                  withMathJax(DTOutput('depMeansTable')),
                                                                                                  ),
-                                                                                          column(width = 2, 
+                                                                                          column(width = 4, 
                                                                                                  br(),
                                                                                                  )
                                                                                         ),

@@ -2436,7 +2436,7 @@ server <- function(input, output) {
     
     data <- GetDepMeansData()
     
-    depMeansTInt <- DepSampTInt(data$dbar, data$sd, data$n, ConfLvl())
+    depMeansTInt <- TInterval(data$n, data$dbar, data$sd, ConfLvl())
     
     return(depMeansTInt)
   })
@@ -3825,6 +3825,66 @@ server <- function(input, output) {
   })
   
   ##### CI ----
+  output$depMeansCI <- renderUI({
+    tInt <- DepMeansTInt()
+    
+    p(
+      withMathJax(),
+      br(),
+      sprintf("\\( \\displaystyle CI = \\bar{d} \\pm \\left( t_{\\alpha/2, \\, df} \\cdot \\dfrac{ s_{d} }{ \\sqrt{n} } \\right) \\)"),
+      br(),
+      br(),
+      p(tags$b("where")),
+      sprintf("\\( \\qquad \\bar{d} = \\dfrac{ \\sum d }{ n } \\; , \\)"),
+      sprintf("\\( \\qquad s_{d} = \\sqrt{ \\dfrac{ \\sum ( d - \\bar{d})^2 }{ n - 1 } } \\; , \\)"),
+      sprintf("\\( \\qquad df = n - 1 \\)"),
+      br(),
+      br(),
+      br(),
+      sprintf("\\( \\displaystyle CI = %g \\pm \\left( t_{%g/2, \\, %g - 1} \\cdot \\dfrac{ %g }{ \\sqrt{ %g } } \\right) \\)",
+              tInt["Sample Mean"],
+              1 - ConfLvl(),
+              tInt["Sample Size"],
+              tInt["Sample SD"],
+              tInt["Sample Size"]),
+      br(),
+      br(),
+      sprintf("\\( \\displaystyle \\phantom{CI} = %g \\pm \\left( t_{%g, \\, %g} \\cdot \\dfrac{ %g }{ %g } \\right) \\)",
+              tInt["Sample Mean"],
+              (1 - ConfLvl()) / 2,
+              tInt["Sample Size"] - 1,
+              tInt["Sample SD"],
+              sqrt(tInt["Sample Size"])),
+      br(),
+      br(),
+      sprintf("\\( \\displaystyle \\phantom{CI} = %g \\pm ( %g \\cdot %g ) \\)",
+              tInt["Sample Mean"],
+              tInt["T Critical"],
+              tInt["Std Error"]),
+      br(),
+      br(),
+      sprintf("\\( \\displaystyle \\phantom{CI} = %g \\pm  %g  \\)",
+              tInt["Sample Mean"],
+              tInt["ME"]),
+      br(),
+      br(),
+      sprintf("\\( \\displaystyle \\phantom{CI} = (%g, \\, %g)  \\)",
+              tInt["LCL"],
+              tInt["UCL"]),
+      br(),
+      br(),
+      br(),
+      p(tags$b("Interpretation:")),
+      sprintf("We are \\( %1.0f \\)%% confident that the population mean difference \\( (\\mu_{d})\\) is between \\( %g \\) and \\( %g \\).",
+              ConfLvl()*100,
+              tInt["LCL"],
+              tInt["UCL"]),
+      br(),
+      br(),
+      br()
+    )
+    
+  })
   
   ##### HT ----
   
