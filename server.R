@@ -492,8 +492,7 @@ server <- function(input, output) {
   indmeansuploadsd_iv$condition(function() {isTRUE(input$samplesSelect == '2' && 
                                                    input$popuParameters == 'Independent Population Means' && 
                                                    input$dataAvailability2 == 'Upload Data' && 
-                                                   input$bothsigmaKnownUpload == 'bothKnown' && 
-                                                   indmeansupload_iv$is_valid()) })
+                                                   input$bothsigmaKnownUpload == 'bothKnown') })
   
   depmeansraw_iv$condition(~ isTRUE(input$samplesSelect == '2' && 
                                     input$popuParameters == 'Dependent Population Means' && 
@@ -2424,8 +2423,6 @@ server <- function(input, output) {
     dat$n  <- length(sampBefore)
     dat$dbar <- sum(dat$d) / dat$n
     dat$sd <- sqrt(sum((dat$d - dat$dbar)^2) / (dat$n - 1))
-    
-    print(dat)
     
     return(dat)
   })
