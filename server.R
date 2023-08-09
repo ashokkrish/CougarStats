@@ -4799,7 +4799,7 @@ server <- function(input, output) {
   #### Probability Distributions ----
   #  -------------------------------------------------------------------- #
   
-  observeEvent(!pd_iv$is_valid(), {
+  observeEvent(input$probability, {
     hide(id = 'probabilityMP')
   })
   
@@ -4811,7 +4811,11 @@ server <- function(input, output) {
     show(id = 'probabilityMP')
   })
   
-  observeEvent(input$probability, {
+  observeEvent({input$numTrialsBinom
+                input$successProbBinom
+                input$numSuccessesBinom
+                input$numSuccessesBinomx1
+                input$numSuccessesBinomx2}, {
     hide(id = 'probabilityMP')
   })
   
@@ -4828,6 +4832,13 @@ server <- function(input, output) {
     show(id = "probabilityMP")
   })
   
+  observeEvent({input$muPoisson
+                input$xPoisson
+                input$x1Poisson
+                input$x2Poisson}, {
+    hide(id = 'probabilityMP')
+  })
+  
   observeEvent(input$resetPoisson, {
     hide(id = "probabilityMP")
     shinyjs::reset("poissonPanel")
@@ -4839,6 +4850,14 @@ server <- function(input, output) {
   
   observeEvent(input$goNormal, {
     show(id = "probabilityMP")
+  })
+  
+  observeEvent({input$popMean
+                input$popSD
+                input$xValue
+                input$x1Value
+                input$x2Value}, {
+    hide(id = 'probabilityMP')
   })
   
   observeEvent(input$resetNormal, {
