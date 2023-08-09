@@ -1431,15 +1431,40 @@
                                                                       conditionalPanel( ##### Dep Pop Means ----
                                                                                         condition = "input.popuParameters == 'Dependent Population Means'",
                                                                                         
+                                                                                        titlePanel(tags$u("Data")),
+                                                                                        br(),
+                                                                                        fluidRow(
+                                                                                          column( width = 2,
+                                                                                                  br(),
+                                                                                                 ),
+                                                                                          column(align = "center", width = 8, 
+                                                                                                 withMathJax(DTOutput('depMeansTable')),
+                                                                                                 ),
+                                                                                          column(width = 2, 
+                                                                                                 br(),
+                                                                                                 )
+                                                                                        ),
+                                                                                        br(),
+                                                                                        br(),
+                                                                                        hr(),
+                                                                                        br(),
+                                                                                        
                                                                                         conditionalPanel(
                                                                                           condition = "input.inferenceType2 == 'Confidence Interval'",
                                                                                           
-                                                                                          #img(src ='TwoSampTIntPaired.png', height = '100px')
+                                                                                          titlePanel(tags$u("Confidence Interval")),
+                                                                                          br(),
+                                                                                          uiOutput('depMeansCI'),
+                                                                                          br(),
                                                                                         ), # CI
                                                                                         
                                                                                         conditionalPanel(
                                                                                           condition = "input.inferenceType2 == 'Hypothesis Testing'",
                                                                                           
+                                                                                          titlePanel(tags$u("Hypothesis Test")),
+                                                                                          br(),
+                                                                                          uiOutput('depMeansHT'),
+                                                                                          br()
                                                                                         ), # HT
                                                                       ), # Two Dependent Samples
                                                                       

@@ -371,8 +371,8 @@ server <- function(input, output) {
   
   depmeansuploadvars_iv$add_rule("depMeansUplSample1", sv_required())
   depmeansuploadvars_iv$add_rule("depMeansUplSample2", sv_required())
-  depmeansuploadvars_iv$add_rule("depMeansUplSample1", ~ if(DepSamplesDiff() != 0) "Before and After must have the same number of observations.")
-  depmeansuploadvars_iv$add_rule("depMeansUplSample2", ~ if(DepSamplesDiff() != 0) "Before and After must have the same number of observations.")
+  depmeansuploadvars_iv$add_rule("depMeansUplSample1", ~ if(CheckDepUploadSamples() != 0) "Before and After must have the same number of observations.")
+  depmeansuploadvars_iv$add_rule("depMeansUplSample2", ~ if(CheckDepUploadSamples() != 0) "Before and After must have the same number of observations.")
 
   # numSuccessesProportion
   
@@ -797,9 +797,9 @@ server <- function(input, output) {
                                   "Mean", 
                                   "Mode", 
                                   "Minimum", 
-                                  "First Quartile \\( (Q_{1}) \\)*", 
-                                  "Second Quartile or Median \\( (Q_{2}) \\)*", 
-                                  "Third Quartile \\( (Q_{3}) \\)*", 
+                                  "First Quartile (Q<sub>1</sub>)*", 
+                                  "Second Quartile or Median (Q<sub>2</sub>)*", 
+                                  "Third Quartile (Q<sub>3</sub>)*", 
                                   "Maximum", 
                                   "Interquartile Range (IQR)", 
                                   "Check for Outliers: Lower Fence", 
@@ -959,6 +959,7 @@ server <- function(input, output) {
                                                  autoWidth = TRUE,
                                                  scrollX = TRUE
                                                ),
+                                               escape = FALSE,
                                                rownames = FALSE,
                                                filter = "none",
                                                
@@ -2377,23 +2378,6 @@ server <- function(input, output) {
   
   #### Dependent Means Reactives ----
   
-  DepMeansRawData <- eventReactive({input$before
-                                    input$after},{
-    req(si_iv$is_valid())
-    
-    rawData <- list()
-    
-    rawBefore <- createNumLst(input$before)
-    rawAfter <- createNumLst(input$after)
-    
-    rawData$n1  <- length(rawBefore)
-    rawData$n2  <- length(rawAfter)
-    rawData$diff <- rawData$n1 - rawData$n2
-    print(rawData)
-    return(rawData)
-  })
-  
-  
   DepMeansUploadData <- eventReactive(input$depMeansUserData, {
     
     ext <- tools::file_ext(input$depMeansUserData$name)
@@ -2409,36 +2393,53 @@ server <- function(input, output) {
     )
   })
   
-  GetDepMeansUplData <- reactive({
+  CheckDepUploadSamples <- eventReactive (c(input$depMeansUplSample1, 
+                                            input$depMeansUplSample2), {
+                                              
+    if(input$depMeansUplSample1 == "" | input$depMeansUplSample2 == "") {
+      return(0)
+    } else {
+      before <- unlist(DepMeansUploadData()[, input$depMeansUplSample1])
+      after <- unlist(DepMeansUploadData()[, input$depMeansUplSample2])
+      difference <- length(na.omit(before)) - length(na.omit(after))
+      return(difference)
+    }
+  })
+  
+  GetDepMeansData <- reactive({
     req(si_iv$is_valid())
     
     dat <- list()
     
-    sampBefore <- na.omit(unlist(DepMeansUploadData()[,input$depMeansUplSample1]))
-    sampAfter <- na.omit(unlist(DepMeansUploadData()[,input$depMeansUplSample2]))
+    if(input$dataTypeDependent == 'Upload Data') {
+      sampBefore <- na.omit(unlist(DepMeansUploadData()[,input$depMeansUplSample1]))
+      sampAfter <- na.omit(unlist(DepMeansUploadData()[,input$depMeansUplSample2]))
+    } else if(input$dataTypeDependent == 'Enter Raw Data') {
+      sampBefore <- createNumLst(input$before)
+      sampAfter <- createNumLst(input$after)
+    }
+    dat$before <- sampBefore
+    dat$after <- sampAfter
+    dat$d <- (sampBefore - sampAfter)
+    dat$n  <- length(sampBefore)
+    dat$dbar <- sum(dat$d) / dat$n
+    dat$sd <- sqrt(sum((dat$d - dat$dbar)^2) / (dat$n - 1))
     
-    dat$n1  <- length(sampBefore)
-    dat$xbar1 <- mean(sampBefore)
-    dat$n2  <- length(sampAfter)
-    dat$xbar2 <- mean(sampAfter)
-  
+    print(dat)
+    
     return(dat)
   })
+
   
-  DepSamplesDiff <- eventReactive (c(input$depMeansUplSample1, 
-                                       input$depMeansUplSample2), {
-                                         if(input$depMeansUplSample1 == "" | input$depMeansUplSample2 == "")
-                                         {
-                                           return(0)
-                                         }
-                                         else
-                                         {
-                                           before <- unlist(DepMeansUploadData()[, input$depMeansUplSample1])
-                                           after <- unlist(DepMeansUploadData()[, input$depMeansUplSample2])
-                                           difference <- length(na.omit(before)) - length(na.omit(after))
-                                           return(difference)
-                                         }
-                                       })
+  DepMeansTInt <- reactive({
+    req(si_iv$is_valid())
+    
+    data <- GetDepMeansData()
+    
+    depMeansTInt <- DepSampTInt(data$dbar, data$sd, data$n, ConfLvl())
+    
+    return(depMeansTInt)
+  })
   
   # --------------------------------------------------------------------- #
   
@@ -2708,7 +2709,7 @@ server <- function(input, output) {
       validate(
         need(input$depMeansUplSample1, "Please select a column for the 'Before' sample data."),
         need(input$depMeansUplSample2, "Please select a column for the 'After' sample data."),
-        need(DepSamplesDiff() == 0, "Same number of data points required for 'Before' and 'After' sample data."),
+        need(CheckDepUploadSamples() == 0, "Same number of data points required for 'Before' and 'After' sample data."),
         
         errorClass = "myClass"
       )
@@ -3797,9 +3798,41 @@ server <- function(input, output) {
   })
   
   
+  #### Dep Means outputs ----
+  
+  ##### Data Table ----
+  output$depMeansTable <- renderDT({
+    depData <- GetDepMeansData()
+
+    df_depData <- data.frame(depData$before, depData$after, depData$d, depData$d^2)
+    names(df_depData) <- c("Before", "After", "<em>d</em> = (Before - After)", "<em>d</em><sup>2</sup>")
+    df_depData <- bind_rows(df_depData, summarise(df_depData, across(where(is.numeric), sum)))
+    rownames(df_depData)[nrow(df_depData)] <- "Totals"
+
+    datatable(round(df_depData, digits = 4),
+              options = list(dom = 'lftp',
+                             pageLength = -1,
+                             lengthMenu = list(c(-1, 10, 25, 50), c("All", "10", "25", "50"))
+              ),
+              escape = FALSE
+    ) %>% formatStyle(
+      names(df_depData),
+      target = 'row',
+      fontWeight = styleRow(dim(df_depData)[1], "bold")
+    )
+
+  })
+  
+  ##### CI ----
+  
+  ##### HT ----
+  
+  ##### HT Plot ----
+  
+  
+  
   
   #### Two Prop outputs ----
-  
   
   ##### CI ----
   output$twoPropCI <- renderUI({
@@ -4096,6 +4129,8 @@ server <- function(input, output) {
          hide(id = 'inferenceData') 
         }
         
+      } else if(input$popuParameters == 'Dependent Population Means') {
+        data <- GetDepMeansData()
       }
     }
     #) # renderInference
