@@ -1431,21 +1431,6 @@
                                                                       conditionalPanel( ##### Dep Pop Means ----
                                                                                         condition = "input.popuParameters == 'Dependent Population Means'",
                                                                                         
-                                                                                        titlePanel(tags$u("Data")),
-                                                                                        br(),
-                                                                                        fluidRow(
-                                                                                          column(width = 8, 
-                                                                                                 withMathJax(DTOutput('depMeansTable')),
-                                                                                                 ),
-                                                                                          column(width = 4, 
-                                                                                                 br(),
-                                                                                                 )
-                                                                                        ),
-                                                                                        br(),
-                                                                                        br(),
-                                                                                        hr(),
-                                                                                        br(),
-                                                                                        
                                                                                         conditionalPanel(
                                                                                           condition = "input.inferenceType2 == 'Confidence Interval'",
                                                                                           
@@ -1463,6 +1448,22 @@
                                                                                           uiOutput('depMeansHT'),
                                                                                           br()
                                                                                         ), # HT
+
+                                                                                        hr(),
+                                                                                        br(),
+                                                                                        
+                                                                                        titlePanel(tags$u("Data")),
+                                                                                        br(),
+                                                                                        fluidRow(
+                                                                                          column(width = 8, 
+                                                                                                 uiOutput('depMeansTable'),
+                                                                                          ),
+                                                                                          column(width = 4, 
+                                                                                                 br(),
+                                                                                          )
+                                                                                        ),
+                                                                                        br(),
+                                                                                        br(),
                                                                       ), # Two Dependent Samples
                                                                       
                                                                       #----------------------------#

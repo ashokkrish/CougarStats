@@ -41,6 +41,7 @@ server <- function(input, output) {
   depmeansraw_iv <- InputValidator$new()
   depmeansupload_iv <- InputValidator$new()
   depmeansuploadvars_iv <- InputValidator$new()
+  depmeansrawsd_iv <- InputValidator$new()
   oneprop_iv <- InputValidator$new()
   onepropht_iv <- InputValidator$new()
   twoprop_iv <- InputValidator$new()
@@ -373,6 +374,8 @@ server <- function(input, output) {
   depmeansuploadvars_iv$add_rule("depMeansUplSample2", sv_required())
   depmeansuploadvars_iv$add_rule("depMeansUplSample1", ~ if(CheckDepUploadSamples() != 0) "Before and After must have the same number of observations.")
   depmeansuploadvars_iv$add_rule("depMeansUplSample2", ~ if(CheckDepUploadSamples() != 0) "Before and After must have the same number of observations.")
+  
+  depmeansrawsd_iv$add_rule("after", ~ if(GetDepMeansData()$sd == 0) "Variance required in 'Before' and 'After' sample data for hypothesis testing.")
 
   # numSuccessesProportion
   
@@ -507,6 +510,12 @@ server <- function(input, output) {
                                            input$dataTypeDependent == 'Upload Data' &&
                                            depmeansupload_iv$is_valid()))
   
+  depmeansrawsd_iv$condition(~ isTRUE(input$samplesSelect == '2' && 
+                                      input$popuParameters == 'Dependent Population Means' &&
+                                      input$dataTypeDependent == 'Enter Raw Data' &&
+                                      input$inferenceType2 == 'Hypothesis Testing' &&
+                                      depmeansraw_iv$is_valid()))
+  
   oneprop_iv$condition(~ isTRUE(input$samplesSelect == '1' && 
                                 input$popuParameter == 'Population Proportion'))
   
@@ -568,6 +577,7 @@ server <- function(input, output) {
   depmeansraw_iv$enable
   depmeansupload_iv$enable()
   depmeansuploadvars_iv$enable()
+  depmeansrawsd_iv$enable()
   oneprop_iv$enable()
   onepropht_iv$enable()
   twoprop_iv$enable()
@@ -1706,6 +1716,28 @@ server <- function(input, output) {
   ### Non-Reactive Functions ----
   # --------------------------------------------------------------------- #
   
+  GetDepMeansData <- function() {
+    req(si_iv$is_valid())
+    
+    dat <- list()
+    
+    if(input$dataTypeDependent == 'Upload Data') {
+      sampBefore <- na.omit(unlist(DepMeansUploadData()[,input$depMeansUplSample1]))
+      sampAfter <- na.omit(unlist(DepMeansUploadData()[,input$depMeansUplSample2]))
+    } else if(input$dataTypeDependent == 'Enter Raw Data') {
+      sampBefore <- createNumLst(input$before)
+      sampAfter <- createNumLst(input$after)
+    }
+    dat$before <- sampBefore
+    dat$after <- sampAfter
+    dat$d <- (sampBefore - sampAfter)
+    dat$n  <- length(sampBefore)
+    dat$dbar <- sum(dat$d) / dat$n
+    dat$sd <- sqrt(sum((dat$d - dat$dbar)^2) / (dat$n - 1))
+    
+    return(dat)
+  }
+  
   shadeHtZArea <- function(x, critValues, altHypothesis){
     area <- dnorm(x, 0, 1)
     
@@ -2405,29 +2437,6 @@ server <- function(input, output) {
     }
   })
   
-  GetDepMeansData <- reactive({
-    req(si_iv$is_valid())
-    
-    dat <- list()
-    
-    if(input$dataTypeDependent == 'Upload Data') {
-      sampBefore <- na.omit(unlist(DepMeansUploadData()[,input$depMeansUplSample1]))
-      sampAfter <- na.omit(unlist(DepMeansUploadData()[,input$depMeansUplSample2]))
-    } else if(input$dataTypeDependent == 'Enter Raw Data') {
-      sampBefore <- createNumLst(input$before)
-      sampAfter <- createNumLst(input$after)
-    }
-    dat$before <- sampBefore
-    dat$after <- sampAfter
-    dat$d <- (sampBefore - sampAfter)
-    dat$n  <- length(sampBefore)
-    dat$dbar <- sum(dat$d) / dat$n
-    dat$sd <- sqrt(sum((dat$d - dat$dbar)^2) / (dat$n - 1))
-    
-    return(dat)
-  })
-
-  
   DepMeansTInt <- reactive({
     req(si_iv$is_valid())
     
@@ -2438,6 +2447,17 @@ server <- function(input, output) {
     return(depMeansTInt)
   })
   
+  
+  DepMeansTTest <- reactive({
+    req(si_iv$is_valid() && depmeansrawsd_iv$is_valid())
+    
+    data <- GetDepMeansData()
+
+    depMeansTTest <- TTest(data$n, data$dbar, data$sd, 0, IndMeansHypInfo()$alternative, SigLvl())
+    
+    return(depMeansTTest)
+
+  })
   # --------------------------------------------------------------------- #
   
   
@@ -2746,6 +2766,15 @@ server <- function(input, output) {
       validate(
         need(input$numSuccesses1 <= input$numTrials1, "Number of Successes 1 (x1) cannot be greater than Number of Trials 1 (n1)"),
         need(input$numSuccesses2 <= input$numTrials2, "Number of Successes 2 (x2) cannot be greater than Number of Trials 2 (n2)"),
+        
+        errorClass = "myClass"
+      )
+    }
+    
+    if(!depmeansrawsd_iv$is_valid()) {
+      
+      validate(
+        need(GetDepMeansData()$sd != 0, "The test statistic (t) will be undefined for sample data with a sample standard deviation of difference (sd) = 0."),
         
         errorClass = "myClass"
       )
@@ -3064,11 +3093,9 @@ server <- function(input, output) {
     intrpInfo <- OneMeanHypInfo()
     
     if(intrpInfo$alternative == "two.sided") {
-      critZVal <- paste("\\( \\pm\\)", oneMeanData[4])
       htPlotCritVals <- c(-oneMeanData[4], oneMeanData[4])
       
     } else {
-      critZVal <- paste(oneMeanData[4])
       htPlotCritVals <- oneMeanData[4]
     }
     
@@ -3798,7 +3825,7 @@ server <- function(input, output) {
   #### Dep Means outputs ----
   
   ##### Data Table ----
-  output$depMeansTable <- renderDT({
+  output$depMeansData <- renderDT({
     depData <- GetDepMeansData()
 
     df_depData <- data.frame(depData$before, depData$after, depData$d, depData$d^2)
@@ -3818,7 +3845,6 @@ server <- function(input, output) {
       target = 'row',
       fontWeight = styleRow(dim(df_depData)[1], "bold")
     )
-
   })
   
   ##### CI ----
@@ -3884,9 +3910,153 @@ server <- function(input, output) {
   })
   
   ##### HT ----
+  output$depMeansHT <- renderUI({
+
+    req(GetDepMeansData()$sd != 0)
+      tTest <- DepMeansTTest()
+      
+      intrpInfo <- IndMeansHypInfo()
+      
+      if(tTest["P-Value"] < 0.0001) {
+        pValue <- "\\lt 0.0001"
+      } else {
+        pValue <- paste(tTest["P-Value"])
+      }
+      
+      if(tTest["P-Value"] > SigLvl()) {
+        pvalSymbol <- "\\gt"
+        suffEvidence <- "do not provide"
+        reject <- "do not reject"
+        region <- "acceptance"
+      } else {
+        pvalSymbol <- "\\leq"
+        suffEvidence <- "provide"
+        reject <- "reject"
+        region <- "rejection"
+      }
+      
+      if(intrpInfo$alternative == "two.sided") {
+        critVal <- paste("\\pm", tTest["T Critical"])
+      } else {
+        critVal <- tTest["T Critical"]
+      }
+      
+      tagList(
+        p(
+          withMathJax(),
+          
+          sprintf("\\( H_{0}: \n \\mu_{d} %s 0\\)",
+                  intrpInfo$nullHyp),
+          br(),
+          sprintf("\\( H_{a}: \\mu_{d} %s 0\\)",
+                  intrpInfo$altHyp),
+          br(),
+          br(),
+          sprintf("\\( \\alpha = %s \\)",
+                  SigLvl()),
+          br(),
+          br(),
+          br(),
+          sprintf("\\( \\displaystyle t = \\dfrac{\\bar{d} - \\mu_{0}}{ \\left( \\dfrac{ s_{d} }{ \\sqrt{n} } \\right) } \\)"),
+          br(),
+          br(),
+          p(tags$b("where")),
+          sprintf("\\( \\qquad \\bar{d} = \\dfrac{ \\sum d }{ n } \\; , \\)"),
+          sprintf("\\( \\qquad s_{d} = \\sqrt{ \\dfrac{ \\sum ( d - \\bar{d})^2 }{ n - 1 } } \\)"),
+          br(),
+          br(),
+          br(),
+          sprintf("\\( \\displaystyle \\phantom{t} = \\dfrac{%g - 0}{ \\left( \\dfrac{ %g }{ \\sqrt{ %g } } \\right) } \\)",
+                  tTest["Sample Mean"],
+                  tTest["Sample SD"],
+                  tTest["Sample Size"]),
+          br(),
+          br(),
+          sprintf("\\( \\displaystyle \\phantom{t} = \\dfrac{%g}{ \\left( \\dfrac{ %g }{ %g } \\right) } \\)",
+                  tTest["Sample Mean"],
+                  tTest["Sample SD"],
+                  sqrt(tTest["Sample Size"])),
+          br(),
+          br(),
+          sprintf("\\( \\displaystyle \\phantom{t} = \\dfrac{ %g }{ %g } \\)",
+                  tTest["Sample Mean"],
+                  tTest["Std Error"]),
+          br(),
+          br(),
+          sprintf("\\( \\displaystyle \\phantom{t} = %g \\)",
+                  tTest["Test Statistic"]),
+          
+          br(),
+          br(),
+          br(),
+          p(tags$b("Using P-Value Method:")),
+          sprintf("\\(P = %s\\)",
+                  pValue),
+          br(),
+          sprintf("Since \\( P %s %0.2f \\), %s \\( H_{0}\\).",
+                  pvalSymbol,
+                  SigLvl(),
+                  reject),
+          br(),
+          br(),
+          br(),
+          p(tags$b("Using Critical Value Method:")),
+          sprintf("Critical Value(s) \\( = %s t_{%s, \\, df} = %s t_{%s, \\, %s} = %s \\)",
+                  IndMeansHypInfo()$critSign,
+                  IndMeansHypInfo()$critAlph,
+                  IndMeansHypInfo()$critSign,
+                  IndMeansHypInfo()$alphaVal,
+                  tTest["Sample Size"] - 1,
+                  tTest["T Critical"]),
+          br(),
+          br(),
+          p(tags$b("where")),
+          sprintf("\\( \\qquad df = n - 1 \\)"),
+          br(),
+          br(),
+          sprintf("Since the test statistic \\( (t)\\) falls within the %s region, %s \\( H_{0}\\).",
+                  region,
+                  reject),
+          br(),
+        ),
+        
+        plotOutput('depMeansHTPlot', width = "75%", height = "300px"),
+        br(),
+        
+        withMathJax(
+          p(tags$b("Conclusion:")),
+          p(
+            sprintf("At the \\( %1.0f \\)%% significance level, the data %s sufficient evidence to reject the null hypothesis \\( (H_{0}) \\) that the population 
+                                mean difference \\( (\\mu_{d}) \\) \\( %s 0\\).",
+                    SigLvl()*100,
+                    suffEvidence,
+                    intrpInfo$nullHyp),
+            br(),
+            br()
+          )
+        )
+      )
+  })
   
   ##### HT Plot ----
-  
+  output$depMeansHTPlot <- renderPlot({
+    
+    if(GetDepMeansData()$sd != 0) {
+      tTest <- DepMeansTTest()
+      intrpInfo <- IndMeansHypInfo()
+      
+      if(intrpInfo$alternative == "two.sided") {
+        htPlotCritVals <- c(-tTest["T Critical"], tTest["T Critical"])
+      } else {
+        htPlotCritVals <- tTest["T Critical"]
+      }
+      
+      depMeansPlot <- hypTTestPlot(tTest["Test Statistic"], tTest["df"], htPlotCritVals, intrpInfo$alternative)
+      
+      depMeansPlot
+    }
+
+  })
   
   
   
@@ -3945,9 +4115,7 @@ server <- function(input, output) {
   
   ##### HT ----
   output$twoPropHT <- renderUI({
-    
-    
-    
+
     twoPropZTest <- TwoPropZTest(input$numSuccesses1, input$numTrials1, input$numSuccesses2, input$numTrials2, 0, IndMeansHypInfo()$alternative, SigLvl())
     
     if(twoPropZTest["P-Value"] < 0.0001)
@@ -4160,7 +4328,7 @@ server <- function(input, output) {
   observeEvent(input$goInference, {
     #output$renderInference <- renderDataTable(
 
-    if(si_iv$is_valid()) {
+    if(si_iv$is_valid() && depmeansrawsd_iv$is_valid()) {
       show(id = "inferenceData")
       
     } else {
@@ -4188,12 +4356,14 @@ server <- function(input, output) {
         }
         
       } else if(input$popuParameters == 'Dependent Population Means') {
-        data <- GetDepMeansData()
+        
+        output$depMeansTable <- renderUI({
+          DTOutput("depMeansData")
+        })
       }
     }
     #) # renderInference
   }) # input$goInference
-  
   
   
   # --------------------------------------------------------------------- #
@@ -4891,6 +5061,11 @@ server <- function(input, output) {
   #  -------------------------------------------------------------------- #
   
   observeEvent(!si_iv$is_valid(), {
+    hide(id = "inferenceMP")
+    hide(id = "inferenceData")
+  })
+  
+  observeEvent(!depmeansrawsd_iv$is_valid(), {
     hide(id = "inferenceMP")
     hide(id = "inferenceData")
   })
