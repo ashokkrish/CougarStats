@@ -672,7 +672,7 @@ server <- function(input, output) {
       }
     }
 
-    return(sort(outliers))
+    return(sort(unique(outliers)))
   }
   
   
