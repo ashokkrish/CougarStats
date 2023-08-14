@@ -37,6 +37,7 @@ server <- function(input, output) {
   indmeanssdknown_iv <- InputValidator$new()
   indmeanssdunk_iv <- InputValidator$new()
   indmeansrawsd_iv <- InputValidator$new()
+  indmeansrawsdunk_iv <- InputValidator$new()
   indmeansuploadsd_iv <- InputValidator$new()
   depmeansraw_iv <- InputValidator$new()
   depmeansupload_iv <- InputValidator$new()
@@ -328,6 +329,10 @@ server <- function(input, output) {
   indmeansrawsd_iv$add_rule("popuSDRaw2", sv_required()) 
   indmeansrawsd_iv$add_rule("popuSDRaw2", sv_gt(0))
   
+  
+  indmeansrawsdunk_iv$add_rule("raw_sample1", ~ if(sd(createNumLst(input$raw_sample1)) == 0 && sd(createNumLst(input$raw_sample2)) == 0) "Invalid Data.")
+  indmeansrawsdunk_iv$add_rule("raw_sample2", ~ if(sd(createNumLst(input$raw_sample1)) == 0 && sd(createNumLst(input$raw_sample2)) == 0) "Invalid Data.")
+  
   #indMeansUserData
   
   indmeansupload_iv$add_rule("indMeansUserData", sv_required())
@@ -483,6 +488,13 @@ server <- function(input, output) {
                                       input$dataAvailability2 == 'Enter Raw Data' && 
                                       input$bothsigmaKnownRaw == 'bothKnown'))
   
+  indmeansrawsdunk_iv$condition(~ isTRUE(input$samplesSelect == '2' && 
+                                        input$popuParameters == 'Independent Population Means' && 
+                                        input$dataAvailability2 == 'Enter Raw Data' && 
+                                        input$bothsigmaKnownRaw == 'bothUnknown' &&
+                                        input$inferenceType2 == 'Hypothesis Testing' &&
+                                        indmeansraw_iv$is_valid()))
+  
   indmeansupload_iv$condition(~ isTRUE(input$samplesSelect == '2' && 
                                        input$popuParameters == 'Independent Population Means' && 
                                        input$dataAvailability2 == 'Upload Data'))
@@ -543,6 +555,7 @@ server <- function(input, output) {
   si_iv$add_validator(indmeanssdknown_iv)
   si_iv$add_validator(indmeanssdunk_iv)
   si_iv$add_validator(indmeansrawsd_iv)
+  si_iv$add_validator(indmeansrawsdunk_iv)
   si_iv$add_validator(indmeansupload_iv)
   si_iv$add_validator(indmeansuploadvar_iv)
   si_iv$add_validator(indmeansuploadsd_iv)
@@ -571,6 +584,7 @@ server <- function(input, output) {
   indmeanssdknown_iv$enable()
   indmeanssdunk_iv$enable()
   indmeansrawsd_iv$enable()
+  indmeansrawsdunk_iv$enable()
   indmeansupload_iv$enable()
   indmeansuploadvar_iv$enable()
   indmeansuploadsd_iv$enable()
@@ -2645,6 +2659,15 @@ server <- function(input, output) {
       validate(
         need(input$popuSDRaw1 & input$popuSD1 > 0, "Population Standard Deviation 1 must be positive."),
         need(input$popuSDRaw2 & input$popuSD2 > 0, "Population Standard Deviation 2 must be positive."),
+        
+        errorClass = "myClass"
+      )
+    }
+    
+    if(!indmeansrawsdunk_iv$is_valid()) {
+      
+      validate(
+        need(sd(createNumLst(input$raw_sample1)) != 0 && sd(createNumLst(input$raw_sample2)) != 0, "The test statistic (t) will be undefined for sample standard deviation of Sample 1 and Sample 2 are both 0."),
         
         errorClass = "myClass"
       )
