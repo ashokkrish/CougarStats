@@ -330,8 +330,8 @@ server <- function(input, output) {
   indmeansrawsd_iv$add_rule("popuSDRaw2", sv_gt(0))
   
   
-  indmeansrawsdunk_iv$add_rule("raw_sample1", ~ if(sd(createNumLst(input$raw_sample1)) == 0 && sd(createNumLst(input$raw_sample2)) == 0) "Invalid Data.")
-  indmeansrawsdunk_iv$add_rule("raw_sample2", ~ if(sd(createNumLst(input$raw_sample1)) == 0 && sd(createNumLst(input$raw_sample2)) == 0) "Invalid Data.")
+  indmeansrawsdunk_iv$add_rule("raw_sample1", ~ if(sd(createNumLst(input$raw_sample1)) == 0 && sd(createNumLst(input$raw_sample2)) == 0) "Sample standard deviation cannot be 0 for both Sample 1 and Sample 2.")
+  indmeansrawsdunk_iv$add_rule("raw_sample2", ~ if(sd(createNumLst(input$raw_sample1)) == 0 && sd(createNumLst(input$raw_sample2)) == 0) "Sample standard deviation cannot be 0 for both Sample 1 and Sample 2.")
   
   #indMeansUserData
   
@@ -2667,7 +2667,7 @@ server <- function(input, output) {
     if(!indmeansrawsdunk_iv$is_valid()) {
       
       validate(
-        need(sd(createNumLst(input$raw_sample1)) != 0 && sd(createNumLst(input$raw_sample2)) != 0, "The test statistic (t) will be undefined for sample standard deviation of Sample 1 and Sample 2 are both 0."),
+        need(sd(createNumLst(input$raw_sample1)) != 0 && sd(createNumLst(input$raw_sample2)) != 0, "The test statistic (t) will be undefined when the sample standard deviation of Sample 1 and Sample 2 are both 0."),
         
         errorClass = "myClass"
       )
