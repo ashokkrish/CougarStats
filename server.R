@@ -686,7 +686,7 @@ server <- function(input, output) {
       }
     }
 
-    return(sort(unique(outliers)))
+    return(sort(outliers))
   }
   
   
