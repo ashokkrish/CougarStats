@@ -662,6 +662,25 @@ server <- function(input, output) {
   ### Non-Reactive Functions ----
   # --------------------------------------------------------------------- #
   
+  # https://rdrr.io/github/skgrange/threadr/src/R/decimal_count.R
+  DecimalCount <- function(x) {
+
+    req(class(x) == "numeric")
+ 
+    # If contains a period
+    if (grepl("\\.", x)) {
+      x <- stringr::str_replace(x, "0+$", "")
+      x <- stringr::str_replace(x, "^.+[.]", "")
+      x <- stringr::str_length(x)
+        
+    } else {
+      # Otherwise return zero
+      x <- 0
+    }
+
+    return(x)
+  }
+  
   # Function to find the mode(s)
   Modes <- function(x) {
     modes <- Mode(x)
@@ -675,6 +694,19 @@ server <- function(input, output) {
       }
       return(modesList)
       }
+  }
+  
+  Range <- function(min, max) {
+    if(DecimalCount(min) < DecimalCount(max)) {
+      numDigits <- DecimalCount(max)
+    } else {
+      numDigits <- DecimalCount(min)
+    }
+    
+    range <- round((max - min), digits = numDigits)
+    print(range)
+    
+    return(range)
   }
   
   GetOutliers <- function(dat, lower, upper) {
@@ -721,7 +753,7 @@ server <- function(input, output) {
       outliers <- paste(as.character(GetOutliers(dat, lowerFence, upperFence)), collapse=", ")
     }
     
-    sampRange <- range(dat)[2]-range(dat)[1]
+    sampRange <- Range(min(dat), max(dat)) 
     sampStdDev <- round(sd(dat),4)
     sampVar <- round(var(dat),4)
     sampMeanSE <- round(sd(dat)/sqrt(length(dat)), 4)
