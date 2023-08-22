@@ -704,7 +704,6 @@ server <- function(input, output) {
     }
     
     range <- round((max - min), digits = numDigits)
-    print(range)
     
     return(range)
   }
@@ -1106,11 +1105,7 @@ server <- function(input, output) {
       
       output$dsStemLeaf <- renderPrint({
         
-        if(length(unique(dat)) > 1) {
-          stem.leaf(dat, m = 1, depths = FALSE)
-        } else {
-          stem(dat, scale = 1)
-        }
+        stem.leaf(dat, unit = 1, m = 1, depths = FALSE)
         
       })
       
