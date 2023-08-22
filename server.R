@@ -61,6 +61,7 @@ server <- function(input, output) {
                                                 "Data must be numeric values seperated by a comma (ie: 2,3,4)"))
   
   dsupload_iv$add_rule("dsUserData", sv_required())
+  dsupload_iv$add_rule("dsUserData", ~ if(is.null(fileInputs$dsStatus) || fileInputs$dsStatus == 'reset') "Required")
   dsupload_iv$add_rule("dsUserData", ~ if(!(tolower(tools::file_ext(input$dsUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
   dsupload_iv$add_rule("dsUserData", ~ if(ncol(dsUploadData()) < 1) "Data must include one variable")
   dsupload_iv$add_rule("dsUserData", ~ if(nrow(dsUploadData()) < 2) "Samples must include at least 2 observations")
@@ -242,6 +243,7 @@ server <- function(input, output) {
   
   # One Mean Upload Data
   onemeanupload_iv$add_rule("oneMeanUserData", sv_required())
+  onemeanupload_iv$add_rule("oneMeanUserData", ~ if(is.null(fileInputs$oneMeanStatus) || fileInputs$oneMeanStatus == 'reset') "Required")
   onemeanupload_iv$add_rule("oneMeanUserData", ~ if(!(tolower(tools::file_ext(input$oneMeanUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
   onemeanupload_iv$add_rule("oneMeanUserData", ~ if(nrow(OneMeanUploadData()) == 0) "File is empty")
   onemeanupload_iv$add_rule("oneMeanUserData", ~ if(nrow(OneMeanUploadData()) < 3) "Samples must include at least 2 observations")
@@ -336,6 +338,7 @@ server <- function(input, output) {
   #indMeansUserData
   
   indmeansupload_iv$add_rule("indMeansUserData", sv_required())
+  indmeansupload_iv$add_rule("indMeansUserData", ~ if(is.null(fileInputs$indMeansStatus) || fileInputs$indMeansStatus == 'reset') "Required")
   indmeansupload_iv$add_rule("indMeansUserData", ~ if(!(tolower(tools::file_ext(input$indMeansUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
   indmeansupload_iv$add_rule("indMeansUserData", ~ if(nrow(IndMeansUploadData()) == 0) "File is empty.")
   indmeansupload_iv$add_rule("indMeansUserData", ~ if(ncol(IndMeansUploadData()) < 2) "File must contain at least 2 distinct samples to choose from for analysis.")
@@ -369,6 +372,7 @@ server <- function(input, output) {
   
   
   depmeansupload_iv$add_rule("depMeansUserData", sv_required())
+  depmeansupload_iv$add_rule("depMeansUserData", ~ if(is.null(fileInputs$depMeansStatus) || fileInputs$depMeansStatus == 'reset') "Required")
   depmeansupload_iv$add_rule("depMeansUserData", ~ if(!(tolower(tools::file_ext(input$depMeansUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
   depmeansupload_iv$add_rule("depMeansUserData", ~ if(nrow(DepMeansUploadData()) == 0) "File is empty.")
   depmeansupload_iv$add_rule("depMeansUserData", ~ if(ncol(DepMeansUploadData()) < 2) "File must contain at least 2 distinct 'Before' and 'After' sets of data to choose from for analysis.")
@@ -611,6 +615,7 @@ server <- function(input, output) {
   slrraw_iv$add_rule("y", ~ if(sampleDiffRaw() != 0) "x and y must have the same number of observations")
   
   slrupload_iv$add_rule("slrUserData", sv_required())
+  slrupload_iv$add_rule("slrUserData", ~ if(is.null(fileInputs$slrStatus) || fileInputs$slrStatus == 'reset') "Required")
   slrupload_iv$add_rule("slrUserData", ~ if(!(tolower(tools::file_ext(input$slrUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
   slrupload_iv$add_rule("slrUserData", ~ if(nrow(slrUploadData()) == 0) "File is empty")
   slrupload_iv$add_rule("slrUserData", ~ if(ncol(slrUploadData()) < 2) "Data must include one response and (at least) one explanatory variable")
@@ -641,6 +646,13 @@ server <- function(input, output) {
   # -------------------------- #
   # ---- Functions/Output ----
   # -------------------------- #
+  fileInputs <- reactiveValues(
+    dsStatus = NULL,
+    oneMeanStatus = NULL,
+    indMeansStatus = NULL,
+    depMeansStatus = NULL,
+    slrStatus = NULL
+  )
   
   # String List to Numeric List
   createNumLst <- function(text) {
@@ -922,6 +934,7 @@ server <- function(input, output) {
   observeEvent(input$dsUserData, {
     hide(id = "descriptiveStatsMP")
     hide(id = "dsUploadVars")
+    fileInputs$dsStatus <- 'uploaded'
     
     if(dsupload_iv$is_valid())
     {
@@ -946,6 +959,12 @@ server <- function(input, output) {
           
           validate("Please upload a file.")
         }
+        
+        validate(
+          need(!is.null(fileInputs$dsStatus) && fileInputs$dsStatus == 'uploaded', "Please upload a file."),
+          
+          errorClass = "myClass"
+        )
         
         validate(
           need(nrow(dsUploadData()) != 0 && ncol(dsUploadData()) > 0, "File is empty"),
@@ -2064,6 +2083,15 @@ server <- function(input, output) {
     )
   })
   
+  OneMeanUploadStatus <- reactive({
+    if (is.null(fileInputs$oneMeanStatus)) {
+      return(NULL)
+    } else if (fileInputs$oneMeanStatus == 'uploaded') {
+      return(input$file1)
+    } else if (fileInputs$oneMeanStatus == 'reset') {
+      return(NULL)
+    }
+  })
   
   OneMeanHypInfo <- reactive({
     hypTestSymbols <- list()
@@ -2558,6 +2586,12 @@ server <- function(input, output) {
       }
       
       validate(
+        need(!is.null(fileInputs$oneMeanStatus) && fileInputs$oneMeanStatus == 'uploaded', "Please upload a file."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
         need(nrow(OneMeanUploadData()) != 0, "File is empty."),
         need(nrow(OneMeanUploadData()) > 2, "Samples must include at least 2 observations."),
         
@@ -2705,6 +2739,12 @@ server <- function(input, output) {
       if(is.null(input$indMeansUserData)) {
         validate("Please upload a file.")
       }
+      
+      validate(
+        need(!is.null(fileInputs$indMeansStatus) && fileInputs$indMeansStatus == 'uploaded', "Please upload a file."),
+        
+        errorClass = "myClass"
+      )
 
       validate(
         need(nrow(IndMeansUploadData()) != 0, "File is empty."),
@@ -2761,6 +2801,12 @@ server <- function(input, output) {
       if(is.null(input$depMeansUserData)) {
         validate("Please upload a file.")
       }
+      
+      validate(
+        need(!is.null(fileInputs$depMeansStatus) && fileInputs$depMeansStatus == 'uploaded', "Please upload a file."),
+        
+        errorClass = "myClass"
+      )
       
       validate(
         need(nrow(DepMeansUploadData()) > 0, "File is empty."),
@@ -4318,6 +4364,7 @@ server <- function(input, output) {
   observeEvent(input$oneMeanUserData, priority = 5, {
     hide(id = "inferenceData")
     hide(id = "oneMeanVariable")
+    fileInputs$oneMeanStatus <- 'uploaded'
     # if(onemeanupload_iv$is_valid())
     # {
       freezeReactiveValue(input, "oneMeanVariable")
@@ -4334,6 +4381,7 @@ server <- function(input, output) {
     hide(id = "inferenceData")
     hide(id = "indMeansUplSample1")
     hide(id = "indMeansUplSample2")
+    fileInputs$indMeansStatus <- 'uploaded'
     # if(onemeanupload_iv$is_valid())
     # {
     freezeReactiveValue(input, "indMeansUplSample1")
@@ -4356,6 +4404,7 @@ server <- function(input, output) {
     hide(id = "inferenceData")
     hide(id = "depMeansUplSample1")
     hide(id = "depMeansUplSample2")
+    fileInputs$depMeansStatus <- 'uploaded'
     
     if(depmeansupload_iv$is_valid()) {
       freezeReactiveValue(input, "depMeansUplSample1")
@@ -4476,6 +4525,8 @@ server <- function(input, output) {
     hide(id = "RegCorMP")
     hide(id = "slrResponse")
     hide(id = "slrExplanatory")
+    fileInputs$slrStatus <- 'uploaded'
+    
     if(slrupload_iv$is_valid())
     {
       freezeReactiveValue(input, "slrExplanatory")
@@ -4513,6 +4564,12 @@ server <- function(input, output) {
           if(is.null(input$slrUserData)) {
             validate("Please upload a file.")
           }
+          
+          validate(
+            need(!is.null(fileInputs$slrStatus) && fileInputs$slrStatus == 'uploaded', "Please upload a file."),
+            
+            errorClass = "myClass"
+          )
           
           validate(
             need(nrow(slrUploadData()) != 0, "File is empty"),
@@ -5010,6 +5067,7 @@ server <- function(input, output) {
   observeEvent(input$resetAll,{
     hide(id = 'descriptiveStatsMP')
     shinyjs::reset("descriptiveStatsPanel")
+    fileInputs$dsStatus <- 'reset'
   })
   
   #  -------------------------------------------------------------------- #
@@ -5155,6 +5213,9 @@ server <- function(input, output) {
   observeEvent(input$resetInference, {
     hide(id = "inferenceMP")
     shinyjs::reset("inferencePanel")
+    fileInputs$oneMeanStatus <- 'reset'
+    fileInputs$indMeansStatus <- 'reset'
+    fileInputs$depMeansStatus <- 'reset'
   })
   
   #  -------------------------------------------------------------------- #
@@ -5183,6 +5244,9 @@ server <- function(input, output) {
     # hideTab(inputId = 'tabSet', target = 'Residual Plots')
     hide(id = "RegCorMP")
     shinyjs::reset("RegCorPanel")
+    fileInputs$slrStatus <- 'reset'
+    
+    output$slrTabs <- renderUI({ "" })
   })
   
   #  -------------------------------------------------------------------- #
