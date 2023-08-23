@@ -20,6 +20,9 @@ server <- function(input, output) {
   norm_iv <- InputValidator$new()
   normprob_iv <- InputValidator$new()
   normbetween_iv <- InputValidator$new()
+  sampdistrprob_iv <- InputValidator$new()
+  sampdistrbetween_iv <- InputValidator$new()
+  sampdistrsize_iv <- InputValidator$new()
   
   si_iv <- InputValidator$new()
   onemean_iv <- InputValidator$new()
@@ -165,6 +168,15 @@ server <- function(input, output) {
   normbetween_iv$add_rule("x1Value", sv_required())
   normbetween_iv$add_rule("x2Value", sv_required())
   
+  sampdistrprob_iv$add_rule("sampDistrxValue", sv_required())
+  
+  sampdistrbetween_iv$add_rule("sampDistrx1Value", sv_required())
+  sampdistrbetween_iv$add_rule("sampDistrx2Value", sv_required())
+  
+  sampdistrsize_iv$add_rule("sampDistrSize", sv_required())
+  sampdistrsize_iv$add_rule("sampDistrSize", sv_integer())
+  sampdistrsize_iv$add_rule("sampDistrSize", sv_gt(0))
+  
   # ------------------ #
   #     Conditions     #
   # ------------------ #
@@ -187,10 +199,23 @@ server <- function(input, output) {
   norm_iv$condition(~ isTRUE(input$probability == 'Normal'))
   
   normprob_iv$condition(~ isTRUE(input$probability == 'Normal' && 
+                                 input$sampMeanDistr == 0 && 
                                  input$calcNormal != 'between'))
   
   normbetween_iv$condition(~ isTRUE(input$probability == 'Normal' && 
+                                    input$sampMeanDistr == 0 &&
                                     input$calcNormal == 'between'))
+  
+  sampdistrprob_iv$condition(~ isTRUE(input$probability == 'Normal' && 
+                                      input$sampMeanDistr == 1 && 
+                                      input$calcNormSampDistr != 'between'))
+  
+  sampdistrbetween_iv$condition(~ isTRUE(input$probability == 'Normal' && 
+                                         input$sampMeanDistr == 1 &&
+                                         input$calcNormSampDistr == 'between'))
+  
+  sampdistrsize_iv$condition(~ isTRUE(input$probability == 'Normal' && 
+                                      input$sampMeanDistr == 1))
   # ------------------ #
   #     Dependency     #
   # ------------------ #
@@ -202,6 +227,9 @@ server <- function(input, output) {
   
   norm_iv$add_validator(normprob_iv)
   norm_iv$add_validator(normbetween_iv)
+  norm_iv$add_validator(sampdistrprob_iv)
+  norm_iv$add_validator(sampdistrbetween_iv)
+  norm_iv$add_validator(sampdistrsize_iv)
   
   pd_iv$add_validator(binom_iv)
   pd_iv$add_validator(poiss_iv)
@@ -220,6 +248,9 @@ server <- function(input, output) {
   norm_iv$enable()
   normprob_iv$enable()
   normbetween_iv$enable()
+  sampdistrprob_iv$enable()
+  sampdistrbetween_iv$enable()
+  sampdistrsize_iv$enable()
   
   #--------------- #
   ## SI rules ----
@@ -1644,6 +1675,7 @@ server <- function(input, output) {
   #### Normal ----
   observeEvent(input$goNormal, {
     
+    ##### Normal Probability ----
     output$renderProbabilityNorm <- renderUI({
       
       if(!pd_iv$is_valid())
@@ -1664,8 +1696,8 @@ server <- function(input, output) {
           validate(
             need(input$popMean, "Enter a value for Population Mean (mu)"),
             need(input$popSD && input$popSD > 0, "Population Standard Deviation (sigma) must be greater than 0"),
-            need(input$x1Value, "Enter a value for Normally Distributed Variable (x)"),
-            need(input$x2Value, "Enter a value for Normally Distributed Variable (x)"),
+            need(input$x1Value, "Enter a value for Normally Distributed Variable (x1)"),
+            need(input$x2Value, "Enter a value for Normally Distributed Variable (x2)"),
             
             errorClass = "myClass"
           )
@@ -1674,7 +1706,7 @@ server <- function(input, output) {
         validate(
           need(input$popMean, "Enter a value for Population Mean (mu)"),
           need(input$popSD && input$popSD > 0, "Population Standard Deviation (sigma) must be greater than 0"),
-          
+
           errorClass = "myClass"
         )
       }
@@ -1756,11 +1788,53 @@ server <- function(input, output) {
         )
       )
     })
+    
+    #### Sampling Distribution of the Sample Mean ----
+    output$renderSampMeanDistr <- renderUI({
+      
+      if(!pd_iv$is_valid())
+      {
+        if(!sampdistrprob_iv$is_valid())
+        {
+          withMathJax()
+          validate(
+            need(input$popMean, "Enter a value for Population Mean (mu)."),
+            need(input$popSD && input$popSD > 0, "Population Standard Deviation (sigma) must be greater than 0."),
+            need(input$sampDistrxValue, "Enter a value for Normally Distributed Variable (x)."),
+            need(input$sampDistrSize > 0 && input$sampDistrSize %% 1 == 0, "Sample Size (n) must be a positive integer."),
+            
+            errorClass = "myClass"
+          )
+        }
+        
+        if(!sampdistrbetween_iv$is_valid())
+        {
+          validate(
+            need(input$popMean, "Enter a value for Population Mean (mu)."),
+            need(input$popSD && input$popSD > 0, "Population Standard Deviation (sigma) must be greater than 0."),
+            need(input$sampDistrx1Value, "Enter a value for Normally Distributed Variable (x1)."),
+            need(input$sampDistrx2Value, "Enter a value for Normally Distributed Variable (x2)."),
+            need(input$sampDistrSize > 0 && input$sampDistrSize %% 1 == 0, "Sample Size (n) must be a positive integer."),
+            
+            errorClass = "myClass"
+          )
+        }
+
+        validate(
+          need(input$popMean, "Enter a value for Population Mean (mu)."),
+          need(input$popSD && input$popSD > 0, "Population Standard Deviation (sigma) must be greater than 0."),
+          need(input$sampDistrSize > 0 && input$sampDistrSize %% 1 == 0, "Sample Size (n) must be a positive integer."),
+          
+          errorClass = "myClass"
+        )
+      }
+    })
   })
   
   output$normDistrPlot <- renderPlot({
     normPlot(getNormValue())
   })
+
   
   # --------------------------------------------------------------------- #
   
@@ -5146,12 +5220,23 @@ server <- function(input, output) {
                 input$popSD
                 input$xValue
                 input$x1Value
-                input$x2Value}, {
+                input$x2Value
+                input$sampMeanDistr
+                input$sampDistrxValue
+                input$sampDistrx1Value
+                input$sampDistrx2Value
+                input$sampDistrSize}, {
     hide(id = 'probabilityMP')
   })
   
   observeEvent(input$calcNormal, {
     if(input$calcNormal == 'between') {
+      hide(id = "probabilityMP")
+    }
+  })
+  
+  observeEvent(input$calcNormSampDistr, {
+    if(input$calcNormSampDistr == 'between') {
       hide(id = "probabilityMP")
     }
   })

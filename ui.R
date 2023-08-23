@@ -347,35 +347,87 @@
                                                                                          label = strong("Population Standard Deviation (\\( \\sigma\\))"),
                                                                                          value = 1, min = 0, 
                                                                                          step = 0.00001),
-                                                                            
-                                                                            radioButtons(inputId = "calcNormal",
-                                                                                         label = strong("Probability"), 
-                                                                                         choiceValues = list("cumulative", "upperTail", "between"),
-                                                                                         choiceNames = list("\\(P(X \\leq x)\\) or \\(P(X < x)\\)", "\\(P(X \\ge x)\\) or \\(P(X \\gt x)\\)", "\\(P(x_1 \\leq X \\leq x_2)\\)"),
-                                                                                         inline = FALSE), #,width = '1000px'),
+                                                                            br(),
+                                                                            checkboxInput(inputId = "sampMeanDistr",
+                                                                                          label = strong("Sampling Distribution of the Sample Mean"),
+                                                                                          value = 0),
                                                                             
                                                                             conditionalPanel(
-                                                                              condition = "input.calcNormal != 'between'",
-                                                                              
-                                                                              numericInput(inputId = "xValue",
-                                                                                           label = strong("Normally Distributed Variable (\\( x\\))"),
-                                                                                           value = 0, 
-                                                                                           step = 0.00001),
+                                                                                             condition = "input.sampMeanDistr == 0",
+                                                                                             
+                                                                                             radioButtons(inputId = "calcNormal",
+                                                                                                          label = strong("Probability"), 
+                                                                                                          choiceValues = list("cumulative", "upperTail", "between"),
+                                                                                                          choiceNames = list("\\(P(X \\leq x)\\) or \\(P(X < x)\\)", 
+                                                                                                                             "\\(P(X \\ge x)\\) or \\(P(X \\gt x)\\)", 
+                                                                                                                             "\\(P(x_1 \\leq X \\leq x_2)\\)"),
+                                                                                                          inline = FALSE), #,width = '1000px'),
+                                                                                             
+                                                                                             conditionalPanel(
+                                                                                               condition = "input.calcNormal != 'between'",
+                                                                                               
+                                                                                               numericInput(inputId = "xValue",
+                                                                                                            label = strong("Normally Distributed Variable (\\( x\\))"),
+                                                                                                            value = 0, 
+                                                                                                            step = 0.00001),
+                                                                                             ),
+                                                                                             
+                                                                                             conditionalPanel(
+                                                                                               condition = "input.calcNormal == 'between'",
+                                                                                               
+                                                                                               numericInput(inputId = "x1Value",
+                                                                                                            label = strong("Normally Distributed Variable (\\( x_{1}\\))"),
+                                                                                                            value = -1, 
+                                                                                                            step = 0.00001),
+                                                                                               
+                                                                                               numericInput(inputId = "x2Value",
+                                                                                                            label = strong("Normally Distributed Variable (\\( x_{2}\\))"),
+                                                                                                            value = 1, 
+                                                                                                            step = 0.00001),
+                                                                                               
+                                                                                             ),
+                                                                                             
                                                                             ),
                                                                             
                                                                             conditionalPanel(
-                                                                              condition = "input.calcNormal == 'between'",
-                                                                              
-                                                                              numericInput(inputId = "x1Value",
-                                                                                           label = strong("Normally Distributed Variable (\\( x_{1}\\))"),
-                                                                                           value = -1, 
-                                                                                           step = 0.00001),
-                                                                              
-                                                                              numericInput(inputId = "x2Value",
-                                                                                           label = strong("Normally Distributed Variable (\\( x_{2}\\))"),
-                                                                                           value = 1, 
-                                                                                           step = 0.00001),
-                                                                              
+                                                                                            condition = "input.sampMeanDistr == 1",
+                                                                                            
+                                                                                            radioButtons(inputId = "calcNormSampDistr",
+                                                                                                         label = strong("Probability"), 
+                                                                                                         choiceValues = list("cumulative", "upperTail", "between"),
+                                                                                                         choiceNames = list("\\(P(\\bar{X} \\leq x)\\) or \\(P(\\bar{X} < x)\\)", 
+                                                                                                                            "\\(P(\\bar{X} \\ge x)\\) or \\(P(\\bar{X} \\gt x)\\)", 
+                                                                                                                            "\\(P(x_1 \\leq \\bar{X} \\leq x_2)\\)"),
+                                                                                                         inline = FALSE), #,width = '1000px'),
+                                                                                            
+                                                                                            conditionalPanel(
+                                                                                              condition = "input.calcNormSampDistr != 'between'",
+                                                                                              
+                                                                                              numericInput(inputId = "sampDistrxValue",
+                                                                                                           label = strong("Normally Distributed Variable (\\( x\\))"),
+                                                                                                           value = 0, 
+                                                                                                           step = 0.00001),
+                                                                                            ),
+                                                                                            
+                                                                                            conditionalPanel(
+                                                                                              condition = "input.calcNormSampDistr == 'between'",
+                                                                                              
+                                                                                              numericInput(inputId = "sampDistrx1Value",
+                                                                                                           label = strong("Normally Distributed Variable (\\( x_{1}\\))"),
+                                                                                                           value = -1, 
+                                                                                                           step = 0.00001),
+                                                                                              
+                                                                                              numericInput(inputId = "sampDistrx2Value",
+                                                                                                           label = strong("Normally Distributed Variable (\\( x_{2}\\))"),
+                                                                                                           value = 1, 
+                                                                                                           step = 0.00001),
+                                                                                              
+                                                                                            ),
+                                                                                            
+                                                                                            numericInput(inputId = "sampDistrSize",
+                                                                                                         label = strong("Sample Size (\\( n\\))"),
+                                                                                                         value = 10, 
+                                                                                                         step = 1),
                                                                             ),
                                                                             
                                                                             actionButton(inputId = "goNormal", 
@@ -1326,7 +1378,17 @@
                                                   
                                                   br(),
                                                   
-                                                  uiOutput("renderProbabilityNorm"),
+                                                  conditionalPanel(
+                                                    condition = "input.sampMeanDistr == 0",
+                                                    
+                                                    uiOutput("renderProbabilityNorm")
+                                                  ),
+                                                  
+                                                  conditionalPanel(
+                                                    condition = "input.sampMeanDistr == 1",
+                                                    
+                                                    uiOutput("renderSampMeanDistr")
+                                                  ),
                                                   
                                                   br(),
                                                 )
