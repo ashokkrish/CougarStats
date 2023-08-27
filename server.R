@@ -1438,6 +1438,28 @@ server <- function(input, output) {
     }
   })
   
+  getMeanNormValue <- reactive({
+    req(pd_iv$is_valid())
+    
+    sampSE <- input$popSD / sqrt(input$sampDistrSize)
+    
+    if(input$calcNormSampDistr == "cumulative")
+    {
+      normValue <- round(pnorm(input$sampDistrxValue, input$popMean, sampSE, lower.tail = TRUE),4)
+      #paste("\\(P(X \\leq \\)", " ", norm_x, "\\()\\)", " ", "\\( = \\)", " ", round(pnorm(norm_x, norm_mu, norm_sigma, lower.tail = TRUE),4))
+    }
+    else if(input$calcNormSampDistr == "upperTail")
+    {
+      normValue <- round(pnorm(input$sampDistrxValue, input$popMean, sampSE, lower.tail = FALSE),4)
+      #paste("\\(P(X > \\)", " ", norm_x, "\\()\\)", " ", "\\( = \\)", " ", round(pnorm(norm_x, norm_mu, norm_sigma, lower.tail = FALSE),4))
+    }
+    else if(input$calcNormSampDistr == 'between')
+    {
+      req(input$sampDistrx1Value <= input$sampDistrx2Value)
+      normValue <- round(pnorm(input$sampDistrx2Value, input$popMean, sampSE, lower.tail = TRUE) - pnorm(input$sampDistrx1Value, input$popMean, sampSE, lower.tail = TRUE), 4)
+    }
+  })
+  
   # --------------------------------------------------------------------- #
   
   
@@ -1988,15 +2010,20 @@ server <- function(input, output) {
 
         if(input$calcNormSampDistr == "cumulative"){
           normProb <- paste("P(\\bar{X} \\leq ", input$sampDistrxValue,")")
+          normProbTransform <- paste("P \\left( \\dfrac{\\bar{X} - \\mu}{ \\left( \\dfrac{\\sigma}{\\sqrt{n}} \\right) } \\leq \\dfrac{", input$sampDistrxValue, " - ", input$popMean, "}{ \\left( \\dfrac{", input$popSD, "}{\\sqrt{", input$sampDistrSize, "}} \\right) } \\right)")
+          normForm <- paste("= P(Z \\leq", round((input$sampDistrxValue - input$popMean)/(input$popSD/sqrt(input$sampDistrSize)), 4), ")")
         }
         else if(input$calcNormSampDistr == "upperTail"){
           normProb <- paste("P(\\bar{X} \\gt ", input$sampDistrxValue,")")
+          normProbTransform <- paste("P \\left( \\dfrac{\\bar{X} - \\mu}{ \\left( \\dfrac{\\sigma}{\\sqrt{n}} \\right) } \\gt \\dfrac{", input$sampDistrxValue, " - ", input$popMean, "}{ \\left( \\dfrac{", input$popSD, "}{\\sqrt{", input$sampDistrSize, "}} \\right) } \\right)")
+          normForm <- paste("= P(Z \\gt", round((input$sampDistrxValue - input$popMean)/(input$popSD/sqrt(input$sampDistrSize)), 4), ")")
         }
       }
       else if(input$calcNormSampDistr == 'between')
       {
         norm_x1 <- input$sampDistrx1Value
         norm_x2 <- input$sampDistrx2Value
+        sampSE <- input$popSD / sqrt(input$sampDistrSize)
 
         validate(
           need(norm_x1 <= norm_x2, "Normally Distributed Variable (x1) must be less than or equal to Normally Distributed Variable (x2)"),
@@ -2005,6 +2032,11 @@ server <- function(input, output) {
         )
 
         normProb <- paste("P(", norm_x1, " ",  " \\leq \\bar{X} \\leq"," ", norm_x2,")")
+
+        normProbTransform <- paste("P \\left( \\dfrac{", norm_x1, " - ", input$popMean, "}{ \\left( \\dfrac{", input$popSD, "}{\\sqrt{", input$sampDistrSize, "}} \\right) } \\leq \\dfrac{\\bar{X} - \\mu}{ \\left( \\dfrac{\\sigma}{\\sqrt{n}} \\right) } \\leq",
+                                   "\\dfrac{", norm_x2, " - ", input$popMean, "}{ \\left( \\dfrac{", input$popSD, "}{\\sqrt{", input$sampDistrSize, "}} \\right) } \\right)")
+        normForm <- paste("= P(", round((norm_x1 - input$popMean)/(input$popSD/sqrt(input$sampDistrSize)), 4), "\\leq Z \\leq", round((norm_x2 - input$popMean)/(input$popSD/sqrt(input$sampDistrSize)), 4), ") = ", 
+                          round(pnorm(norm_x2, input$popMean, sampSE, lower.tail = TRUE), 4), " - ", round(pnorm(norm_x1, input$popMean, sampSE, lower.tail = TRUE), 4))
       }
       
       tagList(
@@ -2016,7 +2048,21 @@ server <- function(input, output) {
                       input$popMean,
                       input$popSD^2 / sqrt(input$sampDistrSize))
             ),
-          )
+            hr(),
+            br(),
+            sprintf("\\( \\displaystyle %s = %s\\)",
+                    normProb,
+                    normProbTransform),
+            br(),
+            br(),
+            sprintf("\\( \\displaystyle %s = %g\\)",
+                    normForm,
+                    getMeanNormValue()),
+            br()
+          ),
+          br(),
+          hr(),
+          br()
         )
       )
     })
@@ -2025,7 +2071,7 @@ server <- function(input, output) {
   output$normDistrPlot <- renderPlot({
     normPlot(getNormValue())
   })
-
+  
   output$normZPlot <- renderPlot({
     normZPlot(getNormValue())
   })
