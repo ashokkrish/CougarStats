@@ -1241,6 +1241,17 @@ server <- function(input, output) {
                 color = NA, 
                 alpha = 0.3) +
       shadeNormArea(df, normValue) +
+      geom_segment(data = lineDF,
+                   aes(x = x, xend = x, y = 0, yend = y),
+                   linetype = "solid",
+                   lineend = 'round',
+                   linewidth = 1.25,
+                   color='#021C38') +
+      geom_text(data = lineDF, 
+                aes(x = x, y = 0, label = x), 
+                size = 16 / .pt, 
+                fontface = "bold", 
+                vjust = 1.5) +
       geom_segment(data = meanDF,
                    aes(x = x, xend = x, y = 0, yend = y),
                    linetype = "dotted",
@@ -1250,8 +1261,8 @@ server <- function(input, output) {
                    alpha = 0.5) +
       geom_text(data = meanDF, 
                 aes(x = x, y = 0, label = x), 
-                size = 14 / .pt, 
-                fontface = "bold",
+                size = 16 / .pt,
+                check_overlap = TRUE,
                 vjust = 1.5) +
       geom_segment(data = sdLinesDF,
                    aes(x = x, xend = x, y = 0, yend = y),
@@ -1260,25 +1271,20 @@ server <- function(input, output) {
                    linewidth = 1,
                    color='#021C38',
                    alpha = 0.5) +
-      geom_segment(data = lineDF,
-                   aes(x = x, xend = x, y = 0, yend = y),
-                   linetype = "solid",
-                   lineend = 'round',
-                   linewidth = 1.25,
-                   color='#021C38') +
-      geom_text(data = lineDF, 
+      geom_text(data = sdLinesDF, 
                 aes(x = x, y = 0, label = x), 
-                size = 14 / .pt, 
-                fontface = "bold", 
+                size = 16 / .pt,
+                check_overlap = TRUE,
                 vjust = 1.5) +
       coord_cartesian(clip="off") +
       ggtitle(paste0("X ~ N(", input$popMean, ", ", (input$popSD^2), ")")) +
       theme_minimal()  +
       theme(plot.title = element_text(size = 24, face = "bold", hjust = 0.5),
             axis.title.x = element_text(size = 18, 
-                                        face = "bold"),
+                                        face = "bold",
+                                        vjust = -1),
             axis.text.x.bottom = element_text(size = 14)) +
-      scale_x_continuous(breaks = c(input$popMean - input$popSD, input$popMean + input$popSD)) +
+      scale_x_continuous(breaks = NULL) +
       ylab("Density") +
       xlab("X") 
     
@@ -1361,6 +1367,12 @@ server <- function(input, output) {
                 color = NA, 
                 alpha = 0.3) +
       shadeNormZArea(df, normValue) +
+      geom_segment(data = lineDF,
+                   aes(x = x, xend = x, y = 0, yend = y),
+                   linetype = "solid",
+                   lineend = 'round',
+                   linewidth = 1.25,
+                   color='#021C38') +
       geom_segment(data = meanDF,
                    aes(x = x, xend = x, y = 0, yend = y),
                    linetype = "dotted",
@@ -1370,8 +1382,8 @@ server <- function(input, output) {
                    alpha = 0.5) +
       geom_text(data = meanDF, 
                 aes(x = x, y = 0, label = x), 
-                size = 14 / .pt, 
-                fontface = "bold", 
+                size = 16 / .pt,
+                check_overlap = TRUE,
                 vjust = 1.5) +
       geom_segment(data = sdLinesDF,
                    aes(x = x, xend = x, y = 0, yend = y),
@@ -1380,20 +1392,19 @@ server <- function(input, output) {
                    linewidth = 1,
                    color='#021C38',
                    alpha = 0.5) +
-      geom_segment(data = lineDF,
-                   aes(x = x, xend = x, y = 0, yend = y),
-                   linetype = "solid",
-                   lineend = 'round',
-                   linewidth = 1.25,
-                   color='#021C38') +
+      geom_text(data = sdLinesDF, 
+                aes(x = x, y = 0, label = x), 
+                size = 16 / .pt,
+                check_overlap = TRUE,
+                vjust = 1.5) +
       labelNormZArea(normValue) +
       coord_cartesian(clip="off") +
       ggtitle(paste0("Z ~ N(0,1)")) +
       theme_minimal()  +
       theme(plot.title = element_text(size = 24, face = "bold", hjust = 0.5),
-            axis.title.x = element_text(size = 18, face = "bold"),
+            axis.title.x = element_text(size = 18, face = "bold", vjust = -1),
             axis.text.x.bottom = element_text(size = 14)) +
-      scale_x_continuous(breaks = c(-1, 1)) +
+      scale_x_continuous(breaks = NULL) +
       ylab("Density") +
       xlab("Z") 
     
