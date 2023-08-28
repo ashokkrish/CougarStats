@@ -1190,48 +1190,175 @@ server <- function(input, output) {
   ### Non-Reactive Functions ----
   # --------------------------------------------------------------------- #
   
-  shadeNormArea <- function(df, normValue){
+  # shadeNormArea <- function(df, normValue, normLines, probType){
+  #   if(normValue > 0){
+  #     if(probType == 'cumulative') {
+  #       print(filter(df, x <= normLines))
+  #       geom_area(data = filter(df, x <= normLines),
+  #                 aes(x = x, y=y), 
+  #                 fill = "#03376d", 
+  #                 alpha = 0.8)
+  #       
+  #     } else if (probType == 'upperTail') {
+  #       geom_area(data = filter(df, x >= normLines),
+  #                 aes(x = x, y=y), 
+  #                 fill = "#03376d", 
+  #                 alpha = 0.8)
+  #       
+  #     } else {
+  #       geom_area(data = subset(df, x >= normLines[1] & x <= normLines[2]),
+  #                 aes(x = x, y=y),
+  #                 adjust = 3,
+  #                 fill = "#03376d",
+  #                 alpha = 0.8)
+  #     }
+  #   }
+  # }
+  
+  
+  shadeNormArea <- function(df, normValue, normLines, probType){
     if(normValue > 0){
-      if(input$calcNormal == 'cumulative') {
-        dataDF <- filter(df, x <= input$xValue)
-        geom_area(data = filter(df, x <= input$xValue),
-                  aes(x=x, y=y), 
+      if(probType == 'cumulative') {
+        geom_area(data = subset(df, x <= normLines),
+                  aes(y=y), 
                   fill = "#03376d", 
+                  color = NA, 
                   alpha = 0.8)
         
-      } else if (input$calcNormal == 'upperTail') {
-        geom_area(data = filter(df, x >= input$xValue),
-                  aes(x=x, y=y), 
+      } else if (probType == 'upperTail') {
+        geom_area(data = subset(df, x >= normLines),
+                  aes(y=y), 
                   fill = "#03376d", 
+                  color = NA, 
                   alpha = 0.8)
         
       } else {
-        geom_area(data = subset(df, x >= input$x1Value & x <= input$x2Value),
-                  aes(y=y),
-                  fill = "#03376d",
+        geom_area(data = subset(df, x >= normLines[1] & x <= normLines[2]),
+                  aes(y=y), 
+                  fill = "#03376d", 
+                  color = NA, 
                   alpha = 0.8)
       }
     }
   }
   
-  normPlot <- function(normValue){
+  labelNormZArea <- function(probVal, probType, normLines){
     req(pd_iv$is_valid())
-    if(input$calcNormal == "between")
-    {
-      normLines <- c(input$x1Value, input$x2Value)
-    }
-    else
-    {
-      normLines <- input$xValue
+    if(probType == 'cumulative') {
+      centerPoint <- normLines - 0.5
+      
+    } else if (probType == 'upperTail') {
+      centerPoint <- normLines + 0.5
+      
+    } else {
+      centerPoint <- normLines[1] + (normLines[2] - normLines[1])/2
     }
     
-    x <- seq(from = input$popMean - 3*input$popSD, to = input$popMean + 3*input$popSD, by = input$popSD/10)
-    xSeq <- c(x, normLines, input$popMean)
+    geom_label(data = NULL,
+               aes(x = centerPoint, y = 0.15, label = probVal),
+               fill = "#265381",
+               color = "white",
+               size = 24 / .pt,
+               fontface = "bold",
+               label.size = NA)
+  }
+  
+  PlotTitle <- function(variance){
+    if(input$sampMeanDistr == 0){
+      ggtitle(bquote(bold(X %~% N(.(input$popMean),.(variance)))))
+    } else {
+      ggtitle(bquote(bold(bar(X) %~% N(.(input$popMean),.(variance)))))
+    }
+  }
+  
+  PlotXLab <- function(){
+    if(input$sampMeanDistr == 0){
+      xlab(expression(bold( X )))
+    } else {
+      xlab(expression(bold( bar(X) )))
+    }
+  }
+  
+  
+  # normPlot <- function(normValue, normLines, standDev, probType){
+  #   req(pd_iv$is_valid())
+  #   
+  #   x <- seq(from = input$popMean - 3*standDev, to = input$popMean + 3*standDev, by = standDev/10)
+  #   xSeq <- c(x, normLines, input$popMean)
+  #   
+  #   df <- data.frame(x = xSeq, y = dnorm(xSeq, mean = input$popMean, sd = standDev))
+  #   lineDF <- filter(df, x %in% normLines)
+  #   meanDF <- filter(df, x %in% input$popMean)
+  #   sdLinesDF <- filter(df, x %in% c(input$popMean - standDev, input$popMean + standDev))
+  #   
+  #   nPlot <- ggplot(df, aes(x = x, y = y)) +
+  #     geom_line() +
+  #     shadeNormArea(df, normValue, normLines, probType) +
+  #     geom_segment(data = lineDF,
+  #                  aes(x = x, xend = x, y = 0, yend = y),
+  #                  linetype = "solid",
+  #                  lineend = 'round',
+  #                  linewidth = 1.25,
+  #                  color='#021C38') +
+  #     geom_text(data = lineDF, 
+  #               aes(x = x, y = 0, label = x), 
+  #               size = 16 / .pt, 
+  #               fontface = "bold",
+  #               check_overlap = TRUE,
+  #               vjust = 1.5) +
+  #     geom_segment(data = meanDF,
+  #                  aes(x = x, xend = x, y = 0, yend = y),
+  #                  linetype = "dotted",
+  #                  lineend = 'round',
+  #                  linewidth = 1,
+  #                  color='#021C38',
+  #                  alpha = 0.5) +
+  #     geom_text(data = meanDF, 
+  #               aes(x = x, y = 0, label = x), 
+  #               size = 16 / .pt,
+  #               check_overlap = TRUE,
+  #               vjust = 1.5) +
+  #     geom_segment(data = sdLinesDF,
+  #                  aes(x = x, xend = x, y = 0, yend = y),
+  #                  linetype = "dotted",
+  #                  lineend = 'round',
+  #                  linewidth = 1,
+  #                  color='#021C38',
+  #                  alpha = 0.5) +
+  #     geom_text(data = sdLinesDF, 
+  #               aes(x = x, y = 0, label = x), 
+  #               size = 16 / .pt,
+  #               check_overlap = TRUE,
+  #               vjust = 1.5) +
+  #     coord_cartesian(clip="off") +
+  #     ggtitle(paste0("X ~ N(", input$popMean, ", ", (standDev^2), ")")) +
+  #     theme_minimal()  +
+  #     theme(plot.title = element_text(size = 24, face = "bold", hjust = 0.5),
+  #           axis.title.x = element_text(size = 18, 
+  #                                       face = "bold",
+  #                                       vjust = -1),
+  #           axis.text.x.bottom = element_text(size = 14)) +
+  #     scale_x_continuous(breaks = NULL) +
+  #     ylab("Density") +
+  #     xlab("X") 
+  #   
+  #   
+  #   return(nPlot)
+  # }
+  
+  
+  normPlot <- function(normValue, normLines, variance, standDev, lineLabels, probType, plotLab){
+    req(pd_iv$is_valid())
+    withMathJax()
     
-    df <- data.frame(x = xSeq, y = dnorm(xSeq, mean = input$popMean, sd = input$popSD))
+    x <- seq(from = -3, to = 3, by = 0.1)
+    xSeq <- sort(c(x, normLines))
+    
+    df <- distinct(data.frame(x = xSeq, y = dnorm(xSeq, mean = 0, sd = 1)))
     lineDF <- filter(df, x %in% normLines)
-    meanDF <- filter(df, x %in% input$popMean)
-    sdLinesDF <- filter(df, x %in% c(input$popMean - input$popSD, input$popMean + input$popSD))
+    lineDF['z'] <- lineLabels
+    meanDF <- filter(df, x %in% c(0))
+    sdLinesDF <- filter(df, x %in% c(-1, 1))
     
     nPlot <- ggplot(df, aes(x = x, y = y)) +
       geom_line() +
@@ -1240,7 +1367,7 @@ server <- function(input, output) {
                 fill = "#03376d", 
                 color = NA, 
                 alpha = 0.3) +
-      shadeNormArea(df, normValue) +
+      shadeNormArea(df, normValue, normLines, probType) +
       geom_segment(data = lineDF,
                    aes(x = x, xend = x, y = 0, yend = y),
                    linetype = "solid",
@@ -1248,9 +1375,10 @@ server <- function(input, output) {
                    linewidth = 1.25,
                    color='#021C38') +
       geom_text(data = lineDF, 
-                aes(x = x, y = 0, label = x), 
-                size = 16 / .pt, 
-                fontface = "bold", 
+                aes(x = x, y = 0, label = z), 
+                size = 16 / .pt,
+                fontface = "bold",
+                check_overlap = TRUE,
                 vjust = 1.5) +
       geom_segment(data = meanDF,
                    aes(x = x, xend = x, y = 0, yend = y),
@@ -1271,85 +1399,27 @@ server <- function(input, output) {
                    linewidth = 1,
                    color='#021C38',
                    alpha = 0.5) +
-      geom_text(data = sdLinesDF, 
-                aes(x = x, y = 0, label = x), 
-                size = 16 / .pt,
-                check_overlap = TRUE,
-                vjust = 1.5) +
+      # geom_text(data = sdLinesDF, 
+      #           aes(x = x, y = 0, label = z), 
+      #           size = 16 / .pt,
+      #           check_overlap = TRUE,
+      #           vjust = 1.5) +
       coord_cartesian(clip="off") +
-      ggtitle(paste0("X ~ N(", input$popMean, ", ", (input$popSD^2), ")")) +
+      PlotTitle(variance) +
       theme_minimal()  +
       theme(plot.title = element_text(size = 24, face = "bold", hjust = 0.5),
-            axis.title.x = element_text(size = 18, 
-                                        face = "bold",
-                                        vjust = -1),
+            axis.title.x = element_text(size = 18, face = "bold", vjust = -1),
             axis.text.x.bottom = element_text(size = 14)) +
       scale_x_continuous(breaks = NULL) +
-      ylab("Density") +
-      xlab("X") 
+      ylab("Density") + 
+      PlotXLab() 
     
     
     return(nPlot)
   }
-  
-  
-  shadeNormZArea <- function(df, normValue){
-    if(normValue > 0){
-      if(input$calcNormal == 'cumulative') {
-        geom_area(data = subset(df, x <= round((input$xValue - input$popMean)/input$popSD, 4)),
-                  aes(y=y), 
-                  fill = "#03376d", 
-                  color = NA, 
-                  alpha = 0.8)
-        
-      } else if (input$calcNormal == 'upperTail') {
-        geom_area(data = subset(df, x >= round((input$xValue - input$popMean)/input$popSD, 4)),
-                  aes(y=y), 
-                  fill = "#03376d", 
-                  color = NA, 
-                  alpha = 0.8)
-        
-      } else {
-        geom_area(data = subset(df, x >= round((input$x1Value - input$popMean)/input$popSD, 4) & x <= round((input$x2Value - input$popMean)/input$popSD, 4)),
-                  aes(y=y), 
-                  fill = "#03376d", 
-                  color = NA, 
-                  alpha = 0.8)
-      }
-    }
-  }
-  
-  labelNormZArea <- function(probVal){
+
+  normZPlot <- function(normValue, normLines, probType){
     req(pd_iv$is_valid())
-    if(input$calcNormal == 'cumulative') {
-      centerPoint <- round((input$xValue - input$popMean)/input$popSD, 4) - 0.5
-      
-    } else if (input$calcNormal == 'upperTail') {
-      centerPoint <- round((input$xValue - input$popMean)/input$popSD, 4) + 0.5
-      
-    } else {
-      centerPoint <- round((input$x1Value - input$popMean)/input$popSD, 4) + (round((input$x2Value - input$popMean)/input$popSD, 4) - round((input$x1Value - input$popMean)/input$popSD, 4))/2
-    }
-    
-    geom_label(data = NULL,
-              aes(x = centerPoint, y = 0.15, label = probVal),
-              fill = "#265381",
-              color = "white",
-              size = 24 / .pt,
-              fontface = "bold",
-              label.size = NA)
-  }
-  
-  normZPlot <- function(normValue){
-    req(pd_iv$is_valid())
-    if(input$calcNormal == "between")
-    {
-      normLines <- c(round((input$x1Value - input$popMean)/input$popSD, 4), round((input$x2Value - input$popMean)/input$popSD, 4))
-    }
-    else
-    {
-      normLines <- round((input$xValue - input$popMean)/input$popSD, 4)
-    }
     
     x <- seq(from = -3, to = 3, by = 0.1)
     xSeq <- c(x, normLines)
@@ -1366,13 +1436,19 @@ server <- function(input, output) {
                 fill = "#03376d", 
                 color = NA, 
                 alpha = 0.3) +
-      shadeNormZArea(df, normValue) +
+      shadeNormArea(df, normValue, normLines, probType) +
       geom_segment(data = lineDF,
                    aes(x = x, xend = x, y = 0, yend = y),
                    linetype = "solid",
                    lineend = 'round',
                    linewidth = 1.25,
                    color='#021C38') +
+      geom_text(data = lineDF, 
+                aes(x = x, y = 0, label = x), 
+                size = 16 / .pt,
+                fontface = "bold",
+                check_overlap = TRUE,
+                vjust = 1.5) +
       geom_segment(data = meanDF,
                    aes(x = x, xend = x, y = 0, yend = y),
                    linetype = "dotted",
@@ -1392,14 +1468,9 @@ server <- function(input, output) {
                    linewidth = 1,
                    color='#021C38',
                    alpha = 0.5) +
-      geom_text(data = sdLinesDF, 
-                aes(x = x, y = 0, label = x), 
-                size = 16 / .pt,
-                check_overlap = TRUE,
-                vjust = 1.5) +
-      labelNormZArea(normValue) +
+      labelNormZArea(normValue, probType, normLines) +
       coord_cartesian(clip="off") +
-      ggtitle(paste0("Z ~ N(0,1)")) +
+      ggtitle(bquote(bold( Z %~% N(0,1) ))) +
       theme_minimal()  +
       theme(plot.title = element_text(size = 24, face = "bold", hjust = 0.5),
             axis.title.x = element_text(size = 18, face = "bold", vjust = -1),
@@ -1884,16 +1955,17 @@ server <- function(input, output) {
       if(input$calcNormal != 'between')
       {
         norm_x <- input$xValue
+        probValue <- round((norm_x - norm_mu)/norm_sigma, 4)
         
         if(input$calcNormal == "cumulative"){
           normProb <- paste("P(X \\leq ", norm_x,")")
           normProbTransform <- paste("P \\left( \\dfrac{X - \\mu}{\\sigma} \\leq \\dfrac{", norm_x, " - ", norm_mu, "}{", norm_sigma, "} \\right)")
-          normForm <- paste("= P(Z \\leq", round((norm_x - norm_mu)/norm_sigma, 4), ")")
+          normForm <- paste("= P(Z \\leq", probValue, ")")
         }
         else if(input$calcNormal == "upperTail"){
           normProb <- paste("P(X \\gt ", norm_x,")")
           normProbTransform <- paste("P \\left( \\dfrac{X - \\mu}{\\sigma} \\gt \\dfrac{", norm_x, " - ", norm_mu, "}{", norm_sigma, "} \\right)")
-          normForm <- paste("= P(Z \\gt", round((norm_x - norm_mu)/norm_sigma, 4), ")")
+          normForm <- paste("= P(Z \\gt", probValue, ")")
         }
       }
       else if(input$calcNormal == 'between')
@@ -1964,6 +2036,38 @@ server <- function(input, output) {
       )
     })
     
+    output$normDistrPlot <- renderPlot({
+      req(pd_iv$is_valid())
+      
+      if(input$calcNormal == "between")
+      {
+        normLines <- c(round((input$x1Value - input$popMean)/input$popSD, 4), round((input$x2Value - input$popMean)/input$popSD, 4))
+        lineLabels <- c(input$x1Value, input$x2Value) 
+      }
+      else
+      {
+        normLines <- round((input$xValue - input$popMean)/input$popSD, 4)
+        lineLabels <- input$xValue
+      }
+      
+      normPlot(getNormValue(), normLines, input$popSD^2, input$popSD, lineLabels, input$calcNormal)
+    })
+    
+    output$normZPlot <- renderPlot({
+      req(pd_iv$is_valid())
+      
+      if(input$calcNormal == "between")
+      {
+        req(input$x1Value <= input$x2Value)
+        normLines <- c(round((input$x1Value - input$popMean)/input$popSD, 4), round((input$x2Value - input$popMean)/input$popSD, 4))
+      }
+      else
+      {
+        normLines <- round((input$xValue - input$popMean)/input$popSD, 4)
+      }
+      normZPlot(getNormValue(), normLines, input$calcNormal)
+    })
+    
     #### Sampling Distribution of the Sample Mean ----
     output$renderSampMeanDistr <- renderUI({
       
@@ -2006,17 +2110,17 @@ server <- function(input, output) {
       
       if(input$calcNormSampDistr != 'between')
       {
-        input$sampDistrxValue
+        probValue <- round((input$sampDistrxValue - input$popMean)/(input$popSD/sqrt(input$sampDistrSize)), 4)
 
         if(input$calcNormSampDistr == "cumulative"){
           normProb <- paste("P(\\bar{X} \\leq ", input$sampDistrxValue,")")
           normProbTransform <- paste("P \\left( \\dfrac{\\bar{X} - \\mu}{ \\left( \\dfrac{\\sigma}{\\sqrt{n}} \\right) } \\leq \\dfrac{", input$sampDistrxValue, " - ", input$popMean, "}{ \\left( \\dfrac{", input$popSD, "}{\\sqrt{", input$sampDistrSize, "}} \\right) } \\right)")
-          normForm <- paste("= P(Z \\leq", round((input$sampDistrxValue - input$popMean)/(input$popSD/sqrt(input$sampDistrSize)), 4), ")")
+          normForm <- paste("= P(Z \\leq", probValue, ")")
         }
         else if(input$calcNormSampDistr == "upperTail"){
           normProb <- paste("P(\\bar{X} \\gt ", input$sampDistrxValue,")")
           normProbTransform <- paste("P \\left( \\dfrac{\\bar{X} - \\mu}{ \\left( \\dfrac{\\sigma}{\\sqrt{n}} \\right) } \\gt \\dfrac{", input$sampDistrxValue, " - ", input$popMean, "}{ \\left( \\dfrac{", input$popSD, "}{\\sqrt{", input$sampDistrSize, "}} \\right) } \\right)")
-          normForm <- paste("= P(Z \\gt", round((input$sampDistrxValue - input$popMean)/(input$popSD/sqrt(input$sampDistrSize)), 4), ")")
+          normForm <- paste("= P(Z \\gt", probValue, ")")
         }
       }
       else if(input$calcNormSampDistr == 'between')
@@ -2043,10 +2147,10 @@ server <- function(input, output) {
         withMathJax(
           div(
             h4(
-              sprintf("Calculating  \\( %s \\)   when  \\(  \\bar{X} \\sim N(\\mu = %g, \\, \\sigma^2 = \\dfrac{\\sigma^2}{\\sqrt{n}} = %0.4f): \\)",
+              sprintf("Calculating  \\( %s \\)   when  \\(  \\bar{X} \\sim N(\\mu = %g, \\, \\sigma^2 = \\dfrac{\\sigma^2}{n} = %0.4f): \\)",
                       normProb,
                       input$popMean,
-                      input$popSD^2 / sqrt(input$sampDistrSize))
+                      input$popSD^2 / input$sampDistrSize)
             ),
             hr(),
             br(),
@@ -2058,23 +2162,85 @@ server <- function(input, output) {
             sprintf("\\( \\displaystyle %s = %g\\)",
                     normForm,
                     getMeanNormValue()),
-            br()
+            br(),
+            br(),
+            br(),
+            sprintf("Mean \\( (\\mu_{\\bar{x}}) = \\mu = %g\\)",
+                    input$popMean),
+            br(),
+            br(),
+            sprintf("Standard Deviation \\( (\\sigma_{\\bar{x}}) = \\dfrac{\\sigma}{\\sqrt{n}} = %0.4f\\)",
+                    input$popSD / sqrt(input$sampDistrSize)),
+            br(),
+            sprintf("Variance \\( (\\sigma^{2}_{\\bar{x}}) = \\dfrac{\\sigma^{2}}{n} = %g\\)",
+                    input$popSD^2 / input$sampDistrSize)
           ),
           br(),
           hr(),
+          br(),
+          fluidRow(
+            column(width = 6, 
+                   plotOutput('sampMeanDistrPlot'),
+            ),
+            column(width = 6, 
+                   plotOutput('sampMeanZPlot'),
+            )
+          ),
+          br(),
           br()
         )
       )
     })
+    
+    
+    
+    
+    
+    output$sampMeanDistrPlot <- renderPlot({
+      req(pd_iv$is_valid())
+      withMathJax()
+      
+      sampSE <- round(input$popSD / sqrt(input$sampDistrSize), 4)
+      
+      if(input$calcNormSampDistr == "between")
+      {
+        req(input$sampDistrx1Value <= input$sampDistrx2Value)
+        normLines <- c(round((input$sampDistrx1Value - input$popMean)/(input$popSD/sqrt(input$sampDistrSize)), 4), 
+                       round((input$sampDistrx2Value - input$popMean)/(input$popSD/sqrt(input$sampDistrSize)), 4))
+        lineLabels <- c(input$sampDistrx1Value, input$sampDistrx2Value)
+      }
+      else
+      {
+        normLines <- round((input$sampDistrxValue - input$popMean)/(input$popSD/sqrt(input$sampDistrSize)), 4)
+        lineLabels <- c(input$sampDistrxValue)
+      }
+      
+      normPlot(getMeanNormValue(), normLines, round(input$popSD^2 / input$sampDistrSize, 4), sampSE, lineLabels, input$calcNormSampDistr)
+    })
+    
+    
+    
+    
+    
+    output$sampMeanZPlot <- renderPlot({
+      req(pd_iv$is_valid())
+      
+      if(input$calcNormSampDistr == "between")
+      {
+        req(input$sampDistrx1Value <= input$sampDistrx2Value)
+        normLines <- c(round((input$sampDistrx1Value - input$popMean)/(input$popSD/sqrt(input$sampDistrSize)), 4), 
+                       round((input$sampDistrx2Value - input$popMean)/(input$popSD/sqrt(input$sampDistrSize)), 4))
+      }
+      else
+      {
+        normLines <- round((input$sampDistrxValue - input$popMean)/(input$popSD/sqrt(input$sampDistrSize)), 4)
+      }
+      normZPlot(getMeanNormValue(), normLines, input$calcNormSampDistr)
+    })
+
   })
   
-  output$normDistrPlot <- renderPlot({
-    normPlot(getNormValue())
-  })
   
-  output$normZPlot <- renderPlot({
-    normZPlot(getNormValue())
-  })
 
   
   # --------------------------------------------------------------------- #
