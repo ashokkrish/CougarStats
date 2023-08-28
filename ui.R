@@ -404,7 +404,7 @@
                                                                                               condition = "input.calcNormSampDistr != 'between'",
                                                                                               
                                                                                               numericInput(inputId = "sampDistrxValue",
-                                                                                                           label = strong("Normally Distributed Variable (\\( x\\))"),
+                                                                                                           label = strong("Normally Distributed Variable (\\( \\bar{x}\\))"),
                                                                                                            value = 0, 
                                                                                                            step = 0.00001),
                                                                                             ),
@@ -413,12 +413,12 @@
                                                                                               condition = "input.calcNormSampDistr == 'between'",
                                                                                               
                                                                                               numericInput(inputId = "sampDistrx1Value",
-                                                                                                           label = strong("Normally Distributed Variable (\\( x_{1}\\))"),
+                                                                                                           label = strong("Normally Distributed Variable (\\( \\bar{x}_{1}\\))"),
                                                                                                            value = -1, 
                                                                                                            step = 0.00001),
                                                                                               
                                                                                               numericInput(inputId = "sampDistrx2Value",
-                                                                                                           label = strong("Normally Distributed Variable (\\( x_{2}\\))"),
+                                                                                                           label = strong("Normally Distributed Variable (\\( \\bar{x}_{2}\\))"),
                                                                                                            value = 1, 
                                                                                                            step = 0.00001),
                                                                                               
