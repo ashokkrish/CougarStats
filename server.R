@@ -1101,8 +1101,8 @@ server <- function(session, input, output) {
       
       df_boxplot <- data.frame(x = dat)
       
-      if(df[15,3] != "There are no outliers.") {
-        df_outliers <- createNumLst(df[15,3])
+      if(df['Outlier Values',3] != "There are no outliers.") {
+        df_outliers <- createNumLst(df['Outlier Values',3])
       } else {
         df_outliers <- data.frame()
       }
