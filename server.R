@@ -1,4 +1,4 @@
-server <- function(input, output) {
+server <- function(session, input, output) {
   
   # ------------------------- #
   # ---- Data Validation ----
@@ -778,6 +778,13 @@ server <- function(input, output) {
     sumSquares <- sum(dat^2)
     xbar <- round(mean(dat),4)
     sampMode <- Modes(dat)
+    
+    if(sampMode == "No mode exists"){
+      modeFreq <- paste("")
+    } else{
+      modeFreq <- paste("Each appears", attr(Mode(dat), "freq"), "times")
+    }
+    
     sampMin <- min(dat)
     #popuStdDev <- round(pop.sd(dat),4) # round(sqrt((n-1)/n) * sampStdDev(dat), 4)
     quartile1 <-  fivenum(dat)[2]
@@ -829,7 +836,8 @@ server <- function(input, output) {
                                   sampSum, 
                                   sumSquares, 
                                   xbar, 
-                                  sampMode, 
+                                  sampMode,
+                                  modeFreq,
                                   sampMin, 
                                   quartile1, 
                                   sampMedian, 
@@ -883,7 +891,7 @@ server <- function(input, output) {
     
     req(ds_iv$is_valid())
     
-    df <- data.frame(Category = c("Descriptives", "Descriptives", "Descriptives", "Descriptives", "Descriptives", 
+    df <- data.frame(Category = c("Descriptives", "Descriptives", "Descriptives", "Descriptives", "Descriptives", "Descriptives", 
                                   "Five Number Summary", "Five Number Summary", "Five Number Summary", "Five Number Summary", "Five Number Summary", 
                                   "Outliers", "Outliers", "Outliers", "Outliers", "Outliers", 
                                   "Dispersion", "Dispersion", "Dispersion", "Dispersion", "Dispersion", 
@@ -892,7 +900,8 @@ server <- function(input, output) {
                                   "Sum", 
                                   "Sum of Squares", 
                                   "Mean", 
-                                  "Mode", 
+                                  "Mode",
+                                  "Mode Frequency",
                                   "Minimum", 
                                   "First Quartile (Q<sub>1</sub>)*", 
                                   "Second Quartile or Median (Q<sub>2</sub>)*", 
@@ -933,7 +942,8 @@ server <- function(input, output) {
                       "Sum", 
                       "Sum of Squares", 
                       "Mean", 
-                      "Mode", 
+                      "Mode",
+                      "Mode Frequency",
                       "Min", 
                       "First Quartile (Q1)", 
                       "Median", 
@@ -1048,7 +1058,14 @@ server <- function(input, output) {
       })
       
       df <- getDsDataframe()
-      filteredDf <- filter(df, rownames(df) %in% input$dsTableFilters)
+      
+      if("Mode" %in% input$dsTableFilters && df['Mode','Value'] != "No mode exists"){
+        rowFilter <- c(input$dsTableFilters, "Mode Frequency")
+      } else{
+        rowFilter <- input$dsTableFilters
+      }
+      
+      filteredDf <- filter(df, rownames(df) %in% rowFilter)
       
       output$dsTableData <- renderDT(datatable(filteredDf,
                                                extensions = 'RowGroup',
@@ -1171,10 +1188,100 @@ server <- function(input, output) {
   observeEvent(input$dsTableFilters, {
     
     df <- getDsDataframe()
-    newFilter <- filter(df, rownames(df) %in% input$dsTableFilters)
+    
+    if("Mode" %in% input$dsTableFilters && df['Mode','Value'] != "No mode exists"){
+      rowFilter <- c(input$dsTableFilters, "Mode Frequency")
+    } else{
+      rowFilter <- input$dsTableFilters
+    }
+    
+    newFilter <- filter(df, rownames(df) %in% rowFilter)
     
     replaceData(dsTableProxy, newFilter, resetPaging = FALSE, rownames = FALSE)
   })
+  
+  # observeEvent(input$descriptiveStat, {
+  #   req(ds_iv$is_valid())
+  #   dat <- createNumLst(input$descriptiveStat)
+  # 
+  #   if(attr(Mode(dat), "freq") == 1){
+  #     updatePickerInput(
+  #       session = session,
+  #       inputId = "dsTableFilters",
+  #       choices = list(
+  #         Descriptives = c("Observations",
+  #                          "Sum",
+  #                          "Sum of Squares",
+  #                          "Mean",
+  #                          "Mode"),
+  #         'Five Number Summary' = c("Min",
+  #                                   "First Quartile (Q[1])",
+  #                                   "Median",
+  #                                   "Third Quartile (Q3)",
+  #                                   "Max"),
+  #         Outliers = c("IQR",
+  #                      "Lower Fence",
+  #                      "Upper Fence",
+  #                      "Potential Outliers",
+  #                      "Outlier Values"),
+  #         Dispersion = c("Range",
+  #                        "Sample Standard Deviation",
+  #                        "Sample Variance",
+  #                        "Standard Error of the Mean",
+  #                        "Coefficient of Variation"),
+  #         Distribution = c("Skewness",
+  #                          "Kurtosis")
+  #       ),
+  #       selected = c("Observations",
+  #                    "Mean",
+  #                    "Min",
+  #                    "First Quartile (Q1)",
+  #                    "Median",
+  #                    "Third Quartile (Q3)",
+  #                    "Max",
+  #                    "Sample Standard Deviation")
+  #     )
+  # 
+  #   } else{
+  #     updatePickerInput(
+  #       session = session,
+  #       inputId = "dsTableFilters",
+  #       choices = list(
+  #         Descriptives = c("Observations",
+  #                          "Sum",
+  #                          "Sum of Squares",
+  #                          "Mean",
+  #                          "Mode",
+  #                          "Mode Frequency"),
+  #         'Five Number Summary' = c("Min",
+  #                                   "First Quartile (Q[1])",
+  #                                   "Median",
+  #                                   "Third Quartile (Q3)",
+  #                                   "Max"),
+  #         Outliers = c("IQR",
+  #                      "Lower Fence",
+  #                      "Upper Fence",
+  #                      "Potential Outliers",
+  #                      "Outlier Values"),
+  #         Dispersion = c("Range",
+  #                        "Sample Standard Deviation",
+  #                        "Sample Variance",
+  #                        "Standard Error of the Mean",
+  #                        "Coefficient of Variation"),
+  #         Distribution = c("Skewness",
+  #                          "Kurtosis")
+  #       ),
+  #       selected = c("Observations",
+  #                    "Mean",
+  #                    "Min",
+  #                    "First Quartile (Q1)",
+  #                    "Median",
+  #                    "Third Quartile (Q3)",
+  #                    "Max",
+  #                    "Sample Standard Deviation")
+  #     )
+  #   }
+  # })
   
   # --------------------------------------------------------------------- #
   

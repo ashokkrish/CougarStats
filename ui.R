@@ -114,7 +114,7 @@
                                                                                 "Mean", 
                                                                                 "Mode"),
                                                                'Five Number Summary' = c("Min", 
-                                                                                         "First Quartile (Q1)", 
+                                                                                         "First Quartile (Q[1])", 
                                                                                          "Median", 
                                                                                          "Third Quartile (Q3)", 
                                                                                          "Max"),
@@ -142,8 +142,34 @@
                                                              options = list(
                                                                `actions-box` = TRUE,
                                                                'selected-text-format' = 'count',
-                                                               style = 'primary'
+                                                               style = 'primary',
+                                                               hideDisabled = TRUE
                                                              ),
+                                                             # choicesOpt = list(
+                                                             #   disabled = c("Observations", 
+                                                             #                "Sum", 
+                                                             #                "Sum of Squares", 
+                                                             #                "Mean", 
+                                                             #                "Mode",
+                                                             #                "Mode Frequency",
+                                                             #                "Min", 
+                                                             #                "First Quartile (Q[1])", 
+                                                             #                "Median", 
+                                                             #                "Third Quartile (Q3)", 
+                                                             #                "Max",
+                                                             #                "IQR", 
+                                                             #                "Lower Fence", 
+                                                             #                "Upper Fence", 
+                                                             #                "Potential Outliers",
+                                                             #                "Outlier Values",
+                                                             #                "Range", 
+                                                             #                "Sample Standard Deviation", 
+                                                             #                "Sample Variance", 
+                                                             #                "Standard Error of the Mean", 
+                                                             #                "Coefficient of Variation",
+                                                             #                "Skewness", 
+                                                             #                "Kurtosis") %in% c("Mode Frequency")
+                                                             # ),
                                                              multiple = TRUE
                                                            ),
                                                            
