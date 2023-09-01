@@ -19,6 +19,9 @@
                         text-decoration:none;
                         background-color:#428BCA
                       }
+                      #cMatrix2x2 td, #cMatrix3x3 td {
+                        background-color:#FFFFFF
+                      }
                       "))
                   ),
                   
@@ -211,11 +214,54 @@
                                                            
                                                            radioButtons(inputId = "probability", 
                                                                         label = strong("Distribution"), 
-                                                                        choices = c("Binomial", 
+                                                                        choices = c("Contingency Table",
+                                                                                    "Binomial", 
                                                                                     "Poisson", 
                                                                                     "Normal"), 
                                                                         selected = NULL, 
                                                                         inline = TRUE),
+                                                           
+                                                           conditionalPanel(id = "contingencyPanel",
+                                                                            condition = "input.probability == 'Contingency Table'",
+                                                                            
+                                                                            radioButtons(inputId = "cTableDimension",
+                                                                                         label = strong("Dimension"),
+                                                                                         choices = c("2 x 2",
+                                                                                                        "3 x 3"),
+                                                                                         inline = TRUE),
+                                                                            
+                                                                            conditionalPanel(
+                                                                                            condition = "input.cTableDimension == '2 x 2'",
+                                                                                            
+                                                                                            matrixInput(inputId = "cMatrix2x2",
+                                                                                                        value = matrix("", 2, 2)
+                                                                                            ),
+                                                                            ),
+                                                                            
+                                                                            conditionalPanel(
+                                                                                            condition = "input.cTableDimension == '3 x 3'",
+                                                                                            
+                                                                                            matrixInput(inputId = "cMatrix3x3",
+                                                                                                        value = matrix("", 3, 3)
+                                                                              ),
+                                                                            ),
+                                                                            
+                                                                            radioButtons(inputId = "cTableProb",
+                                                                                         label = strong("Probabilities"),
+                                                                                         choices = c("Marginal",
+                                                                                                        "Joint",
+                                                                                                        "Conditional"),
+                                                                                         inline = TRUE),
+                                                                            
+                                                                            actionButton(inputId = "gocTable", 
+                                                                                         label = "Calculate",
+                                                                                         style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
+                                                                            actionButton("resetcTable", 
+                                                                                         label = "Reset Values",
+                                                                                         style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
+                                                                            
+                                                                            ),
+
                                                            
                                                            conditionalPanel(id = "binomialPanel",
                                                                             condition = "input.probability == 'Binomial'",
@@ -1376,47 +1422,72 @@
                                           div(id = "probabilityMP",
                                               
                                               conditionalPanel(
-                                                condition = "input.dropDownMenu == 'Probability Distributions'",
-                                                style = "display: none;",
-                                                
-                                                conditionalPanel(
-                                                  condition = "input.probability == 'Binomial'",
-                                                  
-                                                  br(),
-                                                  
-                                                  uiOutput("renderProbabilityBinom"),
-                                                  
-                                                  br(),
+                                                               condition = "input.dropDownMenu == 'Probability Distributions'",
+                                                               style = "display: none;",
+                                                                
+                                                               conditionalPanel(
+                                                                 condition = "input.probability == 'Contingency Table'",
+ 
+                                                                 conditionalPanel(
+                                                                   condition = "input.cTableDimension == '2 x 2'",
+
+                                                                   uiOutput("render2x2cTable"),
+                                                                   br(),
+                                                                 ),
+                
+                                                                 conditionalPanel(
+                                                                   condition = "input.cTableDimension == '3 x 3'",
+
+                                                                   uiOutput("render3x3cTable"),
+                                                                   br(),
+                                                                 ),
+                
+                                                                 # conditionalPanel(
+                                                                 #   condition = "input.cTableDimension == 'Other'",
+                                                                 # 
+                                                                 #   uiOutput("renderOthercTable"),
+                                                                 #   br(),
+                                                                 # )
                                                 ),
                                                 
                                                 conditionalPanel(
-                                                  condition = "input.probability == 'Poisson'",
-                                                  
-                                                  br(),
-                                                  
-                                                  uiOutput("renderProbabilityPoisson"),
-                                                  
-                                                  br(),
+                                                                 condition = "input.probability == 'Binomial'",
+                                                                
+                                                                 br(),
+                                                                
+                                                                 uiOutput("renderProbabilityBinom"),
+                                                                
+                                                                 br(),
                                                 ),
                                                 
                                                 conditionalPanel(
-                                                  condition = "input.probability == 'Normal'",
-                                                  
-                                                  br(),
-                                                  
-                                                  conditionalPanel(
-                                                    condition = "input.sampMeanDistr == 0",
-                                                    
-                                                    uiOutput("renderProbabilityNorm")
-                                                  ),
-                                                  
-                                                  conditionalPanel(
-                                                    condition = "input.sampMeanDistr == 1",
-                                                    
-                                                    uiOutput("renderSampMeanDistr")
-                                                  ),
-                                                  
-                                                  br(),
+                                                                 condition = "input.probability == 'Poisson'",
+                                                                
+                                                                 br(),
+                                                                
+                                                                 uiOutput("renderProbabilityPoisson"),
+                                                                
+                                                                 br(),
+                                                ),
+                                                
+                                                conditionalPanel(
+                                                                 condition = "input.probability == 'Normal'",
+                                                                
+                                                                 br(),
+                                                                
+                                                                 conditionalPanel(
+                                                                   condition = "input.sampMeanDistr == 0",
+                                                                  
+                                                                   uiOutput("renderProbabilityNorm")
+                                                                 ),
+                                                                
+                                                                 conditionalPanel(
+                                                                   condition = "input.sampMeanDistr == 1",
+                                                                  
+                                                                   uiOutput("renderSampMeanDistr")
+                                                                 ),
+                                                                
+                                                                 br(),
                                                 )
                                               )
                                           ), #Probability MainPanel 

@@ -11,6 +11,8 @@ server <- function(session, input, output) {
   dsuploadvars_iv <- InputValidator$new()
   
   pd_iv <- InputValidator$new()
+  ctable2x2_iv <- InputValidator$new()
+  ctable3x3_iv <- InputValidator$new()
   binom_iv <- InputValidator$new()
   binomprob_iv <- InputValidator$new()
   binombetween_iv <- InputValidator$new()
@@ -102,6 +104,17 @@ server <- function(session, input, output) {
   dsuploadvars_iv$enable()
   
   ## PD rules ----
+  
+  ctable2x2_iv$add_rule("cMatrix2x2", sv_required())
+  ctable2x2_iv$add_rule("cMatrix2x2", ~ if(any(is.na(as.numeric(input$cMatrix2x2)))) "Fields must be positive integers.")
+  ctable2x2_iv$add_rule("cMatrix2x2", ~ if(any(as.numeric(input$cMatrix2x2) < 0)) "Fields must be positive integers.")
+  ctable2x2_iv$add_rule("cMatrix2x2", ~ if(any(as.numeric(input$cMatrix2x2) %% 1 != 0)) "Fields must be positive integers.")
+  
+  ctable3x3_iv$add_rule("cMatrix3x3", sv_required())
+  ctable3x3_iv$add_rule("cMatrix3x3", ~ if(any(is.na(as.numeric(input$cMatrix3x3)))) "Fields must be positive integers.")
+  ctable3x3_iv$add_rule("cMatrix3x3", ~ if(any(as.numeric(input$cMatrix3x3) < 0)) "Fields must be positive integers.")
+  ctable3x3_iv$add_rule("cMatrix3x3", ~ if(any(as.numeric(input$cMatrix3x3) %% 1 != 0)) "Fields must be positive integers.")
+  
   
   # numTrialsBinom 
   
@@ -239,6 +252,8 @@ server <- function(session, input, output) {
   #     Activation     #
   # ------------------ #
   pd_iv$enable()
+  ctable2x2_iv$enable()
+  ctable3x3_iv$enable()
   binom_iv$enable()
   binomprob_iv$enable()
   binombetween_iv$enable()
@@ -1109,9 +1124,9 @@ server <- function(session, input, output) {
       
       output$dsBoxplot <- renderPlot({
         
-        #--------------------#
-        # Horizontal boxplot #
-        #--------------------#
+        #---------------- #
+        #### Boxplot ---- 
+        #---------------- #
         
         bp <- ggplot(df_boxplot, aes(x = x, y = 0)) +
           geom_boxplot(fill = "#03376d",
@@ -1139,6 +1154,9 @@ server <- function(session, input, output) {
         
       })
       
+      #------------------ #
+      #### Histogram ----
+      #------------------ #
       
       output$dsHistogram <- renderPlot({
         hist <- ggplot(data.frame(x = dat)) +
@@ -1159,16 +1177,12 @@ server <- function(session, input, output) {
                 axis.text.x.bottom = element_text(size = 14),
                 axis.text.y.left = element_text(size = 14))
         
-        # if(length(unique(dat)) == 1) {
-        #   hist + scale_x_continuous(breaks = dat, limits = c(dat[1] - 1, dat[1] + 1))
-        # } else {
           hist + scale_x_continuous(n.breaks = 10) 
-        # }
-
       })
 
-      
-      
+      #---------------------- #
+      #### Stem and Leaf ----
+      #---------------------- #
       
       output$dsStemLeaf <- renderPrint({
         
@@ -1595,6 +1609,21 @@ server <- function(session, input, output) {
   
   ### Reactives ----
   # --------------------------------------------------------------------- #
+
+  cMatrixData2x2 <- reactive({
+    suppressWarnings(as.numeric(input$cMatrix2x2))
+  })
+  
+  cMatrixData3x3 <- reactive({
+    suppressWarnings(as.numeric(input$cMatrix3x3))
+  })
+  
+  # data2x2cTable <- reactiveValues(data = {
+  #   data.frame(B1 = c(0, 0),
+  #              B2 = c(0, 0),
+  #              stringsAsFactors = FALSE) %>%
+  #     mutate(Total = B1 * B2)
+  # })
   
   getNormValue <- reactive({
     req(pd_iv$is_valid())
@@ -1644,6 +1673,136 @@ server <- function(session, input, output) {
   ### Observers ----
   # --------------------------------------------------------------------- #
   
+  #### Contingency Table ----
+  observeEvent(input$dropDownMenu == 'Probability Distributions', {
+    newMatrix <- matrix("", 2, 2)
+    colnames(newMatrix) <- c("B1", "B2")
+    rownames(newMatrix) <- c("A1", "A2")
+    updateMatrixInput(session, "cMatrix2x2", newMatrix)
+  })
+  
+  observeEvent(input$cTableDimensions == '3 x 3', {
+    newMatrix <- matrix("", 3, 3)
+    colnames(newMatrix) <- c("B1", "B2", "B3")
+    rownames(newMatrix) <- c("A1", "A2", "A3")
+    updateMatrixInput(session, "cMatrix3x3", newMatrix)
+  })
+  
+  observeEvent(input$gocTable, {
+ 
+    output$render2x2cTable <- renderUI({
+      
+      validate(
+        need(input$cMatrix2x2, "Fields must be positive integers."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(all(!is.na(cMatrixData2x2())), "Fields must be positive integers.") %then%
+          need(all(cMatrixData2x2() %% 1 == 0), "Fields must be positive integers."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(all(cMatrixData2x2() >= 0), "Fields must be positive integers."),
+        
+        errorClass = "myClass"
+      )
+      
+      tagList(
+        titlePanel(tags$u("Contingency Table")),
+        br(),
+        br(),
+        DTOutput("cTable2x2", width = '500px')
+      )
+    })
+    
+    output$render3x3cTable <- renderUI({
+      
+      validate(
+        need(input$cMatrix3x3, "Fields must be positive integers."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(all(!is.na(cMatrixData3x3())), "Fields must be positive integers.") %then%
+          need(all(cMatrixData3x3() %% 1 == 0), "Fields must be positive integers."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(all(cMatrixData3x3() >= 0), "Fields must be positive integers."),
+        
+        errorClass = "myClass"
+      )
+      
+      tagList(
+        titlePanel(tags$u("Contingency Table")),
+        br(),
+        br(),
+        DTOutput("cTable3x3", width = '500px')
+      )
+    })
+    
+  })
+  
+  output$cTable2x2 <- renderDT({
+
+    cData <- matrix(as.numeric(input$cMatrix2x2), ncol = ncol(input$cMatrix2x2))
+    colnames(cData) <- colnames(input$cMatrix2x2)
+    rownames(cData) <- rownames(input$cMatrix2x2)
+    cData <- cbind(cData, Total = rowSums(cData))
+    cData <- rbind(cData, Total = colSums(cData))
+
+
+    datatable(cData,
+              options = list(
+                dom = 't',
+                pageLength = -1,
+                ordering = FALSE,
+                searching = FALSE,
+                paging = FALSE,
+                autoWidth = TRUE,
+                scrollX = TRUE,
+                columnDefs = list(list(width = '100px', targets = c(1, 2, 3)))
+              ),
+              editable = list(target = "all", disable = list(columns = c(3), row = c(3))),
+              selection = "none",
+              escape = FALSE,
+              filter = "none",) %>% formatStyle(columns = c(0), #specify columns to format
+                                                fontWeight = 'bold')
+  })
+  
+  output$cTable3x3 <- renderDT({
+    
+    cData <- matrix(as.numeric(input$cMatrix3x3), ncol = ncol(input$cMatrix3x3))
+    colnames(cData) <- colnames(input$cMatrix3x3)
+    rownames(cData) <- rownames(input$cMatrix3x3)
+    cData <- cbind(cData, Total = rowSums(cData))
+    cData <- rbind(cData, Total = colSums(cData))
+    
+    
+    datatable(cData,
+              options = list(
+                dom = 't',
+                pageLength = -1,
+                ordering = FALSE,
+                searching = FALSE,
+                paging = FALSE,
+                autoWidth = TRUE,
+                scrollX = TRUE,
+                columnDefs = list(list(width = '100px', targets = c(1, 2, 3)))
+              ),
+              editable = list(target = "all", disable = list(columns = c(3), row = c(3))),
+              selection = "none",
+              escape = FALSE,
+              filter = "none",) %>% formatStyle(columns = c(0), #specify columns to format
+                                                fontWeight = 'bold')
+  })
   
   #### Binomial ----
   observeEvent(input$goBinom, {
@@ -5658,8 +5817,14 @@ server <- function(session, input, output) {
   #### Probability Distributions ----
   #  -------------------------------------------------------------------- #
   
-  observeEvent(input$probability, {
-    hide(id = 'probabilityMP')
+  observeEvent({input$cTableDimension
+                input$cMatrix2x2
+                input$cMatrix3x3},{
+    hide('probabilityMP')
+  })
+  
+  observeEvent(input$gocTable, {
+    show(id = 'probabilityMP')
   })
   
   #-----------------------#
