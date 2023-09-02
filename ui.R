@@ -19,8 +19,12 @@
                         text-decoration:none;
                         background-color:#428BCA
                       }
+                      #cMatrix2x2 th, #cMatrix3x3 th {
+                        text-align: center
+                      }
                       #cMatrix2x2 td, #cMatrix3x3 td {
-                        background-color:#FFFFFF
+                        background-color:#FFFFFF;
+                        text-align: center
                       }
                       "))
                   ),
