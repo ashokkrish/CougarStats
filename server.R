@@ -115,7 +115,6 @@ server <- function(session, input, output) {
   ctable3x3_iv$add_rule("cMatrix3x3", ~ if(any(as.numeric(input$cMatrix3x3) < 0)) "Fields must be positive integers.")
   ctable3x3_iv$add_rule("cMatrix3x3", ~ if(any(as.numeric(input$cMatrix3x3) %% 1 != 0)) "Fields must be positive integers.")
   
-  
   # numTrialsBinom 
   
   binom_iv$add_rule("numTrialsBinom", sv_required())
@@ -1711,6 +1710,12 @@ server <- function(session, input, output) {
         errorClass = "myClass"
       )
       
+      validate(
+        need(any(cMatrixData2x2() != 0), "All cell values cannot be equal to zero."),
+        
+        errorClass = "myClass"
+      )
+      
       tagList(
         titlePanel(tags$u("Contingency Table")),
         br(),
@@ -1736,6 +1741,12 @@ server <- function(session, input, output) {
       
       validate(
         need(all(cMatrixData3x3() >= 0), "Fields must be positive integers."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(any(cMatrixData3x3() != 0), "All cell values cannot be equal to zero."),
         
         errorClass = "myClass"
       )
