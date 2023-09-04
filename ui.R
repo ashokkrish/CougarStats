@@ -260,7 +260,7 @@
                                                                             actionButton(inputId = "gocTable", 
                                                                                          label = "Calculate",
                                                                                          style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
-                                                                            actionButton("resetcTable", 
+                                                                            actionButton(inputId = "resetcTable", 
                                                                                          label = "Reset Values",
                                                                                          style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
                                                                             
@@ -1344,7 +1344,45 @@
                                                                            helpText("* Note: Quartiles are calculated using the inclusionary (Tukey) approach."),
                                                                          ),
                                                                          
-                                                                         br()
+                                                                         br(),
+                                                                         br(),
+                                                                         
+                                                                         conditionalPanel(
+                                                                           condition = "input.dsTableFilters.indexOf('Mean') > -1 | input.dsTableFilters.indexOf('Sample Standard Deviation') > -1",
+                                                                           
+                                                                           fluidRow(
+                                                                             
+                                                                             column(align = "left", width = 4,
+                                                                                    
+                                                                                    br(),
+                                                                                    DTOutput('sampleDataTable'),
+                                                                                    br(),
+                                                                                    br()
+                                                                             ),
+                                                                             
+                                                                             column(align = "left", width = 8,
+                                                                                    
+                                                                                    conditionalPanel(
+                                                                                      condition = "input.dsTableFilters.indexOf('Mean') > -1",
+                                                                                      
+                                                                                      titlePanel(tags$u('Sample Mean')),
+                                                                                      br(),
+                                                                                      uiOutput('dsMeanCalc')
+                                                                                    ),
+                                                                                    
+                                                                                    conditionalPanel(
+                                                                                      condition = "input.dsTableFilters.indexOf('Sample Standard Deviation') > -1",
+                                                                                      
+                                                                                      titlePanel(tags$u('Sample Standard Deviation')),
+                                                                                      br(),
+                                                                                      uiOutput('dsSDCalc')
+                                                                                    )
+                                                                             ),
+                                                                             
+                                                                             
+                                                                           ),
+                                                                           
+                                                                         ),
                                                                          
                                                                 ),# dsTable tabPanel
                                                                 

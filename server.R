@@ -1067,6 +1067,7 @@ server <- function(session, input, output) {
             
             withMathJax(DTOutput("dsTableData"))
           ),
+
           
         )
       })
@@ -1099,6 +1100,58 @@ server <- function(session, input, output) {
                                                filter = "none",
                                                
       ))
+      
+      sampleData <- dsRawData()
+      
+      sample_df <- data.frame(sampleData, sampleData^2)
+      names(sample_df) <- c("x", "x<sup>2</sup>")
+      dfTotaled <- bind_rows(sample_df, summarise(sample_df, across(where(is.numeric), sum)))
+      rownames(dfTotaled)[nrow(dfTotaled)] <- "Totals"
+      
+      output$sampleDataTable <- renderDT({
+
+        datatable(round(dfTotaled, digits = 3),
+                  options = list(dom = 't',
+                                 pageLength = -1, 
+                                 lengthMenu = list(c(-1, 10, 25, 50, 100), c("All", "10", "25", "50", "100")),
+                                 autoWidth = TRUE,
+                                 scrollX = TRUE
+                  ),
+                  rownames = FALSE,
+                  escape = FALSE
+        ) %>% formatStyle(
+          names(dfTotaled),
+          target = 'row',
+          fontWeight = styleRow(dim(dfTotaled)[1], "bold")
+        )
+
+      })
+      
+      output$dsMeanCalc <- renderUI({
+        withMathJax()
+        tagList(
+          sprintf("\\( \\bar{x} = \\dfrac{\\sum x}{n} = \\dfrac{%g}{%0.f} = %0.4f \\)",
+                  dfTotaled['Totals',1],
+                  df['Observations', 'Value'],
+                  df['Mean', 'Value']),
+          br(),
+          br(),
+          br()
+        )
+      })
+      
+      output$dsSDCalc <- renderUI({
+        withMathJax()
+        tagList(
+          sprintf("\\( s = \\sqrt{ \\dfrac{\\sum x^{2} - \\dfrac{(\\sum x)^{2}}{n} }{n - 1} } \\)"),
+          sprintf("\\( = \\sqrt{ \\dfrac{%g - \\dfrac{(%g)^{2}}{%0.f} }{%0.f - 1} } = %0.4f \\)",
+                  dfTotaled['Totals', 2],
+                  dfTotaled['Totals', 1],
+                  df['Observations', 'Value'],
+                  df['Observations', 'Value'],
+                  df['Sample Standard Deviation', 'Value'])
+        )
+      })
       
       if(input$dataInput == 'Upload Data')
       {
@@ -1334,7 +1387,20 @@ server <- function(session, input, output) {
   #     }
   #   }
   # }
+  Reset2x2CTable <- function(){
+    newMatrix <- matrix("", 2, 2)
+    colnames(newMatrix) <- c("B1", "B2")
+    rownames(newMatrix) <- c("A1", "A2")
+    updateMatrixInput(session, "cMatrix2x2", newMatrix)
+  }
   
+  Reset3x3CTable <- function(){
+    newMatrix <- matrix("", 3, 3)
+    colnames(newMatrix) <- c("B1", "B2", "B3")
+    rownames(newMatrix) <- c("A1", "A2", "A3")
+    withMathJax()
+    updateMatrixInput(session, "cMatrix3x3", newMatrix)
+  }
   
   shadeNormArea <- function(df, normValue, normLines, probType){
     if(normValue > 0){
@@ -1674,17 +1740,11 @@ server <- function(session, input, output) {
   
   #### Contingency Table ----
   observeEvent(input$dropDownMenu == 'Probability Distributions', {
-    newMatrix <- matrix("", 2, 2)
-    colnames(newMatrix) <- c("B1", "B2")
-    rownames(newMatrix) <- c("A1", "A2")
-    updateMatrixInput(session, "cMatrix2x2", newMatrix)
+    Reset2x2CTable()
   })
   
   observeEvent(input$cTableDimensions == '3 x 3', {
-    newMatrix <- matrix("", 3, 3)
-    colnames(newMatrix) <- c("B1", "B2", "B3")
-    rownames(newMatrix) <- c("A1", "A2", "A3")
-    updateMatrixInput(session, "cMatrix3x3", newMatrix)
+    Reset3x3CTable()
   })
   
   observeEvent(input$gocTable, {
@@ -1769,7 +1829,6 @@ server <- function(session, input, output) {
     cData <- cbind(cData, Total = rowSums(cData))
     cData <- rbind(cData, Total = colSums(cData))
 
-
     datatable(cData,
               options = list(
                 dom = 't',
@@ -1813,6 +1872,11 @@ server <- function(session, input, output) {
               escape = FALSE,
               filter = "none",) %>% formatStyle(columns = c(0), #specify columns to format
                                                 fontWeight = 'bold')
+  })
+  
+  observeEvent(input$resetcTable, {
+    Reset2x2CTable()
+    Reset3x3CTable()
   })
   
   #### Binomial ----
