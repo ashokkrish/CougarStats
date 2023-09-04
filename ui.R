@@ -121,7 +121,7 @@
                                                                                 "Mean", 
                                                                                 "Mode"),
                                                                'Five Number Summary' = c("Min", 
-                                                                                         "First Quartile (Q[1])", 
+                                                                                         "First Quartile (Q1)", 
                                                                                          "Median", 
                                                                                          "Third Quartile (Q3)", 
                                                                                          "Max"),
