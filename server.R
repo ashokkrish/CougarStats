@@ -1415,6 +1415,10 @@ server <- function(session, input, output) {
     updateMatrixInput(session, "cMatrix3x3", newMatrix)
   }
   
+  getProbabilities <- function(x, t){
+    return(round((x/t), 4))
+  }
+  
   shadeNormArea <- function(df, normValue, normLines, probType){
     if(normValue > 0){
       if(probType == 'cumulative') {
@@ -1790,10 +1794,18 @@ server <- function(session, input, output) {
       )
       
       tagList(
-        titlePanel(tags$u("Contingency Table")),
+
+        titlePanel("Contingency Table"),
+        hr(),
+        br(),
+        DTOutput("cTable2x2", width = '500px'),
         br(),
         br(),
-        DTOutput("cTable2x2", width = '500px')
+        br(),
+        titlePanel("Probability Distribution Table"),
+        hr(),
+        br(),
+        DTOutput("probTable2x2", width = '500px')
       )
     })
     
@@ -1825,67 +1837,123 @@ server <- function(session, input, output) {
       )
       
       tagList(
-        titlePanel(tags$u("Contingency Table")),
+        
+        titlePanel("Contingency Table"),
+        hr(),
+        br(),
+        DTOutput("cTable3x3", width = '500px'),
         br(),
         br(),
-        DTOutput("cTable3x3", width = '500px')
+        br(),
+        titlePanel("Probability Distribution Table"),
+        hr(),
+        br(),
+        DTOutput("probTable3x3", width = '500px')
       )
     })
     
+    cData2x2 <- matrix(as.numeric(input$cMatrix2x2), ncol = ncol(input$cMatrix2x2))
+    colnames(cData2x2) <- colnames(input$cMatrix2x2)
+    rownames(cData2x2) <- rownames(input$cMatrix2x2)
+    cData2x2 <- cbind(cData2x2, Total = rowSums(cData2x2))
+    cData2x2 <- rbind(cData2x2, Total = colSums(cData2x2))
+    
+    output$cTable2x2 <- renderDT({
+      
+      datatable(cData2x2,
+                class = 'cell-border stripe',
+                options = list(
+                  dom = 't',
+                  pageLength = -1,
+                  ordering = FALSE,
+                  searching = FALSE,
+                  paging = FALSE,
+                  autoWidth = TRUE,
+                  scrollX = TRUE,
+                  columnDefs = list(list(width = '100px', targets = c(1, 2, 3)))
+                ),
+                selection = "none",
+                escape = FALSE,
+                filter = "none",) %>% 
+        formatStyle(columns = c(0), 
+                    fontWeight = 'bold')
+    })
+    
+    probData2x2 <- apply(cData2x2, 2, getProbabilities, t=cData2x2['Total',3])
+    
+    output$probTable2x2 <- renderDT({
+      datatable(probData2x2,
+                class = 'cell-border stripe',
+                options = list(
+                  dom = 't',
+                  pageLength = -1,
+                  ordering = FALSE,
+                  searching = FALSE,
+                  paging = FALSE,
+                  autoWidth = TRUE,
+                  scrollX = TRUE,
+                  columnDefs = list(list(width = '100px', targets = c(1, 2, 3)))
+                ),
+                selection = "none",
+                escape = FALSE,
+                filter = "none",) %>% 
+        formatStyle(columns = c(0), 
+                    fontWeight = 'bold')
+    })
+    
+    
+    
+    cData3x3 <- matrix(as.numeric(input$cMatrix3x3), ncol = ncol(input$cMatrix3x3))
+    colnames(cData3x3) <- colnames(input$cMatrix3x3)
+    rownames(cData3x3) <- rownames(input$cMatrix3x3)
+    cData3x3 <- cbind(cData3x3, Total = rowSums(cData3x3))
+    cData3x3 <- rbind(cData3x3, Total = colSums(cData3x3))
+    
+    output$cTable3x3 <- renderDT({
+
+      datatable(cData3x3,
+                options = list(
+                  dom = 't',
+                  pageLength = -1,
+                  ordering = FALSE,
+                  searching = FALSE,
+                  paging = FALSE,
+                  autoWidth = TRUE,
+                  scrollX = TRUE,
+                  columnDefs = list(list(width = '100px', targets = c(1, 2, 3)))
+                ),
+                selection = "none",
+                escape = FALSE,
+                filter = "none",) %>% formatStyle(columns = c(0), #specify columns to format
+                                                  fontWeight = 'bold')
+    })
+    
+    probData3x3 <- apply(cData3x3, 2, getProbabilities, t=cData3x3['Total',4])
+    
+    output$probTable3x3 <- renderDT({
+      datatable(probData3x3,
+                class = 'cell-border stripe',
+                options = list(
+                  dom = 't',
+                  pageLength = -1,
+                  ordering = FALSE,
+                  searching = FALSE,
+                  paging = FALSE,
+                  autoWidth = TRUE,
+                  scrollX = TRUE,
+                  columnDefs = list(list(width = '100px', targets = c(1, 2, 3)))
+                ),
+                selection = "none",
+                escape = FALSE,
+                filter = "none",) %>% 
+        formatStyle(columns = c(0), 
+                    fontWeight = 'bold')
+    })
   })
   
-  output$cTable2x2 <- renderDT({
-
-    cData <- matrix(as.numeric(input$cMatrix2x2), ncol = ncol(input$cMatrix2x2))
-    colnames(cData) <- colnames(input$cMatrix2x2)
-    rownames(cData) <- rownames(input$cMatrix2x2)
-    cData <- cbind(cData, Total = rowSums(cData))
-    cData <- rbind(cData, Total = colSums(cData))
-
-    datatable(cData,
-              options = list(
-                dom = 't',
-                pageLength = -1,
-                ordering = FALSE,
-                searching = FALSE,
-                paging = FALSE,
-                autoWidth = TRUE,
-                scrollX = TRUE,
-                columnDefs = list(list(width = '100px', targets = c(1, 2, 3)))
-              ),
-              editable = list(target = "all", disable = list(columns = c(3), row = c(3))),
-              selection = "none",
-              escape = FALSE,
-              filter = "none",) %>% formatStyle(columns = c(0), #specify columns to format
-                                                fontWeight = 'bold')
-  })
   
-  output$cTable3x3 <- renderDT({
-    
-    cData <- matrix(as.numeric(input$cMatrix3x3), ncol = ncol(input$cMatrix3x3))
-    colnames(cData) <- colnames(input$cMatrix3x3)
-    rownames(cData) <- rownames(input$cMatrix3x3)
-    cData <- cbind(cData, Total = rowSums(cData))
-    cData <- rbind(cData, Total = colSums(cData))
-    
-    
-    datatable(cData,
-              options = list(
-                dom = 't',
-                pageLength = -1,
-                ordering = FALSE,
-                searching = FALSE,
-                paging = FALSE,
-                autoWidth = TRUE,
-                scrollX = TRUE,
-                columnDefs = list(list(width = '100px', targets = c(1, 2, 3)))
-              ),
-              editable = list(target = "all", disable = list(columns = c(3), row = c(3))),
-              selection = "none",
-              escape = FALSE,
-              filter = "none",) %>% formatStyle(columns = c(0), #specify columns to format
-                                                fontWeight = 'bold')
-  })
+  
+  
   
   observeEvent(input$resetcTable, {
     Reset2x2CTable()
