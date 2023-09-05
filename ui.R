@@ -102,7 +102,7 @@
                                                                inputId = "dsUploadVars",
                                                                label = strong("Choose a Variable"),
                                                                choices = c(""),
-                                                               multiple = TRUE,
+                                                               multiple = FALSE,
                                                                options = list(
                                                                  placeholder = 'Select a variable',
                                                                  onInitialize = I('function() { this.setValue(""); }')
@@ -238,7 +238,9 @@
                                                                                             condition = "input.cTableDimension == '2 x 2'",
                                                                                             
                                                                                             matrixInput(inputId = "cMatrix2x2",
-                                                                                                        value = matrix("", 2, 2)
+                                                                                                        value = matrix("", 2, 2),
+                                                                                                        rows = list(editableNames = TRUE),
+                                                                                                        cols = list(editableNames = TRUE)
                                                                                             ),
                                                                             ),
                                                                             
@@ -246,7 +248,9 @@
                                                                                             condition = "input.cTableDimension == '3 x 3'",
                                                                                             
                                                                                             matrixInput(inputId = "cMatrix3x3",
-                                                                                                        value = matrix("", 3, 3)
+                                                                                                        value = matrix("", 3, 3),
+                                                                                                        rows = list(editableNames = TRUE),
+                                                                                                        cols = list(editableNames = TRUE)
                                                                               ),
                                                                             ),
                                                                             

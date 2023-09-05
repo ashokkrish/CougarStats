@@ -1101,7 +1101,19 @@ server <- function(session, input, output) {
                                                
       ))
       
-      sampleData <- dsRawData()
+      
+      if(input$dataInput == 'Upload Data')
+      {
+        for( x in input$dsUploadVars)
+        {
+          sampleData <- na.omit(as.data.frame(dsUploadData())[, x])
+        }
+      }
+      else
+      {
+        sampleData <- dsRawData()
+      }
+
       
       sample_df <- data.frame(sampleData, sampleData^2)
       names(sample_df) <- c("x", "x<sup>2</sup>")
@@ -1127,13 +1139,14 @@ server <- function(session, input, output) {
 
       })
       
+      
       output$dsMeanCalc <- renderUI({
         withMathJax()
         tagList(
-          sprintf("\\( \\bar{x} = \\dfrac{\\sum x}{n} = \\dfrac{%g}{%0.f} = %0.4f \\)",
-                  dfTotaled['Totals',1],
-                  df['Observations', 'Value'],
-                  df['Mean', 'Value']),
+          sprintf("\\( \\bar{x} = \\dfrac{\\sum x}{n} = \\dfrac{%s}{%s} = %s \\)",
+                  dfTotaled['Totals', 1],
+                  df['Observations', 3],
+                  df['Mean', 3]),
           br(),
           br(),
           br()
@@ -1144,12 +1157,12 @@ server <- function(session, input, output) {
         withMathJax()
         tagList(
           sprintf("\\( s = \\sqrt{ \\dfrac{\\sum x^{2} - \\dfrac{(\\sum x)^{2}}{n} }{n - 1} } \\)"),
-          sprintf("\\( = \\sqrt{ \\dfrac{%g - \\dfrac{(%g)^{2}}{%0.f} }{%0.f - 1} } = %0.4f \\)",
+          sprintf("\\( = \\sqrt{ \\dfrac{%s - \\dfrac{(%s)^{2}}{%s} }{%s - 1} } = %s \\)",
                   dfTotaled['Totals', 2],
                   dfTotaled['Totals', 1],
-                  df['Observations', 'Value'],
-                  df['Observations', 'Value'],
-                  df['Sample Standard Deviation', 'Value'])
+                  df['Observations', 3],
+                  df['Observations', 3],
+                  df['Sample Standard Deviation', 3])
         )
       })
       
