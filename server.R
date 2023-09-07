@@ -1223,14 +1223,15 @@ server <- function(session, input, output) {
                 axis.text.x.bottom = element_text(size = 16),
                 axis.text.y.left = element_blank()) +
           ylim(-1, 1) +
-          coord_cartesian(clip="off") +
-          coord_flip()
+          coord_cartesian(clip="off")
         
         if(length(unique(dat)) == 1) {
-          bp + scale_x_continuous(breaks = dat, limits = c(dat[1] - 1, dat[1] + 1))
+          bp <- bp + scale_x_continuous(breaks = dat, limits = c(dat[1] - 1, dat[1] + 1))
         } else {
-          bp + scale_x_continuous(n.breaks = 8) 
+          bp <- bp + scale_x_continuous(n.breaks = 8) 
         }
+        
+        bp
         
       })
       
