@@ -1498,35 +1498,20 @@
                                                                  
                                                                  conditionalPanel(
                                                                    condition = "input.cTableProb == 'Marginal'",
-                                                                   
-                                                                   titlePanel('Marginal Probabilities'),
-                                                                   hr(),
-                                                                   br(),
-                                                                   uiOutput('renderMarginalProbs'),
-                                                                   br(),
-                                                                   br()
+ 
+                                                                   uiOutput('renderMarginalProbs')
                                                                  ),
                                                                  
                                                                  conditionalPanel(
                                                                    condition = "input.cTableProb == 'Joint'",
                                                                    
-                                                                   titlePanel('Joint Probabilities'),
-                                                                   hr(),
-                                                                   br(),
-                                                                   uiOutput('renderJointProbs'),
-                                                                   br(),
-                                                                   br()
+                                                                   uiOutput('renderJointProbs')
                                                                  ),
                                                                  
                                                                  conditionalPanel(
                                                                    condition = "input.cTableProb == 'Conditional'",
-                                                                   
-                                                                   titlePanel('Conditional Probabilities'),
-                                                                   hr(),
-                                                                   br(),
-                                                                   uiOutput('renderConditionalProbs'),
-                                                                   br(),
-                                                                   br()
+
+                                                                   uiOutput('renderConditionalProbs')
                                                                  )
                                                 ),
                                                 

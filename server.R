@@ -11,6 +11,7 @@ server <- function(session, input, output) {
   dsuploadvars_iv <- InputValidator$new()
   
   pd_iv <- InputValidator$new()
+  ctable_iv <- InputValidator$new()
   ctable2x2_iv <- InputValidator$new()
   ctable3x3_iv <- InputValidator$new()
   binom_iv <- InputValidator$new()
@@ -192,6 +193,12 @@ server <- function(session, input, output) {
   # ------------------ #
   #     Conditions     #
   # ------------------ #
+  ctable2x2_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
+                                  input$cTableDimension == '2 x 2'))
+  
+  ctable3x3_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
+                                    input$cTableDimension == '3 x 3'))
+  
   binom_iv$condition(~ isTRUE(input$probability == 'Binomial'))
   
   binomprob_iv$condition(~ isTRUE(input$probability == 'Binomial' && 
@@ -231,6 +238,9 @@ server <- function(session, input, output) {
   # ------------------ #
   #     Dependency     #
   # ------------------ #
+  ctable_iv$add_validator(ctable2x2_iv)
+  ctable_iv$add_validator(ctable3x3_iv)
+  
   binom_iv$add_validator(binomprob_iv)
   binom_iv$add_validator(binombetween_iv)
   
@@ -243,6 +253,7 @@ server <- function(session, input, output) {
   norm_iv$add_validator(sampdistrbetween_iv)
   norm_iv$add_validator(sampdistrsize_iv)
   
+  pd_iv$add_validator(ctable_iv)
   pd_iv$add_validator(binom_iv)
   pd_iv$add_validator(poiss_iv)
   pd_iv$add_validator(norm_iv)
@@ -251,6 +262,7 @@ server <- function(session, input, output) {
   #     Activation     #
   # ------------------ #
   pd_iv$enable()
+  ctable_iv$enable()
   ctable2x2_iv$enable()
   ctable3x3_iv$enable()
   binom_iv$enable()
@@ -1210,7 +1222,9 @@ server <- function(session, input, output) {
           theme(axis.title.x = element_text(size = 18, face = "bold", vjust = -1.5),
                 axis.text.x.bottom = element_text(size = 16),
                 axis.text.y.left = element_blank()) +
-          ylim(-1, 1)
+          ylim(-1, 1) +
+          coord_cartesian(clip="off") +
+          coord_flip()
         
         if(length(unique(dat)) == 1) {
           bp + scale_x_continuous(breaks = dat, limits = c(dat[1] - 1, dat[1] + 1))
@@ -1423,7 +1437,12 @@ server <- function(session, input, output) {
   
   
   printMarginalProbs <- function(probMatrix, cMatrix){
-    outputTagList <- tagList(withMathJax())
+    outputTagList <- tagList(
+                             withMathJax(),
+                             titlePanel('Marginal Probabilities'),
+                             hr(),
+                             br()
+                             )
     
     for(row in 1:(nrow(probMatrix)-1)){
       newLine <- sprintf("\\( P( \\) %s \\( ) = \\dfrac{%s}{%s} = %s \\)",
@@ -1452,7 +1471,12 @@ server <- function(session, input, output) {
   
   
   printJointProbs <- function(probMatrix, cMatrix){
-    outputTagList <- tagList(withMathJax())
+    outputTagList <- tagList(
+                             withMathJax(),
+                             titlePanel('Joint Probabilities'),
+                             hr(),
+                             br()
+                             )
     
     for(row in 1:(nrow(probMatrix) - 1)){
       for(col in 1:(ncol(probMatrix) - 1)){
@@ -1473,7 +1497,12 @@ server <- function(session, input, output) {
   
   
   printConditionalProbs <- function(cMatrix){
-    outputTagList <- tagList(withMathJax())
+    outputTagList <- tagList(
+                             withMathJax(),
+                             titlePanel('Conditional Probabilities'),
+                             hr(),
+                             br()
+                             )
     
     for(row in 1:(nrow(cMatrix) - 1)){
       for(col in 1:(ncol(cMatrix) - 1)){
@@ -2054,15 +2083,18 @@ server <- function(session, input, output) {
     }
     
     output$renderMarginalProbs <- renderUI({
+      req(pd_iv$is_valid())
       printMarginalProbs(activeProbMatrix, activeCMatrix)
       
     })
     
     output$renderJointProbs <- renderUI({
+      req(pd_iv$is_valid())
       printJointProbs(activeProbMatrix, activeCMatrix)
     })
     
     output$renderConditionalProbs <- renderUI({
+      req(pd_iv$is_valid())
       printConditionalProbs(activeCMatrix)
     })
   })
