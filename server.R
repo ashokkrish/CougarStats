@@ -1419,6 +1419,94 @@ server <- function(session, input, output) {
     return(round((x/t), 4))
   }
   
+  
+  
+  printMarginalProbs <- function(probMatrix, cMatrix){
+    outputTagList <- tagList(withMathJax())
+    
+    for(row in 1:(nrow(probMatrix)-1)){
+      newLine <- sprintf("\\( P( \\) %s \\( ) = \\dfrac{%s}{%s} = %s \\)",
+                         rownames(probMatrix)[row],
+                         cMatrix[row,'Total'],
+                         cMatrix['Total','Total'],
+                         probMatrix[row,'Total'])
+      outputTagList <- tagAppendChild(outputTagList, newLine)
+      outputTagList <- tagAppendChild(outputTagList, br())
+      outputTagList <- tagAppendChild(outputTagList, br())
+    }
+    
+    for(col in 1:(ncol(probMatrix)-1)){
+      newLine <- sprintf("\\( P( \\) %s \\( ) = \\dfrac{%s}{%s} = %s \\)",
+                         colnames(probMatrix)[col],
+                         cMatrix['Total', col],
+                         cMatrix['Total','Total'],
+                         probMatrix['Total',col])
+      outputTagList <- tagAppendChild(outputTagList, newLine)
+      outputTagList <- tagAppendChild(outputTagList, br())
+      outputTagList <- tagAppendChild(outputTagList, br())
+    }
+    
+    return(outputTagList)
+  }
+  
+  
+  printJointProbs <- function(probMatrix, cMatrix){
+    outputTagList <- tagList(withMathJax())
+    
+    for(row in 1:(nrow(probMatrix) - 1)){
+      for(col in 1:(ncol(probMatrix) - 1)){
+        newLine <- sprintf("\\( P( \\)%s \\( AND \\) %s\\( ) \\; = \\dfrac{%s}{%s} = %s \\)",
+                           rownames(probMatrix)[row],
+                           colnames(probMatrix)[col],
+                           cMatrix[row,col],
+                           cMatrix['Total','Total'],
+                           probMatrix[row,col])
+        outputTagList <- tagAppendChild(outputTagList, newLine)
+        outputTagList <- tagAppendChild(outputTagList, br())
+        outputTagList <- tagAppendChild(outputTagList, br())
+      }
+    }
+    
+    return(outputTagList)
+  }
+  
+  
+  printConditionalProbs <- function(cMatrix){
+    outputTagList <- tagList(withMathJax())
+    
+    for(row in 1:(nrow(cMatrix) - 1)){
+      for(col in 1:(ncol(cMatrix) - 1)){
+        newLine <- sprintf("\\( P( \\)%s \\( GIVEN \\) %s\\( ) \\; = \\dfrac{%s}{%s} = %s \\)",
+                           rownames(cMatrix)[row],
+                           colnames(cMatrix)[col],
+                           cMatrix[row,col],
+                           cMatrix['Total',col],
+                           round( (cMatrix[row,col] / cMatrix['Total',col]), 4))
+        outputTagList <- tagAppendChild(outputTagList, newLine)
+        outputTagList <- tagAppendChild(outputTagList, br())
+        outputTagList <- tagAppendChild(outputTagList, br())
+      }
+    }
+    
+    for(col in 1:(ncol(cMatrix) - 1)){
+      for(row in 1:(nrow(cMatrix) - 1)){
+        newLine <- sprintf("\\( P( \\)%s \\( GIVEN \\) %s\\( ) \\; = \\dfrac{%s}{%s} = %s \\)",
+                           colnames(cMatrix)[col],
+                           rownames(cMatrix)[row],
+                           cMatrix[row,col],
+                           cMatrix[row,'Total'],
+                           round( (cMatrix[row,col] / cMatrix[row,'Total']), 4))
+        outputTagList <- tagAppendChild(outputTagList, newLine)
+        outputTagList <- tagAppendChild(outputTagList, br())
+        outputTagList <- tagAppendChild(outputTagList, br())
+      }
+    }
+    
+    return(outputTagList)
+  }
+  
+  
+  
   shadeNormArea <- function(df, normValue, normLines, probType){
     if(normValue > 0){
       if(probType == 'cumulative') {
@@ -1756,13 +1844,13 @@ server <- function(session, input, output) {
   # --------------------------------------------------------------------- #
   
   #### Contingency Table ----
-  observeEvent(input$dropDownMenu == 'Probability Distributions', {
-    Reset2x2CTable()
-  })
+  # observeEvent(input$dropDownMenu == 'Probability Distributions', {
+  #   Reset2x2CTable()
+  # })
   
-  observeEvent(input$cTableDimensions == '3 x 3', {
-    Reset3x3CTable()
-  })
+  # observeEvent(input$cTableDimensions == '3 x 3', {
+  #   Reset3x3CTable()
+  # })
   
   observeEvent(input$gocTable, {
  
@@ -1805,7 +1893,10 @@ server <- function(session, input, output) {
         titlePanel("Probability Distribution Table"),
         hr(),
         br(),
-        DTOutput("probTable2x2", width = '500px')
+        DTOutput("probTable2x2", width = '500px'),
+        br(),
+        br(),
+        br(),
       )
     })
     
@@ -1848,7 +1939,10 @@ server <- function(session, input, output) {
         titlePanel("Probability Distribution Table"),
         hr(),
         br(),
-        DTOutput("probTable3x3", width = '500px')
+        DTOutput("probTable3x3", width = '500px'),
+        br(),
+        br(),
+        br(),
       )
     })
     
@@ -1949,9 +2043,28 @@ server <- function(session, input, output) {
         formatStyle(columns = c(0), 
                     fontWeight = 'bold')
     })
+    
+    if(input$cTableDimension == '2 x 2') {
+      activeProbMatrix <- probData2x2
+      activeCMatrix <- cData2x2
+    } else if(input$cTableDimension == '3 x 3') {
+      activeProbMatrix <- probData3x3
+      activeCMatrix <- cData3x3
+    }
+    
+    output$renderMarginalProbs <- renderUI({
+      printMarginalProbs(activeProbMatrix, activeCMatrix)
+      
+    })
+    
+    output$renderJointProbs <- renderUI({
+      printJointProbs(activeProbMatrix, activeCMatrix)
+    })
+    
+    output$renderConditionalProbs <- renderUI({
+      printConditionalProbs(activeCMatrix)
+    })
   })
-  
-  
   
   
   

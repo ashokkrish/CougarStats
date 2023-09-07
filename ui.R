@@ -184,7 +184,7 @@
                                                            
                                                            pickerInput(
                                                              inputId = "dsGraphOptions",
-                                                             label = strong("Graph Options"), 
+                                                             label = strong("Graphs"), 
                                                              choices = c("Boxplot", 
                                                                          "Histogram", 
                                                                          "Stem and Leaf Plot"),
@@ -238,7 +238,7 @@
                                                                                             condition = "input.cTableDimension == '2 x 2'",
                                                                                             
                                                                                             matrixInput(inputId = "cMatrix2x2",
-                                                                                                        value = matrix("", 2, 2),
+                                                                                                        value = matrix("", 2, 2, dimnames = list(c("A1", "A2"), c("B1", "B2"))),
                                                                                                         rows = list(editableNames = TRUE),
                                                                                                         cols = list(editableNames = TRUE)
                                                                                             ),
@@ -248,7 +248,7 @@
                                                                                             condition = "input.cTableDimension == '3 x 3'",
                                                                                             
                                                                                             matrixInput(inputId = "cMatrix3x3",
-                                                                                                        value = matrix("", 3, 3),
+                                                                                                        value = matrix("", 3, 3, dimnames = list(c("A1", "A2", "A3"), c("B1", "B2", "B3"))),
                                                                                                         rows = list(editableNames = TRUE),
                                                                                                         cols = list(editableNames = TRUE)
                                                                               ),
@@ -1479,6 +1479,7 @@
 
                                                                    uiOutput("render2x2cTable"),
                                                                    br(),
+                                                                   
                                                                  ),
                 
                                                                  conditionalPanel(
@@ -1494,6 +1495,39 @@
                                                                  #   uiOutput("renderOthercTable"),
                                                                  #   br(),
                                                                  # )
+                                                                 
+                                                                 conditionalPanel(
+                                                                   condition = "input.cTableProb == 'Marginal'",
+                                                                   
+                                                                   titlePanel('Marginal Probabilities'),
+                                                                   hr(),
+                                                                   br(),
+                                                                   uiOutput('renderMarginalProbs'),
+                                                                   br(),
+                                                                   br()
+                                                                 ),
+                                                                 
+                                                                 conditionalPanel(
+                                                                   condition = "input.cTableProb == 'Joint'",
+                                                                   
+                                                                   titlePanel('Joint Probabilities'),
+                                                                   hr(),
+                                                                   br(),
+                                                                   uiOutput('renderJointProbs'),
+                                                                   br(),
+                                                                   br()
+                                                                 ),
+                                                                 
+                                                                 conditionalPanel(
+                                                                   condition = "input.cTableProb == 'Conditional'",
+                                                                   
+                                                                   titlePanel('Conditional Probabilities'),
+                                                                   hr(),
+                                                                   br(),
+                                                                   uiOutput('renderConditionalProbs'),
+                                                                   br(),
+                                                                   br()
+                                                                 )
                                                 ),
                                                 
                                                 conditionalPanel(
