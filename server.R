@@ -1917,14 +1917,14 @@ server <- function(session, input, output) {
         titlePanel("Contingency Table"),
         hr(),
         br(),
-        DTOutput("cTable2x2", width = '500px'),
+        DTOutput("cTable2x2", width = '750px'),
         br(),
         br(),
         br(),
         titlePanel("Probability Distribution Table"),
         hr(),
         br(),
-        DTOutput("probTable2x2", width = '500px'),
+        DTOutput("probTable2x2", width = '750px'),
         br(),
         br(),
         br(),
@@ -1963,14 +1963,14 @@ server <- function(session, input, output) {
         titlePanel("Contingency Table"),
         hr(),
         br(),
-        DTOutput("cTable3x3", width = '500px'),
+        DTOutput("cTable3x3", width = '750px'),
         br(),
         br(),
         br(),
         titlePanel("Probability Distribution Table"),
         hr(),
         br(),
-        DTOutput("probTable3x3", width = '500px'),
+        DTOutput("probTable3x3", width = '750px'),
         br(),
         br(),
         br(),
@@ -2000,8 +2000,11 @@ server <- function(session, input, output) {
                 selection = "none",
                 escape = FALSE,
                 filter = "none",) %>% 
-        formatStyle(columns = c(0), 
-                    fontWeight = 'bold')
+        formatStyle(columns = c(0,3), 
+                    fontWeight = 'bold') %>%
+        formatStyle(columns = 1:3,
+                    target = 'row',
+                    fontWeight = styleRow(dim(cData2x2)[1], "bold"))
     })
     
     probData2x2 <- apply(cData2x2, 2, getProbabilities, t=cData2x2['Total',3])
@@ -2022,8 +2025,11 @@ server <- function(session, input, output) {
                 selection = "none",
                 escape = FALSE,
                 filter = "none",) %>% 
-        formatStyle(columns = c(0), 
-                    fontWeight = 'bold')
+        formatStyle(columns = c(0,3), 
+                    fontWeight = 'bold') %>%
+        formatStyle(columns = 1:3,
+                    target = 'row',
+                    fontWeight = styleRow(dim(probData2x2)[1], "bold"))
     })
     
     
@@ -2037,6 +2043,7 @@ server <- function(session, input, output) {
     output$cTable3x3 <- renderDT({
 
       datatable(cData3x3,
+                class = 'cell-border stripe',
                 options = list(
                   dom = 't',
                   pageLength = -1,
@@ -2045,12 +2052,17 @@ server <- function(session, input, output) {
                   paging = FALSE,
                   autoWidth = TRUE,
                   scrollX = TRUE,
-                  columnDefs = list(list(width = '100px', targets = c(1, 2, 3)))
+                  columnDefs = list(list(width = '100px', targets = c(1, 2, 3, 4)),
+                                    list(className = 'dt-center', targets = c(1, 2, 3, 4)))
                 ),
                 selection = "none",
                 escape = FALSE,
-                filter = "none",) %>% formatStyle(columns = c(0), #specify columns to format
-                                                  fontWeight = 'bold')
+                filter = "none",) %>% 
+        formatStyle(columns = c(0,4), #specify columns to format
+                    fontWeight = 'bold') %>%
+        formatStyle(columns = 1:4,
+                    target = 'row',
+                    fontWeight = styleRow(dim(cData3x3)[1], "bold"))
     })
     
     probData3x3 <- apply(cData3x3, 2, getProbabilities, t=cData3x3['Total',4])
@@ -2066,13 +2078,17 @@ server <- function(session, input, output) {
                   paging = FALSE,
                   autoWidth = TRUE,
                   scrollX = TRUE,
-                  columnDefs = list(list(width = '100px', targets = c(1, 2, 3)))
+                  columnDefs = list(list(width = '100px', targets = c(1, 2, 3, 4)),
+                                    list(className = 'dt-center', targets = c(1, 2, 3, 4)))
                 ),
                 selection = "none",
                 escape = FALSE,
                 filter = "none",) %>% 
-        formatStyle(columns = c(0), 
-                    fontWeight = 'bold')
+        formatStyle(columns = c(0,4), 
+                    fontWeight = 'bold') %>%
+        formatStyle(columns = 1:4,
+                    target = 'row',
+                    fontWeight = styleRow(dim(probData3x3)[1], "bold"))
     })
     
     if(input$cTableDimension == '2 x 2') {
