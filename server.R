@@ -1456,6 +1456,8 @@ server <- function(session, input, output) {
       outputTagList <- tagAppendChild(outputTagList, br())
     }
     
+    outputTagList <- tagAppendChild(outputTagList, br())
+    
     for(col in 1:(ncol(probMatrix)-1)){
       newLine <- sprintf("\\( P( \\) %s \\( ) = \\dfrac{%s}{%s} = %s \\)",
                          colnames(probMatrix)[col],
@@ -1491,6 +1493,7 @@ server <- function(session, input, output) {
         outputTagList <- tagAppendChild(outputTagList, br())
         outputTagList <- tagAppendChild(outputTagList, br())
       }
+      outputTagList <- tagAppendChild(outputTagList, br())
     }
     
     return(outputTagList)
@@ -1517,6 +1520,7 @@ server <- function(session, input, output) {
         outputTagList <- tagAppendChild(outputTagList, br())
         outputTagList <- tagAppendChild(outputTagList, br())
       }
+      outputTagList <- tagAppendChild(outputTagList, br())
     }
     
     for(col in 1:(ncol(cMatrix) - 1)){
@@ -1531,6 +1535,7 @@ server <- function(session, input, output) {
         outputTagList <- tagAppendChild(outputTagList, br())
         outputTagList <- tagAppendChild(outputTagList, br())
       }
+      outputTagList <- tagAppendChild(outputTagList, br())
     }
     
     return(outputTagList)
