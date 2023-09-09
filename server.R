@@ -1481,7 +1481,7 @@ server <- function(session, input, output) {
     
     for(row in 1:(nrow(probMatrix) - 1)){
       for(col in 1:(ncol(probMatrix) - 1)){
-        newLine <- sprintf("\\( P( \\)%s \\( AND \\) %s\\( ) \\; = \\dfrac{%s}{%s} = %s \\)",
+        newLine <- sprintf("\\( P( \\)%s \\( \\cap \\) %s\\( ) \\; = \\dfrac{%s}{%s} = %s \\)",
                            rownames(probMatrix)[row],
                            colnames(probMatrix)[col],
                            cMatrix[row,col],
@@ -1507,7 +1507,7 @@ server <- function(session, input, output) {
     
     for(row in 1:(nrow(cMatrix) - 1)){
       for(col in 1:(ncol(cMatrix) - 1)){
-        newLine <- sprintf("\\( P( \\)%s \\( GIVEN \\) %s\\( ) \\; = \\dfrac{%s}{%s} = %s \\)",
+        newLine <- sprintf("\\( P( \\)%s \\( | \\) %s\\( ) \\; = \\dfrac{%s}{%s} = %s \\)",
                            rownames(cMatrix)[row],
                            colnames(cMatrix)[col],
                            cMatrix[row,col],
@@ -1521,7 +1521,7 @@ server <- function(session, input, output) {
     
     for(col in 1:(ncol(cMatrix) - 1)){
       for(row in 1:(nrow(cMatrix) - 1)){
-        newLine <- sprintf("\\( P( \\)%s \\( GIVEN \\) %s\\( ) \\; = \\dfrac{%s}{%s} = %s \\)",
+        newLine <- sprintf("\\( P( \\)%s \\( | \\) %s\\( ) \\; = \\dfrac{%s}{%s} = %s \\)",
                            colnames(cMatrix)[col],
                            rownames(cMatrix)[row],
                            cMatrix[row,col],
@@ -1995,7 +1995,8 @@ server <- function(session, input, output) {
                   paging = FALSE,
                   autoWidth = TRUE,
                   scrollX = TRUE,
-                  columnDefs = list(list(width = '100px', targets = c(1, 2, 3)))
+                  columnDefs = list(list(width = '100px', targets = c(1, 2, 3)),
+                                    list(className = 'dt-center', targets = c(1, 2, 3)))
                 ),
                 selection = "none",
                 escape = FALSE,
@@ -2020,7 +2021,8 @@ server <- function(session, input, output) {
                   paging = FALSE,
                   autoWidth = TRUE,
                   scrollX = TRUE,
-                  columnDefs = list(list(width = '100px', targets = c(1, 2, 3)))
+                  columnDefs = list(list(width = '100px', targets = c(1, 2, 3)),
+                                    list(className = 'dt-center', targets = c(1, 2, 3)))
                 ),
                 selection = "none",
                 escape = FALSE,
