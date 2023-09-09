@@ -1446,7 +1446,7 @@ server <- function(session, input, output) {
                              )
     
     for(row in 1:(nrow(probMatrix)-1)){
-      newLine <- sprintf("\\( P( \\) %s \\( ) = \\dfrac{%s}{%s} = %s \\)",
+      newLine <- sprintf("\\( P( \\text{%s} ) = \\dfrac{%s}{%s} = %s \\)",
                          rownames(probMatrix)[row],
                          cMatrix[row,'Total'],
                          cMatrix['Total','Total'],
@@ -1454,12 +1454,12 @@ server <- function(session, input, output) {
       outputTagList <- tagAppendChild(outputTagList, newLine)
       outputTagList <- tagAppendChild(outputTagList, br())
       outputTagList <- tagAppendChild(outputTagList, br())
+      outputTagList <- tagAppendChild(outputTagList, br())
+      
     }
     
-    outputTagList <- tagAppendChild(outputTagList, br())
-    
     for(col in 1:(ncol(probMatrix)-1)){
-      newLine <- sprintf("\\( P( \\) %s \\( ) = \\dfrac{%s}{%s} = %s \\)",
+      newLine <- sprintf("\\( P( \\text{%s} ) = \\dfrac{%s}{%s} = %s \\)",
                          colnames(probMatrix)[col],
                          cMatrix['Total', col],
                          cMatrix['Total','Total'],
@@ -1467,6 +1467,8 @@ server <- function(session, input, output) {
       outputTagList <- tagAppendChild(outputTagList, newLine)
       outputTagList <- tagAppendChild(outputTagList, br())
       outputTagList <- tagAppendChild(outputTagList, br())
+      outputTagList <- tagAppendChild(outputTagList, br())
+      
     }
     
     return(outputTagList)
@@ -1483,7 +1485,8 @@ server <- function(session, input, output) {
     
     for(row in 1:(nrow(probMatrix) - 1)){
       for(col in 1:(ncol(probMatrix) - 1)){
-        newLine <- sprintf("\\( P( \\)%s \\( \\cap \\) %s\\( ) \\; = \\dfrac{%s}{%s} = %s \\)",
+        newLine <- sprintf("\\( P( \\text{%s} \\cap \\text{%s} ) \\; = 
+                           \\dfrac{%s}{%s} = %s \\)",
                            rownames(probMatrix)[row],
                            colnames(probMatrix)[col],
                            cMatrix[row,col],
@@ -1494,6 +1497,8 @@ server <- function(session, input, output) {
         outputTagList <- tagAppendChild(outputTagList, br())
       }
       outputTagList <- tagAppendChild(outputTagList, br())
+      outputTagList <- tagAppendChild(outputTagList, br())
+      
     }
     
     return(outputTagList)
@@ -1510,9 +1515,19 @@ server <- function(session, input, output) {
     
     for(row in 1:(nrow(cMatrix) - 1)){
       for(col in 1:(ncol(cMatrix) - 1)){
-        newLine <- sprintf("\\( P( \\)%s \\( | \\) %s\\( ) \\; = \\dfrac{%s}{%s} = %s \\)",
+        newLine <- sprintf("\\( P( \\text{%s} \\, | \\, \\text{%s} ) \\; = 
+                           \\; \\dfrac{P( \\text{%s} \\cap \\text{%s} )}{P( \\text{%s} )} \\; = 
+                           \\; \\dfrac{%s}{%s} \\bigg/ \\dfrac{%s}{%s} \\; =
+                           \\; \\dfrac{%s}{%s} = %s \\)",
                            rownames(cMatrix)[row],
                            colnames(cMatrix)[col],
+                           rownames(cMatrix)[row],
+                           colnames(cMatrix)[col],
+                           colnames(cMatrix)[col],
+                           cMatrix[row,col],
+                           cMatrix['Total','Total'],
+                           cMatrix['Total',col],
+                           cMatrix['Total','Total'],
                            cMatrix[row,col],
                            cMatrix['Total',col],
                            round( (cMatrix[row,col] / cMatrix['Total',col]), 4))
@@ -1521,13 +1536,25 @@ server <- function(session, input, output) {
         outputTagList <- tagAppendChild(outputTagList, br())
       }
       outputTagList <- tagAppendChild(outputTagList, br())
+      outputTagList <- tagAppendChild(outputTagList, br())
+      
     }
     
     for(col in 1:(ncol(cMatrix) - 1)){
       for(row in 1:(nrow(cMatrix) - 1)){
-        newLine <- sprintf("\\( P( \\)%s \\( | \\) %s\\( ) \\; = \\dfrac{%s}{%s} = %s \\)",
+        newLine <- sprintf("\\( P( \\text{%s} \\, | \\, \\text{%s} ) \\; = 
+                           \\; \\dfrac{P( \\text{%s} \\cap \\text{%s} )}{P( \\text{%s} )} \\; = 
+                           \\; \\dfrac{%s}{%s} \\bigg/ \\dfrac{%s}{%s} \\; =
+                           \\; \\dfrac{%s}{%s} = %s \\)",
                            colnames(cMatrix)[col],
                            rownames(cMatrix)[row],
+                           colnames(cMatrix)[col],
+                           rownames(cMatrix)[row],
+                           rownames(cMatrix)[row],
+                           cMatrix[row,col],
+                           cMatrix['Total','Total'],
+                           cMatrix[row,'Total'],
+                           cMatrix['Total','Total'],
                            cMatrix[row,col],
                            cMatrix[row,'Total'],
                            round( (cMatrix[row,col] / cMatrix[row,'Total']), 4))
@@ -1536,6 +1563,8 @@ server <- function(session, input, output) {
         outputTagList <- tagAppendChild(outputTagList, br())
       }
       outputTagList <- tagAppendChild(outputTagList, br())
+      outputTagList <- tagAppendChild(outputTagList, br())
+      
     }
     
     return(outputTagList)
