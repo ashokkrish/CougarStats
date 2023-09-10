@@ -257,8 +257,9 @@
                                                                             radioButtons(inputId = "cTableProb",
                                                                                          label = strong("Probabilities"),
                                                                                          choices = c("Marginal",
-                                                                                                        "Joint",
-                                                                                                        "Conditional"),
+                                                                                                     "Joint",
+                                                                                                     "Union",
+                                                                                                     "Conditional"),
                                                                                          inline = TRUE),
                                                                             
                                                                             actionButton(inputId = "gocTable", 
@@ -1510,6 +1511,12 @@
                                                                    condition = "input.cTableProb == 'Joint'",
                                                                    
                                                                    uiOutput('renderJointProbs')
+                                                                 ),
+                                                                 
+                                                                 conditionalPanel(
+                                                                   condition = "input.cTableProb == 'Union'",
+                                                                   
+                                                                   uiOutput('renderUnionProbs', width = '960px')
                                                                  ),
                                                                  
                                                                  conditionalPanel(

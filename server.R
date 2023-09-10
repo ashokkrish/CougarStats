@@ -1505,6 +1505,47 @@ server <- function(session, input, output) {
   }
   
   
+  printUnionProbs <- function(probMatrix, cMatrix){
+    outputTagList <- tagList(
+      withMathJax(),
+      titlePanel('Union Probabilities'),
+      hr(),
+      br()
+    )
+    
+    for(row in 1:(nrow(probMatrix) - 1)){
+      for(col in 1:(ncol(probMatrix) - 1)){
+        newLine <- sprintf("\\( P( \\text{%s} \\cup \\text{%s} ) \\; =
+                           \\; P( \\text{%s} ) + P( \\text{%s} ) - P(\\text{%s} \\cap \\text{%s}) \\; =
+                           \\; \\dfrac{%s}{%s} + \\dfrac{%s}{%s} - \\dfrac{%s}{%s} \\; =
+                           \\; \\dfrac{%s}{%s} = %s \\quad \\)",
+                           rownames(probMatrix)[row],
+                           colnames(probMatrix)[col],
+                           rownames(probMatrix)[row],
+                           colnames(probMatrix)[col],
+                           rownames(probMatrix)[row],
+                           colnames(probMatrix)[col],
+                           cMatrix[row,'Total'],
+                           cMatrix['Total','Total'],
+                           cMatrix['Total',col],
+                           cMatrix['Total','Total'],
+                           cMatrix[row,col],
+                           cMatrix['Total','Total'],
+                           cMatrix[row,'Total'] + cMatrix['Total',col] - cMatrix[row,col],
+                           cMatrix['Total','Total'],
+                           probMatrix[row,'Total'] + probMatrix['Total',col] - probMatrix[row,col])
+        outputTagList <- tagAppendChild(outputTagList, newLine)
+        outputTagList <- tagAppendChild(outputTagList, br())
+        outputTagList <- tagAppendChild(outputTagList, br())
+      }
+      outputTagList <- tagAppendChild(outputTagList, br())
+      outputTagList <- tagAppendChild(outputTagList, br())
+      
+    }
+    
+    return(outputTagList)
+  }
+  
   printConditionalProbs <- function(cMatrix){
     outputTagList <- tagList(
                              withMathJax(),
@@ -2144,6 +2185,11 @@ server <- function(session, input, output) {
     output$renderJointProbs <- renderUI({
       req(pd_iv$is_valid())
       printJointProbs(activeProbMatrix, activeCMatrix)
+    })
+    
+    output$renderUnionProbs <- renderUI({
+      req(pd_iv$is_valid())
+      printUnionProbs(activeProbMatrix, activeCMatrix)
     })
     
     output$renderConditionalProbs <- renderUI({
