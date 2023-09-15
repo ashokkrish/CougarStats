@@ -74,8 +74,6 @@ server <- function(session, input, output) {
   
   dsuploadvars_iv$add_rule("dsUploadVars", sv_required())
   
-  #ds_iv$add_rule("dsTableFilters", sv_required())
-  
   
   # ------------------ #
   #     Conditions     #
@@ -107,14 +105,14 @@ server <- function(session, input, output) {
   ## PD rules ----
   
   ctable2x2_iv$add_rule("cMatrix2x2", sv_required())
-  ctable2x2_iv$add_rule("cMatrix2x2", ~ if(any(is.na(as.numeric(input$cMatrix2x2)))) "Fields must be positive integers.")
-  ctable2x2_iv$add_rule("cMatrix2x2", ~ if(any(as.numeric(input$cMatrix2x2) < 0)) "Fields must be positive integers.")
-  ctable2x2_iv$add_rule("cMatrix2x2", ~ if(any(as.numeric(input$cMatrix2x2) %% 1 != 0)) "Fields must be positive integers.")
+  ctable2x2_iv$add_rule("cMatrix2x2", ~ if(any(is.na(cMatrixData2x2()))) "Fields must be positive integers.")
+  ctable2x2_iv$add_rule("cMatrix2x2", ~ if(any(cMatrixData2x2() < 0)) "Fields must be positive integers.")
+  ctable2x2_iv$add_rule("cMatrix2x2", ~ if(any(cMatrixData2x2() %% 1 != 0)) "Fields must be positive integers.")
   
   ctable3x3_iv$add_rule("cMatrix3x3", sv_required())
-  ctable3x3_iv$add_rule("cMatrix3x3", ~ if(any(is.na(as.numeric(input$cMatrix3x3)))) "Fields must be positive integers.")
-  ctable3x3_iv$add_rule("cMatrix3x3", ~ if(any(as.numeric(input$cMatrix3x3) < 0)) "Fields must be positive integers.")
-  ctable3x3_iv$add_rule("cMatrix3x3", ~ if(any(as.numeric(input$cMatrix3x3) %% 1 != 0)) "Fields must be positive integers.")
+  ctable3x3_iv$add_rule("cMatrix3x3", ~ if(any(is.na(cMatrixData3x3()))) "Fields must be positive integers.")
+  ctable3x3_iv$add_rule("cMatrix3x3", ~ if(any(cMatrixData3x3() < 0)) "Fields must be positive integers.")
+  ctable3x3_iv$add_rule("cMatrix3x3", ~ if(any(cMatrixData3x3() %% 1 != 0)) "Fields must be positive integers.")
   
   # numTrialsBinom 
   
@@ -894,6 +892,7 @@ server <- function(session, input, output) {
   # Function to convert the raw data input into a numeric list
   dsRawData <- reactive ({
     dat <- createNumLst(input$descriptiveStat)
+    return(dat)
   })
   
   
@@ -1034,31 +1033,28 @@ server <- function(session, input, output) {
         )
         
         validate(
-          need(nrow(dsUploadData()) != 0 && ncol(dsUploadData()) > 0, "File is empty"),
-          need(nrow(dsUploadData()) > 1, "Sample Data must include at least 2 observations"),
+          need(nrow(dsUploadData()) != 0 && ncol(dsUploadData()) > 0, "File is empty."),
+          need(nrow(dsUploadData()) > 1, "Sample Data must include at least 2 observations."),
           
           errorClass = "myClass"
         )
-      }
-      else if(!dsuploadvars_iv$is_valid())
-      {
+      } else if(!dsuploadvars_iv$is_valid()) {
         validate(
-          need(input$dsUploadVars != "", "Please select a variable"),
+          need(input$dsUploadVars != "", "Please select a variable."),
           
           errorClass = "myClass"
         )
         
-      }
-      else if(!dsraw_iv$is_valid())
-      {
+      } else if(!dsraw_iv$is_valid()) {
         validate(
-          need(!anyNA(dsRawData()), "Sample Data must be numeric"),
-          need(length(dsRawData()) >= 2, "Sample Data must include at least 2 observations"),
+          need(length(dsRawData()) >= 2, "Sample Data must include at least 2 numeric observations."),
           
           errorClass = "myClass"
         )
+        
+        validate("Sample Data must be numeric.")
 
-      }
+      } 
     })
     
     if(ds_iv$is_valid())
@@ -1086,7 +1082,7 @@ server <- function(session, input, output) {
       
       df <- getDsDataframe()
       
-      if("Mode" %in% input$dsTableFilters && df['Mode','Value'] != "No mode exists"){
+      if("Mode" %in% input$dsTableFilters && df['Mode',3] != "No mode exists."){
         rowFilter <- c(input$dsTableFilters, "Mode Frequency")
       } else{
         rowFilter <- input$dsTableFilters
@@ -1112,6 +1108,8 @@ server <- function(session, input, output) {
                                                filter = "none",
                                                
       ))
+      
+      outputOptions(output, "dsTableData", suspendWhenHidden = FALSE)
       
       
       if(input$dataInput == 'Upload Data')
@@ -1153,8 +1151,9 @@ server <- function(session, input, output) {
       
       
       output$dsMeanCalc <- renderUI({
-        withMathJax()
+        
         tagList(
+          withMathJax(),
           sprintf("\\( \\bar{x} = \\dfrac{\\sum x}{n} = \\dfrac{%s}{%s} = %s \\)",
                   dfTotaled['Totals', 1],
                   df['Observations', 3],
@@ -1166,8 +1165,9 @@ server <- function(session, input, output) {
       })
       
       output$dsSDCalc <- renderUI({
-        withMathJax()
+        
         tagList(
+          withMathJax(),
           sprintf("\\( s = \\sqrt{ \\dfrac{\\sum x^{2} - \\dfrac{(\\sum x)^{2}}{n} }{n - 1} } \\)"),
           sprintf("\\( = \\sqrt{ \\dfrac{%s - \\dfrac{(%s)^{2}}{%s} }{%s - 1} } = %s \\)",
                   dfTotaled['Totals', 2],
@@ -1284,7 +1284,7 @@ server <- function(session, input, output) {
     
     df <- getDsDataframe()
     
-    if("Mode" %in% input$dsTableFilters && df['Mode','Value'] != "No mode exists"){
+    if("Mode" %in% input$dsTableFilters && df['Mode',3] != "No mode exists."){
       rowFilter <- c(input$dsTableFilters, "Mode Frequency")
     } else{
       rowFilter <- input$dsTableFilters
@@ -2052,7 +2052,7 @@ server <- function(session, input, output) {
       )
     })
     
-    cData2x2 <- matrix(as.numeric(input$cMatrix2x2), ncol = ncol(input$cMatrix2x2))
+    cData2x2 <- matrix(cMatrixData2x2(), ncol = ncol(input$cMatrix2x2))
     colnames(cData2x2) <- colnames(input$cMatrix2x2)
     rownames(cData2x2) <- rownames(input$cMatrix2x2)
     cData2x2 <- cbind(cData2x2, Total = rowSums(cData2x2))
@@ -2111,7 +2111,7 @@ server <- function(session, input, output) {
     
     
     
-    cData3x3 <- matrix(as.numeric(input$cMatrix3x3), ncol = ncol(input$cMatrix3x3))
+    cData3x3 <- matrix(cMatrixData3x3(), ncol = ncol(input$cMatrix3x3))
     colnames(cData3x3) <- colnames(input$cMatrix3x3)
     rownames(cData3x3) <- rownames(input$cMatrix3x3)
     cData3x3 <- cbind(cData3x3, Total = rowSums(cData3x3))
@@ -6178,9 +6178,9 @@ server <- function(session, input, output) {
   #### Descriptive Statistics ----
   #  -------------------------------------------------------------------- #
   
-  observeEvent(!ds_iv$is_valid(), {
-    hide(id = "descriptiveStatsMP")
-  })
+  # observeEvent(!ds_iv$is_valid(), {
+  #   hide(id = "descriptiveStatsMP")
+  # })
   
   observeEvent({input$descriptiveStat
     input$dsUploadVars}, {
