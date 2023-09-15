@@ -238,7 +238,7 @@
                                                                                             condition = "input.cTableDimension == '2 x 2'",
                                                                                             
                                                                                             matrixInput(inputId = "cMatrix2x2",
-                                                                                                        value = matrix(c(18,22, 21,152), 2, 2, dimnames = list(c("Victim", "Not a Victim"), c("Worried", "Not worried"))),
+                                                                                                        value = matrix(c(18,22, 21,152), 2, 2, dimnames = list(c("A1", "A2"), c("B1", "B2"))),
                                                                                                         rows = list(editableNames = TRUE),
                                                                                                         cols = list(editableNames = TRUE)
                                                                                             ),
@@ -1369,7 +1369,7 @@
                                                                                     
                                                                                     conditionalPanel(
                                                                                       condition = "input.dsTableFilters.indexOf('Mean') > -1",
-                                                                                      
+                                                                                      withMathJax(),
                                                                                       titlePanel(tags$u('Sample Mean')),
                                                                                       br(),
                                                                                       uiOutput('dsMeanCalc')
@@ -1377,7 +1377,7 @@
                                                                                     
                                                                                     conditionalPanel(
                                                                                       condition = "input.dsTableFilters.indexOf('Sample Standard Deviation') > -1",
-                                                                                      
+                                                                                      withMathJax(),
                                                                                       titlePanel(tags$u('Sample Standard Deviation')),
                                                                                       br(),
                                                                                       uiOutput('dsSDCalc')
