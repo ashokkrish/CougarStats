@@ -111,6 +111,8 @@ server <- function(session, input, output) {
   ctable2x2_iv$add_rule("cMatrix2x2", ~ if(any(cMatrixData2x2() < 0)) "Fields must be positive integers.")
   ctable2x2_iv$add_rule("cMatrix2x2", ~ if(any(cMatrixData2x2() %% 1 != 0)) "Fields must be positive integers.")
   
+  # ctable2x2conditional_iv$add_rule("cMatrix2x2", ~ if())
+  
   ctable2x3_iv$add_rule("cMatrix2x3", sv_required())
   ctable2x3_iv$add_rule("cMatrix2x3", ~ if(any(is.na(cMatrixData2x3()))) "Fields must be positive integers.")
   ctable2x3_iv$add_rule("cMatrix2x3", ~ if(any(cMatrixData2x3() < 0)) "Fields must be positive integers.")
@@ -2185,6 +2187,8 @@ server <- function(session, input, output) {
       )
     })
     
+    req(pd_iv$is_valid())
+    
     cData2x2 <- matrix(cMatrixData2x2(), ncol = ncol(input$cMatrix2x2))
     cData2x2 <- GetCMatrix(cData2x2, input$cMatrix2x2)
     
@@ -2450,7 +2454,7 @@ server <- function(session, input, output) {
   observeEvent(input$resetcTable, {
     ResetCTable("cMatrix2x2", 2, 2, c("A1", "A2"), c("B1", "B2"))
     ResetCTable("cMatrix2x3", 2, 3, c("A1", "A2"), c("B1", "B2", "B3"))
-    ResetCTable("cMatrix2x3", 3, 2, c("A1", "A2", "A3"), c("B1", "B2"))
+    ResetCTable("cMatrix3x2", 3, 2, c("A1", "A2", "A3"), c("B1", "B2"))
     ResetCTable("cMatrix3x3", 3, 3, c("A1", "A2", "A3"), c("B1", "B2", "B3"))
   })
   
