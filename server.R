@@ -12,10 +12,15 @@ server <- function(session, input, output) {
   
   pd_iv <- InputValidator$new()
   ctable_iv <- InputValidator$new()
+  ctableconditional_iv <- InputValidator$new()
   ctable2x2_iv <- InputValidator$new()
+  ctable2x2conditional_iv <- InputValidator$new()
   ctable2x3_iv <- InputValidator$new()
+  ctable2x3conditional_iv <- InputValidator$new()
   ctable3x2_iv <- InputValidator$new()
+  ctable3x2conditional_iv <- InputValidator$new()
   ctable3x3_iv <- InputValidator$new()
+  ctable3x3conditional_iv <- InputValidator$new()
   binom_iv <- InputValidator$new()
   binomprob_iv <- InputValidator$new()
   binombetween_iv <- InputValidator$new()
@@ -110,23 +115,37 @@ server <- function(session, input, output) {
   ctable2x2_iv$add_rule("cMatrix2x2", ~ if(any(is.na(cMatrixData2x2()))) "Fields must be positive integers.")
   ctable2x2_iv$add_rule("cMatrix2x2", ~ if(any(cMatrixData2x2() < 0)) "Fields must be positive integers.")
   ctable2x2_iv$add_rule("cMatrix2x2", ~ if(any(cMatrixData2x2() %% 1 != 0)) "Fields must be positive integers.")
+  ctable2x2_iv$add_rule("cMatrix2x2", ~ if(all(cMatrixData2x2() == 0)) "All cell values cannot be equal to zero.")
   
-  # ctable2x2conditional_iv$add_rule("cMatrix2x2", ~ if())
+  ctable2x2conditional_iv$add_rule("cMatrix2x2", ~ if(any(cMatrix2x2Totaled()['Total',] == 0)) "Row and Column totals must be greater than 0.")
+  ctable2x2conditional_iv$add_rule("cMatrix2x2", ~ if(any(cMatrix2x2Totaled()[,'Total'] == 0)) "Row and Column totals must be greater than 0.")
   
   ctable2x3_iv$add_rule("cMatrix2x3", sv_required())
   ctable2x3_iv$add_rule("cMatrix2x3", ~ if(any(is.na(cMatrixData2x3()))) "Fields must be positive integers.")
   ctable2x3_iv$add_rule("cMatrix2x3", ~ if(any(cMatrixData2x3() < 0)) "Fields must be positive integers.")
   ctable2x3_iv$add_rule("cMatrix2x3", ~ if(any(cMatrixData2x3() %% 1 != 0)) "Fields must be positive integers.")
+  ctable2x3_iv$add_rule("cMatrix2x3", ~ if(all(cMatrixData2x3() == 0)) "All cell values cannot be equal to zero.")
+  
+  ctable2x3conditional_iv$add_rule("cMatrix2x3", ~ if(any(cMatrix2x3Totaled()['Total',] == 0)) "Row and Column totals must be greater than 0.")
+  ctable2x3conditional_iv$add_rule("cMatrix2x3", ~ if(any(cMatrix2x3Totaled()[,'Total'] == 0)) "Row and Column totals must be greater than 0.")
   
   ctable3x2_iv$add_rule("cMatrix3x2", sv_required())
   ctable3x2_iv$add_rule("cMatrix3x2", ~ if(any(is.na(cMatrixData3x2()))) "Fields must be positive integers.")
   ctable3x2_iv$add_rule("cMatrix3x2", ~ if(any(cMatrixData3x2() < 0)) "Fields must be positive integers.")
   ctable3x2_iv$add_rule("cMatrix3x2", ~ if(any(cMatrixData3x2() %% 1 != 0)) "Fields must be positive integers.")
+  ctable3x2_iv$add_rule("cMatrix3x2", ~ if(all(cMatrixData3x2() == 0)) "All cell values cannot be equal to zero.")
+  
+  ctable3x2conditional_iv$add_rule("cMatrix3x2", ~ if(any(cMatrix3x2Totaled()['Total',] == 0)) "Row and Column totals must be greater than 0.")
+  ctable3x2conditional_iv$add_rule("cMatrix3x2", ~ if(any(cMatrix3x2Totaled()[,'Total'] == 0)) "Row and Column totals must be greater than 0.")
   
   ctable3x3_iv$add_rule("cMatrix3x3", sv_required())
   ctable3x3_iv$add_rule("cMatrix3x3", ~ if(any(is.na(cMatrixData3x3()))) "Fields must be positive integers.")
   ctable3x3_iv$add_rule("cMatrix3x3", ~ if(any(cMatrixData3x3() < 0)) "Fields must be positive integers.")
   ctable3x3_iv$add_rule("cMatrix3x3", ~ if(any(cMatrixData3x3() %% 1 != 0)) "Fields must be positive integers.")
+  ctable3x3_iv$add_rule("cMatrix3x3", ~ if(all(cMatrixData3x3() == 0)) "All cell values cannot be equal to zero.")
+  
+  ctable3x3conditional_iv$add_rule("cMatrix3x3", ~ if(any(cMatrix3x3Totaled()['Total',] == 0)) "Row and Column totals must be greater than 0.")
+  ctable3x3conditional_iv$add_rule("cMatrix3x3", ~ if(any(cMatrix3x3Totaled()[,'Total'] == 0)) "Row and Column totals must be greater than 0.")
   
   # numTrialsBinom 
   
@@ -208,14 +227,30 @@ server <- function(session, input, output) {
   ctable2x2_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
                                   input$cTableDimension == '2 x 2'))
   
+  ctable2x2conditional_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
+                                    input$cTableDimension == '2 x 2' &&
+                                    input$cTableProb == 'Conditional'))
+  
   ctable2x3_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
                                     input$cTableDimension == '2 x 3'))
+  
+  ctable2x3conditional_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
+                                               input$cTableDimension == '2 x 3' &&
+                                               input$cTableProb == 'Conditional'))
   
   ctable3x2_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
                                     input$cTableDimension == '3 x 2'))
   
+  ctable3x2conditional_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
+                                               input$cTableDimension == '3 x 2' &&
+                                               input$cTableProb == 'Conditional'))
+  
   ctable3x3_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
                                     input$cTableDimension == '3 x 3'))
+  
+  ctable3x3conditional_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
+                                               input$cTableDimension == '3 x 3' &&
+                                               input$cTableProb == 'Conditional'))
   
   binom_iv$condition(~ isTRUE(input$probability == 'Binomial'))
   
@@ -261,6 +296,11 @@ server <- function(session, input, output) {
   ctable_iv$add_validator(ctable3x2_iv)
   ctable_iv$add_validator(ctable3x3_iv)
   
+  ctableconditional_iv$add_validator(ctable2x2conditional_iv)
+  ctableconditional_iv$add_validator(ctable2x3conditional_iv)
+  ctableconditional_iv$add_validator(ctable3x2conditional_iv)
+  ctableconditional_iv$add_validator(ctable3x3conditional_iv)
+  
   binom_iv$add_validator(binomprob_iv)
   binom_iv$add_validator(binombetween_iv)
   
@@ -283,10 +323,15 @@ server <- function(session, input, output) {
   # ------------------ #
   pd_iv$enable()
   ctable_iv$enable()
+  ctableconditional_iv$enable()
   ctable2x2_iv$enable()
+  ctable2x2conditional_iv$enable()
   ctable2x3_iv$enable()
+  ctable2x3conditional_iv$enable()
   ctable3x2_iv$enable()
+  ctable3x2conditional_iv$enable()
   ctable3x3_iv$enable()
+  ctable3x3conditional_iv$enable()
   binom_iv$enable()
   binomprob_iv$enable()
   binombetween_iv$enable()
@@ -1584,6 +1629,13 @@ server <- function(session, input, output) {
                              withMathJax(),
                              titlePanel('Conditional Probabilities'),
                              hr(),
+                             br(),
+                             sprintf("\\( P(\\text{A} \\, | \\, \\text{B}) \\; = 
+                                     \\; \\dfrac{P(\\text{A} \\cap \\text{B})}{P(\\text{B})}, 
+                                     \\quad P(\\text{B}) \\gt 0 \\)"),
+                             br(),
+                             br(),
+                             br(),
                              br()
                              )
     
@@ -1919,6 +1971,13 @@ server <- function(session, input, output) {
   ### Reactives ----
   # --------------------------------------------------------------------- #
 
+  
+  # --------------------- #
+  # cMatrixData Reactives #
+  # --------------------- #
+  # Purpose:
+  #   converts matrix data user input into numeric values
+  
   cMatrixData2x2 <- reactive({
     suppressWarnings(as.numeric(input$cMatrix2x2))
   })
@@ -1935,12 +1994,50 @@ server <- function(session, input, output) {
     suppressWarnings(as.numeric(input$cMatrix3x3))
   })
   
-  # data2x2cTable <- reactiveValues(data = {
-  #   data.frame(B1 = c(0, 0),
-  #              B2 = c(0, 0),
-  #              stringsAsFactors = FALSE) %>%
-  #     mutate(Total = B1 * B2)
-  # })
+  
+  # ------------------------ #
+  # cMatrixTotaled Reactives #
+  # ------------------------ #
+  # Purpose:
+  #   uses the numeric user data to create a matrix with a 'Total' row and
+  #   column using the GetCMatrix function.
+  
+  cMatrix2x2Totaled <- reactive({
+    if(!any(is.na(cMatrixData2x2()))){
+      cData2x2 <- matrix(cMatrixData2x2(), ncol = ncol(input$cMatrix2x2))
+      cData2x2 <- GetCMatrix(cData2x2, input$cMatrix2x2)
+      
+      return(cData2x2)
+    }
+  })
+  
+  cMatrix2x3Totaled <- reactive({
+    if(!any(is.na(cMatrixData2x3()))){
+      cData2x3 <- matrix(cMatrixData2x3(), ncol = ncol(input$cMatrix2x3))
+      cData2x3 <- GetCMatrix(cData2x3, input$cMatrix2x3)
+      
+      return(cData2x3)
+    }
+  })
+  
+  cMatrix3x2Totaled <- reactive({
+    if(!any(is.na(cMatrixData3x2()))){
+      cData3x2 <- matrix(cMatrixData3x2(), ncol = ncol(input$cMatrix3x2))
+      cData3x2 <- GetCMatrix(cData3x2, input$cMatrix3x2)
+      
+      return(cData3x2)
+    }
+  })
+  
+  cMatrix3x3Totaled <- reactive({
+    if(!any(is.na(cMatrixData3x3()))){
+      cData3x3 <- matrix(cMatrixData3x3(), ncol = ncol(input$cMatrix3x3))
+      cData3x3 <- GetCMatrix(cData3x3, input$cMatrix3x3)
+      
+      return(cData3x3)
+    }
+  })
+
   
   getNormValue <- reactive({
     req(pd_iv$is_valid())
@@ -1991,13 +2088,6 @@ server <- function(session, input, output) {
   # --------------------------------------------------------------------- #
   
   #### Contingency Table ----
-  # observeEvent(input$dropDownMenu == 'Probability Distributions', {
-  #   Reset2x2CTable()
-  # })
-  
-  # observeEvent(input$cTableDimensions == '3 x 3', {
-  #   Reset3x3CTable()
-  # })
   
   observeEvent(input$gocTable, {
  
@@ -2187,11 +2277,8 @@ server <- function(session, input, output) {
       )
     })
     
-    req(pd_iv$is_valid())
-    
     cData2x2 <- matrix(cMatrixData2x2(), ncol = ncol(input$cMatrix2x2))
     cData2x2 <- GetCMatrix(cData2x2, input$cMatrix2x2)
-    
     
     output$cTable2x2 <- renderDT({
       
@@ -2445,7 +2532,15 @@ server <- function(session, input, output) {
     
     output$renderConditionalProbs <- renderUI({
       req(pd_iv$is_valid())
-      printConditionalProbs(activeCMatrix)
+      if(ctableconditional_iv$is_valid()) {
+        printConditionalProbs(activeCMatrix)
+      } else {
+        validate("Row and Column totals must be greater than 0 to calculate conditional probabilities.",
+          
+          errorClass = "myClass"
+        )
+      }
+     
     })
   })
   
