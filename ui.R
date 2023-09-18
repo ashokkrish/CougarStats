@@ -276,7 +276,7 @@
                                                                                             condition = "input.cTableDimension == '3 x 3'",
                                                                                             
                                                                                             matrixInput(inputId = "cMatrix3x3",
-                                                                                                        value = matrix("", 3, 3, dimnames = list(c("A1", "A2", "A3"), c("B1", "B2", "B3"))),
+                                                                                                        value = matrix(c(6,14,50, 38,31,50, 31,4,5), 3, 3, dimnames = list(c("A1", "A2", "A3"), c("B1", "B2", "B3"))),
                                                                                                         rows = list(editableNames = TRUE),
                                                                                                         cols = list(editableNames = TRUE)
                                                                               ),
