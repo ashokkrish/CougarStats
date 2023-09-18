@@ -13,6 +13,8 @@ server <- function(session, input, output) {
   pd_iv <- InputValidator$new()
   ctable_iv <- InputValidator$new()
   ctable2x2_iv <- InputValidator$new()
+  ctable2x3_iv <- InputValidator$new()
+  ctable3x2_iv <- InputValidator$new()
   ctable3x3_iv <- InputValidator$new()
   binom_iv <- InputValidator$new()
   binomprob_iv <- InputValidator$new()
@@ -109,6 +111,16 @@ server <- function(session, input, output) {
   ctable2x2_iv$add_rule("cMatrix2x2", ~ if(any(cMatrixData2x2() < 0)) "Fields must be positive integers.")
   ctable2x2_iv$add_rule("cMatrix2x2", ~ if(any(cMatrixData2x2() %% 1 != 0)) "Fields must be positive integers.")
   
+  ctable2x3_iv$add_rule("cMatrix2x3", sv_required())
+  ctable2x3_iv$add_rule("cMatrix2x3", ~ if(any(is.na(cMatrixData2x3()))) "Fields must be positive integers.")
+  ctable2x3_iv$add_rule("cMatrix2x3", ~ if(any(cMatrixData2x3() < 0)) "Fields must be positive integers.")
+  ctable2x3_iv$add_rule("cMatrix2x3", ~ if(any(cMatrixData2x3() %% 1 != 0)) "Fields must be positive integers.")
+  
+  ctable3x2_iv$add_rule("cMatrix3x2", sv_required())
+  ctable3x2_iv$add_rule("cMatrix3x2", ~ if(any(is.na(cMatrixData3x2()))) "Fields must be positive integers.")
+  ctable3x2_iv$add_rule("cMatrix3x2", ~ if(any(cMatrixData3x2() < 0)) "Fields must be positive integers.")
+  ctable3x2_iv$add_rule("cMatrix3x2", ~ if(any(cMatrixData3x2() %% 1 != 0)) "Fields must be positive integers.")
+  
   ctable3x3_iv$add_rule("cMatrix3x3", sv_required())
   ctable3x3_iv$add_rule("cMatrix3x3", ~ if(any(is.na(cMatrixData3x3()))) "Fields must be positive integers.")
   ctable3x3_iv$add_rule("cMatrix3x3", ~ if(any(cMatrixData3x3() < 0)) "Fields must be positive integers.")
@@ -194,6 +206,12 @@ server <- function(session, input, output) {
   ctable2x2_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
                                   input$cTableDimension == '2 x 2'))
   
+  ctable2x3_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
+                                    input$cTableDimension == '2 x 3'))
+  
+  ctable3x2_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
+                                    input$cTableDimension == '3 x 2'))
+  
   ctable3x3_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
                                     input$cTableDimension == '3 x 3'))
   
@@ -237,6 +255,8 @@ server <- function(session, input, output) {
   #     Dependency     #
   # ------------------ #
   ctable_iv$add_validator(ctable2x2_iv)
+  ctable_iv$add_validator(ctable2x3_iv)
+  ctable_iv$add_validator(ctable3x2_iv)
   ctable_iv$add_validator(ctable3x3_iv)
   
   binom_iv$add_validator(binomprob_iv)
@@ -262,6 +282,8 @@ server <- function(session, input, output) {
   pd_iv$enable()
   ctable_iv$enable()
   ctable2x2_iv$enable()
+  ctable2x3_iv$enable()
+  ctable3x2_iv$enable()
   ctable3x3_iv$enable()
   binom_iv$enable()
   binomprob_iv$enable()
@@ -1416,25 +1438,34 @@ server <- function(session, input, output) {
   #     }
   #   }
   # }
-  Reset2x2CTable <- function(){
-    newMatrix <- matrix("", 2, 2)
-    colnames(newMatrix) <- c("B1", "B2")
-    rownames(newMatrix) <- c("A1", "A2")
-    updateMatrixInput(session, "cMatrix2x2", newMatrix)
+  ResetCTable <- function(tableID, numRows, numCols, rowNames, colNames){
+    newMatrix <- matrix("", numRows, numCols)
+    colnames(newMatrix) <- colNames
+    rownames(newMatrix) <- rowNames
+    updateMatrixInput(session, tableID, newMatrix)
   }
   
-  Reset3x3CTable <- function(){
-    newMatrix <- matrix("", 3, 3)
-    colnames(newMatrix) <- c("B1", "B2", "B3")
-    rownames(newMatrix) <- c("A1", "A2", "A3")
-    withMathJax()
-    updateMatrixInput(session, "cMatrix3x3", newMatrix)
-  }
+  # Reset3x3CTable <- function(){
+  #   newMatrix <- matrix("", 3, 3)
+  #   colnames(newMatrix) <- c("B1", "B2", "B3")
+  #   rownames(newMatrix) <- c("A1", "A2", "A3")
+  #   withMathJax()
+  #   updateMatrixInput(session, "cMatrix3x3", newMatrix)
+  # }
   
   getProbabilities <- function(x, t){
     return(round((x/t), 4))
   }
   
+  
+  GetCMatrix <- function(cMatrix, matrixData){
+    colnames(cMatrix) <- colnames(matrixData)
+    rownames(cMatrix) <- rownames(matrixData)
+    cMatrix <- cbind(cMatrix, Total = rowSums(cMatrix))
+    cMatrix <- rbind(cMatrix, Total = colSums(cMatrix))
+    
+    return(cMatrix)
+  }
   
   
   printMarginalProbs <- function(probMatrix, cMatrix){
@@ -1890,6 +1921,14 @@ server <- function(session, input, output) {
     suppressWarnings(as.numeric(input$cMatrix2x2))
   })
   
+  cMatrixData2x3 <- reactive({
+    suppressWarnings(as.numeric(input$cMatrix2x3))
+  })
+  
+  cMatrixData3x2 <- reactive({
+    suppressWarnings(as.numeric(input$cMatrix3x2))
+  })
+  
   cMatrixData3x3 <- reactive({
     suppressWarnings(as.numeric(input$cMatrix3x3))
   })
@@ -2006,6 +2045,100 @@ server <- function(session, input, output) {
       )
     })
     
+    output$render2x3cTable <- renderUI({
+      
+      validate(
+        need(input$cMatrix2x3, "Fields must be positive integers."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(all(!is.na(cMatrixData2x3())), "Fields must be positive integers.") %then%
+          need(all(cMatrixData2x3() %% 1 == 0), "Fields must be positive integers."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(all(cMatrixData2x3() >= 0), "Fields must be positive integers."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(any(cMatrixData2x3() != 0), "All cell values cannot be equal to zero."),
+        
+        errorClass = "myClass"
+      )
+      
+      tagList(
+        
+        titlePanel("Contingency Table"),
+        hr(),
+        br(),
+        DTOutput("cTable2x3", width = '750px'),
+        br(),
+        br(),
+        br(),
+        titlePanel("Probability Distribution Table"),
+        hr(),
+        br(),
+        DTOutput("probTable2x3", width = '750px'),
+        br(),
+        br(),
+        br(),
+      )
+    })
+    
+    
+    output$render3x2cTable <- renderUI({
+      
+      validate(
+        need(input$cMatrix3x2, "Fields must be positive integers."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(all(!is.na(cMatrixData3x2())), "Fields must be positive integers.") %then%
+          need(all(cMatrixData3x2() %% 1 == 0), "Fields must be positive integers."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(all(cMatrixData3x2() >= 0), "Fields must be positive integers."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(any(cMatrixData3x2() != 0), "All cell values cannot be equal to zero."),
+        
+        errorClass = "myClass"
+      )
+      
+      tagList(
+        
+        titlePanel("Contingency Table"),
+        hr(),
+        br(),
+        DTOutput("cTable3x2", width = '750px'),
+        br(),
+        br(),
+        br(),
+        titlePanel("Probability Distribution Table"),
+        hr(),
+        br(),
+        DTOutput("probTable3x2", width = '750px'),
+        br(),
+        br(),
+        br(),
+      )
+    })
+    
+    
     output$render3x3cTable <- renderUI({
       
       validate(
@@ -2053,10 +2186,8 @@ server <- function(session, input, output) {
     })
     
     cData2x2 <- matrix(cMatrixData2x2(), ncol = ncol(input$cMatrix2x2))
-    colnames(cData2x2) <- colnames(input$cMatrix2x2)
-    rownames(cData2x2) <- rownames(input$cMatrix2x2)
-    cData2x2 <- cbind(cData2x2, Total = rowSums(cData2x2))
-    cData2x2 <- rbind(cData2x2, Total = colSums(cData2x2))
+    cData2x2 <- GetCMatrix(cData2x2, input$cMatrix2x2)
+    
     
     output$cTable2x2 <- renderDT({
       
@@ -2110,12 +2241,122 @@ server <- function(session, input, output) {
     })
     
     
+    cData2x3 <- matrix(cMatrixData2x3(), ncol = ncol(input$cMatrix2x3))
+    cData2x3 <- GetCMatrix(cData2x3, input$cMatrix2x3)
+    
+    
+    output$cTable2x3 <- renderDT({
+      
+      datatable(cData2x3,
+                class = 'cell-border stripe',
+                options = list(
+                  dom = 't',
+                  pageLength = -1,
+                  ordering = FALSE,
+                  searching = FALSE,
+                  paging = FALSE,
+                  autoWidth = TRUE,
+                  scrollX = TRUE,
+                  columnDefs = list(list(width = '100px', targets = c(1, 2, 3, 4)),
+                                    list(className = 'dt-center', targets = c(1, 2, 3, 4)))
+                ),
+                selection = "none",
+                escape = FALSE,
+                filter = "none",) %>% 
+        formatStyle(columns = c(0,4), #specify columns to format
+                    fontWeight = 'bold') %>%
+        formatStyle(columns = 1:4,
+                    target = 'row',
+                    fontWeight = styleRow(dim(cData2x3)[1], "bold"))
+    })
+    
+    probData2x3 <- apply(cData2x3, 2, getProbabilities, t=cData2x3['Total',4])
+    
+    output$probTable2x3 <- renderDT({
+      datatable(probData2x3,
+                class = 'cell-border stripe',
+                options = list(
+                  dom = 't',
+                  pageLength = -1,
+                  ordering = FALSE,
+                  searching = FALSE,
+                  paging = FALSE,
+                  autoWidth = TRUE,
+                  scrollX = TRUE,
+                  columnDefs = list(list(width = '100px', targets = c(1, 2, 3, 4)),
+                                    list(className = 'dt-center', targets = c(1, 2, 3, 4)))
+                ),
+                selection = "none",
+                escape = FALSE,
+                filter = "none",) %>% 
+        formatStyle(columns = c(0,4), 
+                    fontWeight = 'bold') %>%
+        formatStyle(columns = 1:4,
+                    target = 'row',
+                    fontWeight = styleRow(dim(probData2x3)[1], "bold"))
+    })
+    
+    
+    cData3x2 <- matrix(cMatrixData3x2(), ncol = ncol(input$cMatrix3x2))
+    cData3x2 <- GetCMatrix(cData3x2, input$cMatrix3x2)
+    
+    
+    output$cTable3x2 <- renderDT({
+      
+      datatable(cData3x2,
+                class = 'cell-border stripe',
+                options = list(
+                  dom = 't',
+                  pageLength = -1,
+                  ordering = FALSE,
+                  searching = FALSE,
+                  paging = FALSE,
+                  autoWidth = TRUE,
+                  scrollX = TRUE,
+                  columnDefs = list(list(width = '100px', targets = c(1, 2, 3)),
+                                    list(className = 'dt-center', targets = c(1, 2, 3)))
+                ),
+                selection = "none",
+                escape = FALSE,
+                filter = "none",) %>% 
+        formatStyle(columns = c(0,3), #specify columns to format
+                    fontWeight = 'bold') %>%
+        formatStyle(columns = 1:3,
+                    target = 'row',
+                    fontWeight = styleRow(dim(cData3x2)[1], "bold"))
+    })
+    
+    probData3x2 <- apply(cData3x2, 2, getProbabilities, t=cData3x2['Total',3])
+    
+    output$probTable3x2 <- renderDT({
+      datatable(probData3x2,
+                class = 'cell-border stripe',
+                options = list(
+                  dom = 't',
+                  pageLength = -1,
+                  ordering = FALSE,
+                  searching = FALSE,
+                  paging = FALSE,
+                  autoWidth = TRUE,
+                  scrollX = TRUE,
+                  columnDefs = list(list(width = '100px', targets = c(1, 2, 3)),
+                                    list(className = 'dt-center', targets = c(1, 2, 3)))
+                ),
+                selection = "none",
+                escape = FALSE,
+                filter = "none",) %>% 
+        formatStyle(columns = c(0,3), 
+                    fontWeight = 'bold') %>%
+        formatStyle(columns = 1:3,
+                    target = 'row',
+                    fontWeight = styleRow(dim(probData3x2)[1], "bold"))
+    })
+    
+    
     
     cData3x3 <- matrix(cMatrixData3x3(), ncol = ncol(input$cMatrix3x3))
-    colnames(cData3x3) <- colnames(input$cMatrix3x3)
-    rownames(cData3x3) <- rownames(input$cMatrix3x3)
-    cData3x3 <- cbind(cData3x3, Total = rowSums(cData3x3))
-    cData3x3 <- rbind(cData3x3, Total = colSums(cData3x3))
+    cData3x3 <- GetCMatrix(cData3x3, input$cMatrix3x3)
+    
     
     output$cTable3x3 <- renderDT({
 
@@ -2171,6 +2412,12 @@ server <- function(session, input, output) {
     if(input$cTableDimension == '2 x 2') {
       activeProbMatrix <- probData2x2
       activeCMatrix <- cData2x2
+    } else if(input$cTableDimension == '2 x 3') {
+      activeProbMatrix <- probData2x3
+      activeCMatrix <- cData2x3
+    } else if(input$cTableDimension == '3 x 2') {
+      activeProbMatrix <- probData3x2
+      activeCMatrix <- cData3x2
     } else if(input$cTableDimension == '3 x 3') {
       activeProbMatrix <- probData3x3
       activeCMatrix <- cData3x3
@@ -2201,8 +2448,10 @@ server <- function(session, input, output) {
   
   
   observeEvent(input$resetcTable, {
-    Reset2x2CTable()
-    Reset3x3CTable()
+    ResetCTable("cMatrix2x2", 2, 2, c("A1", "A2"), c("B1", "B2"))
+    ResetCTable("cMatrix2x3", 2, 3, c("A1", "A2"), c("B1", "B2", "B3"))
+    ResetCTable("cMatrix2x3", 3, 2, c("A1", "A2", "A3"), c("B1", "B2"))
+    ResetCTable("cMatrix3x3", 3, 3, c("A1", "A2", "A3"), c("B1", "B2", "B3"))
   })
   
   #### Binomial ----
@@ -6220,7 +6469,9 @@ server <- function(session, input, output) {
   
   observeEvent({input$cTableDimension
                 input$cMatrix2x2
-                input$cMatrix3x3},{
+                input$cMatrix2x3
+                input$cMatrix3x2
+                input$cMatrix3x3}, {
     hide('probabilityMP')
   })
   

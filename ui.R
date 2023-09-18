@@ -19,10 +19,16 @@
                         text-decoration:none;
                         background-color:#428BCA
                       }
-                      #cMatrix2x2 th, #cMatrix3x3 th {
+                      #cMatrix2x2 th,
+                      #cMatrix2x3 th,
+                      #cMatrix3x2 th,
+                      #cMatrix3x3 th {
                         text-align: center
                       }
-                      #cMatrix2x2 td, #cMatrix3x3 td {
+                      #cMatrix2x2 td,
+                      #cMatrix2x3 td,
+                      #cMatrix3x2 td,
+                      #cMatrix3x3 td {
                         background-color:#FFFFFF;
                         text-align: center
                       }
@@ -231,7 +237,9 @@
                                                                             radioButtons(inputId = "cTableDimension",
                                                                                          label = strong("Dimension"),
                                                                                          choices = c("2 x 2",
-                                                                                                        "3 x 3"),
+                                                                                                     "2 x 3",
+                                                                                                     "3 x 2",
+                                                                                                     "3 x 3"),
                                                                                          inline = TRUE),
                                                                             
                                                                             conditionalPanel(
@@ -242,6 +250,26 @@
                                                                                                         rows = list(editableNames = TRUE),
                                                                                                         cols = list(editableNames = TRUE)
                                                                                             ),
+                                                                            ),
+                                                                            
+                                                                            conditionalPanel(
+                                                                              condition = "input.cTableDimension == '2 x 3'",
+                                                                              
+                                                                              matrixInput(inputId = "cMatrix2x3",
+                                                                                          value = matrix(c(30,210, 26,121, 0,20), 2, 3, dimnames = list(c("A1", "A2"), c("B1", "B2", "B3"))),
+                                                                                          rows = list(editableNames = TRUE),
+                                                                                          cols = list(editableNames = TRUE)
+                                                                              ),
+                                                                            ),
+                                                                            
+                                                                            conditionalPanel(
+                                                                              condition = "input.cTableDimension == '3 x 2'",
+                                                                              
+                                                                              matrixInput(inputId = "cMatrix3x2",
+                                                                                          value = matrix(c(115,75,142, 250,183,235), 3, 2, dimnames = list(c("A1", "A2", "A3"), c("B1", "B2"))),
+                                                                                          rows = list(editableNames = TRUE),
+                                                                                          cols = list(editableNames = TRUE)
+                                                                              ),
                                                                             ),
                                                                             
                                                                             conditionalPanel(
@@ -1483,6 +1511,22 @@
                                                                    condition = "input.cTableDimension == '2 x 2'",
 
                                                                    uiOutput("render2x2cTable"),
+                                                                   br(),
+                                                                   
+                                                                 ),
+                                                                 
+                                                                 conditionalPanel(
+                                                                   condition = "input.cTableDimension == '2 x 3'",
+                                                                   
+                                                                   uiOutput("render2x3cTable"),
+                                                                   br(),
+                                                                   
+                                                                 ),
+                                                                 
+                                                                 conditionalPanel(
+                                                                   condition = "input.cTableDimension == '3 x 2'",
+                                                                   
+                                                                   uiOutput("render3x2cTable"),
                                                                    br(),
                                                                    
                                                                  ),
