@@ -246,7 +246,7 @@
                                                                                             condition = "input.cTableDimension == '2 x 2'",
                                                                                             
                                                                                             matrixInput(inputId = "cMatrix2x2",
-                                                                                                        value = matrix(c(18,22, 21,152), 2, 2, dimnames = list(c("A1", "A2"), c("B1", "B2"))),
+                                                                                                        value = matrix(c(18,22, 21,152), 2, 2, dimnames = list(c("R1", "R2"), c("C1", "C2"))),
                                                                                                         rows = list(editableNames = TRUE),
                                                                                                         cols = list(editableNames = TRUE)
                                                                                             ),
@@ -256,7 +256,7 @@
                                                                               condition = "input.cTableDimension == '2 x 3'",
                                                                               
                                                                               matrixInput(inputId = "cMatrix2x3",
-                                                                                          value = matrix(c(30,210, 26,121, 0,20), 2, 3, dimnames = list(c("A1", "A2"), c("B1", "B2", "B3"))),
+                                                                                          value = matrix(c(30,210, 26,121, 0,20), 2, 3, dimnames = list(c("R1", "R2"), c("C1", "C2", "C3"))),
                                                                                           rows = list(editableNames = TRUE),
                                                                                           cols = list(editableNames = TRUE)
                                                                               ),
@@ -266,7 +266,7 @@
                                                                               condition = "input.cTableDimension == '3 x 2'",
                                                                               
                                                                               matrixInput(inputId = "cMatrix3x2",
-                                                                                          value = matrix(c(115,75,142, 250,183,235), 3, 2, dimnames = list(c("A1", "A2", "A3"), c("B1", "B2"))),
+                                                                                          value = matrix(c(115,75,142, 250,183,235), 3, 2, dimnames = list(c("R1", "R2", "R3"), c("C1", "C2"))),
                                                                                           rows = list(editableNames = TRUE),
                                                                                           cols = list(editableNames = TRUE)
                                                                               ),
@@ -276,7 +276,7 @@
                                                                                             condition = "input.cTableDimension == '3 x 3'",
                                                                                             
                                                                                             matrixInput(inputId = "cMatrix3x3",
-                                                                                                        value = matrix(c(6,14,50, 38,31,50, 31,4,5), 3, 3, dimnames = list(c("A1", "A2", "A3"), c("B1", "B2", "B3"))),
+                                                                                                        value = matrix(c(6,14,50, 38,31,50, 31,4,5), 3, 3, dimnames = list(c("R1", "R2", "R3"), c("C1", "C2", "C3"))),
                                                                                                         rows = list(editableNames = TRUE),
                                                                                                         cols = list(editableNames = TRUE)
                                                                               ),
