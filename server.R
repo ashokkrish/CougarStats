@@ -3036,17 +3036,17 @@ server <- function(session, input, output) {
           ),
           br(),
           hr(),
-          br(),
-          fluidRow(
-            column(width = 6, 
-                   plotOutput('normDistrPlot'),
-            ),
-            column(width = 6, 
-                   plotOutput('normZPlot'),
-            )
-          ),
-          br(),
           br()
+          # fluidRow(
+          #   column(width = 6, 
+          #          plotOutput('normDistrPlot'),
+          #   ),
+          #   column(width = 6, 
+          #          plotOutput('normZPlot'),
+          #   )
+          # ),
+          # br(),
+          # br()
         )
       )
     })
@@ -3192,17 +3192,17 @@ server <- function(session, input, output) {
           ),
           br(),
           hr(),
-          br(),
-          fluidRow(
-            column(width = 6, 
-                   plotOutput('sampMeanDistrPlot'),
-            ),
-            column(width = 6, 
-                   plotOutput('sampMeanZPlot'),
-            )
-          ),
-          br(),
           br()
+          # fluidRow(
+          #   column(width = 6, 
+          #          plotOutput('sampMeanDistrPlot'),
+          #   ),
+          #   column(width = 6, 
+          #          plotOutput('sampMeanZPlot'),
+          #   )
+          # ),
+          # br(),
+          # br()
         )
       )
     })
