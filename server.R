@@ -2547,10 +2547,10 @@ server <- function(session, input, output) {
   
   
   observeEvent(input$resetcTable, {
-    ResetCTable("cMatrix2x2", 2, 2, c("A1", "A2"), c("B1", "B2"))
-    ResetCTable("cMatrix2x3", 2, 3, c("A1", "A2"), c("B1", "B2", "B3"))
-    ResetCTable("cMatrix3x2", 3, 2, c("A1", "A2", "A3"), c("B1", "B2"))
-    ResetCTable("cMatrix3x3", 3, 3, c("A1", "A2", "A3"), c("B1", "B2", "B3"))
+    ResetCTable("cMatrix2x2", 2, 2, c("R1", "R2"), c("C1", "C2"))
+    ResetCTable("cMatrix2x3", 2, 3, c("R1", "R2"), c("C1", "C2", "C3"))
+    ResetCTable("cMatrix3x2", 3, 2, c("R1", "R2", "R3"), c("C1", "C2"))
+    ResetCTable("cMatrix3x3", 3, 3, c("R1", "R2", "R3"), c("C1", "C2", "C3"))
   })
   
   #### Binomial ----
