@@ -1829,7 +1829,7 @@ server <- function(session, input, output) {
   # }
   
   
-  normPlot <- function(normValue, normLines, variance, standDev, lineLabels, probType, plotLab){
+  normPlot <- function(normValue, normLines, popmean, variance, standDev, lineLabels, probType, plotLab){
     req(pd_iv$is_valid())
     withMathJax()
     
@@ -1870,7 +1870,7 @@ server <- function(session, input, output) {
                    color='#021C38',
                    alpha = 0.5) +
       geom_text(data = meanDF, 
-                aes(x = x, y = 0, label = x), 
+                aes(x = x, y = 0, label = popmean), 
                 size = 16 / .pt,
                 check_overlap = TRUE,
                 vjust = 1.5) +
@@ -3023,30 +3023,30 @@ server <- function(session, input, output) {
             br(),
             br(),
             br(),
-            sprintf("Mean \\( (\\mu) = %g\\)",
+            sprintf("Population Mean \\( (\\mu) = %g\\)",
                     norm_mu),
             br(),
             br(),
-            sprintf("Standard Deviation \\( (\\sigma) = %g\\)",
+            sprintf("Population Standard Deviation \\( (\\sigma) = %g\\)",
                     norm_sigma),
             br(),
             br(),
-            sprintf("Variance \\( (\\sigma^{2}) = %g\\)",
+            sprintf("Population Variance \\( (\\sigma^{2}) = %g\\)",
                     norm_sigma^2)
           ),
           br(),
           hr(),
+          br(),
+          fluidRow(
+            column(width = 6,
+                   plotOutput('normDistrPlot'),
+            ),
+            column(width = 6,
+                   plotOutput('normZPlot'),
+            )
+          ),
+          br(),
           br()
-          # fluidRow(
-          #   column(width = 6, 
-          #          plotOutput('normDistrPlot'),
-          #   ),
-          #   column(width = 6, 
-          #          plotOutput('normZPlot'),
-          #   )
-          # ),
-          # br(),
-          # br()
         )
       )
     })
@@ -3065,7 +3065,7 @@ server <- function(session, input, output) {
         lineLabels <- input$xValue
       }
       
-      normPlot(getNormValue(), normLines, input$popSD^2, input$popSD, lineLabels, input$calcNormal)
+      normPlot(getNormValue(), normLines, input$popMean, input$popSD^2, input$popSD, lineLabels, input$calcNormal)
     })
     
     output$normZPlot <- renderPlot({
@@ -3192,17 +3192,17 @@ server <- function(session, input, output) {
           ),
           br(),
           hr(),
+          br(),
+          fluidRow(
+            column(width = 6,
+                   plotOutput('sampMeanDistrPlot'),
+            ),
+            column(width = 6,
+                   plotOutput('sampMeanZPlot'),
+            )
+          ),
+          br(),
           br()
-          # fluidRow(
-          #   column(width = 6, 
-          #          plotOutput('sampMeanDistrPlot'),
-          #   ),
-          #   column(width = 6, 
-          #          plotOutput('sampMeanZPlot'),
-          #   )
-          # ),
-          # br(),
-          # br()
         )
       )
     })
@@ -3230,7 +3230,7 @@ server <- function(session, input, output) {
         lineLabels <- c(input$sampDistrxValue)
       }
       
-      normPlot(getMeanNormValue(), normLines, round(input$popSD^2 / input$sampDistrSize, 4), sampSE, lineLabels, input$calcNormSampDistr)
+      normPlot(getMeanNormValue(), normLines, input$popMean, round(input$popSD^2 / input$sampDistrSize, 4), sampSE, lineLabels, input$calcNormSampDistr)
     })
     
     
