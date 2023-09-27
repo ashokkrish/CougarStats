@@ -1840,7 +1840,6 @@ server <- function(session, input, output) {
     lineDF <- filter(df, x %in% normLines)
     lineDF['z'] <- lineLabels
     meanDF <- filter(df, x %in% c(0))
-    sdLinesDF <- filter(df, x %in% c(-1, 1))
     
     nPlot <- ggplot(df, aes(x = x, y = y)) +
       geom_line() +
@@ -1872,20 +1871,9 @@ server <- function(session, input, output) {
       geom_text(data = meanDF, 
                 aes(x = x, y = 0, label = popmean), 
                 size = 16 / .pt,
+                fontface = "bold",
                 check_overlap = TRUE,
                 vjust = 1.5) +
-      geom_segment(data = sdLinesDF,
-                   aes(x = x, xend = x, y = 0, yend = y),
-                   linetype = "dotted",
-                   lineend = 'round',
-                   linewidth = 1,
-                   color='#021C38',
-                   alpha = 0.5) +
-      # geom_text(data = sdLinesDF, 
-      #           aes(x = x, y = 0, label = z), 
-      #           size = 16 / .pt,
-      #           check_overlap = TRUE,
-      #           vjust = 1.5) +
       coord_cartesian(clip="off") +
       PlotTitle(variance) +
       theme_minimal()  +
@@ -1909,7 +1897,6 @@ server <- function(session, input, output) {
     df <- data.frame(x = xSeq, y = dnorm(xSeq, mean = 0, sd = 1))
     lineDF <- filter(df, x %in% normLines)
     meanDF <- filter(df, x %in% c(0))
-    sdLinesDF <- filter(df, x %in% c(-1, 1))
     
     nPlot <- ggplot(df, aes(x = x, y = y)) +
       geom_line() +
@@ -1941,15 +1928,9 @@ server <- function(session, input, output) {
       geom_text(data = meanDF, 
                 aes(x = x, y = 0, label = x), 
                 size = 16 / .pt,
+                fontface = "bold",
                 check_overlap = TRUE,
                 vjust = 1.5) +
-      geom_segment(data = sdLinesDF,
-                   aes(x = x, xend = x, y = 0, yend = y),
-                   linetype = "dotted",
-                   lineend = 'round',
-                   linewidth = 1,
-                   color='#021C38',
-                   alpha = 0.5) +
       labelNormZArea(normValue, probType, normLines) +
       coord_cartesian(clip="off") +
       ggtitle(bquote(bold( Z %~% N(0,1) ))) +
@@ -2619,7 +2600,7 @@ server <- function(session, input, output) {
             
             if(input$calcBinom == 'exact'){
               binomProb <- paste("P(X = ", binom_x, ")") #= ", dbinom(binom_x,binom_n,binom_p))
-              binomForm <- paste("\\binom{", binom_n, "}{", binom_x, "}", binom_p, "^", binom_x, "(1-", binom_p, ")^{", binom_n, "-", binom_x, "}")
+              binomForm <- paste("\\binom{", binom_n, "}{", binom_x, "}", binom_p, "^{", binom_x, "}(1-", binom_p, ")^{", binom_n, "-", binom_x, "}")
               binomVal <- round(dbinom(binom_x,binom_n,binom_p), 4)
             }
             else if(input$calcBinom == 'cumulative'){
@@ -2692,15 +2673,15 @@ server <- function(session, input, output) {
                 br(),
                 br(),
                 br(),
-                sprintf("Mean \\( (\\mu) = np = %g\\)",
+                sprintf("Population Mean \\( (\\mu) = np = %g\\)",
                         binom_mu),
                 br(),
                 br(),
-                sprintf("Standard Deviation \\( (\\sigma) = \\sqrt{np(1 - p)} = %g\\)",
+                sprintf("Population Standard Deviation \\( (\\sigma) = \\sqrt{np(1 - p)} = %g\\)",
                         binom_sd),
                 br(),
                 br(),
-                sprintf("Variance \\( (\\sigma^{2}) = np(1 - p) = %g\\)",
+                sprintf("Population Variance \\( (\\sigma^{2}) = np(1 - p) = %g\\)",
                         binom_var)
               ),
               br(),
@@ -2877,15 +2858,15 @@ server <- function(session, input, output) {
                 br(),
                 br(),
                 br(),
-                sprintf("Mean \\( (\\mu) = \\mu = %g\\)",
+                sprintf("Population Mean \\( (\\mu) = \\mu = %g\\)",
                         poisson_mu),
                 br(),
                 br(),
-                sprintf("Standard Deviation \\( (\\sigma) = \\sqrt{\\mu} = %g\\)",
+                sprintf("Population Standard Deviation \\( (\\sigma) = \\sqrt{\\mu} = %g\\)",
                         poisson_sd),
                 br(),
                 br(),
-                sprintf("Variance \\( (\\sigma^{2}) = \\mu = %g\\)",
+                sprintf("Population Variance \\( (\\sigma^{2}) = \\mu = %g\\)",
                         poisson_mu)
               ),
               br(),
