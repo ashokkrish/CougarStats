@@ -1875,7 +1875,7 @@ server <- function(session, input, output) {
                 check_overlap = TRUE,
                 vjust = 1.5) +
       coord_cartesian(clip="off") +
-      PlotTitle(variance) +
+      PlotTitle(standDev) +
       theme_minimal()  +
       theme(plot.title = element_text(size = 24, face = "bold", hjust = 0.5),
             axis.title.x = element_text(size = 18, face = "bold", vjust = -1),
