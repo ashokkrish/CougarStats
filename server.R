@@ -5956,10 +5956,10 @@ server <- function(session, input, output) {
     ext <- tolower(ext)
     
     switch(ext, 
-           csv = read_csv(input$slrUserData$datapath, show_col_types = FALSE),
-           xls = read_xls(input$slrUserData$datapath),
-           xlsx = read_xlsx(input$slrUserData$datapath),
-           txt = read_tsv(input$slrUserData$datapath, show_col_types = FALSE),
+           csv = read_csv(input$slrUserData$datapath, col_types = list(.default = col_double()), show_col_types = FALSE),
+           xls = read_xls(input$slrUserData$datapath, col_types = "numeric"), 
+           xlsx = read_xlsx(input$slrUserData$datapath, col_types = "numeric"),
+           txt = read_tsv(input$slrUserData$datapath, col_types = list(.default = col_double()), show_col_types = FALSE),
            
            validate("Improper file format")
     )
@@ -6068,7 +6068,10 @@ server <- function(session, input, output) {
         if(input$dataRegCor == 'Upload Data')
         {
           datx <- as.data.frame(slrUploadData())[, input$slrExplanatory]
+          datx <- as.numeric(na.omit(datx))
+          
           daty <- as.data.frame(slrUploadData())[, input$slrResponse]
+          daty <- as.numeric(na.omit(daty))
         }
         else
         {
@@ -6324,128 +6327,132 @@ server <- function(session, input, output) {
           if(length(datx) > 2)
           {
             pearson <- cor.test(datx, daty, method = "pearson")
-            if(pearson$estimate < 0) {
-              pearsonSign <- "negative"
-            } else {
-              pearsonSign <- "positive"
-            }
             
-            if(abs(pearson$estimate) > 0.6) {
-              pearsonStrength <- "strong"
-            } else if (abs(pearson$estimate) > 0.3) {
-              pearsonStrength <- "moderate"
-            } else {
-              pearsonStrength <- "weak"
-            }
-            
-            output$pearsonCorFormula <- renderUI({
-              p(
-                withMathJax(),
-                sprintf("\\( r \\; = \\; \\dfrac
+            if(!is.na(pearson$estimate)) {
+              if(pearson$estimate < 0) {
+                pearsonSign <- "negative"
+              } else {
+                pearsonSign <- "positive"
+              }
+              
+              if(abs(pearson$estimate) > 0.6) {
+                pearsonStrength <- "strong"
+              } else if (abs(pearson$estimate) > 0.3) {
+                pearsonStrength <- "moderate"
+              } else {
+                pearsonStrength <- "weak"
+              }
+              
+              output$pearsonCorFormula <- renderUI({
+                p(
+                  withMathJax(),
+                  sprintf("\\( r \\; = \\; \\dfrac
                                         {\\sum xy - \\dfrac{ (\\sum x)(\\sum y) }{ n } }
                                         {\\sqrt{ \\sum x^2 - \\dfrac{ (\\sum x)^2 }{ n } } \\sqrt{ \\sum y^2 - \\dfrac{ (\\sum y) ^2 }{ n } } } \\)"),
-                br(),
-                br(),
-                br(),
-                sprintf("\\( \\quad = \\; \\dfrac
+                  br(),
+                  br(),
+                  br(),
+                  sprintf("\\( \\quad = \\; \\dfrac
                                         {%g - \\dfrac{ (%g)(%g) }{ %g } }
                                         {\\sqrt{ %g - \\dfrac{ (%g)^2 }{ %g } } \\sqrt{ %g - \\dfrac{ (%g) ^2 }{ %g } } } \\)",
-                       dfTotaled["Totals", "xy"],
-                       dfTotaled["Totals", "x"],
-                       dfTotaled["Totals", "y"],
-                       length(datx),
-                       dfTotaled["Totals", "x<sup>2</sup>"],
-                       dfTotaled["Totals", "x"],
-                       length(datx),
-                       dfTotaled["Totals", "y<sup>2</sup>"],
-                       dfTotaled["Totals", "y"],
-                       length(datx)),
-                br(),
-                br(),
-                br(),
-                sprintf("\\( \\quad = \\; \\dfrac
+                          dfTotaled["Totals", "xy"],
+                          dfTotaled["Totals", "x"],
+                          dfTotaled["Totals", "y"],
+                          length(datx),
+                          dfTotaled["Totals", "x<sup>2</sup>"],
+                          dfTotaled["Totals", "x"],
+                          length(datx),
+                          dfTotaled["Totals", "y<sup>2</sup>"],
+                          dfTotaled["Totals", "y"],
+                          length(datx)),
+                  br(),
+                  br(),
+                  br(),
+                  sprintf("\\( \\quad = \\; \\dfrac
                                         {%g - \\dfrac{ %g }{ %g } }
                                         {\\sqrt{ %g - \\dfrac{ %g }{ %g } } \\sqrt{ %g - \\dfrac{ %s }{ %g } } } \\)",
-                        dfTotaled["Totals", "xy"],
-                        sumXSumY,
-                        length(datx),
-                        dfTotaled["Totals", "x<sup>2</sup>"],
-                        sumXSqrd,
-                        length(datx),
-                        dfTotaled["Totals", "y<sup>2</sup>"],
-                        sumYSqrd,
-                        length(datx)),
-                br(),
-                br(),
-                br(),
-                sprintf("\\( \\quad = \\; \\dfrac
+                          dfTotaled["Totals", "xy"],
+                          sumXSumY,
+                          length(datx),
+                          dfTotaled["Totals", "x<sup>2</sup>"],
+                          sumXSqrd,
+                          length(datx),
+                          dfTotaled["Totals", "y<sup>2</sup>"],
+                          sumYSqrd,
+                          length(datx)),
+                  br(),
+                  br(),
+                  br(),
+                  sprintf("\\( \\quad = \\; \\dfrac
                                         {%g - %g }
                                         {\\sqrt{ %g - %g } \\sqrt{ %g - %g } } \\)",
-                        dfTotaled["Totals", "xy"],
-                        sumXSumY / length(datx),
-                        dfTotaled["Totals", "x<sup>2</sup>"],
-                        sumXSqrd / length(datx),
-                        dfTotaled["Totals", "y<sup>2</sup>"],
-                        sumYSqrd / length(datx)),
-                br(),
-                br(),
-                br(),
-                sprintf("\\( \\quad = \\; \\dfrac
+                          dfTotaled["Totals", "xy"],
+                          sumXSumY / length(datx),
+                          dfTotaled["Totals", "x<sup>2</sup>"],
+                          sumXSqrd / length(datx),
+                          dfTotaled["Totals", "y<sup>2</sup>"],
+                          sumYSqrd / length(datx)),
+                  br(),
+                  br(),
+                  br(),
+                  sprintf("\\( \\quad = \\; \\dfrac
                                         { %g }
                                         {\\sqrt{ %g } \\sqrt{ %g } } \\)",
-                        dfTotaled["Totals", "xy"] - sumXSumY / length(datx),
-                        dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx),
-                        dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx)),
-                br(),
-                br(),
-                br(),
-                sprintf("\\( \\quad = \\; \\dfrac
+                          dfTotaled["Totals", "xy"] - sumXSumY / length(datx),
+                          dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx),
+                          dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx)),
+                  br(),
+                  br(),
+                  br(),
+                  sprintf("\\( \\quad = \\; \\dfrac
                                         { %g }
                                         { (%g) (%g) } \\)",
-                        dfTotaled["Totals", "xy"] - sumXSumY / length(datx),
-                        sqrt(dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx)),
-                        sqrt(dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx))),
-                br(),
-                br(),
-                br(),
-                sprintf("\\( \\quad = \\; \\dfrac
+                          dfTotaled["Totals", "xy"] - sumXSumY / length(datx),
+                          sqrt(dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx)),
+                          sqrt(dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx))),
+                  br(),
+                  br(),
+                  br(),
+                  sprintf("\\( \\quad = \\; \\dfrac
                                         { %g }
                                         { %g } \\)",
-                        dfTotaled["Totals", "xy"] - sumXSumY / length(datx),
-                        sqrt(dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx)) * sqrt(dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx))),
-                br(),
-                br(),
-                br(),
-                sprintf("\\( \\quad = \\; %0.4f \\)",
-                        pearson$estimate),
-                br(),
-                br(),
-                br(),
-                p(tags$b("Interpretation:")),
-                sprintf("There is a %s %s linear relationship between \\(x\\) and \\(y\\).",
-                        pearsonStrength,
-                        pearsonSign),
-                br()
-              )
+                          dfTotaled["Totals", "xy"] - sumXSumY / length(datx),
+                          sqrt(dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx)) * sqrt(dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx))),
+                  br(),
+                  br(),
+                  br(),
+                  sprintf("\\( \\quad = \\; %0.4f \\)",
+                          pearson$estimate),
+                  br(),
+                  br(),
+                  br(),
+                  p(tags$b("Interpretation:")),
+                  sprintf("There is a %s %s linear relationship between \\(x\\) and \\(y\\).",
+                          pearsonStrength,
+                          pearsonSign),
+                  br()
+                )
+                
+              })
               
-            })
-            
-            output$PearsonCorTest <- renderPrint({ 
-              pearson
-            })
-            
-            if(length(datx) > 3)
-            {
-              output$PearsonConfInt <- renderPrint({ 
-                pearson$conf.int
+              output$PearsonCorTest <- renderPrint({ 
+                pearson
               })
+              
+              if(length(datx) > 3)
+              {
+                output$PearsonConfInt <- renderPrint({ 
+                  pearson$conf.int
+                })
+              }
+              else
+              {
+                output$PearsonConfInt <- renderPrint ({
+                  noquote("Computation of the Confidence Interval requires a minimum sample size of 4")
+                })
+              }
             }
-            else
-            {
-              output$PearsonConfInt <- renderPrint ({
-                noquote("Computation of the Confidence Interval requires a minimum sample size of 4")
-              })
-            }
+            
             
             # output$PearsonEstimate <- renderPrint({
             #   cat(noquote(paste(c("Pearson's r:", round(pearson$estimate[[1]], 4)))))
