@@ -1833,8 +1833,8 @@ server <- function(session, input, output) {
     req(pd_iv$is_valid())
     withMathJax()
     
-    x <- seq(from = -3, to = 3, by = 0.1)
-    xSeq <- sort(c(x, normLines))
+    x <- round(seq(from = -3, to = 3, by = 0.1), 2)
+    xSeq <- unique(sort(c(x, normLines)))
     
     df <- distinct(data.frame(x = xSeq, y = dnorm(xSeq, mean = 0, sd = 1)))
     lineDF <- filter(df, x %in% normLines)
@@ -1891,10 +1891,12 @@ server <- function(session, input, output) {
   normZPlot <- function(normValue, normLines, probType){
     req(pd_iv$is_valid())
     
-    x <- seq(from = -3, to = 3, by = 0.1)
-    xSeq <- c(x, normLines)
+    x <- round(seq(from = -3, to = 3, by = 0.1), 2)
+    xSeq <- unique(sort(c(x, normLines)))
     
-    df <- data.frame(x = xSeq, y = dnorm(xSeq, mean = 0, sd = 1))
+    df <- distinct(data.frame(x = xSeq, y = dnorm(xSeq, mean = 0, sd = 1)))
+    
+    
     lineDF <- filter(df, x %in% normLines)
     meanDF <- filter(df, x %in% c(0))
     
