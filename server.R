@@ -6110,8 +6110,6 @@ server <- function(session, input, output) {
         {
           datx <- as.data.frame(slrUploadData())[, input$slrExplanatory]
           daty <- as.data.frame(slrUploadData())[, input$slrResponse]
-          
-          print(any(!is.numeric(slrUploadData())))
         }
         else
         {
