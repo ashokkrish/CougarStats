@@ -730,24 +730,33 @@ server <- function(session, input, output) {
   slrraw_iv$add_rule("x", sv_required())
   #iv$add_rule("x", sv_regex("^[0-9]+(.[0-9]+)?(, [0-9](.[0-9]+)?)+$", "Data can only be numeric values separated by commas"))
   slrraw_iv$add_rule("x", sv_regex("^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+$", 
-                                   "Data must be numeric values seperated by a comma (ie: 2,3,4)"))
-  slrraw_iv$add_rule("x", ~ if(sampleDiffRaw() != 0) "x and y must have the same number of observations")
+                                   "Data must be numeric values seperated by a comma (ie: 2,3,4)."))
+  slrraw_iv$add_rule("x", ~ if(sampleInfoRaw()$diff != 0) "x and y must have the same number of observations.")
+  slrraw_iv$add_rule("x", ~ if(sampleInfoRaw()$xSD == 0) "Not enough variance in Independent Variable.")
   
   slrraw_iv$add_rule("y", sv_required())
   slrraw_iv$add_rule("y", sv_regex("^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+$", 
-                                   "Data must be numeric values seperated by a comma (ie: 2,3,4)"))
-  slrraw_iv$add_rule("y", ~ if(sampleDiffRaw() != 0) "x and y must have the same number of observations")
+                                   "Data must be numeric values seperated by a comma (ie: 2,3,4)."))
+  slrraw_iv$add_rule("y", ~ if(sampleInfoRaw()$diff != 0) "x and y must have the same number of observations.")
+  slrraw_iv$add_rule("y", ~ if(sampleInfoRaw()$ySD == 0) "Not enough variance in Dependent Variable.")
   
   slrupload_iv$add_rule("slrUserData", sv_required())
   slrupload_iv$add_rule("slrUserData", ~ if(is.null(fileInputs$slrStatus) || fileInputs$slrStatus == 'reset') "Required")
   slrupload_iv$add_rule("slrUserData", ~ if(!(tolower(tools::file_ext(input$slrUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
-  slrupload_iv$add_rule("slrUserData", ~ if(nrow(slrUploadData()) == 0) "File is empty")
-  slrupload_iv$add_rule("slrUserData", ~ if(ncol(slrUploadData()) < 2) "Data must include one response and (at least) one explanatory variable")
-  slrupload_iv$add_rule("slrUserData", ~ if(nrow(slrUploadData()) < 3) "Samples must include at least 2 observations")
+  slrupload_iv$add_rule("slrUserData", ~ if(nrow(slrUploadData()) == 0) "File is empty.")
+  slrupload_iv$add_rule("slrUserData", ~ if(ncol(slrUploadData()) < 2) "Data must include one response and (at least) one explanatory variable.")
+  slrupload_iv$add_rule("slrUserData", ~ if(nrow(slrUploadData()) < 3) "Samples must include at least 2 observations.")
+  # slrupload_iv$add_rule("slrUserData", ~ if(any(!is.numeric(slrUploadData()))) "File contains non-numeric data.")
+  
+  slruploadvars_iv$add_rule("slrExplanatory", sv_required())
+  slruploadvars_iv$add_rule("slrExplanatory", ~ if(explanatoryInfoUpload()$invalid) "Explanatory variable contains non-numeric data.")
+  slruploadvars_iv$add_rule("slrExplanatory", ~ if(explanatoryInfoUpload()$sd == 0) "Not enough variance in Explanatory Variable.")
   
   slruploadvars_iv$add_rule("slrResponse", sv_required())
-  slruploadvars_iv$add_rule("slrExplanatory", sv_required())
-  slruploadvars_iv$add_rule("slrResponse", ~ if(sampleDiffUpload() != 0) "Missing values detected, x and y must have the same number of observations")
+  slruploadvars_iv$add_rule("slrResponse", ~ if(sampleDiffUpload() != 0) "Missing values detected, x and y must have the same number of observations.")
+  slruploadvars_iv$add_rule("slrResponse", ~ if(responseInfoUpload()$invalid) "Response variable contains non-numeric data.")
+  slruploadvars_iv$add_rule("slrResponse", ~ if(responseInfoUpload()$sd == 0) "Not enough variance in Response Variable.")
+  
   
   slrraw_iv$condition(~ isTRUE(input$dataRegCor == 'Enter Raw Data'))
   slrupload_iv$condition(~ isTRUE(input$dataRegCor == 'Upload Data'))
@@ -3267,6 +3276,7 @@ server <- function(session, input, output) {
       sampBefore <- createNumLst(input$before)
       sampAfter <- createNumLst(input$after)
     }
+    
     dat$before <- sampBefore
     dat$after <- sampAfter
     dat$d <- (sampBefore - sampAfter)
@@ -5956,36 +5966,62 @@ server <- function(session, input, output) {
     ext <- tolower(ext)
     
     switch(ext, 
-           csv = read_csv(input$slrUserData$datapath, col_types = list(.default = col_double()), show_col_types = FALSE),
-           xls = read_xls(input$slrUserData$datapath, col_types = "numeric"), 
-           xlsx = read_xlsx(input$slrUserData$datapath, col_types = "numeric"),
-           txt = read_tsv(input$slrUserData$datapath, col_types = list(.default = col_double()), show_col_types = FALSE),
+           csv = read_csv(input$slrUserData$datapath, show_col_types = FALSE),
+           xls = read_xls(input$slrUserData$datapath), 
+           xlsx = read_xlsx(input$slrUserData$datapath),
+           txt = read_tsv(input$slrUserData$datapath, show_col_types = FALSE),
            
            validate("Improper file format")
     )
   })
   
-  sampleDiffRaw <- eventReactive({input$x
-    input$y}, {
+  sampleInfoRaw <- eventReactive({input$x
+                                  input$y}, {
+      
+      dat <- list()
       datx <- createNumLst(input$x)
       daty <- createNumLst(input$y)
-      return(length(datx) - length(daty))
+      
+      dat$diff <- length(datx) - length(daty)
+      dat$xSD <- sd(datx)
+      dat$ySD <- sd(daty)
+        
+      return(dat)
     })
+  
+  explanatoryInfoUpload <- eventReactive(input$slrExplanatory, {
+    dat <- list()
+    datx <- as.data.frame(slrUploadData())[, input$slrExplanatory]
+    
+    dat$invalid <- any(!is.numeric(datx))
+    dat$sd <- sd(datx, na.rm = TRUE)
+    
+    return(dat)
+  })
+  
+  responseInfoUpload <- eventReactive(input$slrResponse, {
+    dat <- list()
+    daty <- as.data.frame(slrUploadData())[, input$slrResponse]
+    
+    dat$invalid <- any(!is.numeric(daty))
+    dat$sd <- sd(daty, na.rm = TRUE)
+    
+    return(dat)
+  })
   
   sampleDiffUpload <- eventReactive (c(input$slrExplanatory, 
                                        input$slrResponse), {
-                                         if(input$slrResponse == "" | input$slrExplanatory == "")
-                                         {
-                                           return()
-                                         }
-                                         else
-                                         {
-                                           datx <- na.omit(as.data.frame(slrUploadData())[, input$slrExplanatory])
-                                           daty <- na.omit(as.data.frame(slrUploadData())[, input$slrResponse])
-                                           difference <- length(datx) - length(daty)
-                                           return(difference)
-                                         }
-                                       })
+    if(input$slrResponse == "" | input$slrExplanatory == "") {
+      return(0)
+    } else {
+      datx <- na.omit(as.data.frame(slrUploadData())[, input$slrExplanatory])
+      daty <- na.omit(as.data.frame(slrUploadData())[, input$slrResponse])
+                                           
+      diff <- length(datx) - length(daty)
+                                           
+      return(diff)
+    }
+  })
   
   # --------------------------------------------------------------------- #
   
@@ -6044,9 +6080,10 @@ server <- function(session, input, output) {
           )
           
           validate(
-            need(nrow(slrUploadData()) != 0, "File is empty"),
-            need(ncol(slrUploadData()) > 1, "Data must include one response and (at least) one explanatory variable"),
-            need(nrow(slrUploadData()) > 2, "Samples must include at least 2 observations"),
+            need(nrow(slrUploadData()) != 0, "File is empty."),
+            need(ncol(slrUploadData()) > 1, "Data must include one response and (at least) one explanatory variable."),
+            need(nrow(slrUploadData()) > 2, "Samples must include at least 2 observations."),
+      
             errorClass = "myClass"
           )
         })
@@ -6055,9 +6092,13 @@ server <- function(session, input, output) {
       {
         output$slrTabs <- renderUI({
           validate(
-            need(input$slrExplanatory != "", "Please select an explanatory variable (x)"),
-            need(input$slrResponse != "", "Please select a response variable (y)") %then%
-              need(sampleDiffUpload() == 0, "x and y must have the same number of observations"),
+            need(input$slrExplanatory != "", "Please select an Explanatory Variable (x)."),
+            need(input$slrResponse != "", "Please select a Response Variable (y).") %then%
+              need(sampleDiffUpload() == 0, "The Explanatory (x) and Response (y) variables must have the same number of observations."),
+            need(!explanatoryInfoUpload()$invalid, "The Explanatory Variable (x) contains non-numeric data.") %then%
+              need(explanatoryInfoUpload()$sd != 0, "The data for the Explanatory Variable (x) must have a standard deviation greater than 0 to perform regression and correlation analysis."),
+            need(!responseInfoUpload()$invalid, "The Response Variable (y) contains non-numeric data.") %then%
+              need(responseInfoUpload()$sd != 0, "The data for the Response Variable (y) must have a standard deviation greater than 0 to perform regression and correlation analysis."),
             
             errorClass = "myClass"
           )
@@ -6068,10 +6109,9 @@ server <- function(session, input, output) {
         if(input$dataRegCor == 'Upload Data')
         {
           datx <- as.data.frame(slrUploadData())[, input$slrExplanatory]
-          datx <- as.numeric(na.omit(datx))
-          
           daty <- as.data.frame(slrUploadData())[, input$slrResponse]
-          daty <- as.numeric(na.omit(daty))
+          
+          print(any(!is.numeric(slrUploadData())))
         }
         else
         {
@@ -6448,7 +6488,7 @@ server <- function(session, input, output) {
               else
               {
                 output$PearsonConfInt <- renderPrint ({
-                  noquote("Computation of the Confidence Interval requires a minimum sample size of 4")
+                  noquote("Computation of the Confidence Interval requires a minimum sample size of 4.")
                 })
               }
             }
@@ -6461,7 +6501,7 @@ server <- function(session, input, output) {
           else
           {
             output$PearsonCorTest <- renderPrint ({
-              noquote("Pearson's Product-Moment Correlation requires a minimum sample size of 3 for computation")
+              noquote("Pearson's Product-Moment Correlation requires a minimum sample size of 3 for computation.")
             })
           }
           
@@ -6484,13 +6524,20 @@ server <- function(session, input, output) {
           output$slrTabs <- renderUI({
             
             validate(
-              need(length(datx) >= 2, "Must have at least 2 observations for x"),
-              need(length(daty) >= 2, "Must have at least 2 observations for y"),
-              need(!anyNA(datx), "Data must be numeric"),
-              need(!anyNA(daty), "Data must be numeric"),
-              need(length(datx) == length(daty), "x and y must have the same number of observations"),
+              need(length(datx) >= 2, "Must have at least 2 observations for x."),
+              need(length(daty) >= 2, "Must have at least 2 observations for y."),
+              need(!anyNA(datx), "Data must be numeric."),
+              need(!anyNA(daty), "Data must be numeric."),
+              need(length(datx) == length(daty), "x and y must have the same number of observations."),
               
               errorClass = "myclass"
+            )
+            
+            validate(
+              need(sampleInfoRaw()$xSD != 0, "The data for the Independent Variable (x) must have a standard deviation greater than 0 to perform regression and correlation analysis."),
+              need(sampleInfoRaw()$ySD != 0, "The data for the Dependent Variable (y) must have a standard deviation greater than 0 to perform regression and correlation analysis."),
+              
+              errorClass = "myClass"
             )
           })
         }
