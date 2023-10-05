@@ -6063,11 +6063,17 @@ server <- function(session, input, output) {
   
   observeEvent(input$goRegression, {
     
-    if(input$simple_vs_multiple == 'SLR')
-    {
-      if(!slrupload_iv$is_valid())
-      {
-        output$slrTabs <- renderUI({
+    if(input$simple_vs_multiple == 'SLR') {
+      
+      if(regcor_iv$is_valid()) {
+        show(id = "SLRData")
+      } else {
+        hide(id = "SLRData")
+      }
+      
+      output$slrValidation <- renderUI({
+        
+        if(!slrupload_iv$is_valid()) {
           
           if(is.null(input$slrUserData)) {
             validate("Please upload a file.")
@@ -6086,15 +6092,19 @@ server <- function(session, input, output) {
       
             errorClass = "myClass"
           )
-        })
-      }
-      else if(!slruploadvars_iv$is_valid())
-      {
-        output$slrTabs <- renderUI({
+        } 
+        
+        if(!slruploadvars_iv$is_valid()) {
+
           validate(
             need(input$slrExplanatory != "", "Please select an Explanatory Variable (x)."),
             need(input$slrResponse != "", "Please select a Response Variable (y).") %then%
               need(sampleDiffUpload() == 0, "The Explanatory (x) and Response (y) variables must have the same number of observations."),
+            
+            errorClass = "myClass"
+          )
+          
+          validate(
             need(!explanatoryInfoUpload()$invalid, "The Explanatory Variable (x) contains non-numeric data.") %then%
               need(explanatoryInfoUpload()$sd != 0, "The data for the Explanatory Variable (x) must have a standard deviation greater than 0 to perform regression and correlation analysis."),
             need(!responseInfoUpload()$invalid, "The Response Variable (y) contains non-numeric data.") %then%
@@ -6102,444 +6112,348 @@ server <- function(session, input, output) {
             
             errorClass = "myClass"
           )
-        })
-      }
-      else
-      {
-        if(input$dataRegCor == 'Upload Data')
-        {
+        } 
+ 
+        if(input$dataRegCor == 'Upload Data') {
+          req(slruploadvars_iv$is_valid())
           datx <- as.data.frame(slrUploadData())[, input$slrExplanatory]
           daty <- as.data.frame(slrUploadData())[, input$slrResponse]
+        } else {
+          
+          validate(
+            need(input$x, "Input required for the Independent Variable (x)."),
+            need(input$y, "Input required for the Dependent Variable (y)."),
+            
+            errorClass = "myClass"
+          )
+          
+          datx <- createNumLst(input$x)
+          daty <- createNumLst(input$y)
         }
-        else
-        {
+            
+        validate(
+          need(length(datx) >= 2, "Must have at least 2 observations for x."),
+          need(length(daty) >= 2, "Must have at least 2 observations for y."),
+          need(!anyNA(datx), "Data must be numeric."),
+          need(!anyNA(daty), "Data must be numeric."),
+          need(length(datx) == length(daty), "x and y must have the same number of observations."),
+              
+          errorClass = "myclass"
+        )
+        
+        if(!slrraw_iv$is_valid()) {
+          
+          validate(
+            need(sampleInfoRaw()$xSD != 0, "The data for the Independent Variable (x) must have a standard deviation greater than 0 to perform regression and correlation analysis."),
+            need(sampleInfoRaw()$ySD != 0, "The data for the Dependent Variable (y) must have a standard deviation greater than 0 to perform regression and correlation analysis."),
+            
+            errorClass = "myClass"
+          )
+        }
+      }) #output$slrValidation
+      
+      if(regcor_iv$is_valid()) {
+        
+        if(input$dataRegCor == 'Upload Data') {
+          datx <- as.data.frame(slrUploadData())[, input$slrExplanatory]
+          daty <- as.data.frame(slrUploadData())[, input$slrResponse]
+        } else {
           datx <- createNumLst(input$x)
           daty <- createNumLst(input$y)
         }
         
-        if(regcor_iv$is_valid())
-        {
-          output$slrTabs <- renderUI({ ####tab generation ----
-            
-            tagList(
-              
-              tabsetPanel(id = "slrTabset", selected = "Simple Linear Regression",
-                          
-                          tabPanel(id = "slr", title = "Simple Linear Regression",
-                                   
-                                   conditionalPanel(
-                                     condition = "input.scatterPlot == 1",
-                                     
-                                     titlePanel("Scatterplot"),
-                                     plotOutput("scatterplot", width = "500px"),
-                                     br(),
-                                     hr(),
-                                   ),
-                                   
-                                   titlePanel("Data"),
-                                   br(),
-                                   DTOutput("slrDataTable", width = "750px"),
-                                   br(),
-                                   hr(),
-                                   
-                                   titlePanel("Estimated equation of the regression line"),
-                                   br(),
-                                   uiOutput('regLineEquation'),
-                                   verbatimTextOutput("linearRegression"),
-                                   br(),
-                                   hr(),
-                                   
-                                   titlePanel("95% confidence interval for regression parameters"),
-                                   br(),
-                                   verbatimTextOutput("confintLinReg"),
-                                   br(),
-                                   hr(),
-                                   
-                                   titlePanel("ANOVA for regression"),
-                                   br(),
-                                   verbatimTextOutput("anovaLinReg"),
-                                   #br(),
-                          ), 
-                          
-                          tabPanel(id = "normality", title = "Normality of Residuals",
-                                   
-                                   #----------------------------------#
-                                   # Tests for normality of residuals #
-                                   #----------------------------------#
-                                   titlePanel("Anderson-Darling test"),
-                                   verbatimTextOutput("AndersonDarlingTest"),
-                                   br(),
-                                   
-                                   titlePanel("Kolmogorov-Smirnov test"),
-                                   verbatimTextOutput("KolmogorovSmirnovTest"),
-                                   br(),
-                                   
-                                   titlePanel("Shapiro-Wilk test"),
-                                   verbatimTextOutput("ShapiroTest"),
-                                   #br(),
-                          ),
-                          
-                          tabPanel(id = "resid", title = "Residual Plots",
-                                   #-----------------------------#
-                                   # Plots for Residual Analysis #
-                                   #-----------------------------#
-                                   titlePanel("Q-Q plot"),
-                                   plotOutput("qqplot", width = "500px"),
-                                   #br(),
-                                   
-                                   titlePanel("Other diagnostic plots"),
-                                   plotOutput("moreplots", width = "500px"),
-                                   #br(),
-                          ),
-                          
-                          tabPanel(id = "correlation", title = "Correlation Analysis",
-                                   
-                                   #----------------------------------#
-                                   # Correlation Coefficient Analysis #
-                                   #----------------------------------#
-                                   titlePanel("Pearson's Product-Moment Correlation"),
-                                   br(),
-                                   br(),
-                                   uiOutput('pearsonCorFormula'),
-                                   br(),
-                                   verbatimTextOutput("PearsonCorTest"),
-                                   br(),
-                                   verbatimTextOutput("PearsonConfInt"),
-                                   br(),
-                                   hr(),
-
-                                   titlePanel("Kendall's Rank Correlation"),
-                                   br(),
-                                   uiOutput("kendallEstimate"),
-                                   br(),
-                                   hr(),
-                                   
-                                   titlePanel("Spearman's Rank Correlation"),
-                                   br(),
-                                   uiOutput("spearmanEstimate"),
-                                   br(),
-                                   br()
-
-                          ),
-              ),
-            )
-          })
+        model <- lm(daty ~ datx)
           
-          model <- lm(daty ~ datx)
+        main <- input$main
+        xlab <- input$xlab
+        ylab <- input$ylab
           
-          main <- input$main
-          xlab <- input$xlab
-          ylab <- input$ylab
+        df <- data.frame(datx, daty, datx*daty, datx^2, daty^2)
+        names(df) <- c("x", "y", "xy", "x<sup>2</sup>", "y<sup>2</sup>")
+        dfTotaled <- bind_rows(df, summarise(df, across(where(is.numeric), sum)))
+        rownames(dfTotaled)[nrow(dfTotaled)] <- "Totals"
           
-          df <- data.frame(datx, daty, datx*daty, datx^2, daty^2)
-          names(df) <- c("x", "y", "xy", "x<sup>2</sup>", "y<sup>2</sup>")
-          dfTotaled <- bind_rows(df, summarise(df, across(where(is.numeric), sum)))
-          rownames(dfTotaled)[nrow(dfTotaled)] <- "Totals"
+        sumXSumY <- dfTotaled["Totals", "x"] * dfTotaled["Totals", "y"]
+        sumXSqrd <- dfTotaled["Totals", "x"] ^ 2
+        sumYSqrd <- dfTotaled["Totals", "y"] ^ 2
           
-          sumXSumY <- dfTotaled["Totals", "x"] * dfTotaled["Totals", "y"]
-          sumXSqrd <- dfTotaled["Totals", "x"] ^ 2
-          sumYSqrd <- dfTotaled["Totals", "y"] ^ 2
+        output$slrDataTable <- renderDT(
+          datatable(round(dfTotaled, digits = 3),
+                    options = list(pageLength = -1, 
+                                   lengthMenu = list(c(-1, 10, 25, 50, 100), c("All", "10", "25", "50", "100"))
+                    ),
+                    escape = FALSE
+          ) %>% formatStyle(names(dfTotaled),
+                            target = 'row',
+                            fontWeight = styleRow(dim(dfTotaled)[1], "bold"))
+        )
           
-          output$slrDataTable <- renderDT(
-            datatable(round(dfTotaled, digits = 3),
-                      options = list(pageLength = -1, 
-                                     lengthMenu = list(c(-1, 10, 25, 50, 100), c("All", "10", "25", "50", "100"))
-                      ),
-                      escape = FALSE
-            ) %>% formatStyle(
-              names(dfTotaled),
-              target = 'row',
-              fontWeight = styleRow(dim(dfTotaled)[1], "bold")
-            )
+        output$scatterplot <- renderPlot({
+          plot(datx, daty, main = main, xlab = xlab, ylab = ylab, pch = 19) +
+          abline(lm(daty ~ datx), col = "blue")
+        })
+          
+        output$regLineEquation <- renderUI({
+          withMathJax()
+          p(
+            withMathJax(),
+            p(tags$b("The equation of the regression line is given by ")),
+            sprintf("\\( \\qquad \\hat{y} = \\hat{\\beta}_{0} + \\hat{\\beta}_{1} x \\)"),
+            br(),
+            br(),
+            p(tags$b("where")),
+            sprintf("\\( \\qquad \\hat{\\beta}_{1} = \\dfrac{ \\sum xy - \\dfrac{ (\\sum x)(\\sum y) }{ n } }{ \\sum x^2 - \\dfrac{ (\\sum x)^2 }{ n } } \\)"),
+            sprintf("\\( \\, = \\, \\dfrac{ %g - \\dfrac{ (%g)(%g) }{ %g } }{ %g - \\dfrac{ (%g)^2 }{ %g } } \\)",
+                    dfTotaled["Totals", "xy"],
+                    dfTotaled["Totals", "x"],
+                    dfTotaled["Totals", "y"],
+                    length(datx),
+                    dfTotaled["Totals", "x<sup>2</sup>"],
+                    dfTotaled["Totals", "x"],
+                    length(datx)),
+            sprintf("\\( \\, = \\, \\dfrac{ %g - \\dfrac{ %g }{ %g } }{ %g - \\dfrac{ %g }{ %g } } \\)",
+                    dfTotaled["Totals", "xy"],
+                    sumXSumY,
+                    length(datx),
+                    dfTotaled["Totals", "x<sup>2</sup>"],
+                    sumXSqrd,
+                    length(datx)),
+            sprintf("\\( \\, = \\, \\dfrac{ %g - %g }{ %g - %g } \\)",
+                    dfTotaled["Totals", "xy"],
+                    sumXSumY / length(datx),
+                    dfTotaled["Totals", "x<sup>2</sup>"],
+                    sumXSqrd / length(datx)),
+            sprintf("\\( \\, = \\, \\dfrac{ %g }{ %g } \\)",
+                    dfTotaled["Totals", "xy"] - (sumXSumY) / length(datx),
+                    dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx)),
+            sprintf("\\( \\, = \\, %0.4f \\)",
+                    summary(model)$coefficients["datx", "Estimate"] ),
+            br(),
+            br(),
+            p(tags$b("and")),
+            sprintf("\\( \\qquad \\hat{\\beta}_{0} = \\bar{y} - \\hat{\\beta}_{1} \\bar{x}\\)"),
+            sprintf("\\( \\, = \\, %g - %0.4f (%g) \\)",
+                    mean(daty),
+                    summary(model)$coefficients["datx", "Estimate"],
+                    mean(datx)),
+            sprintf("\\( \\, = \\, %g - %0.4f\\)",
+                    mean(daty),
+                    summary(model)$coefficients["datx", "Estimate"] * mean(datx)),
+            sprintf("\\( \\, = \\, %0.4f \\)",
+                    summary(model)$coefficients["(Intercept)", "Estimate"]),
+            br(),
+            br(),
+            br(),
+            sprintf("\\( \\hat{y} = %0.4f + %0.4f x \\)",
+                    summary(model)$coefficients["(Intercept)", "Estimate"],
+                    summary(model)$coefficients["datx", "Estimate"]),
+            br(),
+            br()
           )
+        })
           
-          output$scatterplot <- renderPlot({
-            plot(datx, daty, main = main, xlab = xlab, ylab = ylab, pch = 19) +
-              abline(lm(daty ~ datx), col = "blue")
-          })
-          
-          output$regLineEquation <- renderUI({
-            withMathJax()
-            p(
-              withMathJax(),
-              p(tags$b("The equation of the regression line is given by ")),
-              sprintf("\\( \\qquad \\hat{y} = \\hat{\\beta}_{0} + \\hat{\\beta}_{1} x \\)"),
-              br(),
-              br(),
-              p(tags$b("where")),
-              sprintf("\\( \\qquad \\hat{\\beta}_{1} = \\dfrac{ \\sum xy - \\dfrac{ (\\sum x)(\\sum y) }{ n } }{ \\sum x^2 - \\dfrac{ (\\sum x)^2 }{ n } } \\)"),
-              sprintf("\\( \\, = \\, \\dfrac{ %g - \\dfrac{ (%g)(%g) }{ %g } }{ %g - \\dfrac{ (%g)^2 }{ %g } } \\)",
-                      dfTotaled["Totals", "xy"],
-                      dfTotaled["Totals", "x"],
-                      dfTotaled["Totals", "y"],
-                      length(datx),
-                      dfTotaled["Totals", "x<sup>2</sup>"],
-                      dfTotaled["Totals", "x"],
-                      length(datx)),
-              sprintf("\\( \\, = \\, \\dfrac{ %g - \\dfrac{ %g }{ %g } }{ %g - \\dfrac{ %g }{ %g } } \\)",
-                      dfTotaled["Totals", "xy"],
-                      sumXSumY,
-                      length(datx),
-                      dfTotaled["Totals", "x<sup>2</sup>"],
-                      sumXSqrd,
-                      length(datx)),
-              sprintf("\\( \\, = \\, \\dfrac{ %g - %g }{ %g - %g } \\)",
-                      dfTotaled["Totals", "xy"],
-                      sumXSumY / length(datx),
-                      dfTotaled["Totals", "x<sup>2</sup>"],
-                      sumXSqrd / length(datx)),
-              sprintf("\\( \\, = \\, \\dfrac{ %g }{ %g } \\)",
-                      dfTotaled["Totals", "xy"] - (sumXSumY) / length(datx),
-                      dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx)),
-              sprintf("\\( \\, = \\, %0.4f \\)",
-                      summary(model)$coefficients["datx", "Estimate"] ),
-              br(),
-              br(),
-              p(tags$b("and")),
-              sprintf("\\( \\qquad \\hat{\\beta}_{0} = \\bar{y} - \\hat{\\beta}_{1} \\bar{x}\\)"),
-              sprintf("\\( \\, = \\, %g - %0.4f (%g) \\)",
-                      mean(daty),
-                      summary(model)$coefficients["datx", "Estimate"],
-                      mean(datx)),
-              sprintf("\\( \\, = \\, %g - %0.4f\\)",
-                      mean(daty),
-                      summary(model)$coefficients["datx", "Estimate"] * mean(datx)),
-              sprintf("\\( \\, = \\, %0.4f \\)",
-                      summary(model)$coefficients["(Intercept)", "Estimate"]),
-              br(),
-              br(),
-              br(),
-              sprintf("\\( \\hat{y} = %0.4f + %0.4f x \\)",
-                      summary(model)$coefficients["(Intercept)", "Estimate"],
-                      summary(model)$coefficients["datx", "Estimate"]),
-              br(),
-              br()
-            )
-          })
-          
-          output$linearRegression <- renderPrint({ 
-            summary(model)
-          })
+        output$linearRegression <- renderPrint({ 
+          summary(model)
+        })
  
-          output$confintLinReg <- renderPrint({ 
-            confint(model) # Prints the 95% CI for the regression parameters
-          })
+        output$confintLinReg <- renderPrint({ 
+          confint(model) # Prints the 95% CI for the regression parameters
+        })
           
-          output$anovaLinReg <- renderPrint({ 
-            anova(model) # Prints the ANOVA table
-          })
+        output$anovaLinReg <- renderPrint({ 
+          anova(model) # Prints the ANOVA table
+        })
           
-          #----------------------------------#
-          # Tests for normality of residuals #
-          #----------------------------------#
+        #----------------------------------#
+        # Tests for normality of residuals #
+        #----------------------------------#
+        
+        # Anderson-Darling Normality Test 
+        output$AndersonDarlingTest <- renderPrint({ 
+          ad.test(model$residuals)
+        })
           
-          # Anderson-Darling Normality Test 
-          output$AndersonDarlingTest <- renderPrint({ 
-            ad.test(model$residuals)
-          })
+        # Kolmogorov-Smirnov Normality Test 
+        output$KolmogorovSmirnovTest <- renderPrint({ 
+          ks.test(model$residuals, "pnorm")
+        })
           
-          # Kolmogorov-Smirnov Normality Test 
-          output$KolmogorovSmirnovTest <- renderPrint({ 
-            ks.test(model$residuals, "pnorm")
-          })
+        # Shapiro-Wilk Normality Test 
+        output$ShapiroTest <- renderPrint({ 
+          shapiro.test(model$residuals) 
+        })
           
-          # Shapiro-Wilk Normality Test 
-          output$ShapiroTest <- renderPrint({ 
-            shapiro.test(model$residuals) 
-          })
+        # Q-Q plot for residuals
+        output$qqplot <- renderPlot({
+          #qqnorm(model$residuals, ylab = "Residuals", xlab = "Z Scores", main = "Q-Q plot of Standardized Residuals", pch = 19) #+
+          #qqline(model$residuals)
+          qqPlot(model$residuals, main = "Q-Q Plot", xlab = "Z Scores",  ylab = "Residuals", pch = 19) 
+        })
           
-          # Q-Q plot for residuals
-          output$qqplot <- renderPlot({
-            #qqnorm(model$residuals, ylab = "Residuals", xlab = "Z Scores", main = "Q-Q plot of Standardized Residuals", pch = 19) #+
-            #qqline(model$residuals)
-            qqPlot(model$residuals, main = "Q-Q Plot", xlab = "Z Scores",  ylab = "Residuals", pch = 19) 
-          })
-          
-          output$moreplots <- renderPlot({
-            par(mfrow = c(2, 2))
-            plot(model, which = 1:4, pch = 19)
-          })
+        output$moreplots <- renderPlot({
+          par(mfrow = c(2, 2))
+          plot(model, which = 1:4, pch = 19)
+        })
           
           
-          req(length(datx) > 1) ## correlation coefficient ----
-          if(length(datx) > 2)
-          {
-            pearson <- cor.test(datx, daty, method = "pearson")
-            
-            if(!is.na(pearson$estimate)) {
-              if(pearson$estimate < 0) {
-                pearsonSign <- "negative"
-              } else {
-                pearsonSign <- "positive"
-              }
-              
-              if(abs(pearson$estimate) > 0.6) {
-                pearsonStrength <- "strong"
-              } else if (abs(pearson$estimate) > 0.3) {
-                pearsonStrength <- "moderate"
-              } else {
-                pearsonStrength <- "weak"
-              }
-              
-              output$pearsonCorFormula <- renderUI({
-                p(
-                  withMathJax(),
-                  sprintf("\\( r \\; = \\; \\dfrac
-                                        {\\sum xy - \\dfrac{ (\\sum x)(\\sum y) }{ n } }
-                                        {\\sqrt{ \\sum x^2 - \\dfrac{ (\\sum x)^2 }{ n } } \\sqrt{ \\sum y^2 - \\dfrac{ (\\sum y) ^2 }{ n } } } \\)"),
-                  br(),
-                  br(),
-                  br(),
-                  sprintf("\\( \\quad = \\; \\dfrac
-                                        {%g - \\dfrac{ (%g)(%g) }{ %g } }
-                                        {\\sqrt{ %g - \\dfrac{ (%g)^2 }{ %g } } \\sqrt{ %g - \\dfrac{ (%g) ^2 }{ %g } } } \\)",
-                          dfTotaled["Totals", "xy"],
-                          dfTotaled["Totals", "x"],
-                          dfTotaled["Totals", "y"],
-                          length(datx),
-                          dfTotaled["Totals", "x<sup>2</sup>"],
-                          dfTotaled["Totals", "x"],
-                          length(datx),
-                          dfTotaled["Totals", "y<sup>2</sup>"],
-                          dfTotaled["Totals", "y"],
-                          length(datx)),
-                  br(),
-                  br(),
-                  br(),
-                  sprintf("\\( \\quad = \\; \\dfrac
-                                        {%g - \\dfrac{ %g }{ %g } }
-                                        {\\sqrt{ %g - \\dfrac{ %g }{ %g } } \\sqrt{ %g - \\dfrac{ %s }{ %g } } } \\)",
-                          dfTotaled["Totals", "xy"],
-                          sumXSumY,
-                          length(datx),
-                          dfTotaled["Totals", "x<sup>2</sup>"],
-                          sumXSqrd,
-                          length(datx),
-                          dfTotaled["Totals", "y<sup>2</sup>"],
-                          sumYSqrd,
-                          length(datx)),
-                  br(),
-                  br(),
-                  br(),
-                  sprintf("\\( \\quad = \\; \\dfrac
-                                        {%g - %g }
-                                        {\\sqrt{ %g - %g } \\sqrt{ %g - %g } } \\)",
-                          dfTotaled["Totals", "xy"],
-                          sumXSumY / length(datx),
-                          dfTotaled["Totals", "x<sup>2</sup>"],
-                          sumXSqrd / length(datx),
-                          dfTotaled["Totals", "y<sup>2</sup>"],
-                          sumYSqrd / length(datx)),
-                  br(),
-                  br(),
-                  br(),
-                  sprintf("\\( \\quad = \\; \\dfrac
-                                        { %g }
-                                        {\\sqrt{ %g } \\sqrt{ %g } } \\)",
-                          dfTotaled["Totals", "xy"] - sumXSumY / length(datx),
-                          dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx),
-                          dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx)),
-                  br(),
-                  br(),
-                  br(),
-                  sprintf("\\( \\quad = \\; \\dfrac
-                                        { %g }
-                                        { (%g) (%g) } \\)",
-                          dfTotaled["Totals", "xy"] - sumXSumY / length(datx),
-                          sqrt(dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx)),
-                          sqrt(dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx))),
-                  br(),
-                  br(),
-                  br(),
-                  sprintf("\\( \\quad = \\; \\dfrac
-                                        { %g }
-                                        { %g } \\)",
-                          dfTotaled["Totals", "xy"] - sumXSumY / length(datx),
-                          sqrt(dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx)) * sqrt(dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx))),
-                  br(),
-                  br(),
-                  br(),
-                  sprintf("\\( \\quad = \\; %0.4f \\)",
-                          pearson$estimate),
-                  br(),
-                  br(),
-                  br(),
-                  p(tags$b("Interpretation:")),
-                  sprintf("There is a %s %s linear relationship between \\(x\\) and \\(y\\).",
-                          pearsonStrength,
-                          pearsonSign),
-                  br()
-                )
-                
-              })
-              
-              output$PearsonCorTest <- renderPrint({ 
-                pearson
-              })
-              
-              if(length(datx) > 3)
-              {
-                output$PearsonConfInt <- renderPrint({ 
-                  pearson$conf.int
-                })
-              }
-              else
-              {
-                output$PearsonConfInt <- renderPrint ({
-                  noquote("Computation of the Confidence Interval requires a minimum sample size of 4.")
-                })
-              }
+        req(length(datx) > 1) ## correlation coefficient ----
+        if(length(datx) > 2) {
+          
+          pearson <- cor.test(datx, daty, method = "pearson")
+          
+          if(!is.na(pearson$estimate)) {
+            if(pearson$estimate < 0) {
+              pearsonSign <- "negative"
+            } else {
+              pearsonSign <- "positive"
             }
+            
+            if(abs(pearson$estimate) > 0.6) {
+              pearsonStrength <- "strong"
+            } else if (abs(pearson$estimate) > 0.3) {
+              pearsonStrength <- "moderate"
+            } else {
+              pearsonStrength <- "weak"
+            }
+              
+            output$pearsonCorFormula <- renderUI({
+              p(
+                withMathJax(),
+                sprintf("\\( r \\; = \\; \\dfrac
+                                      {\\sum xy - \\dfrac{ (\\sum x)(\\sum y) }{ n } }
+                                      {\\sqrt{ \\sum x^2 - \\dfrac{ (\\sum x)^2 }{ n } } \\sqrt{ \\sum y^2 - \\dfrac{ (\\sum y) ^2 }{ n } } } \\)"),
+                br(),
+                br(),
+                br(),
+                sprintf("\\( \\quad = \\; \\dfrac
+                                      {%g - \\dfrac{ (%g)(%g) }{ %g } }
+                                      {\\sqrt{ %g - \\dfrac{ (%g)^2 }{ %g } } \\sqrt{ %g - \\dfrac{ (%g) ^2 }{ %g } } } \\)",
+                        dfTotaled["Totals", "xy"],
+                        dfTotaled["Totals", "x"],
+                        dfTotaled["Totals", "y"],
+                        length(datx),
+                        dfTotaled["Totals", "x<sup>2</sup>"],
+                        dfTotaled["Totals", "x"],
+                        length(datx),
+                        dfTotaled["Totals", "y<sup>2</sup>"],
+                        dfTotaled["Totals", "y"],
+                        length(datx)),
+                br(),
+                br(),
+                br(),
+                sprintf("\\( \\quad = \\; \\dfrac
+                                      {%g - \\dfrac{ %g }{ %g } }
+                                      {\\sqrt{ %g - \\dfrac{ %g }{ %g } } \\sqrt{ %g - \\dfrac{ %s }{ %g } } } \\)",
+                        dfTotaled["Totals", "xy"],
+                        sumXSumY,
+                        length(datx),
+                        dfTotaled["Totals", "x<sup>2</sup>"],
+                        sumXSqrd,
+                        length(datx),
+                        dfTotaled["Totals", "y<sup>2</sup>"],
+                        sumYSqrd,
+                        length(datx)),
+                br(),
+                br(),
+                br(),
+                sprintf("\\( \\quad = \\; \\dfrac
+                                      {%g - %g }
+                                      {\\sqrt{ %g - %g } \\sqrt{ %g - %g } } \\)",
+                        dfTotaled["Totals", "xy"],
+                        sumXSumY / length(datx),
+                        dfTotaled["Totals", "x<sup>2</sup>"],
+                        sumXSqrd / length(datx),
+                        dfTotaled["Totals", "y<sup>2</sup>"],
+                        sumYSqrd / length(datx)),
+                br(),
+                br(),
+                br(),
+                sprintf("\\( \\quad = \\; \\dfrac
+                                      { %g }
+                                      {\\sqrt{ %g } \\sqrt{ %g } } \\)",
+                        dfTotaled["Totals", "xy"] - sumXSumY / length(datx),
+                        dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx),
+                        dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx)),
+                br(),
+                br(),
+                br(),
+                sprintf("\\( \\quad = \\; \\dfrac
+                                      { %g }
+                                      { (%g) (%g) } \\)",
+                        dfTotaled["Totals", "xy"] - sumXSumY / length(datx),
+                        sqrt(dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx)),
+                        sqrt(dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx))),
+                br(),
+                br(),
+                br(),
+                sprintf("\\( \\quad = \\; \\dfrac
+                                      { %g }
+                                      { %g } \\)",
+                        dfTotaled["Totals", "xy"] - sumXSumY / length(datx),
+                        sqrt(dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx)) * sqrt(dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx))),
+                br(),
+                br(),
+                br(),
+                sprintf("\\( \\quad = \\; %0.4f \\)",
+                        pearson$estimate),
+                br(),
+                br(),
+                br(),
+                p(tags$b("Interpretation:")),
+                sprintf("There is a %s %s linear relationship between \\(x\\) and \\(y\\).",
+                        pearsonStrength,
+                        pearsonSign),
+                br()
+               )
+                
+            })
+              
+            output$PearsonCorTest <- renderPrint({ 
+              pearson
+            })
+              
+            if(length(datx) > 3) {
+              output$PearsonConfInt <- renderPrint({ 
+                pearson$conf.int
+              })
+            } else {
+              output$PearsonConfInt <- renderPrint ({
+                noquote("Computation of the Confidence Interval requires a minimum sample size of 4.")
+              })
+            }
+          }
             
             
             # output$PearsonEstimate <- renderPrint({
             #   cat(noquote(paste(c("Pearson's r:", round(pearson$estimate[[1]], 4)))))
             # })
-          }
-          else
-          {
-            output$PearsonCorTest <- renderPrint ({
-              noquote("Pearson's Product-Moment Correlation requires a minimum sample size of 3 for computation.")
-            })
-          }
-          
-          kendall <- cor.test(datx, daty, method = "kendall")
-          spearman <- cor.test(datx, daty, method = "spearman")
-          
-          output$kendallEstimate <- renderUI({
-            sprintf("\\( \\tau \\; = \\; %0.4f \\)", 
-                    kendall$estimate)
-          })
-          
-          output$spearmanEstimate <- renderUI({
-            sprintf("\\( \\displaystyle r_{s} \\; = \\; 1 - \\dfrac{ 6 \\, \\sum\\limits_{i=1}^n d^2_{i}}{ n(n^2 - 1)} \\; = \\; %0.4f \\)", 
-                    spearman$estimate)
-          })
-          
-        } #if regcor_iv is valid
+        }
         else
         {
-          output$slrTabs <- renderUI({
-            
-            validate(
-              need(length(datx) >= 2, "Must have at least 2 observations for x."),
-              need(length(daty) >= 2, "Must have at least 2 observations for y."),
-              need(!anyNA(datx), "Data must be numeric."),
-              need(!anyNA(daty), "Data must be numeric."),
-              need(length(datx) == length(daty), "x and y must have the same number of observations."),
-              
-              errorClass = "myclass"
-            )
-            
-            validate(
-              need(sampleInfoRaw()$xSD != 0, "The data for the Independent Variable (x) must have a standard deviation greater than 0 to perform regression and correlation analysis."),
-              need(sampleInfoRaw()$ySD != 0, "The data for the Dependent Variable (y) must have a standard deviation greater than 0 to perform regression and correlation analysis."),
-              
-              errorClass = "myClass"
-            )
+          output$PearsonCorTest <- renderPrint ({
+            noquote("Pearson's Product-Moment Correlation requires a minimum sample size of 3 for computation.")
           })
         }
-      }
+          
+        kendall <- cor.test(datx, daty, method = "kendall")
+        spearman <- cor.test(datx, daty, method = "spearman")
+        
+        output$kendallEstimate <- renderUI({
+          sprintf("\\( \\tau \\; = \\; %0.4f \\)", 
+                  kendall$estimate)
+        })
+        
+        output$spearmanEstimate <- renderUI({
+          sprintf("\\( \\displaystyle r_{s} \\; = \\; 1 - \\dfrac{ 6 \\, \\sum\\limits_{i=1}^n d^2_{i}}{ n(n^2 - 1)} \\; = \\; %0.4f \\)", 
+                  spearman$estimate)
+        })
+        
+        output$slrViewUpload <- renderDT({
+          req(slrupload_iv$is_valid())
+          datatable(slrUploadData())
+        })
+          
+      } #if regcor_iv is valid
     }
     
     #cut here
@@ -6770,6 +6684,7 @@ server <- function(session, input, output) {
   
   observeEvent(!regcor_iv$is_valid(), {
     hide(id = "RegCorMP")
+    hide(id = "SLRData")
   })
   
   observeEvent(input$dataRegCor, {
@@ -6780,6 +6695,15 @@ server <- function(session, input, output) {
     updateTextInput(inputId = "ylab", value = "y")
   })
   
+  observe({
+    
+    if(input$dataRegCor == 'Enter Raw Data') {
+      hideTab(inputId = "slrTabset", target = "Uploaded Data")
+      updateTabsetPanel(inputId = 'slrTabset', selected = 'Simple Linear Regression')
+    } else {
+      showTab(inputId = "slrTabset", target = "Uploaded Data")
+    }
+  })
   
   observeEvent(input$resetRegCor, {
     # hideTab(inputId = 'tabSet', target = 'Simple Linear Regression')
@@ -6789,7 +6713,6 @@ server <- function(session, input, output) {
     shinyjs::reset("RegCorPanel")
     fileInputs$slrStatus <- 'reset'
     
-    output$slrTabs <- renderUI({ "" })
   })
   
   #  -------------------------------------------------------------------- #

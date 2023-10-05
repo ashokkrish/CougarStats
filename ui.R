@@ -1787,7 +1787,119 @@
                                                 conditionalPanel(
                                                   condition = "input.simple_vs_multiple == 'SLR'",
                                                   
-                                                  uiOutput("slrTabs"),
+                                                  uiOutput("slrValidation"),
+                                                  
+                                                  div(id = "SLRData",
+                                                      tabsetPanel(id = "slrTabset", selected = "Simple Linear Regression",
+                                                                  
+                                                                  tabPanel(id = "slr", title = "Simple Linear Regression",
+                                                                           
+                                                                           conditionalPanel(
+                                                                             condition = "input.scatterPlot == 1",
+                                                                             
+                                                                             titlePanel("Scatterplot"),
+                                                                             plotOutput("scatterplot", width = "500px"),
+                                                                             br(),
+                                                                             hr(),
+                                                                           ),
+                                                                           
+                                                                           titlePanel("Data"),
+                                                                           br(),
+                                                                           DTOutput("slrDataTable", width = "750px"),
+                                                                           br(),
+                                                                           hr(),
+                                                                           
+                                                                           titlePanel("Estimated equation of the regression line"),
+                                                                           br(),
+                                                                           uiOutput('regLineEquation'),
+                                                                           verbatimTextOutput("linearRegression"),
+                                                                           br(),
+                                                                           hr(),
+                                                                           
+                                                                           titlePanel("95% confidence interval for regression parameters"),
+                                                                           br(),
+                                                                           verbatimTextOutput("confintLinReg"),
+                                                                           br(),
+                                                                           hr(),
+                                                                           
+                                                                           titlePanel("ANOVA for regression"),
+                                                                           br(),
+                                                                           verbatimTextOutput("anovaLinReg"),
+                                                                           #br(),
+                                                                  ), 
+                                                                  
+                                                                  tabPanel(id = "normality", title = "Normality of Residuals",
+                                                                           
+                                                                           #----------------------------------#
+                                                                           # Tests for normality of residuals #
+                                                                           #----------------------------------#
+                                                                           titlePanel("Anderson-Darling test"),
+                                                                           verbatimTextOutput("AndersonDarlingTest"),
+                                                                           br(),
+                                                                           
+                                                                           titlePanel("Kolmogorov-Smirnov test"),
+                                                                           verbatimTextOutput("KolmogorovSmirnovTest"),
+                                                                           br(),
+                                                                           
+                                                                           titlePanel("Shapiro-Wilk test"),
+                                                                           verbatimTextOutput("ShapiroTest"),
+                                                                           #br(),
+                                                                  ),
+                                                                  
+                                                                  tabPanel(id = "resid", title = "Residual Plots",
+                                                                           #-----------------------------#
+                                                                           # Plots for Residual Analysis #
+                                                                           #-----------------------------#
+                                                                           titlePanel("Q-Q plot"),
+                                                                           plotOutput("qqplot", width = "500px"),
+                                                                           #br(),
+                                                                           
+                                                                           titlePanel("Other diagnostic plots"),
+                                                                           plotOutput("moreplots", width = "500px"),
+                                                                           #br(),
+                                                                  ),
+                                                                  
+                                                                  tabPanel(id = "correlation", title = "Correlation Analysis",
+                                                                           
+                                                                           #----------------------------------#
+                                                                           # Correlation Coefficient Analysis #
+                                                                           #----------------------------------#
+                                                                           titlePanel("Pearson's Product-Moment Correlation"),
+                                                                           br(),
+                                                                           br(),
+                                                                           uiOutput('pearsonCorFormula'),
+                                                                           br(),
+                                                                           verbatimTextOutput("PearsonCorTest"),
+                                                                           br(),
+                                                                           verbatimTextOutput("PearsonConfInt"),
+                                                                           br(),
+                                                                           hr(),
+                                                                           
+                                                                           titlePanel("Kendall's Rank Correlation"),
+                                                                           br(),
+                                                                           uiOutput("kendallEstimate"),
+                                                                           br(),
+                                                                           hr(),
+                                                                           
+                                                                           titlePanel("Spearman's Rank Correlation"),
+                                                                           br(),
+                                                                           uiOutput("spearmanEstimate"),
+                                                                           br(),
+                                                                           br()
+                                                                           
+                                                                  ),
+                                                                  
+                                                                  tabPanel(id = "slrDataFile", title = "Uploaded Data", value = "Uploaded Data",
+                                                                           
+                                                                           titlePanel("Data File"),
+                                                                           br(),
+                                                                           br(),
+                                                                           DTOutput("slrViewUpload"),
+                                                                           br(),
+                                                                           br(),
+                                                                  ),
+                                                      ),
+                                                  ),
                                                   
                                                 ), # sLR
                                                 
