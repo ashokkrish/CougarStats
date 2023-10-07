@@ -3109,10 +3109,10 @@ server <- function(session, input, output) {
         withMathJax(
           div(
             h4(
-              sprintf("Calculating  \\( %s \\)   when  \\(  X \\sim N(\\mu = %g, \\sigma^2 = %g): \\)",
+              sprintf("Calculating  \\( %s \\)   when  \\(  X \\sim N(\\mu = %g, \\sigma = %g): \\)",
                       normProb,
                       norm_mu,
-                      norm_sigma^2)
+                      norm_sigma)
             ),
             hr(),
             br(),
