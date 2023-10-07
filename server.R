@@ -21,6 +21,10 @@ server <- function(session, input, output) {
   ctable3x2conditional_iv <- InputValidator$new()
   ctable3x3_iv <- InputValidator$new()
   ctable3x3conditional_iv <- InputValidator$new()
+  # ptable_iv <- InputValidator$new()
+  # ptableconditional_iv <- InputValidator$new()
+  # ptable2x2_iv <- InputValidator$new()
+  # ptable2x2conditional_iv <- InputValidator$new()
   binom_iv <- InputValidator$new()
   binomprob_iv <- InputValidator$new()
   binombetween_iv <- InputValidator$new()
@@ -147,6 +151,15 @@ server <- function(session, input, output) {
   ctable3x3conditional_iv$add_rule("cMatrix3x3", ~ if(any(cMatrix3x3Totaled()['Total',] == 0)) "Row and Column totals must be greater than 0.")
   ctable3x3conditional_iv$add_rule("cMatrix3x3", ~ if(any(cMatrix3x3Totaled()[,'Total'] == 0)) "Row and Column totals must be greater than 0.")
   
+  # ptable2x2_iv$add_rule("pMatrix2x2", sv_required())
+  # ptable2x2_iv$add_rule("pMatrix2x2", ~ if(any(is.na(pMatrixData2x2()))) "Fields must be between 0 and 1.")
+  # ptable2x2_iv$add_rule("pMatrix2x2", ~ if(any(pMatrixData2x2() < 0)) "Fields must be between 0 and 1.")
+  # ptable2x2_iv$add_rule("pMatrix2x2", ~ if(any(pMatrixData2x2() > 1)) "Fields must be between 0 and 1.")
+  # ptable2x2_iv$add_rule("pMatrix2x2", ~ if(pMatrix2x2Totaled()['Total', 'Total'] != 1) "The sum of all fields must equal 1.")
+  # 
+  # ptable2x2conditional_iv$add_rule("pMatrix2x2", ~ if(any(pMatrix2x2Totaled()['Total',] == 0)) "Row and Column totals must be greater than 0.")
+  # ptable2x2conditional_iv$add_rule("pMatrix2x2", ~ if(any(pMatrix2x2Totaled()[,'Total'] == 0)) "Row and Column totals must be greater than 0.")
+  # 
   # numTrialsBinom 
   
   binom_iv$add_rule("numTrialsBinom", sv_required())
@@ -226,32 +239,42 @@ server <- function(session, input, output) {
   # ------------------ #
   ctable2x2_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
                                   input$cTableDimension == '2 x 2'))
+                                  # input$cTableType == 'Frequency Distribution'))
   
   ctable2x2conditional_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
-                                    input$cTableDimension == '2 x 2' &&
-                                    input$cTableProb == 'Conditional'))
+                                             input$cTableDimension == '2 x 2' &&
+                                             input$cTableProb == 'Conditional'))
   
   ctable2x3_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
-                                    input$cTableDimension == '2 x 3'))
+                                  input$cTableDimension == '2 x 3'))
   
   ctable2x3conditional_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
-                                               input$cTableDimension == '2 x 3' &&
-                                               input$cTableProb == 'Conditional'))
+                                             input$cTableDimension == '2 x 3' &&
+                                             input$cTableProb == 'Conditional'))
   
   ctable3x2_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
-                                    input$cTableDimension == '3 x 2'))
+                                  input$cTableDimension == '3 x 2'))
   
   ctable3x2conditional_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
-                                               input$cTableDimension == '3 x 2' &&
-                                               input$cTableProb == 'Conditional'))
+                                             input$cTableDimension == '3 x 2' &&
+                                             input$cTableProb == 'Conditional'))
   
   ctable3x3_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
-                                    input$cTableDimension == '3 x 3'))
+                                  input$cTableDimension == '3 x 3'))
   
   ctable3x3conditional_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
-                                               input$cTableDimension == '3 x 3' &&
-                                               input$cTableProb == 'Conditional'))
+                                             input$cTableDimension == '3 x 3' &&
+                                             input$cTableProb == 'Conditional'))
   
+  # ptable2x2_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
+  #                                 input$cTableDimension == '2 x 2' &&
+  #                                 input$cTableType == 'Probability Distribution'))
+  # 
+  # ptable2x2conditional_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
+  #                                            input$cTableDimension == '2 x 2' &&
+  #                                            input$cTableType == 'Probability Distribution'&&
+  #                                            input$cTableProb == 'Conditional'))
+  # 
   binom_iv$condition(~ isTRUE(input$probability == 'Binomial'))
   
   binomprob_iv$condition(~ isTRUE(input$probability == 'Binomial' && 
@@ -301,6 +324,10 @@ server <- function(session, input, output) {
   ctableconditional_iv$add_validator(ctable3x2conditional_iv)
   ctableconditional_iv$add_validator(ctable3x3conditional_iv)
   
+  # ptable_iv$add_validator(ptable2x2_iv)
+  # 
+  # ptableconditional_iv$add_validator(ptable2x2conditional_iv)
+  
   binom_iv$add_validator(binomprob_iv)
   binom_iv$add_validator(binombetween_iv)
   
@@ -314,6 +341,7 @@ server <- function(session, input, output) {
   norm_iv$add_validator(sampdistrsize_iv)
   
   pd_iv$add_validator(ctable_iv)
+  # pd_iv$add_validator(ptable_iv)
   pd_iv$add_validator(binom_iv)
   pd_iv$add_validator(poiss_iv)
   pd_iv$add_validator(norm_iv)
@@ -332,6 +360,10 @@ server <- function(session, input, output) {
   ctable3x2conditional_iv$enable()
   ctable3x3_iv$enable()
   ctable3x3conditional_iv$enable()
+  # ptable_iv$enable()
+  # ptableconditional_iv$enable()
+  # ptable2x2_iv$enable()
+  # ptable2x2conditional_iv$enable()
   binom_iv$enable()
   binomprob_iv$enable()
   binombetween_iv$enable()
@@ -1987,6 +2019,29 @@ server <- function(session, input, output) {
   })
   
   
+# --------------------- #
+  # pMatrixData Reactives #
+  # --------------------- #
+  # Purpose:
+  #   converts matrix data input by the user into numeric values
+  
+  # pMatrixData2x2 <- reactive({
+  #   suppressWarnings(as.numeric(input$pMatrix2x2))
+  # })
+  
+  # pMatrixData2x3 <- reactive({
+  #   suppressWarnings(as.numeric(input$pMatrix2x3))
+  # })
+  # 
+  # pMatrixData3x2 <- reactive({
+  #   suppressWarnings(as.numeric(input$pMatrix3x2))
+  # })
+  # 
+  # pMatrixData3x3 <- reactive({
+  #   suppressWarnings(as.numeric(input$pMatrix3x3))
+  # })
+  
+
   # ------------------------ #
   # cMatrixTotaled Reactives #
   # ------------------------ #
@@ -2031,6 +2086,50 @@ server <- function(session, input, output) {
   })
 
   
+# ------------------------ #
+  # pMatrixTotaled Reactives #
+  # ------------------------ #
+  # Purpose:
+  #   uses the numeric user data to create a matrix with a 'Total' row and
+  #   column using the GetCMatrix function.
+  
+  # pMatrix2x2Totaled <- reactive({
+  #   if(!any(is.na(pMatrixData2x2()))){
+  #     pData2x2 <- matrix(pMatrixData2x2(), ncol = ncol(input$pMatrix2x2))
+  #     pData2x2 <- GetCMatrix(pData2x2, input$pMatrix2x2)
+  #     
+  #     return(pData2x2)
+  #   }
+  # })
+  
+  # pMatrix2x3Totaled <- reactive({
+  #   if(!any(is.na(cMatrixData2x3()))){
+  #     pData2x3 <- matrix(pMatrixData2x3(), ncol = ncol(input$pMatrix2x3))
+  #     pData2x3 <- GetCMatrix(pData2x3, input$pMatrix2x3)
+  #     
+  #     return(pData2x3)
+  #   }
+  # })
+  # 
+  # pMatrix3x2Totaled <- reactive({
+  #   if(!any(is.na(pMatrixData3x2()))){
+  #     pData3x2 <- matrix(pMatrixData3x2(), ncol = ncol(input$pMatrix3x2))
+  #     pData3x2 <- GetCMatrix(pData3x2, input$pMatrix3x2)
+  #     
+  #     return(pData3x2)
+  #   }
+  # })
+  # 
+  # pMatrix3x3Totaled <- reactive({
+  #   if(!any(is.na(pMatrixData3x3()))){
+  #     pData3x3 <- matrix(pMatrixData3x3(), ncol = ncol(input$pMatrix3x3))
+  #     pData3x3 <- GetCMatrix(pData3x3, input$pMatrix3x3)
+  #     
+  #     return(pData3x3)
+  #   }
+  # })
+
+
   getNormValue <- reactive({
     req(pd_iv$is_valid())
     
@@ -3495,6 +3594,13 @@ server <- function(session, input, output) {
     return(htPlot)
   }
   
+  getSampSizeEst <- function(critVal, popuSD, margErr) {
+    
+    n <- ( (critVal * popuSD) / margErr ) ^ 2
+    
+    return(n)
+  }
+  
   # --------------------------------------------------------------------- #
   
   
@@ -4016,6 +4122,22 @@ server <- function(session, input, output) {
     return(depMeansTTest)
 
   })
+  
+  
+  #### Samp Size Est Reactives ----
+  criticalValue <- reactive({
+    
+    if(input$confLeveln == "90%") {
+      critVal <- 1.6449
+    } else if(input$confLeveln == "95%") {
+      critVal <- 1.96
+    } else if(input$confLeveln == "99%") {
+      critVal <- 2.5758
+    }
+    
+    return(critVal)
+  })
+
   # --------------------------------------------------------------------- #
   
   
@@ -5835,6 +5957,41 @@ server <- function(session, input, output) {
     
     htPlot <- hypZTestPlot(twoPropZTest["Test Statistic"], htPlotCritVals, IndMeansHypInfo()$alternative)
     htPlot
+  })
+  
+  
+  #### Sample Size Est output ----
+  output$sampSizeEstimate <- renderUI({
+    
+    nEst <- getSampSizeEst(criticalValue(), input$popuSDSampSizeEst, input$margErrSampSizeEst)
+    
+    tagList(
+      withMathJax(),
+      br(),
+      br(),
+      sprintf("\\( n = \\left( \\dfrac{Z_{\\alpha / 2} \\: \\sigma}{E} \\right)^{2} \\)"),
+      sprintf("\\( = \\left( \\dfrac{ (%s)(%s) }{%s} \\right)^{2} \\)",
+              criticalValue(),
+              input$popuSDSampSizeEst,
+              input$margErrSampSizeEst),
+      sprintf("\\( = %0.4f \\)",
+              nEst),
+      br(),
+      br(),
+      sprintf("\\( n = %1.0f \\)",
+              nEst),
+      br(),
+      br(),
+      br(),
+      sprintf("The recommended sample size (\\( n \\)) for a \\( %s \\)%% confidence 
+              interval with a population standard deviation \\( (\\sigma) = %s\\) and
+              margin of error \\( (E) = %s \\) is \\(%1.0f\\).",
+              input$confLeveln,
+              input$popuSDSampSizeEst,
+              input$margErrSampSizeEst,
+              nEst),
+      br(),
+    )
   })
   
   # --------------------------------------------------------------------- #
