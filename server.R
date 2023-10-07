@@ -63,6 +63,7 @@ server <- function(session, input, output) {
   oneprop_iv <- InputValidator$new()
   onepropht_iv <- InputValidator$new()
   twoprop_iv <- InputValidator$new()
+  sampsizeest_iv <- InputValidator$new()
   
   regcor_iv <- InputValidator$new()
   slrraw_iv <- InputValidator$new()
@@ -584,6 +585,14 @@ server <- function(session, input, output) {
   onepropht_iv$add_rule("hypProportion", sv_gt(0))
   onepropht_iv$add_rule("hypProportion", sv_lt(1))
   
+  # Sample Size Estimation
+  
+  sampsizeest_iv$add_rule("popuSDSampSizeEst", sv_required())
+  sampsizeest_iv$add_rule("popuSDSampSizeEst", sv_gt(0))
+  
+  sampsizeest_iv$add_rule("margErrSampSizeEst", sv_required())
+  sampsizeest_iv$add_rule("margErrSampSizeEst", sv_gt(0))
+  
   
   # ------------------ #
   #     Conditions     #
@@ -698,6 +707,8 @@ server <- function(session, input, output) {
   twoprop_iv$condition(~ isTRUE(input$samplesSelect == '2' && 
                                 input$popuParameters == 'Population Proportions'))
   
+  sampsizeest_iv$condition( ~ isTRUE(input$samplesSelect == 'n'))
+  
   
   # ------------------ #
   #     Dependency     #
@@ -725,6 +736,7 @@ server <- function(session, input, output) {
   si_iv$add_validator(oneprop_iv)
   si_iv$add_validator(onepropht_iv)
   si_iv$add_validator(twoprop_iv)
+  si_iv$add_validator(sampsizeest_iv)
   
   
   # ------------------ #
@@ -755,6 +767,7 @@ server <- function(session, input, output) {
   oneprop_iv$enable()
   onepropht_iv$enable()
   twoprop_iv$enable()
+  sampsizeest_iv$enable()
   
   
   ## RC rules ---- 
@@ -3609,6 +3622,8 @@ server <- function(session, input, output) {
   
   ConfLvl <- reactive({
     
+    req(input$samplesSelect != 'n')
+    
     if(input$samplesSelect == '1') {
       
       if(input$confidenceLevel == '90%') {
@@ -4482,6 +4497,19 @@ server <- function(session, input, output) {
       
       validate(
         need(GetDepMeansData()$sd != 0, "The test statistic (t) will be undefined for sample data with a sample standard deviation of difference (sd) = 0."),
+        
+        errorClass = "myClass"
+      )
+    }
+    
+    # Sample Size Estimation Validation 
+    # ------------------------------------------------------------------------ #
+    
+    if(!sampsizeest_iv$is_valid()) {
+      
+      validate(
+        need(input$popuSDSampSizeEst && input$popuSDSampSizeEst > 0, "Population Standard Deviation must be positive."),
+        need(input$margErrSampSizeEst && input$margErrSampSizeEst > 0, "Margin of Error must be positive."),
         
         errorClass = "myClass"
       )
@@ -5963,7 +5991,9 @@ server <- function(session, input, output) {
   #### Sample Size Est output ----
   output$sampSizeEstimate <- renderUI({
     
-    nEst <- getSampSizeEst(criticalValue(), input$popuSDSampSizeEst, input$margErrSampSizeEst)
+    n <- getSampSizeEst(criticalValue(), input$popuSDSampSizeEst, input$margErrSampSizeEst)
+    nEstimate <- ceiling(getSampSizeEst(criticalValue(), input$popuSDSampSizeEst, input$margErrSampSizeEst))
+    
     
     tagList(
       withMathJax(),
@@ -5975,21 +6005,21 @@ server <- function(session, input, output) {
               input$popuSDSampSizeEst,
               input$margErrSampSizeEst),
       sprintf("\\( = %0.4f \\)",
-              nEst),
+              n),
       br(),
       br(),
-      sprintf("\\( n = %1.0f \\)",
-              nEst),
+      sprintf("\\( n \\approx %1.0f \\)",
+              nEstimate),
       br(),
       br(),
       br(),
-      sprintf("The recommended sample size (\\( n \\)) for a \\( %s \\)%% confidence 
+      sprintf("The recommended sample size (\\( n \\)) is \\(%1.0f\\) for a \\( %s \\)%% confidence 
               interval with a population standard deviation \\( (\\sigma) = %s\\) and
-              margin of error \\( (E) = %s \\) is \\(%1.0f\\).",
+              margin of error \\( (E) = %s \\).",
+              nEstimate,
               input$confLeveln,
               input$popuSDSampSizeEst,
-              input$margErrSampSizeEst,
-              nEst),
+              input$margErrSampSizeEst),
       br(),
     )
   })
