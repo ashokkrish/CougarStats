@@ -19,16 +19,10 @@
                         text-decoration:none;
                         background-color:#428BCA
                       }
-                      #cMatrix2x2 th,
-                      #cMatrix2x3 th,
-                      #cMatrix3x2 th,
-                      #cMatrix3x3 th {
+                      .cMatrix th {
                         text-align: center
                       }
-                      #cMatrix2x2 td,
-                      #cMatrix2x3 td,
-                      #cMatrix3x2 td,
-                      #cMatrix3x3 td {
+                      .cMatrix td {
                         background-color:#FFFFFF;
                         text-align: center
                       }
@@ -242,14 +236,45 @@
                                                                                                      "3 x 3"),
                                                                                          inline = TRUE),
                                                                             
+                                                                            
+
+                                                                            # radioButtons(inputId = "cTableType",
+                                                                            #              label = strong("Data Format"),
+                                                                            #              choices = c("Frequency Distribution",
+                                                                            #                          "Probability Distribution"),
+                                                                            #              inline = TRUE),
+                                                                            
                                                                             conditionalPanel(
                                                                                             condition = "input.cTableDimension == '2 x 2'",
                                                                                             
                                                                                             matrixInput(inputId = "cMatrix2x2",
+                                                                                                        inputClass = "cMatrix",
                                                                                                         value = matrix(c(18,22, 21,152), 2, 2, dimnames = list(c("R1", "R2"), c("C1", "C2"))),
                                                                                                         rows = list(editableNames = TRUE),
                                                                                                         cols = list(editableNames = TRUE)
                                                                                             ),
+                                                                                            
+                                                                                            # conditionalPanel(
+                                                                                            #   condition = "input.cTableType == 'Frequency Distribution'",
+                                                                                            #   
+                                                                                            #   matrixInput(inputId = "cMatrix2x2",
+                                                                                            #               inputClass = "cMatrix",
+                                                                                            #               value = matrix(c(18,22, 21,152), 2, 2, dimnames = list(c("R1", "R2"), c("C1", "C2"))),
+                                                                                            #               rows = list(editableNames = TRUE),
+                                                                                            #               cols = list(editableNames = TRUE)
+                                                                                            #   ),
+                                                                                            # ),
+                                                                                            # 
+                                                                                            # conditionalPanel(
+                                                                                            #   condition = "input.cTableType == 'Probability Distribution'",
+                                                                                            #   
+                                                                                            #   matrixInput(inputId = "pMatrix2x2",
+                                                                                            #               inputClass = "cMatrix",
+                                                                                            #               value = matrix(c(0.18,0.22, 0.41,0.19), 2, 2, dimnames = list(c("R1", "R2"), c("C1", "C2"))),
+                                                                                            #               rows = list(editableNames = TRUE),
+                                                                                            #               cols = list(editableNames = TRUE)
+                                                                                            #   ),
+                                                                                            # ),
                                                                             ),
                                                                             
                                                                             conditionalPanel(
@@ -557,8 +582,8 @@
                                                            
                                                            radioButtons(inputId = "samplesSelect",
                                                                         label = strong("Number of samples"),
-                                                                        choiceValues = list("1", "2"),
-                                                                        choiceNames = list("1", "2"),
+                                                                        choiceValues = list("1", "2", "n"),
+                                                                        choiceNames = list("1", "2", "Sample Size Estimation (\\( n \\))"),
                                                                         selected = "1", #character(0), #
                                                                         inline = TRUE), #,width = '1000px'),
                                                            
@@ -1185,6 +1210,30 @@
                                                              ), # Dropdown for 2-sample HT
                                                            ), # "input.samplesSelect == '2'",
                                                            
+                                                           conditionalPanel(
+                                                             condition = "input.samplesSelect == 'n'",
+                                                             
+                                                             radioButtons(inputId = "confLeveln",
+                                                                          label = strong("Confidence Level (\\( 1- \\alpha\\))"),
+                                                                          choices = c("90%", 
+                                                                                      "95%",
+                                                                                      "99%"),
+                                                                          selected = c("95%"),
+                                                                          inline = TRUE),
+                                                             
+                                                             numericInput(inputId = "popuSDSampSizeEst",
+                                                                          label = strong("Population Standard Deviation (\\( \\sigma\\))"),
+                                                                          value = "12", 
+                                                                          min = 0.00001, 
+                                                                          step = 0.00001),
+                                                             
+                                                             numericInput(inputId = "margErrSampSizeEst",
+                                                                          label = strong("Margin of Error (\\( E\\))"),
+                                                                          value = "8", 
+                                                                          min = 0.00001, 
+                                                                          step = 0.00001),
+                                                           ),
+                                                           
                                                            actionButton(inputId = "goInference", 
                                                                         label = "Calculate",
                                                                         style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
@@ -1771,6 +1820,15 @@
                                                                                         
                                                                       ), # Two Population Proportions
                                                     ), # "input.samplesSelect == '2'"
+                                                    
+                                                    conditionalPanel( #### Samp Size Est ----
+                                                      condition = "input.samplesSelect == 'n'",
+                                                      
+                                                      titlePanel(tags$u("Sample Size Estimate (\\( n \\))")),
+                                                      br(),
+                                                      uiOutput('sampSizeEstimate'),
+                                                      br(),
+                                                    ),
                                                 ) # input.dropDownMenu == 'Statistical Inference'
                                               )
                                           ), # inferenceMP
