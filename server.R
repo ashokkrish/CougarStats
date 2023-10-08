@@ -6014,7 +6014,7 @@ server <- function(session, input, output) {
       br(),
       br(),
       sprintf("The recommended sample size (\\( n \\)) is \\(%1.0f\\) for a \\( %s \\)%% confidence 
-              interval with a population standard deviation \\( (\\sigma) = %s\\) and
+              level with a population standard deviation \\( (\\sigma) = %s\\) and
               margin of error \\( (E) = %s \\).",
               nEstimate,
               input$confLeveln,
