@@ -6637,7 +6637,10 @@ server <- function(session, input, output) {
         
         output$slrViewUpload <- renderDT({
           req(slrupload_iv$is_valid())
-          datatable(slrUploadData())
+          datatable(slrUploadData(),
+                    options = list(pageLength = -1,
+                                   lengthMenu = list(c(25, 50, 100, -1),
+                                                     c("25", "50", "100", "all"))))
         })
           
       } #if regcor_iv is valid

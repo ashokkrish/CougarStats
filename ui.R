@@ -1952,7 +1952,7 @@
                                                                            titlePanel("Data File"),
                                                                            br(),
                                                                            br(),
-                                                                           DTOutput("slrViewUpload"),
+                                                                           div(DTOutput("slrViewUpload"), style = "width: 75%"),
                                                                            br(),
                                                                            br(),
                                                                   ),
