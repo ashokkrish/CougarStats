@@ -1327,7 +1327,7 @@ server <- function(session, input, output) {
         #---------------- #
         #### Boxplot ---- 
         #---------------- #
-        
+
         bp <- ggplot(df_boxplot, aes(x = x, y = 0)) +
           stat_boxplot(geom ='errorbar', width = 0.15) +
           geom_boxplot(fill = "#819BB6",
@@ -1344,7 +1344,8 @@ server <- function(session, input, output) {
           theme_minimal() +
           theme(axis.title.x = element_text(size = 18, face = "bold", vjust = -1.5),
                 axis.text.x.bottom = element_text(size = 16),
-                axis.text.y.left = element_blank()) +
+                axis.text.y.left = element_blank(),
+                plot.margin = unit(c(1, 1, 1, 1),"cm")) +
           ylim(-1, 1) +
           coord_cartesian(clip="off")
         
@@ -1379,7 +1380,8 @@ server <- function(session, input, output) {
                                             face = "bold", 
                                             vjust = 1.5),
                 axis.text.x.bottom = element_text(size = 14),
-                axis.text.y.left = element_text(size = 14))
+                axis.text.y.left = element_text(size = 14),
+                plot.margin = unit(c(1, 1, 1, 1),"cm"))
         
           hist + scale_x_continuous(n.breaks = 10) 
       })
