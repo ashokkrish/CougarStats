@@ -19,6 +19,9 @@
                         text-decoration:none;
                         background-color:#428BCA
                       }
+                      .bttn-jelly.bttn-primary {
+                        background-color:#337AB7
+                      }
                       .cMatrix th {
                         text-align: center
                       }
@@ -1482,6 +1485,38 @@
                                                                            condition = "input.dsGraphOptions.indexOf('Boxplot') > -1",
                                                                            
                                                                            h3("Boxplot"),
+                                                                           br(),
+                                                                           #### dropdown ----
+                                                                           dropdown(
+                                                                             
+                                                                             tags$h3("Boxplot Options"),
+                                                                             
+                                                                             textInput(inputId = "boxplotTitle", 
+                                                                                       label = strong("Main title and axes labels:"), 
+                                                                                       value = "Boxplot", 
+                                                                                       placeholder = "main title"),
+                                                                             
+                                                                             textInput(inputId = "boxplotXlab", 
+                                                                                       label = NULL, 
+                                                                                       value = "", 
+                                                                                       placeholder = "x-axis label"),
+                                                                             
+                                                                             textInput(inputId = "boxplotYlab", 
+                                                                                       label = NULL, 
+                                                                                       value = "", 
+                                                                                       placeholder = "y-axis label"),
+                                                                             
+                                                                             colourpicker::colourInput(inputId = "boxplotColour", 
+                                                                                                       label = strong("Plot Colour"), 
+                                                                                                       value = "#819BB6"),
+                                                                             
+                                                                             style = "jelly", icon = icon("gear"),
+                                                                             status = "primary", width = "300px",
+                                                                             animate = animateOptions(
+                                                                               enter = animations$fading_entrances$fadeInDown,
+                                                                               exit = animations$fading_exits$fadeOutUp
+                                                                             )
+                                                                           ),
                                                                            
                                                                            plotOutput("dsBoxplot"),
                                                                            
@@ -1502,9 +1537,41 @@
                                                                            condition = "input.dsGraphOptions.indexOf('Histogram') > -1",
                                                                            
                                                                            h3("Histogram"),
+                                                                           br(),
                                                                            
+                                                                           dropdown(
+                                                                             
+                                                                             tags$h4("Histogram Options"),
+                                                                             
+                                                                             textInput(inputId = "histogramTitle", 
+                                                                                       label = strong("Main title and axes labels:"), 
+                                                                                       value = "Histogram", 
+                                                                                       placeholder = "main title"),
+                                                                             
+                                                                             textInput(inputId = "histogramXlab", 
+                                                                                       label = NULL, 
+                                                                                       value = "", 
+                                                                                       placeholder = "x-axis label"),
+                                                                             
+                                                                             textInput(inputId = "histogramYlab", 
+                                                                                       label = NULL, 
+                                                                                       value = "", 
+                                                                                       placeholder = "y-axis label"),
+                                                                             
+                                                                             colourpicker::colourInput(inputId = "histogramColour", 
+                                                                                                       label = strong("Plot Colour"), 
+                                                                                                       value = "#819BB6",
+                                                                                                       allowTransparent = TRUE),
+                                                                             
+                                                                             style = "jelly", icon = icon("gear"),
+                                                                             status = "primary", width = "300px",
+                                                                             animate = animateOptions(
+                                                                               enter = animations$fading_entrances$fadeInDown,
+                                                                               exit = animations$fading_exits$fadeOutUp
+                                                                             )
+                                                                           ),
                    
-                                                                                    plotOutput("dsHistogram"),
+                                                                           plotOutput("dsHistogram"),
                                                                    
                                                                            
                                                                            br(),
