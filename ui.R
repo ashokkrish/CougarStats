@@ -1452,7 +1452,8 @@
                                                                                       withMathJax(),
                                                                                       titlePanel(tags$u('Sample Mean')),
                                                                                       br(),
-                                                                                      uiOutput('dsMeanCalc')
+                                                                                      uiOutput('dsMeanCalc'),
+                                                                                      br()
                                                                                     ),
                                                                                     
                                                                                     conditionalPanel(
@@ -1460,7 +1461,10 @@
                                                                                       withMathJax(),
                                                                                       titlePanel(tags$u('Sample Standard Deviation')),
                                                                                       br(),
-                                                                                      uiOutput('dsSDCalc')
+                                                                                      uiOutput('dsSDCalc'),
+                                                                                      br(),
+                                                                                      br(),
+                                                                                      br()
                                                                                     )
                                                                              ),
                                                                              
