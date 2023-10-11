@@ -113,7 +113,7 @@
                                                            
                                                            pickerInput(
                                                              inputId = "dsTableFilters",
-                                                             label = strong("Options"), 
+                                                             label = strong("Statistics"), 
                                                              choices = list(
                                                                Descriptives = c("Observations", 
                                                                                 "Sum", 
