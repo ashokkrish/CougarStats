@@ -5205,7 +5205,7 @@ server <- function(session, input, output) {
           br(),
           br(),
           br(),
-          sprintf("\\( CI = (%g - %g) \\pm \\left( %g \\cdot \\sqrt{ \\dfrac{%g}{%g} + \\dfrac{%g}{%g} } \\right) \\)",
+          sprintf("\\( CI = (%g - %g) \\pm \\left( %g \\cdot \\sqrt{ \\dfrac{%g^2}{%g} + \\dfrac{%g^2}{%g} } \\right) \\)",
                   data$xbar1,
                   data$xbar2,
                   tInt['T Critical'],
