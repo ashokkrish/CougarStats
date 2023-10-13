@@ -1190,7 +1190,7 @@ server <- function(session, input, output) {
             condition = "input.dsTableFilters == ''",
             
             br(),
-            p("Select one or more options from the Options menu to see more information.")
+            p("Select one or more items from the Statistics menu to see more information.")
           ),
           
           conditionalPanel(
