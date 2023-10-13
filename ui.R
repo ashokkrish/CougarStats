@@ -2137,7 +2137,9 @@
                                       
                                       br(),
                                       
-                                      p("In Fall 2022 an earlier version of this interactive Shiny app was presented as Crystal Wai's COMP 5690 Senior Computer Science Project. Starting May 2023 this project will be funded by a student research grant awarded by the Faculty of Science and Technology at MRU."), 
+                                      p("In Fall 2022 an earlier version of this interactive Shiny app was presented as Crystal Wai's COMP 5690: Senior Computer Science Project. 
+                                        From June - August 2023 this project was funded by a student research grant awarded by the Faculty of Science and Technology.
+                                        Starting September 2023 this project is funded by the Provost's Teaching-Learning Enhancement Grants."), 
                                       br(),
                                       
                                       p("This interactive R Shiny app is maintained by Dr. Ashok Krishnamurthy. We welcome questions, insights, and feedback."),
