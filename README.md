@@ -10,15 +10,29 @@
 
 **CougarStats** is an open-source platform-independent browser-based interface for statistical data analysis. 
 
-You can use the app on our website: <https://cougarstats.ca/>
+You can use the app on our website: <https://www.cougarstats.ca/>
 
 or using our backup on Shinyapp.io server by clicking <https://cougarstats.shinyapps.io/CougarStats/>
 
+<br>
+
 Alternatively you can send a pull request to download all the files in this repository and run the app by loading `global.R`, `ui.R`, and `server.R` and clicking `Run App`. Note that the ``CougarStats`` project is not on CRAN, just on github.
+
+<br>
 
 CougarStats has also been Dockerized. You can pull the Docker image <a href="https://hub.docker.com/repository/docker/mmyer/cougarstats/general">here</a> by running:
 
-    `docker pull mmyer/cougarstats:latest`
+    docker pull mmyer/cougarstats:latest
+
+then start the container:
+
+    docker run -dp 127.0.0.1:3838:3838 mmyer/cougarstats
+
+and navigate to 127.0.0.1:3838 using a browser of your choice to access a copy of CougarStats running locally on your machine.
+
+More information on Docker can be found <a href="https://www.docker.com/get-started/">here</a>.
+
+<br>
 
 ## Key features
 
@@ -39,10 +53,14 @@ CougarStats has also been Dockerized. You can pull the Docker image <a href="htt
 - Hypothesis test about the difference between two population proportions   
 - Simple Linear Regression and Pearson Correlation Coefficient
 
+<br>
+
 ## Who is CougarStats for?
 
 - Students enrolled in an introductory statistics class
 - Instructors wanting to use an open-source tool in their labs
+
+<br>
 
 ## Shiny app authors
 
