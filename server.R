@@ -3270,14 +3270,16 @@ server <- function(session, input, output) {
                           round(pnorm(norm_x2, input$popMean, sampSE, lower.tail = TRUE), 4), " - ", round(pnorm(norm_x1, input$popMean, sampSE, lower.tail = TRUE), 4))
       }
       
+      sampMeanDistrSD <- input$popSD / sqrt(input$sampDistrSize)
+      
       tagList(
         withMathJax(
           div(
             h4(
-              sprintf("Calculating  \\( %s \\)   when  \\(  \\bar{X} \\sim N(\\mu = %g, \\, \\sigma^2 = \\dfrac{\\sigma^2}{n} = %0.4f): \\)",
+              sprintf("Calculating  \\( %s \\)   when  \\(  \\bar{X} \\sim N(\\mu_{\\bar{X}} = \\mu = %g, \\, \\sigma_{\\bar{X}} = \\dfrac{\\sigma}{\\sqrt{n}} = %0.4f): \\)",
                       normProb,
                       input$popMean,
-                      input$popSD^2 / input$sampDistrSize)
+                      sampMeanDistrSD)
             ),
             hr(),
             br(),
@@ -3292,14 +3294,14 @@ server <- function(session, input, output) {
             br(),
             br(),
             br(),
-            sprintf("Mean \\( (\\mu_{\\bar{x}}) = \\mu = %g\\)",
+            sprintf("Mean \\( (\\mu_{\\bar{X}}) = \\mu = %g\\)",
                     input$popMean),
             br(),
             br(),
-            sprintf("Standard Deviation \\( (\\sigma_{\\bar{x}}) = \\dfrac{\\sigma}{\\sqrt{n}} = %0.4f\\)",
-                    input$popSD / sqrt(input$sampDistrSize)),
+            sprintf("Standard Deviation \\( (\\sigma_{\\bar{X}}) = \\dfrac{\\sigma}{\\sqrt{n}} = %0.4f\\)",
+                    sampMeanDistrSD),
             br(),
-            sprintf("Variance \\( (\\sigma^{2}_{\\bar{x}}) = \\dfrac{\\sigma^{2}}{n} = %g\\)",
+            sprintf("Variance \\( (\\sigma_{\\bar{X}}^2) = \\dfrac{\\sigma^{2}}{n} = %g\\)",
                     input$popSD^2 / input$sampDistrSize)
           ),
           br(),
