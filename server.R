@@ -159,37 +159,37 @@ server <- function(session, input, output) {
   ctable3x3conditional_iv$add_rule("cMatrix3x3", ~ if(any(cMatrix3x3Totaled()[,'Total'] == 0)) "Row and Column totals must be greater than 0.")
   
   ptable2x2_iv$add_rule("pMatrix2x2", sv_required())
-  ptable2x2_iv$add_rule("pMatrix2x2", ~ if(any(is.na(pMatrixData2x2()))) "Fields must be between 0 and 1.")
-  ptable2x2_iv$add_rule("pMatrix2x2", ~ if(any(pMatrixData2x2() < 0)) "Fields must be between 0 and 1.")
-  ptable2x2_iv$add_rule("pMatrix2x2", ~ if(any(pMatrixData2x2() > 1)) "Fields must be between 0 and 1.")
-  ptable2x2_iv$add_rule("pMatrix2x2", ~ if(pMatrix2x2Totaled()['Total', 'Total'] != 1) "The sum of all fields must equal 1.")
+  ptable2x2_iv$add_rule("pMatrix2x2", ~ if(any(is.na(pMatrixData2x2()))) "Probabilities must be between 0 and 1.")
+  ptable2x2_iv$add_rule("pMatrix2x2", ~ if(any(pMatrixData2x2() < 0)) "Probabilities must be between 0 and 1.")
+  ptable2x2_iv$add_rule("pMatrix2x2", ~ if(any(pMatrixData2x2() >= 1)) "Probabilities must be between 0 and 1.")
+  ptable2x2_iv$add_rule("pMatrix2x2", ~ if(pMatrix2x2Totaled()['Total', 'Total'] != 1) "The sum of all probabilities must equal 1.")
 
   ptable2x2conditional_iv$add_rule("pMatrix2x2", ~ if(any(pMatrix2x2Totaled()['Total',] == 0)) "Row and Column totals must be greater than 0.")
   ptable2x2conditional_iv$add_rule("pMatrix2x2", ~ if(any(pMatrix2x2Totaled()[,'Total'] == 0)) "Row and Column totals must be greater than 0.")
   
   ptable2x3_iv$add_rule("pMatrix2x3", sv_required())
-  ptable2x3_iv$add_rule("pMatrix2x3", ~ if(any(is.na(pMatrixData2x3()))) "Fields must be between 0 and 1.")
-  ptable2x3_iv$add_rule("pMatrix2x3", ~ if(any(pMatrixData2x3() < 0)) "Fields must be between 0 and 1.")
-  ptable2x3_iv$add_rule("pMatrix2x3", ~ if(any(pMatrixData2x3() > 1)) "Fields must be between 0 and 1.")
-  ptable2x3_iv$add_rule("pMatrix2x3", ~ if(pMatrix2x3Totaled()['Total', 'Total'] != 1) "The sum of all fields must equal 1.")
+  ptable2x3_iv$add_rule("pMatrix2x3", ~ if(any(is.na(pMatrixData2x3()))) "Probabilities must be between 0 and 1.")
+  ptable2x3_iv$add_rule("pMatrix2x3", ~ if(any(pMatrixData2x3() < 0)) "Probabilities must be between 0 and 1.")
+  ptable2x3_iv$add_rule("pMatrix2x3", ~ if(any(pMatrixData2x3() >= 1)) "Probabilities must be between 0 and 1.")
+  ptable2x3_iv$add_rule("pMatrix2x3", ~ if(pMatrix2x3Totaled()['Total', 'Total'] != 1) "The sum of all probabilities must equal 1.")
   
   ptable2x3conditional_iv$add_rule("pMatrix2x3", ~ if(any(pMatrix2x3Totaled()['Total',] == 0)) "Row and Column totals must be greater than 0.")
   ptable2x3conditional_iv$add_rule("pMatrix2x3", ~ if(any(pMatrix2x3Totaled()[,'Total'] == 0)) "Row and Column totals must be greater than 0.")
   
   ptable3x2_iv$add_rule("pMatrix3x2", sv_required())
-  ptable3x2_iv$add_rule("pMatrix3x2", ~ if(any(is.na(pMatrixData3x2()))) "Fields must be between 0 and 1.")
-  ptable3x2_iv$add_rule("pMatrix3x2", ~ if(any(pMatrixData3x2() < 0)) "Fields must be between 0 and 1.")
-  ptable3x2_iv$add_rule("pMatrix3x2", ~ if(any(pMatrixData3x2() > 1)) "Fields must be between 0 and 1.")
-  ptable3x2_iv$add_rule("pMatrix3x2", ~ if(pMatrix3x2Totaled()['Total', 'Total'] != 1) "The sum of all fields must equal 1.")
+  ptable3x2_iv$add_rule("pMatrix3x2", ~ if(any(is.na(pMatrixData3x2()))) "Probabilities must be between 0 and 1.")
+  ptable3x2_iv$add_rule("pMatrix3x2", ~ if(any(pMatrixData3x2() < 0)) "Probabilities must be between 0 and 1.")
+  ptable3x2_iv$add_rule("pMatrix3x2", ~ if(any(pMatrixData3x2() >= 1)) "Probabilities must be between 0 and 1.")
+  ptable3x2_iv$add_rule("pMatrix3x2", ~ if(pMatrix3x2Totaled()['Total', 'Total'] != 1) "The sum of all probabilities must equal 1.")
   
   ptable3x2conditional_iv$add_rule("pMatrix3x2", ~ if(any(pMatrix3x2Totaled()['Total',] == 0)) "Row and Column totals must be greater than 0.")
   ptable3x2conditional_iv$add_rule("pMatrix3x2", ~ if(any(pMatrix3x2Totaled()[,'Total'] == 0)) "Row and Column totals must be greater than 0.")
   
   ptable3x3_iv$add_rule("pMatrix3x3", sv_required())
-  ptable3x3_iv$add_rule("pMatrix3x3", ~ if(any(is.na(pMatrixData3x3()))) "Fields must be between 0 and 1.")
-  ptable3x3_iv$add_rule("pMatrix3x3", ~ if(any(pMatrixData3x3() < 0)) "Fields must be between 0 and 1.")
-  ptable3x3_iv$add_rule("pMatrix3x3", ~ if(any(pMatrixData3x3() > 1)) "Fields must be between 0 and 1.")
-  ptable3x3_iv$add_rule("pMatrix3x3", ~ if(pMatrix3x3Totaled()['Total', 'Total'] != 1) "The sum of all fields must equal 1.")
+  ptable3x3_iv$add_rule("pMatrix3x3", ~ if(any(is.na(pMatrixData3x3()))) "Probabilities must be between 0 and 1.")
+  ptable3x3_iv$add_rule("pMatrix3x3", ~ if(any(pMatrixData3x3() < 0)) "Probabilities must be between 0 and 1.")
+  ptable3x3_iv$add_rule("pMatrix3x3", ~ if(any(pMatrixData3x3() >= 1)) "Probabilities must be between 0 and 1.")
+  ptable3x3_iv$add_rule("pMatrix3x3", ~ if(pMatrix3x3Totaled()['Total', 'Total'] != 1) "The sum of all probabilities must equal 1.")
   
   ptable3x3conditional_iv$add_rule("pMatrix3x3", ~ if(any(pMatrix3x3Totaled()['Total',] == 0)) "Row and Column totals must be greater than 0.")
   ptable3x3conditional_iv$add_rule("pMatrix3x3", ~ if(any(pMatrix3x3Totaled()[,'Total'] == 0)) "Row and Column totals must be greater than 0.")
@@ -2324,19 +2324,19 @@ server <- function(session, input, output) {
     output$render2x2pTable <- renderUI({
       
       validate(
-        need(input$pMatrix2x2, "Fields must be between 0 and 1."),
+        need(input$pMatrix2x2, "Probabilities must be between 0 and 1."),
         
         errorClass = "myClass"
       )
       
       validate(
-        need(all(!is.na(pMatrixData2x2())), "Fields must be between 0 and 1."),
+        need(all(!is.na(pMatrixData2x2())), "Probabilities must be between 0 and 1."),
         
         errorClass = "myClass"
       )
       
       validate(
-        need(all(pMatrixData2x2() >= 0) && all(pMatrixData2x2() <= 1), "Fields must be between 0 and 1."),
+        need(all(pMatrixData2x2() >= 0) && all(pMatrixData2x2() < 1), "Probabilities must be between 0 and 1."),
         
         errorClass = "myClass"
       )
@@ -2348,7 +2348,7 @@ server <- function(session, input, output) {
       )
       
       validate(
-        need(pMatrix2x2Totaled()['Total', 'Total'] == 1, "The sum of all fields must equal 1."),
+        need(pMatrix2x2Totaled()['Total', 'Total'] == 1, "The sum of all probabilities must equal 1."),
         
         errorClass = "myClass"
       )
@@ -2415,19 +2415,19 @@ server <- function(session, input, output) {
     output$render2x3pTable <- renderUI({
       
       validate(
-        need(input$pMatrix2x3, "Fields must be between 0 and 1."),
+        need(input$pMatrix2x3, "Probabilities must be between 0 and 1."),
         
         errorClass = "myClass"
       )
       
       validate(
-        need(all(!is.na(pMatrixData2x3())), "Fields must be between 0 and 1."),
+        need(all(!is.na(pMatrixData2x3())), "Probabilities must be between 0 and 1."),
         
         errorClass = "myClass"
       )
       
       validate(
-        need(all(pMatrixData2x3() >= 0) && all(pMatrixData2x3() <= 1), "Fields must be between 0 and 1."),
+        need(all(pMatrixData2x3() >= 0) && all(pMatrixData2x3() < 1), "Probabilities must be between 0 and 1."),
         
         errorClass = "myClass"
       )
@@ -2439,7 +2439,7 @@ server <- function(session, input, output) {
       )
       
       validate(
-        need(pMatrix2x3Totaled()['Total', 'Total'] == 1, "The sum of all fields must equal 1."),
+        need(pMatrix2x3Totaled()['Total', 'Total'] == 1, "The sum of all probabilities must equal 1."),
         
         errorClass = "myClass"
       )
@@ -2507,19 +2507,19 @@ server <- function(session, input, output) {
     output$render3x2pTable <- renderUI({
       
       validate(
-        need(input$pMatrix3x2, "Fields must be between 0 and 1."),
+        need(input$pMatrix3x2, "Probabilities must be between 0 and 1."),
         
         errorClass = "myClass"
       )
       
       validate(
-        need(all(!is.na(pMatrixData3x2())), "Fields must be between 0 and 1."),
+        need(all(!is.na(pMatrixData3x2())), "Probabilities must be between 0 and 1."),
         
         errorClass = "myClass"
       )
       
       validate(
-        need(all(pMatrixData3x2() >= 0) && all(pMatrixData3x2() <= 1), "Fields must be between 0 and 1."),
+        need(all(pMatrixData3x2() >= 0) && all(pMatrixData3x2() < 1), "Probabilities must be between 0 and 1."),
         
         errorClass = "myClass"
       )
@@ -2531,7 +2531,7 @@ server <- function(session, input, output) {
       )
       
       validate(
-        need(pMatrix3x2Totaled()['Total', 'Total'] == 1, "The sum of all fields must equal 1."),
+        need(pMatrix3x2Totaled()['Total', 'Total'] == 1, "The sum of all probabilities must equal 1."),
         
         errorClass = "myClass"
       )
@@ -2599,19 +2599,19 @@ server <- function(session, input, output) {
     output$render3x3pTable <- renderUI({
       
       validate(
-        need(input$pMatrix3x3, "Fields must be between 0 and 1."),
+        need(input$pMatrix3x3, "Probabilities must be between 0 and 1."),
         
         errorClass = "myClass"
       )
       
       validate(
-        need(all(!is.na(pMatrixData3x3())), "Fields must be between 0 and 1."),
+        need(all(!is.na(pMatrixData3x3())), "Probabilities must be between 0 and 1."),
         
         errorClass = "myClass"
       )
       
       validate(
-        need(all(pMatrixData3x3() >= 0) && all(pMatrixData3x3() <= 1), "Fields must be between 0 and 1."),
+        need(all(pMatrixData3x3() >= 0) && all(pMatrixData3x3() < 1), "Probabilities must be between 0 and 1."),
         
         errorClass = "myClass"
       )
@@ -2623,7 +2623,7 @@ server <- function(session, input, output) {
       )
       
       validate(
-        need(pMatrix3x3Totaled()['Total', 'Total'] == 1, "The sum of all fields must equal 1."),
+        need(pMatrix3x3Totaled()['Total', 'Total'] == 1, "The sum of all probabilities must equal 1."),
         
         errorClass = "myClass"
       )
