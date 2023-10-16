@@ -7105,6 +7105,7 @@ server <- function(session, input, output) {
   #  -------------------------------------------------------------------- #
   
   observeEvent({input$cTableDimension
+                input$cTableType
                 input$cMatrix2x2
                 input$cMatrix2x3
                 input$cMatrix3x2
