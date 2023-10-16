@@ -21,10 +21,16 @@ server <- function(session, input, output) {
   ctable3x2conditional_iv <- InputValidator$new()
   ctable3x3_iv <- InputValidator$new()
   ctable3x3conditional_iv <- InputValidator$new()
-  # ptable_iv <- InputValidator$new()
-  # ptableconditional_iv <- InputValidator$new()
-  # ptable2x2_iv <- InputValidator$new()
-  # ptable2x2conditional_iv <- InputValidator$new()
+  ptable_iv <- InputValidator$new()
+  ptableconditional_iv <- InputValidator$new()
+  ptable2x2_iv <- InputValidator$new()
+  ptable2x2conditional_iv <- InputValidator$new()
+  ptable2x3_iv <- InputValidator$new()
+  ptable2x3conditional_iv <- InputValidator$new()
+  ptable3x2_iv <- InputValidator$new()
+  ptable3x2conditional_iv <- InputValidator$new()
+  ptable3x3_iv <- InputValidator$new()
+  ptable3x3conditional_iv <- InputValidator$new()
   binom_iv <- InputValidator$new()
   binomprob_iv <- InputValidator$new()
   binombetween_iv <- InputValidator$new()
@@ -152,15 +158,42 @@ server <- function(session, input, output) {
   ctable3x3conditional_iv$add_rule("cMatrix3x3", ~ if(any(cMatrix3x3Totaled()['Total',] == 0)) "Row and Column totals must be greater than 0.")
   ctable3x3conditional_iv$add_rule("cMatrix3x3", ~ if(any(cMatrix3x3Totaled()[,'Total'] == 0)) "Row and Column totals must be greater than 0.")
   
-  # ptable2x2_iv$add_rule("pMatrix2x2", sv_required())
-  # ptable2x2_iv$add_rule("pMatrix2x2", ~ if(any(is.na(pMatrixData2x2()))) "Fields must be between 0 and 1.")
-  # ptable2x2_iv$add_rule("pMatrix2x2", ~ if(any(pMatrixData2x2() < 0)) "Fields must be between 0 and 1.")
-  # ptable2x2_iv$add_rule("pMatrix2x2", ~ if(any(pMatrixData2x2() > 1)) "Fields must be between 0 and 1.")
-  # ptable2x2_iv$add_rule("pMatrix2x2", ~ if(pMatrix2x2Totaled()['Total', 'Total'] != 1) "The sum of all fields must equal 1.")
-  # 
-  # ptable2x2conditional_iv$add_rule("pMatrix2x2", ~ if(any(pMatrix2x2Totaled()['Total',] == 0)) "Row and Column totals must be greater than 0.")
-  # ptable2x2conditional_iv$add_rule("pMatrix2x2", ~ if(any(pMatrix2x2Totaled()[,'Total'] == 0)) "Row and Column totals must be greater than 0.")
-  # 
+  ptable2x2_iv$add_rule("pMatrix2x2", sv_required())
+  ptable2x2_iv$add_rule("pMatrix2x2", ~ if(any(is.na(pMatrixData2x2()))) "Fields must be between 0 and 1.")
+  ptable2x2_iv$add_rule("pMatrix2x2", ~ if(any(pMatrixData2x2() < 0)) "Fields must be between 0 and 1.")
+  ptable2x2_iv$add_rule("pMatrix2x2", ~ if(any(pMatrixData2x2() > 1)) "Fields must be between 0 and 1.")
+  ptable2x2_iv$add_rule("pMatrix2x2", ~ if(pMatrix2x2Totaled()['Total', 'Total'] != 1) "The sum of all fields must equal 1.")
+
+  ptable2x2conditional_iv$add_rule("pMatrix2x2", ~ if(any(pMatrix2x2Totaled()['Total',] == 0)) "Row and Column totals must be greater than 0.")
+  ptable2x2conditional_iv$add_rule("pMatrix2x2", ~ if(any(pMatrix2x2Totaled()[,'Total'] == 0)) "Row and Column totals must be greater than 0.")
+  
+  ptable2x3_iv$add_rule("pMatrix2x3", sv_required())
+  ptable2x3_iv$add_rule("pMatrix2x3", ~ if(any(is.na(pMatrixData2x3()))) "Fields must be between 0 and 1.")
+  ptable2x3_iv$add_rule("pMatrix2x3", ~ if(any(pMatrixData2x3() < 0)) "Fields must be between 0 and 1.")
+  ptable2x3_iv$add_rule("pMatrix2x3", ~ if(any(pMatrixData2x3() > 1)) "Fields must be between 0 and 1.")
+  ptable2x3_iv$add_rule("pMatrix2x3", ~ if(pMatrix2x3Totaled()['Total', 'Total'] != 1) "The sum of all fields must equal 1.")
+  
+  ptable2x3conditional_iv$add_rule("pMatrix2x3", ~ if(any(pMatrix2x3Totaled()['Total',] == 0)) "Row and Column totals must be greater than 0.")
+  ptable2x3conditional_iv$add_rule("pMatrix2x3", ~ if(any(pMatrix2x3Totaled()[,'Total'] == 0)) "Row and Column totals must be greater than 0.")
+  
+  ptable3x2_iv$add_rule("pMatrix3x2", sv_required())
+  ptable3x2_iv$add_rule("pMatrix3x2", ~ if(any(is.na(pMatrixData3x2()))) "Fields must be between 0 and 1.")
+  ptable3x2_iv$add_rule("pMatrix3x2", ~ if(any(pMatrixData3x2() < 0)) "Fields must be between 0 and 1.")
+  ptable3x2_iv$add_rule("pMatrix3x2", ~ if(any(pMatrixData3x2() > 1)) "Fields must be between 0 and 1.")
+  ptable3x2_iv$add_rule("pMatrix3x2", ~ if(pMatrix3x2Totaled()['Total', 'Total'] != 1) "The sum of all fields must equal 1.")
+  
+  ptable3x2conditional_iv$add_rule("pMatrix3x2", ~ if(any(pMatrix3x2Totaled()['Total',] == 0)) "Row and Column totals must be greater than 0.")
+  ptable3x2conditional_iv$add_rule("pMatrix3x2", ~ if(any(pMatrix3x2Totaled()[,'Total'] == 0)) "Row and Column totals must be greater than 0.")
+  
+  ptable3x3_iv$add_rule("pMatrix3x3", sv_required())
+  ptable3x3_iv$add_rule("pMatrix3x3", ~ if(any(is.na(pMatrixData3x3()))) "Fields must be between 0 and 1.")
+  ptable3x3_iv$add_rule("pMatrix3x3", ~ if(any(pMatrixData3x3() < 0)) "Fields must be between 0 and 1.")
+  ptable3x3_iv$add_rule("pMatrix3x3", ~ if(any(pMatrixData3x3() > 1)) "Fields must be between 0 and 1.")
+  ptable3x3_iv$add_rule("pMatrix3x3", ~ if(pMatrix3x3Totaled()['Total', 'Total'] != 1) "The sum of all fields must equal 1.")
+  
+  ptable3x3conditional_iv$add_rule("pMatrix3x3", ~ if(any(pMatrix3x3Totaled()['Total',] == 0)) "Row and Column totals must be greater than 0.")
+  ptable3x3conditional_iv$add_rule("pMatrix3x3", ~ if(any(pMatrix3x3Totaled()[,'Total'] == 0)) "Row and Column totals must be greater than 0.")
+
   # numTrialsBinom 
   
   binom_iv$add_rule("numTrialsBinom", sv_required())
@@ -239,43 +272,77 @@ server <- function(session, input, output) {
   #     Conditions     #
   # ------------------ #
   ctable2x2_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
-                                  input$cTableDimension == '2 x 2'))
-                                  # input$cTableType == 'Frequency Distribution'))
+                                  input$cTableDimension == '2 x 2' &&
+                                  input$cTableType == 'Frequency Distribution'))
   
   ctable2x2conditional_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
                                              input$cTableDimension == '2 x 2' &&
+                                             input$cTableType == 'Frequency Distribution' &&
                                              input$cTableProb == 'Conditional'))
   
   ctable2x3_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
-                                  input$cTableDimension == '2 x 3'))
+                                  input$cTableDimension == '2 x 3' &&
+                                  input$cTableType == 'Frequency Distribution'))
   
   ctable2x3conditional_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
                                              input$cTableDimension == '2 x 3' &&
+                                             input$cTableType == 'Frequency Distribution'&&
                                              input$cTableProb == 'Conditional'))
   
   ctable3x2_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
-                                  input$cTableDimension == '3 x 2'))
+                                  input$cTableDimension == '3 x 2' &&
+                                  input$cTableType == 'Frequency Distribution'))
   
   ctable3x2conditional_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
                                              input$cTableDimension == '3 x 2' &&
+                                             input$cTableType == 'Frequency Distribution'&&
                                              input$cTableProb == 'Conditional'))
   
   ctable3x3_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
-                                  input$cTableDimension == '3 x 3'))
+                                  input$cTableDimension == '3 x 3' &&
+                                  input$cTableType == 'Frequency Distribution'))
   
   ctable3x3conditional_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
                                              input$cTableDimension == '3 x 3' &&
+                                             input$cTableType == 'Frequency Distribution'&&
                                              input$cTableProb == 'Conditional'))
   
-  # ptable2x2_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
-  #                                 input$cTableDimension == '2 x 2' &&
-  #                                 input$cTableType == 'Probability Distribution'))
-  # 
-  # ptable2x2conditional_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
-  #                                            input$cTableDimension == '2 x 2' &&
-  #                                            input$cTableType == 'Probability Distribution'&&
-  #                                            input$cTableProb == 'Conditional'))
-  # 
+  ptable2x2_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
+                                  input$cTableDimension == '2 x 2' &&
+                                  input$cTableType == 'Probability Distribution'))
+
+  ptable2x2conditional_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
+                                             input$cTableDimension == '2 x 2' &&
+                                             input$cTableType == 'Probability Distribution'&&
+                                             input$cTableProb == 'Conditional'))
+  
+  ptable2x3_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
+                                    input$cTableDimension == '2 x 3' &&
+                                    input$cTableType == 'Probability Distribution'))
+  
+  ptable2x3conditional_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
+                                               input$cTableDimension == '2 x 3' &&
+                                               input$cTableType == 'Probability Distribution'&&
+                                               input$cTableProb == 'Conditional'))
+  
+  ptable3x2_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
+                                    input$cTableDimension == '3 x 2' &&
+                                    input$cTableType == 'Probability Distribution'))
+  
+  ptable3x2conditional_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
+                                               input$cTableDimension == '3 x 2' &&
+                                               input$cTableType == 'Probability Distribution'&&
+                                               input$cTableProb == 'Conditional'))
+  
+  ptable3x3_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
+                                    input$cTableDimension == '3 x 3' &&
+                                    input$cTableType == 'Probability Distribution'))
+  
+  ptable3x3conditional_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
+                                               input$cTableDimension == '3 x 3' &&
+                                               input$cTableType == 'Probability Distribution'&&
+                                               input$cTableProb == 'Conditional'))
+
   binom_iv$condition(~ isTRUE(input$probability == 'Binomial'))
   
   binomprob_iv$condition(~ isTRUE(input$probability == 'Binomial' && 
@@ -325,9 +392,15 @@ server <- function(session, input, output) {
   ctableconditional_iv$add_validator(ctable3x2conditional_iv)
   ctableconditional_iv$add_validator(ctable3x3conditional_iv)
   
-  # ptable_iv$add_validator(ptable2x2_iv)
-  # 
-  # ptableconditional_iv$add_validator(ptable2x2conditional_iv)
+  ptable_iv$add_validator(ptable2x2_iv)
+  ptable_iv$add_validator(ptable2x3_iv)
+  ptable_iv$add_validator(ptable3x2_iv)
+  ptable_iv$add_validator(ptable3x3_iv)
+
+  ptableconditional_iv$add_validator(ptable2x2conditional_iv)
+  ptableconditional_iv$add_validator(ptable2x3conditional_iv)
+  ptableconditional_iv$add_validator(ptable3x2conditional_iv)
+  ptableconditional_iv$add_validator(ptable3x3conditional_iv)
   
   binom_iv$add_validator(binomprob_iv)
   binom_iv$add_validator(binombetween_iv)
@@ -342,7 +415,7 @@ server <- function(session, input, output) {
   norm_iv$add_validator(sampdistrsize_iv)
   
   pd_iv$add_validator(ctable_iv)
-  # pd_iv$add_validator(ptable_iv)
+  pd_iv$add_validator(ptable_iv)
   pd_iv$add_validator(binom_iv)
   pd_iv$add_validator(poiss_iv)
   pd_iv$add_validator(norm_iv)
@@ -361,10 +434,16 @@ server <- function(session, input, output) {
   ctable3x2conditional_iv$enable()
   ctable3x3_iv$enable()
   ctable3x3conditional_iv$enable()
-  # ptable_iv$enable()
-  # ptableconditional_iv$enable()
-  # ptable2x2_iv$enable()
-  # ptable2x2conditional_iv$enable()
+  ptable_iv$enable()
+  ptableconditional_iv$enable()
+  ptable2x2_iv$enable()
+  ptable2x2conditional_iv$enable()
+  ptable2x3_iv$enable()
+  ptable2x3conditional_iv$enable()
+  ptable3x2_iv$enable()
+  ptable3x2conditional_iv$enable()
+  ptable3x3_iv$enable()
+  ptable3x3conditional_iv$enable()
   binom_iv$enable()
   binomprob_iv$enable()
   binombetween_iv$enable()
@@ -1554,24 +1633,17 @@ server <- function(session, input, output) {
     updateMatrixInput(session, tableID, newMatrix)
   }
   
-  # Reset3x3CTable <- function(){
-  #   newMatrix <- matrix("", 3, 3)
-  #   colnames(newMatrix) <- c("B1", "B2", "B3")
-  #   rownames(newMatrix) <- c("A1", "A2", "A3")
-  #   withMathJax()
-  #   updateMatrixInput(session, "cMatrix3x3", newMatrix)
-  # }
   
   getProbabilities <- function(x, t){
     return(round((x/t), 4))
   }
   
   
-  GetCMatrix <- function(cMatrix, matrixData){
+  getTotaledMatrix <- function(cMatrix, matrixData){
     colnames(cMatrix) <- colnames(matrixData)
     rownames(cMatrix) <- rownames(matrixData)
-    cMatrix <- cbind(cMatrix, Total = rowSums(cMatrix))
-    cMatrix <- rbind(cMatrix, Total = colSums(cMatrix))
+    cMatrix <- cbind(cMatrix, Total = round(rowSums(cMatrix), 4))
+    cMatrix <- rbind(cMatrix, Total = round(colSums(cMatrix), 4))
     
     return(cMatrix)
   }
@@ -2040,27 +2112,27 @@ server <- function(session, input, output) {
   })
   
   
-# --------------------- #
+  # --------------------- #
   # pMatrixData Reactives #
   # --------------------- #
   # Purpose:
   #   converts matrix data input by the user into numeric values
   
-  # pMatrixData2x2 <- reactive({
-  #   suppressWarnings(as.numeric(input$pMatrix2x2))
-  # })
+  pMatrixData2x2 <- reactive({
+    suppressWarnings(as.numeric(input$pMatrix2x2))
+  })
   
-  # pMatrixData2x3 <- reactive({
-  #   suppressWarnings(as.numeric(input$pMatrix2x3))
-  # })
-  # 
-  # pMatrixData3x2 <- reactive({
-  #   suppressWarnings(as.numeric(input$pMatrix3x2))
-  # })
-  # 
-  # pMatrixData3x3 <- reactive({
-  #   suppressWarnings(as.numeric(input$pMatrix3x3))
-  # })
+  pMatrixData2x3 <- reactive({
+    suppressWarnings(as.numeric(input$pMatrix2x3))
+  })
+
+  pMatrixData3x2 <- reactive({
+    suppressWarnings(as.numeric(input$pMatrix3x2))
+  })
+
+  pMatrixData3x3 <- reactive({
+    suppressWarnings(as.numeric(input$pMatrix3x3))
+  })
   
 
   # ------------------------ #
@@ -2073,7 +2145,7 @@ server <- function(session, input, output) {
   cMatrix2x2Totaled <- reactive({
     if(!any(is.na(cMatrixData2x2()))){
       cData2x2 <- matrix(cMatrixData2x2(), ncol = ncol(input$cMatrix2x2))
-      cData2x2 <- GetCMatrix(cData2x2, input$cMatrix2x2)
+      cData2x2 <- getTotaledMatrix(cData2x2, input$cMatrix2x2)
       
       return(cData2x2)
     }
@@ -2082,7 +2154,7 @@ server <- function(session, input, output) {
   cMatrix2x3Totaled <- reactive({
     if(!any(is.na(cMatrixData2x3()))){
       cData2x3 <- matrix(cMatrixData2x3(), ncol = ncol(input$cMatrix2x3))
-      cData2x3 <- GetCMatrix(cData2x3, input$cMatrix2x3)
+      cData2x3 <- getTotaledMatrix(cData2x3, input$cMatrix2x3)
       
       return(cData2x3)
     }
@@ -2091,7 +2163,7 @@ server <- function(session, input, output) {
   cMatrix3x2Totaled <- reactive({
     if(!any(is.na(cMatrixData3x2()))){
       cData3x2 <- matrix(cMatrixData3x2(), ncol = ncol(input$cMatrix3x2))
-      cData3x2 <- GetCMatrix(cData3x2, input$cMatrix3x2)
+      cData3x2 <- getTotaledMatrix(cData3x2, input$cMatrix3x2)
       
       return(cData3x2)
     }
@@ -2100,7 +2172,7 @@ server <- function(session, input, output) {
   cMatrix3x3Totaled <- reactive({
     if(!any(is.na(cMatrixData3x3()))){
       cData3x3 <- matrix(cMatrixData3x3(), ncol = ncol(input$cMatrix3x3))
-      cData3x3 <- GetCMatrix(cData3x3, input$cMatrix3x3)
+      cData3x3 <- getTotaledMatrix(cData3x3, input$cMatrix3x3)
       
       return(cData3x3)
     }
@@ -2114,41 +2186,41 @@ server <- function(session, input, output) {
   #   uses the numeric user data to create a matrix with a 'Total' row and
   #   column using the GetCMatrix function.
   
-  # pMatrix2x2Totaled <- reactive({
-  #   if(!any(is.na(pMatrixData2x2()))){
-  #     pData2x2 <- matrix(pMatrixData2x2(), ncol = ncol(input$pMatrix2x2))
-  #     pData2x2 <- GetCMatrix(pData2x2, input$pMatrix2x2)
-  #     
-  #     return(pData2x2)
-  #   }
-  # })
+  pMatrix2x2Totaled <- reactive({
+    if(!any(is.na(pMatrixData2x2()))){
+      pData2x2 <- matrix(pMatrixData2x2(), ncol = ncol(input$pMatrix2x2))
+      pData2x2 <- getTotaledMatrix(pData2x2, input$pMatrix2x2)
+
+      return(pData2x2)
+    }
+  })
   
-  # pMatrix2x3Totaled <- reactive({
-  #   if(!any(is.na(cMatrixData2x3()))){
-  #     pData2x3 <- matrix(pMatrixData2x3(), ncol = ncol(input$pMatrix2x3))
-  #     pData2x3 <- GetCMatrix(pData2x3, input$pMatrix2x3)
-  #     
-  #     return(pData2x3)
-  #   }
-  # })
-  # 
-  # pMatrix3x2Totaled <- reactive({
-  #   if(!any(is.na(pMatrixData3x2()))){
-  #     pData3x2 <- matrix(pMatrixData3x2(), ncol = ncol(input$pMatrix3x2))
-  #     pData3x2 <- GetCMatrix(pData3x2, input$pMatrix3x2)
-  #     
-  #     return(pData3x2)
-  #   }
-  # })
-  # 
-  # pMatrix3x3Totaled <- reactive({
-  #   if(!any(is.na(pMatrixData3x3()))){
-  #     pData3x3 <- matrix(pMatrixData3x3(), ncol = ncol(input$pMatrix3x3))
-  #     pData3x3 <- GetCMatrix(pData3x3, input$pMatrix3x3)
-  #     
-  #     return(pData3x3)
-  #   }
-  # })
+  pMatrix2x3Totaled <- reactive({
+    if(!any(is.na(cMatrixData2x3()))){
+      pData2x3 <- matrix(pMatrixData2x3(), ncol = ncol(input$pMatrix2x3))
+      pData2x3 <- getTotaledMatrix(pData2x3, input$pMatrix2x3)
+
+      return(pData2x3)
+    }
+  })
+
+  pMatrix3x2Totaled <- reactive({
+    if(!any(is.na(pMatrixData3x2()))){
+      pData3x2 <- matrix(pMatrixData3x2(), ncol = ncol(input$pMatrix3x2))
+      pData3x2 <- getTotaledMatrix(pData3x2, input$pMatrix3x2)
+
+      return(pData3x2)
+    }
+  })
+
+  pMatrix3x3Totaled <- reactive({
+    if(!any(is.na(pMatrixData3x3()))){
+      pData3x3 <- matrix(pMatrixData3x3(), ncol = ncol(input$pMatrix3x3))
+      pData3x3 <- getTotaledMatrix(pData3x3, input$pMatrix3x3)
+
+      return(pData3x3)
+    }
+  })
 
 
   getNormValue <- reactive({
@@ -2199,7 +2271,7 @@ server <- function(session, input, output) {
   ### Observers ----
   # --------------------------------------------------------------------- #
   
-  #### Contingency Table ----
+  ?RHandson#### Contingency Table ----
   
   observeEvent(input$gocTable, {
  
@@ -2235,14 +2307,58 @@ server <- function(session, input, output) {
         titlePanel("Contingency Table"),
         hr(),
         br(),
-        DTOutput("cTable2x2", width = '750px'),
+        DTOutput("cTable2x2", width = '500px'),
         br(),
         br(),
         br(),
         titlePanel("Probability Distribution Table"),
         hr(),
         br(),
-        DTOutput("probTable2x2", width = '750px'),
+        DTOutput("probTable2x2", width = '500px'),
+        br(),
+        br(),
+        br(),
+      )
+    })
+    
+    output$render2x2pTable <- renderUI({
+      
+      validate(
+        need(input$pMatrix2x2, "Fields must be between 0 and 1."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(all(!is.na(pMatrixData2x2())), "Fields must be between 0 and 1."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(all(pMatrixData2x2() >= 0) && all(pMatrixData2x2() <= 1), "Fields must be between 0 and 1."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(any(pMatrixData2x2() != 0), "All cell values cannot be equal to zero."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(pMatrix2x2Totaled()['Total', 'Total'] == 1, "The sum of all fields must equal 1."),
+        
+        errorClass = "myClass"
+      )
+      
+      tagList(
+        
+        titlePanel("Probability Distribution Table"),
+        hr(),
+        br(),
+        DTOutput("pTable2x2", width = '500px'),
         br(),
         br(),
         br(),
@@ -2281,14 +2397,59 @@ server <- function(session, input, output) {
         titlePanel("Contingency Table"),
         hr(),
         br(),
-        DTOutput("cTable2x3", width = '750px'),
+        DTOutput("cTable2x3", width = '625px'),
         br(),
         br(),
         br(),
         titlePanel("Probability Distribution Table"),
         hr(),
         br(),
-        DTOutput("probTable2x3", width = '750px'),
+        DTOutput("probTable2x3", width = '625px'),
+        br(),
+        br(),
+        br(),
+      )
+    })
+    
+    
+    output$render2x3pTable <- renderUI({
+      
+      validate(
+        need(input$pMatrix2x3, "Fields must be between 0 and 1."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(all(!is.na(pMatrixData2x3())), "Fields must be between 0 and 1."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(all(pMatrixData2x3() >= 0) && all(pMatrixData2x3() <= 1), "Fields must be between 0 and 1."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(any(pMatrixData2x3() != 0), "All cell values cannot be equal to zero."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(pMatrix2x3Totaled()['Total', 'Total'] == 1, "The sum of all fields must equal 1."),
+        
+        errorClass = "myClass"
+      )
+      
+      tagList(
+        
+        titlePanel("Probability Distribution Table"),
+        hr(),
+        br(),
+        DTOutput("pTable2x3", width = '625px'),
         br(),
         br(),
         br(),
@@ -2328,14 +2489,59 @@ server <- function(session, input, output) {
         titlePanel("Contingency Table"),
         hr(),
         br(),
-        DTOutput("cTable3x2", width = '750px'),
+        DTOutput("cTable3x2", width = '500px'),
         br(),
         br(),
         br(),
         titlePanel("Probability Distribution Table"),
         hr(),
         br(),
-        DTOutput("probTable3x2", width = '750px'),
+        DTOutput("probTable3x2", width = '500px'),
+        br(),
+        br(),
+        br(),
+      )
+    })
+    
+    
+    output$render3x2pTable <- renderUI({
+      
+      validate(
+        need(input$pMatrix3x2, "Fields must be between 0 and 1."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(all(!is.na(pMatrixData3x2())), "Fields must be between 0 and 1."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(all(pMatrixData3x2() >= 0) && all(pMatrixData3x2() <= 1), "Fields must be between 0 and 1."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(any(pMatrixData3x2() != 0), "All cell values cannot be equal to zero."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(pMatrix3x2Totaled()['Total', 'Total'] == 1, "The sum of all fields must equal 1."),
+        
+        errorClass = "myClass"
+      )
+      
+      tagList(
+        
+        titlePanel("Probability Distribution Table"),
+        hr(),
+        br(),
+        DTOutput("pTable3x2", width = '500px'),
         br(),
         br(),
         br(),
@@ -2375,24 +2581,74 @@ server <- function(session, input, output) {
         titlePanel("Contingency Table"),
         hr(),
         br(),
-        DTOutput("cTable3x3", width = '750px'),
+        DTOutput("cTable3x3", width = '625px'),
         br(),
         br(),
         br(),
         titlePanel("Probability Distribution Table"),
         hr(),
         br(),
-        DTOutput("probTable3x3", width = '750px'),
+        DTOutput("probTable3x3", width = '625px'),
         br(),
         br(),
         br(),
       )
     })
     
+    
+    output$render3x3pTable <- renderUI({
+      
+      validate(
+        need(input$pMatrix3x3, "Fields must be between 0 and 1."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(all(!is.na(pMatrixData3x3())), "Fields must be between 0 and 1."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(all(pMatrixData3x3() >= 0) && all(pMatrixData3x3() <= 1), "Fields must be between 0 and 1."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(any(pMatrixData3x3() != 0), "All cell values cannot be equal to zero."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(pMatrix3x3Totaled()['Total', 'Total'] == 1, "The sum of all fields must equal 1."),
+        
+        errorClass = "myClass"
+      )
+      
+      tagList(
+        
+        titlePanel("Probability Distribution Table"),
+        hr(),
+        br(),
+        DTOutput("pTable3x3", width = '625px'),
+        br(),
+        br(),
+        br(),
+      )
+    })
+    
+    
     cData2x2 <- matrix(cMatrixData2x2(), ncol = ncol(input$cMatrix2x2))
-    cData2x2 <- GetCMatrix(cData2x2, input$cMatrix2x2)
+    cData2x2 <- getTotaledMatrix(cData2x2, input$cMatrix2x2)
     
     output$cTable2x2 <- renderDT({
+
+      # excelR::excelTable(cData2x2,
+      #            editable = FALSE,
+      #            autoFill = TRUE) 
       
       datatable(cData2x2,
                 class = 'cell-border stripe',
@@ -2402,15 +2658,15 @@ server <- function(session, input, output) {
                   ordering = FALSE,
                   searching = FALSE,
                   paging = FALSE,
-                  autoWidth = TRUE,
+                  autoWidth = FALSE,
                   scrollX = TRUE,
-                  columnDefs = list(list(width = '100px', targets = c(1, 2, 3)),
-                                    list(className = 'dt-center', targets = c(1, 2, 3)))
+                  columnDefs = list(list(width = '100px', targets = c(0, 1, 2, 3)),
+                                    list(className = 'dt-center', targets = c(0, 1, 2, 3)))
                 ),
                 selection = "none",
                 escape = FALSE,
-                filter = "none",) %>% 
-        formatStyle(columns = c(0,3), 
+                filter = "none",) %>%
+        formatStyle(columns = c(0,3),
                     fontWeight = 'bold') %>%
         formatStyle(columns = 1:3,
                     target = 'row',
@@ -2428,10 +2684,10 @@ server <- function(session, input, output) {
                   ordering = FALSE,
                   searching = FALSE,
                   paging = FALSE,
-                  autoWidth = TRUE,
+                  autoWidth = FALSE,
                   scrollX = TRUE,
-                  columnDefs = list(list(width = '100px', targets = c(1, 2, 3)),
-                                    list(className = 'dt-center', targets = c(1, 2, 3)))
+                  columnDefs = list(list(width = '100px', targets = c(0, 1, 2, 3)),
+                                    list(className = 'dt-center', targets = c(0, 1, 2, 3)))
                 ),
                 selection = "none",
                 escape = FALSE,
@@ -2444,8 +2700,41 @@ server <- function(session, input, output) {
     })
     
     
+    pData2x2 <- matrix(pMatrixData2x2(), ncol = ncol(input$pMatrix2x2))
+    pData2x2 <- getTotaledMatrix(pData2x2, input$pMatrix2x2)
+    
+    output$pTable2x2 <- renderDT({
+      
+      # excelR::excelTable(cData2x2,
+      #            editable = FALSE,
+      #            autoFill = TRUE) 
+      
+      datatable(pData2x2,
+                class = 'cell-border stripe',
+                options = list(
+                  dom = 't',
+                  pageLength = -1,
+                  ordering = FALSE,
+                  searching = FALSE,
+                  paging = FALSE,
+                  autoWidth = FALSE,
+                  scrollX = TRUE,
+                  columnDefs = list(list(width = '100px', targets = c(0, 1, 2, 3)),
+                                    list(className = 'dt-center', targets = c(0, 1, 2, 3)))
+                ),
+                selection = "none",
+                escape = FALSE,
+                filter = "none",) %>%
+        formatStyle(columns = c(0,3),
+                    fontWeight = 'bold') %>%
+        formatStyle(columns = 1:3,
+                    target = 'row',
+                    fontWeight = styleRow(dim(pData2x2)[1], "bold"))
+    })
+    
+    
     cData2x3 <- matrix(cMatrixData2x3(), ncol = ncol(input$cMatrix2x3))
-    cData2x3 <- GetCMatrix(cData2x3, input$cMatrix2x3)
+    cData2x3 <- getTotaledMatrix(cData2x3, input$cMatrix2x3)
     
     
     output$cTable2x3 <- renderDT({
@@ -2458,10 +2747,10 @@ server <- function(session, input, output) {
                   ordering = FALSE,
                   searching = FALSE,
                   paging = FALSE,
-                  autoWidth = TRUE,
+                  autoWidth = FALSE,
                   scrollX = TRUE,
                   columnDefs = list(list(width = '100px', targets = c(1, 2, 3, 4)),
-                                    list(className = 'dt-center', targets = c(1, 2, 3, 4)))
+                                    list(className = 'dt-center', targets = c(0, 1, 2, 3, 4)))
                 ),
                 selection = "none",
                 escape = FALSE,
@@ -2484,10 +2773,10 @@ server <- function(session, input, output) {
                   ordering = FALSE,
                   searching = FALSE,
                   paging = FALSE,
-                  autoWidth = TRUE,
+                  autoWidth = FALSE,
                   scrollX = TRUE,
                   columnDefs = list(list(width = '100px', targets = c(1, 2, 3, 4)),
-                                    list(className = 'dt-center', targets = c(1, 2, 3, 4)))
+                                    list(className = 'dt-center', targets = c(0, 1, 2, 3, 4)))
                 ),
                 selection = "none",
                 escape = FALSE,
@@ -2500,8 +2789,41 @@ server <- function(session, input, output) {
     })
     
     
+    pData2x3 <- matrix(pMatrixData2x3(), ncol = ncol(input$pMatrix2x3))
+    pData2x3 <- getTotaledMatrix(pData2x3, input$pMatrix2x3)
+    
+    output$pTable2x3 <- renderDT({
+      
+      # excelR::excelTable(cData2x2,
+      #            editable = FALSE,
+      #            autoFill = TRUE) 
+      
+      datatable(pData2x3,
+                class = 'cell-border stripe',
+                options = list(
+                  dom = 't',
+                  pageLength = -1,
+                  ordering = FALSE,
+                  searching = FALSE,
+                  paging = FALSE,
+                  autoWidth = FALSE,
+                  scrollX = TRUE,
+                  columnDefs = list(list(width = '100px', targets = c(0, 1, 2, 3, 4)),
+                                    list(className = 'dt-center', targets = c(0, 1, 2, 3, 4)))
+                ),
+                selection = "none",
+                escape = FALSE,
+                filter = "none",) %>%
+        formatStyle(columns = c(0,4),
+                    fontWeight = 'bold') %>%
+        formatStyle(columns = 1:4,
+                    target = 'row',
+                    fontWeight = styleRow(dim(pData2x3)[1], "bold"))
+    })
+    
+    
     cData3x2 <- matrix(cMatrixData3x2(), ncol = ncol(input$cMatrix3x2))
-    cData3x2 <- GetCMatrix(cData3x2, input$cMatrix3x2)
+    cData3x2 <- getTotaledMatrix(cData3x2, input$cMatrix3x2)
     
     
     output$cTable3x2 <- renderDT({
@@ -2514,10 +2836,10 @@ server <- function(session, input, output) {
                   ordering = FALSE,
                   searching = FALSE,
                   paging = FALSE,
-                  autoWidth = TRUE,
+                  autoWidth = FALSE,
                   scrollX = TRUE,
                   columnDefs = list(list(width = '100px', targets = c(1, 2, 3)),
-                                    list(className = 'dt-center', targets = c(1, 2, 3)))
+                                    list(className = 'dt-center', targets = c(0, 1, 2, 3)))
                 ),
                 selection = "none",
                 escape = FALSE,
@@ -2540,10 +2862,10 @@ server <- function(session, input, output) {
                   ordering = FALSE,
                   searching = FALSE,
                   paging = FALSE,
-                  autoWidth = TRUE,
+                  autoWidth = FALSE,
                   scrollX = TRUE,
                   columnDefs = list(list(width = '100px', targets = c(1, 2, 3)),
-                                    list(className = 'dt-center', targets = c(1, 2, 3)))
+                                    list(className = 'dt-center', targets = c(0, 1, 2, 3)))
                 ),
                 selection = "none",
                 escape = FALSE,
@@ -2556,9 +2878,42 @@ server <- function(session, input, output) {
     })
     
     
+    pData3x2 <- matrix(pMatrixData3x2(), ncol = ncol(input$pMatrix3x2))
+    pData3x2 <- getTotaledMatrix(pData3x2, input$pMatrix3x2)
+    
+    output$pTable3x2 <- renderDT({
+      
+      # excelR::excelTable(cData2x2,
+      #            editable = FALSE,
+      #            autoFill = TRUE) 
+      
+      datatable(pData3x2,
+                class = 'cell-border stripe',
+                options = list(
+                  dom = 't',
+                  pageLength = -1,
+                  ordering = FALSE,
+                  searching = FALSE,
+                  paging = FALSE,
+                  autoWidth = FALSE,
+                  scrollX = TRUE,
+                  columnDefs = list(list(width = '100px', targets = c(0, 1, 2, 3)),
+                                    list(className = 'dt-center', targets = c(0, 1, 2, 3)))
+                ),
+                selection = "none",
+                escape = FALSE,
+                filter = "none",) %>%
+        formatStyle(columns = c(0,3),
+                    fontWeight = 'bold') %>%
+        formatStyle(columns = 1:3,
+                    target = 'row',
+                    fontWeight = styleRow(dim(pData3x2)[1], "bold"))
+    })
+    
+    
     
     cData3x3 <- matrix(cMatrixData3x3(), ncol = ncol(input$cMatrix3x3))
-    cData3x3 <- GetCMatrix(cData3x3, input$cMatrix3x3)
+    cData3x3 <- getTotaledMatrix(cData3x3, input$cMatrix3x3)
     
     
     output$cTable3x3 <- renderDT({
@@ -2571,10 +2926,10 @@ server <- function(session, input, output) {
                   ordering = FALSE,
                   searching = FALSE,
                   paging = FALSE,
-                  autoWidth = TRUE,
+                  autoWidth = FALSE,
                   scrollX = TRUE,
                   columnDefs = list(list(width = '100px', targets = c(1, 2, 3, 4)),
-                                    list(className = 'dt-center', targets = c(1, 2, 3, 4)))
+                                    list(className = 'dt-center', targets = c(0, 1, 2, 3, 4)))
                 ),
                 selection = "none",
                 escape = FALSE,
@@ -2597,10 +2952,10 @@ server <- function(session, input, output) {
                   ordering = FALSE,
                   searching = FALSE,
                   paging = FALSE,
-                  autoWidth = TRUE,
+                  autoWidth = FALSE,
                   scrollX = TRUE,
                   columnDefs = list(list(width = '100px', targets = c(1, 2, 3, 4)),
-                                    list(className = 'dt-center', targets = c(1, 2, 3, 4)))
+                                    list(className = 'dt-center', targets = c(0, 1, 2, 3, 4)))
                 ),
                 selection = "none",
                 escape = FALSE,
@@ -2611,6 +2966,40 @@ server <- function(session, input, output) {
                     target = 'row',
                     fontWeight = styleRow(dim(probData3x3)[1], "bold"))
     })
+    
+    
+    pData3x3 <- matrix(pMatrixData3x3(), ncol = ncol(input$pMatrix3x3))
+    pData3x3 <- getTotaledMatrix(pData3x3, input$pMatrix3x3)
+    
+    output$pTable3x3 <- renderDT({
+      
+      # excelR::excelTable(cData2x2,
+      #            editable = FALSE,
+      #            autoFill = TRUE) 
+      
+      datatable(pData3x3,
+                class = 'cell-border stripe',
+                options = list(
+                  dom = 't',
+                  pageLength = -1,
+                  ordering = FALSE,
+                  searching = FALSE,
+                  paging = FALSE,
+                  autoWidth = FALSE,
+                  scrollX = TRUE,
+                  columnDefs = list(list(width = '100px', targets = c(0, 1, 2, 3, 4)),
+                                    list(className = 'dt-center', targets = c(0, 1, 2, 3, 4)))
+                ),
+                selection = "none",
+                escape = FALSE,
+                filter = "none",) %>%
+        formatStyle(columns = c(0,4),
+                    fontWeight = 'bold') %>%
+        formatStyle(columns = 1:4,
+                    target = 'row',
+                    fontWeight = styleRow(dim(pData3x3)[1], "bold"))
+    })
+    
     
     if(input$cTableDimension == '2 x 2') {
       activeProbMatrix <- probData2x2
