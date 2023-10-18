@@ -3125,23 +3125,23 @@ server <- function(session, input, output) {
             }
             else if(input$calcBinom == 'cumulative'){
               binomProb <- paste("P(X \\leq ", binom_x, ")") # = ", pbinom(binom_x,binom_n,binom_p,lower.tail = TRUE))
-              binomForm <- paste("\\sum_{x = 0}^", binom_x, " \\binom{", binom_n, "}{x}", binom_p, "^x (1-", binom_p, ")^{", binom_n, "- x}")
+              binomForm <- paste("\\sum_{x = 0}^{", binom_x, "} \\binom{", binom_n, "}{x}", binom_p, "^x (1-", binom_p, ")^{", binom_n, "- x}")
               binomVal <- round(pbinom(binom_x,binom_n,binom_p,lower.tail = TRUE), 4)
             }
             else if(input$calcBinom == 'upperTail'){
               binomProb <- paste("P(X \\geq ", binom_x, ")") # = ", pbinom(binom_x - 1,binom_n,binom_p,lower.tail = FALSE))
-              binomForm <- paste("\\sum_{x = ", binom_x, "}^", binom_n, " \\binom{", binom_n, "}{x}", binom_p, "^x (1-", binom_p, ")^{", binom_n, "- x}")
+              binomForm <- paste("\\sum_{x = ", binom_x, "}^{", binom_n, "} \\binom{", binom_n, "}{x}", binom_p, "^x (1-", binom_p, ")^{", binom_n, "- x}")
               binomVal <- round(pbinom(binom_x - 1,binom_n,binom_p,lower.tail = FALSE), 4)
               
             }
             else if(input$calcBinom == 'greaterThan'){
               binomProb <- paste("P(X \\gt ", binom_x, ")") # = ", pbinom(binom_x,binom_n,binom_p,lower.tail = FALSE))
-              binomForm <- paste("\\sum_{x = ", binom_x + 1, "}^", binom_n, " \\binom{", binom_n, "}{x}", binom_p, "^x (1-", binom_p, ")^{", binom_n, "- x}")
+              binomForm <- paste("\\sum_{x = ", binom_x + 1, "}^{", binom_n, "} \\binom{", binom_n, "}{x}", binom_p, "^x (1-", binom_p, ")^{", binom_n, "- x}")
               binomVal <- round(pbinom(binom_x,binom_n,binom_p,lower.tail = FALSE), 4)
             }
             else if(input$calcBinom == 'lessThan'){
               binomProb <- paste("P(X \\lt ", binom_x, ")") # = ", pbinom(binom_x - 1,binom_n,binom_p,lower.tail = TRUE))
-              binomForm <- paste("\\sum_{x = 0}^", binom_x - 1, " \\binom{", binom_n, "}{x}", binom_p, "^x (1-", binom_p, ")^{", binom_n, "- x}")
+              binomForm <- paste("\\sum_{x = 0}^{", binom_x - 1, "} \\binom{", binom_n, "}{x}", binom_p, "^x (1-", binom_p, ")^{", binom_n, "- x}")
               binomVal <- round(pbinom(binom_x - 1,binom_n,binom_p,lower.tail = TRUE), 4)
             }
             
@@ -3161,7 +3161,7 @@ server <- function(session, input, output) {
             )
             
             binomProb <- paste("P(", binom_x1, " \\leq X \\leq ", binom_x2, ")")
-            binomForm <- paste("\\sum_{x = ", binom_x1, "}^", binom_x2, " \\binom{", binom_n, "}{x}", binom_p, "^x (1-", binom_p, ")^{", binom_n, "- x}")
+            binomForm <- paste("\\sum_{x = ", binom_x1, "}^{", binom_x2, "} \\binom{", binom_n, "}{x}", binom_p, "^x (1-", binom_p, ")^{", binom_n, "- x}")
             binomVal <- round(pbinom(binom_x2,binom_n,binom_p,lower.tail = TRUE) - pbinom(binom_x1-1,binom_n,binom_p,lower.tail = TRUE), 4)
           }
           
@@ -3316,22 +3316,22 @@ server <- function(session, input, output) {
             }
             else if(input$calcPoisson == 'cumulative'){
               poissProb <- paste("P(X \\leq ", poisson_x, ")") # = ", pbinom(binom_x,binom_n,binom_p,lower.tail = TRUE))
-              poissForm <- paste("\\sum_{x = 0}^", poisson_x, "\\dfrac{e^{-", poisson_mu, "}", poisson_mu, "^x}{x!}")
+              poissForm <- paste("\\sum_{x = 0}^{", poisson_x, "} \\dfrac{e^{-", poisson_mu, "}", poisson_mu, "^x}{x!}")
               poissVal <- round(ppois(poisson_x,poisson_mu,lower.tail = TRUE), 4)
             }
             else if(input$calcPoisson == 'upperTail'){
               poissProb <- paste("P(X \\geq ", poisson_x, ")") # = ", pbinom(binom_x,binom_n,binom_p,lower.tail = TRUE))
-              poissForm <- paste("1 - \\sum_{x = 0}^", poisson_x - 1, "\\dfrac{e^{-", poisson_mu, "}", poisson_mu, "^x}{x!}")
+              poissForm <- paste("1 - \\sum_{x = 0}^{", poisson_x - 1, "} \\dfrac{e^{-", poisson_mu, "}", poisson_mu, "^x}{x!}")
               poissVal <- round(ppois(poisson_x - 1,poisson_mu,lower.tail = FALSE), 4)
             }
             else if(input$calcPoisson == 'greaterThan'){
               poissProb <- paste("P(X \\gt ", poisson_x, ")") # = ", pbinom(binom_x,binom_n,binom_p,lower.tail = TRUE))
-              poissForm <- paste("1 - \\sum_{x = 0}^", poisson_x, "\\dfrac{e^{-", poisson_mu, "}", poisson_mu, "^x}{x!}")
+              poissForm <- paste("1 - \\sum_{x = 0}^{", poisson_x, "} \\dfrac{e^{-", poisson_mu, "}", poisson_mu, "^x}{x!}")
               poissVal <- round(ppois(poisson_x,poisson_mu,lower.tail = FALSE), 4)
             }
             else if(input$calcPoisson == 'lessThan'){
               poissProb <- paste("P(X \\lt ", poisson_x, ")") # = ", pbinom(binom_x,binom_n,binom_p,lower.tail = TRUE))
-              poissForm <- paste("\\sum_{x = 0}^", poisson_x - 1, "\\dfrac{e^{-", poisson_mu, "}", poisson_mu, "^x}{x!}")
+              poissForm <- paste("\\sum_{x = 0}^{", poisson_x - 1, "} \\dfrac{e^{-", poisson_mu, "}", poisson_mu, "^x}{x!}")
               poissVal <- round(ppois(poisson_x - 1,poisson_mu,lower.tail = TRUE), 4)
             }
           }
@@ -3347,7 +3347,7 @@ server <- function(session, input, output) {
             poisson_x2 <- input$x2Poisson
             
             poissProb <- paste("P(", poisson_x1, " \\leq X \\leq ", poisson_x2, ")")
-            poissForm <- paste("\\sum_{x = ", poisson_x1, "}^", poisson_x2, "\\dfrac{e^{-", poisson_mu, "}", poisson_mu, "^x}{x!}")
+            poissForm <- paste("\\sum_{x = ", poisson_x1, "}^{", poisson_x2, "} \\dfrac{e^{-", poisson_mu, "}", poisson_mu, "^x}{x!}")
             poissVal <- round(ppois(poisson_x2, poisson_mu, lower.tail = TRUE) - ppois(poisson_x1 - 1, poisson_mu, lower.tail = TRUE), 4)
           }
           
