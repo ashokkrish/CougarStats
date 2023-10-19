@@ -3713,6 +3713,33 @@ server <- function(session, input, output) {
     
     output$renderNormQuartiles <- renderUI({
       
+      qOne <- round(qnorm(0.25, input$popMean, input$popSD, TRUE), 4)
+      qTwo <- round(qnorm(0.5, input$popMean, input$popSD, TRUE), 4)
+      qThree <- round(qnorm(0.75, input$popMean, input$popSD, TRUE), 4)
+      
+      tagList(
+        withMathJax(
+          div(
+            h4(
+              sprintf("Calculating  Quartiles:")
+            ),
+            hr(),
+            br(),
+            sprintf("\\( \\displaystyle Q_{1} = %s\\)",
+                    qOne),
+            br(),
+            br(),
+            sprintf("\\( \\displaystyle Q_{2} = %s\\)",
+                    qTwo),
+            br(),
+            br(),
+            sprintf("\\( \\displaystyle Q_{3} = %s\\)",
+                    qThree)
+          ),
+          br(),
+          br()
+        )
+      )
     })
     
     
