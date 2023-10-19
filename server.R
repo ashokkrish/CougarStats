@@ -3711,7 +3711,9 @@ server <- function(session, input, output) {
     })
     
     
-    
+    output$renderNormQuartiles <- renderUI({
+      
+    })
     
     
     output$sampMeanDistrPlot <- renderPlot({
