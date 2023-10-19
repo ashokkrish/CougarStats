@@ -3311,7 +3311,7 @@ server <- function(session, input, output) {
             
             if(input$calcPoisson == 'exact'){
               poissProb <- paste("P(X = ", poisson_x, ")") #= ", dbinom(binom_x,binom_n,binom_p))
-              poissForm <- paste("\\dfrac{e^{-", poisson_mu, "}", poisson_mu, "^", poisson_x, "}{", poisson_x, "!}")
+              poissForm <- paste("\\dfrac{e^{-", poisson_mu, "}", poisson_mu, "^{", poisson_x, "}}{", poisson_x, "!}")
               poissVal <- round(dpois(poisson_x,poisson_mu), 4)
             }
             else if(input$calcPoisson == 'cumulative'){
