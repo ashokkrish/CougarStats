@@ -3427,7 +3427,7 @@ server <- function(session, input, output) {
   })
   
   #### Normal ----
-  observeEvent(input$goNormal, {
+  observeEvent(input$goNormalProb, {
     
     ##### Normal Probability ----
     output$renderProbabilityNorm <- renderUI({
@@ -3710,38 +3710,7 @@ server <- function(session, input, output) {
       )
     })
     
-    
-    output$renderNormQuartiles <- renderUI({
-      
-      qOne <- round(qnorm(0.25, input$popMean, input$popSD, TRUE), 4)
-      qTwo <- round(qnorm(0.5, input$popMean, input$popSD, TRUE), 4)
-      qThree <- round(qnorm(0.75, input$popMean, input$popSD, TRUE), 4)
-      
-      tagList(
-        withMathJax(
-          div(
-            h4(
-              sprintf("Calculating  Quartiles:")
-            ),
-            hr(),
-            br(),
-            sprintf("\\( \\displaystyle Q_{1} = %s\\)",
-                    qOne),
-            br(),
-            br(),
-            sprintf("\\( \\displaystyle Q_{2} = %s\\)",
-                    qTwo),
-            br(),
-            br(),
-            sprintf("\\( \\displaystyle Q_{3} = %s\\)",
-                    qThree)
-          ),
-          br(),
-          br()
-        )
-      )
-    })
-    
+
     
     output$sampMeanDistrPlot <- renderPlot({
       req(pd_iv$is_valid())
@@ -3785,6 +3754,76 @@ server <- function(session, input, output) {
       normZPlot(getMeanNormValue(), normLines, input$calcNormSampDistr)
     })
 
+  })
+  
+  observeEvent(input$goNormalQuan, {
+    
+    output$renderNormQuartiles <- renderUI({
+      
+      validate(
+        need(input$popMean, "Enter a value for Population Mean (mu)"),
+        need(input$popSD && input$popSD > 0, "Population Standard Deviation (sigma) must be greater than 0"),
+        
+        errorClass = "myClass"
+      )
+      
+      qOne <- round(qnorm(0.25, input$popMean, input$popSD, TRUE), 4)
+      qTwo <- round(qnorm(0.5, input$popMean, input$popSD, TRUE), 4)
+      qThree <- round(qnorm(0.75, input$popMean, input$popSD, TRUE), 4)
+      
+      tagList(
+        withMathJax(
+          div(
+            h4(
+              sprintf("Calculating  Quartiles:")
+            ),
+            hr(),
+            br(),
+            sprintf("Given \\( X \\sim N(\\mu  = %d, \\sigma = %d) \\) then",
+                    input$popMean,
+                    input$popSD),
+            br(),
+            br(),
+            br(),
+            br(),
+            sprintf("Quartile 1 \\( \\displaystyle (Q_{1}) \\) is obtained by solving for \\(x\\) in"),
+            br(),
+            br(),
+            sprintf("\\( \\quad P(X \\le x) = P(Z \\le -0.6745) = 0.25\\)"),
+            br(),
+            br(),
+            sprintf("\\( \\displaystyle x = %s\\)",
+                    qOne),
+            br(),
+            br(),
+            br(),
+            sprintf("Quartile 2 \\( \\displaystyle (Q_{2}) \\) is obtained by solving for \\(x\\) in"),
+            br(),
+            br(),
+            sprintf("\\( \\quad P(X \\le x) = P(Z \\le 0) = 0.50\\)"),
+            br(),
+            br(),
+            sprintf("\\( \\displaystyle x = %s\\)",
+                    qTwo),
+            br(),
+            br(),
+            br(),
+            sprintf("Quartile 3 \\( \\displaystyle (Q_{3}) \\) is obtained by solving for \\(x\\) in"),
+            br(),
+            br(),
+            sprintf("\\( \\quad P(X \\le x) = P(Z \\le 0.6745) = 0.75\\)"),
+            br(),
+            br(),
+            sprintf("\\( \\displaystyle x = %s\\)",
+                    qThree),
+            br(),
+            br(),
+          ),
+          br(),
+          br()
+        )
+      )
+    })
   })
   
   
@@ -7203,7 +7242,11 @@ server <- function(session, input, output) {
   # Normal Distribution #
   #---------------------#
   
-  observeEvent(input$goNormal, {
+  observeEvent(input$goNormalProb, {
+    show(id = "probabilityMP")
+  })
+  
+  observeEvent(input$goNormalQuan, {
     show(id = "probabilityMP")
   })
   
@@ -7216,8 +7259,15 @@ server <- function(session, input, output) {
                 input$sampDistrxValue
                 input$sampDistrx1Value
                 input$sampDistrx2Value
-                input$sampDistrSize}, {
+                input$sampDistrSize
+                input$calcQuantiles}, {
     hide(id = 'probabilityMP')
+  })
+  
+  observeEvent(input$calcQuartiles, {
+    if(input$calcQuartiles == 'Percentile') {
+      hide(id = "probabilityMP")
+    }
   })
   
   observeEvent(input$calcNormal, {
@@ -7232,7 +7282,7 @@ server <- function(session, input, output) {
     }
   })
   
-  observeEvent(input$resetNormal, {
+  observeEvent(input$resetNormalProb, {
     hide(id = "probabilityMP")
     shinyjs::reset("normalPanel")
   })

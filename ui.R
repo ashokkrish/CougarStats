@@ -231,7 +231,7 @@
                                                                         selected = NULL, 
                                                                         inline = TRUE),
                                                            
-                                                           conditionalPanel(id = "contingencyPanel",
+                                                           conditionalPanel(id = "contingencyPanel", #### Contingency Tables ----
                                                                             condition = "input.probability == 'Contingency Table'",
                                                                             
                                                                             radioButtons(inputId = "cTableDimension",
@@ -378,7 +378,7 @@
                                                                             ),
 
                                                            
-                                                           conditionalPanel(id = "binomialPanel",
+                                                           conditionalPanel(id = "binomialPanel", #### Binomial ----
                                                                             condition = "input.probability == 'Binomial'",
                                                                             
                                                                             numericInput(inputId = "numTrialsBinom",
@@ -456,7 +456,7 @@
                                                                             # downloadButton('downloadBinomResults', 'Download Results'),
                                                            ),
                                                            
-                                                           conditionalPanel(id = "poissonPanel", 
+                                                           conditionalPanel(id = "poissonPanel", #### Poisson ----
                                                                             condition = "input.probability == 'Poisson'",
                                                                             
                                                                             numericInput(inputId = "muPoisson", 
@@ -522,7 +522,7 @@
                                                            ),
                                                            
                                                            
-                                                           conditionalPanel(id = "normalPanel",
+                                                           conditionalPanel(id = "normalPanel", #### Normal ----
                                                                             condition = "input.probability == 'Normal'",
                                                                             
                                                                             numericInput(inputId = "popMean", 
@@ -542,7 +542,7 @@
                                                                                          choiceNames = list("Probability", "Quantile"),
                                                                                          inline = TRUE),
                                                                             
-                                                                            conditionalPanel(
+                                                                            conditionalPanel( ##### Probability ----
                                                                               condition = "input.calcQuantiles == 'Probability'",
                                                                               
                                                                               checkboxInput(inputId = "sampMeanDistr",
@@ -626,9 +626,16 @@
                                                                                              value = 10, 
                                                                                              step = 1),
                                                                               ),
+                                                                              
+                                                                              actionButton(inputId = "goNormalProb", 
+                                                                                           label = "Calculate",
+                                                                                           style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
+                                                                              actionButton(inputId = "resetNormalProb", 
+                                                                                           label = "Reset Values",
+                                                                                           style="color: #fff; background-color: #337ab7; border-color: #2e6da4") #, onclick = "history.go(0)"
                                                                             ),
                                                                             
-                                                                            conditionalPanel(
+                                                                            conditionalPanel( ##### Quantile ----
                                                                               condition = "input.calcQuantiles == 'Quantile'",
                                                                               
                                                                               radioButtons(inputId = "calcQuartiles",
@@ -646,22 +653,18 @@
                                                                                              min = 0,
                                                                                              max = 100,
                                                                                              step = 1),
-                                                                                
-                                                                                radioButtons(inputId = "percentileArea",
-                                                                                             label = NULL,
-                                                                                             choiceValues = list("left", "right"),
-                                                                                             choiceNames = list("Area to the left", "Area to the right"),
-                                                                                             inline = TRUE),
                                                                               ),
+                                                                              
+                                                                              actionButton(inputId = "goNormalQuan", 
+                                                                                           label = "Calculate",
+                                                                                           style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
+                                                                              actionButton(inputId = "resetNormalQuan", 
+                                                                                           label = "Reset Values",
+                                                                                           style="color: #fff; background-color: #337ab7; border-color: #2e6da4") #, onclick = "history.go(0)"
                                                                               
                                                                             ),
                                                                             
-                                                                            actionButton(inputId = "goNormal", 
-                                                                                         label = "Calculate",
-                                                                                         style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
-                                                                            actionButton(inputId = "resetNormal", 
-                                                                                         label = "Reset Values",
-                                                                                         style="color: #fff; background-color: #337ab7; border-color: #2e6da4") #, onclick = "history.go(0)"
+                                                                            
                                                            )
                                           ), #ProbPanel
                                           
