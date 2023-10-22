@@ -652,6 +652,7 @@
                                                                                              value = 25,
                                                                                              minimumValue = 0,
                                                                                              maximumValue = 100,
+                                                                                             decimalPlaces = 0,
                                                                                              align = 'left',
                                                                                              suffixText = '%',
                                                                                              wheelOn = 'hover',

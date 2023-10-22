@@ -270,8 +270,8 @@ server <- function(session, input, output) {
   sampdistrsize_iv$add_rule("sampDistrSize", sv_gt(0))
   
   percentile_iv$add_rule("percentileValue", sv_required())
-  percentile_iv$add_rule("percentileValue", sv_gte(0))
-  percentile_iv$add_rule("percentileValue", sv_lte(100))
+  percentile_iv$add_rule("percentileValue", sv_gt(0))
+  percentile_iv$add_rule("percentileValue", sv_lt(100))
   
   # ------------------ #
   #     Conditions     #
@@ -3851,6 +3851,12 @@ server <- function(session, input, output) {
         errorClass = "myClass"
       )
       
+      validate(
+        need(input$percentileValue > 0 && input$percentileValue < 100, "Percentile Value must be between 0 and 100"),
+        
+        errorClass = "myClass"
+      )
+      
       if(input$percentileValue %% 10 == 1) {
         ordinal <- 'st'
       } else if(input$percentileValue %% 10 == 2) {
@@ -7339,7 +7345,8 @@ server <- function(session, input, output) {
                 input$sampDistrx1Value
                 input$sampDistrx2Value
                 input$sampDistrSize
-                input$calcQuantiles}, {
+                input$calcQuantiles
+                input$percentileValue}, {
     hide(id = 'probabilityMP')
   })
   
