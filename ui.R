@@ -537,7 +537,7 @@
                                                                             
                                                                             
                                                                             radioButtons(inputId = "calcQuantiles",
-                                                                                         label = NULL,
+                                                                                         label = strong("Type of Calculation"),
                                                                                          choiceValues = list("Probability", "Quantile"),
                                                                                          choiceNames = list("Probability", "Quantile"),
                                                                                          inline = TRUE),
@@ -647,12 +647,15 @@
                                                                               conditionalPanel(
                                                                                 condition = "input.calcQuartiles == 'Percentile'",
                                                                                 
-                                                                                numericInput(inputId = "percentileValue",
+                                                                                autonumericInput(inputId = "percentileValue",
                                                                                              label = strong("Percentile Value"),
-                                                                                             value = "",
-                                                                                             min = 0,
-                                                                                             max = 100,
-                                                                                             step = 1),
+                                                                                             value = 25,
+                                                                                             minimumValue = 0,
+                                                                                             maximumValue = 100,
+                                                                                             align = 'left',
+                                                                                             suffixText = '%',
+                                                                                             wheelOn = 'hover',
+                                                                                             wheelStep = 1),
                                                                               ),
                                                                               
                                                                               actionButton(inputId = "goNormalQuan", 

@@ -43,6 +43,7 @@ server <- function(session, input, output) {
   sampdistrprob_iv <- InputValidator$new()
   sampdistrbetween_iv <- InputValidator$new()
   sampdistrsize_iv <- InputValidator$new()
+  percentile_iv <- InputValidator$new()
   
   si_iv <- InputValidator$new()
   onemean_iv <- InputValidator$new()
@@ -268,6 +269,10 @@ server <- function(session, input, output) {
   sampdistrsize_iv$add_rule("sampDistrSize", sv_integer())
   sampdistrsize_iv$add_rule("sampDistrSize", sv_gt(0))
   
+  percentile_iv$add_rule("percentileValue", sv_required())
+  percentile_iv$add_rule("percentileValue", sv_gte(0))
+  percentile_iv$add_rule("percentileValue", sv_lte(100))
+  
   # ------------------ #
   #     Conditions     #
   # ------------------ #
@@ -361,24 +366,33 @@ server <- function(session, input, output) {
   
   norm_iv$condition(~ isTRUE(input$probability == 'Normal'))
   
-  normprob_iv$condition(~ isTRUE(input$probability == 'Normal' && 
+  normprob_iv$condition(~ isTRUE(input$probability == 'Normal' &&
+                                 input$calcQuantiles == 'Probability' &&
                                  input$sampMeanDistr == 0 && 
                                  input$calcNormal != 'between'))
   
-  normbetween_iv$condition(~ isTRUE(input$probability == 'Normal' && 
+  normbetween_iv$condition(~ isTRUE(input$probability == 'Normal' &&
+                                    input$calcQuantiles == 'Probability' &&
                                     input$sampMeanDistr == 0 &&
                                     input$calcNormal == 'between'))
   
-  sampdistrprob_iv$condition(~ isTRUE(input$probability == 'Normal' && 
+  sampdistrprob_iv$condition(~ isTRUE(input$probability == 'Normal' &&
+                                      input$calcQuantiles == 'Probability' && 
                                       input$sampMeanDistr == 1 && 
                                       input$calcNormSampDistr != 'between'))
   
-  sampdistrbetween_iv$condition(~ isTRUE(input$probability == 'Normal' && 
+  sampdistrbetween_iv$condition(~ isTRUE(input$probability == 'Normal' &&
+                                         input$calcQuantiles == 'Probability' &&
                                          input$sampMeanDistr == 1 &&
                                          input$calcNormSampDistr == 'between'))
   
-  sampdistrsize_iv$condition(~ isTRUE(input$probability == 'Normal' && 
+  sampdistrsize_iv$condition(~ isTRUE(input$probability == 'Normal' &&
+                                      input$calcQuantiles == 'Probability' && 
                                       input$sampMeanDistr == 1))
+  
+  percentile_iv$condition(~ isTRUE(input$probability == 'Normal' &&
+                                   input$calcQuantiles == 'Quantile' &&
+                                   input$calcQuartiles == 'Percentile'))
   # ------------------ #
   #     Dependency     #
   # ------------------ #
@@ -413,6 +427,7 @@ server <- function(session, input, output) {
   norm_iv$add_validator(sampdistrprob_iv)
   norm_iv$add_validator(sampdistrbetween_iv)
   norm_iv$add_validator(sampdistrsize_iv)
+  norm_iv$add_validator(percentile_iv)
   
   pd_iv$add_validator(ctable_iv)
   pd_iv$add_validator(ptable_iv)
@@ -456,6 +471,7 @@ server <- function(session, input, output) {
   sampdistrprob_iv$enable()
   sampdistrbetween_iv$enable()
   sampdistrsize_iv$enable()
+  percentile_iv$enable()
   
   #--------------- #
   ## SI rules ----
@@ -3822,6 +3838,69 @@ server <- function(session, input, output) {
           br(),
           br()
         )
+      )
+    })
+    
+    output$renderNormPercentile <- renderUI({
+      
+      validate(
+        need(input$popMean, "Enter a value for Population Mean (mu)."),
+        need(input$popSD && input$popSD > 0, "Population Standard Deviation (sigma) must be greater than 0."),
+        need(input$percentileValue, "Enter a Percentile Value between 0 and 100."),
+        
+        errorClass = "myClass"
+      )
+      
+      if(input$percentileValue %% 10 == 1) {
+        ordinal <- 'st'
+      } else if(input$percentileValue %% 10 == 2) {
+        ordinal <- 'nd'
+      } else if(input$percentileValue %% 10 == 3) {
+        ordinal <- 'rd'
+      } else {
+        ordinal <- 'th'
+      }
+      
+      probability <- (input$percentileValue / 100)
+      zVal <- round(qnorm(probability, 0, 1, TRUE), 4)
+      percentile <- round(qnorm(probability, input$popMean, input$popSD, TRUE), 4)
+      
+      tagList(
+        withMathJax(
+          div(
+            h4(
+              sprintf("Calculating \\( %d^{%s}\\) Percentile:",
+                      input$percentileValue,
+                      ordinal)
+            ),
+            hr(),
+            br(),
+            sprintf("Given \\( X \\sim N(\\mu  = %d, \\sigma = %d) \\) then",
+                    input$popMean,
+                    input$popSD),
+            br(),
+            br(),
+            br(),
+            sprintf("the \\( \\displaystyle %d^{%s} \\) percentile is obtained by solving for \\(x\\) in",
+                    input$percentileValue,
+                    ordinal),
+            br(),
+            br(),
+            sprintf("\\( \\quad P(X \\le x) = P(Z \\le %s) = %s\\)",
+                    zVal,
+                    probability),
+            br(),
+            br(),
+            sprintf("\\( \\displaystyle x = %s\\)",
+                    percentile),
+            br(),
+            br(),
+            br(),
+          ),
+          br(),
+          br()
+        )
+        
       )
     })
   })
