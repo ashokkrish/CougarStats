@@ -3907,8 +3907,76 @@ server <- function(session, input, output) {
           br()
         )
         
+        # plotOutput("percentilePlot"),
+        # br(),
+        # br()
       )
     })
+    
+    # output$percentilePlot <- renderPlot({
+    # 
+    #   req(pd_iv$is_valid())
+    #   
+    #   probability <- input$percentileValue / 100
+    #   percentileLine <- round(qnorm(probability, 0, 1, TRUE), 4)
+    #   lineLabel <- round(qnorm(probability, input$popMean, input$popSD, TRUE), 4)
+    #   
+    #   x <- round(seq(from = -3, to = 3, by = 0.1), 2)
+    #   xSeq <- unique(sort(c(x, percentileLine)))
+    #   
+    #   df <- distinct(data.frame(x = xSeq, y = dnorm(xSeq, mean = 0, sd = 1)))
+    #   
+    #   
+    #   lineDF <- filter(df, x %in% percentileLine)
+    #   meanDF <- filter(df, x %in% c(0))
+    #   
+    #   nPlot <- ggplot(df, aes(x = x, y = y)) +
+    #     geom_line() +
+    #     geom_area(data = df,
+    #               aes(y=y), 
+    #               fill = "#03376d", 
+    #               color = NA, 
+    #               alpha = 0.3) +
+    #     shadeNormArea(df, probability, percentileLine, "cumulative") +
+    #     geom_segment(data = lineDF,
+    #                  aes(x = x, xend = x, y = 0, yend = y),
+    #                  linetype = "solid",
+    #                  lineend = 'round',
+    #                  linewidth = 1.25,
+    #                  color='#021C38') +
+    #     geom_text(data = lineDF, 
+    #               aes(x = x, y = 0, label = lineLabel), 
+    #               size = 16 / .pt,
+    #               fontface = "bold",
+    #               check_overlap = TRUE,
+    #               vjust = 1.5) +
+    #     geom_segment(data = meanDF,
+    #                  aes(x = x, xend = x, y = 0, yend = y),
+    #                  linetype = "dotted",
+    #                  lineend = 'round',
+    #                  linewidth = 1,
+    #                  color='#021C38',
+    #                  alpha = 0.5) +
+    #     geom_text(data = meanDF, 
+    #               aes(x = x, y = 0, label = input$popMean), 
+    #               size = 16 / .pt,
+    #               fontface = "bold",
+    #               check_overlap = TRUE,
+    #               vjust = 1.5) +
+    #     labelNormZArea(probability, "lower", percentileLine) +
+    #     coord_cartesian(clip="off") +
+    #     ggtitle(bquote(bold( Z %~% N(.(input$popMean),.(input$popSD)) ))) +
+    #     theme_minimal()  +
+    #     theme(plot.title = element_text(size = 24, face = "bold", hjust = 0.5),
+    #           axis.title.x = element_text(size = 18, face = "bold", vjust = -1),
+    #           axis.text.x.bottom = element_text(size = 14)) +
+    #     scale_x_continuous(breaks = NULL) +
+    #     ylab("Density") +
+    #     xlab("X") 
+    #     
+    #   nPlot
+    # })
+    
   })
   
   
@@ -7369,6 +7437,11 @@ server <- function(session, input, output) {
   })
   
   observeEvent(input$resetNormalProb, {
+    hide(id = "probabilityMP")
+    shinyjs::reset("normalPanel")
+  })
+  
+  observeEvent(input$resetNormalQuan, {
     hide(id = "probabilityMP")
     shinyjs::reset("normalPanel")
   })
