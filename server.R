@@ -3774,6 +3774,7 @@ server <- function(session, input, output) {
   
   observeEvent(input$goNormalQuan, {
     
+    ##### Quartiles ----
     output$renderNormQuartiles <- renderUI({
       
       validate(
@@ -3801,14 +3802,15 @@ server <- function(session, input, output) {
             br(),
             br(),
             br(),
-            br(),
             sprintf("Quartile 1 \\( \\displaystyle (Q_{1}) \\) is obtained by solving for \\(x\\) in"),
             br(),
             br(),
             sprintf("\\( \\quad P(X \\le x) = P(Z \\le -0.6745) = 0.25\\)"),
             br(),
             br(),
-            sprintf("\\( \\displaystyle x = %s\\)",
+            sprintf("\\( \\displaystyle x = %s + (-0.6745 \\times %s) = %s\\)",
+                    input$popMean,
+                    input$popSD,
                     qOne),
             br(),
             br(),
@@ -3819,7 +3821,9 @@ server <- function(session, input, output) {
             sprintf("\\( \\quad P(X \\le x) = P(Z \\le 0) = 0.50\\)"),
             br(),
             br(),
-            sprintf("\\( \\displaystyle x = %s\\)",
+            sprintf("\\( \\displaystyle x = %s + (0 \\times %s) = %s\\)",
+                    input$popMean,
+                    input$popSD,
                     qTwo),
             br(),
             br(),
@@ -3830,7 +3834,9 @@ server <- function(session, input, output) {
             sprintf("\\( \\quad P(X \\le x) = P(Z \\le 0.6745) = 0.75\\)"),
             br(),
             br(),
-            sprintf("\\( \\displaystyle x = %s\\)",
+            sprintf("\\( \\displaystyle x = %s + (0.6745 \\times %s) = %s\\)",
+                    input$popMean,
+                    input$popSD,
                     qThree),
             br(),
             br(),
@@ -3897,7 +3903,10 @@ server <- function(session, input, output) {
                     probability),
             br(),
             br(),
-            sprintf("\\( \\displaystyle x = %s\\)",
+            sprintf("\\( \\displaystyle x = %s + (%s \\times %s) = %s\\)",
+                    input$popMean,
+                    zVal,
+                    input$popSD,
                     percentile),
             br(),
             br(),
