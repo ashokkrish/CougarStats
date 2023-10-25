@@ -3897,10 +3897,13 @@ server <- function(session, input, output) {
         geom_line() +
         geom_area(data = df,
                   aes(y=y), 
-                  fill = "#03376d", 
+                  fill = NA, 
+                  color = NA) +
+        geom_area(data = subset(df, x <= probLine),
+                  aes(y=y), 
+                  fill = "#023B70", 
                   color = NA, 
-                  alpha = 0.3) +
-        shadeNormArea(df, probability, probLine, "cumulative") +
+                  alpha = 0.4) +
         geom_segment(data = lineDF,
                      aes(x = x, xend = x, y = 0, yend = y),
                      linetype = "solid",
@@ -3957,10 +3960,13 @@ server <- function(session, input, output) {
         geom_line() +
         geom_area(data = df,
                   aes(y=y), 
-                  fill = "#03376d", 
+                  fill = NA, 
+                  color = NA) +
+        geom_area(data = subset(df, x <= probLine),
+                  aes(y=y), 
+                  fill = "#023B70", 
                   color = NA, 
-                  alpha = 0.3) +
-        shadeNormArea(df, probability, probLine, "cumulative") +
+                  alpha = 0.4) +
         geom_segment(data = lineDF,
                      aes(x = x, xend = x, y = 0, yend = y),
                      linetype = "solid",
@@ -4017,10 +4023,13 @@ server <- function(session, input, output) {
         geom_line() +
         geom_area(data = df,
                   aes(y=y), 
-                  fill = "#03376d", 
+                  fill = NA, 
+                  color = NA) +
+        geom_area(data = subset(df, x <= probLine),
+                  aes(y=y), 
+                  fill = "#023B70", 
                   color = NA, 
-                  alpha = 0.3) +
-        shadeNormArea(df, probability, probLine, "cumulative") +
+                  alpha = 0.4) +
         geom_segment(data = lineDF,
                      aes(x = x, xend = x, y = 0, yend = y),
                      linetype = "solid",
@@ -4154,15 +4163,18 @@ server <- function(session, input, output) {
         geom_line() +
         geom_area(data = df,
                   aes(y=y), 
-                  fill = "#03376d", 
+                  fill = NA, 
+                  color = NA) +
+        geom_area(data = subset(df, x <= percentileLine),
+                  aes(y=y), 
+                  fill = "#023B70", 
                   color = NA, 
-                  alpha = 0.3) +
-        shadeNormArea(df, probability, percentileLine, "cumulative") +
+                  alpha = 0.4) +
         geom_segment(data = lineDF,
                      aes(x = x, xend = x, y = 0, yend = y),
                      linetype = "solid",
                      lineend = 'round',
-                     linewidth = 1.25,
+                     linewidth = 1,
                      color='#021C38') +
         geom_text(data = lineDF, 
                   aes(x = x, y = 0, label = x), 
