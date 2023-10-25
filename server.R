@@ -3792,59 +3792,271 @@ server <- function(session, input, output) {
         withMathJax(
           div(
             h4(
-              sprintf("Calculating  Quartiles:")
+              sprintf("Given \\( X \\sim N(\\mu  = %d, \\sigma = %d) \\) then",
+                      input$popMean,
+                      input$popSD),
             ),
             hr(),
             br(),
-            sprintf("Given \\( X \\sim N(\\mu  = %d, \\sigma = %d) \\) then",
-                    input$popMean,
-                    input$popSD),
             br(),
+            fluidRow(
+              column(width = 4,
+                     div(style = "padding-top: 80px;",
+                         sprintf("Quartile 1 \\( \\displaystyle (Q_{1}) \\) is obtained by solving for \\(x\\) in"),
+                         br(),
+                         br(),
+                         sprintf("\\( \\quad P(X \\le x) = P(Z \\le -0.6745) = 0.25\\)"),
+                         br(),
+                         br(),
+                         sprintf("\\( \\displaystyle x = %s + (-0.6745 \\times %s) = %s\\)",
+                                 input$popMean,
+                                 input$popSD,
+                                 qOne),
+                         br(),
+                         br(),
+                         br(),
+                     ),
+              ),
+              column(width = 8,
+                     plotOutput("quartile1Plot", height = "300px"),
+                     br()    
+              ),    
+            ),
+            hr(),
             br(),
+            fluidRow(
+              column(width = 4,
+                     div(style = "padding-top: 80px;",
+                         sprintf("Quartile 2 \\( \\displaystyle (Q_{2}) \\) is obtained by solving for \\(x\\) in"),
+                         br(),
+                         br(),
+                         sprintf("\\( \\quad P(X \\le x) = P(Z \\le 0) = 0.50\\)"),
+                         br(),
+                         br(),
+                         sprintf("\\( \\displaystyle x = %s + (0 \\times %s) = %s\\)",
+                                 input$popMean,
+                                 input$popSD,
+                                 qTwo),
+                         br(),
+                         br(),
+                         br(),
+                     ),
+              ),
+              column(width = 8,
+                     plotOutput("quartile2Plot", height = "300px"),
+                     br()    
+              ),    
+            ),
+            hr(),
             br(),
-            sprintf("Quartile 1 \\( \\displaystyle (Q_{1}) \\) is obtained by solving for \\(x\\) in"),
-            br(),
-            br(),
-            sprintf("\\( \\quad P(X \\le x) = P(Z \\le -0.6745) = 0.25\\)"),
-            br(),
-            br(),
-            sprintf("\\( \\displaystyle x = %s + (-0.6745 \\times %s) = %s\\)",
-                    input$popMean,
-                    input$popSD,
-                    qOne),
-            br(),
-            br(),
-            br(),
-            sprintf("Quartile 2 \\( \\displaystyle (Q_{2}) \\) is obtained by solving for \\(x\\) in"),
-            br(),
-            br(),
-            sprintf("\\( \\quad P(X \\le x) = P(Z \\le 0) = 0.50\\)"),
-            br(),
-            br(),
-            sprintf("\\( \\displaystyle x = %s + (0 \\times %s) = %s\\)",
-                    input$popMean,
-                    input$popSD,
-                    qTwo),
-            br(),
-            br(),
-            br(),
-            sprintf("Quartile 3 \\( \\displaystyle (Q_{3}) \\) is obtained by solving for \\(x\\) in"),
-            br(),
-            br(),
-            sprintf("\\( \\quad P(X \\le x) = P(Z \\le 0.6745) = 0.75\\)"),
-            br(),
-            br(),
-            sprintf("\\( \\displaystyle x = %s + (0.6745 \\times %s) = %s\\)",
-                    input$popMean,
-                    input$popSD,
-                    qThree),
-            br(),
-            br(),
+            fluidRow(
+              column(width = 4,
+                     div(style = "padding-top: 80px;",
+                         sprintf("Quartile 3 \\( \\displaystyle (Q_{3}) \\) is obtained by solving for \\(x\\) in"),
+                         br(),
+                         br(),
+                         sprintf("\\( \\quad P(X \\le x) = P(Z \\le 0.6745) = 0.75\\)"),
+                         br(),
+                         br(),
+                         sprintf("\\( \\displaystyle x = %s + (0.6745 \\times %s) = %s\\)",
+                                 input$popMean,
+                                 input$popSD,
+                                 qThree),
+                         br(),
+                         br(),
+                     ),
+              ),
+              column(width = 8,
+                     plotOutput("quartile3Plot", height = "300px"),
+                     br(),
+                     br()     
+              ),    
+            ),
           ),
           br(),
           br()
         )
       )
+    })
+    
+    output$quartile1Plot <- renderPlot({
+      
+      req(pd_iv$is_valid())
+      
+      probability <- 0.25
+      probLine <- round(qnorm(0.25, input$popMean, input$popSD, TRUE), 4)
+      
+      x <- round(seq(from = input$popMean - (3 * input$popSD), to = input$popMean + (3 * input$popSD), length.out = 60), 2)
+      xSeq <- unique(sort(c(x, input$popMean, probLine)))
+      
+      df <- distinct(data.frame(x = xSeq, y = dnorm(xSeq, mean = input$popMean, sd = input$popSD)))
+      meanDF <- filter(df, x %in% c(input$popMean))
+      lineDF <- filter(df, x %in% c(probLine))
+      
+      nPlot <- ggplot(df, aes(x = x, y = y)) +
+        geom_line() +
+        geom_area(data = df,
+                  aes(y=y), 
+                  fill = "#03376d", 
+                  color = NA, 
+                  alpha = 0.3) +
+        shadeNormArea(df, probability, probLine, "cumulative") +
+        geom_segment(data = lineDF,
+                     aes(x = x, xend = x, y = 0, yend = y),
+                     linetype = "solid",
+                     lineend = 'round',
+                     linewidth = 1.25,
+                     color='#021C38') +
+        geom_text(data = lineDF, 
+                  aes(x = x, y = 0, label = x), 
+                  size = 16 / .pt,
+                  fontface = "bold",
+                  check_overlap = TRUE,
+                  vjust = 1.5) +
+        geom_segment(data = meanDF,
+                     aes(x = x, xend = x, y = 0, yend = y),
+                     linetype = "dotted",
+                     lineend = 'round',
+                     linewidth = 1,
+                     color='#021C38',
+                     alpha = 0.5) +
+        geom_text(data = meanDF, 
+                  aes(x = x, y = 0, label = x), 
+                  size = 16 / .pt,
+                  fontface = "bold",
+                  check_overlap = TRUE,
+                  vjust = 1.5) +
+        coord_cartesian(clip="off") +
+        theme_minimal()  +
+        theme(plot.title = element_text(size = 24, face = "bold", hjust = 0.5),
+              axis.title.x = element_text(size = 18, face = "bold", vjust = -1),
+              axis.text.x.bottom = element_text(size = 14)) +
+        scale_x_continuous(breaks = NULL) +
+        ylab("Density") +
+        xlab("X") 
+      
+      nPlot
+      
+    })
+    
+    output$quartile2Plot <- renderPlot({
+      
+      req(pd_iv$is_valid())
+      
+      probability <- 0.5
+      probLine <- round(qnorm(probability, input$popMean, input$popSD, TRUE), 4)
+      
+      x <- round(seq(from = input$popMean - (3 * input$popSD), to = input$popMean + (3 * input$popSD), length.out = 60), 2)
+      xSeq <- unique(sort(c(x, input$popMean, probLine)))
+      
+      df <- distinct(data.frame(x = xSeq, y = dnorm(xSeq, mean = input$popMean, sd = input$popSD)))
+      meanDF <- filter(df, x %in% c(input$popMean))
+      lineDF <- filter(df, x %in% c(probLine))
+      
+      nPlot <- ggplot(df, aes(x = x, y = y)) +
+        geom_line() +
+        geom_area(data = df,
+                  aes(y=y), 
+                  fill = "#03376d", 
+                  color = NA, 
+                  alpha = 0.3) +
+        shadeNormArea(df, probability, probLine, "cumulative") +
+        geom_segment(data = lineDF,
+                     aes(x = x, xend = x, y = 0, yend = y),
+                     linetype = "solid",
+                     lineend = 'round',
+                     linewidth = 1.25,
+                     color='#021C38') +
+        geom_text(data = lineDF, 
+                  aes(x = x, y = 0, label = x), 
+                  size = 16 / .pt,
+                  fontface = "bold",
+                  check_overlap = TRUE,
+                  vjust = 1.5) +
+        geom_segment(data = meanDF,
+                     aes(x = x, xend = x, y = 0, yend = y),
+                     linetype = "dotted",
+                     lineend = 'round',
+                     linewidth = 1,
+                     color='#021C38',
+                     alpha = 0.5) +
+        geom_text(data = meanDF, 
+                  aes(x = x, y = 0, label = x), 
+                  size = 16 / .pt,
+                  fontface = "bold",
+                  check_overlap = TRUE,
+                  vjust = 1.5) +
+        coord_cartesian(clip="off") +
+        theme_minimal()  +
+        theme(plot.title = element_text(size = 24, face = "bold", hjust = 0.5),
+              axis.title.x = element_text(size = 18, face = "bold", vjust = -1),
+              axis.text.x.bottom = element_text(size = 14)) +
+        scale_x_continuous(breaks = NULL) +
+        ylab("Density") +
+        xlab("X") 
+      
+      nPlot
+      
+    })
+    
+    output$quartile3Plot <- renderPlot({
+      
+      req(pd_iv$is_valid())
+      
+      probability <- 0.75
+      probLine <- round(qnorm(probability, input$popMean, input$popSD, TRUE), 4)
+      
+      x <- round(seq(from = input$popMean - (3 * input$popSD), to = input$popMean + (3 * input$popSD), length.out = 60), 2)
+      xSeq <- unique(sort(c(x, input$popMean, probLine)))
+      
+      df <- distinct(data.frame(x = xSeq, y = dnorm(xSeq, mean = input$popMean, sd = input$popSD)))
+      meanDF <- filter(df, x %in% c(input$popMean))
+      lineDF <- filter(df, x %in% c(probLine))
+      
+      nPlot <- ggplot(df, aes(x = x, y = y)) +
+        geom_line() +
+        geom_area(data = df,
+                  aes(y=y), 
+                  fill = "#03376d", 
+                  color = NA, 
+                  alpha = 0.3) +
+        shadeNormArea(df, probability, probLine, "cumulative") +
+        geom_segment(data = lineDF,
+                     aes(x = x, xend = x, y = 0, yend = y),
+                     linetype = "solid",
+                     lineend = 'round',
+                     linewidth = 1.25,
+                     color='#021C38') +
+        geom_text(data = lineDF, 
+                  aes(x = x, y = 0, label = x), 
+                  size = 16 / .pt,
+                  fontface = "bold",
+                  check_overlap = TRUE,
+                  vjust = 1.5) +
+        geom_segment(data = meanDF,
+                     aes(x = x, xend = x, y = 0, yend = y),
+                     linetype = "dotted",
+                     lineend = 'round',
+                     linewidth = 1,
+                     color='#021C38',
+                     alpha = 0.5) +
+        geom_text(data = meanDF, 
+                  aes(x = x, y = 0, label = x), 
+                  size = 16 / .pt,
+                  fontface = "bold",
+                  check_overlap = TRUE,
+                  vjust = 1.5) +
+        coord_cartesian(clip="off") +
+        theme_minimal()  +
+        theme(plot.title = element_text(size = 24, face = "bold", hjust = 0.5),
+              axis.title.x = element_text(size = 18, face = "bold", vjust = -1),
+              axis.text.x.bottom = element_text(size = 14)) +
+        scale_x_continuous(breaks = NULL) +
+        ylab("Density") +
+        xlab("X") 
+      
+      nPlot
+      
     })
     
     output$renderNormPercentile <- renderUI({
@@ -3881,110 +4093,108 @@ server <- function(session, input, output) {
         withMathJax(
           div(
             h4(
-              sprintf("Calculating \\( %d^{%s}\\) Percentile:",
-                      input$percentileValue,
-                      ordinal)
+              sprintf("Given \\( X \\sim N(\\mu  = %d, \\sigma = %d) \\) then",
+                      input$popMean,
+                      input$popSD),
             ),
             hr(),
             br(),
-            sprintf("Given \\( X \\sim N(\\mu  = %d, \\sigma = %d) \\) then",
-                    input$popMean,
-                    input$popSD),
             br(),
-            br(),
-            br(),
-            sprintf("the \\( \\displaystyle %d^{%s} \\) percentile is obtained by solving for \\(x\\) in",
-                    input$percentileValue,
-                    ordinal),
-            br(),
-            br(),
-            sprintf("\\( \\quad P(X \\le x) = P(Z \\le %s) = %s\\)",
-                    zVal,
-                    probability),
-            br(),
-            br(),
-            sprintf("\\( \\displaystyle x = %s + (%s \\times %s) = %s\\)",
-                    input$popMean,
-                    zVal,
-                    input$popSD,
-                    percentile),
-            br(),
-            br(),
-            br(),
+            fluidRow(
+              column(width = 4,
+                     div(style = "padding-top: 80px;",
+                       sprintf("the \\( \\displaystyle %d^{%s} \\) percentile is obtained by solving for \\(x\\) in",
+                               input$percentileValue,
+                               ordinal),
+                       br(),
+                       br(),
+                       sprintf("\\( \\quad P(X \\le x) = P(Z \\le %s) = %s\\)",
+                               zVal,
+                               probability),
+                       br(),
+                       br(),
+                       sprintf("\\( \\displaystyle x = %s + (%s \\times %s) = %s\\)",
+                               input$popMean,
+                               zVal,
+                               input$popSD,
+                               percentile),
+                       br(),
+                       br(),
+                       br(),
+                     ),
+              ),
+              column(width = 8,
+                     plotOutput("percentilePlot", height = "300px"),
+                     br(),
+                     br()     
+              ),    
+            ),
           ),
           br(),
           br()
-        )
-        
-        # plotOutput("percentilePlot"),
-        # br(),
-        # br()
+        ),
       )
     })
     
-    # output$percentilePlot <- renderPlot({
-    # 
-    #   req(pd_iv$is_valid())
-    #   
-    #   probability <- input$percentileValue / 100
-    #   percentileLine <- round(qnorm(probability, 0, 1, TRUE), 4)
-    #   lineLabel <- round(qnorm(probability, input$popMean, input$popSD, TRUE), 4)
-    #   
-    #   x <- round(seq(from = -3, to = 3, by = 0.1), 2)
-    #   xSeq <- unique(sort(c(x, percentileLine)))
-    #   
-    #   df <- distinct(data.frame(x = xSeq, y = dnorm(xSeq, mean = 0, sd = 1)))
-    #   
-    #   
-    #   lineDF <- filter(df, x %in% percentileLine)
-    #   meanDF <- filter(df, x %in% c(0))
-    #   
-    #   nPlot <- ggplot(df, aes(x = x, y = y)) +
-    #     geom_line() +
-    #     geom_area(data = df,
-    #               aes(y=y), 
-    #               fill = "#03376d", 
-    #               color = NA, 
-    #               alpha = 0.3) +
-    #     shadeNormArea(df, probability, percentileLine, "cumulative") +
-    #     geom_segment(data = lineDF,
-    #                  aes(x = x, xend = x, y = 0, yend = y),
-    #                  linetype = "solid",
-    #                  lineend = 'round',
-    #                  linewidth = 1.25,
-    #                  color='#021C38') +
-    #     geom_text(data = lineDF, 
-    #               aes(x = x, y = 0, label = lineLabel), 
-    #               size = 16 / .pt,
-    #               fontface = "bold",
-    #               check_overlap = TRUE,
-    #               vjust = 1.5) +
-    #     geom_segment(data = meanDF,
-    #                  aes(x = x, xend = x, y = 0, yend = y),
-    #                  linetype = "dotted",
-    #                  lineend = 'round',
-    #                  linewidth = 1,
-    #                  color='#021C38',
-    #                  alpha = 0.5) +
-    #     geom_text(data = meanDF, 
-    #               aes(x = x, y = 0, label = input$popMean), 
-    #               size = 16 / .pt,
-    #               fontface = "bold",
-    #               check_overlap = TRUE,
-    #               vjust = 1.5) +
-    #     labelNormZArea(probability, "lower", percentileLine) +
-    #     coord_cartesian(clip="off") +
-    #     ggtitle(bquote(bold( Z %~% N(.(input$popMean),.(input$popSD)) ))) +
-    #     theme_minimal()  +
-    #     theme(plot.title = element_text(size = 24, face = "bold", hjust = 0.5),
-    #           axis.title.x = element_text(size = 18, face = "bold", vjust = -1),
-    #           axis.text.x.bottom = element_text(size = 14)) +
-    #     scale_x_continuous(breaks = NULL) +
-    #     ylab("Density") +
-    #     xlab("X") 
-    #     
-    #   nPlot
-    # })
+    output$percentilePlot <- renderPlot({
+
+      req(pd_iv$is_valid())
+
+      probability <- input$percentileValue / 100
+      percentileLine <- round(qnorm(probability, input$popMean, input$popSD, TRUE), 4)
+
+      x <- round(seq(from = input$popMean - (3 * input$popSD), to = input$popMean + (3 * input$popSD), length.out = 60), 2)
+      xSeq <- unique(sort(c(x, input$popMean, percentileLine)))
+      
+      df <- distinct(data.frame(x = xSeq, y = dnorm(xSeq, mean = input$popMean, sd = input$popSD)))
+      meanDF <- filter(df, x %in% c(input$popMean))
+      lineDF <- filter(df, x %in% c(percentileLine))
+      
+      nPlot <- ggplot(df, aes(x = x, y = y)) +
+        geom_line() +
+        geom_area(data = df,
+                  aes(y=y), 
+                  fill = "#03376d", 
+                  color = NA, 
+                  alpha = 0.3) +
+        shadeNormArea(df, probability, percentileLine, "cumulative") +
+        geom_segment(data = lineDF,
+                     aes(x = x, xend = x, y = 0, yend = y),
+                     linetype = "solid",
+                     lineend = 'round',
+                     linewidth = 1.25,
+                     color='#021C38') +
+        geom_text(data = lineDF, 
+                  aes(x = x, y = 0, label = x), 
+                  size = 16 / .pt,
+                  fontface = "bold",
+                  check_overlap = TRUE,
+                  vjust = 1.5) +
+        geom_segment(data = meanDF,
+                     aes(x = x, xend = x, y = 0, yend = y),
+                     linetype = "dotted",
+                     lineend = 'round',
+                     linewidth = 1,
+                     color='#021C38',
+                     alpha = 0.5) +
+        geom_text(data = meanDF, 
+                  aes(x = x, y = 0, label = x), 
+                  size = 16 / .pt,
+                  fontface = "bold",
+                  check_overlap = TRUE,
+                  vjust = 1.5) +
+        coord_cartesian(clip="off") +
+        theme_minimal()  +
+        theme(plot.title = element_text(size = 24, face = "bold", hjust = 0.5),
+              axis.title.x = element_text(size = 18, face = "bold", vjust = -1),
+              axis.text.x.bottom = element_text(size = 14)) +
+        scale_x_continuous(breaks = NULL) +
+        ylab("Density") +
+        xlab("X") 
+      
+      nPlot
+      
+    })
     
   })
   
