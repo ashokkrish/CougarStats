@@ -1853,23 +1853,23 @@ server <- function(session, input, output) {
       if(probType == 'cumulative') {
         geom_area(data = subset(df, x <= normLines),
                   aes(y=y), 
-                  fill = "#03376d", 
+                  fill = "#023B70", 
                   color = NA, 
-                  alpha = 0.8)
+                  alpha = 0.4)
         
       } else if (probType == 'upperTail') {
         geom_area(data = subset(df, x >= normLines),
                   aes(y=y), 
-                  fill = "#03376d", 
+                  fill = "#023B70", 
                   color = NA, 
-                  alpha = 0.8)
+                  alpha = 0.4)
         
       } else {
         geom_area(data = subset(df, x >= normLines[1] & x <= normLines[2]),
                   aes(y=y), 
-                  fill = "#03376d", 
+                  fill = "#023B70", 
                   color = NA, 
-                  alpha = 0.8)
+                  alpha = 0.4)
       }
     }
   }
@@ -1995,9 +1995,8 @@ server <- function(session, input, output) {
       geom_line() +
       geom_area(data = df,
                 aes(y=y), 
-                fill = "#03376d", 
-                color = NA, 
-                alpha = 0.3) +
+                fill = NA, 
+                color = NA) +
       shadeNormArea(df, normValue, normLines, probType) +
       geom_segment(data = lineDF,
                    aes(x = x, xend = x, y = 0, yend = y),
@@ -2054,9 +2053,8 @@ server <- function(session, input, output) {
       geom_line() +
       geom_area(data = df,
                 aes(y=y), 
-                fill = "#03376d", 
-                color = NA, 
-                alpha = 0.3) +
+                fill = NA, 
+                color = NA) +
       shadeNormArea(df, normValue, normLines, probType) +
       geom_segment(data = lineDF,
                    aes(x = x, xend = x, y = 0, yend = y),
@@ -2083,7 +2081,7 @@ server <- function(session, input, output) {
                 fontface = "bold",
                 check_overlap = TRUE,
                 vjust = 1.5) +
-      labelNormZArea(normValue, probType, normLines) +
+      # labelNormZArea(normValue, probType, normLines) +
       coord_cartesian(clip="off") +
       ggtitle(bquote(bold( Z %~% N(0,1) ))) +
       theme_minimal()  +
