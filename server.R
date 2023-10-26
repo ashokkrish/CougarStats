@@ -2334,7 +2334,7 @@ server <- function(session, input, output) {
       
       tagList(
 
-        titlePanel("Contingency Table"),
+        titlePanel("Frequency Distribution Table"),
         hr(),
         br(),
         DTOutput("cTable2x2", width = '500px'),
@@ -2424,7 +2424,7 @@ server <- function(session, input, output) {
       
       tagList(
         
-        titlePanel("Contingency Table"),
+        titlePanel("Frequency Distribution Table"),
         hr(),
         br(),
         DTOutput("cTable2x3", width = '625px'),
@@ -2516,7 +2516,7 @@ server <- function(session, input, output) {
       
       tagList(
         
-        titlePanel("Contingency Table"),
+        titlePanel("Frequency Distribution Table"),
         hr(),
         br(),
         DTOutput("cTable3x2", width = '500px'),
@@ -2608,7 +2608,7 @@ server <- function(session, input, output) {
       
       tagList(
         
-        titlePanel("Contingency Table"),
+        titlePanel("Frequency Distribution Table"),
         hr(),
         br(),
         DTOutput("cTable3x3", width = '625px'),
