@@ -1905,9 +1905,9 @@ server <- function(session, input, output) {
   
   PlotXLab <- function(){
     if(input$sampMeanDistr == 0){
-      xlab(expression(bold( X )))
+      xlab(expression(bolditalic( X )))
     } else {
-      xlab(expression(bold( bar(X) )))
+      xlab(expression(bolditalic( bar(X) )))
     }
   }
   
@@ -1992,7 +1992,9 @@ server <- function(session, input, output) {
     meanDF <- filter(df, x %in% c(0))
     
     nPlot <- ggplot(df, aes(x = x, y = y)) +
-      geom_line() +
+      geom_line(linetype = "solid",
+                linewidth = 0.75,
+                color='#021C38') +
       geom_area(data = df,
                 aes(y=y), 
                 fill = NA, 
@@ -2023,14 +2025,20 @@ server <- function(session, input, output) {
                 fontface = "bold",
                 check_overlap = TRUE,
                 vjust = 1.5) +
+      geom_segment(data = df,
+                   aes(x = -3, xend = 3, y = 0, yend = 0),
+                   linetype = "solid",
+                   linewidth = 0.5,
+                   color='#021C38') +
       coord_cartesian(clip="off") +
       PlotTitle(standDev) +
       theme_minimal()  +
       theme(plot.title = element_text(size = 24, face = "bold", hjust = 0.5),
-            axis.title.x = element_text(size = 18, face = "bold", vjust = -1),
+            axis.title.x = element_text(size = 18, face = "bold.italic", vjust = -1),
             axis.text.x.bottom = element_text(size = 14)) +
       scale_x_continuous(breaks = NULL) +
-      ylab("Density") + 
+      scale_y_continuous(breaks = NULL) +
+      ylab("") + 
       PlotXLab() 
     
     
@@ -2050,7 +2058,9 @@ server <- function(session, input, output) {
     meanDF <- filter(df, x %in% c(0))
     
     nPlot <- ggplot(df, aes(x = x, y = y)) +
-      geom_line() +
+      geom_line(linetype = "solid",
+                linewidth = 0.75,
+                color='#021C38') +
       geom_area(data = df,
                 aes(y=y), 
                 fill = NA, 
@@ -2081,15 +2091,21 @@ server <- function(session, input, output) {
                 fontface = "bold",
                 check_overlap = TRUE,
                 vjust = 1.5) +
+      geom_segment(data = df,
+                   aes(x = -3, xend = 3, y = 0, yend = 0),
+                   linetype = "solid",
+                   linewidth = 0.5,
+                   color='#021C38') +
       # labelNormZArea(normValue, probType, normLines) +
       coord_cartesian(clip="off") +
       ggtitle(bquote(bold( Z %~% N(0,1) ))) +
       theme_minimal()  +
       theme(plot.title = element_text(size = 24, face = "bold", hjust = 0.5),
-            axis.title.x = element_text(size = 18, face = "bold", vjust = -1),
+            axis.title.x = element_text(size = 18, face = "bold.italic", vjust = -1),
             axis.text.x.bottom = element_text(size = 14)) +
       scale_x_continuous(breaks = NULL) +
-      ylab("Density") +
+      scale_y_continuous(breaks = NULL) +
+      ylab("") +
       xlab("Z") 
     
     
@@ -3798,12 +3814,14 @@ server <- function(session, input, output) {
             br(),
             br(),
             fluidRow(
-              column(width = 4,
-                     div(style = "padding-top: 80px;",
-                         sprintf("Quartile 1 \\( \\displaystyle (Q_{1}) \\) is obtained by solving for \\(x\\) in"),
+              column(width = 5,
+                     div(style = "padding-top: 60px;",
+                         sprintf("\\( P(X \\le x) = P \\left( \\dfrac{X - \\mu}{\\sigma} \\le \\dfrac{x - %s}{%s} \\right) = P(Z \\le -0.6745) = 0.25\\)",
+                                 input$popMean,
+                                 input$popSD),
                          br(),
                          br(),
-                         sprintf("\\( \\quad P(X \\le x) = P(Z \\le -0.6745) = 0.25\\)"),
+                         sprintf("Quartile 1 \\( \\displaystyle (Q_{1}) \\) is obtained by solving for \\(x\\)"),
                          br(),
                          br(),
                          sprintf("\\( \\displaystyle x = %s + (-0.6745 \\times %s) = %s\\)",
@@ -3815,7 +3833,7 @@ server <- function(session, input, output) {
                          br(),
                      ),
               ),
-              column(width = 8,
+              column(width = 7,
                      plotOutput("quartile1Plot", height = "300px"),
                      br()    
               ),    
@@ -3823,12 +3841,14 @@ server <- function(session, input, output) {
             hr(),
             br(),
             fluidRow(
-              column(width = 4,
-                     div(style = "padding-top: 80px;",
-                         sprintf("Quartile 2 \\( \\displaystyle (Q_{2}) \\) is obtained by solving for \\(x\\) in"),
+              column(width = 5,
+                     div(style = "padding-top: 60px;",
+                         sprintf("\\( P(X \\le x) = P \\left( \\dfrac{X - \\mu}{\\sigma} \\le \\dfrac{x - %s}{%s} \\right) = P(Z \\le 0) = 0.50\\)",
+                                 input$popMean,
+                                 input$popSD),
                          br(),
                          br(),
-                         sprintf("\\( \\quad P(X \\le x) = P(Z \\le 0) = 0.50\\)"),
+                         sprintf("Quartile 2 \\( \\displaystyle (Q_{2}) \\) is obtained by solving for \\(x\\)"),
                          br(),
                          br(),
                          sprintf("\\( \\displaystyle x = %s + (0 \\times %s) = %s\\)",
@@ -3840,7 +3860,7 @@ server <- function(session, input, output) {
                          br(),
                      ),
               ),
-              column(width = 8,
+              column(width = 7,
                      plotOutput("quartile2Plot", height = "300px"),
                      br()    
               ),    
@@ -3848,12 +3868,14 @@ server <- function(session, input, output) {
             hr(),
             br(),
             fluidRow(
-              column(width = 4,
-                     div(style = "padding-top: 80px;",
-                         sprintf("Quartile 3 \\( \\displaystyle (Q_{3}) \\) is obtained by solving for \\(x\\) in"),
+              column(width = 5,
+                     div(style = "padding-top: 60px;",
+                         sprintf("\\( P(X \\le x) = P \\left( \\dfrac{X - \\mu}{\\sigma} \\le \\dfrac{x - %s}{%s} \\right) = P(Z \\le 0.6745) = 0.75\\)",
+                                 input$popMean,
+                                 input$popSD),
                          br(),
                          br(),
-                         sprintf("\\( \\quad P(X \\le x) = P(Z \\le 0.6745) = 0.75\\)"),
+                         sprintf("Quartile 3 \\( \\displaystyle (Q_{3}) \\) is obtained by solving for \\(x\\)"),
                          br(),
                          br(),
                          sprintf("\\( \\displaystyle x = %s + (0.6745 \\times %s) = %s\\)",
@@ -3864,7 +3886,7 @@ server <- function(session, input, output) {
                          br(),
                      ),
               ),
-              column(width = 8,
+              column(width = 7,
                      plotOutput("quartile3Plot", height = "300px"),
                      br(),
                      br()     
@@ -3883,8 +3905,10 @@ server <- function(session, input, output) {
       
       probability <- 0.25
       probLine <- round(qnorm(0.25, input$popMean, input$popSD, TRUE), 4)
+      xStart <- input$popMean - (3 * input$popSD)
+      xEnd <- input$popMean + (3 * input$popSD)
       
-      x <- round(seq(from = input$popMean - (3 * input$popSD), to = input$popMean + (3 * input$popSD), length.out = 60), 2)
+      x <- round(seq(from = xStart, to = xEnd, length.out = 60), 2)
       xSeq <- unique(sort(c(x, input$popMean, probLine)))
       
       df <- distinct(data.frame(x = xSeq, y = dnorm(xSeq, mean = input$popMean, sd = input$popSD)))
@@ -3892,7 +3916,9 @@ server <- function(session, input, output) {
       lineDF <- filter(df, x %in% c(probLine))
       
       nPlot <- ggplot(df, aes(x = x, y = y)) +
-        geom_line() +
+        geom_line(linetype = "solid",
+                  linewidth = 0.75,
+                  color='#021C38') +
         geom_area(data = df,
                   aes(y=y), 
                   fill = NA, 
@@ -3927,13 +3953,19 @@ server <- function(session, input, output) {
                   fontface = "bold",
                   check_overlap = TRUE,
                   vjust = 1.5) +
+        geom_segment(data = df,
+                     aes(x = xStart, xend = xEnd, y = 0, yend = 0),
+                     linetype = "solid",
+                     linewidth = 0.5,
+                     color='#021C38') +
         coord_cartesian(clip="off") +
         theme_minimal()  +
         theme(plot.title = element_text(size = 24, face = "bold", hjust = 0.5),
-              axis.title.x = element_text(size = 18, face = "bold", vjust = -1),
+              axis.title.x = element_text(size = 18, face = "bold.italic", vjust = -1),
               axis.text.x.bottom = element_text(size = 14)) +
         scale_x_continuous(breaks = NULL) +
-        ylab("Density") +
+        scale_y_continuous(breaks = NULL) +
+        ylab("") +
         xlab("X") 
       
       nPlot
@@ -3946,8 +3978,10 @@ server <- function(session, input, output) {
       
       probability <- 0.5
       probLine <- round(qnorm(probability, input$popMean, input$popSD, TRUE), 4)
+      xStart <- input$popMean - (3 * input$popSD)
+      xEnd <- input$popMean + (3 * input$popSD)
       
-      x <- round(seq(from = input$popMean - (3 * input$popSD), to = input$popMean + (3 * input$popSD), length.out = 60), 2)
+      x <- round(seq(from = xStart, to = xEnd, length.out = 60), 2)
       xSeq <- unique(sort(c(x, input$popMean, probLine)))
       
       df <- distinct(data.frame(x = xSeq, y = dnorm(xSeq, mean = input$popMean, sd = input$popSD)))
@@ -3955,7 +3989,9 @@ server <- function(session, input, output) {
       lineDF <- filter(df, x %in% c(probLine))
       
       nPlot <- ggplot(df, aes(x = x, y = y)) +
-        geom_line() +
+        geom_line(linetype = "solid",
+                  linewidth = 0.75,
+                  color='#021C38') +
         geom_area(data = df,
                   aes(y=y), 
                   fill = NA, 
@@ -3990,13 +4026,19 @@ server <- function(session, input, output) {
                   fontface = "bold",
                   check_overlap = TRUE,
                   vjust = 1.5) +
+        geom_segment(data = df,
+                     aes(x = xStart, xend = xEnd, y = 0, yend = 0),
+                     linetype = "solid",
+                     linewidth = 0.5,
+                     color='#021C38') +
         coord_cartesian(clip="off") +
         theme_minimal()  +
         theme(plot.title = element_text(size = 24, face = "bold", hjust = 0.5),
-              axis.title.x = element_text(size = 18, face = "bold", vjust = -1),
+              axis.title.x = element_text(size = 18, face = "bold.italic", vjust = -1),
               axis.text.x.bottom = element_text(size = 14)) +
         scale_x_continuous(breaks = NULL) +
-        ylab("Density") +
+        scale_y_continuous(breaks = NULL) +
+        ylab("") +
         xlab("X") 
       
       nPlot
@@ -4009,8 +4051,10 @@ server <- function(session, input, output) {
       
       probability <- 0.75
       probLine <- round(qnorm(probability, input$popMean, input$popSD, TRUE), 4)
+      xStart <- input$popMean - (3 * input$popSD)
+      xEnd <- input$popMean + (3 * input$popSD)
       
-      x <- round(seq(from = input$popMean - (3 * input$popSD), to = input$popMean + (3 * input$popSD), length.out = 60), 2)
+      x <- round(seq(from = xStart, to = xEnd, length.out = 60), 2)
       xSeq <- unique(sort(c(x, input$popMean, probLine)))
       
       df <- distinct(data.frame(x = xSeq, y = dnorm(xSeq, mean = input$popMean, sd = input$popSD)))
@@ -4018,7 +4062,9 @@ server <- function(session, input, output) {
       lineDF <- filter(df, x %in% c(probLine))
       
       nPlot <- ggplot(df, aes(x = x, y = y)) +
-        geom_line() +
+        geom_line(linetype = "solid",
+                  linewidth = 0.75,
+                  color='#021C38') +
         geom_area(data = df,
                   aes(y=y), 
                   fill = NA, 
@@ -4053,13 +4099,19 @@ server <- function(session, input, output) {
                   fontface = "bold",
                   check_overlap = TRUE,
                   vjust = 1.5) +
+        geom_segment(data = df,
+                     aes(x = xStart, xend = xEnd, y = 0, yend = 0),
+                     linetype = "solid",
+                     linewidth = 0.5,
+                     color='#021C38') +
         coord_cartesian(clip="off") +
         theme_minimal()  +
         theme(plot.title = element_text(size = 24, face = "bold", hjust = 0.5),
-              axis.title.x = element_text(size = 18, face = "bold", vjust = -1),
+              axis.title.x = element_text(size = 18, face = "bold.italic", vjust = -1),
               axis.text.x.bottom = element_text(size = 14)) +
         scale_x_continuous(breaks = NULL) +
-        ylab("Density") +
+        scale_y_continuous(breaks = NULL) +
+        ylab("") +
         xlab("X") 
       
       nPlot
@@ -4108,29 +4160,31 @@ server <- function(session, input, output) {
             br(),
             br(),
             fluidRow(
-              column(width = 4,
-                     div(style = "padding-top: 80px;",
-                       sprintf("the \\( \\displaystyle %d^{%s} \\) percentile is obtained by solving for \\(x\\) in",
-                               input$percentileValue,
-                               ordinal),
-                       br(),
-                       br(),
-                       sprintf("\\( \\quad P(X \\le x) = P(Z \\le %s) = %s\\)",
-                               zVal,
-                               probability),
-                       br(),
-                       br(),
-                       sprintf("\\( \\displaystyle x = %s + (%s \\times %s) = %s\\)",
-                               input$popMean,
-                               zVal,
-                               input$popSD,
-                               percentile),
-                       br(),
-                       br(),
-                       br(),
+              column(width = 5,
+                     div(style = "padding-top: 60px;",
+                         sprintf("\\( P(X \\le x) = P \\left( \\dfrac{X - \\mu}{\\sigma} \\le \\dfrac{x - %s}{%s} \\right) = P(Z \\le %s) = %s\\)",
+                                 input$popMean,
+                                 input$popSD,
+                                 zVal,
+                                 probability),
+                         br(),
+                         br(),
+                         sprintf("the \\( \\displaystyle %d^{%s} \\) percentile is obtained by solving for \\(x\\) in",
+                                 input$percentileValue,
+                                 ordinal),
+                         br(),
+                         br(),
+                         sprintf("\\( \\displaystyle x = %s + (%s \\times %s) = %s\\)",
+                                 input$popMean,
+                                 zVal,
+                                 input$popSD,
+                                 percentile),
+                         br(),
+                         br(),
+                         br(),
                      ),
               ),
-              column(width = 8,
+              column(width = 7,
                      plotOutput("percentilePlot", height = "300px"),
                      br(),
                      br()     
@@ -4149,8 +4203,10 @@ server <- function(session, input, output) {
 
       probability <- input$percentileValue / 100
       percentileLine <- round(qnorm(probability, input$popMean, input$popSD, TRUE), 4)
-
-      x <- round(seq(from = input$popMean - (3 * input$popSD), to = input$popMean + (3 * input$popSD), length.out = 60), 2)
+      xStart <- input$popMean - (3 * input$popSD)
+      xEnd <- input$popMean + (3 * input$popSD)
+      
+      x <- round(seq(from = xStart, to = xEnd, length.out = 60), 2)
       xSeq <- unique(sort(c(x, input$popMean, percentileLine)))
       
       df <- distinct(data.frame(x = xSeq, y = dnorm(xSeq, mean = input$popMean, sd = input$popSD)))
@@ -4158,7 +4214,9 @@ server <- function(session, input, output) {
       lineDF <- filter(df, x %in% c(percentileLine))
       
       nPlot <- ggplot(df, aes(x = x, y = y)) +
-        geom_line() +
+        geom_line(linetype = "solid",
+                  linewidth = 0.75,
+                  color='#021C38') +
         geom_area(data = df,
                   aes(y=y), 
                   fill = NA, 
@@ -4193,13 +4251,19 @@ server <- function(session, input, output) {
                   fontface = "bold",
                   check_overlap = TRUE,
                   vjust = 1.5) +
+        geom_segment(data = df,
+                     aes(x = xStart, xend = xEnd, y = 0, yend = 0),
+                     linetype = "solid",
+                     linewidth = 0.5,
+                     color='#021C38') +
         coord_cartesian(clip="off") +
         theme_minimal()  +
         theme(plot.title = element_text(size = 24, face = "bold", hjust = 0.5),
               axis.title.x = element_text(size = 18, face = "bold", vjust = -1),
               axis.text.x.bottom = element_text(size = 14)) +
         scale_x_continuous(breaks = NULL) +
-        ylab("Density") +
+        scale_y_continuous(breaks = NULL) +
+        ylab("") +
         xlab("X") 
       
       nPlot
