@@ -163,7 +163,6 @@ server <- function(session, input, output) {
   ptable2x2_iv$add_rule("pMatrix2x2", ~ if(any(is.na(pMatrixData2x2()))) "Probabilities must be between 0 and 1.")
   ptable2x2_iv$add_rule("pMatrix2x2", ~ if(any(pMatrixData2x2() < 0)) "Probabilities must be between 0 and 1.")
   ptable2x2_iv$add_rule("pMatrix2x2", ~ if(any(pMatrixData2x2() >= 1)) "Probabilities must be between 0 and 1.")
-  ptable2x2_iv$add_rule("pMatrix2x2", ~ if(pMatrix2x2Totaled()['Total', 'Total'] != 1) "The sum of all probabilities must equal 1.")
 
   ptable2x2conditional_iv$add_rule("pMatrix2x2", ~ if(any(pMatrix2x2Totaled()['Total',] == 0)) "Row and Column totals must be greater than 0.")
   ptable2x2conditional_iv$add_rule("pMatrix2x2", ~ if(any(pMatrix2x2Totaled()[,'Total'] == 0)) "Row and Column totals must be greater than 0.")
@@ -172,8 +171,7 @@ server <- function(session, input, output) {
   ptable2x3_iv$add_rule("pMatrix2x3", ~ if(any(is.na(pMatrixData2x3()))) "Probabilities must be between 0 and 1.")
   ptable2x3_iv$add_rule("pMatrix2x3", ~ if(any(pMatrixData2x3() < 0)) "Probabilities must be between 0 and 1.")
   ptable2x3_iv$add_rule("pMatrix2x3", ~ if(any(pMatrixData2x3() >= 1)) "Probabilities must be between 0 and 1.")
-  ptable2x3_iv$add_rule("pMatrix2x3", ~ if(pMatrix2x3Totaled()['Total', 'Total'] != 1) "The sum of all probabilities must equal 1.")
-  
+
   ptable2x3conditional_iv$add_rule("pMatrix2x3", ~ if(any(pMatrix2x3Totaled()['Total',] == 0)) "Row and Column totals must be greater than 0.")
   ptable2x3conditional_iv$add_rule("pMatrix2x3", ~ if(any(pMatrix2x3Totaled()[,'Total'] == 0)) "Row and Column totals must be greater than 0.")
   
@@ -181,8 +179,7 @@ server <- function(session, input, output) {
   ptable3x2_iv$add_rule("pMatrix3x2", ~ if(any(is.na(pMatrixData3x2()))) "Probabilities must be between 0 and 1.")
   ptable3x2_iv$add_rule("pMatrix3x2", ~ if(any(pMatrixData3x2() < 0)) "Probabilities must be between 0 and 1.")
   ptable3x2_iv$add_rule("pMatrix3x2", ~ if(any(pMatrixData3x2() >= 1)) "Probabilities must be between 0 and 1.")
-  ptable3x2_iv$add_rule("pMatrix3x2", ~ if(pMatrix3x2Totaled()['Total', 'Total'] != 1) "The sum of all probabilities must equal 1.")
-  
+
   ptable3x2conditional_iv$add_rule("pMatrix3x2", ~ if(any(pMatrix3x2Totaled()['Total',] == 0)) "Row and Column totals must be greater than 0.")
   ptable3x2conditional_iv$add_rule("pMatrix3x2", ~ if(any(pMatrix3x2Totaled()[,'Total'] == 0)) "Row and Column totals must be greater than 0.")
   
@@ -190,8 +187,7 @@ server <- function(session, input, output) {
   ptable3x3_iv$add_rule("pMatrix3x3", ~ if(any(is.na(pMatrixData3x3()))) "Probabilities must be between 0 and 1.")
   ptable3x3_iv$add_rule("pMatrix3x3", ~ if(any(pMatrixData3x3() < 0)) "Probabilities must be between 0 and 1.")
   ptable3x3_iv$add_rule("pMatrix3x3", ~ if(any(pMatrixData3x3() >= 1)) "Probabilities must be between 0 and 1.")
-  ptable3x3_iv$add_rule("pMatrix3x3", ~ if(pMatrix3x3Totaled()['Total', 'Total'] != 1) "The sum of all probabilities must equal 1.")
-  
+
   ptable3x3conditional_iv$add_rule("pMatrix3x3", ~ if(any(pMatrix3x3Totaled()['Total',] == 0)) "Row and Column totals must be greater than 0.")
   ptable3x3conditional_iv$add_rule("pMatrix3x3", ~ if(any(pMatrix3x3Totaled()[,'Total'] == 0)) "Row and Column totals must be greater than 0.")
 
