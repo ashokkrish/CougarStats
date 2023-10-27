@@ -1893,9 +1893,9 @@ server <- function(session, input, output) {
   
   PlotTitle <- function(variance){
     if(input$sampMeanDistr == 0){
-      ggtitle(bquote(bold(X %~% N(.(input$popMean),.(variance)))))
+      ggtitle(bquote(bolditalic(X %~% N(.(input$popMean),.(variance)))))
     } else {
-      ggtitle(bquote(bold(bar(X) %~% N(.(input$popMean),.(variance)))))
+      ggtitle(bquote(bolditalic(bar(X) %~% N(.(input$popMean),.(variance)))))
     }
   }
   
@@ -2094,7 +2094,7 @@ server <- function(session, input, output) {
                    color='#021C38') +
       # labelNormZArea(normValue, probType, normLines) +
       coord_cartesian(clip="off") +
-      ggtitle(bquote(bold( Z %~% N(0,1) ))) +
+      ggtitle(bquote(bolditalic( Z %~% N(0,1) ))) +
       theme_minimal()  +
       theme(plot.title = element_text(size = 24, face = "bold", hjust = 0.5),
             axis.title.x = element_text(size = 18, face = "bold.italic", vjust = -1),
