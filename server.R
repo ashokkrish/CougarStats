@@ -4655,6 +4655,23 @@ server <- function(session, input, output) {
     return(hypTestSymbols)
   })
   
+  OneMeanSigma <- reactive({
+    req(si_iv$is_valid())
+    
+    if(input$dataAvailability == 'Summarized Data') {
+      sigmaKnown <- input$sigmaKnown
+    } else if(input$dataAvailability == 'Enter Raw Data') {
+      if(input$sigmaKnownRaw == 'rawKnown') {
+        sigmaKnown <- "Known"
+      } else {
+        sigmaKnown <- "Unknown"
+      }
+    } else if(input$dataAvailability == 'Upload Data') {
+      sigmaKnown <- input$sigmaKnownUpload
+    }
+    
+    return(sigmaKnown)
+  })
   
   OneMeanZIntSumm <- reactive({
     req(si_iv$is_valid())
@@ -5444,55 +5461,29 @@ server <- function(session, input, output) {
   ##### CI ----
   output$oneMeanCI <- renderUI({
     withMathJax()
-    if(input$dataAvailability == 'Summarized Data'){
+    if(OneMeanSigma() == "Known"){
       
-      if(input$sigmaKnown == 'Known'){
-        
+      if(input$dataAvailability == 'Summarized Data'){
         oneMeanData <- OneMeanZIntSumm()
-        sdSymbol <- "\\sigma"
-        testStat <- "z"
-        critVal <- oneMeanData["Z Critical"]
-        
-      } else if(input$sigmaKnown == 'Unknown'){
-        
+      } else {
+        oneMeanData <- OneMeanZIntRaw()
+      }
+      
+      sdSymbol <- "\\sigma"
+      testStat <- "z"
+      critVal <- oneMeanData["Z Critical"]
+      
+    } else {
+      
+      if(input$dataAvailability == 'Summarized Data'){
         oneMeanData <- OneMeanTIntSumm()
-        sdSymbol <- "s"
-        testStat <- "t"
-        critVal <- oneMeanData["T Critical"]
-        
-      } 
-    } else if(input$dataAvailability == 'Enter Raw Data'){
-      
-      if(input$sigmaKnownRaw == 'rawKnown'){
-        
-        oneMeanData <- OneMeanZIntRaw()
-        sdSymbol <- "\\sigma"
-        testStat <- "z"
-        critVal <- oneMeanData["Z Critical"]
-        
-      } else if(input$sigmaKnownRaw == 'rawUnknown'){
-        
+      } else {
         oneMeanData <- OneMeanTIntRaw()
-        sdSymbol <- "s"
-        testStat <- "t"
-        critVal <- oneMeanData["T Critical"]
-      } 
-    } else if(input$dataAvailability == 'Upload Data'){
+      }
       
-      if(input$sigmaKnownUpload == 'Known'){
-        
-        oneMeanData <- OneMeanZIntRaw()
-        sdSymbol <- "\\sigma"
-        testStat <- "z"
-        critVal <- oneMeanData["Z Critical"]
-        
-      } else if(input$sigmaKnownUpload == 'Unknown'){
-        
-        oneMeanData <- OneMeanTIntRaw()
-        sdSymbol <- "s"
-        testStat <- "t"
-        critVal <- oneMeanData["T Critical"]
-      } 
+      sdSymbol <- "s"
+      testStat <- "t"
+      critVal <- oneMeanData["T Critical"]
     }
     
     p(
