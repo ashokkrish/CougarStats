@@ -4320,104 +4320,154 @@ server <- function(session, input, output) {
     return(dat)
   }
   
-  shadeHtZArea <- function(x, critValues, altHypothesis){
-    area <- dnorm(x, 0, 1)
+  shadeHtZArea <- function(df, critValue, altHypothesis){
     
-    if(altHypothesis == "less") #less
-    {
-      area[x > critValues] <- NA
-    }
-    else if(altHypothesis == "two.sided") #twosided
-    {
-      area[x > critValues[1] & x < critValues[2]] <- NA
-    }
-    else if(altHypothesis == "greater") #greater
-    {
-      area[x < critValues] <- NA
-    }
-    return(area)
+      if(altHypothesis == 'less') {
+        geom_area(data = subset(df, x <= critValue),
+                  aes(y=y), 
+                  fill = "#023B70", 
+                  color = NA, 
+                  alpha = 0.4)
+          
+      # } else if (altHypothesis == 'two.sided') {
+      #   geom_area(data = subset(df, x <= critValueLeft),
+      #             aes(y=y), 
+      #             fill = "#023B70", 
+      #             color = NA, 
+      #             alpha = 0.4) +
+      #   geom_area(data = subset(df, x >= critValue),
+      #             aes(y=y), 
+      #             fill = "#023B70", 
+      #             color = NA, 
+      #             alpha = 0.4)
+          
+      } else if (altHypothesis == 'greater') {
+        geom_area(data = subset(df, x >= critValue),
+                  aes(y=y), 
+                  fill = "#023B70", 
+                  color = NA, 
+                  alpha = 0.4)
+      }
+    
   }
+    
+  #   if(altHypothesis == "less") #less
+  #   {
+  #     area[x > critValues] <- NA
+  #   }
+  #   else if(altHypothesis == "two.sided") #twosided
+  #   {
+  #     area[x > critValues[1] & x < critValues[2]] <- NA
+  #   }
+  #   else if(altHypothesis == "greater") #greater
+  #   {
+  #     area[x < critValues] <- NA
+  #   }
+  #   return(area)
+  # }
   
-  hypZTestPlot <- function(testStatistic, critValues, altHypothesis){
-    normTail = qnorm(0.999, mean = 0, sd = 1, lower.tail = FALSE)
-    normHead = qnorm(0.999, mean = 0, sd = 1, lower.tail = TRUE)
-    xSeq = sort(c(normTail, normHead, testStatistic, critValues, 0))
+  hypZTestPlot <- function(testStatistic, critValue, altHypothesis){
+    # normTail = qnorm(0.999, mean = 0, sd = 1, lower.tail = FALSE)
+    # normHead = qnorm(0.999, mean = 0, sd = 1, lower.tail = TRUE)
+    # xSeq = sort(c(normTail, normHead, testStatistic, critValues, 0))
     
-    if(testStatistic < normTail)
-    {
-      normTail = testStatistic
+    x <- round(seq(from = -3, to = 3, by = 0.1), 2)
+    
+    if(altHypothesis == "two.sided") {
+      CVs <- c(-critValue, critValue)
+      RRLabels <- c((-critValue + -3)/2, (critValue + 3)/2)
+    } else{
+      CVs <- c(critValue)
+      if(altHypothesis == 'less') {
+        RRLabels <- c((critValue + -3)/2)
+      } else {
+        RRLabels <- c((critValue + 3)/2)
+      }
+    }
+    
+    xSeq <- unique(sort(c(x, testStatistic, CVs, RRLabels, 0)))
       
-    } else if(testStatistic > normHead)
-    {
-      normHead = testStatistic
-    } 
+    # if(testStatistic < normTail)
+    # {
+    #   normTail = testStatistic
+    #   
+    # } else if(testStatistic > normHead)
+    # {
+    #   normHead = testStatistic
+    # } 
     
-    df <- data.frame(x = xSeq, y = dnorm(xSeq, 0, 1))
-    cvDF <- filter(df, x %in% critValues)
+    df <- distinct(data.frame(x = xSeq, y = dnorm(xSeq, mean = 0, sd = 1)))
+    cvDF <- filter(df, x %in% CVs)
+    RRLabelsDF <- filter(df, x %in% RRLabels)
     tsDF <- filter(df, x %in% testStatistic)
     centerDF <- filter(df, x %in% c(0))
     
-    htPlot <- ggplot(df, aes(x = x, y = y)) +
-      stat_function(fun = dnorm, 
-                    geom = "density",
-                    xlim = c(normTail, normHead),
-                    fill = "#03376d",
-                    alpha = 0.3) + 
-      stat_function(fun = shadeHtZArea, 
-                    args = list(critValues, altHypothesis), 
-                    geom = "area",
-                    xlim = c(normTail, normHead),
-                    fill = "#03376d",
-                    alpha = 0.7) +
-      theme_void() +  
-      scale_y_continuous(breaks = NULL) +
-      ylab("") + xlab("Z") +
-      geom_segment(data = filter(df, x %in% c(0)),
-                   aes(x = x, xend = x, y = 0, yend = y),
-                   linetype = "dotted",
-                   linewidth = 0.75,
-                   color='#03376d') +
-      geom_text(data = filter(df, x %in% c(0)),
-                aes(x = x, y = y/2, label = "A R"),
-                size = 16 / .pt,
-                fontface = "bold") +
-      geom_text(data = filter(df, x %in% c(0)),
-                aes(x = x, y = 0, label = "0"),
-                size = 14 / .pt,
-                fontface = "bold",
-                nudge_y = -.01) +
-      geom_segment(data = tsDF,
-                   aes(x = x, xend = x, y = -0.01, yend = y + .03),
-                   linetype = "solid",
-                   linewidth = 1.25,
-                   color='#03376d') +
-      geom_text(data = tsDF,
-                aes(x = x, y = y, label = "TS"),
-                size = 16 / .pt,
-                fontface = "bold",
-                nudge_y = .045) +
-      geom_text(data = tsDF,
-                aes(x = x, y = 0, label = x),
-                size = 14 / .pt,
-                fontface = "bold",
-                nudge_y = -.02) +
-      geom_segment(data = cvDF,
-                   aes(x = x, xend = x, y = 0, yend = y),
-                   linetype = "blank",
-                   lineend = 'round',
-                   linewidth = 1.5,
-                   color='#03376d') +
-      geom_text(data = cvDF,
-                aes(x = x, y = 0, label = x),
-                size = 14 / .pt,
-                fontface = "bold",
-                nudge_y = -.01) +
-      geom_text(data = cvDF,
-                aes(x = x + x/4, y = y, label = "RR"),
-                size = 16 / .pt,
-                fontface = "bold",
-                nudge_y = .03) +
-      theme(axis.title.x = element_text(size = 16, face = "bold"))
+    htPlot <- ggplot(df, aes(x = x, y = y)) 
+    
+    if(altHypothesis == 'two.sided') {
+      htPlot <- htPlot + shadeHtZArea(df, -critValue, "less") +
+                         shadeHtZArea(df, critValue, "greater")
+    } else {
+      htPlot <- htPlot + shadeHtZArea(df, critValue, altHypothesis)
+    }
+      # stat_function(fun = shadeHtZArea, 
+      #               args = list(critValues, altHypothesis), 
+      #               geom = "area",
+      #               fill = "#99BCDB") +
+    htPlot <- htPlot + geom_segment(data = cvDF,
+                                    aes(x = x, xend = x, y = 0, yend = y),
+                                    linetype = "solid",
+                                    lineend = 'butt',
+                                    linewidth = 1.5,
+                                    color='#337AB7') +
+                       stat_function(fun = dnorm, 
+                                     geom = "density",
+                                     fill = NA) + 
+      
+                       theme_void() +  
+                       scale_y_continuous(breaks = NULL) +
+                       ylab("") + xlab("Z") +
+                       geom_segment(data = filter(df, x %in% c(0)),
+                                    aes(x = x, xend = x, y = 0, yend = y),
+                                    linetype = "dotted",
+                                    linewidth = 0.75,
+                                    color='black') +
+                       geom_text(data = filter(df, x %in% c(0)),
+                                 aes(x = x, y = y/2, label = "A R"),
+                                 size = 16 / .pt,
+                                 check_overlap = TRUE,
+                                 fontface = "bold") +
+                       geom_text(data = filter(df, x %in% c(0)),
+                                 aes(x = x, y = 0, label = "0"),
+                                 size = 14 / .pt,
+                                 fontface = "bold",
+                                 nudge_y = -.03,
+                                 check_overlap = TRUE) +
+                       geom_segment(data = tsDF,
+                                    aes(x = x, xend = x, y = 0, yend = y + .055),
+                                    linetype = "solid",
+                                    linewidth = 1.25,
+                                    color='#BD130B') +
+                       geom_text(data = tsDF,
+                                 aes(x = x, y = y, label = x),
+                                 size = 14 / .pt,
+                                 fontface = "bold",
+                                 nudge_y = .075,
+                                 check_overlap = TRUE) +
+                       geom_text(data = cvDF,
+                                 aes(x = x, y = 0, label = x),
+                                 size = 14 / .pt,
+                                 fontface = "bold",
+                                 nudge_y = -.03,
+                                 check_overlap = TRUE) +
+                       geom_text(data = RRLabelsDF,
+                                 aes(x = x, y = y, label = "RR"),
+                                 size = 16 / .pt,
+                                 fontface = "bold",
+                                 nudge_y = .025,
+                                 check_overlap = TRUE) +
+                       theme(axis.title.x = element_text(size = 16, face = "bold.italic")) +
+                       coord_cartesian(clip="off")
     
     return(htPlot)
   }
@@ -5738,19 +5788,13 @@ server <- function(session, input, output) {
     }
     
     intrpInfo <- OneMeanHypInfo()
-    
-    if(intrpInfo$alternative == "two.sided") {
-      htPlotCritVals <- c(-oneMeanData[4], oneMeanData[4])
-      
-    } else {
-      htPlotCritVals <- oneMeanData[4]
-    }
+    htPlotCritVal <- oneMeanData[4]
     
     if(sigmaKnown== 'Known') {
-      oneMeanPlot <- hypZTestPlot(oneMeanData[6], htPlotCritVals, intrpInfo$alternative)
+      oneMeanPlot <- hypZTestPlot(oneMeanData[6], htPlotCritVal, intrpInfo$alternative)
       
     } else {
-      oneMeanPlot <- hypTTestPlot(oneMeanData[6], oneMeanData[8], htPlotCritVals, intrpInfo$alternative)
+      oneMeanPlot <- hypTTestPlot(oneMeanData[6], oneMeanData[8], htPlotCritVal, intrpInfo$alternative)
     }
     
     oneMeanPlot
@@ -5899,14 +5943,9 @@ server <- function(session, input, output) {
   output$onePropHTPlot <- renderPlot({
     
     oneSampPropZTest <- OnePropZTest(input$numSuccesses, input$numTrials, input$hypProportion, OneMeanHypInfo()$alternative, SigLvl())
+    htPlotCritVal <- oneSampPropZTest["Z Critical"]
     
-    if(OneMeanHypInfo()$alternative == "two.sided") {
-      htPlotCritVals <- c(-oneSampPropZTest["Z Critical"], oneSampPropZTest["Z Critical"]) 
-    } else {
-      htPlotCritVals <- oneSampPropZTest["Z Critical"]
-    }
-    
-    htPlot <- hypZTestPlot(oneSampPropZTest["Test Statistic"], htPlotCritVals, OneMeanHypInfo()$alternative)
+    htPlot <- hypZTestPlot(oneSampPropZTest["Test Statistic"], htPlotCritVal, OneMeanHypInfo()$alternative)
     htPlot
   })
   
@@ -6450,19 +6489,14 @@ server <- function(session, input, output) {
     }
 
     intrpInfo <- IndMeansHypInfo()
-
-    if(intrpInfo$alternative == "two.sided") {
-      htPlotCritVals <- c(-data[2], data[2])
-
-    } else {
-      htPlotCritVals <- data[2]
-    }
+    htPlotCritVal <- data[2]
+    
 
     if(IndMeansSigmaKnown() == 'bothKnown') {
-      indMeansPlot <- hypZTestPlot(data['Test Statistic'], htPlotCritVals, intrpInfo$alternative)
+      indMeansPlot <- hypZTestPlot(data['Test Statistic'], htPlotCritVal, intrpInfo$alternative)
 
     } else if(IndMeansSigmaKnown() == 'bothUnknown'){
-      indMeansPlot <- hypTTestPlot(data['Test Statistic'], data['df'], htPlotCritVals, intrpInfo$alternative)
+      indMeansPlot <- hypTTestPlot(data['Test Statistic'], data['df'], htPlotCritVal, intrpInfo$alternative)
     }
 
     indMeansPlot
@@ -6885,17 +6919,9 @@ server <- function(session, input, output) {
   output$twoPropHTPlot <- renderPlot({
     
     twoPropZTest <- TwoPropZTest(input$numSuccesses1, input$numTrials1, input$numSuccesses2, input$numTrials2, 0, IndMeansHypInfo()$alternative, SigLvl())
+    htPlotCritVal <- twoPropZTest["Z Critical"]
     
-    if(IndMeansHypInfo()$alternative == "two.sided")
-    {
-      htPlotCritVals <- c(-twoPropZTest["Z Critical"], twoPropZTest["Z Critical"])
-    }
-    else
-    {
-      htPlotCritVals <- twoPropZTest["Z Critical"]
-    }
-    
-    htPlot <- hypZTestPlot(twoPropZTest["Test Statistic"], htPlotCritVals, IndMeansHypInfo()$alternative)
+    htPlot <- hypZTestPlot(twoPropZTest["Test Statistic"], htPlotCritVal, IndMeansHypInfo()$alternative)
     htPlot
   })
   
