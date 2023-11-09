@@ -4320,7 +4320,7 @@ server <- function(session, input, output) {
     return(dat)
   }
   
-  shadeHtZArea <- function(df, critValue, altHypothesis){
+  shadeHtArea <- function(df, critValue, altHypothesis){
     
       if(altHypothesis == 'less') {
         geom_area(data = subset(df, x <= critValue),
@@ -4405,25 +4405,21 @@ server <- function(session, input, output) {
     htPlot <- ggplot(df, aes(x = x, y = y)) 
     
     if(altHypothesis == 'two.sided') {
-      htPlot <- htPlot + shadeHtZArea(df, -critValue, "less") +
-                         shadeHtZArea(df, critValue, "greater")
+      htPlot <- htPlot + shadeHtArea(df, -critValue, "less") +
+                         shadeHtArea(df, critValue, "greater")
     } else {
-      htPlot <- htPlot + shadeHtZArea(df, critValue, altHypothesis)
+      htPlot <- htPlot + shadeHtArea(df, critValue, altHypothesis)
     }
-      # stat_function(fun = shadeHtZArea, 
-      #               args = list(critValues, altHypothesis), 
-      #               geom = "area",
-      #               fill = "#99BCDB") +
+
     htPlot <- htPlot + geom_segment(data = cvDF,
                                     aes(x = x, xend = x, y = 0, yend = y),
                                     linetype = "solid",
                                     lineend = 'butt',
                                     linewidth = 1.5,
-                                    color='#337AB7') +
+                                    color='#023B70') +
                        stat_function(fun = dnorm, 
                                      geom = "density",
                                      fill = NA) + 
-      
                        theme_void() +  
                        scale_y_continuous(breaks = NULL) +
                        ylab("") + xlab("Z") +
@@ -4473,107 +4469,90 @@ server <- function(session, input, output) {
   }
   
   
-  shadeHtTArea <- function(x, testStatistic, df, critValues, altHypothesis){
-    area <- dt(x, df)
-    
-    if(altHypothesis == "less") #less
-    {
-      area[x > critValues] <- NA
-    }
-    else if(altHypothesis == "two.sided") #twosided
-    {
-      area[x > critValues[1] & x < critValues[2]] <- NA
-    }
-    else if(altHypothesis == "greater") #greater
-    {
-      area[x < critValues] <- NA
-    }
-    return(area)
-  }
-  
-  
-  hypTTestPlot <- function(testStatistic, degfree, critValues, altHypothesis){
+  hypTTestPlot <- function(testStatistic, degfree, critValue, altHypothesis){
     tTail = qt(0.999, df = degfree, lower.tail = FALSE)
     tHead = qt(0.999, df = degfree, lower.tail = TRUE)
-    #xSeq = seq(normTail, normHead, by = 0.005)
-    xSeq = sort(c(tTail, tHead, testStatistic, critValues, 0))
+    x <- round(seq(from = tTail, to = tHead, by = 0.1), 2)
     
-    if(testStatistic < tTail)
-    {
-      tTail = testStatistic
-      
-    } else if(testStatistic > tHead)
-    {
-      tHead = testStatistic
-    } 
+    if(altHypothesis == "two.sided") {
+      CVs <- c(-critValue, critValue)
+      RRLabels <- c((-critValue + tTail)/2, (critValue + tHead)/2)
+    } else{
+      CVs <- c(critValue)
+      if(altHypothesis == 'less') {
+        RRLabels <- c((critValue + tTail)/2)
+      } else {
+        RRLabels <- c((critValue + tHead)/2)
+      }
+    }
+    
+    xSeq <- unique(sort(c(x, testStatistic, CVs, RRLabels, 0)))
     
     df <- data.frame(x = xSeq, y = dt(xSeq, degfree))
-    cvDF <- filter(df, x %in% critValues)
+    cvDF <- filter(df, x %in% CVs)
+    RRLabelsDF <- filter(df, x %in% RRLabels)
     tsDF <- filter(df, x %in% testStatistic)
     centerDF <- filter(df, x %in% c(0))
     
-    htPlot <- ggplot(df, aes(x = x, y = y)) +
-      stat_function(fun = dt, 
-                    args = list(df = degfree), 
-                    geom = "density",
-                    xlim = c(tTail, tHead),
-                    fill = "#03376d",
-                    alpha = 0.3) + 
-      stat_function(fun = shadeHtTArea, 
-                    args = list(testStatistic, degfree, critValues, altHypothesis), 
-                    geom = "area",
-                    xlim = c(tTail, tHead),
-                    fill = "#03376d",
-                    alpha = 0.7) +
-      theme_void()  +
-      scale_y_continuous(breaks = NULL) +
-      ylab("") + 
-      xlab("t") +
-      geom_segment(data = filter(df, x %in% c(0)), 
-                   aes(x = x, xend = x, y = 0, yend = y), 
-                   linetype = "dotted", 
-                   linewidth = 0.75, color='#03376d') +
-      geom_text(data = filter(df, x %in% c(0)), 
-                aes(x = x, y = y/2, label = "A R"), 
-                size = 16 / .pt, 
-                fontface = "bold") +
-      geom_text(data = filter(df, x %in% c(0)), 
-                aes(x = x, y = 0, label = "0"), 
-                size = 14 / .pt, 
-                fontface = "bold", 
-                nudge_y = -.01) +
-      geom_segment(data = tsDF, 
-                   aes(x = x, xend = x, y = -0.01, yend = y + .03), 
-                   linetype = "solid", 
-                   linewidth = 1.25, 
-                   color='#03376d') +
-      geom_text(data = tsDF, 
-                aes(x = x, y = y, label = "TS"), 
-                size = 16 / .pt, 
-                fontface = "bold", 
-                nudge_y = .045) +
-      geom_text(data = tsDF, 
-                aes(x = x, y = 0, label = x), 
-                size = 14 / .pt, 
-                fontface = "bold", 
-                nudge_y = -.02) +
-      geom_segment(data = cvDF, 
-                   aes(x = x, xend = x, y = 0, yend = y), 
-                   linetype = "blank", 
-                   lineend = 'round', 
-                   linewidth = 1.5, 
-                   color='#03376d') +
-      geom_text(data = cvDF, 
-                aes(x = x, y = 0, label = x), 
-                size = 14 / .pt, 
-                fontface = "bold", 
-                nudge_y = -.01) +
-      geom_text(data = cvDF, 
-                aes(x = x + x/4, y = y, label = "RR"), 
-                size = 16 / .pt, 
-                fontface = "bold", 
-                nudge_y = .03) +
-      theme(axis.title.x = element_text(size = 16, face = "bold"))
+    htPlot <- ggplot(df, aes(x = x, y = y)) 
+    
+    if(altHypothesis == 'two.sided') {
+      htPlot <- htPlot + shadeHtArea(df, -critValue, "less") +
+                         shadeHtArea(df, critValue, "greater")
+    } else {
+      htPlot <- htPlot + shadeHtArea(df, critValue, altHypothesis)
+    }
+    
+    htPlot <- htPlot + stat_function(fun = dt, 
+                                     args = list(df = degfree), 
+                                     geom = "density",
+                                     fill = NA) + 
+                       theme_void()  +
+                       scale_y_continuous(breaks = NULL) +
+                       ylab("") + 
+                       xlab("t") +
+                       geom_segment(data = filter(df, x %in% c(0)), 
+                                    aes(x = x, xend = x, y = 0, yend = y), 
+                                    linetype = "dotted", 
+                                    linewidth = 0.75, 
+                                    color='black') +
+                       geom_text(data = filter(df, x %in% c(0)), 
+                                 aes(x = x, y = y/2, label = "A R"), 
+                                 size = 16 / .pt, 
+                                 fontface = "bold") +
+                       geom_text(data = filter(df, x %in% c(0)), 
+                                 aes(x = x, y = 0, label = "0"), 
+                                 size = 14 / .pt, 
+                                 fontface = "bold", 
+                                 nudge_y = -.03) +
+                       geom_segment(data = tsDF, 
+                                    aes(x = x, xend = x, y = 0, yend = y + .03), 
+                                    linetype = "solid", 
+                                    linewidth = 1.25, 
+                                    color='#BD130B') +
+                       geom_text(data = tsDF, 
+                                 aes(x = x, y = y, label = x), 
+                                 size = 16 / .pt, 
+                                 fontface = "bold", 
+                                 nudge_y = .075) +
+                       geom_segment(data = cvDF, 
+                                    aes(x = x, xend = x, y = 0, yend = y), 
+                                    linetype = "solid", 
+                                    lineend = 'butt', 
+                                    linewidth = 1.5, 
+                                    color='#023B70') +
+                       geom_text(data = cvDF, 
+                                 aes(x = x, y = 0, label = x), 
+                                 size = 14 / .pt, 
+                                 fontface = "bold", 
+                                 nudge_y = -.03) +
+                       geom_text(data = RRLabelsDF, 
+                                 aes(x = x, y = y, label = "RR"), 
+                                 size = 16 / .pt, 
+                                 fontface = "bold", 
+                                 nudge_y = .03) +
+                       theme(axis.title.x = element_text(size = 16, 
+                                                         face = "bold.italic"))
     
     return(htPlot)
   }
