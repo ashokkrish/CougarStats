@@ -4315,7 +4315,7 @@ server <- function(session, input, output) {
     
     oneMeanCIOutput <- tagList(
       withMathJax(),
-      sprintf("\\( \\text{For a %s%% Confidence Interval:} \\)",
+      sprintf("For a \\( %s \\)%% Confidence Interval: ",
               ConfLvl()*100),
       br(),
       sprintf("\\( \\phantom{CII} \\alpha = 1 - %s = %s \\)",
@@ -4378,7 +4378,7 @@ server <- function(session, input, output) {
       }
       
       givenOutput <- tagList(
-        sprintf("\\( \\text{Given } \\)"),
+        sprintf("Given:"),
         br(),
         sprintf("\\( \\phantom{CII} n = %s \\)",
                 oneMeanData['Sample Size']),
@@ -4397,7 +4397,7 @@ server <- function(session, input, output) {
       
       if(OneMeanSigma() == 'Known') {
         givenOutput <- tagList(
-          sprintf("\\( \\text{Given } \\)"),
+          sprintf("Given:"),
           br(),
           sprintf("\\( \\phantom{CII} \\sigma = %s \\)",
                   oneMeanData[3]),
@@ -4442,7 +4442,7 @@ server <- function(session, input, output) {
                   sd),
           br(),
           br(),
-          sprintf("\\( \\text{where} \\)"),
+          sprintf("where"),
           br(),
           sprintf("\\( \\phantom{CII} n = %s \\; , \\)",
                   oneMeanData["Sample Size"]),
@@ -4462,7 +4462,7 @@ server <- function(session, input, output) {
                   sd),
           br(),
           br(),
-          sprintf("\\( \\text{where} \\)"),
+          sprintf("where"),
           br(),
           sprintf("\\( \\phantom{CII} n = %s \\; , \\)",
                   oneMeanData["Sample Size"]),
@@ -4527,7 +4527,7 @@ server <- function(session, input, output) {
     oneMeanData <- GetOneMeanCI()
     
     intrpOutput <- tagList(
-      p("\\( \\text{Interpretation}: \\)"),
+      p(tags$b("Interpretation:")),
       sprintf("We are %1.0f%% confident that the population mean \\( (\\mu)\\) is between \\( %g \\) and \\( %g \\).",
               ConfLvl()*100,
               oneMeanData["LCL"],
