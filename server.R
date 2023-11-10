@@ -4297,6 +4297,247 @@ server <- function(session, input, output) {
   ### Non-Reactive Functions ----
   # --------------------------------------------------------------------- #
   
+  #### One Mean Functions ----
+  printOneMeanCI <- function() {
+    
+    oneMeanData <- GetOneMeanCI()
+    
+    if(OneMeanSigma() == "Known"){
+      sdSymbol <- "\\sigma"
+      testStat <- "z"
+      critVal <- oneMeanData["Z Critical"]
+      
+    } else {
+      sdSymbol <- "s"
+      testStat <- "t"
+      critVal <- oneMeanData["T Critical"]
+    }
+    
+    oneMeanCIOutput <- tagList(
+      withMathJax(),
+      sprintf("\\( \\text{For a %s%% Confidence Interval:} \\)",
+              ConfLvl()*100),
+      br(),
+      sprintf("\\( \\phantom{CII} \\alpha = 1 - %s = %s \\)",
+              ConfLvl(),
+              1 - ConfLvl()),
+      br())
+    
+    cvOutput <- printOneMeanCV()
+    givenOutput <- printOneMeanGiven()
+    formulaOutput <- printOneMeanCIFormula()
+    calcOutput <- printOneMeanCICalc()
+    intrpOutput <- printOneMeanCIIntrp()
+    
+    oneMeanCIOutput <- tagAppendChildren(oneMeanCIOutput, cvOutput, givenOutput, formulaOutput, calcOutput, intrpOutput)
+
+    return(oneMeanCIOutput)
+  }
+  
+  printOneMeanCV <- function() {
+    
+    oneMeanData <- GetOneMeanCI()
+    
+    if(OneMeanSigma() == "Known"){
+      cvOutput <- tagList(
+                          sprintf("\\( \\phantom{CII} z_{\\alpha/2} = z_{%s/2} = z_{%s} = %s \\)",
+                                  1 - ConfLvl(),
+                                  (1 - ConfLvl()) / 2,
+                                  oneMeanData["Z Critical"]),
+                          br(),
+                          br()
+                  )
+    } else {
+      df <- oneMeanData["Sample Size"] - 1
+      
+      cvOutput <- tagList(
+                          sprintf("\\( \\phantom{CII} df = n - 1 \\)"),
+                          br(),
+                          sprintf("\\( \\phantom{CII} t_{\\alpha/2, \\, df} = t_{%s/2, \\, %s} = t_{%s, \\, %s} = %s \\)",
+                                  1 - ConfLvl(),
+                                  df,
+                                  (1 - ConfLvl()) / 2,
+                                  df,
+                                 oneMeanData["T Critical"]),
+                          br(),
+                          br()
+                  )
+    }
+    
+    return(cvOutput)
+  }
+  
+  printOneMeanGiven <- function() {
+    oneMeanData <- GetOneMeanCI()
+    
+    if(input$dataAvailability == 'Summarized Data') {
+      if(OneMeanSigma() == 'Known') {
+        sd <- '\\sigma'
+      } else {
+        sd <- 's'
+      }
+      
+      givenOutput <- tagList(
+        sprintf("\\( \\text{Given } \\)"),
+        br(),
+        sprintf("\\( \\phantom{CII} n = %s \\)",
+                oneMeanData['Sample Size']),
+        br(),
+        sprintf("\\( \\phantom{CII} \\bar{x} = %s \\)",
+                oneMeanData['Sample Mean']),
+        br(),
+        sprintf("\\( \\phantom{CII} %s = %s \\)",
+                sd,
+                oneMeanData[3]),
+        br(),
+        br(),
+      )
+      
+    } else {
+      
+      if(OneMeanSigma() == 'Known') {
+        givenOutput <- tagList(
+          sprintf("\\( \\text{Given } \\)"),
+          br(),
+          sprintf("\\( \\phantom{CII} \\sigma = %s \\)",
+                  oneMeanData[3]),
+          br(),
+          br(),
+        )
+      } else {
+        givenOutput <- br()
+      }
+      
+    }
+  }
+  
+  printOneMeanCIFormula <- function() {
+    oneMeanData <- GetOneMeanCI()
+    
+    if(OneMeanSigma() == 'Known') {
+      sd <- "\\sigma"
+      testStat <- "z_{\\alpha/2}"
+    } else {
+      sd <- "s"
+      testStat <- "t_{\\alpha/2, \\, df}"
+    }
+    
+    if(input$dataAvailability == 'Summarized Data') {
+      formulaOutput <- tagList(
+        br(),
+        sprintf("\\( \\displaystyle CI = \\bar{x} \\pm \\left( %s \\dfrac{%s}{\\sqrt{n}} \\right) \\)",
+                testStat,
+                sd),
+        br(),
+        br(),
+        br()
+      )
+    } else {
+      
+      if(OneMeanSigma() == 'Known') {
+        formulaOutput <- tagList(
+          br(),
+          sprintf("\\( \\displaystyle CI = \\bar{x} \\pm \\left( %s \\dfrac{%s}{\\sqrt{n}} \\right) \\)",
+                  testStat,
+                  sd),
+          br(),
+          br(),
+          sprintf("\\( \\text{where} \\)"),
+          br(),
+          sprintf("\\( \\phantom{CII} n = %s \\; , \\)",
+                  oneMeanData["Sample Size"]),
+          sprintf("\\( \\phantom{CII} \\bar{x} = \\dfrac{\\sum x}{n} = \\dfrac{%s}{%s} = %s \\)",
+                  OneMeanTotaledData(),
+                  oneMeanData["Sample Size"],
+                  oneMeanData["Sample Mean"]),
+          br(),
+          br(),
+          br()
+        )
+      } else {
+        formulaOutput <- tagList(
+          br(),
+          sprintf("\\( \\displaystyle CI = \\bar{x} \\pm \\left( %s \\dfrac{%s}{\\sqrt{n}} \\right) \\)",
+                  testStat,
+                  sd),
+          br(),
+          br(),
+          sprintf("\\( \\text{where} \\)"),
+          br(),
+          sprintf("\\( \\phantom{CII} n = %s \\; , \\)",
+                  oneMeanData["Sample Size"]),
+          sprintf("\\( \\phantom{CII} \\bar{x} = \\dfrac{\\sum x}{n} = \\dfrac{%s}{%s} = %s \\; , \\)",
+                  OneMeanTotaledData(),
+                  oneMeanData["Sample Size"],
+                  oneMeanData["Sample Mean"]),
+          sprintf("\\( \\phantom{CII} s  = \\sqrt{ \\dfrac{\\sum x^{2} - \\dfrac{(\\sum x)^{2}}{n} }{n - 1} } = %s \\)", 
+                  oneMeanData[3]),
+          br(),
+          br(),
+          br()
+        )
+        
+      } 
+
+    }
+    
+    return(formulaOutput)
+  }
+  
+  printOneMeanCICalc <- function() {
+    oneMeanData <- GetOneMeanCI()
+    
+    if(OneMeanSigma() == "Known"){
+      critVal <- oneMeanData["Z Critical"]
+    } else {
+      critVal <- oneMeanData["T Critical"]
+    }
+    
+    calcOutput <- tagList(
+      sprintf("\\( \\displaystyle CI = %s \\pm \\left( %g \\dfrac{%g}{\\sqrt{%g}} \\right) \\)",
+              oneMeanData["Sample Mean"],
+              critVal,
+              oneMeanData[3],
+              oneMeanData['Sample Size']),
+      br(),
+      br(),
+      sprintf("\\( \\displaystyle \\phantom{CI} = %s \\pm \\left( %g \\cdot %g \\right) \\)",
+              oneMeanData["Sample Mean"],
+              critVal,
+              oneMeanData['Std Error']),
+      br(),
+      br(),
+      sprintf("\\( \\displaystyle \\phantom{CI} = %s \\pm %g \\)",
+              oneMeanData["Sample Mean"],
+              oneMeanData['ME']),
+      br(),
+      br(),
+      sprintf("\\( \\phantom{CI} = (%g, %g)\\)",
+              oneMeanData["LCL"],
+              oneMeanData["UCL"]),
+      br(),
+      br(),
+      br()
+    )
+    
+    return(calcOutput)
+  }
+  
+  printOneMeanCIIntrp <- function() {
+    oneMeanData <- GetOneMeanCI()
+    
+    intrpOutput <- tagList(
+      p("\\( \\text{Interpretation}: \\)"),
+      sprintf("We are %1.0f%% confident that the population mean \\( (\\mu)\\) is between \\( %g \\) and \\( %g \\).",
+              ConfLvl()*100,
+              oneMeanData["LCL"],
+              oneMeanData["UCL"]),
+      br()
+    )
+    
+    return(intrpOutput)
+  }
+  
   GetDepMeansData <- function() {
     req(si_iv$is_valid())
     
@@ -4653,6 +4894,21 @@ server <- function(session, input, output) {
     }
   })
   
+  OneMeanTotaledData <- reactive({
+    req(si_iv$is_valid())
+    
+    if(input$dataAvailability == 'Enter Raw Data'){
+      dat <- createNumLst(input$sample1)
+      
+    } else if (input$dataAvailability == 'Upload Data'){
+      dat <- unlist(OneMeanUploadData()[,input$oneMeanVariable])
+    } else{
+      dat <- 0
+    }
+    
+    return(sum(dat))
+  })
+  
   OneMeanHypInfo <- reactive({
     hypTestSymbols <- list()
     
@@ -4847,6 +5103,29 @@ server <- function(session, input, output) {
     return(oneMeanTTest)
   })
   
+  
+  GetOneMeanCI <- reactive({
+    
+    if(OneMeanSigma() == "Known"){
+      
+      if(input$dataAvailability == 'Summarized Data'){
+        oneMeanCI <- OneMeanZIntSumm()
+      } else {
+        oneMeanCI <- OneMeanZIntRaw()
+      }
+      
+    } else {
+      
+      if(input$dataAvailability == 'Summarized Data'){
+        oneMeanCI <- OneMeanTIntSumm()
+      } else {
+        oneMeanCI <- OneMeanTIntRaw()
+      }
+      
+    }
+    
+    return(oneMeanCI)
+  })
   
   #### Independent Sample Means reactives ----
   
@@ -5489,71 +5768,9 @@ server <- function(session, input, output) {
   
   ##### CI ----
   output$oneMeanCI <- renderUI({
-    withMathJax()
-    if(OneMeanSigma() == "Known"){
-      
-      if(input$dataAvailability == 'Summarized Data'){
-        oneMeanData <- OneMeanZIntSumm()
-      } else {
-        oneMeanData <- OneMeanZIntRaw()
-      }
-      
-      sdSymbol <- "\\sigma"
-      testStat <- "z"
-      critVal <- oneMeanData["Z Critical"]
-      
-    } else {
-      
-      if(input$dataAvailability == 'Summarized Data'){
-        oneMeanData <- OneMeanTIntSumm()
-      } else {
-        oneMeanData <- OneMeanTIntRaw()
-      }
-      
-      sdSymbol <- "s"
-      testStat <- "t"
-      critVal <- oneMeanData["T Critical"]
-    }
+
+    printOneMeanCI()
     
-    p(
-      withMathJax(
-        sprintf("\\( \\displaystyle CI = \\bar{x} \\pm \\left( %s_{\\alpha/2}  \\dfrac{%s}{\\sqrt{n}} \\right) \\)",
-                testStat,
-                sdSymbol),
-        br(),
-        br(),
-        sprintf("\\( \\displaystyle \\quad = %s \\pm \\left( %g \\dfrac{%g}{\\sqrt{%g}} \\right) \\)",
-                oneMeanData["Sample Mean"],
-                critVal,
-                oneMeanData[3],
-                oneMeanData['Sample Size']),
-        br(),
-        br(),
-        sprintf("\\( \\displaystyle \\quad = %s \\pm \\left( %g \\cdot %g \\right) \\)",
-                oneMeanData["Sample Mean"],
-                critVal,
-                oneMeanData['Std Error']),
-        br(),
-        br(),
-        sprintf("\\( \\displaystyle \\quad = %s \\pm %g \\)",
-                oneMeanData["Sample Mean"],
-                oneMeanData['ME']),
-        br(),
-        br(),
-        sprintf("\\( \\quad = (%g, %g)\\)",
-                oneMeanData["LCL"],
-                oneMeanData["UCL"]),
-        br(),
-        br(),
-        br(),
-        p(tags$b("Interpretation:")),
-        sprintf("We are %1.0f%% confident that the population mean \\( (\\mu)\\) is between \\( %g \\) and \\( %g \\).",
-                ConfLvl()*100,
-                oneMeanData["LCL"],
-                oneMeanData["UCL"]),
-        br()
-      )
-    )
   })
   
   
