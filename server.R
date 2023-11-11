@@ -4313,7 +4313,11 @@ server <- function(session, input, output) {
       critVal <- oneMeanData["T Critical"]
     }
     
-    oneMeanCIOutput <- tagList(
+    oneMeanCIOutput <- tagList()
+    
+    givenOutput <- printOneMeanGiven()
+    
+    alphaOutput <- tagList(
       withMathJax(),
       sprintf("For a \\( %s \\)%% Confidence Interval: ",
               ConfLvl()*100),
@@ -4324,12 +4328,11 @@ server <- function(session, input, output) {
       br())
     
     cvOutput <- printOneMeanCV()
-    givenOutput <- printOneMeanGiven()
     formulaOutput <- printOneMeanCIFormula()
     calcOutput <- printOneMeanCICalc()
     intrpOutput <- printOneMeanCIIntrp()
     
-    oneMeanCIOutput <- tagAppendChildren(oneMeanCIOutput, cvOutput, givenOutput, formulaOutput, calcOutput, intrpOutput)
+    oneMeanCIOutput <- tagAppendChildren(oneMeanCIOutput, givenOutput, alphaOutput, cvOutput, formulaOutput, calcOutput, intrpOutput)
 
     return(oneMeanCIOutput)
   }
@@ -4345,7 +4348,8 @@ server <- function(session, input, output) {
                                   (1 - ConfLvl()) / 2,
                                   oneMeanData["Z Critical"]),
                           br(),
-                          br()
+                          br(),
+                          br(),
                   )
     } else {
       df <- oneMeanData["Sample Size"] - 1
@@ -4359,6 +4363,7 @@ server <- function(session, input, output) {
                                   (1 - ConfLvl()) / 2,
                                   df,
                                  oneMeanData["T Critical"]),
+                          br(),
                           br(),
                           br()
                   )
@@ -4378,7 +4383,6 @@ server <- function(session, input, output) {
       }
       
       givenOutput <- tagList(
-        br(),
         sprintf("Given:"),
         br(),
         sprintf("\\( n = %s \\)",
@@ -4399,7 +4403,6 @@ server <- function(session, input, output) {
       
       if(OneMeanSigma() == 'Known') {
         givenOutput <- tagList(
-          br(),
           sprintf("Given:"),
           br(),
           sprintf("\\( \\sigma = %s \\)",
