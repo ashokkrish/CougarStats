@@ -718,8 +718,7 @@ server <- function(session, input, output) {
   onemeanuploadsd_iv$condition(function() {isTRUE(input$samplesSelect == '1' &&
                                                   input$popuParameter == 'Population Mean' &&
                                                   input$dataAvailability == 'Upload Data' && 
-                                                  input$sigmaKnownUpload == 'Known' && 
-                                                  onemeanupload_iv$is_valid()) })
+                                                  input$sigmaKnownUpload == 'Known') })
   
   onemeanht_iv$condition(~ isTRUE(input$samplesSelect == '1' && 
                                   input$popuParameter == 'Population Mean' && 
@@ -6949,7 +6948,7 @@ server <- function(session, input, output) {
                   IndMeansHypInfo()$critSign,
                   IndMeansHypInfo()$alphaVal,
                   tTest["Sample Size"] - 1,
-                  tTest["T Critical"]),
+                  critVal),
           br(),
           br(),
           p(tags$b("where")),
@@ -6987,14 +6986,9 @@ server <- function(session, input, output) {
       tTest <- DepMeansTTest()
       intrpInfo <- IndMeansHypInfo()
       
-      if(intrpInfo$alternative == "two.sided") {
-        htPlotCritVals <- c(-tTest["T Critical"], tTest["T Critical"])
-      } else {
-        htPlotCritVals <- tTest["T Critical"]
-      }
+      htPlotCritVal <- tTest["T Critical"]
       
-      depMeansPlot <- hypTTestPlot(tTest["Test Statistic"], tTest["df"], htPlotCritVals, intrpInfo$alternative)
-      
+      depMeansPlot <- hypTTestPlot(tTest["Test Statistic"], tTest["df"], htPlotCritVal, intrpInfo$alternative)
       depMeansPlot
     }
 

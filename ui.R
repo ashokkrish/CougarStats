@@ -835,7 +835,7 @@
                                                                                                                                   "Unknown"),
                                                                                                               choiceNames = list("Known", 
                                                                                                                                  "Unknown"),
-                                                                                                              selected = "Known",
+                                                                                                              selected = "Unknown",
                                                                                                               inline = TRUE),
                                                                                                  
                                                                                                  conditionalPanel( ###### " Known ----
@@ -1135,7 +1135,7 @@
                                                                                                   "bothUnknown"),
                                                                               choiceNames = list("Both Known", 
                                                                                                  "Both Unknown"),
-                                                                              selected = "bothKnown",
+                                                                              selected = "bothUnknown",
                                                                               inline = TRUE), #,width = '1000px'),
                                                                  
                                                                  conditionalPanel(
