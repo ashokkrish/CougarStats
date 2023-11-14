@@ -6798,6 +6798,8 @@ server <- function(session, input, output) {
   ##### CI ----
   output$depMeansCI <- renderUI({
     tInt <- DepMeansTInt()
+    dSum <- sum(GetDepMeansData()$d)
+    dSqrdSum <- sum(GetDepMeansData()$d^2)
     
     p(
       withMathJax(),
@@ -6806,16 +6808,26 @@ server <- function(session, input, output) {
       br(),
       br(),
       p("where"),
-      sprintf("\\( \\qquad \\bar{d} = \\dfrac{ \\sum d }{ n } \\; , \\)"),
-      sprintf("\\( \\qquad s_{d} = \\sqrt{ \\dfrac{ \\sum ( d - \\bar{d})^2 }{ n - 1 } } \\; , \\)"),
-      sprintf("\\( \\qquad df = n - 1 \\)"),
+      sprintf("\\( \\qquad \\bar{d} = \\dfrac{ \\sum d }{ n } = \\dfrac{%s}{%s} = %s \\; , \\)",
+              dSum,
+              tInt["Sample Size"],
+              tInt["Sample Mean"]),
+      sprintf("\\( \\qquad s_{d} = \\sqrt{ \\dfrac{\\sum d^{2} - \\dfrac{(\\sum d)^{2}}{n} }{n - 1} } \\)"),
+      sprintf("\\( = \\sqrt{ \\dfrac{%s - \\dfrac{(%s)^{2}}{%s} }{%s - 1} } = %s \\; , \\)",
+              dSqrdSum,
+              dSum,
+              tInt["Sample Size"],
+              tInt["Sample Size"],
+              tInt['Sample SD']),
+      sprintf("\\( \\qquad df = n - 1 = %s \\)",
+              tInt["Sample Size"] - 1),
       br(),
       br(),
       br(),
-      sprintf("\\( \\displaystyle CI = %g \\pm \\left( t_{%g/2, \\, %g - 1} \\cdot \\dfrac{ %g }{ \\sqrt{ %g } } \\right) \\)",
+      sprintf("\\( \\displaystyle CI = %g \\pm \\left( t_{%g/2, \\, %g} \\cdot \\dfrac{ %g }{ \\sqrt{ %g } } \\right) \\)",
               tInt["Sample Mean"],
               1 - ConfLvl(),
-              tInt["Sample Size"],
+              tInt["Sample Size"] - 1,
               tInt["Sample SD"],
               tInt["Sample Size"]),
       br(),
@@ -6862,6 +6874,8 @@ server <- function(session, input, output) {
 
     req(GetDepMeansData()$sd != 0)
       tTest <- DepMeansTTest()
+      dSum <- sum(GetDepMeansData()$d)
+      dSqrdSum <- sum(GetDepMeansData()$d^2)
       
       intrpInfo <- IndMeansHypInfo()
       
@@ -6907,8 +6921,17 @@ server <- function(session, input, output) {
           br(),
           sprintf("\\( \\displaystyle t = \\dfrac{\\bar{d} - \\mu_{0}}{ \\left( \\dfrac{ s_{d} }{ \\sqrt{n} } \\right) } \\qquad \\)"),
           p("where"),
-          sprintf("\\( \\qquad \\bar{d} = \\dfrac{ \\sum d }{ n } \\; , \\)"),
-          sprintf("\\( \\qquad s_{d} = \\sqrt{ \\dfrac{ \\sum ( d - \\bar{d})^2 }{ n - 1 } } \\)"),
+          sprintf("\\( \\qquad \\bar{d} = \\dfrac{ \\sum d }{ n } = \\dfrac{%s}{%s} = %s \\; , \\)",
+                  dSum,
+                  tTest["Sample Size"],
+                  tTest["Sample Mean"]),
+          sprintf("\\( \\qquad s_{d} = \\sqrt{ \\dfrac{\\sum d^{2} - \\dfrac{(\\sum d)^{2}}{n} }{n - 1} } \\)"),
+          sprintf("\\( = \\sqrt{ \\dfrac{%s - \\dfrac{(%s)^{2}}{%s} }{%s - 1} } = %s \\; , \\)",
+                  dSqrdSum,
+                  dSum,
+                  tTest["Sample Size"],
+                  tTest["Sample Size"],
+                  tTest['Sample SD']),
           br(),
           br(),
           br(),
@@ -6952,7 +6975,8 @@ server <- function(session, input, output) {
           br(),
           br(),
           p("where"),
-          sprintf("\\( \\qquad df = n - 1 \\)"),
+          sprintf("\\( \\qquad df = n - 1 = %s \\)",
+                  tTest["Sample Size"] - 1),
           br(),
           br(),
           sprintf("Since the test statistic \\( (t)\\) falls within the %s region, %s \\( H_{0}\\).",
