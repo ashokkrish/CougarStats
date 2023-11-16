@@ -26,6 +26,7 @@ library(writexl)
 library(xtable)
 library(MASS)
 
+source("R/RenderBoxplot.R")
 source('R/OneSampZInt.R')
 source('R/OneSampTInt.R')
 source("R/OneSampZTest.R")

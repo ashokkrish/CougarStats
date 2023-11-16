@@ -848,6 +848,7 @@
                                                                                                                                 step = 0.00001)
                                                                                                  ),
                                                                                                ), # One Sample upload data
+                                                                                               
                                                                              ), # One Population Mean
                                                                              
                                                                              conditionalPanel(##### Proportion ----
@@ -937,6 +938,15 @@
                                                                                               ),
                                                                                ),
                                                                              ), # Dropdown for 1-sample HT
+                                                                             
+                                                                             conditionalPanel(
+                                                                               condition = "input.popuParameter == 'Population Mean' && input.dataAvailability != 'Summarized Data'",
+                                                                               
+                                                                               p(strong("Options")),
+                                                                               checkboxInput(inputId = "oneMeanBoxplot",
+                                                                                             label = "Construct Boxplot for Sample Data",
+                                                                                             value = TRUE)
+                                                                             )
                                                            ), #"input.samplesSelect == '1'"
                                                            
                                                            conditionalPanel( #### 2 Sample ----
@@ -1591,22 +1601,22 @@
                                                                              
                                                                              tags$h3("Boxplot Options"),
                                                                              
-                                                                             textInput(inputId = "boxplotTitle", 
+                                                                             textInput(inputId = "dsBoxplotTitle", 
                                                                                        label = strong("Main title and axes labels:"), 
                                                                                        value = "Boxplot", 
                                                                                        placeholder = "main title"),
                                                                              
-                                                                             textInput(inputId = "boxplotXlab", 
+                                                                             textInput(inputId = "dsBoxplotXlab", 
                                                                                        label = NULL, 
                                                                                        value = "", 
                                                                                        placeholder = "x-axis label"),
                                                                              
-                                                                             textInput(inputId = "boxplotYlab", 
+                                                                             textInput(inputId = "dsBboxplotYlab", 
                                                                                        label = NULL, 
                                                                                        value = "", 
                                                                                        placeholder = "y-axis label"),
                                                                              
-                                                                             colourpicker::colourInput(inputId = "boxplotColour", 
+                                                                             colourpicker::colourInput(inputId = "dsBoxplotColour", 
                                                                                                        label = strong("Plot Colour"), 
                                                                                                        value = "#819BB6"),
                                                                              
@@ -1940,6 +1950,49 @@
                                                                                           br(),
                                                                                         ),
                                                                                         
+                                                                                        conditionalPanel(
+                                                                                          condition = "input.dataAvailability != 'Summarized Data' && input.oneMeanBoxplot == 1",
+                                                                                          
+                                                                                          br(),
+                                                                                          hr(),
+                                                                                          br(),
+                                                                                          titlePanel(tags$u("Boxplot")),
+                                                                                          br(),
+                                                                                          dropdown(
+                                                                                            
+                                                                                            tags$h3("Boxplot Options"),
+                                                                                            
+                                                                                            textInput(inputId = "oneMeanBoxplotTitle", 
+                                                                                                      label = strong("Main title and axes labels:"), 
+                                                                                                      value = "Boxplot", 
+                                                                                                      placeholder = "main title"),
+                                                                                            
+                                                                                            textInput(inputId = "oneMeanBoxplotXlab", 
+                                                                                                      label = NULL, 
+                                                                                                      value = "", 
+                                                                                                      placeholder = "x-axis label"),
+                                                                                            
+                                                                                            textInput(inputId = "oneMeanBoxplotYlab", 
+                                                                                                      label = NULL, 
+                                                                                                      value = "", 
+                                                                                                      placeholder = "y-axis label"),
+                                                                                            
+                                                                                            colourpicker::colourInput(inputId = "oneMeanBoxplotColour", 
+                                                                                                                      label = strong("Plot Colour"), 
+                                                                                                                      value = "#819BB6"),
+                                                                                            
+                                                                                            style = "jelly", icon = icon("gear"),
+                                                                                            status = "primary", width = "300px",
+                                                                                            animate = animateOptions(
+                                                                                              enter = animations$fading_entrances$fadeInDown,
+                                                                                              exit = animations$fading_exits$fadeOutUp
+                                                                                            )
+                                                                                          ),
+                                                                                          plotOutput("siOneMeanBoxplot"),
+                                                                                          br(),
+                                                                                          br()
+                                                                                        )
+                                                                                        
                                                                       ), # One Population Mean
                                                                       
                                                                       conditionalPanel( ##### Pop Prop ----
@@ -1964,6 +2017,7 @@
                                                                                         ),
                                                                                         
                                                                       ), # One Population Proportion
+                                                                      
                                                     ), # "input.samplesSelect == '1'"
                                                     
                                                     conditionalPanel( #### Two Samp ----

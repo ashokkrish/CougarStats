@@ -1403,7 +1403,7 @@ server <- function(session, input, output) {
       {
         dat <- dsRawData()
       }
-      
+
       df_boxplot <- data.frame(x = dat)
       
       if(df['Outlier Values',3] != "There are no outliers.") {
@@ -1417,39 +1417,17 @@ server <- function(session, input, output) {
         #---------------- #
         #### Boxplot ---- 
         #---------------- #
+        
+        bp <- RenderBoxplot(dat,
+                            df_boxplot,
+                            df_outliers,
+                            input$dsBoxplotColour,
+                            input$dsBoxplotTitle,
+                            input$dsBoxplotXlab,
+                            input$dsBboxplotYlab)
 
-        bp <- ggplot(df_boxplot, aes(x = x, y = 0)) +
-          stat_boxplot(geom ='errorbar', width = 0.15) +
-          geom_boxplot(fill = input$boxplotColour,
-                       alpha = 1,
-                       outlier.shape = NA) +
-          geom_point(data = filter(df_boxplot, x %in% df_outliers),
-                     size = 5) +
-          geom_text(data = filter(df_boxplot, x %in% df_outliers),
-                    aes(x = x, y = 0, label = x),
-                    size = 15 / .pt,
-                    vjust = -1.25) +
-          labs(title = input$boxplotTitle,
-               x = input$boxplotXlab,
-               y = input$boxplotYlab) +
-          theme_minimal() +
-          theme(plot.title = element_text(size = 24, face = "bold", hjust = 0.5),
-                axis.title.x = element_text(size = 16, face = "bold", vjust = -1.5),
-                axis.title.y = element_text(size = 16, face = "bold"),
-                axis.text.x.bottom = element_text(size = 16),
-                axis.text.y.left = element_blank(),
-                plot.margin = unit(c(1, 1, 1, 1),"cm")) +
-          ylim(-1, 1) +
-          coord_cartesian(clip="off")
-        
-        if(length(unique(dat)) == 1) {
-          bp <- bp + scale_x_continuous(breaks = dat, limits = c(dat[1] - 1, dat[1] + 1))
-        } else {
-          bp <- bp + scale_x_continuous(n.breaks = 8) 
-        }
-        
         bp
-        
+
       })
       
       #------------------ #
@@ -6063,10 +6041,47 @@ server <- function(session, input, output) {
     } else {
       oneMeanPlot <- hypTTestPlot(oneMeanData[6], oneMeanData[8], htPlotCritVal, intrpInfo$alternative)
     }
-    
+
     oneMeanPlot
   })
   
+  
+  output$siOneMeanBoxplot <- renderPlot({
+    
+    if(input$dataAvailability == 'Enter Raw Data') {
+      dat <- createNumLst(input$sample1)
+    } else if(input$dataAvailability == 'Upload Data') {
+      dat <- na.omit(unlist(OneMeanUploadData()[,input$oneMeanVariable]))
+    }
+    
+    quartile1 <-  fivenum(dat)[2]
+    quartile3 <-  fivenum(dat)[4]
+    sampIQR <- round(quartile3 - quartile1, 4)
+    lowerFence <- round(quartile1 - (1.5*sampIQR), 4)
+    upperFence <- round(quartile3 + (1.5*sampIQR), 4)
+    numOutliers <- sum(dat < lowerFence) + sum(dat > upperFence)
+    
+    if(numOutliers == 0) {
+      outliers <- "There are no outliers."
+      df_outliers <- data.frame()
+    } else {
+      outliers <- GetOutliers(dat, lowerFence, upperFence)
+      df_outliers <- as.data.frame(outliers)
+    }
+    
+    
+    df_boxplot <- data.frame(x = dat)
+
+    bp <- RenderBoxplot(dat,
+                      df_boxplot,
+                      df_outliers,
+                      input$oneMeanBoxplotColour,
+                      input$oneMeanBoxplotTitle,
+                      input$oneMeanBoxplotXlab,
+                      input$oneMeanBoxplotYLab)
+    
+    bp
+  })
   
   
   #### One Prop outputs ----
@@ -6215,8 +6230,7 @@ server <- function(session, input, output) {
     htPlot <- hypZTestPlot(oneSampPropZTest["Test Statistic"], htPlotCritVal, OneMeanHypInfo()$alternative)
     htPlot
   })
-  
-  
+
   
   #### Ind Means outputs ----
   
