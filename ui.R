@@ -942,9 +942,9 @@
                                                                              conditionalPanel(
                                                                                condition = "input.popuParameter == 'Population Mean' && input.dataAvailability != 'Summarized Data'",
                                                                                
-                                                                               p(strong("Options")),
+                                                                               p(strong("Graph Options")),
                                                                                checkboxInput(inputId = "oneMeanBoxplot",
-                                                                                             label = "Construct Boxplot for Sample Data",
+                                                                                             label = "Boxplot for Sample Data",
                                                                                              value = TRUE)
                                                                              )
                                                            ), #"input.samplesSelect == '1'"
