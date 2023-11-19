@@ -4570,7 +4570,9 @@ server <- function(session, input, output) {
       sprintf("\\( \\alpha = %s \\)",
               SigLvl()),
       br(),
-      br())
+      br(),
+      br(),
+      p(tags$b("Test Statistic:")))
     
     givenOutput <- printOneMeanGiven()
     formulaOutput <- printOneMeanHTFormula(sdSymbol, testStat)
@@ -6174,6 +6176,7 @@ server <- function(session, input, output) {
         br(),
         br(),
         br(),
+        p(tags$b("Test Statistic:")),
         sprintf("\\(z = \\dfrac{\\hat{p} - p_{0}}{ \\sqrt{ \\dfrac{p_{0}(1 - p_{0})}{n} } }\\)"),
         br(),
         br(),
@@ -6550,6 +6553,7 @@ server <- function(session, input, output) {
                   SigLvl()),
           br(),
           br(),
+          p(tags$b("Test Statistic:")),
           conditionalPanel(
             condition = "(input.dataAvailability2 == 'Summarized Data' && input.bothsigmaKnown == 'bothKnown') 
                          || (input.dataAvailability2 == 'Enter Raw Data' && input.bothsigmaKnownRaw == 'bothKnown')
@@ -6939,7 +6943,7 @@ server <- function(session, input, output) {
                   SigLvl()),
           br(),
           br(),
-          br(),
+          p(tags$b("Test Statistic:")),
           sprintf("\\( \\displaystyle t = \\dfrac{\\bar{d} - \\mu_{0}}{ \\left( \\dfrac{ s_{d} }{ \\sqrt{n} } \\right) } \\qquad \\)"),
           p("where"),
           sprintf("\\( \\qquad \\bar{d} = \\dfrac{ \\sum d }{ n } = \\dfrac{%s}{%s} = %s \\; , \\)",
@@ -7149,7 +7153,7 @@ server <- function(session, input, output) {
                 SigLvl()),
         br(),
         br(),
-        br(),
+        p(tags$b("Test Statistic:")),
         sprintf("\\(z = \\dfrac{ (\\hat{p}_{1} - \\hat{p}_{2}) - (p_{1} - p_{2})_{0} }{\\sqrt{\\hat{p}(1-\\hat{p})(\\dfrac{1}{n_{1}} + \\dfrac{1}{n_{2}})}}\\)"),
         br(),
         br(),
