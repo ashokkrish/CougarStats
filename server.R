@@ -82,7 +82,7 @@ server <- function(session, input, output) {
   # descriptiveStat
   
   dsraw_iv$add_rule("descriptiveStat", sv_required())
-  dsraw_iv$add_rule("descriptiveStat", sv_regex("^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+$", 
+  dsraw_iv$add_rule("descriptiveStat", sv_regex("^( )*(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+( )*$", 
                                                 "Data must be numeric values seperated by a comma (ie: 2,3,4)"))
   
   dsupload_iv$add_rule("dsUserData", sv_required())
@@ -484,9 +484,8 @@ server <- function(session, input, output) {
   onemean_iv$add_rule("sampleMean", sv_required())
   
   # sample1 
-  
   onemeanraw_iv$add_rule("sample1", sv_required())
-  onemeanraw_iv$add_rule("sample1", sv_regex("^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+$", 
+  onemeanraw_iv$add_rule("sample1", sv_regex("^( )*(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+( )*$", 
                                              "Data must be numeric values seperated by a comma (ie: 2,3,4)"))
   
   # One Mean Upload Data
@@ -563,13 +562,13 @@ server <- function(session, input, output) {
   # raw_sample1
   
   indmeansraw_iv$add_rule("raw_sample1", sv_required())
-  indmeansraw_iv$add_rule("raw_sample1", sv_regex("^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+$", 
+  indmeansraw_iv$add_rule("raw_sample1", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+( )*$", 
                                                   "Data must be at least 3 numeric values seperated by a comma (ie: 2,3,4)"))
   
   # raw_sample2 
   
   indmeansraw_iv$add_rule("raw_sample2", sv_required())
-  indmeansraw_iv$add_rule("raw_sample2", sv_regex("^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+$", 
+  indmeansraw_iv$add_rule("raw_sample2", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+( )*$", 
                                                   "Data must be at least 3 numeric values seperated by a comma (ie: 2,3,4)."))
   
   indmeansrawsd_iv$add_rule("popuSDRaw1", sv_required()) 
@@ -605,13 +604,13 @@ server <- function(session, input, output) {
   # before
   
   depmeansraw_iv$add_rule("before", sv_required())
-  depmeansraw_iv$add_rule("before", sv_regex("^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+$", 
+  depmeansraw_iv$add_rule("before", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+( )*$", 
                                                   "Data must be at least 3 numeric values seperated by a comma (ie: 2,3,4)"))
   
   # after
   
   depmeansraw_iv$add_rule("after", sv_required())
-  depmeansraw_iv$add_rule("after", sv_regex("^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+$", 
+  depmeansraw_iv$add_rule("after", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+( )*$", 
                                                   "Data must be at least 3 numeric values seperated by a comma (ie: 2,3,4)."))
   
   
@@ -864,13 +863,13 @@ server <- function(session, input, output) {
   
   slrraw_iv$add_rule("x", sv_required())
   #iv$add_rule("x", sv_regex("^[0-9]+(.[0-9]+)?(, [0-9](.[0-9]+)?)+$", "Data can only be numeric values separated by commas"))
-  slrraw_iv$add_rule("x", sv_regex("^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+$", 
+  slrraw_iv$add_rule("x", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+( )*$", 
                                    "Data must be numeric values seperated by a comma (ie: 2,3,4)."))
   slrraw_iv$add_rule("x", ~ if(sampleInfoRaw()$diff != 0) "x and y must have the same number of observations.")
   slrraw_iv$add_rule("x", ~ if(sampleInfoRaw()$xSD == 0) "Not enough variance in Independent Variable.")
   
   slrraw_iv$add_rule("y", sv_required())
-  slrraw_iv$add_rule("y", sv_regex("^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+$", 
+  slrraw_iv$add_rule("y", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+( )*$", 
                                    "Data must be numeric values seperated by a comma (ie: 2,3,4)."))
   slrraw_iv$add_rule("y", ~ if(sampleInfoRaw()$diff != 0) "x and y must have the same number of observations.")
   slrraw_iv$add_rule("y", ~ if(sampleInfoRaw()$ySD == 0) "Not enough variance in Dependent Variable.")
@@ -1295,10 +1294,14 @@ server <- function(session, input, output) {
       
       df <- getDsDataframe()
       
+      rowFilter <- input$dsTableFilters
+      
       if("Mode" %in% input$dsTableFilters && df['Mode',3] != "No mode exists."){
-        rowFilter <- c(input$dsTableFilters, "Mode Frequency")
-      } else{
-        rowFilter <- input$dsTableFilters
+        rowFilter <- c(rowFilter, "Mode Frequency")
+      } 
+      
+      if("Potential Outliers" %in% input$dsTableFilters){
+        rowFilter <- c(rowFilter, "Lower Fence", "Upper Fence", "Outlier Values")
       }
       
       filteredDf <- filter(df, rownames(df) %in% rowFilter)
@@ -1483,10 +1486,14 @@ server <- function(session, input, output) {
     
     df <- getDsDataframe()
     
+    rowFilter <- input$dsTableFilters
+    
     if("Mode" %in% input$dsTableFilters && df['Mode',3] != "No mode exists."){
-      rowFilter <- c(input$dsTableFilters, "Mode Frequency")
-    } else{
-      rowFilter <- input$dsTableFilters
+      rowFilter <- c(rowFilter, "Mode Frequency")
+    } 
+    
+    if("Potential Outliers" %in% input$dsTableFilters){
+      rowFilter <- c(rowFilter, "Lower Fence", "Upper Fence", "Outlier Values")
     }
     
     newFilter <- filter(df, rownames(df) %in% rowFilter)
