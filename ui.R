@@ -784,7 +784,7 @@
                                                                                                                                                   "rawUnknown"),
                                                                                                                               choiceNames = list("Known", 
                                                                                                                                                  "Unknown"),
-                                                                                                                              selected = "rawKnown",
+                                                                                                                              selected = "rawUnknown",
                                                                                                                               inline = TRUE), #,width = '1000px'),
                                                                                                                  
                                                                                                                  conditionalPanel( ###### " Known ----
@@ -1070,7 +1070,7 @@
                                                                                                   "bothUnknown"),
                                                                               choiceNames = list("Both Known", 
                                                                                                  "Both Unknown"),
-                                                                              selected = "bothKnown",
+                                                                              selected = "bothUnknown",
                                                                               inline = TRUE), #,width = '1000px'),
                                                                  
                                                                  conditionalPanel(
