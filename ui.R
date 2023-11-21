@@ -1314,6 +1314,15 @@
                                                                               )
                                                                ), 
                                                              ), # Dropdown for 2-sample HT
+                                                             
+                                                             conditionalPanel(
+                                                               condition = "input.popuParameters == 'Independent Population Means' && input.dataAvailability2 != 'Summarized Data'",
+                                                               
+                                                               p(strong("Graph Options")),
+                                                               checkboxInput(inputId = "indMeansBoxplot",
+                                                                             label = "Boxplot for Sample Data",
+                                                                             value = TRUE)
+                                                             ),
                                                            ), # "input.samplesSelect == '2'",
                                                            
                                                            conditionalPanel(
@@ -1339,6 +1348,7 @@
                                                                           min = 0.00001, 
                                                                           step = 0.00001),
                                                            ),
+
                                                            
                                                            actionButton(inputId = "goInference", 
                                                                         label = "Calculate",
@@ -2041,6 +2051,53 @@
                                                                                           uiOutput('indMeansHT'),
                                                                                           br()
                                                                                         ),
+                                                                                        
+                                                                                        conditionalPanel(
+                                                                                          condition = "input.dataAvailability2 != 'Summarized Data' && input.indMeansBoxplot == 1",
+                                                                                          
+                                                                                          br(),
+                                                                                          hr(),
+                                                                                          br(),
+                                                                                          titlePanel(tags$u("Boxplot")),
+                                                                                          br(),
+                                                                                          dropdown(
+                                                                                            
+                                                                                            tags$h3("Boxplot Options"),
+                                                                                            
+                                                                                            textInput(inputId = "indMeansBoxplotTitle", 
+                                                                                                      label = strong("Main title and axes labels:"), 
+                                                                                                      value = "Boxplot", 
+                                                                                                      placeholder = "main title"),
+                                                                                            
+                                                                                            textInput(inputId = "indMeansBoxplotXlab", 
+                                                                                                      label = NULL, 
+                                                                                                      value = "", 
+                                                                                                      placeholder = "x-axis label"),
+                                                                                            
+                                                                                            textInput(inputId = "indMeansBoxplotYlab", 
+                                                                                                      label = NULL, 
+                                                                                                      value = "", 
+                                                                                                      placeholder = "y-axis label"),
+                                                                                            
+                                                                                            colourpicker::colourInput(inputId = "indMeansBoxplotColour", 
+                                                                                                                      label = strong("Plot Colour"), 
+                                                                                                                      value = "#819BB6"),
+                                                                                            
+                                                                                            checkboxInput(inputId = "indMeansBoxplotFlip",
+                                                                                                          label = "Plot Boxplot Vertically",
+                                                                                                          value = FALSE),
+                                                                                            
+                                                                                            style = "jelly", icon = icon("gear"),
+                                                                                            status = "primary", width = "300px",
+                                                                                            animate = animateOptions(
+                                                                                              enter = animations$fading_entrances$fadeInDown,
+                                                                                              exit = animations$fading_exits$fadeOutUp
+                                                                                            )
+                                                                                          ),
+                                                                                          plotOutput("siIndMeansBoxplot"),
+                                                                                          br(),
+                                                                                          br()
+                                                                                        )
                                                                                         
                                                                       ), # Two Independent Samples
                                                                       

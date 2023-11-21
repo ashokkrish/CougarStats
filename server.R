@@ -6299,6 +6299,53 @@ server <- function(session, input, output) {
   })
   
   
+  output$siIndMeansBoxplot <- renderPlot({
+    
+    if(input$dataAvailability2 == 'Enter Raw Data') {
+      sample1 <- createNumLst(input$raw_sample1)
+      sample2 <- createNumLst(input$raw_sample2)
+    } else if(input$dataAvailability2 == 'Upload Data') {
+      sample1 <- na.omit(unlist(IndMeansUploadData()[,input$indMeansUplSample1]))
+      sample2 <- na.omit(unlist(IndMeansUploadData()[,input$indMeansUplSample2]))
+    }
+    
+    dat <- c(sample1, sample2)
+    df_boxplot <- data.frame(sample = c(rep("Sample 1",length(sample1)), rep("Sample 2",length(sample2))),
+                             data = c(dat))
+    df_outliers <- data.frame()
+    
+    # quartile1 <-  fivenum(dat)[2]
+    # quartile3 <-  fivenum(dat)[4]
+    # sampIQR <- round(quartile3 - quartile1, 4)
+    # lowerFence <- round(quartile1 - (1.5*sampIQR), 4)
+    # upperFence <- round(quartile3 + (1.5*sampIQR), 4)
+    # numOutliers <- sum(dat < lowerFence) + sum(dat > upperFence)
+    # 
+    # if(numOutliers == 0) {
+    #   outliers <- "There are no outliers."
+    #   df_outliers <- data.frame()
+    # } else {
+    #   outliers <- GetOutliers(dat, lowerFence, upperFence)
+    #   df_outliers <- as.data.frame(outliers)
+    # }
+    
+    bp <- RenderSideBySideBoxplot(dat,
+                                  df_boxplot,
+                                  df_outliers,
+                                  input$indMeansBoxplotColour,
+                                  input$indMeansBoxplotTitle,
+                                  input$indMeansBoxplotXlab,
+                                  input$indMeansBoxplotYLab)
+
+    if(input$indMeansBoxplotFlip == 1){
+      bp + coord_flip()
+    } else {
+      bp
+    }
+    
+  })
+  
+  
   output$sigmaKnownCIFormula <- renderUI({
     
     if (input$dataAvailability2 == 'Summarized Data') {
