@@ -1,8 +1,8 @@
-OnePropZTest <- function(X, n, p0, alternative = c("two.sided", "less", "greater"),  s_level = 0.05)
+OnePropZTest <- function(x, n, p0, alternative = c("two.sided", "less", "greater"),  s_level = 0.05)
 {
-  phat <- X/n
+  phat <- x/n
   
-  se <- sqrt(p0*(1 - p0)/n)
+  se <- sqrt((p0*(1 - p0))/n)
   
   zstat <- (phat - p0)/se
   
@@ -22,9 +22,9 @@ OnePropZTest <- function(X, n, p0, alternative = c("two.sided", "less", "greater
     z.crit <- qnorm(1 - s_level)
   }
   
-  dat <- sapply(c(X, n, phat, z.crit, se, zstat, p_value), function(x){ if(x < 0.0001 && x > 0) {signif(x,1)} else {round(x, 4)}})
+  dat <- sapply(c(x, n, phat, z.crit, se, zstat, p_value), function(x){ if(x < 0.0001 && x > 0) {signif(x,1)} else {round(x, 4)}})
   
-  names(dat) <- c("X", "n", "Sample Proportion", "Z Critical", "Std Error", "Test Statistic", "P-Value")
+  names(dat) <- c("x", "n", "phat", "Z Critical", "Std Error", "Test Statistic", "P-Value")
   
   return(dat)
 }

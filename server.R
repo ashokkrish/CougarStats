@@ -6127,31 +6127,74 @@ server <- function(session, input, output) {
   output$onePropCI <- renderUI({
     req(si_iv$is_valid() && input$numTrials >= input$numSuccesses)
     
-    oneSampPropZInt <- OnePropZInterval(input$numSuccesses, input$numTrials, ConfLvl())
+    onePropData <- OnePropZInterval(input$numSuccesses, input$numTrials, ConfLvl())
 
     p(
       withMathJax(
+        sprintf("Given:"),
+        br(),
+        sprintf("\\( n = %s \\)",
+                onePropData["n"]),
+        br(),
+        sprintf("\\( x = %s \\)",
+                onePropData["x"]),
+        br(),
+        br(),
+        br(),
+        sprintf("For a \\( %s \\)%% Confidence Interval: ",
+                ConfLvl()*100),
+        br(),
+        sprintf("\\( \\alpha = 1 - %s = %s \\)",
+                ConfLvl(),
+                1 - ConfLvl()),
+        br(),
+        sprintf("\\( z_{\\alpha/2} = z_{%s/2} = z_{%s} = %s \\)",
+                1 - ConfLvl(),
+                (1 - ConfLvl()) / 2,
+                onePropData["Z Critical"]),
+        br(),
+        br(),
+        br(),
         sprintf("\\( \\displaystyle CI = \\hat{p} \\pm \\left( z_{\\alpha/2} \\sqrt{\\dfrac{\\hat{p}(1-\\hat{p})}{n}} \\right) \\)"),
         br(),
-        br(),
-        sprintf("\\( \\displaystyle CI = %s \\pm \\left( %0.3f \\sqrt{\\dfrac{%0.3f(1-%0.3f)}{%1.0f}} \\right) \\)",
-                oneSampPropZInt["phat"],
-                oneSampPropZInt["Z Critical"],
-                oneSampPropZInt["phat"],
-                oneSampPropZInt["phat"],
-                input$numTrials),
+        p("where"),
+        sprintf("\\( \\qquad \\hat{p} = \\dfrac{x}{n} = \\dfrac{%s}{%s} = %0.4f \\)",
+                onePropData["x"],
+                onePropData["n"],
+                onePropData["phat"]),
         br(),
         br(),
-        sprintf("\\(CI = (%0.3f, %0.3f)\\)",
-                oneSampPropZInt["LCL"],
-                oneSampPropZInt["UCL"]),
+        br(),
+        sprintf("\\( \\displaystyle CI = %0.4f \\pm \\left( %s \\sqrt{\\dfrac{%0.4f(1 - %0.4f)}{%s}} \\right) \\)",
+                onePropData["phat"],
+                onePropData["Z Critical"],
+                onePropData["phat"],
+                onePropData["phat"],
+                onePropData["n"]),
+        br(),
+        br(),
+        sprintf("\\( \\displaystyle \\phantom{CI} = %0.4f \\pm \\left( %g \\cdot %0.4f \\right) \\)",
+                onePropData["phat"],
+                onePropData["Z Critical"],
+                onePropData['Std Error']),
+        br(),
+        br(),
+        sprintf("\\( \\displaystyle \\phantom{CI} = %0.4f \\pm %0.4f \\)",
+                onePropData["phat"],
+                onePropData['ME']),
+        br(),
+        br(),
+        sprintf("\\( \\displaystyle \\phantom{CI} = (%0.4f, %0.4f)\\)",
+                onePropData["LCL"],
+                onePropData["UCL"]),
+        br(),
         br(),
         br(),
         p(tags$b("Interpretation:")),
-        sprintf("We are %1.0f%% confident that the population proportion \\( (p) \\) is between \\( %g \\) and \\( %g \\).",
+        sprintf("We are %1.0f%% confident that the population proportion \\( (p) \\) is between \\( %0.4f \\) and \\( %0.4f \\).",
                 ConfLvl()*100,
-                oneSampPropZInt["LCL"],
-                oneSampPropZInt["UCL"])
+                onePropData["LCL"],
+                onePropData["UCL"])
       )
     )
   })
@@ -6161,14 +6204,14 @@ server <- function(session, input, output) {
   output$onePropHT <- renderUI({
     req(si_iv$is_valid() && input$numTrials >= input$numSuccesses)
     
-    oneSampPropZTest <- OnePropZTest(input$numSuccesses, input$numTrials, input$hypProportion, OneMeanHypInfo()$alternative, SigLvl())
+    onePropData <- OnePropZTest(input$numSuccesses, input$numTrials, input$hypProportion, OneMeanHypInfo()$alternative, SigLvl())
     
     if(input$altHypothesis == "2") { #two sided test
-      critZVal <- paste("\\pm", oneSampPropZTest["Z Critical"])
+      critZVal <- paste("\\pm", onePropData["Z Critical"])
       nullHyp <- "p ="
       altHyp <- "p \\neq"
     } else {
-      critZVal <- paste(oneSampPropZTest["Z Critical"])
+      critZVal <- paste(onePropData["Z Critical"])
       
       if(input$altHypothesis == "1"){
         nullHyp <- "p \\geq"
@@ -6179,20 +6222,20 @@ server <- function(session, input, output) {
       }
     }
     
-    if(oneSampPropZTest["P-Value"] < 0.0001) {
+    if(onePropData["P-Value"] < 0.0001) {
       pValue <- "P \\lt 0.0001"
     } else {
-      pValue <- paste("P = ", oneSampPropZTest["P-Value"])
+      pValue <- paste("P = ", onePropData["P-Value"])
     }
     
-    if(oneSampPropZTest["P-Value"] > SigLvl()) {
+    if(onePropData["P-Value"] > SigLvl()) {
       pvalSymbol <- "\\( \\gt\\)"
-      suffEvidence <- "do not provide"
+      suffEvidence <- "isn't"
       reject <- "do not reject"
       region <- "acceptance"
     } else {
       pvalSymbol <- "\\( \\leq\\)"
-      suffEvidence <- "provide"
+      suffEvidence <- "is"
       reject <- "reject"
       region <- "rejection"
     }
@@ -6214,19 +6257,39 @@ server <- function(session, input, output) {
         br(),
         br(),
         p(tags$b("Test Statistic:")),
+        sprintf("Given:"),
+        br(),
+        sprintf("\\( n = %s \\)",
+                onePropData["n"]),
+        br(),
+        sprintf("\\( x = %s \\)",
+                onePropData["x"]),
+        br(),
+        br(),
+        br(),
         sprintf("\\(z = \\dfrac{\\hat{p} - p_{0}}{ \\sqrt{ \\dfrac{p_{0}(1 - p_{0})}{n} } }\\)"),
         br(),
+        p("where"),
+        sprintf("\\( \\qquad \\hat{p} = \\dfrac{x}{n} = \\dfrac{%s}{%s} = %0.4f \\)",
+                onePropData["x"],
+                onePropData["n"],
+                onePropData["phat"]),
         br(),
-        sprintf("\\(\\phantom{z} = \\dfrac{%0.3f - %0.3f}{ \\sqrt{ \\dfrac{%0.3f(1 - %0.3f)}{%1.0f} } }\\)",
-                oneSampPropZTest["Sample Proportion"],
+        br(),
+        br(),
+        sprintf("\\(z = \\dfrac{%0.4f - %0.4f}{ \\sqrt{ \\dfrac{%0.4f(1 - %0.4f)}{%1.0f} } }\\)",
+                onePropData["phat"],
                 input$hypProportion,
                 input$hypProportion,
                 input$hypProportion,
                 input$numTrials),
+        sprintf("\\( = \\dfrac{%0.4f}{%0.4f} \\)",
+                onePropData["phat"] - input$hypProportion,
+                onePropData["Std Error"]),
         br(),
         br(),
         sprintf("\\(\\phantom{z} = %0.4f\\)",
-                oneSampPropZTest["Test Statistic"]),
+                onePropData["Test Statistic"]),
         br(),
         br(),
         br(),
@@ -6262,6 +6325,7 @@ server <- function(session, input, output) {
     tagAppendChild(propHTOutput, printHTConclusion(region, reject, suffEvidence, altHyp, input$hypProportion))
   })
   
+  
   ##### HT Plot ----
   output$onePropHTPlot <- renderPlot({
     
@@ -6273,8 +6337,8 @@ server <- function(session, input, output) {
   })
 
   
-  #### Ind Means outputs ----
   
+  #### Ind Means outputs ----
   
   ##### CI ----
   output$indMeansCI <- renderUI({
@@ -7129,12 +7193,55 @@ server <- function(session, input, output) {
     
     p(
       withMathJax(
+        sprintf("Given:"),
+        br(),
+        sprintf("\\( x_{1} = %s \\)",
+                input$numSuccesses1),
+        br(),
+        sprintf("\\( n_{1} = %s \\)",
+                input$numTrials1),
+        br(),
+        sprintf("\\( x_{2} = %s \\)",
+                input$numSuccesses2),
+        br(),
+        sprintf("\\( n_{2} = %s \\)",
+                input$numTrials2),
+        br(),
+        br(),
+        br(),
+        sprintf("For a \\( %s \\)%% Confidence Interval: ",
+                ConfLvl()*100),
+        br(),
+        sprintf("\\( \\alpha = 1 - %s = %s \\)",
+                ConfLvl(),
+                1 - ConfLvl()),
+        br(),
+        sprintf("\\( z_{\\alpha/2} = z_{%s/2} = z_{%s} = %s \\)",
+                1 - ConfLvl(),
+                (1 - ConfLvl()) / 2,
+                twoSampPropZInt["Z Critical"]),
+        br(),
+        br(),
+        br(),
         sprintf("\\( \\displaystyle CI = (\\hat{p}_{1} - \\hat{p}_{2}) \\pm \\left( z_{\\alpha/2} \\sqrt{\\dfrac{\\hat{p}_{1}(1-\\hat{p}_{1})}{n_{1}} + \\dfrac{\\hat{p}_{2}(1-\\hat{p}_{2})}{n_{2}}} \\right) \\)"),
         br(),
+        p("where"),
+        sprintf("\\( \\displaystyle \\qquad \\hat{p}_{1} = \\dfrac{x_{1}}{n_{1}} = \\dfrac{%s}{%s} = %0.4f,\\)",
+                input$numSuccesses1,
+                input$numTrials1,
+                twoSampPropZInt["Sample Proportion 1"]),
+        br(),
+        p("and"),
+        sprintf("\\( \\displaystyle \\qquad \\hat{p}_{2} = \\dfrac{x_{2}}{n_{2}} = \\dfrac{%s}{%s} = %0.4f,\\)",
+                input$numSuccesses2,
+                input$numTrials2,
+                twoSampPropZInt["Sample Proportion 2"]),
         br(),
         br(),
-        sprintf("\\( \\displaystyle CI = %s \\pm \\left( %0.3f \\sqrt{\\dfrac{%0.3f(1-%0.3f)}{%1.0f} + \\dfrac{%0.3f(1-%0.3f)}{%1.0f}} \\right) \\)",
-                twoSampPropZInt["Difference of proportions"],
+        br(),
+        sprintf("\\( \\displaystyle CI = (%0.4f - %0.4f) \\pm \\left( %s \\sqrt{\\dfrac{%0.4f(1-%0.4f)}{%1.0f} + \\dfrac{%0.4f(1-%0.4f)}{%1.0f}} \\right) \\)",
+                twoSampPropZInt["Sample Proportion 1"],
+                twoSampPropZInt["Sample Proportion 2"],
                 twoSampPropZInt["Z Critical"],
                 twoSampPropZInt["Sample Proportion 1"],
                 twoSampPropZInt["Sample Proportion 1"],
@@ -7144,25 +7251,25 @@ server <- function(session, input, output) {
                 input$numTrials2),
         br(),
         br(),
-        sprintf("\\( \\quad = %s \\pm ( %g \\cdot %g ) \\)",
+        sprintf("\\( \\phantom{CI} = %0.4f \\pm ( %s \\cdot %0.4f ) \\)",
                 twoSampPropZInt["Difference of proportions"],
                 twoSampPropZInt["Z Critical"],
                 twoSampPropZInt["Std Error"]),
         br(),
         br(),
-        sprintf("\\( \\quad = %s \\pm %g \\)",
+        sprintf("\\( \\phantom{CI} = %0.4f \\pm %0.4f \\)",
                 twoSampPropZInt["Difference of proportions"],
                 twoSampPropZInt["Margin of Error"]),
         br(),
         br(),
-        sprintf("\\( \\quad = (%0.3f, %0.3f)\\)",
+        sprintf("\\( \\phantom{CI} = (%0.4f, %0.4f)\\)",
                 twoSampPropZInt["LCL"],
                 twoSampPropZInt["UCL"]),
         br(),
         br(),
         br(),
         p(tags$b("Interpretation:")),
-        sprintf("We are %1.0f%% confident that the difference in population proportions \\( (p_{1} - p_{2}) \\) is between \\( %0.3f \\) and \\( %0.3f \\).",
+        sprintf("We are %1.0f%% confident that the difference in population proportions \\( (p_{1} - p_{2}) \\) is between \\( %0.4f \\) and \\( %0.4f \\).",
                 ConfLvl()*100,
                 twoSampPropZInt["LCL"],
                 twoSampPropZInt["UCL"])
@@ -7238,37 +7345,64 @@ server <- function(session, input, output) {
                 SigLvl()),
         br(),
         br(),
+        br(),
         p(tags$b("Test Statistic:")),
-        sprintf("\\(z = \\dfrac{ (\\hat{p}_{1} - \\hat{p}_{2}) - (p_{1} - p_{2})_{0} }{\\sqrt{\\hat{p}(1-\\hat{p})(\\dfrac{1}{n_{1}} + \\dfrac{1}{n_{2}})}}\\)"),
+        sprintf("Given:"),
+        br(),
+        sprintf("\\( x_{1} = %s \\)",
+                input$numSuccesses1),
+        br(),
+        sprintf("\\( n_{1} = %s \\)",
+                input$numTrials1),
+        br(),
+        sprintf("\\( x_{2} = %s \\)",
+                input$numSuccesses2),
+        br(),
+        sprintf("\\( n_{2} = %s \\)",
+                input$numTrials2),
+        br(),
+        br(),
+        br(),
+        sprintf("\\(z = \\dfrac{ (\\hat{p}_{1} - \\hat{p}_{2}) - (p_{1} - p_{2})_{0} }{\\sqrt{\\hat{p}(1-\\hat{p})\\left(\\dfrac{1}{n_{1}} + \\dfrac{1}{n_{2}}\\right)}}\\)"),
         br(),
         br(),
         p("where"),
         sprintf("\\( \\displaystyle \\qquad \\hat{p} = \\dfrac{x_{1} + x_{2}}{n_{1} + n_{2}} \\)"),
-        sprintf("\\( = \\dfrac{%g + %g}{%g + %g} = %g \\)",
+        sprintf("\\( = \\dfrac{%g + %g}{%g + %g} = %0.4f, \\)",
                 input$numSuccesses1,
                 input$numSuccesses2,
                 input$numTrials1,
                 input$numTrials2,
                 twoPropZTest["Pooled Proportion"]),
         br(),
+        p("and"),
+        sprintf("\\( \\displaystyle \\qquad \\hat{p}_{1} = \\dfrac{x_{1}}{n_{1}} = \\dfrac{%s}{%s} = %0.4f,\\)",
+                input$numSuccesses1,
+                input$numTrials1,
+                twoPropZTest["Sample Proportion 1"]),
+        br(),
+        p("and"),
+        sprintf("\\( \\displaystyle \\qquad \\hat{p}_{2} = \\dfrac{x_{2}}{n_{2}} = \\dfrac{%s}{%s} = %0.4f,\\)",
+                input$numSuccesses2,
+                input$numTrials2,
+                twoPropZTest["Sample Proportion 2"]),
         br(),
         br(),
-        sprintf("\\(\\phantom{z} = \\dfrac{ (%g - %g) - 0}{\\sqrt{%g(1-%g)(\\dfrac{1}{%g} + \\dfrac{1}{%g})}}\\)",
+        br(),
+        sprintf("\\( z = \\dfrac{ (%0.4f - %0.4f) - 0}{\\sqrt{%0.4f(1-%0.4f)\\left(\\dfrac{1}{%g} + \\dfrac{1}{%g}\\right)}}\\)",
                 twoPropZTest["Sample Proportion 1"],
                 twoPropZTest["Sample Proportion 2"],
                 twoPropZTest["Pooled Proportion"],
                 twoPropZTest["Pooled Proportion"],
                 input$numTrials1,
                 input$numTrials2),
-        sprintf("\\( = \\dfrac{%g}{%g} = %0.4f\\)",
+        sprintf("\\( = \\dfrac{%0.4f}{%0.4f} \\)",
                 twoPropZTest["Sample Proportion 1"] - twoPropZTest["Sample Proportion 2"],
-                twoPropZTest["Std Error"],
-                twoPropZTest["Test Statistic"]),
+                twoPropZTest["Std Error"]),
         br(),
         br(),
         sprintf("\\(\\phantom{z} = %0.4f\\)",
                 twoPropZTest["Test Statistic"]),
-        br(),
         br(),
         br(),
         br(),

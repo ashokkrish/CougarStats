@@ -12,9 +12,9 @@ OnePropZInterval <- function(x, n, c_level = 0.95)
   
   UCL_z <- phat + margin_of_error
   
-  dat <- sapply(c(x, n, phat, z.crit, se, LCL_z, UCL_z), function(x){ if(x < 0.0001 && x > 0) {signif(x,1)} else {round(x, 4)}})
+  dat <- sapply(c(x, n, phat, z.crit, se, margin_of_error, LCL_z, UCL_z), function(x){ if(x < 0.0001 && x > 0) {signif(x,1)} else {round(x, 4)}})
   
-  names(dat) <- c("x", "n", "phat", "Z Critical", "Std Error", "LCL", "UCL")
+  names(dat) <- c("x", "n", "phat", "Z Critical", "Std Error", "ME", "LCL", "UCL")
   
   return(dat)
 }
