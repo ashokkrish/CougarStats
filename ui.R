@@ -2239,36 +2239,36 @@
                                                                            #br(),
                                                                   ), 
                                                                   
-                                                                  tabPanel(id = "normality", title = "Normality of Residuals",
-                                                                           
-                                                                           #----------------------------------#
-                                                                           # Tests for normality of residuals #
-                                                                           #----------------------------------#
-                                                                           titlePanel("Anderson-Darling test"),
-                                                                           verbatimTextOutput("AndersonDarlingTest"),
-                                                                           br(),
-                                                                           
-                                                                           titlePanel("Kolmogorov-Smirnov test"),
-                                                                           verbatimTextOutput("KolmogorovSmirnovTest"),
-                                                                           br(),
-                                                                           
-                                                                           titlePanel("Shapiro-Wilk test"),
-                                                                           verbatimTextOutput("ShapiroTest"),
-                                                                           #br(),
-                                                                  ),
+                                                                  # tabPanel(id = "normality", title = "Normality of Residuals",
+                                                                  #          
+                                                                  #          #----------------------------------#
+                                                                  #          # Tests for normality of residuals #
+                                                                  #          #----------------------------------#
+                                                                  #          titlePanel("Anderson-Darling test"),
+                                                                  #          verbatimTextOutput("AndersonDarlingTest"),
+                                                                  #          br(),
+                                                                  #          
+                                                                  #          titlePanel("Kolmogorov-Smirnov test"),
+                                                                  #          verbatimTextOutput("KolmogorovSmirnovTest"),
+                                                                  #          br(),
+                                                                  #          
+                                                                  #          titlePanel("Shapiro-Wilk test"),
+                                                                  #          verbatimTextOutput("ShapiroTest"),
+                                                                  #          #br(),
+                                                                  # ),
                                                                   
-                                                                  tabPanel(id = "resid", title = "Residual Plots",
-                                                                           #-----------------------------#
-                                                                           # Plots for Residual Analysis #
-                                                                           #-----------------------------#
-                                                                           titlePanel("Q-Q plot"),
-                                                                           plotOutput("qqplot", width = "500px"),
-                                                                           #br(),
-                                                                           
-                                                                           titlePanel("Other diagnostic plots"),
-                                                                           plotOutput("moreplots", width = "500px"),
-                                                                           #br(),
-                                                                  ),
+                                                                  # tabPanel(id = "resid", title = "Residual Plots",
+                                                                  #          #-----------------------------#
+                                                                  #          # Plots for Residual Analysis #
+                                                                  #          #-----------------------------#
+                                                                  #          titlePanel("Q-Q plot"),
+                                                                  #          plotOutput("qqplot", width = "500px"),
+                                                                  #          #br(),
+                                                                  #          
+                                                                  #          titlePanel("Other diagnostic plots"),
+                                                                  #          plotOutput("moreplots", width = "500px"),
+                                                                  #          #br(),
+                                                                  # ),
                                                                   
                                                                   tabPanel(id = "correlation", title = "Correlation Analysis",
                                                                            

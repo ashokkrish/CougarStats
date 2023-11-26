@@ -7785,31 +7785,31 @@ server <- function(session, input, output) {
         #----------------------------------#
         
         # Anderson-Darling Normality Test 
-        output$AndersonDarlingTest <- renderPrint({ 
-          ad.test(model$residuals)
-        })
-          
-        # Kolmogorov-Smirnov Normality Test 
-        output$KolmogorovSmirnovTest <- renderPrint({ 
-          ks.test(model$residuals, "pnorm")
-        })
-          
-        # Shapiro-Wilk Normality Test 
-        output$ShapiroTest <- renderPrint({ 
-          shapiro.test(model$residuals) 
-        })
-          
-        # Q-Q plot for residuals
-        output$qqplot <- renderPlot({
-          #qqnorm(model$residuals, ylab = "Residuals", xlab = "Z Scores", main = "Q-Q plot of Standardized Residuals", pch = 19) #+
-          #qqline(model$residuals)
-          qqPlot(model$residuals, main = "Q-Q Plot", xlab = "Z Scores",  ylab = "Residuals", pch = 19) 
-        })
-          
-        output$moreplots <- renderPlot({
-          par(mfrow = c(2, 2))
-          plot(model, which = 1:4, pch = 19)
-        })
+        # output$AndersonDarlingTest <- renderPrint({ 
+        #   ad.test(model$residuals)
+        # })
+        #   
+        # # Kolmogorov-Smirnov Normality Test 
+        # output$KolmogorovSmirnovTest <- renderPrint({ 
+        #   ks.test(model$residuals, "pnorm")
+        # })
+        #   
+        # # Shapiro-Wilk Normality Test 
+        # output$ShapiroTest <- renderPrint({ 
+        #   shapiro.test(model$residuals) 
+        # })
+        #   
+        # # Q-Q plot for residuals
+        # output$qqplot <- renderPlot({
+        #   #qqnorm(model$residuals, ylab = "Residuals", xlab = "Z Scores", main = "Q-Q plot of Standardized Residuals", pch = 19) #+
+        #   #qqline(model$residuals)
+        #   qqPlot(model$residuals, main = "Q-Q Plot", xlab = "Z Scores",  ylab = "Residuals", pch = 19) 
+        # })
+        #   
+        # output$moreplots <- renderPlot({
+        #   par(mfrow = c(2, 2))
+        #   plot(model, which = 1:4, pch = 19)
+        # })
           
           
         req(length(datx) > 1) ## correlation coefficient ----
