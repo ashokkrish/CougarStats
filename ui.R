@@ -1320,7 +1320,7 @@
                                                                
                                                                p(strong("Graph Options")),
                                                                checkboxInput(inputId = "indMeansBoxplot",
-                                                                             label = "Boxplot for Sample Data",
+                                                                             label = "Side-by-side Boxplot for Sample Data",
                                                                              value = TRUE)
                                                              ),
                                                            ), # "input.samplesSelect == '2'",
