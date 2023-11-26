@@ -1627,6 +1627,10 @@
                                                                                                        label = strong("Plot Colour"), 
                                                                                                        value = "#819BB6"),
                                                                              
+                                                                             checkboxInput(inputId = "dsBoxplotFlip",
+                                                                                           label = "Plot Boxplot Vertically",
+                                                                                           value = FALSE),
+                                                                             
                                                                              style = "jelly", icon = icon("gear"),
                                                                              status = "primary", width = "300px",
                                                                              animate = animateOptions(

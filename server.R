@@ -1429,7 +1429,13 @@ server <- function(session, input, output) {
                             input$dsBoxplotXlab,
                             input$dsBboxplotYlab)
 
-        bp
+        if(input$dsBoxplotFlip == 1){
+          bp + coord_flip() +
+            theme(axis.text.x.bottom = element_blank(),
+                  axis.text.y.left = element_text(size = 16))
+        } else {
+          bp
+        }
 
       })
       
