@@ -1988,6 +1988,10 @@
                                                                                                                       label = strong("Plot Colour"), 
                                                                                                                       value = "#819BB6"),
                                                                                             
+                                                                                            checkboxInput(inputId = "oneMeanBoxplotFlip",
+                                                                                                          label = "Plot Boxplot Vertically",
+                                                                                                          value = FALSE),
+                                                                                            
                                                                                             style = "jelly", icon = icon("gear"),
                                                                                             status = "primary", width = "300px",
                                                                                             animate = animateOptions(
@@ -2066,7 +2070,7 @@
                                                                                             
                                                                                             textInput(inputId = "indMeansBoxplotTitle", 
                                                                                                       label = strong("Main title and axes labels:"), 
-                                                                                                      value = "Boxplot", 
+                                                                                                      value = "Side-by-side Boxplot", 
                                                                                                       placeholder = "main title"),
                                                                                             
                                                                                             textInput(inputId = "indMeansBoxplotXlab", 

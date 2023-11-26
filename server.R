@@ -4282,6 +4282,27 @@ server <- function(session, input, output) {
   # --------------------------------------------------------------------- #
   
   #### One Mean Functions ----
+  
+  printHTConclusion <- function(region, reject, suffEvidence, altHyp, altHypValue) {
+    conclusion <- tagList(
+      withMathJax(),
+      p(tags$b("Conclusion:")),
+      sprintf("At \\( \\alpha = %s \\), since the test statistic falls in the %s region we %s \\(
+               H_{0}\\) and conclude that there %s enough statistical evidence to support that \\(%s %s\\).",
+              SigLvl(),
+              region,
+              reject,
+              suffEvidence,
+              altHyp,
+              altHypValue),
+      br(),
+      br()
+    )
+    
+    return(conclusion)
+  }
+  
+  
   printOneMeanCI <- function() {
     
     oneMeanData <- GetOneMeanCI()
@@ -4544,25 +4565,25 @@ server <- function(session, input, output) {
     if(oneMeanData[7] > SigLvl())
     {
       pvalSymbol <- "\\gt"
-      suffEvidence <- "do not provide"
+      suffEvidence <- "isn't"
       reject <- "do not reject"
       region <- "acceptance"
     }
     else
     {
       pvalSymbol <- "\\leq"
-      suffEvidence <- "provide"
+      suffEvidence <- "is"
       reject <- "reject"
       region <- "rejection"
     }
     
     oneMeanHTOutput <- tagList(
       withMathJax(),
-      sprintf("\\( H_{0}: \n \\mu %s %s\\)",
+      sprintf("\\( H_{0}: %s %s\\)",
               intrpInfo$nullHyp,
               input$hypMean),
       br(),
-      sprintf("\\( H_{a}: \\mu %s %s\\)",
+      sprintf("\\( H_{a}: %s %s\\)",
               intrpInfo$altHyp,
               input$hypMean),
       br(),
@@ -4578,7 +4599,7 @@ server <- function(session, input, output) {
     formulaOutput <- printOneMeanHTFormula(sdSymbol, testStat)
     pvalOutput <- printOneMeanHTPVal(pvalSymbol, reject)
     cvOutput <- printOneMeanHTCV(testStat, reject, region)
-    conclusionOutput <- printOneMeanHTConclusion(suffEvidence)
+    conclusionOutput <- printHTConclusion(region, reject, suffEvidence, OneMeanHypInfo()$altHyp, input$hypMean)
     
     tagAppendChildren(oneMeanHTOutput, givenOutput, formulaOutput, pvalOutput, cvOutput, conclusionOutput)
   }
@@ -5115,24 +5136,24 @@ server <- function(session, input, output) {
     
     if(input$altHypothesis == "3"){
       hypTestSymbols$alternative <- "greater"
-      hypTestSymbols$nullHyp <- "\\leq"
-      hypTestSymbols$altHyp <- "\\gt"
+      hypTestSymbols$nullHyp <- "\\mu \\leq"
+      hypTestSymbols$altHyp <- "\\mu \\gt"
       hypTestSymbols$critAlph <- "\\alpha"
       hypTestSymbols$critSign <- ""
       hypTestSymbols$alphaVal <- SigLvl()
     }
     else if(input$altHypothesis == "2"){
       hypTestSymbols$alternative <- "two.sided"
-      hypTestSymbols$nullHyp <- "="
-      hypTestSymbols$altHyp <- "\\neq"
+      hypTestSymbols$nullHyp <- "\\mu ="
+      hypTestSymbols$altHyp <- "\\mu \\neq"
       hypTestSymbols$critAlph <- "\\alpha/2"
       hypTestSymbols$critSign <- "\\pm"
       hypTestSymbols$alphaVal <- SigLvl()/2
     }
     else{
       hypTestSymbols$alternative <- "less"
-      hypTestSymbols$nullHyp <- "\\geq"
-      hypTestSymbols$altHyp <- "\\lt"
+      hypTestSymbols$nullHyp <- "\\mu \\geq"
+      hypTestSymbols$altHyp <- "\\mu \\lt"
       hypTestSymbols$critAlph <- "\\alpha"
       hypTestSymbols$critSign <- "-"
       hypTestSymbols$alphaVal <- SigLvl()
@@ -5461,24 +5482,24 @@ server <- function(session, input, output) {
     
     if(input$altHypothesis2 == "3"){
       hypTestSymbols$alternative <- "greater"
-      hypTestSymbols$nullHyp <- "\\leq"
-      hypTestSymbols$altHyp <- "\\gt"
+      hypTestSymbols$nullHyp <- "\\mu_{1} \\leq"
+      hypTestSymbols$altHyp <- "\\mu_{1} \\gt"
       hypTestSymbols$critAlph <- "\\alpha"
       hypTestSymbols$critSign <- ""
       hypTestSymbols$alphaVal <- SigLvl()
     }
     else if(input$altHypothesis2 == "2"){
       hypTestSymbols$alternative <- "two.sided"
-      hypTestSymbols$nullHyp <- "="
-      hypTestSymbols$altHyp <- "\\neq"
+      hypTestSymbols$nullHyp <- "\\mu_{1} ="
+      hypTestSymbols$altHyp <- "\\mu_{1} \\neq"
       hypTestSymbols$critAlph <- "\\alpha/2"
       hypTestSymbols$critSign <- "\\pm"
       hypTestSymbols$alphaVal <- SigLvl()/2
     }
     else{
       hypTestSymbols$alternative <- "less"
-      hypTestSymbols$nullHyp <- "\\geq"
-      hypTestSymbols$altHyp <- "\\lt"
+      hypTestSymbols$nullHyp <- "\\mu_{1} \\geq"
+      hypTestSymbols$altHyp <- "\\mu_{1} \\lt"
       hypTestSymbols$critAlph <- "\\alpha"
       hypTestSymbols$critSign <- "-"
       hypTestSymbols$alphaVal <- SigLvl()
@@ -6089,7 +6110,13 @@ server <- function(session, input, output) {
                       input$oneMeanBoxplotXlab,
                       input$oneMeanBoxplotYLab)
     
-    bp
+    if(input$oneMeanBoxplotFlip == 1){
+      bp + coord_flip() +
+           theme(axis.text.x.bottom = element_blank(),
+                 axis.text.y.left = element_text(size = 16))
+    } else {
+      bp
+    }
   })
   
   
@@ -6136,10 +6163,20 @@ server <- function(session, input, output) {
     
     oneSampPropZTest <- OnePropZTest(input$numSuccesses, input$numTrials, input$hypProportion, OneMeanHypInfo()$alternative, SigLvl())
     
-    if(OneMeanHypInfo()$alternative == "two.sided") {
+    if(input$altHypothesis == "2") { #two sided test
       critZVal <- paste("\\pm", oneSampPropZTest["Z Critical"])
+      nullHyp <- "p ="
+      altHyp <- "p \\neq"
     } else {
       critZVal <- paste(oneSampPropZTest["Z Critical"])
+      
+      if(input$altHypothesis == "1"){
+        nullHyp <- "p \\geq"
+        altHyp <- "p \\lt"
+      } else {
+        nullHyp <- "p \\leq"
+        altHyp <- "p \\gt"
+      }
     }
     
     if(oneSampPropZTest["P-Value"] < 0.0001) {
@@ -6160,14 +6197,14 @@ server <- function(session, input, output) {
       region <- "rejection"
     }
     
-    p(
+    propHTOutput <- tagList(
       withMathJax(
-        sprintf("\\( H_{0}: p %s %g\\)",
-                OneMeanHypInfo()$nullHyp,
+        sprintf("\\( H_{0}: %s %g\\)",
+                nullHyp,
                 input$hypProportion),
         br(),
-        sprintf("\\( H_{a}: p %s %g\\)",
-                OneMeanHypInfo()$altHyp,
+        sprintf("\\( H_{a}: %s %g\\)",
+                altHyp,
                 input$hypProportion),
         br(),
         br(),
@@ -6218,17 +6255,11 @@ server <- function(session, input, output) {
         br(),
         br(),
         plotOutput('onePropHTPlot', width = "75%", height = "300px"),
-        br(),
-        p(tags$b("Conclusion:")),
-        sprintf("At the %1.0f%% level, the data %s sufficient evidence to reject the null hypothesis \\( (H_{0}) \\) that the population 
-                              proportion \\( (p) \\) \\( %s %g \\).",
-                SigLvl()*100,
-                suffEvidence,
-                OneMeanHypInfo()$nullHyp,
-                input$hypProportion),
         br()
       )
     )
+      
+    tagAppendChild(propHTOutput, printHTConclusion(region, reject, suffEvidence, altHyp, input$hypProportion))
   })
   
   ##### HT Plot ----
@@ -6568,14 +6599,14 @@ server <- function(session, input, output) {
     if(hTest["P-Value"] > SigLvl())
     {
       pvalSymbol <- "\\gt"
-      suffEvidence <- "do not provide"
+      suffEvidence <- "isn't"
       reject <- "do not reject"
       region <- "acceptance"
     }
     else
     {
       pvalSymbol <- "\\leq"
-      suffEvidence <- "provide"
+      suffEvidence <- "is"
       reject <- "reject"
       region <- "rejection"
     }
@@ -6587,15 +6618,15 @@ server <- function(session, input, output) {
       critVal <- hTest[2]
     }
     
-    tagList(
+    indHTOutput <- tagList(
       
       p(
         withMathJax(
           #h4(tags$u("Performing the Hypothesis Test:")),
           #br(),
-          sprintf("\\( H_{0}: \n \\mu_{1} = \\mu_{2}\\)"),
+          sprintf("\\( H_{0}: \\mu_{1} = \\mu_{2}\\)"),
           br(),
-          sprintf("\\( H_{a}: \\mu_{1} %s \\mu_{2}\\)",
+          sprintf("\\( H_{a}: %s \\mu_{2}\\)",
                   intrpInfo$altHyp),
           br(),
           br(),
@@ -6685,18 +6716,9 @@ server <- function(session, input, output) {
       
       plotOutput('indMeansHTPlot', width = "75%", height = "300px"),
       br(),
-      
-      withMathJax(
-        p(tags$b("Conclusion:")),
-        p(
-          sprintf("At the %1.0f%% significance level, the data %s sufficient evidence to reject the null hypothesis
-                                \\( (H_{0}) \\) that \\( \\mu_{1} = \\mu_{2} \\).",
-                  SigLvl()*100,
-                  suffEvidence),
-          br(),
-        )
-      )
     )
+    
+    tagAppendChild(indHTOutput, printHTConclusion(region, reject, suffEvidence, intrpInfo$altHyp, "\\mu_{2}"))
   })
   
   
@@ -6962,31 +6984,44 @@ server <- function(session, input, output) {
       
       if(tTest["P-Value"] > SigLvl()) {
         pvalSymbol <- "\\gt"
-        suffEvidence <- "do not provide"
+        suffEvidence <- "isn't"
         reject <- "do not reject"
         region <- "acceptance"
       } else {
         pvalSymbol <- "\\leq"
-        suffEvidence <- "provide"
+        suffEvidence <- "is"
         reject <- "reject"
         region <- "rejection"
       }
       
-      if(intrpInfo$alternative == "two.sided") {
+      if(input$altHypothesis2 == "2")
+      {
         critVal <- paste("\\pm", tTest["T Critical"])
-      } else {
+        nullHyp <- "\\mu_{d} ="
+        altHyp <- "\\mu_{d} \\neq"
+      }
+      else
+      {
         critVal <- tTest["T Critical"]
+        
+        if(input$altHypothesis2 == "1"){
+          nullHyp <- "\\mu_{d} \\geq"
+          altHyp <- "\\mu_{d} \\lt"
+        } else {
+          nullHyp <- "\\mu_{d} \\leq"
+          altHyp <- "\\mu_{d} \\gt"
+        }
       }
       
-      tagList(
+      depHTOutput <- tagList(
         p(
           withMathJax(),
           
-          sprintf("\\( H_{0}: \n \\mu_{d} %s 0\\)",
-                  intrpInfo$nullHyp),
+          sprintf("\\( H_{0}: %s 0\\)",
+                  nullHyp),
           br(),
-          sprintf("\\( H_{a}: \\mu_{d} %s 0\\)",
-                  intrpInfo$altHyp),
+          sprintf("\\( H_{a}: %s 0\\)",
+                  altHyp),
           br(),
           br(),
           sprintf("\\( \\alpha = %s \\)",
@@ -7061,21 +7096,10 @@ server <- function(session, input, output) {
         ),
         
         plotOutput('depMeansHTPlot', width = "75%", height = "300px"),
-        br(),
-        
-        withMathJax(
-          p(tags$b("Conclusion:")),
-          p(
-            sprintf("At the \\( %1.0f \\)%% significance level, the data %s sufficient evidence to reject the null hypothesis \\( (H_{0}) \\) that the population 
-                                mean difference \\( (\\mu_{d}) \\) \\( %s 0\\).",
-                    SigLvl()*100,
-                    suffEvidence,
-                    intrpInfo$nullHyp),
-            br(),
-            br()
-          )
-        )
+        br()
       )
+      
+      tagAppendChild(depHTOutput, printHTConclusion(region, reject, suffEvidence, altHyp, 0))
   })
   
   ##### HT Plot ----
@@ -7162,15 +7186,26 @@ server <- function(session, input, output) {
       pValue <- paste("P = ", twoPropZTest["P-Value"])
     }
     
-    if(IndMeansHypInfo()$alternative == "two.sided")
+    
+    if(input$altHypothesis2 == "2")
     {
       critZVal <- paste("\\pm", twoPropZTest["Z Critical"])
       htPlotCritVals <- c(-twoPropZTest["Z Critical"], twoPropZTest["Z Critical"])
+      nullHyp <- "p_{1} ="
+      altHyp <- "p_{1} \\neq"
     }
     else
     {
       critZVal <- paste(twoPropZTest["Z Critical"])
       htPlotCritVals <- twoPropZTest["Z Critical"]
+      
+      if(input$altHypothesis2 == "1"){
+        nullHyp <- "p_{1} \\geq"
+        altHyp <- "p_{1} \\lt"
+      } else {
+        nullHyp <- "p_{1} \\leq"
+        altHyp <- "p_{1} \\gt"
+      }
     }
     
     propDiff <- twoPropZTest["Sample Proportion 1"] - twoPropZTest["Sample Proportion 2"]
@@ -7178,25 +7213,25 @@ server <- function(session, input, output) {
     if(twoPropZTest["P-Value"] > SigLvl())
     {
       pvalSymbol <- "\\gt"
-      suffEvidence <- "do not provide"
+      suffEvidence <- "isn't"
       reject <- "do not reject"
       region <- "acceptance"
     }
     else
     {
       pvalSymbol <- "\\leq"
-      suffEvidence <- "provide"
+      suffEvidence <- "is"
       reject <- "reject"
       region <- "rejection"
     }
     
-    p(
+    twoPropHTOutput <- tagList(
       withMathJax(
-        sprintf("\\( H_{0}: p_{1} %s p_{2}\\)",
-                IndMeansHypInfo()$nullHyp),
+        sprintf("\\( H_{0}: %s p_{2}\\)",
+                nullHyp),
         br(),
-        sprintf("\\( H_{a}: p_{1} %s p_{2}\\)",
-                IndMeansHypInfo()$altHyp),
+        sprintf("\\( H_{a}: %s p_{2}\\)",
+                altHyp),
         br(),
         br(),
         sprintf("\\( \\alpha = %g \\)",
@@ -7263,16 +7298,11 @@ server <- function(session, input, output) {
         br(),
         br(),
         plotOutput('twoPropHTPlot'),
-        br(),
-        p(tags$b("Conclusion:")),
-        sprintf("At the %1.0f%% significance level, the data %s sufficient evidence to reject the null hypothesis \\( (H_{0}) \\) that the population 
-                              proportion \\( p_{1} %s p_{2}\\).",
-                SigLvl()*100,
-                suffEvidence,
-                IndMeansHypInfo()$nullHyp),
         br()
       )
     )
+  
+    tagAppendChild(twoPropHTOutput, printHTConclusion(region, reject, suffEvidence, altHyp, "p_{2}"))
   })
   
   
