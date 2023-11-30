@@ -43,14 +43,11 @@ More information on Docker can be found <a href="https://www.docker.com/get-star
 - Calculate the marginal, joint, union, and conditional probabilities for a contingency table (2x2, 2x3, 3x2, and 3x3 tables)
 - Calculate exact and cumulative probabilities for Binomial and Poisson distributions
 - Calculate cumulative probability for Normal distribution
-- Confidence interval for one population mean
-- Hypothesis test about one population mean
-- Confidence interval for difference between two population means (independent samples)
-- Hypothesis test about the difference between two population means (independent samples)
-- Confidence interval for the population mean difference of paired populations (dependent samples) 
-- Hypothesis test for the population mean difference of paired populations (dependent samples)
-- Confidence interval for difference between two population proportions
-- Hypothesis test about the difference between two population proportions   
+- Confidence interval and Hypothesis test for one population mean
+- Confidence interval and Hypothesis test for the difference between two population means (independent samples)
+- Confidence interval and Hypothesis test for the population mean difference of paired populations (dependent samples)
+- Confidence interval and Hypothesis test for one population proportion
+- Confidence interval and Hypothesis test for difference between two population proportions 
 - Simple Linear Regression and Pearson Correlation Coefficient
 
 <br>
