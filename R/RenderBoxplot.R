@@ -10,7 +10,7 @@ RenderBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, p
     geom_text(data = filter(df_boxplot, x %in% df_outliers),
               aes(x = x, y = 0, label = x),
               size = 15 / .pt,
-              vjust = -1.25) +
+              vjust = -1) +
     labs(title = plotTitle,
          x = plotXLab,
          y = plotYLab) +
@@ -27,7 +27,7 @@ RenderBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, p
   if(length(unique(dat)) == 1) {
     bp <- bp + scale_x_continuous(breaks = dat, limits = c(dat[1] - 1, dat[1] + 1))
   } else {
-    bp <- bp + scale_x_continuous(n.breaks = 8)
+    bp <- bp + scale_x_continuous(breaks = waiver(), n.breaks = 8, expand = expansion(mult = 0.15))
   }
   
   return(bp) 
