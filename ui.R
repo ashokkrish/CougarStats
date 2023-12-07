@@ -740,8 +740,8 @@
                                                            
                                                            radioButtons(inputId = "samplesSelect",
                                                                         label = strong("Number of samples"),
-                                                                        choiceValues = list("1", "2", "n"),
-                                                                        choiceNames = list("1", "2", "Sample Size Estimation (\\( n \\))"),
+                                                                        choiceValues = list("1", "2"),
+                                                                        choiceNames = list("1", "2"),
                                                                         selected = "1", #character(0), #
                                                                         inline = TRUE), #,width = '1000px'),
                                                            
