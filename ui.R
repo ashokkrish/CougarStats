@@ -56,7 +56,8 @@
                                             label = strong("Choose Statistical Topic"),
                                             choices = c("", 
                                                         "Descriptive Statistics", 
-                                                        "Probability Distributions", 
+                                                        "Probability Distributions",
+                                                        "Sample Size Estimation",
                                                         "Statistical Inference", 
                                                         "Regression and Correlation"),
                                             options = list(
@@ -668,6 +669,67 @@
                                                                             
                                                            )
                                           ), #ProbPanel
+                                          
+                                          
+                                          #   --------------------------------------- #  
+                                          ### --- Sample Size Estimation sidebar ---- 
+                                          #   --------------------------------------- #
+                                          conditionalPanel(id = "sampSizeEstPanel",
+                                                           condition = "input.dropDownMenu == 'Sample Size Estimation'",
+                                                           style = "display: none;",
+                                                           
+                                                           radioButtons(inputId = "sampSizeEstParameter",
+                                                                        label = strong("Parameter of Interest"),
+                                                                        choiceValues = list("Population Mean", 
+                                                                                            "Population Proportion"),
+                                                                        choiceNames = list("Population Mean (\\( \\mu \\)) ", 
+                                                                                           "Population Proportion (\\( p\\))"),
+                                                                        selected = "Population Mean", #character(0), #
+                                                                        inline = TRUE), #,width = '1000px'),
+                                                           
+                                                           radioButtons(inputId = "confLeveln",
+                                                                        label = strong("Confidence Level (\\( 1- \\alpha\\))"),
+                                                                        choices = c("90%", 
+                                                                                    "95%",
+                                                                                    "99%"),
+                                                                        selected = c("95%"),
+                                                                        inline = TRUE),
+                                                           
+                                                           conditionalPanel(
+                                                             condition = "input.sampSizeEstParameter == 'Population Mean'",
+                                                             
+                                                             numericInput(inputId = "popuSDSampSizeEst",
+                                                                          label = strong("Population Standard Deviation (\\( \\sigma\\))"),
+                                                                          value = "12", 
+                                                                          min = 0.00001, 
+                                                                          step = 0.00001)
+                                                           ),
+                                                           
+                                                           conditionalPanel(
+                                                             condition = "input.sampSizeEstParameter == 'Population Proportion'",
+                                                             
+                                                             numericInput(inputId = "targetPropSampSizeEst",
+                                                                          label = strong("Target Proportion (\\( \\hat{p} \\))"),
+                                                                          value = "0.5", 
+                                                                          min = 0.00001, 
+                                                                          step = 0.01)
+                                                           ),
+                                                           
+                                                           numericInput(inputId = "margErrSampSizeEst",
+                                                                        label = strong("Margin of Error (\\( E\\))"),
+                                                                        value = "8", 
+                                                                        min = 0.00001, 
+                                                                        step = 0.00001),
+                                                           
+                                                           actionButton(inputId = "goSampSizeEst", 
+                                                                        label = "Calculate",
+                                                                        style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
+                                                           actionButton(inputId = "resetSampSizeEst", 
+                                                                        label = "Reset Values",
+                                                                        style="color: #fff; background-color: #337ab7; border-color: #2e6da4")
+                                          ),
+                                          
+                                          
                                           
                                           #   --------------------------------------- #  
                                           ### ---- Statistical Inference sidebar ---- 
@@ -1324,30 +1386,6 @@
                                                                              value = TRUE)
                                                              ),
                                                            ), # "input.samplesSelect == '2'",
-                                                           
-                                                           conditionalPanel(
-                                                             condition = "input.samplesSelect == 'n'",
-                                                             
-                                                             radioButtons(inputId = "confLeveln",
-                                                                          label = strong("Confidence Level (\\( 1- \\alpha\\))"),
-                                                                          choices = c("90%", 
-                                                                                      "95%",
-                                                                                      "99%"),
-                                                                          selected = c("95%"),
-                                                                          inline = TRUE),
-                                                             
-                                                             numericInput(inputId = "popuSDSampSizeEst",
-                                                                          label = strong("Population Standard Deviation (\\( \\sigma\\))"),
-                                                                          value = "12", 
-                                                                          min = 0.00001, 
-                                                                          step = 0.00001),
-                                                             
-                                                             numericInput(inputId = "margErrSampSizeEst",
-                                                                          label = strong("Margin of Error (\\( E\\))"),
-                                                                          value = "8", 
-                                                                          min = 0.00001, 
-                                                                          step = 0.00001),
-                                                           ),
 
                                                            
                                                            actionButton(inputId = "goInference", 
@@ -1924,6 +1962,41 @@
                                               )
                                           ), #Probability MainPanel 
                                           
+                                          
+                                          #   ------------------------------------ #  
+                                          ### --- Sample Size Estimation main ---- 
+                                          #   ------------------------------------ #
+                                          div(id = "ssEstimationMP",
+                                            conditionalPanel(
+                                              condition = "input.dropDownMenu == 'Sample Size Estimation'",
+                                              style = "display: none;",
+                                              
+                                              uiOutput("ssEstimationValidation"),
+                                              
+                                              div(id = "ssEstimationData",
+                                              
+                                                conditionalPanel( #### Samp Size Mean Est ----
+                                                                 condition = "input.sampSizeEstParameter == 'Population Mean'",
+                                                                
+                                                                 titlePanel(tags$u("Sample Size Estimate (\\( n \\))")),
+                                                                 br(),
+                                                                 uiOutput('sampSizeMeanEstimate'),
+                                                                 br(),
+                                                ),
+                                              
+                                                conditionalPanel( #### Samp Size Prop Est ----
+                                                                 condition = "input.sampSizeEstParameter == 'Population Proportion'",
+                                                                
+                                                                 titlePanel(tags$u("Sample Size Estimate (\\( n \\))")),
+                                                                 br(),
+                                                                 uiOutput('sampSizePropEstimate'),
+                                                                 br(),
+                                                ),
+                                              )
+                                            )
+                                          ),
+                                          
+                                          
                                           #   ------------------------------------ #  
                                           ### ---- Statistical Inference main ---- 
                                           #   ------------------------------------ #
@@ -2178,15 +2251,6 @@
                                                                                         
                                                                       ), # Two Population Proportions
                                                     ), # "input.samplesSelect == '2'"
-                                                    
-                                                    conditionalPanel( #### Samp Size Est ----
-                                                      condition = "input.samplesSelect == 'n'",
-                                                      
-                                                      titlePanel(tags$u("Sample Size Estimate (\\( n \\))")),
-                                                      br(),
-                                                      uiOutput('sampSizeEstimate'),
-                                                      br(),
-                                                    ),
                                                 ) # input.dropDownMenu == 'Statistical Inference'
                                               )
                                           ), # inferenceMP

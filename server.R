@@ -45,6 +45,10 @@ server <- function(session, input, output) {
   sampdistrsize_iv <- InputValidator$new()
   percentile_iv <- InputValidator$new()
   
+  sse_iv <- InputValidator$new()
+  ssemean_iv <- InputValidator$new()
+  sseprop_iv <- InputValidator$new()
+  
   si_iv <- InputValidator$new()
   onemean_iv <- InputValidator$new()
   onemeansdknown_iv <- InputValidator$new()
@@ -70,7 +74,6 @@ server <- function(session, input, output) {
   oneprop_iv <- InputValidator$new()
   onepropht_iv <- InputValidator$new()
   twoprop_iv <- InputValidator$new()
-  sampsizeest_iv <- InputValidator$new()
   
   regcor_iv <- InputValidator$new()
   slrraw_iv <- InputValidator$new()
@@ -469,6 +472,56 @@ server <- function(session, input, output) {
   sampdistrsize_iv$enable()
   percentile_iv$enable()
   
+  
+  #---------------- #
+  ## SSE rules ----
+  #---------------- #
+  
+  # popuSD
+  
+  ssemean_iv$add_rule("popuSDSampSizeEst", sv_required())
+  ssemean_iv$add_rule("popuSDSampSizeEst", sv_gt(0))
+  
+  # targetProp
+  
+  sseprop_iv$add_rule("targetPropSampSizeEst", sv_required())
+  sseprop_iv$add_rule("targetPropSampSizeEst", sv_gte(0))
+  sseprop_iv$add_rule("targetPropSampSizeEst", sv_lte(1))
+  
+  # margErr
+  
+  sse_iv$add_rule("margErrSampSizeEst", sv_required())
+  sse_iv$add_rule("margErrSampSizeEst", sv_gt(0))
+  
+  
+  # ------------------ #
+  #     Conditions     #
+  # ------------------ #
+  
+  ssemean_iv$condition( ~ isTRUE(input$dropDownMenu == 'Sample Size Estimation' &&
+                                 input$sampSizeEstParameter == 'Population Mean'))
+  sseprop_iv$condition( ~ isTRUE(input$dropDownMenu == 'Sample Size Estimation' && 
+                                 input$sampSizeEstParameter == 'Population Proportion'))
+  
+  
+  # ------------------ #
+  #     Dependency     #
+  # ------------------ #
+  
+  sse_iv$add_validator(ssemean_iv)
+  sse_iv$add_validator(sseprop_iv)
+  
+  
+  # ------------------ #
+  #     Activation     #
+  # ------------------ #
+  
+  sse_iv$enable()
+  ssemean_iv$enable()
+  sseprop_iv$enable()
+  
+  
+  
   #--------------- #
   ## SI rules ----
   #--------------- #
@@ -675,14 +728,6 @@ server <- function(session, input, output) {
   onepropht_iv$add_rule("hypProportion", sv_gt(0))
   onepropht_iv$add_rule("hypProportion", sv_lt(1))
   
-  # Sample Size Estimation
-  
-  sampsizeest_iv$add_rule("popuSDSampSizeEst", sv_required())
-  sampsizeest_iv$add_rule("popuSDSampSizeEst", sv_gt(0))
-  
-  sampsizeest_iv$add_rule("margErrSampSizeEst", sv_required())
-  sampsizeest_iv$add_rule("margErrSampSizeEst", sv_gt(0))
-  
   
   # ------------------ #
   #     Conditions     #
@@ -795,9 +840,7 @@ server <- function(session, input, output) {
   
   twoprop_iv$condition(~ isTRUE(input$samplesSelect == '2' && 
                                 input$popuParameters == 'Population Proportions'))
-  
-  sampsizeest_iv$condition( ~ isTRUE(input$samplesSelect == 'n'))
-  
+
   
   # ------------------ #
   #     Dependency     #
@@ -825,7 +868,6 @@ server <- function(session, input, output) {
   si_iv$add_validator(oneprop_iv)
   si_iv$add_validator(onepropht_iv)
   si_iv$add_validator(twoprop_iv)
-  si_iv$add_validator(sampsizeest_iv)
   
   
   # ------------------ #
@@ -856,7 +898,6 @@ server <- function(session, input, output) {
   oneprop_iv$enable()
   onepropht_iv$enable()
   twoprop_iv$enable()
-  sampsizeest_iv$enable()
   
   
   ## RC rules ---- 
@@ -4271,7 +4312,168 @@ server <- function(session, input, output) {
   })
   
   
-
+  # --------------------------------------------------------------------- #
+  
+  
+# **************************************************************************** #
+  
+  
+  #  -------------------------------------------------------------------- #
+  ## ---------------- Sample Size Estimation functions ------------------
+  #  -------------------------------------------------------------------- #
+  
+  
+  ### Non-Reactive Functions ----
+  # --------------------------------------------------------------------- #
+  
+  getSampSizeEstMean <- function(critVal, popuSD, margErr) {
+    
+    n <- ((critVal * popuSD) / margErr) ^ 2
+    
+    return(n)
+  }
+  
+  
+  getSampSizeEstProp <- function(critVal, phat, margErr) {
+    
+    n <- phat * (1 - phat) * (critVal / margErr)^2
+    
+    return(n)
+  }
+  
+  ### Outputs ----
+  # --------------------------------------------------------------------- #
+  
+  
+  #### Validation ----
+  
+  # Sample Size Estimation Validation 
+  # ------------------------------------------------------------------------ #
+  
+  output$ssEstimationValidation <- renderUI({
+      
+    if(!sse_iv$is_valid()){
+      
+      if(!ssemean_iv$is_valid()){
+        
+        validate(
+          need(input$popuSDSampSizeEst && input$popuSDSampSizeEst > 0, "Population Standard Deviation must be positive."),
+          need(input$margErrSampSizeEst && input$margErrSampSizeEst > 0, "Margin of Error must be positive."),
+          
+          errorClass = "myClass"
+        )
+      }else if(!sseprop_iv$is_valid()){
+        
+        validate(
+          need(input$targetPropSampSizeEst, "Target Proportion must be between 0 and 1.") %then%
+            need(input$targetPropSampSizeEst >= 0 && input$targetPropSampSizeEst <= 1, "Target Proportion must be between 0 and 1."),
+          need(input$margErrSampSizeEst && input$margErrSampSizeEst > 0, "Margin of Error must be positive."),
+          
+          errorClass = "myClass"
+        )
+      } else {
+        
+        validate(
+          need(input$margErrSampSizeEst && input$margErrSampSizeEst > 0, "Margin of Error must be positive."),
+          
+          errorClass = "myClass"
+        )
+      }
+    }
+    
+  })
+  
+  
+  #### Sample Size Est Mean output ----
+  output$sampSizeMeanEstimate <- renderUI({
+    
+    n <- getSampSizeEstMean(criticalValue(), input$popuSDSampSizeEst, input$margErrSampSizeEst)
+    nEstimate <- ceiling(n)
+    
+    
+    tagList(
+      withMathJax(),
+      br(),
+      br(),
+      sprintf("\\( n = \\left( \\dfrac{Z_{\\alpha / 2} \\: \\sigma}{E} \\right)^{2} \\)"),
+      sprintf("\\( = \\left( \\dfrac{ (%s)(%s) }{%s} \\right)^{2} \\)",
+              criticalValue(),
+              input$popuSDSampSizeEst,
+              input$margErrSampSizeEst),
+      sprintf("\\( = %0.4f \\)",
+              n),
+      br(),
+      br(),
+      sprintf("\\( n \\approx %1.0f \\)",
+              nEstimate),
+      br(),
+      br(),
+      br(),
+      sprintf("The recommended sample size (\\( n \\)) is \\(%1.0f\\) for a \\( %s \\)%% confidence 
+              level with a population standard deviation \\( (\\sigma) = %s\\) and
+              margin of error \\( (E) = %s \\).",
+              nEstimate,
+              input$confLeveln,
+              input$popuSDSampSizeEst,
+              input$margErrSampSizeEst),
+      br(),
+    )
+  })
+  
+  #### Sample Size Est Proportion output ----
+  output$sampSizePropEstimate <- renderUI({
+    
+    n <- getSampSizeEstProp(criticalValue(), input$targetPropSampSizeEst, input$margErrSampSizeEst)
+    nEstimate <- ceiling(n)
+    
+    
+    tagList(
+      withMathJax(),
+      br(),
+      br(),
+      sprintf("\\( n = \\hat{p} (1 - \\hat{p}) \\left( \\dfrac{Z_{\\alpha / 2}}{E} \\right)^{2} \\)"),
+      sprintf("\\( = \\; %s \\; (%s) \\left( \\dfrac{%s}{%s} \\right)^{2} \\)",
+              input$targetPropSampSizeEst,
+              1 - input$targetPropSampSizeEst,
+              criticalValue(),
+              input$margErrSampSizeEst),
+      sprintf("\\( = \\; %0.4f \\)",
+              n),
+      br(),
+      br(),
+      sprintf("\\( n \\approx %1.0f \\)",
+              nEstimate),
+      br(),
+      br(),
+      br(),
+      sprintf("The recommended sample size (\\( n \\)) is \\(%1.0f\\) for a \\( %s \\)%% confidence 
+              level with a target proportion \\( (\\hat{p}) = %s\\) and
+              margin of error \\( (E) = %s \\).",
+              nEstimate,
+              input$confLeveln,
+              input$targetPropSampSizeEst,
+              input$margErrSampSizeEst),
+      br(),
+    )
+  })
+  
+ 
+  
+  ### Observers ----
+  # --------------------------------------------------------------------- #
+  
+  
+  observeEvent(input$goSampSizeEst, {
+    
+    if(sse_iv$is_valid()) {
+      show(id = "ssEstimationData")
+      
+    } else {
+      hide(id = "ssEstimationData")
+    }
+  })
+  
+  
   
   # --------------------------------------------------------------------- #
   
@@ -5023,13 +5225,6 @@ server <- function(session, input, output) {
                                                          face = "bold.italic"))
     
     return(htPlot)
-  }
-  
-  getSampSizeEst <- function(critVal, popuSD, margErr) {
-    
-    n <- ( (critVal * popuSD) / margErr ) ^ 2
-    
-    return(n)
   }
   
   # --------------------------------------------------------------------- #
@@ -5994,19 +6189,6 @@ server <- function(session, input, output) {
       
       validate(
         need(GetDepMeansData()$sd != 0, "The test statistic (t) will be undefined for sample data with a sample standard deviation of difference (sd) = 0."),
-        
-        errorClass = "myClass"
-      )
-    }
-    
-    # Sample Size Estimation Validation 
-    # ------------------------------------------------------------------------ #
-    
-    if(!sampsizeest_iv$is_valid()) {
-      
-      validate(
-        need(input$popuSDSampSizeEst && input$popuSDSampSizeEst > 0, "Population Standard Deviation must be positive."),
-        need(input$margErrSampSizeEst && input$margErrSampSizeEst > 0, "Margin of Error must be positive."),
         
         errorClass = "myClass"
       )
@@ -7455,43 +7637,7 @@ server <- function(session, input, output) {
     htPlot <- hypZTestPlot(twoPropZTest["Test Statistic"], htPlotCritVal, IndMeansHypInfo()$alternative)
     htPlot
   })
-  
-  
-  #### Sample Size Est output ----
-  output$sampSizeEstimate <- renderUI({
-    
-    n <- getSampSizeEst(criticalValue(), input$popuSDSampSizeEst, input$margErrSampSizeEst)
-    nEstimate <- ceiling(getSampSizeEst(criticalValue(), input$popuSDSampSizeEst, input$margErrSampSizeEst))
-    
-    
-    tagList(
-      withMathJax(),
-      br(),
-      br(),
-      sprintf("\\( n = \\left( \\dfrac{Z_{\\alpha / 2} \\: \\sigma}{E} \\right)^{2} \\)"),
-      sprintf("\\( = \\left( \\dfrac{ (%s)(%s) }{%s} \\right)^{2} \\)",
-              criticalValue(),
-              input$popuSDSampSizeEst,
-              input$margErrSampSizeEst),
-      sprintf("\\( = %0.4f \\)",
-              n),
-      br(),
-      br(),
-      sprintf("\\( n \\approx %1.0f \\)",
-              nEstimate),
-      br(),
-      br(),
-      br(),
-      sprintf("The recommended sample size (\\( n \\)) is \\(%1.0f\\) for a \\( %s \\)%% confidence 
-              level with a population standard deviation \\( (\\sigma) = %s\\) and
-              margin of error \\( (E) = %s \\).",
-              nEstimate,
-              input$confLeveln,
-              input$popuSDSampSizeEst,
-              input$margErrSampSizeEst),
-      br(),
-    )
-  })
+
   
   # --------------------------------------------------------------------- #
   
@@ -8297,6 +8443,32 @@ server <- function(session, input, output) {
   
   #  -------------------------------------------------------------------- #
   
+  
+  #### Sample Size Estimation ----
+  #  -------------------------------------------------------------------- #
+  
+  observeEvent(!sse_iv$is_valid(), {
+    hide(id = "ssEstimationMP")
+    hide(id = "ssEstimationData")
+  })
+  
+  observeEvent({input$sampSizeEstParameter
+                input$popuSDSampSizeEst
+                input$targetPropSampSizeEst
+                input$margErrSampSizeEst}, {
+      hide(id = "ssEstimationData")
+    })
+  
+  observeEvent(input$goSampSizeEst, {
+    show(id = "ssEstimationMP")
+  })
+  
+  observeEvent(input$resetSampSizeEst, {
+    hide(id = "ssEstimationMP")
+    shinyjs::reset("sampSizeEstPanel")
+  })
+  
+  #  -------------------------------------------------------------------- #
   
   
   #### Statistical Inference ----
