@@ -1575,7 +1575,8 @@
                                                                          br(),
                                                                          
                                                                          conditionalPanel(
-                                                                           condition = "input.dsTableFilters.indexOf('First Quartile (Q1)') > -1 | input.dsTableFilters.indexOf('Third Quartile (Q3)') > -1",
+                                                                           condition = "input.dsTableFilters.indexOf('First Quartile (Q1)') > -1 | input.dsTableFilters.indexOf('Third Quartile (Q3)') > -1 |
+                                                                                        input.dsTableFilters.indexOf('IQR') > -1 | input.dsTableFilters.indexOf('Potential Outliers')) > -1",
                                                                            
                                                                            helpText("* Note: Quartiles are calculated using the inclusionary (Tukey) approach. 
                                                                                     The median value is included on both sides if the sample size is odd and the median value is excluded on both sides if the sample size is even."),
@@ -1589,7 +1590,7 @@
                                                                            
                                                                            fluidRow(
                                                                              
-                                                                             column(align = "left", width = 4,
+                                                                             column(align = "center", width = 4,
                                                                                     
                                                                                     br(),
                                                                                     DTOutput('sampleDataTable'),
@@ -1683,7 +1684,8 @@
                  
  
                                                                            br(),
-                                                                           helpText("*** Using Tukey's hinges"),
+                                                                           helpText("* Note: Quartiles are calculated using the inclusionary (Tukey) approach. 
+                                                                                    The median value is included on both sides if the sample size is odd and the median value is excluded on both sides if the sample size is even."),
                                                                            br(),
                                                                            # checkboxInput(inputId = "boxplotAlignment",
                                                                            #               label = "Vertical Boxplot",
