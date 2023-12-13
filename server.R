@@ -7999,11 +7999,11 @@ server <- function(session, input, output) {
           withMathJax()
           p(
             withMathJax(),
-            p(tags$b("The equation of the regression line is given by ")),
+            p("The estimated equation of the regression line is given by "),
             sprintf("\\( \\qquad \\hat{y} = \\hat{\\beta}_{0} + \\hat{\\beta}_{1} x \\)"),
             br(),
             br(),
-            p(tags$b("where")),
+            p("where"),
             sprintf("\\( \\qquad \\hat{\\beta}_{1} = \\dfrac{ \\sum xy - \\dfrac{ (\\sum x)(\\sum y) }{ n } }{ \\sum x^2 - \\dfrac{ (\\sum x)^2 }{ n } } \\)"),
             sprintf("\\( \\, = \\, \\dfrac{ %g - \\dfrac{ (%g)(%g) }{ %g } }{ %g - \\dfrac{ (%g)^2 }{ %g } } \\)",
                     dfTotaled["Totals", "xy"],
@@ -8032,7 +8032,7 @@ server <- function(session, input, output) {
                     summary(model)$coefficients["datx", "Estimate"] ),
             br(),
             br(),
-            p(tags$b("and")),
+            p("and"),
             sprintf("\\( \\qquad \\hat{\\beta}_{0} = \\bar{y} - \\hat{\\beta}_{1} \\bar{x}\\)"),
             sprintf("\\( \\, = \\, %g - %0.4f (%g) \\)",
                     mean(daty),
