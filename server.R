@@ -4372,8 +4372,8 @@ server <- function(session, input, output) {
         validate(
           need(input$sseTargetProp, "Target Proportion must be between 0 and 1.") %then%
             need(input$sseTargetProp >= 0 && input$sseTargetProp <= 1, "Target Proportion must be between 0 and 1."),
-          need(input$ssePropMargErr, "Margin of Error must be between 0 and 1.") %then%
-            need(input$ssePropMargErr >= 0 && input$ssePropMargErr <= 1, "Margin of Error must be between 0 and 1."),
+          need(input$ssePropMargErr, "Margin of Error must be greater than 0 and less than or equal to 1.") %then%
+            need(input$ssePropMargErr > 0 && input$ssePropMargErr <= 1, "Margin of Error must be greater than 0 and less than or equal to 1."),
           
           errorClass = "myClass"
         )
@@ -4804,7 +4804,7 @@ server <- function(session, input, output) {
     
     givenOutput <- printOneMeanGiven()
     formulaOutput <- printOneMeanHTFormula(sdSymbol, testStat)
-    pvalOutput <- printOneMeanHTPVal(pvalSymbol, reject)
+    pvalOutput <- printOneMeanHTPVal(pvalSymbol, testStat, reject)
     cvOutput <- printOneMeanHTCV(testStat, reject, region)
     conclusionOutput <- printHTConclusion(region, reject, suffEvidence, OneMeanHypInfo()$altHyp, input$hypMean)
     
@@ -4918,7 +4918,7 @@ server <- function(session, input, output) {
     return(cvOutput)
   }
   
-  printOneMeanHTPVal <- function(pvalSymbol, reject) {
+  printOneMeanHTPVal <- function(pvalSymbol, testStat, reject) {
     oneMeanData <- GetOneMeanHT()
     
     if(oneMeanData[7] < 0.0001)
@@ -4932,7 +4932,7 @@ server <- function(session, input, output) {
     
     pvalOutput <- tagList(
       p(tags$b("Using P-Value Method:")),
-      sprintf("\\(P = %s\\)",
+      sprintf("\\(P =  %s\\)",
               pValue),
       br(),
       sprintf("Since \\( P %s %0.2f \\), %s \\( H_{0}\\).",
