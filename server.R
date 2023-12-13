@@ -1472,7 +1472,7 @@ server <- function(session, input, output) {
                             input$dsBoxplotColour,
                             input$dsBoxplotTitle,
                             input$dsBoxplotXlab,
-                            input$dsBboxplotYlab)
+                            input$dsBoxplotYlab)
 
         if(input$dsBoxplotFlip == 1){
           bp + coord_flip() +

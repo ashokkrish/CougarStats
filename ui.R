@@ -1620,15 +1620,7 @@
                                                                 ),# dsTable tabPanel
                                                                 
                                                                 tabPanel(id = "dsGraphs", title = "Graphs", value = 'Graphs',
-                                                                         
-                                                                         conditionalPanel(
-                                                                           condition = "input.dsGraphOptions == ''",
-                                                                           
-                                                                           br(),
-                                                                           
-                                                                           p("Select one or more options from the Graph Options menu to see more information.")
-                                                                         ),
-                                                                         
+
                                                                          conditionalPanel(
                                                                            condition = "input.dsGraphOptions.indexOf('Boxplot') > -1",
                                                                            
@@ -1649,7 +1641,7 @@
                                                                                        value = "", 
                                                                                        placeholder = "x-axis label"),
                                                                              
-                                                                             textInput(inputId = "dsBboxplotYlab", 
+                                                                             textInput(inputId = "dsBoxplotYlab", 
                                                                                        label = NULL, 
                                                                                        value = "", 
                                                                                        placeholder = "y-axis label"),
