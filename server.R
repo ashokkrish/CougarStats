@@ -479,19 +479,23 @@ server <- function(session, input, output) {
   
   # popuSD
   
-  ssemean_iv$add_rule("popuSDSampSizeEst", sv_required())
-  ssemean_iv$add_rule("popuSDSampSizeEst", sv_gt(0))
+  ssemean_iv$add_rule("ssePopuSD", sv_required())
+  ssemean_iv$add_rule("ssePopuSD", sv_gt(0))
+  ssemean_iv$add_rule("sseMeanMargErr", sv_required())
+  ssemean_iv$add_rule("sseMeanMargErr", sv_gt(0))
   
   # targetProp
   
-  sseprop_iv$add_rule("targetPropSampSizeEst", sv_required())
-  sseprop_iv$add_rule("targetPropSampSizeEst", sv_gte(0))
-  sseprop_iv$add_rule("targetPropSampSizeEst", sv_lte(1))
+  sseprop_iv$add_rule("sseTargetProp", sv_required())
+  sseprop_iv$add_rule("sseTargetProp", sv_gte(0))
+  sseprop_iv$add_rule("sseTargetProp", sv_lte(1))
+  sseprop_iv$add_rule("ssePropMargErr", sv_required())
+  sseprop_iv$add_rule("ssePropMargErr", sv_gt(0))
+  sseprop_iv$add_rule("ssePropMargErr", sv_lte(1))
   
   # margErr
   
-  sse_iv$add_rule("margErrSampSizeEst", sv_required())
-  sse_iv$add_rule("margErrSampSizeEst", sv_gt(0))
+  
   
   
   # ------------------ #
@@ -4357,28 +4361,23 @@ server <- function(session, input, output) {
       if(!ssemean_iv$is_valid()){
         
         validate(
-          need(input$popuSDSampSizeEst && input$popuSDSampSizeEst > 0, "Population Standard Deviation must be positive."),
-          need(input$margErrSampSizeEst && input$margErrSampSizeEst > 0, "Margin of Error must be positive."),
+          need(input$ssePopuSD && input$ssePopuSD > 0, "Population Standard Deviation must be positive."),
+          need(input$sseMeanMargErr && input$sseMeanMargErr > 0, "Margin of Error must be positive."),
+          
           
           errorClass = "myClass"
         )
       }else if(!sseprop_iv$is_valid()){
         
         validate(
-          need(input$targetPropSampSizeEst, "Target Proportion must be between 0 and 1.") %then%
-            need(input$targetPropSampSizeEst >= 0 && input$targetPropSampSizeEst <= 1, "Target Proportion must be between 0 and 1."),
-          need(input$margErrSampSizeEst && input$margErrSampSizeEst > 0, "Margin of Error must be positive."),
+          need(input$sseTargetProp, "Target Proportion must be between 0 and 1.") %then%
+            need(input$sseTargetProp >= 0 && input$sseTargetProp <= 1, "Target Proportion must be between 0 and 1."),
+          need(input$ssePropMargErr, "Margin of Error must be between 0 and 1.") %then%
+            need(input$ssePropMargErr >= 0 && input$ssePropMargErr <= 1, "Margin of Error must be between 0 and 1."),
           
           errorClass = "myClass"
         )
-      } else {
-        
-        validate(
-          need(input$margErrSampSizeEst && input$margErrSampSizeEst > 0, "Margin of Error must be positive."),
-          
-          errorClass = "myClass"
-        )
-      }
+      } 
     }
     
   })
@@ -4387,7 +4386,7 @@ server <- function(session, input, output) {
   #### Sample Size Est Mean output ----
   output$sampSizeMeanEstimate <- renderUI({
     
-    n <- getSampSizeEstMean(criticalValue(), input$popuSDSampSizeEst, input$margErrSampSizeEst)
+    n <- getSampSizeEstMean(criticalValue(), input$ssePopuSD, input$sseMeanMargErr)
     nEstimate <- ceiling(n)
     
     
@@ -4398,8 +4397,8 @@ server <- function(session, input, output) {
       sprintf("\\( n = \\left( \\dfrac{Z_{\\alpha / 2} \\: \\sigma}{E} \\right)^{2} \\)"),
       sprintf("\\( = \\left( \\dfrac{ (%s)(%s) }{%s} \\right)^{2} \\)",
               criticalValue(),
-              input$popuSDSampSizeEst,
-              input$margErrSampSizeEst),
+              input$ssePopuSD,
+              input$sseMeanMargErr),
       sprintf("\\( = %0.4f \\)",
               n),
       br(),
@@ -4414,8 +4413,8 @@ server <- function(session, input, output) {
               margin of error \\( (E) = %s \\).",
               nEstimate,
               input$confLeveln,
-              input$popuSDSampSizeEst,
-              input$margErrSampSizeEst),
+              input$ssePopuSD,
+              input$sseMeanMargErr),
       br(),
     )
   })
@@ -4423,7 +4422,7 @@ server <- function(session, input, output) {
   #### Sample Size Est Proportion output ----
   output$sampSizePropEstimate <- renderUI({
     
-    n <- getSampSizeEstProp(criticalValue(), input$targetPropSampSizeEst, input$margErrSampSizeEst)
+    n <- getSampSizeEstProp(criticalValue(), input$sseTargetProp, input$ssePropMargErr)
     nEstimate <- ceiling(n)
     
     
@@ -4433,10 +4432,10 @@ server <- function(session, input, output) {
       br(),
       sprintf("\\( n = \\hat{p} (1 - \\hat{p}) \\left( \\dfrac{Z_{\\alpha / 2}}{E} \\right)^{2} \\)"),
       sprintf("\\( = \\; %s \\; (%s) \\left( \\dfrac{%s}{%s} \\right)^{2} \\)",
-              input$targetPropSampSizeEst,
-              1 - input$targetPropSampSizeEst,
+              input$sseTargetProp,
+              1 - input$sseTargetProp,
               criticalValue(),
-              input$margErrSampSizeEst),
+              input$ssePropMargErr),
       sprintf("\\( = \\; %0.4f \\)",
               n),
       br(),
@@ -4451,8 +4450,8 @@ server <- function(session, input, output) {
               margin of error \\( (E) = %s \\).",
               nEstimate,
               input$confLeveln,
-              input$targetPropSampSizeEst,
-              input$margErrSampSizeEst),
+              input$sseTargetProp,
+              input$ssePropMargErr),
       br(),
     )
   })

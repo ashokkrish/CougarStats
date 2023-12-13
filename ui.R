@@ -698,28 +698,36 @@
                                                            conditionalPanel(
                                                              condition = "input.sampSizeEstParameter == 'Population Mean'",
                                                              
-                                                             numericInput(inputId = "popuSDSampSizeEst",
+                                                             numericInput(inputId = "ssePopuSD",
                                                                           label = strong("Population Standard Deviation (\\( \\sigma\\))"),
                                                                           value = "12", 
                                                                           min = 0.00001, 
-                                                                          step = 0.00001)
+                                                                          step = 0.00001),
+                                                             
+                                                             numericInput(inputId = "sseMeanMargErr",
+                                                                          label = strong("Margin of Error (\\( E\\))"),
+                                                                          value = "8", 
+                                                                          min = 0.00001, 
+                                                                          step = 0.00001),
                                                            ),
                                                            
                                                            conditionalPanel(
                                                              condition = "input.sampSizeEstParameter == 'Population Proportion'",
                                                              
-                                                             numericInput(inputId = "targetPropSampSizeEst",
+                                                             numericInput(inputId = "sseTargetProp",
                                                                           label = strong("Target Proportion (\\( \\hat{p} \\))"),
                                                                           value = "0.5", 
                                                                           min = 0.00001, 
-                                                                          step = 0.01)
+                                                                          step = 0.01),
+                                                             
+                                                             numericInput(inputId = "ssePropMargErr",
+                                                                          label = strong("Margin of Error (\\( E\\))"),
+                                                                          value = "0.1", 
+                                                                          min = 0.00001, 
+                                                                          step = 0.00001),
                                                            ),
                                                            
-                                                           numericInput(inputId = "margErrSampSizeEst",
-                                                                        label = strong("Margin of Error (\\( E\\))"),
-                                                                        value = "8", 
-                                                                        min = 0.00001, 
-                                                                        step = 0.00001),
+                                                           
                                                            
                                                            actionButton(inputId = "goSampSizeEst", 
                                                                         label = "Calculate",
