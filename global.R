@@ -27,6 +27,7 @@ library(xtable)
 library(MASS)
 
 source("R/RenderBoxplot.R")
+source("R/RenderScatterplot.R")
 source("R/RenderSideBySideBoxplot.R")
 source('R/OneSampZInt.R')
 source('R/OneSampTInt.R')

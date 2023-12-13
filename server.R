@@ -7988,26 +7988,27 @@ server <- function(session, input, output) {
           
         output$scatterplot <- renderPlot({ # scatterplot ----
           
-          ggplot(df, aes(x = x, y = y)) + 
-            geom_point(shape = 19,
-                       size = 3,
-                       colour = input$slrScatterColour) + 
-            geom_smooth(formula = y ~ x, method = lm,  
-                        se = FALSE,    
-                        fullrange = TRUE,
-                        size = 1,
-                        colour = input$slrRegLineColour) +
-            labs(title = input$slrScatterTitle,
-                 x = input$slrScatterXlab,
-                 y = input$slrScatterYlab) +
-            theme(plot.title = element_text(size = 24, face = "bold", hjust = 0.5),
-                  axis.title.x = element_text(size = 16, face = "bold", vjust = -1.5),
-                  axis.title.y = element_text(size = 16, face = "bold"),
-                  axis.text.x.bottom = element_text(size = 12),
-                  axis.text.y.left = element_text(size = 12),
-                  panel.background = element_rect(fill = "white", colour = "black"),
-                  panel.grid.major = element_line(colour = "grey90"),
-                  panel.grid.minor = element_line(colour = "grey90"))
+          RenderScatterplot(df, input$slrScatterTitle, input$slrScatterXlab, input$slrScatterYlab, input$slrRegLineColour, input$slrScatterColour)
+          # ggplot(df, aes(x = x, y = y)) + 
+          #   geom_point(shape = 19,
+          #              size = 3,
+          #              colour = input$slrScatterColour) + 
+          #   geom_smooth(formula = y ~ x, method = lm,  
+          #               se = FALSE,    
+          #               fullrange = TRUE,
+          #               size = 1,
+          #               colour = input$slrRegLineColour) +
+          #   labs(title = input$slrScatterTitle,
+          #        x = input$slrScatterXlab,
+          #        y = input$slrScatterYlab) +
+          #   theme(plot.title = element_text(size = 24, face = "bold", hjust = 0.5),
+          #         axis.title.x = element_text(size = 16, face = "bold", vjust = -1.5),
+          #         axis.title.y = element_text(size = 16, face = "bold"),
+          #         axis.text.x.bottom = element_text(size = 12),
+          #         axis.text.y.left = element_text(size = 12),
+          #         panel.background = element_rect(fill = "white", colour = "black"),
+          #         panel.grid.major = element_line(colour = "grey90"),
+          #         panel.grid.minor = element_line(colour = "grey90"))
           
           
         })
@@ -8022,7 +8023,7 @@ server <- function(session, input, output) {
           b0HatOp <- "+"
         }
         
-        slopeIntercept <- round(summary(model)$coefficients["(Intercept)", "Estimate"], 4)
+        interceptEstimate <- round(summary(model)$coefficients["(Intercept)", "Estimate"], 4)
         slopeEstimate <- round(summary(model)$coefficients["datx", "Estimate"], 4)
         
         output$regLineEquation <- renderUI({
@@ -8073,12 +8074,12 @@ server <- function(session, input, output) {
                     b0HatOp,
                     abs(slopeEstimate) * mean(datx)),
             sprintf("\\( \\, = \\, %0.4f \\)",
-                    slopeIntercept),
+                    interceptEstimate),
             br(),
             br(),
             br(),
             sprintf("\\( \\hat{y} = %0.4f %s %0.4f x \\)",
-                    slopeIntercept,
+                    interceptEstimate,
                     yHatOp,
                     abs(slopeEstimate)),
             br(),
@@ -8088,7 +8089,7 @@ server <- function(session, input, output) {
             sprintf("Within the scope of observation, \\(%s\\) is the estimated value of \\(y\\)
                     when \\(x\\) = 0. A slope of \\(%s\\) represents the estimated %s in \\(y\\) for a 
                     unit increase of \\(x\\).",
-                    slopeIntercept,
+                    interceptEstimate,
                     slopeEstimate,
                     slopeDirection),
             br(),
