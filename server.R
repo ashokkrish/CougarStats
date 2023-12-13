@@ -1189,7 +1189,7 @@ server <- function(session, input, output) {
                                   "Check for Outliers: Lower Fence*", 
                                   "Check for Outliers: Upper Fence*", 
                                   "Number of Potential Outliers*",
-                                  "Outlier Values*",
+                                  "Outlier Value(s)*",
                                   "Range", 
                                   "Sample Standard Deviation", 
                                   "Sample Variance", 
