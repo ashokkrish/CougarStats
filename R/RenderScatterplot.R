@@ -7,7 +7,7 @@ RenderScatterplot <- function(df, plotTitle, plotXLab, plotYLab, regLineColour, 
     geom_smooth(formula = y ~ x, method = lm,  
                 se = FALSE,    
                 fullrange = TRUE,
-                size = 1,
+                linewidth = 1,
                 colour = regLineColour) +
     labs(title = plotTitle,
          x = plotXLab,
