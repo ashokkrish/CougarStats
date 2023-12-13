@@ -7995,6 +7995,19 @@ server <- function(session, input, output) {
           abline(lm(daty ~ datx), col = "blue")
         })
           
+        if(summary(model)$coefficients["datx", "Estimate"] > 0){
+          slopeDirection <- "increase"
+          yHatOp <- "+"
+          b0HatOp <- "-"
+        } else {
+          slopeDirection <- "decrease"
+          yHatOp <- "-"
+          b0HatOp <- "+"
+        }
+        
+        slopeIntercept <- round(summary(model)$coefficients["(Intercept)", "Estimate"], 4)
+        slopeEstimate <- round(summary(model)$coefficients["datx", "Estimate"], 4)
+        
         output$regLineEquation <- renderUI({
           withMathJax()
           p(
@@ -8029,26 +8042,38 @@ server <- function(session, input, output) {
                     dfTotaled["Totals", "xy"] - (sumXSumY) / length(datx),
                     dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx)),
             sprintf("\\( \\, = \\, %0.4f \\)",
-                    summary(model)$coefficients["datx", "Estimate"] ),
+                    slopeEstimate),
             br(),
             br(),
             p("and"),
             sprintf("\\( \\qquad \\hat{\\beta}_{0} = \\bar{y} - \\hat{\\beta}_{1} \\bar{x}\\)"),
-            sprintf("\\( \\, = \\, %g - %0.4f (%g) \\)",
+            sprintf("\\( \\, = \\, %g - (%0.4f) (%g) \\)",
                     mean(daty),
                     summary(model)$coefficients["datx", "Estimate"],
                     mean(datx)),
-            sprintf("\\( \\, = \\, %g - %0.4f\\)",
+            sprintf("\\( \\, = \\, %g %s %0.4f\\)",
                     mean(daty),
-                    summary(model)$coefficients["datx", "Estimate"] * mean(datx)),
+                    b0HatOp,
+                    abs(slopeEstimate) * mean(datx)),
             sprintf("\\( \\, = \\, %0.4f \\)",
-                    summary(model)$coefficients["(Intercept)", "Estimate"]),
+                    slopeIntercept),
             br(),
             br(),
             br(),
-            sprintf("\\( \\hat{y} = %0.4f + %0.4f x \\)",
-                    summary(model)$coefficients["(Intercept)", "Estimate"],
-                    summary(model)$coefficients["datx", "Estimate"]),
+            sprintf("\\( \\hat{y} = %0.4f %s %0.4f x \\)",
+                    slopeIntercept,
+                    yHatOp,
+                    abs(slopeEstimate)),
+            br(),
+            br(),
+            br(),
+            p(tags$b("Interpretation of regression coefficients:")),
+            sprintf("Within the scope of observation, \\(%s\\) is the estimated value of \\(y\\)
+                    when \\(x\\) = 0. A slope of \\(%s\\) represents the estimated %s in \\(y\\) for a 
+                    unit increase of \\(x\\).",
+                    slopeIntercept,
+                    slopeEstimate,
+                    slopeDirection),
             br(),
             br()
           )
