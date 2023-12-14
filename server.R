@@ -4804,7 +4804,7 @@ server <- function(session, input, output) {
     
     givenOutput <- printOneMeanGiven()
     formulaOutput <- printOneMeanHTFormula(sdSymbol, testStat)
-    pvalOutput <- printOneMeanHTPVal(pvalSymbol, testStat, reject)
+    pvalOutput <- printHTPVal(oneMeanData["P-Value"], testStat, intrpInfo$alternative, oneMeanData["Test Statistic"], pvalSymbol, reject)
     cvOutput <- printOneMeanHTCV(testStat, reject, region)
     conclusionOutput <- printHTConclusion(region, reject, suffEvidence, OneMeanHypInfo()$altHyp, input$hypMean)
     
@@ -4918,25 +4918,36 @@ server <- function(session, input, output) {
     return(cvOutput)
   }
   
-  printOneMeanHTPVal <- function(pvalSymbol, testStat, reject) {
+  printHTPVal <- function(pValue, testStat, alternative, tsValue, pvalSign, reject) {
     oneMeanData <- GetOneMeanHT()
     
-    if(oneMeanData[7] < 0.0001)
-    {
-      pValue <- "\\lt 0.0001"
-    }
-    else
-    {
-      pValue <- paste(oneMeanData[7])
+    # if(oneMeanData[7] < 0.0001)
+    # {
+    #   pValue <- "\\lt 0.0001"
+    # }
+    # else
+    # {
+    #   pValue <- paste(oneMeanData[7])
+    # }
+    # 
+    
+    if(alternative == "two.sided"){
+      pvalCalc <- paste("2 \\times P(", testStat, "\\, \\gt \\; \\mid", tsValue, "\\mid)")
+    } else if (alternative == "greater"){
+      pvalCalc <- paste("P(", testStat, "\\, > \\,", tsValue, ")")
+    } else {
+      pvalCalc <- paste("P(", testStat, "\\, < \\,", tsValue, ")")
     }
     
     pvalOutput <- tagList(
       p(tags$b("Using P-Value Method:")),
-      sprintf("\\(P =  %s\\)",
+      sprintf("\\(P = %s = %s\\)",
+              pvalCalc,
               pValue),
       br(),
+      br(),
       sprintf("Since \\( P %s %0.2f \\), %s \\( H_{0}\\).",
-              pvalSymbol,
+              pvalSign,
               SigLvl(),
               reject),
       br(),
@@ -6416,18 +6427,18 @@ server <- function(session, input, output) {
     }
     
     if(onePropData["P-Value"] > SigLvl()) {
-      pvalSymbol <- "\\( \\gt\\)"
+      pvalSymbol <- "\\gt"
       suffEvidence <- "isn't"
       reject <- "do not reject"
       region <- "acceptance"
     } else {
-      pvalSymbol <- "\\( \\leq\\)"
+      pvalSymbol <- "\\leq"
       suffEvidence <- "is"
       reject <- "reject"
       region <- "rejection"
     }
     
-    propHTOutput <- tagList(
+    onePropHTHead <- tagList(
       withMathJax(
         sprintf("\\( H_{0}: %s %g\\)",
                 nullHyp,
@@ -6479,18 +6490,25 @@ server <- function(session, input, output) {
                 onePropData["Test Statistic"]),
         br(),
         br(),
-        br(),
-        p(tags$b("Using P-Value Method:")),
-        sprintf("\\( %s \\)",
-                pValue),
-        br(),
-        sprintf("Since \\( P\\) %s %0.2f, %s \\( H_{0}\\).",
-                pvalSymbol,
-                SigLvl(),
-                reject),
-        br(),
-        br(),
-        br(),
+        br()
+      )
+    )
+      
+    onePropPVal <- printHTPVal(onePropData["P-Value"], "z", OneMeanHypInfo()$alternative, onePropData["Test Statistic"], pvalSymbol, reject)
+        # p(tags$b("Using P-Value Method:")),
+        # sprintf("\\( %s \\)",
+        #         pValue),
+        # br(),
+        # sprintf("Since \\( P\\) %s %0.2f, %s \\( H_{0}\\).",
+        #         pvalSymbol,
+        #         SigLvl(),
+        #         reject),
+        # br(),
+        # br(),
+        # br(),
+      
+    onePropHTTail <- tagList(
+      withMathJax(
         p(tags$b("Using Critical Value Method:")),
         sprintf("Critical Value(s) \\( = %s z_{%s} = %s z_{%s} = %s \\)",
                 OneMeanHypInfo()$critSign,
@@ -6498,6 +6516,7 @@ server <- function(session, input, output) {
                 OneMeanHypInfo()$critSign,
                 OneMeanHypInfo()$alphaVal,
                 critZVal),
+        br(),
         br(),
         sprintf("Since the test statistic \\( (z)\\) falls within the %s region, %s \\( H_{0}\\).",
                 region,
@@ -6508,8 +6527,10 @@ server <- function(session, input, output) {
         br()
       )
     )
-      
-    tagAppendChild(propHTOutput, printHTConclusion(region, reject, suffEvidence, altHyp, input$hypProportion))
+    
+    onePropHTConclusion <- printHTConclusion(region, reject, suffEvidence, altHyp, input$hypProportion)
+    
+    tagAppendChildren(onePropHTHead, onePropPVal, onePropHTTail, onePropHTConclusion)
   })
   
   
