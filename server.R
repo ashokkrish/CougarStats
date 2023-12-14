@@ -4883,6 +4883,7 @@ server <- function(session, input, output) {
                 OneMeanHypInfo()$alphaVal,
                 critVal),
         br(),
+        br(),
       )
       
     } else {
@@ -4892,6 +4893,7 @@ server <- function(session, input, output) {
         sprintf("\\( df = n - 1 = %s \\)",
                 oneMeanData["Sample Size"] - 1),
         br(),
+        br(),
         sprintf("Critical Value(s) \\( = %s t_{%s, \\, df} = %s t_{%s, \\, %s} = %s \\)",
                 OneMeanHypInfo()$critSign,
                 OneMeanHypInfo()$critAlph,
@@ -4899,6 +4901,7 @@ server <- function(session, input, output) {
                 OneMeanHypInfo()$alphaVal,
                 oneMeanData["Sample Size"] - 1,
                 critVal),
+        br(),
         br()
       )
     }
@@ -7564,7 +7567,7 @@ server <- function(session, input, output) {
       region <- "rejection"
     }
     
-    twoPropHTOutput <- tagList(
+    twoPropHTHead <- tagList(
       withMathJax(
         sprintf("\\( H_{0}: %s p_{2}\\)",
                 nullHyp),
@@ -7637,18 +7640,19 @@ server <- function(session, input, output) {
                 twoPropZTest["Test Statistic"]),
         br(),
         br(),
-        br(),
-        p(tags$b("Using P-Value Method:")),
-        sprintf("\\( %s \\)",
-                pValue),
-        br(),
-        sprintf("Since \\( P %s %0.2f \\), %s \\( H_{0}\\).",
-                pvalSymbol,
-                SigLvl(),
-                reject),
-        br(),
-        br(),
-        br(),
+        br()
+      )
+    )
+    
+    twoPropHTPVal <- printHTPVal(twoPropZTest["P-Value"], 
+                                 "z", 
+                                 IndMeansHypInfo()$alternative, 
+                                 twoPropZTest["Test Statistic"], 
+                                 pvalSymbol, 
+                                 reject)
+    
+    twoPropHTTail <- tagList(
+      withMathJax(
         p(tags$b("Using Critical Value Method:")),
         sprintf("Critical Value(s) \\( = %s z_{%s} = %s z_{%s} = %s \\)",
                 IndMeansHypInfo()$critSign,
@@ -7657,6 +7661,7 @@ server <- function(session, input, output) {
                 IndMeansHypInfo()$alphaVal,
                 critZVal),
         
+        br(),
         br(),
         sprintf("Since the test statistic \\( (z)\\) falls within the %s region, %s \\( H_{0}\\).",
                 region,
@@ -7667,8 +7672,10 @@ server <- function(session, input, output) {
         br()
       )
     )
+    
+    twoPropHTConclusion <- printHTConclusion(region, reject, suffEvidence, altHyp, "p_{2}")
   
-    tagAppendChild(twoPropHTOutput, printHTConclusion(region, reject, suffEvidence, altHyp, "p_{2}"))
+    tagAppendChildren(twoPropHTHead, twoPropHTPVal, twoPropHTTail, twoPropHTConclusion)
   })
   
   
