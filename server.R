@@ -6938,17 +6938,6 @@ server <- function(session, input, output) {
                                pvalSymbol, 
                                reject),
       
-      # p(tags$b("Using P-Value Method:")),
-      # sprintf("\\( P = %s \\)",
-      #         pValue),
-      # br(),
-      # sprintf("Since \\( P %s %0.2f \\), %s \\( H_{0}\\).",
-      #         pvalSymbol,
-      #         SigLvl(),
-      #         reject),
-      # br(),
-      # br(),
-      # br(),
       
       indHTTail <- tagList(
         withMathJax(
@@ -7305,7 +7294,7 @@ server <- function(session, input, output) {
         }
       }
       
-      depHTOutput <- tagList(
+      depHTHead <- tagList(
         p(
           withMathJax(),
           
@@ -7354,7 +7343,20 @@ server <- function(session, input, output) {
                   tTest["Test Statistic"]),
           br(),
           br(),
-          br(),
+          br()
+        )
+      )
+      
+      depHTPVal <- printHTPVal(tTest["P-Value"], 
+                               "t", 
+                               intrpInfo$alternative, 
+                               tTest["Test Statistic"], 
+                               pvalSymbol, 
+                               reject)
+      
+      depHTTail <- tagList(
+        p(
+          withMathJax(),
           p(tags$b("Using P-Value Method:")),
           sprintf("\\(P = %s\\)",
                   pValue),
@@ -7391,7 +7393,9 @@ server <- function(session, input, output) {
         br()
       )
       
-      tagAppendChild(depHTOutput, printHTConclusion(region, reject, suffEvidence, altHyp, 0))
+      depHTConclusion <- printHTConclusion(region, reject, suffEvidence, altHyp, 0)
+      
+      tagAppendChildren(depHTHead, depHTPVal, depHTTail, depHTConclusion)
   })
   
   ##### HT Plot ----
