@@ -6494,7 +6494,11 @@ server <- function(session, input, output) {
       )
     )
       
-    onePropPVal <- printHTPVal(onePropData["P-Value"], "z", OneMeanHypInfo()$alternative, onePropData["Test Statistic"], pvalSymbol, reject)
+    onePropPVal <- printHTPVal(onePropData["P-Value"], "z", 
+                               OneMeanHypInfo()$alternative, 
+                               onePropData["Test Statistic"], 
+                               pvalSymbol, 
+                               reject)
         # p(tags$b("Using P-Value Method:")),
         # sprintf("\\( %s \\)",
         #         pValue),
@@ -6890,7 +6894,7 @@ server <- function(session, input, output) {
       critVal <- hTest[2]
     }
     
-    indHTOutput <- tagList(
+    indHTHead <- tagList(
       
       p(
         withMathJax(
@@ -6923,18 +6927,32 @@ server <- function(session, input, output) {
           ),
           br(),
           br(),
-          br(),
-          p(tags$b("Using P-Value Method:")),
-          sprintf("\\( P = %s \\)",
-                  pValue),
-          br(),
-          sprintf("Since \\( P %s %0.2f \\), %s \\( H_{0}\\).",
-                  pvalSymbol,
-                  SigLvl(),
-                  reject),
-          br(),
-          br(),
-          br(),
+          br()
+        )
+      ),
+      
+      indHTPVal <- printHTPVal(hTest["P-Value"], 
+                               testStat, 
+                               intrpInfo$alternative, 
+                               hTest["Test Statistic"], 
+                               pvalSymbol, 
+                               reject),
+      
+      # p(tags$b("Using P-Value Method:")),
+      # sprintf("\\( P = %s \\)",
+      #         pValue),
+      # br(),
+      # sprintf("Since \\( P %s %0.2f \\), %s \\( H_{0}\\).",
+      #         pvalSymbol,
+      #         SigLvl(),
+      #         reject),
+      # br(),
+      # br(),
+      # br(),
+      
+      indHTTail <- tagList(
+        withMathJax(
+ 
           p(tags$b("Using Critical Value Method:")),
           sprintf("Critical Value(s) \\( = %s = %s\\)",
                   critValDF,
@@ -6990,7 +7008,9 @@ server <- function(session, input, output) {
       br(),
     )
     
-    tagAppendChild(indHTOutput, printHTConclusion(region, reject, suffEvidence, intrpInfo$altHyp, "\\mu_{2}"))
+    indHTConclusion <- printHTConclusion(region, reject, suffEvidence, intrpInfo$altHyp, "\\mu_{2}")
+    
+    tagAppendChildren(indHTHead, indHTPVal, indHTTail, indHTConclusion)
   })
   
   
