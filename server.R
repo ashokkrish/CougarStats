@@ -487,8 +487,8 @@ server <- function(session, input, output) {
   # targetProp
   
   sseprop_iv$add_rule("sseTargetProp", sv_required())
-  sseprop_iv$add_rule("sseTargetProp", sv_gte(0))
-  sseprop_iv$add_rule("sseTargetProp", sv_lte(1))
+  sseprop_iv$add_rule("sseTargetProp", sv_gt(0))
+  sseprop_iv$add_rule("sseTargetProp", sv_lt(1))
   sseprop_iv$add_rule("ssePropMargErr", sv_required())
   sseprop_iv$add_rule("ssePropMargErr", sv_gt(0))
   sseprop_iv$add_rule("ssePropMargErr", sv_lte(1))
@@ -4371,7 +4371,7 @@ server <- function(session, input, output) {
         
         validate(
           need(input$sseTargetProp, "Target Proportion must be between 0 and 1.") %then%
-            need(input$sseTargetProp >= 0 && input$sseTargetProp <= 1, "Target Proportion must be between 0 and 1."),
+            need(input$sseTargetProp > 0 && input$sseTargetProp < 1, "Target Proportion must be between 0 and 1."),
           need(input$ssePropMargErr, "Margin of Error must be greater than 0 and less than or equal to 1.") %then%
             need(input$ssePropMargErr > 0 && input$ssePropMargErr <= 1, "Margin of Error must be greater than 0 and less than or equal to 1."),
           
