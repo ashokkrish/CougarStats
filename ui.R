@@ -2624,14 +2624,14 @@
                       #          plotOutput("moreplots", width = "500px"),
                       #          #br(),
                       # ),
-                                                                  
+                      
+                      #----------------------------------#
+                      # Correlation Coefficient Analysis #
+                      #----------------------------------#                                            
                       tabPanel(
                         id    = "correlation", 
                         title = "Correlation Analysis",
-                                                                           
-                        #----------------------------------#
-                        # Correlation Coefficient Analysis #
-                        #----------------------------------#
+
                         titlePanel("Pearson's Product-Moment Correlation"),
                         br(),
                         br(),
