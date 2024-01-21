@@ -276,39 +276,35 @@ server <- function(session, input, output) {
   #     Conditions     #
   # ------------------ #
   ctable2x2_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
-                                  input$cTableDimension == '2 x 2' &&
-                                  input$cTableType == 'Frequency Distribution'))
+                                  input$cTableDimension == '2 x 2'))
   
   ctable2x2conditional_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
                                              input$cTableDimension == '2 x 2' &&
-                                             input$cTableType == 'Frequency Distribution' &&
+                                             # input$cTableType == 'Frequency Distribution' &&
                                              input$cTableProb == 'Conditional'))
   
   ctable2x3_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
-                                  input$cTableDimension == '2 x 3' &&
-                                  input$cTableType == 'Frequency Distribution'))
+                                  input$cTableDimension == '2 x 3'))
   
   ctable2x3conditional_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
                                              input$cTableDimension == '2 x 3' &&
-                                             input$cTableType == 'Frequency Distribution'&&
+                                             # input$cTableType == 'Frequency Distribution'&&
                                              input$cTableProb == 'Conditional'))
   
   ctable3x2_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
-                                  input$cTableDimension == '3 x 2' &&
-                                  input$cTableType == 'Frequency Distribution'))
+                                  input$cTableDimension == '3 x 2'))
   
   ctable3x2conditional_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
                                              input$cTableDimension == '3 x 2' &&
-                                             input$cTableType == 'Frequency Distribution'&&
+                                             # input$cTableType == 'Frequency Distribution'&&
                                              input$cTableProb == 'Conditional'))
   
   ctable3x3_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
-                                  input$cTableDimension == '3 x 3' &&
-                                  input$cTableType == 'Frequency Distribution'))
+                                  input$cTableDimension == '3 x 3'))
   
   ctable3x3conditional_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
                                              input$cTableDimension == '3 x 3' &&
-                                             input$cTableType == 'Frequency Distribution'&&
+                                             # input$cTableType == 'Frequency Distribution'&&
                                              input$cTableProb == 'Conditional'))
   
   ptable2x2_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
