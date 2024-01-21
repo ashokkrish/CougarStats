@@ -2179,21 +2179,21 @@ server <- function(session, input, output) {
   # Purpose:
   #   converts matrix data input by the user into numeric values
   
-  pMatrixData2x2 <- reactive({
-    suppressWarnings(as.numeric(input$pMatrix2x2))
-  })
-  
-  pMatrixData2x3 <- reactive({
-    suppressWarnings(as.numeric(input$pMatrix2x3))
-  })
-
-  pMatrixData3x2 <- reactive({
-    suppressWarnings(as.numeric(input$pMatrix3x2))
-  })
-
-  pMatrixData3x3 <- reactive({
-    suppressWarnings(as.numeric(input$pMatrix3x3))
-  })
+  # pMatrixData2x2 <- reactive({
+  #   suppressWarnings(as.numeric(input$pMatrix2x2))
+  # })
+  # 
+  # pMatrixData2x3 <- reactive({
+  #   suppressWarnings(as.numeric(input$pMatrix2x3))
+  # })
+  # 
+  # pMatrixData3x2 <- reactive({
+  #   suppressWarnings(as.numeric(input$pMatrix3x2))
+  # })
+  # 
+  # pMatrixData3x3 <- reactive({
+  #   suppressWarnings(as.numeric(input$pMatrix3x3))
+  # })
   
 
   # ------------------------ #
@@ -2247,41 +2247,41 @@ server <- function(session, input, output) {
   #   uses the numeric user data to create a matrix with a 'Total' row and
   #   column using the GetCMatrix function.
   
-  pMatrix2x2Totaled <- reactive({
-    if(!any(is.na(pMatrixData2x2()))){
-      pData2x2 <- matrix(pMatrixData2x2(), ncol = ncol(input$pMatrix2x2))
-      pData2x2 <- getTotaledMatrix(pData2x2, input$pMatrix2x2)
-
-      return(pData2x2)
-    }
-  })
-  
-  pMatrix2x3Totaled <- reactive({
-    if(!any(is.na(cMatrixData2x3()))){
-      pData2x3 <- matrix(pMatrixData2x3(), ncol = ncol(input$pMatrix2x3))
-      pData2x3 <- getTotaledMatrix(pData2x3, input$pMatrix2x3)
-
-      return(pData2x3)
-    }
-  })
-
-  pMatrix3x2Totaled <- reactive({
-    if(!any(is.na(pMatrixData3x2()))){
-      pData3x2 <- matrix(pMatrixData3x2(), ncol = ncol(input$pMatrix3x2))
-      pData3x2 <- getTotaledMatrix(pData3x2, input$pMatrix3x2)
-
-      return(pData3x2)
-    }
-  })
-
-  pMatrix3x3Totaled <- reactive({
-    if(!any(is.na(pMatrixData3x3()))){
-      pData3x3 <- matrix(pMatrixData3x3(), ncol = ncol(input$pMatrix3x3))
-      pData3x3 <- getTotaledMatrix(pData3x3, input$pMatrix3x3)
-
-      return(pData3x3)
-    }
-  })
+  # pMatrix2x2Totaled <- reactive({
+  #   if(!any(is.na(pMatrixData2x2()))){
+  #     pData2x2 <- matrix(pMatrixData2x2(), ncol = ncol(input$pMatrix2x2))
+  #     pData2x2 <- getTotaledMatrix(pData2x2, input$pMatrix2x2)
+  # 
+  #     return(pData2x2)
+  #   }
+  # })
+  # 
+  # pMatrix2x3Totaled <- reactive({
+  #   if(!any(is.na(cMatrixData2x3()))){
+  #     pData2x3 <- matrix(pMatrixData2x3(), ncol = ncol(input$pMatrix2x3))
+  #     pData2x3 <- getTotaledMatrix(pData2x3, input$pMatrix2x3)
+  # 
+  #     return(pData2x3)
+  #   }
+  # })
+  # 
+  # pMatrix3x2Totaled <- reactive({
+  #   if(!any(is.na(pMatrixData3x2()))){
+  #     pData3x2 <- matrix(pMatrixData3x2(), ncol = ncol(input$pMatrix3x2))
+  #     pData3x2 <- getTotaledMatrix(pData3x2, input$pMatrix3x2)
+  # 
+  #     return(pData3x2)
+  #   }
+  # })
+  # 
+  # pMatrix3x3Totaled <- reactive({
+  #   if(!any(is.na(pMatrixData3x3()))){
+  #     pData3x3 <- matrix(pMatrixData3x3(), ncol = ncol(input$pMatrix3x3))
+  #     pData3x3 <- getTotaledMatrix(pData3x3, input$pMatrix3x3)
+  # 
+  #     return(pData3x3)
+  #   }
+  # })
 
 
   getNormValue <- reactive({
@@ -2332,7 +2332,7 @@ server <- function(session, input, output) {
   ### Observers ----
   # --------------------------------------------------------------------- #
   
-  ?RHandson#### Contingency Table ----
+  #### Contingency Table ----
   
   observeEvent(input$gocTable, {
  
@@ -2382,49 +2382,49 @@ server <- function(session, input, output) {
       )
     })
     
-    output$render2x2pTable <- renderUI({
-      
-      validate(
-        need(input$pMatrix2x2, "Probabilities must be between 0 and 1."),
-        
-        errorClass = "myClass"
-      )
-      
-      validate(
-        need(all(!is.na(pMatrixData2x2())), "Probabilities must be between 0 and 1."),
-        
-        errorClass = "myClass"
-      )
-      
-      validate(
-        need(all(pMatrixData2x2() >= 0) && all(pMatrixData2x2() < 1), "Probabilities must be between 0 and 1."),
-        
-        errorClass = "myClass"
-      )
-      
-      validate(
-        need(any(pMatrixData2x2() != 0), "All cell values cannot be equal to zero."),
-        
-        errorClass = "myClass"
-      )
-      
-      validate(
-        need(pMatrix2x2Totaled()['Total', 'Total'] == 1, "The sum of all probabilities must equal 1."),
-        
-        errorClass = "myClass"
-      )
-      
-      tagList(
-        
-        titlePanel("Probability Distribution Table"),
-        hr(),
-        br(),
-        DTOutput("pTable2x2", width = '500px'),
-        br(),
-        br(),
-        br(),
-      )
-    })
+    # output$render2x2pTable <- renderUI({
+    #   
+    #   validate(
+    #     need(input$pMatrix2x2, "Probabilities must be between 0 and 1."),
+    #     
+    #     errorClass = "myClass"
+    #   )
+    #   
+    #   validate(
+    #     need(all(!is.na(pMatrixData2x2())), "Probabilities must be between 0 and 1."),
+    #     
+    #     errorClass = "myClass"
+    #   )
+    #   
+    #   validate(
+    #     need(all(pMatrixData2x2() >= 0) && all(pMatrixData2x2() < 1), "Probabilities must be between 0 and 1."),
+    #     
+    #     errorClass = "myClass"
+    #   )
+    #   
+    #   validate(
+    #     need(any(pMatrixData2x2() != 0), "All cell values cannot be equal to zero."),
+    #     
+    #     errorClass = "myClass"
+    #   )
+    #   
+    #   validate(
+    #     need(pMatrix2x2Totaled()['Total', 'Total'] == 1, "The sum of all probabilities must equal 1."),
+    #     
+    #     errorClass = "myClass"
+    #   )
+    #   
+    #   tagList(
+    #     
+    #     titlePanel("Probability Distribution Table"),
+    #     hr(),
+    #     br(),
+    #     DTOutput("pTable2x2", width = '500px'),
+    #     br(),
+    #     br(),
+    #     br(),
+    #   )
+    # })
     
     output$render2x3cTable <- renderUI({
       
@@ -2473,49 +2473,49 @@ server <- function(session, input, output) {
     })
     
     
-    output$render2x3pTable <- renderUI({
-      
-      validate(
-        need(input$pMatrix2x3, "Probabilities must be between 0 and 1."),
-        
-        errorClass = "myClass"
-      )
-      
-      validate(
-        need(all(!is.na(pMatrixData2x3())), "Probabilities must be between 0 and 1."),
-        
-        errorClass = "myClass"
-      )
-      
-      validate(
-        need(all(pMatrixData2x3() >= 0) && all(pMatrixData2x3() < 1), "Probabilities must be between 0 and 1."),
-        
-        errorClass = "myClass"
-      )
-      
-      validate(
-        need(any(pMatrixData2x3() != 0), "All cell values cannot be equal to zero."),
-        
-        errorClass = "myClass"
-      )
-      
-      validate(
-        need(pMatrix2x3Totaled()['Total', 'Total'] == 1, "The sum of all probabilities must equal 1."),
-        
-        errorClass = "myClass"
-      )
-      
-      tagList(
-        
-        titlePanel("Probability Distribution Table"),
-        hr(),
-        br(),
-        DTOutput("pTable2x3", width = '625px'),
-        br(),
-        br(),
-        br(),
-      )
-    })
+    # output$render2x3pTable <- renderUI({
+    #   
+    #   validate(
+    #     need(input$pMatrix2x3, "Probabilities must be between 0 and 1."),
+    #     
+    #     errorClass = "myClass"
+    #   )
+    #   
+    #   validate(
+    #     need(all(!is.na(pMatrixData2x3())), "Probabilities must be between 0 and 1."),
+    #     
+    #     errorClass = "myClass"
+    #   )
+    #   
+    #   validate(
+    #     need(all(pMatrixData2x3() >= 0) && all(pMatrixData2x3() < 1), "Probabilities must be between 0 and 1."),
+    #     
+    #     errorClass = "myClass"
+    #   )
+    #   
+    #   validate(
+    #     need(any(pMatrixData2x3() != 0), "All cell values cannot be equal to zero."),
+    #     
+    #     errorClass = "myClass"
+    #   )
+    #   
+    #   validate(
+    #     need(pMatrix2x3Totaled()['Total', 'Total'] == 1, "The sum of all probabilities must equal 1."),
+    #     
+    #     errorClass = "myClass"
+    #   )
+    #   
+    #   tagList(
+    #     
+    #     titlePanel("Probability Distribution Table"),
+    #     hr(),
+    #     br(),
+    #     DTOutput("pTable2x3", width = '625px'),
+    #     br(),
+    #     br(),
+    #     br(),
+    #   )
+    # })
     
     
     output$render3x2cTable <- renderUI({
@@ -2565,49 +2565,49 @@ server <- function(session, input, output) {
     })
     
     
-    output$render3x2pTable <- renderUI({
-      
-      validate(
-        need(input$pMatrix3x2, "Probabilities must be between 0 and 1."),
-        
-        errorClass = "myClass"
-      )
-      
-      validate(
-        need(all(!is.na(pMatrixData3x2())), "Probabilities must be between 0 and 1."),
-        
-        errorClass = "myClass"
-      )
-      
-      validate(
-        need(all(pMatrixData3x2() >= 0) && all(pMatrixData3x2() < 1), "Probabilities must be between 0 and 1."),
-        
-        errorClass = "myClass"
-      )
-      
-      validate(
-        need(any(pMatrixData3x2() != 0), "All cell values cannot be equal to zero."),
-        
-        errorClass = "myClass"
-      )
-      
-      validate(
-        need(pMatrix3x2Totaled()['Total', 'Total'] == 1, "The sum of all probabilities must equal 1."),
-        
-        errorClass = "myClass"
-      )
-      
-      tagList(
-        
-        titlePanel("Probability Distribution Table"),
-        hr(),
-        br(),
-        DTOutput("pTable3x2", width = '500px'),
-        br(),
-        br(),
-        br(),
-      )
-    })
+    # output$render3x2pTable <- renderUI({
+    #   
+    #   validate(
+    #     need(input$pMatrix3x2, "Probabilities must be between 0 and 1."),
+    #     
+    #     errorClass = "myClass"
+    #   )
+    #   
+    #   validate(
+    #     need(all(!is.na(pMatrixData3x2())), "Probabilities must be between 0 and 1."),
+    #     
+    #     errorClass = "myClass"
+    #   )
+    #   
+    #   validate(
+    #     need(all(pMatrixData3x2() >= 0) && all(pMatrixData3x2() < 1), "Probabilities must be between 0 and 1."),
+    #     
+    #     errorClass = "myClass"
+    #   )
+    #   
+    #   validate(
+    #     need(any(pMatrixData3x2() != 0), "All cell values cannot be equal to zero."),
+    #     
+    #     errorClass = "myClass"
+    #   )
+    #   
+    #   validate(
+    #     need(pMatrix3x2Totaled()['Total', 'Total'] == 1, "The sum of all probabilities must equal 1."),
+    #     
+    #     errorClass = "myClass"
+    #   )
+    #   
+    #   tagList(
+    #     
+    #     titlePanel("Probability Distribution Table"),
+    #     hr(),
+    #     br(),
+    #     DTOutput("pTable3x2", width = '500px'),
+    #     br(),
+    #     br(),
+    #     br(),
+    #   )
+    # })
     
     
     output$render3x3cTable <- renderUI({
@@ -2657,49 +2657,49 @@ server <- function(session, input, output) {
     })
     
     
-    output$render3x3pTable <- renderUI({
-      
-      validate(
-        need(input$pMatrix3x3, "Probabilities must be between 0 and 1."),
-        
-        errorClass = "myClass"
-      )
-      
-      validate(
-        need(all(!is.na(pMatrixData3x3())), "Probabilities must be between 0 and 1."),
-        
-        errorClass = "myClass"
-      )
-      
-      validate(
-        need(all(pMatrixData3x3() >= 0) && all(pMatrixData3x3() < 1), "Probabilities must be between 0 and 1."),
-        
-        errorClass = "myClass"
-      )
-      
-      validate(
-        need(any(pMatrixData3x3() != 0), "All cell values cannot be equal to zero."),
-        
-        errorClass = "myClass"
-      )
-      
-      validate(
-        need(pMatrix3x3Totaled()['Total', 'Total'] == 1, "The sum of all probabilities must equal 1."),
-        
-        errorClass = "myClass"
-      )
-      
-      tagList(
-        
-        titlePanel("Probability Distribution Table"),
-        hr(),
-        br(),
-        DTOutput("pTable3x3", width = '625px'),
-        br(),
-        br(),
-        br(),
-      )
-    })
+    # output$render3x3pTable <- renderUI({
+    #   
+    #   validate(
+    #     need(input$pMatrix3x3, "Probabilities must be between 0 and 1."),
+    #     
+    #     errorClass = "myClass"
+    #   )
+    #   
+    #   validate(
+    #     need(all(!is.na(pMatrixData3x3())), "Probabilities must be between 0 and 1."),
+    #     
+    #     errorClass = "myClass"
+    #   )
+    #   
+    #   validate(
+    #     need(all(pMatrixData3x3() >= 0) && all(pMatrixData3x3() < 1), "Probabilities must be between 0 and 1."),
+    #     
+    #     errorClass = "myClass"
+    #   )
+    #   
+    #   validate(
+    #     need(any(pMatrixData3x3() != 0), "All cell values cannot be equal to zero."),
+    #     
+    #     errorClass = "myClass"
+    #   )
+    #   
+    #   validate(
+    #     need(pMatrix3x3Totaled()['Total', 'Total'] == 1, "The sum of all probabilities must equal 1."),
+    #     
+    #     errorClass = "myClass"
+    #   )
+    #   
+    #   tagList(
+    #     
+    #     titlePanel("Probability Distribution Table"),
+    #     hr(),
+    #     br(),
+    #     DTOutput("pTable3x3", width = '625px'),
+    #     br(),
+    #     br(),
+    #     br(),
+    #   )
+    # })
     
     
     cData2x2 <- matrix(cMatrixData2x2(), ncol = ncol(input$cMatrix2x2))
@@ -2761,37 +2761,37 @@ server <- function(session, input, output) {
     })
     
     
-    pData2x2 <- matrix(pMatrixData2x2(), ncol = ncol(input$pMatrix2x2))
-    pData2x2 <- getTotaledMatrix(pData2x2, input$pMatrix2x2)
-    
-    output$pTable2x2 <- renderDT({
-      
-      # excelR::excelTable(cData2x2,
-      #            editable = FALSE,
-      #            autoFill = TRUE) 
-      
-      datatable(pData2x2,
-                class = 'cell-border stripe',
-                options = list(
-                  dom = 't',
-                  pageLength = -1,
-                  ordering = FALSE,
-                  searching = FALSE,
-                  paging = FALSE,
-                  autoWidth = FALSE,
-                  scrollX = TRUE,
-                  columnDefs = list(list(width = '100px', targets = c(0, 1, 2, 3)),
-                                    list(className = 'dt-center', targets = c(0, 1, 2, 3)))
-                ),
-                selection = "none",
-                escape = FALSE,
-                filter = "none",) %>%
-        formatStyle(columns = c(0,3),
-                    fontWeight = 'bold') %>%
-        formatStyle(columns = 1:3,
-                    target = 'row',
-                    fontWeight = styleRow(dim(pData2x2)[1], "bold"))
-    })
+    # pData2x2 <- matrix(pMatrixData2x2(), ncol = ncol(input$pMatrix2x2))
+    # pData2x2 <- getTotaledMatrix(pData2x2, input$pMatrix2x2)
+    # 
+    # output$pTable2x2 <- renderDT({
+    #   
+    #   # excelR::excelTable(cData2x2,
+    #   #            editable = FALSE,
+    #   #            autoFill = TRUE) 
+    #   
+    #   datatable(pData2x2,
+    #             class = 'cell-border stripe',
+    #             options = list(
+    #               dom = 't',
+    #               pageLength = -1,
+    #               ordering = FALSE,
+    #               searching = FALSE,
+    #               paging = FALSE,
+    #               autoWidth = FALSE,
+    #               scrollX = TRUE,
+    #               columnDefs = list(list(width = '100px', targets = c(0, 1, 2, 3)),
+    #                                 list(className = 'dt-center', targets = c(0, 1, 2, 3)))
+    #             ),
+    #             selection = "none",
+    #             escape = FALSE,
+    #             filter = "none",) %>%
+    #     formatStyle(columns = c(0,3),
+    #                 fontWeight = 'bold') %>%
+    #     formatStyle(columns = 1:3,
+    #                 target = 'row',
+    #                 fontWeight = styleRow(dim(pData2x2)[1], "bold"))
+    # })
     
     
     cData2x3 <- matrix(cMatrixData2x3(), ncol = ncol(input$cMatrix2x3))
@@ -2850,37 +2850,37 @@ server <- function(session, input, output) {
     })
     
     
-    pData2x3 <- matrix(pMatrixData2x3(), ncol = ncol(input$pMatrix2x3))
-    pData2x3 <- getTotaledMatrix(pData2x3, input$pMatrix2x3)
-    
-    output$pTable2x3 <- renderDT({
-      
-      # excelR::excelTable(cData2x2,
-      #            editable = FALSE,
-      #            autoFill = TRUE) 
-      
-      datatable(pData2x3,
-                class = 'cell-border stripe',
-                options = list(
-                  dom = 't',
-                  pageLength = -1,
-                  ordering = FALSE,
-                  searching = FALSE,
-                  paging = FALSE,
-                  autoWidth = FALSE,
-                  scrollX = TRUE,
-                  columnDefs = list(list(width = '100px', targets = c(0, 1, 2, 3, 4)),
-                                    list(className = 'dt-center', targets = c(0, 1, 2, 3, 4)))
-                ),
-                selection = "none",
-                escape = FALSE,
-                filter = "none",) %>%
-        formatStyle(columns = c(0,4),
-                    fontWeight = 'bold') %>%
-        formatStyle(columns = 1:4,
-                    target = 'row',
-                    fontWeight = styleRow(dim(pData2x3)[1], "bold"))
-    })
+    # pData2x3 <- matrix(pMatrixData2x3(), ncol = ncol(input$pMatrix2x3))
+    # pData2x3 <- getTotaledMatrix(pData2x3, input$pMatrix2x3)
+    # 
+    # output$pTable2x3 <- renderDT({
+    #   
+    #   # excelR::excelTable(cData2x2,
+    #   #            editable = FALSE,
+    #   #            autoFill = TRUE) 
+    #   
+    #   datatable(pData2x3,
+    #             class = 'cell-border stripe',
+    #             options = list(
+    #               dom = 't',
+    #               pageLength = -1,
+    #               ordering = FALSE,
+    #               searching = FALSE,
+    #               paging = FALSE,
+    #               autoWidth = FALSE,
+    #               scrollX = TRUE,
+    #               columnDefs = list(list(width = '100px', targets = c(0, 1, 2, 3, 4)),
+    #                                 list(className = 'dt-center', targets = c(0, 1, 2, 3, 4)))
+    #             ),
+    #             selection = "none",
+    #             escape = FALSE,
+    #             filter = "none",) %>%
+    #     formatStyle(columns = c(0,4),
+    #                 fontWeight = 'bold') %>%
+    #     formatStyle(columns = 1:4,
+    #                 target = 'row',
+    #                 fontWeight = styleRow(dim(pData2x3)[1], "bold"))
+    # })
     
     
     cData3x2 <- matrix(cMatrixData3x2(), ncol = ncol(input$cMatrix3x2))
@@ -2939,37 +2939,37 @@ server <- function(session, input, output) {
     })
     
     
-    pData3x2 <- matrix(pMatrixData3x2(), ncol = ncol(input$pMatrix3x2))
-    pData3x2 <- getTotaledMatrix(pData3x2, input$pMatrix3x2)
-    
-    output$pTable3x2 <- renderDT({
-      
-      # excelR::excelTable(cData2x2,
-      #            editable = FALSE,
-      #            autoFill = TRUE) 
-      
-      datatable(pData3x2,
-                class = 'cell-border stripe',
-                options = list(
-                  dom = 't',
-                  pageLength = -1,
-                  ordering = FALSE,
-                  searching = FALSE,
-                  paging = FALSE,
-                  autoWidth = FALSE,
-                  scrollX = TRUE,
-                  columnDefs = list(list(width = '100px', targets = c(0, 1, 2, 3)),
-                                    list(className = 'dt-center', targets = c(0, 1, 2, 3)))
-                ),
-                selection = "none",
-                escape = FALSE,
-                filter = "none",) %>%
-        formatStyle(columns = c(0,3),
-                    fontWeight = 'bold') %>%
-        formatStyle(columns = 1:3,
-                    target = 'row',
-                    fontWeight = styleRow(dim(pData3x2)[1], "bold"))
-    })
+    # pData3x2 <- matrix(pMatrixData3x2(), ncol = ncol(input$pMatrix3x2))
+    # pData3x2 <- getTotaledMatrix(pData3x2, input$pMatrix3x2)
+    # 
+    # output$pTable3x2 <- renderDT({
+    #   
+    #   # excelR::excelTable(cData2x2,
+    #   #            editable = FALSE,
+    #   #            autoFill = TRUE) 
+    #   
+    #   datatable(pData3x2,
+    #             class = 'cell-border stripe',
+    #             options = list(
+    #               dom = 't',
+    #               pageLength = -1,
+    #               ordering = FALSE,
+    #               searching = FALSE,
+    #               paging = FALSE,
+    #               autoWidth = FALSE,
+    #               scrollX = TRUE,
+    #               columnDefs = list(list(width = '100px', targets = c(0, 1, 2, 3)),
+    #                                 list(className = 'dt-center', targets = c(0, 1, 2, 3)))
+    #             ),
+    #             selection = "none",
+    #             escape = FALSE,
+    #             filter = "none",) %>%
+    #     formatStyle(columns = c(0,3),
+    #                 fontWeight = 'bold') %>%
+    #     formatStyle(columns = 1:3,
+    #                 target = 'row',
+    #                 fontWeight = styleRow(dim(pData3x2)[1], "bold"))
+    # })
     
     
     
@@ -3029,37 +3029,37 @@ server <- function(session, input, output) {
     })
     
     
-    pData3x3 <- matrix(pMatrixData3x3(), ncol = ncol(input$pMatrix3x3))
-    pData3x3 <- getTotaledMatrix(pData3x3, input$pMatrix3x3)
-    
-    output$pTable3x3 <- renderDT({
-      
-      # excelR::excelTable(cData2x2,
-      #            editable = FALSE,
-      #            autoFill = TRUE) 
-      
-      datatable(pData3x3,
-                class = 'cell-border stripe',
-                options = list(
-                  dom = 't',
-                  pageLength = -1,
-                  ordering = FALSE,
-                  searching = FALSE,
-                  paging = FALSE,
-                  autoWidth = FALSE,
-                  scrollX = TRUE,
-                  columnDefs = list(list(width = '100px', targets = c(0, 1, 2, 3, 4)),
-                                    list(className = 'dt-center', targets = c(0, 1, 2, 3, 4)))
-                ),
-                selection = "none",
-                escape = FALSE,
-                filter = "none",) %>%
-        formatStyle(columns = c(0,4),
-                    fontWeight = 'bold') %>%
-        formatStyle(columns = 1:4,
-                    target = 'row',
-                    fontWeight = styleRow(dim(pData3x3)[1], "bold"))
-    })
+    # pData3x3 <- matrix(pMatrixData3x3(), ncol = ncol(input$pMatrix3x3))
+    # pData3x3 <- getTotaledMatrix(pData3x3, input$pMatrix3x3)
+    # 
+    # output$pTable3x3 <- renderDT({
+    #   
+    #   # excelR::excelTable(cData2x2,
+    #   #            editable = FALSE,
+    #   #            autoFill = TRUE) 
+    #   
+    #   datatable(pData3x3,
+    #             class = 'cell-border stripe',
+    #             options = list(
+    #               dom = 't',
+    #               pageLength = -1,
+    #               ordering = FALSE,
+    #               searching = FALSE,
+    #               paging = FALSE,
+    #               autoWidth = FALSE,
+    #               scrollX = TRUE,
+    #               columnDefs = list(list(width = '100px', targets = c(0, 1, 2, 3, 4)),
+    #                                 list(className = 'dt-center', targets = c(0, 1, 2, 3, 4)))
+    #             ),
+    #             selection = "none",
+    #             escape = FALSE,
+    #             filter = "none",) %>%
+    #     formatStyle(columns = c(0,4),
+    #                 fontWeight = 'bold') %>%
+    #     formatStyle(columns = 1:4,
+    #                 target = 'row',
+    #                 fontWeight = styleRow(dim(pData3x3)[1], "bold"))
+    # })
     
     
     if(input$cTableDimension == '2 x 2') {

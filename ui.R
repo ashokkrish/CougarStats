@@ -233,19 +233,19 @@
                   inline  = TRUE
                 ),
                                                                             
-                radioButtons(
-                  inputId = "cTableType",
-                  label   = strong("Data Format"),
-                  choices = c("Frequency Distribution",
-                              "Probability Distribution"),
-                  inline  = TRUE
-                ),
+                # radioButtons(
+                #   inputId = "cTableType",
+                #   label   = strong("Data Format"),
+                #   choices = c("Frequency Distribution",
+                #               "Probability Distribution"),
+                #   inline  = TRUE
+                # ),
                                                                             
                 conditionalPanel(
                   condition = "input.cTableDimension == '2 x 2'",
                                                                                             
-                  conditionalPanel(
-                    condition = "input.cTableType == 'Frequency Distribution'",
+                  # conditionalPanel(
+                  #   condition = "input.cTableType == 'Frequency Distribution'",
 
                     matrixInput(
                       inputId = "cMatrix2x2",
@@ -257,29 +257,29 @@
                       rows = list(editableNames = TRUE),
                       cols = list(editableNames = TRUE)
                     ),
-                  ), # Frequency Distribution
+                  # ), # Frequency Distribution
 
-                  conditionalPanel(
-                    condition = "input.cTableType == 'Probability Distribution'",
+                  # conditionalPanel(
+                  #   condition = "input.cTableType == 'Probability Distribution'",
 
-                    matrixInput(
-                      inputId = "pMatrix2x2",
-                      inputClass = "cMatrix",
-                      value = matrix(c(0.18,0.22, 0.41,0.19), 
-                                     2, 2, 
-                                     dimnames = list(c("R1", "R2"), 
-                                                     c("C1", "C2"))),
-                      rows = list(editableNames = TRUE),
-                      cols = list(editableNames = TRUE)
-                    ),
-                  ), # Probability Distribution
+                  #   matrixInput(
+                  #     inputId = "pMatrix2x2",
+                  #     inputClass = "cMatrix",
+                  #     value = matrix(c(0.18,0.22, 0.41,0.19), 
+                  #                    2, 2, 
+                  #                    dimnames = list(c("R1", "R2"), 
+                  #                                    c("C1", "C2"))),
+                  #     rows = list(editableNames = TRUE),
+                  #     cols = list(editableNames = TRUE)
+                  #   ),
+                  # ), # Probability Distribution
                 ), # 2x2
                                                                             
                 conditionalPanel(
                   condition = "input.cTableDimension == '2 x 3'",
                                                                             
-                  conditionalPanel(
-                    condition = "input.cTableType == 'Frequency Distribution'",
+                  # conditionalPanel(
+                  #   condition = "input.cTableType == 'Frequency Distribution'",
                                                                               
                     matrixInput(
                       inputId = "cMatrix2x3",
@@ -291,29 +291,29 @@
                       rows = list(editableNames = TRUE),
                       cols = list(editableNames = TRUE)
                     ),
-                  ), # Frequency Distribution
+                  # ), # Frequency Distribution
                                                                               
-                  conditionalPanel(
-                    condition = "input.cTableType == 'Probability Distribution'",
-                                                                                
-                    matrixInput(
-                      inputId = "pMatrix2x3",
-                      inputClass = "cMatrix",
-                      value = matrix(c(0.28,0.11, 0.08,0.26, 0.13,0.14), 
-                                     2, 3, 
-                                     dimnames = list(c("R1", "R2"), 
-                                                     c("C1", "C2", "C3"))),
-                      rows = list(editableNames = TRUE),
-                      cols = list(editableNames = TRUE)
-                    ),
-                  ), # Probability Distribution
+                  # conditionalPanel(
+                  #   condition = "input.cTableType == 'Probability Distribution'",
+                  #                                                               
+                  #   matrixInput(
+                  #     inputId = "pMatrix2x3",
+                  #     inputClass = "cMatrix",
+                  #     value = matrix(c(0.28,0.11, 0.08,0.26, 0.13,0.14), 
+                  #                    2, 3, 
+                  #                    dimnames = list(c("R1", "R2"), 
+                  #                                    c("C1", "C2", "C3"))),
+                  #     rows = list(editableNames = TRUE),
+                  #     cols = list(editableNames = TRUE)
+                  #   ),
+                  # ), # Probability Distribution
                 ), # 2x3
                                                                             
                 conditionalPanel(
                   condition = "input.cTableDimension == '3 x 2'",
                                                                               
-                  conditionalPanel(
-                    condition = "input.cTableType == 'Frequency Distribution'",
+                  # conditionalPanel(
+                  #   condition = "input.cTableType == 'Frequency Distribution'",
                                                                                 
                     matrixInput(
                       inputId = "cMatrix3x2",
@@ -325,29 +325,29 @@
                       rows = list(editableNames = TRUE),
                       cols = list(editableNames = TRUE)
                     ),
-                  ), # Frequency Distribution
+                  # ), # Frequency Distribution
                                                                               
-                  conditionalPanel(
-                    condition = "input.cTableType == 'Probability Distribution'",
-                                                                                
-                    matrixInput(
-                      inputId = "pMatrix3x2",
-                      inputClass = "cMatrix",
-                      value = matrix(c(0.115,0.075,0.142, 0.250,0.183,0.235), 
-                                     3, 2, 
-                                     dimnames = list(c("R1", "R2", "R3"), 
-                                                     c("C1", "C2"))),
-                      rows = list(editableNames = TRUE),
-                      cols = list(editableNames = TRUE)
-                    ),
-                  ), # Probability Distribution
+                  # conditionalPanel(
+                  #   condition = "input.cTableType == 'Probability Distribution'",
+                  #                                                               
+                  #   matrixInput(
+                  #     inputId = "pMatrix3x2",
+                  #     inputClass = "cMatrix",
+                  #     value = matrix(c(0.115,0.075,0.142, 0.250,0.183,0.235), 
+                  #                    3, 2, 
+                  #                    dimnames = list(c("R1", "R2", "R3"), 
+                  #                                    c("C1", "C2"))),
+                  #     rows = list(editableNames = TRUE),
+                  #     cols = list(editableNames = TRUE)
+                  #   ),
+                  # ), # Probability Distribution
                 ), # 3x2
                                                                             
                 conditionalPanel(
                   condition = "input.cTableDimension == '3 x 3'",
                                                                                             
-                  conditionalPanel(
-                    condition = "input.cTableType == 'Frequency Distribution'",
+                  # conditionalPanel(
+                  #   condition = "input.cTableType == 'Frequency Distribution'",
                                                 
                     matrixInput(
                       inputId = "cMatrix3x3",
@@ -359,22 +359,22 @@
                       rows = list(editableNames = TRUE),
                       cols = list(editableNames = TRUE)
                     ),
-                  ), # Frequency Distribution
+                  # ), # Frequency Distribution
                                                                                 
-                  conditionalPanel(
-                    condition = "input.cTableType == 'Probability Distribution'",
-                                                                                  
-                    matrixInput(
-                      inputId    = "pMatrix3x3",
-                      inputClass = "cMatrix",
-                      value      = matrix(c(0.0262,0.0611,0.2183, 0.1659,0.1354,0.2184, 0.1354,0.0175,0.0218), 
-                                          3, 3, 
-                                          dimnames = list(c("R1", "R2", "R3"), 
-                                                          c("C1", "C2", "C3"))),
-                      rows       = list(editableNames = TRUE),
-                      cols       = list(editableNames = TRUE)
-                    ),
-                  ), # Probability Distribution            
+                  # conditionalPanel(
+                  #   condition = "input.cTableType == 'Probability Distribution'",
+                  #                                                                 
+                  #   matrixInput(
+                  #     inputId    = "pMatrix3x3",
+                  #     inputClass = "cMatrix",
+                  #     value      = matrix(c(0.0262,0.0611,0.2183, 0.1659,0.1354,0.2184, 0.1354,0.0175,0.0218), 
+                  #                         3, 3, 
+                  #                         dimnames = list(c("R1", "R2", "R3"), 
+                  #                                         c("C1", "C2", "C3"))),
+                  #     rows       = list(editableNames = TRUE),
+                  #     cols       = list(editableNames = TRUE)
+                  #   ),
+                  # ), # Probability Distribution            
                 ), # 3x3
                                                                             
                 radioButtons(
@@ -2016,73 +2016,73 @@
                   conditionalPanel(
                     condition = "input.cTableDimension == '2 x 2'",
                                                                    
-                    conditionalPanel(
-                      condition = "input.cTableType == 'Frequency Distribution'",
+                    # conditionalPanel(
+                    #   condition = "input.cTableType == 'Frequency Distribution'",
                                                                      
                       uiOutput("render2x2cTable"),
                       br(),
-                    ), # 2x2 Frequency Distribution
+                    # ), # 2x2 Frequency Distribution
                                                                    
-                    conditionalPanel(
-                      condition = "input.cTableType == 'Probability Distribution'",
-                                                                     
-                      uiOutput("render2x2pTable"),
-                      br(),
-                    ), # 2x2 Probability Distribution
+                    # conditionalPanel(
+                    #   condition = "input.cTableType == 'Probability Distribution'",
+                    #                                                  
+                    #   uiOutput("render2x2pTable"),
+                    #   br(),
+                    # ), # 2x2 Probability Distribution
                   ), # cTableDimension == 2 x 2
                                                                  
                   conditionalPanel(
                     condition = "input.cTableDimension == '2 x 3'",
                                                                    
-                    conditionalPanel(
-                      condition = "input.cTableType == 'Frequency Distribution'",
+                    # conditionalPanel(
+                    #   condition = "input.cTableType == 'Frequency Distribution'",
                                                                      
                       uiOutput("render2x3cTable"),
                       br(),
-                    ), # 2x3 Frequency Distribution
-                                                                   
-                    conditionalPanel(
-                      condition = "input.cTableType == 'Probability Distribution'",
-                                                                     
-                      uiOutput("render2x3pTable"),
-                      br(),
-                    ), # 2x3 Probability Distribution
+                    # ), # 2x3 Frequency Distribution
+                    #                                                
+                    # conditionalPanel(
+                    #   condition = "input.cTableType == 'Probability Distribution'",
+                    #                                                  
+                    #   uiOutput("render2x3pTable"),
+                    #   br(),
+                    # ), # 2x3 Probability Distribution
                   ), # cTableDimension == 2 x 3
                                                                  
                   conditionalPanel(
                     condition = "input.cTableDimension == '3 x 2'",
                                                                    
-                    conditionalPanel(
-                      condition = "input.cTableType == 'Frequency Distribution'",
+                    # conditionalPanel(
+                    #   condition = "input.cTableType == 'Frequency Distribution'",
                                                                      
                       uiOutput("render3x2cTable"),
                       br(),
-                    ), # 3x2 Frequency Distribution
+                    # ), # 3x2 Frequency Distribution
                                                                    
-                    conditionalPanel(
-                      condition = "input.cTableType == 'Probability Distribution'",
-                                                                     
-                      uiOutput("render3x2pTable"),
-                      br(),
-                    ), # 3x2 Probability Distribution
+                    # conditionalPanel(
+                    #   condition = "input.cTableType == 'Probability Distribution'",
+                    #                                                  
+                    #   uiOutput("render3x2pTable"),
+                    #   br(),
+                    # ), # 3x2 Probability Distribution
                   ), # cTableDimension == 3 x 2
                 
                   conditionalPanel(
                     condition = "input.cTableDimension == '3 x 3'",
                                                                    
-                    conditionalPanel(
-                      condition = "input.cTableType == 'Frequency Distribution'",
+                    # conditionalPanel(
+                    #   condition = "input.cTableType == 'Frequency Distribution'",
                                                                      
                       uiOutput("render3x3cTable"),
                       br(),
-                    ), # 3x3 Frequency Distribution
+                    # ), # 3x3 Frequency Distribution
                                                                    
-                    conditionalPanel(
-                      condition = "input.cTableType == 'Probability Distribution'",
-                                                                     
-                      uiOutput("render3x3pTable"),
-                      br(),
-                    ), # 3x3 Probability Distribution
+                    # conditionalPanel(
+                    #   condition = "input.cTableType == 'Probability Distribution'",
+                    #                                                  
+                    #   uiOutput("render3x3pTable"),
+                    #   br(),
+                    # ), # 3x3 Probability Distribution
                   ), # cTableDimension == 3 x 3
                 
                   # conditionalPanel(
@@ -2092,8 +2092,8 @@
                   #   br(),
                   # )
                                                                  
-                  conditionalPanel(
-                    condition = "input.cTableType == 'Frequency Distribution'",
+                  # conditionalPanel(
+                  #   condition = "input.cTableType == 'Frequency Distribution'",
                                                                    
                     conditionalPanel(
                       condition = "input.cTableProb == 'Marginal'",
@@ -2118,7 +2118,7 @@
                                                                      
                       uiOutput('renderConditionalProbs')
                     ) # Conditional
-                  ),
+                  # ),
                 ), # Contingency Table
                   
                                               
