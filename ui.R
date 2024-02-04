@@ -2744,7 +2744,7 @@
       # ---- Authors Tab ---- 
       # --------------------- #
       tabPanel("Authors",
-        h3("Developement Team", style= "font-weight:bold"),
+        h3("Development Team", style= "font-weight:bold"),
                                       
         br(),
                                       
@@ -2762,18 +2762,10 @@
         br(),
                                       
         p(span("Michael Myer,", style= "font-weight:bold")),
-        p("Developer"),
+        p("Senior Developer"),
         #p(span("Lead Developer", style = "font-weight:bold")),
         p("Undergraduate Student, Mount Royal University,"),
         p("Calgary, AB, CANADA"),
-                                      
-        br(),
-                                    
-        p(span("Crystal Wai,", style= "font-weight:bold")),
-        p("Developer"),
-        #p(span("Lead Developer", style = "font-weight:bold")),
-        p("Undergraduate Student, Mount Royal University,"), 
-        p("Calgary, AB, CANADA"), 
                                       
         br(),
                                       
