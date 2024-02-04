@@ -1142,6 +1142,8 @@ server <- function(session, input, output) {
   ### Reactives ----
   # --------------------------------------------------------------------- #
   
+  dsReset <- reactiveVal(FALSE)
+  
   # Function to convert the raw data input into a numeric list
   dsRawData <- reactive ({
     dat <- createNumLst(input$descriptiveStat)
@@ -1312,6 +1314,8 @@ server <- function(session, input, output) {
     
     if(ds_iv$is_valid())
     {
+      dsReset(FALSE)
+      
       output$dsDataTable <- renderUI({
 
         tagList(
@@ -1530,6 +1534,7 @@ server <- function(session, input, output) {
   dsTableProxy <- dataTableProxy('dsTableData')
   
   observeEvent(input$dsTableFilters, {
+    req(dsReset() == FALSE)
     
     df <- getDsDataframe()
     
@@ -8385,6 +8390,7 @@ server <- function(session, input, output) {
   })
   
   observeEvent(input$resetAll,{
+    dsReset(TRUE)
     hide(id = 'descriptiveStatsMP')
     shinyjs::reset("descriptiveStatsPanel")
     fileInputs$dsStatus <- 'reset'
