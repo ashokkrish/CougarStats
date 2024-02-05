@@ -74,6 +74,10 @@ server <- function(session, input, output) {
   oneprop_iv <- InputValidator$new()
   onepropht_iv <- InputValidator$new()
   twoprop_iv <- InputValidator$new()
+  chiSq2x2_iv <- InputValidator$new()
+  chiSq2x3_iv <- InputValidator$new()
+  chiSq3x2_iv <- InputValidator$new()
+  chiSq3x3_iv <- InputValidator$new()
   
   regcor_iv <- InputValidator$new()
   slrraw_iv <- InputValidator$new()
@@ -728,120 +732,162 @@ server <- function(session, input, output) {
   onepropht_iv$add_rule("hypProportion", sv_gt(0))
   onepropht_iv$add_rule("hypProportion", sv_lt(1))
   
+  # Chi-Square
+  
+  # 2 x 2
+  chiSq2x2_iv$add_rule("chiSqInput2x2", sv_required())
+  chiSq2x2_iv$add_rule("chiSqInput2x2", ~ if(any(is.na(chiSqData2x2()))) "Fields must be positive integers.")
+  chiSq2x2_iv$add_rule("chiSqInput2x2", ~ if(any(chiSqData2x2() < 0)) "Fields must be positive integers.")
+  chiSq2x2_iv$add_rule("chiSqInput2x2", ~ if(any(chiSqData2x2() %% 1 != 0)) "Fields must be positive integers.")
+  chiSq2x2_iv$add_rule("chiSqInput2x2", ~ if(all(chiSqData2x2() == 0)) "All cell values cannot be equal to zero.")
+  
+  # 2 x 3
+  chiSq2x3_iv$add_rule("chiSqInput2x3", sv_required())
+  chiSq2x3_iv$add_rule("chiSqInput2x3", ~ if(any(is.na(chiSqData2x3()))) "Fields must be positive integers.")
+  chiSq2x3_iv$add_rule("chiSqInput2x3", ~ if(any(chiSqData2x3() < 0)) "Fields must be positive integers.")
+  chiSq2x3_iv$add_rule("chiSqInput2x3", ~ if(any(chiSqData2x3() %% 1 != 0)) "Fields must be positive integers.")
+  chiSq2x3_iv$add_rule("chiSqInput2x3", ~ if(all(chiSqData2x3() == 0)) "All cell values cannot be equal to zero.")
+  
+  # 3 x 2
+  chiSq3x2_iv$add_rule("chiSqInput3x2", sv_required())
+  chiSq3x2_iv$add_rule("chiSqInput3x2", ~ if(any(is.na(chiSqData3x2()))) "Fields must be positive integers.")
+  chiSq3x2_iv$add_rule("chiSqInput3x2", ~ if(any(chiSqData3x2() < 0)) "Fields must be positive integers.")
+  chiSq3x2_iv$add_rule("chiSqInput3x2", ~ if(any(chiSqData3x2() %% 1 != 0)) "Fields must be positive integers.")
+  chiSq3x2_iv$add_rule("chiSqInput3x2", ~ if(all(chiSqData3x2() == 0)) "All cell values cannot be equal to zero.")
+  
+  # 3 x 3
+  chiSq3x3_iv$add_rule("chiSqInput3x3", sv_required())
+  chiSq3x3_iv$add_rule("chiSqInput3x3", ~ if(any(is.na(chiSqData3x3()))) "Fields must be positive integers.")
+  chiSq3x3_iv$add_rule("chiSqInput3x3", ~ if(any(chiSqData3x3() < 0)) "Fields must be positive integers.")
+  chiSq3x3_iv$add_rule("chiSqInput3x3", ~ if(any(chiSqData3x3() %% 1 != 0)) "Fields must be positive integers.")
+  chiSq3x3_iv$add_rule("chiSqInput3x3", ~ if(all(chiSqData3x3() == 0)) "All cell values cannot be equal to zero.")
+  
   
   # ------------------ #
   #     Conditions     #
   # ------------------ #
-  onemean_iv$condition(~ isTRUE(input$samplesSelect == '1' && 
+  onemean_iv$condition(~ isTRUE(input$siMethod == '1' && 
                                 input$popuParameter == 'Population Mean' && 
                                 input$dataAvailability == 'Summarized Data'))
   
-  onemeansdknown_iv$condition(~ isTRUE(input$samplesSelect == '1' && 
+  onemeansdknown_iv$condition(~ isTRUE(input$siMethod == '1' && 
                                        input$popuParameter == 'Population Mean' && 
                                        input$dataAvailability == 'Summarized Data' && 
                                        input$sigmaKnown == 'Known'))
   
-  onemeansdunk_iv$condition(~ isTRUE(input$samplesSelect == '1' && 
+  onemeansdunk_iv$condition(~ isTRUE(input$siMethod == '1' && 
                                      input$popuParameter == 'Population Mean' && 
                                      input$dataAvailability == 'Summarized Data' && 
                                      input$sigmaKnown == 'Unknown'))
   
-  onemeanraw_iv$condition(~ isTRUE(input$samplesSelect == '1' && 
+  onemeanraw_iv$condition(~ isTRUE(input$siMethod == '1' && 
                                    input$popuParameter == 'Population Mean' && 
                                    input$dataAvailability == 'Enter Raw Data'))
   
-  onemeanupload_iv$condition(~ isTRUE(input$samplesSelect == '1' && 
+  onemeanupload_iv$condition(~ isTRUE(input$siMethod == '1' && 
                                       input$popuParameter == 'Population Mean' && 
                                       input$dataAvailability == 'Upload Data'))
   
-  onemeanuploadvar_iv$condition(function() {isTRUE(input$samplesSelect == '1' && 
+  onemeanuploadvar_iv$condition(function() {isTRUE(input$siMethod == '1' && 
                                                    input$popuParameter == 'Population Mean' &&
                                                    input$dataAvailability == 'Upload Data' && 
                                                    onemeanupload_iv$is_valid()) })
   
-  onemeanuploadsd_iv$condition(function() {isTRUE(input$samplesSelect == '1' &&
+  onemeanuploadsd_iv$condition(function() {isTRUE(input$siMethod == '1' &&
                                                   input$popuParameter == 'Population Mean' &&
                                                   input$dataAvailability == 'Upload Data' && 
                                                   input$sigmaKnownUpload == 'Known') })
   
-  onemeanht_iv$condition(~ isTRUE(input$samplesSelect == '1' && 
+  onemeanht_iv$condition(~ isTRUE(input$siMethod == '1' && 
                                   input$popuParameter == 'Population Mean' && 
                                   input$inferenceType == 'Hypothesis Testing'))
   
-  indmeanssumm_iv$condition(~ isTRUE(input$samplesSelect == '2' && 
+  indmeanssumm_iv$condition(~ isTRUE(input$siMethod == '2' && 
                                      input$popuParameters == 'Independent Population Means' && 
                                      input$dataAvailability2 == 'Summarized Data'))
   
-  indmeansraw_iv$condition(~ isTRUE(input$samplesSelect == '2' && 
+  indmeansraw_iv$condition(~ isTRUE(input$siMethod == '2' && 
                                     input$popuParameters == 'Independent Population Means' && 
                                     input$dataAvailability2 == 'Enter Raw Data'))
   
-  indmeanssdknown_iv$condition(~ isTRUE(input$samplesSelect == '2' && 
+  indmeanssdknown_iv$condition(~ isTRUE(input$siMethod == '2' && 
                                         input$popuParameters == 'Independent Population Means' && 
                                         input$dataAvailability2 == 'Summarized Data' && 
                                         input$bothsigmaKnown == 'bothKnown'))
   
-  indmeanssdunk_iv$condition(~ isTRUE(input$samplesSelect == '2' && 
+  indmeanssdunk_iv$condition(~ isTRUE(input$siMethod == '2' && 
                                       input$popuParameters == 'Independent Population Means' && 
                                       input$dataAvailability2 == 'Summarized Data' && 
                                         input$bothsigmaKnown == 'bothUnknown'))
   
-  indmeansrawsd_iv$condition(~ isTRUE(input$samplesSelect == '2' && 
+  indmeansrawsd_iv$condition(~ isTRUE(input$siMethod == '2' && 
                                       input$popuParameters == 'Independent Population Means' && 
                                       input$dataAvailability2 == 'Enter Raw Data' && 
                                       input$bothsigmaKnownRaw == 'bothKnown'))
   
-  indmeansrawsdunk_iv$condition(~ isTRUE(input$samplesSelect == '2' && 
+  indmeansrawsdunk_iv$condition(~ isTRUE(input$siMethod == '2' && 
                                         input$popuParameters == 'Independent Population Means' && 
                                         input$dataAvailability2 == 'Enter Raw Data' && 
                                         input$bothsigmaKnownRaw == 'bothUnknown' &&
                                         input$inferenceType2 == 'Hypothesis Testing' &&
                                         indmeansraw_iv$is_valid()))
   
-  indmeansupload_iv$condition(~ isTRUE(input$samplesSelect == '2' && 
+  indmeansupload_iv$condition(~ isTRUE(input$siMethod == '2' && 
                                        input$popuParameters == 'Independent Population Means' && 
                                        input$dataAvailability2 == 'Upload Data'))
   
-  indmeansuploadvar_iv$condition(function() {isTRUE(input$samplesSelect == '2' && 
+  indmeansuploadvar_iv$condition(function() {isTRUE(input$siMethod == '2' && 
                                                     input$popuParameters == 'Independent Population Means' && 
                                                     input$dataAvailability2 == 'Upload Data' && 
                                                     indmeansupload_iv$is_valid()) })
   
-  indmeansuploadsd_iv$condition(function() {isTRUE(input$samplesSelect == '2' && 
+  indmeansuploadsd_iv$condition(function() {isTRUE(input$siMethod == '2' && 
                                                    input$popuParameters == 'Independent Population Means' && 
                                                    input$dataAvailability2 == 'Upload Data' && 
                                                    input$bothsigmaKnownUpload == 'bothKnown') })
   
-  depmeansraw_iv$condition(~ isTRUE(input$samplesSelect == '2' && 
+  depmeansraw_iv$condition(~ isTRUE(input$siMethod == '2' && 
                                     input$popuParameters == 'Dependent Population Means' && 
                                     input$dataTypeDependent == 'Enter Raw Data'))
   
-  depmeansupload_iv$condition(~ isTRUE(input$samplesSelect == '2' && 
+  depmeansupload_iv$condition(~ isTRUE(input$siMethod == '2' && 
                                        input$popuParameters == 'Dependent Population Means' && 
                                        input$dataTypeDependent == 'Upload Data'))
   
-  depmeansuploadvars_iv$condition(~ isTRUE(input$samplesSelect == '2' && 
+  depmeansuploadvars_iv$condition(~ isTRUE(input$siMethod == '2' && 
                                            input$popuParameters == 'Dependent Population Means' && 
                                            input$dataTypeDependent == 'Upload Data' &&
                                            depmeansupload_iv$is_valid()))
   
-  depmeansrawsd_iv$condition(~ isTRUE(input$samplesSelect == '2' && 
+  depmeansrawsd_iv$condition(~ isTRUE(input$siMethod == '2' && 
                                       input$popuParameters == 'Dependent Population Means' &&
                                       input$dataTypeDependent == 'Enter Raw Data' &&
                                       input$inferenceType2 == 'Hypothesis Testing' &&
                                       depmeansraw_iv$is_valid()))
   
-  oneprop_iv$condition(~ isTRUE(input$samplesSelect == '1' && 
+  oneprop_iv$condition(~ isTRUE(input$siMethod == '1' && 
                                 input$popuParameter == 'Population Proportion'))
   
-  onepropht_iv$condition(~ isTRUE(input$samplesSelect == '1' && 
+  onepropht_iv$condition(~ isTRUE(input$siMethod == '1' && 
                                   input$popuParameter == 'Population Proportion' && 
                                   input$inferenceType == 'Hypothesis Testing'))
   
-  twoprop_iv$condition(~ isTRUE(input$samplesSelect == '2' && 
+  twoprop_iv$condition(~ isTRUE(input$siMethod == '2' && 
                                 input$popuParameters == 'Population Proportions'))
-
   
+  chiSq2x2_iv$condition(~ isTRUE(input$siMethod == 'Chi-Square' &&
+                                 input$chisquareDimension == '2 x 2'))
+  
+  chiSq2x3_iv$condition(~ isTRUE(input$siMethod == 'Chi-Square' &&
+                                 input$chisquareDimension == '2 x 3'))
+  
+  chiSq3x2_iv$condition(~ isTRUE(input$siMethod == 'Chi-Square' &&
+                                 input$chisquareDimension == '3 x 2'))
+  
+  chiSq3x3_iv$condition(~ isTRUE(input$siMethod == 'Chi-Square' &&
+                                 input$chisquareDimension == '3 x 3'))
+  
+
   # ------------------ #
   #     Dependency     #
   # ------------------ #
@@ -868,6 +914,10 @@ server <- function(session, input, output) {
   si_iv$add_validator(oneprop_iv)
   si_iv$add_validator(onepropht_iv)
   si_iv$add_validator(twoprop_iv)
+  si_iv$add_validator(chiSq2x2_iv)
+  si_iv$add_validator(chiSq2x3_iv)
+  si_iv$add_validator(chiSq3x2_iv) 
+  si_iv$add_validator(chiSq3x3_iv)
   
   
   # ------------------ #
@@ -898,6 +948,10 @@ server <- function(session, input, output) {
   oneprop_iv$enable()
   onepropht_iv$enable()
   twoprop_iv$enable()
+  chiSq2x2_iv$enable()
+  chiSq2x3_iv$enable()
+  chiSq3x2_iv$enable()
+  chiSq3x3_iv$enable()
   
   
   ## RC rules ---- 
@@ -5249,9 +5303,9 @@ server <- function(session, input, output) {
   
   ConfLvl <- reactive({
     
-    req(input$samplesSelect != 'n')
+    req(input$siMethod != 'n')
     
-    if(input$samplesSelect == '1') {
+    if(input$siMethod == '1') {
       
       if(input$confidenceLevel == '90%') {
         confLvl <- 0.9
@@ -5261,7 +5315,7 @@ server <- function(session, input, output) {
         confLvl <- 0.99
       }
       
-    } else if(input$samplesSelect == '2') {
+    } else if(input$siMethod == '2') {
       
       if(input$confidenceLevel2 == '90%') {
         confLvl <- 0.9
@@ -5270,7 +5324,9 @@ server <- function(session, input, output) {
       } else {
         confLvl <- 0.99
       }
-    } 
+    } else {
+      confLvl <- 0
+    }
     
     return(confLvl)
   })
@@ -5278,7 +5334,7 @@ server <- function(session, input, output) {
   
   SigLvl <- reactive({
     
-    if(input$samplesSelect == '1') {
+    if(input$siMethod == '1') {
       
       if(input$significanceLevel == "10%") {
         sigLvl <- 0.1 
@@ -5288,7 +5344,7 @@ server <- function(session, input, output) {
         sigLvl <- 0.01
       }
       
-    } else if (input$samplesSelect == '2') {
+    } else if (input$siMethod == '2') {
       
       if(input$significanceLevel2 == "10%") {
         sigLvl <- 0.1 
@@ -5845,6 +5901,73 @@ server <- function(session, input, output) {
   })
   
   
+  #### Chi-Square Reactives ----
+  chiSqData2x2 <- reactive({
+    suppressWarnings(as.numeric(input$chiSqInput2x2))
+  })
+  
+  chiSqData2x3 <- reactive({
+    suppressWarnings(as.numeric(input$chiSqInput2x3))
+  })
+  
+  chiSqData3x2 <- reactive({
+    suppressWarnings(as.numeric(input$chiSqInput3x2))
+  })
+  
+  chiSqData3x3 <- reactive({
+    suppressWarnings(as.numeric(input$chiSqInput3x3))
+  })
+  
+  chiSqActiveSet <- reactive({
+    if(input$chisquareDimension == "2 x 2") {
+      active <- matrix(chiSqData2x2(), ncol = ncol(input$chiSqInput2x2))
+    } else if (input$chisquareDimension == "2 x 3") {
+      active <- matrix(chiSqData2x3(), ncol = ncol(input$chiSqInput2x3))
+    } else if (input$chisquareDimension == "3 x 2") {
+      active <- matrix(chiSqData3x2(), ncol = ncol(input$chiSqInput3x2))
+    } else if (input$chisquareDimension == "3 x 3") {
+      active <- matrix(chiSqData3x3(), ncol = ncol(input$chiSqInput3x3))
+    }
+    
+    return(active)
+  })
+  
+  chiSq2x2Totaled <- reactive({
+    if(!any(is.na(chiSqData2x2()))){
+      chiSqData2x2 <- matrix(chiSqData2x2(), ncol = ncol(input$chiSqInput2x2))
+      chiSqData2x2 <- getTotaledMatrix(chiSqData2x2, input$chiSqInput2x2)
+      
+      return(chiSqData2x2)
+    }
+  })
+  
+  chiSq2x3Totaled <- reactive({
+    if(!any(is.na(chiSqData2x3()))){
+      chiSqData2x3 <- matrix(chiSqData2x3(), ncol = ncol(input$chiSqInput2x3))
+      chiSqData2x3 <- getTotaledMatrix(chiSqData2x3, input$chiSqInput2x3)
+      
+      return(chiSqData2x3)
+    }
+  })
+  
+  chiSq3x2Totaled <- reactive({
+    if(!any(is.na(chiSqData3x2()))){
+      chiSqData3x2 <- matrix(chiSqData3x2(), ncol = ncol(input$chiSqInput3x2))
+      chiSqData3x2 <- getTotaledMatrix(chiSqData3x2, input$chiSqInput3x2)
+      
+      return(chiSqData3x2)
+    }
+  })
+  
+  chiSq3x3Totaled <- reactive({
+    if(!any(is.na(chiSqData3x3()))) {
+      chiSqData3x3 <- matrix(chiSqData3x3(), ncol = ncol(input$chiSqInput3x3))
+      chiSqData3x3 <- getTotaledMatrix(chiSqData3x3, input$chiSqInput3x3)
+      
+      return(chiSqData3x3)
+    }
+  })
+  
   #### Samp Size Est Reactives ----
   criticalValue <- reactive({
     
@@ -5975,7 +6098,7 @@ server <- function(session, input, output) {
 
         errorClass = "myClass"
       )
-    } else if(input$samplesSelect == '1' && input$popuParameter == 'Population Proportion') {
+    } else if(input$siMethod == '1' && input$popuParameter == 'Population Proportion') {
       req(input$numSuccesses && input$numTrials)
       validate(
         need(input$numSuccesses <= input$numTrials, "Number of Successes (x) cannot be greater than Number of Trials (n)"),
@@ -5999,7 +6122,6 @@ server <- function(session, input, output) {
   # ------------------------------------------------------------------------ #
     
     if(!indmeanssumm_iv$is_valid()) {
-      
       validate(
         need(input$sampleSize1, "Sample Size 1 (n1) must be an integer greater than 1.") %then%
           need(input$sampleSize1 > 1 & input$sampleSize1 %% 1 == 0, "Sample Size 1 (n1) must be an integer greater than 1."),
@@ -6034,7 +6156,6 @@ server <- function(session, input, output) {
     }
     
     if(!indmeansraw_iv$is_valid()) {
-      
       validate(
         need(input$raw_sample1, "Sample 1 requires a minimum of 3 data points.") %then%
           need(length(createNumLst(input$raw_sample1)) > 2, "Sample Data requires a minimum of 3 data points."),
@@ -6048,7 +6169,6 @@ server <- function(session, input, output) {
     }
     
     if(!indmeansrawsd_iv$is_valid()) {
-      
       validate(
         need(input$popuSDRaw1 & input$popuSD1 > 0, "Population Standard Deviation 1 must be positive."),
         need(input$popuSDRaw2 & input$popuSD2 > 0, "Population Standard Deviation 2 must be positive."),
@@ -6058,7 +6178,6 @@ server <- function(session, input, output) {
     }
     
     if(!indmeansrawsdunk_iv$is_valid()) {
-      
       validate(
         need(sd(createNumLst(input$raw_sample1)) != 0 && sd(createNumLst(input$raw_sample2)) != 0, "The test statistic (t) will be undefined when the sample standard deviation of Sample 1 and Sample 2 are both 0."),
         
@@ -6088,7 +6207,6 @@ server <- function(session, input, output) {
     }
     
     if(!indmeansuploadvar_iv$is_valid()) {
-      
       validate(
         need(input$indMeansUplSample1, "Please select a column for Sample 1."),
         need(input$indMeansUplSample2, "Please select a column for Sample 2."),
@@ -6098,7 +6216,6 @@ server <- function(session, input, output) {
     }
     
     if(!indmeansuploadsd_iv$is_valid()) {
-      
       validate(
         need(input$popuSDUpload1 && input$popuSDUpload1 > 0, "Population Standard Deviation 1 must be positive."),
         need(input$popuSDUpload2 && input$popuSDUpload2 > 0, "Population Standard Deviation 2 must be positive."),
@@ -6111,7 +6228,6 @@ server <- function(session, input, output) {
   # ------------------------------------------------------------------------ #
     
     if(!depmeansraw_iv$is_valid()) {
-      
       validate(
         need(input$before, "'Before' sample data requires a minimum of 3 data points.") %then%
           need(length(createNumLst(input$before)) > 2, "'Before' sample Data requires a minimum of 3 data points."),
@@ -6150,7 +6266,6 @@ server <- function(session, input, output) {
     }
     
     if(!depmeansuploadvars_iv$is_valid()) {
-      
       validate(
         need(input$depMeansUplSample1, "Please select a column for the 'Before' sample data."),
         need(input$depMeansUplSample2, "Please select a column for the 'After' sample data."),
@@ -6164,7 +6279,6 @@ server <- function(session, input, output) {
   # ------------------------------------------------------------------------ #
     
     if(!twoprop_iv$is_valid()) {
-      
       validate(
         need(input$numSuccesses1, "Numeric value for Number of Successes 1 (x1) required"),
         need(input$numTrials1, "Numeric value for Number of Trials 1 (n1) required"),
@@ -6187,7 +6301,7 @@ server <- function(session, input, output) {
         errorClass = "myClass"
       )
     
-    } else if (input$samplesSelect == '2' && input$popuParameters == 'Population Proportions') {
+    } else if (input$siMethod == '2' && input$popuParameters == 'Population Proportions') {
       req(input$numSuccesses1 && input$numTrials1)
       req(input$numSuccesses2 && input$numTrials2)
       
@@ -6200,9 +6314,119 @@ server <- function(session, input, output) {
     }
     
     if(!depmeansrawsd_iv$is_valid()) {
-      
       validate(
         need(GetDepMeansData()$sd != 0, "The test statistic (t) will be undefined for sample data with a sample standard deviation of difference (sd) = 0."),
+        
+        errorClass = "myClass"
+      )
+    }
+    
+    # Chi-Square Validation 
+    # ------------------------------------------------------------------------ #
+    
+    if(!chiSq2x2_iv$is_valid()) {
+      validate(
+        need(input$chiSqInput2x2, "Fields must be positive integers."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(all(!is.na(chiSqData2x2())), "Fields must be positive integers.") %then%
+          need(all(chiSqData2x2() %% 1 == 0), "Fields must be positive integers."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(all(chiSqData2x2() >= 0), "Fields must be positive integers."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(any(chiSqData2x2() != 0), "All cell values cannot be equal to zero."),
+        
+        errorClass = "myClass"
+      )
+    }
+    
+    if(!chiSq2x3_iv$is_valid()) {
+      validate(
+        need(input$chiSqInput2x3, "Fields must be positive integers."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(all(!is.na(chiSqData2x3())), "Fields must be positive integers.") %then%
+          need(all(chiSqData2x3() %% 1 == 0), "Fields must be positive integers."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(all(chiSqData2x3() >= 0), "Fields must be positive integers."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(any(chiSqData2x3() != 0), "All cell values cannot be equal to zero."),
+        
+        errorClass = "myClass"
+      )
+    }
+    
+    if(!chiSq3x2_iv$is_valid()){
+      validate(
+        need(input$chiSqInput3x2, "Fields must be positive integers."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(all(!is.na(chiSqData3x2())), "Fields must be positive integers.") %then%
+          need(all(chiSqData3x2() %% 1 == 0), "Fields must be positive integers."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(all(chiSqData3x2() >= 0), "Fields must be positive integers."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(any(chiSqData3x2() != 0), "All cell values cannot be equal to zero."),
+        
+        errorClass = "myClass"
+      )
+    }
+    
+    if(!chiSq3x3_iv$is_valid()){
+      validate(
+        need(input$chiSqInput3x3, "Fields must be positive integers."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(all(!is.na(chiSqData3x3())), "Fields must be positive integers.") %then%
+          need(all(chiSqData3x3() %% 1 == 0), "Fields must be positive integers."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(all(chiSqData3x3() >= 0), "Fields must be positive integers."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(any(chiSqData3x3() != 0), "All cell values cannot be equal to zero."),
         
         errorClass = "myClass"
       )
@@ -7690,6 +7914,134 @@ server <- function(session, input, output) {
     htPlot
   })
 
+  #### Chi-Square Outputs ----
+  output$chiSq2x2 <- renderDT({
+    
+    datatable(chiSq2x2Totaled(),
+              class = 'cell-border stripe',
+              options = list(
+                dom = 't',
+                pageLength = -1,
+                ordering = FALSE,
+                searching = FALSE,
+                paging = FALSE,
+                autoWidth = FALSE,
+                scrollX = TRUE,
+                columnDefs = list(list(width = '100px', targets = c(0, 1, 2, 3)),
+                                  list(className = 'dt-center', targets = c(0, 1, 2, 3)))
+              ),
+              selection = "none",
+              escape = FALSE,
+              filter = "none",) %>%
+      formatStyle(columns = c(0,3),
+                  fontWeight = 'bold') %>%
+      formatStyle(columns = 1:3,
+                  target = 'row',
+                  fontWeight = styleRow(dim(chiSq2x2Totaled())[1], "bold")) 
+  })
+  
+  output$chiSq2x3 <- renderDT({
+    
+    datatable(chiSq2x3Totaled(),
+              class = 'cell-border stripe',
+              options = list(
+                dom = 't',
+                pageLength = -1,
+                ordering = FALSE,
+                searching = FALSE,
+                paging = FALSE,
+                autoWidth = FALSE,
+                scrollX = TRUE,
+                columnDefs = list(list(width = '100px', targets = c(1, 2, 3, 4)),
+                                  list(className = 'dt-center', targets = c(0, 1, 2, 3, 4)))
+              ),
+              selection = "none",
+              escape = FALSE,
+              filter = "none",) %>% 
+      formatStyle(columns = c(0,4), #specify columns to format
+                  fontWeight = 'bold') %>%
+      formatStyle(columns = 1:4,
+                  target = 'row',
+                  fontWeight = styleRow(dim(chiSq2x3Totaled())[1], "bold"))
+  })
+  
+  output$chiSq3x2 <- renderDT({
+    
+    datatable(chiSq3x2Totaled(),
+              class = 'cell-border stripe',
+              options = list(
+                dom = 't',
+                pageLength = -1,
+                ordering = FALSE,
+                searching = FALSE,
+                paging = FALSE,
+                autoWidth = FALSE,
+                scrollX = TRUE,
+                columnDefs = list(list(width = '100px', targets = c(1, 2, 3)),
+                                  list(className = 'dt-center', targets = c(0, 1, 2, 3)))
+              ),
+              selection = "none",
+              escape = FALSE,
+              filter = "none",) %>% 
+      formatStyle(columns = c(0,3), #specify columns to format
+                  fontWeight = 'bold') %>%
+      formatStyle(columns = 1:3,
+                  target = 'row',
+                  fontWeight = styleRow(dim(chiSq3x2Totaled())[1], "bold"))
+  })
+  
+  output$chiSq3x3 <- renderDT({
+    
+    datatable(chiSq3x3Totaled(),
+              class = 'cell-border stripe',
+              options = list(
+                dom = 't',
+                pageLength = -1,
+                ordering = FALSE,
+                searching = FALSE,
+                paging = FALSE,
+                autoWidth = FALSE,
+                scrollX = TRUE,
+                columnDefs = list(list(width = '100px', targets = c(1, 2, 3, 4)),
+                                  list(className = 'dt-center', targets = c(0, 1, 2, 3, 4)))
+              ),
+              selection = "none",
+              escape = FALSE,
+              filter = "none",) %>% 
+      formatStyle(columns = c(0,4), #specify columns to format
+                  fontWeight = 'bold') %>%
+      formatStyle(columns = 1:4,
+                  target = 'row',
+                  fontWeight = styleRow(dim(chiSq3x3Totaled())[1], "bold"))
+  })
+  
+  output$chiSqResultsMatrix <- renderDT({
+    req(si_iv$is_valid())
+    
+    chiSqTest <- suppressWarnings(ChiSquareTest(chiSqActiveSet(), input$chiSquareYates))
+    
+    datatable(chiSqTest$Matrix,
+              class = 'cell-border stripe',
+              options = list(
+                dom = 't',
+                pageLength = -1,
+                ordering = FALSE,
+                searching = FALSE,
+                paging = FALSE,
+                autoWidth = FALSE,
+                scrollX = TRUE,
+                columnDefs = list(
+                  list(width = '130px', targets = c(0, 1, 2, 3, 4)),
+                  list(className = 'dt-center', targets = c(0, 1, 2, 3, 4)))
+              ),
+              selection = "none",
+              escape = FALSE,
+              filter = "none",
+              rownames = FALSE) %>%
+      formatStyle(columns = 0:ncol(chiSqTest$Matrix),
+                  target = 'row',
+                  fontWeight = styleRow(dim(chiSqTest$Matrix)[1], "bold")) 
+  })
   
   # --------------------------------------------------------------------- #
   
@@ -7770,7 +8122,7 @@ server <- function(session, input, output) {
       hide(id = "inferenceData")
     }
     
-    if(input$samplesSelect == '1'){
+    if(input$siMethod == '1'){
 
       if(input$popuParameter == 'Population Proportion') {
         req(input$numTrials && input$numSuccesses)
@@ -7780,7 +8132,7 @@ server <- function(session, input, output) {
       } # input$popuParameter == 'Population Proportion'
     } # one sample
     
-    else if(input$samplesSelect == '2') {
+    else if(input$siMethod == '2') {
  
       if(input$popuParameters == 'Population Proportions') {
         req(input$numSuccesses1 && input$numTrials1)
@@ -7796,6 +8148,59 @@ server <- function(session, input, output) {
           DTOutput("depMeansData")
         })
       }
+    } else if(input$siMethod == 'Chi-Square') {
+      
+      output$render2x2ChiSq <- renderUI({
+        tagList(
+          
+          titlePanel("Chi-Square Test for Independence"),
+          hr(),
+          br(),
+          DTOutput("chiSq2x2", width = '500px'),
+          br(),
+          br(),
+          br(),
+        )
+      })
+      
+      output$render2x3ChiSq <- renderUI({
+        tagList(
+          
+          titlePanel("Chi-Square Test for Independence"),
+          hr(),
+          br(),
+          DTOutput("chiSq2x3", width = '500px'),
+          br(),
+          br(),
+          br(),
+        )
+      })
+      
+      output$render3x2ChiSq <- renderUI({
+        tagList(
+          
+          titlePanel("Chi-Square Test for Independence"),
+          hr(),
+          br(),
+          DTOutput("chiSq3x2", width = '500px'),
+          br(),
+          br(),
+          br(),
+        )
+      })
+      
+      output$render3x3ChiSq <- renderUI({
+        tagList(
+          
+          titlePanel("Chi-Square Test for Independence"),
+          hr(),
+          br(),
+          DTOutput("chiSq3x3", width = '500px'),
+          br(),
+          br(),
+          br(),
+        )
+      })
     }
     #) # renderInference
   }) # input$goInference
@@ -8567,7 +8972,7 @@ server <- function(session, input, output) {
     hide(id = "inferenceData")
   })
   
-  observeEvent({input$samplesSelect
+  observeEvent({input$siMethod
                 input$sampleSize
                 input$sampleMean
                 input$popuParameter

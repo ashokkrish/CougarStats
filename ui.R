@@ -865,14 +865,17 @@
               style     = "display: none;",
                                                            
               radioButtons(
-                inputId      = "samplesSelect",
-                label        = strong("Number of samples"),
+                inputId      = "siMethod",
+                label        = strong("Methodology"),
                 choiceValues = list("1", 
-                                    "2"),
-                choiceNames  = list("1", 
-                                    "2"),
-                selected     = "1", #character(0), #
-                inline       = TRUE
+                                    "2",
+                                    "Multiple",
+                                    "Chi-Square"),
+                choiceNames  = list("Inference about 1 sample", 
+                                    "Inference about 2 samples",
+                                    "Inference about more than 2 samples",
+                                    "Chi-Square tests"),
+                selected     = "1"
               ), #,width = '1000px'),
                                                            
               # radioButtons(inputId = "popuDistribution",
@@ -893,7 +896,7 @@
               # ),
                                                            
               conditionalPanel( #### 1 Sample ----
-                condition = "input.samplesSelect == '1'",
+                condition = "input.siMethod == '1'",
                                                                            
                 radioButtons(
                   inputId      = "popuParameter",
@@ -1169,10 +1172,10 @@
                     value   = TRUE
                   )
                 ) # Pop Mean ! Summarized
-              ), #"input.samplesSelect == '1'"
+              ), #"input.siMethod == '1'"
                                                            
               conditionalPanel( #### 2 Sample ----
-                condition = "input.samplesSelect == '2'",
+                condition = "input.siMethod == '2'",
                                                            
                 radioButtons(
                   inputId      = "popuParameters",
@@ -1605,7 +1608,125 @@
                     value   = TRUE
                   )
                 ), # Ind Means !Summarized
-              ), # "input.samplesSelect == '2'",
+              ), # "input.siMethod == '2'",
+              
+              conditionalPanel( #### Chi-Square ----
+                condition = 'input.siMethod == "Chi-Square"',
+                                
+                radioButtons(
+                  inputId = "chisquareDimension",
+                  label   = strong("Dimension"),
+                  choices = c("2 x 2",
+                              "2 x 3",
+                              "3 x 2",
+                              "3 x 3"),
+                  inline  = TRUE
+                ),
+                                
+                conditionalPanel(
+                  condition = "input.chisquareDimension == '2 x 2'",
+                                  
+                  matrixInput(
+                    inputId = "chiSqInput2x2",
+                    inputClass = "cMatrix",
+                    value = matrix(nrow = 2, 
+                                   ncol = 2, 
+                                   dimnames = list(c("R1", "R2"), 
+                                                   c("C1", "C2"))),
+                    rows = list(editableNames = TRUE),
+                    cols = list(editableNames = TRUE),
+                    class = "numeric"
+                  ),
+                ),
+                                
+                conditionalPanel(
+                  condition = "input.chisquareDimension == '2 x 3'",
+                                  
+                  matrixInput(
+                    inputId = "chiSqInput2x3",
+                    inputClass = "cMatrix",
+                    value = matrix(nrow = 2, 
+                                   ncol = 3, 
+                                   dimnames = list(c("R1", "R2"), 
+                                                   c("C1", "C2", "C3"))),
+                    rows = list(editableNames = TRUE),
+                    cols = list(editableNames = TRUE),
+                    class = "numeric"
+                  ),
+                ),
+                                
+                conditionalPanel(
+                  condition = "input.chisquareDimension == '3 x 2'",
+                                  
+                  matrixInput(
+                    inputId = "chiSqInput3x2",
+                    inputClass = "cMatrix",
+                    value = matrix(nrow = 3, 
+                                   ncol = 2, 
+                                   dimnames = list(c("R1", "R2", "R3"), 
+                                                   c("C1", "C2"))),
+                    rows = list(editableNames = TRUE),
+                    cols = list(editableNames = TRUE),
+                    class = "numeric"
+                  ),
+                ),
+                                
+                conditionalPanel(
+                  condition = "input.chisquareDimension == '3 x 3'",
+                                  
+                  matrixInput(
+                    inputId = "chiSqInput3x3",
+                    inputClass = "cMatrix",
+                    value = matrix(nrow = 3, 
+                                   ncol = 3, 
+                                   dimnames = list(c("R1", "R2", "R3"), 
+                                                   c("C1", "C2", "C3"))),
+                    rows = list(editableNames = TRUE),
+                    cols = list(editableNames = TRUE),
+                    class = "numeric"
+                  ),
+                ),
+                                
+                                # tableHTML(mtcars,
+                                #           rownames = TRUE,
+                                #           widths = c(150, 100, rep(50, 11)),
+                                #           row_groups = list(c(10, 10, 12), c('Group 1', 'Group 2', 'Group 3'))) %>%
+                                #   add_css_column(css = list('background-color', 'lightgray'), columns = 'row_groups') %>%
+                                #   add_css_column(css = list('text-align', 'right'), columns = 'row_groups') %>%
+                                #   add_css_header(css = list('background-color', 'lightgray'), headers = 1) %>%
+                                #   add_editable_column(columns = -1:3),
+                                # br(),
+                                
+                radioButtons(
+                  inputId  = "chisquareMethod", 
+                  label    = strong("Method"), 
+                  choices  = c("Chi-Square test for independence", 
+                               "Fisher's Exact test"),
+                  selected = c("Chi-Square test for independence"),
+                  inline   = TRUE
+                ),
+                                
+                conditionalPanel(
+                  condition = 'input.chisquareMethod == "Chi-Square test for independence"',
+                                  
+                  checkboxInput(
+                    inputId = "chiSquareYates",
+                    label   = "with Yates continuity correction",
+                    value   = FALSE
+                  ),
+                                  
+                  radioButtons(
+                    inputId  = "chisquareSigLvl", 
+                    label    = strong("Significance Level (\\( \\alpha\\))"), 
+                    choices  = c("10%", 
+                                 "5%",
+                                 "1%"),
+                    selected = c("5%"),
+                    inline   = TRUE
+                  ),
+                )
+              ),
+
 
               actionButton(
                 inputId = "goInference", 
@@ -2231,7 +2352,7 @@
                 div(id = "inferenceData",
                                                     
                   conditionalPanel( #### One samp ----
-                    condition = "input.samplesSelect == '1'",
+                    condition = "input.siMethod == '1'",
                                                                       
                     conditionalPanel( ##### Pop Mean ----
                       condition = "input.popuParameter == 'Population Mean'",
@@ -2334,10 +2455,10 @@
                         br(),
                       ), # Hypothesis Testing
                     ), # One Population Proportion
-                  ), # "input.samplesSelect == '1'"
+                  ), # "input.siMethod == '1'"
                                                     
                   conditionalPanel( #### Two Samp ----
-                    condition = "input.samplesSelect == '2'",
+                    condition = "input.siMethod == '2'",
                                                                       
                     conditionalPanel( ##### Ind Pop Means ----
                       condition = "input.popuParameters == 'Independent Population Means'",
@@ -2486,8 +2607,44 @@
                         br(),
                       ), # Hypothesis Testing
                     ), # Two Population Proportions
-                  ), # "input.samplesSelect == '2'"
-                ) # input.dropDownMenu == 'Statistical Inference'
+                  ), # "input.siMethod == '2'"
+                  
+                  conditionalPanel( #### Chi-Square ----
+                    condition = "input.siMethod == 'Chi-Square'",
+                                    
+                    conditionalPanel(
+                      condition = "input.chisquareDimension == '2 x 2'",
+                                      
+                      uiOutput("render2x2ChiSq"),
+                      br(),
+                    ),# 2x2 Chi-Square
+                                    
+                    conditionalPanel(
+                      condition = "input.chisquareDimension == '2 x 3'",
+                                      
+                      uiOutput("render2x3ChiSq"),
+                      br(),
+                    ),# 2x3 Chi-Square
+                                    
+                    conditionalPanel(
+                      condition = "input.chisquareDimension == '3 x 2'",
+                                      
+                      uiOutput("render3x2ChiSq"),
+                      br(),
+                    ),# 3x2 Chi-Square
+                                    
+                    conditionalPanel(
+                      condition = "input.chisquareDimension == '3 x 3'",
+                                      
+                      uiOutput("render3x3ChiSq"),
+                      br(),
+                    ),# 3x3 Chi-Square
+                    br(),
+                    DTOutput("chiSqResultsMatrix", width = "650px"),
+                    br(),
+                    br()
+                  ) # input.siMethod == 'Chi-Square'
+                )# Inference Data
               )
             ), # inferenceMP
                                           
@@ -2737,7 +2894,7 @@
             #             "
             #   )
           ) # mainPanel
-        ), # sidebarLayout
+        ) # sidebarLayout
       ), # Methods Panel
                              
       # --------------------- #  
