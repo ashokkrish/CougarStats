@@ -26,6 +26,7 @@ library(writexl)
 library(xtable)
 library(MASS)
 
+source("R/ChiSquareTest.R")
 source("R/RenderBoxplot.R")
 source("R/RenderScatterplot.R")
 source("R/RenderSideBySideBoxplot.R")
