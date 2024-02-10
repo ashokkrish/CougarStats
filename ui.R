@@ -1878,7 +1878,11 @@
             # downloadButton('describe_download', "Download Report", class="butt" ), br(),
             # tags$head(tags$style(".butt{background-color:#337ab7;} .butt{color:#fff;}")), br(),
             # radioButtons('format', 'Document format', c('PDF', 'Word'), inline = TRUE),
+            
           ), #SidebarPanel
+          
+          # tags$img(src = "./www/app-store-logo.svg", width = "99px")
+
                                         
           #  --------------------------- #  
           ## ---- Methods mainPanel ---- 
@@ -2894,8 +2898,16 @@
             #             "
             #   )
           ) # mainPanel
-        ) # sidebarLayout
-      ), # Methods Panel
+        ), # sidebarLayout
+        br(),
+        br(),
+        tags$a(
+          href="https://apps.apple.com/us/app/cougarstats/id6476070179", 
+          target = "_blank",
+          tags$img(src="AppStoreLogo.svg", 
+                   title="App Store Link", 
+                   width="150px")
+        )      ), # Methods Panel
                              
       # --------------------- #  
       # ---- Authors Tab ---- 
