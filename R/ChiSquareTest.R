@@ -1,5 +1,5 @@
 library(dplyr)
-ChiSquareTest <- function(tableData, correction) {
+ChiSquareTest <- function(tableData, correction = FALSE) {
   
   # print(typeof(tableData))
   # print(tableData)
