@@ -7157,73 +7157,72 @@ server <- function(session, input, output) {
           br(),
           br()
         )
-      ),
+      )
+    )
       
-      indHTPVal <- printHTPVal(hTest["P-Value"], 
-                               testStat, 
-                               intrpInfo$alternative, 
-                               hTest["Test Statistic"], 
-                               pvalSymbol, 
-                               reject),
+    indHTPVal <- printHTPVal(hTest["P-Value"], 
+                             testStat, 
+                             intrpInfo$alternative, 
+                             hTest["Test Statistic"], 
+                             pvalSymbol, 
+                             reject)
       
       
-      indHTTail <- tagList(
-        withMathJax(
+    indHTTail <- tagList(
+      withMathJax(
  
-          p(tags$b("Using Critical Value Method:")),
-          sprintf("Critical Value(s) \\( = %s = %s\\)",
-                  critValDF,
-                  critVal),
-          br(),
+        p(tags$b("Using Critical Value Method:")),
+        sprintf("Critical Value(s) \\( = %s = %s\\)",
+                critValDF,
+                critVal),
+        br(),
           
-          conditionalPanel(
-            condition = "(input.dataAvailability2 == 'Summarized Data' && input.bothsigmaKnown == 'bothUnknown' && input.bothsigmaEqual == 'FALSE') || 
-                         (input.dataAvailability2 == 'Enter Raw Data' && input.bothsigmaKnownRaw == 'bothUnknown' && input.bothsigmaEqualRaw == 'FALSE')
-                         ",
-
-            br(),
-            p("where"),
-            sprintf("\\( \\displaystyle \\qquad \\nu = \\: \\dfrac{ \\left( \\dfrac{s^2_{1}}{n_{1}} + \\dfrac{s^2_{2}}{n_{2}} \\right)^2 }
-                    { \\dfrac{ \\left( \\dfrac{s^2_{1}}{n_{1}} \\right)^2 }{n_{1} - 1} + \\dfrac{ \\left( \\dfrac{s^2_{2}}{n_{2}} \\right)^2 }{n_{2} - 1} } \\)"),
-            sprintf("\\( \\displaystyle \\: = \\: \\dfrac{ \\left( \\dfrac{%g^2}{%g} + \\dfrac{%g^2}{%g} \\right)^2 }
-                    { \\dfrac{ \\left( \\dfrac{%g^2}{%g} \\right)^2 }{%g - 1} + \\dfrac{ \\left( \\dfrac{%g^2}{%g} \\right)^2 }{%g - 1} }\\)",
-                    data$sd1,
-                    data$n1,
-                    data$sd2,
-                    data$n2,
-                    data$sd1,
-                    data$n1,
-                    data$n1,
-                    data$sd2,
-                    data$n2,
-                    data$n2),
-            sprintf("\\( \\displaystyle \\: = \\: \\dfrac{ \\left( %0.4f + %0.4f \\right)^2 }
-                    { \\dfrac{ %0.4f^2 }{%g} + \\dfrac{ %0.4f^2 }{%g} } = %s\\)",
-                    (data$sd1^2) / data$n1,
-                    (data$sd2^2) / data$n2,
-                    (data$sd1^2) / data$n1,
-                    data$n1 - 1,
-                    (data$sd2^2) / data$n2,
-                    data$n2 - 1,
-                    hTest['df']),
-            br(),
-            br()
-          ),
-          
+        conditionalPanel(
+          condition = "(input.dataAvailability2 == 'Summarized Data' && input.bothsigmaKnown == 'bothUnknown' && input.bothsigmaEqual == 'FALSE') || 
+                       (input.dataAvailability2 == 'Enter Raw Data' && input.bothsigmaKnownRaw == 'bothUnknown' && input.bothsigmaEqualRaw == 'FALSE')
+                       ",
           br(),
-          sprintf("Since the test statistic \\( (%s)\\) falls within the %s region, %s \\( H_{0}\\).",
-                  testStat,
-                  region,
-                  reject),
+          p("where"),
+          sprintf("\\( \\displaystyle \\qquad \\nu = \\: \\dfrac{ \\left( \\dfrac{s^2_{1}}{n_{1}} + \\dfrac{s^2_{2}}{n_{2}} \\right)^2 }
+                  { \\dfrac{ \\left( \\dfrac{s^2_{1}}{n_{1}} \\right)^2 }{n_{1} - 1} + \\dfrac{ \\left( \\dfrac{s^2_{2}}{n_{2}} \\right)^2 }{n_{2} - 1} } \\)"),
+          sprintf("\\( \\displaystyle \\: = \\: \\dfrac{ \\left( \\dfrac{%g^2}{%g} + \\dfrac{%g^2}{%g} \\right)^2 }
+                  { \\dfrac{ \\left( \\dfrac{%g^2}{%g} \\right)^2 }{%g - 1} + \\dfrac{ \\left( \\dfrac{%g^2}{%g} \\right)^2 }{%g - 1} }\\)",
+                  data$sd1,
+                  data$n1,
+                  data$sd2,
+                  data$n2,
+                  data$sd1,
+                  data$n1,
+                  data$n1,
+                  data$sd2,
+                  data$n2,
+                  data$n2),
+          sprintf("\\( \\displaystyle \\: = \\: \\dfrac{ \\left( %0.4f + %0.4f \\right)^2 }
+                  { \\dfrac{ %0.4f^2 }{%g} + \\dfrac{ %0.4f^2 }{%g} } = %s\\)",
+                  (data$sd1^2) / data$n1,
+                  (data$sd2^2) / data$n2,
+                  (data$sd1^2) / data$n1,
+                  data$n1 - 1,
+                  (data$sd2^2) / data$n2,
+                  data$n2 - 1,
+                  hTest['df']),
           br(),
           br()
+        ),
           
-        )
+        br(),
+        sprintf("Since the test statistic \\( (%s)\\) falls within the %s region, %s \\( H_{0}\\).",
+                testStat,
+                region,
+                reject),
+        br(),
+        br()
+          
       ),
-      
       plotOutput('indMeansHTPlot', width = "75%", height = "300px"),
       br(),
     )
+
     
     indHTConclusion <- printHTConclusion(region, reject, suffEvidence, intrpInfo$altHyp, "\\mu_{2}")
     
@@ -7585,17 +7584,6 @@ server <- function(session, input, output) {
       depHTTail <- tagList(
         p(
           withMathJax(),
-          p(tags$b("Using P-Value Method:")),
-          sprintf("\\(P = %s\\)",
-                  pValue),
-          br(),
-          sprintf("Since \\( P %s %0.2f \\), %s \\( H_{0}\\).",
-                  pvalSymbol,
-                  SigLvl(),
-                  reject),
-          br(),
-          br(),
-          br(),
           p(tags$b("Using Critical Value Method:")),
           sprintf("Critical Value(s) \\( = %s t_{%s, \\, df} = %s t_{%s, \\, %s} = %s \\)",
                   IndMeansHypInfo()$critSign,
