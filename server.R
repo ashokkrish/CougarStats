@@ -688,6 +688,7 @@ server <- function(session, input, output) {
   depmeansuploadvars_iv$add_rule("depMeansUplSample1", ~ if(CheckDepUploadSamples() != 0) "Before and After must have the same number of observations.")
   depmeansuploadvars_iv$add_rule("depMeansUplSample2", ~ if(CheckDepUploadSamples() != 0) "Before and After must have the same number of observations.")
   
+  
   depmeansrawsd_iv$add_rule("after", ~ if(GetDepMeansData()$sd == 0) "Variance required in 'Before' and 'After' sample data for hypothesis testing.")
 
   # numSuccessesProportion
@@ -862,7 +863,6 @@ server <- function(session, input, output) {
   depmeansrawsd_iv$condition(~ isTRUE(input$siMethod == '2' && 
                                       input$popuParameters == 'Dependent Population Means' &&
                                       input$dataTypeDependent == 'Enter Raw Data' &&
-                                      input$inferenceType2 == 'Hypothesis Testing' &&
                                       depmeansraw_iv$is_valid()))
   
   oneprop_iv$condition(~ isTRUE(input$siMethod == '1' && 
@@ -6275,6 +6275,20 @@ server <- function(session, input, output) {
       )
     }
     
+    if(!depmeansrawsd_iv$is_valid()) {
+      
+      if(input$inferenceType2 == 'Hypothesis Testing'){
+        sdValidation <- "The test statistic (t) will be undefined for sample data with a sample standard deviation of difference (sd) = 0."
+      } else {
+        sdValidation <- "The confidence interval results in (0, 0) when the sample standard deviation of difference (sd) = 0."
+      }
+      validate(
+        need(GetDepMeansData()$sd != 0, sdValidation),
+        
+        errorClass = "myClass"
+      )
+    }
+    
   # Two Population Proportion Validation 
   # ------------------------------------------------------------------------ #
     
@@ -6312,14 +6326,7 @@ server <- function(session, input, output) {
         errorClass = "myClass"
       )
     }
-    
-    if(!depmeansrawsd_iv$is_valid()) {
-      validate(
-        need(GetDepMeansData()$sd != 0, "The test statistic (t) will be undefined for sample data with a sample standard deviation of difference (sd) = 0."),
-        
-        errorClass = "myClass"
-      )
-    }
+
     
     # Chi-Square Validation 
     # ------------------------------------------------------------------------ #
