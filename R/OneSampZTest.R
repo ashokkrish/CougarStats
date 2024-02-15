@@ -25,17 +25,17 @@ ZTest <- function(n, xbar, sigma, mu = 0, alternative = c("two.sided", "less", "
 }
 
 # Example usage:
-
-ZTest(36, 6.05, 3.8, 5.1, "greater", 0.10)
-
-ZTest(24, 15.17, 5, 12.5, "greater", 0.10)
-
-ZTest(20, 27.1, 2.4, 25.3, "greater", 0.01)
-
-ZTest(35, 0.66, 0.12, 0.70, "less", 0.05)
-
-ZTest(23, 3071, 761, 3000, "less", 0.01)
-
-ZTest(20, 262.3, 3, 264, "less", 0.01)
-
-ZTest(10, 8.179, 0.02, 8.20, "two.sided", 0.10)
+# 
+# ZTest(36, 6.05, 3.8, 5.1, "greater", 0.10)
+# 
+# ZTest(24, 15.17, 5, 12.5, "greater", 0.10)
+# 
+# ZTest(20, 27.1, 2.4, 25.3, "greater", 0.01)
+# 
+# ZTest(35, 0.66, 0.12, 0.70, "less", 0.05)
+# 
+# ZTest(23, 3071, 761, 3000, "less", 0.01)
+# 
+# ZTest(20, 262.3, 3, 264, "less", 0.01)
+# 
+# ZTest(10, 8.179, 0.02, 8.20, "two.sided", 0.10)
