@@ -31,6 +31,9 @@
         }
         #cTable2x2 {
           border-style: hidden;
+        }
+        .si-label {
+          padding-bottom: 10px;
         }"
         )
       )
@@ -863,10 +866,11 @@
             conditionalPanel(id = "inferencePanel",
               condition = "input.dropDownMenu == 'Statistical Inference'",
               style     = "display: none;",
-                                                           
+                            
+              HTML("<label class='si-label'><b>Methodology</b></label>"),                               
               radioButtons(
                 inputId      = "siMethod",
-                label        = strong("Methodology"),
+                label        = NULL,
                 choiceValues = list("1", 
                                     "2",
                                     "Multiple",
@@ -1176,10 +1180,11 @@
                                                            
               conditionalPanel( #### 2 Sample ----
                 condition = "input.siMethod == '2'",
-                                                           
+                        
+                HTML("<label class='si-label'><b>Parameter of Interest</b></label>"),                                   
                 radioButtons(
                   inputId      = "popuParameters",
-                  label        = strong("Parameter of Interest"),
+                  label        = NULL,
                   choiceValues = list("Independent Population Means", 
                                       "Dependent Population Means", 
                                       "Population Proportions"),
@@ -1629,7 +1634,8 @@
                   matrixInput(
                     inputId = "chiSqInput2x2",
                     inputClass = "cMatrix",
-                    value = matrix(nrow = 2, 
+                    value = matrix(c(173,599, 160,851),
+                                   nrow = 2, 
                                    ncol = 2, 
                                    dimnames = list(c("R1", "R2"), 
                                                    c("C1", "C2"))),
@@ -1645,7 +1651,8 @@
                   matrixInput(
                     inputId = "chiSqInput2x3",
                     inputClass = "cMatrix",
-                    value = matrix(nrow = 2, 
+                    value = matrix(c(160,40, 140,60, 40,60),
+                                   nrow = 2, 
                                    ncol = 3, 
                                    dimnames = list(c("R1", "R2"), 
                                                    c("C1", "C2", "C3"))),
@@ -1661,7 +1668,8 @@
                   matrixInput(
                     inputId = "chiSqInput3x2",
                     inputClass = "cMatrix",
-                    value = matrix(nrow = 3, 
+                    value = matrix(c(162,106,201, 353,259,332),
+                                   nrow = 3, 
                                    ncol = 2, 
                                    dimnames = list(c("R1", "R2", "R3"), 
                                                    c("C1", "C2"))),
@@ -1677,7 +1685,8 @@
                   matrixInput(
                     inputId = "chiSqInput3x3",
                     inputClass = "cMatrix",
-                    value = matrix(nrow = 3, 
+                    value = matrix(c(6,14,50, 38,31,50, 31,4,5),
+                                   nrow = 3, 
                                    ncol = 3, 
                                    dimnames = list(c("R1", "R2", "R3"), 
                                                    c("C1", "C2", "C3"))),
@@ -1686,6 +1695,18 @@
                     class = "numeric"
                   ),
                 ),
+                
+                # textInput(
+                #   inputId = "chiSquareRowHeader",
+                #   label = "Name for Row Variable (optional):",
+                #   value = ""
+                # ),
+                # 
+                # textInput(
+                #   inputId = "chiSquareColHeader",
+                #   label = "Name for Column Variable (optional):",
+                #   value = ""
+                # ),
                                 
                                 # tableHTML(mtcars,
                                 #           rownames = TRUE,
@@ -2616,37 +2637,52 @@
                   conditionalPanel( #### Chi-Square ----
                     condition = "input.siMethod == 'Chi-Square'",
                                     
-                    conditionalPanel(
-                      condition = "input.chisquareDimension == '2 x 2'",
-                                      
-                      uiOutput("render2x2ChiSq"),
-                      br(),
-                    ),# 2x2 Chi-Square
-                                    
-                    conditionalPanel(
-                      condition = "input.chisquareDimension == '2 x 3'",
-                                      
-                      uiOutput("render2x3ChiSq"),
-                      br(),
-                    ),# 2x3 Chi-Square
-                                    
-                    conditionalPanel(
-                      condition = "input.chisquareDimension == '3 x 2'",
-                                      
-                      uiOutput("render3x2ChiSq"),
-                      br(),
-                    ),# 3x2 Chi-Square
-                                    
-                    conditionalPanel(
-                      condition = "input.chisquareDimension == '3 x 3'",
-                                      
-                      uiOutput("render3x3ChiSq"),
-                      br(),
-                    ),# 3x3 Chi-Square
+                    # conditionalPanel(
+                    #   condition = "input.chisquareDimension == '2 x 2'",
+                    #                   
+                    #   uiOutput("render2x2ChiSq"),
+                    #   br(),
+                    # ),# 2x2 Chi-Square
+                    #                 
+                    # conditionalPanel(
+                    #   condition = "input.chisquareDimension == '2 x 3'",
+                    #                   
+                    #   uiOutput("render2x3ChiSq"),
+                    #   br(),
+                    # ),# 2x3 Chi-Square
+                    #                 
+                    # conditionalPanel(
+                    #   condition = "input.chisquareDimension == '3 x 2'",
+                    #                   
+                    #   uiOutput("render3x2ChiSq"),
+                    #   br(),
+                    # ),# 3x2 Chi-Square
+                    #                 
+                    # conditionalPanel(
+                    #   condition = "input.chisquareDimension == '3 x 3'",
+                    #                   
+                    #   uiOutput("render3x3ChiSq"),
+                    #   br(),
+                    # ),# 3x3 Chi-Square
+                    titlePanel("Chi-Square Test for Independence"),
+                    hr(),
                     br(),
-                    DTOutput("chiSqResultsMatrix", width = "650px"),
+                    h4("Observed Frequencies"),
+                    uiOutput("renderChiSqObs"),
                     br(),
-                    br()
+                    br(),
+                    h4("Expected Frequencies"),
+                    uiOutput("renderChiSqExp"),
+                    br(),
+                    br(),
+                    h4("Chi-Square Summary Table"),
+                    uiOutput("renderChiSqResults"),
+                    br(),
+                    hr(),
+                    br(),
+                    uiOutput("chiSqTest"),
+                    br(),
+                    br(),
                   ) # input.siMethod == 'Chi-Square'
                 )# Inference Data
               )

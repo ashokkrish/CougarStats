@@ -737,31 +737,31 @@ server <- function(session, input, output) {
   
   # 2 x 2
   chiSq2x2_iv$add_rule("chiSqInput2x2", sv_required())
-  chiSq2x2_iv$add_rule("chiSqInput2x2", ~ if(any(is.na(chiSqData2x2()))) "Fields must be positive integers.")
-  chiSq2x2_iv$add_rule("chiSqInput2x2", ~ if(any(chiSqData2x2() < 0)) "Fields must be positive integers.")
-  chiSq2x2_iv$add_rule("chiSqInput2x2", ~ if(any(chiSqData2x2() %% 1 != 0)) "Fields must be positive integers.")
-  chiSq2x2_iv$add_rule("chiSqInput2x2", ~ if(all(chiSqData2x2() == 0)) "All cell values cannot be equal to zero.")
+  chiSq2x2_iv$add_rule("chiSqInput2x2", ~ if(any(is.na(chiSqActiveData()$numeric))) "Fields must be positive integers.")
+  chiSq2x2_iv$add_rule("chiSqInput2x2", ~ if(any(chiSqActiveData()$numeric < 0)) "Fields must be positive integers.")
+  chiSq2x2_iv$add_rule("chiSqInput2x2", ~ if(any(chiSqActiveData()$numeric %% 1 != 0)) "Fields must be positive integers.")
+  chiSq2x2_iv$add_rule("chiSqInput2x2", ~ if(all(chiSqActiveData()$numeric == 0)) "All cell values cannot be equal to zero.")
   
   # 2 x 3
   chiSq2x3_iv$add_rule("chiSqInput2x3", sv_required())
-  chiSq2x3_iv$add_rule("chiSqInput2x3", ~ if(any(is.na(chiSqData2x3()))) "Fields must be positive integers.")
-  chiSq2x3_iv$add_rule("chiSqInput2x3", ~ if(any(chiSqData2x3() < 0)) "Fields must be positive integers.")
-  chiSq2x3_iv$add_rule("chiSqInput2x3", ~ if(any(chiSqData2x3() %% 1 != 0)) "Fields must be positive integers.")
-  chiSq2x3_iv$add_rule("chiSqInput2x3", ~ if(all(chiSqData2x3() == 0)) "All cell values cannot be equal to zero.")
+  chiSq2x3_iv$add_rule("chiSqInput2x3", ~ if(any(is.na(chiSqActiveData()$numeric))) "Fields must be positive integers.")
+  chiSq2x3_iv$add_rule("chiSqInput2x3", ~ if(any(chiSqActiveData()$numeric < 0)) "Fields must be positive integers.")
+  chiSq2x3_iv$add_rule("chiSqInput2x3", ~ if(any(chiSqActiveData()$numeric %% 1 != 0)) "Fields must be positive integers.")
+  chiSq2x3_iv$add_rule("chiSqInput2x3", ~ if(all(chiSqActiveData()$numeric == 0)) "All cell values cannot be equal to zero.")
   
   # 3 x 2
   chiSq3x2_iv$add_rule("chiSqInput3x2", sv_required())
-  chiSq3x2_iv$add_rule("chiSqInput3x2", ~ if(any(is.na(chiSqData3x2()))) "Fields must be positive integers.")
-  chiSq3x2_iv$add_rule("chiSqInput3x2", ~ if(any(chiSqData3x2() < 0)) "Fields must be positive integers.")
-  chiSq3x2_iv$add_rule("chiSqInput3x2", ~ if(any(chiSqData3x2() %% 1 != 0)) "Fields must be positive integers.")
-  chiSq3x2_iv$add_rule("chiSqInput3x2", ~ if(all(chiSqData3x2() == 0)) "All cell values cannot be equal to zero.")
+  chiSq3x2_iv$add_rule("chiSqInput3x2", ~ if(any(is.na(chiSqActiveData()$numeric))) "Fields must be positive integers.")
+  chiSq3x2_iv$add_rule("chiSqInput3x2", ~ if(any(chiSqActiveData()$numeric < 0)) "Fields must be positive integers.")
+  chiSq3x2_iv$add_rule("chiSqInput3x2", ~ if(any(chiSqActiveData()$numeric %% 1 != 0)) "Fields must be positive integers.")
+  chiSq3x2_iv$add_rule("chiSqInput3x2", ~ if(all(chiSqActiveData()$numeric == 0)) "All cell values cannot be equal to zero.")
   
   # 3 x 3
   chiSq3x3_iv$add_rule("chiSqInput3x3", sv_required())
-  chiSq3x3_iv$add_rule("chiSqInput3x3", ~ if(any(is.na(chiSqData3x3()))) "Fields must be positive integers.")
-  chiSq3x3_iv$add_rule("chiSqInput3x3", ~ if(any(chiSqData3x3() < 0)) "Fields must be positive integers.")
-  chiSq3x3_iv$add_rule("chiSqInput3x3", ~ if(any(chiSqData3x3() %% 1 != 0)) "Fields must be positive integers.")
-  chiSq3x3_iv$add_rule("chiSqInput3x3", ~ if(all(chiSqData3x3() == 0)) "All cell values cannot be equal to zero.")
+  chiSq3x3_iv$add_rule("chiSqInput3x3", ~ if(any(is.na(chiSqActiveData()$numeric))) "Fields must be positive integers.")
+  chiSq3x3_iv$add_rule("chiSqInput3x3", ~ if(any(chiSqActiveData()$numeric < 0)) "Fields must be positive integers.")
+  chiSq3x3_iv$add_rule("chiSqInput3x3", ~ if(any(chiSqActiveData()$numeric %% 1 != 0)) "Fields must be positive integers.")
+  chiSq3x3_iv$add_rule("chiSqInput3x3", ~ if(all(chiSqActiveData()$numeric == 0)) "All cell values cannot be equal to zero.")
   
   
   # ------------------ #
@@ -5058,7 +5058,7 @@ server <- function(session, input, output) {
     return(dat)
   }
   
-  shadeHtArea <- function(df, critValue, altHypothesis){
+  shadeHtArea <- function(df, critValue, altHypothesis) {
     
       if(altHypothesis == 'less') {
         geom_area(data = subset(df, x <= critValue),
@@ -5086,7 +5086,6 @@ server <- function(session, input, output) {
                   color = NA, 
                   alpha = 0.4)
       }
-    
   }
     
   #   if(altHypothesis == "less") #less
@@ -5295,6 +5294,219 @@ server <- function(session, input, output) {
     return(htPlot)
   }
   
+  #### Chi-Square Functions ----
+  
+  
+  
+  CreateChiSqObserved <- function(chiSqData) {
+    
+    observedTable <- datatable(chiSqData,
+      class = 'cell-border stripe',
+      options = list(
+        dom = 't',
+        pageLength = -1,
+        ordering = FALSE,
+        searching = FALSE,
+        paging = FALSE,
+        autoWidth = FALSE,
+        scrollX = TRUE,
+        columnDefs = list(list(width = '100px', 
+                               targets = 0:ncol(chiSqData)),
+                          list(className = 'dt-center', 
+                               targets = 0:ncol(chiSqData)))
+        ),
+        selection = "none",
+        escape = FALSE,
+        filter = "none"
+    )
+    
+    observedTable <- FormatChiSqTable(observedTable, ncol(chiSqData), nrow(chiSqData))
+    
+    return(observedTable)
+  }
+  
+  CreateChiSqExpected <- function(chiSqData) {
+    totaledData <- getTotaledMatrix(round(chiSqData, 4), chiSqActiveData()$data)
+    
+    expectedTable <- datatable(totaledData,
+                               class = 'cell-border stripe',
+                               options = list(
+                                 dom = 't',
+                                 pageLength = -1,
+                                 ordering = FALSE,
+                                 searching = FALSE,
+                                 paging = FALSE,
+                                 autoWidth = FALSE,
+                                 scrollX = TRUE,
+                                 columnDefs = list(list(width = '100px', 
+                                                        targets = 0:ncol(totaledData)),
+                                                   list(className = 'dt-center', 
+                                                        targets = 0:ncol(totaledData)))
+                               ),
+                               selection = "none",
+                               escape = FALSE,
+                               filter = "none"
+    )
+    
+    expectedTable <- FormatChiSqTable(expectedTable, ncol(totaledData), nrow(totaledData))
+    
+    return(expectedTable)
+  }
+  
+  FormatChiSqTable <- function(chiSqTable, numCol, numRow) {
+    
+    chiSqTable %>%
+      formatStyle(columns = c(0,numCol),
+                  fontWeight = 'bold') %>%
+      formatStyle(columns = 1:numCol,
+                  target = 'row',
+                  fontWeight = styleRow(dim(chiSqTotaled())[1], "bold")) %>%
+      formatStyle(columns = c(0,numCol - 1),
+                  borderRight = styleRow(c(1:(numRow - 1)),'2px solid #787878')) %>%
+      formatStyle(columns = c(1:(numCol - 1)),
+                  borderTop = styleRow(c(1),'2px solid #787878'),
+                  borderBottom = styleRow(c(numRow - 1),'2px solid #787878'))
+  }
+  
+  PrintChiSqTest <- function(chiSqStat) {
+    data <- chiSqResults()
+    
+    if(input$chisquareSigLvl == "10%") {
+      sigLvl <- 0.1 
+    } else if(input$chisquareSigLvl == "5%") {
+      sigLvl <- 0.05
+    } else {
+      sigLvl <- 0.01
+    }
+    
+    critVal <- round(qchisq(1 - sigLvl, df = data$Results$parameter), 4)
+    
+    if(data$Results$p.value < sigLvl) {
+      reject <- "reject"
+      region <- "rejection"
+    } else {
+      reject <- "do no reject"
+      region <- "acceptance"
+    }
+    
+    chiSqSum <- PrintChiSqSum()
+    chiSqPVal <- PrintChiSqPVal(data$Results$p.value, chiSqStat, sigLvl, reject)
+    chiSqCV <- PrintChiSqCV(critVal, reject, region)
+    
+    chiSqOutput <- tagList(
+      withMathJax(),
+      titlePanel("5-Step Process"),
+      br(),
+      br(),
+      sprintf("\\( H_{0} \\): The Row variable and Column variable are not associated (independent)"),
+      br(),
+      sprintf("\\( H_{a} \\): The Row variable and Column variable are associated (dependent)"),
+      br(),
+      br(),
+      sprintf("\\( \\alpha = %s \\)",
+              sigLvl),
+      br(),
+      br(),
+      br(),
+      p(tags$b("Test Statistic:")),
+      sprintf("\\( \\chi^2 = \\large{ \\sum{ \\dfrac{(O - E)^2}{E} } } \\)"),
+      br(),
+      br(),
+      sprintf("\\( \\phantom{\\chi^2} =  %s \\)",
+              chiSqSum$summation),
+      br(),
+      br(),
+      br(),
+      sprintf("\\( \\phantom{\\chi^2} =  %s \\)",
+              chiSqSum$simplified),
+      br(),
+      br(),
+      br(),
+      sprintf("\\( \\phantom{\\chi^2} = %0.4f \\)",
+              chiSqStat),
+      br(),
+      br(),
+      br()
+    )
+    
+    tagAppendChildren(chiSqOutput, chiSqPVal, chiSqCV)
+  }
+  
+  
+  PrintChiSqSum <- function() {
+    data <- chiSqResults()$Matrix
+    
+    chiSqSum <- ""
+    chiSqSmplf <- ""
+    
+    for(row in 1:(nrow(data) - 2)) {
+      chiSqSum <- paste0(chiSqSum, "\\dfrac{(", data[row,"O"], " - ", data[row,"E"], ")^2}{", data[row,"E"], "} + ")
+    }
+    
+    chiSqSum <- paste0(chiSqSum, "\\dfrac{(", data[nrow(data) - 1,"O"], " - ", data[nrow(data) - 1,"E"], ")^2}{", data[ncol(data) - 1,"E"], "}")
+    
+    for(row in 1:(nrow(data) - 2)) {
+      chiSqSmplf <- paste0(chiSqSmplf, data[row,"(O - E)<sup>2</sup> / E"]," + ")
+    }
+    
+    chiSqSmplf <- paste0(chiSqSmplf, data[nrow(data) - 1,"(O - E)<sup>2</sup> / E"])
+    
+    sums <- list(chiSqSum, chiSqSmplf)
+    names(sums) <- c("summation", "simplified")
+    
+    return(sums)
+  }
+  
+  
+  
+  PrintChiSqPVal <- function(pValue, tsValue, sigLvl, reject) {
+    
+    pvalCalc <- paste("P(\\, \\chi^2 \\, \\ge \\,", round(tsValue,4), ")")
+    
+    if(pValue < 0.0001 && pValue > 0) {
+      pValue <- signif(pValue,1)
+    } else {
+      pValue <- round(pValue, 4)
+    }
+    
+    pValOutput <- tagList(
+      p(tags$b("Using P-Value Method:")),
+      sprintf("\\( P = %s = %s\\)",
+              pvalCalc,
+              pValue),
+      br(),
+      br(),
+      sprintf("Since \\( P < %0.2f \\), %s \\( H_{0}\\).",
+              sigLvl,
+              reject),
+      br(),
+      br(),
+      br()
+    )
+    
+    return(pValOutput)
+  }
+  
+  PrintChiSqCV <- function(critVal, reject, region) {
+    
+    cvOutput <- tagList(
+      p(tags$b("Using Critical Value Method:")),
+      sprintf("Critical Value \\( = %s \\)",
+              critVal),
+      br(),
+      br(),
+      sprintf("Since the test statistic \\( (\\chi^2)\\) falls within the %s region, %s \\( H_{0}\\).",
+              region,
+              reject),
+      br(),
+      br(),
+      br(),
+      plotOutput("chiSqPlot", width = "50%", height = "400px"),
+      br(),
+      br()
+    )
+  }
+  
   # --------------------------------------------------------------------- #
   
   
@@ -5354,6 +5566,8 @@ server <- function(session, input, output) {
         sigLvl <- 0.01
       }
       
+    } else {
+      sigLvl <- 0.05
     }
     
     return(sigLvl)
@@ -5902,71 +6116,63 @@ server <- function(session, input, output) {
   
   
   #### Chi-Square Reactives ----
-  chiSqData2x2 <- reactive({
-    suppressWarnings(as.numeric(input$chiSqInput2x2))
-  })
+  # chiSqData2x2 <- reactive({
+  #   suppressWarnings(as.numeric(input$chiSqInput2x2))
+  # })
+  # 
+  # chiSqData2x3 <- reactive({
+  #   suppressWarnings(as.numeric(input$chiSqInput2x3))
+  # })
+  # 
+  # chiSqData3x2 <- reactive({
+  #   suppressWarnings(as.numeric(input$chiSqInput3x2))
+  # })
+  # 
+  # chiSqData3x3 <- reactive({
+  #   suppressWarnings(as.numeric(input$chiSqInput3x3))
+  # })
   
-  chiSqData2x3 <- reactive({
-    suppressWarnings(as.numeric(input$chiSqInput2x3))
-  })
-  
-  chiSqData3x2 <- reactive({
-    suppressWarnings(as.numeric(input$chiSqInput3x2))
-  })
-  
-  chiSqData3x3 <- reactive({
-    suppressWarnings(as.numeric(input$chiSqInput3x3))
-  })
-  
-  chiSqActiveSet <- reactive({
+  chiSqActiveData <- reactive({
     if(input$chisquareDimension == "2 x 2") {
-      active <- matrix(chiSqData2x2(), ncol = ncol(input$chiSqInput2x2))
+      active <- input$chiSqInput2x2
     } else if (input$chisquareDimension == "2 x 3") {
-      active <- matrix(chiSqData2x3(), ncol = ncol(input$chiSqInput2x3))
+      active <- input$chiSqInput2x3
     } else if (input$chisquareDimension == "3 x 2") {
-      active <- matrix(chiSqData3x2(), ncol = ncol(input$chiSqInput3x2))
+      active <- input$chiSqInput3x2
     } else if (input$chisquareDimension == "3 x 3") {
-      active <- matrix(chiSqData3x3(), ncol = ncol(input$chiSqInput3x3))
+      active <- input$chiSqInput3x3
     }
+    
+    activeData <- list(active, suppressWarnings(as.numeric(active)))
+    names(activeData) <- c("data", "numeric")
+    
+    return(activeData)
+  })
+  
+  chiSqActiveMatrix <- reactive({
+    active <- matrix(chiSqActiveData()$numeric, ncol = ncol(chiSqActiveData()$data))
+    colnames(active) <- colnames(chiSqActiveData()$data)
+    rownames(active) <- rownames(chiSqActiveData()$data)
     
     return(active)
   })
   
-  chiSq2x2Totaled <- reactive({
-    if(!any(is.na(chiSqData2x2()))){
-      chiSqData2x2 <- matrix(chiSqData2x2(), ncol = ncol(input$chiSqInput2x2))
-      chiSqData2x2 <- getTotaledMatrix(chiSqData2x2, input$chiSqInput2x2)
+  chiSqResults <- reactive({
+    req(si_iv$is_valid())
+    return(suppressWarnings(ChiSquareTest(chiSqActiveMatrix(), input$chiSquareYates)))
+  })
+  
+  chiSqTotaled <- reactive({
+    if(!any(is.na(chiSqActiveData()$numeric))){
       
-      return(chiSqData2x2)
+      chiSqTotaledMatrix <- chiSqActiveMatrix()
+      chiSqTotaledMatrix <- cbind(chiSqTotaledMatrix, Total = round(rowSums(chiSqTotaledMatrix), 4))
+      chiSqTotaledMatrix <- rbind(chiSqTotaledMatrix, Total = round(colSums(chiSqTotaledMatrix), 4))
+
+      return(chiSqTotaledMatrix)
     }
   })
   
-  chiSq2x3Totaled <- reactive({
-    if(!any(is.na(chiSqData2x3()))){
-      chiSqData2x3 <- matrix(chiSqData2x3(), ncol = ncol(input$chiSqInput2x3))
-      chiSqData2x3 <- getTotaledMatrix(chiSqData2x3, input$chiSqInput2x3)
-      
-      return(chiSqData2x3)
-    }
-  })
-  
-  chiSq3x2Totaled <- reactive({
-    if(!any(is.na(chiSqData3x2()))){
-      chiSqData3x2 <- matrix(chiSqData3x2(), ncol = ncol(input$chiSqInput3x2))
-      chiSqData3x2 <- getTotaledMatrix(chiSqData3x2, input$chiSqInput3x2)
-      
-      return(chiSqData3x2)
-    }
-  })
-  
-  chiSq3x3Totaled <- reactive({
-    if(!any(is.na(chiSqData3x3()))) {
-      chiSqData3x3 <- matrix(chiSqData3x3(), ncol = ncol(input$chiSqInput3x3))
-      chiSqData3x3 <- getTotaledMatrix(chiSqData3x3, input$chiSqInput3x3)
-      
-      return(chiSqData3x3)
-    }
-  })
   
   #### Samp Size Est Reactives ----
   criticalValue <- reactive({
@@ -6280,7 +6486,10 @@ server <- function(session, input, output) {
       if(input$inferenceType2 == 'Hypothesis Testing'){
         sdValidation <- "The test statistic (t) will be undefined for sample data with a sample standard deviation of difference (sd) = 0."
       } else {
-        sdValidation <- "The confidence interval results in (0, 0) when the sample standard deviation of difference (sd) = 0."
+        sdValidation <- paste0("The confidence interval results in (",
+                               GetDepMeansData()$dbar,
+                               ",", GetDepMeansData()$dbar,
+                               ") when the sample standard deviation of difference (sd) = 0.")
       }
       validate(
         need(GetDepMeansData()$sd != 0, sdValidation),
@@ -6339,20 +6548,20 @@ server <- function(session, input, output) {
       )
       
       validate(
-        need(all(!is.na(chiSqData2x2())), "Fields must be positive integers.") %then%
-          need(all(chiSqData2x2() %% 1 == 0), "Fields must be positive integers."),
+        need(all(!is.na(chiSqActiveData()$numeric)), "Fields must be positive integers.") %then%
+          need(all(chiSqActiveData()$numeric %% 1 == 0), "Fields must be positive integers."),
         
         errorClass = "myClass"
       )
       
       validate(
-        need(all(chiSqData2x2() >= 0), "Fields must be positive integers."),
+        need(all(chiSqActiveData()$numeric >= 0), "Fields must be positive integers."),
         
         errorClass = "myClass"
       )
       
       validate(
-        need(any(chiSqData2x2() != 0), "All cell values cannot be equal to zero."),
+        need(any(chiSqActiveData()$numeric != 0), "All cell values cannot be equal to zero."),
         
         errorClass = "myClass"
       )
@@ -6366,20 +6575,20 @@ server <- function(session, input, output) {
       )
       
       validate(
-        need(all(!is.na(chiSqData2x3())), "Fields must be positive integers.") %then%
-          need(all(chiSqData2x3() %% 1 == 0), "Fields must be positive integers."),
+        need(all(!is.na(chiSqActiveData()$numeric)), "Fields must be positive integers.") %then%
+          need(all(chiSqActiveData()$numeric %% 1 == 0), "Fields must be positive integers."),
         
         errorClass = "myClass"
       )
       
       validate(
-        need(all(chiSqData2x3() >= 0), "Fields must be positive integers."),
+        need(all(chiSqActiveData()$numeric >= 0), "Fields must be positive integers."),
         
         errorClass = "myClass"
       )
       
       validate(
-        need(any(chiSqData2x3() != 0), "All cell values cannot be equal to zero."),
+        need(any(chiSqActiveData()$numeric != 0), "All cell values cannot be equal to zero."),
         
         errorClass = "myClass"
       )
@@ -6393,20 +6602,20 @@ server <- function(session, input, output) {
       )
       
       validate(
-        need(all(!is.na(chiSqData3x2())), "Fields must be positive integers.") %then%
-          need(all(chiSqData3x2() %% 1 == 0), "Fields must be positive integers."),
+        need(all(!is.na(chiSqActiveData()$numeric)), "Fields must be positive integers.") %then%
+          need(all(chiSqActiveData()$numeric %% 1 == 0), "Fields must be positive integers."),
         
         errorClass = "myClass"
       )
       
       validate(
-        need(all(chiSqData3x2() >= 0), "Fields must be positive integers."),
+        need(all(chiSqActiveData()$numeric >= 0), "Fields must be positive integers."),
         
         errorClass = "myClass"
       )
       
       validate(
-        need(any(chiSqData3x2() != 0), "All cell values cannot be equal to zero."),
+        need(any(chiSqActiveData()$numeric != 0), "All cell values cannot be equal to zero."),
         
         errorClass = "myClass"
       )
@@ -6420,20 +6629,20 @@ server <- function(session, input, output) {
       )
       
       validate(
-        need(all(!is.na(chiSqData3x3())), "Fields must be positive integers.") %then%
-          need(all(chiSqData3x3() %% 1 == 0), "Fields must be positive integers."),
+        need(all(!is.na(chiSqActiveData()$numeric)), "Fields must be positive integers.") %then%
+          need(all(chiSqActiveData()$numeric %% 1 == 0), "Fields must be positive integers."),
         
         errorClass = "myClass"
       )
       
       validate(
-        need(all(chiSqData3x3() >= 0), "Fields must be positive integers."),
+        need(all(chiSqActiveData()$numeric >= 0), "Fields must be positive integers."),
         
         errorClass = "myClass"
       )
       
       validate(
-        need(any(chiSqData3x3() != 0), "All cell values cannot be equal to zero."),
+        need(any(cchiSqActiveData()$numeric != 0), "All cell values cannot be equal to zero."),
         
         errorClass = "myClass"
       )
@@ -7910,110 +8119,142 @@ server <- function(session, input, output) {
   })
 
   #### Chi-Square Outputs ----
-  output$chiSq2x2 <- renderDT({
+  # output$chiSq2x2 <- renderDT({
+  #   
+  #   datatable(chiSq2x2Totaled(),
+  #             class = 'cell-border stripe',
+  #             options = list(
+  #               dom = 't',
+  #               pageLength = -1,
+  #               ordering = FALSE,
+  #               searching = FALSE,
+  #               paging = FALSE,
+  #               autoWidth = FALSE,
+  #               scrollX = TRUE,
+  #               columnDefs = list(list(width = '100px', targets = c(0, 1, 2, 3)),
+  #                                 list(className = 'dt-center', targets = c(0, 1, 2, 3)))
+  #             ),
+  #             selection = "none",
+  #             escape = FALSE,
+  #             filter = "none",) %>%
+  #     formatStyle(columns = c(0,3),
+  #                 fontWeight = 'bold') %>%
+  #     formatStyle(columns = 1:3,
+  #                 target = 'row',
+  #                 fontWeight = styleRow(dim(chiSq2x2Totaled())[1], "bold")) %>%
+  #     formatStyle(columns = c(0,2),
+  #                 borderRight = styleRow(c(1,2),'2px solid #787878')) %>%
+  #     formatStyle(columns = c(1,2),
+  #                 borderTop = styleRow(c(1),'2px solid #787878'),
+  #                 borderBottom = styleRow(c(2),'2px solid #787878'))
+  # })
+  
+  # output$chiSq2x3 <- renderDT({
+  #   
+  #   datatable(chiSq2x3Totaled(),
+  #             class = 'cell-border stripe',
+  #             options = list(
+  #               dom = 't',
+  #               pageLength = -1,
+  #               ordering = FALSE,
+  #               searching = FALSE,
+  #               paging = FALSE,
+  #               autoWidth = FALSE,
+  #               scrollX = TRUE,
+  #               columnDefs = list(list(width = '100px', targets = c(1, 2, 3, 4)),
+  #                                 list(className = 'dt-center', targets = c(0, 1, 2, 3, 4)))
+  #             ),
+  #             selection = "none",
+  #             escape = FALSE,
+  #             filter = "none",) %>% 
+  #     formatStyle(columns = c(0,4), #specify columns to format
+  #                 fontWeight = 'bold') %>%
+  #     formatStyle(columns = 1:4,
+  #                 target = 'row',
+  #                 fontWeight = styleRow(dim(chiSq2x3Totaled())[1], "bold")) %>%
+  #     formatStyle(columns = c(0,3),
+  #                 borderRight = styleRow(c(1,2),'2px solid #787878')) %>%
+  #     formatStyle(columns = 1:3,
+  #                 borderTop = styleRow(c(1),'2px solid #787878'),
+  #                 borderBottom = styleRow(c(2),'2px solid #787878'))
+  # })
+  
+  # output$chiSq3x2 <- renderDT({
+  #   
+  #   datatable(chiSq3x2Totaled(),
+  #             class = 'cell-border stripe',
+  #             options = list(
+  #               dom = 't',
+  #               pageLength = -1,
+  #               ordering = FALSE,
+  #               searching = FALSE,
+  #               paging = FALSE,
+  #               autoWidth = FALSE,
+  #               scrollX = TRUE,
+  #               columnDefs = list(list(width = '100px', targets = c(1, 2, 3)),
+  #                                 list(className = 'dt-center', targets = c(0, 1, 2, 3)))
+  #             ),
+  #             selection = "none",
+  #             escape = FALSE,
+  #             filter = "none",) %>% 
+  #     formatStyle(columns = c(0,3), #specify columns to format
+  #                 fontWeight = 'bold') %>%
+  #     formatStyle(columns = 1:3,
+  #                 target = 'row',
+  #                 fontWeight = styleRow(dim(chiSq3x2Totaled())[1], "bold")) %>%
+  #     formatStyle(columns = c(0,2),
+  #                 borderRight = styleRow(1:3,'2px solid #787878')) %>%
+  #     formatStyle(columns = c(1,2),
+  #                 borderTop = styleRow(c(1),'2px solid #787878'),
+  #                 borderBottom = styleRow(c(3),'2px solid #787878'))
+  # })
+  
+  # output$chiSq3x3 <- renderDT({
+  #   
+  #   datatable(chiSq3x3Totaled(),
+  #             class = 'cell-border stripe',
+  #             options = list(
+  #               dom = 't',
+  #               pageLength = -1,
+  #               ordering = FALSE,
+  #               searching = FALSE,
+  #               paging = FALSE,
+  #               autoWidth = FALSE,
+  #               scrollX = TRUE,
+  #               columnDefs = list(list(width = '100px', targets = c(1, 2, 3, 4)),
+  #                                 list(className = 'dt-center', targets = c(0, 1, 2, 3, 4)))
+  #             ),
+  #             selection = "none",
+  #             escape = FALSE,
+  #             filter = "none",) %>% 
+  #     formatStyle(columns = c(0,4), #specify columns to format
+  #                 fontWeight = 'bold') %>%
+  #     formatStyle(columns = 1:4,
+  #                 target = 'row',
+  #                 fontWeight = styleRow(dim(chiSq3x3Totaled())[1], "bold")) %>%
+  #     formatStyle(columns = c(0,3),
+  #                 borderRight = styleRow(1:3,'2px solid #787878')) %>%
+  #     formatStyle(columns = 1:3,
+  #                 borderTop = styleRow(c(1),'2px solid #787878'),
+  #                 borderBottom = styleRow(c(3),'2px solid #787878'))
+  # })
+  
+  output$chiSqObs <- renderDT({
+    chiSqData <- chiSqTotaled()
     
-    datatable(chiSq2x2Totaled(),
-              class = 'cell-border stripe',
-              options = list(
-                dom = 't',
-                pageLength = -1,
-                ordering = FALSE,
-                searching = FALSE,
-                paging = FALSE,
-                autoWidth = FALSE,
-                scrollX = TRUE,
-                columnDefs = list(list(width = '100px', targets = c(0, 1, 2, 3)),
-                                  list(className = 'dt-center', targets = c(0, 1, 2, 3)))
-              ),
-              selection = "none",
-              escape = FALSE,
-              filter = "none",) %>%
-      formatStyle(columns = c(0,3),
-                  fontWeight = 'bold') %>%
-      formatStyle(columns = 1:3,
-                  target = 'row',
-                  fontWeight = styleRow(dim(chiSq2x2Totaled())[1], "bold")) 
+    CreateChiSqObserved(chiSqData)
   })
   
-  output$chiSq2x3 <- renderDT({
-    
-    datatable(chiSq2x3Totaled(),
-              class = 'cell-border stripe',
-              options = list(
-                dom = 't',
-                pageLength = -1,
-                ordering = FALSE,
-                searching = FALSE,
-                paging = FALSE,
-                autoWidth = FALSE,
-                scrollX = TRUE,
-                columnDefs = list(list(width = '100px', targets = c(1, 2, 3, 4)),
-                                  list(className = 'dt-center', targets = c(0, 1, 2, 3, 4)))
-              ),
-              selection = "none",
-              escape = FALSE,
-              filter = "none",) %>% 
-      formatStyle(columns = c(0,4), #specify columns to format
-                  fontWeight = 'bold') %>%
-      formatStyle(columns = 1:4,
-                  target = 'row',
-                  fontWeight = styleRow(dim(chiSq2x3Totaled())[1], "bold"))
-  })
+  outputOptions(output, "chiSqObs", suspendWhenHidden = FALSE)
   
-  output$chiSq3x2 <- renderDT({
-    
-    datatable(chiSq3x2Totaled(),
-              class = 'cell-border stripe',
-              options = list(
-                dom = 't',
-                pageLength = -1,
-                ordering = FALSE,
-                searching = FALSE,
-                paging = FALSE,
-                autoWidth = FALSE,
-                scrollX = TRUE,
-                columnDefs = list(list(width = '100px', targets = c(1, 2, 3)),
-                                  list(className = 'dt-center', targets = c(0, 1, 2, 3)))
-              ),
-              selection = "none",
-              escape = FALSE,
-              filter = "none",) %>% 
-      formatStyle(columns = c(0,3), #specify columns to format
-                  fontWeight = 'bold') %>%
-      formatStyle(columns = 1:3,
-                  target = 'row',
-                  fontWeight = styleRow(dim(chiSq3x2Totaled())[1], "bold"))
-  })
-  
-  output$chiSq3x3 <- renderDT({
-    
-    datatable(chiSq3x3Totaled(),
-              class = 'cell-border stripe',
-              options = list(
-                dom = 't',
-                pageLength = -1,
-                ordering = FALSE,
-                searching = FALSE,
-                paging = FALSE,
-                autoWidth = FALSE,
-                scrollX = TRUE,
-                columnDefs = list(list(width = '100px', targets = c(1, 2, 3, 4)),
-                                  list(className = 'dt-center', targets = c(0, 1, 2, 3, 4)))
-              ),
-              selection = "none",
-              escape = FALSE,
-              filter = "none",) %>% 
-      formatStyle(columns = c(0,4), #specify columns to format
-                  fontWeight = 'bold') %>%
-      formatStyle(columns = 1:4,
-                  target = 'row',
-                  fontWeight = styleRow(dim(chiSq3x3Totaled())[1], "bold"))
+  output$chiSqExp <- renderDT({
+    CreateChiSqExpected(chiSqResults()$Results$expected)
   })
   
   output$chiSqResultsMatrix <- renderDT({
     req(si_iv$is_valid())
-    
-    chiSqTest <- suppressWarnings(ChiSquareTest(chiSqActiveSet(), input$chiSquareYates))
+
+    chiSqTest <- suppressWarnings(ChiSquareTest(chiSqActiveMatrix(), input$chiSquareYates))
     
     datatable(chiSqTest$Matrix,
               class = 'cell-border stripe',
@@ -8036,6 +8277,83 @@ server <- function(session, input, output) {
       formatStyle(columns = 0:ncol(chiSqTest$Matrix),
                   target = 'row',
                   fontWeight = styleRow(dim(chiSqTest$Matrix)[1], "bold")) 
+  })
+  
+  
+  output$chiSqTest <- renderUI({
+    results <- chiSqResults()$Results$statistic
+    
+    PrintChiSqTest(results)
+  })
+  
+  output$chiSqPlot <- renderPlot({ ###### chisq plot ----
+    data <- chiSqResults()
+    chisq_df <- data$Results$parameter
+    chisq_ts <- round(data$Results$statistic, 4)
+    
+    if(input$chisquareSigLvl == "10%") {
+      sigLvl <- 0.1 
+    } else if(input$chisquareSigLvl == "5%") {
+      sigLvl <- 0.05
+    } else {
+      sigLvl <- 0.01
+    }
+    
+    cv <- round(qchisq(1 - sigLvl, df = chisq_df), 4)
+    # lower95 <- qchisq(.025, chisq_df)
+    # upper95 <- qchisq(.975, chisq_df)
+    
+    x_vector <- sort(c(seq(0, 15, length.out = 75), cv, chisq_ts))
+    p_vector <- dchisq(x_vector, df = chisq_df)
+    
+    df <- distinct(data.frame(x = x_vector, y = p_vector))
+    cvDF <- filter(df, x %in% cv)
+    tsDF <- filter(df, x %in% chisq_ts)
+    
+    ggplot(df, 
+           aes(x = x, y = y)) +
+      stat_function(fun = dchisq, 
+                    args = list(df = chisq_df),
+                    geom = "Density",
+                    fill = NA) +
+      shadeHtArea(df, cv, "greater") +
+      geom_segment(data = filter(df, x %in% c(0)),
+                   aes(x = x, xend = x, y = 0, yend = y),
+                   linetype = "dotted",
+                   linewidth = 0.75,
+                   color='black') +
+      geom_text(data = filter(df, x %in% c(0)),
+                aes(x = x, y = 0, label = "0"),
+                size = 14 / .pt,
+                fontface = "bold",
+                nudge_y = -.03,
+                check_overlap = TRUE) +
+      geom_segment(data = cvDF,
+                   aes(x = x, xend = x, y = 0, yend = y),
+                   linetype = "solid",
+                   lineend = 'butt',
+                   linewidth = 1.5,
+                   color='#023B70') +
+      geom_text(data = cvDF,
+                aes(x = x, y = 0, label = x),
+                size = 14 / .pt,
+                fontface = "bold",
+                nudge_y = -.03,
+                check_overlap = TRUE) +
+      geom_segment(data = tsDF,
+                   aes(x = x, xend = x, y = 0, yend = y + .055),
+                   linetype = "solid",
+                   linewidth = 1.25,
+                   color='#BD130B') +
+      geom_text(data = tsDF,
+                aes(x = x, y = y, label = x),
+                size = 14 / .pt,
+                fontface = "bold",
+                nudge_y = .075,
+                check_overlap = TRUE) +
+      theme_void() +  
+      scale_y_continuous(breaks = NULL) +
+      ylab("") + xlab("x^2")
   })
   
   # --------------------------------------------------------------------- #
@@ -8107,6 +8425,20 @@ server <- function(session, input, output) {
   })
   
   
+  observeEvent(input$chisquareDimension, {
+    output$renderChiSqObs <- renderUI({
+      DTOutput("chiSqObs", width = '500px')
+    })
+    
+    output$renderChiSqExp <- renderUI({
+      DTOutput("chiSqExp", width = '500px')
+    })
+    
+    output$renderChiSqResults <- renderUI({
+      DTOutput("chiSqResultsMatrix", width = "650px")
+    })
+  })
+  
   observeEvent(input$goInference, {
     #output$renderInference <- renderDataTable(
 
@@ -8145,57 +8477,60 @@ server <- function(session, input, output) {
       }
     } else if(input$siMethod == 'Chi-Square') {
       
-      output$render2x2ChiSq <- renderUI({
-        tagList(
-          
-          titlePanel("Chi-Square Test for Independence"),
-          hr(),
-          br(),
-          DTOutput("chiSq2x2", width = '500px'),
-          br(),
-          br(),
-          br(),
-        )
-      })
+      # output$render2x2ChiSq <- renderUI({
+      #   tagList(
+      #     
+      #     titlePanel("Chi-Square Test for Independence"),
+      #     hr(),
+      #     br(),
+      #     h3("Observed Frequencies"),
+      #     DTOutput("chiSq2x2Obs", width = '500px'),
+      #     br(),
+      #     br(),
+      #     h3("Expected Frequencies"),
+      #     DTOutput("chiSq2x2", width = '500px'),
+      #     br(),
+      #   )
+      # })
+      # 
+      # output$render2x3ChiSq <- renderUI({
+      #   tagList(
+      #     
+      #     titlePanel("Chi-Square Test for Independence"),
+      #     hr(),
+      #     br(),
+      #     DTOutput("chiSq2x3", width = '500px'),
+      #     br(),
+      #     br(),
+      #     br(),
+      #   )
+      # })
       
-      output$render2x3ChiSq <- renderUI({
-        tagList(
-          
-          titlePanel("Chi-Square Test for Independence"),
-          hr(),
-          br(),
-          DTOutput("chiSq2x3", width = '500px'),
-          br(),
-          br(),
-          br(),
-        )
-      })
-      
-      output$render3x2ChiSq <- renderUI({
-        tagList(
-          
-          titlePanel("Chi-Square Test for Independence"),
-          hr(),
-          br(),
-          DTOutput("chiSq3x2", width = '500px'),
-          br(),
-          br(),
-          br(),
-        )
-      })
-      
-      output$render3x3ChiSq <- renderUI({
-        tagList(
-          
-          titlePanel("Chi-Square Test for Independence"),
-          hr(),
-          br(),
-          DTOutput("chiSq3x3", width = '500px'),
-          br(),
-          br(),
-          br(),
-        )
-      })
+      # output$render3x2ChiSq <- renderUI({
+      #   tagList(
+      #     
+      #     titlePanel("Chi-Square Test for Independence"),
+      #     hr(),
+      #     br(),
+      #     DTOutput("chiSq3x2", width = '500px'),
+      #     br(),
+      #     br(),
+      #     br(),
+      #   )
+      # })
+      # 
+      # output$render3x3ChiSq <- renderUI({
+      #   tagList(
+      #     
+      #     titlePanel("Chi-Square Test for Independence"),
+      #     hr(),
+      #     br(),
+      #     DTOutput("chiSq3x3", width = '500px'),
+      #     br(),
+      #     br(),
+      #     br(),
+      #   )
+      # })
     }
     #) # renderInference
   }) # input$goInference
