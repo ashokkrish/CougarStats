@@ -5389,10 +5389,6 @@ server <- function(session, input, output) {
       region <- "acceptance"
     }
     
-    chiSqSum <- PrintChiSqSum()
-    chiSqPVal <- PrintChiSqPVal(data$Results$p.value, chiSqStat, sigLvl, reject)
-    chiSqCV <- PrintChiSqCV(critVal, reject, region)
-    
     chiSqOutput <- tagList(
       withMathJax(),
       titlePanel("5-Step Process"),
@@ -5407,18 +5403,48 @@ server <- function(session, input, output) {
               sigLvl),
       br(),
       br(),
-      br(),
+      br()
+    )
+    
+    if(input$chiSquareYates) {
+      chiSqFormula <- PrintChiSqYatesFormula(chiSqStat)
+    } else {
+      chiSqFormula <- PrintChiSqFormula(chiSqStat)
+    }
+    
+    chiSqPVal <- PrintChiSqPVal(data$Results$p.value, chiSqStat, sigLvl, reject)
+    chiSqCV <- PrintChiSqCV(critVal, reject, region)
+    
+    tagAppendChildren(chiSqOutput, chiSqFormula, chiSqPVal, chiSqCV)
+  }
+  
+  
+  PrintChiSqFormula <- function(chiSqStat) {
+    data <- chiSqResults()$Matrix
+    
+    chiSqSum <- ""
+    chiSqSmplf <- ""
+    
+    for(row in 1:(nrow(data) - 2)) {
+      chiSqSum <- paste0(chiSqSum, "\\dfrac{(", data[row,"O"], " - ", data[row,"E"], ")^2}{", data[row,"E"], "} + ")
+      chiSqSmplf <- paste0(chiSqSmplf, data[row,"(O - E)<sup>2</sup> / E"]," + ")
+    }
+    
+    chiSqSum <- paste0(chiSqSum, "\\dfrac{(", data[nrow(data) - 1,"O"], " - ", data[nrow(data) - 1,"E"], ")^2}{", data[ncol(data) - 1,"E"], "}")
+    chiSqSmplf <- paste0(chiSqSmplf, data[nrow(data) - 1,"(O - E)<sup>2</sup> / E"])
+    
+    formula <- tagList(
       p(tags$b("Test Statistic:")),
       sprintf("\\( \\chi^2 = \\large{ \\sum{ \\dfrac{(O - E)^2}{E} } } \\)"),
       br(),
       br(),
       sprintf("\\( \\phantom{\\chi^2} =  %s \\)",
-              chiSqSum$summation),
+              chiSqSum),
       br(),
       br(),
       br(),
       sprintf("\\( \\phantom{\\chi^2} =  %s \\)",
-              chiSqSum$simplified),
+              chiSqSmplf),
       br(),
       br(),
       br(),
@@ -5429,34 +5455,52 @@ server <- function(session, input, output) {
       br()
     )
     
-    tagAppendChildren(chiSqOutput, chiSqPVal, chiSqCV)
+    return(formula)
   }
   
   
-  PrintChiSqSum <- function() {
+  PrintChiSqYatesFormula <- function(chiSqStat) {
     data <- chiSqResults()$Matrix
+    yates <- data[,"(O - E)"]
+    print(yates)
+    yates <- round((abs(yates) - 0.5)^2 / data[,"E"], 4)
+    print(yates)
     
     chiSqSum <- ""
     chiSqSmplf <- ""
     
     for(row in 1:(nrow(data) - 2)) {
-      chiSqSum <- paste0(chiSqSum, "\\dfrac{(", data[row,"O"], " - ", data[row,"E"], ")^2}{", data[row,"E"], "} + ")
+      chiSqSum <- paste0(chiSqSum, "\\dfrac{(|", data[row,"O"], " - ", data[row,"E"], "| - 0.5)^2}{", data[row,"E"], "} + ")
+      chiSqSmplf <- paste0(chiSqSmplf, yates[row]," + ")
     }
     
-    chiSqSum <- paste0(chiSqSum, "\\dfrac{(", data[nrow(data) - 1,"O"], " - ", data[nrow(data) - 1,"E"], ")^2}{", data[ncol(data) - 1,"E"], "}")
+    chiSqSum <- paste0(chiSqSum, "\\dfrac{(|", data[nrow(data) - 1,"O"], " - ", data[nrow(data) - 1,"E"], "| - 0.5)^2}{", data[ncol(data) - 1,"E"], "}")
+    chiSqSmplf <- paste0(chiSqSmplf, yates[nrow(data) - 1])
     
-    for(row in 1:(nrow(data) - 2)) {
-      chiSqSmplf <- paste0(chiSqSmplf, data[row,"(O - E)<sup>2</sup> / E"]," + ")
-    }
+    formula <- tagList(
+      p(tags$b("Test Statistic:")),
+      sprintf("\\( \\chi^2_{Yates} = \\large{ \\sum{ \\dfrac{(|O - E| - 0.5)^2}{E} } } \\)"),
+      br(),
+      br(),
+      sprintf("\\( \\phantom{\\chi^2} =  %s \\)",
+              chiSqSum),
+      br(),
+      br(),
+      br(),
+      sprintf("\\( \\phantom{\\chi^2} =  %s \\)",
+              chiSqSmplf),
+      br(),
+      br(),
+      br(),
+      sprintf("\\( \\phantom{\\chi^2} = %0.4f \\)",
+              chiSqStat),
+      br(),
+      br(),
+      br()
+    )
     
-    chiSqSmplf <- paste0(chiSqSmplf, data[nrow(data) - 1,"(O - E)<sup>2</sup> / E"])
-    
-    sums <- list(chiSqSum, chiSqSmplf)
-    names(sums) <- c("summation", "simplified")
-    
-    return(sums)
+    return(formula)
   }
-  
   
   
   PrintChiSqPVal <- function(pValue, tsValue, sigLvl, reject) {
