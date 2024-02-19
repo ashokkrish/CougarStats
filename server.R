@@ -5016,24 +5016,6 @@ server <- function(session, input, output) {
     return(pvalOutput)
   }
   
-  printOneMeanHTConclusion <- function(suffEvidence) {
-    
-    conclusion <- tagList(
-      p(tags$b("Conclusion:")),
-      p(
-        sprintf("At the %1.0f%% significance level, the data %s sufficient evidence to reject the null hypothesis \\( (H_{0}) \\) that the population 
-                              mean \\( (\\mu) \\) \\( %s %g\\).",
-                SigLvl()*100,
-                suffEvidence,
-                OneMeanHypInfo()$nullHyp,
-                input$hypMean),
-        br(),
-      )
-    )
-    
-    return(conclusion)
-  }
-  
   
   GetDepMeansData <- function() {
     req(si_iv$is_valid())
@@ -5368,8 +5350,9 @@ server <- function(session, input, output) {
                   borderBottom = styleRow(c(numRow - 1),'2px solid #787878'))
   }
   
-  PrintChiSqTest <- function(chiSqStat) {
+  PrintChiSqTest <- function() {
     data <- chiSqResults()
+    chiSqStat <- data$Results$statistic
     
     if(input$chisquareSigLvl == "10%") {
       sigLvl <- 0.1 
@@ -5384,9 +5367,11 @@ server <- function(session, input, output) {
     if(data$Results$p.value < sigLvl) {
       reject <- "reject"
       region <- "rejection"
+      suffEvidence <- "is"
     } else {
       reject <- "do no reject"
       region <- "acceptance"
+      suffEvidence <- "isn't"
     }
     
     chiSqOutput <- tagList(
@@ -5414,8 +5399,9 @@ server <- function(session, input, output) {
     
     chiSqPVal <- PrintChiSqPVal(data$Results$p.value, chiSqStat, sigLvl, reject)
     chiSqCV <- PrintChiSqCV(critVal, reject, region)
+    chiSqConclusion <- PrintChiSqConclusion(sigLvl, suffEvidence)
     
-    tagAppendChildren(chiSqOutput, chiSqFormula, chiSqPVal, chiSqCV)
+    tagAppendChildren(chiSqOutput, chiSqFormula, chiSqPVal, chiSqCV, chiSqConclusion)
   }
   
   
@@ -5549,6 +5535,23 @@ server <- function(session, input, output) {
       br(),
       br()
     )
+  }
+  
+  PrintChiSqConclusion <- function(sigLvl, suffEvidence) {
+    
+    conclusion <- tagList(
+      p(tags$b("Conclusion:")),
+      p(
+        sprintf("At the %1.0f%% significance level, there %s sufficient 
+                evidence to reject the null hypothesis \\( (H_{0}) \\) that the 
+                Row variable and Column variable are associated.",
+                sigLvl*100,
+                suffEvidence),
+        br(),
+      )
+    )
+    
+    return(conclusion)
   }
   
   # --------------------------------------------------------------------- #
@@ -8325,9 +8328,8 @@ server <- function(session, input, output) {
   
   
   output$chiSqTest <- renderUI({
-    results <- chiSqResults()$Results$statistic
     
-    PrintChiSqTest(results)
+    PrintChiSqTest()
   })
   
   output$chiSqPlot <- renderPlot({ ###### chisq plot ----
@@ -8347,12 +8349,16 @@ server <- function(session, input, output) {
     # lower95 <- qchisq(.025, chisq_df)
     # upper95 <- qchisq(.975, chisq_df)
     
-    x_vector <- sort(c(seq(0, 15, length.out = 75), cv, chisq_ts))
+    xSeq <- c(seq(0, 15, length.out = 75), cv, chisq_ts)
+    rrLabel <- c((cv + max(xSeq))/2)
+    x_vector <- sort(c(xSeq, rrLabel))
     p_vector <- dchisq(x_vector, df = chisq_df)
     
     df <- distinct(data.frame(x = x_vector, y = p_vector))
     cvDF <- filter(df, x %in% cv)
     tsDF <- filter(df, x %in% chisq_ts)
+    rrLabelDF <- filter(df, x %in% rrLabel)
+    arLabelDF <- filter(df, y %in% max(p_vector))
     
     ggplot(df, 
            aes(x = x, y = y)) +
@@ -8361,11 +8367,12 @@ server <- function(session, input, output) {
                     geom = "Density",
                     fill = NA) +
       shadeHtArea(df, cv, "greater") +
-      geom_segment(data = filter(df, x %in% c(0)),
-                   aes(x = x, xend = x, y = 0, yend = y),
+      geom_segment(data = filter(df, y %in% max(p_vector)),
+                   aes(x = 0, xend = 0, y = 0, yend = y, alpha = 0.5),
                    linetype = "dotted",
                    linewidth = 0.75,
-                   color='black') +
+                   color='black',
+                   show.legend = FALSE) +
       geom_text(data = filter(df, x %in% c(0)),
                 aes(x = x, y = 0, label = "0"),
                 size = 14 / .pt,
@@ -8395,9 +8402,25 @@ server <- function(session, input, output) {
                 fontface = "bold",
                 nudge_y = .075,
                 check_overlap = TRUE) +
-      theme_void() +  
+      geom_text(data = arLabelDF,
+                aes(x = x, y = 0, label = "A R"),
+                size = 16 / .pt,
+                fontface = "bold",
+                vjust = -4,
+                check_overlap = TRUE) +
+      geom_text(data = rrLabelDF,
+                aes(x = x, y = y, label = "RR"),
+                size = 16 / .pt,
+                fontface = "bold",
+                vjust = -4,
+                check_overlap = TRUE) +
+      theme_void() +
+      ylab("") + 
+      xlab(expression(bold(chi^2))) +
       scale_y_continuous(breaks = NULL) +
-      ylab("") + xlab("x^2")
+      theme(axis.title.x = element_text(size = 20))
+      # coord_cartesian(clip="off")
+      
   })
   
   # --------------------------------------------------------------------- #
