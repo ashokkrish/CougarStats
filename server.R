@@ -6225,11 +6225,11 @@ server <- function(session, input, output) {
   criticalValue <- reactive({
     
     if(input$confLeveln == "90%") {
-      critVal <- 1.6449
+      critVal <- 1.645
     } else if(input$confLeveln == "95%") {
       critVal <- 1.96
     } else if(input$confLeveln == "99%") {
-      critVal <- 2.5758
+      critVal <- 2.576
     }
     
     return(critVal)
