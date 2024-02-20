@@ -4979,15 +4979,15 @@ server <- function(session, input, output) {
   printHTPVal <- function(pValue, testStat, alternative, tsValue, pvalSign, reject) {
     oneMeanData <- GetOneMeanHT()
     
-    # if(oneMeanData[7] < 0.0001)
-    # {
-    #   pValue <- "\\lt 0.0001"
-    # }
-    # else
-    # {
-    #   pValue <- paste(oneMeanData[7])
-    # }
-    # 
+    if(oneMeanData[7] < 0.0001)
+    {
+      pValue <- "P \\lt 0.0001"
+    }
+    else
+    {
+      pValue <- paste(oneMeanData[7])
+    }
+
     
     if(alternative == "two.sided"){
       pvalCalc <- paste("2 \\times P(", testStat, "\\, \\gt \\; \\mid", tsValue, "\\mid)")
@@ -5494,9 +5494,9 @@ server <- function(session, input, output) {
     pvalCalc <- paste("P(\\, \\chi^2 \\, \\ge \\,", round(tsValue,4), ")")
     
     if(pValue < 0.0001 && pValue > 0) {
-      pValue <- signif(pValue,1)
+      pValue <- "P < 0.0001"
     } else {
-      pValue <- round(pValue, 4)
+      pValue <- paste(round(pValue, 4))
     }
     
     pValOutput <- tagList(
