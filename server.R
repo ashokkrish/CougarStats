@@ -74,6 +74,7 @@ server <- function(session, input, output) {
   oneprop_iv <- InputValidator$new()
   onepropht_iv <- InputValidator$new()
   twoprop_iv <- InputValidator$new()
+  twopropht_iv <- InputValidator$new()
   chiSq2x2_iv <- InputValidator$new()
   chiSq2x3_iv <- InputValidator$new()
   chiSq3x2_iv <- InputValidator$new()
@@ -701,11 +702,13 @@ server <- function(session, input, output) {
   twoprop_iv$add_rule("numSuccesses1", sv_required())
   twoprop_iv$add_rule("numSuccesses1", sv_integer())
   twoprop_iv$add_rule("numSuccesses1", sv_gte(0))
+  twopropht_iv$add_rule("numSuccesses1", ~ if(checkTwoProp() == 0) "At least one of (x1) and (x2) must be greater than 0.")
   
   # x2
   twoprop_iv$add_rule("numSuccesses2", sv_required())
   twoprop_iv$add_rule("numSuccesses2", sv_integer())
   twoprop_iv$add_rule("numSuccesses2", sv_gte(0))
+  twopropht_iv$add_rule("numSuccesses2", ~ if(checkTwoProp() == 0) "At least one of (x1) and (x2) must be greater than 0.")
   
   # numTrialsProportion
   
@@ -875,6 +878,10 @@ server <- function(session, input, output) {
   twoprop_iv$condition(~ isTRUE(input$siMethod == '2' && 
                                 input$popuParameters == 'Population Proportions'))
   
+  twopropht_iv$condition(~ isTRUE(input$siMethod == '2' && 
+                                  input$popuParameters == 'Population Proportions' &&
+                                  input$inferenceType2 == 'Hypothesis Testing'))
+  
   chiSq2x2_iv$condition(~ isTRUE(input$siMethod == 'Chi-Square' &&
                                  input$chisquareDimension == '2 x 2'))
   
@@ -914,6 +921,7 @@ server <- function(session, input, output) {
   si_iv$add_validator(oneprop_iv)
   si_iv$add_validator(onepropht_iv)
   si_iv$add_validator(twoprop_iv)
+  si_iv$add_validator(twopropht_iv)
   si_iv$add_validator(chiSq2x2_iv)
   si_iv$add_validator(chiSq2x3_iv)
   si_iv$add_validator(chiSq3x2_iv) 
@@ -948,6 +956,7 @@ server <- function(session, input, output) {
   oneprop_iv$enable()
   onepropht_iv$enable()
   twoprop_iv$enable()
+  twopropht_iv$enable()
   chiSq2x2_iv$enable()
   chiSq2x3_iv$enable()
   chiSq3x2_iv$enable()
@@ -6161,6 +6170,18 @@ server <- function(session, input, output) {
 
   })
   
+  #### Two Prop Reactives ----
+  checkTwoProp <- eventReactive(c(input$numSuccesses1,
+                                  input$numSuccesses2), {
+
+    if(is.na(input$numSuccesses1) || is.na(input$numSuccesses2)) {
+      return(-1)
+    } else {
+      return(input$numSuccesses1 + input$numSuccesses2)
+    } 
+
+  })
+  
   
   #### Chi-Square Reactives ----
   # chiSqData2x2 <- reactive({
@@ -6563,14 +6584,21 @@ server <- function(session, input, output) {
         need(input$numSuccesses1 >= 0, "Number of Successes 1 (x1) cannot be negative"),
         need(input$numTrials1 %% 1 == 0, "Number of Trials 1 (n1) must be an integer"),
         need(input$numTrials1 > 0, "Number of Trials 1 (n1) must be greater than 0"),
-        need(input$numSuccesses2 %% 1 == 0, "Number of Successes 1 (x2) must be an integer"),
-        need(input$numSuccesses2 >= 0, "Number of Successes 1 (x2) cannot be negative"),
+        need(input$numSuccesses2 %% 1 == 0, "Number of Successes 2 (x2) must be an integer"),
+        need(input$numSuccesses2 >= 0, "Number of Successes 2 (x2) cannot be negative"),
         need(input$numTrials2 %% 1 == 0, "Number of Trials 2 (n2) must be an integer"),
         need(input$numTrials2 > 0, "Number of Trials 2 (n2) must be greater than 0"),
+        need(checkTwoProp() > 0, "The test statistic (t) will be undefined when the Number of Successes 1 (x1) and Number of Successes 2 (x2) are both 0."),
         
         errorClass = "myClass"
       )
     
+    } else if(!twopropht_iv$is_valid()) {
+      validate(
+        need(checkTwoProp() > 0, "The test statistic (t) will be undefined when the Number of Successes 1 (x1) and Number of Successes 2 (x2) are both 0."),
+        
+        errorClass = "myClass"
+      )
     } else if (input$siMethod == '2' && input$popuParameters == 'Population Proportions') {
       req(input$numSuccesses1 && input$numTrials1)
       req(input$numSuccesses2 && input$numTrials2)
