@@ -1813,7 +1813,7 @@
                 ),
                                 
                 conditionalPanel(
-                  condition = 'input.chisquareMethod == "Chi-Square test for independence"',
+                  condition = 'input.chisquareMethod == "Chi-Square test for independence" && input.chisquareDimension == "2 x 2"',
                                   
                   checkboxInput(
                     inputId = "chiSquareYates",
