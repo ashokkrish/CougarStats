@@ -80,6 +80,14 @@
   .navbar-nav .nav-link {
     color: rgba(245,245,245,0.5)!important;
   }
+  .pageTitle {
+    color: #F5F5F5; 
+    font-weight: bold; 
+    font-style: italic; 
+    font-size: 24pt; 
+    padding: 0px 10px; 
+    vertical-align: middle;
+  }
   .pretty input:checked~.state.p-primary-o label:before, 
   .pretty.p-toggle .state.p-primary-o label:before {
     border-color: #18536F;
