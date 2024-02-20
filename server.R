@@ -6325,7 +6325,7 @@ server <- function(session, input, output) {
     
     if(!onemeanht_iv$is_valid()) {
       validate(
-        need(input$hypMean, "Hypothesized Population Mean value required."),
+        need(input$hypMean, "Hypothesized value of the Population Mean is required."),
         
         errorClass = "myClass"
       )
@@ -6363,8 +6363,8 @@ server <- function(session, input, output) {
      
     if(!onepropht_iv$is_valid()) {
       validate(
-        need(input$hypProportion, "Hypothesized Population Proportion must be between 0 and 1") %then%
-          need(input$hypProportion > 0 && input$hypProportion < 1, "Hypothesized Population Proportion must be between 0 and 1"),
+        need(input$hypProportion, "Hypothesized value of the Population Proportion must be between 0 and 1") %then%
+          need(input$hypProportion > 0 && input$hypProportion < 1, "Hypothesized value of the Population Proportion must be between 0 and 1"),
           
         errorClass = "myClass"
       )
