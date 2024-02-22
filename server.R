@@ -744,6 +744,8 @@ server <- function(session, input, output) {
   chiSq2x2_iv$add_rule("chiSqInput2x2", ~ if(any(chiSqActiveData()$numeric < 0)) "Fields must be positive integers.")
   chiSq2x2_iv$add_rule("chiSqInput2x2", ~ if(any(chiSqActiveData()$numeric %% 1 != 0)) "Fields must be positive integers.")
   chiSq2x2_iv$add_rule("chiSqInput2x2", ~ if(all(chiSqActiveData()$numeric == 0)) "All cell values cannot be equal to zero.")
+  chiSq2x2_iv$add_rule("chiSqInput2x2", ~ if(any(chiSqTotaled()[,"Total"] == 0)) "Row Totals must be greater than zero.")
+  chiSq2x2_iv$add_rule("chiSqInput2x2", ~ if(any(chiSqTotaled()["Total",] == 0)) "Column Totals must be greater than zero.")
   
   # 2 x 3
   chiSq2x3_iv$add_rule("chiSqInput2x3", sv_required())
@@ -751,6 +753,8 @@ server <- function(session, input, output) {
   chiSq2x3_iv$add_rule("chiSqInput2x3", ~ if(any(chiSqActiveData()$numeric < 0)) "Fields must be positive integers.")
   chiSq2x3_iv$add_rule("chiSqInput2x3", ~ if(any(chiSqActiveData()$numeric %% 1 != 0)) "Fields must be positive integers.")
   chiSq2x3_iv$add_rule("chiSqInput2x3", ~ if(all(chiSqActiveData()$numeric == 0)) "All cell values cannot be equal to zero.")
+  chiSq2x3_iv$add_rule("chiSqInput2x3", ~ if(any(chiSqTotaled()[,"Total"] == 0)) "Row Totals must be greater than zero.")
+  chiSq2x3_iv$add_rule("chiSqInput2x3", ~ if(any(chiSqTotaled()["Total",] == 0)) "Column Totals must be greater than zero.")
   
   # 3 x 2
   chiSq3x2_iv$add_rule("chiSqInput3x2", sv_required())
@@ -758,6 +762,8 @@ server <- function(session, input, output) {
   chiSq3x2_iv$add_rule("chiSqInput3x2", ~ if(any(chiSqActiveData()$numeric < 0)) "Fields must be positive integers.")
   chiSq3x2_iv$add_rule("chiSqInput3x2", ~ if(any(chiSqActiveData()$numeric %% 1 != 0)) "Fields must be positive integers.")
   chiSq3x2_iv$add_rule("chiSqInput3x2", ~ if(all(chiSqActiveData()$numeric == 0)) "All cell values cannot be equal to zero.")
+  chiSq3x2_iv$add_rule("chiSqInput3x2", ~ if(any(chiSqTotaled()[,"Total"] == 0)) "Row Totals must be greater than zero.")
+  chiSq3x2_iv$add_rule("chiSqInput3x2", ~ if(any(chiSqTotaled()["Total",] == 0)) "Column Totals must be greater than zero.")
   
   # 3 x 3
   chiSq3x3_iv$add_rule("chiSqInput3x3", sv_required())
@@ -765,6 +771,8 @@ server <- function(session, input, output) {
   chiSq3x3_iv$add_rule("chiSqInput3x3", ~ if(any(chiSqActiveData()$numeric < 0)) "Fields must be positive integers.")
   chiSq3x3_iv$add_rule("chiSqInput3x3", ~ if(any(chiSqActiveData()$numeric %% 1 != 0)) "Fields must be positive integers.")
   chiSq3x3_iv$add_rule("chiSqInput3x3", ~ if(all(chiSqActiveData()$numeric == 0)) "All cell values cannot be equal to zero.")
+  chiSq3x3_iv$add_rule("chiSqInput3x3", ~ if(any(chiSqTotaled()[,"Total"] == 0)) "Row Totals must be greater than zero.")
+  chiSq3x3_iv$add_rule("chiSqInput3x3", ~ if(any(chiSqTotaled()["Total",] == 0)) "Column Totals must be greater than zero.")
   
   
   # ------------------ #
@@ -6639,6 +6647,12 @@ server <- function(session, input, output) {
         
         errorClass = "myClass"
       )
+      
+      validate(
+        need(all(chiSqTotaled()[,"Total"] > 0) && all(chiSqTotaled()["Total",] > 0), "The test statistic will be undefined if any row or column total equals 0."),
+        
+        errorClass = "myClass"
+      )
     }
     
     if(!chiSq2x3_iv$is_valid()) {
@@ -6663,6 +6677,12 @@ server <- function(session, input, output) {
       
       validate(
         need(any(chiSqActiveData()$numeric != 0), "All cell values cannot be equal to zero."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(all(chiSqTotaled()[,"Total"] > 0) && all(chiSqTotaled()["Total",] > 0), "The test statistic will be undefined if any row or column total equals 0."),
         
         errorClass = "myClass"
       )
@@ -6693,6 +6713,12 @@ server <- function(session, input, output) {
         
         errorClass = "myClass"
       )
+      
+      validate(
+        need(all(chiSqTotaled()[,"Total"] > 0) && all(chiSqTotaled()["Total",] > 0), "The test statistic will be undefined if any row or column total equals 0."),
+        
+        errorClass = "myClass"
+      )
     }
     
     if(!chiSq3x3_iv$is_valid()){
@@ -6717,6 +6743,12 @@ server <- function(session, input, output) {
       
       validate(
         need(any(cchiSqActiveData()$numeric != 0), "All cell values cannot be equal to zero."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(all(chiSqTotaled()[,"Total"] > 0) && all(chiSqTotaled()["Total",] > 0), "The test statistic will be undefined if any row or column total equals 0."),
         
         errorClass = "myClass"
       )
