@@ -738,41 +738,28 @@ server <- function(session, input, output) {
   
   # Chi-Square
   
+  ChiSqInputRules <- function(iv, inputID) {
+    iv$add_rule(inputID, sv_required())
+    iv$add_rule(inputID, ~ if(any(is.na(chiSqActiveData()$numeric))) "Fields must be positive integers.")
+    iv$add_rule(inputID, ~ if(any(chiSqActiveData()$numeric < 0)) "Fields must be positive integers.")
+    iv$add_rule(inputID, ~ if(any(chiSqActiveData()$numeric %% 1 != 0)) "Fields must be positive integers.")
+    iv$add_rule(inputID, ~ if(all(chiSqActiveData()$numeric == 0)) "All cell values cannot be equal to zero.")
+    iv$add_rule(inputID, ~ if(any(chiSqTotaled()[,"Total"] == 0)) "Row Totals must be greater than zero.")
+    iv$add_rule(inputID, ~ if(any(chiSqTotaled()["Total",] == 0)) "Column Totals must be greater than zero.")
+  }
+  
   # 2 x 2
-  chiSq2x2_iv$add_rule("chiSqInput2x2", sv_required())
-  chiSq2x2_iv$add_rule("chiSqInput2x2", ~ if(any(is.na(chiSqActiveData()$numeric))) "Fields must be positive integers.")
-  chiSq2x2_iv$add_rule("chiSqInput2x2", ~ if(any(chiSqActiveData()$numeric < 0)) "Fields must be positive integers.")
-  chiSq2x2_iv$add_rule("chiSqInput2x2", ~ if(any(chiSqActiveData()$numeric %% 1 != 0)) "Fields must be positive integers.")
-  chiSq2x2_iv$add_rule("chiSqInput2x2", ~ if(all(chiSqActiveData()$numeric == 0)) "All cell values cannot be equal to zero.")
-  chiSq2x2_iv$add_rule("chiSqInput2x2", ~ if(any(chiSqTotaled()[,"Total"] == 0)) "Row Totals must be greater than zero.")
-  chiSq2x2_iv$add_rule("chiSqInput2x2", ~ if(any(chiSqTotaled()["Total",] == 0)) "Column Totals must be greater than zero.")
+  ChiSqInputRules(chiSq2x2_iv, "chiSqInput2x2")
   
   # 2 x 3
-  chiSq2x3_iv$add_rule("chiSqInput2x3", sv_required())
-  chiSq2x3_iv$add_rule("chiSqInput2x3", ~ if(any(is.na(chiSqActiveData()$numeric))) "Fields must be positive integers.")
-  chiSq2x3_iv$add_rule("chiSqInput2x3", ~ if(any(chiSqActiveData()$numeric < 0)) "Fields must be positive integers.")
-  chiSq2x3_iv$add_rule("chiSqInput2x3", ~ if(any(chiSqActiveData()$numeric %% 1 != 0)) "Fields must be positive integers.")
-  chiSq2x3_iv$add_rule("chiSqInput2x3", ~ if(all(chiSqActiveData()$numeric == 0)) "All cell values cannot be equal to zero.")
-  chiSq2x3_iv$add_rule("chiSqInput2x3", ~ if(any(chiSqTotaled()[,"Total"] == 0)) "Row Totals must be greater than zero.")
-  chiSq2x3_iv$add_rule("chiSqInput2x3", ~ if(any(chiSqTotaled()["Total",] == 0)) "Column Totals must be greater than zero.")
-  
+  ChiSqInputRules(chiSq2x3_iv, "chiSqInput2x3")
+
   # 3 x 2
-  chiSq3x2_iv$add_rule("chiSqInput3x2", sv_required())
-  chiSq3x2_iv$add_rule("chiSqInput3x2", ~ if(any(is.na(chiSqActiveData()$numeric))) "Fields must be positive integers.")
-  chiSq3x2_iv$add_rule("chiSqInput3x2", ~ if(any(chiSqActiveData()$numeric < 0)) "Fields must be positive integers.")
-  chiSq3x2_iv$add_rule("chiSqInput3x2", ~ if(any(chiSqActiveData()$numeric %% 1 != 0)) "Fields must be positive integers.")
-  chiSq3x2_iv$add_rule("chiSqInput3x2", ~ if(all(chiSqActiveData()$numeric == 0)) "All cell values cannot be equal to zero.")
-  chiSq3x2_iv$add_rule("chiSqInput3x2", ~ if(any(chiSqTotaled()[,"Total"] == 0)) "Row Totals must be greater than zero.")
-  chiSq3x2_iv$add_rule("chiSqInput3x2", ~ if(any(chiSqTotaled()["Total",] == 0)) "Column Totals must be greater than zero.")
-  
+  ChiSqInputRules(chiSq3x2_iv, "chiSqInput3x2")
+
   # 3 x 3
-  chiSq3x3_iv$add_rule("chiSqInput3x3", sv_required())
-  chiSq3x3_iv$add_rule("chiSqInput3x3", ~ if(any(is.na(chiSqActiveData()$numeric))) "Fields must be positive integers.")
-  chiSq3x3_iv$add_rule("chiSqInput3x3", ~ if(any(chiSqActiveData()$numeric < 0)) "Fields must be positive integers.")
-  chiSq3x3_iv$add_rule("chiSqInput3x3", ~ if(any(chiSqActiveData()$numeric %% 1 != 0)) "Fields must be positive integers.")
-  chiSq3x3_iv$add_rule("chiSqInput3x3", ~ if(all(chiSqActiveData()$numeric == 0)) "All cell values cannot be equal to zero.")
-  chiSq3x3_iv$add_rule("chiSqInput3x3", ~ if(any(chiSqTotaled()[,"Total"] == 0)) "Row Totals must be greater than zero.")
-  chiSq3x3_iv$add_rule("chiSqInput3x3", ~ if(any(chiSqTotaled()["Total",] == 0)) "Column Totals must be greater than zero.")
+  ChiSqInputRules(chiSq3x3_iv, "chiSqInput3x3")
+
   
   
   # ------------------ #
@@ -1045,6 +1032,13 @@ server <- function(session, input, output) {
   }
   
   # **************************************************************************** #
+  
+  #  --------------------------------------------------------------------- #
+  ## -------------------- Input Validator Functions ----------------------
+  #  --------------------------------------------------------------------- #
+  
+  
+  
   
   #  -------------------------------------------------------------------- #
   ## ------------------- Descriptive Stats functions --------------------
