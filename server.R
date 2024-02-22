@@ -8321,8 +8321,6 @@ server <- function(session, input, output) {
     CreateChiSqObserved(chiSqData)
   })
   
-  outputOptions(output, "chiSqObs", suspendWhenHidden = FALSE)
-  
   output$chiSqExp <- renderDT({
     CreateChiSqExpected(chiSqResults()$Results$expected)
   })
@@ -8573,7 +8571,7 @@ server <- function(session, input, output) {
         })
       }
     } else if(input$siMethod == 'Chi-Square') {
-      
+
       # output$render2x2ChiSq <- renderUI({
       #   tagList(
       #     
