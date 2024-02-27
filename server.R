@@ -5377,10 +5377,12 @@ server <- function(session, input, output) {
     critVal <- round(qchisq(1 - sigLvl, df = data$Results$parameter), 4)
     
     if(data$Results$p.value < sigLvl) {
+      pValSymbol <- "\\leq"
       reject <- "reject"
       region <- "rejection"
       suffEvidence <- "is"
     } else {
+      pValSymbol <- "\\gt"
       reject <- "do no reject"
       region <- "acceptance"
       suffEvidence <- "isn't"
@@ -5403,14 +5405,15 @@ server <- function(session, input, output) {
       br()
     )
     
-    if(input$chiSquareYates) {
+    if(input$chiSquareYates && abs(data$Matrix[1,"(O - E)"]) > 0.5) {
+      #Yates correction is only applied when O - E is > 0.5
       chiSqFormula <- PrintChiSqYatesFormula(chiSqStat)
     } else {
       chiSqFormula <- PrintChiSqFormula(chiSqStat)
     }
     
-    chiSqPVal <- PrintChiSqPVal(data$Results$p.value, chiSqStat, sigLvl, reject)
-    chiSqCV <- PrintChiSqCV(critVal, reject, region)
+    chiSqPVal <- PrintChiSqPVal(data$Results$p.value, chiSqStat, pValSymbol, sigLvl, reject)
+    chiSqCV <- PrintChiSqCV(critVal, reject, region, alpha = sigLvl, df = data$Results$parameter)
     chiSqConclusion <- PrintChiSqConclusion(sigLvl, suffEvidence)
     
     tagAppendChildren(chiSqOutput, chiSqFormula, chiSqPVal, chiSqCV, chiSqConclusion)
@@ -5460,9 +5463,8 @@ server <- function(session, input, output) {
   PrintChiSqYatesFormula <- function(chiSqStat) {
     data <- chiSqResults()$Matrix
     yates <- data[,"(O - E)"]
-    print(yates)
     yates <- round((abs(yates) - 0.5)^2 / data[,"E"], 4)
-    print(yates)
+
     
     chiSqSum <- ""
     chiSqSmplf <- ""
@@ -5501,7 +5503,7 @@ server <- function(session, input, output) {
   }
   
   
-  PrintChiSqPVal <- function(pValue, tsValue, sigLvl, reject) {
+  PrintChiSqPVal <- function(pValue, tsValue, pValSymbol, sigLvl, reject) {
     
     pvalCalc <- paste("P(\\, \\chi^2 \\, \\ge \\,", round(tsValue,4), ")")
     
@@ -5518,7 +5520,8 @@ server <- function(session, input, output) {
               pValue),
       br(),
       br(),
-      sprintf("Since \\( P < %0.2f \\), %s \\( H_{0}\\).",
+      sprintf("Since \\( P %s %0.2f \\), %s \\( H_{0}\\).",
+              pValSymbol,
               sigLvl,
               reject),
       br(),
@@ -5529,12 +5532,14 @@ server <- function(session, input, output) {
     return(pValOutput)
   }
   
-  PrintChiSqCV <- function(critVal, reject, region) {
+  PrintChiSqCV <- function(critVal, reject, region, alpha, df) {
     
     cvOutput <- tagList(
       p(tags$b("Using Critical Value Method:")),
-      sprintf("Critical Value \\( = %s \\)",
-              critVal),
+      sprintf("Critical Value \\( = \\chi^2_{alpha,df} = \\chi^2_{%s,%s} = %s \\)",
+              critVal,
+              alpha,
+              df),
       br(),
       br(),
       sprintf("Since the test statistic \\( (\\chi^2)\\) falls within the %s region, %s \\( H_{0}\\).",
@@ -5556,7 +5561,7 @@ server <- function(session, input, output) {
       p(
         sprintf("At the %1.0f%% significance level, there %s sufficient 
                 evidence to reject the null hypothesis \\( (H_{0}) \\) that the 
-                Row variable and Column variable are associated.",
+                Row variable and Column variable are not associated.",
                 sigLvl*100,
                 suffEvidence),
         br(),
@@ -5564,6 +5569,109 @@ server <- function(session, input, output) {
     )
     
     return(conclusion)
+  }
+  
+  PrintFishersTest <- function() {
+    results <- fishersResults()
+    
+    if(input$chisquareSigLvl == "10%") {
+      sigLvl <- 0.1 
+    } else if(input$chisquareSigLvl == "5%") {
+      sigLvl <- 0.05
+    } else {
+      sigLvl <- 0.01
+    }
+    
+    if(results$p.value > sigLvl) {
+      pValSymbol <- "\\gt"
+      suffEvidence <- "isn't"
+      reject <- "do not reject"
+      pValue <- paste(round(results$p.value, 4))
+    } else {
+      pValSymbol <- "\\leq"
+      suffEvidence <- "is"
+      reject <- "reject"
+      
+      if(results$p.value < 0.0001 && results$p.value > 0) {
+        pValue <- "p < 0.0001"
+      } else {
+        pValue <- paste(round(results$p.value, 4))
+      }
+    }
+    
+    fishersOutput <- tagList(
+      withMathJax(),
+      br(),
+      br(),
+      sprintf("\\( H_{0} \\): The Row variable and Column variable are not associated (independent)"),
+      br(),
+      sprintf("\\( H_{a} \\): The Row variable and Column variable are associated (dependent)"),
+      br(),
+      br(),
+      sprintf("\\( \\alpha = %s \\)",
+              sigLvl),
+      br(),
+      br()
+    )
+    
+    fishersPVal <- PrintFishersPVal(pValue, pValSymbol, sigLvl, reject)
+    fishersConclusion <- PrintChiSqConclusion(sigLvl, suffEvidence)
+    
+    tagAppendChildren(fishersOutput, fishersPVal, fishersConclusion)
+  }
+  
+  PrintFishersPVal <- function(pValue, pValSymbol, sigLvl, reject) {
+    fishersData <- chiSqTotaled()
+    
+    if(input$chisquareDimension == '2 x 2') {
+      tagList(
+        p(tags$b("P-Value:")),
+        sprintf("\\( p = \\dfrac{(a + b)! \\; (c + d)! \\; (a + c)! \\; (b + d)!}{a! \\; b! \\; c! \\; d! \\; n!} \\)"),
+        br(),
+        br(),
+        sprintf("\\( \\phantom{p} = \\dfrac{(%s + %s)! \\; (%s + %s)! \\; (%s + %s)! \\; (%s + %s)!}{%s! \\; %s! \\; %s! \\; %s! \\; %s!} \\)",
+                fishersData[1,1],
+                fishersData[1,2],
+                fishersData[2,1],
+                fishersData[2,2],
+                fishersData[1,1],
+                fishersData[2,1],
+                fishersData[1,2],
+                fishersData[2,2],
+                fishersData[1,1],
+                fishersData[1,2],
+                fishersData[2,1],
+                fishersData[2,2],
+                fishersData[3,3]),
+        br(),
+        br(),
+        sprintf("\\( \\phantom{p} = %s \\)",
+                pValue),
+        br(),
+        br(),
+        sprintf("Since \\( p %s %0.2f \\), %s \\( H_{0}\\).",
+                pValSymbol,
+                sigLvl,
+                reject),
+        br(),
+        br()
+      )
+    } else {
+      tagList(
+        p(tags$b("P-Value:")),
+        sprintf("\\( p = %s \\)",
+                pValue),
+        br(),
+        br(),
+        sprintf("Since \\( p %s %0.2f \\), %s \\( H_{0}\\).",
+                pValSymbol,
+                sigLvl,
+                reject),
+        br(),
+        br()
+      )
+    }
+      
   }
   
   # --------------------------------------------------------------------- #
@@ -6241,6 +6349,11 @@ server <- function(session, input, output) {
 
       return(chiSqTotaledMatrix)
     }
+  })
+  
+  fishersResults <- reactive({
+    req(si_iv$is_valid())
+    return(fisher.test(chiSqActiveMatrix(), simulate.p.value = TRUE))
   })
   
   
@@ -8381,7 +8494,6 @@ server <- function(session, input, output) {
   
   
   output$chiSqTest <- renderUI({
-    
     PrintChiSqTest()
   })
   
@@ -8476,6 +8588,16 @@ server <- function(session, input, output) {
       
   })
   
+  output$fishersObs <- renderDT({
+    req(si_iv$is_valid())
+    
+    CreateChiSqObserved(chiSqTotaled())
+  })
+  
+  output$fishersTest <- renderUI({
+    PrintFishersTest()
+  })
+  
   # --------------------------------------------------------------------- #
   
   
@@ -8545,7 +8667,7 @@ server <- function(session, input, output) {
   })
   
   
-  observeEvent(input$chisquareDimension, {
+  observeEvent(input$goInference, {
     output$renderChiSqObs <- renderUI({
       DTOutput("chiSqObs", width = '500px')
     })
@@ -8556,6 +8678,10 @@ server <- function(session, input, output) {
     
     output$renderChiSqResults <- renderUI({
       DTOutput("chiSqResultsMatrix", width = "650px")
+    })
+    
+    output$renderFishersObs <- renderUI({
+      DTOutput("fishersObs", width = '500px')
     })
   })
   
