@@ -1803,17 +1803,19 @@
                                 
                 prettyRadioButtons(
                   inputId  = "chisquareMethod", 
-                  label    = strong("Method"), 
-                  choices  = c("Chi-Square test for independence", 
-                               "Fisher's Exact test"),
-                  selected = c("Chi-Square test for independence"),
+                  label    = strong("Hypothesis Test"), 
+                  choiceNames  = c("Chi-Square test for independence", 
+                                   "Fisher's Exact test"),
+                  choiceValues = c("Chi-Square",
+                                   "Fisher"),
+                  selected = c("Chi-Square"),
                   inline   = TRUE,
                   outline  = TRUE,
                   status   = "primary"
                 ),
                                 
                 conditionalPanel(
-                  condition = 'input.chisquareMethod == "Chi-Square test for independence" && input.chisquareDimension == "2 x 2"',
+                  condition = 'input.chisquareMethod == "Chi-Square" && input.chisquareDimension == "2 x 2"',
                                   
                   checkboxInput(
                     inputId = "chiSquareYates",
@@ -1826,21 +1828,20 @@
                   #   "Additional info",
                   #   placement = "right"
                   # ),
-                                  
-                  prettyRadioButtons(
-                    inputId  = "chisquareSigLvl", 
-                    label    = strong("Significance Level (\\( \\alpha\\))"), 
-                    choices  = c("10%", 
-                                 "5%",
-                                 "1%"),
-                    selected = c("5%"),
-                    inline   = TRUE,
-                    outline  = TRUE,
-                    status   = "primary"
-                  ),
-                )
+                ),
+                
+                prettyRadioButtons(
+                  inputId  = "chisquareSigLvl", 
+                  label    = strong("Significance Level (\\( \\alpha\\))"), 
+                  choices  = c("10%", 
+                               "5%",
+                               "1%"),
+                  selected = c("5%"),
+                  inline   = TRUE,
+                  outline  = TRUE,
+                  status   = "primary"
+                ),
               ),
-
 
               actionButton(
                 inputId = "goInference", 
@@ -2738,82 +2739,76 @@
                   conditionalPanel( #### Chi-Square ----
                     condition = "input.siMethod == 'Chi-Square'",
                                     
-                    # conditionalPanel(
-                    #   condition = "input.chisquareDimension == '2 x 2'",
-                    #                   
-                    #   uiOutput("render2x2ChiSq"),
-                    #   br(),
-                    # ),# 2x2 Chi-Square
-                    #                 
-                    # conditionalPanel(
-                    #   condition = "input.chisquareDimension == '2 x 3'",
-                    #                   
-                    #   uiOutput("render2x3ChiSq"),
-                    #   br(),
-                    # ),# 2x3 Chi-Square
-                    #                 
-                    # conditionalPanel(
-                    #   condition = "input.chisquareDimension == '3 x 2'",
-                    #                   
-                    #   uiOutput("render3x2ChiSq"),
-                    #   br(),
-                    # ),# 3x2 Chi-Square
-                    #                 
-                    # conditionalPanel(
-                    #   condition = "input.chisquareDimension == '3 x 3'",
-                    #                   
-                    #   uiOutput("render3x3ChiSq"),
-                    #   br(),
-                    # ),# 3x3 Chi-Square
-                    titlePanel("Chi-Square Test for Independence"),
-                    hr(),
-                    br(),
-                    # accordion(
-                    #   accordion_panel(
-                    #     title = "Observed Frequencies", 
-                    #     uiOutput("renderChiSqObs"),
-                    #     br(),
-                    #     br(),
-                    #   ),
-                    #   
-                    #   accordion_panel(
-                    #     title = "Expected Frequencies",
-                    #     uiOutput("renderChiSqExp"),
-                    #     br(),
-                    #     br(),
-                    #   ),
-                    #   
-                    #   accordion_panel(
-                    #     title = "Calculation of the \\( \\chi^2 \\) statistic value",
-                    #     uiOutput("renderChiSqResults"),
-                    #     br(),
-                    #   ),
-                    #   
-                    #   accordion_panel(
-                    #     title = "Chi-Square Test",
-                    #     uiOutput("chiSqTest"),
-                    #     br(),
-                    #     br(),
-                    #   ),
-                    #   
-                    #   open = TRUE
-                    # ),
-                    h4("Observed Frequencies"),
-                    uiOutput("renderChiSqObs"),
-                    br(),
-                    br(),
-                    h4("Expected Frequencies"),
-                    uiOutput("renderChiSqExp"),
-                    br(),
-                    br(),
-                    h4("Calculation of the \\( \\chi^2 \\) statistic value"),
-                    uiOutput("renderChiSqResults"),
-                    br(),
-                    hr(),
-                    br(),
-                    uiOutput("chiSqTest"),
-                    br(),
-                    br(),
+                    conditionalPanel( ##### Chi-Square Test for Independence ----
+                      condition = "input.chisquareMethod == 'Chi-Square'",  
+                      titlePanel("Chi-Square Test for Independence"),
+                      hr(),
+                      br(),
+                                    # accordion(
+                                      #   accordion_panel(
+                                      #     title = "Observed Frequencies", 
+                                      #     uiOutput("renderChiSqObs"),
+                                      #     br(),
+                                      #     br(),
+                                      #   ),
+                                      #   
+                                      #   accordion_panel(
+                                      #     title = "Expected Frequencies",
+                                      #     uiOutput("renderChiSqExp"),
+                                      #     br(),
+                                      #     br(),
+                                      #   ),
+                                      #   
+                                      #   accordion_panel(
+                                      #     title = "Calculation of the \\( \\chi^2 \\) statistic value",
+                                      #     uiOutput("renderChiSqResults"),
+                                      #     br(),
+                                      #   ),
+                                      #   
+                                      #   accordion_panel(
+                                      #     title = "Chi-Square Test",
+                                      #     uiOutput("chiSqTest"),
+                                      #     br(),
+                                      #     br(),
+                                      #   ),
+                                      #   
+                                      #   open = TRUE
+                                      # ),
+                      h4("Observed Frequencies"),
+                      uiOutput("renderChiSqObs"),
+                      br(),
+                      br(),
+                      h4("Expected Frequencies"),
+                      uiOutput("renderChiSqExp"),
+                      br(),
+                      br(),
+                      h4("Calculation of the \\( \\chi^2 \\) statistic value"),
+                      uiOutput("renderChiSqResults"),
+                      br(),
+                      hr(),
+                      br(),
+                      uiOutput("chiSqTest"),
+                      br(),
+                      br(),
+                    ),
+                    
+                    conditionalPanel( #### Fisher's Exact Test ----
+                      condition = "input.chisquareMethod == 'Fisher'",
+                      
+                      titlePanel("Fisher's Exact Test"),
+                      hr(),
+                      br(),
+                      h4("Observed Frequencies"),
+                      uiOutput("renderFishersObs"),
+                      br(),
+                      br(),
+                      hr(),
+                      br(),
+                      h4("Hypothesis Test"),
+                      uiOutput("fishersTest"),
+                      br(),
+                      br(),
+                    )
                   ) # input.siMethod == 'Chi-Square'
                 )# Inference Data
               )
