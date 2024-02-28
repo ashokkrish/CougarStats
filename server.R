@@ -8678,6 +8678,14 @@ server <- function(session, input, output) {
     }
   })
   
+  observeEvent(input$chisquareDimension, {
+    if( input$chisquareDimension != '2 x 2') {
+      shinyjs::disable(selector = '#chisquareMethod input[value="Fisher"]')
+    } else {
+      shinyjs::enable(selector = '#chisquareMethod input[value="Fisher"]')
+    }
+    
+  })
   
   observeEvent(input$goInference, {
     output$renderChiSqObs <- renderUI({
