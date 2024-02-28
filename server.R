@@ -877,16 +877,16 @@ server <- function(session, input, output) {
                                   input$popuParameters == 'Population Proportions' &&
                                   input$inferenceType2 == 'Hypothesis Testing'))
   
-  chiSq2x2_iv$condition(~ isTRUE(input$siMethod == 'Chi-Square' &&
+  chiSq2x2_iv$condition(~ isTRUE(input$siMethod == 'Categorical' &&
                                  input$chisquareDimension == '2 x 2'))
   
-  chiSq2x3_iv$condition(~ isTRUE(input$siMethod == 'Chi-Square' &&
+  chiSq2x3_iv$condition(~ isTRUE(input$siMethod == 'Categorical' &&
                                  input$chisquareDimension == '2 x 3'))
   
-  chiSq3x2_iv$condition(~ isTRUE(input$siMethod == 'Chi-Square' &&
+  chiSq3x2_iv$condition(~ isTRUE(input$siMethod == 'Categorical' &&
                                  input$chisquareDimension == '3 x 2'))
   
-  chiSq3x3_iv$condition(~ isTRUE(input$siMethod == 'Chi-Square' &&
+  chiSq3x3_iv$condition(~ isTRUE(input$siMethod == 'Categorical' &&
                                  input$chisquareDimension == '3 x 3'))
   
 
@@ -5383,7 +5383,7 @@ server <- function(session, input, output) {
       suffEvidence <- "is"
     } else {
       pValSymbol <- "\\gt"
-      reject <- "do no reject"
+      reject <- "do not reject"
       region <- "acceptance"
       suffEvidence <- "isn't"
     }
@@ -8492,8 +8492,8 @@ server <- function(session, input, output) {
                 autoWidth = FALSE,
                 scrollX = TRUE,
                 columnDefs = list(
-                  list(width = '130px', targets = c(0, 1, 2, 3, 4)),
-                  list(className = 'dt-center', targets = c(0, 1, 2, 3, 4)))
+                  list(width = '130px', targets = c(0, 1, 2, 3, 4, 5)),
+                  list(className = 'dt-center', targets = c(0, 1, 2, 3, 4, 5)))
               ),
               selection = "none",
               escape = FALSE,
@@ -8684,7 +8684,6 @@ server <- function(session, input, output) {
     } else {
       shinyjs::enable(selector = '#chisquareMethod input[value="Fisher"]')
     }
-    
   })
   
   observeEvent(input$goInference, {
@@ -8697,7 +8696,7 @@ server <- function(session, input, output) {
     })
     
     output$renderChiSqResults <- renderUI({
-      DTOutput("chiSqResultsMatrix", width = "650px")
+      DTOutput("chiSqResultsMatrix", width = "750px")
     })
     
     output$renderFishersObs <- renderUI({
@@ -8742,7 +8741,7 @@ server <- function(session, input, output) {
           DTOutput("depMeansData")
         })
       }
-    } else if(input$siMethod == 'Chi-Square') {
+    } else if(input$siMethod == 'Categorical') {
 
       # output$render2x2ChiSq <- renderUI({
       #   tagList(
