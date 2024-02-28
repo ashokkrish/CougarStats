@@ -6365,7 +6365,7 @@ server <- function(session, input, output) {
   
   fishersResults <- reactive({
     req(si_iv$is_valid())
-    return(fisher.test(chiSqActiveMatrix(), workspace = 500000))
+    return(fisher.test(chiSqActiveMatrix()))
   })
   
   
@@ -8681,6 +8681,11 @@ server <- function(session, input, output) {
   observeEvent(input$chisquareDimension, {
     if( input$chisquareDimension != '2 x 2') {
       shinyjs::disable(selector = '#chisquareMethod input[value="Fisher"]')
+      
+      updatePrettyRadioButtons(
+        inputId = "chisquareMethod",
+        selected = "Chi-Square"
+      )
     } else {
       shinyjs::enable(selector = '#chisquareMethod input[value="Fisher"]')
     }
