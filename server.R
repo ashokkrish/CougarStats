@@ -5537,9 +5537,9 @@ server <- function(session, input, output) {
     cvOutput <- tagList(
       p(tags$b("Using Critical Value Method:")),
       sprintf("Critical Value \\( = \\chi^2_{alpha,df} = \\chi^2_{%s,%s} = %s \\)",
-              critVal,
               alpha,
-              df),
+              df,
+              critVal),
       br(),
       br(),
       sprintf("Since the test statistic \\( (\\chi^2)\\) falls within the %s region, %s \\( H_{0}\\).",
