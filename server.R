@@ -8534,7 +8534,7 @@ server <- function(session, input, output) {
       shadeHtArea(df, cv, "greater") +
       geom_segment(data = filter(df, y %in% max(p_vector)),
                    aes(x = 0, xend = 0, y = 0, yend = y, alpha = 0.5),
-                   linetype = "dotted",
+                   linetype = "solid",
                    linewidth = 0.75,
                    color='black',
                    show.legend = FALSE) +
