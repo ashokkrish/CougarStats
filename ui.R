@@ -896,22 +896,26 @@
               condition = "input.dropDownMenu == 'Statistical Inference'",
               style     = "display: none;",
                             
-              HTML("<label class='si-label'><b>Methodology</b></label>"),                               
-              prettyRadioButtons(
-                inputId      = "siMethod",
-                label        = NULL,
-                choiceValues = list("1", 
-                                    "2",
-                                    "Multiple",
-                                    "Chi-Square"),
-                choiceNames  = list("Inference about 1 sample", 
-                                    "Inference about 2 samples",
-                                    "Inference about more than 2 samples",
-                                    "Chi-Square tests"),
-                selected     = "1",
-                outline      = TRUE,
-                status       = "primary"
-              ), #,width = '1000px'),
+              HTML("<label class='si-label'><b>Methodology</b></label>"),
+              htmltools::tagAppendAttributes(
+                prettyRadioButtons(
+                  inputId      = "siMethod",
+                  label        = NULL,
+                  choiceValues = list("1", 
+                                      "2",
+                                      "Multiple",
+                                      "Categorical"),
+                  choiceNames  = list("Inference about 1 sample\\(\\)", 
+                                      "Inference about 2 samples\\(\\)",
+                                      "Inference about more than 2 samples\\(\\)",
+                                      "Inference for Categorical Data (e.g \\( \\chi^2 \\) test, Fisher's Exact test)"),
+                  selected     = "1",
+                  outline      = TRUE,
+                  status       = "primary"
+                ), #,width = '1000px'),
+                
+                class = "latexRadio"
+              ),
                                                            
               # radioButtons(inputId = "popuDistribution",
               #              label = strong("Analysis Type"),
@@ -1697,7 +1701,7 @@
               ), # "input.siMethod == '2'",
               
               conditionalPanel( #### Chi-Square ----
-                condition = 'input.siMethod == "Chi-Square"',
+                condition = 'input.siMethod == "Categorical"',
                                 
                 prettyRadioButtons(
                   inputId = "chisquareDimension",
@@ -2737,7 +2741,7 @@
                   ), # "input.siMethod == '2'"
                   
                   conditionalPanel( #### Chi-Square ----
-                    condition = "input.siMethod == 'Chi-Square'",
+                    condition = "input.siMethod == 'Categorical'",
                                     
                     conditionalPanel( ##### Chi-Square Test for Independence ----
                       condition = "input.chisquareMethod == 'Chi-Square'",  
@@ -2809,7 +2813,7 @@
                       br(),
                       br(),
                     )
-                  ) # input.siMethod == 'Chi-Square'
+                  ) # input.siMethod == 'Categorical'
                 )# Inference Data
               )
             ), # inferenceMP
