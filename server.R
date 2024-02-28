@@ -5405,7 +5405,7 @@ server <- function(session, input, output) {
       br()
     )
     
-    if(input$chisquareDimension == '2 x 2' && input$chiSquareYates && abs(data$Matrix[1,"(O - E)"]) > 0.5) {
+    if(input$chisquareDimension == '2 x 2' && input$chiSquareYates) {
       #Yates correction is only applied when O - E is > 0.5
       chiSqFormula <- PrintChiSqYatesFormula(chiSqStat)
     } else {
@@ -5465,40 +5465,52 @@ server <- function(session, input, output) {
     yates <- data[,"(O - E)"]
     yates <- round((abs(yates) - 0.5)^2 / data[,"E"], 4)
 
-    
-    chiSqSum <- ""
-    chiSqSmplf <- ""
-    
-    for(row in 1:(nrow(data) - 2)) {
-      chiSqSum <- paste0(chiSqSum, "\\dfrac{(|", data[row,"O"], " - ", data[row,"E"], "| - 0.5)^2}{", data[row,"E"], "} + ")
-      chiSqSmplf <- paste0(chiSqSmplf, yates[row]," + ")
+    if(all(abs(data[nrow(data) - 1,"(O - E)"]) > 0.5)) {
+      
+      chiSqSum <- ""
+      chiSqSmplf <- ""
+      
+      for(row in 1:(nrow(data) - 2)) {
+        chiSqSum <- paste0(chiSqSum, "\\dfrac{(|", data[row,"O"], " - ", data[row,"E"], "| - 0.5)^2}{", data[row,"E"], "} + ")
+        chiSqSmplf <- paste0(chiSqSmplf, yates[row]," + ")
+      }
+      
+      chiSqSum <- paste0(chiSqSum, "\\dfrac{(|", data[nrow(data) - 1,"O"], " - ", data[nrow(data) - 1,"E"], "| - 0.5)^2}{", data[ncol(data) - 1,"E"], "}")
+      chiSqSmplf <- paste0(chiSqSmplf, yates[nrow(data) - 1])
+      
+      formula <- tagList(
+        p(tags$b("Test Statistic:")),
+        sprintf("\\( \\chi^2_{Yates} = \\large{ \\sum{ \\dfrac{(|O - E| - 0.5)^2}{E} } } \\)"),
+        br(),
+        br(),
+        sprintf("\\( \\phantom{\\chi^2} =  %s \\)",
+                chiSqSum),
+        br(),
+        br(),
+        br(),
+        sprintf("\\( \\phantom{\\chi^2} =  %s \\)",
+                chiSqSmplf),
+        br(),
+        br(),
+        br(),
+        sprintf("\\( \\phantom{\\chi^2} = %0.4f \\)",
+                chiSqStat),
+        br(),
+        br(),
+        br()
+      )
+    } else {
+      disclaimer <- tagList(
+        p(tags$i("*Note: Yates’ continuity correction is not applied in this 
+                 case because the correction factor is greater than |O - E| for 
+                 one or more of the differences.*")
+          ),
+        br(),
+        br()
+      )
+      formula <- tagAppendChildren(PrintChiSqFormula(chiSqStat), disclaimer)
     }
-    
-    chiSqSum <- paste0(chiSqSum, "\\dfrac{(|", data[nrow(data) - 1,"O"], " - ", data[nrow(data) - 1,"E"], "| - 0.5)^2}{", data[ncol(data) - 1,"E"], "}")
-    chiSqSmplf <- paste0(chiSqSmplf, yates[nrow(data) - 1])
-    
-    formula <- tagList(
-      p(tags$b("Test Statistic:")),
-      sprintf("\\( \\chi^2_{Yates} = \\large{ \\sum{ \\dfrac{(|O - E| - 0.5)^2}{E} } } \\)"),
-      br(),
-      br(),
-      sprintf("\\( \\phantom{\\chi^2} =  %s \\)",
-              chiSqSum),
-      br(),
-      br(),
-      br(),
-      sprintf("\\( \\phantom{\\chi^2} =  %s \\)",
-              chiSqSmplf),
-      br(),
-      br(),
-      br(),
-      sprintf("\\( \\phantom{\\chi^2} = %0.4f \\)",
-              chiSqStat),
-      br(),
-      br(),
-      br()
-    )
-    
+
     return(formula)
   }
   
@@ -5536,7 +5548,7 @@ server <- function(session, input, output) {
     
     cvOutput <- tagList(
       p(tags$b("Using Critical Value Method:")),
-      sprintf("Critical Value \\( = \\chi^2_{alpha,df} = \\chi^2_{%s,%s} = %s \\)",
+      sprintf("Critical Value \\( = \\chi^2_{\\alpha,df} = \\chi^2_{%s,%s} = %s \\)",
               alpha,
               df,
               critVal),
@@ -6353,7 +6365,7 @@ server <- function(session, input, output) {
   
   fishersResults <- reactive({
     req(si_iv$is_valid())
-    return(fisher.test(chiSqActiveMatrix(), simulate.p.value = TRUE))
+    return(fisher.test(chiSqActiveMatrix(), workspace = 500000))
   })
   
   
