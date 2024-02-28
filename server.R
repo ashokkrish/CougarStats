@@ -5405,7 +5405,7 @@ server <- function(session, input, output) {
       br()
     )
     
-    if(input$chiSquareYates && abs(data$Matrix[1,"(O - E)"]) > 0.5) {
+    if(input$chisquareDimension == '2 x 2' && input$chiSquareYates && abs(data$Matrix[1,"(O - E)"]) > 0.5) {
       #Yates correction is only applied when O - E is > 0.5
       chiSqFormula <- PrintChiSqYatesFormula(chiSqStat)
     } else {
