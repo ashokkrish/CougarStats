@@ -16,9 +16,11 @@ ChiSquareTest <- function(tableData, correction = FALSE) {
   
   ominusE2byE <- round(ominusE2/expected, 4)
   
-  resultMatrix <- cbind(observed, expected, ominusE, ominusE2, ominusE2byE)
+  residuals <- round(t(t(as.vector(results$residuals))), 4)
+  
+  resultMatrix <- cbind(observed, expected, ominusE, ominusE2, ominusE2byE, residuals)
   resultMatrix <- rbind(resultMatrix, Total = round(colSums(resultMatrix), 4))
-  colnames(resultMatrix) <- c("O", "E", "(O - E)", "(O - E)<sup>2</sup>", "(O - E)<sup>2</sup> / E")
+  colnames(resultMatrix) <- c("O", "E", "(O - E)", "(O - E)<sup>2</sup>", "(O - E)<sup>2</sup> / E", "Standardized Residuals")
   
   fullResults <- list(results, resultMatrix)
   names(fullResults) <- c("Results", "Matrix")
