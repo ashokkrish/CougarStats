@@ -75,6 +75,9 @@ server <- function(session, input, output) {
   onepropht_iv <- InputValidator$new()
   twoprop_iv <- InputValidator$new()
   twopropht_iv <- InputValidator$new()
+  anovaupload_iv <- InputValidator$new()
+  anovamulti_iv <- InputValidator$new()
+  anovastacked_iv <- InputValidator$new()
   chiSq2x2_iv <- InputValidator$new()
   chiSq2x3_iv <- InputValidator$new()
   chiSq3x2_iv <- InputValidator$new()
@@ -736,6 +739,20 @@ server <- function(session, input, output) {
   onepropht_iv$add_rule("hypProportion", sv_gt(0))
   onepropht_iv$add_rule("hypProportion", sv_lt(1))
   
+  # Anova
+  
+  anovaupload_iv$add_rule("anovaUserData", sv_required())
+  anovaupload_iv$add_rule("anovaUserData", ~ if(is.null(fileInputs$anovaStatus) || fileInputs$anovaStatus == 'reset') "Required")
+  anovaupload_iv$add_rule("anovaUserData", ~ if(!(tolower(tools::file_ext(input$anovaUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+  anovaupload_iv$add_rule("anovaUserData", ~ if(ncol(anovaUploadData()) < 2) "Data must include at least two columns")
+  # anovaupload_iv$add_rule("anovaUserData", ~ if(nrow(anovaUploadData()) < 2) "")
+  
+  anovamulti_iv$add_rule("anovaMultiColumns", sv_required())
+  anovamulti_iv$add_rule("anovaMultiColumns", ~ if(length(input$anovaMultiColumns) < 2) "Select at least two columns")
+  
+  anovastacked_iv$add_rule("anovaResponse", sv_required())
+  anovastacked_iv$add_rule("anovaFactors", sv_required())
+  
   # Chi-Square
   
   ChiSqInputRules <- function(iv, inputID) {
@@ -877,6 +894,16 @@ server <- function(session, input, output) {
                                   input$popuParameters == 'Population Proportions' &&
                                   input$inferenceType2 == 'Hypothesis Testing'))
   
+  anovaupload_iv$condition(~ isTRUE(input$siMethod == 'Multiple'))
+  
+  anovamulti_iv$condition(~ isTRUE(input$siMethod == 'Multiple' && 
+                                   input$anovaFormat == 'Multiple' &&
+                                   anovaupload_iv$is_valid()))
+  
+  anovastacked_iv$condition(~ isTRUE(input$siMethod == 'Multiple' && 
+                                     input$anovaFormat == 'Stacked' &&
+                                     anovaupload_iv$is_valid()))
+  
   chiSq2x2_iv$condition(~ isTRUE(input$siMethod == 'Categorical' &&
                                  input$chisquareDimension == '2 x 2'))
   
@@ -918,6 +945,9 @@ server <- function(session, input, output) {
   si_iv$add_validator(twoprop_iv)
   si_iv$add_validator(twopropht_iv)
   twoprop_iv$add_validator(twopropht_iv)
+  si_iv$add_validator(anovaupload_iv)
+  si_iv$add_validator(anovamulti_iv)
+  si_iv$add_validator(anovastacked_iv)
   si_iv$add_validator(chiSq2x2_iv)
   si_iv$add_validator(chiSq2x3_iv)
   si_iv$add_validator(chiSq3x2_iv) 
@@ -953,6 +983,9 @@ server <- function(session, input, output) {
   onepropht_iv$enable()
   twoprop_iv$enable()
   twopropht_iv$enable()
+  anovaupload_iv$enable()
+  anovamulti_iv$enable()
+  anovastacked_iv$enable()
   chiSq2x2_iv$enable()
   chiSq2x3_iv$enable()
   chiSq3x2_iv$enable()
@@ -1018,6 +1051,7 @@ server <- function(session, input, output) {
     oneMeanStatus = NULL,
     indMeansStatus = NULL,
     depMeansStatus = NULL,
+    anovaStatus = NULL,
     slrStatus = NULL
   )
   
@@ -6305,6 +6339,22 @@ server <- function(session, input, output) {
   })
   
   
+  #### ANOVA Reactives ----
+  anovaUploadData <- eventReactive(input$anovaUserData, {
+    ext <- tools::file_ext(input$anovaUserData$name)
+    ext <- tolower(ext)
+    
+    switch(ext, 
+           csv = read_csv(input$anovaUserData$datapath, show_col_types = FALSE),
+           xls = read_xls(input$anovaUserData$datapath),
+           xlsx = read_xlsx(input$anovaUserData$datapath),
+           txt = read_tsv(input$anovaUserData$datapath, show_col_types = FALSE),
+           
+           validate("Improper file format.")
+    )
+  })
+  
+  
   #### Chi-Square Reactives ----
   # chiSqData2x2 <- reactive({
   #   suppressWarnings(as.numeric(input$chiSqInput2x2))
@@ -8678,6 +8728,44 @@ server <- function(session, input, output) {
     }
   })
   
+  
+  observeEvent(input$anovaUserData, {
+    hide(id = "inferenceData")
+    hide(id = "anovaUploadInputs")
+    print("HO")
+    # hide(id = "anovaResponse")
+    # hide(id = "anovaFactors")
+    
+    fileInputs$anovaStatus <- 'uploaded'
+    
+    if(anovaupload_iv$is_valid())
+    {
+      freezeReactiveValue(input, "anovaMultiColumns")
+      updateSelectizeInput(session = getDefaultReactiveDomain(),
+                           "anovaMultiColumns",
+                           choices = c(colnames(anovaUploadData()))
+      )
+      
+      freezeReactiveValue(input, "anovaResponse")
+      updateSelectizeInput(session = getDefaultReactiveDomain(),
+                           "anovaResponse",
+                           choices = c(colnames(anovaUploadData()))
+      )
+      
+      freezeReactiveValue(input, "anovaFactors")
+      updateSelectizeInput(session = getDefaultReactiveDomain(),
+                           "anovaFactors",
+                           choices = c(colnames(anovaUploadData()))
+      )
+      
+      show(id = "anovaUploadInputs")
+      print(length(input$anovaMultiColumns))
+      print("HEY")
+      # show(id = "anovaResponse")
+      # show(id = "anovaFactors")
+    }
+  })
+  
   observeEvent(input$chisquareDimension, {
     if( input$chisquareDimension != '2 x 2') {
       shinyjs::disable(selector = '#chisquareMethod input[value="Fisher"]')
@@ -9601,6 +9689,11 @@ server <- function(session, input, output) {
     hide(id = "depMeansUplSample2")
   })
   
+  observeEvent(!anovaupload_iv$is_valid(), {
+    hide(id = "inferenceMP")
+    hide(id = "inferenceData")
+  })
+  
   observeEvent(input$goInference, {
     show(id = "inferenceMP")
   })
@@ -9611,6 +9704,7 @@ server <- function(session, input, output) {
     fileInputs$oneMeanStatus <- 'reset'
     fileInputs$indMeansStatus <- 'reset'
     fileInputs$depMeansStatus <- 'reset'
+    fileInputs$anovaStatus <- 'reset'
   })
   
   #  -------------------------------------------------------------------- #

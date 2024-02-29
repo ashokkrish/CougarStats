@@ -1700,6 +1700,87 @@
                 ), # Ind Means !Summarized
               ), # "input.siMethod == '2'",
               
+              conditionalPanel( #### More than 2 Samples ----
+                condition = 'input.siMethod == "Multiple"',
+                
+                fileInput(
+                  inputId = "anovaUserData", 
+                  label   = strong("Upload your Data (.csv or .xls or .xlsx or .txt)"), 
+                  accept  = c("text/csv",
+                              "text/comma-separated-values", 
+                              "text/plain", 
+                              ".csv",
+                              ".xls",
+                              ".xlsx")
+                ),
+                
+                hidden(tagList(
+                  div(id = "anovaUploadInputs",
+                      
+                    prettyRadioButtons(
+                      inputId = "anovaFormat",
+                      label   = strong("Data Format"),
+                      choiceNames = c("Values in multiple columns",
+                                      "Responses and factors stacked in two columns"),
+                      choiceValues = c("Multiple",
+                                       "Stacked"),
+                      outline = TRUE,
+                      status  = "primary"
+                    ),
+                      
+                    conditionalPanel(
+                      condition = "input.anovaFormat == 'Multiple'",
+                      
+                      selectizeInput(
+                        inputId = "anovaMultiColumns",
+                        label = strong("Choose columns to conduct analysis"),
+                        choices = c(""),
+                        multiple = TRUE,
+                        selected = NULL,
+                        options = list(hideSelected = FALSE,
+                                       placeholder = 'Select two or more columns',
+                                       onInitialize = I('function() { this.setValue(""); }')),
+                      )
+                    ),
+                    
+                    conditionalPanel(
+                      condition = "input.anovaFormat == 'Stacked'",
+                      
+                      selectizeInput(
+                        inputId = "anovaResponse",
+                        label = strong("Response Variable"),
+                        choices = c(""),
+                        selected = NULL,
+                        options = list(placeholder = 'Select a variable',
+                                       onInitialize = I('function() { this.setValue(""); }')),
+                      ),
+                      
+                      selectizeInput(
+                        inputId = "anovaFactors",
+                        label = strong("Factors"),
+                        choices = c(""),
+                        selected = NULL,
+                        options = list(placeholder = 'Select a factor',
+                                       onInitialize = I('function() { this.setValue(""); }')),
+                      )
+                    )
+                  ),  
+                )),
+                
+                prettyRadioButtons(
+                  inputId  = "chisquareSigLvl", 
+                  label    = strong("Significance Level (\\( \\alpha\\))"), 
+                  choices  = c("10%", 
+                               "5%",
+                               "1%"),
+                  selected = c("5%"),
+                  inline   = TRUE,
+                  outline  = TRUE,
+                  status   = "primary"
+                ),
+                
+              ),
+              
               conditionalPanel( #### Chi-Square ----
                 condition = 'input.siMethod == "Categorical"',
                                 
