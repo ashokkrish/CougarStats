@@ -747,7 +747,7 @@ server <- function(session, input, output) {
   anovaupload_iv$add_rule("anovaUserData", ~ if(ncol(anovaUploadData()) < 2) "Data must include at least two columns")
   # anovaupload_iv$add_rule("anovaUserData", ~ if(nrow(anovaUploadData()) < 2) "")
   
-  anovamulti_iv$add_rule("anovaMultiColumns", sv_required())
+  # anovamulti_iv$add_rule("anovaMultiColumns", sv_required())
   anovamulti_iv$add_rule("anovaMultiColumns", ~ if(length(input$anovaMultiColumns) < 2) "Select at least two columns")
   
   anovastacked_iv$add_rule("anovaResponse", sv_required())
