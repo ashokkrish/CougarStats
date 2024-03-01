@@ -752,6 +752,8 @@ server <- function(session, input, output) {
   
   anovastacked_iv$add_rule("anovaResponse", sv_required())
   anovastacked_iv$add_rule("anovaFactors", sv_required())
+  anovastacked_iv$add_rule("anovaResponse", ~ if(anovaStackedIsValid() == FALSE) "Response variable and factors column cannot be the same")
+  anovastacked_iv$add_rule("anovaFactors", ~ if(anovaStackedIsValid() == FALSE) "Response variable and factors column cannot be the same")
   
   # Chi-Square
   
@@ -6354,6 +6356,18 @@ server <- function(session, input, output) {
     )
   })
   
+  anovaStackedIsValid <- eventReactive({input$anovaResponse
+                                        input$anovaFactors}, {
+    valid <- TRUE
+    
+    if(!is.null(input$anovaResponse) && !is.null(input$anovaFactors)) {
+      if(input$anovaResponse == input$anovaFactors) {
+        valid <- FALSE
+      }
+    }
+
+    return(valid)    
+  })
   
   #### Chi-Square Reactives ----
   # chiSqData2x2 <- reactive({
@@ -6787,6 +6801,52 @@ server <- function(session, input, output) {
       )
 
     }
+    
+    
+    # ANOVA Validation
+    # ------------------------------------------------------------------------ #
+    if(!anovaupload_iv$is_valid()) {
+      if(is.null(input$anovaUserData)) {
+        validate("Please upload a file.")
+      }
+      
+      validate(
+        need(!is.null(fileInputs$anovaStatus) && fileInputs$anovaStatus == 'uploaded', "Please upload a file."),
+        
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(nrow(anovaUploadData()) > 0, "File is empty."),
+        need(ncol(anovaUploadData()) >= 2, "File must contain at least 2 distinct columns of data to choose from for analysis."),
+        
+        errorClass = "myClass"
+      )
+    }
+    
+    if(!anovamulti_iv$is_valid()) {
+      validate(
+        need(length(input$anovaMultiColumns) >= 2, "Please select two or more columns to conduct analysis."),
+        
+        errorClass = "myClass"
+      )
+    }
+    
+    if(!anovastacked_iv$is_valid()) {
+      validate(
+        need(!is.null(input$anovaResponse) && input$anovaResponse != '', "Please select a Response Variable."),
+        need(!is.null(input$anovaFactors) && input$anovaFactors != '', "Please select a Factors column."),
+
+        errorClass = "myClass"
+      )
+      
+      validate(
+        need(anovaStackedIsValid() == TRUE, "Please select distinct columns for Response Variable and Factors."),
+        
+        errorClass = "myClass"
+      )
+    }
+    
     
     # Chi-Square Validation 
     # ------------------------------------------------------------------------ #
@@ -9700,6 +9760,7 @@ server <- function(session, input, output) {
   
   observeEvent(input$resetInference, {
     hide(id = "inferenceMP")
+    hide(id = "anovaUploadInputs")
     shinyjs::reset("inferencePanel")
     fileInputs$oneMeanStatus <- 'reset'
     fileInputs$indMeansStatus <- 'reset'
