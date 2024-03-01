@@ -1768,12 +1768,12 @@
                 )),
                 
                 prettyRadioButtons(
-                  inputId  = "chisquareSigLvl", 
+                  inputId  = "anovaSigLvl", 
                   label    = strong("Significance Level (\\( \\alpha\\))"), 
                   choices  = c("10%", 
                                "5%",
                                "1%"),
-                  selected = c("5%"),
+                  selected = "5%",
                   inline   = TRUE,
                   outline  = TRUE,
                   status   = "primary"
