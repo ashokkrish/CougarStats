@@ -1054,7 +1054,7 @@ server <- function(session, input, output) {
     indMeansStatus = NULL,
     depMeansStatus = NULL,
     anovaStatus = NULL,
-    slrStatus = NULL
+    slrStatus = NULL,
   )
   
   # String List to Numeric List
@@ -5328,25 +5328,67 @@ server <- function(session, input, output) {
   #### ANOVA Functions ----
   
   PrintANOVA <- function() {
-    sigLvl <- 5
+    data <- anovaOneWayResults()$test
+    
+    if(input$anovaSigLvl == "10%") {
+      sigLvl <- 0.1 
+    } else if(input$anovaSigLvl == "5%") {
+      sigLvl <- 0.05
+    } else {
+      sigLvl <- 0.01
+    }
+    
+    critVal <- round(qf(1 - sigLvl, df1 = data[1,"Df"], df2 = data[2,"Df"]), 4)
+    
+    if(data[1,"Pr(>F)"] < sigLvl) {
+      pValSymbol <- "\\leq"
+      reject <- "reject"
+      region <- "rejection"
+      suffEvidence <- "is"
+    } else {
+      pValSymbol <- "\\gt"
+      reject <- "do not reject"
+      region <- "acceptance"
+      suffEvidence <- "isn't"
+    }
     
     hypothesis <- PrintANOVAHyp(sigLvl)
     testStat <- PrintANOVAFormula()
-    tagAppendChildren(hypothesis, testStat)
+    pValue <- PrintANOVAPValue(pValSymbol, sigLvl, reject)
+    anovaCV <- PrintANOVACV(critVal, data[1,"Df"], data[2,"Df"], reject, region, sigLvl)
+    tagAppendChildren(hypothesis, testStat, pValue, anovaCV)
   }
   
   PrintANOVAHyp <- function(sigLvl) {
     anovaData <- anovaOneWayResults()$data
-    numFactors <- anovaOneWayResults()$numFactors
-    factorCol <- anovaOneWayResults()$factorCol
-    factorNames <- anovaOneWayResults()$factorNames
+    numGroups <- anovaOneWayResults()$numFactors
+    groupCol <- anovaOneWayResults()$factorCol
+    groupNames <- anovaOneWayResults()$factorNames
     
     nullHyp <- "H_{0} : "
-    
-    for(mu in 1:(numFactors - 1)) {
-      nullHyp <- paste0(nullHyp, "\\mu_{", mu, "} = ")
+    groupCounts <- tagList()
+
+    for(group in 1:(numGroups - 1)) {
+      nullHyp <- paste0(nullHyp, "\\mu_{\\textit{", groupNames[group], "}} = ")
+      
+      groupCount <- tagList(
+        sprintf("\\(n_{\\textit{%s}} = %s\\)",
+                groupNames[group],
+                sum(anovaData[,groupCol] == groupNames[group])),
+        br()
+      )
+      groupCounts <- tagAppendChildren(groupCounts, groupCount)
     }
-    nullHyp <- paste0(nullHyp, "\\mu_{", numFactors, "}")
+    
+    nullHyp <- paste0(nullHyp, "\\mu_{\\textit{", groupNames[numGroups], "}}")
+    
+    groupCount <- tagList(
+      sprintf("\\(n_{\\textit{%s}} = %s\\)",
+              groupNames[numGroups],
+              sum(anovaData[,groupCol] == groupNames[numGroups])),
+      br()
+    )
+    groupCounts <- tagAppendChildren(groupCounts, groupCount)
     
     hypothesis <- tagList(
       withMathJax(),
@@ -5363,22 +5405,13 @@ server <- function(session, input, output) {
       sprintf("\\( n = %s \\)",
               anovaOneWayResults()$count),
       br(),
-      sprintf("\\( k = \\) number of factors \\( = %s \\)",
-              numFactors),
+      sprintf("\\( k = %s \\)",
+              numGroups),
       br(),
       br(),
     )
     
-    for(name in factorNames) {
-      factorCount <- tagList(
-        sprintf("\\(n_{%s} = %s\\)",
-                name,
-                sum(anovaData[,factorCol] == name)),
-        br()
-      )
-      
-      hypothesis <- tagAppendChildren(hypothesis, factorCount)
-    }
+    hypothesis <- tagAppendChildren(hypothesis, groupCounts)
     
     return(hypothesis)
   }
@@ -5396,6 +5429,7 @@ server <- function(session, input, output) {
               anovaOneWayResults()$test[2,"Mean Sq"],
               anovaOneWayResults()$test[1,"F value"]),
       br(),
+      br(),
       br()
     )
   } 
@@ -5404,8 +5438,7 @@ server <- function(session, input, output) {
     data <- anovaOneWayResults()$test
     data <- rbind(data, c(sum(data[,"Df"]), sum(data[,"Sum Sq"]), NA, NA, NA))
     # print(data[,"Df"])
-    rownames(data)[2] <- "Error"
-    rownames(data)[3] <- "Total"
+    rownames(data) <- c("Between", "Error", "Total")
     colnames(data) <- c("df", "Sum of Squares (SS)", "Mean Sum of Squares (MS)", "F-ratio", "P-Value")
     
     datatable(data[,0:4],
@@ -5431,7 +5464,61 @@ server <- function(session, input, output) {
     ) %>% formatRound(columns = 2:4,
                       digits = 4
     ) %>% formatStyle(columns = c(0),
-                      fontWeight = 'bold')
+                      fontWeight = 'bold'
+    ) %>% formatStyle(columns = 1:4,
+                      target = 'row',
+                      fontWeight = styleRow(3, "bold"))
+  }
+  
+  PrintANOVAPValue <- function(pValSymbol, sigLvl, reject) {
+    tsValue <- anovaOneWayResults()$test[1,"F value"]
+    pValue <- anovaOneWayResults()$test[1,"Pr(>F)"]
+    pvalCalc <- paste("P(\\, F \\, \\gt \\,", round(tsValue,4), ")")
+    
+    if(pValue < 0.0001 && pValue > 0) {
+      pValue <- "P < 0.0001"
+    } else {
+      pValue <- paste(round(pValue, 4))
+    }
+    
+    pValOutput <- tagList(
+      p(tags$b("Using P-Value Method:")),
+      sprintf("\\( P = %s = %s\\)",
+              pvalCalc,
+              pValue),
+      br(),
+      br(),
+      sprintf("Since \\( P %s %0.2f \\), %s \\( H_{0}\\).",
+              pValSymbol,
+              sigLvl,
+              reject),
+      br(),
+      br(),
+      br()
+    )
+  }
+  
+  PrintANOVACV <- function(critVal, df1, df2, reject, region, alpha) {
+    
+    cvOutput <- tagList(
+      p(tags$b("Using Critical Value Method:")),
+      sprintf("Critical Value \\( = F_{\\alpha,df_{1},df_{2}} = F_{%s,%s,%s} = %s \\)",
+              alpha,
+              df1,
+              df2,
+              critVal),
+      br(),
+      br(),
+      sprintf("Since the test statistic \\( F \\) falls within the %s region, %s \\( H_{0}\\).",
+              region,
+              reject),
+      br(),
+      br(),
+      br(),
+      plotOutput("oneWayAnovaPlot", width = "50%", height = "400px"),
+      br(),
+      br()
+    )
   }
   
   
@@ -6482,7 +6569,7 @@ server <- function(session, input, output) {
   
   anovaOneWayResults <- reactive({
     req(si_iv$is_valid)
-    
+
     results <- list()
     
     if(input$anovaFormat == "Multiple") {
@@ -6505,7 +6592,7 @@ server <- function(session, input, output) {
     numFactors <- length(factorNames)
     anovaTest <- aov(formula = anovaFormula, data = anovaData)
     
-    results$data <- anovaData
+    results$data <- na.omit(anovaData)
     results$count <- totalCount
     results$factorCol <- factorCol
     results$numFactors <- numFactors
@@ -8604,11 +8691,101 @@ server <- function(session, input, output) {
   
   #### ANOVA Outputs ----
   output$anovaOutput <- renderUI({
+    req(si_iv$is_valid())
     PrintANOVA()
   })
   
   output$oneWayAnovaTable <- renderDT({
+    req(si_iv$is_valid())
     PrintANOVATable()
+  })
+  
+  output$oneWayAnovaPlot <- renderPlot({
+    req(si_iv$is_valid())
+    
+    data <- anovaOneWayResults()$test
+    anovaF <- round(data[1,"F value"], 4)
+    
+    if(input$anovaSigLvl == "10%") {
+      sigLvl <- 0.1 
+    } else if(input$anovaSigLvl == "5%") {
+      sigLvl <- 0.05
+    } else {
+      sigLvl <- 0.01
+    }
+    
+    cv <- round(qf(1 - sigLvl, df1 = data[1,"Df"], df2 = data[2,"Df"]), 4)
+    
+    xSeq <- c(seq(0, 15, length.out = 75), cv, anovaF)
+    rrLabel <- c((cv + max(xSeq))/2)
+    x_vector <- sort(c(xSeq, rrLabel))
+    p_vector <- df(x_vector, df1 = data[1,"Df"], df2 = data[2,"Df"])
+    
+    anova_dataframe <- distinct(data.frame(x = x_vector, y = p_vector))
+    cv_dataframe <- filter(anova_dataframe, x %in% cv)
+    ts_dataframe <- filter(anova_dataframe, x %in% anovaF)
+    rrLabelDF <- filter(anova_dataframe, x %in% rrLabel)
+    arLabelDF <- filter(anova_dataframe, y %in% max(p_vector))
+    
+    ggplot(anova_dataframe, 
+           aes(x = x, y = y)) +
+      stat_function(fun = df, 
+                    args = list(df1 = data[1,"Df"], df2 = data[2,"Df"]),
+                    geom = "Density",
+                    fill = NA) +
+      shadeHtArea(anova_dataframe, cv, "greater") +
+      geom_segment(data = filter(anova_dataframe, y %in% max(p_vector)),
+                   aes(x = 0, xend = 0, y = 0, yend = y, alpha = 0.5),
+                   linetype = "solid",
+                   linewidth = 0.75,
+                   color='black',
+                   show.legend = FALSE) +
+      geom_text(data = filter(anova_dataframe, x %in% c(0)),
+                aes(x = x, y = 0, label = "0"),
+                size = 14 / .pt,
+                fontface = "bold",
+                nudge_y = -.03,
+                check_overlap = TRUE) +
+      geom_segment(data = cv_dataframe,
+                   aes(x = x, xend = x, y = 0, yend = y),
+                   linetype = "solid",
+                   lineend = 'butt',
+                   linewidth = 1.5,
+                   color='#023B70') +
+      geom_text(data = cv_dataframe,
+                aes(x = x, y = 0, label = x),
+                size = 14 / .pt,
+                fontface = "bold",
+                nudge_y = -.03,
+                check_overlap = TRUE) +
+      geom_segment(data = ts_dataframe,
+                   aes(x = x, xend = x, y = 0, yend = y + .055),
+                   linetype = "solid",
+                   linewidth = 1.25,
+                   color='#BD130B') +
+      geom_text(data = ts_dataframe,
+                aes(x = x, y = y, label = x),
+                size = 14 / .pt,
+                fontface = "bold",
+                nudge_y = .075,
+                check_overlap = TRUE) +
+      geom_text(data = arLabelDF,
+                aes(x = x, y = 0, label = "A R"),
+                size = 16 / .pt,
+                fontface = "bold",
+                vjust = -4,
+                check_overlap = TRUE) +
+      geom_text(data = rrLabelDF,
+                aes(x = x, y = y, label = "RR"),
+                size = 16 / .pt,
+                fontface = "bold",
+                vjust = -4,
+                check_overlap = TRUE) +
+      theme_void() +
+      ylab("") + 
+      xlab(expression(bold(F))) +
+      scale_y_continuous(breaks = NULL) +
+      theme(axis.title.x = element_text(size = 20))
   })
   
   output$anovaUploadTable <- renderDT({
@@ -8616,130 +8793,14 @@ server <- function(session, input, output) {
     datatable(anovaUploadData(),
               options = list(pageLength = -1,
                              lengthMenu = list(c(25, 50, 100, -1),
-                                               c("25", "50", "100", "all"))))
+                                               c("25", "50", "100", "all")),
+                             columnDefs = list(list(className = 'dt-center',
+                                                    targets = 0:ncol(anovaUploadData())))),
+              )
   })
   
   
   #### Chi-Square Outputs ----
-  # output$chiSq2x2 <- renderDT({
-  #   
-  #   datatable(chiSq2x2Totaled(),
-  #             class = 'cell-border stripe',
-  #             options = list(
-  #               dom = 't',
-  #               pageLength = -1,
-  #               ordering = FALSE,
-  #               searching = FALSE,
-  #               paging = FALSE,
-  #               autoWidth = FALSE,
-  #               scrollX = TRUE,
-  #               columnDefs = list(list(width = '100px', targets = c(0, 1, 2, 3)),
-  #                                 list(className = 'dt-center', targets = c(0, 1, 2, 3)))
-  #             ),
-  #             selection = "none",
-  #             escape = FALSE,
-  #             filter = "none",) %>%
-  #     formatStyle(columns = c(0,3),
-  #                 fontWeight = 'bold') %>%
-  #     formatStyle(columns = 1:3,
-  #                 target = 'row',
-  #                 fontWeight = styleRow(dim(chiSq2x2Totaled())[1], "bold")) %>%
-  #     formatStyle(columns = c(0,2),
-  #                 borderRight = styleRow(c(1,2),'2px solid #787878')) %>%
-  #     formatStyle(columns = c(1,2),
-  #                 borderTop = styleRow(c(1),'2px solid #787878'),
-  #                 borderBottom = styleRow(c(2),'2px solid #787878'))
-  # })
-  
-  # output$chiSq2x3 <- renderDT({
-  #   
-  #   datatable(chiSq2x3Totaled(),
-  #             class = 'cell-border stripe',
-  #             options = list(
-  #               dom = 't',
-  #               pageLength = -1,
-  #               ordering = FALSE,
-  #               searching = FALSE,
-  #               paging = FALSE,
-  #               autoWidth = FALSE,
-  #               scrollX = TRUE,
-  #               columnDefs = list(list(width = '100px', targets = c(1, 2, 3, 4)),
-  #                                 list(className = 'dt-center', targets = c(0, 1, 2, 3, 4)))
-  #             ),
-  #             selection = "none",
-  #             escape = FALSE,
-  #             filter = "none",) %>% 
-  #     formatStyle(columns = c(0,4), #specify columns to format
-  #                 fontWeight = 'bold') %>%
-  #     formatStyle(columns = 1:4,
-  #                 target = 'row',
-  #                 fontWeight = styleRow(dim(chiSq2x3Totaled())[1], "bold")) %>%
-  #     formatStyle(columns = c(0,3),
-  #                 borderRight = styleRow(c(1,2),'2px solid #787878')) %>%
-  #     formatStyle(columns = 1:3,
-  #                 borderTop = styleRow(c(1),'2px solid #787878'),
-  #                 borderBottom = styleRow(c(2),'2px solid #787878'))
-  # })
-  
-  # output$chiSq3x2 <- renderDT({
-  #   
-  #   datatable(chiSq3x2Totaled(),
-  #             class = 'cell-border stripe',
-  #             options = list(
-  #               dom = 't',
-  #               pageLength = -1,
-  #               ordering = FALSE,
-  #               searching = FALSE,
-  #               paging = FALSE,
-  #               autoWidth = FALSE,
-  #               scrollX = TRUE,
-  #               columnDefs = list(list(width = '100px', targets = c(1, 2, 3)),
-  #                                 list(className = 'dt-center', targets = c(0, 1, 2, 3)))
-  #             ),
-  #             selection = "none",
-  #             escape = FALSE,
-  #             filter = "none",) %>% 
-  #     formatStyle(columns = c(0,3), #specify columns to format
-  #                 fontWeight = 'bold') %>%
-  #     formatStyle(columns = 1:3,
-  #                 target = 'row',
-  #                 fontWeight = styleRow(dim(chiSq3x2Totaled())[1], "bold")) %>%
-  #     formatStyle(columns = c(0,2),
-  #                 borderRight = styleRow(1:3,'2px solid #787878')) %>%
-  #     formatStyle(columns = c(1,2),
-  #                 borderTop = styleRow(c(1),'2px solid #787878'),
-  #                 borderBottom = styleRow(c(3),'2px solid #787878'))
-  # })
-  
-  # output$chiSq3x3 <- renderDT({
-  #   
-  #   datatable(chiSq3x3Totaled(),
-  #             class = 'cell-border stripe',
-  #             options = list(
-  #               dom = 't',
-  #               pageLength = -1,
-  #               ordering = FALSE,
-  #               searching = FALSE,
-  #               paging = FALSE,
-  #               autoWidth = FALSE,
-  #               scrollX = TRUE,
-  #               columnDefs = list(list(width = '100px', targets = c(1, 2, 3, 4)),
-  #                                 list(className = 'dt-center', targets = c(0, 1, 2, 3, 4)))
-  #             ),
-  #             selection = "none",
-  #             escape = FALSE,
-  #             filter = "none",) %>% 
-  #     formatStyle(columns = c(0,4), #specify columns to format
-  #                 fontWeight = 'bold') %>%
-  #     formatStyle(columns = 1:4,
-  #                 target = 'row',
-  #                 fontWeight = styleRow(dim(chiSq3x3Totaled())[1], "bold")) %>%
-  #     formatStyle(columns = c(0,3),
-  #                 borderRight = styleRow(1:3,'2px solid #787878')) %>%
-  #     formatStyle(columns = 1:3,
-  #                 borderTop = styleRow(c(1),'2px solid #787878'),
-  #                 borderBottom = styleRow(c(3),'2px solid #787878'))
-  # })
   
   output$chiSqObs <- renderDT({
     chiSqData <- chiSqTotaled()
@@ -8954,12 +9015,10 @@ server <- function(session, input, output) {
   })
   
   
-  observeEvent(input$anovaUserData, {
+  observeEvent(input$anovaUserData, priority = 10, {
+    
     hide(id = "inferenceData")
     hide(id = "anovaUploadInputs")
-    print("HO")
-    # hide(id = "anovaResponse")
-    # hide(id = "anovaFactors")
     
     fileInputs$anovaStatus <- 'uploaded'
     
@@ -8970,7 +9029,7 @@ server <- function(session, input, output) {
                            "anovaMultiColumns",
                            choices = c(colnames(anovaUploadData()))
       )
-      
+
       freezeReactiveValue(input, "anovaResponse")
       updateSelectizeInput(session = getDefaultReactiveDomain(),
                            "anovaResponse",
@@ -8984,10 +9043,6 @@ server <- function(session, input, output) {
       )
       
       show(id = "anovaUploadInputs")
-      print(length(input$anovaMultiColumns))
-      print("HEY")
-      # show(id = "anovaResponse")
-      # show(id = "anovaFactors")
     }
   })
   
