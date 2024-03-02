@@ -5324,6 +5324,117 @@ server <- function(session, input, output) {
     return(htPlot)
   }
   
+  
+  #### ANOVA Functions ----
+  
+  PrintANOVA <- function() {
+    sigLvl <- 5
+    
+    hypothesis <- PrintANOVAHyp(sigLvl)
+    testStat <- PrintANOVAFormula()
+    tagAppendChildren(hypothesis, testStat)
+  }
+  
+  PrintANOVAHyp <- function(sigLvl) {
+    anovaData <- anovaOneWayResults()$data
+    numFactors <- anovaOneWayResults()$numFactors
+    factorCol <- anovaOneWayResults()$factorCol
+    factorNames <- anovaOneWayResults()$factorNames
+    
+    nullHyp <- "H_{0} : "
+    
+    for(mu in 1:(numFactors - 1)) {
+      nullHyp <- paste0(nullHyp, "\\mu_{", mu, "} = ")
+    }
+    nullHyp <- paste0(nullHyp, "\\mu_{", numFactors, "}")
+    
+    hypothesis <- tagList(
+      withMathJax(),
+      sprintf("\\( %s \\) ",
+              nullHyp),
+      br(),
+      sprintf("\\( H_{a}: \\) At least two means differ"),
+      br(),
+      br(),
+      sprintf("\\( \\alpha = %s \\)",
+              sigLvl),
+      br(),
+      br(),
+      sprintf("\\( n = %s \\)",
+              anovaOneWayResults()$count),
+      br(),
+      sprintf("\\( k = \\) number of factors \\( = %s \\)",
+              numFactors),
+      br(),
+      br(),
+    )
+    
+    for(name in factorNames) {
+      factorCount <- tagList(
+        sprintf("\\(n_{%s} = %s\\)",
+                name,
+                sum(anovaData[,factorCol] == name)),
+        br()
+      )
+      
+      hypothesis <- tagAppendChildren(hypothesis, factorCount)
+    }
+    
+    return(hypothesis)
+  }
+  
+  PrintANOVAFormula <- function() {
+    tagList(
+      br(),
+      p(tags$b("Anova Table:")),
+      DTOutput("oneWayAnovaTable", width = '750px'),
+      br(),
+      br(),
+      p(tags$b("Test Statistic:")),
+      sprintf("\\( F = \\dfrac{MSB}{MSE} = \\dfrac{%0.4f}{%0.4f} = %0.4f \\)",
+              anovaOneWayResults()$test[1,"Mean Sq"],
+              anovaOneWayResults()$test[2,"Mean Sq"],
+              anovaOneWayResults()$test[1,"F value"]),
+      br(),
+      br()
+    )
+  } 
+  
+  PrintANOVATable <- function() {
+    data <- anovaOneWayResults()$test
+    data <- rbind(data, c(sum(data[,"Df"]), sum(data[,"Sum Sq"]), NA, NA, NA))
+    # print(data[,"Df"])
+    rownames(data)[2] <- "Error"
+    rownames(data)[3] <- "Total"
+    colnames(data) <- c("df", "Sum of Squares (SS)", "Mean Sum of Squares (MS)", "F-ratio", "P-Value")
+    
+    datatable(data[,0:4],
+              class = 'cell-border stripe',
+              options = list(
+                dom = 't',
+                pageLength = -1,
+                ordering = FALSE,
+                searching = FALSE,
+                paging = FALSE,
+                autoWidth = FALSE,
+                scrollX = TRUE,
+                columnDefs = list(list(className = 'dt-center',
+                                       targets = 0:4),
+                                  list(width = '175px', 
+                                       targets = 2:4))
+              ),
+              selection = "none",
+              escape = FALSE,
+              filter = "none"
+    ) %>% formatRound(columns = 1,
+                      digits = 0
+    ) %>% formatRound(columns = 2:4,
+                      digits = 4
+    ) %>% formatStyle(columns = c(0),
+                      fontWeight = 'bold')
+  }
+  
+  
   #### Chi-Square Functions ----
   
   
@@ -6367,6 +6478,41 @@ server <- function(session, input, output) {
     }
 
     return(valid)    
+  })
+  
+  anovaOneWayResults <- reactive({
+    req(si_iv$is_valid)
+    
+    results <- list()
+    
+    if(input$anovaFormat == "Multiple") {
+      anovaData <- stack(anovaUploadData()[,input$anovaMultiColumns])
+      factorCol <- "ind"
+      anovaFormula <- values ~ ind
+      factorNames <- levels(anovaData[,factorCol])
+      
+    } else {
+      anovaData <- anovaUploadData()
+      factorCol <- input$anovaFactors
+      anovaFormula <- reformulate(factorCol, input$anovaResponse)
+      names <- distinct(anovaUploadData()[,factorCol])
+      factorNames <- c()
+      for(row in 1:nrow(names)) {
+        factorNames[row] <- names[row,1]
+      }
+    }
+    totalCount <- nrow(anovaData)
+    numFactors <- length(factorNames)
+    anovaTest <- aov(formula = anovaFormula, data = anovaData)
+    
+    results$data <- anovaData
+    results$count <- totalCount
+    results$factorCol <- factorCol
+    results$numFactors <- numFactors
+    results$factorNames <- factorNames
+    results$test <- anova(anovaTest)
+    
+    return(results)
   })
   
   #### Chi-Square Reactives ----
@@ -8455,6 +8601,25 @@ server <- function(session, input, output) {
     htPlot
   })
 
+  
+  #### ANOVA Outputs ----
+  output$anovaOutput <- renderUI({
+    PrintANOVA()
+  })
+  
+  output$oneWayAnovaTable <- renderDT({
+    PrintANOVATable()
+  })
+  
+  output$anovaUploadTable <- renderDT({
+    req(anovaupload_iv$is_valid())
+    datatable(anovaUploadData(),
+              options = list(pageLength = -1,
+                             lengthMenu = list(c(25, 50, 100, -1),
+                                               c("25", "50", "100", "all"))))
+  })
+  
+  
   #### Chi-Square Outputs ----
   # output$chiSq2x2 <- renderDT({
   #   

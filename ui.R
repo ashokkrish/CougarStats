@@ -2821,6 +2821,39 @@
                     ), # Two Population Proportions
                   ), # "input.siMethod == '2'"
                   
+                  conditionalPanel( #### ANOVA ----
+                    condition = "input.siMethod == 'Multiple'",
+                    
+                    tabsetPanel(
+                      id       = "anovaTabset", 
+                      selected = "Analysis",
+                      
+                      tabPanel(
+                        id    = "anova", 
+                        title = "Analysis",
+                        
+                        titlePanel("One-way Analysis of Variance (ANOVA)"),
+                        hr(),
+                        br(),
+                        uiOutput("anovaOutput"),
+                        br(),
+                        br()
+                      ),
+                      
+                      tabPanel(
+                        id    = "anovaData",
+                        title = "Uploaded Data",
+                        
+                        titlePanel("Data File"),
+                        br(),
+                        br(),
+                        div(DTOutput("anovaUploadTable"), style = "width: 75%"),
+                        br(),
+                        br(),
+                      )
+                    )
+                  ),
+                  
                   conditionalPanel( #### Chi-Square ----
                     condition = "input.siMethod == 'Categorical'",
                                     
