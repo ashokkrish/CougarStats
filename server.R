@@ -5356,7 +5356,8 @@ server <- function(session, input, output) {
     testStat <- PrintANOVAFormula()
     pValue <- PrintANOVAPValue(pValSymbol, sigLvl, reject)
     anovaCV <- PrintANOVACV(critVal, data[1,"Df"], data[2,"Df"], reject, region, sigLvl)
-    tagAppendChildren(hypothesis, testStat, pValue, anovaCV)
+    conclusion <- PrintANOVAConclusion(sigLvl, reject)
+    tagAppendChildren(hypothesis, testStat, pValue, anovaCV, conclusion)
   }
   
   PrintANOVAHyp <- function(sigLvl) {
@@ -5521,6 +5522,26 @@ server <- function(session, input, output) {
     )
   }
   
+  PrintANOVAConclusion <- function(sigLvl, reject) {
+    if(reject == "reject") {
+      result <- "there is sufficient statistical evidence in support of the alternative 
+                 hypothesis \\( (H_{a}) \\) that at least two means differ and post 
+                 hoc tests are warranted."
+    } else {
+      result <- "there is not enough statistical evidence in support of the alternative 
+                  hypothesis \\( (H_{a}) \\) that at least two means differ."
+    }
+    
+    tagList(
+      p(tags$b("Conclusion:")),
+      p(
+        sprintf("At the %1.0f%% significance level, %s",
+                sigLvl*100,
+                result),
+        br(),
+      )
+    )
+  }
   
   #### Chi-Square Functions ----
   
@@ -6580,9 +6601,14 @@ server <- function(session, input, output) {
       
     } else {
       anovaData <- anovaUploadData()
-      factorCol <- input$anovaFactors
-      anovaFormula <- reformulate(factorCol, input$anovaResponse)
-      names <- distinct(anovaUploadData()[,factorCol])
+      colnames(anovaData)[colnames(anovaData) == input$anovaFactors] <- "ind"
+      colnames(anovaData)[colnames(anovaData) == input$anovaResponse] <- "values"
+      factorCol <- "ind"
+      # factorCol <- input$anovaFactors
+      # anovaFormula <- as.name(input$anovaResponse) ~ as.name(factorCol)
+      # anovaFormula <- reformulate(factorCol, as.name(input$anovaResponse))
+      anovaFormula <- values ~ ind
+      names <- distinct(anovaData[,factorCol])
       factorNames <- c()
       for(row in 1:nrow(names)) {
         factorNames[row] <- names[row,1]
