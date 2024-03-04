@@ -2844,12 +2844,7 @@
                         id    = "anovaData",
                         title = "Uploaded Data",
                         
-                        titlePanel("Data File"),
-                        br(),
-                        br(),
-                        div(DTOutput("anovaUploadTable"), style = "width: 75%"),
-                        br(),
-                        br(),
+                        uiOutput("renderAnovaDataView")
                       )
                     )
                   ),

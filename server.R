@@ -5420,7 +5420,7 @@ server <- function(session, input, output) {
   PrintANOVAFormula <- function() {
     tagList(
       br(),
-      p(tags$b("Anova Table:")),
+      p(tags$b("ANOVA Table:")),
       DTOutput("oneWayAnovaTable", width = '750px'),
       br(),
       br(),
@@ -9086,6 +9086,17 @@ server <- function(session, input, output) {
   })
   
   observeEvent(input$goInference, {
+    output$renderAnovaDataView <- renderUI({
+      tagList(
+        titlePanel("Data File"),
+        br(),
+        br(),
+        div(DTOutput("anovaUploadTable"), style = "width: 75%"),
+        br(),
+        br()
+      )  
+    })
+    
     output$renderChiSqObs <- renderUI({
       DTOutput("chiSqObs", width = '500px')
     })
