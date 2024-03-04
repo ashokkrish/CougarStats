@@ -1864,17 +1864,17 @@
                   ),
                 ),
                 
-                # textInput(
-                #   inputId = "chiSquareRowHeader",
-                #   label = "Name for Row Variable (optional):",
-                #   value = ""
-                # ),
-                # 
-                # textInput(
-                #   inputId = "chiSquareColHeader",
-                #   label = "Name for Column Variable (optional):",
-                #   value = ""
-                # ),
+                textInput(
+                  inputId = "chiSquareRowHeader",
+                  label = "Name for Row Variable (optional):",
+                  value = ""
+                ),
+
+                textInput(
+                  inputId = "chiSquareColHeader",
+                  label = "Name for Column Variable (optional):",
+                  value = ""
+                ),
                                 
                                 # tableHTML(mtcars,
                                 #           rownames = TRUE,
@@ -2888,10 +2888,12 @@
                                       #   open = TRUE
                                       # ),
                       h4("Observed Frequencies"),
+                      br(),
                       uiOutput("renderChiSqObs"),
                       br(),
                       br(),
                       h4("Expected Frequencies"),
+                      br(),
                       uiOutput("renderChiSqExp"),
                       br(),
                       br(),

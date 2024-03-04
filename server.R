@@ -5360,6 +5360,7 @@ server <- function(session, input, output) {
     tagAppendChildren(hypothesis, testStat, pValue, anovaCV, conclusion)
   }
   
+  
   PrintANOVAHyp <- function(sigLvl) {
     anovaData <- anovaOneWayResults()$data
     numGroups <- anovaOneWayResults()$numFactors
@@ -5387,6 +5388,7 @@ server <- function(session, input, output) {
       sprintf("\\(n_{\\textit{%s}} = %s\\)",
               groupNames[numGroups],
               sum(anovaData[,groupCol] == groupNames[numGroups])),
+      br(),
       br()
     )
     groupCounts <- tagAppendChildren(groupCounts, groupCount)
@@ -5440,10 +5442,25 @@ server <- function(session, input, output) {
     data <- rbind(data, c(sum(data[,"Df"]), sum(data[,"Sum Sq"]), NA, NA, NA))
     # print(data[,"Df"])
     rownames(data) <- c("Between", "Error", "Total")
-    colnames(data) <- c("df", "Sum of Squares (SS)", "Mean Sum of Squares (MS)", "F-ratio", "P-Value")
+    colNames <- c("df", "Sum of Squares (SS)", "Mean Sum of Squares (MS)", "F-ratio")
+    
+    headers = htmltools::withTags(table(
+      class = 'display',
+      thead(
+        tr(
+          th("Sources of Variation", 
+             style = "border: 1px solid rgba(0, 0, 0, 0.15);
+                      border-bottom: 1px solid  rgba(0, 0, 0, 0.3);"),
+          lapply(colNames, th, 
+                 style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
+                          border-top: 1px solid rgba(0, 0, 0, 0.15);')
+        )
+      )
+    ))
     
     datatable(data[,0:4],
               class = 'cell-border stripe',
+              container = headers,
               options = list(
                 dom = 't',
                 pageLength = -1,
@@ -5548,9 +5565,11 @@ server <- function(session, input, output) {
   
   
   CreateChiSqObserved <- function(chiSqData) {
+    headers <- GetChiSqHeaders(chiSqData)
     
     observedTable <- datatable(chiSqData,
       class = 'cell-border stripe',
+      container = headers,
       options = list(
         dom = 't',
         pageLength = -1,
@@ -5576,9 +5595,11 @@ server <- function(session, input, output) {
   
   CreateChiSqExpected <- function(chiSqData) {
     totaledData <- getTotaledMatrix(round(chiSqData, 4), chiSqActiveData()$data)
+    headers <- GetChiSqHeaders(totaledData)
     
     expectedTable <- datatable(totaledData,
                                class = 'cell-border stripe',
+                               container = headers,
                                options = list(
                                  dom = 't',
                                  pageLength = -1,
@@ -5600,6 +5621,48 @@ server <- function(session, input, output) {
     expectedTable <- FormatChiSqTable(expectedTable, ncol(totaledData), nrow(totaledData))
     
     return(expectedTable)
+  }
+  
+  GetChiSqHeaders <- function(chiSqData) {
+    rowTitle <- input$chiSquareRowHeader
+    colTitle <- input$chiSquareColHeader
+    
+    if(rowTitle == "" && colTitle == "") {
+      headers = htmltools::withTags(table(
+        class = 'display',
+        thead(
+          tr(
+            th("", 
+               style = "border: 1px solid rgba(0, 0, 0, 0.15);
+                      border-bottom: 1px solid  rgba(0, 0, 0, 0.3);"),
+            lapply(colnames(chiSqData), th, 
+                   style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
+                          border-top: 1px solid rgba(0, 0, 0, 0.15);')
+          )
+        )
+      ))
+    } else {
+      headers = htmltools::withTags(table(
+        class = 'display',
+        thead(
+          tr(
+            th(rowspan = 2, colspan = 1, rowTitle, 
+               class = 'dt-center', 
+               style = 'border: 1px solid rgba(0, 0, 0, 0.15);'),
+            th(colspan = ncol(chiSqData), colTitle, 
+               class = 'dt-center', 
+               style = 'border: 1px solid rgba(0, 0, 0, 0.15);
+                      border-left: none;')
+          ),
+          tr(
+            lapply(colnames(chiSqData), th, 
+                   style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);')
+          )
+        )
+      ))
+    }
+
+    return(headers)
   }
   
   FormatChiSqTable <- function(chiSqTable, numCol, numRow) {
@@ -9083,6 +9146,9 @@ server <- function(session, input, output) {
     } else {
       shinyjs::enable(selector = '#chisquareMethod input[value="Fisher"]')
     }
+    
+    shinyjs::reset(id = "chiSquareRowHeader")
+    shinyjs::reset(id = "chiSquareColHeader")
   })
   
   observeEvent(input$goInference, {
