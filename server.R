@@ -5481,7 +5481,7 @@ server <- function(session, input, output) {
                       digits = 0
     ) %>% formatRound(columns = 2:4,
                       digits = 4
-    ) %>% formatStyle(columns = c(0),
+    ) %>% formatStyle(columns = c(0,4),
                       fontWeight = 'bold'
     ) %>% formatStyle(columns = 1:4,
                       target = 'row',
@@ -5520,7 +5520,7 @@ server <- function(session, input, output) {
     
     cvOutput <- tagList(
       p(tags$b("Using Critical Value Method:")),
-      sprintf("Critical Value \\( = F_{\\alpha,df_{1},df_{2}} = F_{%s, \\, %s, \\, %s} = %s \\)",
+      sprintf("Critical Value \\( = F_{\\alpha, \\, df_{1}, \\, df_{2}} = F_{%s, \\, %s, \\, %s} = %s \\)",
               alpha,
               df1,
               df2,
@@ -5866,7 +5866,7 @@ server <- function(session, input, output) {
     
     cvOutput <- tagList(
       p(tags$b("Using Critical Value Method:")),
-      sprintf("Critical Value \\( = \\chi^2_{\\alpha,df} = \\chi^2_{%s,%s} = %s \\)",
+      sprintf("Critical Value \\( = \\chi^2_{\\alpha, \\, df} = \\chi^2_{%s, \\, %s} = %s \\)",
               alpha,
               df,
               critVal),
