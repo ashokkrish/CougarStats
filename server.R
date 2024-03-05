@@ -5520,7 +5520,7 @@ server <- function(session, input, output) {
     
     cvOutput <- tagList(
       p(tags$b("Using Critical Value Method:")),
-      sprintf("Critical Value \\( = F_{\\alpha,df_{1},df_{2}} = F_{%s,%s,%s} = %s \\)",
+      sprintf("Critical Value \\( = F_{\\alpha,df_{1},df_{2}} = F_{%s, \\, %s, \\, %s} = %s \\)",
               alpha,
               df1,
               df2,
@@ -5634,7 +5634,7 @@ server <- function(session, input, output) {
           tr(
             th("", 
                style = "border: 1px solid rgba(0, 0, 0, 0.15);
-                      border-bottom: 1px solid  rgba(0, 0, 0, 0.3);"),
+                        border-bottom: 1px solid  rgba(0, 0, 0, 0.3);"),
             lapply(colnames(chiSqData), th, 
                    style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
                           border-top: 1px solid rgba(0, 0, 0, 0.15);')
@@ -8906,8 +8906,42 @@ server <- function(session, input, output) {
 
     chiSqTest <- suppressWarnings(ChiSquareTest(chiSqActiveMatrix(), input$chiSquareYates))
     
+    headers = htmltools::withTags(table(
+      class = 'display',
+      thead(
+        tr(
+          th("O",
+             class = 'dt-center',
+             style = "border: 1px solid rgba(0, 0, 0, 0.15);
+                      border-bottom: 1px solid  rgba(0, 0, 0, 0.3);"),
+          th("E",
+             class = 'dt-center',
+             style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
+                      border-top: 1px solid rgba(0, 0, 0, 0.15);'),
+          th("(O - E)",
+             class = 'dt-center',
+             style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
+                      border-top: 1px solid rgba(0, 0, 0, 0.15);'),
+          th(HTML(paste("(O - E)", sup(2))),
+             class = 'dt-center',
+             style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
+                      border-top: 1px solid rgba(0, 0, 0, 0.15);'),
+          th(HTML(paste("(O - E)", sup(2), "/ E")),
+             class = 'dt-center',
+             style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
+                      border-top: 1px solid rgba(0, 0, 0, 0.15);'),
+          th("Standardized Residuals",
+             class = 'dt-center',
+             style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
+                      border-top: 1px solid rgba(0, 0, 0, 0.15);')
+          
+        )
+      )
+    )) 
+    
     datatable(chiSqTest$Matrix,
               class = 'cell-border stripe',
+              container = headers,
               options = list(
                 dom = 't',
                 pageLength = -1,
