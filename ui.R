@@ -2898,6 +2898,7 @@
                       br(),
                       br(),
                       h4("Calculation of the \\( \\chi^2 \\) statistic value"),
+                      br(),
                       uiOutput("renderChiSqResults"),
                       br(),
                       hr(),
