@@ -48,6 +48,7 @@ More information on Docker can be found <a href="https://www.docker.com/get-star
     - population mean difference of paired populations (dependent samples)
     - one population proportion
     - difference between two population proportions
+- One-Way Analysis of Variance (ANOVA)
 - Simple Linear Regression and Pearson Correlation Coefficient
 
 <br>
@@ -63,5 +64,6 @@ More information on Docker can be found <a href="https://www.docker.com/get-star
 
 * **<a href="https://github.com/ashokkrish">Ashok Krishnamurthy PhD</a>** | *Template design, model structure and maintainer*
 * **<a href="https://github.com/m-myer">Michael Myer</a>** | *Senior Developer*
+* **<a href="https://github.com/samantha-v-brian">Samantha Brian</a>** | *Developer*
 
 **Acknowledgement**: In Fall 2022 an earlier version of this interactive R Shiny app was presented as **<a href="https://github.com/cwai097">Crystal Wai</a>**'s COMP 5690: Senior Computer Science Project. From June - August 2023 this project was funded by a student research grant (awarded to Michael Myer) conferred by the Faculty of Science and Technology at Mount Royal University. Starting September 2023 this project is funded by a Provost's Teaching-Learning Enhancement Grant (TLEG). Michael Myer is currently hired as a Project Assistant through this grant.
