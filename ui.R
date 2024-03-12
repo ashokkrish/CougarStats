@@ -3208,12 +3208,20 @@
         p("GitHub:", a(href = "https://github.com/ashokkrish/CougarStats","https://github.com/ashokkrish/CougarStats", target = "_blank")),
         br(),
                                       
-        p(span("Michael Myer,", style= "font-weight:bold")),
+        p(span("Michael Myer", style= "font-weight:bold")),
         p("Senior Developer"),
         #p(span("Lead Developer", style = "font-weight:bold")),
         p("Undergraduate Student, Mount Royal University,"),
         p("Calgary, AB, CANADA"),
                                       
+        br(),
+        
+        p(span("Samantha Brian", style= "font-weight:bold")),
+        p("Developer"),
+        #p(span("Lead Developer", style = "font-weight:bold")),
+        p("Undergraduate Student, Mount Royal University,"),
+        p("Calgary, AB, CANADA"),
+        
         br(),
                                       
         p("Acknowledgement: In Fall 2022 an earlier version of this interactive R Shiny app was presented as Crystal Wai's 
