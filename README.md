@@ -49,6 +49,7 @@ More information on Docker can be found <a href="https://www.docker.com/get-star
     - one population proportion
     - difference between two population proportions
 - One-Way Analysis of Variance (ANOVA)
+- Chi-Square test of independence
 - Simple Linear Regression and Pearson Correlation Coefficient
 
 <br>
