@@ -55,3 +55,6 @@ render <- "
   option: function(data, escape){return '<div class=\"option\">'+data.label+'</div>';},
   item: function(data, escape){return '<div class=\"item\">'+data.label+'</div>';}
 }"
+
+# How many digits to round Critical Values
+cvDigits <- 3

@@ -4677,7 +4677,7 @@ server <- function(session, input, output) {
                                   df,
                                   (1 - ConfLvl()) / 2,
                                   df,
-                                 oneMeanData["T Critical"]),
+                                  oneMeanData["T Critical"]),
                           br(),
                           br(),
                           br()
@@ -4813,7 +4813,7 @@ server <- function(session, input, output) {
     } else {
       critVal <- oneMeanData["T Critical"]
     }
-    
+
     calcOutput <- tagList(
       sprintf("\\( \\displaystyle CI = %s \\pm \\left( %g \\dfrac{%g}{\\sqrt{%g}} \\right) \\)",
               oneMeanData["Sample Mean"],
@@ -4957,22 +4957,15 @@ server <- function(session, input, output) {
   printOneMeanHTCV <- function(testStat, reject, region) {
     oneMeanData <- GetOneMeanHT()
     
+    if(testStat == 'z') {
+      critVal <- paste(oneMeanData["Z Critical"])
+    } else {
+      critVal <- paste(oneMeanData["T Critical"])
+    }
+    
     if(OneMeanHypInfo()$alternative == "two.sided")
     {
-      if(testStat == 'z') {
-        critVal <- paste("\\pm", oneMeanData["Z Critical"])
-      } else {
-        critVal <- paste("\\pm", oneMeanData["T Critical"])
-      }
-      
-    }
-    else
-    {
-      if(testStat == 'z') {
-        critVal <- paste(oneMeanData["Z Critical"])
-      } else {
-        critVal <- paste(oneMeanData["T Critical"])
-      }
+      critVal <- paste("\\pm", critVal)
     }
     
     if(testStat == 'z') {
@@ -5692,7 +5685,7 @@ server <- function(session, input, output) {
       sigLvl <- 0.01
     }
     
-    critVal <- round(qchisq(1 - sigLvl, df = data$Results$parameter), 4)
+    critVal <- round(qchisq(1 - sigLvl, df = data$Results$parameter), cvDigits)
     
     if(data$Results$p.value < sigLvl) {
       pValSymbol <- "\\leq"
@@ -6170,6 +6163,7 @@ server <- function(session, input, output) {
     sigmaSampOne <- input$popuSD
     
     oneMeanZInt <- ZInterval(nSampOne, xbarSampOne, sigmaSampOne, ConfLvl())
+    oneMeanZInt["Z Critical"] <- round(oneMeanZInt["Z Critical"], cvDigits)
     
     return(oneMeanZInt)
   })
@@ -6191,6 +6185,7 @@ server <- function(session, input, output) {
     sampleMean <- mean(dat)
     
     oneMeanZInt <- ZInterval(sampleSize, sampleMean, popuSD, ConfLvl())
+    oneMeanZInt["Z Critical"] <- round(oneMeanZInt["Z Critical"], cvDigits)
     
     return(oneMeanZInt)
   })
@@ -6204,6 +6199,7 @@ server <- function(session, input, output) {
     sSampOne <- input$sampSD
     
     oneMeanTInt <- TInterval(nSampOne, xbarSampOne, sSampOne, ConfLvl())
+    oneMeanTInt["T Critical"] <- round(oneMeanTInt["T Critical"], cvDigits)
     
     return(oneMeanTInt)
   })
@@ -6223,8 +6219,8 @@ server <- function(session, input, output) {
     sampleMean <- mean(dat)
     sampleSD <- sd(dat)
     
-    oneMeanTInt <- TInterval(sampleSize, sampleMean, sampleSD, 
-                             ConfLvl())
+    oneMeanTInt <- TInterval(sampleSize, sampleMean, sampleSD, ConfLvl())
+    oneMeanTInt["T Critical"] <- round(oneMeanTInt["T Critical"], cvDigits)
     
     return(oneMeanTInt) 
   })
@@ -6240,6 +6236,7 @@ server <- function(session, input, output) {
     
     oneMeanZTest <- ZTest(nSampOne, xbarSampOne, sigmaSampOne, hypMeanSampOne,
                           OneMeanHypInfo()$alternative, SigLvl())
+    oneMeanZTest["Z Critical"] <- round(oneMeanZTest["Z Critical"], cvDigits)
     
     return (oneMeanZTest)
   }) 
@@ -6260,9 +6257,9 @@ server <- function(session, input, output) {
     sampleMean <- mean(dat)
     hypMeanVal <- input$hypMean 
     
-    oneMeanZTest <- ZTest(sampleSize, sampleMean, popuSD, 
-                          hypMeanVal, OneMeanHypInfo()$alternative, 
-                          SigLvl())
+    oneMeanZTest <- ZTest(sampleSize, sampleMean, popuSD, hypMeanVal, 
+                          OneMeanHypInfo()$alternative, SigLvl())
+    oneMeanZTest["Z Critical"] <- round(oneMeanZTest["Z Critical"], cvDigits)
     
     return (oneMeanZTest) 
   })
@@ -6278,6 +6275,7 @@ server <- function(session, input, output) {
     
     oneMeanTTest <- TTest(nSampOne, xbarSampOne, sSampOne, hypMeanSampOne, 
                           OneMeanHypInfo()$alternative, SigLvl())
+    oneMeanTTest["T Critical"] <- round(oneMeanTTest["T Critical"], cvDigits)
     
     return(oneMeanTTest)
   })
@@ -6300,9 +6298,9 @@ server <- function(session, input, output) {
     sampleSD <- sd(dat)
     hypMeanVal <- input$hypMean 
     
-    oneMeanTTest <- TTest(sampleSize, sampleMean, sampleSD, 
-                          hypMeanVal, OneMeanHypInfo()$alternative, 
-                          SigLvl())
+    oneMeanTTest <- TTest(sampleSize, sampleMean, sampleSD, hypMeanVal, 
+                          OneMeanHypInfo()$alternative, SigLvl())
+    oneMeanTTest["T Critical"] <- round(oneMeanTTest["T Critical"], cvDigits)
     
     return(oneMeanTTest)
   })
@@ -6503,6 +6501,7 @@ server <- function(session, input, output) {
     }
     
     twoSampZInt <- TwoSampZInt(data$xbar1, data$sd1, data$n1, data$xbar2, data$sd2, data$n2, ConfLvl())
+    twoSampZInt["Z Critical"] <- round(twoSampZInt["Z Critical"], cvDigits)
     
     return(twoSampZInt)
   })
@@ -6520,6 +6519,7 @@ server <- function(session, input, output) {
     }
     
     twoSampTInt <- TwoSampTInt(data$xbar1, data$sd1, data$n1, data$xbar2, data$sd2, data$n2, data$sigmaEqual, ConfLvl())
+    twoSampTInt["T Critical"] <- round(twoSampTInt["T Critical"], cvDigits)
     
     return(twoSampTInt)
   })
@@ -6537,6 +6537,7 @@ server <- function(session, input, output) {
     }
     
     twoSampZTest <- TwoSampZTest(data$xbar1, data$sd1, data$n1, data$xbar2, data$sd2, data$n2, IndMeansHypInfo()$alternative, SigLvl())
+    twoSampZTest["Z Critical"] <- round(twoSampZTest["Z Critical"], cvDigits)
     
     return(twoSampZTest)
   })
@@ -6554,6 +6555,7 @@ server <- function(session, input, output) {
     }
     
     twoSampTTest <- TwoSampTTest(data$xbar1, data$sd1, data$n1, data$xbar2, data$sd2, data$n2, data$sigmaEqual, IndMeansHypInfo()$alternative, SigLvl())
+    twoSampTTest["T Critical"] <- round(twoSampTTest["T Critical"], cvDigits)
     
     return(twoSampTTest)
   })
@@ -6595,6 +6597,7 @@ server <- function(session, input, output) {
     data <- GetDepMeansData()
     
     depMeansTInt <- TInterval(data$n, data$dbar, data$sd, ConfLvl())
+    depMeansTInt["T Critical"] <- round(depMeansTInt["T Critical"], cvDigits)
     
     return(depMeansTInt)
   })
@@ -6606,6 +6609,7 @@ server <- function(session, input, output) {
     data <- GetDepMeansData()
 
     depMeansTTest <- TTest(data$n, data$dbar, data$sd, 0, IndMeansHypInfo()$alternative, SigLvl())
+    depMeansTTest["T Critical"] <- round(depMeansTTest["T Critical"], cvDigits)
     
     return(depMeansTTest)
 
@@ -7427,6 +7431,7 @@ server <- function(session, input, output) {
     req(si_iv$is_valid() && input$numTrials >= input$numSuccesses)
     
     onePropData <- OnePropZInterval(input$numSuccesses, input$numTrials, ConfLvl())
+    critVal <- round(onePropData["Z Critical"], cvDigits)
 
     p(
       withMathJax(
@@ -7450,7 +7455,7 @@ server <- function(session, input, output) {
         sprintf("\\( z_{\\alpha/2} = z_{%s/2} = z_{%s} = %s \\)",
                 1 - ConfLvl(),
                 (1 - ConfLvl()) / 2,
-                onePropData["Z Critical"]),
+                critVal),
         br(),
         br(),
         br(),
@@ -7466,7 +7471,7 @@ server <- function(session, input, output) {
         br(),
         sprintf("\\( \\displaystyle CI = %0.4f \\pm \\left( %s \\sqrt{\\dfrac{%0.4f(1 - %0.4f)}{%s}} \\right) \\)",
                 onePropData["phat"],
-                onePropData["Z Critical"],
+                critVal,
                 onePropData["phat"],
                 onePropData["phat"],
                 onePropData["n"]),
@@ -7474,7 +7479,7 @@ server <- function(session, input, output) {
         br(),
         sprintf("\\( \\displaystyle \\phantom{CI} = %0.4f \\pm \\left( %g \\cdot %0.4f \\right) \\)",
                 onePropData["phat"],
-                onePropData["Z Critical"],
+                critVal,
                 onePropData['Std Error']),
         br(),
         br(),
@@ -7506,11 +7511,11 @@ server <- function(session, input, output) {
     onePropData <- OnePropZTest(input$numSuccesses, input$numTrials, input$hypProportion, OneMeanHypInfo()$alternative, SigLvl())
     
     if(input$altHypothesis == "2") { #two sided test
-      critZVal <- paste("\\pm", onePropData["Z Critical"])
+      critZVal <- paste("\\pm", round(onePropData["Z Critical"], cvDigits))
       nullHyp <- "p ="
       altHyp <- "p \\neq"
     } else {
-      critZVal <- paste(onePropData["Z Critical"])
+      critZVal <- paste(round(onePropData["Z Critical"], cvDigits))
       
       if(input$altHypothesis == "1"){
         nullHyp <- "p \\geq"
@@ -8510,7 +8515,8 @@ server <- function(session, input, output) {
   output$twoPropCI <- renderUI({
     req(si_iv$is_valid())
     
-    twoSampPropZInt <- TwoPropZInt(input$numSuccesses1, input$numTrials1, input$numSuccesses2, input$numTrials2, ConfLvl())
+    twoPropZInt <- TwoPropZInt(input$numSuccesses1, input$numTrials1, input$numSuccesses2, input$numTrials2, ConfLvl())
+    twoPropZInt["Z Critical"] <- round(twoPropZInt["Z Critical"], cvDigits)
     
     p(
       withMathJax(
@@ -8540,7 +8546,7 @@ server <- function(session, input, output) {
         sprintf("\\( z_{\\alpha/2} = z_{%s/2} = z_{%s} = %s \\)",
                 1 - ConfLvl(),
                 (1 - ConfLvl()) / 2,
-                twoSampPropZInt["Z Critical"]),
+                twoPropZInt["Z Critical"]),
         br(),
         br(),
         br(),
@@ -8550,50 +8556,50 @@ server <- function(session, input, output) {
         sprintf("\\( \\displaystyle \\qquad \\hat{p}_{1} = \\dfrac{x_{1}}{n_{1}} = \\dfrac{%s}{%s} = %0.4f,\\)",
                 input$numSuccesses1,
                 input$numTrials1,
-                twoSampPropZInt["Sample Proportion 1"]),
+                twoPropZInt["Sample Proportion 1"]),
         br(),
         p("and"),
         sprintf("\\( \\displaystyle \\qquad \\hat{p}_{2} = \\dfrac{x_{2}}{n_{2}} = \\dfrac{%s}{%s} = %0.4f,\\)",
                 input$numSuccesses2,
                 input$numTrials2,
-                twoSampPropZInt["Sample Proportion 2"]),
+                twoPropZInt["Sample Proportion 2"]),
         br(),
         br(),
         br(),
         sprintf("\\( \\displaystyle CI = (%0.4f - %0.4f) \\pm \\left( %s \\sqrt{\\dfrac{%0.4f(1-%0.4f)}{%1.0f} + \\dfrac{%0.4f(1-%0.4f)}{%1.0f}} \\right) \\)",
-                twoSampPropZInt["Sample Proportion 1"],
-                twoSampPropZInt["Sample Proportion 2"],
-                twoSampPropZInt["Z Critical"],
-                twoSampPropZInt["Sample Proportion 1"],
-                twoSampPropZInt["Sample Proportion 1"],
+                twoPropZInt["Sample Proportion 1"],
+                twoPropZInt["Sample Proportion 2"],
+                twoPropZInt["Z Critical"],
+                twoPropZInt["Sample Proportion 1"],
+                twoPropZInt["Sample Proportion 1"],
                 input$numTrials1,
-                twoSampPropZInt["Sample Proportion 2"],
-                twoSampPropZInt["Sample Proportion 2"],
+                twoPropZInt["Sample Proportion 2"],
+                twoPropZInt["Sample Proportion 2"],
                 input$numTrials2),
         br(),
         br(),
         sprintf("\\( \\phantom{CI} = %0.4f \\pm ( %s \\cdot %0.4f ) \\)",
-                twoSampPropZInt["Difference of proportions"],
-                twoSampPropZInt["Z Critical"],
-                twoSampPropZInt["Std Error"]),
+                twoPropZInt["Difference of proportions"],
+                twoPropZInt["Z Critical"],
+                twoPropZInt["Std Error"]),
         br(),
         br(),
         sprintf("\\( \\phantom{CI} = %0.4f \\pm %0.4f \\)",
-                twoSampPropZInt["Difference of proportions"],
-                twoSampPropZInt["Margin of Error"]),
+                twoPropZInt["Difference of proportions"],
+                twoPropZInt["Margin of Error"]),
         br(),
         br(),
         sprintf("\\( \\phantom{CI} = (%0.4f, %0.4f)\\)",
-                twoSampPropZInt["LCL"],
-                twoSampPropZInt["UCL"]),
+                twoPropZInt["LCL"],
+                twoPropZInt["UCL"]),
         br(),
         br(),
         br(),
         p(tags$b("Interpretation:")),
         sprintf("We are %1.0f%% confident that the difference in population proportions \\( (p_{1} - p_{2}) \\) is between \\( %0.4f \\) and \\( %0.4f \\).",
                 ConfLvl()*100,
-                twoSampPropZInt["LCL"],
-                twoSampPropZInt["UCL"])
+                twoPropZInt["LCL"],
+                twoPropZInt["UCL"])
       )
     )
   })
@@ -8605,6 +8611,7 @@ server <- function(session, input, output) {
     req(si_iv$is_valid())
 
     twoPropZTest <- TwoPropZTest(input$numSuccesses1, input$numTrials1, input$numSuccesses2, input$numTrials2, 0, IndMeansHypInfo()$alternative, SigLvl())
+    twoPropZTest["Z Critical"] <- round(twoPropZTest["Z Critical"], cvDigits)
     
     if(twoPropZTest["P-Value"] < 0.0001)
     {
@@ -8771,7 +8778,7 @@ server <- function(session, input, output) {
     req(si_iv$is_valid())
     
     twoPropZTest <- TwoPropZTest(input$numSuccesses1, input$numTrials1, input$numSuccesses2, input$numTrials2, 0, IndMeansHypInfo()$alternative, SigLvl())
-    htPlotCritVal <- twoPropZTest["Z Critical"]
+    htPlotCritVal <- round(twoPropZTest["Z Critical"], cvDigits)
     
     htPlot <- hypZTestPlot(twoPropZTest["Test Statistic"], htPlotCritVal, IndMeansHypInfo()$alternative)
     htPlot
