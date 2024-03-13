@@ -3017,19 +3017,19 @@
                         titlePanel("Estimated equation of the regression line"),
                         br(),
                         uiOutput('regLineEquation'),
-                        verbatimTextOutput("linearRegression"),
-                        br(),
-                        hr(),
-                                                                           
-                        titlePanel("95% confidence interval for regression parameters"),
-                        br(),
-                        verbatimTextOutput("confintLinReg"),
-                        br(),
-                        hr(),
-                                                                           
-                        titlePanel("ANOVA for regression"),
-                        br(),
-                        verbatimTextOutput("anovaLinReg"),
+                        # verbatimTextOutput("linearRegression"),
+                        # br(),
+                        # hr(),
+                        #                                                    
+                        # titlePanel("95% confidence interval for regression parameters"),
+                        # br(),
+                        # verbatimTextOutput("confintLinReg"),
+                        # br(),
+                        # hr(),
+                        #                                                    
+                        # titlePanel("ANOVA for regression"),
+                        # br(),
+                        # verbatimTextOutput("anovaLinReg"),
                         #br(),
                       ), # slr tabpanel
                                                                   
@@ -3076,10 +3076,10 @@
                         br(),
                         uiOutput('pearsonCorFormula'),
                         br(),
-                        verbatimTextOutput("PearsonCorTest"),
-                        br(),
-                        verbatimTextOutput("PearsonConfInt"),
-                        br(),
+                        # verbatimTextOutput("PearsonCorTest"),
+                        # br(),
+                        # verbatimTextOutput("PearsonConfInt"),
+                        # br(),
                         hr(),
                                                                            
                         titlePanel("Kendall's Rank Correlation"),
