@@ -6408,8 +6408,8 @@ server <- function(session, input, output) {
     
     switch(ext, 
            csv = read_csv(input$indMeansUserData$datapath, show_col_types = FALSE),
-           xls = read_excel(input$indMeansUserData$datapath),
-           xlsx = read_excel(input$indMeansUserData$datapath),
+           xls = read_xls(input$indMeansUserData$datapath),
+           xlsx = read_xlsx(input$indMeansUserData$datapath),
            txt = read_tsv(input$indMeansUserData$datapath, show_col_types = FALSE),
            
            validate("Improper file format")
