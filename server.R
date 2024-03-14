@@ -5018,15 +5018,10 @@ server <- function(session, input, output) {
   }
   
   printHTPVal <- function(pValue, testStat, alternative, tsValue, pvalSign, reject) {
-    oneMeanData <- GetOneMeanHT()
     
-    if(oneMeanData[7] < 0.0001)
+    if(pValue < 0.0001)
     {
       pValue <- "P \\lt 0.0001"
-    }
-    else
-    {
-      pValue <- paste(oneMeanData[7])
     }
 
     
@@ -7526,12 +7521,6 @@ server <- function(session, input, output) {
       }
     }
     
-    if(onePropData["P-Value"] < 0.0001) {
-      pValue <- "P \\lt 0.0001"
-    } else {
-      pValue <- paste("P = ", onePropData["P-Value"])
-    }
-    
     if(onePropData["P-Value"] > SigLvl()) {
       pvalSymbol <- "\\gt"
       suffEvidence <- "isn't"
@@ -7600,7 +7589,8 @@ server <- function(session, input, output) {
       )
     )
       
-    onePropPVal <- printHTPVal(onePropData["P-Value"], "z", 
+    onePropPVal <- printHTPVal(onePropData["P-Value"], 
+                               "z", 
                                OneMeanHypInfo()$alternative, 
                                onePropData["Test Statistic"], 
                                pvalSymbol, 
@@ -7967,15 +7957,6 @@ server <- function(session, input, output) {
       } else {
         critValDF <- paste(intrpInfo$critSign, "t_{", intrpInfo$critAlph, ", \\, \\nu} = ", "\n", intrpInfo$critSign, "t_{", intrpInfo$alphaVal, ", \\, ", hTest['df'], "}")
       }
-    }
-    
-    if(hTest["P-Value"] < 0.0001)
-    {
-      pValue <- "\\lt 0.0001"
-    }
-    else
-    {
-      pValue <- hTest["P-Value"]
     }
     
     if(hTest["P-Value"] > SigLvl())
@@ -8362,12 +8343,6 @@ server <- function(session, input, output) {
       
       intrpInfo <- IndMeansHypInfo()
       
-      if(tTest["P-Value"] < 0.0001) {
-        pValue <- "\\lt 0.0001"
-      } else {
-        pValue <- paste(tTest["P-Value"])
-      }
-      
       if(tTest["P-Value"] > SigLvl()) {
         pvalSymbol <- "\\gt"
         suffEvidence <- "isn't"
@@ -8612,16 +8587,6 @@ server <- function(session, input, output) {
 
     twoPropZTest <- TwoPropZTest(input$numSuccesses1, input$numTrials1, input$numSuccesses2, input$numTrials2, 0, IndMeansHypInfo()$alternative, SigLvl())
     twoPropZTest["Z Critical"] <- round(twoPropZTest["Z Critical"], cvDigits)
-    
-    if(twoPropZTest["P-Value"] < 0.0001)
-    {
-      pValue <- "P \\lt 0.0001"
-    }
-    else
-    {
-      pValue <- paste("P = ", twoPropZTest["P-Value"])
-    }
-    
     
     if(input$altHypothesis2 == "2")
     {
