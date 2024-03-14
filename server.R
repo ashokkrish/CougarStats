@@ -9743,60 +9743,21 @@ server <- function(session, input, output) {
                 br(),
                 br(),
                 br(),
-                sprintf("\\( \\quad = \\; \\dfrac
-                                      {%g - \\dfrac{ %g }{ %g } }
-                                      {\\sqrt{ %g - \\dfrac{ %g }{ %g } } \\sqrt{ %g - \\dfrac{ %s }{ %g } } } \\)",
-                        dfTotaled["Totals", "xy"],
-                        sumXSumY,
-                        length(datx),
-                        dfTotaled["Totals", "x<sup>2</sup>"],
-                        sumXSqrd,
-                        length(datx),
-                        dfTotaled["Totals", "y<sup>2</sup>"],
-                        sumYSqrd,
-                        length(datx)),
-                br(),
-                br(),
-                br(),
-                sprintf("\\( \\quad = \\; \\dfrac
-                                      {%g - %g }
-                                      {\\sqrt{ %g - %g } \\sqrt{ %g - %g } } \\)",
-                        dfTotaled["Totals", "xy"],
-                        sumXSumY / length(datx),
-                        dfTotaled["Totals", "x<sup>2</sup>"],
-                        sumXSqrd / length(datx),
-                        dfTotaled["Totals", "y<sup>2</sup>"],
-                        sumYSqrd / length(datx)),
-                br(),
-                br(),
-                br(),
+                
                 sprintf("\\( \\quad = \\; \\dfrac
                                       { %g }
                                       {\\sqrt{ %g } \\sqrt{ %g } } \\)",
                         dfTotaled["Totals", "xy"] - sumXSumY / length(datx),
                         dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx),
                         dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx)),
-                br(),
-                br(),
-                br(),
-                sprintf("\\( \\quad = \\; \\dfrac
-                                      { %g }
-                                      { (%g) (%g) } \\)",
-                        dfTotaled["Totals", "xy"] - sumXSumY / length(datx),
-                        sqrt(dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx)),
-                        sqrt(dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx))),
-                br(),
-                br(),
-                br(),
-                sprintf("\\( \\quad = \\; \\dfrac
+                
+                sprintf("\\( = \\; \\dfrac
                                       { %g }
                                       { %g } \\)",
                         dfTotaled["Totals", "xy"] - sumXSumY / length(datx),
                         sqrt(dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx)) * sqrt(dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx))),
-                br(),
-                br(),
-                br(),
-                sprintf("\\( \\quad = \\; %0.4f \\)",
+                
+                sprintf("\\( = \\; %0.4f \\)",
                         pearson$estimate),
                 br(),
                 br(),
@@ -9806,8 +9767,8 @@ server <- function(session, input, output) {
                         pearsonStrength,
                         pearsonSign),
                 br()
-               )
-                
+              )
+              
             })
               
             output$PearsonCorTest <- renderPrint({ 
