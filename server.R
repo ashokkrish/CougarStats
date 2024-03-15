@@ -8844,9 +8844,11 @@ server <- function(session, input, output) {
                 check_overlap = TRUE) +
       theme_void() +
       ylab("") + 
-      xlab(expression(bold(F))) +
+      xlab("F") +
       scale_y_continuous(breaks = NULL) +
-      theme(axis.title.x = element_text(size = 20))
+      theme(axis.title.x = element_text(size = 20,
+                                        family = "serif",
+                                        face = "bold.italic"))
   })
   
   output$anovaUploadTable <- renderDT({
