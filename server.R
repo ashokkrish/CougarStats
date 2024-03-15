@@ -5360,26 +5360,9 @@ server <- function(session, input, output) {
 
     for(group in 1:(numGroups - 1)) {
       nullHyp <- paste0(nullHyp, "\\mu_{\\textit{", groupNames[group], "}} = ")
-      
-      groupCount <- tagList(
-        sprintf("\\(n_{\\textit{%s}} = %s\\)",
-                groupNames[group],
-                sum(anovaData[,groupCol] == groupNames[group])),
-        br()
-      )
-      groupCounts <- tagAppendChildren(groupCounts, groupCount)
     }
     
     nullHyp <- paste0(nullHyp, "\\mu_{\\textit{", groupNames[numGroups], "}}")
-    
-    groupCount <- tagList(
-      sprintf("\\(n_{\\textit{%s}} = %s\\)",
-              groupNames[numGroups],
-              sum(anovaData[,groupCol] == groupNames[numGroups])),
-      br(),
-      br()
-    )
-    groupCounts <- tagAppendChildren(groupCounts, groupCount)
     
     hypothesis <- tagList(
       withMathJax(),
@@ -5402,13 +5385,15 @@ server <- function(session, input, output) {
       br(),
     )
     
-    hypothesis <- tagAppendChildren(hypothesis, groupCounts)
-    
     return(hypothesis)
   }
   
   PrintANOVAFormula <- function() {
     tagList(
+      br(),
+      p(tags$b("Numerical Summaries:")),
+      DTOutput("oneWayFactorTable", width = '600px'),
+      br(),
       br(),
       p(tags$b("ANOVA Table:")),
       DTOutput("oneWayAnovaTable", width = '750px'),
@@ -5424,6 +5409,68 @@ server <- function(session, input, output) {
       br()
     )
   } 
+  
+  PrintANOVAFactorTable <- function() {
+    anovaData <- anovaOneWayResults()$data
+    numGroups <- anovaOneWayResults()$numFactors
+    groupCol <- anovaOneWayResults()$factorCol
+    groupNames <- anovaOneWayResults()$factorNames
+    colNames <- c("Factor", "Sample Size", "Sample Mean", "Sample Standard Deviation")
+    
+    headers = htmltools::withTags(table(
+      class = 'display',
+      thead(
+        tr(
+          th(colNames[1],
+             style = "border: 1px solid rgba(0, 0, 0, 0.15);
+                      border-bottom: 1px solid  rgba(0, 0, 0, 0.3);"),
+          lapply(colNames[2:4], th,
+                 style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
+                          border-top: 1px solid rgba(0, 0, 0, 0.15);')
+        )
+      )
+    ))
+    
+    factor_df <- data.frame()
+    
+    for(group in 1:numGroups) {
+      groupData <- as.data.frame(anovaData[anovaData$ind == groupNames[group],])
+      factor_df <- rbind(factor_df, data.frame("Sample Size" = length(groupData[,groupCol]),
+                                               "Sample Mean" = mean(groupData[,"values"]),
+                                               "Sample Standard Deviation" = sd(groupData[,"values"])))
+    }
+    
+    rownames(factor_df) <- groupNames
+
+    ftable <- datatable(factor_df,
+              class = 'cell-border stripe',
+              container = headers,
+              options = list(
+                dom = 't',
+                pageLength = -1,
+                ordering = FALSE,
+                searching = FALSE,
+                paging = FALSE,
+                autoWidth = FALSE,
+                scrollX = TRUE,
+                columnDefs = list(list(className = 'dt-center',
+                                       targets = 0:3),
+                                  list(width = '150px', 
+                                       targets = 0:3))
+              ),
+              selection = "none",
+              escape = FALSE,
+              filter = "none"
+    ) %>% formatRound(columns = 1,
+                      digits = 0
+    ) %>% formatRound(columns = 2:3,
+                      digits = 4
+    ) %>% formatStyle(columns = c(0),
+                      fontWeight = 'bold'
+    ) 
+    
+    return(ftable)
+  }
   
   PrintANOVATable <- function() {
     data <- anovaOneWayResults()$test
@@ -8754,6 +8801,11 @@ server <- function(session, input, output) {
   output$anovaOutput <- renderUI({
     req(si_iv$is_valid())
     PrintANOVA()
+  })
+  
+  output$oneWayFactorTable <- renderDT({
+    req(si_iv$is_valid())
+    PrintANOVAFactorTable()
   })
   
   output$oneWayAnovaTable <- renderDT({
