@@ -1779,6 +1779,16 @@
                   status   = "primary"
                 ),
                 
+                selectizeInput(
+                  inputId = "anovaGraphs",
+                  label = strong("Graphs"),
+                  choices = c("Side-by-side Boxplot", "Histogram of Residuals", "QQ Plot of Residuals"),
+                  multiple = TRUE,
+                  selected = c("Side-by-side Boxplot"),
+                  options = list(hideSelected = FALSE,
+                                 placeholder = 'Select two or more columns'),
+                )
+                
               ),
               
               conditionalPanel( #### Chi-Square ----
@@ -2190,69 +2200,107 @@
 
                       conditionalPanel(
                         condition = "input.dsGraphOptions.indexOf('Boxplot') > -1",
-                                                                           
+                                                  
                         h3("Boxplot"),
                         br(),
                         
                         #### dropdown ----
                         dropdown(
                           tags$h3("Boxplot Options"),
-                                                                           
+                          
                           textInput(
                             inputId     = "dsBoxplotTitle", 
                             label       = strong("Main title and axes labels:"), 
                             value       = "Boxplot", 
                             placeholder = "main title"
                           ),
-                                                                             
+                          
                           textInput(
                             inputId     = "dsBoxplotXlab", 
                             label       = NULL, 
                             value       = "", 
                             placeholder = "x-axis label"
                           ),
-                                                                             
+                          
                           textInput(
                             inputId     = "dsBoxplotYlab", 
                             label       = NULL, 
                             value       = "", 
                             placeholder = "y-axis label"
                           ),
-                                                                             
+                          
                           colourpicker::colourInput(
                             inputId = "dsBoxplotColour", 
                             label   = strong("Plot Colour"), 
                             value   = "#819BB6"
                           ),
-                                                                             
+                          
+                          sliderInput(
+                            inputId = "dsBoxWidth",
+                            label = strong("Box Width"),
+                            min = 1,
+                            max = 10,
+                            value = 5,
+                            step = 1
+                          ),
+                          
+                          radioButtons(
+                            inputId = "dsBoxplotHeight",
+                            label = strong("Plot Height"),
+                            choices = c("auto", "in px"),
+                            selected = "auto",
+                            inline = TRUE
+                          ),
+                          
+                          conditionalPanel(
+                            condition = "input.dsBoxplotHeight == 'in px'",
+                            
+                            numericInput(
+                              inputId = "dsBoxplotHeightPx",
+                              label = NULL,
+                              value = 400,
+                              min = 100,
+                              max = 1500,
+                              step = 1,
+                            )
+                          ),
+                          
+                          radioButtons(
+                            inputId = "dsBoxplotWidth",
+                            label = strong("Plot Width"),
+                            choices = c("auto", "in px"),
+                            selected = "auto",
+                            inline = TRUE
+                          ),
+                          
+                          conditionalPanel(
+                            condition = "input.dsBoxplotWidth == 'in px'",
+                            
+                            numericInput(
+                              inputId = "dsBoxplotWidthPx",
+                              label = NULL,
+                              value = 750,
+                              min = 100,
+                              max = 1500,
+                              step = 1,
+                            )
+                          ),
+                          
                           checkboxInput(
                             inputId = "dsBoxplotFlip",
                             label   = "Plot Boxplot Vertically",
                             value   = FALSE
                           ),
-                                                                             
+                          
                           style   = "jelly", 
                           icon    = icon("gear"),
                           status  = "primary", 
                           width   = "300px",
                           animate = animateOptions(
-                                      enter = animations$fading_entrances$fadeInDown,
-                                      exit = animations$fading_exits$fadeOutUp)
-                        ),
-                                                                           
-                        plotOutput("dsBoxplot"),
-                                                                           
-                        br(),
-                        helpText("* Note: Quartiles are calculated using the inclusionary (Tukey) approach. 
-                                 The median value is included on both sides if the sample size is odd and 
-                                 the median value is excluded on both sides if the sample size is even."),
-                        br(),
-                        # checkboxInput(inputId = "boxplotAlignment",
-                        #               label = "Vertical Boxplot",
-                        #               value = FALSE),
-                        # br(),
-                        hr(),
-                        br(),
+                            enter = animations$fading_entrances$fadeInDown,
+                            exit = animations$fading_exits$fadeOutUp)
+                        ),                         
+                        uiOutput("renderDSBoxplot")
                       ), # Boxplot
                                                                          
                       conditionalPanel(
@@ -2730,6 +2778,15 @@
                             label = strong("Plot Colour"), 
                             value = "#819BB6"
                           ),
+                          
+                          sliderInput(
+                            inputId = "indMeansBoxWidth",
+                            label = strong("Box Width"),
+                            min = 1,
+                            max = 10,
+                            value = 5,
+                            step = 1
+                          ),
                                                                                             
                           checkboxInput(
                             inputId = "indMeansBoxplotFlip",
@@ -2838,14 +2895,118 @@
                         uiOutput("anovaOutput"),
                         br(),
                         br()
-                      ),
+                        ),
+                      
+                      tabPanel(
+                        title = "Graphs",
+                        
+                        titlePanel("Side-by-side Boxplot"),
+                        br(),
+                        br(),
+                        dropdown(
+                          tags$h3("Boxplot Options"),
+                          
+                          textInput(
+                            inputId     = "anovaBoxplotTitle", 
+                            label       = strong("Main title and axes labels:"), 
+                            value       = "Boxplot", 
+                            placeholder = "main title"
+                          ),
+                          
+                          textInput(
+                            inputId     = "anovaBoxplotXlab", 
+                            label       = NULL, 
+                            value       = "", 
+                            placeholder = "x-axis label"
+                          ),
+                          
+                          textInput(
+                            inputId     = "anovaBoxplotYlab", 
+                            label       = NULL, 
+                            value       = "", 
+                            placeholder = "y-axis label"
+                          ),
+                          
+                          colourpicker::colourInput(
+                            inputId = "anovaBoxplotColour", 
+                            label   = strong("Plot Colour"), 
+                            value   = "#819BB6"
+                          ),
+                          
+                          sliderInput(
+                            inputId = "anovaBoxWidth",
+                            label = strong("Box Width"),
+                            min = 1,
+                            max = 10,
+                            value = 5,
+                            step = 1
+                          ),
+                          
+                          radioButtons(
+                            inputId = "anovaBoxplotHeight",
+                            label = strong("Plot Height"),
+                            choices = c("auto", "in px"),
+                            selected = "auto",
+                            inline = TRUE
+                          ),
+                          
+                          conditionalPanel(
+                            condition = "input.anovaBoxplotHeight == 'in px'",
+                            
+                            numericInput(
+                              inputId = "anovaBoxplotHeightPx",
+                              label = NULL,
+                              value = 400,
+                              min = 100,
+                              max = 1500,
+                              step = 1,
+                            )
+                          ),
+                          
+                          radioButtons(
+                            inputId = "anovaBoxplotWidth",
+                            label = strong("Plot Width"),
+                            choices = c("auto", "in px"),
+                            selected = "auto",
+                            inline = TRUE
+                          ),
+                          
+                          conditionalPanel(
+                            condition = "input.anovaBoxplotWidth == 'in px'",
+                            
+                            numericInput(
+                              inputId = "anovaBoxplotWidthPx",
+                              label = NULL,
+                              value = 750,
+                              min = 100,
+                              max = 1500,
+                              step = 1,
+                            )
+                          ),
+                          
+                          checkboxInput(
+                            inputId = "anovaBoxplotFlip",
+                            label   = "Plot Boxplot Vertically",
+                            value   = FALSE
+                          ),
+                          
+                          style   = "jelly", 
+                          icon    = icon("gear"),
+                          status  = "primary", 
+                          width   = "300px",
+                          animate = animateOptions(
+                            enter = animations$fading_entrances$fadeInDown,
+                            exit = animations$fading_exits$fadeOutUp)
+                        ),
+                        uiOutput("renderAnovaBoxplot")
+                        ),
                       
                       tabPanel(
                         id    = "anovaData",
                         title = "Uploaded Data",
                         
                         uiOutput("renderAnovaDataView")
-                      )
+                        )
                     )
                   ),
                   
