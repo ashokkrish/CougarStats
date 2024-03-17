@@ -1593,8 +1593,8 @@ server <- function(session, input, output) {
   
         tagList(
           plotOutput("dsBoxplot",
-                     height = GetPlotHeight(input$dsBoxplotHeight, input$dsBoxplotHeightPx, ui = TRUE),
-                     width = GetPlotWidth(input$dsBoxplotWidth, input$dsBoxplotWidthPx, ui = TRUE)),
+                     height = GetPlotHeight(input[["dsBoxplot-Height"]], input[["dsBoxplot-HeightPx"]], ui = TRUE),
+                     width = GetPlotWidth(input[["dsBoxplot-Width"]], input[["dsBoxplot-WidthPx"]], ui = TRUE)),
           
           br(),
           helpText("* Note: Quartiles are calculated using the inclusionary (Tukey) approach. 
@@ -1611,7 +1611,7 @@ server <- function(session, input, output) {
       })
       
       output$dsBoxplot <- renderPlot({
-        req(!is.null(input$dsBoxplotHeight) && !is.null(input$dsBoxplotWidth))
+
         #---------------- #
         #### Boxplot ---- 
         #---------------- #
@@ -1619,13 +1619,14 @@ server <- function(session, input, output) {
         bp <- RenderBoxplot(dat,
                             df_boxplot,
                             df_outliers,
-                            input$dsBoxplotColour,
-                            input$dsBoxplotTitle,
-                            input$dsBoxplotXlab,
-                            input$dsBoxplotYlab,
-                            input$dsBoxWidth/10)
+                            input[["dsBoxplot-Colour"]],
+                            input[["dsBoxplot-Title"]],
+                            input[["dsBoxplot-Xlab"]],
+                            input[["dsBoxplot-Ylab"]],
+                            input[["dsBoxplot-BoxWidth"]]/10,
+                            input[["dsBoxplot-Gridlines"]])
 
-        if(input$dsBoxplotFlip == 1){
+        if(input[["dsBoxplot-Flip"]] == 1){
           bp + coord_flip() +
             theme(axis.text.x.bottom = element_blank(),
                   axis.text.y.left = element_text(size = 16))
@@ -1633,8 +1634,8 @@ server <- function(session, input, output) {
           bp
         }
 
-      }, height = function() {GetPlotHeight(input$dsBoxplotHeight, input$dsBoxplotHeightPx, ui = FALSE)},
-         width = function() {GetPlotWidth(input$dsBoxplotWidth, input$dsBoxplotWidthPx, ui = FALSE)}
+      }, height = function() {GetPlotHeight(input[["dsBoxplot-Height"]], input[["dsBoxplot-HeightPx"]], ui = FALSE)},
+         width = function() {GetPlotWidth(input[["dsBoxplot-Width"]], input[["dsBoxplot-WidthPx"]], ui = FALSE)}
       )
       
       #------------------ #
@@ -1642,29 +1643,47 @@ server <- function(session, input, output) {
       #------------------ #
       
       output$dsHistogram <- renderPlot({
+        
+        
         hist <- ggplot(data.frame(x = dat)) +
           geom_histogram(aes(x = x),
                          bins = 15,
-                         fill = input$histogramColour,
+                         fill = input[["dsHisto-Colour"]],
                          color = "black") +
-          labs(title = input$histogramTitle,
-               x = input$histogramXlab,
-               y = input$histogramYlab) +
-          theme_minimal() +
+          labs(title = input[["dsHisto-Title"]],
+               x = input[["dsHisto-Xlab"]],
+               y = input[["dsHisto-Ylab"]]) +
+          theme_void() +
           theme(plot.title = element_text(size = 24,
                                           face = "bold",
-                                          hjust = 0.5),
+                                          hjust = 0.5,
+                                          margin = margin(0,0,10,0)),
                 axis.title.x = element_text(size = 16, 
                                             face = "bold", 
-                                            vjust = -1.5),
+                                            vjust = -1.5,
+                                            margin = margin(5,0,0,0)),
                 axis.title.y = element_text(size = 16, 
                                             face = "bold", 
-                                            vjust = 1.5),
-                axis.text.x.bottom = element_text(size = 14),
-                axis.text.y.left = element_text(size = 14),
-                plot.margin = unit(c(1, 1, 1, 1),"cm"))
+                                            vjust = 1.5,
+                                            margin = margin(0,5,0,0)),
+                axis.text.x.bottom = element_text(size = 14,
+                                                  margin = margin(5,0,0,0)),
+                axis.text.y.left = element_text(size = 14,
+                                                margin = margin(0,5,0,0)),
+                plot.margin = unit(c(1, 1, 1, 1),"cm"),
+                panel.border = element_rect(fill=NA))
         
-          hist + scale_x_continuous(n.breaks = 10) 
+          hist <- hist + scale_x_continuous(n.breaks = 10)
+          
+          if("Major" %in% input[["dsHisto-Gridlines"]]) {
+            hist <- hist + theme(panel.grid.major = element_line(colour = "#D9D9D9"))
+          }
+          
+          if("Minor" %in% input[["dsHisto-Gridlines"]]) {
+            hist <- hist + theme(panel.grid.minor = element_line(colour = "#D9D9D9"))
+          }
+          
+          hist
       })
 
       #---------------------- #
@@ -7798,10 +7817,10 @@ server <- function(session, input, output) {
     
     
   })
-  
+
   
   ##### Boxplot ----
-  output$siIndMeansBoxplot <- renderPlot({ 
+  output$indMeansBoxplot <- renderPlot({ 
     
     if(input$dataAvailability2 == 'Enter Raw Data') {
       sample1 <- createNumLst(input$raw_sample1)
@@ -7834,19 +7853,22 @@ server <- function(session, input, output) {
     bp <- RenderSideBySideBoxplot(dat,
                                   df_boxplot,
                                   df_outliers,
-                                  input$indMeansBoxplotColour,
-                                  input$indMeansBoxplotTitle,
-                                  input$indMeansBoxplotXlab,
-                                  input$indMeansBoxplotYLab,
-                                  input$indMeansBoxWidth / 10)
+                                  input[["indMeansBoxplot-Colour"]],
+                                  input[["indMeansBoxplot-Title"]],
+                                  input[["indMeansBoxplot-Xlab"]],
+                                  input[["indMeansBoxplot-Ylab"]],
+                                  input[["indMeansBoxplot-BoxWidth"]] / 10,
+                                  input[["indMeansBoxplot-Gridlines"]])
 
-    if(input$indMeansBoxplotFlip == 1){
+    if(input[["indMeansBoxplot-Flip"]] == 1){
       bp + coord_flip()
     } else {
       bp
     }
     
-  })
+  }, height = function() {GetPlotHeight(input[["indMeansBoxplot-Height"]], input[["indMeansBoxplot-HeightPx"]], ui = FALSE)},
+     width = function() {GetPlotWidth(input[["indMeansBoxplot-Width"]], input[["indMeansBoxplot-WidthPx"]], ui = FALSE)}
+  )
   
   
   output$sigmaKnownCIFormula <- renderUI({
@@ -8962,29 +8984,30 @@ server <- function(session, input, output) {
   ##### Boxplot ----
   output$anovaBoxplot <- renderPlot({
     data <- anovaOneWayResults()$data
-    
+
     df_boxplot <- data.frame(sample = c(data[,"ind"]),
-                             data = c(lapply(data[,"values"], as.numeric)))
+                             data = c(data[,"values"]))
     colnames(df_boxplot) <- c("sample", "data")
     df_outliers <- data.frame()
-    
+
     bp <- RenderSideBySideBoxplot(df_boxplot[,"data"],
                                   df_boxplot,
                                   df_outliers,
-                                  input$anovaBoxplotColour,
-                                  input$anovaBoxplotTitle,
-                                  input$anovaBoxplotXlab,
-                                  input$anovaBoxplotYLab,
-                                  input$anovaBoxWidth / 10)
+                                  input[["anovaBoxplot-Colour"]],
+                                  input[["anovaBoxplot-Title"]],
+                                  input[["anovaBoxplot-Xlab"]],
+                                  input[["anovaBoxplot-Ylab"]],
+                                  input[["anovaBoxplot-BoxWidth"]] / 10,
+                                  input[["anovaBoxplot-Gridlines"]])
     
-    if(input$anovaBoxplotFlip == 1){
+    if(input[["anovaBoxplot-Flip"]] == 1){
       bp + coord_flip()
     } else {
       bp
     }
     
-  }, height = function() {GetPlotHeight(input$anovaBoxplotHeight, input$anovaBoxplotHeightPx, ui = FALSE)},
-     width = function() {GetPlotWidth(input$anovaBoxplotWidth, input$anovaBoxplotWidthPx, ui = FALSE)}
+  }, height = function() {GetPlotHeight(input[["anovaBoxplot-Height"]], input[["anovaBoxplot-HeightPx"]], ui = FALSE)},
+     width = function() {GetPlotWidth(input[["anovaBoxplot-Width"]], input[["anovaBoxplot-WidthPx"]], ui = FALSE)}
   )
   
   ##### Uploaded Data Table ----
@@ -9314,8 +9337,8 @@ server <- function(session, input, output) {
           condition = "input.anovaGraphs.indexOf('Side-by-side Boxplot') > -1",
           
           plotOutput("anovaBoxplot",
-                     height = GetPlotHeight(input$anovaBoxplotHeight, input$anovaBoxplotHeightPx, ui = TRUE),
-                     width = GetPlotWidth(input$anovaBoxplotWidth, input$anovaBoxplotWidthPx, ui = TRUE)),
+                     height = GetPlotHeight(input[["anovaBoxplot-Height"]], input[["anovaBoxplot-HeightPx"]], ui = TRUE),
+                     width = GetPlotWidth(input[["anovaBoxplot-Width"]], input[["anovaBoxplot-WidthPx"]], ui = TRUE)),
           br(),
           br(),
           hr()
@@ -9371,6 +9394,14 @@ server <- function(session, input, output) {
          hide(id = 'inferenceData') 
         }
         
+      } else if (input$popuParameters == "Independent Population Means") {
+      
+          output$renderIndMeansBoxplot <- renderUI({
+            plotOutput("indMeansBoxplot",
+                       height = GetPlotHeight(input[["indMeansBoxplot-Height"]], input[["indMeansBoxplot-HeightPx"]], ui = TRUE),
+                       width = GetPlotWidth(input[["indMeansBoxplot-Width"]], input[["indMeansBoxplot-WidthPx"]], ui = TRUE))
+          })
+          
       } else if(input$popuParameters == 'Dependent Population Means') {
         
         output$depMeansTable <- renderUI({

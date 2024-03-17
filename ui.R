@@ -2203,103 +2203,10 @@
                                                   
                         h3("Boxplot"),
                         br(),
-                        
-                        #### dropdown ----
-                        dropdown(
-                          tags$h3("Boxplot Options"),
-                          
-                          textInput(
-                            inputId     = "dsBoxplotTitle", 
-                            label       = strong("Main title and axes labels:"), 
-                            value       = "Boxplot", 
-                            placeholder = "main title"
-                          ),
-                          
-                          textInput(
-                            inputId     = "dsBoxplotXlab", 
-                            label       = NULL, 
-                            value       = "", 
-                            placeholder = "x-axis label"
-                          ),
-                          
-                          textInput(
-                            inputId     = "dsBoxplotYlab", 
-                            label       = NULL, 
-                            value       = "", 
-                            placeholder = "y-axis label"
-                          ),
-                          
-                          colourpicker::colourInput(
-                            inputId = "dsBoxplotColour", 
-                            label   = strong("Plot Colour"), 
-                            value   = "#819BB6"
-                          ),
-                          
-                          sliderInput(
-                            inputId = "dsBoxWidth",
-                            label = strong("Box Width"),
-                            min = 1,
-                            max = 10,
-                            value = 5,
-                            step = 1
-                          ),
-                          
-                          radioButtons(
-                            inputId = "dsBoxplotHeight",
-                            label = strong("Plot Height"),
-                            choices = c("auto", "in px"),
-                            selected = "auto",
-                            inline = TRUE
-                          ),
-                          
-                          conditionalPanel(
-                            condition = "input.dsBoxplotHeight == 'in px'",
-                            
-                            numericInput(
-                              inputId = "dsBoxplotHeightPx",
-                              label = NULL,
-                              value = 400,
-                              min = 100,
-                              max = 1500,
-                              step = 1,
-                            )
-                          ),
-                          
-                          radioButtons(
-                            inputId = "dsBoxplotWidth",
-                            label = strong("Plot Width"),
-                            choices = c("auto", "in px"),
-                            selected = "auto",
-                            inline = TRUE
-                          ),
-                          
-                          conditionalPanel(
-                            condition = "input.dsBoxplotWidth == 'in px'",
-                            
-                            numericInput(
-                              inputId = "dsBoxplotWidthPx",
-                              label = NULL,
-                              value = 750,
-                              min = 100,
-                              max = 1500,
-                              step = 1,
-                            )
-                          ),
-                          
-                          checkboxInput(
-                            inputId = "dsBoxplotFlip",
-                            label   = "Plot Boxplot Vertically",
-                            value   = FALSE
-                          ),
-                          
-                          style   = "jelly", 
-                          icon    = icon("gear"),
-                          status  = "primary", 
-                          width   = "300px",
-                          animate = animateOptions(
-                            enter = animations$fading_entrances$fadeInDown,
-                            exit = animations$fading_exits$fadeOutUp)
-                        ),                         
+                        plotOptionsMenuUI(
+                          id = "dsBoxplot", 
+                          plotType = "Boxplot",
+                          title = "Boxplot"),                         
                         uiOutput("renderDSBoxplot")
                       ), # Boxplot
                                                                          
@@ -2309,46 +2216,8 @@
                         h3("Histogram"),
                         br(),
                                                                            
-                        dropdown(
-                          tags$h4("Histogram Options"),
-                                                                             
-                          textInput(
-                            inputId = "histogramTitle", 
-                            label   = strong("Main title and axes labels:"), 
-                            value   = "Histogram", 
-                            placeholder = "main title"
-                          ),
-                                                                             
-                          textInput(
-                            inputId = "histogramXlab", 
-                            label   = NULL, 
-                            value   = "", 
-                            placeholder = "x-axis label"
-                          ),
-                                                                             
-                          textInput(
-                            inputId = "histogramYlab", 
-                            label   = NULL, 
-                            value   = "", 
-                            placeholder = "y-axis label"
-                          ),
-                                                                             
-                          colourpicker::colourInput(
-                            inputId = "histogramColour", 
-                            label   = strong("Plot Colour"), 
-                            value   = "#819BB6",
-                            allowTransparent = TRUE
-                          ),
-                                                                             
-                          style   = "jelly", 
-                          icon    = icon("gear"),
-                          status  = "primary", 
-                          width   = "300px",
-                          animate = animateOptions(
-                                      enter = animations$fading_entrances$fadeInDown,
-                                      exit = animations$fading_exits$fadeOutUp)
-                        ),
-                   
+                        plotOptionsMenuUI(id = "dsHisto",
+                                          title = "Histogram"),
                         plotOutput("dsHistogram"),
                                                                    
                         br(),
@@ -2749,61 +2618,11 @@
                         br(),
                         titlePanel(tags$u("Boxplot")),
                         br(),
-                        dropdown(
-                          tags$h3("Boxplot Options"),
-                                                                                            
-                          textInput(
-                            inputId = "indMeansBoxplotTitle", 
-                            label = strong("Main title and axes labels:"), 
-                            value = "Side-by-side Boxplot", 
-                            placeholder = "main title"
-                          ),
-                                                                                            
-                          textInput(
-                            inputId = "indMeansBoxplotXlab", 
-                            label = NULL, 
-                            value = "", 
-                            placeholder = "x-axis label"
-                          ),
-                                                                                            
-                          textInput(
-                            inputId = "indMeansBoxplotYlab", 
-                            label = NULL, 
-                            value = "", 
-                            placeholder = "y-axis label"
-                          ),
-                                                                                            
-                          colourpicker::colourInput(
-                            inputId = "indMeansBoxplotColour", 
-                            label = strong("Plot Colour"), 
-                            value = "#819BB6"
-                          ),
-                          
-                          sliderInput(
-                            inputId = "indMeansBoxWidth",
-                            label = strong("Box Width"),
-                            min = 1,
-                            max = 10,
-                            value = 5,
-                            step = 1
-                          ),
-                                                                                            
-                          checkboxInput(
-                            inputId = "indMeansBoxplotFlip",
-                            label = "Plot Boxplot Vertically",
-                            value = FALSE
-                          ),
-                                                                                            
-                          style = "jelly", 
-                          icon = icon("gear"),
-                          status = "primary", 
-                          width = "300px",
-                          animate = animateOptions(
-                                      enter = animations$fading_entrances$fadeInDown,
-                                      exit = animations$fading_exits$fadeOutUp)
-                        ), # dropdown
-                        
-                        plotOutput("siIndMeansBoxplot"),
+                        plotOptionsMenuUI(
+                          id = "indMeansBoxplot", 
+                          plotType = "Boxplot",
+                          title = "Boxplot"),
+                        uiOutput("renderIndMeansBoxplot"),
                         br(),
                         br()
                       )
@@ -2903,110 +2722,19 @@
                         titlePanel("Side-by-side Boxplot"),
                         br(),
                         br(),
-                        dropdown(
-                          tags$h3("Boxplot Options"),
-                          
-                          textInput(
-                            inputId     = "anovaBoxplotTitle", 
-                            label       = strong("Main title and axes labels:"), 
-                            value       = "Boxplot", 
-                            placeholder = "main title"
-                          ),
-                          
-                          textInput(
-                            inputId     = "anovaBoxplotXlab", 
-                            label       = NULL, 
-                            value       = "", 
-                            placeholder = "x-axis label"
-                          ),
-                          
-                          textInput(
-                            inputId     = "anovaBoxplotYlab", 
-                            label       = NULL, 
-                            value       = "", 
-                            placeholder = "y-axis label"
-                          ),
-                          
-                          colourpicker::colourInput(
-                            inputId = "anovaBoxplotColour", 
-                            label   = strong("Plot Colour"), 
-                            value   = "#819BB6"
-                          ),
-                          
-                          sliderInput(
-                            inputId = "anovaBoxWidth",
-                            label = strong("Box Width"),
-                            min = 1,
-                            max = 10,
-                            value = 5,
-                            step = 1
-                          ),
-                          
-                          radioButtons(
-                            inputId = "anovaBoxplotHeight",
-                            label = strong("Plot Height"),
-                            choices = c("auto", "in px"),
-                            selected = "auto",
-                            inline = TRUE
-                          ),
-                          
-                          conditionalPanel(
-                            condition = "input.anovaBoxplotHeight == 'in px'",
-                            
-                            numericInput(
-                              inputId = "anovaBoxplotHeightPx",
-                              label = NULL,
-                              value = 400,
-                              min = 100,
-                              max = 1500,
-                              step = 1,
-                            )
-                          ),
-                          
-                          radioButtons(
-                            inputId = "anovaBoxplotWidth",
-                            label = strong("Plot Width"),
-                            choices = c("auto", "in px"),
-                            selected = "auto",
-                            inline = TRUE
-                          ),
-                          
-                          conditionalPanel(
-                            condition = "input.anovaBoxplotWidth == 'in px'",
-                            
-                            numericInput(
-                              inputId = "anovaBoxplotWidthPx",
-                              label = NULL,
-                              value = 750,
-                              min = 100,
-                              max = 1500,
-                              step = 1,
-                            )
-                          ),
-                          
-                          checkboxInput(
-                            inputId = "anovaBoxplotFlip",
-                            label   = "Plot Boxplot Vertically",
-                            value   = FALSE
-                          ),
-                          
-                          style   = "jelly", 
-                          icon    = icon("gear"),
-                          status  = "primary", 
-                          width   = "300px",
-                          animate = animateOptions(
-                            enter = animations$fading_entrances$fadeInDown,
-                            exit = animations$fading_exits$fadeOutUp)
-                        ),
+                        plotOptionsMenuUI(
+                          id = "anovaBoxplot", 
+                          plotType = "Boxplot",
+                          title = "Side-by-Side Boxplot"),
                         uiOutput("renderAnovaBoxplot")
-                        ),
+                      ),
                       
                       tabPanel(
                         id    = "anovaData",
                         title = "Uploaded Data",
                         
                         uiOutput("renderAnovaDataView")
-                        )
+                      )
                     )
                   ),
                   
