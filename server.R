@@ -1067,6 +1067,32 @@ server <- function(session, input, output) {
     suppressWarnings(na.omit(as.numeric(split)))
   }
   
+  GetPlotHeight  <- function(plotToggle, pxValue, ui) {
+    
+    ifelse(plotToggle == 'in px' && !is.na(pxValue), 
+           height <- pxValue, 
+           height <- 400)
+    
+    ifelse(ui,
+           return(paste0(height, "px")),
+           return(height))
+  }
+  
+  GetPlotWidth  <- function(plotToggle, pxValue, ui) {
+
+    if(plotToggle == 'in px' && !is.na(pxValue)) {
+      width <- pxValue
+      
+      if(ui) {
+        width <- paste0(width, "px")
+      }
+    } else {
+      width <- "auto"
+    }
+    
+    return(width)      
+  }
+  
   # **************************************************************************** #
   
   #  --------------------------------------------------------------------- #
@@ -1562,8 +1588,30 @@ server <- function(session, input, output) {
         df_outliers <- data.frame()
       }
       
+      
+      output$renderDSBoxplot <- renderUI({
+  
+        tagList(
+          plotOutput("dsBoxplot",
+                     height = GetPlotHeight(input$dsBoxplotHeight, input$dsBoxplotHeightPx, ui = TRUE),
+                     width = GetPlotWidth(input$dsBoxplotWidth, input$dsBoxplotWidthPx, ui = TRUE)),
+          
+          br(),
+          helpText("* Note: Quartiles are calculated using the inclusionary (Tukey) approach. 
+                                 The median value is included on both sides if the sample size is odd and 
+                                 the median value is excluded on both sides if the sample size is even."),
+          br(),
+          # checkboxInput(inputId = "boxplotAlignment",
+          #               label = "Vertical Boxplot",
+          #               value = FALSE),
+          # br(),
+          hr(),
+          br(),
+        )
+      })
+      
       output$dsBoxplot <- renderPlot({
-        
+        req(!is.null(input$dsBoxplotHeight) && !is.null(input$dsBoxplotWidth))
         #---------------- #
         #### Boxplot ---- 
         #---------------- #
@@ -1574,7 +1622,8 @@ server <- function(session, input, output) {
                             input$dsBoxplotColour,
                             input$dsBoxplotTitle,
                             input$dsBoxplotXlab,
-                            input$dsBoxplotYlab)
+                            input$dsBoxplotYlab,
+                            input$dsBoxWidth/10)
 
         if(input$dsBoxplotFlip == 1){
           bp + coord_flip() +
@@ -1584,7 +1633,9 @@ server <- function(session, input, output) {
           bp
         }
 
-      })
+      }, height = function() {GetPlotHeight(input$dsBoxplotHeight, input$dsBoxplotHeightPx, ui = FALSE)},
+         width = function() {GetPlotWidth(input$dsBoxplotWidth, input$dsBoxplotWidthPx, ui = FALSE)}
+      )
       
       #------------------ #
       #### Histogram ----
@@ -7749,7 +7800,8 @@ server <- function(session, input, output) {
   })
   
   
-  output$siIndMeansBoxplot <- renderPlot({
+  ##### Boxplot ----
+  output$siIndMeansBoxplot <- renderPlot({ 
     
     if(input$dataAvailability2 == 'Enter Raw Data') {
       sample1 <- createNumLst(input$raw_sample1)
@@ -7785,7 +7837,8 @@ server <- function(session, input, output) {
                                   input$indMeansBoxplotColour,
                                   input$indMeansBoxplotTitle,
                                   input$indMeansBoxplotXlab,
-                                  input$indMeansBoxplotYLab)
+                                  input$indMeansBoxplotYLab,
+                                  input$indMeansBoxWidth / 10)
 
     if(input$indMeansBoxplotFlip == 1){
       bp + coord_flip()
@@ -8803,16 +8856,19 @@ server <- function(session, input, output) {
     PrintANOVA()
   })
   
+  ##### Factor Table ----
   output$oneWayFactorTable <- renderDT({
     req(si_iv$is_valid())
     PrintANOVAFactorTable()
   })
   
+  ##### ANOVA Table ----
   output$oneWayAnovaTable <- renderDT({
     req(si_iv$is_valid())
     PrintANOVATable()
   })
   
+  ##### HT Plot ----
   output$oneWayAnovaPlot <- renderPlot({
     req(si_iv$is_valid())
     
@@ -8903,6 +8959,35 @@ server <- function(session, input, output) {
                                         face = "bold.italic"))
   })
   
+  ##### Boxplot ----
+  output$anovaBoxplot <- renderPlot({
+    data <- anovaOneWayResults()$data
+    
+    df_boxplot <- data.frame(sample = c(data[,"ind"]),
+                             data = c(lapply(data[,"values"], as.numeric)))
+    colnames(df_boxplot) <- c("sample", "data")
+    df_outliers <- data.frame()
+    
+    bp <- RenderSideBySideBoxplot(df_boxplot[,"data"],
+                                  df_boxplot,
+                                  df_outliers,
+                                  input$anovaBoxplotColour,
+                                  input$anovaBoxplotTitle,
+                                  input$anovaBoxplotXlab,
+                                  input$anovaBoxplotYLab,
+                                  input$anovaBoxWidth / 10)
+    
+    if(input$anovaBoxplotFlip == 1){
+      bp + coord_flip()
+    } else {
+      bp
+    }
+    
+  }, height = function() {GetPlotHeight(input$anovaBoxplotHeight, input$anovaBoxplotHeightPx, ui = FALSE)},
+     width = function() {GetPlotWidth(input$anovaBoxplotWidth, input$anovaBoxplotWidthPx, ui = FALSE)}
+  )
+  
+  ##### Uploaded Data Table ----
   output$anovaUploadTable <- renderDT({
     req(anovaupload_iv$is_valid())
     datatable(anovaUploadData(),
@@ -9221,6 +9306,21 @@ server <- function(session, input, output) {
         br(),
         br()
       )  
+    })
+    
+    output$renderAnovaBoxplot <- renderUI({
+      tagList(
+        conditionalPanel(
+          condition = "input.anovaGraphs.indexOf('Side-by-side Boxplot') > -1",
+          
+          plotOutput("anovaBoxplot",
+                     height = GetPlotHeight(input$anovaBoxplotHeight, input$anovaBoxplotHeightPx, ui = TRUE),
+                     width = GetPlotWidth(input$anovaBoxplotWidth, input$anovaBoxplotWidthPx, ui = TRUE)),
+          br(),
+          br(),
+          hr()
+        )
+      )
     })
     
     output$renderChiSqObs <- renderUI({
