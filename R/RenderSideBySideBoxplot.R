@@ -1,8 +1,9 @@
-RenderSideBySideBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, plotXLab, plotYLab) {
-  
-  bp <- ggplot(df_boxplot, aes(x = data, y = sample)) +
+RenderSideBySideBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, plotXLab, plotYLab, boxWidth) {
+
+    bp <- ggplot(df_boxplot, aes(x = data, y = sample)) +
     stat_boxplot(geom ='errorbar', width = 0.15) +
-    geom_boxplot(fill = plotColour,
+    geom_boxplot(width = boxWidth,
+                 fill = plotColour,
                  alpha = 1) +
     # geom_point(data = filter(df_boxplot, data %in% df_outliers),
     #            size = 5) +
@@ -28,6 +29,6 @@ RenderSideBySideBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, pl
   } else {
     bp <- bp + scale_x_continuous(n.breaks = 8, limits = c(min(dat) - 1, max(dat) + 1))
   }
-  
+
   return(bp) 
 }

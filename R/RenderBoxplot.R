@@ -1,8 +1,9 @@
-RenderBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, plotXLab, plotYLab) {
+RenderBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, plotXLab, plotYLab, boxWidth) {
   
   bp <- ggplot(df_boxplot, aes(x = x, y = 0)) +
     stat_boxplot(geom ='errorbar', width = 0.15) +
-    geom_boxplot(fill = plotColour,
+    geom_boxplot(width = boxWidth,
+                 fill = plotColour,
                  alpha = 1,
                  outlier.shape = NA) +
     geom_point(data = filter(df_boxplot, x %in% df_outliers),
