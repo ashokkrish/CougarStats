@@ -1,4 +1,4 @@
-RenderSideBySideBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, plotXLab, plotYLab, boxWidth) {
+RenderSideBySideBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, plotXLab, plotYLab, boxWidth, gridlines) {
 
     bp <- ggplot(df_boxplot, aes(x = data, y = sample)) +
     stat_boxplot(geom ='errorbar', width = 0.15) +
@@ -14,13 +14,14 @@ RenderSideBySideBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, pl
     labs(title = plotTitle,
          x = plotXLab,
          y = plotYLab) +
-    theme_minimal() +
-    theme(plot.title = element_text(size = 24, face = "bold", hjust = 0.5),
+    theme_void() +
+    theme(plot.title = element_text(size = 24, face = "bold", hjust = 0.5, margin = margin(0,0,5,0)),
           axis.title.x = element_text(size = 16, face = "bold", vjust = -1.5),
           axis.title.y = element_text(size = 16, face = "bold"),
-          axis.text.x.bottom = element_text(size = 16),
-          axis.text.y.left = element_text(size = 16),
-          plot.margin = unit(c(1, 1, 1, 1),"cm")) +
+          axis.text.x.bottom = element_text(size = 16, margin = margin(5,0,0,0)),
+          axis.text.y.left = element_text(size = 16, margin = margin(0,5,0,0)),
+          plot.margin = unit(c(1, 1, 1, 1),"cm"),
+          panel.border = element_rect(fill = NA)) +
     coord_cartesian(clip="off") 
     
   
@@ -28,6 +29,14 @@ RenderSideBySideBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, pl
     bp <- bp + scale_x_continuous(breaks = dat, limits = c(dat[1] - 1, dat[1] + 1))
   } else {
     bp <- bp + scale_x_continuous(n.breaks = 8, limits = c(min(dat) - 1, max(dat) + 1))
+  }
+    
+  if("Major" %in% gridlines) {
+    bp <- bp + theme(panel.grid.major = element_line(colour = "#D9D9D9"))
+  }
+    
+  if("Minor" %in% gridlines) {
+    bp <- bp + theme(panel.grid.minor = element_line(colour = "#D9D9D9"))
   }
 
   return(bp) 
