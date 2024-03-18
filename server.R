@@ -8989,11 +8989,53 @@ server <- function(session, input, output) {
                                         face = "bold.italic"))
   })
   
+
   ##### Post hoc analysis ----
-  output$anovaPosthoc <- renderDT({
+  output$anovaPosthocAnalysis <- renderUI({
+    
+    if(input$anovaSigLvl == "10%") {
+      sigLvl <- 0.1 
+    } else if(input$anovaSigLvl == "5%") {
+      sigLvl <- 0.05
+    } else {
+      sigLvl <- 0.01
+    }
+    
+    numComparisons <- anovaOneWayResults()$numFactors * (anovaOneWayResults()$numFactors - 1) / 2
+    
+    tagList(
+      withMathJax(),
+      titlePanel("Pairwise Comparisons"),
+      hr(),
+      br(),
+      sprintf("The total number of independent pairwise comparisons is"),
+      sprintf("\\( m = k(k-1)/2 \\), where \\(k\\) is the number of factors."),
+      br(),
+      sprintf("In this exercise,  \\(m = %s(%s-1)/2 = %s.\\)",
+              anovaOneWayResults()$numFactors,
+              anovaOneWayResults()$numFactors,
+              numComparisons),
+      br(),
+      br(),
+      p(tags$b("Bonferroni adjusted p-values using t tests with pooled SD")),
+      DTOutput("anovaBonfTable"),
+      br(),
+      sprintf("Note: The simple Bonferroni correction rejects only null hypotheses
+              with a p-value less than"),
+      sprintf("\\( \\alpha^{*} = \\alpha / m = %s / %s = %s \\)",
+             sigLvl,
+             numComparisons,
+             round(sigLvl / numComparisons, 4)),
+      br()
+    )
+  })
+  
+  output$anovaBonfTable <- renderDT({
     data <- anovaOneWayResults()$data
     
-    ph_df <- pairwise.t.test(data$values, data$ind, p.adjust.method = "bonf")
+    bonf_df <- as.data.frame(pairwise.t.test(data$values, data$ind, p.adjust.method = "bonf")$p.value)
+    bonf_df <- mutate_if(bonf_df, is.numeric, round, digits=4)
+    bonf_df[bonf_df == 0] <- "P < 0.0001"
     
     headers = htmltools::withTags(table(
       class = 'display',
@@ -9002,14 +9044,14 @@ server <- function(session, input, output) {
           th("", 
              style = "border: 1px solid rgba(0, 0, 0, 0.15);
                         border-bottom: 1px solid  rgba(0, 0, 0, 0.3);"),
-          lapply(colnames(ph_df$p.value), th, 
+          lapply(colnames(bonf_df), th, 
                  style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
                           border-top: 1px solid rgba(0, 0, 0, 0.15);')
         )
       )
     ))
     
-    datatable(ph_df$p.value,
+    datatable(bonf_df,
               class = 'cell-border stripe',
               container = headers,
               options = list(

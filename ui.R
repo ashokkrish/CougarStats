@@ -2675,15 +2675,9 @@
                         conditionalPanel(
                           condition = "input.anovaOptions.indexOf('posthoc') > -1",
                           
-                          titlePanel("Pairwise Comparisons"),
-                          hr(),
-                          br(),
-                          p(tags$b("Bonferroni Method")),
-                          DTOutput("anovaPosthoc"),
-                          br(),
-                          br()
+                          uiOutput('anovaPosthocAnalysis')
                         )
-                        ),
+                      ),
                       
                       tabPanel(
                         title = "Graphs",
