@@ -7503,7 +7503,7 @@ server <- function(session, input, output) {
   })
   
   
-  output$siOneMeanBoxplot <- renderPlot({
+  output$oneMeanBoxplot <- renderPlot({
     
     if(input$dataAvailability == 'Enter Raw Data') {
       dat <- createNumLst(input$sample1)
@@ -7529,22 +7529,20 @@ server <- function(session, input, output) {
     
     df_boxplot <- data.frame(x = dat)
 
-    bp <- RenderBoxplot(dat,
-                      df_boxplot,
-                      df_outliers,
-                      input$oneMeanBoxplotColour,
-                      input$oneMeanBoxplotTitle,
-                      input$oneMeanBoxplotXlab,
-                      input$oneMeanBoxplotYLab)
+    RenderBoxplot(dat,
+                  df_boxplot,
+                  df_outliers,
+                  input[["oneMeanBoxplot-Colour"]],
+                  input[["oneMeanBoxplot-Title"]],
+                  input[["oneMeanBoxplot-Xlab"]],
+                  input[["oneMeanBoxplot-Ylab"]],
+                  input[["oneMeanBoxplot-BoxWidth"]]/10,
+                  input[["oneMeanBoxplot-Gridlines"]],
+                  input[["oneMeanBoxplot-Flip"]])
     
-    if(input$oneMeanBoxplotFlip == 1){
-      bp + coord_flip() +
-           theme(axis.text.x.bottom = element_blank(),
-                 axis.text.y.left = element_text(size = 16))
-    } else {
-      bp
-    }
-  })
+  }, height = function() {GetPlotHeight(input[["oneMeanBoxplot-Height"]], input[["oneMeanBoxplot-HeightPx"]], ui = FALSE)},
+     width = function() {GetPlotWidth(input[["oneMeanBoxplot-Width"]], input[["oneMeanBoxplot-WidthPx"]], ui = FALSE)}
+  )
   
   
   #### One Prop outputs ----
@@ -9471,7 +9469,14 @@ server <- function(session, input, output) {
     
     if(input$siMethod == '1'){
 
-      if(input$popuParameter == 'Population Proportion') {
+      if(input$popuParameter == 'Population Mean') {
+        req(si_iv$is_valid())
+        output$renderOneMeanBoxplot <- renderUI({
+          plotOutput("oneMeanBoxplot",
+                     height = GetPlotHeight(input[["oneMeanBoxplot-Height"]], input[["oneMeanBoxplot-HeightPx"]], ui = TRUE),
+                     width = GetPlotWidth(input[["oneMeanBoxplot-Width"]], input[["oneMeanBoxplot-WidthPx"]], ui = TRUE))
+        })
+      } else if(input$popuParameter == 'Population Proportion') {
         req(input$numTrials && input$numSuccesses)
         if(input$numTrials < input$numSuccesses) {
           hide(id = "inferenceData")

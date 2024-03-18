@@ -2512,52 +2512,12 @@
                         br(),
                         titlePanel(tags$u("Boxplot")),
                         br(),
-                        dropdown(
-                          tags$h3("Boxplot Options"),
-                                                                                            
-                          textInput(
-                            inputId = "oneMeanBoxplotTitle", 
-                            label = strong("Main title and axes labels:"), 
-                            value = "Boxplot", 
-                            placeholder = "main title"
-                          ),
-                                                                                            
-                          textInput(
-                            inputId = "oneMeanBoxplotXlab", 
-                            label = NULL, 
-                            value = "", 
-                            placeholder = "x-axis label"
-                          ),
-                                                                                            
-                          textInput(
-                            inputId = "oneMeanBoxplotYlab", 
-                            label = NULL, 
-                            value = "", 
-                            placeholder = "y-axis label"
-                          ),
-                                                                                            
-                          colourpicker::colourInput(
-                            inputId = "oneMeanBoxplotColour", 
-                            label = strong("Plot Colour"), 
-                            value = "#819BB6"
-                          ),
-                                                                                            
-                          checkboxInput(
-                            inputId = "oneMeanBoxplotFlip",
-                            label = "Plot Boxplot Vertically",
-                            value = FALSE
-                          ),
-                                                                                            
-                          style = "jelly", 
-                          icon = icon("gear"),
-                          status = "primary", 
-                          width = "300px",
-                          animate = animateOptions(
-                                      enter = animations$fading_entrances$fadeInDown,
-                                      exit = animations$fading_exits$fadeOutUp)
-                        ), # dropdown
-                        
-                        plotOutput("siOneMeanBoxplot"),
+                        plotOptionsMenuUI(
+                          id = "oneMeanBoxplot",
+                          plotType = "Boxplot",
+                          title = "Boxplot"
+                        ),
+                        uiOutput("renderOneMeanBoxplot"),
                         br(),
                         br()
                       )
