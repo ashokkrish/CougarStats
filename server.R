@@ -6813,6 +6813,7 @@ server <- function(session, input, output) {
     results$numFactors <- numFactors
     results$factorNames <- factorNames
     results$test <- anova(anovaTest)
+    results$residuals <- anovaTest$residuals
     
     return(results)
   })
@@ -9011,6 +9012,22 @@ server <- function(session, input, output) {
      width = function() {GetPlotWidth(input[["anovaBoxplot-Width"]], input[["anovaBoxplot-WidthPx"]], ui = FALSE)}
   )
   
+  ##### Histogram of Residuals ----
+  output$anovaHistogram <- renderPlot({
+    data <- anovaOneWayResults()$residuals
+    print(input[["anovaHistogram-Ylab"]])
+    RenderHistogram(data,
+                    input[["anovaHistogram-Colour"]],
+                    input[["anovaHistogram-Title"]],
+                    input[["anovaHistogram-Xlab"]],
+                    input[["anovaHistogram-Ylab"]],
+                    input[["anovaHistogram-Gridlines"]],
+                    input[["anovaHistogram-Flip"]])
+    
+  }, height = function() {GetPlotHeight(input[["anovaHistogram-Height"]], input[["anovaHistogram-HeightPx"]], ui = FALSE)},
+  width = function() {GetPlotWidth(input[["anovaHistogram-Width"]], input[["anovaHistogram-WidthPx"]], ui = FALSE)}
+  )
+  
   ##### Uploaded Data Table ----
   output$anovaUploadTable <- renderDT({
     req(anovaupload_iv$is_valid())
@@ -9334,16 +9351,23 @@ server <- function(session, input, output) {
     
     output$renderAnovaBoxplot <- renderUI({
       tagList(
-        conditionalPanel(
-          condition = "input.anovaGraphs.indexOf('Side-by-side Boxplot') > -1",
-          
-          plotOutput("anovaBoxplot",
-                     height = GetPlotHeight(input[["anovaBoxplot-Height"]], input[["anovaBoxplot-HeightPx"]], ui = TRUE),
-                     width = GetPlotWidth(input[["anovaBoxplot-Width"]], input[["anovaBoxplot-WidthPx"]], ui = TRUE)),
-          br(),
-          br(),
-          hr()
-        )
+        plotOutput("anovaBoxplot",
+                   height = GetPlotHeight(input[["anovaBoxplot-Height"]], input[["anovaBoxplot-HeightPx"]], ui = TRUE),
+                   width = GetPlotWidth(input[["anovaBoxplot-Width"]], input[["anovaBoxplot-WidthPx"]], ui = TRUE)),
+        br(),
+        br(),
+        hr()
+      )
+    })
+    
+    output$renderAnovaHistogram <- renderUI({
+      tagList(
+        plotOutput("anovaHistogram",
+                   height = GetPlotHeight(input[["anovaBoxplot-Height"]], input[["anovaBoxplot-HeightPx"]], ui = TRUE),
+                   width = GetPlotWidth(input[["anovaBoxplot-Width"]], input[["anovaBoxplot-WidthPx"]], ui = TRUE)),
+        br(),
+        br(),
+        hr()
       )
     })
     

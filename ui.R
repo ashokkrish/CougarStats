@@ -2715,14 +2715,32 @@
                       tabPanel(
                         title = "Graphs",
                         
-                        titlePanel("Side-by-side Boxplot"),
-                        br(),
-                        br(),
-                        plotOptionsMenuUI(
-                          id = "anovaBoxplot", 
-                          plotType = "Boxplot",
-                          title = "Side-by-Side Boxplot"),
-                        uiOutput("renderAnovaBoxplot")
+                        conditionalPanel(
+                          condition = "input.anovaGraphs.indexOf('Side-by-side Boxplot') > -1",
+                          
+                          titlePanel("Side-by-side Boxplot"),
+                          br(),
+                          br(),
+                          plotOptionsMenuUI(
+                            id = "anovaBoxplot", 
+                            plotType = "Boxplot",
+                            title = "Side-by-Side Boxplot"),
+                          uiOutput("renderAnovaBoxplot")
+                        ),
+                        
+                        conditionalPanel(
+                          condition = "input.anovaGraphs.indexOf('Histogram of Residuals') > -1",
+                          
+                          titlePanel("Histogram of Residuals"),
+                          br(),
+                          br(),
+                          plotOptionsMenuUI(
+                            id = "anovaHistogram",
+                            title = "Histogram of Residuals",
+                            xlab = "Residuals",
+                            ylab = "Frequency"),
+                          uiOutput("renderAnovaHistogram")
+                        )
                       ),
                       
                       tabPanel(
