@@ -2,11 +2,43 @@
   --main-color: #18536F;
   --main-color-shadow: rgba(24,83,111,0.6);
   --off-white: #F5F5F5;
+  --dt-row-selected: 24, 83, 111!important;
 }
 
-input[type = "checkbox"] {
+input[type = "checkbox"],
+input[type = "radio"] {
   accent-color: var(--main-color)!important;
 }
+
+/* ---------------------------------------------------------- */
+/* Datatable Styles (DT)                                      */
+/* ---------------------------------------------------------- */
+                                                            /**/
+/* Removes the long line beneath auto-width plots           /**/
+.dataTables_scrollBody {                                    /**/
+  border-bottom: none!important;                            /**/
+}                                                           /**/
+                                                            /**/
+/* Adds a bottom border only the width of auto-width table  /**/
+.dataTables_scrollBody .dataTable {                         /**/
+  border-bottom: 1px solid rgba(0, 0, 0, 0.3)!important;    /**/
+}                                                           /**/
+                                                            /**/
+                                                            /**/
+table.dataTable.display>tbody>tr.selected+tr.selected>td {  /**/
+  border-top-color: var(--off-white)!important;             /**/
+}                                                           /**/
+                                                            /**/
+/* Remove default centering behaviour for auto-width tables /**/
+.dataTable thead,                                           /**/
+.dataTable tbody {                                          /**/
+  vertical-align: bottom!important;                         /**/
+}                                                           /**/
+                                                            /**/
+table.dataTable {                                           /**/
+  margin: 0!important;                                      /**/
+}                                                           /**/
+/* ---------------------------------------------------------- */
 
 .shiny-output-error-validation {
     color: red;
@@ -16,7 +48,9 @@ input[type = "checkbox"] {
     font-weight: bold;
   }*/
 
-  /* 'Calculate' and 'Reset' button styles ----- */
+  /* ------------------------------------------- */
+  /* 'Calculate' and 'Reset' button styles       */
+  /* ------------------------------------------- */
   .act-btn,                                    /**/
   .act-btn:focus {                             /**/
     color: var(--off-white);                   /**/
@@ -32,8 +66,9 @@ input[type = "checkbox"] {
   }                                            /**/
   /*---------------------------------------------*/
 
-
+  /* --------------------------------------- */
   /* graph options dropdown menu icon styles */
+  /* --------------------------------------- */
   .bttn-jelly.bttn-primary {               /**/
     background-color: var(--main-color);   /**/
   }                                        /**/
@@ -44,8 +79,9 @@ input[type = "checkbox"] {
   }                                        /**/
   /*_________________________________________*/
 
-
-  /* contingency table inputs (matrixInput) styles ---*/
+  /* ------------------------------------------------ */
+  /* contingency table inputs (matrixInput) styles    */
+  /* ------------------------------------------------ */
   .cMatrix th {                                     /**/
     text-align: center;                             /**/
     background-color: #D6D6D6;                      /**/
@@ -63,8 +99,10 @@ input[type = "checkbox"] {
   .irs-bar {
     background: var(--main-color)!important;
   }
-
+  
+/* ------------------------------- */
 /* pickerInput options menu styles */
+/* ------------------------------- */
   .dropdown-item:hover,
   .dropdown-menu>li>a:hover,
   .dropdown-item:focus,
@@ -92,8 +130,9 @@ input[type = "checkbox"] {
     padding-bottom: 10px;
   }
 
-
-  /* Header menu styles --------------------------------------------------*/
+  /* -------------------------------------------------------------------- */
+  /* Header menu styles                                                   */
+  /* -------------------------------------------------------------------- */
   .nav {                                                                /**/
     align-items: center;                                                /**/
   }                                                                     /**/
@@ -128,8 +167,9 @@ input[type = "checkbox"] {
   }                                                                     /**/
   /*----------------------------------------------------------------------*/
 
-
-  /* prettyRadioButton styles -----------------------------------------------------*/
+  /* ----------------------------------------------------------------------------- */
+  /* prettyRadioButton styles                                                      */
+  /* ----------------------------------------------------------------------------- */
   .pretty input:checked~.state.p-primary-o label:before,                         /**/
   .pretty.p-toggle .state.p-primary-o label:before {                             /**/
     border-color: var(--main-color);                                             /**/
@@ -140,8 +180,9 @@ input[type = "checkbox"] {
   }                                                                              /**/
   /*-------------------------------------------------------------------------------*/
 
-
-  /* selectInput/selectizeInput styles -------------------------------------*/ 
+  /* ---------------------------------------------------------------------- */
+  /* selectInput/selectizeInput styles                                      */
+  /* ---------------------------------------------------------------------- */
   .selectize-input.focus {                                                /**/
     border-color: var(--main-color);                                      /**/
     box-shadow: inset 0 1px 1px rgba(0,0,0,0.075),                        /**/
