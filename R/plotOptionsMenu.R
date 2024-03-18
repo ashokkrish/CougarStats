@@ -44,7 +44,7 @@ library(shinyWidgets)
 #   - box widths
 #
 # ================================================================ #
-plotOptionsMenuUI <- function(id, plotType = NULL, title = "Plot", xlab = "", ylab = "") {
+plotOptionsMenuUI <- function(id, plotType = NULL, title = "Plot", xlab = "", ylab = "", colour = "#7293AD") {
   ns <- NS(id)
   
   if(!is.null(plotType)) {
@@ -83,7 +83,7 @@ plotOptionsMenuUI <- function(id, plotType = NULL, title = "Plot", xlab = "", yl
       colourpicker::colourInput(
         inputId = ns("Colour"), 
         label = strong("Plot Colour"), 
-        value = "#819BB6"
+        value = colour
       ),
       
       radioButtons(
