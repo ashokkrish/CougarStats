@@ -1779,6 +1779,14 @@
                   status   = "primary"
                 ),
                 
+                checkboxGroupInput(
+                  inputId = "anovaOptions",
+                  label = p(strong("Options")),
+                  choiceNames = c("Include post hoc tests"),
+                  choiceValues = c("posthoc"),
+                  selected = NULL
+                ),
+                
                 selectizeInput(
                   inputId = "anovaGraphs",
                   label = strong("Graphs"),
@@ -2128,14 +2136,10 @@
                       id    = "dsTable", 
                       title = "Descriptive Statistics", 
                       value = 'Descriptive Statistics',
-                                                                         
-                      fluidRow(
-                        withMathJax(),
+
+                      withMathJax(),
                         
-                        column(align = "center", width = 12, 
-                          uiOutput('dsDataTable')
-                        )
-                      ),
+                      uiOutput('dsDataTable'),
                                                                          
                       br(),
                                                                          
@@ -2159,14 +2163,14 @@
                                                                            
                         fluidRow(
                                                                              
-                          column(align = "center", width = 4,
+                          column(width = 4,
                             br(),
                             DTOutput('sampleDataTable'),
                             br(),
                             br()
                           ),
                                                                              
-                          column(align = "left", width = 8,
+                          column(width = 8,
                             conditionalPanel(
                               condition = "input.dsTableFilters.indexOf('Mean') > -1",
                               
@@ -2709,7 +2713,18 @@
                         br(),
                         uiOutput("anovaOutput"),
                         br(),
-                        br()
+                        br(),
+                        conditionalPanel(
+                          condition = "input.anovaOptions.indexOf('posthoc') > -1",
+                          
+                          titlePanel("Pairwise Comparisons"),
+                          hr(),
+                          br(),
+                          p(tags$b("Bonferroni Method")),
+                          DTOutput("anovaPosthoc"),
+                          br(),
+                          br()
+                        )
                         ),
                       
                       tabPanel(
@@ -2740,6 +2755,21 @@
                             xlab = "Residuals",
                             ylab = "Frequency"),
                           uiOutput("renderAnovaHistogram")
+                        ),
+                        
+                        conditionalPanel(
+                          condition = "input.anovaGraphs.indexOf('QQ Plot of Residuals') > -1",
+                          
+                          titlePanel("QQ Plot of Residuals"),
+                          br(),
+                          br(),
+                          plotOptionsMenuUI(
+                            id = "anovaQQplot",
+                            title = "QQ Plot of Residuals",
+                            xlab = "Normal Quantiles",
+                            ylab = "Residuals",
+                            colour = "#0F3345"),
+                          uiOutput("renderAnovaQQplot")
                         )
                       ),
                       

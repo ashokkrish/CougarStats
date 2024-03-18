@@ -6785,7 +6785,6 @@ server <- function(session, input, output) {
     if(input$anovaFormat == "Multiple") {
       anovaData <- stack(anovaUploadData()[,input$anovaMultiColumns])
       factorCol <- "ind"
-      anovaFormula <- values ~ ind
       factorNames <- levels(anovaData[,factorCol])
       
     } else {
@@ -6796,7 +6795,6 @@ server <- function(session, input, output) {
       # factorCol <- input$anovaFactors
       # anovaFormula <- as.name(input$anovaResponse) ~ as.name(factorCol)
       # anovaFormula <- reformulate(factorCol, as.name(input$anovaResponse))
-      anovaFormula <- values ~ ind
       names <- distinct(anovaData[,factorCol])
       factorNames <- c()
       for(row in 1:nrow(names)) {
@@ -6805,15 +6803,16 @@ server <- function(session, input, output) {
     }
     totalCount <- nrow(anovaData)
     numFactors <- length(factorNames)
-    anovaTest <- aov(formula = anovaFormula, data = anovaData)
+    anovaTest <- aov(formula = values ~ ind, data = anovaData)
     
     results$data <- na.omit(anovaData)
     results$count <- totalCount
     results$factorCol <- factorCol
     results$numFactors <- numFactors
     results$factorNames <- factorNames
-    results$test <- anova(anovaTest)
+    results$fit <- anovaTest
     results$residuals <- anovaTest$residuals
+    results$test <- anova(anovaTest)
     
     return(results)
   })
@@ -8988,10 +8987,49 @@ server <- function(session, input, output) {
                                         face = "bold.italic"))
   })
   
+  ##### Post hoc analysis ----
+  output$anovaPosthoc <- renderDT({
+    data <- anovaOneWayResults()$data
+    
+    ph_df <- pairwise.t.test(data$values, data$ind, p.adjust.method = "bonf")
+    
+    headers = htmltools::withTags(table(
+      class = 'display',
+      thead(
+        tr(
+          th("", 
+             style = "border: 1px solid rgba(0, 0, 0, 0.15);
+                        border-bottom: 1px solid  rgba(0, 0, 0, 0.3);"),
+          lapply(colnames(ph_df$p.value), th, 
+                 style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
+                          border-top: 1px solid rgba(0, 0, 0, 0.15);')
+        )
+      )
+    ))
+    
+    datatable(ph_df$p.value,
+              class = 'cell-border stripe',
+              container = headers,
+              options = list(
+                dom = 't',
+                pageLength = -1,
+                ordering = FALSE,
+                searching = FALSE,
+                paging = FALSE,
+                autoWidth = TRUE,
+                scrollX = TRUE
+              ),
+              selection = "none",
+              escape = FALSE,
+              filter = "none") %>% formatStyle(columns = c(0),
+                                               fontWeight = 'bold')
+
+  })
+  
   ##### Boxplot ----
   output$anovaBoxplot <- renderPlot({
     data <- anovaOneWayResults()$data
-
+    
     df_boxplot <- data.frame(sample = c(data[,"ind"]),
                              data = c(data[,"values"]))
     colnames(df_boxplot) <- c("sample", "data")
@@ -9015,7 +9053,7 @@ server <- function(session, input, output) {
   ##### Histogram of Residuals ----
   output$anovaHistogram <- renderPlot({
     data <- anovaOneWayResults()$residuals
-    print(input[["anovaHistogram-Ylab"]])
+
     RenderHistogram(data,
                     input[["anovaHistogram-Colour"]],
                     input[["anovaHistogram-Title"]],
@@ -9025,7 +9063,25 @@ server <- function(session, input, output) {
                     input[["anovaHistogram-Flip"]])
     
   }, height = function() {GetPlotHeight(input[["anovaHistogram-Height"]], input[["anovaHistogram-HeightPx"]], ui = FALSE)},
-  width = function() {GetPlotWidth(input[["anovaHistogram-Width"]], input[["anovaHistogram-WidthPx"]], ui = FALSE)}
+     width = function() {GetPlotWidth(input[["anovaHistogram-Width"]], input[["anovaHistogram-WidthPx"]], ui = FALSE)}
+  )
+  
+  ##### QQ Plot of Residuals ----
+  output$anovaQQplot <- renderPlot({
+    data <- anovaOneWayResults()$residuals
+
+    qqplot_df <- data.frame(values = data)
+
+    RenderQQPlot(qqplot_df,
+                 input[["anovaQQplot-Colour"]],
+                 input[["anovaQQplot-Title"]],
+                 input[["anovaQQplot-Xlab"]],
+                 input[["anovaQQplot-Ylab"]],
+                 input[["anovaQQplot-Gridlines"]],
+                 input[["anovaQQplot-Flip"]])
+
+  }, height = function() {GetPlotHeight(input[["anovaQQplot-Height"]], input[["anovaQQplot-HeightPx"]], ui = FALSE)},
+     width = function() {GetPlotWidth(input[["anovaQQplot-Width"]], input[["anovaQQplot-WidthPx"]], ui = FALSE)}
   )
   
   ##### Uploaded Data Table ----
@@ -9365,6 +9421,17 @@ server <- function(session, input, output) {
         plotOutput("anovaHistogram",
                    height = GetPlotHeight(input[["anovaBoxplot-Height"]], input[["anovaBoxplot-HeightPx"]], ui = TRUE),
                    width = GetPlotWidth(input[["anovaBoxplot-Width"]], input[["anovaBoxplot-WidthPx"]], ui = TRUE)),
+        br(),
+        br(),
+        hr()
+      )
+    })
+    
+    output$renderAnovaQQplot <- renderUI({
+      tagList(
+        plotOutput("anovaQQplot",
+                   height = GetPlotHeight(input[["anovaQQplot-Height"]], input[["anovaQQplot-HeightPx"]], ui = TRUE),
+                   width = GetPlotWidth(input[["anovaQQplot-Width"]], input[["anovaQQplot-WidthPx"]], ui = TRUE)),
         br(),
         br(),
         hr()
