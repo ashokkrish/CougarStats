@@ -24,6 +24,10 @@ library(shinyWidgets)
 #
 # title:    The title of the plot.
 #
+# xlab:     The default value for the X-Axis label.
+#
+# ylab:     The defualt value for Y-Axis label.
+#
 # ================================================================ #
 # Customization Options
 # ---------------------
@@ -40,7 +44,7 @@ library(shinyWidgets)
 #   - box widths
 #
 # ================================================================ #
-plotOptionsMenuUI <- function(id, plotType = NULL, title = "Plot") {
+plotOptionsMenuUI <- function(id, plotType = NULL, title = "Plot", xlab = "", ylab = "") {
   ns <- NS(id)
   
   if(!is.null(plotType)) {
@@ -65,14 +69,14 @@ plotOptionsMenuUI <- function(id, plotType = NULL, title = "Plot") {
       textInput(
         inputId = ns("Xlab"), 
         label = NULL, 
-        value = "", 
+        value = xlab, 
         placeholder = "x-axis label"
       ),
       
       textInput(
         inputId = ns("Ylab"), 
         label = NULL, 
-        value = "", 
+        value = ylab, 
         placeholder = "y-axis label"
       ),
       
