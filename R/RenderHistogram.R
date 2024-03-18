@@ -1,6 +1,6 @@
 library(ggplot2)
 
-RenderHistogram <- function(dat, plotColour, plotTitle, plotXLab, plotYLab, gridlines, flip) {
+RenderHistogram <- function(dat, plotColour, plotTitle, plotXlab, plotYlab, gridlines, flip) {
   
   hist <- ggplot(data.frame(x = dat)) +
     geom_histogram(aes(x = x),
@@ -8,8 +8,8 @@ RenderHistogram <- function(dat, plotColour, plotTitle, plotXLab, plotYLab, grid
                    fill = plotColour,
                    color = "black") +
     labs(title = plotTitle,
-         x = plotXLab,
-         y = plotYLab) +
+         x = plotXlab,
+         y = plotYlab) +
     theme_void() +
     theme(plot.title = element_text(size = 24,
                                     face = "bold",
@@ -23,12 +23,12 @@ RenderHistogram <- function(dat, plotColour, plotTitle, plotXLab, plotYLab, grid
                                       colour = "black",
                                       face = "bold", 
                                       angle = 90,
-                                      margin = margin(0,10,0,0)),
+                                      margin = margin(0,5,0,0)),
           axis.text.x.bottom = element_text(size = 14,
                                             margin = margin(5,0,0,0)),
           axis.text.y.left = element_text(size = 14,
                                           margin = margin(0,5,0,0)),
-          plot.margin = unit(c(1, 1, 1, 10),"cm"),
+          plot.margin = unit(c(1, 1, 1, 1),"cm"),
           panel.border = element_rect(fill=NA)) +
     coord_cartesian(clip="off")
   
@@ -44,8 +44,8 @@ RenderHistogram <- function(dat, plotColour, plotTitle, plotXLab, plotYLab, grid
   
   if(flip == 1) {
     hist <- hist + coord_flip() +
-      labs(x = plotYLab,
-           y = plotXLab) +
+      labs(x = plotYlab,
+           y = plotXlab) +
       scale_y_continuous(n.breaks = 10, expand = c(0, 0))
   }
   

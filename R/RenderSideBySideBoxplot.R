@@ -1,6 +1,6 @@
 library(ggplot2)
 
-RenderSideBySideBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, plotXLab, plotYLab, boxWidth, gridlines, flip) {
+RenderSideBySideBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, plotXlab, plotYlab, boxWidth, gridlines, flip) {
 
     bp <- ggplot(df_boxplot, aes(x = data, y = sample)) +
     stat_boxplot(geom ='errorbar', width = 0.15) +
@@ -14,8 +14,8 @@ RenderSideBySideBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, pl
     #           size = 15 / .pt,
     #           vjust = -1.25) +
     labs(title = plotTitle,
-         x = plotXLab,
-         y = plotYLab) +
+         x = plotXlab,
+         y = plotYlab) +
     theme_void() +
     theme(plot.title = element_text(size = 24, face = "bold", hjust = 0.5, margin = margin(0,0,5,0)),
           axis.title.x = element_text(size = 16, face = "bold", vjust = -1.5),
@@ -43,8 +43,8 @@ RenderSideBySideBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, pl
     
     if(flip == 1){
       bp <- bp + coord_flip() +
-        labs(x = plotYLab,
-             y = plotXLab)
+        labs(x = plotYlab,
+             y = plotXlab)
     }
 
   return(bp) 

@@ -1,6 +1,6 @@
 library(ggplot2)
 
-RenderBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, plotXLab, plotYLab, boxWidth, gridlines, flip) {
+RenderBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, plotXlab, plotYlab, boxWidth, gridlines, flip) {
   
   bp <- ggplot(df_boxplot, aes(x = x, y = 0)) +
     stat_boxplot(geom ='errorbar', width = 0.15) +
@@ -15,8 +15,8 @@ RenderBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, p
               size = 15 / .pt,
               vjust = -1) +
     labs(title = plotTitle,
-         x = plotXLab,
-         y = plotYLab) +
+         x = plotXlab,
+         y = plotYlab) +
     theme_void() +
     theme(plot.title = element_text(size = 24, face = "bold", hjust = 0.5, margin = margin(0,0,5,0)),
           axis.title.x = element_text(size = 16, face = "bold", vjust = -1.5, margin = margin(5,0,0,0)),
@@ -46,8 +46,8 @@ RenderBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, p
     bp <- bp + coord_flip() +
       theme(axis.text.x.bottom = element_blank(),
             axis.text.y.left = element_text(size = 16)) +
-      labs(x = plotYLab,
-           y = plotXLab)
+      labs(x = plotYlab,
+           y = plotXlab)
   }
   
   return(bp) 
