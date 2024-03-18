@@ -1,3 +1,5 @@
+library(ggplot2)
+
 RenderSideBySideBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, plotXLab, plotYLab, boxWidth, gridlines, flip) {
 
     bp <- ggplot(df_boxplot, aes(x = data, y = sample)) +
