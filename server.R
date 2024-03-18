@@ -4750,7 +4750,9 @@ server <- function(session, input, output) {
       df <- oneMeanData["Sample Size"] - 1
       
       cvOutput <- tagList(
-                          sprintf("\\( df = n - 1 \\)"),
+                          sprintf("\\( df = n - 1 = %s - 1 = %s\\)",
+                                  oneMeanData['Sample Size'],
+                                  oneMeanData['Sample Size'] - 1),
                           br(),
                           sprintf("\\( t_{\\alpha/2, \\, df} = t_{%s/2, \\, %s} = t_{%s, \\, %s} = %s \\)",
                                   1 - ConfLvl(),
