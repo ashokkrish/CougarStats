@@ -2218,11 +2218,7 @@
                                                                            
                         plotOptionsMenuUI(id = "dsHisto",
                                           title = "Histogram"),
-                        plotOutput("dsHistogram"),
-                                                                   
-                        br(),
-                        hr(),
-                        br(),
+                        uiOutput("renderDSHistogram"),
                       ), # Histogram
                                                                          
                       conditionalPanel(

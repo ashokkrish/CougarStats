@@ -1601,10 +1601,18 @@ server <- function(session, input, output) {
                                  The median value is included on both sides if the sample size is odd and 
                                  the median value is excluded on both sides if the sample size is even."),
           br(),
-          # checkboxInput(inputId = "boxplotAlignment",
-          #               label = "Vertical Boxplot",
-          #               value = FALSE),
-          # br(),
+          hr(),
+          br(),
+        )
+      })
+      
+      output$renderDSHistogram <- renderUI({
+        
+        tagList(
+          plotOutput("dsHistogram",
+                     height = GetPlotHeight(input[["dsHisto-Height"]], input[["dsHisto-HeightPx"]], ui = TRUE),
+                     width = GetPlotWidth(input[["dsHisto-Width"]], input[["dsHisto-WidthPx"]], ui = TRUE)),
+          br(),
           hr(),
           br(),
         )
@@ -1616,23 +1624,17 @@ server <- function(session, input, output) {
         #### Boxplot ---- 
         #---------------- #
         
-        bp <- RenderBoxplot(dat,
-                            df_boxplot,
-                            df_outliers,
-                            input[["dsBoxplot-Colour"]],
-                            input[["dsBoxplot-Title"]],
-                            input[["dsBoxplot-Xlab"]],
-                            input[["dsBoxplot-Ylab"]],
-                            input[["dsBoxplot-BoxWidth"]]/10,
-                            input[["dsBoxplot-Gridlines"]])
+        RenderBoxplot(dat,
+                      df_boxplot,
+                      df_outliers,
+                      input[["dsBoxplot-Colour"]],
+                      input[["dsBoxplot-Title"]],
+                      input[["dsBoxplot-Xlab"]],
+                      input[["dsBoxplot-Ylab"]],
+                      input[["dsBoxplot-BoxWidth"]]/10,
+                      input[["dsBoxplot-Gridlines"]],
+                      input[["dsBoxplot-Flip"]])
 
-        if(input[["dsBoxplot-Flip"]] == 1){
-          bp + coord_flip() +
-            theme(axis.text.x.bottom = element_blank(),
-                  axis.text.y.left = element_text(size = 16))
-        } else {
-          bp
-        }
 
       }, height = function() {GetPlotHeight(input[["dsBoxplot-Height"]], input[["dsBoxplot-HeightPx"]], ui = FALSE)},
          width = function() {GetPlotWidth(input[["dsBoxplot-Width"]], input[["dsBoxplot-WidthPx"]], ui = FALSE)}
@@ -1683,8 +1685,16 @@ server <- function(session, input, output) {
             hist <- hist + theme(panel.grid.minor = element_line(colour = "#D9D9D9"))
           }
           
+          if(input[["dsHisto-Flip"]] == 1) {
+            hist <- hist + coord_flip() +
+              labs(x = input[["dsHisto-Ylab"]],
+                   y = input[["dsHisto-Xlab"]]) +
+              scale_y_continuous(n.breaks = 10, expand = c(0, 0))
+          }
+          
           hist
-      })
+      }, height = function() {GetPlotHeight(input[["dsHisto-Height"]], input[["dsHisto-HeightPx"]], ui = FALSE)},
+      width = function() {GetPlotWidth(input[["dsHisto-Width"]], input[["dsHisto-WidthPx"]], ui = FALSE)})
 
       #---------------------- #
       #### Stem and Leaf ----
@@ -7850,21 +7860,17 @@ server <- function(session, input, output) {
     #   df_outliers <- as.data.frame(outliers)
     # }
     
-    bp <- RenderSideBySideBoxplot(dat,
-                                  df_boxplot,
-                                  df_outliers,
-                                  input[["indMeansBoxplot-Colour"]],
-                                  input[["indMeansBoxplot-Title"]],
-                                  input[["indMeansBoxplot-Xlab"]],
-                                  input[["indMeansBoxplot-Ylab"]],
-                                  input[["indMeansBoxplot-BoxWidth"]] / 10,
-                                  input[["indMeansBoxplot-Gridlines"]])
+    RenderSideBySideBoxplot(dat,
+                            df_boxplot,
+                            df_outliers,
+                            input[["indMeansBoxplot-Colour"]],
+                            input[["indMeansBoxplot-Title"]],
+                            input[["indMeansBoxplot-Xlab"]],
+                            input[["indMeansBoxplot-Ylab"]],
+                            input[["indMeansBoxplot-BoxWidth"]] / 10,
+                            input[["indMeansBoxplot-Gridlines"]],
+                            input[["indMeansBoxplot-Flip"]])
 
-    if(input[["indMeansBoxplot-Flip"]] == 1){
-      bp + coord_flip()
-    } else {
-      bp
-    }
     
   }, height = function() {GetPlotHeight(input[["indMeansBoxplot-Height"]], input[["indMeansBoxplot-HeightPx"]], ui = FALSE)},
      width = function() {GetPlotWidth(input[["indMeansBoxplot-Width"]], input[["indMeansBoxplot-WidthPx"]], ui = FALSE)}
@@ -8990,21 +8996,16 @@ server <- function(session, input, output) {
     colnames(df_boxplot) <- c("sample", "data")
     df_outliers <- data.frame()
 
-    bp <- RenderSideBySideBoxplot(df_boxplot[,"data"],
-                                  df_boxplot,
-                                  df_outliers,
-                                  input[["anovaBoxplot-Colour"]],
-                                  input[["anovaBoxplot-Title"]],
-                                  input[["anovaBoxplot-Xlab"]],
-                                  input[["anovaBoxplot-Ylab"]],
-                                  input[["anovaBoxplot-BoxWidth"]] / 10,
-                                  input[["anovaBoxplot-Gridlines"]])
-    
-    if(input[["anovaBoxplot-Flip"]] == 1){
-      bp + coord_flip()
-    } else {
-      bp
-    }
+    RenderSideBySideBoxplot(df_boxplot[,"data"],
+                            df_boxplot,
+                            df_outliers,
+                            input[["anovaBoxplot-Colour"]],
+                            input[["anovaBoxplot-Title"]],
+                            input[["anovaBoxplot-Xlab"]],
+                            input[["anovaBoxplot-Ylab"]],
+                            input[["anovaBoxplot-BoxWidth"]] / 10,
+                            input[["anovaBoxplot-Gridlines"]],
+                            input[["anovaBoxplot-Flip"]])
     
   }, height = function() {GetPlotHeight(input[["anovaBoxplot-Height"]], input[["anovaBoxplot-HeightPx"]], ui = FALSE)},
      width = function() {GetPlotWidth(input[["anovaBoxplot-Width"]], input[["anovaBoxplot-WidthPx"]], ui = FALSE)}
