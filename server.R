@@ -5637,7 +5637,7 @@ server <- function(session, input, output) {
     
     cvOutput <- tagList(
       p(tags$b("Using Critical Value Method:")),
-      sprintf("Critical Value \\( = F_{\\alpha, \\, df_{1}, \\, df_{2}} = F_{%s, \\, %s, \\, %s} = %s \\)",
+      sprintf("Critical Value \\( = F_{\\alpha, \\, (k - 1), \\, (n - k)} = F_{%s, \\, %s, \\, %s} = %s \\)",
               alpha,
               df1,
               df2,
