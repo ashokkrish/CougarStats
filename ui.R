@@ -162,18 +162,16 @@
                                                            
               br(),
                                                            
-              pickerInput(
+              selectizeInput(
                 inputId  = "dsGraphOptions",
                 label    = strong("Graphs"), 
                 choices  = c("Boxplot", 
                             "Histogram", 
                             "Stem and Leaf Plot"),
                 selected = c("Boxplot"),
-                options  = list(`actions-box` = TRUE,
-                                'selected-text-format' = 'count',
-                                style = 'btn-outline-primary'
-                ),
-                multiple = TRUE
+                multiple = TRUE,
+                options = list(hideSelected = FALSE,
+                               placeholder = 'Select graph(s) to display')
               ),
                                                            
               br(),
@@ -1794,7 +1792,7 @@
                   multiple = TRUE,
                   selected = c("Side-by-side Boxplot"),
                   options = list(hideSelected = FALSE,
-                                 placeholder = 'Select two or more columns'),
+                                 placeholder = 'Select graph(s) to display'),
                 )
                 
               ),
