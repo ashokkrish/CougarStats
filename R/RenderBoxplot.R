@@ -1,4 +1,4 @@
-RenderBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, plotXLab, plotYLab, boxWidth, gridlines) {
+RenderBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, plotXLab, plotYLab, boxWidth, gridlines, flip) {
   
   bp <- ggplot(df_boxplot, aes(x = x, y = 0)) +
     stat_boxplot(geom ='errorbar', width = 0.15) +
@@ -38,6 +38,14 @@ RenderBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, p
   
   if("Minor" %in% gridlines) {
     bp <- bp + theme(panel.grid.minor = element_line(colour = "#D9D9D9"))
+  }
+  
+  if(flip == 1){
+    bp <- bp + coord_flip() +
+      theme(axis.text.x.bottom = element_blank(),
+            axis.text.y.left = element_text(size = 16)) +
+      labs(x = plotYLab,
+           y = plotXLab)
   }
   
   return(bp) 

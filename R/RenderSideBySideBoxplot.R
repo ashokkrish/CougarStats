@@ -1,4 +1,4 @@
-RenderSideBySideBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, plotXLab, plotYLab, boxWidth, gridlines) {
+RenderSideBySideBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, plotXLab, plotYLab, boxWidth, gridlines, flip) {
 
     bp <- ggplot(df_boxplot, aes(x = data, y = sample)) +
     stat_boxplot(geom ='errorbar', width = 0.15) +
@@ -38,6 +38,12 @@ RenderSideBySideBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, pl
   if("Minor" %in% gridlines) {
     bp <- bp + theme(panel.grid.minor = element_line(colour = "#D9D9D9"))
   }
+    
+    if(flip == 1){
+      bp <- bp + coord_flip() +
+        labs(x = plotYLab,
+             y = plotXLab)
+    }
 
   return(bp) 
 }
