@@ -9035,7 +9035,7 @@ server <- function(session, input, output) {
     
     bonf_df <- as.data.frame(pairwise.t.test(data$values, data$ind, p.adjust.method = "bonf")$p.value)
     bonf_df <- mutate_if(bonf_df, is.numeric, round, digits=4)
-    bonf_df[bonf_df == 0] <- "P < 0.0001"
+    bonf_df[bonf_df == 0] <- "< 0.0001"
     
     headers = htmltools::withTags(table(
       class = 'display',
