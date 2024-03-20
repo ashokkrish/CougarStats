@@ -9227,7 +9227,7 @@ server <- function(session, input, output) {
   output$chiSqPlot <- renderPlot({ ###### chisq plot ----
     data <- chiSqResults()
     chisq_df <- data$Results$parameter
-    chisq_ts <- round(data$Results$statistic, 4)
+    chisq_ts <- data$Matrix[nrow(data$Matrix), "(O - E)<sup>2</sup> / E"]
     
     if(input$chisquareSigLvl == "10%") {
       sigLvl <- 0.1 
