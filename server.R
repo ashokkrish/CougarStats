@@ -5799,7 +5799,7 @@ server <- function(session, input, output) {
   
   PrintChiSqTest <- function() {
     data <- chiSqResults()
-    chiSqStat <- data$Results$statistic
+    chiSqStat <- data$Matrix[nrow(data$Matrix), "(O - E)<sup>2</sup> / E"]
     
     if(input$chisquareSigLvl == "10%") {
       sigLvl <- 0.1 
@@ -5884,7 +5884,7 @@ server <- function(session, input, output) {
       br(),
       br(),
       br(),
-      sprintf("\\( \\phantom{\\chi^2} = %0.4f \\)",
+      sprintf("\\( \\phantom{\\chi^2} = %s \\)",
               chiSqStat),
       br(),
       br(),
