@@ -5478,7 +5478,7 @@ server <- function(session, input, output) {
       br(),
       br(),
       p(tags$b("ANOVA Table:")),
-      DTOutput("oneWayAnovaTable", width = '750px'),
+      DTOutput("oneWayAnovaTable", width = '900px'),
       br(),
       br(),
       p(tags$b("Test Statistic:")),
@@ -5556,10 +5556,17 @@ server <- function(session, input, output) {
   
   PrintANOVATable <- function() {
     data <- anovaOneWayResults()$test
+    
+    if(data[1,"Pr(>F)"] < 0.0001 && data[1,"Pr(>F)"] > 0) {
+      data[1,"Pr(>F)"] <- "P < 0.0001"
+    } else {
+      data[1,"Pr(>F)"] <- paste(round(data[1,"Pr(>F)"], 4))
+    }
+    
     data <- rbind(data, c(sum(data[,"Df"]), sum(data[,"Sum Sq"]), NA, NA, NA))
     # print(data[,"Df"])
     rownames(data) <- c("Between", "Error", "Total")
-    colNames <- c("df", "Sum of Squares (SS)", "Mean Sum of Squares (MS)", "F-ratio")
+    colNames <- c("df", "Sum of Squares (SS)", "Mean Sum of Squares (MS)", "F-ratio", "P-Value")
     
     headers = htmltools::withTags(table(
       class = 'display',
@@ -5575,7 +5582,7 @@ server <- function(session, input, output) {
       )
     ))
     
-    datatable(data[,0:4],
+    datatable(data[,0:5],
               class = 'cell-border stripe',
               container = headers,
               options = list(
@@ -5587,9 +5594,9 @@ server <- function(session, input, output) {
                 autoWidth = FALSE,
                 scrollX = TRUE,
                 columnDefs = list(list(className = 'dt-center',
-                                       targets = 0:4),
-                                  list(width = '175px', 
-                                       targets = 2:4))
+                                       targets = 0:5),
+                                  list(width = '150px', 
+                                       targets = 2:5))
               ),
               selection = "none",
               escape = FALSE,
@@ -5600,7 +5607,7 @@ server <- function(session, input, output) {
                       digits = 4
     ) %>% formatStyle(columns = c(0,4),
                       fontWeight = 'bold'
-    ) %>% formatStyle(columns = 1:4,
+    ) %>% formatStyle(columns = 1:5,
                       target = 'row',
                       fontWeight = styleRow(3, "bold"))
   }
@@ -7508,6 +7515,7 @@ server <- function(session, input, output) {
   
   
   output$oneMeanBoxplot <- renderPlot({
+    req(si_iv$is_valid())
     
     if(input$dataAvailability == 'Enter Raw Data') {
       dat <- createNumLst(input$sample1)
