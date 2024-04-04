@@ -31,6 +31,7 @@ library(MASS)
 
 source("R/ChiSquareTest.R")
 source("R/RenderBoxplot.R")
+source("R/RenderMeanPlot.R")
 source("R/RenderQQPlot.R")
 source("R/RenderScatterplot.R")
 source("R/RenderSideBySideBoxplot.R")
