@@ -1788,7 +1788,10 @@
                 selectizeInput(
                   inputId = "anovaGraphs",
                   label = strong("Graphs"),
-                  choices = c("Side-by-side Boxplot", "Histogram of Residuals", "QQ Plot of Residuals"),
+                  choices = c("Side-by-side Boxplot", 
+                              "Histogram of Residuals", 
+                              "QQ Plot of Residuals",
+                              "Plot Group Means"),
                   multiple = TRUE,
                   selected = c("Side-by-side Boxplot"),
                   options = list(hideSelected = FALSE,
@@ -2722,6 +2725,21 @@
                             ylab = "Residuals",
                             colour = "#0F3345"),
                           uiOutput("renderAnovaQQplot")
+                        ),
+                        
+                        conditionalPanel(
+                          condition = "input.anovaGraphs.indexOf('Plot Group Means') > -1",
+                          
+                          titlePanel("Group Means"),
+                          br(),
+                          br(),
+                          plotOptionsMenuUI(
+                            id = "anovaMeanPlot",
+                            title = "Group Means",
+                            xlab = "Group",
+                            ylab = "Mean",
+                            colour = "#0F3345"),
+                          uiOutput("renderAnovaMeanPlot")
                         )
                       ),
                       

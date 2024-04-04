@@ -9140,6 +9140,24 @@ server <- function(session, input, output) {
      width = function() {GetPlotWidth(input[["anovaQQplot-Width"]], input[["anovaQQplot-WidthPx"]], ui = FALSE)}
   )
   
+  ##### Group Means Plot ----
+  output$anovaMeanPlot<- renderPlot({
+    data <- as.data.frame(anovaOneWayResults()$data)
+    groups <- anovaOneWayResults()$factornames
+
+    RenderMeanPlot(data,
+                 groups,
+                 input[["anovaMeanPlot-Colour"]],
+                 input[["anovaMeanPlot-Title"]],
+                 input[["anovaMeanPlot-Xlab"]],
+                 input[["anovaMeanPlot-Ylab"]],
+                 input[["anovaMeanPlot-Gridlines"]],
+                 input[["anovaMeanPlot-Flip"]])
+    
+  }, height = function() {GetPlotHeight(input[["anovaMeanPlot-Height"]], input[["anovaMeanPlot-HeightPx"]], ui = FALSE)},
+     width = function() {GetPlotWidth(input[["anovaMeanPlot-Width"]], input[["anovaMeanPlot-WidthPx"]], ui = FALSE)}
+  )
+  
   ##### Uploaded Data Table ----
   output$anovaUploadTable <- renderDT({
     req(anovaupload_iv$is_valid())
@@ -9488,6 +9506,17 @@ server <- function(session, input, output) {
         plotOutput("anovaQQplot",
                    height = GetPlotHeight(input[["anovaQQplot-Height"]], input[["anovaQQplot-HeightPx"]], ui = TRUE),
                    width = GetPlotWidth(input[["anovaQQplot-Width"]], input[["anovaQQplot-WidthPx"]], ui = TRUE)),
+        br(),
+        br(),
+        hr()
+      )
+    })
+    
+    output$renderAnovaMeanPlot <- renderUI({
+      tagList(
+        plotOutput("anovaMeanPlot",
+                   height = GetPlotHeight(input[["anovaMeanPlot-Height"]], input[["anovaMeanPlot-HeightPx"]], ui = TRUE),
+                   width = GetPlotWidth(input[["anovaMeanPlot-Width"]], input[["anovaMeanPlot-WidthPx"]], ui = TRUE)),
         br(),
         br(),
         hr()
