@@ -38,8 +38,7 @@ RenderMeanPlot <- function(dat, groups, plotColour, plotTitle, plotXlab, plotYla
           axis.text.y.left = element_text(size = 14,
                                           margin = margin(0,5,0,0)),
           plot.margin = unit(c(1, 1, 1, 1),"cm"),
-          panel.border = element_rect(fill=NA)) +
-    coord_cartesian(clip="off")
+          panel.border = element_rect(fill=NA)) 
   
   if("Major" %in% gridlines) {
     gmp <- gmp + theme(panel.grid.major = element_line(colour = "#D9D9D9"))
@@ -50,10 +49,9 @@ RenderMeanPlot <- function(dat, groups, plotColour, plotTitle, plotXlab, plotYla
   }
   
   if(flip == 1) {
-    hist <- hist + coord_flip() +
+    gmp <- gmp + coord_flip(clip="off") +
       labs(x = plotYlab,
-           y = plotXlab) +
-      scale_y_continuous(n.breaks = 10, expand = c(0, 0))
+           y = plotXlab) 
   }
   
   return(gmp)
