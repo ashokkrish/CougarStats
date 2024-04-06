@@ -905,8 +905,8 @@
                                       "Categorical"),
                   choiceNames  = list("Inference about 1 sample\\(\\)", 
                                       "Inference about 2 samples\\(\\)",
-                                      "Inference about more than 2 samples\\(\\)",
-                                      "Inference for Categorical Data (e.g \\( \\chi^2 \\) test, Fisher's Exact test)"),
+                                      "Inference about more than 2 samples (e.g. ANOVA)\\(\\)",
+                                      "Inference for Categorical Data (e.g \\( \\chi^2 \\) test)"),
                   selected     = "1",
                   outline      = TRUE,
                   status       = "primary"
