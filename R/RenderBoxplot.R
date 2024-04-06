@@ -25,8 +25,8 @@ RenderBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, p
           axis.text.y.left = element_blank(),
           plot.margin = unit(c(1, 1, 1, 1),"cm"),
           panel.border = element_rect(fill = NA)) +
-    ylim(-1, 1) +
-    coord_cartesian(clip="off")
+    ylim(-1, 1)
+    
   
   if(length(unique(dat)) == 1) {
     bp <- bp + scale_x_continuous(breaks = dat, limits = c(dat[1] - 1, dat[1] + 1))
@@ -43,7 +43,7 @@ RenderBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, p
   }
   
   if(flip == 1){
-    bp <- bp + coord_flip() +
+    bp <- bp + coord_flip(clip = "off") +
       theme(axis.text.x.bottom = element_blank(),
             axis.text.y.left = element_text(size = 16)) +
       labs(x = plotYlab,
