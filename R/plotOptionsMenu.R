@@ -9,13 +9,18 @@ library(shinyWidgets)
 # options. 
 #
 # ================================================================ #
-# Usage 
+# Example Usage 
 # -----
-# plotOptionsMenuUI(id, plotType = NULL, title = "Plot")
+# in ui.R:
+#   plotOptionsMenuUI(id = "boxplotMenu", plotType = "Boxplot", title = "Plot",
+#                     xlab = "X", ylab = "Y", colour = "#5493DD")
+#
+# in server.R
+#   plotOptionsMenuServer("boxplotMenu")
 #
 # ================================================================ #
-# Arguments 
-# ---------
+# UI Arguments 
+# ------------
 # id:       The id of the namespace. See ?NS for more information.
 #
 # plotType: The type of plot being customized. 
@@ -27,6 +32,11 @@ library(shinyWidgets)
 # xlab:     The default value for the X-Axis label.
 #
 # ylab:     The defualt value for Y-Axis label.
+#
+#
+# Server Arguments 
+# ----------------
+# id:       The id of the namespace. See ?NS for more information.
 #
 # ================================================================ #
 # Customization Options
@@ -141,7 +151,7 @@ plotOptionsMenuUI <- function(id, plotType = NULL, title = "Plot", xlab = "", yl
       p(strong("Orientation")),
       checkboxInput(
         inputId = ns("Flip"),
-        label = "Plot Boxplot Vertically",
+        label = "Plot Vertically",
         value = FALSE
       ),
       
@@ -171,4 +181,28 @@ BoxplotOptions <- function(ns) {
       step = 1
     )
   )
+}
+
+plotOptionsMenuServer <- function(id) {
+  moduleServer(id, function(input, output, session) {
+    
+    #Swap the axis labels
+    observeEvent(input$Flip, {
+      if(!is.null(input$Xlab) && !is.null(input$Ylab)){
+        xlab <- input$Xlab
+        
+        updateTextInput(
+          inputId = "Xlab",
+          value = input$Ylab
+        )
+        
+        updateTextInput(
+          inputId = "Ylab",
+          value = xlab
+        )
+      } 
+      
+    }, ignoreInit = TRUE)
+
+  })
 }
