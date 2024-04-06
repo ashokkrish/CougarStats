@@ -1793,7 +1793,8 @@
                               "QQ Plot of Residuals",
                               "Plot Group Means"),
                   multiple = TRUE,
-                  selected = c("Side-by-side Boxplot"),
+                  selected = c("Side-by-side Boxplot",
+                               "Plot Group Means"),
                   options = list(hideSelected = FALSE,
                                  placeholder = 'Select graph(s) to display'),
                 )
