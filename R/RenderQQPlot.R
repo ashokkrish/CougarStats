@@ -35,7 +35,9 @@ RenderQQPlot <- function(dat, plotColour, plotTitle, plotXlab, plotYlab, gridlin
   
   if(flip == 1) {
     qp <- ggpar(qp,
-                orientation = "horiz")
+                orientation = "horiz",
+                xlab = plotYlab,
+                ylab = plotXlab)
   }
 
   return(qp)
