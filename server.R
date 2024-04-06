@@ -1107,6 +1107,11 @@ server <- function(session, input, output) {
   #  -------------------------------------------------------------------- #
   
   
+  ### Module Server Elements ----
+  # --------------------------------------------------------------------- #
+  plotOptionsMenuServer("dsBoxplot")
+  plotOptionsMenuServer("dsHisto")
+  
   ### Non-Reactive Functions ----
   # --------------------------------------------------------------------- #
   
@@ -4667,6 +4672,13 @@ server <- function(session, input, output) {
   ## ----------------- Statistical Inference functions ------------------
   #  -------------------------------------------------------------------- #
   
+  ### Module Server elements ----
+  plotOptionsMenuServer("oneMeanBoxplot")
+  plotOptionsMenuServer("indMeansBoxplot")
+  plotOptionsMenuServer("anovaBoxplot")
+  plotOptionsMenuServer("anovaHistogram")
+  plotOptionsMenuServer("anovaQQplot")
+  plotOptionsMenuServer("anovaMeanPlot")
   
   ### Non-Reactive Functions ----
   # --------------------------------------------------------------------- #
@@ -9450,7 +9462,7 @@ server <- function(session, input, output) {
       show(id = "anovaUploadInputs")
     }
   })
-  
+
   observeEvent(input$chisquareDimension, {
     if( input$chisquareDimension != '2 x 2') {
       shinyjs::disable(selector = '#chisquareMethod input[value="Fisher"]')
