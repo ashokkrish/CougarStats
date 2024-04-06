@@ -67,7 +67,7 @@
               #   inline       = TRUE
               # ), #,width = '1000px'),
               
-              prettyRadioButtons(
+              radioButtons(
                 inputId      = "dataInput",
                 label        = strong("Data"),
                 choiceValues = list("Enter Raw Data", 
@@ -75,10 +75,7 @@
                 choiceNames  = list("Enter Raw Data", 
                                     "Upload Data"),
                 selected     = "Enter Raw Data", #character(0), #
-                inline       = TRUE,
-                outline      = TRUE,
-                status       = "primary"
-              ),
+                inline       = TRUE),
                                                            
               conditionalPanel(
                 condition = "input.dataInput == 'Enter Raw Data'",
@@ -197,7 +194,7 @@
               condition = "input.dropDownMenu == 'Probability Distributions'",
               style = "display: none;",
                                                            
-              prettyRadioButtons(
+              radioButtons(
                 inputId  = "probability", 
                 label    = strong("Distribution"), 
                 choices  = c("Contingency Table",
@@ -205,10 +202,7 @@
                             "Poisson", 
                             "Normal"), 
                 selected = NULL, 
-                inline   = TRUE,
-                outline  = TRUE,
-                status   = "primary"
-              ),
+                inline   = TRUE),
               
               
               #    ---------------------------- #
@@ -217,17 +211,14 @@
               conditionalPanel(id = "contingencyPanel", 
                 condition = "input.probability == 'Contingency Table'",
                                                                             
-                prettyRadioButtons(
+                radioButtons(
                   inputId = "cTableDimension",
                   label   = strong("Dimension"),
                   choices = c("2 x 2",
                               "2 x 3",
                               "3 x 2",
                               "3 x 3"),
-                  inline  = TRUE,
-                  outline = TRUE,
-                  status  = "primary"
-                ),
+                  inline  = TRUE),
                                                                             
                 # radioButtons(
                 #   inputId = "cTableType",
@@ -373,17 +364,14 @@
                   # ), # Probability Distribution            
                 ), # 3x3
                                                                             
-                prettyRadioButtons(
+                radioButtons(
                   inputId = "cTableProb",
                   label   = strong("Probabilities"),
                   choices = c("Marginal",
                               "Joint",
                               "Union",
                               "Conditional"),
-                  inline = TRUE,
-                  outline      = TRUE,
-                  status       = "primary"
-                ),
+                  inline = TRUE),
                                                                             
                 actionButton(
                   inputId = "gocTable", 
@@ -422,10 +410,11 @@
                   max     = 1, 
                   step    = 0.00001
                 ),
-                                                                            
-                prettyRadioButtons(
+                
+                HTML("<label class='si-label'><b>Probability</b></label>"),                                                            
+                radioButtons(
                   inputId      = "calcBinom",
-                  label        = strong("Probability"),
+                  label        = NULL,
                   choiceValues = list("exact", 
                                       "cumulative", 
                                       "upperTail", 
@@ -438,10 +427,7 @@
                                      "\\(P(X \\gt x)\\)", 
                                      "\\(P(X < x)\\)", 
                                      "\\(P(x_1 \\leq X \\leq x_2)\\)"),
-                  inline       = FALSE,
-                  outline      = TRUE,
-                  status       = "primary"
-                ), #,width = '1000px'),
+                  inline       = FALSE), #,width = '1000px'),
                                                                             
                 conditionalPanel(
                   condition = "input.calcBinom != 'between'",
@@ -514,10 +500,11 @@
                   label   = strong("Average (\\( \\mu\\))"),
                   value   = 4.5
                 ),
-                                                                            
-                prettyRadioButtons(
+                
+                HTML("<label class='si-label'><b>Probability</b></label>"),                                                            
+                radioButtons(
                   inputId      = "calcPoisson",
-                  label        = strong("Probability"),
+                  label        = NULL,
                   choiceValues = list("exact", 
                                       "cumulative", 
                                       "upperTail", 
@@ -530,10 +517,7 @@
                                       "\\(P(X \\gt x)\\)", 
                                       "\\(P(X < x)\\)", 
                                       "\\(P(x_1 \\leq X \\leq x_2)\\)"),
-                  inline       = FALSE,
-                  outline      = TRUE,
-                  status       = "primary"
-                ), #,width = '1000px'),
+                  inline       = FALSE), #,width = '1000px'),
                                                                             
                 conditionalPanel(
                   condition = "input.calcPoisson != 'between'",
@@ -613,15 +597,12 @@
                   step    = 0.00001
                 ),
                                                                             
-                prettyRadioButtons(
+                radioButtons(
                   inputId      = "calcQuantiles",
                   label        = strong("Type of Calculation"),
                   choiceValues = list("Probability", "Quantile"),
                   choiceNames  = list("Probability", "Quantile"),
-                  inline       = TRUE,
-                  outline      = TRUE,
-                  status       = "primary"
-                ),
+                  inline       = TRUE),
                                                                             
                 conditionalPanel( ##### Probability ----
                   condition = "input.calcQuantiles == 'Probability'",
@@ -634,20 +615,18 @@
                                                                               
                   conditionalPanel(
                     condition = "input.sampMeanDistr == 0",
-                                                                                
-                    prettyRadioButtons(
+                            
+                    HTML("<label class='si-label'><b>Probability</b></label>"),
+                    radioButtons(
                       inputId      = "calcNormal",
-                      label        = strong("Probability"), 
+                      label        = NULL, 
                       choiceValues = list("cumulative", 
                                           "upperTail", 
                                           "between"),
                       choiceNames  = list("\\(P(X \\leq x)\\) or \\(P(X < x)\\)", 
                                           "\\(P(X \\ge x)\\) or \\(P(X \\gt x)\\)", 
                                           "\\(P(x_1 \\leq X \\leq x_2)\\)"),
-                      inline       = FALSE,
-                      outline      = TRUE,
-                      status       = "primary"
-                    ), #,width = '1000px'),
+                      inline       = FALSE),
                                                                                 
                     conditionalPanel(
                       condition = "input.calcNormal != 'between'",
@@ -681,20 +660,18 @@
                                                                               
                   conditionalPanel(
                     condition = "input.sampMeanDistr == 1",
-                                                                                
-                    prettyRadioButtons(
+                              
+                    HTML("<label class='si-label'><b>Probability</b></label>"),                                                  
+                    radioButtons(
                       inputId      = "calcNormSampDistr",
-                      label        = strong("Probability"), 
+                      label        = NULL, 
                       choiceValues = list("cumulative", 
                                           "upperTail", 
                                           "between"),
                       choiceNames  = list("\\(P(\\bar{X} \\leq x)\\) or \\(P(\\bar{X} < x)\\)", 
                                           "\\(P(\\bar{X} \\ge x)\\) or \\(P(\\bar{X} \\gt x)\\)", 
                                           "\\(P(x_1 \\leq \\bar{X} \\leq x_2)\\)"),
-                      inline       = FALSE,
-                      outline      = TRUE,
-                      status       = "primary"
-                    ), #,width = '1000px'),
+                      inline       = FALSE), #,width = '1000px'),
                                                                                 
                     conditionalPanel(
                       condition = "input.calcNormSampDistr != 'between'",
@@ -749,18 +726,15 @@
                                                                             
                 conditionalPanel( ##### Quantile ----
                   condition = "input.calcQuantiles == 'Quantile'",
-                                                                              
-                  prettyRadioButtons(
+                     
+                  radioButtons(
                     inputId      = "calcQuartiles",
                     label        = NULL,
                     choiceValues = list("Quartiles", 
                                         "Percentile"),
                     choiceNames  = list("Quartiles \\( (Q_{1}, Q_{2}, Q_{3}) \\)", 
                                         "Percentile"),
-                    inline       = TRUE,
-                    outline      = TRUE,
-                    status       = "primary"
-                  ),
+                    inline       = TRUE),
                                                                               
                   conditionalPanel(
                     condition = "input.calcQuartiles == 'Percentile'",
@@ -803,34 +777,40 @@
               condition = "input.dropDownMenu == 'Sample Size Estimation'",
               style = "display: none;",
               
-              htmltools::tagAppendAttributes(
-                prettyRadioButtons(
-                  inputId      = "sampSizeEstParameter",
-                  label        = strong("Parameter of Interest"),
-                  choiceValues = list("Population Mean", 
-                                      "Population Proportion"),
-                  choiceNames  = list("Population Mean (\\( \\mu \\)) ", 
-                                      "Population Proportion (\\( p\\))"),
-                  selected     = "Population Mean", #character(0), #
-                  inline       = TRUE,
-                  outline      = TRUE,
-                  status       = "primary"
-                ), #,width = '1000px'),
-                
-                class = "latexRadio"
-              ),                                             
-              
-              prettyRadioButtons(
+              # htmltools::tagAppendAttributes(
+              #   prettyRadioButtons(
+              #     inputId      = "sampSizeEstParameter",
+              #     label        = strong("Parameter of Interest"),
+              #     choiceValues = list("Population Mean",
+              #                         "Population Proportion"),
+              #     choiceNames  = list("Population Mean (\\( \\mu \\)) ",
+              #                         "Population Proportion (\\( p\\))"),
+              #     selected     = "Population Mean", #character(0), #
+              #     inline       = TRUE,
+              #     outline      = TRUE,
+              #     status       = "primary"
+              #   ), #,width = '1000px'),
+              # 
+              #   class = "latexRadio"
+              # ),
+              radioButtons(
+                inputId      = "sampSizeEstParameter",
+                label        = strong("Parameter of Interest"),
+                choiceValues = list("Population Mean",
+                                    "Population Proportion"),
+                choiceNames  = list("Population Mean (\\( \\mu \\)) ",
+                                    "Population Proportion (\\( p\\))"),
+                selected     = "Population Mean", #character(0), #
+                inline       = TRUE),
+
+              radioButtons(
                 inputId  = "confLeveln",
                 label    = strong("Confidence Level (\\( 1- \\alpha\\))"),
                 choices  = c("90%", 
                              "95%",
                              "99%"),
                 selected = c("95%"),
-                inline   = TRUE,
-                outline  = TRUE,
-                status   = "primary"
-              ),
+                inline   = TRUE),
                                                            
               conditionalPanel(
                 condition = "input.sampSizeEstParameter == 'Population Mean'",
@@ -895,26 +875,20 @@
               style     = "display: none;",
                             
               HTML("<label class='si-label'><b>Methodology</b></label>"),
-              htmltools::tagAppendAttributes(
-                prettyRadioButtons(
-                  inputId      = "siMethod",
-                  label        = NULL,
-                  choiceValues = list("1", 
-                                      "2",
-                                      "Multiple",
-                                      "Categorical"),
-                  choiceNames  = list("Inference about 1 sample\\(\\)", 
-                                      "Inference about 2 samples\\(\\)",
-                                      "Inference about more than 2 samples (e.g. ANOVA)\\(\\)",
-                                      "Inference for Categorical Data (e.g \\( \\chi^2 \\) test)"),
-                  selected     = "1",
-                  outline      = TRUE,
-                  status       = "primary"
-                ), #,width = '1000px'),
-                
-                class = "latexRadio"
-              ),
-                                                           
+              
+              radioButtons(
+                inputId      = "siMethod",
+                label        = NULL,
+                choiceValues = list("1", 
+                                    "2",
+                                    "Multiple",
+                                    "Categorical"),
+                choiceNames  = list("Inference about 1 sample\\(\\)", 
+                                    "Inference about 2 samples\\(\\)",
+                                    "Inference about more than 2 samples (e.g. ANOVA)\\(\\)",
+                                    "Inference for Categorical Data (e.g \\( \\chi^2 \\) test)"),
+                selected     = "1"), #,width = '1000px'),
+              
               # radioButtons(inputId = "popuDistribution",
               #              label = strong("Analysis Type"),
               #              choiceValues = list("Parametric analysis", "Non-parametric analysis"),
@@ -935,27 +909,20 @@
               conditionalPanel( #### 1 Sample ----
                 condition = "input.siMethod == '1'",
                                                                            
-                htmltools::tagAppendAttributes(
-                  prettyRadioButtons(
-                    inputId      = "popuParameter",
-                    label        = strong("Parameter of Interest"),
-                    choiceValues = list("Population Mean", 
-                                        "Population Proportion"),
-                    choiceNames  = list("Population Mean (\\( \\mu \\)) ", 
-                                        "Population Proportion (\\( p\\))"),
-                    selected     = "Population Mean", #character(0), #
-                    inline       = TRUE,
-                    outline      = TRUE,
-                    status       = "primary"
-                  ), #,width = '1000px'),
-                  
-                  class = "latexRadio"
-                ),
+                radioButtons(
+                  inputId      = "popuParameter",
+                  label        = strong("Parameter of Interest"),
+                  choiceValues = list("Population Mean", 
+                                      "Population Proportion"),
+                  choiceNames  = list("Population Mean (\\( \\mu \\)) ", 
+                                      "Population Proportion (\\( p\\))"),
+                  selected     = "Population Mean", #character(0), #
+                  inline       = TRUE), #,width = '1000px'),
                                                                              
                 conditionalPanel( ##### Mean ----
                   condition = "input.popuParameter == 'Population Mean'",
                                                                                                
-                  prettyRadioButtons(
+                  radioButtons(
                     inputId      = "dataAvailability",
                     label        = strong("Data Availability"),
                     choiceValues = list("Summarized Data", 
@@ -965,10 +932,7 @@
                                         "Enter Raw Data",
                                         "Upload Data"),
                     selected     = "Summarized Data", # character(0), # 
-                    inline       = TRUE,
-                    outline      = TRUE,
-                    status       = "primary"
-                  ), #,width = '1000px'),
+                    inline       = TRUE), #,width = '1000px'),
                                                                                                
                   conditionalPanel( ###### Summarized ----
                     condition = "input.dataAvailability == 'Summarized Data'",
@@ -988,7 +952,7 @@
                       step    = 0.00001
                     ),
                                                                                                                  
-                    prettyRadioButtons(
+                    radioButtons(
                       inputId      = "sigmaKnown",
                       label        = strong("Is Population Standard Deviation (\\( \\sigma\\)) known?"),
                       choiceValues = list("Known", 
@@ -996,10 +960,7 @@
                       choiceNames  = list("Known", 
                                           "Unknown"),
                       selected     = "Known", #character(0),
-                      inline       = TRUE,
-                      outline      = TRUE,
-                      status       = "primary"
-                    ), #,width = '1000px'),
+                      inline       = TRUE), #,width = '1000px'),
                                                                                                                  
                     conditionalPanel( ####### " Known ----
                       condition = "input.sigmaKnown == 'Known'",
@@ -1037,7 +998,7 @@
                       rows        = 3
                     ),
                                                                                                                  
-                    prettyRadioButtons(
+                    radioButtons(
                       inputId      = "sigmaKnownRaw",
                       label        = strong("Population Standard Deviation (\\( \\sigma\\))"),
                       choiceValues = list("rawKnown", 
@@ -1045,10 +1006,7 @@
                       choiceNames  = list("Known", 
                                           "Unknown"),
                       selected     = "rawUnknown",
-                      inline       = TRUE,
-                      outline      = TRUE,
-                      status       = "primary"
-                    ), #,width = '1000px'),
+                      inline       = TRUE), #,width = '1000px'),
                                                                                                                  
                     conditionalPanel( ###### " Known ----
                       condition = "input.sigmaKnownRaw == 'rawKnown'",
@@ -1089,7 +1047,7 @@
                                      onInitialize = I('function() { this.setValue(""); }'))
                     ),
                                                                                                  
-                    prettyRadioButtons(
+                    radioButtons(
                       inputId      = "sigmaKnownUpload",
                       label        = strong("Population Standard Deviation (\\( \\sigma\\))"),
                       choiceValues = list("Known", 
@@ -1097,10 +1055,7 @@
                       choiceNames  = list("Known", 
                                           "Unknown"),
                       selected     = "Unknown",
-                      inline       = TRUE,
-                      outline      = TRUE,
-                      status       = "primary"
-                    ),
+                      inline       = TRUE),
                                                                                                  
                     conditionalPanel( ###### " Known ----
                       condition = "input.sigmaKnownUpload == 'Known'",
@@ -1139,7 +1094,7 @@
                 #conditionalPanel(
                 #   condition = "input.dataAvailability == 'Summarized Data' || input.dataAvailability == 'Enter Raw Data' || input.popuParameter == 'Population Proportion'",
                                                                            
-                prettyRadioButtons(
+                radioButtons(
                   inputId      = "inferenceType",
                   label        = strong("Inference Type"),
                   choiceValues = list("Confidence Interval", 
@@ -1147,41 +1102,32 @@
                   choiceNames  = list("Confidence Interval", 
                                       "Hypothesis Testing"),
                   selected     = "Confidence Interval", #character(0), # 
-                  inline       = TRUE,
-                  outline      = TRUE,
-                  status       = "primary"
-                ), #,width = '1000px'),
+                  inline       = TRUE), #,width = '1000px'),
                                                                              
                 conditionalPanel(
                   condition = "input.inferenceType == 'Confidence Interval'",
                                                                                
-                  prettyRadioButtons(
+                  radioButtons(
                     inputId  = "confidenceLevel", 
                     label    = strong("Confidence Level (\\( 1- \\alpha\\))"), 
                     choices  = c("90%", 
                                  "95%",
                                  "99%"), 
                     selected = c("95%"),
-                    inline   = TRUE,
-                    outline  = TRUE,
-                    status   = "primary"
-                  )
+                    inline   = TRUE)
                 ), # Confidence Interval
                                                                              
                 conditionalPanel(
                   condition = "input.inferenceType == 'Hypothesis Testing'",
                                                                              
-                  prettyRadioButtons(
+                  radioButtons(
                     inputId  = "significanceLevel", 
                     label    = strong("Significance Level (\\( \\alpha\\))"), 
                     choices  = c("10%", 
                                  "5%",
                                  "1%"),
                     selected = c("5%"),
-                    inline   = TRUE,
-                    outline  = TRUE,
-                    status   = "primary"
-                  ),
+                    inline   = TRUE),
                                                                                
                   conditionalPanel(
                     condition = "input.popuParameter == 'Population Mean'",
@@ -1236,30 +1182,23 @@
                         
                 HTML("<label class='si-label'><b>Parameter of Interest</b></label>"),                                   
                 
-                htmltools::tagAppendAttributes(
-                  prettyRadioButtons(
-                    inputId      = "popuParameters",
-                    label        = NULL,
-                    choiceValues = list("Independent Population Means", 
-                                        "Dependent Population Means", 
-                                        "Population Proportions"),
-                    choiceNames  = list("Two Independent Populations (\\( \\mu_{1} - \\mu_{2} \\))", 
-                                        "Dependent (Paired) Populations (\\( \\mu_{d} \\))", 
-                                        "Two Population Proportions (\\( p_{1} - p_{2}\\))"),
-                    selected     = "Independent Population Means", #character(0), #
-                    inline       = FALSE,
-                    outline      = TRUE,
-                    status       = "primary"
-                  ), #,width = '1000px'),
-                  
-                  class = "latexRadio"
-                ),
+                radioButtons(
+                  inputId      = "popuParameters",
+                  label        = NULL,
+                  choiceValues = list("Independent Population Means", 
+                                      "Dependent Population Means", 
+                                      "Population Proportions"),
+                  choiceNames  = list("Two Independent Populations (\\( \\mu_{1} - \\mu_{2} \\))", 
+                                      "Dependent (Paired) Populations (\\( \\mu_{d} \\))", 
+                                      "Two Population Proportions (\\( p_{1} - p_{2}\\))"),
+                  selected     = "Independent Population Means", #character(0), #
+                  inline       = FALSE), #,width = '1000px'),
                 
                                                              
                 conditionalPanel( ##### Ind Pop Means ----
                   condition = "input.popuParameters == 'Independent Population Means'",
                                                                
-                  prettyRadioButtons(
+                  radioButtons(
                     inputId      = "dataAvailability2",
                     label        = strong("Data Availability"),
                     choiceValues = list("Summarized Data", 
@@ -1269,10 +1208,7 @@
                                         "Enter Raw Data",
                                         "Upload Data"),
                     selected     = "Summarized Data", #character(0), # 
-                    inline       = TRUE,
-                    outline      = TRUE,
-                    status       = "primary"
-                  ), #,width = '1000px'),
+                    inline       = TRUE), #,width = '1000px'),
                                                                
                   conditionalPanel(
                     condition = "input.dataAvailability2 == 'Summarized Data'",
@@ -1307,7 +1243,7 @@
                       step    = 0.00001
                     ),
                                                                  
-                    prettyRadioButtons(
+                    radioButtons(
                       inputId      = "bothsigmaKnown",
                       label        = strong("Are Population Standard Deviations (\\( \\sigma_{1}\\) and \\( \\sigma_{2}\\)) known?"),
                       choiceValues = list("bothKnown", 
@@ -1315,10 +1251,7 @@
                       choiceNames  = list("Both Known", 
                                           "Both Unknown"),
                       selected     = "bothKnown",
-                      inline       = TRUE,
-                      outline      = TRUE,
-                      status       = "primary"
-                    ), #,width = '1000px'),
+                      inline       = TRUE), #,width = '1000px'),
                                                                  
                     conditionalPanel(
                       condition = "input.bothsigmaKnown == 'bothKnown'",
@@ -1343,7 +1276,7 @@
                     conditionalPanel(
                       condition = "input.bothsigmaKnown == 'bothUnknown'",
                                                                    
-                      prettyRadioButtons(
+                      radioButtons(
                         inputId      = "bothsigmaEqual",
                         label        = strong("Assume Population Variances are equal (\\( \\sigma_{1}^2\\) = \\( \\sigma_{2}^2\\))?"),
                         choiceValues = list("TRUE", 
@@ -1351,10 +1284,7 @@
                         choiceNames  = list("Yes (Pooled)", 
                                             "No (Welch-Satterthwaite df)"),
                         selected     = "TRUE",
-                        inline       = TRUE,
-                        outline      = TRUE,
-                        status       = "primary"
-                      ), #,width = '1000px'),
+                        inline       = TRUE), #,width = '1000px'),
                                                                    
                       numericInput(
                         inputId = "sampSD1",
@@ -1393,7 +1323,7 @@
                       rows        = 3
                     ),
                                                                  
-                    prettyRadioButtons(
+                    radioButtons(
                       inputId      = "bothsigmaKnownRaw",
                       label        = strong("Are Population Standard Deviations (\\( \\sigma_{1}\\) and \\( \\sigma_{2}\\)) known?"),
                       choiceValues = list("bothKnown", 
@@ -1401,15 +1331,12 @@
                       choiceNames  = list("Both Known", 
                                           "Both Unknown"),
                       selected     = "bothUnknown",
-                      inline       = TRUE,
-                      outline      = TRUE,
-                      status       = "primary"
-                    ), #,width = '1000px'),
+                      inline       = TRUE), #,width = '1000px'),
                                                                  
                     conditionalPanel(
                       condition = "input.bothsigmaKnownRaw == 'bothUnknown'",
                                                                  
-                      prettyRadioButtons(
+                      radioButtons(
                         inputId      = "bothsigmaEqualRaw",
                         label        = strong("Assume Population Variances are equal (\\( \\sigma_{1}^2\\) = \\( \\sigma_{2}^2\\))?"),
                         choiceValues = list("TRUE", 
@@ -1417,10 +1344,7 @@
                         choiceNames  = list("Yes (Pooled)", 
                                             "No (Welch-Satterthwaite df)"),
                         selected     = "TRUE",
-                        inline       = TRUE,
-                        outline      = TRUE,
-                        status       = "primary"
-                      )
+                        inline       = TRUE)
                     ), # Sigma Both Unknown
                                                                  
                     conditionalPanel(
@@ -1474,7 +1398,7 @@
                                      onInitialize = I('function() { this.setValue(""); }'))
                     ),
                                                                
-                    prettyRadioButtons(
+                    radioButtons(
                       inputId      = "bothsigmaKnownUpload",
                       label        = strong("Are Population Standard Deviations (\\( \\sigma_{1}\\) and \\( \\sigma_{2}\\)) known?"),
                       choiceValues = list("bothKnown", 
@@ -1482,15 +1406,12 @@
                       choiceNames  = list("Both Known", 
                                           "Both Unknown"),
                       selected     = "bothUnknown",
-                      inline       = TRUE,
-                      outline      = TRUE,
-                      status       = "primary"
-                    ), #,width = '1000px'),
+                      inline       = TRUE), #,width = '1000px'),
                                                                  
                     conditionalPanel(
                       condition = "input.bothsigmaKnownUpload == 'bothUnknown'",
                                                                    
-                      prettyRadioButtons(
+                      radioButtons(
                         inputId      = "bothsigmaEqualUpload",
                         label        = strong("Assume Population Variances are equal (\\( \\sigma_{1}^2\\) = \\( \\sigma_{2}^2\\))?"),
                         choiceValues = list("TRUE", 
@@ -1498,10 +1419,7 @@
                         choiceNames  = list("Yes (Pooled)", 
                                             "No (Welch-Satterthwaite df)"),
                         selected     = "TRUE",
-                        inline       = TRUE,
-                        outline      = TRUE,
-                        status       = "primary"
-                      )
+                        inline       = TRUE)
                     ), # Sigma Both Unknown
                                                                  
                     conditionalPanel(
@@ -1529,7 +1447,7 @@
                 conditionalPanel( ##### Dep Pop Means ----
                   condition = "input.popuParameters == 'Dependent Population Means'",
                                                                               
-                  prettyRadioButtons(
+                  radioButtons(
                     inputId      = "dataTypeDependent",
                     label        = strong("Data Availability"),
                     choiceValues = list("Enter Raw Data",
@@ -1537,10 +1455,7 @@
                     choiceNames  = list("Enter Raw Data",
                                         "Upload Data"),
                     selected     = "Enter Raw Data", #character(0), # 
-                    inline       = TRUE,
-                    outline      = TRUE,
-                    status       = "primary"
-                  ), #,width = '1000px'),
+                    inline       = TRUE), #,width = '1000px'),
                                                                               
                   conditionalPanel(
                     condition = "input.dataTypeDependent == 'Enter Raw Data'",
@@ -1630,7 +1545,7 @@
                   ),
                 ), # Two Population Proportions
 
-                prettyRadioButtons(
+                radioButtons(
                   inputId      = "inferenceType2",
                   label        = strong("Inference Type"),
                   choiceValues = list("Confidence Interval", 
@@ -1638,41 +1553,32 @@
                   choiceNames  = list("Confidence Interval", 
                                       "Hypothesis Testing"),
                   selected     = "Confidence Interval", #character(0), # 
-                  inline       = TRUE,
-                  outline      = TRUE,
-                  status       = "primary"
-                ), #,width = '1000px'),
+                  inline       = TRUE), #,width = '1000px'),
                                                                
                 conditionalPanel(
                   condition = "input.inferenceType2 == 'Confidence Interval'",
                                                                  
-                  prettyRadioButtons(
+                  radioButtons(
                     inputId  = "confidenceLevel2",
                     label    = strong("Confidence Level (\\( 1- \\alpha\\))"),
                     choices  = c("90%", 
                                  "95%",
                                  "99%"),
                     selected = c("95%"),
-                    inline   = TRUE,
-                    outline  = TRUE,
-                    status   = "primary"
-                  )
+                    inline   = TRUE)
                 ), # Confidence Interval
                                                                
                 conditionalPanel(
                   condition = "input.inferenceType2 == 'Hypothesis Testing'",
                                                                  
-                  prettyRadioButtons(
+                  radioButtons(
                     inputId  = "significanceLevel2", 
                     label    = strong("Significance Level (\\( \\alpha\\))"), 
                     choices  = c("10%", 
                                  "5%",
                                  "1%"),
                     selected = c("5%"),
-                    inline   = TRUE,
-                    outline  = TRUE,
-                    status   = "primary"
-                  ),
+                    inline   = TRUE),
                                                                  
                   selectizeInput(
                     inputId  = "altHypothesis2",
@@ -1715,16 +1621,13 @@
                 hidden(tagList(
                   div(id = "anovaUploadInputs",
                       
-                    prettyRadioButtons(
+                    radioButtons(
                       inputId = "anovaFormat",
                       label   = strong("Data Format"),
                       choiceNames = c("Values in multiple columns",
                                       "Responses and factors stacked in two columns"),
                       choiceValues = c("Multiple",
-                                       "Stacked"),
-                      outline = TRUE,
-                      status  = "primary"
-                    ),
+                                       "Stacked")),
                       
                     conditionalPanel(
                       condition = "input.anovaFormat == 'Multiple'",
@@ -1765,17 +1668,14 @@
                   ),  
                 )),
                 
-                prettyRadioButtons(
+                radioButtons(
                   inputId  = "anovaSigLvl", 
                   label    = strong("Significance Level (\\( \\alpha\\))"), 
                   choices  = c("10%", 
                                "5%",
                                "1%"),
                   selected = "5%",
-                  inline   = TRUE,
-                  outline  = TRUE,
-                  status   = "primary"
-                ),
+                  inline   = TRUE),
                 
                 checkboxGroupInput(
                   inputId = "anovaOptions",
@@ -1804,17 +1704,14 @@
               conditionalPanel( #### Chi-Square ----
                 condition = 'input.siMethod == "Categorical"',
                                 
-                prettyRadioButtons(
+                radioButtons(
                   inputId = "chisquareDimension",
                   label   = strong("Dimension"),
                   choices = c("2 x 2",
                               "2 x 3",
                               "3 x 2",
                               "3 x 3"),
-                  inline  = TRUE,
-                  outline = TRUE,
-                  status  = "primary"
-                ),
+                  inline  = TRUE),
                                 
                 conditionalPanel(
                   condition = "input.chisquareDimension == '2 x 2'",
@@ -1906,7 +1803,7 @@
                                 #   add_editable_column(columns = -1:3),
                                 # br(),
                                 
-                prettyRadioButtons(
+                radioButtons(
                   inputId  = "chisquareMethod", 
                   label    = strong("Hypothesis Test"), 
                   choiceNames  = c("Chi-Square test for independence", 
@@ -1914,10 +1811,7 @@
                   choiceValues = c("Chi-Square",
                                    "Fisher"),
                   selected = c("Chi-Square"),
-                  inline   = TRUE,
-                  outline  = TRUE,
-                  status   = "primary"
-                ),
+                  inline   = TRUE),
                                 
                 conditionalPanel(
                   condition = 'input.chisquareMethod == "Chi-Square" && input.chisquareDimension == "2 x 2"',
@@ -1935,17 +1829,14 @@
                   # ),
                 ),
                 
-                prettyRadioButtons(
+                radioButtons(
                   inputId  = "chisquareSigLvl", 
                   label    = strong("Significance Level (\\( \\alpha\\))"), 
                   choices  = c("10%", 
                                "5%",
                                "1%"),
                   selected = c("5%"),
-                  inline   = TRUE,
-                  outline  = TRUE,
-                  status   = "primary"
-                ),
+                  inline   = TRUE),
               ),
 
               actionButton(
@@ -1970,7 +1861,7 @@
               condition = "input.dropDownMenu == 'Regression and Correlation'",
               style     = "display: none;",
                                                            
-              prettyRadioButtons(
+              radioButtons(
                 inputId      = "simple_vs_multiple",
                 label        = strong("Regression Type"),
                 choiceValues = list("SLR"), 
@@ -1978,15 +1869,12 @@
                 choiceNames  = list("Simple Linear Regression and Correlation Analysis"), 
                                     # "Multiple Linear Regression"),
                 selected     = "SLR", #character(0), # 
-                inline       = TRUE,
-                outline      = TRUE,
-                status       = "primary"
-              ), #,width = '1000px'),
+                inline       = TRUE), #,width = '1000px'),
                                                            
               conditionalPanel(
                 condition = "input.simple_vs_multiple == 'SLR'",
                                                            
-                prettyRadioButtons(
+                radioButtons(
                   inputId      = "dataRegCor",
                   label        = strong("Data"),
                   choiceValues = list("Enter Raw Data", 
@@ -1994,10 +1882,7 @@
                   choiceNames  = list("Enter Raw Data", 
                                       "Upload Data"),
                   selected     = "Enter Raw Data", #character(0), #
-                  inline       = TRUE,
-                  outline      = TRUE,
-                  status       = "primary"
-                ), #,width = '1000px'),
+                  inline       = TRUE), #,width = '1000px'),
                                                            
                 conditionalPanel(
                   condition = "input.dataRegCor == 'Enter Raw Data'",
