@@ -13,7 +13,7 @@ RenderMeanPlot <- function(dat, groups, plotColour, plotTitle, plotXlab, plotYla
     ungroup()
   
   gmp <- ggplot(data_plot, aes(x=ind, y=m, ymin=ci_low, ymax=ci_hi)) +
-    geom_line(aes(group = 1), size = 1) +
+    geom_line(aes(group = 1), linewidth = 1) +
     geom_errorbar(width = 0.2, color = plotColour) + 
     geom_point(size=2) +
     labs(title = plotTitle,
