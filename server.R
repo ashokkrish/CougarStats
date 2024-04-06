@@ -6826,11 +6826,12 @@ server <- function(session, input, output) {
         factorNames[row] <- names[row,1]
       }
     }
+    anovaData <- na.omit(anovaData)
     totalCount <- nrow(anovaData)
     numFactors <- length(factorNames)
     anovaTest <- aov(formula = values ~ ind, data = anovaData)
     
-    results$data <- na.omit(anovaData)
+    results$data <- anovaData
     results$count <- totalCount
     results$factorCol <- factorCol
     results$numFactors <- numFactors
