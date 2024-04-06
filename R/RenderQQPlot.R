@@ -14,9 +14,9 @@ RenderQQPlot <- function(dat, plotColour, plotTitle, plotXlab, plotYlab, gridlin
       ggtheme = theme(
         plot.title = element_text(hjust = 0.5,
                                   margin = margin(0,0,10,0)),
-        axis.text.x.bottom = element_text(size = 14,
+        axis.text.x.bottom = element_text(size = 16,
                                           margin = margin(5,0,5,0)),
-        axis.text.y.left = element_text(size = 14,
+        axis.text.y.left = element_text(size = 16,
                                         margin = margin(0,5,0,5)),
         panel.border = element_rect(fill=NA))
     )

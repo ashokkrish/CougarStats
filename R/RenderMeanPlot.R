@@ -33,9 +33,9 @@ RenderMeanPlot <- function(dat, groups, plotColour, plotTitle, plotXlab, plotYla
                                       face = "bold", 
                                       angle = 90,
                                       margin = margin(0,5,0,0)),
-          axis.text.x.bottom = element_text(size = 14,
+          axis.text.x.bottom = element_text(size = 16,
                                             margin = margin(5,0,0,0)),
-          axis.text.y.left = element_text(size = 14,
+          axis.text.y.left = element_text(size = 16,
                                           margin = margin(0,5,0,0)),
           plot.margin = unit(c(1, 1, 1, 1),"cm"),
           panel.border = element_rect(fill=NA)) 
