@@ -6002,7 +6002,7 @@ server <- function(session, input, output) {
     
     cvOutput <- tagList(
       p(tags$b("Using Critical Value Method:")),
-      sprintf("Critical Value \\( = \\chi^2_{\\alpha, \\, df} = \\chi^2_{\\alpha \\, (r - 1) \\times (c - 1)}
+      sprintf("Critical Value \\( = \\chi^2_{\\alpha, \\, df} = \\chi^2_{\\alpha, \\, (r - 1) \\times (c - 1)}
               = \\chi^2_{%s, \\, (%s - 1) \\times (%s - 1)} =  \\chi^2_{%s, \\, %s} = %s \\)",
               alpha,
               nrow(chiSqActiveData()$data),
