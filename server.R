@@ -2244,10 +2244,10 @@ server <- function(session, input, output) {
                 fontface = "bold",
                 check_overlap = TRUE,
                 vjust = 1.5) +
-      geom_segment(data = df,
-                   aes(x = -3, xend = 3, y = 0, yend = 0),
+      geom_segment(data = data.frame(x1 = -3, x2 = 3, y1 = 0, y2 = 0),
+                   aes(x = x1, xend = x2, y = y1, yend = y2),
                    linetype = "solid",
-                   linewidth = 0.5,
+                   linewidth = 1,
                    color='#021C38') +
       coord_cartesian(clip="off") +
       PlotTitle(standDev) +
@@ -2310,10 +2310,10 @@ server <- function(session, input, output) {
                 fontface = "bold",
                 check_overlap = TRUE,
                 vjust = 1.5) +
-      geom_segment(data = df,
-                   aes(x = -3, xend = 3, y = 0, yend = 0),
+      geom_segment(data = data.frame(x1 = -3, x2 = 3, y1 = 0, y2 = 0),
+                   aes(x = x1, xend = x2, y = y1, yend = y2),
                    linetype = "solid",
-                   linewidth = 0.5,
+                   linewidth = 1,
                    color='#021C38') +
       # labelNormZArea(normValue, probType, normLines) +
       coord_cartesian(clip="off") +
@@ -9902,12 +9902,30 @@ server <- function(session, input, output) {
                             target = 'row',
                             fontWeight = styleRow(dim(dfTotaled)[1], "bold"))
         )
+        
+        output$renderSLRScatterplot <- renderUI({
           
-        output$scatterplot <- renderPlot({ # scatterplot ----
-          
-          RenderScatterplot(df, input$slrScatterTitle, input$slrScatterXlab, input$slrScatterYlab, input$slrRegLineColour, input$slrScatterColour)
-          
+          tagList(
+            plotOutput("slrScatterplot",
+                       height = GetPlotHeight(input[["slrScatter-Height"]], input[["slrScatter-HeightPx"]], ui = TRUE),
+                       width = GetPlotWidth(input[["slrScatter-Width"]], input[["slrScatter-WidthPx"]], ui = TRUE)),
+          )
         })
+          
+        output$slrScatterplot <- renderPlot({ # scatterplot ----
+          
+          RenderScatterplot(df, 
+                            input[["slrScatter-Title"]], 
+                            input[["slrScatter-Xlab"]], 
+                            input[["slrScatter-Ylab"]], 
+                            input[["slrScatter-Colour"]],
+                            input[["slrScatter-PointsColour"]],
+                            input[["slrScatter-LineWidth"]],
+                            input[["slrScatter-PointSize"]],
+                            input[["slrScatter-Gridlines"]])
+          
+        }, height = function() {GetPlotHeight(input[["slrScatter-Height"]], input[["slrScatter-HeightPx"]], ui = FALSE)},
+           width = function() {GetPlotWidth(input[["slrScatter-Width"]], input[["slrScatter-WidthPx"]], ui = FALSE)})
           
         if(summary(model)$coefficients["datx", "Estimate"] > 0){
           slopeDirection <- "increase"

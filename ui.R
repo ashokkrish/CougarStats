@@ -2747,52 +2747,15 @@
                                                                              
                           titlePanel("Scatterplot"),
                           br(),
-                          dropdown(
-                            tags$h3("Scatterplot Options"),
-                                                                               
-                            textInput(
-                              inputId = "slrScatterTitle", 
-                              label = strong("Main title and axes labels:"), 
-                              value = "Scatterplot", 
-                              placeholder = "main title"
-                            ),
-                                                                               
-                            textInput(
-                              inputId = "slrScatterXlab", 
-                              label = NULL, 
-                              value = "x", 
-                              placeholder = "x-axis label"
-                            ),
-                                                                               
-                            textInput(
-                              inputId = "slrScatterYlab", 
-                              label = NULL, 
-                              value = "y", 
-                              placeholder = "y-axis label"
-                            ),
-                                                                               
-                            colourpicker::colourInput(
-                              inputId = "slrRegLineColour", 
-                              label = strong("Regression Line Colour"), 
-                              value = "#819BB6"
-                            ),
-                                                                               
-                            colourpicker::colourInput(
-                              inputId = "slrScatterColour", 
-                              label = strong("Plot Points Colour"), 
-                              value = "#000000"
-                            ),
-                                                                               
-                            style = "jelly", 
-                            icon = icon("gear"),
-                            status = "primary",
-                            width = "300px",
-                            animate = animateOptions(
-                                        enter = animations$fading_entrances$fadeInDown,
-                                        exit = animations$fading_exits$fadeOutUp)
-                          ), # dropdown
-
-                          plotOutput("scatterplot", width = "500px"),
+                          plotOptionsMenuUI(
+                            id = "slrScatter", 
+                            plotType = "Scatterplot",
+                            title = "Scatterplot",
+                            xlab = "x",
+                            ylab = "y",
+                            dim = "in px",
+                            includeFlip = FALSE),
+                          uiOutput("renderSLRScatterplot"),
                           br(),
                           hr(),
                         ), # Scatterplot
