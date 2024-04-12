@@ -5890,7 +5890,7 @@ server <- function(session, input, output) {
     
     formula <- tagList(
       p(tags$b("Test Statistic:")),
-      sprintf("\\( \\chi^2 = \\large{ \\sum{ \\dfrac{(O - E)^2}{E} } } \\)"),
+      sprintf("\\( \\chi^2 = \\large{\\displaystyle \\sum{ \\dfrac{(O - E)^2}{E} } } \\)"),
       br(),
       br(),
       sprintf("\\( \\phantom{\\chi^2} =  %s \\)",
