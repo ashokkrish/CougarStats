@@ -31,7 +31,18 @@ library(shinyWidgets)
 #
 # xlab:     The default value for the X-Axis label.
 #
-# ylab:     The defualt value for Y-Axis label.
+# ylab:     The default value for Y-Axis label.
+#
+# colour:   The primary colour for plot customization
+#
+# dim:      The setting for height/width calculation Default is "auto".
+#
+# includeGridlines:
+#           Option for including major and minor gridline toggles. Included
+#           by default.
+# 
+# includeFlip:
+#           Option for include plot orientation toggle. Included by default.
 #
 #
 # Server Arguments 
@@ -53,16 +64,26 @@ library(shinyWidgets)
 # Boxplot options:
 #   - box widths
 #
+# Scatterplot options:
+#   - plot points colour
+#   - plot line width
+#   - plot points size
+#
 # ================================================================ #
-plotOptionsMenuUI <- function(id, plotType = NULL, title = "Plot", xlab = "", ylab = "", colour = "#7293AD") {
+plotOptionsMenuUI <- function(id, plotType = NULL, title = "Plot", xlab = "", ylab = "", colour = "#7293AD",
+                              dim = "auto", includeGridlines = TRUE, includeFlip = TRUE) {
   ns <- NS(id)
   
+  flip <- addFlipCheckbox(includeFlip, ns)
+  grid <- addGridlines(includeGridlines, ns)
+  extraOptions <- tagList()
+  
   if(!is.null(plotType)) {
-    if(plotType == 'Boxplot'){
-      extraOptions <- BoxplotOptions(ns)
-    }
-  } else {
-    extraOptions <- tagList()
+    extraOptions <- switch(
+      plotType, 
+      "Boxplot" = BoxplotOptions(ns),
+      "Scatterplot" = ScatterplotOptions(ns) 
+    )
   }
   
   menu <- tagList(
@@ -100,7 +121,7 @@ plotOptionsMenuUI <- function(id, plotType = NULL, title = "Plot", xlab = "", yl
         inputId = ns("Height"),
         label = strong("Plot Height"),
         choices = c("auto", "in px"),
-        selected = "auto",
+        selected = dim,
         inline = TRUE
       ),
       
@@ -122,7 +143,7 @@ plotOptionsMenuUI <- function(id, plotType = NULL, title = "Plot", xlab = "", yl
         inputId = ns("Width"),
         label = strong("Plot Width"),
         choices = c("auto", "in px"),
-        selected = "auto",
+        selected = dim,
         inline = TRUE
       ),
       
@@ -140,21 +161,8 @@ plotOptionsMenuUI <- function(id, plotType = NULL, title = "Plot", xlab = "", yl
         )
       ),
       
-      checkboxGroupInput(
-        inputId = ns("Gridlines"),
-        label = strong("Add Gridlines"),
-        choices = c("Major", "Minor"),
-        selected = NULL,
-        inline = TRUE
-      ),
-      
-      p(strong("Orientation")),
-      checkboxInput(
-        inputId = ns("Flip"),
-        label = "Plot Vertically",
-        value = FALSE
-      ),
-      
+      grid,      
+      flip,
       extraOptions,
       
       style = "jelly", 
@@ -168,6 +176,37 @@ plotOptionsMenuUI <- function(id, plotType = NULL, title = "Plot", xlab = "", yl
   )
 }
 
+addFlipCheckbox <- function(includeFlip, ns) {
+  flip <- tagList()
+  
+  if(includeFlip){
+    flip <- tagList(
+      p(strong("Orientation")),
+      checkboxInput(
+        inputId = ns("Flip"),
+        label = "Plot Vertically",
+        value = FALSE
+      )
+    )
+  }
+}
+
+addGridlines <- function(includeGridlines, ns) {
+  grid <- tagList()
+  
+  if(includeGridlines){
+    grid <- tagList(
+      checkboxGroupInput(
+        inputId = ns("Gridlines"),
+        label = strong("Add Gridlines"),
+        choices = c("Major", "Minor"),
+        selected = NULL,
+        inline = TRUE
+      )
+    )
+  }
+}
+
 BoxplotOptions <- function(ns) {
   tagList(
     tags$h3("Boxplot Options"),
@@ -178,6 +217,37 @@ BoxplotOptions <- function(ns) {
       min = 1,
       max = 10,
       value = 5,
+      step = 1
+    )
+  )
+}
+
+ScatterplotOptions <- function(ns) {
+  
+  tagList(
+    tags$h3("Scatterplot Options"),
+    
+    colourpicker::colourInput(
+      inputId = ns("PointsColour"), 
+      label = strong("Plot Points Colour"), 
+      value = "#000000"
+    ),
+    
+    sliderInput(
+      inputId = ns("LineWidth"),
+      label = strong("Line Width"),
+      min = 1,
+      max = 10,
+      value = 1,
+      step = 1
+    ),
+    
+    sliderInput(
+      inputId = ns("PointSize"),
+      label = strong("Point Size"),
+      min = 1,
+      max = 10,
+      value = 3,
       step = 1
     )
   )
