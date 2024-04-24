@@ -544,7 +544,8 @@ server <- function(session, input, output) {
   onemeanraw_iv$add_rule("sample1", sv_required())
   onemeanraw_iv$add_rule("sample1", sv_regex("^( )*(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$", 
                                              "Data must be numeric values seperated by a comma (ie: 2,3,4)"))
-  
+  onemeanraw_iv$add_rule("sample1", ~ if (sd(createNumLst(input$sample1)) == 0) "No variance in sample data")
+
   # One Mean Upload Data
   onemeanupload_iv$add_rule("oneMeanUserData", sv_required())
   onemeanupload_iv$add_rule("oneMeanUserData", ~ if(is.null(fileInputs$oneMeanStatus) || fileInputs$oneMeanStatus == 'reset') "Required")
@@ -552,7 +553,7 @@ server <- function(session, input, output) {
   onemeanupload_iv$add_rule("oneMeanUserData", ~ if(nrow(OneMeanUploadData()) == 0) "File is empty")
   onemeanupload_iv$add_rule("oneMeanUserData", ~ if(nrow(OneMeanUploadData()) < 3) "Samples must include at least 2 observations")
   
-  # popuSD 
+  # popuSD
   
   onemeansdknown_iv$add_rule("popuSD", sv_required()) 
   onemeansdknown_iv$add_rule("popuSD", sv_gt(0))
