@@ -4518,17 +4518,27 @@ server <- function(session, input, output) {
   ### Non-Reactive Functions ----
   # --------------------------------------------------------------------- #
   
-  getSampSizeEstMean <- function(critVal, popuSD, margErr) {
+  getSampSizeEstMean <- function(critVal, popuSD, margErr, widthInt) {
     
-    n <- ((critVal * popuSD) / margErr) ^ 2
+    if(input$sseEstimationType == "Width of Interval"){
+      n <- ((2 * critVal * popuSD) / widthInt) ^ 2
+    }
+    else {
+      n <- ((critVal * popuSD) / margErr) ^ 2
+    }
     
     return(n)
   }
   
   
-  getSampSizeEstProp <- function(critVal, phat, margErr) {
+  getSampSizeEstProp <- function(critVal, phat, margErr, widthInt) {
     
-    n <- phat * (1 - phat) * (critVal / margErr)^2
+    if(input$sseEstimationType == "Width of Interval"){
+      n <- phat * (1 - phat) * (critVal / (widthInt/2))^2
+    }
+    else{
+      n <- phat * (1 - phat) * (critVal / margErr)^2
+    }
     
     return(n)
   }
@@ -4552,7 +4562,6 @@ server <- function(session, input, output) {
           need(input$ssePopuSD && input$ssePopuSD > 0, "Population Standard Deviation must be positive."),
           need(input$sseMeanMargErr && input$sseMeanMargErr > 0, "Margin of Error must be positive."),
           
-          
           errorClass = "myClass"
         )
       }else if(!sseprop_iv$is_valid()){
@@ -4574,7 +4583,7 @@ server <- function(session, input, output) {
   #### Sample Size Est Mean output ----
   output$sampSizeMeanEstimate <- renderUI({
     
-    n <- getSampSizeEstMean(criticalValue(), input$ssePopuSD, input$sseMeanMargErr)
+    n <- getSampSizeEstMean(criticalValue(), input$ssePopuSD, input$sseMeanMargErr, input$sseMeanWoI)
     nEstimate <- ceiling(n)
     
     
@@ -4582,13 +4591,32 @@ server <- function(session, input, output) {
       withMathJax(),
       br(),
       br(),
-      sprintf("\\( n = \\left( \\dfrac{Z_{\\alpha / 2} \\: \\sigma}{E} \\right)^{2} \\)"),
-      sprintf("\\( = \\left( \\dfrac{ (%s)(%s) }{%s} \\right)^{2} \\)",
-              criticalValue(),
-              input$ssePopuSD,
-              input$sseMeanMargErr),
-      sprintf("\\( = %0.4f \\)",
-              n),
+      
+      # Print Population Mean formula for SSE using Margin of Error
+      if(input$sseEstimationType == "Margin of Error"){
+        list(
+          sprintf("\\( n = \\left( \\dfrac{Z_{\\alpha / 2} \\: \\sigma}{E} \\right)^{2} \\)"),
+          sprintf("\\( = \\left( \\dfrac{ (%s)(%s) }{%s} \\right)^{2} \\)",
+                  criticalValue(),
+                  input$ssePopuSD,
+                  input$sseMeanMargErr),
+          sprintf("\\( = %0.4f \\)",
+                  n)
+        )
+      }
+      # Print Population Mean formula for SSE using Width of Interval
+      else {
+        list(
+          sprintf("\\( n = \\left( \\dfrac{(2)Z_{\\alpha / 2} \\: \\sigma}{W} \\right)^{2} \\)"),
+          sprintf("\\( = \\left( \\dfrac{ (2)(%s)(%s) }{%s} \\right)^{2} \\)",
+                  criticalValue(),
+                  input$ssePopuSD,
+                  input$sseMeanWoI),
+          sprintf("\\( = %0.4f \\)",
+                  n)
+        )
+      },
+      
       br(),
       br(),
       sprintf("\\( n \\approx %1.0f \\)",
@@ -4597,20 +4625,35 @@ server <- function(session, input, output) {
       br(),
       br(),
       sprintf("The recommended sample size (\\( n \\)) is \\(%1.0f\\) for a \\( %s \\)%% confidence 
-              level with a population standard deviation \\( (\\sigma) = %s\\) and
-              margin of error \\( (E) = %s \\).",
+                  level with a population standard deviation \\( (\\sigma) = %s\\) and
+                  a ",
               nEstimate,
               input$confLeveln,
-              input$ssePopuSD,
-              input$sseMeanMargErr),
-      br(),
+              input$ssePopuSD),
+      
+      # Print blurb with Margin of Error
+      if(input$sseEstimationType == "Margin of Error"){
+        list(
+          sprintf("margin of error \\( (E) = %s \\)", input$sseMeanMargErr),
+          br()
+        )
+      }
+      # Print blurb with Width of Interval
+      else{
+        list(
+          sprintf("width of interval \\( (W) = %s \\)", input$sseMeanWoI),
+          br()
+        )
+      }
     )
+    
   })
+  
   
   #### Sample Size Est Proportion output ----
   output$sampSizePropEstimate <- renderUI({
     
-    n <- getSampSizeEstProp(criticalValue(), input$sseTargetProp, input$ssePropMargErr)
+    n <- getSampSizeEstProp(criticalValue(), input$sseTargetProp, input$ssePropMargErr, input$ssePropWoI)
     nEstimate <- ceiling(n)
     
     
@@ -4618,14 +4661,34 @@ server <- function(session, input, output) {
       withMathJax(),
       br(),
       br(),
-      sprintf("\\( n = \\hat{p} (1 - \\hat{p}) \\left( \\dfrac{Z_{\\alpha / 2}}{E} \\right)^{2} \\)"),
-      sprintf("\\( = \\; %s \\; (%s) \\left( \\dfrac{%s}{%s} \\right)^{2} \\)",
-              input$sseTargetProp,
-              1 - input$sseTargetProp,
-              criticalValue(),
-              input$ssePropMargErr),
-      sprintf("\\( = \\; %0.4f \\)",
-              n),
+      
+      # Print Population Proportion formula for SSE using Margin of Error
+      if(input$sseEstimationType == "Margin of Error"){
+        list(
+          sprintf("\\( n = \\hat{p} (1 - \\hat{p}) \\left( \\dfrac{Z_{\\alpha / 2}}{E} \\right)^{2} \\)"),
+          sprintf("\\( = \\; %s \\; (%s) \\left( \\dfrac{%s}{%s} \\right)^{2} \\)",
+                  input$sseTargetProp,
+                  1 - input$sseTargetProp,
+                  criticalValue(),
+                  input$ssePropMargErr),
+          sprintf("\\( = \\; %0.4f \\)",
+                  n)
+        )
+      }
+      # Print Population Proportion formula for SSE using Width of Interval
+      else {
+        list(
+          sprintf("\\( n = \\hat{p} (1 - \\hat{p}) \\left( \\dfrac{Z_{\\alpha / 2}}{(W/2)} \\right)^{2} \\)"),
+          sprintf("\\( = \\; %s \\; (%s) \\left( \\dfrac{%s}{(%s/2)} \\right)^{2} \\)",
+                  input$sseTargetProp,
+                  1 - input$sseTargetProp,
+                  criticalValue(),
+                  input$ssePropWoI),
+          sprintf("\\( = \\; %0.4f \\)",
+                  n)
+        )
+      },
+      
       br(),
       br(),
       sprintf("\\( n \\approx %1.0f \\)",
@@ -4634,13 +4697,22 @@ server <- function(session, input, output) {
       br(),
       br(),
       sprintf("The recommended sample size (\\( n \\)) is \\(%1.0f\\) for a \\( %s \\)%% confidence 
-              level with a target proportion \\( (\\hat{p}) = %s\\) and
-              margin of error \\( (E) = %s \\).",
+              level with a target proportion \\( (\\hat{p}) = %s\\) and a ",
               nEstimate,
               input$confLeveln,
-              input$sseTargetProp,
-              input$ssePropMargErr),
-      br(),
+              input$sseTargetProp),
+      if(input$sseEstimationType == "Margin of Error"){
+        list(
+          sprintf("margin of error \\( (E) = %s \\).", input$ssePropMargErr),
+          br()
+        )
+      }
+      else{
+        list(
+          sprintf("width of interval \\( (W) = %s \\).", input$ssePropWoI),
+          br()
+        )
+      }
     )
   })
   

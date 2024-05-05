@@ -811,6 +811,21 @@
                              "99%"),
                 selected = c("95%"),
                 inline   = TRUE),
+              
+              # 4 Options: Mean & Margin of Error, Mean & Width of Interval,
+              #            Prop & Margin of Error, Prop & Width of Interval
+              
+              
+              # Population Mean + (MoE or WoI)
+              radioButtons(
+                inputId      = "sseEstimationType",
+                label        = strong("Estimation Type"),
+                choiceValues = list("Margin of Error",
+                                    "Width of Interval"),
+                choiceNames  = list("Margin of Error (\\( E\\)) ",
+                                    "Width of Interval (\\( W\\))"),
+                selected     = "Margin of Error",
+                inline       = TRUE),
                                                            
               conditionalPanel(
                 condition = "input.sampSizeEstParameter == 'Population Mean'",
@@ -822,16 +837,34 @@
                   min     = 0.00001, 
                   step    = 0.00001
                 ),
-                                                             
-                numericInput(
-                  inputId = "sseMeanMargErr",
-                  label   = strong("Margin of Error (\\( E\\))"),
-                  value   = "8", 
-                  min     = 0.00001, 
-                  step    = 0.00001
+                
+                conditionalPanel(
+                  condition = "input.sseEstimationType == 'Margin of Error'",
+                  
+                  numericInput(
+                    inputId = "sseMeanMargErr",
+                    label   = strong("Margin of Error (\\( E\\))"),
+                    value   = "8", 
+                    min     = 0.00001, 
+                    step    = 0.01
+                  )
                 ),
-              ), # Population Mean
-                                                           
+                
+                conditionalPanel(
+                  condition = "input.sseEstimationType == 'Width of Interval'",
+                  
+                  numericInput(
+                    inputId = "sseMeanWoI",
+                    label   = strong("Width of Interval (\\( W\\))"),
+                    value   = "16", 
+                    min     = 0.00001, 
+                    step    = 0.01
+                  )
+                )
+              ),
+              
+              
+              # Population Proportion + (MoE or WoI)                                             
               conditionalPanel(
                 condition = "input.sampSizeEstParameter == 'Population Proportion'",
                                                              
@@ -842,16 +875,33 @@
                   min     = 0.00001, 
                   step    = 0.01
                 ),
-                                                             
-                numericInput(
-                  inputId = "ssePropMargErr",
-                  label   = strong("Margin of Error (\\( E\\))"),
-                  value   = "0.1", 
-                  min     = 0.00001, 
-                  step    = 0.00001
+                
+                conditionalPanel(
+                  condition = "input.sseEstimationType == 'Margin of Error'",
+                  
+                  numericInput(
+                    inputId = "ssePropMargErr",
+                    label   = strong("Margin of Error (\\( E\\))"),
+                    value   = "0.01", 
+                    min     = 0.00001, 
+                    step    = 0.01
+                  )
                 ),
-              ), # Population Proportion
-                                                           
+                
+                conditionalPanel(
+                  condition = "input.sseEstimationType == 'Width of Interval'",
+                  
+                  numericInput(
+                    inputId = "ssePropWoI",
+                    label   = strong("Width of Interval (\\( W\\))"),
+                    value   = "0.02", 
+                    min     = 0.00001, 
+                    step    = 0.01
+                  )
+                )
+              ),
+               
+                                                          
               actionButton(
                 inputId = "goSampSizeEst", 
                 label   = "Calculate",
