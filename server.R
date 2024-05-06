@@ -1169,7 +1169,7 @@ server <- function(session, input, output) {
     if(length(dat) %% 2 != 0) { # remove median for odd lists
       dat <- dat[dat != median(dat)]
     }
-    print(length(dat))
+
     mid <- length(dat) / 2
     quartiles$q1 <- median(dat[1:mid])
     quartiles$q3 <- median(dat[(mid+1):length(dat)])
@@ -1214,7 +1214,6 @@ server <- function(session, input, output) {
     sampMin <- min(dat)
     #popuStdDev <- round(pop.sd(dat),4) # round(sqrt((n-1)/n) * sampStdDev(dat), 4)
     quartiles <- GetQuartiles(dat)
-    print(quartiles)
     quartile1 <-  quartiles$q1
     sampMedian <- median(dat)
     quartile3 <-  quartiles$q3
