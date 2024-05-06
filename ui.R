@@ -2036,8 +2036,7 @@
                                     input.dsTableFilters.indexOf('IQR') > -1 | 
                                     input.dsTableFilters.indexOf('Potential Outliers') > -1",
                                                                            
-                        helpText("* Note: Quartiles are calculated by excluding the median on both 
-                                 sides for both even and odd sample sizes."),
+                        helpText("* Note: Quartiles are calculated by excluding the median on both sides."),
                       ),
                                                                          
                       br(),

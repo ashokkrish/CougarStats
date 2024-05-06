@@ -1620,8 +1620,7 @@ server <- function(session, input, output) {
                      width = GetPlotWidth(input[["dsBoxplot-Width"]], input[["dsBoxplot-WidthPx"]], ui = TRUE)),
           
           br(),
-          helpText("* Note: Quartiles are calculated by excluding the median on both 
-                   sides for both even and odd sample sizes."),
+          helpText("* Note: Quartiles are calculated by excluding the median on both sides."),
           br(),
           hr(),
           br(),
