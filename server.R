@@ -1260,7 +1260,6 @@ server <- function(session, input, output) {
     if(is.nan(sampKurtosis)) {
       sampKurtosis <- "Not enough variability or data points in the dataset."
     }
-    print("END")
     
     dfCol <- data.frame(Value = c(sampSize, 
                                   sampSum, 
