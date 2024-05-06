@@ -1161,6 +1161,22 @@ server <- function(session, input, output) {
     return(range)
   }
   
+  GetQuartiles <- function(dat) {
+    
+    quartiles <- list()
+    dat <- dat[order(dat)]
+
+    if(length(dat) %% 2 != 0) { # remove median for odd lists
+      dat <- dat[dat != median(dat)]
+    }
+    print(length(dat))
+    mid <- length(dat) / 2
+    quartiles$q1 <- median(dat[1:mid])
+    quartiles$q3 <- median(dat[(mid+1):length(dat)])
+    
+    return(quartiles)
+  }
+  
   GetOutliers <- function(dat, lower, upper) {
     outliers <- c()
     
@@ -1197,9 +1213,11 @@ server <- function(session, input, output) {
     
     sampMin <- min(dat)
     #popuStdDev <- round(pop.sd(dat),4) # round(sqrt((n-1)/n) * sampStdDev(dat), 4)
-    quartile1 <-  fivenum(dat)[2]
+    quartiles <- GetQuartiles(dat)
+    print(quartiles)
+    quartile1 <-  quartiles$q1
     sampMedian <- median(dat)
-    quartile3 <-  fivenum(dat)[4]
+    quartile3 <-  quartiles$q3
     sampMax <- max(dat)
     sampIQR <- round(quartile3 - quartile1, 4)
     lowerFence <- round(quartile1 - (1.5*sampIQR), 4)
@@ -1602,9 +1620,8 @@ server <- function(session, input, output) {
                      width = GetPlotWidth(input[["dsBoxplot-Width"]], input[["dsBoxplot-WidthPx"]], ui = TRUE)),
           
           br(),
-          helpText("* Note: Quartiles are calculated using the inclusionary (Tukey) approach. 
-                                 The median value is included on both sides if the sample size is odd and 
-                                 the median value is excluded on both sides if the sample size is even."),
+          helpText("* Note: Quartiles are calculated by excluding the median on both 
+                   sides for both even and odd sample sizes."),
           br(),
           hr(),
           br(),
