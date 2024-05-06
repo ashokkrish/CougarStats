@@ -1162,18 +1162,18 @@ server <- function(session, input, output) {
   }
   
   GetQuartiles <- function(dat) {
-    
+
     quartiles <- list()
     dat <- dat[order(dat)]
 
     if(length(dat) %% 2 != 0) { # remove median for odd lists
-      dat <- dat[dat != median(dat)]
+      dat <- dat[-ceiling(length(dat)/2)] # ceiling(length(dat)/2) = middle index
     }
 
     mid <- length(dat) / 2
     quartiles$q1 <- median(dat[1:mid])
     quartiles$q3 <- median(dat[(mid+1):length(dat)])
-    
+
     return(quartiles)
   }
   
@@ -1210,7 +1210,7 @@ server <- function(session, input, output) {
     } else{
       modeFreq <- paste("Each appears", attr(Mode(dat), "freq"), "times")
     }
-    
+
     sampMin <- min(dat)
     #popuStdDev <- round(pop.sd(dat),4) # round(sqrt((n-1)/n) * sampStdDev(dat), 4)
     quartiles <- GetQuartiles(dat)
@@ -1222,23 +1222,26 @@ server <- function(session, input, output) {
     lowerFence <- round(quartile1 - (1.5*sampIQR), 4)
     upperFence <- round(quartile3 + (1.5*sampIQR), 4)
     numOutliers <- sum(dat < lowerFence) + sum(dat > upperFence)
-    
-    if(numOutliers == 0) {
+
+    if(is.na(numOutliers) || numOutliers == 0) {
       outliers <- "There are no outliers."
     } else {
       outliers <- paste(as.character(GetOutliers(dat, lowerFence, upperFence)), collapse=", ")
     }
-    
+
     sampRange <- Range(min(dat), max(dat)) 
     sampStdDev <- round(sd(dat),4)
     sampVar <- round(var(dat),4)
     sampMeanSE <- round(sd(dat)/sqrt(length(dat)), 4)
-    
+
     coeffVar <- round(sampStdDev/xbar, 4)
-    if(is.infinite(coeffVar)) {
+
+    if (is.na(coeffVar)) {
+      coeffVar <- "Coefficient of Variation is undefined for this data"
+    } else if (is.infinite(coeffVar)) {
       coeffVar <- "Infinity"
     }
-    
+
     if(sampSize < 3){
       sampSkewness <- round(skewness(dat, type = 1), 4)
     } else {
@@ -1257,7 +1260,7 @@ server <- function(session, input, output) {
     if(is.nan(sampKurtosis)) {
       sampKurtosis <- "Not enough variability or data points in the dataset."
     }
-    
+    print("END")
     
     dfCol <- data.frame(Value = c(sampSize, 
                                   sampSum, 
