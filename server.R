@@ -548,7 +548,8 @@ server <- function(session, input, output) {
   onemeanraw_iv$add_rule("sample1", sv_required())
   onemeanraw_iv$add_rule("sample1", sv_regex("^( )*(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$", 
                                              "Data must be numeric values seperated by a comma (ie: 2,3,4)"))
-  
+  onemeanraw_iv$add_rule("sample1", ~ if (sd(createNumLst(input$sample1)) == 0) "No variance in sample data")
+
   # One Mean Upload Data
   onemeanupload_iv$add_rule("oneMeanUserData", sv_required())
   onemeanupload_iv$add_rule("oneMeanUserData", ~ if(is.null(fileInputs$oneMeanStatus) || fileInputs$oneMeanStatus == 'reset') "Required")
@@ -556,7 +557,7 @@ server <- function(session, input, output) {
   onemeanupload_iv$add_rule("oneMeanUserData", ~ if(nrow(OneMeanUploadData()) == 0) "File is empty")
   onemeanupload_iv$add_rule("oneMeanUserData", ~ if(nrow(OneMeanUploadData()) < 3) "Samples must include at least 2 observations")
   
-  # popuSD 
+  # popuSD
   
   onemeansdknown_iv$add_rule("popuSD", sv_required()) 
   onemeansdknown_iv$add_rule("popuSD", sv_gt(0))
@@ -1161,6 +1162,22 @@ server <- function(session, input, output) {
     return(range)
   }
   
+  GetQuartiles <- function(dat) {
+
+    quartiles <- list()
+    dat <- dat[order(dat)]
+
+    if(length(dat) %% 2 != 0) { # remove median for odd lists
+      dat <- dat[-ceiling(length(dat)/2)] # ceiling(length(dat)/2) = middle index
+    }
+
+    mid <- length(dat) / 2
+    quartiles$q1 <- median(dat[1:mid])
+    quartiles$q3 <- median(dat[(mid+1):length(dat)])
+
+    return(quartiles)
+  }
+  
   GetOutliers <- function(dat, lower, upper) {
     outliers <- c()
     
@@ -1196,27 +1213,29 @@ server <- function(session, input, output) {
     } else{
       modeFreq <- paste("Each appears", attr(Mode(dat), "freq"), "times")
     }
-    
+
     sampMin <- min(dat)
     #popuStdDev <- round(pop.sd(dat),4) # round(sqrt((n-1)/n) * sampStdDev(dat), 4)
-    quartile1 <-  fivenum(dat)[2]
+    quartiles <- GetQuartiles(dat)
+    quartile1 <-  quartiles$q1
     sampMedian <- median(dat)
-    quartile3 <-  fivenum(dat)[4]
+    quartile3 <-  quartiles$q3
     sampMax <- max(dat)
     sampIQR <- round(quartile3 - quartile1, 4)
     lowerFence <- round(quartile1 - (1.5*sampIQR), 4)
     upperFence <- round(quartile3 + (1.5*sampIQR), 4)
     numOutliers <- sum(dat < lowerFence) + sum(dat > upperFence)
-    
-    if(numOutliers == 0) {
+
+    if(is.na(numOutliers) || numOutliers == 0) {
       outliers <- "There are no outliers."
     } else {
       outliers <- paste(as.character(GetOutliers(dat, lowerFence, upperFence)), collapse=", ")
     }
-    
+
     sampRange <- Range(min(dat), max(dat)) 
     sampVar <- round(var(dat), 4)
     sampMeanSE <- round(sd(dat)/sqrt(length(dat)), 4)
+
     stdDev <- sd(dat)
     stdDevNum <- round(stdDev, 4)       # always holds numeric value of SD
     
@@ -1228,10 +1247,13 @@ server <- function(session, input, output) {
     }
     
     coeffVar <- round(stdDevNum/xbar, 4)
-    if(is.infinite(coeffVar)) {
+
+    if (is.na(coeffVar)) {
+      coeffVar <- "Coefficient of Variation is undefined for this data"
+    } else if (is.infinite(coeffVar)) {
       coeffVar <- "Infinity"
     }
-    
+
     if(sampSize < 3){
       sampSkewness <- round(skewness(dat, type = 1), 4)
     } else {
@@ -1250,7 +1272,6 @@ server <- function(session, input, output) {
     if(is.nan(sampKurtosis)) {
       sampKurtosis <- "Not enough variability or data points in the dataset."
     }
-    
     
     dfCol <- data.frame(Value = c(sampSize, 
                                   sampSum, 
@@ -1612,9 +1633,7 @@ server <- function(session, input, output) {
                      width = GetPlotWidth(input[["dsBoxplot-Width"]], input[["dsBoxplot-WidthPx"]], ui = TRUE)),
           
           br(),
-          helpText("* Note: Quartiles are calculated using the inclusionary (Tukey) approach. 
-                                 The median value is included on both sides if the sample size is odd and 
-                                 the median value is excluded on both sides if the sample size is even."),
+          helpText("* Note: Quartiles are calculated by excluding the median on both sides."),
           br(),
           hr(),
           br(),

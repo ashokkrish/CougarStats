@@ -2086,9 +2086,7 @@
                                     input.dsTableFilters.indexOf('IQR') > -1 | 
                                     input.dsTableFilters.indexOf('Potential Outliers') > -1",
                                                                            
-                        helpText("* Note: Quartiles are calculated using the inclusionary (Tukey) approach. 
-                                 The median value is included on both sides if the sample size is odd and the 
-                                 median value is excluded on both sides if the sample size is even."),
+                        helpText("* Note: Quartiles are calculated by excluding the median on both sides."),
                       ),
                                                                          
                       br(),
