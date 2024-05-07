@@ -1176,7 +1176,9 @@ server <- function(session, input, output) {
   
   # Function to find the population standard deviation
   pop.sd <- function(x) {
+    
     sqrt(sum((x-mean(x))^2)/length(x))
+    
   }
   
   
@@ -1213,11 +1215,19 @@ server <- function(session, input, output) {
     }
     
     sampRange <- Range(min(dat), max(dat)) 
-    sampStdDev <- round(sd(dat),4)
-    sampVar <- round(var(dat),4)
+    sampVar <- round(var(dat), 4)
     sampMeanSE <- round(sd(dat)/sqrt(length(dat)), 4)
+    stdDev <- sd(dat)
+    stdDevNum <- round(stdDev, 4)       # always holds numeric value of SD
     
-    coeffVar <- round(sampStdDev/xbar, 4)
+    # Handle very small standard deviation by converting to string of scientific notation
+    if (stdDev > 0.0001){
+      sampStdDev <- round(stdDev, 4)
+    } else {
+      sampStdDev <- as.character(format(stdDev, scientific = TRUE))
+    }
+    
+    coeffVar <- round(stdDevNum/xbar, 4)
     if(is.infinite(coeffVar)) {
       coeffVar <- "Infinity"
     }
@@ -1559,7 +1569,7 @@ server <- function(session, input, output) {
       })
       
       output$dsSDCalc <- renderUI({
-        
+
         tagList(
           withMathJax(),
           sprintf("\\( s = \\sqrt{ \\dfrac{\\sum x^{2} - \\dfrac{(\\sum x)^{2}}{n} }{n - 1} } \\)"),
@@ -4678,8 +4688,8 @@ server <- function(session, input, output) {
       # Print Population Proportion formula for SSE using Width of Interval
       else {
         list(
-          sprintf("\\( n = \\hat{p} (1 - \\hat{p}) \\left( \\dfrac{Z_{\\alpha / 2}}{(W/2)} \\right)^{2} \\)"),
-          sprintf("\\( = \\; %s \\; (%s) \\left( \\dfrac{%s}{(%s/2)} \\right)^{2} \\)",
+          sprintf("\\( n = \\hat{p} (1 - \\hat{p}) \\left( \\dfrac{(2)Z_{\\alpha / 2}}{W} \\right)^{2} \\)"),
+          sprintf("\\( = \\; %s \\; (%s) \\left( \\dfrac{(2)%s}{(%s)} \\right)^{2} \\)",
                   input$sseTargetProp,
                   1 - input$sseTargetProp,
                   criticalValue(),
