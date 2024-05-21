@@ -962,9 +962,11 @@
                 radioButtons(
                   inputId      = "popuParameter",
                   label        = strong("Parameter of Interest"),
-                  choiceValues = list("Population Mean", 
+                  choiceValues = list("Population Mean",
+                                      "Population Standard Deviation",
                                       "Population Proportion"),
-                  choiceNames  = list("Population Mean (\\( \\mu \\)) ", 
+                  choiceNames  = list("Population Mean (\\( \\mu \\)) ",
+                                      "Population Standard Deviation (\\( \\sigma \\)) ",
                                       "Population Proportion (\\( p\\))"),
                   selected     = "Population Mean", #character(0), #
                   inline       = TRUE), #,width = '1000px'),
@@ -1140,6 +1142,26 @@
                     step    = 1
                   ),
                 ), #One Population Proportion 
+                
+                ##### Standard Deviation ----
+                conditionalPanel(
+                  condition = "input.popuParameter == 'Population Standard Deviation'",
+                  
+                  numericInput(
+                    inputId = "SDSampleSize",
+                    label   = strong("Sample Size (n)"),
+                    value   = 0, 
+                    step    = 0.00001
+                  ),
+                  
+                  numericInput(
+                    inputId = "SDStdDev",
+                    label   = strong("Population Standard Deviation (\\( \\sigma \\))"),
+                    value   = 0, 
+                    step    = 0.00001
+                  ),
+                  
+                ),
                                                                          
                 #conditionalPanel(
                 #   condition = "input.dataAvailability == 'Summarized Data' || input.dataAvailability == 'Enter Raw Data' || input.popuParameter == 'Population Proportion'",

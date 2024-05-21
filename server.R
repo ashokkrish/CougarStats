@@ -71,6 +71,7 @@ server <- function(session, input, output) {
   depmeansupload_iv <- InputValidator$new()
   depmeansuploadvars_iv <- InputValidator$new()
   depmeansrawsd_iv <- InputValidator$new()
+  oneSD_iv <- InputValidator$new()
   oneprop_iv <- InputValidator$new()
   onepropht_iv <- InputValidator$new()
   twoprop_iv <- InputValidator$new()
@@ -487,6 +488,8 @@ server <- function(session, input, output) {
   ssemean_iv$add_rule("ssePopuSD", sv_gt(0))
   ssemean_iv$add_rule("sseMeanMargErr", sv_required())
   ssemean_iv$add_rule("sseMeanMargErr", sv_gt(0))
+  ssemean_iv$add_rule("sseMeanWoI", sv_required())
+  ssemean_iv$add_rule("sseMeanWoI", sv_gt(0))
   
   # targetProp
   
@@ -496,6 +499,9 @@ server <- function(session, input, output) {
   sseprop_iv$add_rule("ssePropMargErr", sv_required())
   sseprop_iv$add_rule("ssePropMargErr", sv_gt(0))
   sseprop_iv$add_rule("ssePropMargErr", sv_lte(1))
+  sseprop_iv$add_rule("ssePropWoI", sv_required())
+  sseprop_iv$add_rule("ssePropWoI", sv_gt(0))
+  sseprop_iv$add_rule("ssePropWoI", sv_lte(1))
   
   # margErr
   
@@ -696,6 +702,13 @@ server <- function(session, input, output) {
   
   depmeansrawsd_iv$add_rule("after", ~ if(GetDepMeansData()$sd == 0) "Variance required in 'Before' and 'After' sample data for hypothesis testing.")
 
+  # population standard deviation
+  
+  oneSD_iv$add_rule("SDSampleSize", sv_required())
+  oneSD_iv$add_rule("SDSampleSize", sv_gt(0))
+  oneSD_iv$add_rule("SDStdDev", sv_required())
+  oneSD_iv$add_rule("SDStdDev", sv_gt(0))
+  
   # numSuccessesProportion
   
   oneprop_iv$add_rule("numSuccesses", sv_required(message = "Numeric value required."))
@@ -883,6 +896,9 @@ server <- function(session, input, output) {
                                       input$dataTypeDependent == 'Enter Raw Data' &&
                                       depmeansraw_iv$is_valid()))
   
+  oneSD_iv$condition(~ isTRUE(input$siMethod == '1' && 
+                                  input$popuParameter == 'Population Standard Deviation'))
+  
   oneprop_iv$condition(~ isTRUE(input$siMethod == '1' && 
                                 input$popuParameter == 'Population Proportion'))
   
@@ -943,6 +959,7 @@ server <- function(session, input, output) {
   si_iv$add_validator(depmeansraw_iv)
   si_iv$add_validator(depmeansupload_iv)
   si_iv$add_validator(depmeansuploadvars_iv)
+  si_iv$add_validator(oneSD_iv)
   si_iv$add_validator(oneprop_iv)
   si_iv$add_validator(onepropht_iv)
   si_iv$add_validator(twoprop_iv)
@@ -982,6 +999,7 @@ server <- function(session, input, output) {
   depmeansupload_iv$enable()
   depmeansuploadvars_iv$enable()
   depmeansrawsd_iv$enable()
+  oneSD_iv$enable()
   oneprop_iv$enable()
   onepropht_iv$enable()
   twoprop_iv$enable()
