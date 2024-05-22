@@ -963,10 +963,10 @@
                   inputId      = "popuParameter",
                   label        = strong("Parameter of Interest"),
                   choiceValues = list("Population Mean",
-                                      "Sample Standard Deviation",
+                                      "Population Standard Deviation",
                                       "Population Proportion"),
                   choiceNames  = list("Population Mean (\\( \\mu \\)) ",
-                                      "Sample Standard Deviation (\\( s\\)) ",
+                                      "Population Standard Deviation (\\( \\sigma\\)) ",
                                       "Population Proportion (\\( p\\))"),
                   selected     = "Population Mean", #character(0), #
                   inline       = FALSE), #,width = '1000px'),
@@ -1145,7 +1145,7 @@
                 
                 ##### Sample Standard Deviation ----
                 conditionalPanel(
-                  condition = "input.popuParameter == 'Sample Standard Deviation'",
+                  condition = "input.popuParameter == 'Population Standard Deviation'",
                   
                   numericInput(
                     inputId = "SSDSampleSize",

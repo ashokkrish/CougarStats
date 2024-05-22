@@ -895,7 +895,7 @@ server <- function(session, input, output) {
                                       depmeansraw_iv$is_valid()))
   
   oneSD_iv$condition(~ isTRUE(input$siMethod == '1' && 
-                                  input$popuParameter == 'Sample Standard Deviation'))
+                                  input$popuParameter == 'Population Standard Deviation'))
   
   oneprop_iv$condition(~ isTRUE(input$siMethod == '1' && 
                                 input$popuParameter == 'Population Proportion'))
