@@ -504,9 +504,7 @@ server <- function(session, input, output) {
   sseprop_iv$add_rule("ssePropWoI", sv_lte(1))
   
   # margErr
-  
-  
-  
+ 
   
   # ------------------ #
   #     Conditions     #
@@ -702,12 +700,12 @@ server <- function(session, input, output) {
   
   depmeansrawsd_iv$add_rule("after", ~ if(GetDepMeansData()$sd == 0) "Variance required in 'Before' and 'After' sample data for hypothesis testing.")
 
-  # population standard deviation
+  # sample standard deviation
   
-  oneSD_iv$add_rule("SDSampleSize", sv_required())
-  oneSD_iv$add_rule("SDSampleSize", sv_gt(0))
-  oneSD_iv$add_rule("SDStdDev", sv_required())
-  oneSD_iv$add_rule("SDStdDev", sv_gt(0))
+  oneSD_iv$add_rule("SSDSampleSize", sv_required())
+  oneSD_iv$add_rule("SSDSampleSize", sv_gt(0))
+  oneSD_iv$add_rule("SSDStdDev", sv_required())
+  oneSD_iv$add_rule("SSDStdDev", sv_gt(0))
   
   # numSuccessesProportion
   
@@ -897,7 +895,7 @@ server <- function(session, input, output) {
                                       depmeansraw_iv$is_valid()))
   
   oneSD_iv$condition(~ isTRUE(input$siMethod == '1' && 
-                                  input$popuParameter == 'Population Standard Deviation'))
+                                  input$popuParameter == 'Sample Standard Deviation'))
   
   oneprop_iv$condition(~ isTRUE(input$siMethod == '1' && 
                                 input$popuParameter == 'Population Proportion'))
@@ -4624,6 +4622,22 @@ server <- function(session, input, output) {
       } 
     }
     
+    if(!ssemean_iv$is_valid()){
+      
+      validate(
+        need(input$sseMeanWoI, "Width of Interval (W) required.") %then%
+          need(input$sseMeanWoI > -1, "Width of Interval (W) must be positive.")
+      )
+    }
+    
+    if(!sseprop_iv$is_valid()){
+      
+      validate(
+        need(input$ssePropWoI, "Width of Interval (W) required.") %then%
+          need(input$ssePropWoI > -1, "Width of Interval (W) must be greater than 0 and less than or equal to 1.")
+      )
+    }
+    
   })
   
   
@@ -7050,7 +7064,7 @@ server <- function(session, input, output) {
   
   #### Validation ----
   
-  # One Mean Validation 
+  # One Mean Validation
   # ------------------------------------------------------------------------ #
   output$inferenceValidation <- renderUI({
     
@@ -7131,6 +7145,27 @@ server <- function(session, input, output) {
     if(!onemeanht_iv$is_valid()) {
       validate(
         need(input$hypMean, "Hypothesized value of the Population Mean is required."),
+        
+        errorClass = "myClass"
+      )
+    }
+  
+  # One Standard Deviation Validation
+  # ------------------------------------------------------------------------ #
+    
+    if(!oneSD_iv$is_valid()) {
+      validate(
+        need(input$SSDSampleSize, "Sample size (n) is required.") %then%
+          need(input$SSDSampleSize > 1 & input$SSDSampleSize %% 1 == 0, "Sample size (n) must be an integer greater than 1."),
+        
+        errorClass = "myClass"
+      )
+    }
+    
+    if(!oneSD_iv$is_valid()) {
+      validate(
+        need(input$SSDStdDev, "Sample Standard Deviation (s) is required.") %then%
+          need(input$SSDStdDev > 0, "Sample Standard Deviation (s) must be positive."),
         
         errorClass = "myClass"
       )

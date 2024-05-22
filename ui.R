@@ -963,10 +963,10 @@
                   inputId      = "popuParameter",
                   label        = strong("Parameter of Interest"),
                   choiceValues = list("Population Mean",
-                                      "Population Standard Deviation",
+                                      "Sample Standard Deviation",
                                       "Population Proportion"),
                   choiceNames  = list("Population Mean (\\( \\mu \\)) ",
-                                      "Population Standard Deviation (\\( \\sigma \\)) ",
+                                      "Sample Standard Deviation (\\( s\\)) ",
                                       "Population Proportion (\\( p\\))"),
                   selected     = "Population Mean", #character(0), #
                   inline       = TRUE), #,width = '1000px'),
@@ -1143,21 +1143,21 @@
                   ),
                 ), #One Population Proportion 
                 
-                ##### Standard Deviation ----
+                ##### Sample Standard Deviation ----
                 conditionalPanel(
-                  condition = "input.popuParameter == 'Population Standard Deviation'",
+                  condition = "input.popuParameter == 'Sample Standard Deviation'",
                   
                   numericInput(
-                    inputId = "SDSampleSize",
-                    label   = strong("Sample Size (n)"),
-                    value   = 0, 
+                    inputId = "SSDSampleSize",
+                    label   = strong("Sample Size (\\( n\\))"),
+                    value   = 30, 
                     step    = 0.00001
                   ),
                   
                   numericInput(
-                    inputId = "SDStdDev",
-                    label   = strong("Population Standard Deviation (\\( \\sigma \\))"),
-                    value   = 0, 
+                    inputId = "SSDStdDev",
+                    label   = strong("Sample Standard Deviation (\\( s\\))"),
+                    value   = 12.23, 
                     step    = 0.00001
                   ),
                   
