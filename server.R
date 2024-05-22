@@ -4634,7 +4634,7 @@ server <- function(session, input, output) {
       
       validate(
         need(input$ssePropWoI, "Width of Interval (W) required.") %then%
-          need(input$ssePropWoI > -1, "Width of Interval (W) must be greater than 0 and less than or equal to 1.")
+          need(input$ssePropWoI > 0 && input$ssePropWoI <= 1, "Width of Interval (W) must be greater than 0 and less than or equal to 1.")
       )
     }
     
