@@ -969,7 +969,7 @@
                                       "Sample Standard Deviation (\\( s\\)) ",
                                       "Population Proportion (\\( p\\))"),
                   selected     = "Population Mean", #character(0), #
-                  inline       = TRUE), #,width = '1000px'),
+                  inline       = FALSE), #,width = '1000px'),
                                                                              
                 conditionalPanel( ##### Mean ----
                   condition = "input.popuParameter == 'Population Mean'",
