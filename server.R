@@ -3506,7 +3506,10 @@ server <- function(session, input, output) {
                 titlePanel("Probability Distribution Table"),
                 hr(),
                 DTOutput("binomDistrTable", width = "25%"),
-                br()
+                br(),
+                if (input$numTrialsBinom < 50) {
+                  plotOutput("binomDistrBarPlot", width = "50%")
+                }
               )
             )
           )
@@ -3519,7 +3522,8 @@ server <- function(session, input, output) {
       
       if(input$numTrialsBinom < 50)
       {
-        dfBinom <- data.frame(value = seq(0, input$numTrialsBinom), value = round(dbinom(x = 0:input$numTrialsBinom, size = input$numTrialsBinom, prob = input$successProbBinom), 4))
+        dfBinom <- data.frame(value = seq(0, input$numTrialsBinom), 
+                              value = round(dbinom(x = 0:input$numTrialsBinom, size = input$numTrialsBinom, prob = input$successProbBinom), 4))
         colnames(dfBinom) <- c("X", "P(X = x)")
         
         datatable(dfBinom,
@@ -3550,9 +3554,22 @@ server <- function(session, input, output) {
                   filter = "none"
         )
       }
-      
-      
     })
+    
+    output$binomDistrBarPlot <- renderPlot({
+      
+      if(input$numTrialsBinom < 50)
+      {
+        dfBinom <- data.frame(X = seq(0, input$numTrialsBinom), 
+                              P = round(dbinom(x = 0:input$numTrialsBinom, size = input$numTrialsBinom, prob = input$successProbBinom), 4))
+        
+        ggplot(dfBinom, aes(x = X, y = P)) + 
+          geom_bar(stat = "identity", fill = "skyblue") + 
+          labs(x = "X", y = "P(X = x)", title = "Probability Distribution") +
+          theme_bw()
+      }
+    })
+      
   })
   
   #### Poisson ----
