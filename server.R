@@ -3553,51 +3553,54 @@ server <- function(session, input, output) {
         )
       }
     })
-    
-    
-    output$binomDistrBarPlot <- renderPlot({
-      
-      req(input$numTrialsBinom < 50)
-      
-      dfBinom <- data.frame(X = seq(0, input$numTrialsBinom), 
-                            P = round(dbinom(x = 0:input$numTrialsBinom, 
-                                             size = input$numTrialsBinom, 
-                                             prob = input$successProbBinom), 4))
-      
-      # render as ggplot
-      # ggplot(dfBinom, aes(x = X, y = P)) + 
-      #   geom_bar(stat = "identity", fill = "skyblue") + 
-      #   labs(x = bquote(bold("Number of Successes (" * bolditalic(x) * ")")),
-      #        y = bquote(bold("P(" * bolditalic(X == x) * ")")),
-      #        title = bquote(bold("Binomial Distribution: " * bolditalic(X) * " ~ Bin(" * bolditalic(n) * " = , " * bolditalic(p) * " = )"))
-      #   ) +
-      #   theme(axis.text = element_text(size = 14),
-      #         axis.title = element_text(size = 16),
-      #         plot.title = element_text(size = 18, hjust = 0.5),
-      #         panel.grid.major = element_blank(),
-      #         panel.grid.minor = element_blank()
-      #   )
-      
-      plot_ly(dfBinom, x = ~X, y = ~P, type = 'bar', marker = list(color = 'skyblue')) %>%
-        layout(
-          xaxis = list(
-            title = bquote(bold("Number of Successes (" * bolditalic(x) * ")")),
-            tickfont = list(size = 14)
-          ),
-          yaxis = list(
-            title = bquote(bold("P(" * bolditalic(X == x) * ")")),
-            tickfont = list(size = 14)
-          ),
-          title = bquote(bold("Binomial Distribution: " * bolditalic(X) * " ~ Bin(" * bolditalic(n) * " = , " * bolditalic(p) * " = )")),
-          titlefont = list(size = 18),
-          showlegend = FALSE,
-          hoverinfo = 'text',
-          text = ~paste("X:", X, "<br>", "P(X = x):", P)
-        )
-      
-    })
       
   })
+  
+
+  output$binomDistrBarPlot <- renderPlot({
+    
+    req(input$numTrialsBinom < 50)
+    
+    dfBinom <- data.frame(X = seq(0, input$numTrialsBinom), 
+                          P = round(dbinom(x = 0:input$numTrialsBinom, 
+                                           size = input$numTrialsBinom, 
+                                           prob = input$successProbBinom), 4))
+    
+    # render as ggplot
+    ggplot(dfBinom, aes(x = X, y = P)) +
+      geom_bar(stat = "identity", fill = "skyblue") +
+      labs(x = bquote(bold("Number of Successes (" * bolditalic(x) * ")")),
+           y = bquote(bold("P(" * bolditalic(X == x) * ")")),
+           title = bquote(bold("Binomial Distribution: " * bolditalic(X) * " ~ Bin(" * bolditalic(n) * " = , " * bolditalic(p) * " = )"))
+      ) +
+      theme(axis.text = element_text(size = 14),
+            axis.title = element_text(size = 16),
+            plot.title = element_text(size = 18, hjust = 0.5),
+            panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank()
+      )
+    
+    # interactPlot <- plot_ly(dfBinom, 
+    #                         x = ~X, 
+    #                         y = ~P, 
+    #                         type = 'bar', 
+    #                         marker = list(color = 'skyblue')) %>%
+    #   layout(
+    #     xaxis = list(
+    #       title = bquote(bold("Number of Successes (" * bolditalic(x) * ")")),
+    #       tickfont = list(size = 14)
+    #     ),
+    #     yaxis = list(
+    #       title = bquote(bold("P(" * bolditalic(X == x) * ")")),
+    #       tickfont = list(size = 14)
+    #     ),
+    #     title = list(text = bquote(bold("Binomial Distribution: " * bolditalic(X) * " ~ Bin(" * bolditalic(n) * " = , " * bolditalic(p) * " = )")), 
+    #                  font = list(size = 18)),
+    #     showlegend = FALSE
+    #   )
+    
+  })
+  
   
   
   #### Poisson ----
