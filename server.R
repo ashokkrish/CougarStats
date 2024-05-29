@@ -3577,7 +3577,10 @@ server <- function(session, input, output) {
             axis.title = element_text(size = 16),
             plot.title = element_text(size = 18, hjust = 0.5),
             panel.grid.major = element_blank(),
-            panel.grid.minor = element_blank()
+            panel.grid.minor = element_blank(),
+            panel.border = element_rect(color = "black", fill = NA, size = 0.5),
+            plot.background = element_rect(color = "black", fill = NA, size = 0.5),
+            plot.margin = margin(10, 10, 10, 5, unit = "mm")
       )
     
     # interactPlot <- plot_ly(dfBinom, 
