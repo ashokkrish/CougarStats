@@ -3566,18 +3566,22 @@ server <- function(session, input, output) {
                                            size = input$numTrialsBinom, 
                                            prob = input$successProbBinom), 4))
     
+    n <- input$numTrialsBinom
+    p <- input$successProbBinom
+    
     # render as ggplot
     ggplot(dfBinom, aes(x = X, y = P)) +
       geom_bar(stat = "identity", fill = "skyblue") +
       labs(x = bquote(bold("Number of Successes (" * bolditalic(x) * ")")),
            y = bquote(bold("P(" * bolditalic(X == x) * ")")),
-           title = bquote(bold("Binomial Distribution: " * bolditalic(X) * " ~ Bin(" * bolditalic(n) * " = , " * bolditalic(p) * " = )"))
+           title = bquote(bold("Binomial Distribution: " * bolditalic(X) * " ~ Bin(" * bolditalic(n) * " = " * bold(.(n)) * ", " * bolditalic(p) * " = " * bold(.(p)) * ")"))
       ) +
+      scale_y_continuous(expand = c(0, 0)) +
       theme(axis.text = element_text(size = 14),
             axis.title = element_text(size = 16),
-            plot.title = element_text(size = 18, hjust = 0.5),
             panel.grid.major = element_blank(),
             panel.grid.minor = element_blank(),
+            plot.title = element_text(size = 18, hjust = 0.5),
             panel.border = element_rect(color = "black", fill = NA, size = 0.5),
             plot.background = element_rect(color = "black", fill = NA, size = 0.5),
             plot.margin = margin(10, 10, 10, 5, unit = "mm")
