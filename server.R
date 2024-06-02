@@ -3576,7 +3576,7 @@ server <- function(session, input, output) {
            y = bquote(bold("P(" * bolditalic(X == x) * ")")),
            title = bquote(bold("Binomial Distribution: " * bolditalic(X) * " ~ Bin(" * bolditalic(n) * " = " * bold(.(n)) * ", " * bolditalic(p) * " = " * bold(.(p)) * ")"))
       ) +
-      scale_y_continuous(expand = c(0, 0)) +
+      scale_y_continuous(expand = expansion(mult = c(0, 0.05))) +
       theme(axis.text = element_text(size = 14),
             axis.title = element_text(size = 16),
             panel.grid.major = element_blank(),
