@@ -46,8 +46,12 @@ server <- function(session, input, output) {
   percentile_iv <- InputValidator$new()
   
   sse_iv <- InputValidator$new()
-  ssemean_iv <- InputValidator$new()
-  sseprop_iv <- InputValidator$new()
+  sseMean_iv <- InputValidator$new()
+  sseMeanMargin_iv <- InputValidator$new()
+  sseMeanWidth_iv <- InputValidator$new()
+  sseProp_iv <- InputValidator$new()
+  ssePropMargin_iv <- InputValidator$new()
+  ssePropWidth_iv <- InputValidator$new()
   
   si_iv <- InputValidator$new()
   onemean_iv <- InputValidator$new()
@@ -484,24 +488,24 @@ server <- function(session, input, output) {
   
   # popuSD
   
-  ssemean_iv$add_rule("ssePopuSD", sv_required())
-  ssemean_iv$add_rule("ssePopuSD", sv_gt(0))
-  ssemean_iv$add_rule("sseMeanMargErr", sv_required())
-  ssemean_iv$add_rule("sseMeanMargErr", sv_gt(0))
-  ssemean_iv$add_rule("sseMeanWoI", sv_required())
-  ssemean_iv$add_rule("sseMeanWoI", sv_gt(0))
+  sseMean_iv$add_rule("ssePopuSD", sv_required())
+  sseMean_iv$add_rule("ssePopuSD", sv_gt(0))
+  sseMeanMargin_iv$add_rule("sseMeanMargErr", sv_required())
+  sseMeanMargin_iv$add_rule("sseMeanMargErr", sv_gt(0))
+  sseMeanWidth_iv$add_rule("sseMeanWoI", sv_required())
+  sseMeanWidth_iv$add_rule("sseMeanWoI", sv_gt(0))
   
   # targetProp
   
-  sseprop_iv$add_rule("sseTargetProp", sv_required())
-  sseprop_iv$add_rule("sseTargetProp", sv_gt(0))
-  sseprop_iv$add_rule("sseTargetProp", sv_lt(1))
-  sseprop_iv$add_rule("ssePropMargErr", sv_required())
-  sseprop_iv$add_rule("ssePropMargErr", sv_gt(0))
-  sseprop_iv$add_rule("ssePropMargErr", sv_lte(1))
-  sseprop_iv$add_rule("ssePropWoI", sv_required())
-  sseprop_iv$add_rule("ssePropWoI", sv_gt(0))
-  sseprop_iv$add_rule("ssePropWoI", sv_lte(1))
+  sseProp_iv$add_rule("sseTargetProp", sv_required())
+  sseProp_iv$add_rule("sseTargetProp", sv_gt(0))
+  sseProp_iv$add_rule("sseTargetProp", sv_lt(1))
+  ssePropMargin_iv$add_rule("ssePropMargErr", sv_required())
+  ssePropMargin_iv$add_rule("ssePropMargErr", sv_gt(0))
+  ssePropMargin_iv$add_rule("ssePropMargErr", sv_lte(1))
+  ssePropWidth_iv$add_rule("ssePropWoI", sv_required())
+  ssePropWidth_iv$add_rule("ssePropWoI", sv_gt(0))
+  ssePropWidth_iv$add_rule("ssePropWoI", sv_lte(1))
   
   # margErr
  
@@ -510,18 +514,36 @@ server <- function(session, input, output) {
   #     Conditions     #
   # ------------------ #
   
-  ssemean_iv$condition( ~ isTRUE(input$dropDownMenu == 'Sample Size Estimation' &&
-                                 input$sampSizeEstParameter == 'Population Mean'))
-  sseprop_iv$condition( ~ isTRUE(input$dropDownMenu == 'Sample Size Estimation' && 
-                                 input$sampSizeEstParameter == 'Population Proportion'))
+  sseMean_iv$condition( ~ isTRUE(input$dropDownMenu == 'Sample Size Estimation' &&
+                                   input$sampSizeEstParameter == 'Population Mean'))
+  sseMeanMargin_iv$condition( ~ isTRUE(input$dropDownMenu == 'Sample Size Estimation' &&
+                                         input$sampSizeEstParameter == 'Population Mean' &&
+                                         input$sseEstimationType == 'Margin of Error'))
+  sseMeanWidth_iv$condition( ~ isTRUE(input$dropDownMenu == 'Sample Size Estimation' &&
+                                        input$sampSizeEstParameter == 'Population Mean' &&
+                                        input$sseEstimationType == 'Width of Interval'))
+  
+  sseProp_iv$condition( ~ isTRUE(input$dropDownMenu == 'Sample Size Estimation' && 
+                                   input$sampSizeEstParameter == 'Population Proportion'))
+  ssePropMargin_iv$condition( ~ isTRUE(input$dropDownMenu == 'Sample Size Estimation' && 
+                                         input$sampSizeEstParameter == 'Population Proportion' &&
+                                         input$sseEstimationType == 'Margin of Error'))
+  ssePropWidth_iv$condition( ~ isTRUE(input$dropDownMenu == 'Sample Size Estimation' && 
+                                         input$sampSizeEstParameter == 'Population Proportion' &&
+                                         input$sseEstimationType == 'Width of Interval'))
   
   
   # ------------------ #
   #     Dependency     #
   # ------------------ #
   
-  sse_iv$add_validator(ssemean_iv)
-  sse_iv$add_validator(sseprop_iv)
+  sse_iv$add_validator(sseMean_iv)
+  sse_iv$add_validator(sseMeanMargin_iv)
+  sse_iv$add_validator(sseMeanWidth_iv)
+  
+  sse_iv$add_validator(sseProp_iv)
+  sse_iv$add_validator(ssePropMargin_iv)
+  sse_iv$add_validator(ssePropWidth_iv)
   
   
   # ------------------ #
@@ -529,8 +551,14 @@ server <- function(session, input, output) {
   # ------------------ #
   
   sse_iv$enable()
-  ssemean_iv$enable()
-  sseprop_iv$enable()
+  
+  sseMean_iv$enable()
+  sseMeanMargin_iv$enable()
+  sseMeanWidth_iv$enable()
+  
+  sseProp_iv$enable()
+  ssePropMargin_iv$enable()
+  ssePropWidth_iv$enable()
   
   
   
@@ -4654,44 +4682,60 @@ server <- function(session, input, output) {
   
   output$ssEstimationValidation <- renderUI({
       
-    if(!sse_iv$is_valid()){
+    if (!sse_iv$is_valid()){
       
-      if(!ssemean_iv$is_valid()){
+      # Validate values for Population Mean (population standard deviation, margin of error, width of interval)
+      if (input$sampSizeEstParameter == 'Population Mean'){
         
         validate(
-          need(input$ssePopuSD && input$ssePopuSD > 0, "Population Standard Deviation must be positive."),
-          need(input$sseMeanMargErr && input$sseMeanMargErr > 0, "Margin of Error must be positive."),
-          
+          need(input$ssePopuSD, "Population Standard Deviation is required.") %then%
+            need(input$ssePopuSD > -1, "Population Standard Deviation must be positive."),
           errorClass = "myClass"
         )
-      }else if(!sseprop_iv$is_valid()){
+        
+        if (!sseMeanMargin_iv$is_valid()){
+
+          validate(
+            need(input$sseMeanMargErr, "Margin of Error is required.") %then%
+              need(input$sseMeanMargErr > 0, "Margin of Error must be positive."),
+            errorClass = "myClass"
+          )
+        } else if (!sseMeanWidth_iv$is_valid()) {
+          validate(
+            need(input$sseMeanWoI, "Width of Interval is required.") %then%
+              need(input$sseMeanWoI > -1, "Width of Interval must be positive."),
+            errorClass = "myClass"
+          )
+        }
+        
+      }
+      # Validate values for Population Proportion (target proportion, margin of error, width of interval)
+      else if (input$sampSizeEstParameter == 'Population Proportion'){
         
         validate(
-          need(input$sseTargetProp, "Target Proportion must be between 0 and 1.") %then%
-            need(input$sseTargetProp > 0 && input$sseTargetProp < 1, "Target Proportion must be between 0 and 1."),
-          need(input$ssePropMargErr, "Margin of Error must be greater than 0 and less than or equal to 1.") %then%
-            need(input$ssePropMargErr > 0 && input$ssePropMargErr <= 1, "Margin of Error must be greater than 0 and less than or equal to 1."),
-          
+          need(input$sseTargetProp, "Target Proportion is required.") %then%
+            need(input$sseTargetProp > 0 && input$sseTargetProp < 1, "Target Proportion must be greater than 0 and less than 1."),
           errorClass = "myClass"
         )
-      } 
-    }
+        
+        if (!ssePropMargin_iv$is_valid()){
+          
+          validate(
+            need(input$ssePropMargErr, "Margin of Error is required.") %then%
+              need(input$ssePropMargErr > 0 && input$ssePropMargErr <= 1, "Margin of Error must be greater than 0 and less than or equal to 1."),
+            errorClass = "myClass"
+          )
+        } else if (!ssePropWidth_iv$is_valid()) {
+          validate(
+            need(input$ssePropWoI, "Width of Interval is required.") %then%
+              need(input$ssePropWoI > 0 && input$ssePropWoI <= 1, "Width of Interval must be greater than 0 and less than or equal to 1."),
+            errorClass = "myClass"
+          )
+        }
+      }
     
-    if(!ssemean_iv$is_valid()){
-      
-      validate(
-        need(input$sseMeanWoI, "Width of Interval (W) required.") %then%
-          need(input$sseMeanWoI > -1, "Width of Interval (W) must be positive.")
-      )
-    }
+    } 
     
-    if(!sseprop_iv$is_valid()){
-      
-      validate(
-        need(input$ssePropWoI, "Width of Interval (W) required.") %then%
-          need(input$ssePropWoI > 0 && input$ssePropWoI <= 1, "Width of Interval (W) must be greater than 0 and less than or equal to 1.")
-      )
-    }
     
   })
   
