@@ -1,14 +1,29 @@
 :root {
   --main-color: #18536F;
-  --main-color-shadow: rgba(24,83,111,0.6);
+  --main-color-shadow: rgba(14,52,68,0.6);
   --off-white: #F5F5F5;
   --dt-row-selected: 24, 83, 111!important;
+}
+
+html {
+  min-height: 100%;
+  position: relative;
+}
+
+body {
+  height: 100%;
+  margin-bottom: 80px;
 }
 
 input[type = "checkbox"],
 input[type = "radio"] {
   accent-color: var(--main-color)!important;
 }
+
+/*body {
+  background-color: #101010;
+  color: #f5f5f5;
+}*/
 
 /* ---------------------------------------------------------- */
 /* Datatable Styles (DT)                                      */
@@ -60,7 +75,7 @@ table.dataTable {                                           /**/
   }                                            /**/
   .act-btn:hover {                             /**/
     color: var(--off-white);                   /**/
-    font-eight: bold;                          /**/
+    font-weight: bold;                          /**/
     background-color: var(--main-color-shadow);/**/
     border-color: var(--main-color);           /**/
   }                                            /**/
@@ -133,21 +148,38 @@ table.dataTable {                                           /**/
   /* -------------------------------------------------------------------- */
   /* Header menu styles                                                   */
   /* -------------------------------------------------------------------- */
-  .nav {                                                                /**/
+  .navbar-nav {                                                                /**/
     align-items: center;                                                /**/
   }                                                                     /**/
   .navbar,                                                              /**/
   .navbar-brand,                                                        /**/
   .navbar-light .navbar-brand, .navbar.navbar-default .navbar-brand{    /**/
     color: var(--off-white);                                            /**/
-    --bslib-navbar-default-bg: var(--main-color);                       /**/
-  }                                                                     /**/
+    --bslib-navbar-default-bg: var(--main-color);
+    font-weight: bold;                       /**/
+  }                                                                    /**/
   .navbar-nav .nav-link.active {                                        /**/
     color: var(--off-white)!important;                                  /**/
-  }                                                                     /**/
-  .navbar-nav .nav-link {                                               /**/
-    color: rgba(245,245,245,0.5)!important;                             /**/
-  }                                                                     /**/
+  }
+  #mainBanner .nav-link.active {                                        /**/                               /**/
+    font-size: 1.5rem;
+  }                                                                       /**/
+  #mainBanner .nav-link {                                               /**/
+    color: rgba(245,245,245,0.75);                             /**/
+    font-size: 1.35rem;
+    transition: font-size 0.1s;
+  } 
+  #mainBanner .nav-link:hover {                                               /**/
+    font-size: 1.5rem;                            /**/
+  } 
+  .nav-item {
+    width: 200px;
+    text-align: center;
+  }
+  
+  .navbarLogo {
+    width: 325px;
+  }/**/
   .pageTitle {                                                          /**/
     color: var(--off-white);                                            /**/
     font-weight: bold;                                                  /**/
@@ -165,6 +197,53 @@ table.dataTable {                                           /**/
     padding-right: 15px;                                                /**/
     padding-left: 15px;                                                 /**/
   }                                                                     /**/
+
+  .tab-pane,
+  .tab-content {                                                           
+    padding-right: 0px;                                                 
+    padding-left: 0px;                                                  
+    margin-top: 0px!important;
+  }
+  
+  div[data-value = "Methods"] {
+    min-height: 100%;
+  }
+  div[data-value = "Methods"] .navbar {
+    background-color: #F7F7F7!important;
+    padding: 0px 15px;
+    margin-bottom: 25px;
+    border-style: solid;
+    border-bottom-color: #D8D8D8;
+    border-width: 0px 0px 2px 0px;
+    
+  }                                                                   
+  div[data-value = "Methods"] .navbar-nav .nav-link {   
+    padding: 15px!important;                                            
+    color: var(--main-color)!important;
+    font-size: 1.25rem; 
+    border-width: 0px;                            
+    border-radius: 0px 0px 10px 10px;
+    transition: color 0.3s, background-color 0.3s, border-style 0.3s, border-color 0.3s;
+    transition-timing-function: linear;
+  } 
+  div[data-value = "Methods"] .navbar-nav .nav-link:hover,
+  div[data-value = "Methods"] .navbar-nav .nav-link.active {                                               
+    border-style: solid;
+    border-color: var(--main-color);
+    background-color: var(--main-color);
+    color: #F7F7F7!important;                            
+  } 
+  div[data-value = "Methods"] .navbar-nav {
+    justify-content: space-around;
+  }
+  div[data-value = "Methods"] .nav-item {
+    width: auto;
+  }
+  
+  div[data-value = "Authors"] {
+    margin: 25px;
+  }
+
   /*----------------------------------------------------------------------*/
 
   /* ----------------------------------------------------------------------------- */
@@ -209,3 +288,22 @@ table.dataTable {                                           /**/
     .state.p-default.p-round {
         margin-bottom: 0.5rem;
       }
+
+.row {
+  margin-right: 0px;
+}
+
+.footer {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 80px;
+}
+
+.appStoreButton {
+  width: 100%;
+  height: 80px;
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: var(--main-color)
+}
