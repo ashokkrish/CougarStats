@@ -3610,8 +3610,8 @@ server <- function(session, input, output) {
             panel.grid.major = element_blank(),
             panel.grid.minor = element_blank(),
             plot.title = element_text(size = 18, hjust = 0.5),
-            panel.border = element_rect(color = "black", fill = NA, size = 0.5),
-            plot.background = element_rect(color = "black", fill = NA, size = 0.5),
+            panel.border = element_rect(color = "black", fill = NA, linewidth = 0.5),
+            plot.background = element_rect(color = "black", fill = NA, linewidth = 0.5),
             plot.margin = margin(10, 10, 10, 5, unit = "mm")
       )
     
