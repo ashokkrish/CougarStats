@@ -10,7 +10,11 @@
     tags$head(
         tags$link(rel = "stylesheet", 
                   type="text/css", 
-                  href="cougarstats-styles.css")
+                  href="cougarstats-styles.css"),
+
+        tags$link(rel = "icon",
+                  type="image/x-icon",
+                  href="favicon.ico"),
     ),
   
     navbarPage(
