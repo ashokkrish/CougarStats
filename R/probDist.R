@@ -46,11 +46,12 @@ probDistUI <- function(id) {
             label    = strong("Distribution"), 
             choices  = c("Contingency Table",
                          "Binomial", 
-                         "Poisson", 
+                         "Poisson",
+                         "Negative Binomial",
                          "Normal"), 
             selected = NULL, 
-            inline   = TRUE),
-          
+            inline   = FALSE),
+
 ### ------------ Contingency Tables -------------------------------------------
 
           conditionalPanel(
@@ -410,6 +411,121 @@ probDistUI <- function(id) {
           ), # Poisson
         
         
+
+### ------------ Negative Binomial --------------------------------------------
+
+          conditionalPanel(
+            ns = ns,
+            id = ns("negBinPanel"),
+            condition = "input.probability == 'Negative Binomial'",
+
+            # numeric input
+            numericInput(
+              inputId = ns("successNegBin"),
+              label   = strong("Number of Successes (\\( r\\))"),
+              value   = 12345,
+              min     = 1,
+              step    = 1),
+
+            # numeric input
+            numericInput(
+              inputId = ns("probabilityNegBin"),
+              label   = strong("Probability of Successes (\\( p\\))"),
+              value   = 0.12345,
+              min     = 0,
+              max     = 1,
+              step    = 0.00001),
+
+            HTML("<label class='si-label'><b>Probability</b></label>"),
+            # radio buttons
+            radioButtons(
+              inputId      = ns("calcNegBin"),
+              label        = NULL,
+              choiceValues = list("exact",
+                                  "cumulative",
+                                  "upperTail",
+                                  "greaterThan",
+                                  "lessThan",
+                                  "between"),
+              choiceNames  = list("\\(P(X = x \\))",
+                                  "\\(P(X \\leq x)\\)",
+                                  "\\(P(X \\ge x)\\)",
+                                  "\\(P(X \\gt x)\\)",
+                                  "\\(P(X < x)\\)",
+                                  "\\(P(x_1 \\leq X \\leq x_2)\\)"),
+              inline       = FALSE),
+
+            # radio buttons
+            radioButtons(
+              inputId = ns("trialsNegBin"),
+              label = strong("Trials"),
+              choiceValues = list("failures",
+                                  "trials"),
+              choiceNames = list("Failures prior to the rth success",
+                                 "Trials until (and including) the rth success"),
+              inline = TRUE,
+            ),
+
+            # conditional check
+            # if ONE value
+            conditionalPanel(
+              ns = ns,
+              condition = "input.calcNegBin != 'between'",
+
+              # numeric input
+              numericInput(
+                inputId = ns("xNegBin"),
+                label   = strong("Number of Successes (\\( x\\))"),
+                value   = 12345,
+                min     = 1,
+                step    = 1)
+            ),
+
+            # else TWO values
+            conditionalPanel(
+              ns = ns,
+              condition = "input.calcNegBin == 'between'",
+
+              # numeric input
+              numericInput(
+                inputId = ns("x1NegBin"),
+                label   = strong("Number of Successes (\\( x_{1}\\))"),
+                value   = 12345,
+                min     = 1,
+                step    = 1),
+
+              # numeric input
+              numericInput(
+                inputId = ns("x2NegBin"),
+                label   = strong("Number of Successes (\\( x_{2}\\))"),
+                value   = 12345,
+                min     = 1,
+                step    = 1)
+            ),
+
+            br(),
+            p(strong("Options")),
+            hr(),
+
+            # checkbox
+            checkboxInput(
+              inputId = ns("showNegBinTable"),
+              label   = "Display Probability Distribution Table",
+              value   = TRUE),
+
+            # 'calculate' and 'reset' buttons
+            actionButton(
+              inputId = ns("goNegBin"),
+              label   = "Calculate",
+              class   = "act-btn"),
+
+            actionButton(
+              inputId = ns("resetNegBin"),
+              label   = "Reset Values",
+              class   = "act-btn")
+          ), # Negative Binomial
+
+
 
 ### ------------ Normal -------------------------------------------------------
 
