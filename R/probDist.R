@@ -489,7 +489,7 @@ probDistUI <- function(id) {
               numericInput(
                 inputId = ns("x2NegBin"),
                 label   = strong("Number of Successes (\\( x_{2}\\))"),
-                value   = 3,
+                value   = 2,
                 min     = 1,
                 step    = 1)
             ),
@@ -863,6 +863,16 @@ probDistUI <- function(id) {
               br(),
             ), # Poisson
             
+### ------------ Negative Binomial --------------------------------------------
+            conditionalPanel(
+              ns = ns,
+              condition = "input.probability == 'Negative Binomial'",
+
+              br(),
+              uiOutput(ns("renderProbabilityNegBin")),
+              br(),
+            ), # Negative Binomial
+
 ### ------------ Normal -------------------------------------------------------
            conditionalPanel(
               ns = ns,
@@ -925,6 +935,7 @@ probDistServer <- function(id) {
  ## -------- Data Validation ------------------------------------------------
  # ========================================================================== #
     pd_iv <- InputValidator$new()
+
     ctable_iv <- InputValidator$new()
     ctableconditional_iv <- InputValidator$new()
     ctable2x2_iv <- InputValidator$new()
@@ -935,6 +946,7 @@ probDistServer <- function(id) {
     ctable3x2conditional_iv <- InputValidator$new()
     ctable3x3_iv <- InputValidator$new()
     ctable3x3conditional_iv <- InputValidator$new()
+
     ptable_iv <- InputValidator$new()
     ptableconditional_iv <- InputValidator$new()
     ptable2x2_iv <- InputValidator$new()
@@ -945,15 +957,22 @@ probDistServer <- function(id) {
     ptable3x2conditional_iv <- InputValidator$new()
     ptable3x3_iv <- InputValidator$new()
     ptable3x3conditional_iv <- InputValidator$new()
+
     binom_iv <- InputValidator$new()
     binomprob_iv <- InputValidator$new()
     binombetween_iv <- InputValidator$new()
+
     poiss_iv <- InputValidator$new()
     poissprob_iv <- InputValidator$new()
     poissbetween_iv <- InputValidator$new()
+
+    negbin_iv <- InputValidator$new()
+    negbinxlte_iv <- InputValidator$new()
+
     norm_iv <- InputValidator$new()
     normprob_iv <- InputValidator$new()
     normbetween_iv <- InputValidator$new()
+
     sampdistrprob_iv <- InputValidator$new()
     sampdistrbetween_iv <- InputValidator$new()
     sampdistrsize_iv <- InputValidator$new()
@@ -1065,6 +1084,8 @@ probDistServer <- function(id) {
     poissbetween_iv$add_rule("x2Poisson", sv_integer())
     poissbetween_iv$add_rule("x2Poisson", sv_gte(0))
     
+    # TODO: negbinxlte_iv$add_rule("", )
+
     norm_iv$add_rule("popMean", sv_required())
     
     norm_iv$add_rule("popSD", sv_required())
@@ -1175,6 +1196,9 @@ probDistServer <- function(id) {
     poissbetween_iv$condition(~ isTRUE(input$probability == 'Poisson' && 
                                          input$calcPoisson == 'between'))
     
+    # TODO: negbin_iv$condition(~ isTRUE(input$probability == 'Negative Binomial'))
+
+
     norm_iv$condition(~ isTRUE(input$probability == 'Normal'))
     
     normprob_iv$condition(~ isTRUE(input$probability == 'Normal' &&
@@ -1234,6 +1258,8 @@ probDistServer <- function(id) {
     poiss_iv$add_validator(poissprob_iv)
     poiss_iv$add_validator(poissbetween_iv)
     
+    # TODO: negbin_iv$add_validator()
+
     norm_iv$add_validator(normprob_iv)
     norm_iv$add_validator(normbetween_iv)
     norm_iv$add_validator(sampdistrprob_iv)
@@ -1245,12 +1271,14 @@ probDistServer <- function(id) {
     pd_iv$add_validator(ptable_iv)
     pd_iv$add_validator(binom_iv)
     pd_iv$add_validator(poiss_iv)
+    # TODO: pd_iv$add_validator(negbin_iv)
     pd_iv$add_validator(norm_iv)
     
 
  ### ------------ Activation --------------------------------------------------   
 
     pd_iv$enable()
+
     ctable_iv$enable()
     ctableconditional_iv$enable()
     ctable2x2_iv$enable()
@@ -1261,6 +1289,7 @@ probDistServer <- function(id) {
     ctable3x2conditional_iv$enable()
     ctable3x3_iv$enable()
     ctable3x3conditional_iv$enable()
+
     ptable_iv$enable()
     ptableconditional_iv$enable()
     ptable2x2_iv$enable()
@@ -1271,15 +1300,21 @@ probDistServer <- function(id) {
     ptable3x2conditional_iv$enable()
     ptable3x3_iv$enable()
     ptable3x3conditional_iv$enable()
+
     binom_iv$enable()
     binomprob_iv$enable()
     binombetween_iv$enable()
+
     poiss_iv$enable()
     poissprob_iv$enable()
     poissbetween_iv$enable()
+
+    # TODO: negbin_iv$enable()
+
     norm_iv$enable()
     normprob_iv$enable()
     normbetween_iv$enable()
+
     sampdistrprob_iv$enable()
     sampdistrbetween_iv$enable()
     sampdistrsize_iv$enable()
@@ -2635,7 +2670,21 @@ probDistServer <- function(id) {
         ) %>% formatRound(2, digits = 4)
       })
     })
-    
+
+  ### ------------ Negative Binomial ------------------------------------------
+
+    # TODO
+    # observeEvent(input$goNegBin, {
+
+    #   output$renderProbabilityNegBin <- renderUI({
+    #     withMathJax(
+    #       if(!pd_iv$is_valid())
+    #       {
+
+    #       }
+    #     )
+    #   })
+
  ### ------------ Normal ------------------------------------------------------
     observeEvent(input$goNormalProb, {
       
