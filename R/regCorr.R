@@ -19,10 +19,10 @@ regCorrUI <- function(id) {
           radioButtons(
             inputId      = ns("simple_vs_multiple"),
             label        = strong("Regression Type"),
-            choiceValues = list("SLR"), 
-            # "MLR"),
-            choiceNames  = list("Simple Linear Regression and Correlation Analysis"), 
-            # "Multiple Linear Regression"),
+            choiceValues = list("SLR", 
+                                "MLR"), 
+            choiceNames  = list("Simple Linear Regression and Correlation Analysis", 
+                                "Multiple Linear Regression"),
             selected     = "SLR", 
             inline       = TRUE),
           
@@ -105,8 +105,8 @@ regCorrUI <- function(id) {
             condition = "input.simple_vs_multiple == 'MLR'",
             
             fileInput(
-              inputId = ns("headerfileMLR"),
-              label   = "Upload data",
+              inputId = ns("mlrUserData"),
+              label   = "Upload your data (.csv or .xls or .xlsx or .txt)",
               accept  = c("text/csv",
                           "text/comma-separated-values",
                           "text/tab-separated-values",
@@ -114,7 +114,22 @@ regCorrUI <- function(id) {
                           ".csv",
                           ".txt",
                           ".xls",
-                          ".xlsx"))
+                          ".xlsx")),
+            
+            selectizeInput(
+              inputId = ns("mlrExplanatory"),
+              label   = strong("Choose the Explanatory Variables (x)"),
+              choices = c(""),
+              multiple = TRUE,
+              options = list(placeholder = 'Select a variable',
+                             onInitialize = I('function() { this.setValue(""); }'))),
+            
+            selectizeInput(
+              inputId = ns("mlrResponse"),
+              label   = strong("Choose the Response Variable (y)"),
+              choices = c(""),
+              options = list(placeholder = 'Select a variable',
+                             onInitialize = I('function() { this.setValue(""); }')))
           ), #simple_vs_multiple == 'MLR'
           
           actionButton(
@@ -312,6 +327,7 @@ regCorrServer <- function(id) {
     slrraw_iv <- InputValidator$new()
     slrupload_iv <- InputValidator$new()
     slruploadvars_iv <- InputValidator$new()
+    mlrupload_iv <- InputValidator$new()
 
  ### ------------ Rules -------------------------------------------------------
     slrraw_iv$add_rule("x", sv_required())
@@ -334,25 +350,32 @@ regCorrServer <- function(id) {
     slrupload_iv$add_rule("slrUserData", ~ if(nrow(slrUploadData()) < 3) "Samples must include at least 2 observations.")
     # slrupload_iv$add_rule("slrUserData", ~ if(any(!is.numeric(slrUploadData()))) "File contains non-numeric data.")
     
+    mlrupload_iv$add_rule("mlrUserData", sv_required())
+    mlrupload_iv$add_rule("mlrUserData", ~ if(is.null(fileInputs$mlrStatus) || fileInputs$mlrStatus == 'reset') "Required")
+    mlrupload_iv$add_rule("mlrUserData", ~ if(!(tolower(tools::file_ext(input$mlrUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+    mlrupload_iv$add_rule("mlrUserData", ~ if(nrow(mlrUploadData()) == 0) "File is empty.")
+    
     slruploadvars_iv$add_rule("slrExplanatory", sv_required())
-    slruploadvars_iv$add_rule("slrExplanatory", ~ if(explanatoryInfoUpload()$invalid) "Explanatory variable contains non-numeric data.")
-    slruploadvars_iv$add_rule("slrExplanatory", ~ if(explanatoryInfoUpload()$sd == 0) "Not enough variance in Explanatory Variable.")
+    slruploadvars_iv$add_rule("slrExplanatory", ~ if(explanatoryInfoUploadSLR()$invalid) "Explanatory variable contains non-numeric data.")
+    slruploadvars_iv$add_rule("slrExplanatory", ~ if(explanatoryInfoUploadSLR()$sd == 0) "Not enough variance in Explanatory Variable.")
     
     slruploadvars_iv$add_rule("slrResponse", sv_required())
     slruploadvars_iv$add_rule("slrResponse", ~ if(sampleDiffUpload() != 0) "Missing values detected, x and y must have the same number of observations.")
-    slruploadvars_iv$add_rule("slrResponse", ~ if(responseInfoUpload()$invalid) "Response variable contains non-numeric data.")
-    slruploadvars_iv$add_rule("slrResponse", ~ if(responseInfoUpload()$sd == 0) "Not enough variance in Response Variable.")
+    slruploadvars_iv$add_rule("slrResponse", ~ if(responseInfoUploadSLR()$invalid) "Response variable contains non-numeric data.")
+    slruploadvars_iv$add_rule("slrResponse", ~ if(responseInfoUploadSLR()$sd == 0) "Not enough variance in Response Variable.")
 
  ### ------------ Conditions --------------------------------------------------
     slrraw_iv$condition(~ isTRUE(input$dataRegCor == 'Enter Raw Data'))
     slrupload_iv$condition(~ isTRUE(input$dataRegCor == 'Upload Data'))
     slruploadvars_iv$condition(function() {isTRUE(input$dataRegCor == 'Upload Data' && 
                                                     slrupload_iv$is_valid()) })
+    mlrupload_iv$condition(~ isTRUE(input$simple_vs_multiple == "MLR"))
 
  ### ------------ Dependencies ------------------------------------------------
     regcor_iv$add_validator(slrraw_iv)
     regcor_iv$add_validator(slrupload_iv)
     regcor_iv$add_validator(slruploadvars_iv)
+    regcor_iv$add_validator(mlrupload_iv)
 
     
  ### ------------ Activation --------------------------------------------------
@@ -360,6 +383,7 @@ regCorrServer <- function(id) {
     slrraw_iv$enable()
     slrupload_iv$enable()
     slruploadvars_iv$enable()
+    mlrupload_iv$enable()
     
     
  #  ========================================================================= #    
@@ -402,6 +426,10 @@ regCorrServer <- function(id) {
       slrStatus = NULL,
     )
     
+    mlrFileInputs <- reactiveValues(
+      mlrStatus = NULL
+    )
+    
     slrUploadData <- eventReactive(input$slrUserData, {
       ext <- tools::file_ext(input$slrUserData$name)
       ext <- tolower(ext)
@@ -411,6 +439,19 @@ regCorrServer <- function(id) {
              xls = read_xls(input$slrUserData$datapath), 
              xlsx = read_xlsx(input$slrUserData$datapath),
              txt = read_tsv(input$slrUserData$datapath, show_col_types = FALSE),
+             
+             validate("Improper file format"))
+    })
+    
+    mlrUploadData <- eventReactive(input$mlrUserData, {
+      ext <- tools::file_ext(input$mlrUserData$name)
+      ext <- tolower(ext)
+      
+      switch(ext, 
+             csv = read_csv(input$mlrUserData$datapath, show_col_types = FALSE),
+             xls = read_xls(input$mlrUserData$datapath), 
+             xlsx = read_xlsx(input$mlrUserData$datapath),
+             txt = read_tsv(input$mlrUserData$datapath, show_col_types = FALSE),
              
              validate("Improper file format"))
     })
@@ -426,7 +467,7 @@ regCorrServer <- function(id) {
         return(dat)
       })
     
-    explanatoryInfoUpload <- eventReactive(input$slrExplanatory, {
+    explanatoryInfoUploadSLR <- eventReactive(input$slrExplanatory, {
       dat <- list()
       datx <- as.data.frame(slrUploadData())[, input$slrExplanatory]
       dat$invalid <- any(!is.numeric(datx))
@@ -434,9 +475,25 @@ regCorrServer <- function(id) {
       return(dat)
     })
     
-    responseInfoUpload <- eventReactive(input$slrResponse, {
+    explanatoryInfoUploadMLR <- eventReactive(input$mlrExplanatory, {
+      dat <- list()
+      datx <- as.data.frame(mlrUploadData())[, input$mlrExplanatory]
+      dat$invalid <- any(!is.numeric(datx))
+      dat$sd <- sd(datx, na.rm = TRUE)
+      return(dat)
+    })
+    
+    responseInfoUploadSLR <- eventReactive(input$slrResponse, {
       dat <- list()
       daty <- as.data.frame(slrUploadData())[, input$slrResponse]
+      dat$invalid <- any(!is.numeric(daty))
+      dat$sd <- sd(daty, na.rm = TRUE)
+      return(dat)
+    })
+    
+    responseInfoUploadMLR <- eventReactive(input$mlrResponse, {
+      dat <- list()
+      daty <- as.data.frame(mlrUploadData())[, input$mlrResponse]
       dat$invalid <- any(!is.numeric(daty))
       dat$sd <- sd(daty, na.rm = TRUE)
       return(dat)
@@ -478,6 +535,28 @@ regCorrServer <- function(id) {
         )
         show(id = "slrResponse")
         show(id = "slrExplanatory")
+      }
+    })
+    
+    observeEvent(input$mlrUserData, {
+      hide(id = "mlrResponse")
+      hide(id = "mlrExplanatory")
+      fileInputs$mlrStatus <- 'uploaded'
+      
+      if(mlrupload_iv$is_valid())
+      {
+        freezeReactiveValue(input, "mlrExplanatory")
+        updateSelectInput(session = getDefaultReactiveDomain(),
+                          "mlrExplanatory",
+                          choices = c(colnames(mlrUploadData()))
+        )
+        freezeReactiveValue(input, "mlrResponse")
+        updateSelectInput(session = getDefaultReactiveDomain(),
+                          "mlrResponse",
+                          choices = c(colnames(mlrUploadData()))
+        )
+        show(id = "mlrResponse")
+        show(id = "mlrExplanatory")
       }
     })
     
@@ -526,10 +605,10 @@ regCorrServer <- function(id) {
               errorClass = "myClass")
             
             validate(
-              need(!explanatoryInfoUpload()$invalid, "The Explanatory Variable (x) contains non-numeric data.") %then%
-                need(explanatoryInfoUpload()$sd != 0, "The data for the Explanatory Variable (x) must have a standard deviation greater than 0 to perform regression and correlation analysis."),
-              need(!responseInfoUpload()$invalid, "The Response Variable (y) contains non-numeric data.") %then%
-                need(responseInfoUpload()$sd != 0, "The data for the Response Variable (y) must have a standard deviation greater than 0 to perform regression and correlation analysis."),
+              need(!explanatoryInfoUploadSLR()$invalid, "The Explanatory Variable (x) contains non-numeric data.") %then%
+                need(explanatoryInfoUploadSLR()$sd != 0, "The data for the Explanatory Variable (x) must have a standard deviation greater than 0 to perform regression and correlation analysis."),
+              need(!responseInfoUploadSLR()$invalid, "The Response Variable (y) contains non-numeric data.") %then%
+                need(responseInfoUploadSLR()$sd != 0, "The data for the Response Variable (y) must have a standard deviation greater than 0 to perform regression and correlation analysis."),
               errorClass = "myClass")
           } 
           
@@ -888,6 +967,11 @@ regCorrServer <- function(id) {
       hide(id = "slrExplanatory")
       updateTextInput(inputId = "xlab", value = "x")
       updateTextInput(inputId = "ylab", value = "y")
+    })
+    
+    observeEvent(input$simple_vs_multiple, {
+      hide(id = "mlrResponse")
+      hide(id = "mlrExplanatory")
     })
     
     observe({
