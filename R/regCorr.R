@@ -118,10 +118,10 @@ regCorrUI <- function(id) {
             
             selectizeInput(
               inputId = ns("mlrExplanatory"),
-              label   = strong("Choose the Explanatory Variables (x)"),
+              label   = strong("Choose the Explanatory Variables (x1, x2, x3, ...)"),
               choices = c(""),
               multiple = TRUE,
-              options = list(placeholder = 'Select a variable',
+              options = list(placeholder = 'Select multiple variables',
                              onInitialize = I('function() { this.setValue(""); }'))),
             
             selectizeInput(
@@ -305,6 +305,8 @@ regCorrUI <- function(id) {
           conditionalPanel(
             ns = ns,
             condition = "input.simple_vs_multiple == 'MLR'",
+            
+            uiOutput(ns("mlrValidation")),
    
           ), #simple_vs_multiple == 'MLR'
         ) #regCorrMP
@@ -328,6 +330,7 @@ regCorrServer <- function(id) {
     slrupload_iv <- InputValidator$new()
     slruploadvars_iv <- InputValidator$new()
     mlrupload_iv <- InputValidator$new()
+    mlruploadvars_iv <- InputValidator$new()
 
  ### ------------ Rules -------------------------------------------------------
     slrraw_iv$add_rule("x", sv_required())
@@ -350,11 +353,6 @@ regCorrServer <- function(id) {
     slrupload_iv$add_rule("slrUserData", ~ if(nrow(slrUploadData()) < 3) "Samples must include at least 2 observations.")
     # slrupload_iv$add_rule("slrUserData", ~ if(any(!is.numeric(slrUploadData()))) "File contains non-numeric data.")
     
-    mlrupload_iv$add_rule("mlrUserData", sv_required())
-    mlrupload_iv$add_rule("mlrUserData", ~ if(is.null(fileInputs$mlrStatus) || fileInputs$mlrStatus == 'reset') "Required")
-    mlrupload_iv$add_rule("mlrUserData", ~ if(!(tolower(tools::file_ext(input$mlrUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
-    mlrupload_iv$add_rule("mlrUserData", ~ if(nrow(mlrUploadData()) == 0) "File is empty.")
-    
     slruploadvars_iv$add_rule("slrExplanatory", sv_required())
     slruploadvars_iv$add_rule("slrExplanatory", ~ if(explanatoryInfoUploadSLR()$invalid) "Explanatory variable contains non-numeric data.")
     slruploadvars_iv$add_rule("slrExplanatory", ~ if(explanatoryInfoUploadSLR()$sd == 0) "Not enough variance in Explanatory Variable.")
@@ -364,19 +362,31 @@ regCorrServer <- function(id) {
     slruploadvars_iv$add_rule("slrResponse", ~ if(responseInfoUploadSLR()$invalid) "Response variable contains non-numeric data.")
     slruploadvars_iv$add_rule("slrResponse", ~ if(responseInfoUploadSLR()$sd == 0) "Not enough variance in Response Variable.")
 
+    mlrupload_iv$add_rule("mlrUserData", sv_required())
+    mlrupload_iv$add_rule("mlrUserData", ~ if(is.null(fileInputs$mlrStatus) || fileInputs$mlrStatus == 'reset') "Required")
+    mlrupload_iv$add_rule("mlrUserData", ~ if(!(tolower(tools::file_ext(input$mlrUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+    mlrupload_iv$add_rule("mlrUserData", ~ if(nrow(mlrUploadData()) == 0) "File is empty.")
+    mlrupload_iv$add_rule("mlrUserData", ~ if(ncol(mlrUploadData()) < 2) "Data must include one response and (at least) one explanatory variable.")
+    
+    mlruploadvars_iv$add_rule("mlrExplanatory", sv_required())
+    mlruploadvars_iv$add_rule("mlrResponse", sv_required())
+    
  ### ------------ Conditions --------------------------------------------------
     slrraw_iv$condition(~ isTRUE(input$dataRegCor == 'Enter Raw Data'))
     slrupload_iv$condition(~ isTRUE(input$dataRegCor == 'Upload Data'))
     slruploadvars_iv$condition(function() {isTRUE(input$dataRegCor == 'Upload Data' && 
                                                     slrupload_iv$is_valid()) })
     mlrupload_iv$condition(~ isTRUE(input$simple_vs_multiple == "MLR"))
+    mlruploadvars_iv$condition(~ isTRUE(input$simple_vs_multiple == "MLR" &&
+                                        mlrupload_iv$is_valid()))
 
  ### ------------ Dependencies ------------------------------------------------
     regcor_iv$add_validator(slrraw_iv)
     regcor_iv$add_validator(slrupload_iv)
     regcor_iv$add_validator(slruploadvars_iv)
     regcor_iv$add_validator(mlrupload_iv)
-
+    regcor_iv$add_validator(mlruploadvars_iv)
+    
     
  ### ------------ Activation --------------------------------------------------
     regcor_iv$enable()
@@ -384,6 +394,7 @@ regCorrServer <- function(id) {
     slrupload_iv$enable()
     slruploadvars_iv$enable()
     mlrupload_iv$enable()
+    mlruploadvars_iv$enable()
     
     
  #  ========================================================================= #    
@@ -570,6 +581,7 @@ regCorrServer <- function(id) {
     
     observeEvent(input$goRegression, {
       
+      ### SLR Validation messages ----
       if(input$simple_vs_multiple == 'SLR') {
         
         if(regcor_iv$is_valid()) {
@@ -641,6 +653,7 @@ regCorrServer <- function(id) {
               errorClass = "myClass")
           }
         }) #output$slrValidation
+
         
         if(regcor_iv$is_valid()) {
           
@@ -952,6 +965,33 @@ regCorrServer <- function(id) {
           
         } #if regcor_iv is valid
       }
+      
+### MLR Validation messages ----      
+      else if (input$simple_vs_multiple == "MLR") {
+        
+        output$mlrValidation <- renderUI({
+          
+          if(!mlrupload_iv$is_valid()) {
+            
+            if(is.null(input$mlrUserData)) {
+              validate("Please upload a file.")
+            }
+          }
+          
+          
+          if(!mlruploadvars_iv$is_valid()) {
+            validate(
+              need(input$mlrExplanatory != "", "Please select at least one Explanatory Variable (x)."),
+              need(input$mlrResponse != "", "Please select a Response Variable (y)."),
+              
+              errorClass = "myClass"
+            )
+          } 
+          
+        })
+        
+      }
+      
       show(id = "regCorrMP")
     }) # input$goRegression
     
@@ -970,8 +1010,12 @@ regCorrServer <- function(id) {
     })
     
     observeEvent(input$simple_vs_multiple, {
-      hide(id = "mlrResponse")
-      hide(id = "mlrExplanatory")
+      
+      if (!mlrupload_iv$is_valid()) {
+        hide(id = "mlrResponse")
+        hide(id = "mlrExplanatory")
+      }
+      
     })
     
     observe({
@@ -990,6 +1034,7 @@ regCorrServer <- function(id) {
       hide(id = "regCorrMP")
       shinyjs::reset("inputPanel")
       fileInputs$slrStatus <- 'reset'
+      fileInputs$mlrStatus <- 'reset'
     })
  
   })
