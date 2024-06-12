@@ -41,12 +41,12 @@ authorsUI <- function() {
     
     br(),
     
-    p("Acknowledgement: In Fall 2022 an earlier version of this interactive R Shiny app was presented as Crystal 
+    p(HTML("<b>Acknowledgement:</b> In Fall 2022 an earlier version of this interactive R Shiny app was presented as Crystal 
       Wai's COMP 5690: Senior Computer Science Project. From June - August 2023 this project was funded by a 
       student research grant conferred by the Faculty of Science and Technology at Mount Royal University. From 
       September 2023 - April 2024 this project was funded by a Provost's Teaching-Learning Enhancement Grant 
       (TLEG). Starting July 2024 this project will be funded by the Provost's Teaching-Learning Enhancement Grant 
-      (TLEG) for the 2024-2025 cycle."), 
+      (TLEG) for the 2024-2025 cycle.")), 
     br(),
     
     p("This interactive R Shiny app is maintained by Dr. Ashok Krishnamurthy. We welcome questions, insights, and feedback."),
