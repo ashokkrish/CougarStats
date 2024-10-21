@@ -16,13 +16,12 @@ authorsUI <- function() {
     p("Website:", a(href = "https://bit.ly/2YKrXjX","https://bit.ly/2YKrXjX", target = "_blank")),
     p("GitHub:", a(href = "https://github.com/ashokkrish/CougarStats","https://github.com/ashokkrish/CougarStats", target = "_blank")),
     br(),
-    
-    p(span("Michael Myer", style= "font-weight:bold")),
+
+    p(a(href = "https://github.com/bryce-carson",
+        span("Bryce Carson, B.Sc.", style = "font-weight:bold"),
+        target = "_blank")),
     p("Senior Developer"),
-    #p(span("Lead Developer", style = "font-weight:bold")),
-    p("Undergraduate Student, Mount Royal University,"),
     p("Calgary, AB, CANADA"),
-    
     br(),
     
     p(span("Samantha Brian", style= "font-weight:bold")),
@@ -33,31 +32,22 @@ authorsUI <- function() {
     
     br(),
     
-    p(span("Michael Walsh", style= "font-weight:bold")),
-    p("Developer"),
-    #p(span("Lead Developer", style = "font-weight:bold")),
-    p("Undergraduate Student, Mount Royal University,"),
-    p("Calgary, AB, CANADA"),
-    
-    br(),
-    
-    p(HTML("<b>Acknowledgement:</b> In Fall 2022 an earlier version of this interactive R Shiny app was presented as Crystal 
-      Wai's COMP 5690: Senior Computer Science Project. From June - August 2023 this project was funded by a 
-      student research grant conferred by the Faculty of Science and Technology at Mount Royal University. From 
-      September 2023 - April 2024 this project was funded by a Provost's Teaching-Learning Enhancement Grant 
-      (TLEG). Starting July 2024 this project will be funded by the Provost's Teaching-Learning Enhancement Grant 
-      (TLEG) for the 2024-2025 cycle.")), 
+    p(HTML("<b>Acknowledgement:</b> The development of this interactive Shiny&#174; app
+has benefited from the contributions of several students. In Fall 2022, Crystal
+Wai presented an early version of this app as part of her COMP 5690: Senior
+Computer Science Project. From June to August 2023, Michael Myer further
+developed the project, supported by a student research grant from the Faculty of
+Science and Technology at Mount Royal University. From September 2023 to April
+2024, Michael Myer continued his work on the project with funding from a
+Provost's Teaching-Learning Enhancement Grant (TLEG). Beginning in October 2024,
+this project will receive continued support through the TLEG for the
+2024&ndash;2025 cycle.")),
     br(),
     
     p("This interactive R Shiny app is maintained by Dr. Ashok Krishnamurthy. We welcome questions, insights, and feedback."),
     
     hr(),
     
-    h5("Built with",
-       img(src = "https://www.rstudio.com/wp-content/uploads/2014/04/shiny.png", height = "35px"),
-       "by",
-       img(src = "https://www.rstudio.com/wp-content/uploads/2018/10/RStudio-Logo.png", height = "35px"),
-       "."
-    )
+    HTML("<h5>Created with Posit&trade; and Shiny&#174;</h5>")
   )
 }
