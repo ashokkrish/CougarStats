@@ -38,6 +38,9 @@ library(MASS)
 # ---- UI Components --------------------------------------------------------
 # =========================================================================== #
 
+lessThanInequalGreaterThanChoices123 <-
+  c("<" = 1, "≠" = 2, ">" = 3)
+
 statInfrUI <- function(id) {
   ns <- NS(id)
 
@@ -368,9 +371,7 @@ statInfrUI <- function(id) {
               selectInput(
                 inputId  = ns("altHypothesis"),
                 label    = strong("Alternate Hypothesis (\\( H_{a}\\))"),
-                choices  = c("< " = 1,
-                             "&ne; " = 2,
-                             "> " = 3),
+                choices  = lessThanInequalGreaterThanChoices123,
                 selected = 2
                 # options  = list(render = I(render))
                 ),
@@ -801,9 +802,7 @@ statInfrUI <- function(id) {
                   selectizeInput(
                     inputId  = ns("altHypothesis2"),
                     label    = strong("Alternate Hypothesis (\\( H_{a}\\))"),
-                    choices  = c("< " = 1,
-                                 "&ne; " = 2,
-                                 "> " = 3),
+                    choices  = lessThanInequalGreaterThanChoices123,
                     selected = 2,
                     options  = list(render = I(render))),
                 ), # Hypothesis Testing
