@@ -3426,6 +3426,15 @@ statInfrServer <- function(id) {
         confLvl <- 0
       }
 
+      ## B.C. NOTE: all of the above could be replaced with the following.
+      ## req(input$siMethod != NULL)
+      ## if (input$siMethod %in% c(1, 2))
+      ##   confLvl <- switch(input$confidenceLevel,
+      ##                     "90%" = 0.90,
+      ##                     "95%" = 0.95,
+      ##                     0.99)
+      ## else
+      ##   confLvl <- 0
       return(confLvl)
     })
 
