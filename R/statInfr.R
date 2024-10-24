@@ -1127,10 +1127,36 @@ statInfrUI <- function(id) {
                 br())
               ), # One Population Mean
 
- #### ---------------- 1 Pop Prop ---------------------------------------------
+#### ---------------- 1 Pop Prop ---------------------------------------------
+            conditionalPanel(
+              ns = ns,
+              condition = "input.popuParameter == 'Population Proportion'",
+
               conditionalPanel(
                 ns = ns,
-                condition = "input.popuParameter == 'Population Proportion'",
+                condition = "input.inferenceType == 'Confidence Interval'",
+
+                titlePanel(tags$u("Confidence Interval")),
+                br(),
+                uiOutput(ns('onePropCI')),
+                br(),
+                ), # Confidence Interval
+
+              conditionalPanel(
+                ns = ns,
+                condition = "input.inferenceType == 'Hypothesis Testing'",
+
+                titlePanel(tags$u("Hypothesis Test")),
+                br(),
+                uiOutput(ns('onePropHT')),
+                br(),
+                ), # Hypothesis Testing
+              ), # One Population Proportion
+
+#### ---------------- 1 Pop Standard deviation -------------------------------
+              conditionalPanel(
+                ns = ns,
+                condition = "input.popuParameter == 'Population Standard Deviation'",
 
                 conditionalPanel(
                   ns = ns,
@@ -1138,7 +1164,7 @@ statInfrUI <- function(id) {
 
                   titlePanel(tags$u("Confidence Interval")),
                   br(),
-                  uiOutput(ns('onePropCI')),
+                  uiOutput(ns('oneSDCI')),
                   br(),
                 ), # Confidence Interval
 
@@ -1148,7 +1174,7 @@ statInfrUI <- function(id) {
 
                   titlePanel(tags$u("Hypothesis Test")),
                   br(),
-                  uiOutput(ns('onePropHT')),
+                  uiOutput(ns('oneSDHT')),
                   br(),
                 ), # Hypothesis Testing
               ), # One Population Proportion
@@ -3401,6 +3427,8 @@ statInfrServer <- function(id) {
 
     ConfLvl <- reactive({
 
+      ## MAYBE FIXME: the inputId siMethod has no choiceValue 'n'... it has
+      ## choice values 1, 2, Multiple, and Categorical.
       req(input$siMethod != 'n')
 
       if(input$siMethod == '1') {
@@ -3435,6 +3463,7 @@ statInfrServer <- function(id) {
       ##                     0.99)
       ## else
       ##   confLvl <- 0
+
       return(confLvl)
     })
 
@@ -4705,7 +4734,94 @@ statInfrServer <- function(id) {
        width = function() {GetPlotWidth(input[["oneMeanBoxplot-Width"]], input[["oneMeanBoxplot-WidthPx"]], ui = FALSE)}
     )
 
- ### ------------ One Prop Outputs --------------------------------------------
+
+### ------------ One Sample Standard Deviation Outputs -----------------------
+#### ---------------- CI ----
+    output$oneSDCI <- renderUI({
+      ## Input validation
+      ## req() # NOTE: requried data is already validated...
+
+      ## Required data
+      ## n (sample size), s (sample standard deviation), Confidence Level (1 - α)
+      ## ns("SSDSampleSize")
+      ## ns("SSDStdDev")
+      ## ns("confidenceLevel")
+      ## df = n - 1
+      oneSDCIalpha <- 1 - ConfLvl() # e.g.: 0.05
+      oneSDCIdf <- input[["SSDSampleSize"]] - 1
+
+      ## UI
+      withMathJax(
+        ## Step one
+        h4("Step one"),
+        sprintf("For a %s confidence interval, the confidence level is %0.2f = 1 - %0.2f, and so \\( \\alpha = %0.2f \\). Also, for \\( n = %d, df = %d \\). Thus,",
+                input$confidenceLevel, # for a 90%; character.
+
+                ConfLvl(), # is 0.90; numeric.
+
+                oneSDCIalpha, # 1 - 0.10, and so
+                oneSDCIalpha, # α = 0.10
+                input$SSDSampleSize, # n
+                oneSDCIdf # n - 1 = df
+                ),
+        br(),
+        br(),
+        sprintf("\\( \\chi^2_{  \\alpha/2} = \\chi^2_{    %0.3f / 2 } = \\chi^2_{ %0.3f } = %0.3f \\).",
+                oneSDCIalpha,
+                ## See https://www.easysevens.com/understanding-chi-square-critical-value-a-beginners-tutorial/.
+                (critOneSSDLeft <- oneSDCIalpha/2),
+                (oneSSDLeft <- qchisq(p = 1 - critOneSSDLeft, df = oneSDCIdf))),
+        br(),
+        br(),
+        p("and"),
+        sprintf("\\( \\chi^2_{1-\\alpha/2} = \\chi^2_{ 1 - %0.3f / 2} = \\chi^2_{ %0.3f } = %0.3f \\)",
+                oneSDCIalpha,
+                (critOneSSDRight <- 1 - oneSDCIalpha/2),
+                (oneSSDRight <- qchisq(p = 1 - critOneSSDRight, df = oneSDCIdf))),
+        br(),
+        br(),
+        br(),
+
+        h4("Step two"),
+        p("\\( \\displaystyle  \\sqrt{\\frac{df}{\\chi^2_{\\alpha/2}}} \\cdot s \\) to \\( \\displaystyle \\sqrt{\\frac{df}{\\chi^2_{1 - \\alpha/2}}} \\cdot s \\)"),
+        br(),
+        sprintf("We have \\( n = %d, df = %d\\), and from the previous formulae we have (the upper/right) \\( \\chi^2_{1 - \\alpha/2} = %0.3f \\), and (the lower/left) \\( \\chi^2_{\\alpha/2} = %0.3f \\). Here \\(  s  = %0.3f \\), so a %s confidence interval for \\( \\sigma \\) is from",
+                input$SSDSampleSize, # n
+                oneSDCIdf, # df
+                oneSSDRight,
+                oneSSDLeft,
+                input$SSDStdDev,
+                input$confidenceLevel),
+        br(),
+        sprintf(paste("\\( \\displaystyle",
+                      "\\sqrt{\\frac{%d}{%0.3f}} \\cdot %0.3f",
+                      "\\) to \\( \\displaystyle",
+                      "\\sqrt{\\frac{%d}{%0.3f}} \\cdot %0.3f",
+                      "\\)"),
+                # Left/lower
+                oneSDCIdf, # df
+                oneSSDLeft,
+                input$SSDStdDev, # s
+
+                # Right/upper
+                oneSDCIdf, # df
+                oneSSDRight,
+                input$SSDStdDev), # s
+        br(),
+        sprintf("that is, between \\(%0.2f\\) and \\(%0.2f\\).",
+                (oneSSDLowerPopStdDev <- sqrt(oneSDCIdf / oneSSDLeft) * input$SSDStdDev ),
+                (oneSSDUpperPopStdDev <- sqrt(oneSDCIdf / oneSSDRight) * input$SSDStdDev) ),
+
+        ## Step three
+        h4("Step three"),
+        sprintf("Interpret the results: we are \\(%0.2f\\%%\\) confident that the population standard deviation lies between \\( %0.2f \\) and \\( %0.2f \\).",
+                ConfLvl(), oneSSDLowerPopStdDev, oneSSDUpperPopStdDev)
+      )
+
+    })
+
+
+### ------------ One Prop Outputs --------------------------------------------
 
  #### ---------------- CI ----
     output$onePropCI <- renderUI({
