@@ -34,9 +34,9 @@ probDistUI <- function(id) {
   
   tagList(
     sidebarLayout(
-#  ========================================================================== #  
-## -------- Sidebar Panel --------------------------------------------------- 
-#  ========================================================================== #
+  #  ========================================================================== #  
+  ## -------- Sidebar Panel --------------------------------------------------- 
+  #  ========================================================================== #
       sidebarPanel(
         shinyjs::useShinyjs(),
         div(
@@ -47,6 +47,7 @@ probDistUI <- function(id) {
             choices  = c("Contingency Table",
                          "Binomial", 
                          "Poisson",
+                         "Hypergeometric",
                          "Negative Binomial",
                          "Normal"), 
             selected = NULL, 
@@ -328,8 +329,6 @@ probDistUI <- function(id) {
               class   = "act-btn") 
           ), # Binomial
           
-          
-
 ### ------------ Poisson ------------------------------------------------------
 
           conditionalPanel(
@@ -410,7 +409,103 @@ probDistUI <- function(id) {
               class = "act-btn") 
           ), # Poisson
         
-        
+### ------------ Hypergeometric --------------------------------------------
+
+          conditionalPanel(
+            ns = ns,
+            id = ns("HypGeoPanel"),
+            condition = "input.probability == 'Hypergeometric'",
+
+            numericInput(
+              inputId = ns("popSizeHypGeo"),
+              label   = strong("Population Size (\\( N\\))"),
+              value   = 12,
+              min     = 1,
+              step    = 1),
+            
+            numericInput(
+              inputId = ns("popSuccessesHypGeo"),
+              label   = strong("Number of Successes in Population (\\( M\\))"),
+              value   = 5,
+              min     = 1,
+              step    = 1),
+            
+            numericInput(
+              inputId = ns("sampSizeHypGeo"),
+              label   = strong("Sample Size (\\( n\\))"),
+              value   = 6,
+              min     = 1,
+              step    = 1),
+
+            HTML("<label class='si-label'><b>Probability</b></label>"),
+
+            radioButtons(
+              inputId      = ns("calcHypGeo"),
+              label        = NULL,
+              choiceValues = list("exact",
+                                  "cumulative",
+                                  "upperTail",
+                                  "greaterThan",
+                                  "lessThan",
+                                  "between"),
+              choiceNames  = list("\\(P(X = x \\))",
+                                  "\\(P(X \\leq x)\\)",
+                                  "\\(P(X \\ge x)\\)",
+                                  "\\(P(X \\gt x)\\)",
+                                  "\\(P(X < x)\\)",
+                                  "\\(P(x_1 \\leq X \\leq x_2)\\)"),
+              inline       = FALSE),
+
+            conditionalPanel(
+              ns = ns,
+              condition = "input.calcHypGeo != 'between'",
+
+              numericInput(
+                inputId = ns("xHypGeo"),
+                label   = strong("Number of Successes (\\( x\\))"),
+                value   = 1,
+                min     = 1,
+                step    = 1)
+            ),
+
+            conditionalPanel(
+              ns = ns,
+              condition = "input.calcHypGeo == 'between'",
+
+              numericInput(
+                inputId = ns("x1HypGeo"),
+                label   = strong("Number of Successes (\\( x_{1}\\))"),
+                value   = 3,
+                min     = 1,
+                step    = 1),
+
+              numericInput(
+                inputId = ns("x2HypGeo"),
+                label   = strong("Number of Successes (\\( x_{2}\\))"),
+                value   = 5,
+                min     = 1,
+                step    = 1)
+            ),
+
+            # br(),
+            # p(strong("Options")),
+            # hr(),
+
+            # checkboxInput(
+            #   inputId = ns("showHypGeoTable"),
+            #   label   = "Display Probability Distribution Table",
+            #   value   = TRUE),
+
+            actionButton(
+              inputId = ns("goHypGeo"),
+              label   = "Calculate",
+              class   = "act-btn"),
+
+            actionButton(
+              inputId = ns("resetHypGeo"),
+              label   = "Reset Values",
+              class   = "act-btn")
+          ), # Hypergeometric
 
 ### ------------ Negative Binomial --------------------------------------------
 
@@ -418,14 +513,14 @@ probDistUI <- function(id) {
             ns = ns,
             id = ns("negBinPanel"),
             condition = "input.probability == 'Negative Binomial'",
-
+            
             numericInput(
               inputId = ns("successNegBin"),
               label   = strong("Number of Successes (\\( r\\))"),
               value   = 1,
               min     = 1,
               step    = 1),
-
+            
             numericInput(
               inputId = ns("probabilityNegBin"),
               label   = strong("Probability of Successes (\\( p\\))"),
@@ -433,9 +528,9 @@ probDistUI <- function(id) {
               min     = 0,
               max     = 1,
               step    = 0.00001),
-
+            
             HTML("<label class='si-label'><b>Probability</b></label>"),
-
+            
             radioButtons(
               inputId      = ns("calcNegBin"),
               label        = NULL,
@@ -452,7 +547,7 @@ probDistUI <- function(id) {
                                   "\\(P(X < x)\\)",
                                   "\\(P(x_1 \\leq X \\leq x_2)\\)"),
               inline       = FALSE),
-
+            
             radioButtons(
               inputId = ns("trialsNegBin"),
               label = strong("Trials"),
@@ -462,59 +557,57 @@ probDistUI <- function(id) {
                                  "Trials until (and including) the \\(r^{th}\\) success"),
               inline = TRUE,
             ),
-
+            
             conditionalPanel(
               ns = ns,
               condition = "input.calcNegBin != 'between'",
-
+              
               numericInput(
                 inputId = ns("xNegBin"),
-                label   = strong("Number of Successes (\\( x\\))"),
+                label   = strong("Number of Failures (\\( x\\))"),
                 value   = 2,
                 min     = 1,
                 step    = 1)
             ),
-
+            
             conditionalPanel(
               ns = ns,
               condition = "input.calcNegBin == 'between'",
-
+              
               numericInput(
                 inputId = ns("x1NegBin"),
-                label   = strong("Number of Successes (\\( x_{1}\\))"),
+                label   = strong("Number of Failures (\\( x_{1}\\))"),
                 value   = 2,
                 min     = 1,
                 step    = 1),
-
+              
               numericInput(
                 inputId = ns("x2NegBin"),
-                label   = strong("Number of Successes (\\( x_{2}\\))"),
-                value   = 2,
+                label   = strong("Number of Failures (\\( x_{2}\\))"),
+                value   = 4,
                 min     = 1,
                 step    = 1)
             ),
-
-            br(),
-            p(strong("Options")),
-            hr(),
-
-            checkboxInput(
-              inputId = ns("showNegBinTable"),
-              label   = "Display Probability Distribution Table",
-              value   = TRUE),
-
+            
+            # br(),
+            # p(strong("Options")),
+            # hr(),
+            # 
+            # checkboxInput(
+            #   inputId = ns("showNegBinTable"),
+            #   label   = "Display Probability Distribution Table",
+            #   value   = TRUE),
+            
             actionButton(
               inputId = ns("goNegBin"),
               label   = "Calculate",
               class   = "act-btn"),
-
+            
             actionButton(
               inputId = ns("resetNegBin"),
               label   = "Reset Values",
               class   = "act-btn")
           ), # Negative Binomial
-
-
 
 ### ------------ Normal -------------------------------------------------------
 
@@ -543,8 +636,7 @@ probDistUI <- function(id) {
               choiceNames  = list("Probability", "Quantile"),
               inline       = TRUE),
           
-#### ---------------- Probability ---------------------------------------------
-
+      #### ---------------- Probability ---------------------------------------------
             conditionalPanel( 
               ns = ns,
               condition = "input.calcQuantiles == 'Probability'",
@@ -661,7 +753,7 @@ probDistUI <- function(id) {
                 class   = "act-btn")
             ), # Normal Probability
           
-#### ---------------- Quantile ------------------------------------------------
+      #### ---------------- Quantile ------------------------------------------------
             conditionalPanel( 
               ns = ns,
               condition = "input.calcQuantiles == 'Quantile'",
@@ -843,7 +935,7 @@ probDistUI <- function(id) {
               # ),
             ), # Contingency Table
             
-### ------------ Binomial -----------------------------------------------------
+          ### ------------ Binomial -----------------------------------------------------
             conditionalPanel(
               ns = ns,
               condition = "input.probability == 'Binomial'",
@@ -853,7 +945,7 @@ probDistUI <- function(id) {
               br(),
             ), # Binomial
             
-### ------------ Poisson ------------------------------------------------------
+        ### ------------ Poisson ------------------------------------------------------
             conditionalPanel(
               ns = ns,
               condition = "input.probability == 'Poisson'",
@@ -862,25 +954,35 @@ probDistUI <- function(id) {
               uiOutput(ns("renderProbabilityPoisson")),
               br(),
             ), # Poisson
-            
-### ------------ Negative Binomial --------------------------------------------
-            conditionalPanel(
-              ns = ns,
-              condition = "input.probability == 'Negative Binomial'",
 
-              br(),
-              uiOutput(ns("renderProbabilityNegBin")),
-              br(),
-            ), # Negative Binomial
+      ### ------------ Hypergeometric --------------------------------------------
+            # conditionalPanel(
+            #   ns = ns,
+            #   condition = "input.probability == 'Hypergeometric'",
+            #   
+            #   br(),
+            #   uiOutput(ns("renderProbabilityHypGeo")),
+            #   br(),
+            # ), # Hypergeometric
 
-### ------------ Normal -------------------------------------------------------
+      ### ------------ Negative Binomial --------------------------------------------
+            # conditionalPanel(
+            #   ns = ns,
+            #   condition = "input.probability == 'Negative Binomial'",
+            # 
+            #   br(),
+            #   uiOutput(ns("renderProbabilityNegBin")),
+            #   br(),
+            # ), # Negative Binomial
+
+      ### ------------ Normal -------------------------------------------------------
            conditionalPanel(
               ns = ns,
               condition = "input.probability == 'Normal'",
                 
               br(),
               
-#### ---------------- Probability ---------------------------------------------
+      #### ---------------- Probability ---------------------------------------------
               conditionalPanel(
                 ns = ns,
                 condition = "input.calcQuantiles == 'Probability'",
@@ -898,8 +1000,7 @@ probDistUI <- function(id) {
                   uiOutput(ns("renderSampMeanDistr"))),
               ), # Probability
             
-#### ---------------- Quantile ------------------------------------------------
-            
+      #### ---------------- Quantile ------------------------------------------------
              conditionalPanel(
                ns = ns,
                condition = "input.calcQuantiles == 'Quantile'",
@@ -920,7 +1021,7 @@ probDistUI <- function(id) {
             ) # Normal
         ), # probabilityMP
       ) # mainPanel
-    )
+    ) # sidebarLayout
   ) # tagList
 }
 
@@ -966,6 +1067,9 @@ probDistServer <- function(id) {
     poissprob_iv <- InputValidator$new()
     poissbetween_iv <- InputValidator$new()
 
+    HypGeo_iv <- InputValidator$new()
+    HypGeoxlte_iv <- InputValidator$new()
+    
     negbin_iv <- InputValidator$new()
     negbinxlte_iv <- InputValidator$new()
 
@@ -977,7 +1081,6 @@ probDistServer <- function(id) {
     sampdistrbetween_iv <- InputValidator$new()
     sampdistrsize_iv <- InputValidator$new()
     percentile_iv <- InputValidator$new()
-    
     
  ### ------------ Rules -------------------------------------------------------
     
@@ -1084,6 +1187,14 @@ probDistServer <- function(id) {
     poissbetween_iv$add_rule("x2Poisson", sv_integer())
     poissbetween_iv$add_rule("x2Poisson", sv_gte(0))
     
+    # TODO: HypGeoxlte_iv$add_rule("", )
+    # popSizeHypGeo
+    # popSuccessesHypGeo
+    # sampSizeHypGeo
+    # xHypGeo
+    # x1HypGeo
+    # x2HypGeo
+
     # TODO: negbinxlte_iv$add_rule("", )
 
     norm_iv$add_rule("popMean", sv_required())
@@ -1109,7 +1220,6 @@ probDistServer <- function(id) {
     percentile_iv$add_rule("percentileValue", sv_gt(0))
     percentile_iv$add_rule("percentileValue", sv_lt(100))
     
-
  ### ------------ Conditions --------------------------------------------------
 
     ctable2x2_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
@@ -1196,8 +1306,8 @@ probDistServer <- function(id) {
     poissbetween_iv$condition(~ isTRUE(input$probability == 'Poisson' && 
                                          input$calcPoisson == 'between'))
     
+    # TODO: HypGeo_iv$condition(~ isTRUE(input$probability == 'Hypergeometric'))
     # TODO: negbin_iv$condition(~ isTRUE(input$probability == 'Negative Binomial'))
-
 
     norm_iv$condition(~ isTRUE(input$probability == 'Normal'))
     
@@ -1229,7 +1339,6 @@ probDistServer <- function(id) {
                                        input$calcQuantiles == 'Quantile' &&
                                        input$calcQuartiles == 'Percentile'))
 
-    
  ### ------------ Dependencies ------------------------------------------------
 
     ctable_iv$add_validator(ctable2x2_iv)
@@ -1257,7 +1366,7 @@ probDistServer <- function(id) {
     
     poiss_iv$add_validator(poissprob_iv)
     poiss_iv$add_validator(poissbetween_iv)
-    
+    # TODO: HypGeo_iv$add_validator()    
     # TODO: negbin_iv$add_validator()
 
     norm_iv$add_validator(normprob_iv)
@@ -1271,9 +1380,9 @@ probDistServer <- function(id) {
     pd_iv$add_validator(ptable_iv)
     pd_iv$add_validator(binom_iv)
     pd_iv$add_validator(poiss_iv)
+    # TODO: pd_iv$add_validator(HypGeo_iv)
     # TODO: pd_iv$add_validator(negbin_iv)
     pd_iv$add_validator(norm_iv)
-    
 
  ### ------------ Activation --------------------------------------------------   
 
@@ -1309,6 +1418,7 @@ probDistServer <- function(id) {
     poissprob_iv$enable()
     poissbetween_iv$enable()
 
+    # TODO: HypGeo_iv$enable()
     # TODO: negbin_iv$enable()
 
     norm_iv$enable()
@@ -1319,7 +1429,6 @@ probDistServer <- function(id) {
     sampdistrbetween_iv$enable()
     sampdistrsize_iv$enable()
     percentile_iv$enable()
-    
     
  # ========================================================================== #
  ## -------- Functions ------------------------------------------------------
@@ -1397,8 +1506,7 @@ probDistServer <- function(id) {
       }
       return(outputTagList)
     }
-    
-    
+
     printUnionProbs <- function(probMatrix, cMatrix){
       outputTagList <- tagList(
         withMathJax(),
@@ -1433,8 +1541,7 @@ probDistServer <- function(id) {
       }
       return(outputTagList)
     }
-    
-    
+
     printConditionalProbs <- function(cMatrix){
       outputTagList <- tagList(
         withMathJax(),
@@ -1495,8 +1602,7 @@ probDistServer <- function(id) {
       }
       return(outputTagList)
     }
-    
-    
+
     shadeNormArea <- function(df, normValue, normLines, probType){
       if(normValue > 0){
         if(probType == 'cumulative') {
@@ -1520,8 +1626,7 @@ probDistServer <- function(id) {
         }
       }
     }
-    
-    
+
     labelNormZArea <- function(probVal, probType, normLines){
       req(pd_iv$is_valid())
       if(probType == 'cumulative') {
@@ -1539,8 +1644,7 @@ probDistServer <- function(id) {
                  fontface = "bold",
                  label.size = NA)
     }
-    
-    
+
     plotTitle <- function(variance){
       if(input$sampMeanDistr == 0){
         ggtitle(bquote(bolditalic(X %~% N(.(input$popMean),.(variance)))))
@@ -1548,8 +1652,7 @@ probDistServer <- function(id) {
         ggtitle(bquote(bolditalic(bar(X) %~% N(.(input$popMean),.(variance)))))
       }
     }
-    
-    
+
     plotXLab <- function(){
       if(input$sampMeanDistr == 0){
         xlab(expression(bolditalic( X )))
@@ -1557,8 +1660,7 @@ probDistServer <- function(id) {
         xlab(expression(bolditalic( bar(X) )))
       }
     }
-    
-    
+
     normPlot <- function(normValue, normLines, popmean, variance, standDev, lineLabels, probType, plotLab){
       req(pd_iv$is_valid())
       withMathJax()
@@ -1622,8 +1724,7 @@ probDistServer <- function(id) {
       
       return(nPlot)
     }
-    
-    
+ 
     normZPlot <- function(normValue, normLines, probType){
       req(pd_iv$is_valid())
       
@@ -1856,8 +1957,7 @@ probDistServer <- function(id) {
         normValue <- round(pnorm(input$sampDistrx2Value, input$popMean, sampSE, lower.tail = TRUE) - pnorm(input$sampDistrx1Value, input$popMean, sampSE, lower.tail = TRUE), 4)
       }
     })
-    
-    
+ 
  # ========================================================================== #
  ## -------- Observers ------------------------------------------------------
  # ========================================================================== #
@@ -2357,7 +2457,6 @@ probDistServer <- function(id) {
                 binomForm <- paste("\\sum_{x = 0}^{", binom_x - 1, "} \\binom{", binom_n, "}{x}", binom_p, "^x (1-", binom_p, ")^{", binom_n, "- x}")
                 binomVal <- round(pbinom(binom_x - 1,binom_n,binom_p,lower.tail = TRUE), 4)
               }
-              
             }
             else if(input$calcBinom == 'between')
             {
@@ -2468,7 +2567,6 @@ probDistServer <- function(id) {
       })# binomDistrTable
       
     })
-    
     
     output$binomDistrBarPlot <- renderPlot({
       
@@ -2969,7 +3067,8 @@ probDistServer <- function(id) {
     })
     
     observeEvent(input$goNormalQuan, {
- #### ---------------- Quartiles ----------------------------------------------
+
+#### ---------------- Quartiles ----------------------------------------------
       output$renderNormQuartiles <- renderUI({
         validate(
           need(input$popMean, "Enter a value for Population Mean (mu)"),
@@ -3513,6 +3612,24 @@ probDistServer <- function(id) {
       shinyjs::reset("poissonPanel")
     })
     
+    #-----------------------------#
+    # Hypergeometric Distribution #
+    #-----------------------------#
+    
+    observeEvent(input$resetHypGeo, {
+      hide(id = "probabilityMP")
+      shinyjs::reset("HypGeoPanel")
+    })
+    
+    #--------------------------------#
+    # Negative Binomial Distribution #
+    #--------------------------------#
+
+    observeEvent(input$resetNegBin, {
+      hide(id = "probabilityMP")
+      shinyjs::reset("negBinPanel")
+    })
+
     #---------------------#
     # Normal Distribution #
     #---------------------#
