@@ -956,24 +956,24 @@ probDistUI <- function(id) {
             ), # Poisson
 
       ### ------------ Hypergeometric --------------------------------------------
-            # conditionalPanel(
-            #   ns = ns,
-            #   condition = "input.probability == 'Hypergeometric'",
-            #   
-            #   br(),
-            #   uiOutput(ns("renderProbabilityHypGeo")),
-            #   br(),
-            # ), # Hypergeometric
+            conditionalPanel(
+              ns = ns,
+              condition = "input.probability == 'Hypergeometric'",
+
+              br(),
+              uiOutput(ns("renderProbabilityHypGeo")),
+              br(),
+            ), # Hypergeometric
 
       ### ------------ Negative Binomial --------------------------------------------
-            # conditionalPanel(
-            #   ns = ns,
-            #   condition = "input.probability == 'Negative Binomial'",
-            # 
-            #   br(),
-            #   uiOutput(ns("renderProbabilityNegBin")),
-            #   br(),
-            # ), # Negative Binomial
+            conditionalPanel(
+              ns = ns,
+              condition = "input.probability == 'Negative Binomial'",
+
+              br(),
+              uiOutput(ns("renderProbabilityNegBin")),
+              br(),
+            ), # Negative Binomial
 
       ### ------------ Normal -------------------------------------------------------
            conditionalPanel(
@@ -1067,11 +1067,13 @@ probDistServer <- function(id) {
     poissprob_iv <- InputValidator$new()
     poissbetween_iv <- InputValidator$new()
 
-    HypGeo_iv <- InputValidator$new()
-    HypGeoxlte_iv <- InputValidator$new()
+    hypgeo_iv <- InputValidator$new()
+    hypgeoprob_iv <- InputValidator$new()
+    hypgeobetween_iv <- InputValidator$new()
     
-    negbin_iv <- InputValidator$new()
-    negbinxlte_iv <- InputValidator$new()
+    # negbin_iv <- InputValidator$new()
+    # negbinprob_iv <- InputValidator$new()
+    # negbinbetween_iv <- InputValidator$new()
 
     norm_iv <- InputValidator$new()
     normprob_iv <- InputValidator$new()
@@ -1366,6 +1368,7 @@ probDistServer <- function(id) {
     
     poiss_iv$add_validator(poissprob_iv)
     poiss_iv$add_validator(poissbetween_iv)
+    
     # TODO: HypGeo_iv$add_validator()    
     # TODO: negbin_iv$add_validator()
 
@@ -1419,6 +1422,11 @@ probDistServer <- function(id) {
     poissbetween_iv$enable()
 
     # TODO: HypGeo_iv$enable()
+    
+    hypgeo_iv$enable()
+    hypgeoprob_iv$enable()
+    hypgeobetween_iv$enable()
+    
     # TODO: negbin_iv$enable()
 
     norm_iv$enable()
@@ -2748,7 +2756,7 @@ probDistServer <- function(id) {
                   ))
               )# tagList
           })
-      })
+      }) # renderProbabilityPoisson
       
       output$poissDistrTable <- DT::renderDT({
         req(pd_iv$is_valid())
@@ -2766,22 +2774,38 @@ probDistServer <- function(id) {
                   rownames = FALSE,
                   filter = "none"
         ) %>% formatRound(2, digits = 4)
+      }) # poissDistrTable
+    }) # goPoisson
+ 
+ ### ------------ Hypergeometric ------------------------------------------
+
+    observeEvent(input$goHypGeo, {
+      
+      output$renderProbabilityHypGeo <- renderUI({
+        withMathJax(
+          if(!pd_iv$is_valid())
+          {
+            
+          }
+        )
       })
-    })
+      
+    }) # goHypGeo
+    
+ ### ------------ Negative Binomial ------------------------------------------
 
-  ### ------------ Negative Binomial ------------------------------------------
-
-    # TODO
     # observeEvent(input$goNegBin, {
-
+    # 
     #   output$renderProbabilityNegBin <- renderUI({
     #     withMathJax(
     #       if(!pd_iv$is_valid())
     #       {
-
+    #         
     #       }
     #     )
     #   })
+    #   
+    # }) # goNegBin
 
  ### ------------ Normal ------------------------------------------------------
     observeEvent(input$goNormalProb, {
@@ -3615,6 +3639,10 @@ probDistServer <- function(id) {
     #-----------------------------#
     # Hypergeometric Distribution #
     #-----------------------------#
+    
+    observeEvent(input$goHypGeo, {
+      show(id = "probabilityMP")
+    })
     
     observeEvent(input$resetHypGeo, {
       hide(id = "probabilityMP")
