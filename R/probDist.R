@@ -425,7 +425,7 @@ probDistUI <- function(id) {
             
             numericInput(
               inputId = ns("popSuccessesHypGeo"),
-              label   = strong("Number of Successes in Population (\\( M\\))"),
+              label   = strong("Number of Successes in the Population (\\( M\\))"),
               value   = 5,
               min     = 1,
               step    = 1),
@@ -464,7 +464,7 @@ probDistUI <- function(id) {
                 inputId = ns("xHypGeo"),
                 label   = strong("Number of Successes (\\( x\\))"),
                 value   = 1,
-                min     = 1,
+                min     = 0,
                 step    = 1)
             ),
 
@@ -476,14 +476,14 @@ probDistUI <- function(id) {
                 inputId = ns("x1HypGeo"),
                 label   = strong("Number of Successes (\\( x_{1}\\))"),
                 value   = 3,
-                min     = 1,
+                min     = 0,
                 step    = 1),
 
               numericInput(
                 inputId = ns("x2HypGeo"),
                 label   = strong("Number of Successes (\\( x_{2}\\))"),
                 value   = 5,
-                min     = 1,
+                min     = 0,
                 step    = 1)
             ),
 
@@ -518,7 +518,7 @@ probDistUI <- function(id) {
               inputId = ns("successNegBin"),
               label   = strong("Number of Successes (\\( r\\))"),
               value   = 1,
-              min     = 1,
+              min     = 0,
               step    = 1),
             
             numericInput(
@@ -566,7 +566,7 @@ probDistUI <- function(id) {
                 inputId = ns("xNegBin"),
                 label   = strong("Number of Failures (\\( x\\))"),
                 value   = 2,
-                min     = 1,
+                min     = 0,
                 step    = 1)
             ),
             
@@ -578,14 +578,14 @@ probDistUI <- function(id) {
                 inputId = ns("x1NegBin"),
                 label   = strong("Number of Failures (\\( x_{1}\\))"),
                 value   = 2,
-                min     = 1,
+                min     = 0,
                 step    = 1),
               
               numericInput(
                 inputId = ns("x2NegBin"),
                 label   = strong("Number of Failures (\\( x_{2}\\))"),
                 value   = 4,
-                min     = 1,
+                min     = 0,
                 step    = 1)
             ),
             
@@ -1067,9 +1067,9 @@ probDistServer <- function(id) {
     poissprob_iv <- InputValidator$new()
     poissbetween_iv <- InputValidator$new()
 
-    hypgeo_iv <- InputValidator$new()
-    hypgeoprob_iv <- InputValidator$new()
-    hypgeobetween_iv <- InputValidator$new()
+    HypGeo_iv <- InputValidator$new()
+    HypGeoprob_iv <- InputValidator$new()
+    HypGeobetween_iv <- InputValidator$new()
     
     # negbin_iv <- InputValidator$new()
     # negbinprob_iv <- InputValidator$new()
@@ -1154,6 +1154,8 @@ probDistServer <- function(id) {
     ptable3x3conditional_iv$add_rule("pMatrix3x3", ~ if(any(pMatrix3x3Totaled()['Total',] == 0)) "Row and Column totals must be greater than 0.")
     ptable3x3conditional_iv$add_rule("pMatrix3x3", ~ if(any(pMatrix3x3Totaled()[,'Total'] == 0)) "Row and Column totals must be greater than 0.")
     
+    # Binomial
+    
     binom_iv$add_rule("numTrialsBinom", sv_required())
     binom_iv$add_rule("numTrialsBinom", sv_integer())
     binom_iv$add_rule("numTrialsBinom", sv_gt(0))
@@ -1174,6 +1176,8 @@ probDistServer <- function(id) {
     binombetween_iv$add_rule("numSuccessesBinomx2", sv_integer())
     binombetween_iv$add_rule("numSuccessesBinomx2", sv_gte(0))
     
+    # Poisson
+    
     poiss_iv$add_rule("muPoisson", sv_required())
     poiss_iv$add_rule("muPoisson", sv_gt(0))
     
@@ -1188,16 +1192,38 @@ probDistServer <- function(id) {
     poissbetween_iv$add_rule("x2Poisson", sv_required())
     poissbetween_iv$add_rule("x2Poisson", sv_integer())
     poissbetween_iv$add_rule("x2Poisson", sv_gte(0))
-    
-    # TODO: HypGeoxlte_iv$add_rule("", )
-    # popSizeHypGeo
-    # popSuccessesHypGeo
-    # sampSizeHypGeo
-    # xHypGeo
-    # x1HypGeo
-    # x2HypGeo
 
-    # TODO: negbinxlte_iv$add_rule("", )
+    # Hypergeometric 
+    
+    HypGeo_iv$add_rule("popSizeHypGeo", sv_required())
+    HypGeo_iv$add_rule("popSizeHypGeo", sv_integer())
+    HypGeo_iv$add_rule("popSizeHypGeo", sv_gt(0))
+
+    HypGeo_iv$add_rule("popSuccessesHypGeo", sv_required())
+    HypGeo_iv$add_rule("popSuccessesHypGeo", sv_integer())
+    HypGeo_iv$add_rule("popSuccessesHypGeo", sv_gt(0))
+
+    HypGeo_iv$add_rule("sampSizeHypGeo", sv_required())
+    HypGeo_iv$add_rule("sampSizeHypGeo", sv_integer())
+    HypGeo_iv$add_rule("sampSizeHypGeo", sv_gt(0))
+
+    HypGeoprob_iv$add_rule("xHypGeo", sv_required())
+    HypGeoprob_iv$add_rule("xHypGeo", sv_integer())
+    HypGeoprob_iv$add_rule("xHypGeo", sv_gte(0))
+    
+    HypGeobetween_iv$add_rule("x1HypGeo", sv_required())
+    HypGeobetween_iv$add_rule("x1HypGeo", sv_integer())
+    HypGeobetween_iv$add_rule("x1HypGeo", sv_gte(0))
+    
+    HypGeobetween_iv$add_rule("x2HypGeo", sv_required())
+    HypGeobetween_iv$add_rule("x2HypGeo", sv_integer())
+    HypGeobetween_iv$add_rule("x2HypGeo", sv_gte(0))
+
+    # Negative Binomial
+    
+    #TODO
+    
+    # Normal
 
     norm_iv$add_rule("popMean", sv_required())
     
@@ -1291,6 +1317,7 @@ probDistServer <- function(id) {
                                                  input$cTableDimension == '3 x 3' &&
                                                  input$cTableType == 'Probability Distribution'&&
                                                  input$cTableProb == 'Conditional'))
+    # Binomial
     
     binom_iv$condition(~ isTRUE(input$probability == 'Binomial'))
     
@@ -1299,6 +1326,7 @@ probDistServer <- function(id) {
     
     binombetween_iv$condition(~ isTRUE(input$probability == 'Binomial' && 
                                          input$calcBinom == 'between'))
+    # Poisson
     
     poiss_iv$condition(~ isTRUE(input$probability == 'Poisson'))
     
@@ -1308,9 +1336,21 @@ probDistServer <- function(id) {
     poissbetween_iv$condition(~ isTRUE(input$probability == 'Poisson' && 
                                          input$calcPoisson == 'between'))
     
-    # TODO: HypGeo_iv$condition(~ isTRUE(input$probability == 'Hypergeometric'))
+    # Hypergeometric
+    
+    HypGeo_iv$condition(~ isTRUE(input$probability == 'Hypergeometric'))
+    
+    HypGeoprob_iv$condition(~ isTRUE(input$probability == 'Hypergeometric' && 
+                                      input$calcHypGeo != 'between'))
+    
+    HypGeobetween_iv$condition(~ isTRUE(input$probability == 'Hypergeometric' && 
+                                         input$calcHypGeo == 'between'))
+    # Negative Binomial
+    
     # TODO: negbin_iv$condition(~ isTRUE(input$probability == 'Negative Binomial'))
-
+    
+    # Normal
+    
     norm_iv$condition(~ isTRUE(input$probability == 'Normal'))
     
     normprob_iv$condition(~ isTRUE(input$probability == 'Normal' &&
@@ -1369,7 +1409,9 @@ probDistServer <- function(id) {
     poiss_iv$add_validator(poissprob_iv)
     poiss_iv$add_validator(poissbetween_iv)
     
-    # TODO: HypGeo_iv$add_validator()    
+    HypGeo_iv$add_validator(HypGeoprob_iv)
+    HypGeo_iv$add_validator(HypGeobetween_iv)
+    
     # TODO: negbin_iv$add_validator()
 
     norm_iv$add_validator(normprob_iv)
@@ -1383,8 +1425,10 @@ probDistServer <- function(id) {
     pd_iv$add_validator(ptable_iv)
     pd_iv$add_validator(binom_iv)
     pd_iv$add_validator(poiss_iv)
-    # TODO: pd_iv$add_validator(HypGeo_iv)
+    pd_iv$add_validator(HypGeo_iv)
+    
     # TODO: pd_iv$add_validator(negbin_iv)
+    
     pd_iv$add_validator(norm_iv)
 
  ### ------------ Activation --------------------------------------------------   
@@ -1421,11 +1465,9 @@ probDistServer <- function(id) {
     poissprob_iv$enable()
     poissbetween_iv$enable()
 
-    # TODO: HypGeo_iv$enable()
-    
-    hypgeo_iv$enable()
-    hypgeoprob_iv$enable()
-    hypgeobetween_iv$enable()
+    HypGeo_iv$enable()
+    HypGeoprob_iv$enable()
+    HypGeobetween_iv$enable()
     
     # TODO: negbin_iv$enable()
 
@@ -2532,9 +2574,9 @@ probDistServer <- function(id) {
                   br(),
                   plotOutput(session$ns("binomDistrBarPlot"), width = "50%")
                   ))
-              )# tagList
-          })
-      }) #renderProbabilityBinom
+              ) # tagList
+          }) 
+      }) # renderProbabilityBinom
       
       output$binomDistrTable <- DT::renderDT({
         req(pd_iv$is_valid())
@@ -2573,7 +2615,6 @@ probDistServer <- function(id) {
                     filter = "none")
         }
       })# binomDistrTable
-      
     })
     
     output$binomDistrBarPlot <- renderPlot({
@@ -2647,7 +2688,7 @@ probDistServer <- function(id) {
             {
               validate(
                 need(input$muPoisson && input$muPoisson > 0, "Average Number of Successes (mu) must be greater than zero"),
-                need(input$x2Poisson, "Enter a value for the Number of Successes (x1)") %then%
+                need(input$x1Poisson, "Enter a value for the Number of Successes (x1)") %then%
                   need(input$x1Poisson >= 0 && input$x1Poisson %% 1 == 0, "Number of Successes (x1) must be a positive integer"),
                 need(input$x2Poisson, "Enter a value for the Number of Successes (x2)") %then%
                   need(input$x2Poisson >= 0 && input$x2Poisson %% 1 == 0, "Number of Successes (x2) must be a positive integer"),
@@ -2754,8 +2795,8 @@ probDistServer <- function(id) {
                   DTOutput(session$ns("poissDistrTable"), width = "25%"),
                   br()
                   ))
-              )# tagList
-          })
+              ) # tagList
+          }) # withMathJax
       }) # renderProbabilityPoisson
       
       output$poissDistrTable <- DT::renderDT({
@@ -2785,17 +2826,53 @@ probDistServer <- function(id) {
         withMathJax(
           if(!pd_iv$is_valid())
           {
-            
+            if(!HypGeoprob_iv$is_valid())
+            {
+              validate(
+                need(input$popSizeHypGeo , "Population Size (N) must be a positive integer")%then%
+                  need(input$popSizeHypGeo > 0 && input$popSizeHypGeo %% 1 == 0, "Population Size (N) must be a positive integer"),
+                need(input$popSuccessesHypGeo && input$popSuccessesHypGeo > 0, "Number of Successes in the Population (M) must be a positive integer")%then%
+                  need(input$popSuccessesHypGeo %% 1 == 0, "Number of Successes in the Population (M) must be a positive integer"),
+                need(input$sampSizeHypGeo && input$sampSizeHypGeo > 0, "Sample Size (n) must be a positive integer")%then%
+                  need(input$sampSizeHypGeo %% 1 == 0, "Sample Size (n) must be a positive integer"),
+                need(input$xHypGeo , "Number of Successes (x) must be a positive integer") %then%
+                  need(input$xHypGeo >= 0 && input$xHypGeo %% 1 == 0, "Number of Successes (x) must be a positive integer"),
+                errorClass = "myClass")
+            }
+
+            if(!HypGeobetween_iv$is_valid())
+            {
+              validate(
+                need(input$popSizeHypGeo , "Population Size (N) must be a positive integer")%then%
+                  need(input$popSizeHypGeo > 0 && input$popSizeHypGeo %% 1 == 0, "Population Size (N) must be a positive integer"),
+                need(input$popSuccessesHypGeo && input$popSuccessesHypGeo > 0, "Number of Successes in the Population (M) must be a positive integer")%then%
+                  need(input$popSuccessesHypGeo %% 1 == 0, "Number of Successes in the Population (M) must be a positive integer"),
+                need(input$sampSizeHypGeo && input$sampSizeHypGeo > 0, "Sample Size (n) must be a positive integer")%then%
+                  need(input$sampSizeHypGeo %% 1 == 0, "Sample Size (n) must be a positive integer"),
+                need(input$x1HypGeo , "Number of Successes (x1) must be a positive integer") %then%
+                  need(input$x1HypGeo >= 0 && input$x1HypGeo %% 1 == 0, "Number of Successes (x1) must be a positive integer"),
+                need(input$x2HypGeo , "Number of Successes (x2) must be a positive integer") %then%
+                  need(input$x2HypGeo >= 0 && input$x2HypGeo %% 1 == 0, "Number of Successes (x2) must be a positive integer"),
+                errorClass = "myClass")
+            }
+
+              validate(
+                need(input$popSizeHypGeo , "Population Size (N) must be a positive integer")%then%
+                  need(input$popSizeHypGeo > 0 && input$popSizeHypGeo %% 1 == 0, "Population Size (N) must be a positive integer"),
+                need(input$popSuccessesHypGeo && input$popSuccessesHypGeo > 0, "Number of Successes in the Population (M) must be a positive integer")%then%
+                  need(input$popSuccessesHypGeo %% 1 == 0, "Number of Successes in the Population (M) must be a positive integer"),
+                need(input$sampSizeHypGeo && input$sampSizeHypGeo > 0, "Sample Size (n) must be a positive integer")%then%
+                  need(input$sampSizeHypGeo %% 1 == 0, "Sample Size (n) must be a positive integer"),
+                errorClass = "myClass")
           }
-        )
-      })
-      
+        ) #withMathJax
+      }) # renderProbabilityHypGeo
     }) # goHypGeo
     
  ### ------------ Negative Binomial ------------------------------------------
 
-    # observeEvent(input$goNegBin, {
-    # 
+    observeEvent(input$goNegBin, {
+
     #   output$renderProbabilityNegBin <- renderUI({
     #     withMathJax(
     #       if(!pd_iv$is_valid())
@@ -2804,13 +2881,13 @@ probDistServer <- function(id) {
     #       }
     #     )
     #   })
-    #   
-    # }) # goNegBin
+
+    }) # goNegBin
 
  ### ------------ Normal ------------------------------------------------------
     observeEvent(input$goNormalProb, {
       
- #### ---------------- Normal Probability -------------------------------------
+      #### ---------------- Normal Probability -------------------------------------
       output$renderProbabilityNorm <- renderUI({
         if(!pd_iv$is_valid())
         {
@@ -2950,7 +3027,7 @@ probDistServer <- function(id) {
         normZPlot(getNormValue(), normLines, input$calcNormal)
       })
       
- #### ---------------- Sampling Distribution of the Sample Mean ---------------
+      #### ---------------- Sampling Distribution of the Sample Mean ---------------
       output$renderSampMeanDistr <- renderUI({
         if(!pd_iv$is_valid()) {
           if(!sampdistrprob_iv$is_valid()) {
@@ -3092,7 +3169,7 @@ probDistServer <- function(id) {
     
     observeEvent(input$goNormalQuan, {
 
-#### ---------------- Quartiles ----------------------------------------------
+      #### ---------------- Quartiles ----------------------------------------------
       output$renderNormQuartiles <- renderUI({
         validate(
           need(input$popMean, "Enter a value for Population Mean (mu)"),
@@ -3642,6 +3719,21 @@ probDistServer <- function(id) {
     
     observeEvent(input$goHypGeo, {
       show(id = "probabilityMP")
+    })
+    
+    observeEvent({input$popSizeHypGeo
+      input$popSuccessesHypGeo
+      input$sampSizeHypGeo
+      input$xHypGeo
+      input$x1HypGeo
+      input$x2HypGeo}, {
+        hide(id = 'probabilityMP')
+      })
+    
+    observeEvent(input$calcHypGeo, {
+      if(input$calcHypGeo == 'between') {
+        hide(id = "probabilityMP")
+      }
     })
     
     observeEvent(input$resetHypGeo, {
