@@ -53,7 +53,7 @@ Read more about [Getting Started with Docker](https://www.docker.com/get-started
 
 ## Developers
 ### Current project members
-- [Ashok Krishnamurthy Ph.D.](https://github.com/ashokkrish): Project supervisor, template and model designer, copyright holder
+- [Ashok Krishnamurthy Ph.D., MRU Associate Professor](https://github.com/ashokkrish): Project supervisor, template and model designer, copyright holder. See the [faculty biography page of Prof. Krishnamurthy](https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/ScienceTechnology/Departments/MathematicsComputing/Faculty/akrishnamurthy.htm).
 - [Bryce Carson](https://github.com/bryce-carson): Senior Developer
 - [Samantha Brian](https://github.com/samantha-v-brian): Developer
 
