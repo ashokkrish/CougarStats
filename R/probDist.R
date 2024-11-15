@@ -511,7 +511,7 @@ probDistUI <- function(id) {
 
           conditionalPanel(
             ns = ns,
-            id = ns("negBinPanel"),
+            id = ns("NegBinPanel"),
             condition = "input.probability == 'Negative Binomial'",
             
             numericInput(
@@ -522,7 +522,7 @@ probDistUI <- function(id) {
               step    = 1),
             
             numericInput(
-              inputId = ns("probabilityNegBin"),
+              inputId = ns("successProbNegBin"),
               label   = strong("Probability of Successes (\\( p\\))"),
               value   = 0.20,
               min     = 0,
@@ -1071,9 +1071,9 @@ probDistServer <- function(id) {
     HypGeoprob_iv <- InputValidator$new()
     HypGeobetween_iv <- InputValidator$new()
     
-    # negbin_iv <- InputValidator$new()
-    # negbinprob_iv <- InputValidator$new()
-    # negbinbetween_iv <- InputValidator$new()
+    NegBin_iv <- InputValidator$new()
+    NegBinprob_iv <- InputValidator$new()
+    NegBinbetween_iv <- InputValidator$new()
 
     norm_iv <- InputValidator$new()
     normprob_iv <- InputValidator$new()
@@ -1221,7 +1221,25 @@ probDistServer <- function(id) {
 
     # Negative Binomial
     
-    #TODO
+    NegBin_iv$add_rule("successNegBin", sv_required())
+    NegBin_iv$add_rule("successNegBin", sv_integer())
+    NegBin_iv$add_rule("successNegBin", sv_gt(0))
+    
+    NegBin_iv$add_rule("successProbNegBin", sv_required())
+    NegBin_iv$add_rule("successProbNegBin", sv_gte(0))
+    NegBin_iv$add_rule("successProbNegBin", sv_lte(1))
+    
+    NegBinprob_iv$add_rule("xNegBin", sv_required())
+    NegBinprob_iv$add_rule("xNegBin", sv_integer())
+    NegBinprob_iv$add_rule("xNegBin", sv_gte(0))
+    
+    NegBinbetween_iv$add_rule("x1NegBin", sv_required())
+    NegBinbetween_iv$add_rule("x1NegBin", sv_integer())
+    NegBinbetween_iv$add_rule("x1NegBin", sv_gte(0))
+    
+    NegBinbetween_iv$add_rule("x2NegBin", sv_required())
+    NegBinbetween_iv$add_rule("x2NegBin", sv_integer())
+    NegBinbetween_iv$add_rule("x2NegBin", sv_gte(0))
     
     # Normal
 
@@ -1347,7 +1365,13 @@ probDistServer <- function(id) {
                                          input$calcHypGeo == 'between'))
     # Negative Binomial
     
-    # TODO: negbin_iv$condition(~ isTRUE(input$probability == 'Negative Binomial'))
+    NegBin_iv$condition(~ isTRUE(input$probability == 'Negative Binomial'))
+    
+    NegBinprob_iv$condition(~ isTRUE(input$probability == 'Negative Binomial' && 
+                                       input$calcNegBin != 'between'))
+    
+    NegBinbetween_iv$condition(~ isTRUE(input$probability == 'Negative Binomial' && 
+                                          input$calcNegBin == 'between'))
     
     # Normal
     
@@ -1412,7 +1436,8 @@ probDistServer <- function(id) {
     HypGeo_iv$add_validator(HypGeoprob_iv)
     HypGeo_iv$add_validator(HypGeobetween_iv)
     
-    # TODO: negbin_iv$add_validator()
+    NegBin_iv$add_validator(NegBinprob_iv)
+    NegBin_iv$add_validator(NegBinbetween_iv)
 
     norm_iv$add_validator(normprob_iv)
     norm_iv$add_validator(normbetween_iv)
@@ -1426,9 +1451,7 @@ probDistServer <- function(id) {
     pd_iv$add_validator(binom_iv)
     pd_iv$add_validator(poiss_iv)
     pd_iv$add_validator(HypGeo_iv)
-    
-    # TODO: pd_iv$add_validator(negbin_iv)
-    
+    pd_iv$add_validator(NegBin_iv)
     pd_iv$add_validator(norm_iv)
 
  ### ------------ Activation --------------------------------------------------   
@@ -1469,7 +1492,9 @@ probDistServer <- function(id) {
     HypGeoprob_iv$enable()
     HypGeobetween_iv$enable()
     
-    # TODO: negbin_iv$enable()
+    NegBin_iv$enable()
+    NegBinprob_iv$enable()
+    NegBinbetween_iv$enable()
 
     norm_iv$enable()
     normprob_iv$enable()
@@ -2865,24 +2890,32 @@ probDistServer <- function(id) {
                   need(input$sampSizeHypGeo %% 1 == 0, "Sample Size (n) must be a positive integer"),
                 errorClass = "myClass")
           }
-        ) #withMathJax
+        ) # withMathJax
       }) # renderProbabilityHypGeo
     }) # goHypGeo
     
  ### ------------ Negative Binomial ------------------------------------------
 
-    observeEvent(input$goNegBin, {
-
+    # observeEvent(input$goNegBin, {
+    # 
     #   output$renderProbabilityNegBin <- renderUI({
     #     withMathJax(
     #       if(!pd_iv$is_valid())
     #       {
+    #         if(!NegBinprob_iv$is_valid())
+    #         {
+    #           
+    #         }
     #         
+    #         if(!NegBinbetween_iv$is_valid())
+    #         {
+    #           
+    #         }
+    # 
     #       }
-    #     )
-    #   })
-
-    }) # goNegBin
+    #     ) # withMathJax
+    #   }) # renderProbabilityNegBin
+    # }) # goNegBin
 
  ### ------------ Normal ------------------------------------------------------
     observeEvent(input$goNormalProb, {
@@ -3745,9 +3778,27 @@ probDistServer <- function(id) {
     # Negative Binomial Distribution #
     #--------------------------------#
 
+    observeEvent(input$goNegBin, {
+      show(id = "probabilityMP")
+    })
+    
+    observeEvent({input$successNegBin
+      input$successProbNegBin
+      input$xNegBin
+      input$x1NegBin
+      input$x2NegBin}, {
+        hide(id = 'probabilityMP')
+      })
+    
+    observeEvent(input$calcNegBin, {
+      if(input$calcNegBin == 'between') {
+        hide(id = "probabilityMP")
+      }
+    })
+
     observeEvent(input$resetNegBin, {
       hide(id = "probabilityMP")
-      shinyjs::reset("negBinPanel")
+      shinyjs::reset("NegBinPanel")
     })
 
     #---------------------#
