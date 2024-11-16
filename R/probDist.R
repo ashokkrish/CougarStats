@@ -2896,26 +2896,48 @@ probDistServer <- function(id) {
     
  ### ------------ Negative Binomial ------------------------------------------
 
-    # observeEvent(input$goNegBin, {
-    # 
-    #   output$renderProbabilityNegBin <- renderUI({
-    #     withMathJax(
-    #       if(!pd_iv$is_valid())
-    #       {
-    #         if(!NegBinprob_iv$is_valid())
-    #         {
-    #           
-    #         }
-    #         
-    #         if(!NegBinbetween_iv$is_valid())
-    #         {
-    #           
-    #         }
-    # 
-    #       }
-    #     ) # withMathJax
-    #   }) # renderProbabilityNegBin
-    # }) # goNegBin
+    observeEvent(input$goNegBin, {
+      
+      output$renderProbabilityNegBin <- renderUI({
+        withMathJax(
+          if(!pd_iv$is_valid())
+          {
+            if(!NegBinprob_iv$is_valid())
+            {
+              validate(
+                need(input$successNegBin , "Number of Successes (r) must be a positive integer")%then%
+                  need(input$successNegBin > 0 && input$successNegBin %% 1 == 0, "Number of Successes (r) must be a positive integer"),
+                need(input$successProbNegBin, "Probability of Success (p) must be between 0 and 1") %then%
+                  need(input$successProbNegBin >= 0 && input$successProbNegBin <= 1, "Probability of Success (p) must be between 0 and 1"),
+                need(input$xNegBin , "Number of Failures (x) must be a positive integer") %then%
+                  need(input$xNegBin >= 0 && input$xNegBin %% 1 == 0, "Number of Failures (x) must be a positive integer"),
+                errorClass = "myClass")
+            }
+            
+            if(!NegBinbetween_iv$is_valid())
+            {
+              validate(
+                need(input$successNegBin , "Number of Successes (r) must be a positive integer")%then%
+                  need(input$successNegBin > 0 && input$successNegBin %% 1 == 0, "Number of Successes (r) must be a positive integer"),
+                need(input$successProbNegBin, "Probability of Success (p) must be between 0 and 1") %then%
+                  need(input$successProbNegBin >= 0 && input$successProbNegBin <= 1, "Probability of Success (p) must be between 0 and 1"),
+                need(input$x1NegBin , "Number of Failures (x1) must be a positive integer") %then%
+                  need(input$x1NegBin >= 0 && input$x1NegBin %% 1 == 0, "Number of Failures (x1) must be a positive integer"),
+                need(input$x2NegBin , "Number of Failures (x2) must be a positive integer") %then%
+                  need(input$x2NegBin >= 0 && input$x2NegBin %% 1 == 0, "Number of Failures (x2) must be a positive integer"),
+                errorClass = "myClass")
+            }
+            
+            validate(
+              need(input$successNegBin , "Number of Successes (r) must be a positive integer")%then%
+                need(input$successNegBin > 0 && input$successNegBin %% 1 == 0, "Number of Successes (r) must be a positive integer"),
+              need(input$successProbNegBin, "Probability of Success (p) must be between 0 and 1") %then%
+                need(input$successProbNegBin >= 0 && input$successProbNegBin <= 1, "Probability of Success (p) must be between 0 and 1"),
+              errorClass = "myClass")
+          }
+        ) # withMathJax
+      }) # renderProbabilityNegBin
+    }) # goNegBin
 
  ### ------------ Normal ------------------------------------------------------
     observeEvent(input$goNormalProb, {
