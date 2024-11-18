@@ -50,7 +50,7 @@ probDistUI <- function(id) {
                          "Hypergeometric",
                          "Negative Binomial",
                          "Normal"), 
-            selected = NULL, 
+            selected = "Hypergeometric",# NULL, 
             inline   = FALSE),
 
 ### ------------ Contingency Tables -------------------------------------------
@@ -462,7 +462,7 @@ probDistUI <- function(id) {
 
               numericInput(
                 inputId = ns("xHypGeo"),
-                label   = strong("Number of Successes (\\( x\\))"),
+                label   = strong("Number of Successes in the Sample (\\( x\\))"),
                 value   = 1,
                 min     = 0,
                 step    = 1)
@@ -474,14 +474,14 @@ probDistUI <- function(id) {
 
               numericInput(
                 inputId = ns("x1HypGeo"),
-                label   = strong("Number of Successes (\\( x_{1}\\))"),
+                label   = strong("Number of Successes in the Sample (\\( x_{1}\\))"),
                 value   = 3,
                 min     = 0,
                 step    = 1),
 
               numericInput(
                 inputId = ns("x2HypGeo"),
-                label   = strong("Number of Successes (\\( x_{2}\\))"),
+                label   = strong("Number of Successes in the Sample (\\( x_{2}\\))"),
                 value   = 5,
                 min     = 0,
                 step    = 1)
@@ -2507,28 +2507,27 @@ probDistServer <- function(id) {
                 errorClass = "myClass")
               
               if(input$calcBinom == 'exact'){
-                binomProb <- paste("P(X = ", binom_x, ")") #= ", dbinom(binom_x,binom_n,binom_p))
+                binomProb <- paste("P(X = ", binom_x, ")") 
                 binomForm <- paste("\\binom{", binom_n, "}{", binom_x, "}", binom_p, "^{", binom_x, "}(1-", binom_p, ")^{", binom_n, "-", binom_x, "}")
                 binomVal <- round(dbinom(binom_x,binom_n,binom_p), 4)
               }
               else if(input$calcBinom == 'cumulative'){
-                binomProb <- paste("P(X \\leq ", binom_x, ")") # = ", pbinom(binom_x,binom_n,binom_p,lower.tail = TRUE))
+                binomProb <- paste("P(X \\leq ", binom_x, ")") 
                 binomForm <- paste("\\sum_{x = 0}^{", binom_x, "} \\binom{", binom_n, "}{x}", binom_p, "^x (1-", binom_p, ")^{", binom_n, "- x}")
                 binomVal <- round(pbinom(binom_x,binom_n,binom_p,lower.tail = TRUE), 4)
               }
               else if(input$calcBinom == 'upperTail'){
-                binomProb <- paste("P(X \\geq ", binom_x, ")") # = ", pbinom(binom_x - 1,binom_n,binom_p,lower.tail = FALSE))
+                binomProb <- paste("P(X \\geq ", binom_x, ")") 
                 binomForm <- paste("\\sum_{x = ", binom_x, "}^{", binom_n, "} \\binom{", binom_n, "}{x}", binom_p, "^x (1-", binom_p, ")^{", binom_n, "- x}")
                 binomVal <- round(pbinom(binom_x - 1,binom_n,binom_p,lower.tail = FALSE), 4)
-                
               }
               else if(input$calcBinom == 'greaterThan'){
-                binomProb <- paste("P(X \\gt ", binom_x, ")") # = ", pbinom(binom_x,binom_n,binom_p,lower.tail = FALSE))
+                binomProb <- paste("P(X \\gt ", binom_x, ")") 
                 binomForm <- paste("\\sum_{x = ", binom_x + 1, "}^{", binom_n, "} \\binom{", binom_n, "}{x}", binom_p, "^x (1-", binom_p, ")^{", binom_n, "- x}")
                 binomVal <- round(pbinom(binom_x,binom_n,binom_p,lower.tail = FALSE), 4)
               }
               else if(input$calcBinom == 'lessThan'){
-                binomProb <- paste("P(X \\lt ", binom_x, ")") # = ", pbinom(binom_x - 1,binom_n,binom_p,lower.tail = TRUE))
+                binomProb <- paste("P(X \\lt ", binom_x, ")") 
                 binomForm <- paste("\\sum_{x = 0}^{", binom_x - 1, "} \\binom{", binom_n, "}{x}", binom_p, "^x (1-", binom_p, ")^{", binom_n, "- x}")
                 binomVal <- round(pbinom(binom_x - 1,binom_n,binom_p,lower.tail = TRUE), 4)
               }
@@ -2560,8 +2559,8 @@ probDistServer <- function(id) {
                   hr(),
                   br(),
                   p(tags$b("Using the Probability Mass Function: ")),
-                  sprintf("\\( \\qquad \\qquad P(X = x) = \\binom{n}{x} p^x (1-p)^{n-x} \\)"),
-                  sprintf("\\( \\qquad \\) for \\( x = 0, 1, 2, ... n\\)"),
+                  sprintf("\\( P(X = x) = \\binom{n}{x} p^x (1-p)^{n-x} \\)"),
+                  sprintf("\\( \\qquad \\) for \\( x = 0, 1, 2, ..., n\\)"),
                   br(),
                   br(),
                   br(),
@@ -2598,9 +2597,10 @@ probDistServer <- function(id) {
                   DTOutput(session$ns("binomDistrTable"), width = "25%"),
                   br(),
                   plotOutput(session$ns("binomDistrBarPlot"), width = "50%")
-                  ))
+                  )
+                ) # withMathJax
               ) # tagList
-          }) 
+          }) # withMathJax
       }) # renderProbabilityBinom
       
       output$binomDistrTable <- DT::renderDT({
@@ -2639,7 +2639,7 @@ probDistServer <- function(id) {
                     rownames = FALSE,
                     filter = "none")
         }
-      })# binomDistrTable
+      }) # binomDistrTable
     })
     
     output$binomDistrBarPlot <- renderPlot({
@@ -2734,27 +2734,27 @@ probDistServer <- function(id) {
               poisson_x <- input$xPoisson
               
               if(input$calcPoisson == 'exact'){
-                poissProb <- paste("P(X = ", poisson_x, ")") #= ", dbinom(binom_x,binom_n,binom_p))
+                poissProb <- paste("P(X = ", poisson_x, ")") 
                 poissForm <- paste("\\dfrac{e^{-", poisson_mu, "}", poisson_mu, "^{", poisson_x, "}}{", poisson_x, "!}")
                 poissVal <- round(dpois(poisson_x,poisson_mu), 4)
               }
               else if(input$calcPoisson == 'cumulative'){
-                poissProb <- paste("P(X \\leq ", poisson_x, ")") # = ", pbinom(binom_x,binom_n,binom_p,lower.tail = TRUE))
+                poissProb <- paste("P(X \\leq ", poisson_x, ")") 
                 poissForm <- paste("\\sum_{x = 0}^{", poisson_x, "} \\dfrac{e^{-", poisson_mu, "}", poisson_mu, "^x}{x!}")
                 poissVal <- round(ppois(poisson_x,poisson_mu,lower.tail = TRUE), 4)
               }
               else if(input$calcPoisson == 'upperTail'){
-                poissProb <- paste("P(X \\geq ", poisson_x, ")") # = ", pbinom(binom_x,binom_n,binom_p,lower.tail = TRUE))
+                poissProb <- paste("P(X \\geq ", poisson_x, ")") 
                 poissForm <- paste("1 - \\sum_{x = 0}^{", poisson_x - 1, "} \\dfrac{e^{-", poisson_mu, "}", poisson_mu, "^x}{x!}")
                 poissVal <- round(ppois(poisson_x - 1,poisson_mu,lower.tail = FALSE), 4)
               }
               else if(input$calcPoisson == 'greaterThan'){
-                poissProb <- paste("P(X \\gt ", poisson_x, ")") # = ", pbinom(binom_x,binom_n,binom_p,lower.tail = TRUE))
+                poissProb <- paste("P(X \\gt ", poisson_x, ")") 
                 poissForm <- paste("1 - \\sum_{x = 0}^{", poisson_x, "} \\dfrac{e^{-", poisson_mu, "}", poisson_mu, "^x}{x!}")
                 poissVal <- round(ppois(poisson_x,poisson_mu,lower.tail = FALSE), 4)
               }
               else if(input$calcPoisson == 'lessThan'){
-                poissProb <- paste("P(X \\lt ", poisson_x, ")") # = ", pbinom(binom_x,binom_n,binom_p,lower.tail = TRUE))
+                poissProb <- paste("P(X \\lt ", poisson_x, ")") 
                 poissForm <- paste("\\sum_{x = 0}^{", poisson_x - 1, "} \\dfrac{e^{-", poisson_mu, "}", poisson_mu, "^x}{x!}")
                 poissVal <- round(ppois(poisson_x - 1,poisson_mu,lower.tail = TRUE), 4)
               }
@@ -2776,14 +2776,14 @@ probDistServer <- function(id) {
             tagList(
               withMathJax(
                 div(
-                  h4(
+                  h3(
                     sprintf("Calculating  \\( %s \\)   when  \\(  X \\sim Pois(\\mu = %g): \\)",
                             poissProb,
                             poisson_mu)),
                   hr(),
                   br(),
                   p(tags$b("Using the Probability Mass Function: ")),
-                  sprintf("\\( \\qquad \\qquad P(X = x) = \\dfrac{e^{-\\mu} \\mu^x}{x!} \\)"),
+                  sprintf("\\( P(X = x) = \\dfrac{e^{-\\mu} \\mu^x}{x!} \\)"),
                   sprintf("\\( \\qquad \\) for \\( x = 0, 1, 2, ... \\)"),
                   br(),
                   br(),
@@ -2819,7 +2819,8 @@ probDistServer <- function(id) {
                   hr(),
                   DTOutput(session$ns("poissDistrTable"), width = "25%"),
                   br()
-                  ))
+                  )
+                ) # withMathJax
               ) # tagList
           }) # withMathJax
       }) # renderProbabilityPoisson
@@ -2845,6 +2846,8 @@ probDistServer <- function(id) {
  
  ### ------------ Hypergeometric ------------------------------------------
 
+    # IMPORTANT TO DO: Validate this Choose n-x ≤ N-M
+    
     observeEvent(input$goHypGeo, {
       
       output$renderProbabilityHypGeo <- renderUI({
@@ -2860,8 +2863,8 @@ probDistServer <- function(id) {
                   need(input$popSuccessesHypGeo %% 1 == 0, "Number of Successes in the Population (M) must be a positive integer"),
                 need(input$sampSizeHypGeo && input$sampSizeHypGeo > 0, "Sample Size (n) must be a positive integer")%then%
                   need(input$sampSizeHypGeo %% 1 == 0, "Sample Size (n) must be a positive integer"),
-                need(input$xHypGeo , "Number of Successes (x) must be a positive integer") %then%
-                  need(input$xHypGeo >= 0 && input$xHypGeo %% 1 == 0, "Number of Successes (x) must be a positive integer"),
+                need(input$xHypGeo , "Number of Successes in the Sample (x) must be a positive integer") %then%
+                  need(input$xHypGeo >= 0 && input$xHypGeo %% 1 == 0, "Number of Successes in the Sample (x) must be a positive integer"),
                 errorClass = "myClass")
             }
 
@@ -2874,10 +2877,10 @@ probDistServer <- function(id) {
                   need(input$popSuccessesHypGeo %% 1 == 0, "Number of Successes in the Population (M) must be a positive integer"),
                 need(input$sampSizeHypGeo && input$sampSizeHypGeo > 0, "Sample Size (n) must be a positive integer")%then%
                   need(input$sampSizeHypGeo %% 1 == 0, "Sample Size (n) must be a positive integer"),
-                need(input$x1HypGeo , "Number of Successes (x1) must be a positive integer") %then%
-                  need(input$x1HypGeo >= 0 && input$x1HypGeo %% 1 == 0, "Number of Successes (x1) must be a positive integer"),
-                need(input$x2HypGeo , "Number of Successes (x2) must be a positive integer") %then%
-                  need(input$x2HypGeo >= 0 && input$x2HypGeo %% 1 == 0, "Number of Successes (x2) must be a positive integer"),
+                need(input$x1HypGeo , "Number of Successes in the Sample (x1) must be a positive integer") %then%
+                  need(input$x1HypGeo >= 0 && input$x1HypGeo %% 1 == 0, "Number of Successes in the Sample (x1) must be a positive integer"),
+                need(input$x2HypGeo , "Number of Successes in the Sample (x2) must be a positive integer") %then%
+                  need(input$x2HypGeo >= 0 && input$x2HypGeo %% 1 == 0, "Number of Successes in the Sample (x2) must be a positive integer"),
                 errorClass = "myClass")
             }
 
@@ -2890,8 +2893,127 @@ probDistServer <- function(id) {
                   need(input$sampSizeHypGeo %% 1 == 0, "Sample Size (n) must be a positive integer"),
                 errorClass = "myClass")
           }
-        ) # withMathJax
+          else
+          {
+            popSizeHypGeo <- input$popSizeHypGeo
+            popSuccessesHypGeo <- input$popSuccessesHypGeo
+            sampSizeHypGeo <- input$sampSizeHypGeo
+
+            validate(
+              need(popSizeHypGeo > popSuccessesHypGeo, "Number of Successes in the Population (M) must be less than or equal to Population Size (N)"),
+              need(popSizeHypGeo > sampSizeHypGeo, "Sample Size (n) must be less than or equal to Population Size (N)"),
+            errorClass = "myClass")
+
+            HypGeo_mu <- round(sampSizeHypGeo*popSuccessesHypGeo/popSizeHypGeo, 4)
+            HypGeo_var <- round(sampSizeHypGeo*(popSuccessesHypGeo/popSizeHypGeo)*((popSizeHypGeo - popSuccessesHypGeo)/popSizeHypGeo)*((popSizeHypGeo - sampSizeHypGeo)/(popSizeHypGeo - 1)), 4)
+            HypGeo_sd <- round(sqrt(HypGeo_var), 4)
+
+            if(input$calcHypGeo != 'between')
+            {
+              xHypGeo <- input$xHypGeo
+
+              validate(
+                need(xHypGeo <= sampSizeHypGeo, "Number of Successes in the Sample (x) must be less than or equal to the Sample Size (n)"),
+                need(xHypGeo <= popSuccessesHypGeo, "Number of Successes in the Sample (x) must be less than or equal to the Number of Successes in the Population (M)"),
+                errorClass = "myClass")
+              
+              if(input$calcHypGeo == 'exact'){
+                HypGeoProb <- paste("P(X = ", xHypGeo, ")") 
+                HypGeoForm <- paste("\\dfrac{\\binom{", popSuccessesHypGeo, "}{", xHypGeo, "}", "\\binom{", (popSizeHypGeo - popSuccessesHypGeo), "}{", (sampSizeHypGeo - xHypGeo), "}}{\\binom{", popSizeHypGeo, "}{", sampSizeHypGeo, "}}")
+                HypGeoVal <- round(dhyper(xHypGeo, popSuccessesHypGeo, (popSizeHypGeo - popSuccessesHypGeo), sampSizeHypGeo), 4) # dhyper(x, m, n, k, log = FALSE)
+              }
+              else if(input$calcHypGeo == 'cumulative'){
+                HypGeoProb <- paste("P(X \\leq ", xHypGeo, ")")
+                HypGeoForm <- paste("\\sum_{x = 0}^{", xHypGeo, "} \\dfrac{\\binom{", popSuccessesHypGeo, "}{x} \\binom{", (popSizeHypGeo - popSuccessesHypGeo), "}{", sampSizeHypGeo,  "- x}}{\\binom{", popSizeHypGeo, "}{", sampSizeHypGeo, "}}")
+                HypGeoVal <- round(phyper(xHypGeo, popSuccessesHypGeo, (popSizeHypGeo - popSuccessesHypGeo), sampSizeHypGeo, lower.tail = TRUE), 4)
+              }
+              else if(input$calcHypGeo == 'upperTail'){
+                HypGeoProb <- paste("P(X \\geq ", xHypGeo, ")")
+                HypGeoForm <- paste("\\sum_{x =", xHypGeo,"}^{", popSuccessesHypGeo, "} \\dfrac{\\binom{", popSuccessesHypGeo, "}{x} \\binom{", (popSizeHypGeo - popSuccessesHypGeo), "}{", sampSizeHypGeo,  "- x}}{\\binom{", popSizeHypGeo, "}{", sampSizeHypGeo, "}}")
+                HypGeoVal <- round(phyper(xHypGeo - 1, popSuccessesHypGeo, (popSizeHypGeo - popSuccessesHypGeo), sampSizeHypGeo, lower.tail = FALSE), 4)
+              }
+              else if(input$calcHypGeo == 'greaterThan'){
+                HypGeoProb <- paste("P(X \\gt ", xHypGeo, ")")
+                HypGeoForm <- paste("\\sum_{x =", xHypGeo + 1,"}^{", popSuccessesHypGeo, "} \\dfrac{\\binom{", popSuccessesHypGeo, "}{x} \\binom{", (popSizeHypGeo - popSuccessesHypGeo), "}{", sampSizeHypGeo,  "- x}}{\\binom{", popSizeHypGeo, "}{", sampSizeHypGeo, "}}")
+                HypGeoVal <- round(phyper(xHypGeo, popSuccessesHypGeo, (popSizeHypGeo - popSuccessesHypGeo), sampSizeHypGeo, lower.tail = FALSE), 4)
+              }
+              else if(input$calcHypGeo == 'lessThan'){
+                HypGeoProb <- paste("P(X \\lt ", xHypGeo, ")")
+                HypGeoForm <- paste("\\sum_{x = 0}^{", xHypGeo - 1, "} \\dfrac{\\binom{", popSuccessesHypGeo, "}{x} \\binom{", (popSizeHypGeo - popSuccessesHypGeo), "}{", sampSizeHypGeo,  "- x}}{\\binom{", popSizeHypGeo, "}{", sampSizeHypGeo, "}}")
+                HypGeoVal <- round(phyper(xHypGeo - 1, popSuccessesHypGeo, (popSizeHypGeo - popSuccessesHypGeo), sampSizeHypGeo, lower.tail = TRUE), 4)
+              }
+            }
+            else if(input$calcHypGeo == 'between')
+            {
+              x1HypGeo <- input$x1HypGeo
+              x2HypGeo <- input$x2HypGeo
+              
+              validate(
+                need(x1HypGeo <= sampSizeHypGeo, "Number of Successes in the Sample (x1) must be less than or equal to the Sample Size (n)"),
+                need(x2HypGeo <= sampSizeHypGeo, "Number of Successes in the Sample (x2) must be less than or equal to the Sample Size (n)"),
+                need(x1HypGeo <= popSuccessesHypGeo, "Number of Successes in the Sample (x1) must be less than or equal to the Number of Successes in the Population (M)"),
+                need(x2HypGeo <= popSuccessesHypGeo, "Number of Successes in the Sample (x2) must be less than or equal to the Number of Successes in the Population (M)"),
+                need(x1HypGeo <= x2HypGeo, "Number of Successes in the Sample (x1) must be less than or equal to Number of Successes in the Sample (x2)"),
+                errorClass = "myClass")
+            }
+            
+            tagList(
+              withMathJax(
+                div(
+                  h3(
+                    sprintf("Calculating  \\( %s \\)   when  \\(  X \\sim Hyper(N = %1.0f, M = %1.0f, n = %1.0f): \\)",
+                            HypGeoProb,
+                            popSizeHypGeo,
+                            popSuccessesHypGeo,
+                            sampSizeHypGeo)),
+                  hr(),
+                  br(),
+                  p(tags$b("Using the Probability Mass Function: ")),
+                  sprintf("\\( P(X = x) = \\dfrac{\\binom{M}{x} \\binom{N - M}{n - x}}{\\binom{N}{n}} \\)"),
+                  sprintf("\\( \\qquad \\) for \\( x = max(0, n + M - N), ..., min(n, M) \\)"),
+                  br(),
+                  br(),
+                  br(),
+                  sprintf("\\( \\displaystyle %s = %s\\)",
+                          HypGeoProb,
+                          HypGeoForm),
+                  br(),
+                  br(),
+                  sprintf("\\( %s = %0.4f\\)",
+                          HypGeoProb,
+                          HypGeoVal),
+                  br(),
+                  br(),
+                  br(),
+                  sprintf("Population Mean \\( (\\mu) = n\\left(\\dfrac{M}{N}\\right) = %g\\)",
+                          HypGeo_mu),
+                  br(),
+                  br(),
+                  sprintf("Population Standard Deviation \\( (\\sigma) = \\sqrt{n\\left(\\dfrac{M}{N}\\right)\\left(\\dfrac{N-M}{N}\\right)\\left(\\dfrac{N-n}{N-1}\\right)} = %g\\)",
+                          HypGeo_sd),
+                  br(),
+                  br(),
+                  sprintf("Population Variance \\( (\\sigma^{2}) = n\\left(\\dfrac{M}{N}\\right)\\left(\\dfrac{N-M}{N}\\right)\\left(\\dfrac{N-n}{N-1}\\right) = %g\\)",
+                          HypGeo_var)
+                )
+                #,
+                # br(),
+                # conditionalPanel(
+                #   ns = session$ns,
+                #   condition = "input.showHypGeoTable == 1",
+                #   
+                #   br(),
+                #   titlePanel("Probability Distribution Table"),
+                #   hr(),
+                #   DTOutput(session$ns("HypGeoDistrTable"), width = "25%"),
+                #   br(),
+                #   plotOutput(session$ns("HypGeoDistrBarPlot"), width = "50%")
+                # )
+              ) # withMathJax
+            ) # tagList
+          }) # withMathJax
       }) # renderProbabilityHypGeo
+      
     }) # goHypGeo
     
  ### ------------ Negative Binomial ------------------------------------------
@@ -2934,6 +3056,30 @@ probDistServer <- function(id) {
               need(input$successProbNegBin, "Probability of Success (p) must be between 0 and 1") %then%
                 need(input$successProbNegBin >= 0 && input$successProbNegBin <= 1, "Probability of Success (p) must be between 0 and 1"),
               errorClass = "myClass")
+          }
+          else
+          {
+            successNegBin <- input$successNegBin
+            successProbNegBin <- input$successProbNegBin
+            
+            # NegBin_mu <- round((successNegBin*(1 - successProbNegBin))/successProbNegBin, 4)
+            # NegBin_var <- round((successNegBin*(1 - successProbNegBin))/(successProbNegBin^2), 4)
+            # NegBin_sd <- round(sqrt(NegBin_var), 4)
+            
+            if(input$calcNegBin != 'between')
+            {
+              xNegBin <- input$xNegBin
+              
+            }
+            else if(input$calcNegBin == 'between')
+            {
+              x1NegBin <- input$x1NegBin
+              x2NegBin <- input$x2NegBin
+              
+              validate(
+                need(x1NegBin <= x2NegBin, "Number of Failures (x1) must be less than or equal to Number of Failures (x2)"),
+                errorClass = "myClass")
+            }
           }
         ) # withMathJax
       }) # renderProbabilityNegBin
@@ -3009,7 +3155,7 @@ probDistServer <- function(id) {
         tagList(
           withMathJax(
             div(
-              h4(
+              h3(
                 sprintf("Calculating  \\( %s \\)   when  \\(  X \\sim N(\\mu = %g, \\sigma = %g): \\)",
                         normProb,
                         norm_mu,
@@ -3146,7 +3292,7 @@ probDistServer <- function(id) {
         tagList(
           withMathJax(
             div(
-              h4(
+              h3(
                 sprintf("Calculating  \\( %s \\)   when  \\(  \\bar{X} \\sim N(\\mu_{\\bar{X}} = \\mu = %g, \\, \\sigma_{\\bar{X}} = \\dfrac{\\sigma}{\\sqrt{n}} = %0.4f): \\)",
                         normProb,
                         input$popMean,
@@ -3238,7 +3384,7 @@ probDistServer <- function(id) {
         tagList(
           withMathJax(
             div(
-              h4(
+              h3(
                 sprintf("Given \\( X \\sim N(\\mu  = %d, \\sigma = %d) \\) then",
                         input$popMean,
                         input$popSD)
@@ -3581,7 +3727,7 @@ probDistServer <- function(id) {
         tagList(
           withMathJax(
             div(
-              h4(
+              h3(
                 sprintf("Given \\( X \\sim N(\\mu  = %d, \\sigma = %d) \\) then",
                         input$popMean,
                         input$popSD)),
