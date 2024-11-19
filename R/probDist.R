@@ -50,7 +50,7 @@ probDistUI <- function(id) {
                          "Hypergeometric",
                          "Negative Binomial",
                          "Normal"), 
-            selected =  "Negative Binomial",  # NULL, #
+            selected =  NULL, #"Negative Binomial",  # 
             inline   = FALSE),
 
 ### ------------ Contingency Tables -------------------------------------------
@@ -548,15 +548,15 @@ probDistUI <- function(id) {
                                   "\\(P(x_1 \\leq X \\leq x_2)\\)"),
               inline       = FALSE),
             
-            radioButtons(
-              inputId = ns("trialsNegBin"),
-              label = strong("Trials"),
-              choiceValues = list("failures",
-                                  "trials"),
-              choiceNames = list("Failures prior to the \\(r^{th}\\) success",
-                                 "Trials until (and including) the \\(r^{th}\\) success"),
-              inline = TRUE,
-            ),
+            # radioButtons(
+            #   inputId = ns("trialsNegBin"),
+            #   label = strong("Trials"),
+            #   choiceValues = list("failures",
+            #                       "trials"),
+            #   choiceNames = list("Failures prior to the \\(r^{th}\\) success",
+            #                      "Trials until (and including) the \\(r^{th}\\) success"),
+            #   inline = TRUE,
+            # ),
             
             conditionalPanel(
               ns = ns,
@@ -564,7 +564,7 @@ probDistUI <- function(id) {
               
               numericInput(
                 inputId = ns("xNegBin"),
-                label   = strong("Number of Failures (\\( x\\))"),
+                label   = strong("Number of Failures prior to the \\(r^{th}\\) success (\\( x\\))"),
                 value   = 4,
                 min     = 0,
                 step    = 1)
@@ -1223,10 +1223,10 @@ probDistServer <- function(id) {
     
     NegBin_iv$add_rule("successNegBin", sv_required())
     NegBin_iv$add_rule("successNegBin", sv_integer())
-    NegBin_iv$add_rule("successNegBin", sv_gt(0))
+    NegBin_iv$add_rule("successNegBin", sv_gte(0))
     
     NegBin_iv$add_rule("successProbNegBin", sv_required())
-    NegBin_iv$add_rule("successProbNegBin", sv_gte(0))
+    NegBin_iv$add_rule("successProbNegBin", sv_gt(0))
     NegBin_iv$add_rule("successProbNegBin", sv_lte(1))
     
     NegBinprob_iv$add_rule("xNegBin", sv_required())
@@ -3032,9 +3032,9 @@ probDistServer <- function(id) {
             {
               validate(
                 need(input$successNegBin , "Number of Successes (r) must be a positive integer")%then%
-                  need(input$successNegBin > 0 && input$successNegBin %% 1 == 0, "Number of Successes (r) must be a positive integer"),
+                  need(input$successNegBin >= 0 && input$successNegBin %% 1 == 0, "Number of Successes (r) must be a positive integer"),
                 need(input$successProbNegBin, "Probability of Success (p) must be between 0 and 1") %then%
-                  need(input$successProbNegBin >= 0 && input$successProbNegBin <= 1, "Probability of Success (p) must be between 0 and 1"),
+                  need(input$successProbNegBin > 0 && input$successProbNegBin <= 1, "Probability of Success (p) must be 0 < p  ≤ 1"),
                 need(input$xNegBin , "Number of Failures (x) must be a positive integer") %then%
                   need(input$xNegBin >= 0 && input$xNegBin %% 1 == 0, "Number of Failures (x) must be a positive integer"),
                 errorClass = "myClass")
@@ -3044,13 +3044,13 @@ probDistServer <- function(id) {
             {
               validate(
                 need(input$successNegBin , "Number of Successes (r) must be a positive integer")%then%
-                  need(input$successNegBin > 0 && input$successNegBin %% 1 == 0, "Number of Successes (r) must be a positive integer"),
+                  need(input$successNegBin >= 0 && input$successNegBin %% 1 == 0, "Number of Successes (r) must be a positive integer"),
                 need(input$successProbNegBin, "Probability of Success (p) must be between 0 and 1") %then%
-                  need(input$successProbNegBin >= 0 && input$successProbNegBin <= 1, "Probability of Success (p) must be between 0 and 1"),
-                # need(input$x1NegBin , "Number of Failures (x1) must be a positive integer") %then%
-                #   need(input$x1NegBin >= 0 && input$x1NegBin %% 1 == 0, "Number of Failures (x1) must be a positive integer"),
-                # need(input$x2NegBin , "Number of Failures (x2) must be a positive integer") %then%
-                #   need(input$x2NegBin >= 0 && input$x2NegBin %% 1 == 0, "Number of Failures (x2) must be a positive integer"),
+                  need(input$successProbNegBin > 0 && input$successProbNegBin <= 1, "Probability of Success (p) must be 0 < p  ≤ 1"),
+                need(input$x1NegBin , "Number of Failures (x1) must be a positive integer") %then%
+                  need(input$x1NegBin >= 0 && input$x1NegBin %% 1 == 0, "Number of Failures (x1) must be a positive integer"),
+                need(input$x2NegBin , "Number of Failures (x2) must be a positive integer") %then%
+                  need(input$x2NegBin >= 0 && input$x2NegBin %% 1 == 0, "Number of Failures (x2) must be a positive integer"),
                 errorClass = "myClass")
             }
             
@@ -3139,15 +3139,15 @@ probDistServer <- function(id) {
                 br(),
                 br(),
                 br(),
-                sprintf("Population Mean \\( (\\mu) =  = %g\\)",
+                sprintf("Population Mean \\( (\\mu) = \\dfrac{r(1 - p)}{p} = %g\\)",
                         NegBin_mu),
                 br(),
                 br(),
-                sprintf("Population Standard Deviation \\( (\\sigma) =  = %g\\)",
+                sprintf("Population Standard Deviation \\( (\\sigma) = \\sqrt{\\dfrac{r(1 - p)}{p^2}} = %g\\)",
                         NegBin_sd),
                 br(),
                 br(),
-                sprintf("Population Variance \\( (\\sigma^{2}) =  = %g\\)",
+                sprintf("Population Variance \\( (\\sigma^{2}) = \\dfrac{r(1 - p)}{p^2} = %g\\)",
                         NegBin_var)
               )
               #,
@@ -4037,8 +4037,9 @@ probDistServer <- function(id) {
     observeEvent({input$successNegBin
       input$successProbNegBin
       input$xNegBin
-      input$x1NegBin
-      input$x2NegBin}, {
+      #input$x1NegBin
+      #input$x2NegBin
+      }, {
         hide(id = 'probabilityMP')
       })
     
