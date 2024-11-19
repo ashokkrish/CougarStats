@@ -50,7 +50,7 @@ probDistUI <- function(id) {
                          "Hypergeometric",
                          "Negative Binomial",
                          "Normal"), 
-            selected = "Hypergeometric",# NULL, 
+            selected =  "Negative Binomial",  # NULL, #
             inline   = FALSE),
 
 ### ------------ Contingency Tables -------------------------------------------
@@ -517,14 +517,14 @@ probDistUI <- function(id) {
             numericInput(
               inputId = ns("successNegBin"),
               label   = strong("Number of Successes (\\( r\\))"),
-              value   = 1,
+              value   = 3,
               min     = 0,
               step    = 1),
             
             numericInput(
               inputId = ns("successProbNegBin"),
               label   = strong("Probability of Successes (\\( p\\))"),
-              value   = 0.20,
+              value   = 0.14,
               min     = 0,
               max     = 1,
               step    = 0.00001),
@@ -535,16 +535,16 @@ probDistUI <- function(id) {
               inputId      = ns("calcNegBin"),
               label        = NULL,
               choiceValues = list("exact",
-                                  "cumulative",
-                                  "upperTail",
-                                  "greaterThan",
-                                  "lessThan",
+                                  # "cumulative",
+                                  # "upperTail",
+                                  # "greaterThan",
+                                  # "lessThan",
                                   "between"),
               choiceNames  = list("\\(P(X = x \\))",
-                                  "\\(P(X \\leq x)\\)",
-                                  "\\(P(X \\ge x)\\)",
-                                  "\\(P(X \\gt x)\\)",
-                                  "\\(P(X < x)\\)",
+                                  # "\\(P(X \\leq x)\\)",
+                                  # "\\(P(X \\ge x)\\)",
+                                  # "\\(P(X \\gt x)\\)",
+                                  # "\\(P(X < x)\\)",
                                   "\\(P(x_1 \\leq X \\leq x_2)\\)"),
               inline       = FALSE),
             
@@ -565,7 +565,7 @@ probDistUI <- function(id) {
               numericInput(
                 inputId = ns("xNegBin"),
                 label   = strong("Number of Failures (\\( x\\))"),
-                value   = 2,
+                value   = 4,
                 min     = 0,
                 step    = 1)
             ),
@@ -2955,7 +2955,11 @@ probDistServer <- function(id) {
                 need(x2HypGeo <= popSuccessesHypGeo, "Number of Successes in the Sample (x2) must be less than or equal to the Number of Successes in the Population (M)"),
                 need(x1HypGeo <= x2HypGeo, "Number of Successes in the Sample (x1) must be less than or equal to Number of Successes in the Sample (x2)"),
                 errorClass = "myClass")
-            }
+              
+                HypGeoProb <- paste("P(", x1HypGeo, " \\leq X \\leq ", x2HypGeo, ")")
+                HypGeoForm <- paste("\\sum_{x = ", x1HypGeo, "}^{", x2HypGeo, "} \\dfrac{\\binom{", popSuccessesHypGeo, "}{x} \\binom{", (popSizeHypGeo - popSuccessesHypGeo), "}{", sampSizeHypGeo,  "- x}}{\\binom{", popSizeHypGeo, "}{", sampSizeHypGeo, "}}")
+                HypGeoVal <- round(phyper(x2HypGeo, popSuccessesHypGeo, (popSizeHypGeo - popSuccessesHypGeo), sampSizeHypGeo, lower.tail = TRUE) - phyper(x1HypGeo - 1, popSuccessesHypGeo, (popSizeHypGeo - popSuccessesHypGeo), sampSizeHypGeo, lower.tail = TRUE), 4)
+              }
             
             tagList(
               withMathJax(
@@ -3043,10 +3047,10 @@ probDistServer <- function(id) {
                   need(input$successNegBin > 0 && input$successNegBin %% 1 == 0, "Number of Successes (r) must be a positive integer"),
                 need(input$successProbNegBin, "Probability of Success (p) must be between 0 and 1") %then%
                   need(input$successProbNegBin >= 0 && input$successProbNegBin <= 1, "Probability of Success (p) must be between 0 and 1"),
-                need(input$x1NegBin , "Number of Failures (x1) must be a positive integer") %then%
-                  need(input$x1NegBin >= 0 && input$x1NegBin %% 1 == 0, "Number of Failures (x1) must be a positive integer"),
-                need(input$x2NegBin , "Number of Failures (x2) must be a positive integer") %then%
-                  need(input$x2NegBin >= 0 && input$x2NegBin %% 1 == 0, "Number of Failures (x2) must be a positive integer"),
+                # need(input$x1NegBin , "Number of Failures (x1) must be a positive integer") %then%
+                #   need(input$x1NegBin >= 0 && input$x1NegBin %% 1 == 0, "Number of Failures (x1) must be a positive integer"),
+                # need(input$x2NegBin , "Number of Failures (x2) must be a positive integer") %then%
+                #   need(input$x2NegBin >= 0 && input$x2NegBin %% 1 == 0, "Number of Failures (x2) must be a positive integer"),
                 errorClass = "myClass")
             }
             
@@ -3062,26 +3066,106 @@ probDistServer <- function(id) {
             successNegBin <- input$successNegBin
             successProbNegBin <- input$successProbNegBin
             
-            # NegBin_mu <- round((successNegBin*(1 - successProbNegBin))/successProbNegBin, 4)
-            # NegBin_var <- round((successNegBin*(1 - successProbNegBin))/(successProbNegBin^2), 4)
-            # NegBin_sd <- round(sqrt(NegBin_var), 4)
-            
+            NegBin_mu <- round((successNegBin*(1 - successProbNegBin))/successProbNegBin, 4)
+            NegBin_var <- round((successNegBin*(1 - successProbNegBin))/(successProbNegBin^2), 4)
+            NegBin_sd <- round(sqrt(NegBin_var), 4)
+
             if(input$calcNegBin != 'between')
             {
               xNegBin <- input$xNegBin
-              
+
+              if(input$calcNegBin == 'exact'){
+                NegBinProb <- paste("P(X = ", xNegBin, ")")
+                NegBinForm <- paste("\\binom{", xNegBin, "-1}{", successNegBin, "-1} ", successProbNegBin, "^", successNegBin, " (1-", successProbNegBin, ")^{", xNegBin, "-", successNegBin, "}")
+                NegBinVal <- round(dnbinom(xNegBin, successNegBin, successProbNegBin), 4)
+              }
+              # else if(input$calcNegBin == 'cumulative'){
+              #   NegBinProb <- paste("P(X \\leq ", xNegBin, ")")
+              #   NegBinForm <- paste()
+              #   NegBinVal <- round(pnbinom(xNegBin, successNegBin, successProbNegBin, lower.tail = TRUE), 4)
+              # }
+              # else if(input$calcNegBin == 'upperTail'){
+              #   NegBinProb <- paste("P(X \\geq ", xNegBin, ")")
+              #   NegBinForm <- paste()
+              #   NegBinVal <- round(pnbinom(xNegBin - 1, successNegBin, successProbNegBin, lower.tail = FALSE), 4)
+              # }
+              # else if(input$calcNegBin == 'greaterThan'){
+              #   NegBinProb <- paste("P(X \\gt ", xNegBin, ")")
+              #   NegBinForm <- paste()
+              #   NegBinVal <- round(pnbinom(xNegBin, successNegBin, successProbNegBin, lower.tail = FALSE), 4)
+              # }
+              # else if(input$calcNegBin == 'lessThan'){
+              #   NegBinProb <- paste("P(X \\lt ", xNegBin, ")")
+              #   NegBinForm <- paste()
+              #   NegBinVal <- round(pnbinom(xNegBin - 1, successNegBin, successProbNegBin, lower.tail = TRUE), 4)
+              # }
             }
             else if(input$calcNegBin == 'between')
             {
               x1NegBin <- input$x1NegBin
               x2NegBin <- input$x2NegBin
-              
+
               validate(
                 need(x1NegBin <= x2NegBin, "Number of Failures (x1) must be less than or equal to Number of Failures (x2)"),
                 errorClass = "myClass")
+
             }
-          }
-        ) # withMathJax
+
+          tagList(
+            withMathJax(
+              div(
+                h3(
+                  sprintf("Calculating  \\( %s \\)   when  \\(  X \\sim NegBin(r = %1.0f, p = %g): \\)",
+                          NegBinProb,
+                          successNegBin,
+                          successProbNegBin
+                  )),
+                hr(),
+                br(),
+                p(tags$b("Using the Probability Mass Function: ")),
+                sprintf("\\( P(X = x) = \\binom{x-1}{r-1} p^r (1-p)^{x-r} \\)"),
+                sprintf("\\( \\qquad \\) for \\( x = r, r+1, ... \\)"),
+                br(),
+                br(),
+                br(),
+                sprintf("\\( \\displaystyle %s = %s\\)",
+                        NegBinProb,
+                        NegBinForm),
+                br(),
+                br(),
+                sprintf("\\( %s = %0.4f\\)",
+                        NegBinProb,
+                        NegBinVal),
+                br(),
+                br(),
+                br(),
+                sprintf("Population Mean \\( (\\mu) =  = %g\\)",
+                        NegBin_mu),
+                br(),
+                br(),
+                sprintf("Population Standard Deviation \\( (\\sigma) =  = %g\\)",
+                        NegBin_sd),
+                br(),
+                br(),
+                sprintf("Population Variance \\( (\\sigma^{2}) =  = %g\\)",
+                        NegBin_var)
+              )
+              #,
+              # br(),
+              # conditionalPanel(
+              #   ns = session$ns,
+              #   condition = "input.showNegBinTable == 1",
+              #
+              #   br(),
+              #   titlePanel("Probability Distribution Table"),
+              #   hr(),
+              #   DTOutput(session$ns("NegBinDistrTable"), width = "25%"),
+              #   br(),
+              #   plotOutput(session$ns("NegBinDistrBarPlot"), width = "50%")
+              # )
+            ) # withMathJax
+          ) # tagList
+         }) # withMathJax
       }) # renderProbabilityNegBin
     }) # goNegBin
 
