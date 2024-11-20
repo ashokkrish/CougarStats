@@ -4763,15 +4763,19 @@ statInfrServer <- function(id) {
         br(),
 
         sprintf("For a %s Confidence Interval:", input$confidenceLevel), br(),
-        sprintf("\\( \\alpha = %0.2f \\)", oneSDCIalpha), br(),
-        sprintf("\\( \\chi^2_{  \\alpha/2} = \\chi^2_{    %0.2f / 2 } = \\chi^2_{ %0.3f } = %0.3f \\).",
+        sprintf("\\( \\alpha = 1 - %0.2f = %0.2f \\)", oneSDCIalpha, 1 - oneSDCIalpha), br(),
+        sprintf("\\( \\chi^2_{  \\alpha/2, df} = \\chi^2_{    %0.2f / 2 , %d} = \\chi^2_{ %0.3f, %d } = %0.3f \\).",
                 oneSDCIalpha,
+                oneSDCIdf,
                 ## See https://www.easysevens.com/understanding-chi-square-critical-value-a-beginners-tutorial/.
                 (critOneSSDLeft <- oneSDCIalpha/2),
+                oneSDCIdf,
                 (oneSSDLeft <- qchisq(p = 1 - critOneSSDLeft, df = oneSDCIdf))), br(),
-        sprintf("\\( \\chi^2_{1-\\alpha/2} = \\chi^2_{ 1 - %0.2f / 2} = \\chi^2_{ %0.3f } = %0.3f \\)",
+        sprintf("\\( \\chi^2_{1-\\alpha/2, df} = \\chi^2_{ 1 - %0.2f / 2, %d} = \\chi^2_{ %0.3f, %d} = %0.3f \\)",
                 oneSDCIalpha,
+                oneSDCIdf,
                 (critOneSSDRight <- 1 - oneSDCIalpha/2),
+                oneSDCIdf,
                 (oneSSDRight <- qchisq(p = 1 - critOneSSDRight, df = oneSDCIdf))), br(),
 
         br(),
