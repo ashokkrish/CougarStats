@@ -4752,52 +4752,46 @@ statInfrServer <- function(id) {
 
       ## UI
       withMathJax(
-        ## Step one
-        h4("Step one"),
-        sprintf("For a %s confidence interval, the confidence level is %0.2f = 1 - %0.2f, and so \\( \\alpha = %0.2f \\). Also, for \\( n = %d, df = %d \\). Thus,",
-                input$confidenceLevel, # for a 90%; character.
-
-                ConfLvl(), # is 0.90; numeric.
-
-                oneSDCIalpha, # 1 - 0.10, and so
-                oneSDCIalpha, # α = 0.10
-                input$SSDSampleSize, # n
-                oneSDCIdf # n - 1 = df
-                ),
+        ## Preface
+        sprintf("Given:"), br(),
+        sprintf("\\( n = %d \\)",
+                input$SSDSampleSize), br(),
+        sprintf("\\( s = %0.2f \\)",
+                input$SSDStdDev), br(),
         br(),
         br(),
-        sprintf("\\( \\chi^2_{  \\alpha/2} = \\chi^2_{    %0.3f / 2 } = \\chi^2_{ %0.3f } = %0.3f \\).",
+        br(),
+
+        sprintf("For a %s Confidence Interval:", input$confidenceLevel), br(),
+        sprintf("\\( \\alpha = %0.2f \\)", oneSDCIalpha), br(),
+        sprintf("\\( \\chi^2_{  \\alpha/2} = \\chi^2_{    %0.2f / 2 } = \\chi^2_{ %0.3f } = %0.3f \\).",
                 oneSDCIalpha,
                 ## See https://www.easysevens.com/understanding-chi-square-critical-value-a-beginners-tutorial/.
                 (critOneSSDLeft <- oneSDCIalpha/2),
-                (oneSSDLeft <- qchisq(p = 1 - critOneSSDLeft, df = oneSDCIdf))),
-        br(),
-        br(),
-        p("and"),
-        sprintf("\\( \\chi^2_{1-\\alpha/2} = \\chi^2_{ 1 - %0.3f / 2} = \\chi^2_{ %0.3f } = %0.3f \\)",
+                (oneSSDLeft <- qchisq(p = 1 - critOneSSDLeft, df = oneSDCIdf))), br(),
+        sprintf("\\( \\chi^2_{1-\\alpha/2} = \\chi^2_{ 1 - %0.2f / 2} = \\chi^2_{ %0.3f } = %0.3f \\)",
                 oneSDCIalpha,
                 (critOneSSDRight <- 1 - oneSDCIalpha/2),
-                (oneSSDRight <- qchisq(p = 1 - critOneSSDRight, df = oneSDCIdf))),
-        br(),
+                (oneSSDRight <- qchisq(p = 1 - critOneSSDRight, df = oneSDCIdf))), br(),
+
         br(),
         br(),
 
-        h4("Step two"),
-        p("\\( \\displaystyle  \\sqrt{\\frac{df}{\\chi^2_{\\alpha/2}}} \\cdot s \\) to \\( \\displaystyle \\sqrt{\\frac{df}{\\chi^2_{1 - \\alpha/2}}} \\cdot s \\)"),
+        p("\\( CI = \\displaystyle  \\sqrt{\\frac{df}{\\chi^2_{\\alpha/2}}} \\cdot s \\), and \\( \\displaystyle \\sqrt{\\frac{df}{\\chi^2_{1 - \\alpha/2}}} \\cdot s \\)"),
+        p("where"),
+        sprintf("\\(  df = n - 1 = %d - 1 = %d \\)",
+                input[["SSDSampleSize"]],
+                input[["SSDSampleSize"]] - 1),
         br(),
-        sprintf("We have \\( n = %d, df = %d\\), and from the previous formulae we have (the upper/right) \\( \\chi^2_{1 - \\alpha/2} = %0.3f \\), and (the lower/left) \\( \\chi^2_{\\alpha/2} = %0.3f \\). Here \\(  s  = %0.3f \\), so a %s confidence interval for \\( \\sigma \\) is from",
-                input$SSDSampleSize, # n
-                oneSDCIdf, # df
-                oneSSDRight,
-                oneSSDLeft,
-                input$SSDStdDev,
-                input$confidenceLevel),
         br(),
-        sprintf(paste("\\( \\displaystyle",
-                      "\\sqrt{\\frac{%d}{%0.3f}} \\cdot %0.3f",
-                      "\\) to \\( \\displaystyle",
-                      "\\sqrt{\\frac{%d}{%0.3f}} \\cdot %0.3f",
-                      "\\)"),
+        br(),
+        
+        sprintf(r"---(
+          \begin{align}
+          CI &= \left( \sqrt{\frac{%d}{%0.3f}} \cdot %0.3f,  \sqrt{\frac{%d}{%0.3f}} \cdot %0.3f \right) \\
+             &= \left(%0.2f, %0.2f\right)
+          \end{align}
+          )---",
                 # Left/lower
                 oneSDCIdf, # df
                 oneSSDLeft,
@@ -4806,18 +4800,31 @@ statInfrServer <- function(id) {
                 # Right/upper
                 oneSDCIdf, # df
                 oneSSDRight,
-                input$SSDStdDev), # s
+                input$SSDStdDev, #s
+          (oneSSDLowerPopStdDev <- sqrt(oneSDCIdf / oneSSDLeft) * input$SSDStdDev),
+                 (oneSSDUpperPopStdDev <- sqrt(oneSDCIdf / oneSSDRight) * input$SSDStdDev)),
         br(),
-        sprintf("that is, between \\(%0.2f\\) and \\(%0.2f\\).",
-                (oneSSDLowerPopStdDev <- sqrt(oneSDCIdf / oneSSDLeft) * input$SSDStdDev ),
-                (oneSSDUpperPopStdDev <- sqrt(oneSDCIdf / oneSSDRight) * input$SSDStdDev) ),
+        br(),
+        br(),
 
         ## Step three
-        h4("Step three"),
-        sprintf("Interpret the results: we are \\(%0.2f\\%%\\) confident that the population standard deviation lies between \\( %0.2f \\) and \\( %0.2f \\).",
+        tags$b("Interpretation:"), br(),
+        sprintf("We are \\(%0.2f\\%%\\) confident that the population standard deviation (\\( \\sigma \\)) lies between \\( %0.2f \\) and \\( %0.2f \\).",
                 ConfLvl(), oneSSDLowerPopStdDev, oneSSDUpperPopStdDev)
       )
 
+    })
+
+    output$oneSDHT <- renderUI({
+      ## Input validation
+      ## req() # NOTE: requried data is already validated...
+
+      ## Required data
+
+      ## UI
+      withMathJax(
+        h1("TODO: write the hypothesis test UI render function.")
+      ) # with math jax
     })
 
 
