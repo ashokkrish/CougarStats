@@ -296,12 +296,15 @@ statInfrUI <- function(id) {
                 inputId = ns("SSDSampleSize"),
                 label   = strong("Sample Size (\\( n\\))"),
                 value   = 30,
-                step    = 0.00001),
+                min     = 2,
+                step    = 1
+              ),
 
               numericInput(
                 inputId = ns("SSDStdDev"),
                 label   = strong("Sample Standard Deviation (\\( s\\))"),
                 value   = 12.23,
+                min     = 0.00001,
                 step    = 0.00001),
             ), #One Population Standard Deviation
 
@@ -1648,7 +1651,7 @@ statInfrServer <- function(id) {
 
     # sample standard deviation
     oneSD_iv$add_rule("SSDSampleSize", sv_required())
-    oneSD_iv$add_rule("SSDSampleSize", sv_gt(0))
+    oneSD_iv$add_rule("SSDSampleSize", sv_gt(1))
     oneSD_iv$add_rule("SSDStdDev", sv_required())
     oneSD_iv$add_rule("SSDStdDev", sv_gt(0))
 
