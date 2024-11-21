@@ -369,7 +369,20 @@ statInfrUI <- function(id) {
                   min     = 0,
                   max     = 1,
                   step    = 0.00001),
-              ), # Population Proportion
+                ), # Population Proportion
+
+              conditionalPanel(
+                ns = ns,
+                condition = "input.popuParameter == 'Population Standard Deviation'",
+
+                numericInput(
+                  inputId = ns("hypStdDeviation"),
+                  label   = strong(r"--{Hypothesized Population Standard Deviation (\( \sigma_{0}\)) Value}--"),
+                  value   = 0.15,
+                  min     = 0.001,
+                  max     = 1,
+                  step    = 0.001)
+              ), # Population standard deviation
 
               selectInput(
                 inputId  = ns("altHypothesis"),
@@ -1498,6 +1511,7 @@ statInfrServer <- function(id) {
     depmeansuploadvars_iv <- InputValidator$new()
     depmeansrawsd_iv <- InputValidator$new()
     oneSD_iv <- InputValidator$new()
+    oneStdDevHT_iv <- InputValidator$new()
     oneprop_iv <- InputValidator$new()
     onepropht_iv <- InputValidator$new()
     twoprop_iv <- InputValidator$new()
@@ -1695,6 +1709,10 @@ statInfrServer <- function(id) {
     onepropht_iv$add_rule("hypProportion", sv_gt(0))
     onepropht_iv$add_rule("hypProportion", sv_lt(1))
 
+    oneStdDevHT_iv$add_rule("hypStdDeviation", sv_required())
+    oneStdDevHT_iv$add_rule("hypStdDeviation", sv_gt(0))
+    oneStdDevHT_iv$add_rule("hypStdDeviation", sv_lt(1))
+
     # Anova
     anovaupload_iv$add_rule("anovaUserData", sv_required())
     anovaupload_iv$add_rule("anovaUserData", ~ if(is.null(fileInputs$anovaStatus) || fileInputs$anovaStatus == 'reset') "Required")
@@ -1833,14 +1851,18 @@ statInfrServer <- function(id) {
                                           depmeansraw_iv$is_valid()))
 
     oneSD_iv$condition(~ isTRUE(input$siMethod == '1' &&
-                                  input$popuParameter == 'Population Standard Deviation'))
+                                input$popuParameter == 'Population Standard Deviation'))
+
+    oneStdDevHT_iv$condition(~ isTRUE(input$siMethod == '1' &&
+                                    input$popuParameter == 'Popultion Standard Deviation' &&
+                                    input$inferenceType == 'Hypothesis Testing'))
 
     oneprop_iv$condition(~ isTRUE(input$siMethod == '1' &&
-                                    input$popuParameter == 'Population Proportion'))
+                                  input$popuParameter == 'Population Proportion'))
 
     onepropht_iv$condition(~ isTRUE(input$siMethod == '1' &&
-                                      input$popuParameter == 'Population Proportion' &&
-                                      input$inferenceType == 'Hypothesis Testing'))
+                                    input$popuParameter == 'Population Proportion' &&
+                                    input$inferenceType == 'Hypothesis Testing'))
 
     twoprop_iv$condition(~ isTRUE(input$siMethod == '2' &&
                                     input$popuParameters == 'Population Proportions'))
@@ -1893,6 +1915,7 @@ statInfrServer <- function(id) {
     si_iv$add_validator(depmeansupload_iv)
     si_iv$add_validator(depmeansuploadvars_iv)
     si_iv$add_validator(oneSD_iv)
+    si_iv$add_validator(oneStdDevHT_iv)
     si_iv$add_validator(oneprop_iv)
     si_iv$add_validator(onepropht_iv)
     si_iv$add_validator(twoprop_iv)
@@ -1906,7 +1929,7 @@ statInfrServer <- function(id) {
     si_iv$add_validator(chiSq3x2_iv)
     si_iv$add_validator(chiSq3x3_iv)
 
- ### ------------ Activation --------------------------------------------------
+### ------------ Activation --------------------------------------------------
     si_iv$enable()
     onemean_iv$enable()
     onemeansdknown_iv$enable()
@@ -1916,6 +1939,7 @@ statInfrServer <- function(id) {
     onemeanupload_iv$enable()
     onemeanuploadvar_iv$enable()
     onemeanuploadsd_iv$enable()
+    oneStdDevHT_iv$enable()
     indmeanssumm_iv$enable()
     indmeansraw_iv$enable()
     indmeanssdknown_iv$enable()
@@ -4758,10 +4782,12 @@ statInfrServer <- function(id) {
         ## Preface
         sprintf("Given:"), br(),
         sprintf("\\( n = %d \\)",
-                input$SSDSampleSize), br(),
-        sprintf("\\( s = %0.2f \\)",
-                input$SSDStdDev), br(),
+                input$SSDSampleSize),
         br(),
+        sprintf("\\( s = %0.2f \\)",
+                input$SSDStdDev),
+        br(),
+
         br(),
         br(),
 
@@ -4833,6 +4859,7 @@ br(),
 
     })
 
+    ## See #33.
     output$oneSDHT <- renderUI({
       ## Input validation
       ## req() # NOTE: requried data is already validated...
@@ -4841,8 +4868,87 @@ br(),
 
       ## UI
       withMathJax(
-        h1("TODO: write the hypothesis test UI render function.")
-      ) # with math jax
+        ## Hypotheses
+        ## Lower tail
+        sprintf(r"--[\( H_%s: \sigma %s %0.3f \)]--",
+                "0",
+                (
+                  if (input$altHypothesis == 1) "\\geq"
+                  else if (input$altHypothesis == 2) "="
+                  else "\\leq"
+                ),
+                input$hypStdDeviation), br(),
+        sprintf(r"--[\( H_%s: \sigma %s %0.3f \)]--",
+                "a",
+                (
+                  if (input$altHypothesis == 1) "\\lt"
+                  else if (input$altHypothesis == 2) "\\ne"
+                  else "\\gt"
+                ),
+                input$hypStdDeviation), br(),
+
+        br(),
+        sprintf("\\( \\alpha = %0.2f \\)",
+        {
+          if(input$significanceLevel == "10%") {
+            0.10
+          } else if(input$significanceLevel == "5%") {
+            0.05
+          } else {
+            0.01
+          }
+        }), br(),
+
+        br(),
+        br(),
+        p(tags$b("Test Statistic:")),
+        ## Givens
+        sprintf("Given:"), br(),
+        sprintf(r"--[\( n = %d \)]--", input$SSDSampleSize), br(),
+        sprintf(r"--[\( s = %0.3f \)]--", input$SSDStdDev), br(),
+        sprintf(r"--[\( \sigma_0 = %0.3f \)]--", input$hypStdDeviation), br(),
+
+        br(),
+        br(),
+        ## Formulas
+        p(r"--[ \( \displaystyle \chi^2 = \sqrt{\frac{(n-1)s^2}{\sigma^2_0}} \) ]--"), br(),
+
+        br(),
+        br(),
+        ## Calculations
+        sprintf(
+r"--(
+\(
+\begin{align}
+\displaystyle
+\chi^2 &= \sqrt{\frac{(n-1)s^2}{\sigma^2_0}} \\
+\chi^2 &= \sqrt{\frac{(%d - 1)  %0.3f ^2}{%0.3f^2}} \\
+\chi^2 &= \sqrt{\frac{(%d)      %0.3f   }{%0.3f}} \\
+\chi^2 &= \sqrt{\frac{%0.3f}{%0.3f}} \\
+\chi^2 &= \sqrt{%0.3f} \\
+\chi^2 &= %0.3f
+\end{align}
+\)
+)--",
+1.0,  1.0,  1.0,
+1.0,  1.0,  1.0,
+1.0,  1.0,
+1.0,
+1.0), br(),
+
+br(),
+br(),
+## Interpretations
+## Lower tail
+## Two tail
+## Upper tail
+{
+  if (input$altHypothesis == 1) sprintf("Interpretation for alternative hypothesis one.")
+  else if (input$altHypothesis == 2) sprintf("Interpretation for alternative hypothesis two.")
+  else sprintf("Interpretation for alternative hypothesis three.")
+},
+br()
+) # with math jax
     })
 
 
