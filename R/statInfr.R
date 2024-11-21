@@ -4766,6 +4766,10 @@ statInfrServer <- function(id) {
         br(),
         sprintf("\\( \\alpha = 1 - %0.2f = %0.2f \\)", oneSDCIalpha, 1 - oneSDCIalpha),
         br(),
+        sprintf("\\(  df = n - 1 = %d - 1 = %d \\)",
+                input[["SSDSampleSize"]],
+                input[["SSDSampleSize"]] - 1),
+        br(),
         sprintf("\\( \\chi^2_{  \\alpha/2, df} = \\chi^2_{    %0.2f / 2 , %d} = \\chi^2_{ %0.3f, %d } = %0.3f \\).",
                 oneSDCIalpha,
                 oneSDCIdf,
@@ -4781,27 +4785,24 @@ statInfrServer <- function(id) {
                 oneSDCIdf,
                 (oneSSDRight <- qchisq(p = 1 - critOneSSDRight, df = oneSDCIdf))),
         br(),
+
         br(),
         br(),
 
-        sprintf(r"---{\( \left(
-CI = \displaystyle  \sqrt{\frac{df}{\chi^2_{\alpha/2, df}}} \cdot s,
-                    \sqrt{\frac{df}{\chi^2_{1 - \alpha/2, df}}} \cdot s
+        sprintf(r"---{\(
+CI = \displaystyle
+\left(
+\sqrt{\frac{df}{\chi^2_{\alpha/2, df}}} \cdot s, \;\:
+\sqrt{\frac{df}{\chi^2_{1 - \alpha/2, df}}} \cdot s
 \right) \)}---"),
         br(),
-        br(),
-        p("where"),
-        sprintf("\\(  df = n - 1 = %d - 1 = %d \\)",
-                input[["SSDSampleSize"]],
-                input[["SSDSampleSize"]] - 1),
-        br(),
-        br(),
-        br(),
+br(),
+br(),
 
         sprintf(r"---(
 \(
           \begin{align}
-          CI &= \left( \sqrt{\frac{%d}{%0.3f}} \cdot %0.3f,  \sqrt{\frac{%d}{%0.3f}} \cdot %0.3f \right) \\ \\
+          CI &= \left( \sqrt{\frac{%d}{%0.3f}} \cdot %0.3f, \;\: \sqrt{\frac{%d}{%0.3f}} \cdot %0.3f \right) \\ \\
              &= \left(%0.2f, %0.2f\right)
           \end{align}
 \)
