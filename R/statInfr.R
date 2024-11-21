@@ -4762,26 +4762,34 @@ statInfrServer <- function(id) {
         br(),
         br(),
 
-        sprintf("For a %s Confidence Interval:", input$confidenceLevel), br(),
-        sprintf("\\( \\alpha = 1 - %0.2f = %0.2f \\)", oneSDCIalpha, 1 - oneSDCIalpha), br(),
+        sprintf("For a %s Confidence Interval:", input$confidenceLevel),
+        br(),
+        sprintf("\\( \\alpha = 1 - %0.2f = %0.2f \\)", oneSDCIalpha, 1 - oneSDCIalpha),
+        br(),
         sprintf("\\( \\chi^2_{  \\alpha/2, df} = \\chi^2_{    %0.2f / 2 , %d} = \\chi^2_{ %0.3f, %d } = %0.3f \\).",
                 oneSDCIalpha,
                 oneSDCIdf,
                 ## See https://www.easysevens.com/understanding-chi-square-critical-value-a-beginners-tutorial/.
                 (critOneSSDLeft <- oneSDCIalpha/2),
                 oneSDCIdf,
-                (oneSSDLeft <- qchisq(p = 1 - critOneSSDLeft, df = oneSDCIdf))), br(),
+                (oneSSDLeft <- qchisq(p = 1 - critOneSSDLeft, df = oneSDCIdf))),
+        br(),
         sprintf("\\( \\chi^2_{1-\\alpha/2, df} = \\chi^2_{ 1 - %0.2f / 2, %d} = \\chi^2_{ %0.3f, %d} = %0.3f \\)",
                 oneSDCIalpha,
                 oneSDCIdf,
                 (critOneSSDRight <- 1 - oneSDCIalpha/2),
                 oneSDCIdf,
-                (oneSSDRight <- qchisq(p = 1 - critOneSSDRight, df = oneSDCIdf))), br(),
-
+                (oneSSDRight <- qchisq(p = 1 - critOneSSDRight, df = oneSDCIdf))),
         br(),
         br(),
+        br(),
 
-        p("\\( CI = \\displaystyle  \\sqrt{\\frac{df}{\\chi^2_{\\alpha/2}}} \\cdot s \\), and \\( \\displaystyle \\sqrt{\\frac{df}{\\chi^2_{1 - \\alpha/2}}} \\cdot s \\)"),
+        sprintf(r"---{\( \left(
+CI = \displaystyle  \sqrt{\frac{df}{\chi^2_{\alpha/2, df}}} \cdot s,
+                    \sqrt{\frac{df}{\chi^2_{1 - \alpha/2, df}}} \cdot s
+\right) \)}---"),
+        br(),
+        br(),
         p("where"),
         sprintf("\\(  df = n - 1 = %d - 1 = %d \\)",
                 input[["SSDSampleSize"]],
@@ -4789,32 +4797,34 @@ statInfrServer <- function(id) {
         br(),
         br(),
         br(),
-        
+
         sprintf(r"---(
+\(
           \begin{align}
-          CI &= \left( \sqrt{\frac{%d}{%0.3f}} \cdot %0.3f,  \sqrt{\frac{%d}{%0.3f}} \cdot %0.3f \right) \\
+          CI &= \left( \sqrt{\frac{%d}{%0.3f}} \cdot %0.3f,  \sqrt{\frac{%d}{%0.3f}} \cdot %0.3f \right) \\ \\
              &= \left(%0.2f, %0.2f\right)
           \end{align}
+\)
           )---",
-                # Left/lower
-                oneSDCIdf, # df
-                oneSSDLeft,
-                input$SSDStdDev, # s
+          ## Left/lower
+          oneSDCIdf, # df
+          oneSSDLeft,
+          input$SSDStdDev, # s
 
-                # Right/upper
-                oneSDCIdf, # df
-                oneSSDRight,
-                input$SSDStdDev, #s
+          ## Right/upper
+          oneSDCIdf, # df
+          oneSSDRight,
+          input$SSDStdDev, #s
           (oneSSDLowerPopStdDev <- sqrt(oneSDCIdf / oneSSDLeft) * input$SSDStdDev),
-                 (oneSSDUpperPopStdDev <- sqrt(oneSDCIdf / oneSSDRight) * input$SSDStdDev)),
+          (oneSSDUpperPopStdDev <- sqrt(oneSDCIdf / oneSSDRight) * input$SSDStdDev)),
         br(),
         br(),
         br(),
 
         ## Step three
         tags$b("Interpretation:"), br(),
-        sprintf("We are \\(%0.2f\\%%\\) confident that the population standard deviation (\\( \\sigma \\)) lies between \\( %0.2f \\) and \\( %0.2f \\).",
-                ConfLvl(), oneSSDLowerPopStdDev, oneSSDUpperPopStdDev)
+        sprintf("We are %s confident that the population standard deviation (\\( \\sigma \\)) is between \\( %0.2f \\) and \\( %0.2f \\).",
+                input$confidenceLevel, oneSSDLowerPopStdDev, oneSSDUpperPopStdDev)
       )
 
     })
