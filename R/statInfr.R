@@ -1665,6 +1665,7 @@ statInfrServer <- function(id) {
 
     # sample standard deviation
     oneSD_iv$add_rule("SSDSampleSize", sv_required())
+    oneSD_iv$add_rule("SSDSampleSize", sv_integer())
     oneSD_iv$add_rule("SSDSampleSize", sv_gt(1))
     oneSD_iv$add_rule("SSDStdDev", sv_required())
     oneSD_iv$add_rule("SSDStdDev", sv_gt(0))
