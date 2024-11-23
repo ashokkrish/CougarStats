@@ -13,12 +13,12 @@
 <!-- ## Financial support of the development of CougarStats**  -->
 
 ## Acknowledgements
-| Grant and/or Funding Agency | Recipient | Date(s) |
+| Funding Agency / Coursework | Recipient | Date(s) |
 |--------|--------|--------|
-| TLEG | Bryce Carson | November 2024 through January 2025 |
-| Provost's Teaching-Learning Enhancement Grant (TLEG) | Michael Myer | September 2023 through April 2024 |
-| FST Mount Royal University Student Research Grant | Michael Myer | June through August 2023 |
-| COMP 5690 | Crystal Wai | September through December 2022 |
+| Provost's Teaching and Learning Enhancement Grant (TLEG) | Bryce Carson | November 2024 through January 2025 |
+| Provost's Teaching and Learning Enhancement Grant (TLEG) | Michael Myer | September 2023 through April 2024 |
+| Faculty of Science and Technology (FST) Student Research Award | Michael Myer | June through August 2023 |
+| COMP 5690: Senior Computer Science Project | Crystal Wai | September through December 2022 |
 <!-- | TLEG | Samantha Brian | January 2025 |  -->
 
 <!-- CougarStats is partially-derived from the senior project coursework of Crystal Wai, completed in Fall 2022 ([Mount Royal University _COMP 5690: Senior Computer Science Project_](https://catalog.mtroyal.ca/preview_course.php?catoid=26&coid=40800&print)).   -->
