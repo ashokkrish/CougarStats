@@ -487,14 +487,14 @@ probDistUI <- function(id) {
                 step    = 1)
             ),
 
-            # br(),
-            # p(strong("Options")),
-            # hr(),
+            br(),
+            p(strong("Options")),
+            hr(),
 
-            # checkboxInput(
-            #   inputId = ns("showHypGeoTable"),
-            #   label   = "Display Probability Distribution Table",
-            #   value   = TRUE),
+            checkboxInput(
+              inputId = ns("showHypGeoTable"),
+              label   = "Display Probability Distribution Table",
+              value   = TRUE),
 
             actionButton(
               inputId = ns("goHypGeo"),
@@ -548,19 +548,24 @@ probDistUI <- function(id) {
                                   "\\(P(x_1 \\leq X \\leq x_2)\\)"),
               inline       = FALSE),
             
-            # radioButtons(
-            #   inputId = ns("trialsNegBin"),
-            #   label = strong("Trials"),
-            #   choiceValues = list("failures",
-            #                       "trials"),
-            #   choiceNames = list("Failures prior to the \\(r^{th}\\) success",
-            #                      "Trials until (and including) the \\(r^{th}\\) success"),
-            #   inline = TRUE,
-            # ),
+            radioButtons(
+              inputId = ns("trialsNegBin"),
+              label = strong("Trials"),
+              choiceValues = list("failures",
+                                  "trials"),
+              choiceNames = list("Failures prior to the \\(r^{th}\\) success",
+                                 "Trials until (and including) the \\(r^{th}\\) success"),
+              inline = TRUE,
+            ),
             
             conditionalPanel(
               ns = ns,
               condition = "input.calcNegBin != 'between'",
+              
+              
+              conditionalPanel(
+                ns = ns,
+                condition = "input.trialsNegBin == 'failures'",
               
               numericInput(
                 inputId = ns("xNegBin"),
@@ -568,26 +573,40 @@ probDistUI <- function(id) {
                 value   = 4,
                 min     = 0,
                 step    = 1)
+              
+              ),
+              
+              conditionalPanel(
+                ns = ns,
+                condition = "input.trialsNegBin == 'trials'",
+                
+                numericInput(
+                  inputId = ns("xNegBin"),
+                  label   = strong("Trials until (and including) the \\(r^{th}\\) success (\\( x\\))"),
+                  value   = 4,
+                  min     = 0,
+                  step    = 1)
+              ),
             ),
             
-            conditionalPanel(
-              ns = ns,
-              condition = "input.calcNegBin == 'between'",
-              
-              numericInput(
-                inputId = ns("x1NegBin"),
-                label   = strong("Number of Failures (\\( x_{1}\\))"),
-                value   = 2,
-                min     = 0,
-                step    = 1),
-              
-              numericInput(
-                inputId = ns("x2NegBin"),
-                label   = strong("Number of Failures (\\( x_{2}\\))"),
-                value   = 4,
-                min     = 0,
-                step    = 1)
-            ),
+            # conditionalPanel(
+            #   ns = ns,
+            #   condition = "input.calcNegBin == 'between'",
+            #   
+            #   numericInput(
+            #     inputId = ns("x1NegBin"),
+            #     label   = strong("Number of Failures (\\( x_{1}\\))"),
+            #     value   = 2,
+            #     min     = 0,
+            #     step    = 1),
+            #   
+            #   numericInput(
+            #     inputId = ns("x2NegBin"),
+            #     label   = strong("Number of Failures (\\( x_{2}\\))"),
+            #     value   = 4,
+            #     min     = 0,
+            #     step    = 1)
+            # ),
             
             # br(),
             # p(strong("Options")),
@@ -2846,7 +2865,7 @@ probDistServer <- function(id) {
  
  ### ------------ Hypergeometric ------------------------------------------
 
-    # IMPORTANT TO DO: Validate this Choose n-x ≤ N-M
+    # IMPORTANT: If (n-x) > (N-M) then P(X = x) = 0, P(X < x) = 0, P(X ≤ x) = 0, P(X > x) = 1, P(X ≥ x) = 1
     
     observeEvent(input$goHypGeo, {
       
@@ -2900,8 +2919,8 @@ probDistServer <- function(id) {
             sampSizeHypGeo <- input$sampSizeHypGeo
 
             validate(
-              need(popSizeHypGeo > popSuccessesHypGeo, "Number of Successes in the Population (M) must be less than or equal to Population Size (N)"),
-              need(popSizeHypGeo > sampSizeHypGeo, "Sample Size (n) must be less than or equal to Population Size (N)"),
+              need(popSizeHypGeo >= popSuccessesHypGeo, "Number of Successes in the Population (M) must be less than or equal to Population Size (N)"),
+              need(popSizeHypGeo >= sampSizeHypGeo, "Sample Size (n) must be less than or equal to Population Size (N)"),
             errorClass = "myClass")
 
             HypGeo_mu <- round(sampSizeHypGeo*popSuccessesHypGeo/popSizeHypGeo, 4)
@@ -2915,6 +2934,7 @@ probDistServer <- function(id) {
               validate(
                 need(xHypGeo <= sampSizeHypGeo, "Number of Successes in the Sample (x) must be less than or equal to the Sample Size (n)"),
                 need(xHypGeo <= popSuccessesHypGeo, "Number of Successes in the Sample (x) must be less than or equal to the Number of Successes in the Population (M)"),
+                need((sampSizeHypGeo - xHypGeo) <= (popSizeHypGeo - popSuccessesHypGeo), "Since (n - x) > (N - M) the following are true P(X = x) = 0, P(X < x) = 0, P(X ≤ x) = 0, P(X > x) = 1, P(X ≥ x) = 1"),
                 errorClass = "myClass")
               
               if(input$calcHypGeo == 'exact'){
@@ -2924,22 +2944,22 @@ probDistServer <- function(id) {
               }
               else if(input$calcHypGeo == 'cumulative'){
                 HypGeoProb <- paste("P(X \\leq ", xHypGeo, ")")
-                HypGeoForm <- paste("\\sum_{x = 0}^{", xHypGeo, "} \\dfrac{\\binom{", popSuccessesHypGeo, "}{x} \\binom{", (popSizeHypGeo - popSuccessesHypGeo), "}{", sampSizeHypGeo,  "- x}}{\\binom{", popSizeHypGeo, "}{", sampSizeHypGeo, "}}")
+                HypGeoForm <- paste("\\sum_{x = ", max(0, sampSizeHypGeo + popSuccessesHypGeo - popSizeHypGeo), "}^{", xHypGeo, "} \\dfrac{\\binom{", popSuccessesHypGeo, "}{x} \\binom{", (popSizeHypGeo - popSuccessesHypGeo), "}{", sampSizeHypGeo,  "- x}}{\\binom{", popSizeHypGeo, "}{", sampSizeHypGeo, "}}")
                 HypGeoVal <- round(phyper(xHypGeo, popSuccessesHypGeo, (popSizeHypGeo - popSuccessesHypGeo), sampSizeHypGeo, lower.tail = TRUE), 4)
               }
               else if(input$calcHypGeo == 'upperTail'){
                 HypGeoProb <- paste("P(X \\geq ", xHypGeo, ")")
-                HypGeoForm <- paste("\\sum_{x =", xHypGeo,"}^{", popSuccessesHypGeo, "} \\dfrac{\\binom{", popSuccessesHypGeo, "}{x} \\binom{", (popSizeHypGeo - popSuccessesHypGeo), "}{", sampSizeHypGeo,  "- x}}{\\binom{", popSizeHypGeo, "}{", sampSizeHypGeo, "}}")
+                HypGeoForm <- paste("\\sum_{x =", xHypGeo,"}^{", min(popSuccessesHypGeo, sampSizeHypGeo), "} \\dfrac{\\binom{", popSuccessesHypGeo, "}{x} \\binom{", (popSizeHypGeo - popSuccessesHypGeo), "}{", sampSizeHypGeo,  "- x}}{\\binom{", popSizeHypGeo, "}{", sampSizeHypGeo, "}}")
                 HypGeoVal <- round(phyper(xHypGeo - 1, popSuccessesHypGeo, (popSizeHypGeo - popSuccessesHypGeo), sampSizeHypGeo, lower.tail = FALSE), 4)
               }
               else if(input$calcHypGeo == 'greaterThan'){
                 HypGeoProb <- paste("P(X \\gt ", xHypGeo, ")")
-                HypGeoForm <- paste("\\sum_{x =", xHypGeo + 1,"}^{", popSuccessesHypGeo, "} \\dfrac{\\binom{", popSuccessesHypGeo, "}{x} \\binom{", (popSizeHypGeo - popSuccessesHypGeo), "}{", sampSizeHypGeo,  "- x}}{\\binom{", popSizeHypGeo, "}{", sampSizeHypGeo, "}}")
+                HypGeoForm <- paste("\\sum_{x =", xHypGeo + 1,"}^{", min(popSuccessesHypGeo, sampSizeHypGeo), "} \\dfrac{\\binom{", popSuccessesHypGeo, "}{x} \\binom{", (popSizeHypGeo - popSuccessesHypGeo), "}{", sampSizeHypGeo,  "- x}}{\\binom{", popSizeHypGeo, "}{", sampSizeHypGeo, "}}")
                 HypGeoVal <- round(phyper(xHypGeo, popSuccessesHypGeo, (popSizeHypGeo - popSuccessesHypGeo), sampSizeHypGeo, lower.tail = FALSE), 4)
               }
               else if(input$calcHypGeo == 'lessThan'){
                 HypGeoProb <- paste("P(X \\lt ", xHypGeo, ")")
-                HypGeoForm <- paste("\\sum_{x = 0}^{", xHypGeo - 1, "} \\dfrac{\\binom{", popSuccessesHypGeo, "}{x} \\binom{", (popSizeHypGeo - popSuccessesHypGeo), "}{", sampSizeHypGeo,  "- x}}{\\binom{", popSizeHypGeo, "}{", sampSizeHypGeo, "}}")
+                HypGeoForm <- paste("\\sum_{x ", max(0, sampSizeHypGeo + popSuccessesHypGeo - popSizeHypGeo), "}^{", xHypGeo - 1, "} \\dfrac{\\binom{", popSuccessesHypGeo, "}{x} \\binom{", (popSizeHypGeo - popSuccessesHypGeo), "}{", sampSizeHypGeo,  "- x}}{\\binom{", popSizeHypGeo, "}{", sampSizeHypGeo, "}}")
                 HypGeoVal <- round(phyper(xHypGeo - 1, popSuccessesHypGeo, (popSizeHypGeo - popSuccessesHypGeo), sampSizeHypGeo, lower.tail = TRUE), 4)
               }
             }
