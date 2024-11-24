@@ -3020,24 +3020,61 @@ probDistServer <- function(id) {
                   sprintf("Population Variance \\( (\\sigma^{2}) = n\\left(\\dfrac{M}{N}\\right)\\left(\\dfrac{N-M}{N}\\right)\\left(\\dfrac{N-n}{N-1}\\right) = %g\\)",
                           HypGeo_var)
                 )
-                #,
-                # br(),
-                # conditionalPanel(
-                #   ns = session$ns,
-                #   condition = "input.showHypGeoTable == 1",
-                #   
-                #   br(),
-                #   titlePanel("Probability Distribution Table"),
-                #   hr(),
-                #   DTOutput(session$ns("HypGeoDistrTable"), width = "25%"),
-                #   br(),
-                #   plotOutput(session$ns("HypGeoDistrBarPlot"), width = "50%")
-                # )
+                ,
+                br(),
+                conditionalPanel(
+                  ns = session$ns,
+                  condition = "input.showHypGeoTable == 1",
+
+                  br(),
+                  titlePanel("Probability Distribution Table"),
+                  hr(),
+                  DTOutput(session$ns("HypGeoDistrTable"), width = "25%"),
+                  # br(),
+                  # plotOutput(session$ns("HypGeoDistrBarPlot"), width = "50%")
+                )
               ) # withMathJax
             ) # tagList
           }) # withMathJax
       }) # renderProbabilityHypGeo
       
+      output$HypGeoDistrTable <- DT::renderDT({
+        req(pd_iv$is_valid())
+        
+        if(input$sampSizeHypGeo < 50)
+        {
+          dfHypGeo <- data.frame(value = seq(max(0, input$sampSizeHypGeo + input$popSuccessesHypGeo - input$popSizeHypGeo), min(input$popSuccessesHypGeo, input$sampSizeHypGeo)), 
+                                 value = round(dhyper(x = max(0, input$sampSizeHypGeo + input$popSuccessesHypGeo - input$popSizeHypGeo):min(input$popSuccessesHypGeo, input$sampSizeHypGeo), input$popSuccessesHypGeo, (input$popSizeHypGeo - input$popSuccessesHypGeo), input$sampSizeHypGeo), 4))
+          colnames(dfHypGeo) <- c("X", "P(X = x)")
+          
+          datatable(dfHypGeo,
+                    options = list(
+                      dom = 't',
+                      pageLength = -1,
+                      ordering = FALSE,
+                      searching = FALSE,
+                      paging = FALSE
+                    ),
+                    rownames = FALSE,
+                    filter = "none"
+          ) %>% formatRound(2, digits = 4)
+        }
+        else
+        {
+          dfHypGeo <- data.frame(value = "Probability distribution table limited to sample sizes less than 50")
+          colnames(dfHypGeo) <- c("Sample Size Too Large")
+          datatable(dfHypGeo,
+                    options = list(
+                      dom = '',
+                      pageLength = -1,
+                      ordering = FALSE,
+                      searching = FALSE,
+                      paging = FALSE
+                    ),
+                    rownames = FALSE,
+                    filter = "none")
+        }
+      }) # HypGeoDistrTable
     }) # goHypGeo
     
  ### ------------ Negative Binomial ------------------------------------------
