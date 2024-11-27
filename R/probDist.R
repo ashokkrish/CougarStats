@@ -41,16 +41,19 @@ probDistUI <- function(id) {
         shinyjs::useShinyjs(),
         div(
           id = ns("inputPanel"),
+          
+          HTML("<label class='si-label'><b>Distribution</b></label>"),
+          
           radioButtons(
             inputId  = ns("probability"), 
-            label    = strong("Distribution"), 
+            label    = NULL, #strong("Distribution"), 
             choices  = c("Contingency Table",
                          "Binomial", 
                          "Poisson",
                          "Hypergeometric",
                          "Negative Binomial",
                          "Normal"), 
-            selected =  NULL, #"Negative Binomial",  # 
+            selected =  NULL,
             inline   = FALSE),
 
 ### ------------ Contingency Tables -------------------------------------------
