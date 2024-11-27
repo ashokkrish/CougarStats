@@ -378,9 +378,8 @@ statInfrUI <- function(id) {
                 numericInput(
                   inputId = ns("hypStdDeviation"),
                   label   = strong(r"--{Hypothesized Population Standard Deviation (\( \sigma_{0}\)) Value}--"),
-                  value   = 0.15,
+                  value   = 12.00,
                   min     = 0.001,
-                  max     = 1,
                   step    = 0.001)
               ), # Population standard deviation
 
@@ -1190,7 +1189,7 @@ statInfrUI <- function(id) {
 
                   titlePanel(tags$u("Hypothesis Test")),
                   br(),
-                  uiOutput(ns('oneSDHT')),
+                  uiOutput(ns('onePopulationSDHT')),
                   br(),
                 ), # Hypothesis Testing
               ), # One Population Proportion
@@ -1511,7 +1510,7 @@ statInfrServer <- function(id) {
     depmeansuploadvars_iv <- InputValidator$new()
     depmeansrawsd_iv <- InputValidator$new()
     oneSD_iv <- InputValidator$new()
-    oneStdDevHT_iv <- InputValidator$new()
+    oneSDht_iv <- InputValidator$new()
     oneprop_iv <- InputValidator$new()
     onepropht_iv <- InputValidator$new()
     twoprop_iv <- InputValidator$new()
@@ -1669,6 +1668,8 @@ statInfrServer <- function(id) {
     oneSD_iv$add_rule("SSDSampleSize", sv_gt(1))
     oneSD_iv$add_rule("SSDStdDev", sv_required())
     oneSD_iv$add_rule("SSDStdDev", sv_gt(0))
+    oneSDht_iv$add_rule("hypStdDeviation", sv_required())
+    oneSDht_iv$add_rule("hypStdDeviation", sv_gt(0))
 
     # numSuccessesProportion
     oneprop_iv$add_rule("numSuccesses", sv_required(message = "Numeric value required."))
@@ -1709,10 +1710,6 @@ statInfrServer <- function(id) {
     onepropht_iv$add_rule("hypProportion", sv_required())
     onepropht_iv$add_rule("hypProportion", sv_gt(0))
     onepropht_iv$add_rule("hypProportion", sv_lt(1))
-
-    oneStdDevHT_iv$add_rule("hypStdDeviation", sv_required())
-    oneStdDevHT_iv$add_rule("hypStdDeviation", sv_gt(0))
-    oneStdDevHT_iv$add_rule("hypStdDeviation", sv_lt(1))
 
     # Anova
     anovaupload_iv$add_rule("anovaUserData", sv_required())
@@ -1854,9 +1851,12 @@ statInfrServer <- function(id) {
     oneSD_iv$condition(~ isTRUE(input$siMethod == '1' &&
                                 input$popuParameter == 'Population Standard Deviation'))
 
-    oneStdDevHT_iv$condition(~ isTRUE(input$siMethod == '1' &&
-                                    input$popuParameter == 'Popultion Standard Deviation' &&
-                                    input$inferenceType == 'Hypothesis Testing'))
+    ## See: https://rstudio.github.io/shinyvalidate/reference/InputValidator.html#method-InputValidator-condition.
+    oneSDht_iv$condition(function() {
+      return(all(input$siMethod == '1',
+                 input$popuParameter == 'Population Standard Deviation',
+                 input$inferenceType == 'Hypothesis Testing'))
+    })
 
     oneprop_iv$condition(~ isTRUE(input$siMethod == '1' &&
                                   input$popuParameter == 'Population Proportion'))
@@ -1916,7 +1916,7 @@ statInfrServer <- function(id) {
     si_iv$add_validator(depmeansupload_iv)
     si_iv$add_validator(depmeansuploadvars_iv)
     si_iv$add_validator(oneSD_iv)
-    si_iv$add_validator(oneStdDevHT_iv)
+    si_iv$add_validator(oneSDht_iv)
     si_iv$add_validator(oneprop_iv)
     si_iv$add_validator(onepropht_iv)
     si_iv$add_validator(twoprop_iv)
@@ -1931,6 +1931,13 @@ statInfrServer <- function(id) {
     si_iv$add_validator(chiSq3x3_iv)
 
 ### ------------ Activation --------------------------------------------------
+
+    ## FIXME: If this validator object has been added to another validator
+    ## object using InputValidator$add_validator, calls to enable() on this
+    ## validator will be ignored. Don't rely on this behaviour, if undefined, or
+    ## if out-of-sync with the documenation. When child validators exist they
+    ## are enabled or disabled recursively when parent is enabled or disabled,
+    ## and actions on the child should be ignored.
     si_iv$enable()
     onemean_iv$enable()
     onemeansdknown_iv$enable()
@@ -1940,7 +1947,6 @@ statInfrServer <- function(id) {
     onemeanupload_iv$enable()
     onemeanuploadvar_iv$enable()
     onemeanuploadsd_iv$enable()
-    oneStdDevHT_iv$enable()
     indmeanssumm_iv$enable()
     indmeansraw_iv$enable()
     indmeanssdknown_iv$enable()
@@ -1955,6 +1961,7 @@ statInfrServer <- function(id) {
     depmeansuploadvars_iv$enable()
     depmeansrawsd_iv$enable()
     oneSD_iv$enable()
+    oneSDht_iv$enable()
     oneprop_iv$enable()
     onepropht_iv$enable()
     twoprop_iv$enable()
@@ -4323,6 +4330,16 @@ statInfrServer <- function(id) {
           errorClass = "myClass")
       }
 
+      ## DONE: these messages are for debugging purposes only.
+      ## message(sprintf("Should oneSDht_iv be testing? %s", oneSDht_iv$condition()()))
+      if(!oneSDht_iv$is_valid()) {
+        ## message("The one sample standard deviation hypothesis test InputValidator object is invalid!")
+        validate(
+          need(input$hypStdDeviation, "Hypothesized Population Standard Deviation (\u03C3\u2080) is required (and must be a number).") %then%
+          need(input$hypStdDeviation > 0 && input$hypStdDeviation < 1, "Hypothesized Population Standard Deviation (\u03C3\u2080) must be positive. (\u03C3\u2080 > 0)."),
+          errorClass = "myClass")
+      }
+
  #### ---------------- One Prop Validation
       if(!oneprop_iv$is_valid()) {
         validate(
@@ -4764,7 +4781,7 @@ statInfrServer <- function(id) {
 
 
 ### ------------ One Sample Standard Deviation Outputs -----------------------
-#### ---------------- CI ----
+#### ---- One population standard deviation confidence interval CI ----
     output$oneSDCI <- renderUI({
       ## Input validation
       ## req() # NOTE: requried data is already validated...
@@ -4860,45 +4877,62 @@ br(),
 
     })
 
+#### ---- One population standard deviation hypothesis testing HT ----
     ## See #33.
-    output$oneSDHT <- renderUI({
-      ## Input validation
-      ## req() # NOTE: requried data is already validated...
+    output$onePopulationSDHT <- renderUI({
+      ## Required data: n, s, alpha, sigma_naught, hypothesis_alternative; ns(x)
+      ## doesn't seem to be required here. Review why that might be.
+      ##
+      ## Inputs: SSDSampleSize, SSDStdDev, significanceLevel, hypStdDeviation,
+      ## altHypothesis.
+      ##
+      ## Useful data: SigLvl() [numeric];
 
-      ## Required data
+      ## This paragraph is related to the final interpretation, as used in the
+      ## P-value method.
+      degreesOfFreedom <- input$SSDSampleSize - 1;
+      chiSqTestStatistic <- qchisq(1 - SigLvl(), degreesOfFreedom);
+      peachySquare <- pchisq(chiSqTestStatistic, degreesOfFreedom)
+      if (peachySquare >= SigLvl()) {
+        ## Since P >= SigLvl we do not reject the null hypothesis.
+        rejectionRelationalOperator = "\\gt"
+        rejectionStatement <- "do not reject";
+      } else if (peachySquare < SigLvl()){
+        ## Since P < SigLvl we must reject the null hypothesis.
+        rejectionRelationalOperator = "\\leq"
+        rejectionStatement <- "reject";
+      }
+
+      ## Establish the strings to use in MathJax-supported LaTeX for the hypotheses and relations.
+      if (input$altHypothesis == 1) {
+        nullHypString <- "\\geq";
+        altHypString <- "\\lt";
+        pValueMethodRelationalOperatorString <- "\\lt"
+        pValueMethodAbsoluteTestStatisticValueOrNot <- sprintf("%0.3f", chiSqTestStatistic)
+      } else if (input$altHypothesis == 2) {
+        nullHypString <- "=";
+        altHypString <- "\\ne";
+        pValueMethodRelationalOperatorString <- "\\gt"
+        pValueMethodAbsoluteTestStatisticValueOrNot <- sprintf(paste("\\left|", "%0.3f", "\\right|"),
+                                                               chiSqTestStatistic)
+      } else {
+        nullHypString <- "\\leq";
+        altHypString <- "\\gt";
+        pValueMethodRelationalOperatorString <- "\\gt"
+        pValueMethodAbsoluteTestStatisticValueOrNot <- sprintf("%0.3f", chiSqTestStatistic)
+      }
+
+      hypothesisFormattedString <- function(hypothesis, relation, standardDeviation) {
+        sprintf(r"--[\( H_%s: \sigma %s %0.3f \)]--", # σ
+                "0", relation, standardDeviation)
+      }
 
       ## UI
       withMathJax(
-        ## Hypotheses
-        ## Lower tail
-        sprintf(r"--[\( H_%s: \sigma %s %0.3f \)]--",
-                "0",
-                (
-                  if (input$altHypothesis == 1) "\\geq"
-                  else if (input$altHypothesis == 2) "="
-                  else "\\leq"
-                ),
-                input$hypStdDeviation), br(),
-        sprintf(r"--[\( H_%s: \sigma %s %0.3f \)]--",
-                "a",
-                (
-                  if (input$altHypothesis == 1) "\\lt"
-                  else if (input$altHypothesis == 2) "\\ne"
-                  else "\\gt"
-                ),
-                input$hypStdDeviation), br(),
-
+        hypothesisFormattedString("0", nullHypString, input$hypStdDeviation), br(),
+        hypothesisFormattedString("a", altHypString,  input$hypStdDeviation), br(),
         br(),
-        sprintf("\\( \\alpha = %0.2f \\)",
-        {
-          if(input$significanceLevel == "10%") {
-            0.10
-          } else if(input$significanceLevel == "5%") {
-            0.05
-          } else {
-            0.01
-          }
-        }), br(),
+        sprintf("\\( \\alpha = %0.2f \\)", SigLvl()), br(),
 
         br(),
         br(),
@@ -4912,44 +4946,79 @@ br(),
         br(),
         br(),
         ## Formulas
-        p(r"--[ \( \displaystyle \chi^2 = \sqrt{\frac{(n-1)s^2}{\sigma^2_0}} \) ]--"), br(),
+        p(r"--[
+            \(
+            \displaystyle \chi^2 = \sqrt{\frac{(n-1)s^2}{\sigma^2_0}}
+            \)
+           ]--"), br(),
 
         br(),
         br(),
         ## Calculations
         sprintf(
-r"--(
-\(
-\begin{align}
-\displaystyle
-\chi^2 &= \sqrt{\frac{(n-1)s^2}{\sigma^2_0}} \\
-\chi^2 &= \sqrt{\frac{(%d - 1)  %0.3f ^2}{%0.3f^2}} \\
-\chi^2 &= \sqrt{\frac{(%d)      %0.3f   }{%0.3f}} \\
-\chi^2 &= \sqrt{\frac{%0.3f}{%0.3f}} \\
-\chi^2 &= \sqrt{%0.3f} \\
-\chi^2 &= %0.3f
-\end{align}
-\)
-)--",
-1.0,  1.0,  1.0,
-1.0,  1.0,  1.0,
-1.0,  1.0,
-1.0,
-1.0), br(),
+          r"--(
+           \(
+           \begin{align}
+           \displaystyle
+           \chi^2 &= \sqrt{\frac{(n-1)s^2}{\sigma^2_0}} \\
+           \chi^2 &= \sqrt{\frac{(%d - 1)  %0.3f ^2}{%0.3f^2}} \\
+           \chi^2 &= \sqrt{\frac{(%d)      %0.3f   }{%0.3f}} \\
+           \chi^2 &= \sqrt{\frac{%0.3f}{%0.3f}} \\
+           \chi^2 &= \sqrt{%0.3f} \\
+           \chi^2 &= %0.3f
+           \end{align}
+           \)
+           )--",
+          input$SSDSampleSize,  input$SSDStdDev,  input$hypStdDeviation,
+          degreesOfFreedom,  input$SSDStdDev^2,  input$hypStdDeviation^2,
+          degreesOfFreedom * input$SSDStdDev^2,  input$hypStdDeviation^2,
+          (degreesOfFreedom * input$SSDStdDev^2) /  input$hypStdDeviation^2,
+          ## MAYBE FIXME: the value produced seems wildly incorrect.
+          (oneSSDHTchisq <- sqrt((degreesOfFreedom * input$SSDStdDev^2) /  input$hypStdDeviation^2))
+        ), br(),
 
-br(),
-br(),
-## Interpretations
-## Lower tail
-## Two tail
-## Upper tail
-{
-  if (input$altHypothesis == 1) sprintf("Interpretation for alternative hypothesis one.")
-  else if (input$altHypothesis == 2) sprintf("Interpretation for alternative hypothesis two.")
-  else sprintf("Interpretation for alternative hypothesis three.")
-},
-br()
-) # with math jax
+        br(),
+        br(),
+        p(tags$b("Using P-Value Method:")),
+        sprintf("\\( P = P\\left( \\chi^2 %s %s \\right) = %0.3f \\)",
+                pValueMethodRelationalOperatorString,
+                pValueMethodAbsoluteTestStatisticValueOrNot,
+                peachySquare), br(),
+        br(),
+        sprintf("Since \\( P %s %0.2f \\), %s \\( H_{0}\\).",
+                rejectionRelationalOperator,
+                SigLvl(),
+                rejectionStatement), br(),
+
+        br(),
+        br(),
+        p(tags$b("Using Critical Value Method:")),
+        ## sprintf("\\( df = %d - 1 = %d \\)", input$SSDSampleSize, degreesOfFreedom), br(),
+        ## br(),
+        sprintf("Critical value(s): \\( \\chi^2_{%0.2f,%d} = %0.3f \\)",
+                SigLvl(),
+                degreesOfFreedom,
+                (chisq.value <- qchisq(p = 1 - SigLvl(), df = degreesOfFreedom))), br(),
+        sprintf(
+          r"--(
+           \(
+           \begin{align}
+           \displaystyle
+           \chi^2 &%s \chi^2_{%0.3f} \\
+           %0.3f &%s %0.3f  \\
+           \end{align}
+           \)
+           )--",
+          ## Both of these are alternative hypothesis-dependent
+          nullHypString, SigLvl(),
+          oneSSDHTchisq, nullHypString, chisq.value
+        ), br(),
+
+        ## TODO: replace this with an appropriate statement and values.
+        br(),
+        p(tags$b("Conclusion:")),
+        sprintf("At \\(\\alpha = 0.05\\), since the test statistic falls in the acceptance region we do not reject \\(H_0\\) and conclude that there isn't enough statistical evidence to support that \\( \\mu < 99 \\).")
+      ) # with math jax
     })
 
 
@@ -4957,10 +5026,10 @@ br()
 
  #### ---------------- CI ----
     output$onePropCI <- renderUI({
-      req(si_iv$is_valid() && input$numTrials >= input$numSuccesses)
+      req(si_iv$is_valid() && input$numTrials >= input$numSuccesses);
 
-      onePropData <- OnePropZInterval(input$numSuccesses, input$numTrials, ConfLvl())
-      critVal <- round(onePropData["Z Critical"], cvDigits)
+      onePropData <- OnePropZInterval(input$numSuccesses, input$numTrials, ConfLvl());
+      critVal <- round(onePropData["Z Critical"], cvDigits);
 
       p(
         withMathJax(
@@ -7050,7 +7119,8 @@ br()
       hide(id = "inferenceData")
     })
 
-    observeEvent({input$siMethod
+    observeEvent({
+      input$siMethod
       input$sampleSize
       input$sampleMean
       input$popuParameter
@@ -7063,9 +7133,10 @@ br()
       input$popuSDRaw
       input$sampSD
       input$inferenceType
-      input$inferenceType2}, {
-        hide(id = "inferenceData")
-      })
+      input$inferenceType2
+    }, {
+      hide(id = "inferenceData")
+    })
 
     observeEvent(input$dataAvailability, {
       hide(id = "oneMeanVariable")
