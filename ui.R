@@ -1,11 +1,13 @@
-
 # ----------------------- #  
 # ---- UI components ---- 
 # ----------------------- #
+
 ui <- fluidPage(id = "mainContainer",
                 theme = bs_theme(version = 4,
                                  primary = "#18536F"),
                 
+                use_darkmode(),
+
                 tags$head(
                   tags$link(rel = "stylesheet", 
                             type="text/css", 
@@ -21,11 +23,17 @@ ui <- fluidPage(id = "mainContainer",
                   title = div(
                     class = "navbarLogo",
                     img(src ="CougarStatsLogo.png", height = 100), 
-                    span(" CougarStats ", class = "pageTitle")),
-                  
+                    span(" CougarStats ", class = "pageTitle"),
+
+                      tags$div(style = "margin-top: -10px; text-align: right; float: right; margin-right: -150px;",
+                               prettySwitch(inputId = "togglemode", label = "Dark Mode", value = TRUE, fill = TRUE, status = "primary")
+                      ),
+                    ),
+
                   # --------------------- #  
                   # ---- Methods Tab ---- 
                   # --------------------- #
+                  
                   tabPanel(
                     title = "Methods",
                     
@@ -58,10 +66,10 @@ ui <- fluidPage(id = "mainContainer",
                       )
                     ), # tabPanel "Methods"
                   ),
+                  
                   #  ------------------------- #  
                   ## ---- Methods sidebar ---- 
                   #  ------------------------- #       
-                  
                   
                   tabPanel(
                     title = "Authors",
@@ -78,4 +86,3 @@ ui <- fluidPage(id = "mainContainer",
                                                 width="150px")))
                 )
 ) #fluidPage
-
