@@ -3529,7 +3529,7 @@ probDistServer <- function(id) {
           withMathJax(
             div(
               h3(
-                sprintf("Given \\( X \\sim N(\\mu  = %d, \\sigma = %d) \\) then",
+                sprintf("Given \\( X \\sim N(\\mu  = %g, \\sigma = %g) \\) then",
                         input$popMean,
                         input$popSD)
                 ),
@@ -3872,7 +3872,7 @@ probDistServer <- function(id) {
           withMathJax(
             div(
               h3(
-                sprintf("Given \\( X \\sim N(\\mu  = %d, \\sigma = %d) \\) then",
+                sprintf("Given \\( X \\sim N(\\mu  = %g, \\sigma = %g) \\) then",
                         input$popMean,
                         input$popSD)),
               hr(),
