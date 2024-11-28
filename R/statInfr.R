@@ -378,7 +378,7 @@ statInfrUI <- function(id) {
                 numericInput(
                   inputId = ns("hypStdDeviation"),
                   label   = strong(r"--{Hypothesized Population Standard Deviation (\( \sigma_{0}\)) Value}--"),
-                  value   = 12.00,
+                  value   = 16.00,
                   min     = 0.001,
                   step    = 0.001)
               ), # Population standard deviation
@@ -4879,58 +4879,150 @@ br(),
 
 #### ---- One population standard deviation hypothesis testing HT ----
     ## See #33.
+
+    output$onePopulationSDHTChiSqPlot <- renderPlot({
+
+      degreesOfFreedom <- input$SSDSampleSize - 1;
+      ## lower.tail will be false when the alternative hypothesis is >.
+      leftTailed = input$altHypothesis %in% c(1, 2);
+      chiSqCValue <- qchisq(1 - SigLvl(), degreesOfFreedom, lower.tail = leftTailed);
+      chiSqPValue <- pchisq(chiSqCValue, degreesOfFreedom, lower.tail = leftTailed);
+      chiSqTestStatistic <- sqrt((degreesOfFreedom * input$SSDStdDev^2) /  input$hypStdDeviation^2);
+
+          ## data <- chiSqResults()
+          ## chisq_df <- data$Results$parameter
+          ## chisq_ts <- data$Matrix[nrow(data$Matrix), "(O - E)<sup>2</sup> / E"]
+
+          ## cv <- round(qchisq(1 - SigLvl(), df = degreesOfFreedom), 4)
+          ## lower95 <- qchisq(.025, chisq_df)
+          ## upper95 <- qchisq(.975, chisq_df)
+
+          xSeq <- c(seq(0, 15, length.out = 200), chiSqCValue, chiSqTestStatistic)
+          rrLabel <- c((chiSqCValue + max(xSeq))/2)
+          x_vector <- sort(c(xSeq, rrLabel))
+          p_vector <- dchisq(x_vector, df = degreesOfFreedom)
+
+          df <- distinct(data.frame(x = x_vector, y = p_vector))
+          cvDF <- filter(df, x %in% chiSqCValue)
+          tsDF <- filter(df, x %in% chiSqTestStatistic)
+          rrLabelDF <- filter(df, x %in% rrLabel)
+          arLabelDF <- filter(df, y %in% max(p_vector))
+
+          ggplot(df,
+                 aes(x = x, y = y)) +
+            stat_function(fun = dchisq,
+                          args = list(df = degreesOfFreedom),
+                          geom = "Density",
+                          fill = NA) +
+            shadeHtArea(df, chiSqCValue, "greater") +
+            geom_segment(data = filter(df, y %in% max(p_vector)),
+                         aes(x = 0, xend = 0, y = 0, yend = y, alpha = 0.5),
+                         linetype = "solid",
+                         linewidth = 0.75,
+                         color='black',
+                         show.legend = FALSE) +
+            geom_text(data = filter(df, x %in% c(0)),
+                      aes(x = x, y = 0, label = "0"),
+                      size = 14 / .pt,
+                      fontface = "bold",
+                      nudge_y = -.03,
+                      check_overlap = TRUE) +
+            geom_segment(data = cvDF,
+                         aes(x = x, xend = x, y = 0, yend = y),
+                         linetype = "solid",
+                         lineend = 'butt',
+                         linewidth = 1.5,
+                         color='#023B70') +
+            geom_text(data = cvDF,
+                      aes(x = x, y = 0, label = x),
+                      size = 14 / .pt,
+                      fontface = "bold",
+                      nudge_y = -.03,
+                      check_overlap = TRUE) +
+            geom_segment(data = tsDF,
+                         aes(x = x, xend = x, y = 0, yend = y + .055),
+                         linetype = "solid",
+                         linewidth = 1.25,
+                         color='#BD130B') +
+            geom_text(data = tsDF,
+                      aes(x = x, y = y, label = x),
+                      size = 14 / .pt,
+                      fontface = "bold",
+                      nudge_y = .075,
+                      check_overlap = TRUE) +
+            geom_text(data = arLabelDF,
+                      aes(x = x, y = 0, label = "A R"),
+                      size = 16 / .pt,
+                      fontface = "bold",
+                      vjust = -4,
+                      check_overlap = TRUE) +
+            geom_text(data = rrLabelDF,
+                      aes(x = x, y = y, label = "RR"),
+                      size = 16 / .pt,
+                      fontface = "bold",
+                      vjust = -4,
+                      check_overlap = TRUE) +
+            theme_void() +
+            ylab("") +
+            xlab(expression(bold(chi^2))) +
+            scale_y_continuous(breaks = NULL) +
+            theme(axis.title.x = element_text(size = 20))
+                                        # coord_cartesian(clip="off")
+        })
+    
     output$onePopulationSDHT <- renderUI({
       ## Required data: n, s, alpha, sigma_naught, hypothesis_alternative; ns(x)
       ## doesn't seem to be required here. Review why that might be.
       ##
-      ## Inputs: SSDSampleSize, SSDStdDev, significanceLevel, hypStdDeviation,
-      ## altHypothesis.
+      ## Inputs: SSDSampleSize (n), SSDStdDev (s), significanceLevel, hypStdDeviation (sigma_naught),
+      ## altHypothesis (e.g. "<").
       ##
       ## Useful data: SigLvl() [numeric];
 
       ## This paragraph is related to the final interpretation, as used in the
       ## P-value method.
       degreesOfFreedom <- input$SSDSampleSize - 1;
-      chiSqTestStatistic <- qchisq(1 - SigLvl(), degreesOfFreedom);
-      peachySquare <- pchisq(chiSqTestStatistic, degreesOfFreedom)
-      if (peachySquare >= SigLvl()) {
-        ## Since P >= SigLvl we do not reject the null hypothesis.
-        rejectionRelationalOperator = "\\gt"
-        rejectionStatement <- "do not reject";
-      } else if (peachySquare < SigLvl()){
-        ## Since P < SigLvl we must reject the null hypothesis.
-        rejectionRelationalOperator = "\\leq"
-        rejectionStatement <- "reject";
-      }
+      ## lower.tail will be false when the alternative hypothesis is >.
+      leftTailed = input$altHypothesis %in% c(1, 2);
+      chiSqCValue <- qchisq(1 - SigLvl(), degreesOfFreedom, lower.tail = leftTailed);
+      chiSqPValue <- pchisq(chiSqCValue, degreesOfFreedom, lower.tail = leftTailed);
+      ## chiSqTestStatistic <- sqrt((degreesOfFreedom * input$SSDStdDev^2) /  input$hypStdDeviation^2);
+      chiSqTestStatistic <- qchisq(SigLvl(), 11, lower.tail = leftTailed);
 
       ## Establish the strings to use in MathJax-supported LaTeX for the hypotheses and relations.
       if (input$altHypothesis == 1) {
         nullHypString <- "\\geq";
         altHypString <- "\\lt";
-        pValueMethodRelationalOperatorString <- "\\lt"
-        pValueMethodAbsoluteTestStatisticValueOrNot <- sprintf("%0.3f", chiSqTestStatistic)
+        pValueMethodRelationalOperatorString <- "\\lt";
       } else if (input$altHypothesis == 2) {
         nullHypString <- "=";
         altHypString <- "\\ne";
-        pValueMethodRelationalOperatorString <- "\\gt"
-        pValueMethodAbsoluteTestStatisticValueOrNot <- sprintf(paste("\\left|", "%0.3f", "\\right|"),
-                                                               chiSqTestStatistic)
+        pValueMethodRelationalOperatorString <- "\\gt";
+        chiSqPValue <- 2*chiSqPValue;
       } else {
         nullHypString <- "\\leq";
         altHypString <- "\\gt";
-        pValueMethodRelationalOperatorString <- "\\gt"
-        pValueMethodAbsoluteTestStatisticValueOrNot <- sprintf("%0.3f", chiSqTestStatistic)
+        pValueMethodRelationalOperatorString <- "\\gt";
       }
 
-      hypothesisFormattedString <- function(hypothesis, relation, standardDeviation) {
+      ## "if P <= alpha, reject H0"
+      if (chiSqPValue <= SigLvl()) {
+        rejectionOrAcceptanceStatement <-
+          sprintf("Since \\( P \\leq %0.2f \\), reject \\( H_{0}\\).", SigLvl())
+      } else {
+        rejectionOrAcceptanceStatement <-
+          sprintf("Since \\( P \\gt %0.2f \\), do not reject \\( H_{0}\\).", SigLvl())
+      }
+
+      hypothesisFormattedString <- function(hypothesis, relation) {
         sprintf(r"--[\( H_%s: \sigma %s %0.3f \)]--", # σ
-                "0", relation, standardDeviation)
+                "0", relation, input$hypStdDeviation);
       }
 
       ## UI
       withMathJax(
-        hypothesisFormattedString("0", nullHypString, input$hypStdDeviation), br(),
-        hypothesisFormattedString("a", altHypString,  input$hypStdDeviation), br(),
+        hypothesisFormattedString("0", nullHypString), br(),
+        hypothesisFormattedString("a", altHypString), br(),
         br(),
         sprintf("\\( \\alpha = %0.2f \\)", SigLvl()), br(),
 
@@ -4956,39 +5048,43 @@ br(),
         br(),
         ## Calculations
         sprintf(
+          ## r"--(
+          ##  \(
+          ##  \begin{align}
+          ##  \displaystyle
+          ##  \chi^2 &= \sqrt{\frac{(n-1)s^2}{\sigma^2_0}} \\
+          ##  \chi^2 &= \sqrt{\frac{(%d - 1)  %0.3f ^2}{%0.3f^2}} \\
+          ##  \chi^2 &= \sqrt{\frac{(%d)      %0.3f   }{%0.3f}} \\
+          ##  \chi^2 &= \sqrt{\frac{%0.3f}{%0.3f}} \\
+          ##  \chi^2 &= \sqrt{%0.3f} \\
+          ##  \chi^2 &= %0.3f
+          ##  \end{align}
+          ##  \)
+          ##  )--",
+          ## input$SSDSampleSize,  input$SSDStdDev,  input$hypStdDeviation,
+          ## degreesOfFreedom,  input$SSDStdDev^2,  input$hypStdDeviation^2,
+          ## degreesOfFreedom * input$SSDStdDev^2,  input$hypStdDeviation^2,
+          ## (degreesOfFreedom * input$SSDStdDev^2) /  input$hypStdDeviation^2,
+          ## chiSqTestStatistic
           r"--(
            \(
-           \begin{align}
            \displaystyle
-           \chi^2 &= \sqrt{\frac{(n-1)s^2}{\sigma^2_0}} \\
-           \chi^2 &= \sqrt{\frac{(%d - 1)  %0.3f ^2}{%0.3f^2}} \\
-           \chi^2 &= \sqrt{\frac{(%d)      %0.3f   }{%0.3f}} \\
-           \chi^2 &= \sqrt{\frac{%0.3f}{%0.3f}} \\
-           \chi^2 &= \sqrt{%0.3f} \\
-           \chi^2 &= %0.3f
-           \end{align}
+           \chi^2 = \sqrt{\frac{(%d - 1)  %0.3f ^2}{%0.3f^2}} = %0.3f\\
            \)
            )--",
-          input$SSDSampleSize,  input$SSDStdDev,  input$hypStdDeviation,
-          degreesOfFreedom,  input$SSDStdDev^2,  input$hypStdDeviation^2,
-          degreesOfFreedom * input$SSDStdDev^2,  input$hypStdDeviation^2,
-          (degreesOfFreedom * input$SSDStdDev^2) /  input$hypStdDeviation^2,
-          ## MAYBE FIXME: the value produced seems wildly incorrect.
-          (oneSSDHTchisq <- sqrt((degreesOfFreedom * input$SSDStdDev^2) /  input$hypStdDeviation^2))
+          input$SSDSampleSize,  input$SSDStdDev,  input$hypStdDeviation, chiSqTestStatistic
         ), br(),
 
         br(),
         br(),
         p(tags$b("Using P-Value Method:")),
-        sprintf("\\( P = P\\left( \\chi^2 %s %s \\right) = %0.3f \\)",
+        sprintf("\\( P = %s P\\left( \\chi^2 %s %s \\right) = %0.2f \\)",
+                if (input$altHypothesis %in% c(1, 3)) "" else "2",
                 pValueMethodRelationalOperatorString,
-                pValueMethodAbsoluteTestStatisticValueOrNot,
-                peachySquare), br(),
+                sprintf("%0.3f", chiSqTestStatistic),
+                chiSqPValue), br(),
         br(),
-        sprintf("Since \\( P %s %0.2f \\), %s \\( H_{0}\\).",
-                rejectionRelationalOperator,
-                SigLvl(),
-                rejectionStatement), br(),
+        rejectionOrAcceptanceStatement, br(),
 
         br(),
         br(),
@@ -5004,15 +5100,24 @@ br(),
            \(
            \begin{align}
            \displaystyle
-           \chi^2 &%s \chi^2_{%0.3f} \\
+           \chi^2 &%s \chi^2_{%0.2f,%d} \\
            %0.3f &%s %0.3f  \\
            \end{align}
            \)
            )--",
           ## Both of these are alternative hypothesis-dependent
-          nullHypString, SigLvl(),
-          oneSSDHTchisq, nullHypString, chisq.value
+          {
+            if (chiSqTestStatistic < chisq.value) "\\leq"
+            else if (chiSqTestStatistic >= chisq.value) "\\geq"
+          }, SigLvl(), degreesOfFreedom,
+          chiSqTestStatistic, {
+            if (chiSqTestStatistic < chisq.value) "\\leq"
+            else if (chiSqTestStatistic >= chisq.value) "\\geq"
+          }, chisq.value
         ), br(),
+
+        br(),
+        plotOutput(session$ns("onePopulationSDHTChiSqPlot"), width = "50%", height = "400px"),
 
         ## TODO: replace this with an appropriate statement and values.
         br(),
@@ -6736,6 +6841,7 @@ br(),
       rrLabelDF <- filter(df, x %in% rrLabel)
       arLabelDF <- filter(df, y %in% max(p_vector))
 
+      ## TODO: copy this into #33 UI and FIXME any errors due to missing values.
       ggplot(df,
              aes(x = x, y = y)) +
         stat_function(fun = dchisq,
