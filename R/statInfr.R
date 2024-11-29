@@ -6897,7 +6897,6 @@ br(),
       rrLabelDF <- filter(df, x %in% rrLabel)
       arLabelDF <- filter(df, y %in% max(p_vector))
 
-      ## TODO: copy this into #33 UI and FIXME any errors due to missing values.
       ggplot(df,
              aes(x = x, y = y)) +
         stat_function(fun = dchisq,
