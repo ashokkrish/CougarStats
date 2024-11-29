@@ -3508,7 +3508,7 @@ statInfrServer <- function(id) {
       if(input$siMethod == '1') {
 
         if(input$significanceLevel == "10%") {
-          sigLvl <- 0.1
+          sigLvl <- 0.10
         } else if(input$significanceLevel == "5%") {
           sigLvl <- 0.05
         } else {
@@ -3518,7 +3518,7 @@ statInfrServer <- function(id) {
       } else if (input$siMethod == '2') {
 
         if(input$significanceLevel2 == "10%") {
-          sigLvl <- 0.1
+          sigLvl <- 0.10
         } else if(input$significanceLevel2 == "5%") {
           sigLvl <- 0.05
         } else {
@@ -4879,97 +4879,126 @@ br(),
 
 #### ---- One population standard deviation hypothesis testing HT ----
     ## See #33.
+    chiSqTestData <- function(envir) {
+      evalq(expr = {
+        ## This paragraph is related to the final interpretation, as used in the
+        ## P-value method.
+        degreesOfFreedom <- input$SSDSampleSize - 1;
+        chiSqTestStatistic <- (degreesOfFreedom * input$SSDStdDev^2) /  input$hypStdDeviation^2;
+        ## lower.tail will be false when the alternative hypothesis is >.
+        isLeftTailed = input$altHypothesis %in% c(1, 2);
+
+        ## Establish the strings to use in MathJax-supported LaTeX for the hypotheses and relations.
+        if (input$altHypothesis == 1) {
+          nullHypString <- "\\geq";
+          altHypString <- "\\lt";
+          pValueMethodRelationalOperatorString <- "\\lt";
+          chiSqCValue <- qchisq(SigLvl(), degreesOfFreedom);
+          chiSqPValue <- pchisq(chiSqTestStatistic, degreesOfFreedom, lower.tail = isLeftTailed);
+        } else if (input$altHypothesis == 2) {
+          nullHypString <- "=";
+          altHypString <- "\\ne";
+          pValueMethodRelationalOperatorString <- "\\gt";
+          chiSqCValueLower <- qchisq(SigLvl()/2, degreesOfFreedom);
+          chiSqCValueUpper <- qchisq(1 - SigLvl()/2, degreesOfFreedom);
+          chiSqCValue <- c(chiSqCValueLower, chiSqCValueUpper)
+          chiSqPValue <- 2 * pchisq(chiSqTestStatistic, degreesOfFreedom, lower.tail = isLeftTailed);
+        } else {
+          nullHypString <- "\\leq";
+          altHypString <- "\\gt";
+          pValueMethodRelationalOperatorString <- "\\gt";
+          chiSqCValue <- qchisq(1 - SigLvl(), degreesOfFreedom);
+          chiSqPValue <- pchisq(chiSqTestStatistic, degreesOfFreedom, lower.tail = isLeftTailed);
+        }
+      },
+      envir = envir)
+    }
 
     output$onePopulationSDHTChiSqPlot <- renderPlot({
 
-      degreesOfFreedom <- input$SSDSampleSize - 1;
-      ## lower.tail will be false when the alternative hypothesis is >.
-      leftTailed = input$altHypothesis %in% c(1, 2);
-      chiSqCValue <- qchisq(1 - SigLvl(), degreesOfFreedom, lower.tail = leftTailed);
-      chiSqPValue <- pchisq(chiSqCValue, degreesOfFreedom, lower.tail = leftTailed);
-      chiSqTestStatistic <- sqrt((degreesOfFreedom * input$SSDStdDev^2) /  input$hypStdDeviation^2);
+      chiSqTestData(envir = environment())
 
-          ## data <- chiSqResults()
-          ## chisq_df <- data$Results$parameter
-          ## chisq_ts <- data$Matrix[nrow(data$Matrix), "(O - E)<sup>2</sup> / E"]
+      ## data <- chiSqResults()
+      ## chisq_df <- data$Results$parameter
+      ## chisq_ts <- data$Matrix[nrow(data$Matrix), "(O - E)<sup>2</sup> / E"]
 
-          ## cv <- round(qchisq(1 - SigLvl(), df = degreesOfFreedom), 4)
-          ## lower95 <- qchisq(.025, chisq_df)
-          ## upper95 <- qchisq(.975, chisq_df)
+      ## cv <- round(qchisq(1 - SigLvl(), df = degreesOfFreedom), 4)
+      ## lower95 <- qchisq(.025, chisq_df)
+      ## upper95 <- qchisq(.975, chisq_df)
 
-          xSeq <- c(seq(0, 15, length.out = 200), chiSqCValue, chiSqTestStatistic)
-          rrLabel <- c((chiSqCValue + max(xSeq))/2)
-          x_vector <- sort(c(xSeq, rrLabel))
-          p_vector <- dchisq(x_vector, df = degreesOfFreedom)
+      xSeq <- c(seq(0, 15, length.out = 200), chiSqCValue, chiSqTestStatistic)
+      rrLabel <- c((chiSqCValue + max(xSeq))/2)
+      x_vector <- sort(c(xSeq, rrLabel))
+      p_vector <- dchisq(x_vector, df = degreesOfFreedom)
 
-          df <- distinct(data.frame(x = x_vector, y = p_vector))
-          cvDF <- filter(df, x %in% chiSqCValue)
-          tsDF <- filter(df, x %in% chiSqTestStatistic)
-          rrLabelDF <- filter(df, x %in% rrLabel)
-          arLabelDF <- filter(df, y %in% max(p_vector))
+      df <- distinct(data.frame(x = x_vector, y = p_vector))
+      cvDF <- filter(df, x %in% chiSqCValue)
+      tsDF <- filter(df, x %in% chiSqTestStatistic)
+      rrLabelDF <- filter(df, x %in% rrLabel)
+      arLabelDF <- filter(df, y %in% max(p_vector))
 
-          ggplot(df,
-                 aes(x = x, y = y)) +
-            stat_function(fun = dchisq,
-                          args = list(df = degreesOfFreedom),
-                          geom = "Density",
-                          fill = NA) +
-            shadeHtArea(df, chiSqCValue, "greater") +
-            geom_segment(data = filter(df, y %in% max(p_vector)),
-                         aes(x = 0, xend = 0, y = 0, yend = y, alpha = 0.5),
-                         linetype = "solid",
-                         linewidth = 0.75,
-                         color='black',
-                         show.legend = FALSE) +
-            geom_text(data = filter(df, x %in% c(0)),
-                      aes(x = x, y = 0, label = "0"),
-                      size = 14 / .pt,
-                      fontface = "bold",
-                      nudge_y = -.03,
-                      check_overlap = TRUE) +
-            geom_segment(data = cvDF,
-                         aes(x = x, xend = x, y = 0, yend = y),
-                         linetype = "solid",
-                         lineend = 'butt',
-                         linewidth = 1.5,
-                         color='#023B70') +
-            geom_text(data = cvDF,
-                      aes(x = x, y = 0, label = x),
-                      size = 14 / .pt,
-                      fontface = "bold",
-                      nudge_y = -.03,
-                      check_overlap = TRUE) +
-            geom_segment(data = tsDF,
-                         aes(x = x, xend = x, y = 0, yend = y + .055),
-                         linetype = "solid",
-                         linewidth = 1.25,
-                         color='#BD130B') +
-            geom_text(data = tsDF,
-                      aes(x = x, y = y, label = x),
-                      size = 14 / .pt,
-                      fontface = "bold",
-                      nudge_y = .075,
-                      check_overlap = TRUE) +
-            geom_text(data = arLabelDF,
-                      aes(x = x, y = 0, label = "A R"),
-                      size = 16 / .pt,
-                      fontface = "bold",
-                      vjust = -4,
-                      check_overlap = TRUE) +
-            geom_text(data = rrLabelDF,
-                      aes(x = x, y = y, label = "RR"),
-                      size = 16 / .pt,
-                      fontface = "bold",
-                      vjust = -4,
-                      check_overlap = TRUE) +
-            theme_void() +
-            ylab("") +
-            xlab(expression(bold(chi^2))) +
-            scale_y_continuous(breaks = NULL) +
-            theme(axis.title.x = element_text(size = 20))
+      ggplot(df,
+             aes(x = x, y = y)) +
+        stat_function(fun = dchisq,
+                      args = list(df = degreesOfFreedom),
+                      geom = "Density",
+                      fill = NA) +
+        shadeHtArea(df, chiSqCValue, "greater") +
+        geom_segment(data = filter(df, y %in% max(p_vector)),
+                     aes(x = 0, xend = 0, y = 0, yend = y, alpha = 0.5),
+                     linetype = "solid",
+                     linewidth = 0.75,
+                     color='black',
+                     show.legend = FALSE) +
+        geom_text(data = filter(df, x %in% c(0)),
+                  aes(x = x, y = 0, label = "0"),
+                  size = 14 / .pt,
+                  fontface = "bold",
+                  nudge_y = -.03,
+                  check_overlap = TRUE) +
+        geom_segment(data = cvDF,
+                     aes(x = x, xend = x, y = 0, yend = y),
+                     linetype = "solid",
+                     lineend = 'butt',
+                     linewidth = 1.5,
+                     color='#023B70') +
+        geom_text(data = cvDF,
+                  aes(x = x, y = 0, label = x),
+                  size = 14 / .pt,
+                  fontface = "bold",
+                  nudge_y = -.03,
+                  check_overlap = TRUE) +
+        geom_segment(data = tsDF,
+                     aes(x = x, xend = x, y = 0, yend = y + .055),
+                     linetype = "solid",
+                     linewidth = 1.25,
+                     color='#BD130B') +
+        geom_text(data = tsDF,
+                  aes(x = x, y = y, label = x),
+                  size = 14 / .pt,
+                  fontface = "bold",
+                  nudge_y = .075,
+                  check_overlap = TRUE) +
+        geom_text(data = arLabelDF,
+                  aes(x = x, y = 0, label = "A R"),
+                  size = 16 / .pt,
+                  fontface = "bold",
+                  vjust = -4,
+                  check_overlap = TRUE) +
+        geom_text(data = rrLabelDF,
+                  aes(x = x, y = y, label = "RR"),
+                  size = 16 / .pt,
+                  fontface = "bold",
+                  vjust = -4,
+                  check_overlap = TRUE) +
+        theme_void() +
+        ylab("") +
+        xlab(expression(bold(chi^2))) +
+        scale_y_continuous(breaks = NULL) +
+        theme(axis.title.x = element_text(size = 20))
                                         # coord_cartesian(clip="off")
-        })
-    
+    })
+
     output$onePopulationSDHT <- renderUI({
       ## Required data: n, s, alpha, sigma_naught, hypothesis_alternative; ns(x)
       ## doesn't seem to be required here. Review why that might be.
@@ -4979,31 +5008,7 @@ br(),
       ##
       ## Useful data: SigLvl() [numeric];
 
-      ## This paragraph is related to the final interpretation, as used in the
-      ## P-value method.
-      degreesOfFreedom <- input$SSDSampleSize - 1;
-      ## lower.tail will be false when the alternative hypothesis is >.
-      leftTailed = input$altHypothesis %in% c(1, 2);
-      chiSqCValue <- qchisq(1 - SigLvl(), degreesOfFreedom, lower.tail = leftTailed);
-      chiSqPValue <- pchisq(chiSqCValue, degreesOfFreedom, lower.tail = leftTailed);
-      ## chiSqTestStatistic <- sqrt((degreesOfFreedom * input$SSDStdDev^2) /  input$hypStdDeviation^2);
-      chiSqTestStatistic <- qchisq(SigLvl(), 11, lower.tail = leftTailed);
-
-      ## Establish the strings to use in MathJax-supported LaTeX for the hypotheses and relations.
-      if (input$altHypothesis == 1) {
-        nullHypString <- "\\geq";
-        altHypString <- "\\lt";
-        pValueMethodRelationalOperatorString <- "\\lt";
-      } else if (input$altHypothesis == 2) {
-        nullHypString <- "=";
-        altHypString <- "\\ne";
-        pValueMethodRelationalOperatorString <- "\\gt";
-        chiSqPValue <- 2*chiSqPValue;
-      } else {
-        nullHypString <- "\\leq";
-        altHypString <- "\\gt";
-        pValueMethodRelationalOperatorString <- "\\gt";
-      }
+      chiSqTestData(envir = environment())
 
       ## "if P <= alpha, reject H0"
       if (chiSqPValue <= SigLvl()) {
@@ -5040,7 +5045,7 @@ br(),
         ## Formulas
         p(r"--[
             \(
-            \displaystyle \chi^2 = \sqrt{\frac{(n-1)s^2}{\sigma^2_0}}
+            \displaystyle \chi^2 = \frac{(n-1)s^2}{\sigma^2_0}
             \)
            ]--"), br(),
 
@@ -5048,28 +5053,10 @@ br(),
         br(),
         ## Calculations
         sprintf(
-          ## r"--(
-          ##  \(
-          ##  \begin{align}
-          ##  \displaystyle
-          ##  \chi^2 &= \sqrt{\frac{(n-1)s^2}{\sigma^2_0}} \\
-          ##  \chi^2 &= \sqrt{\frac{(%d - 1)  %0.3f ^2}{%0.3f^2}} \\
-          ##  \chi^2 &= \sqrt{\frac{(%d)      %0.3f   }{%0.3f}} \\
-          ##  \chi^2 &= \sqrt{\frac{%0.3f}{%0.3f}} \\
-          ##  \chi^2 &= \sqrt{%0.3f} \\
-          ##  \chi^2 &= %0.3f
-          ##  \end{align}
-          ##  \)
-          ##  )--",
-          ## input$SSDSampleSize,  input$SSDStdDev,  input$hypStdDeviation,
-          ## degreesOfFreedom,  input$SSDStdDev^2,  input$hypStdDeviation^2,
-          ## degreesOfFreedom * input$SSDStdDev^2,  input$hypStdDeviation^2,
-          ## (degreesOfFreedom * input$SSDStdDev^2) /  input$hypStdDeviation^2,
-          ## chiSqTestStatistic
           r"--(
            \(
            \displaystyle
-           \chi^2 = \sqrt{\frac{(%d - 1)  %0.3f ^2}{%0.3f^2}} = %0.3f\\
+           \chi^2 = \frac{(%d - 1)  %0.3f ^2}{%0.3f^2} = %0.3f\\
            \)
            )--",
           input$SSDSampleSize,  input$SSDStdDev,  input$hypStdDeviation, chiSqTestStatistic
@@ -5089,42 +5076,105 @@ br(),
         br(),
         br(),
         p(tags$b("Using Critical Value Method:")),
-        ## sprintf("\\( df = %d - 1 = %d \\)", input$SSDSampleSize, degreesOfFreedom), br(),
-        ## br(),
-        sprintf("Critical value(s): \\( \\chi^2_{%0.2f,%d} = %0.3f \\)",
-                SigLvl(),
-                degreesOfFreedom,
-                (chisq.value <- qchisq(p = 1 - SigLvl(), df = degreesOfFreedom))), br(),
-        sprintf(
-          r"--(
-           \(
-           \begin{align}
-           \displaystyle
-           \chi^2 &%s \chi^2_{%0.2f,%d} \\
-           %0.3f &%s %0.3f  \\
-           \end{align}
-           \)
-           )--",
-          ## Both of these are alternative hypothesis-dependent
-          {
-            if (chiSqTestStatistic < chisq.value) "\\leq"
-            else if (chiSqTestStatistic >= chisq.value) "\\geq"
-          }, SigLvl(), degreesOfFreedom,
-          chiSqTestStatistic, {
-            if (chiSqTestStatistic < chisq.value) "\\leq"
-            else if (chiSqTestStatistic >= chisq.value) "\\geq"
-          }, chisq.value
-        ), br(),
+        br(),
+        if (input$altHypothesis != 2) {
+          HTML(sprintf("Critical value(s): \\( \\chi^2_{%0.2f,%d} = %0.3f \\) <br/>",
+                       SigLvl(),
+                       degreesOfFreedom,
+                       chiSqCValue))
+        } else {
+          HTML(sprintf("Critical value(s): <br/>
+                  \\( \\chi^2_{%0.3f,%d} = %0.3f \\) <br/>
+                  \\( \\chi^2_{%0.3f,%d} = %0.3f \\) <br/>",
+                  SigLvl() / 2,
+                  degreesOfFreedom,
+                  chiSqCValue[[1]],
+                  1 - SigLvl() / 2,
+                  degreesOfFreedom,
+                  chiSqCValue[[2]]))
+        },
+
+        if (input$altHypothesis != 2) {
+          HTML(sprintf(
+            r"--(\(\begin{align} \displaystyle \chi^2 &%s \chi^2_{%0.2f,%d} \\ %0.3f &%s %0.3f  \\ \end{align} \)<br/>)--",
+            ## Both of these are alternative hypothesis-dependent
+            {
+              if (chiSqTestStatistic < chiSqCValue) "\\leq"
+              else if (chiSqTestStatistic >= chiSqCValue) "\\geq"
+            }, SigLvl(), degreesOfFreedom,
+            chiSqTestStatistic, {
+              if (chiSqTestStatistic < chiSqCValue) "\\leq"
+              else if (chiSqTestStatistic >= chiSqCValue) "\\geq"
+            },
+            chiSqCValue
+          ))
+        } else {
+          lessThan <- chiSqTestStatistic <= chiSqCValue[[1]]
+          greaterThan <- chiSqTestStatistic >= chiSqCValue[[2]]
+          between <- !lessThan && !greaterThan
+          if (lessThan) relation <- "\\leq"
+          else if (greaterThan) relation <- "\\geq"
+
+          if (!between) {
+            HTML(sprintf(
+              r"--(\(\begin{align} \displaystyle \chi^2 &%s \chi^2_{%0.3f,%d} \\ %0.3f &%s %0.3f \\ \end{align} \)<br/>)--",
+              relation, {if (lessThan) SigLvl()/2 else 1-SigLvl()/2}, degreesOfFreedom,
+              chiSqTestStatistic, relation, if (lessThan) chiSqCValue[[1]]))
+          } else {
+            HTML(sprintf(r"--(\(\begin{align} \displaystyle \chi^2_{%0.3f,%d} &< \chi^2 &< \chi^2_{%0.3f,%d} \\ %0.3f &< %0.3f &< %0.3f \\ \end{align} \)<br/>)--",
+                         SigLvl()/2, degreesOfFreedom, 1-SigLvl()/2, degreesOfFreedom,
+                         chiSqCValue[[1]], chiSqTestStatistic, chiSqCValue[[2]]))
+          }
+        },
 
         br(),
         plotOutput(session$ns("onePopulationSDHTChiSqPlot"), width = "50%", height = "400px"),
 
-        ## TODO: replace this with an appropriate statement and values.
         br(),
         p(tags$b("Conclusion:")),
-        sprintf("At \\(\\alpha = 0.05\\), since the test statistic falls in the acceptance region we do not reject \\(H_0\\) and conclude that there isn't enough statistical evidence to support that \\( \\mu < 99 \\).")
-      ) # with math jax
-    })
+        {
+          if (input$altHypothesis != 2) {
+            if (chiSqTestStatistic < chiSqCValue) {
+              sprintf(paste0("Since \\(\\alpha = %0.2f\\), and the test statistic",
+                             " \\(\\chi^2 = %0.3f\\) falls in the acceptance region",
+                             " (it is less than \\(%0.3f\\)) we do not reject \\(H_0\\)",
+                             " as there is insufficient evidence to accept the ",
+                             "proposed alternative hypothesis."),
+                      SigLvl(), chiSqTestStatistic, chiSqCValue)
+            } else {
+              sprintf(paste0("Since \\(\\alpha = %0.2f\\), and the test statistic",
+                             " \\(\\chi^2 = %0.3f\\) falls in the rejection region",
+                             " (it is greater than \\(%0.3f\\)) we must reject \\(H_0\\)",
+                             " as there is sufficient evidence to accept the ",
+                             "proposed alternative hypothesis."),
+                      SigLvl(), chiSqTestStatistic, chiSqCValue)
+            }
+          } else {
+            if (chiSqTestStatistic <= chiSqCValue[[1]])
+              sprintf(paste0("Since \\(\\alpha = %0.2f\\), and the test statistic",
+                             " \\(\\chi^2 = %0.3f\\) falls in the acceptance region",
+                             " (it is less than or equal to \\(%0.3f\\)) we do not reject \\(H_0\\)",
+                             " as there is insufficient evidence to accept the ",
+                             "proposed alternative hypothesis."),
+                      SigLvl(), chiSqTestStatistic, chiSqCValue[[1]])
+            else if ((chiSqTestStatistic >= chiSqCValue[[2]]))
+              sprintf(paste0("Since \\(\\alpha = %0.2f\\), and the test statistic",
+                             " \\(\\chi^2 = %0.3f\\) falls in the acceptance region",
+                             " (it is greater than or equal to \\(%0.3f\\)) we do not reject \\(H_0\\)",
+                             " as there is insufficient evidence to accept the ",
+                             "proposed alternative hypothesis."),
+                      SigLvl(), chiSqTestStatistic, chiSqCValue[[2]])
+            else
+              sprintf(paste0("Since \\(\\alpha = %0.2f\\), and the test statistic",
+                             " \\(\\chi^2 = %0.3f\\) falls in the rejection region",
+                             " (it is greater than \\(%0.3f\\) and less than \\(%0.3f\\)) we must reject \\(H_0\\)",
+                             " as there is sufficient evidence to accept the ",
+                             "proposed alternative hypothesis."),
+                      SigLvl(), chiSqTestStatistic, chiSqCValue[[1]], chiSqCValue[[2]])
+          }
+        },
+        br()) # withMathJax
+    }) # renderUI
 
 
 ### ------------ One Prop Outputs --------------------------------------------
