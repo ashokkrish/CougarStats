@@ -4135,7 +4135,7 @@ statInfrServer <- function(id) {
       ## NOTE: when anovaFormat is Multiple the data is stacked... so why when
       ## the data is already stacked and not stacked using stack() is the
       ## anovaData bugged?
-      if(input$anovaFormat == "Multiple") {
+      if (input$anovaFormat == "Multiple") {
         anovaData <- stack(anovaUploadData()[,input$anovaMultiColumns])
         factorCol <- "ind"
         factorNames <- levels(anovaData[,factorCol])
@@ -4149,15 +4149,21 @@ statInfrServer <- function(id) {
         # anovaFormula <- as.name(input$anovaResponse) ~ as.name(factorCol)
         # anovaFormula <- reformulate(factorCol, as.name(input$anovaResponse))
         names <- distinct(anovaData[,factorCol])
+        ## NOTE: a big difference is the use of a loop here and levels in the
+        ## other branch of this if-else.
         factorNames <- c()
         for(row in 1:nrow(names)) {
           factorNames[row] <- names[row,1]
         }
       }
+      ## FIXME: results$test is where the bad data is, but that data is produced
+      ## by this model fitting function call.
+      ## FIXME: BEGIN BAD DATA
       anovaData <- na.omit(anovaData)
       totalCount <- nrow(anovaData)
       numFactors <- length(factorNames)
       anovaTest <- aov(formula = values ~ ind, data = anovaData)
+      ## FIXME: END BAD DATA
 
       results$data <- anovaData
       results$count <- totalCount
