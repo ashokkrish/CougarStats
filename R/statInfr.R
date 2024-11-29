@@ -4124,17 +4124,23 @@ statInfrServer <- function(id) {
         return(valid)
       })
 
+    ## FIXME: this is the cause of #37; anovaOneWayResults()$test[1, "Df"] and
+    ## anovaOneWayResults()$test[2, "Df"] are bugged. Surely, [1, "Df"] is
+    ## bugged, and [2, "Df"] is likely bugged as well.
     anovaOneWayResults <- reactive({
       req(si_iv$is_valid)
 
       results <- list()
 
+      ## NOTE: when anovaFormat is Multiple the data is stacked... so why when
+      ## the data is already stacked and not stacked using stack() is the
+      ## anovaData bugged?
       if(input$anovaFormat == "Multiple") {
         anovaData <- stack(anovaUploadData()[,input$anovaMultiColumns])
         factorCol <- "ind"
         factorNames <- levels(anovaData[,factorCol])
-
       } else {
+        ## FIXME: df is bugged.
         anovaData <- anovaUploadData()
         colnames(anovaData)[colnames(anovaData) == input$anovaFactors] <- "ind"
         colnames(anovaData)[colnames(anovaData) == input$anovaResponse] <- "values"
