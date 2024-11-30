@@ -1484,6 +1484,9 @@ statInfrUI <- function(id) {
 statInfrServer <- function(id) {
   moduleServer(id, function(input, output, session) {
 
+    useShinyjs()
+    disable(selector = "#si-inferenceType > div:nth-child(2) > label:nth-child(2) > input:nth-child(1)")
+
  #  ========================================================================= #
  ## -------- Data Validation ------------------------------------------------
  #  ========================================================================= #
