@@ -4124,46 +4124,28 @@ statInfrServer <- function(id) {
         return(valid)
       })
 
-    ## FIXME: this is the cause of #37; anovaOneWayResults()$test[1, "Df"] and
-    ## anovaOneWayResults()$test[2, "Df"] are bugged. Surely, [1, "Df"] is
-    ## bugged, and [2, "Df"] is likely bugged as well.
     anovaOneWayResults <- reactive({
       req(si_iv$is_valid)
 
       results <- list()
 
-      ## NOTE: when anovaFormat is Multiple the data is stacked... so why when
-      ## the data is already stacked and not stacked using stack() is the
-      ## anovaData bugged?
       if (input$anovaFormat == "Multiple") {
         anovaData <- stack(anovaUploadData()[,input$anovaMultiColumns])
         factorCol <- "ind"
         factorNames <- levels(anovaData[,factorCol])
       } else {
-        ## FIXME: df is bugged.
         anovaData <- anovaUploadData()
         colnames(anovaData)[colnames(anovaData) == input$anovaFactors] <- "ind"
         colnames(anovaData)[colnames(anovaData) == input$anovaResponse] <- "values"
+        anovaData <- anovaData %>% mutate(ind = factor(ind))
         factorCol <- "ind"
-        # factorCol <- input$anovaFactors
-        # anovaFormula <- as.name(input$anovaResponse) ~ as.name(factorCol)
-        # anovaFormula <- reformulate(factorCol, as.name(input$anovaResponse))
-        names <- distinct(anovaData[,factorCol])
-        ## NOTE: a big difference is the use of a loop here and levels in the
-        ## other branch of this if-else.
-        factorNames <- c()
-        for(row in 1:nrow(names)) {
-          factorNames[row] <- names[row,1]
-        }
+        factorNames <- levels(anovaData$ind)
       }
-      ## FIXME: results$test is where the bad data is, but that data is produced
-      ## by this model fitting function call.
-      ## FIXME: BEGIN BAD DATA
+
       anovaData <- na.omit(anovaData)
       totalCount <- nrow(anovaData)
       numFactors <- length(factorNames)
       anovaTest <- aov(formula = values ~ ind, data = anovaData)
-      ## FIXME: END BAD DATA
 
       results$data <- anovaData
       results$count <- totalCount
