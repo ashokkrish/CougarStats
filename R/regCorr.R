@@ -19,10 +19,12 @@ regCorrUI <- function(id) {
           radioButtons(
             inputId      = ns("simple_vs_multiple"),
             label        = strong("Regression Type"),
-            choiceValues = list("SLR", 
-                                "MLR"), 
-            choiceNames  = list("Simple Linear Regression and Correlation Analysis", 
-                                "Multiple Linear Regression"),
+            choiceValues = list("SLR"#, 
+                                #"MLR"
+                                ), 
+            choiceNames  = list("Simple Linear Regression and Correlation Analysis"#, 
+                                #"Multiple Linear Regression"
+                                ),
             selected     = "SLR", 
             inline       = TRUE),
           
