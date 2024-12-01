@@ -17,7 +17,13 @@ RUN R -e "install.packages(c('aplpack', 'base', 'bslib', 'car', 'colourpicker', 
 RUN R -e "remotes::install_github("deepanshu88/shinyDarkmode")"
 
 # copy our application into the server, where 'R' is the local path to the app
-COPY CougarStats /srv/shiny-server
+# Usage: docker build --build-arg APPLICATION_DIRECTORY=<the directory of the cougarstats git repo> .
+# "." in the command only indicates that the Dockerfile is in the current directory.
+# If you are one directory level above the git repository you may write:
+# Usage: docker build --build-arg APPLICATION_DIRECTORY=cougarstats -f cougarstats/Dockerfile
+
+ARG APPLICATION_DIRECTORY=.
+COPY $APPLICATION_DIRECTORY /srv/shiny-server
 
 ## Grant access to server directory
 RUN sudo chown -R shiny:shiny /srv/shiny-server
