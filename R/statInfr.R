@@ -1483,9 +1483,20 @@ statInfrUI <- function(id) {
 
 statInfrServer <- function(id) {
   moduleServer(id, function(input, output, session) {
-
     useShinyjs()
-    disable(selector = "#si-inferenceType > div:nth-child(2) > label:nth-child(2) > input:nth-child(1)")
+    hypothesisTestingRadioButtonCssSelector <-
+      "#si-inferenceType > div:nth-child(2) > label:nth-child(2) > input:nth-child(1)"
+    observe({
+      if (input$siMethod == 1 && input$popuParameter == "Population Standard Deviation") {
+        updateRadioButtons(session = session,
+                           inputId = "inferenceType",
+                           selected = "Confidence Interval")
+        disable(selector = hypothesisTestingRadioButtonCssSelector)
+      } else {
+        enable(selector = hypothesisTestingRadioButtonCssSelector)
+      }
+    }) |> bindEvent(input$siMethod, input$popuParameter)
+
 
  #  ========================================================================= #
  ## -------- Data Validation ------------------------------------------------
