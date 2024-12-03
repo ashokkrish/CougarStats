@@ -1,5 +1,5 @@
-# # install.packages("remotes")
-# remotes::install_github("deepanshu88/shinyDarkmode")
+## install.packages("remotes")
+## remotes::install_github("deepanshu88/shinyDarkmode")
 
 library(aplpack)
 library(base)
@@ -60,9 +60,9 @@ source('R/TwoPropZInt.R')
 source('R/TwoPropZTest.R')
 
 options(scipen = 999) # options(scipen = 0)
-# options(shiny.reactlog = TRUE)
+## options(shiny.reactlog = TRUE)
 
-# How many digits to round Critical Values
+## How many digits to round Critical Values
 cvDigits <- 3
 
 render <- "
@@ -70,43 +70,43 @@ render <- "
   option: function(data, escape){return '<div class=\"option\">'+data.label+'</div>';},
   item: function(data, escape){return '<div class=\"item\">'+data.label+'</div>';}
 }"
-  
-  # String List to Numeric List
-  createNumLst <- function(text) {
-    text <- gsub("[^0-9.,-]","", text) #purge non-numeric characters 
-    text <- gsub("^,", "", text)      #purge any leading commas
-    text <- gsub(",(,)+", ",", text)  #transform multiple consecutive commas into a single comma
-    text <- gsub(",$", "", text)      #purge any trailing commas
-    split <- strsplit(text, ",", fixed = FALSE)[[1]]
-    suppressWarnings(na.omit(as.numeric(split)))
-  }
-  
-  GetPlotHeight  <- function(plotToggle, pxValue, ui) {
-    
-    ifelse(plotToggle == 'in px' && !is.na(pxValue), 
-           height <- pxValue, 
-           height <- 400)
-    
-    ifelse(ui,
-           return(paste0(height, "px")),
-           return(height))
-  }
-  
-  GetPlotWidth  <- function(plotToggle, pxValue, ui) {
-    
-    if(plotToggle == 'in px' && !is.na(pxValue)) {
-      width <- pxValue
-      
-      if(ui) {
-        width <- paste0(width, "px")
-      }
-    } else {
-      width <- "auto"
+
+## String List to Numeric List
+createNumLst <- function(text) {
+  text <- gsub("[^0-9.,-]","", text) #purge non-numeric characters
+  text <- gsub("^,", "", text)      #purge any leading commas
+  text <- gsub(",(,)+", ",", text)  #transform multiple consecutive commas into a single comma
+  text <- gsub(",$", "", text)      #purge any trailing commas
+  split <- strsplit(text, ",", fixed = FALSE)[[1]]
+  suppressWarnings(na.omit(as.numeric(split)))
+}
+
+GetPlotHeight  <- function(plotToggle, pxValue, ui) {
+
+  ifelse(plotToggle == 'in px' && !is.na(pxValue),
+         height <- pxValue,
+         height <- 400)
+
+  ifelse(ui,
+         return(paste0(height, "px")),
+         return(height))
+}
+
+GetPlotWidth  <- function(plotToggle, pxValue, ui) {
+
+  if(plotToggle == 'in px' && !is.na(pxValue)) {
+    width <- pxValue
+
+    if(ui) {
+      width <- paste0(width, "px")
     }
-    
-    return(width)      
+  } else {
+    width <- "auto"
   }
-  
-  `%then%` <- function(a, b) {
-    if (is.null(a)) b else a
-  }
+
+  return(width)
+}
+
+`%then%` <- function(a, b) {
+  if (is.null(a)) b else a
+}
