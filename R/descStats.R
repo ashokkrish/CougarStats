@@ -643,7 +643,7 @@ descStatsServer <- function(id) {
                           choices = c(colnames(dsUploadData()))
         )
         
-        show(id = "dsUploadVars")
+        shinyjs::show(id = "dsUploadVars")
       }
     })
     
