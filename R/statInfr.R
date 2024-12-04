@@ -5084,7 +5084,7 @@ br(),
 
       hypothesisFormattedString <- function(hypothesis, relation) {
         sprintf(r"--[\( H_%s: \sigma %s %0.3f \)]--", # σ
-                "0", relation, input$hypStdDeviation);
+                hypothesis, relation, input$hypStdDeviation);
       }
 
       ## UI
