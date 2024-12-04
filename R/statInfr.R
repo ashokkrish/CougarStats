@@ -4947,68 +4947,35 @@ br(),
 
       ## Account for two-tailed hypothesis tests.
       if (length(chiSqCValue) == 1) {
-        ## one-tailed hypothesis tests
-        if (input$altHypothesis == 1) {
-          ## upper-tail
-          upperRejectionRegion <- seq(chiSqCValue, max(chiSqTestStatistic, chiSqCValue) + 1)
-          upperPVector <- dchisq(upperRejectionRegion, df = degreesOfFreedom)
-          polygon(c(upperRejectionRegion, rev(upperRejectionRegion)),
-                  c(upperPVector, rep(0, length(upperPVector))),
-                  col = adjustcolor("red", alpha = 0.3),
-                  border = NA)
-          segments(x0 = chiSqTestStatistic,
-                   y0 = 0,
-                   y1 = dchisq(chiSqTestStatistic, df = degreesOfFreedom),
-                   col = adjustcolor("blue", alpha = 0.8),
-                   lwd = 5)
-          segments(x0 = chiSqCValue,
-                   y0 = 0,
-                   y1 = dchisq(chiSqCValue, df = degreesOfFreedom),
-                   col = adjustcolor("red", alpha = 0.8),
-                   lwd = 5)
-          text(
-            x = chiSqCValue, y = dchisq(chiSqCValue, df = degreesOfFreedom),
-            labels = as.character(round(chiSqCValue, 4)),
-            pos = 3, # to the left of the specified (x, y) coordinate.
-            offset = 1
-          )
-          text(
-            x = chiSqTestStatistic, y = dchisq(chiSqTestStatistic, df = degreesOfFreedom),
-            labels = as.character(round(chiSqTestStatistic, 4)),
-            pos = 2, # to the left of the specified (x, y) coordinate.
-            offset = 1
-          )
-        } else {
-          ## upper-tail
-          upperRejectionRegion <- seq(chiSqCValue, max(chiSqTestStatistic, chiSqCValue) + 1)
-          upperPVector <- dchisq(upperRejectionRegion, df = degreesOfFreedom)
-          polygon(c(upperRejectionRegion, rev(upperRejectionRegion)),
-                  c(upperPVector, rep(0, length(upperPVector))),
-                  col = adjustcolor("red", alpha = 0.3),
-                  border = NA)
-          segments(x0 = chiSqTestStatistic,
-                   y0 = 0,
-                   y1 = dchisq(chiSqTestStatistic, df = degreesOfFreedom),
-                   col = adjustcolor("blue", alpha = 0.8),
-                   lwd = 5)
-          segments(x0 = chiSqCValue,
-                   y0 = 0,
-                   y1 = dchisq(chiSqCValue, df = degreesOfFreedom),
-                   col = adjustcolor("red", alpha = 0.8),
-                   lwd = 5)
-          text(
-            x = chiSqCValue, y = dchisq(chiSqCValue, df = degreesOfFreedom),
-            labels = as.character(round(chiSqCValue, 4)),
-            pos = 3, # to the left of the specified (x, y) coordinate.
-            offset = 1
-          )
-          text(
-            x = chiSqTestStatistic, y = dchisq(chiSqTestStatistic, df = degreesOfFreedom),
-            labels = as.character(round(chiSqTestStatistic, 4)),
-            pos = 2, # to the left of the specified (x, y) coordinate.
-            offset = 1
-          )
-        }
+        ## applies to lower and upper tailed tests
+        lowerRejectionRegion <- sort(c(0, seq(chiSqCValue, minimumChiSqValue)))
+        lowerPVector <- dchisq(lowerRejectionRegion, df = degreesOfFreedom)
+        polygon(c(lowerRejectionRegion, rev(lowerRejectionRegion)),
+                c(lowerPVector, rep(0, length(lowerPVector))),
+                col = adjustcolor("red", alpha = 0.3),
+                border = NA)
+        segments(x0 = chiSqTestStatistic,
+                 y0 = 0,
+                 y1 = dchisq(chiSqTestStatistic, df = degreesOfFreedom),
+                 col = adjustcolor("blue", alpha = 0.8),
+                 lwd = 5)
+        segments(x0 = chiSqCValue,
+                 y0 = 0,
+                 y1 = dchisq(chiSqCValue, df = degreesOfFreedom),
+                 col = adjustcolor("red", alpha = 0.8),
+                 lwd = 5)
+        text(
+          x = chiSqCValue, y = dchisq(chiSqCValue, df = degreesOfFreedom),
+          labels = as.character(round(chiSqCValue, 4)),
+          pos = 3, # to the left of the specified (x, y) coordinate.
+          offset = 1
+        )
+        text(
+          x = chiSqTestStatistic, y = dchisq(chiSqTestStatistic, df = degreesOfFreedom),
+          labels = as.character(round(chiSqTestStatistic, 4)),
+          pos = 2, # to the left of the specified (x, y) coordinate.
+          offset = 1
+        )
       } else {
         ## two-tailed hypothesis tests
         lowerRejectionRegion <- seq(minimumChiSqValue, chiSqCValue[[1]])
@@ -5157,6 +5124,7 @@ br(),
                   chiSqCValue[[2]]))
         },
 
+        ## Chi square critical value conclusion.
         if (input$altHypothesis != 2) {
           HTML(sprintf(
             r"--(\(\begin{align} \displaystyle \chi^2 &%s \chi^2_{%0.2f,%d} \\ %0.3f &%s %0.3f  \\ \end{align} \)<br/>)--",
@@ -5193,26 +5161,48 @@ br(),
         br(),
         plotOutput(session$ns("onePopulationSDHTChiSqPlot"), width = "50%", height = "400px"),
 
+        ## Overall conclusion
         br(),
         p(tags$b("Conclusion:")),
         {
+          conclusionString <-
+            function(significanceLevel = SigLvl(),
+                     testStatisticValue = chiSqTestStatistic,
+                     criticalValue = chiSqCValue,
+                     accept = TRUE,
+                     lessThan = TRUE) {
+              sprintf(paste0("Since \\(\\alpha = %0.2f\\), and the test statistic",
+                             " \\(\\chi^2 = %0.3f\\) falls in the %s region",
+                             " (it is %s than \\(%0.3f\\)) we %sreject \\(H_0\\)",
+                             " as there is %ssufficient evidence to accept the ",
+                             "proposed alternative hypothesis."),
+                      significanceLevel,
+                      testStatisticValue,
+                      if (accept) "acceptance" else "rejection",
+                      if (lessThan) "less" else "greater",
+                      criticalValue,
+                      if (accept) "do not " else "",
+                      if (accept) "in" else ""
+                      )
+            }
+
           if (input$altHypothesis != 2) {
-            if (chiSqTestStatistic < chiSqCValue) {
-              sprintf(paste0("Since \\(\\alpha = %0.2f\\), and the test statistic",
-                             " \\(\\chi^2 = %0.3f\\) falls in the acceptance region",
-                             " (it is less than \\(%0.3f\\)) we do not reject \\(H_0\\)",
-                             " as there is insufficient evidence to accept the ",
-                             "proposed alternative hypothesis."),
-                      SigLvl(), chiSqTestStatistic, chiSqCValue)
+            ## One-tailed test
+            if (input$altHypothesis == 1) {
+              if (chiSqTestStatistic < chiSqCValue) {
+                conclusionString(accept = FALSE, lessThan = TRUE)
+              } else {
+                conclusionString(accept = TRUE, lessThan = FALSE)
+              }
             } else {
-              sprintf(paste0("Since \\(\\alpha = %0.2f\\), and the test statistic",
-                             " \\(\\chi^2 = %0.3f\\) falls in the rejection region",
-                             " (it is greater than \\(%0.3f\\)) we must reject \\(H_0\\)",
-                             " as there is sufficient evidence to accept the ",
-                             "proposed alternative hypothesis."),
-                      SigLvl(), chiSqTestStatistic, chiSqCValue)
+              if (chiSqTestStatistic < chiSqCValue) {
+                conclusionString(accept = TRUE, lessThan = TRUE)
+              } else {
+                conclusionString(accept = FALSE, lessThan = FALSE)
+              }
             }
           } else {
+            ## Two-tailed test
             if (chiSqTestStatistic <= chiSqCValue[[1]])
               sprintf(paste0("Since \\(\\alpha = %0.2f\\), and the test statistic",
                              " \\(\\chi^2 = %0.3f\\) falls in the rejection region",
