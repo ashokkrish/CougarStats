@@ -1147,26 +1147,33 @@ statInfrUI <- function(id) {
               ns = ns,
               condition = "input.popuParameter == 'Population Proportion'",
 
-              conditionalPanel(
-                ns = ns,
-                condition = "input.inferenceType == 'Confidence Interval'",
+              tabsetPanel(type = "tabs",
+                          tabPanel(title = "Inferences",
+                                   conditionalPanel(
+                                     ns = ns,
+                                     condition = "input.inferenceType == 'Confidence Interval'",
 
-                titlePanel(tags$u("Confidence Interval")),
-                br(),
-                uiOutput(ns('onePropCI')),
-                br(),
-                ), # Confidence Interval
+                                     titlePanel(tags$u("Confidence Interval")),
+                                     br(),
+                                     uiOutput(ns('onePropCI')),
+                                     br(),
+                                     ), # Confidence Interval
 
-              conditionalPanel(
-                ns = ns,
-                condition = "input.inferenceType == 'Hypothesis Testing'",
+                                   conditionalPanel(
+                                     ns = ns,
+                                     condition = "input.inferenceType == 'Hypothesis Testing'",
 
-                titlePanel(tags$u("Hypothesis Test")),
-                br(),
-                uiOutput(ns('onePropHT')),
-                br(),
-                ), # Hypothesis Testing
-              ), # One Population Proportion
+                                     titlePanel(tags$u("Hypothesis Test")),
+                                     br(),
+                                     uiOutput(ns('onePropHT')),
+                                     br(),
+                                     ) # Hypothesis Testing
+                                   ),
+                          tabPanel(title = "Graphs",
+                                   br(),
+                                   plotOutput(ns("onePropBarGraph")),
+                                   plotOutput(ns("onePropPieChart")))
+                          )), # One Population Proportion
 
 #### ---------------- 1 Pop Standard deviation -------------------------------
               conditionalPanel(
@@ -1484,18 +1491,18 @@ statInfrUI <- function(id) {
 statInfrServer <- function(id) {
   moduleServer(id, function(input, output, session) {
     useShinyjs()
-    hypothesisTestingRadioButtonCssSelector <-
-      "#si-inferenceType > div:nth-child(2) > label:nth-child(2) > input:nth-child(1)"
-    observe({
-      if (input$siMethod == 1 && input$popuParameter == "Population Standard Deviation") {
-        updateRadioButtons(session = session,
-                           inputId = "inferenceType",
-                           selected = "Confidence Interval")
-        disable(selector = hypothesisTestingRadioButtonCssSelector)
-      } else {
-        enable(selector = hypothesisTestingRadioButtonCssSelector)
-      }
-    }) |> bindEvent(input$siMethod, input$popuParameter)
+    ## hypothesisTestingRadioButtonCssSelector <-
+    ##   "#si-inferenceType > div:nth-child(2) > label:nth-child(2) > input:nth-child(1)"
+    ## observe({
+    ##   if (input$siMethod == 1 && input$popuParameter == "Population Standard Deviation") {
+    ##     updateRadioButtons(session = session,
+    ##                        inputId = "inferenceType",
+    ##                        selected = "Confidence Interval")
+    ##     disable(selector = hypothesisTestingRadioButtonCssSelector)
+    ##   } else {
+    ##     enable(selector = hypothesisTestingRadioButtonCssSelector)
+    ##   }
+    ## }) |> bindEvent(input$siMethod, input$popuParameter)
 
 
  #  ========================================================================= #
@@ -4923,88 +4930,136 @@ br(),
     }
 
     output$onePopulationSDHTChiSqPlot <- renderPlot({
-
       chiSqTestData(envir = environment())
 
-      ## data <- chiSqResults()
-      ## chisq_df <- data$Results$parameter
-      ## chisq_ts <- data$Matrix[nrow(data$Matrix), "(O - E)<sup>2</sup> / E"]
+      ## Clamp the minimum to zero.
+      minimumChiSqValue <- min(chiSqTestStatistic, chiSqCValue) - 1
+      if (minimumChiSqValue < 0) minimumChiSqValue <- 0
 
-      ## cv <- round(qchisq(1 - SigLvl(), df = degreesOfFreedom), 4)
-      ## lower95 <- qchisq(.025, chisq_df)
-      ## upper95 <- qchisq(.975, chisq_df)
+      ## Plot the main curve.
+      curve(
+        dchisq(x, df = degreesOfFreedom),
+        from = minimumChiSqValue,
+        to = max(chiSqTestStatistic, chiSqCValue) + 1,
+        main = sprintf("Chi-Square Distribution (df = %d)", degreesOfFreedom),
+        lwd = 2 # line width
+      )
 
-      xSeq <- c(seq(0, 15, length.out = 200), chiSqCValue, chiSqTestStatistic)
-      rrLabel <- c((chiSqCValue + max(xSeq))/2)
-      x_vector <- sort(c(xSeq, rrLabel))
-      p_vector <- dchisq(x_vector, df = degreesOfFreedom)
+      ## Account for two-tailed hypothesis tests.
+      if (length(chiSqCValue) == 1) {
+        ## one-tailed hypothesis tests
+        if (input$altHypothesis == 1) {
+          ## upper-tail
+          upperRejectionRegion <- seq(chiSqCValue, max(chiSqTestStatistic, chiSqCValue) + 1)
+          upperPVector <- dchisq(upperRejectionRegion, df = degreesOfFreedom)
+          polygon(c(upperRejectionRegion, rev(upperRejectionRegion)),
+                  c(upperPVector, rep(0, length(upperPVector))),
+                  col = adjustcolor("red", alpha = 0.3),
+                  border = NA)
+          segments(x0 = chiSqTestStatistic,
+                   y0 = 0,
+                   y1 = dchisq(chiSqTestStatistic, df = degreesOfFreedom),
+                   col = adjustcolor("blue", alpha = 0.8),
+                   lwd = 5)
+          segments(x0 = chiSqCValue,
+                   y0 = 0,
+                   y1 = dchisq(chiSqCValue, df = degreesOfFreedom),
+                   col = adjustcolor("red", alpha = 0.8),
+                   lwd = 5)
+          text(
+            x = chiSqCValue, y = dchisq(chiSqCValue, df = degreesOfFreedom),
+            labels = as.character(round(chiSqCValue, 4)),
+            pos = 3, # to the left of the specified (x, y) coordinate.
+            offset = 1
+          )
+          text(
+            x = chiSqTestStatistic, y = dchisq(chiSqTestStatistic, df = degreesOfFreedom),
+            labels = as.character(round(chiSqTestStatistic, 4)),
+            pos = 2, # to the left of the specified (x, y) coordinate.
+            offset = 1
+          )
+        } else {
+          ## upper-tail
+          upperRejectionRegion <- seq(chiSqCValue, max(chiSqTestStatistic, chiSqCValue) + 1)
+          upperPVector <- dchisq(upperRejectionRegion, df = degreesOfFreedom)
+          polygon(c(upperRejectionRegion, rev(upperRejectionRegion)),
+                  c(upperPVector, rep(0, length(upperPVector))),
+                  col = adjustcolor("red", alpha = 0.3),
+                  border = NA)
+          segments(x0 = chiSqTestStatistic,
+                   y0 = 0,
+                   y1 = dchisq(chiSqTestStatistic, df = degreesOfFreedom),
+                   col = adjustcolor("blue", alpha = 0.8),
+                   lwd = 5)
+          segments(x0 = chiSqCValue,
+                   y0 = 0,
+                   y1 = dchisq(chiSqCValue, df = degreesOfFreedom),
+                   col = adjustcolor("red", alpha = 0.8),
+                   lwd = 5)
+          text(
+            x = chiSqCValue, y = dchisq(chiSqCValue, df = degreesOfFreedom),
+            labels = as.character(round(chiSqCValue, 4)),
+            pos = 3, # to the left of the specified (x, y) coordinate.
+            offset = 1
+          )
+          text(
+            x = chiSqTestStatistic, y = dchisq(chiSqTestStatistic, df = degreesOfFreedom),
+            labels = as.character(round(chiSqTestStatistic, 4)),
+            pos = 2, # to the left of the specified (x, y) coordinate.
+            offset = 1
+          )
+        }
+      } else {
+        ## two-tailed hypothesis tests
+        lowerRejectionRegion <- seq(minimumChiSqValue, chiSqCValue[[1]])
+        lowerPVector <- dchisq(lowerRejectionRegion, df = degreesOfFreedom)
+        polygon(c(lowerRejectionRegion, rev(lowerRejectionRegion)),
+                c(lowerPVector, rep(0, length(lowerPVector))),
+                col = adjustcolor("red", alpha = 0.3),
+                border = NA)
 
-      df <- distinct(data.frame(x = x_vector, y = p_vector))
-      cvDF <- filter(df, x %in% chiSqCValue)
-      tsDF <- filter(df, x %in% chiSqTestStatistic)
-      rrLabelDF <- filter(df, x %in% rrLabel)
-      arLabelDF <- filter(df, y %in% max(p_vector))
+        upperRejectionRegion <- seq(chiSqCValue[[2]], max(chiSqTestStatistic, chiSqCValue) + 1)
+        upperPVector <- dchisq(upperRejectionRegion, df = degreesOfFreedom)
+        polygon(c(upperRejectionRegion, rev(upperRejectionRegion)),
+                c(upperPVector, rep(0, length(upperPVector))),
+                col = adjustcolor("red", alpha = 0.3),
+                border = NA)
 
-      ggplot(df,
-             aes(x = x, y = y)) +
-        stat_function(fun = dchisq,
-                      args = list(df = degreesOfFreedom),
-                      geom = "Density",
-                      fill = NA) +
-        shadeHtArea(df, chiSqCValue, "greater") +
-        geom_segment(data = filter(df, y %in% max(p_vector)),
-                     aes(x = 0, xend = 0, y = 0, yend = y, alpha = 0.5),
-                     linetype = "solid",
-                     linewidth = 0.75,
-                     color='black',
-                     show.legend = FALSE) +
-        geom_text(data = filter(df, x %in% c(0)),
-                  aes(x = x, y = 0, label = "0"),
-                  size = 14 / .pt,
-                  fontface = "bold",
-                  nudge_y = -.03,
-                  check_overlap = TRUE) +
-        geom_segment(data = cvDF,
-                     aes(x = x, xend = x, y = 0, yend = y),
-                     linetype = "solid",
-                     lineend = 'butt',
-                     linewidth = 1.5,
-                     color='#023B70') +
-        geom_text(data = cvDF,
-                  aes(x = x, y = 0, label = x),
-                  size = 14 / .pt,
-                  fontface = "bold",
-                  nudge_y = -.03,
-                  check_overlap = TRUE) +
-        geom_segment(data = tsDF,
-                     aes(x = x, xend = x, y = 0, yend = y + .055),
-                     linetype = "solid",
-                     linewidth = 1.25,
-                     color='#BD130B') +
-        geom_text(data = tsDF,
-                  aes(x = x, y = y, label = x),
-                  size = 14 / .pt,
-                  fontface = "bold",
-                  nudge_y = .075,
-                  check_overlap = TRUE) +
-        geom_text(data = arLabelDF,
-                  aes(x = x, y = 0, label = "A R"),
-                  size = 16 / .pt,
-                  fontface = "bold",
-                  vjust = -4,
-                  check_overlap = TRUE) +
-        geom_text(data = rrLabelDF,
-                  aes(x = x, y = y, label = "RR"),
-                  size = 16 / .pt,
-                  fontface = "bold",
-                  vjust = -4,
-                  check_overlap = TRUE) +
-        theme_void() +
-        ylab("") +
-        xlab(expression(bold(chi^2))) +
-        scale_y_continuous(breaks = NULL) +
-        theme(axis.title.x = element_text(size = 20))
-                                        # coord_cartesian(clip="off")
+        segments(x0 = chiSqTestStatistic,
+                 y0 = 0,
+                 y1 = dchisq(chiSqTestStatistic, df = degreesOfFreedom),
+                 col = adjustcolor("blue", alpha = 0.8),
+                 lwd = 5)
+        segments(x0 = chiSqCValue[[1]],
+                 y0 = 0,
+                 y1 = dchisq(chiSqCValue[[1]], df = degreesOfFreedom),
+                 col = adjustcolor("red", alpha = 0.8),
+                 lwd = 5)
+        segments(x0 = chiSqCValue[[2]],
+                 y0 = 0,
+                 y1 = dchisq(chiSqCValue[[2]], df = degreesOfFreedom),
+                 col = adjustcolor("red", alpha = 0.8),
+                 lwd = 5)
+
+        text(
+          x = chiSqCValue[[1]], y = dchisq(chiSqCValue[[1]], df = degreesOfFreedom),
+          labels = as.character(round(chiSqCValue[[1]], 4)),
+          pos = 3, # to the left of the specified (x, y) coordinate.
+          offset = 1
+        )
+        text(
+          x = chiSqCValue[[2]], y = dchisq(chiSqCValue[[2]], df = degreesOfFreedom),
+          labels = as.character(round(chiSqCValue[[2]], 4)),
+          pos = 3, # to the left of the specified (x, y) coordinate.
+          offset = 1
+        )
+        text(
+          x = chiSqTestStatistic, y = dchisq(chiSqTestStatistic, df = degreesOfFreedom),
+          labels = as.character(round(chiSqTestStatistic, 4)),
+          pos = 2, # to the left of the specified (x, y) coordinate.
+          offset = 1
+        )
+      }
     })
 
     output$onePopulationSDHT <- renderUI({
@@ -5160,23 +5215,23 @@ br(),
           } else {
             if (chiSqTestStatistic <= chiSqCValue[[1]])
               sprintf(paste0("Since \\(\\alpha = %0.2f\\), and the test statistic",
-                             " \\(\\chi^2 = %0.3f\\) falls in the acceptance region",
-                             " (it is less than or equal to \\(%0.3f\\)) we do not reject \\(H_0\\)",
-                             " as there is insufficient evidence to accept the ",
+                             " \\(\\chi^2 = %0.3f\\) falls in the rejection region",
+                             " (it is less than or equal to \\(%0.3f\\)) we must reject \\(H_0\\)",
+                             " as there is sufficient evidence to accept the ",
                              "proposed alternative hypothesis."),
                       SigLvl(), chiSqTestStatistic, chiSqCValue[[1]])
             else if ((chiSqTestStatistic >= chiSqCValue[[2]]))
               sprintf(paste0("Since \\(\\alpha = %0.2f\\), and the test statistic",
-                             " \\(\\chi^2 = %0.3f\\) falls in the acceptance region",
-                             " (it is greater than or equal to \\(%0.3f\\)) we do not reject \\(H_0\\)",
-                             " as there is insufficient evidence to accept the ",
+                             " \\(\\chi^2 = %0.3f\\) falls in the rejection region",
+                             " (it is greater than or equal to \\(%0.3f\\)) we must reject \\(H_0\\)",
+                             " as there is sufficient evidence to accept the ",
                              "proposed alternative hypothesis."),
                       SigLvl(), chiSqTestStatistic, chiSqCValue[[2]])
             else
               sprintf(paste0("Since \\(\\alpha = %0.2f\\), and the test statistic",
-                             " \\(\\chi^2 = %0.3f\\) falls in the rejection region",
-                             " (it is greater than \\(%0.3f\\) and less than \\(%0.3f\\)) we must reject \\(H_0\\)",
-                             " as there is sufficient evidence to accept the ",
+                             " \\(\\chi^2 = %0.3f\\) falls in the acceptance region",
+                             " (it is greater than \\(%0.3f\\) and less than \\(%0.3f\\)) we cannot reject \\(H_0\\)",
+                             " as there is insufficient evidence to accept the ",
                              "proposed alternative hypothesis."),
                       SigLvl(), chiSqTestStatistic, chiSqCValue[[1]], chiSqCValue[[2]])
           }
@@ -5187,9 +5242,29 @@ br(),
 
 ### ------------ One Prop Outputs --------------------------------------------
 
- #### ---------------- CI ----
-    output$onePropCI <- renderUI({
+#### ----------------- #3 Graphs! ---------
+    output$onePropBarGraph <- renderPlot({
       req(si_iv$is_valid() && input$numTrials >= input$numSuccesses);
+
+      x <- tibble(count = c(input$numSuccesses, input$numTrials - input$numSuccesses),
+                  label = c("Successes", "Failures"))
+      ggplot(data = x, mapping = aes(x = label, y = count)) + geom_col() + theme_classic()
+      ## barplot(x$value, names.arg = x$label)
+    },
+    width = 400,
+    height = 400)
+
+    output$onePropPieChart <- renderPlot({
+      req(si_iv$is_valid() && input$numTrials >= input$numSuccesses);
+
+      x <- c("Successes" = input$numSuccesses,
+             "Failures" = input$numTrials - input$numSuccesses)
+      pie(x)
+    })
+
+#### ---------------- CI ----
+output$onePropCI <- renderUI({
+  req(si_iv$is_valid() && input$numTrials >= input$numSuccesses);
 
       onePropData <- OnePropZInterval(input$numSuccesses, input$numTrials, ConfLvl());
       critVal <- round(onePropData["Z Critical"], cvDigits);
@@ -6874,7 +6949,8 @@ br(),
     output$chiSqPlot <- renderPlot({ ###### chisq plot ----
       data <- chiSqResults()
       chisq_df <- data$Results$parameter
-      chisq_ts <- data$Matrix[nrow(data$Matrix), "(O - E)<sup>2</sup> / E"]
+      chisq_ts <- round(data$Results$statistic, 4)
+      ## chisq_ts <- data$Matrix[nrow(data$Matrix), "(O - E)<sup>2</sup> / E"]
 
       if(input$chisquareSigLvl == "10%") {
         sigLvl <- 0.1
