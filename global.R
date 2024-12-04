@@ -1,6 +1,9 @@
 ## install.packages("remotes")
 ## remotes::install_github("deepanshu88/shinyDarkmode")
 
+options(conflicts.policy = TRUE)
+library(conflicted)
+
 library(aplpack)
 library(base)
 library(bslib)
@@ -110,3 +113,14 @@ GetPlotWidth  <- function(plotToggle, pxValue, ui) {
 `%then%` <- function(a, b) {
   if (is.null(a)) b else a
 }
+
+## NOTE: advanced understanding of R is required to interpret these results.
+## It's not for the faint of heart.
+## warning("What follows is the base R conflicts() report: all MASK-ED or MASK-ING symbols are given.",
+##         immediate. = TRUE)
+## print(conflicts(detail = TRUE))
+
+warning("Following this is the conflicted::conflict_scout() report.",
+        immediate. = TRUE)
+print(conflicted::conflict_scout())
+conflicted::conflicts_prefer(shinyjs::show, dplyr::filter, dplyr::select)
