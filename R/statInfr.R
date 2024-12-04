@@ -7054,7 +7054,7 @@ output$onePropCI <- renderUI({
                         choices = c(colnames(OneMeanUploadData()))
       )
 
-      show(id = "oneMeanVariable")
+      shinyjs::show(id = "oneMeanVariable")
       # }
     })
 
@@ -7076,8 +7076,8 @@ output$onePropCI <- renderUI({
                         "indMeansUplSample2",
                         choices = c(colnames(IndMeansUploadData()))
       )
-      show(id = "indMeansUplSample1")
-      show(id = "indMeansUplSample2")
+      shinyjs::show(id = "indMeansUplSample1")
+      shinyjs::show(id = "indMeansUplSample2")
       # }
     })
 
@@ -7099,8 +7099,8 @@ output$onePropCI <- renderUI({
                           "depMeansUplSample2",
                           choices = c(colnames(DepMeansUploadData()))
         )
-        show(id = "depMeansUplSample1")
-        show(id = "depMeansUplSample2")
+        shinyjs::show(id = "depMeansUplSample1")
+        shinyjs::show(id = "depMeansUplSample2")
       }
     })
 
@@ -7132,7 +7132,7 @@ output$onePropCI <- renderUI({
                              choices = c(colnames(anovaUploadData()))
         )
 
-        show(id = "anovaUploadInputs")
+        shinyjs::show(id = "anovaUploadInputs")
       }
     })
 
@@ -7229,7 +7229,7 @@ output$onePropCI <- renderUI({
       #output$renderInference <- renderDataTable(
 
       if(si_iv$is_valid() && depmeansrawsd_iv$is_valid()) {
-        show(id = "inferenceData")
+        shinyjs::show(id = "inferenceData")
 
       } else {
         hide(id = "inferenceData")
@@ -7384,7 +7384,7 @@ output$onePropCI <- renderUI({
     })
 
     observeEvent(input$goInference, {
-      show(id = "inferenceMP")
+      shinyjs::show(id = "inferenceMP")
     })
 
     observeEvent(input$resetInference, {
