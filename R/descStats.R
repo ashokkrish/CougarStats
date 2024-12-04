@@ -631,8 +631,8 @@ descStatsServer <- function(id) {
     
     # Fills the variable selection options based on data file columns
     observeEvent(input$dsUserData, {
-      hide(id = "descriptiveStatsMP")
-      hide(id = "dsUploadVars")
+      shinyjs::hide(id = "descriptiveStatsMP")
+      shinyjs::hide(id = "dsUploadVars")
       fileInputs$dsStatus <- 'uploaded'
       
       if(dsupload_iv$is_valid())
@@ -913,9 +913,9 @@ descStatsServer <- function(id) {
           stem.leaf(dat, unit = 1, m = 1, depths = FALSE)
         })
         
-        show(id = 'outputPanel')
+        shinyjs::show(id = "outputPanel")
       } else {
-        hide(id = 'outputPanel')
+        shinyjs::hide(id = "outputPanel")
       }
       # show(id = 'descriptiveStatsMP') 
     })
@@ -949,12 +949,12 @@ descStatsServer <- function(id) {
     
     observeEvent({input$descriptiveStat
       input$dsUploadVars}, {
-        hide(id = 'outputPanel')                
+        shinyjs::hide(id = 'outputPanel')                
       })
     
     observeEvent(input$dataInput, {
-      hide(id = 'outputPanel')
-      hide(id = 'dsUploadVars')
+      shinyjs::hide(id = 'outputPanel')
+      shinyjs::hide(id = 'dsUploadVars')
     })
     
     observe({
@@ -967,12 +967,12 @@ descStatsServer <- function(id) {
     })
     
     observeEvent(input$goDescpStats, {
-      show(id = 'descriptiveStatsMP')
+      shinyjs::show(id = "descriptiveStatsMP")
     })
     
     observeEvent(input$resetAll,{
       dsReset(TRUE)
-      hide(id = 'outputPanel')
+      shinyjs::hide(id = 'outputPanel')
       shinyjs::reset("inputPanel")
       fileInputs$dsStatus <- 'reset'
     })
