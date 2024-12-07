@@ -4772,6 +4772,18 @@ statInfrServer <- function(id) {
         outliers <- "There are no outliers."
         df_outliers <- data.frame()
       } else {
+        ## Copied from descStats.R
+        GetOutliers <- function(dat, lower, upper) {
+          outliers <- c()
+          
+          for(x in dat) {
+            if(x < lower | x > upper) {
+              outliers <-c(outliers, x)
+            }
+          }
+          
+          return(sort(outliers))
+        }
         outliers <- GetOutliers(dat, lowerFence, upperFence)
         df_outliers <- as.data.frame(outliers)
       }
