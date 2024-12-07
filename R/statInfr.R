@@ -4811,7 +4811,7 @@ statInfrServer <- function(id) {
 #### ---- One population standard deviation confidence interval CI ----
     output$oneSDCI <- renderUI({
       ## Input validation
-      ## req() # NOTE: requried data is already validated...
+      req(oneSD_iv$is_valid())
 
       ## Required data
       ## n (sample size), s (sample standard deviation), Confidence Level (1 - α)
@@ -4841,8 +4841,8 @@ statInfrServer <- function(id) {
         sprintf("\\( \\alpha = 1 - %0.2f = %0.2f \\)", oneSDCIalpha, 1 - oneSDCIalpha),
         br(),
         sprintf("\\(  df = n - 1 = %d - 1 = %d \\)",
-                input[["SSDSampleSize"]],
-                input[["SSDSampleSize"]] - 1),
+                input$SSDSampleSize,
+                input$SSDSampleSize - 1),
         br(),
         sprintf("\\( \\chi^2_{  \\alpha/2, df} = \\chi^2_{    %0.2f / 2 , %d} = \\chi^2_{ %0.3f, %d } = %0.3f \\).",
                 oneSDCIalpha,
