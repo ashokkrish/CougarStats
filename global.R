@@ -120,7 +120,8 @@ GetPlotWidth  <- function(plotToggle, pxValue, ui) {
 ##         immediate. = TRUE)
 ## print(conflicts(detail = TRUE))
 
-warning("Following this is the conflicted::conflict_scout() report.",
-        immediate. = TRUE)
-print(conflicted::conflict_scout())
+## NOTE: see #41.
+## warning("Following this is the conflicted::conflict_scout() report.",
+##         immediate. = TRUE)
+## print(conflicted::conflict_scout())
 conflicted::conflicts_prefer(shinyjs::show, dplyr::filter, dplyr::select)
