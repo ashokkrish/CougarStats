@@ -305,9 +305,7 @@ descStatsServer <- function(id) {
     # ------------------ #
     dsraw_iv$condition(~ isTRUE(input$dataInput == 'Enter Raw Data'))
     dsupload_iv$condition(~ isTRUE(input$dataInput == 'Upload Data'))
-    dsuploadvars_iv$condition(function() {isTRUE(input$dropDownMenu == 'Descriptive Statistics' &&
-                                                   input$dataInput == 'Upload Data' && 
-                                                   dsupload_iv$is_valid()) })
+    dsuploadvars_iv$condition(function() { input$dataInput == 'Upload Data' && dsupload_iv$is_valid() })
 
     # ------------------ #
     #     Dependency     #
@@ -581,6 +579,8 @@ descStatsServer <- function(id) {
       
       if(input$dataInput == 'Upload Data')
       {
+        req(dsuploadvars_iv$is_valid())
+
         for( x in input$dsUploadVars)
         {
           dat <- na.omit(as.data.frame(dsUploadData())[, x])
