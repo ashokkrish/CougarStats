@@ -5137,8 +5137,8 @@ br(),
                        chiSqCValue))
         } else {
           HTML(sprintf("Critical value(s): <br/>
-                  \\( \\chi^2_{%0.3f,%d} = %0.3f \\) <br/>
-                  \\( \\chi^2_{%0.3f,%d} = %0.3f \\) <br/>",
+                  \\( \\chi^2_{\\alpha/2,df} = \\chi^2_{%0.3f,%d} = %0.3f \\) <br/>
+                  \\( \\chi^2_{1 - \\alpha/2} = \\chi^2_{%0.3f,%d} = %0.3f \\) <br/>",
                   SigLvl() / 2,
                   degreesOfFreedom,
                   chiSqCValue[[1]],
@@ -5260,12 +5260,12 @@ br(),
         p(tags$b("Conclusion:")), br(),
         {
           if (accept) {
-            conclusion <- sprintf("At \\(\\alpha = %0.2f\\), since the test statistic falls in the acceptance region we fail to reject \\(H_0\\) and conclude that there is not enough statistical evidence to support that \\(\\chi^2 %s %s\\).",
+            conclusion <- sprintf("At \\(\\alpha = %0.2f\\), since the test statistic falls in the acceptance region we fail to reject \\(H_0\\) and conclude that there is not enough statistical evidence to support that \\(\\sigma %s %s\\).",
                     SigLvl(),
                     altHypString,
                     input$hypStdDeviation)
           } else {
-            conclusion <- sprintf("At \\(\\alpha = %0.2f\\), since the test statistic falls in the rejection region we reject \\(H_0\\) and conclude that there is enough statistical evidence to support that \\(\\chi^2 %s %s\\).",
+            conclusion <- sprintf("At \\(\\alpha = %0.2f\\), since the test statistic falls in the rejection region we reject \\(H_0\\) and conclude that there is enough statistical evidence to support that \\(\\sigma %s %s\\).",
                     SigLvl(),
                     altHypString,
                     input$hypStdDeviation)
