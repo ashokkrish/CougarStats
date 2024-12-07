@@ -5029,6 +5029,8 @@ br(),
       }
     })
 
+    relation <- reactiveVal()
+
     output$onePopulationSDHT <- renderUI({
       ## Required data: n, s, alpha, sigma_naught, hypothesis_alternative; ns(x)
       ## doesn't seem to be required here. Review why that might be.
@@ -5049,9 +5051,9 @@ br(),
           sprintf("Since \\( P \\gt %0.2f \\), do not reject \\( H_{0}\\).", SigLvl())
       }
 
-      hypothesisFormattedString <- function(hypothesis, relation) {
+      hypothesisFormattedString <- function(hypothesis, nullOrAltHypothesisString) {
         sprintf(r"--[\( H_%s: \sigma %s %0.3f \)]--", # σ
-                hypothesis, relation, input$hypStdDeviation);
+                hypothesis, nullOrAltHypothesisString, input$hypStdDeviation);
       }
 
       ## UI
@@ -5106,7 +5108,6 @@ br(),
         br(),
         br(),
         p(tags$b("Using Critical Value Method:")),
-        br(),
         if (input$altHypothesis != 2) {
           HTML(sprintf("Critical value(s): \\( \\chi^2_{%0.2f,%d} = %0.3f \\) <br/>",
                        SigLvl(),
@@ -5125,17 +5126,18 @@ br(),
         },
 
         ## Chi square critical value conclusion.
+        ## Example from mu: "Since the test statistic (z) falls within the rejection region, reject H0."
         if (input$altHypothesis != 2) {
           HTML(sprintf(
             r"--(\(\begin{align} \displaystyle \chi^2 &%s \chi^2_{%0.2f,%d} \\ %0.3f &%s %0.3f  \\ \end{align} \)<br/>)--",
             ## Both of these are alternative hypothesis-dependent
             {
-              if (chiSqTestStatistic < chiSqCValue) "\\leq"
-              else if (chiSqTestStatistic >= chiSqCValue) "\\geq"
+              if (chiSqTestStatistic < chiSqCValue) { relation("\\leq"); "\\leq" }
+              else if (chiSqTestStatistic >= chiSqCValue) { relation("\\geq"); "\\geq" }
             }, SigLvl(), degreesOfFreedom,
             chiSqTestStatistic, {
-              if (chiSqTestStatistic < chiSqCValue) "\\leq"
-              else if (chiSqTestStatistic >= chiSqCValue) "\\geq"
+              if (chiSqTestStatistic < chiSqCValue) { relation("\\leq"); "\\leq" }
+              else if (chiSqTestStatistic >= chiSqCValue) { relation("\\geq"); "\\geq" }
             },
             chiSqCValue
           ))
@@ -5143,27 +5145,20 @@ br(),
           lessThan <- chiSqTestStatistic <= chiSqCValue[[1]]
           greaterThan <- chiSqTestStatistic >= chiSqCValue[[2]]
           between <- !lessThan && !greaterThan
-          if (lessThan) relation <- "\\leq"
-          else if (greaterThan) relation <- "\\geq"
+          if (lessThan) { relation("\\leq"); "\\leq" }
+          else if (greaterThan) { relation("\\geq"); "\\geq" }
 
           if (!between) {
             HTML(sprintf(
               r"--(\(\begin{align} \displaystyle \chi^2 &%s \chi^2_{%0.3f,%d} \\ %0.3f &%s %0.3f \\ \end{align} \)<br/>)--",
-              relation, {if (lessThan) SigLvl()/2 else 1-SigLvl()/2}, degreesOfFreedom,
-              chiSqTestStatistic, relation, if (lessThan) chiSqCValue[[1]]))
+              relation(), {if (lessThan) SigLvl()/2 else 1-SigLvl()/2}, degreesOfFreedom,
+              chiSqTestStatistic, relation(), if (lessThan) chiSqCValue[[1]]))
           } else {
             HTML(sprintf(r"--(\(\begin{align} \displaystyle \chi^2_{%0.3f,%d} &< \chi^2 &< \chi^2_{%0.3f,%d} \\ %0.3f &< %0.3f &< %0.3f \\ \end{align} \)<br/>)--",
                          SigLvl()/2, degreesOfFreedom, 1-SigLvl()/2, degreesOfFreedom,
                          chiSqCValue[[1]], chiSqTestStatistic, chiSqCValue[[2]]))
           }
         },
-
-        br(),
-        plotOutput(session$ns("onePopulationSDHTChiSqPlot"), width = "50%", height = "400px"),
-
-        ## Overall conclusion
-        br(),
-        p(tags$b("Conclusion:")),
         {
           conclusionString <-
             function(significanceLevel = SigLvl(),
@@ -5171,14 +5166,13 @@ br(),
                      criticalValue = chiSqCValue,
                      accept = TRUE,
                      lessThan = TRUE) {
-              sprintf(paste0("At \\(\\alpha = %0.2f\\), the test statistic",
-                             " \\(\\chi^2 = %0.3f\\) falls in the %s region",
-                             " (it is %s than \\(%0.3f\\)) we %sreject \\(H_0\\)",
-                             " as there is %ssufficient evidence to accept the ",
-                             "proposed alternative hypothesis."),
-                      significanceLevel,
-                      testStatisticValue,
+              sprintf(paste0("Since the test statistic \\( \\left( \\chi^2 \\right) \\)",
+                             " falls in the %s region,",
+                             " \\(\\chi^2 = %0.3f\\) which is %s than \\(%0.3f\\), we %sreject \\(H_0\\)",
+                             " as there is %ssufficient evidence to accept the",
+                             " proposed alternative hypothesis."),
                       if (accept) "acceptance" else "rejection",
+                      testStatisticValue,
                       if (lessThan) "less" else "greater",
                       criticalValue,
                       if (accept) "do not " else "",
@@ -5190,41 +5184,72 @@ br(),
             ## One-tailed test
             if (input$altHypothesis == 1) {
               if (chiSqTestStatistic < chiSqCValue) {
-                conclusionString(accept = FALSE, lessThan = TRUE)
+                conclusionString(accept = (accept <- FALSE), lessThan = TRUE)
               } else {
-                conclusionString(accept = TRUE, lessThan = FALSE)
+                conclusionString(accept = (accept <- TRUE), lessThan = FALSE)
               }
             } else {
               if (chiSqTestStatistic < chiSqCValue) {
-                conclusionString(accept = TRUE, lessThan = TRUE)
+                conclusionString(accept = (accept <- TRUE), lessThan = TRUE)
               } else {
-                conclusionString(accept = FALSE, lessThan = FALSE)
+                conclusionString(accept = (accept <- FALSE), lessThan = FALSE)
               }
             }
           } else {
             ## Two-tailed test
-            if (chiSqTestStatistic <= chiSqCValue[[1]])
-              sprintf(paste0("At \\(\\alpha = %0.2f\\), the test statistic",
-                             " \\(\\chi^2 = %0.3f\\) falls in the rejection region",
-                             " (it is less than or equal to \\(%0.3f\\)) we must reject \\(H_0\\)",
-                             " as there is sufficient evidence to accept the ",
-                             "proposed alternative hypothesis."),
-                      SigLvl(), chiSqTestStatistic, chiSqCValue[[1]])
-            else if ((chiSqTestStatistic >= chiSqCValue[[2]]))
-              sprintf(paste0("At \\(\\alpha = %0.2f\\), the test statistic",
-                             " \\(\\chi^2 = %0.3f\\) falls in the rejection region",
-                             " (it is greater than or equal to \\(%0.3f\\)) we must reject \\(H_0\\)",
-                             " as there is sufficient evidence to accept the ",
-                             "proposed alternative hypothesis."),
-                      SigLvl(), chiSqTestStatistic, chiSqCValue[[2]])
-            else
-              sprintf(paste0("At \\(\\alpha = %0.2f\\), the test statistic",
-                             " \\(\\chi^2 = %0.3f\\) falls in the acceptance region",
-                             " (it is greater than \\(%0.3f\\) and less than \\(%0.3f\\)) we cannot reject \\(H_0\\)",
-                             " as there is insufficient evidence to accept the ",
-                             "proposed alternative hypothesis."),
-                      SigLvl(), chiSqTestStatistic, chiSqCValue[[1]], chiSqCValue[[2]])
+            if (chiSqTestStatistic <= chiSqCValue[[1]]) {
+              accept <- FALSE
+              sprintf(paste0("Since the test statistic \\( \\left( \\chi^2 \\right) \\)",
+                             " falls in the rejection region,",
+                             " \\(\\chi^2 = %0.3f\\) which is less than (or equal to) \\(%0.3f\\), we reject \\(H_0\\)",
+                             " as there is sufficient evidence to accept the",
+                             " proposed alternative hypothesis."),
+                      chiSqTestStatistic,
+                      chiSqCValue[[1]])
+            } else if ((chiSqTestStatistic >= chiSqCValue[[2]])) {
+              accept <- FALSE
+              sprintf(paste0("Since the test statistic \\( \\left( \\chi^2 \\right) \\)",
+                             " falls in the rejection region,",
+                             " \\(\\chi^2 = %0.3f\\) which is greater than (or equal to) \\(%0.3f\\), we reject \\(H_0\\)",
+                             " as there is sufficient evidence to accept the",
+                             " proposed alternative hypothesis."),
+                      chiSqTestStatistic,
+                      chiSqCValue[[2]])
+            } else {
+              accept <- TRUE
+              sprintf(paste0("Since the test statistic \\( \\left( \\chi^2 \\right) \\)",
+                             " falls in the acceptance region,",
+                             " \\(\\chi^2 = %0.3f\\) which is between \\(%0.3f\\) and \\(%0.3f\\), we do not reject \\(H_0\\)",
+                             " as there is insufficient evidence to accept the",
+                             " proposed alternative hypothesis."),
+                      chiSqTestStatistic,
+                      chiSqCValue[[1]],
+                      chiSqCValue[[2]])
+            }
           }
+        },
+
+        br(),
+        plotOutput(session$ns("onePopulationSDHTChiSqPlot"), width = "50%", height = "400px"),
+
+        ## Overall conclusion
+        ## An example conclusion from mu hypothesis testing: At α=0.05, since the test statistic falls in the rejection region we reject H0 and conclude that there is enough statistical evidence to support that μ≠99.
+        br(),
+        p(tags$b("Conclusion:")), br(),
+        {
+          if (accept) {
+            conclusion <- sprintf("At \\(\\alpha = %0.2f\\), since the test statistic falls in the acceptance region we fail to reject \\(H_0\\) and conclude that there is not enough statistical evidence to support that \\(\\chi^2 %s %s\\).",
+                    SigLvl(),
+                    altHypString,
+                    input$hypStdDeviation)
+          } else {
+            conclusion <- sprintf("At \\(\\alpha = %0.2f\\), since the test statistic falls in the rejection region we reject \\(H_0\\) and conclude that there is enough statistical evidence to support that \\(\\chi^2 %s %s\\).",
+                    SigLvl(),
+                    altHypString,
+                    input$hypStdDeviation)
+          }
+
+          conclusion
         },
         br()) # withMathJax
     }) # renderUI
