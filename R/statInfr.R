@@ -5171,7 +5171,7 @@ br(),
                      criticalValue = chiSqCValue,
                      accept = TRUE,
                      lessThan = TRUE) {
-              sprintf(paste0("Since \\(\\alpha = %0.2f\\), and the test statistic",
+              sprintf(paste0("At \\(\\alpha = %0.2f\\), the test statistic",
                              " \\(\\chi^2 = %0.3f\\) falls in the %s region",
                              " (it is %s than \\(%0.3f\\)) we %sreject \\(H_0\\)",
                              " as there is %ssufficient evidence to accept the ",
@@ -5204,21 +5204,21 @@ br(),
           } else {
             ## Two-tailed test
             if (chiSqTestStatistic <= chiSqCValue[[1]])
-              sprintf(paste0("Since \\(\\alpha = %0.2f\\), and the test statistic",
+              sprintf(paste0("At \\(\\alpha = %0.2f\\), the test statistic",
                              " \\(\\chi^2 = %0.3f\\) falls in the rejection region",
                              " (it is less than or equal to \\(%0.3f\\)) we must reject \\(H_0\\)",
                              " as there is sufficient evidence to accept the ",
                              "proposed alternative hypothesis."),
                       SigLvl(), chiSqTestStatistic, chiSqCValue[[1]])
             else if ((chiSqTestStatistic >= chiSqCValue[[2]]))
-              sprintf(paste0("Since \\(\\alpha = %0.2f\\), and the test statistic",
+              sprintf(paste0("At \\(\\alpha = %0.2f\\), the test statistic",
                              " \\(\\chi^2 = %0.3f\\) falls in the rejection region",
                              " (it is greater than or equal to \\(%0.3f\\)) we must reject \\(H_0\\)",
                              " as there is sufficient evidence to accept the ",
                              "proposed alternative hypothesis."),
                       SigLvl(), chiSqTestStatistic, chiSqCValue[[2]])
             else
-              sprintf(paste0("Since \\(\\alpha = %0.2f\\), and the test statistic",
+              sprintf(paste0("At \\(\\alpha = %0.2f\\), the test statistic",
                              " \\(\\chi^2 = %0.3f\\) falls in the acceptance region",
                              " (it is greater than \\(%0.3f\\) and less than \\(%0.3f\\)) we cannot reject \\(H_0\\)",
                              " as there is insufficient evidence to accept the ",
