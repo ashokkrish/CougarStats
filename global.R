@@ -35,6 +35,7 @@ library(tools)
 library(writexl)
 library(xtable)
 library(MASS)
+library(latex2exp)
 
 source("R/authors.R")
 source("R/ChiSquareTest.R")

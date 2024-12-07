@@ -4936,19 +4936,24 @@ br(),
       minimumChiSqValue <- min(chiSqTestStatistic, chiSqCValue) - 1
       if (minimumChiSqValue < 0) minimumChiSqValue <- 0
 
+      maximumChiSqValue <- max(chiSqTestStatistic, chiSqCValue) + 1
+      if (maximumChiSqValue < 20) maximumChiSqValue <- 20
+
       ## Plot the main curve.
       curve(
         dchisq(x, df = degreesOfFreedom),
-        from = minimumChiSqValue,
-        to = max(chiSqTestStatistic, chiSqCValue) + 1,
+        ## from = minimumChiSqValue,
+        from = 0,
+        to = maximumChiSqValue,
         main = sprintf("Chi-Square Distribution (df = %d)", degreesOfFreedom),
-        lwd = 2 # line width
+        lwd = 2, # line width
+        xlab = expression(x = chi^2)
       )
 
       ## Account for two-tailed hypothesis tests.
       if (length(chiSqCValue) == 1) {
         ## applies to lower and upper tailed tests
-        lowerRejectionRegion <- sort(c(0, seq(chiSqCValue, minimumChiSqValue)))
+        lowerRejectionRegion <- sort(seq(0, chiSqCValue, by = 0.00001))
         lowerPVector <- dchisq(lowerRejectionRegion, df = degreesOfFreedom)
         polygon(c(lowerRejectionRegion, rev(lowerRejectionRegion)),
                 c(lowerPVector, rep(0, length(lowerPVector))),
@@ -4978,7 +4983,7 @@ br(),
         )
       } else {
         ## two-tailed hypothesis tests
-        lowerRejectionRegion <- seq(minimumChiSqValue, chiSqCValue[[1]])
+        lowerRejectionRegion <- seq(0, chiSqCValue[[1]], by = 0.00001)
         lowerPVector <- dchisq(lowerRejectionRegion, df = degreesOfFreedom)
         polygon(c(lowerRejectionRegion, rev(lowerRejectionRegion)),
                 c(lowerPVector, rep(0, length(lowerPVector))),
@@ -5027,6 +5032,10 @@ br(),
           offset = 1
         )
       }
+
+      segments(x0 = 0, y0 = 0,
+               x1 = maximumChiSqValue, y1 = 0,
+               col = adjustcolor("black", alpha = 1.0))
     })
 
     relation <- reactiveVal()
