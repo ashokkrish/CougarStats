@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y \
     libtk
     
 ## Install R packages
-RUN R -e "install.packages(c('aplpack', 'base', 'bslib', 'car', 'colourpicker', 'DescTools', 'dplyr', 'DT', 'generics', 'ggplot2', 'ggpubr', 'ggsci', 'e1071', 'markdown', 'nortest', 'plotly', 'readr', 'readxl', 'remotes', 'rstatix', 'shiny', 'shinythemes', 'shinyjs', 'shinyMatrix', 'shinyvalidate', 'shinyWidgets', 'tinytex', 'tools', 'writexl', 'xtable', 'MASS'), dependencies = T)" 
+RUN R -e "install.packages(c('aplpack', 'base', 'bslib', 'car', 'colourpicker', 'DescTools', 'dplyr', 'DT', 'generics', 'ggplot2', 'ggpubr', 'ggsci', 'e1071', 'markdown', 'nortest', 'plotly', 'readr', 'readxl', 'remotes', 'rstatix', 'shiny', 'shinythemes', 'shinyjs', 'shinyMatrix', 'shinyvalidate', 'shinyWidgets', 'tinytex', 'tools', 'writexl', 'xtable', 'MASS', 'conflicted'), dependencies = T)" 
 RUN R -e "remotes::install_github(\"deepanshu88/shinyDarkmode\")"
 
 # copy our application into the server, where 'R' is the local path to the app
