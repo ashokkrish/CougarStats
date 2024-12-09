@@ -5129,7 +5129,7 @@ br(),
         br(),
         br(),
         p(tags$b("Using Critical Value Method:")),
-        sprintf("\\(df = %d - 1 = %d\\)", input$SSDSampleSize, degreesOfFreedom), br(),
+        sprintf("\\(df = n - 1 = %d - 1 = %d\\)", input$SSDSampleSize, degreesOfFreedom), br(),
         if (input$altHypothesis != 2) {
           HTML(sprintf("Critical value(s): \\( \\chi^2_{%0.2f,%d} = %0.3f \\) <br/>",
                        SigLvl(),
@@ -5138,7 +5138,7 @@ br(),
         } else {
           HTML(sprintf("Critical value(s): <br/>
                   \\( \\chi^2_{\\alpha/2,df} = \\chi^2_{%0.3f,%d} = %0.3f \\) <br/>
-                  \\( \\chi^2_{1 - \\alpha/2} = \\chi^2_{%0.3f,%d} = %0.3f \\) <br/>",
+                  \\( \\chi^2_{1 - \\alpha/2,df} = \\chi^2_{%0.3f,%d} = %0.3f \\) <br/>",
                   SigLvl() / 2,
                   degreesOfFreedom,
                   chiSqCValue[[1]],
