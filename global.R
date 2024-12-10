@@ -36,6 +36,7 @@ library(writexl)
 library(xtable)
 library(MASS)
 library(latex2exp)
+library(thematic)
 
 source("R/authors.R")
 source("R/ChiSquareTest.R")
@@ -126,3 +127,9 @@ GetPlotWidth  <- function(plotToggle, pxValue, ui) {
 ##         immediate. = TRUE)
 ## print(conflicted::conflict_scout())
 conflicted::conflicts_prefer(shinyjs::show, dplyr::filter, dplyr::select)
+
+## See the theming issue brought up in #33; use thematic to attempt to make base
+## R graphics compliant with ggplot theming, and to anticipate the impact of
+## dark mode.
+ggplot2::theme_set(ggplot2::theme_minimal())
+thematic_shiny()

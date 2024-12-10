@@ -3,24 +3,59 @@ FROM rocker/shiny:latest
 
 # system libraries of general use
 ## install debian packages
-RUN apt-get update && apt-get install -y \
-    sudo \
-    libcurl4-gnutls-dev \
-    libcairo2-dev \
-    libxt-dev \
-    libssl-dev \
-    libtcl \ 
-    libtk
-    
+RUN apt-get update && \
+    apt-get install -y \
+            sudo \
+            libcurl4-gnutls-dev \
+            libcairo2-dev \
+            libxt-dev \
+            libssl-dev \
+            libtcl \
+            libtk
+
 ## Install R packages
-RUN R -e "install.packages(c('aplpack', 'base', 'bslib', 'car', 'colourpicker', 'DescTools', 'dplyr', 'DT', 'generics', 'ggplot2', 'ggpubr', 'ggsci', 'e1071', 'markdown', 'nortest', 'plotly', 'readr', 'readxl', 'remotes', 'rstatix', 'shiny', 'shinythemes', 'shinyjs', 'shinyMatrix', 'shinyvalidate', 'shinyWidgets', 'tinytex', 'tools', 'writexl', 'xtable', 'MASS', 'conflicted'), dependencies = T)" 
-RUN R -e "remotes::install_github(\"deepanshu88/shinyDarkmode\")"
+RUN R -e \
+"install.packages(c('conflicted',    \
+                    'aplpack',       \
+                    'bslib',         \
+                    'car',           \
+                    'colourpicker',  \
+                    'DescTools',     \
+                    'dplyr',         \
+                    'DT',            \
+                    'generics',      \
+                    'ggplot2',       \
+                    'plotly',        \
+                    'ggpubr',        \
+                    'ggsci',         \
+                    'e1071',         \
+                    'markdown',      \
+                    'nortest',       \
+                    'readr',         \
+                    'readxl',        \
+                    'remotes',       \
+                    'rstatix',       \
+                    'shiny',         \
+                    'shinythemes',   \
+                    'shinyjs',       \
+                    'shinyMatrix',   \
+                    'shinyvalidate', \
+                    'shinyWidgets',  \
+                    'tinytex',       \
+                    'writexl',       \
+                    'xtable',        \
+                    'MASS',          \
+                    'latex2exp'),    \
+                  dependencies = TRUE); \
+                  \
+                  remotes::install_github('deepanshu88/shinyDarkmode')"
 
 # copy our application into the server, where 'R' is the local path to the app
-# Usage: docker build --build-arg APPLICATION_DIRECTORY=<the directory of the cougarstats git repo> .
-# "." in the command only indicates that the Dockerfile is in the current directory.
-# If you are one directory level above the git repository you may write:
-# Usage: docker build --build-arg APPLICATION_DIRECTORY=cougarstats -f cougarstats/Dockerfile
+# Usage: docker build --build-arg APPLICATION_DIRECTORY=<the directory of the
+# cougarstats git repo> . "." in the command only indicates that the Dockerfile
+# is in the current directory. If you are one directory level above the git
+# repository you may write: Usage: docker build --build-arg
+# APPLICATION_DIRECTORY=cougarstats -f cougarstats/Dockerfile
 
 ARG APPLICATION_DIRECTORY=.
 COPY $APPLICATION_DIRECTORY /srv/shiny-server

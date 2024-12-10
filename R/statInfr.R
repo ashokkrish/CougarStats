@@ -4951,26 +4951,39 @@ br(),
       maximumChiSqValue <- max(chiSqTestStatistic, chiSqCValue) + 1
       if (maximumChiSqValue < 20) maximumChiSqValue <- 20
 
+      par(font.lab = 2, font.axis = 2)
+
       ## Plot the main curve.
       curve(
         dchisq(x, df = degreesOfFreedom),
         ## from = minimumChiSqValue,
         from = 0,
         to = maximumChiSqValue,
-        main = sprintf("Chi-Square Distribution (df = %d)", degreesOfFreedom),
+        ## main = sprintf("Chi-Square Distribution (df = %d)", degreesOfFreedom),
+        main = NULL,
         lwd = 2, # line width
-        xlab = expression(x = chi^2)
+        font.lab = 2,
+        xlab = expression(x = chi^2),
+        ylab = expression(y = f(chi^2))
       )
 
       ## Account for two-tailed hypothesis tests.
       if (length(chiSqCValue) == 1) {
         ## applies to lower and upper tailed tests
         lowerRejectionRegion <- sort(seq(0, chiSqCValue, by = 0.00001))
+        upperRejectionRegion <- sort(seq(chiSqCValue, maximumChiSqValue, by = 0.00001))
         lowerPVector <- dchisq(lowerRejectionRegion, df = degreesOfFreedom)
-        polygon(c(lowerRejectionRegion, rev(lowerRejectionRegion)),
-                c(lowerPVector, rep(0, length(lowerPVector))),
-                col = adjustcolor("red", alpha = 0.3),
-                border = NA)
+        upperPVector <- dchisq(upperRejectionRegion, df = degreesOfFreedom)
+        if (input$altHypothesis == 1)
+          polygon(c(lowerRejectionRegion, rev(lowerRejectionRegion)),
+                  c(lowerPVector, rep(0, length(lowerPVector))),
+                  col = adjustcolor("red", alpha = 0.3),
+                  border = NA)
+        else
+          polygon(c(upperRejectionRegion, rev(upperRejectionRegion)),
+                  c(upperPVector, rep(0, length(upperPVector))),
+                  col = adjustcolor("red", alpha = 0.3),
+                  border = NA)
         segments(x0 = chiSqTestStatistic,
                  y0 = 0,
                  y1 = dchisq(chiSqTestStatistic, df = degreesOfFreedom),
