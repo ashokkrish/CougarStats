@@ -1,88 +1,47 @@
-# ----------------------- #  
-# ---- UI components ---- 
-# ----------------------- #
-
-ui <- fluidPage(id = "mainContainer",
-                theme = bs_theme(version = 4,
-                                 primary = "#18536F"),
-                
-                use_darkmode(),
-
-                tags$head(
-                  tags$link(rel = "stylesheet", 
-                            type="text/css", 
+HEAD <- tags$head(tags$link(rel = "stylesheet",
+                            type="text/css",
                             href="cougarstats-styles.css"),
                   tags$link(rel = "icon",
                             type="image/x-icon",
-                            href="favicon.ico"),
-                ),
-                
-                navbarPage(
-                  id = "mainBanner",
-                  
-                  title = div(
-                    class = "navbarLogo",
-                    img(src ="CougarStatsLogo.png", height = 100), 
-                    span(" CougarStats ", class = "pageTitle"),
+                            href="favicon.ico"))
 
-                      tags$div(style = "margin-top: -10px; text-align: right; float: right; margin-right: -150px;",
-                               prettySwitch(inputId = "togglemode", label = "Dark Mode", value = TRUE, fill = TRUE, status = "primary")
-                      ),
-                    ),
+FOOT <- tags$footer(class = "footer",
+                    div(class = "appStoreButton",
+                        tags$a(href="https://apps.apple.com/us/app/cougarstats/id6476070179",
+                               target = "_blank",
+                               tags$img(src="AppStoreLogo.svg",
+                                        title="App Store Link",
+                                        width="150px"))))
 
-                  # --------------------- #  
-                  # ---- Methods Tab ---- 
-                  # --------------------- #
-                  
-                  tabPanel(
-                    title = "Methods",
-                    
-                    navbarPage(
-                      title = "",
-                      
-                      tabPanel(
-                        title = "Descriptive Statistics",
-                        descStatsUI(id = "ds")
-                      ),
-                      
-                      tabPanel(
-                        title = "Probability Distributions",
-                        probDistUI(id = "pd")
-                      ),
-                      
-                      tabPanel(
-                        title = "Sample Size Estimation",
-                        sampSizeEstUI(id = "sse")
-                      ),
-                      
-                      tabPanel(
-                        title = "Statistical Inference",
-                        statInfrUI(id = "si")
-                      ),
-                      
-                      tabPanel(
-                        title = "Regression and Correlation",
-                        regCorrUI(id = "rc") 
-                      )
-                    ), # tabPanel "Methods"
-                  ),
-                  
-                  #  ------------------------- #  
-                  ## ---- Methods sidebar ---- 
-                  #  ------------------------- #       
-                  
-                  tabPanel(
-                    title = "Authors",
-                    authorsUI()
-                  )
-                ), #navbarPage
-                
-                tags$footer(class = "footer",
-                            div(class = "appStoreButton",
-                                tags$a(href="https://apps.apple.com/us/app/cougarstats/id6476070179",
-                                       target = "_blank",
-                                       tags$img(src="AppStoreLogo.svg",
-                                                title="App Store Link",
-                                                width="150px")))
-                )
-) #fluidPage
+BODY <-
+  navbarPage(
+    id = "mainBanner",
+    title = div(class = "navbarLogo",
+                img(src ="CougarStatsLogo.png", height = 100),
+                span(" CougarStats ", class = "pageTitle"),
+                tags$div(style = paste("margin-top: -10px",
+                                       "text-align: right",
+                                       "float: right",
+                                       "margin-right: -150px",
+                                       sep = "; "),
+                         prettySwitch(inputId = "togglemode",
+                                      label = "Dark Mode",
+                                      value = TRUE,
+                                      fill = TRUE,
+                                      status = "primary"))),
+    tabPanel("Methods",
+             navbarPage(title = NULL,
+                        tabPanel("Descriptive Statistics", descStatsUI(id = "ds")),
+                        tabPanel("Probability Distributions", probDistUI(id = "pd")),
+                        tabPanel("Sample Size Estimation", sampSizeEstUI(id = "sse")),
+                        tabPanel("Statistical Inference", statInfrUI(id = "si")),
+                        tabPanel("Regression and Correlation", regCorrUI(id = "rc")))),
+    tabPanel("Authors", authorsUI())
+  )
+
+ui <- fluidPage(id = "mainContainer",
+                theme = bs_theme(version = 4, primary = "#18536F"),
+                use_darkmode(),
+                HEAD,
+                BODY,
+                FOOT)
