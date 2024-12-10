@@ -725,9 +725,7 @@ regCorrServer <- function(id) {
           slopeEstimate <- round(summary(model)$coefficients["datx", "Estimate"], 4)
 
           output$regLineEquation <- renderUI({
-            withMathJax()
-            p(
-              withMathJax(),
+            withMathJax(
               p("The estimated equation of the regression line is given by "),
               sprintf("\\( \\qquad \\hat{y} = \\hat{\\beta}_{0} + \\hat{\\beta}_{1} x \\)"),
               br(),
@@ -868,8 +866,7 @@ regCorrServer <- function(id) {
               }
 
               output$pearsonCorFormula <- renderUI({
-                p(
-                  withMathJax(),
+                withMathJax(
                   sprintf("\\( r \\; = \\; \\dfrac
                                       {\\sum xy - \\dfrac{ (\\sum x)(\\sum y) }{ n } }
                                       {\\sqrt{ \\sum x^2 - \\dfrac{ (\\sum x)^2 }{ n } } \\sqrt{ \\sum y^2 - \\dfrac{ (\\sum y) ^2 }{ n } } } \\)"),
