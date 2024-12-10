@@ -15,39 +15,39 @@ RUN apt-get update && \
 
 ## Install R packages
 RUN R -e \
-"install.packages(c('conflicted',    \
-                    'aplpack',       \
-                    'bslib',         \
-                    'car',           \
-                    'colourpicker',  \
-                    'DescTools',     \
-                    'dplyr',         \
-                    'DT',            \
-                    'generics',      \
-                    'ggplot2',       \
-                    'plotly',        \
-                    'ggpubr',        \
-                    'ggsci',         \
-                    'e1071',         \
-                    'markdown',      \
-                    'nortest',       \
-                    'readr',         \
-                    'readxl',        \
-                    'remotes',       \
-                    'rstatix',       \
-                    'shiny',         \
-                    'shinythemes',   \
-                    'shinyjs',       \
-                    'shinyMatrix',   \
-                    'shinyvalidate', \
-                    'shinyWidgets',  \
-                    'tinytex',       \
-                    'writexl',       \
-                    'xtable',        \
-                    'MASS',          \
-                    'latex2exp'),    \
+"install.packages(c('conflicted',       \
+                    'aplpack',          \
+                    'bslib',            \
+                    'car',              \
+                    'colourpicker',     \
+                    'DescTools',        \
+                    'dplyr',            \
+                    'DT',               \
+                    'generics',         \
+                    'ggplot2',          \
+                    'plotly',           \
+                    'ggpubr',           \
+                    'ggsci',            \
+                    'e1071',            \
+                    'markdown',         \
+                    'nortest',          \
+                    'readr',            \
+                    'readxl',           \
+                    'remotes',          \
+                    'rstatix',          \
+                    'shiny',            \
+                    'shinythemes',      \
+                    'shinyjs',          \
+                    'shinyMatrix',      \
+                    'shinyvalidate',    \
+                    'shinyWidgets',     \
+                    'tinytex',          \
+                    'writexl',          \
+                    'xtable',           \
+                    'MASS',             \
+                    'latex2exp',        \
+                    'thematic'),        \
                   dependencies = TRUE); \
-                  \
                   remotes::install_github('deepanshu88/shinyDarkmode')"
 
 # copy our application into the server, where 'R' is the local path to the app
