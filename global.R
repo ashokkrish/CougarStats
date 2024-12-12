@@ -1,8 +1,8 @@
 ## install.packages("remotes")
 ## remotes::install_github("deepanshu88/shinyDarkmode")
 
-options(conflicts.policy = TRUE)
-library(conflicted)
+## options(conflicts.policy = TRUE)
+## library(conflicted)
 
 library(aplpack)
 library(base)
@@ -37,6 +37,8 @@ library(xtable)
 library(MASS)
 library(latex2exp)
 library(thematic)
+library(datamods)
+library(magrittr)
 
 source("R/authors.R")
 source("R/ChiSquareTest.R")
@@ -49,7 +51,6 @@ source('R/OnePropZInt.R')
 source('R/OnePropZTest.R')
 source('R/plotOptionsMenu.R')
 source("R/probDist.R")
-source("R/regCorr.R")
 source("R/RenderBoxplot.R")
 source("R/RenderMeanPlot.R")
 source("R/RenderQQPlot.R")
@@ -63,6 +64,10 @@ source('R/TwoSampZTest.R')
 source('R/TwoSampTTest.R')
 source('R/TwoPropZInt.R')
 source('R/TwoPropZTest.R')
+
+source("R/singleLinearRegression.R")
+source("R/multipleLinearRegression.R")
+source('R/regressionAndCorrelation.R')
 
 options(scipen = 999) # options(scipen = 0)
 ## options(shiny.reactlog = TRUE)
@@ -126,7 +131,9 @@ GetPlotWidth  <- function(plotToggle, pxValue, ui) {
 ## warning("Following this is the conflicted::conflict_scout() report.",
 ##         immediate. = TRUE)
 ## print(conflicted::conflict_scout())
-conflicted::conflicts_prefer(shinyjs::show, dplyr::filter, dplyr::select)
+
+## TODO: reenable this line before deployment.
+## conflicted::conflicts_prefer(shinyjs::show, dplyr::filter, dplyr::select)
 
 ## See the theming issue brought up in #33; use thematic to attempt to make base
 ## R graphics compliant with ggplot theming, and to anticipate the impact of

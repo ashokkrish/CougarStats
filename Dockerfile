@@ -46,7 +46,9 @@ RUN R -e \
                     'xtable',           \
                     'MASS',             \
                     'latex2exp',        \
-                    'thematic'),        \
+                    'thematic',         \
+                    'datamods',         \
+                    'magrittr'),        \
                   dependencies = TRUE); \
                   remotes::install_github('deepanshu88/shinyDarkmode')"
 
