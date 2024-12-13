@@ -41,33 +41,43 @@ library(datamods)
 library(magrittr)
 
 source("R/authors.R")
+
 source("R/ChiSquareTest.R")
 source("R/descStats.R")
+
 source('R/OneSampZInt.R')
 source('R/OneSampTInt.R')
 source("R/OneSampZTest.R")
 source("R/OneSampTTest.R")
+
 source('R/OnePropZInt.R')
 source('R/OnePropZTest.R')
+
 source('R/plotOptionsMenu.R')
+
 source("R/probDist.R")
+
 source("R/RenderBoxplot.R")
 source("R/RenderMeanPlot.R")
 source("R/RenderQQPlot.R")
 source("R/RenderScatterplot.R")
 source("R/RenderSideBySideBoxplot.R")
+
 source("R/sampSizeEst.R")
+
 source("R/statInfr.R")
+
 source('R/TwoSampZInt.R')
 source('R/TwoSampTInt.R')
 source('R/TwoSampZTest.R')
 source('R/TwoSampTTest.R')
+
 source('R/TwoPropZInt.R')
 source('R/TwoPropZTest.R')
 
-source("R/singleLinearRegression.R")
+source("R/simpleLinearRegression.R")
 source("R/multipleLinearRegression.R")
-source('R/regressionAndCorrelation.R')
+source("R/regressionAndCorrelation.R")
 
 options(scipen = 999) # options(scipen = 0)
 ## options(shiny.reactlog = TRUE)

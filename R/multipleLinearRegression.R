@@ -1,14 +1,38 @@
-multipleRegressionCorrelationUI <- function(id) {
+multipleLinearRegressionSidebarUI <- function(id, uploadedTibble) {
   ns <- NS(id)
-  fluidPage(fluidRow(column(width = 4,
-                            tags$b("Imported data:"),
-                            verbatimTextOutput(outputId = ns("str_data")),
-                            verbatimTextOutput(outputId = ns("lm"))),
-                     column(width = 8,
-                            plotOutput(ns("plot")))))
+
+  tagList(
+    ## DONE: the choices need to be updated dynamically.
+    selectInput(ns("responseVariable"),
+                "Response Variable (\\(y\\))",
+                choices = NULL),
+    uiOutput(ns("singleOrMultipleHelpText")),
+    selectInput(ns("explanatoryVariables"),
+                "Explanatory Variables (\\(x_1, x_2, x_3, \\cdots , x_n\\))",
+                multiple = TRUE,
+                choices = NULL),
+    )
 }
 
-multipleRegressionCorrelationServer <- function(id, uploadedTibble, selectedVariables) {
+multipleLinearRegressionMainPanelUI <- function(id, uploadedTibble) {
+  ns <- NS(id)
+
+  fluidPage(
+    fluidRow(column(2),
+             column(8,
+                    import_ui(id = "dataImport",
+                              from = c("file", "copypaste", "env")),
+                    ),
+             column(2)),
+    fluidRow(column(width = 4,
+                    tags$b("Imported data:"),
+                    verbatimTextOutput(outputId = ns("str_data")),
+                    verbatimTextOutput(outputId = ns("lm"))),
+             column(width = 8,
+                    plotOutput(ns("plot")))))
+}
+
+multipleLinearRegressionSidebarServer <- function(id, uploadedTibble) {
   moduleServer(id, function(input, output, session) {
     ## NOTE: example outputs.
     output$str_data <- renderPrint({
@@ -16,6 +40,58 @@ multipleRegressionCorrelationServer <- function(id, uploadedTibble, selectedVari
       str(uploadedTibble$data())
     })
 
+    ## TODO: revert to a locally available datamods ui.
+    ## DONE Update the choices for the select inputs when the uploadedTibble changes.
+    observe({
+      updateSelectInput(inputId = "responseVariable",
+                        choices = colnames(uploadedTibble$data()))
+
+      updateSelectizeInput(inputId = "explanatoryVariables",
+                           choices = colnames(uploadedTibble$data()))
+    }) |> bindEvent(uploadedTibble$data())
+
+    ## TODO: revert to a locally available datamods ui.
+    ## DONE Validate that the response variable is not included in the explanatory variables.
+    observe({
+      if (isTruthy(uploadedTibble$data())) {
+        ## DONE The newly-selected response variable is always removed from the
+        ## available choices for explanatory variables, but the explanatory
+        ## variables are updated to only deselect the newly-selected response
+        ## variable; other explanatory variables remain selected, if any, rather
+        ## than deselecting all variables whenever the response variable is
+        ## changed.
+        updateSelectizeInput(
+          inputId = "explanatoryVariables",
+          choices =
+            dplyr::select(uploadedTibble$data(),
+                          !all_of(input$responseVariable)) %>%
+            colnames(),
+          selected = if (input$responseVariable %in% input$explanatoryVariables)
+                       input$explanatoryVariables[input$explanatoryVariables !=
+                                                  input$responseVariable]
+                     else
+                       input$explanatoryVariables
+        )
+      }
+    }) |> bindEvent(input$responseVariable)
+
+    ## TODO: revert to a locally available datamods ui.
+    ## DONE dynamically render help text
+    output$singleOrMultipleHelpText <- renderUI({
+      if (length(input$explanatoryVariables) > 1) {
+        helpText("Multiple explanatory variables results in a multiple linear regression")
+      } else if (length(input$explanatoryVariables) == 1) {
+        helpText("A single explanatory variable results in a simple linear regression")
+      } else {
+        helpText("Select at least one explanatory variable")
+      }
+    })
+  })
+}
+
+multipleLinearRegressionMainPanelServer <- function(id, uploadedTibble) {
+  moduleServer(id, function(input, output, session) {
+    ## TODO: revert to a locally available datamods ui.
     ## NOTE regardless of single or multiple linear regression, all the
     ## explanatory variables and the response variable must be numeric or
     ## factors (which are strings coded as numbers).
