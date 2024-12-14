@@ -25,13 +25,13 @@ regressionAndCorrelationServer <- function(id) {
     ## and main panel UI based on the value of the "multiple" radioButtons.
     observe({
       output$simpleOrMultipleRegressionSidebarUI <- renderUI({
-        if (input$multiple == "MLR") MLRSidebarUI(MLRId)
-        else SLRSidebarUI(SLRId)
+        if (input$multiple == "MLR") MLRSidebarUI(session$ns(MLRId))
+        else SLRSidebarUI(session$ns(SLRId))
       })
 
       output$simpleOrMultipleRegressionMainPanelUI <- renderUI({
-        if (input$multiple == "MLR") MLRMainPanelUI(MLRId)
-        else SLRMainPanelUI(SLRId)
+        if (input$multiple == "MLR") MLRMainPanelUI(session$ns(MLRId))
+        else SLRMainPanelUI(session$ns(SLRId))
       })
     })
   })
