@@ -43,7 +43,7 @@ BODY <-
                         tabPanel("Statistical Inference",
                                  statInfrUI(id = "si")),
                         tabPanel("Regression and Correlation",
-                                 regressionCorrelationUI(id = "rc")))),
+                                 regressionAndCorrelationUI(id = "rc")))),
     tabPanel("Authors", authorsUI())
   )
 

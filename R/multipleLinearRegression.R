@@ -57,6 +57,7 @@ MLRServer <- function(id) {
     ## TODO: revert to a locally available datamods ui.
     ## DONE Validate that the response variable is not included in the explanatory variables.
     observe({
+      req(isTruthy(input$responseVariable))
       if (isTruthy(uploadedTibble$data())) {
         ## DONE The newly-selected response variable is always removed from the
         ## available choices for explanatory variables, but the explanatory

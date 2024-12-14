@@ -5,5 +5,5 @@ server <- function(session, input, output) {
   probDistServer(id = "pd")
   sampSizeEstServer(id = "sse")
   statInfrServer(id = "si")
-  regressionCorrelationServer(id = "rc")
+  regressionAndCorrelationServer(id = "rc")
 }
