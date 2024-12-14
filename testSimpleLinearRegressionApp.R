@@ -1,5 +1,6 @@
 library(shiny)
-source("R/simpleLinearRegression.R")
+library(bslib)
+source("R/simpleLinearRegression_alternate.R")
 
 testSLRModule <- function() {
   SLRId <- "SLR"

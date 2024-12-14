@@ -73,7 +73,7 @@ source('R/TwoSampTTest.R')
 source('R/TwoPropZInt.R')
 source('R/TwoPropZTest.R')
 
-source("R/simpleLinearRegression.R")
+source("R/simpleLinearRegression_alternate.R")
 source("R/multipleLinearRegression.R")
 source("R/regressionAndCorrelation.R")
 
