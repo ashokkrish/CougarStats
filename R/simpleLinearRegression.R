@@ -1,10 +1,54 @@
+library(DT)
+library(DescTools)
+library(MASS)
+library(aplpack)
+library(bslib)
+library(car)
+library(colourpicker)
+library(datamods)
+library(dplyr)
+library(e1071)
+library(generics)
+library(ggplot2)
+library(ggpubr)
+library(ggsci)
+library(htmltools)
+library(latex2exp)
+library(magrittr)
+library(magrittr)
+library(markdown)
+library(nortest)
+library(plotly)
+library(readr)
+library(readxl)
+library(rstatix)
+library(shiny)
+library(shinyDarkmode)
+library(shinyMatrix)
+library(shinyWidgets)
+library(shinyjs)
+library(shinythemes)
+library(shinyvalidate)
+library(thematic)
+library(tinytex)
+library(writexl)
+library(xtable)
+
+source("R/RenderBoxplot.R")
+source("R/RenderMeanPlot.R")
+source("R/RenderQQPlot.R")
+source("R/RenderScatterplot.R")
+source("R/RenderSideBySideBoxplot.R")
+source("R/utilityFunctions.R")
+source('R/plotOptionsMenu.R')
+
 # =========================================================================== #
 # ---- UI Components --------------------------------------------------------
 # =========================================================================== #
-simpleLinearRegressionSidebarUI <- function(id) {
+SLRSidebarUI <- function(id) {
   ns <- NS(id)
 
-  tagList(div(
+  tagList(withMathJax(div(
     id = ns("inputPanel"),
 
     radioButtons(
@@ -52,14 +96,14 @@ simpleLinearRegressionSidebarUI <- function(id) {
 
       selectizeInput(
         inputId = ns("slrExplanatory"),
-        label   = strong("Choose the Explanatory Variable (x)"),
+        label   = strong("Choose the Explanatory Variable (\\(x\\))"),
         choices = c(""),
         options = list(placeholder = 'Select a variable',
                        onInitialize = I('function() { this.setValue(""); }'))),
 
       selectizeInput(
         inputId = ns("slrResponse"),
-        label   = strong("Choose the Response Variable (y)"),
+        label   = strong("Choose the Response Variable (\\(y\\))"),
         choices = c(""),
         options = list(placeholder = 'Select a variable',
                        onInitialize = I('function() { this.setValue(""); }'))),
@@ -83,58 +127,58 @@ simpleLinearRegressionSidebarUI <- function(id) {
       inputId = ns("resetRegCor"),
       label = "Reset Values",
       class = "act-btn")
-  ))
+  )))
 }
 
-simpleLinearRegressionMainPanelUI <- function(id) {
+SLRMainPanelUI <- function(id) {
   ns <- NS(id)
 
   tagList(
-    mainPanel(
-      div(id = ns("simpleLinearRegressionMainPanel"),
+    hidden(mainPanel(
+      withMathJax(hidden(div(id = ns("SLRMainPanel"),
 
 ### ------------ Simple Linear Regression ------------------------------------
-          uiOutput(ns("slrValidation")),
+                             uiOutput(ns("slrValidation")),
 
-          div(
-            id = ns("SLRData"),
-            tabsetPanel(
-              id       = ns("slrTabset"),
-              selected = "Simple Linear Regression",
+                             div(
+                               id = ns("SLRData"),
+                               tabsetPanel(
+                                 id       = ns("slrTabset"),
+                                 selected = "Simple Linear Regression",
 
 #### ---------------- SLR Tab ------------------------------------------------
-              tabPanel(
-                id    = ns("slr"),
-                title = "Simple Linear Regression",
+                                 tabPanel(
+                                   id    = ns("slr"),
+                                   title = "Simple Linear Regression",
 
-                conditionalPanel(
-                  ns = ns,
-                  condition = "input.scatterPlot == 1",
+                                   conditionalPanel(
+                                     ns = ns,
+                                     condition = "input.scatterPlot == 1",
 
-                  titlePanel("Scatterplot"),
-                  br(),
-                  plotOptionsMenuUI(
-                    id          = ns("slrScatter"),
-                    plotType    = "Scatterplot",
-                    title       = "Scatterplot",
-                    xlab        = "x",
-                    ylab        = "y",
-                    dim         = "in px",
-                    includeFlip = FALSE),
-                  uiOutput(ns("renderSLRScatterplot")),
-                  br(),
-                  hr(),
-                  ), #scatterPlot == 1
+                                     titlePanel("Scatterplot"),
+                                     br(),
+                                     plotOptionsMenuUI(
+                                       id          = ns("slrScatter"),
+                                       plotType    = "Scatterplot",
+                                       title       = "Scatterplot",
+                                       xlab        = "x",
+                                       ylab        = "y",
+                                       dim         = "in px",
+                                       includeFlip = FALSE),
+                                     uiOutput(ns("renderSLRScatterplot")),
+                                     br(),
+                                     hr(),
+                                     ), #scatterPlot == 1
 
-                titlePanel("Data"),
-                br(),
-                DTOutput(ns("slrDataTable"), width = "750px"),
-                br(),
-                hr(),
+                                   titlePanel("Data"),
+                                   br(),
+                                   DTOutput(ns("slrDataTable"), width = "750px"),
+                                   br(),
+                                   hr(),
 
-                titlePanel("Estimated equation of the regression line"),
-                br(),
-                uiOutput(ns('regLineEquation')),
+                                   titlePanel("Estimated equation of the regression line"),
+                                   br(),
+                                   uiOutput(ns('regLineEquation')),
 
                                         # verbatimTextOutput(ns("linearRegression")),
                                         # br(),
@@ -150,7 +194,7 @@ simpleLinearRegressionMainPanelUI <- function(id) {
                                         # br(),
                                         # verbatimTextOutput(ns("anovaLinReg")),
                                         #br(),
-                ), # slr tabpanel
+                                   ), # slr tabpanel
 
 #### ---------------- Normality of Residuals Tab -----------------------------
                                         # tabPanel(
@@ -191,69 +235,68 @@ simpleLinearRegressionMainPanelUI <- function(id) {
 
 
 #### ---------------- Correlation Coefficient Analysis Tab -------------------
-              tabPanel(
-                id    = ns("correlation"),
-                title = "Correlation Analysis",
+                                 tabPanel(
+                                   id    = ns("correlation"),
+                                   title = "Correlation Analysis",
 
-                titlePanel("Pearson's Product-Moment Correlation"),
-                br(),
-                br(),
-                uiOutput(ns('pearsonCorFormula')),
-                br(),
+                                   titlePanel("Pearson's Product-Moment Correlation"),
+                                   br(),
+                                   br(),
+                                   uiOutput(ns('pearsonCorFormula')),
+                                   br(),
                                         # verbatimTextOutput(ns("PearsonCorTest")),
                                         # br(),
                                         # verbatimTextOutput(ns("PearsonConfInt")),
                                         # br(),
-                hr(),
+                                   hr(),
 
-                titlePanel("Kendall's Rank Correlation"),
-                br(),
-                uiOutput(ns("kendallEstimate")),
-                br(),
-                hr(),
+                                   titlePanel("Kendall's Rank Correlation"),
+                                   br(),
+                                   uiOutput(ns("kendallEstimate")),
+                                   br(),
+                                   hr(),
 
-                titlePanel("Spearman's Rank Correlation"),
-                br(),
-                uiOutput(ns("spearmanEstimate")),
-                br(),
-                br()
-              ), #correlation tabPanel
+                                   titlePanel("Spearman's Rank Correlation"),
+                                   br(),
+                                   uiOutput(ns("spearmanEstimate")),
+                                   br(),
+                                   br()
+                                 ), #correlation tabPanel
 
 #### ---------------- Data File Tab ------------------------------------------
-              tabPanel(
-                id    = ns("slrDataFile"),
-                title = "Uploaded Data",
-                value = "Uploaded Data",
+                                 tabPanel(
+                                   id    = ns("slrDataFile"),
+                                   title = "Uploaded Data",
+                                   value = "Uploaded Data",
 
-                titlePanel("Data File"),
-                br(),
-                br(),
-                div(
-                  DTOutput(ns("slrViewUpload")),
-                  style = "width: 75%"
-                ),
-                br(),
-                br(),
-                ), #slrDataFile tabpanel
-              ), #slrTabset tabsetPanel
-            ), #SLRData div
+                                   titlePanel("Data File"),
+                                   br(),
+                                   br(),
+                                   div(
+                                     DTOutput(ns("slrViewUpload")),
+                                     style = "width: 75%"
+                                   ),
+                                   br(),
+                                   br(),
+                                   ), #slrDataFile tabpanel
+                                 ), #slrTabset tabsetPanel
+                               ), #SLRData div
 
-          ) #simpleLinearRegressionMainPanel
-    ))
+                             ))) #SLRMainPanel
+    )))
 }
 
 # =========================================================================== #
 # ---- Server Components ----------------------------------------------------
 # =========================================================================== #
-simpleLinearRegressionSidebarServer <- function(id) {
+SLRServer <- function(id) {
   moduleServer(id, function(input, output, session) {
     observeEvent(input$resetRegCor, {
       ## hideTab(inputId = 'tabSet', target = 'Simple Linear Regression')
       ## hideTab(inputId = 'tabSet', target = 'Normality of Residuals')
       ## hideTab(inputId = 'tabSet', target = 'Residual Plots')
 
-      ## TODO: how to hide communicate between the sidebar UI and its appropriate cousin?
-      hide(id = "simpleLinearRegressionMainPanel")
+      hide(id = "SLRMainPanel")
       shinyjs::reset("inputPanel")
       fileInputs$slrStatus <- 'reset'
     })
@@ -261,11 +304,9 @@ simpleLinearRegressionSidebarServer <- function(id) {
     observe({
       req(input$dataRegCor)
       if (input$dataRegCor == 'Enter Raw Data') {
-        ## TODO: how to hide communicate between the sidebar UI and its appropriate cousin?
         hideTab(inputId = "slrTabset", target = "Uploaded Data")
         updateTabsetPanel(inputId = 'slrTabset', selected = 'Simple Linear Regression')
       } else {
-        ## TODO: how to hide communicate between the sidebar UI and its appropriate cousin?
         showTab(inputId = "slrTabset", target = "Uploaded Data")
       }
     })
@@ -424,7 +465,7 @@ simpleLinearRegressionSidebarServer <- function(id) {
     ## -------- Observers ------------------------------------------------------
                                         #  ========================================================================= #
     observeEvent(input$slrUserData, {
-      hide(id = "simpleLinearRegressionMainPanel")
+      hide(id = "SLRMainPanel")
       hide(id = "slrResponse")
       hide(id = "slrExplanatory")
       fileInputs$slrStatus <- 'uploaded'
@@ -455,35 +496,24 @@ simpleLinearRegressionSidebarServer <- function(id) {
     })
 
 ### ------------ Component Display -------------------------------------------
-    observeEvent(!regcor_iv$is_valid(), {
-      hide(id = "simpleLinearRegressionMainPanel")
-      hide(id = "SLRData")
-    })
-
     ## NOTE: whenever the regression and correlation data changes hide the main
     ## panel, and hide the response and explanatory variable inputs... for some
     ## odd reason? Further, update some text inputs...
     observeEvent(input$dataRegCor, {
-      hide(id = "simpleLinearRegressionMainPanel")
+      hide(id = "SLRMainPanel")
       hide(id = "slrResponse")
       hide(id = "slrExplanatory")
       updateTextInput(inputId = "xlab", value = "x")
       updateTextInput(inputId = "ylab", value = "y")
     })
-    
-  })
-}
 
-simpleLinearRegressionMainPanelServer <- function(id) {
-  moduleServer(id, function(input, output, session) {
+
+    
     observeEvent(input$goRegression, {
 
 ### SLR Validation messages ----
-      if(regcor_iv$is_valid()) {
-        show(id = "SLRData")
-      } else {
-        hide(id = "SLRData")
-      }
+      toggle(id = "SLRData", condition = regcor_iv$is_valid())
+      toggle(id = "SLRMainPanel", condition = regcor_iv$is_valid())
 
       output$slrValidation <- renderUI({
 
@@ -857,7 +887,7 @@ simpleLinearRegressionMainPanelServer <- function(id) {
 
       } #if regcor_iv is valid
 
-      show(id = "simpleLinearRegressionMainPanel")
+      show(id = "SLRMainPanel")
     }) # input$goRegression
   })
 }

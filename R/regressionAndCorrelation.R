@@ -16,24 +16,24 @@ regressionCorrelationUI <- function(id) {
 
 regressionCorrelationServer <- function(id) {
   moduleServer(id, function(input, output, session) {
-    simpleLinearRegressionSidebarServer("slr")
-    simpleLinearRegressionMainPanelServer("slr")
-
-    importValue <- import_server("dataImport", return_class = "tbl_df")
-    multipleLinearRegressionMainPanelServer("mlr", importValue)
-    multipleLinearRegressionSidebarServer("mlr", importValue)
+    SLRServer("slr")
+    MLRServer("mlr")
 
     ## DONE: alternate between the simple or multiple linear regression sidebar
     ## and main panel UI based on the value of the "multiple" radioButtons.
     observe({
       output$simpleOrMultipleRegressionSidebarUI <- renderUI({
-        if (input$multiple == "MLR") multipleLinearRegressionSidebarUI("mlr", importValue)
-        else simpleLinearRegressionSidebarUI("slr")
+        if (input$multiple == "MLR")
+          MLRSidebarUI("mlr")
+        else
+          SLRSidebarUI("slr")
       })
 
       output$simpleOrMultipleRegressionMainPanelUI <- renderUI({
-        if (input$multiple == "MLR") multipleLinearRegressionMainPanelUI("mlr", importValue)
-        else simpleLinearRegressionMainPanelUI("slr")
+        if (input$multiple == "MLR")
+          MLRMainPanelUI("mlr")
+        else
+          SLRMainPanelUI("slr")
       })
     })
   })

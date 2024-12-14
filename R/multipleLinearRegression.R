@@ -1,29 +1,31 @@
-multipleLinearRegressionSidebarUI <- function(id, uploadedTibble) {
-  ns <- NS(id)
+library(shiny)
+library(bslib)
+library(datamods)
+library(magrittr)
 
+MLRSidebarUI <- function(id) {
+  ns <- NS(id)
   tagList(
-    ## DONE: the choices need to be updated dynamically.
-    selectInput(ns("responseVariable"),
-                "Response Variable (\\(y\\))",
-                choices = NULL),
-    uiOutput(ns("singleOrMultipleHelpText")),
-    selectInput(ns("explanatoryVariables"),
-                "Explanatory Variables (\\(x_1, x_2, x_3, \\cdots , x_n\\))",
-                multiple = TRUE,
-                choices = NULL),
+    withMathJax(
+      ## DONE: the choices need to be updated dynamically.
+      selectInput(ns("responseVariable"),
+                  "Response Variable (\\(y\\))",
+                  choices = NULL),
+      uiOutput(ns("singleOrMultipleHelpText")),
+      selectInput(ns("explanatoryVariables"),
+                  "Explanatory Variables (\\(x_1, x_2, x_3, \\cdots , x_n\\))",
+                  multiple = TRUE,
+                  choices = NULL)),
     )
 }
 
-multipleLinearRegressionMainPanelUI <- function(id, uploadedTibble) {
+MLRMainPanelUI <- function(id) {
   ns <- NS(id)
-
   fluidPage(
     fluidRow(column(2),
-             column(8,
-                    import_ui(id = "dataImport",
-                              from = c("file", "copypaste", "env")),
-                    ),
+             column(8, import_ui(id = ns("dataImport"), from = c("file", "copypaste")),),
              column(2)),
+    fluidRow(),
     fluidRow(column(width = 4,
                     tags$b("Imported data:"),
                     verbatimTextOutput(outputId = ns("str_data")),
@@ -32,8 +34,10 @@ multipleLinearRegressionMainPanelUI <- function(id, uploadedTibble) {
                     plotOutput(ns("plot")))))
 }
 
-multipleLinearRegressionSidebarServer <- function(id, uploadedTibble) {
+MLRServer <- function(id) {
   moduleServer(id, function(input, output, session) {
+    uploadedTibble <- import_server("dataImport", return_class = "tbl_df")
+
     ## NOTE: example outputs.
     output$str_data <- renderPrint({
       validate(need(uploadedTibble$name(), "Upload some data."))
@@ -86,11 +90,7 @@ multipleLinearRegressionSidebarServer <- function(id, uploadedTibble) {
         helpText("Select at least one explanatory variable")
       }
     })
-  })
-}
 
-multipleLinearRegressionMainPanelServer <- function(id, uploadedTibble) {
-  moduleServer(id, function(input, output, session) {
     ## TODO: revert to a locally available datamods ui.
     ## NOTE regardless of single or multiple linear regression, all the
     ## explanatory variables and the response variable must be numeric or
@@ -106,7 +106,7 @@ multipleLinearRegressionMainPanelServer <- function(id, uploadedTibble) {
         }
       }
       validate(need(uploadedTibble$name(), "Upload some data."),
-               need(is.numeric(uploadedTibble$data()[[selectedVariables$responseVariable()]]),
+               need(is.numeric(uploadedTibble$data()[[input$responseVariable]]),
                     "The response variable must be numeric."),
                need(isTruthy(input$explanatoryVariables),
                     "One or more explanatory variables must be selected."),
@@ -115,15 +115,18 @@ multipleLinearRegressionMainPanelServer <- function(id, uploadedTibble) {
                     sprintf("All explanatory variables must be numeric. These variables are non-numeric: %s.",
                             paste(nonnumericVariables, sep = ", "))))
       with(uploadedTibble$data(), {
-        lm(reformulate(input$explanatoryVariables, selectedVariables$responseVariable()))
+        lm(reformulate(input$explanatoryVariables, input$responseVariable))
       })
     })
     output$plot <- renderPlot({
       validate(need(uploadedTibble$name(), "Upload some data."))
-      validate(need(length(uploadedTibble$data()[[selectedVariables$responseVariable()]]) == 1, "Upload some data."))
-      responseVariableData <- uploadedTibble$data()[[selectedVariables$responseVariable()]]
-      validate(need(is.numeric(responseVariableData), "Response variable must be numeric."))
+      validate(need(isTruthy(input$responseVariable),
+                    "Select at least one explanatory variable."))
+      responseVariableData <- uploadedTibble$data()[[input$responseVariable]]
+      validate(need(is.numeric(responseVariableData),
+                    "Response variable must be numeric."))
       hist(responseVariableData)
     })
+
   })
 }
