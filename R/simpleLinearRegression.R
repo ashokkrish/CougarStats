@@ -45,140 +45,54 @@ source('R/plotOptionsMenu.R')
 # =========================================================================== #
 # ---- UI Components --------------------------------------------------------
 # =========================================================================== #
-SLRSidebarUI <- function(id) {
-  ns <- NS(id)
-
-  tagList(withMathJax(div(
-    id = ns("inputPanel"),
-
-    radioButtons(
-      inputId      = ns("dataRegCor"),
-      label        = strong("Data"),
-      choiceValues = list("Enter Raw Data",
-                          "Upload Data"),
-      choiceNames  = list("Enter Raw Data",
-                          "Upload Data"),
-      selected     = "Enter Raw Data", #character(0), #
-      inline       = TRUE), #,width = '1000px'),
-
-    conditionalPanel(
-      ns = ns,
-      condition = "input.dataRegCor == 'Enter Raw Data'",
-
-      textAreaInput(
-        inputId     = ns("x"),
-        label       = strong("\\( x\\) (Independent Variable)"),
-        value       = "10, 13, 18, 19, 22, 24, 27, 29, 35, 38",
-        placeholder = "Enter values separated by a comma with decimals as points",
-        rows        = 3),
-
-      textAreaInput(
-        inputId     = ns("y"),
-        label       = strong("\\( y\\) (Dependent Variable)"),
-        value       = "66, 108, 161, 177, 228, 235, 268, 259, 275, 278",
-        placeholder = "Enter values separated by a comma with decimals as points",
-        rows        = 3),
-      ), #dataRegCor == 'Enter Raw Data'
-
-    conditionalPanel(
-      ns = ns,
-      condition = "input.dataRegCor == 'Upload Data'",
-
-      fileInput(
-        inputId = ns("slrUserData"),
-        label   = strong("Upload your data (.csv or .xls or .xlsx or .txt)"),
-        accept  = c("text/csv",
-                    "text/comma-separated-values",
-                    "text/plain",
-                    ".csv",
-                    ".xls",
-                    ".xlsx")),
-
-      selectizeInput(
-        inputId = ns("slrExplanatory"),
-        label   = strong("Choose the Explanatory Variable (\\(x\\))"),
-        choices = c(""),
-        options = list(placeholder = 'Select a variable',
-                       onInitialize = I('function() { this.setValue(""); }'))),
-
-      selectizeInput(
-        inputId = ns("slrResponse"),
-        label   = strong("Choose the Response Variable (\\(y\\))"),
-        choices = c(""),
-        options = list(placeholder = 'Select a variable',
-                       onInitialize = I('function() { this.setValue(""); }'))),
-      ), #dataRegCor == 'Upload Data'
-
-    br(),
-    p(strong("Graph Options")),
-    hr(),
-    checkboxInput(
-      inputId = ns("scatterPlot"),
-      label   = "Scatterplot of \\( x\\) versus \\( y\\)",
-      value   = TRUE),
-    br(),
-
-    actionButton(
-      inputId = ns("goRegression"),
-      label = "Calculate",
-      class = "act-btn"),
-
-    actionButton(
-      inputId = ns("resetRegCor"),
-      label = "Reset Values",
-      class = "act-btn")
-  )))
-}
-
 SLRMainPanelUI <- function(id) {
   ns <- NS(id)
 
-  tagList(
-    hidden(mainPanel(
-      withMathJax(hidden(div(id = ns("SLRMainPanel"),
+  tagList(withMathJax(
+    useShinyjs(),
+    hidden(div(
+      id = ns("regCorrMP"),
+      uiOutput(ns("slrValidation")),
 
-### ------------ Simple Linear Regression ------------------------------------
-                             uiOutput(ns("slrValidation")),
-
-                             div(
-                               id = ns("SLRData"),
-                               tabsetPanel(
-                                 id       = ns("slrTabset"),
-                                 selected = "Simple Linear Regression",
+      div(
+        id = ns("SLRData"),
+        tabsetPanel(
+          id       = ns("slrTabset"),
+          selected = "Simple Linear Regression",
 
 #### ---------------- SLR Tab ------------------------------------------------
-                                 tabPanel(
-                                   id    = ns("slr"),
-                                   title = "Simple Linear Regression",
+          tabPanel(
+            id    = ns("slr"),
+            title = "Simple Linear Regression",
 
-                                   conditionalPanel(
-                                     ns = ns,
-                                     condition = "input.scatterPlot == 1",
+            conditionalPanel(
+              ns = ns,
+              condition = "input.scatterPlot == 1",
 
-                                     titlePanel("Scatterplot"),
-                                     br(),
-                                     plotOptionsMenuUI(
-                                       id          = ns("slrScatter"),
-                                       plotType    = "Scatterplot",
-                                       title       = "Scatterplot",
-                                       xlab        = "x",
-                                       ylab        = "y",
-                                       dim         = "in px",
-                                       includeFlip = FALSE),
-                                     uiOutput(ns("renderSLRScatterplot")),
-                                     br(),
-                                     hr(),
-                                     ), #scatterPlot == 1
+              titlePanel("Scatterplot"),
+              br(),
+              plotOptionsMenuUI(
+                id          = ns("slrScatter"),
+                plotType    = "Scatterplot",
+                title       = "Scatterplot",
+                xlab        = "x",
+                ylab        = "y",
+                dim         = "in px",
+                includeFlip = FALSE),
+              uiOutput(ns("renderSLRScatterplot")),
+              br(),
+              hr(),
+              ), #scatterPlot == 1
 
-                                   titlePanel("Data"),
-                                   br(),
-                                   DTOutput(ns("slrDataTable"), width = "750px"),
-                                   br(),
-                                   hr(),
+            titlePanel("Data"),
+            br(),
+            DTOutput(ns("slrDataTable"), width = "750px"),
+            br(),
+            hr(),
 
-                                   titlePanel("Estimated equation of the regression line"),
-                                   br(),
-                                   uiOutput(ns('regLineEquation')),
+            titlePanel("Estimated equation of the regression line"),
+            br(),
+            uiOutput(ns('regLineEquation')),
 
                                         # verbatimTextOutput(ns("linearRegression")),
                                         # br(),
@@ -194,7 +108,7 @@ SLRMainPanelUI <- function(id) {
                                         # br(),
                                         # verbatimTextOutput(ns("anovaLinReg")),
                                         #br(),
-                                   ), # slr tabpanel
+            ), # slr tabpanel
 
 #### ---------------- Normality of Residuals Tab -----------------------------
                                         # tabPanel(
@@ -235,91 +149,156 @@ SLRMainPanelUI <- function(id) {
 
 
 #### ---------------- Correlation Coefficient Analysis Tab -------------------
-                                 tabPanel(
-                                   id    = ns("correlation"),
-                                   title = "Correlation Analysis",
+          tabPanel(
+            id    = ns("correlation"),
+            title = "Correlation Analysis",
 
-                                   titlePanel("Pearson's Product-Moment Correlation"),
-                                   br(),
-                                   br(),
-                                   uiOutput(ns('pearsonCorFormula')),
-                                   br(),
+            titlePanel("Pearson's Product-Moment Correlation"),
+            br(),
+            br(),
+            uiOutput(ns('pearsonCorFormula')),
+            br(),
                                         # verbatimTextOutput(ns("PearsonCorTest")),
                                         # br(),
                                         # verbatimTextOutput(ns("PearsonConfInt")),
                                         # br(),
-                                   hr(),
+            hr(),
 
-                                   titlePanel("Kendall's Rank Correlation"),
-                                   br(),
-                                   uiOutput(ns("kendallEstimate")),
-                                   br(),
-                                   hr(),
+            titlePanel("Kendall's Rank Correlation"),
+            br(),
+            uiOutput(ns("kendallEstimate")),
+            br(),
+            hr(),
 
-                                   titlePanel("Spearman's Rank Correlation"),
-                                   br(),
-                                   uiOutput(ns("spearmanEstimate")),
-                                   br(),
-                                   br()
-                                 ), #correlation tabPanel
+            titlePanel("Spearman's Rank Correlation"),
+            br(),
+            uiOutput(ns("spearmanEstimate")),
+            br(),
+            br()
+          ), #correlation tabPanel
 
 #### ---------------- Data File Tab ------------------------------------------
-                                 tabPanel(
-                                   id    = ns("slrDataFile"),
-                                   title = "Uploaded Data",
-                                   value = "Uploaded Data",
+          tabPanel(
+            id    = ns("slrDataFile"),
+            title = "Uploaded Data",
+            value = "Uploaded Data",
 
-                                   titlePanel("Data File"),
-                                   br(),
-                                   br(),
-                                   div(
-                                     DTOutput(ns("slrViewUpload")),
-                                     style = "width: 75%"
-                                   ),
-                                   br(),
-                                   br(),
-                                   ), #slrDataFile tabpanel
-                                 ), #slrTabset tabsetPanel
-                               ), #SLRData div
-
-                             ))) #SLRMainPanel
-    )))
+            titlePanel("Data File"),
+            br(),
+            br(),
+            div(
+              DTOutput(ns("slrViewUpload")),
+              style = "width: 75%"
+            ),
+            br(),
+            br(),
+            ), #slrDataFile tabpanel
+          ), #slrTabset tabsetPanel
+        ),
+      ))
+  ))
 }
 
-# =========================================================================== #
-# ---- Server Components ----------------------------------------------------
-# =========================================================================== #
+SLRSidebarUI <- function(id) {
+  ns <- NS(id)
+
+  tagList(withMathJax(div(
+    id = ns("inputPanel"),
+
+### ------------ Simple Linear Regression ------------------------------------
+    radioButtons(
+        inputId      = ns("dataRegCor"),
+        label        = strong("Data"),
+        choiceValues = list("Enter Raw Data",
+                            "Upload Data"),
+        choiceNames  = list("Enter Raw Data",
+                            "Upload Data"),
+        selected     = "Enter Raw Data", #character(0), #
+        inline       = TRUE), #,width = '1000px'),
+
+      conditionalPanel(
+        ns = ns,
+        condition = "input.dataRegCor == 'Enter Raw Data'",
+
+        textAreaInput(
+          inputId     = ns("x"),
+          label       = strong("\\( x\\) (Independent Variable)"),
+          value       = "10, 13, 18, 19, 22, 24, 27, 29, 35, 38",
+          placeholder = "Enter values separated by a comma with decimals as points",
+          rows        = 3),
+
+        textAreaInput(
+          inputId     = ns("y"),
+          label       = strong("\\( y\\) (Dependent Variable)"),
+          value       = "66, 108, 161, 177, 228, 235, 268, 259, 275, 278",
+          placeholder = "Enter values separated by a comma with decimals as points",
+          rows        = 3),
+        ), #dataRegCor == 'Enter Raw Data'
+
+    div(
+      id = "userUploadedData",
+      conditionalPanel(
+        ns = ns,
+        condition = "input.dataRegCor == 'Upload Data'",
+
+        fileInput(
+          inputId = ns("slrUserData"),
+          label   = strong("Upload your data (.csv or .xls or .xlsx or .txt)"),
+          accept  = c("text/csv",
+                      "text/comma-separated-values",
+                      "text/plain",
+                      ".csv",
+                      ".xls",
+                      ".xlsx")),
+
+        selectizeInput(
+          inputId = ns("slrExplanatory"),
+          label   = strong("Choose the Explanatory Variable (x)"),
+          choices = c(""),
+          options = list(placeholder = 'Select a variable',
+                         onInitialize = I('function() { this.setValue(""); }'))),
+
+        selectizeInput(
+          inputId = ns("slrResponse"),
+          label   = strong("Choose the Response Variable (y)"),
+          choices = c(""),
+          options = list(placeholder = 'Select a variable',
+                         onInitialize = I('function() { this.setValue(""); }'))),
+        )), #dataRegCor == 'Upload Data'
+
+      br(),
+      p(strong("Graph Options")),
+      hr(),
+      checkboxInput(
+        inputId = ns("scatterPlot"),
+        label   = "Scatterplot of \\( x\\) versus \\( y\\)",
+        value   = TRUE),
+      br(),
+
+    actionButton(
+      inputId = ns("goRegression"),
+      label = "Calculate",
+      class = "act-btn"),
+
+    actionButton(
+      inputId = ns("resetRegCor"),
+      label = "Reset Values",
+      class = "act-btn")
+  )))
+}
+
 SLRServer <- function(id) {
   moduleServer(id, function(input, output, session) {
-    observeEvent(input$resetRegCor, {
-      ## hideTab(inputId = 'tabSet', target = 'Simple Linear Regression')
-      ## hideTab(inputId = 'tabSet', target = 'Normality of Residuals')
-      ## hideTab(inputId = 'tabSet', target = 'Residual Plots')
 
-      hide(id = "SLRMainPanel")
-      shinyjs::reset("inputPanel")
-      fileInputs$slrStatus <- 'reset'
-    })
-
-    observe({
-      req(input$dataRegCor)
-      if (input$dataRegCor == 'Enter Raw Data') {
-        hideTab(inputId = "slrTabset", target = "Uploaded Data")
-        updateTabsetPanel(inputId = 'slrTabset', selected = 'Simple Linear Regression')
-      } else {
-        showTab(inputId = "slrTabset", target = "Uploaded Data")
-      }
-    })
-
-                                        #  ========================================================================= #
-    ## -------- Data Validation ------------------------------------------------
-                                        #  ========================================================================= #
+ #  ========================================================================= #
+ ## -------- Data Validation ------------------------------------------------
+ #  ========================================================================= #
     regcor_iv <- InputValidator$new()
     slrraw_iv <- InputValidator$new()
     slrupload_iv <- InputValidator$new()
     slruploadvars_iv <- InputValidator$new()
 
-### ------------ Rules -------------------------------------------------------
+ ### ------------ Rules -------------------------------------------------------
     slrraw_iv$add_rule("x", sv_required())
     slrraw_iv$add_rule("x", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
                                      "Data must be numeric values seperated by a comma (ie: 2,3,4)."))
@@ -338,7 +317,7 @@ SLRServer <- function(id) {
     slrupload_iv$add_rule("slrUserData", ~ if(nrow(slrUploadData()) == 0) "File is empty.")
     slrupload_iv$add_rule("slrUserData", ~ if(ncol(slrUploadData()) < 2) "Data must include one response and (at least) one explanatory variable.")
     slrupload_iv$add_rule("slrUserData", ~ if(nrow(slrUploadData()) < 3) "Samples must include at least 2 observations.")
-                                        # slrupload_iv$add_rule("slrUserData", ~ if(any(!is.numeric(slrUploadData()))) "File contains non-numeric data.")
+    # slrupload_iv$add_rule("slrUserData", ~ if(any(!is.numeric(slrUploadData()))) "File contains non-numeric data.")
 
     slruploadvars_iv$add_rule("slrExplanatory", sv_required())
     slruploadvars_iv$add_rule("slrExplanatory", ~ if(explanatoryInfoUploadSLR()$invalid) "Explanatory variable contains non-numeric data.")
@@ -349,34 +328,34 @@ SLRServer <- function(id) {
     slruploadvars_iv$add_rule("slrResponse", ~ if(responseInfoUploadSLR()$invalid) "Response variable contains non-numeric data.")
     slruploadvars_iv$add_rule("slrResponse", ~ if(responseInfoUploadSLR()$sd == 0) "Not enough variance in Response Variable.")
 
-### ------------ Conditions --------------------------------------------------
+ ### ------------ Conditions --------------------------------------------------
     slrraw_iv$condition(~ isTRUE(input$dataRegCor == 'Enter Raw Data'))
     slrupload_iv$condition(~ isTRUE(input$dataRegCor == 'Upload Data'))
     slruploadvars_iv$condition(function() {isTRUE(input$dataRegCor == 'Upload Data' &&
-                                                  slrupload_iv$is_valid()) })
+                                                    slrupload_iv$is_valid()) })
 
-### ------------ Dependencies ------------------------------------------------
+ ### ------------ Dependencies ------------------------------------------------
     regcor_iv$add_validator(slrraw_iv)
     regcor_iv$add_validator(slrupload_iv)
     regcor_iv$add_validator(slruploadvars_iv)
 
 
-### ------------ Activation --------------------------------------------------
+ ### ------------ Activation --------------------------------------------------
     regcor_iv$enable()
     slrraw_iv$enable()
     slrupload_iv$enable()
     slruploadvars_iv$enable()
 
 
-                                        #  ========================================================================= #
-    ## -------- Module Server Elements -----------------------------------------
-                                        #  ========================================================================= #
+ #  ========================================================================= #
+ ## -------- Module Server Elements -----------------------------------------
+ #  ========================================================================= #
     plotOptionsMenuServer("slrScatter")
 
 
-                                        #  ========================================================================= #
-    ## -------- Functions ------------------------------------------------------
-                                        #  ========================================================================= #
+ #  ========================================================================= #
+ ## -------- Functions ------------------------------------------------------
+ #  ========================================================================= #
     GetPlotHeight  <- function(plotToggle, pxValue, ui) {
       ifelse(plotToggle == 'in px' && !is.na(pxValue),
              height <- pxValue,
@@ -401,12 +380,12 @@ SLRServer <- function(id) {
     }
 
 
-                                        #  ========================================================================= #
-    ## -------- Reactives ------------------------------------------------------
-                                        #  ========================================================================= #
+ #  ========================================================================= #
+ ## -------- Reactives ------------------------------------------------------
+ #  ========================================================================= #
     fileInputs <- reactiveValues(
       slrStatus = NULL,
-      )
+    )
 
     slrUploadData <- eventReactive(input$slrUserData, {
       ext <- tools::file_ext(input$slrUserData$name)
@@ -422,7 +401,7 @@ SLRServer <- function(id) {
     })
 
     sampleInfoRaw <- eventReactive({input$x
-      input$y}, {
+                                    input$y}, {
         dat <- list()
         datx <- createNumLst(input$x)
         daty <- createNumLst(input$y)
@@ -450,89 +429,60 @@ SLRServer <- function(id) {
 
     sampleDiffUpload <- eventReactive (c(input$slrExplanatory,
                                          input$slrResponse), {
-                                           if(input$slrResponse == "" | input$slrExplanatory == "") {
-                                             return(0)
-                                           } else {
-                                             datx <- na.omit(as.data.frame(slrUploadData())[, input$slrExplanatory])
-                                             daty <- na.omit(as.data.frame(slrUploadData())[, input$slrResponse])
-                                             diff <- length(datx) - length(daty)
-                                             return(diff)
-                                           }
-                                         })
-
-
-                                        #  ========================================================================= #
-    ## -------- Observers ------------------------------------------------------
-                                        #  ========================================================================= #
-    observeEvent(input$slrUserData, {
-      hide(id = "SLRMainPanel")
-      hide(id = "slrResponse")
-      hide(id = "slrExplanatory")
-      fileInputs$slrStatus <- 'uploaded'
-
-      if(slrupload_iv$is_valid())
-      {
-        freezeReactiveValue(input, "slrExplanatory")
-        updateSelectInput(session = getDefaultReactiveDomain(),
-                          "slrExplanatory",
-                          choices = c(colnames(slrUploadData()))
-                          )
-        freezeReactiveValue(input, "slrResponse")
-        updateSelectInput(session = getDefaultReactiveDomain(),
-                          "slrResponse",
-                          choices = c(colnames(slrUploadData()))
-                          )
-        show(id = "slrResponse")
-        show(id = "slrExplanatory")
+      if(input$slrResponse == "" | input$slrExplanatory == "") {
+        return(0)
+      } else {
+        datx <- na.omit(as.data.frame(slrUploadData())[, input$slrExplanatory])
+        daty <- na.omit(as.data.frame(slrUploadData())[, input$slrResponse])
+        diff <- length(datx) - length(daty)
+        return(diff)
       }
     })
 
+
+ #  ========================================================================= #
+ ## -------- Observers ------------------------------------------------------
+ #  ========================================================================= #
+    observe({
+      fileInputs$slrStatus <- 'uploaded'
+      toggle(id = "regCorrMP", condition = slrupload_iv$is_valid())
+
+      if (slrupload_iv$is_valid()) {
+        updateSelectInput(inputId = "slrExplanatory",
+                          choices = colnames(slrUploadData()))
+        updateSelectInput(inputId = "slrResponse",
+                          choices = colnames(slrUploadData()))
+        show("slrExplanatory")
+        show("slrResponse")
+      }
+    }) |> bindEvent(input$slrUserData)
+
+    ## NOTE: related to the old plot options UI.
     observeEvent(input$slrExplanatory, {
       updateTextInput(inputId = "xlab", value = input$slrExplanatory)
     })
-
     observeEvent(input$slrResponse, {
       updateTextInput(inputId = "ylab", value = input$slrResponse)
     })
 
-### ------------ Component Display -------------------------------------------
-    ## NOTE: whenever the regression and correlation data changes hide the main
-    ## panel, and hide the response and explanatory variable inputs... for some
-    ## odd reason? Further, update some text inputs...
-    observeEvent(input$dataRegCor, {
-      hide(id = "SLRMainPanel")
-      hide(id = "slrResponse")
-      hide(id = "slrExplanatory")
-      updateTextInput(inputId = "xlab", value = "x")
-      updateTextInput(inputId = "ylab", value = "y")
-    })
-
-
-    
     observeEvent(input$goRegression, {
-
-### SLR Validation messages ----
+      ## SLR Validation messages ----
       toggle(id = "SLRData", condition = regcor_iv$is_valid())
-      toggle(id = "SLRMainPanel", condition = regcor_iv$is_valid())
 
       output$slrValidation <- renderUI({
-
-        if(!slrupload_iv$is_valid()) {
-
-          if(is.null(input$slrUserData)) {
-            validate("Please upload a file.")
-          }
-
-          validate(
-            need(!is.null(fileInputs$slrStatus) && fileInputs$slrStatus == 'uploaded', "Please upload a file."),
-            errorClass = "myClass")
-
-          validate(
-            need(nrow(slrUploadData()) != 0, "File is empty."),
-            need(ncol(slrUploadData()) > 1, "Data must include one response and (at least) one explanatory variable."),
-            need(nrow(slrUploadData()) > 2, "Samples must include at least 2 observations."),
-            errorClass = "myClass")
-        }
+        validate(
+          need(isTruthy(slrupload_iv$is_valid()), "Uploaded data is not valid."),
+          need(!is.null(input$slrUserData), "Please upload a file."),
+          need(!is.null(fileInputs$slrStatus) &&
+               fileInputs$slrStatus == 'uploaded',
+               "Please upload a file."),
+          need(nrow(slrUploadData()) != 0, "File is empty."),
+          need(ncol(slrUploadData()) > 1,
+               "Data must include one response and (at least) one explanatory variable."),
+          need(nrow(slrUploadData()) > 2,
+               "Samples must include at least 2 observations."),
+          errorClass = "myClass"
+        )
 
         if(!slruploadvars_iv$is_valid()) {
           validate(
@@ -551,6 +501,8 @@ SLRServer <- function(id) {
 
         if(input$dataRegCor == 'Upload Data') {
           req(slruploadvars_iv$is_valid())
+          show("slrExplanatory")
+          show("slrResponse")
           datx <- as.data.frame(slrUploadData())[, input$slrExplanatory]
           daty <- as.data.frame(slrUploadData())[, input$slrResponse]
         } else {
@@ -581,7 +533,6 @@ SLRServer <- function(id) {
 
 
       if(regcor_iv$is_valid()) {
-
         if(input$dataRegCor == 'Upload Data') {
           datx <- as.data.frame(slrUploadData())[, input$slrExplanatory]
           daty <- as.data.frame(slrUploadData())[, input$slrResponse]
@@ -620,21 +571,33 @@ SLRServer <- function(id) {
             )
         })
 
-        output$slrScatterplot <- renderPlot({ # scatterplot ----
-          RenderScatterplot(df,
-                            input[["slrScatter-Title"]],
-                            input[["slrScatter-Xlab"]],
-                            input[["slrScatter-Ylab"]],
-                            input[["slrScatter-Colour"]],
-                            input[["slrScatter-PointsColour"]],
-                            input[["slrScatter-LineWidth"]],
-                            input[["slrScatter-PointSize"]],
-                            input[["slrScatter-Gridlines"]])
+        output$slrScatterplot <- renderPlot(
+        { # scatterplot ----
+          RenderScatterplot(
+            df,
+            input[["slrScatter-Title"]],
+            input[["slrScatter-Xlab"]],
+            input[["slrScatter-Ylab"]],
+            input[["slrScatter-Colour"]],
+            input[["slrScatter-PointsColour"]],
+            input[["slrScatter-LineWidth"]],
+            input[["slrScatter-PointSize"]],
+            input[["slrScatter-Gridlines"]]
+          )
+        },
+        height = function() {
+          GetPlotHeight(input[["slrScatter-Height"]],
+                        input[["slrScatter-HeightPx"]],
+                        ui = FALSE)
+        },
+        width = function() {
+          GetPlotWidth(input[["slrScatter-Width"]],
+                       input[["slrScatter-WidthPx"]],
+                       ui = FALSE)
+        }
+        )
 
-        }, height = function() {GetPlotHeight(input[["slrScatter-Height"]], input[["slrScatter-HeightPx"]], ui = FALSE)},
-        width = function() {GetPlotWidth(input[["slrScatter-Width"]], input[["slrScatter-WidthPx"]], ui = FALSE)})
-
-        if(summary(model)$coefficients["datx", "Estimate"] > 0){
+        if (summary(model)$coefficients["datx", "Estimate"] > 0) {
           slopeDirection <- "increase"
           yHatOp <- "+"
           b0HatOp <- "-"
@@ -887,7 +850,45 @@ SLRServer <- function(id) {
 
       } #if regcor_iv is valid
 
-      show(id = "SLRMainPanel")
+      show(id = "regCorrMP")
     }) # input$goRegression
+
+ ### ------------ Component Display -------------------------------------------
+    observeEvent(!regcor_iv$is_valid(), {
+      hide(id = "regCorrMP")
+      hide(id = "SLRData")
+    })
+
+    observeEvent(input$dataRegCor, {
+      hide(id = "regCorrMP")
+      hide(id = "slrResponse")
+      hide(id = "slrExplanatory")
+      updateTextInput(inputId = "xlab", value = "x")
+      updateTextInput(inputId = "ylab", value = "y")
+      ## FIXME: the file upload won't reset to its original state simply by
+      ## switching back and forth between data sources, which it should.
+      shinyjs::reset("userUploadedData")
+      fileInputs$slrStatus <- 'reset'
+    })
+
+    observe({
+      req(isTruthy(input$dataRegCor))
+      if(input$dataRegCor == 'Enter Raw Data') {
+        hideTab(inputId = "slrTabset", target = "Uploaded Data")
+        updateTabsetPanel(inputId = 'slrTabset', selected = 'Simple Linear Regression')
+      } else {
+        showTab(inputId = "slrTabset", target = "Uploaded Data")
+      }
+    })
+
+    observeEvent(input$resetRegCor, {
+                                        # hideTab(inputId = 'tabSet', target = 'Simple Linear Regression')
+                                        # hideTab(inputId = 'tabSet', target = 'Normality of Residuals')
+                                        # hideTab(inputId = 'tabSet', target = 'Residual Plots')
+      hide(id = "regCorrMP")
+      shinyjs::reset("inputPanel")
+      fileInputs$slrStatus <- 'reset'
+    })
+
   })
 }

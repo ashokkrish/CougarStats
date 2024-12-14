@@ -1,4 +1,4 @@
-regressionCorrelationUI <- function(id) {
+regressionAndCorrelationUI <- function(id) {
   ns <- NS(id)
   sidebarLayout(
     sidebarPanel(
@@ -14,26 +14,24 @@ regressionCorrelationUI <- function(id) {
     ))
 }
 
-regressionCorrelationServer <- function(id) {
+regressionAndCorrelationServer <- function(id) {
   moduleServer(id, function(input, output, session) {
-    SLRServer("slr")
-    MLRServer("mlr")
+    SLRId <- "SLR"
+    MLRId <- "MLR"
+    SLRServer(SLRId)
+    MLRServer(MLRId)
 
     ## DONE: alternate between the simple or multiple linear regression sidebar
     ## and main panel UI based on the value of the "multiple" radioButtons.
     observe({
       output$simpleOrMultipleRegressionSidebarUI <- renderUI({
-        if (input$multiple == "MLR")
-          MLRSidebarUI("mlr")
-        else
-          SLRSidebarUI("slr")
+        if (input$multiple == "MLR") MLRSidebarUI(MLRId)
+        else SLRSidebarUI(SLRId)
       })
 
       output$simpleOrMultipleRegressionMainPanelUI <- renderUI({
-        if (input$multiple == "MLR")
-          MLRMainPanelUI("mlr")
-        else
-          SLRMainPanelUI("slr")
+        if (input$multiple == "MLR") MLRMainPanelUI(MLRId)
+        else SLRMainPanelUI(SLRId)
       })
     })
   })
