@@ -4,7 +4,7 @@ regressionAndCorrelationUI <- function(id) {
     sidebarPanel(
       useShinyjs(),
       radioButtons(ns("multiple"),
-                   "Regression type",
+                   tags$b("Regression type"),
                    list("Simple Linear Regression and Correlation Analysis" = "SLR",
                         "Multiple Linear Regression" = "MLR")),
       uiOutput(ns("simpleOrMultipleRegressionSidebarUI"))),

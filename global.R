@@ -1,5 +1,6 @@
 ## install.packages("remotes")
 ## remotes::install_github("deepanshu88/shinyDarkmode")
+## remotes::install_github("rsquaredacademy/olsrr")
 
 ## options(conflicts.policy = TRUE)
 ## library(conflicted)
@@ -37,6 +38,7 @@ library(latex2exp)
 library(thematic)
 library(datamods)
 library(magrittr)
+library(olsrr)
 
 source("R/authors.R")
 
@@ -91,7 +93,7 @@ render <- "
 
 ## NOTE: advanced understanding of R is required to interpret these results.
 ## It's not for the faint of heart.
-## warning("What follows is the base R conflicts() report: all MASK-ED or MASK-ING symbols are given.",
+## warning("What follows is the base R conflicts() report: all MASK-ed or MASK-ing symbols are given.",
 ##         immediate. = TRUE)
 ## print(conflicts(detail = TRUE))
 

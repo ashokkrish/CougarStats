@@ -15,3 +15,5 @@ testMLRModule <- function() {
 
   shinyApp(ui, server)
 }
+
+testMLRModule()
