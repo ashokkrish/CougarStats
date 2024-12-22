@@ -11,8 +11,8 @@ MLRSidebarUI <- function(id) {
     div(
       id = "MLRSidebar",
       useShinyjs(),
-      extendShinyjs(script = "enableDisableTabPanel.js", functions = c("disableTab", "enableTab")),
-      includeCSS(path = "www/enableDisableTabPanel.css"),
+      ## extendShinyjs(script = "enableDisableTabPanel.js", functions = c("disableTab", "enableTab")),
+      ## includeCSS(path = "www/enableDisableTabPanel.css"),
       withMathJax(
         ## DONE: the choices need to be updated dynamically.
         selectInput(ns("responseVariable"),
@@ -60,14 +60,14 @@ MLRServer <- function(id) {
 
     ## FIXME #45: why isn't the effect of disableTab useful from R, when the
     ## same function call in JavaScript will have an effect?
-    js$disableTab("MLR")
-    js$disableTab("Diagnostics")
-    observe({
-      shinyjs::reset(id = "responseVariable")
-      shinyjs::reset(id = "explanatoryVariables")
-      js$disableTab("MLR")
-      js$disableTab("Diagnostics")
-    }) |> bindEvent(input$reset)
+    ## js$disableTab("MLR")
+    ## js$disableTab("Diagnostics")
+    ## observe({
+    ##   shinyjs::reset(id = "responseVariable")
+    ##   shinyjs::reset(id = "explanatoryVariables")
+    ##   js$disableTab("MLR")
+    ##   js$disableTab("Diagnostics")
+    ## }) |> bindEvent(input$reset)
 
     ## Update the choices for the select inputs when the uploadedTibble changes.
     observe({
@@ -148,21 +148,21 @@ MLRServer <- function(id) {
 
       output$linearModelEquations <- renderUI({
         validate(need(uploadedTibble$name(), "Upload some data."),
-               need(is.numeric(uploadedTibble$data()[[input$responseVariable]]),
-                    "The response variable must be numeric."),
-               need(isTruthy(input$explanatoryVariables) &&
-                    length(input$explanatoryVariables) >= 2,
-                    "Two or more explanatory variables must be selected."),
-               ## MAYBE FIXME: this doesn't seem to return FALSE whilst
-               ## is.numeric(factor(c("Male", "Female"))) would.
-               need(all(as.logical(lapply(input$explanatoryVariables,
-                                          storeNameIfNotNumeric))),
-                    sprintf("All explanatory variables must be numeric. These variables are non-numeric: %s.",
-                            paste(nonnumericVariables, sep = ", "))),
-               need(all(as.logical(lapply(input$explanatoryVariables,
-                                          storeNameIfAnyNA))),
-                    sprintf("All explanatory variables must not contain NAs. These variables contain NAs: %s.",
-                            paste(isNAVariables, sep = ", "))))
+                 need(is.numeric(uploadedTibble$data()[[input$responseVariable]]),
+                      "The response variable must be numeric."),
+                 need(isTruthy(input$explanatoryVariables) &&
+                      length(input$explanatoryVariables) >= 2,
+                      "Two or more explanatory variables must be selected."),
+                 ## MAYBE FIXME: this doesn't seem to return FALSE whilst
+                 ## is.numeric(factor(c("Male", "Female"))) would.
+                 need(all(as.logical(lapply(input$explanatoryVariables,
+                                            storeNameIfNotNumeric))),
+                      sprintf("All explanatory variables must be numeric. These variables are non-numeric: %s.",
+                              paste(nonnumericVariables, sep = ", "))),
+                 need(all(as.logical(lapply(input$explanatoryVariables,
+                                            storeNameIfAnyNA))),
+                      sprintf("All explanatory variables must not contain NAs. These variables contain NAs: %s.",
+                              paste(isNAVariables, sep = ", "))))
 
         tagList(
           withMathJax(
@@ -173,11 +173,11 @@ MLRServer <- function(id) {
                   model <- lm(reformulate(input$explanatoryVariables, input$responseVariable))
                   ## Reactively generate the LaTeX for the regression model equation.
                   modelEquations <- with(as.list(coefficients(model)), {
+                    ## FIXME 51: Warning: Error in sprintf: argument is missing, with no default.
                     paste(
                       r"[\(]",
                       paste(
                         c(
-                          r"[\text{}]",
                           sprintf(r"[\hat{y} = \hat{\beta_0} + %s]",
                                   paste(
                                     sprintf(
@@ -192,11 +192,10 @@ MLRServer <- function(id) {
                                   input$responseVariable,
                                   paste(
                                     sprintf(
-                                      r"[\hat{%s}]",
-                                      paste0(r"[\beta_]",
-                                             seq_along(input$explanatoryVariables))
-                                    ),
-                                    input$explanatoryVariables,
+                                      r"[\hat{%s%s}]",
+                                      paste0(r"[\beta_]", seq_along(input$explanatoryVariables)),
+                                      paste0(r"[x_]", seq_along(input$explanatoryVariables)),
+                                      ),
                                     collapse = "+"
                                   )),
                           sprintf(r"[\hat{%s} = %.3f + %s]",
@@ -213,7 +212,8 @@ MLRServer <- function(id) {
                                   )),
                           ""
                         ),
-                        collapse = r"[\\]"),
+                        collapse = r"[\\]"
+                      ),
                       r"[\)]"
                     )
                   })
@@ -257,8 +257,8 @@ MLRServer <- function(id) {
 
       ## FIXME #45: why isn't the effect of disableTab useful from R, when the
       ## same function call in JavaScript will have an effect?
-      js$enableTab("MLR")
-      js$enableTab("Diagnostics")
+      ## js$enableTab("MLR")
+      ## js$enableTab("Diagnostics")
     }) |> bindEvent(input$calculate)
   })
 }
