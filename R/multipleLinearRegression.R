@@ -168,17 +168,16 @@ MLRServer <- function(id) {
           withMathJax(
             div(id = "linear-model-equations",
                 p("The estimated regression equation is"),
-                ## TODO #50: reformat the dynamic text.
                 p(with(uploadedTibble$data(), {
                   model <- lm(reformulate(input$explanatoryVariables, input$responseVariable))
                   ## Reactively generate the LaTeX for the regression model equation.
                   modelEquations <- with(as.list(coefficients(model)), {
-                    ## FIXME #51: Warning: Error in sprintf: argument is missing, with no default.
                     paste(
-                      r"[\(]",
+                      r"{\[}",
+                      r"[\begin{align}]",
                       paste(
                         c(
-                          sprintf(r"[\hat{y} = \hat{\beta_0} + %s]",
+                          sprintf(r"[\hat{y} &= \hat{\beta_0} &+ %s]",
                                   paste(
                                     sprintf(
                                       r"[\hat{%s}]",
@@ -186,35 +185,22 @@ MLRServer <- function(id) {
                                              seq_along(input$explanatoryVariables))
                                     ),
                                     paste0(r"[x_]", seq_along(input$explanatoryVariables)),
-                                    collapse = "+"
+                                    collapse = "&+"
                                   )),
-                          sprintf(r"[\hat{%s} = \hat{\beta_0} + %s]",
-                                  input$responseVariable,
-                                  paste(
-                                    sprintf(
-                                      r"[\hat{%s%s}]",
-                                      paste0(r"[\beta_]", seq_along(input$explanatoryVariables)),
-                                      paste0(r"[x_]", seq_along(input$explanatoryVariables)),
-                                      ),
-                                    collapse = "+"
-                                  )),
-                          sprintf(r"[\hat{%s} = %.3f + %s]",
-                                  input$responseVariable,
+                          sprintf(r"[\hat{y} &= %.3f &+ %s]",
                                   get("(Intercept)"),
                                   paste(
-                                    ## Get the values of the estimated coefficients from the
-                                    ## environment constructed by with(coefficients(model),
-                                    ## {...}).
-                                    as.character(lapply(mget(input$explanatoryVariables),
-                                                        \(x) sprintf(r"[%.3f]", x))),
-                                    input$explanatoryVariables,
-                                    collapse = "+"
-                                  )),
+                                    as.character(lapply(mget(input$explanatoryVariables), \(x) sprintf(r"[%.3f]", x))),
+                                    paste0(r"[x_]", seq_along(input$explanatoryVariables)),
+                                    collapse = "&+")
+                                  ),
                           ""
                         ),
                         collapse = r"[\\]"
                       ),
-                      r"[\)]"
+                      r"[\end{align}]",
+                      r"{\]}",
+                      sep = r"{\\}"
                     )
                   })
                 }))
