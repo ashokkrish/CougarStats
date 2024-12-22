@@ -150,8 +150,7 @@ MLRServer <- function(id) {
         validate(need(uploadedTibble$name(), "Upload some data."),
                  need(is.numeric(uploadedTibble$data()[[input$responseVariable]]),
                       "The response variable must be numeric."),
-                 need(isTruthy(input$explanatoryVariables) &&
-                      length(input$explanatoryVariables) >= 2,
+                 need(isTruthy(input$explanatoryVariables) && length(as.character(input$explanatoryVariables)) >= 2,
                       "Two or more explanatory variables must be selected."),
                  ## MAYBE FIXME: this doesn't seem to return FALSE whilst
                  ## is.numeric(factor(c("Male", "Female"))) would.
@@ -159,8 +158,8 @@ MLRServer <- function(id) {
                                             storeNameIfNotNumeric))),
                       sprintf("All explanatory variables must be numeric. These variables are non-numeric: %s.",
                               paste(nonnumericVariables, sep = ", "))),
-                 need(all(as.logical(lapply(input$explanatoryVariables,
-                                            storeNameIfAnyNA))),
+                 need(!all(as.logical(lapply(input$explanatoryVariables,
+                                             storeNameIfAnyNA))),
                       sprintf("All explanatory variables must not contain NAs. These variables contain NAs: %s.",
                               paste(isNAVariables, sep = ", "))))
 
