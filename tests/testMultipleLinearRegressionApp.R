@@ -5,9 +5,8 @@ source("R/multipleLinearRegression.R")
 testMLRModule <- function() {
   MLRId <- "MLR"
 
-  ui <- page_sidebar(MLRMainPanelUI(MLRId),
-                     sidebar = sidebar(MLRSidebarUI(MLRId)),
-                     title = "Test application for the MLR module")
+  ui <- sidebarLayout(sidebarPanel(MLRSidebarUI(MLRId)),
+                      mainPanel(MLRMainPanelUI(MLRId)))
 
   server <- function(input, output, session) {
     MLRServer(MLRId)

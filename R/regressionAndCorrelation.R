@@ -7,7 +7,8 @@ regressionAndCorrelationUI <- function(id) {
                    tags$b("Regression type"),
                    list("Simple Linear Regression and Correlation Analysis" = "SLR",
                         "Multiple Linear Regression" = "MLR")),
-      uiOutput(ns("simpleOrMultipleRegressionSidebarUI"))),
+      uiOutput(ns("simpleOrMultipleRegressionSidebarUI"))
+    ),
     mainPanel(
       useShinyjs(),
       uiOutput(ns("simpleOrMultipleRegressionMainPanelUI"))
@@ -16,6 +17,8 @@ regressionAndCorrelationUI <- function(id) {
 
 regressionAndCorrelationServer <- function(id) {
   moduleServer(id, function(input, output, session) {
+    ## FIXME: starting these servers here causes a delay when the user navigates
+    ## to the RC tab.
     SLRId <- "SLR"
     MLRId <- "MLR"
     SLRServer(SLRId)

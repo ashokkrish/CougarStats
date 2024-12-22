@@ -11,6 +11,8 @@ MLRSidebarUI <- function(id) {
     div(
       id = "MLRSidebar",
       useShinyjs(),
+      extendShinyjs(script = "enableDisableTabPanel.js", functions = c("disableTab", "enableTab")),
+      includeCSS(path = "www/enableDisableTabPanel.css"),
       withMathJax(
         ## DONE: the choices need to be updated dynamically.
         selectInput(ns("responseVariable"),
@@ -21,6 +23,7 @@ MLRSidebarUI <- function(id) {
                     "Explanatory Variables (\\(x_1, x_2, x_3, \\cdots , x_n\\))",
                     multiple = TRUE,
                     choices = NULL),
+        ## FIXME #44: styling issue.
         fluidRow(actionButton(ns("calculate"), "Calculate"),
                  actionButton(ns("reset"), "Reset")))
     ))
@@ -28,27 +31,26 @@ MLRSidebarUI <- function(id) {
 
 MLRMainPanelUI <- function(id) {
   ns <- NS(id)
-  navbarPage(title = NULL, id = ns("MLRMainPanelTab"),
+  navbarPage(title = NULL,
              tabPanel(title = "Data Import",
-                      import_ui(id = ns("dataImport"),
-                                from = c("file",
-                                         "copypaste"))),
+                      import_ui(id = ns("dataImport"), from = c("file", "copypaste"))),
              tabPanel(title = "MLR",
                       fluidPage(
                         fluidRow(uiOutput(ns("linearModelEquations"))),
                         fluidRow(verbatimTextOutput(ns("linearModelSummary"))),
-                        fluidRow(verbatimTextOutput(ns("linearModelANOVA"))),
-
-                        ## NOTE: Ashok didn't ask for this, but it's here.
+                        ## NOTE: Ashok didn't ask for these, but they're here.
                         fluidRow(verbatimTextOutput(ns("linearModelAIC"))),
-                        fluidRow(verbatimTextOutput(ns("linearModelBIC"))),
+                        fluidRow(verbatimTextOutput(ns("linearModelBIC")))
                       )),
-             tabPanel(title = "Residual Analysis",
-                      fluidPage(
-                        fluidRow(plotOutput(ns("linearModelRegressionLineAndPoints")))
-                      )),
-             ## NOTE: if the version is 5 then import_ui will break! MAYBE
-             ## FIXME: submit a bug report upstream?
+             tabPanel(title = "ANOVA",
+                      fluidRow(verbatimTextOutput(ns("linearModelANOVA")))),
+             tabPanel(title = "Diagnostics",
+                      fluidPage(fluidRow(plotOutput(ns("linearModelRegressionLineAndPoints"))))),
+             tabPanel(title = "Diagnostic Plots"),
+
+             ## FIXME: if the version is 5 then import_ui will break! NOTE:
+             ## write a support request on the Posit Shiny subform asking for
+             ## advice. I don't understand why this is this way.
              theme = bs_theme(version = 4))
 }
 
@@ -56,8 +58,16 @@ MLRServer <- function(id) {
   moduleServer(id, function(input, output, session) {
     uploadedTibble <- import_server("dataImport", return_class = "tbl_df")
 
-    observe({ shinyjs::reset(id = "responseVariable") }) |> bindEvent(input$reset)
-    observe({ shinyjs::reset(id = "explanatoryVariables") }) |> bindEvent(input$reset)
+    ## FIXME #45: why isn't the effect of disableTab useful from R, when the
+    ## same function call in JavaScript will have an effect?
+    js$disableTab("MLR")
+    js$disableTab("Diagnostics")
+    observe({
+      shinyjs::reset(id = "responseVariable")
+      shinyjs::reset(id = "explanatoryVariables")
+      js$disableTab("MLR")
+      js$disableTab("Diagnostics")
+    }) |> bindEvent(input$reset)
 
     ## Update the choices for the select inputs when the uploadedTibble changes.
     observe({
@@ -96,18 +106,15 @@ MLRServer <- function(id) {
 
     output$singleOrMultipleHelpText <- renderUI({
       if (length(input$explanatoryVariables) > 1) {
-        helpText("Multiple explanatory variables results in a multiple linear regression")
+        div(class = "text-success", span("Multiple explanatory variables result in a multiple linear regression."))
       } else if (length(input$explanatoryVariables) == 1) {
-        helpText("A single explanatory variable results in a simple linear regression")
+        div(class = "text-danger", span("Select at least one more explanatory variable; a single explanatory variable results in a simple linear regression."))
       } else {
-        helpText("Select at least one explanatory variable")
+        div(class = "text-primary", span("Select at least two explanatory variables."))
       }
     })
 
-    ## NOTE regardless of (the implicitly chosen) single or multiple linear
-    ## regression, all of the model variables must be numeric. MAYBE TODO:
-    ## acommodate factors.
-    observe({
+    observe({ # input$calculate
       nonnumericVariables <- NULL
       storeNameIfNotNumeric <- function(var) {
         if (is.numeric(uploadedTibble$data()[[var]]))
@@ -121,77 +128,100 @@ MLRServer <- function(id) {
         }
       }
 
-      validate(need(uploadedTibble$name(), "Upload some data."),
+      isNAVariables <- NULL
+      storeNameIfAnyNA <- function(var) {
+        if (anyNA(uploadedTibble$data()[[var]]))
+          return(TRUE)
+        else {
+          ## Replace or concatenate to the value of the isNAVariables variable.
+          if (is.null(isNAVariables)) isNAVariables <- var
+          else isNAVariables %<>% c(var)
+          return(FALSE)
+        }
+      }
+
+      output$linearModelEquations <- renderUI({
+        validate(need(uploadedTibble$name(), "Upload some data."),
                need(is.numeric(uploadedTibble$data()[[input$responseVariable]]),
                     "The response variable must be numeric."),
-               need(isTruthy(input$explanatoryVariables),
-                    "One or more explanatory variables must be selected."),
+               need(isTruthy(input$explanatoryVariables) &&
+                    length(input$explanatoryVariables) >= 2,
+                    "Two or more explanatory variables must be selected."),
                ## MAYBE FIXME: this doesn't seem to return FALSE whilst
                ## is.numeric(factor(c("Male", "Female"))) would.
                need(all(as.logical(lapply(input$explanatoryVariables,
                                           storeNameIfNotNumeric))),
                     sprintf("All explanatory variables must be numeric. These variables are non-numeric: %s.",
-                            paste(nonnumericVariables, sep = ", "))))
+                            paste(nonnumericVariables, sep = ", "))),
+               need(all(as.logical(lapply(input$explanatoryVariables,
+                                          storeNameIfAnyNA))),
+                    sprintf("All explanatory variables must not contain NAs. These variables contain NAs: %s.",
+                            paste(isNAVariables, sep = ", "))))
 
-      output$linearModelEquations <- renderUI({
         tagList(
           withMathJax(
-            p("The estimated regression equation is"),
-            ## Three equations follow
-            p(with(uploadedTibble$data(), {
-              model <- lm(reformulate(input$explanatoryVariables, input$responseVariable))
-              ## Reactively generate the LaTeX for the regression model equation.
-              modelEquations <- with(as.list(coefficients(model)), {
-                paste(
-                  r"[\(]",
-                  paste(
-                    c(
-                      r"[\text{}]",
-                      sprintf(r"[\hat{y} = \hat{\beta_0} + %s]",
-                              paste(
-                                sprintf(
-                                  r"[\hat{%s}]",
-                                  paste0(r"[\beta_]",
-                                         seq_along(input$explanatoryVariables))
-                                ),
-                                paste0(r"[x_]", seq_along(input$explanatoryVariables)),
-                                collapse = "+"
-                              )),
-                      sprintf(r"[\hat{%s} = \hat{\beta_0} + %s]",
-                              input$responseVariable,
-                              paste(
-                                sprintf(
-                                  r"[\hat{%s}]",
-                                  paste0(r"[\beta_]",
-                                         seq_along(input$explanatoryVariables))
-                                ),
-                                input$explanatoryVariables,
-                                collapse = "+"
-                              )),
-                      sprintf(r"[\hat{%s} = %.3f + %s]",
-                              input$responseVariable,
-                              get("(Intercept)"),
-                              paste(
-                                ## Get the values of the estimated coefficients from the
-                                ## environment constructed by with(coefficients(model),
-                                ## {...}).
-                                as.character(lapply(mget(input$explanatoryVariables),
-                                                    \(x) sprintf(r"[%.3f]", x))),
-                                input$explanatoryVariables,
-                                collapse = "+"
-                              )),
-                      ""
-                    ),
-                    collapse = r"[\\]"),
-                  r"[\)]"
-                )
-              })
-            }))
-          )
+            div(id = "linear-model-equations",
+                p("The estimated regression equation is"),
+                ## Three equations follow
+                p(with(uploadedTibble$data(), {
+                  model <- lm(reformulate(input$explanatoryVariables, input$responseVariable))
+                  ## Reactively generate the LaTeX for the regression model equation.
+                  modelEquations <- with(as.list(coefficients(model)), {
+                    paste(
+                      r"[\(]",
+                      paste(
+                        c(
+                          r"[\text{}]",
+                          sprintf(r"[\hat{y} = \hat{\beta_0} + %s]",
+                                  paste(
+                                    sprintf(
+                                      r"[\hat{%s}]",
+                                      paste0(r"[\beta_]",
+                                             seq_along(input$explanatoryVariables))
+                                    ),
+                                    paste0(r"[x_]", seq_along(input$explanatoryVariables)),
+                                    collapse = "+"
+                                  )),
+                          sprintf(r"[\hat{%s} = \hat{\beta_0} + %s]",
+                                  input$responseVariable,
+                                  paste(
+                                    sprintf(
+                                      r"[\hat{%s}]",
+                                      paste0(r"[\beta_]",
+                                             seq_along(input$explanatoryVariables))
+                                    ),
+                                    input$explanatoryVariables,
+                                    collapse = "+"
+                                  )),
+                          sprintf(r"[\hat{%s} = %.3f + %s]",
+                                  input$responseVariable,
+                                  get("(Intercept)"),
+                                  paste(
+                                    ## Get the values of the estimated coefficients from the
+                                    ## environment constructed by with(coefficients(model),
+                                    ## {...}).
+                                    as.character(lapply(mget(input$explanatoryVariables),
+                                                        \(x) sprintf(r"[%.3f]", x))),
+                                    input$explanatoryVariables,
+                                    collapse = "+"
+                                  )),
+                          ""
+                        ),
+                        collapse = r"[\\]"),
+                      r"[\)]"
+                    )
+                  })
+                }))
+                ))
         )
       })
 
       with(uploadedTibble$data(), {
+        validate(need(isTruthy(input$explanatoryVariables),
+                      "Two or more explanatory variables must be selected."),
+                 need(isTruthy(input$responseVariable),
+                      "A response variable must be selected."))
+
         model <- lm(reformulate(input$explanatoryVariables, input$responseVariable))
         output$linearModelSummary <- renderPrint({ summary(model) })
         output$linearModelANOVA <- renderPrint({ anova(model) })
@@ -218,6 +248,11 @@ MLRServer <- function(id) {
                       "Response variable must be numeric."))
         hist(responseVariableData)
       })
+
+      ## FIXME #45: why isn't the effect of disableTab useful from R, when the
+      ## same function call in JavaScript will have an effect?
+      js$enableTab("MLR")
+      js$enableTab("Diagnostics")
     }) |> bindEvent(input$calculate)
   })
 }
