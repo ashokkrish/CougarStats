@@ -81,6 +81,12 @@ MLRServer <- function(id) {
 
     ## Validate that the response variable is not included in the explanatory variables.
     observe({
+      ## NOTE: why is the response variable requirement preceeding the
+      ## conditional statement operating upon the boolean result of the
+      ## availability of the uploaded data tibble? A little cart before the
+      ## horse, but it hasn't been problematic yet. NOTE: it's delicate because
+      ## the reactive being observed is the response variable itself; it's then
+      ## checked for truthiness before proceeding.
       req(isTruthy(input$responseVariable))
       if (isTruthy(uploadedTibble$data())) {
         ## The newly-selected response variable is always removed from the
@@ -162,7 +168,7 @@ MLRServer <- function(id) {
           withMathJax(
             div(id = "linear-model-equations",
                 p("The estimated regression equation is"),
-                ## Three equations follow
+                ## TODO #50: reformat the dynamic text.
                 p(with(uploadedTibble$data(), {
                   model <- lm(reformulate(input$explanatoryVariables, input$responseVariable))
                   ## Reactively generate the LaTeX for the regression model equation.
