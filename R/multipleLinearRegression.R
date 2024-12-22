@@ -173,7 +173,7 @@ MLRServer <- function(id) {
                   model <- lm(reformulate(input$explanatoryVariables, input$responseVariable))
                   ## Reactively generate the LaTeX for the regression model equation.
                   modelEquations <- with(as.list(coefficients(model)), {
-                    ## FIXME 51: Warning: Error in sprintf: argument is missing, with no default.
+                    ## FIXME #51: Warning: Error in sprintf: argument is missing, with no default.
                     paste(
                       r"[\(]",
                       paste(
