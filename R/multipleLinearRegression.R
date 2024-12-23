@@ -176,29 +176,33 @@ MLRServer <- function(id) {
                     paste(
                       r"{\[}",
                       r"[\begin{align}]",
-                      paste(
-                        c(
-                          sprintf(r"[\hat{y} &= \hat{\beta_0} &+ %s]",
-                                  paste(
-                                    sprintf(
-                                      r"[\hat{%s}]",
-                                      paste0(r"[\beta_]",
-                                             seq_along(input$explanatoryVariables))
-                                    ),
-                                    paste0(r"[x_]", seq_along(input$explanatoryVariables)),
-                                    collapse = "&+"
-                                  )),
-                          sprintf(r"[\hat{y} &= %.3f &+ %s]",
-                                  get("(Intercept)"),
-                                  paste(
-                                    as.character(lapply(mget(input$explanatoryVariables), \(x) sprintf(r"[%.3f]", x))),
-                                    paste0(r"[x_]", seq_along(input$explanatoryVariables)),
-                                    collapse = "&+")
-                                  ),
-                          ""
-                        ),
-                        collapse = r"[\\]"
-                      ),
+                      gsub(
+                        pattern = r"{\+(\ +)?-}",
+                        replacement = "-",
+                        x = paste(
+                          c(
+                            sprintf(r"[\hat{y} &= \hat{\beta_0} &+ %s]",
+                                    paste(
+                                      sprintf(
+                                        r"[\hat{%s}]",
+                                        paste0(r"[\beta_]",
+                                               seq_along(input$explanatoryVariables))
+                                      ),
+                                      paste0(r"[x_]", seq_along(input$explanatoryVariables)),
+                                      collapse = "&+"
+                                    )),
+                            sprintf(r"[\hat{y} &= %.3f &+ %s]",
+                                    get("(Intercept)"),
+                                    paste(
+                                      as.character(lapply(mget(input$explanatoryVariables),
+                                                          \(x) sprintf(r"[%.3f]", x))),
+                                      paste0(r"[x_]", seq_along(input$explanatoryVariables)),
+                                      collapse = "&+"
+                                    )),
+                            ""
+                          ),
+                          collapse = r"[\\]"
+                        )),
                       r"[\end{align}]",
                       r"{\]}",
                       sep = r"{\\}"
