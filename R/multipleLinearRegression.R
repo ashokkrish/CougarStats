@@ -11,6 +11,9 @@ MLRSidebarUI <- function(id) {
     div(
       id = "MLRSidebar",
       useShinyjs(),
+      ## FIXME #45: the script isn't working; unfortunately, it seems there is
+      ## an upstream bug or a severely complex issue which is preventing the
+      ## script objects from being correctly associated.
       ## extendShinyjs(script = "enableDisableTabPanel.js", functions = c("disableTab", "enableTab")),
       ## includeCSS(path = "www/enableDisableTabPanel.css"),
       withMathJax(
