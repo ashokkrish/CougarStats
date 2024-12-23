@@ -75,8 +75,7 @@ MLRServer <- function(id) {
     ## Update the choices for the select inputs when the uploadedTibble changes.
     observe({
       updateSelectInput(inputId = "responseVariable",
-                        choices = colnames(uploadedTibble$data()),
-                        selected = character())
+                        choices = colnames(uploadedTibble$data()))
 
       updateSelectizeInput(inputId = "explanatoryVariables",
                            choices = colnames(uploadedTibble$data()))
