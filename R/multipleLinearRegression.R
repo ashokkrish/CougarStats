@@ -266,10 +266,18 @@ H_a: \text{at least one} \beta_j \ne 0, \text{where} j = 0, 1, \cdots, k. \text{
         output$linearModelAdjustedR2 <- renderUI({
           eval(MLRValidation)
           withMathJax(p(r"{ Adjusted \(r^2\) }"),
-                      p(sprintf(r"{ \[ r^2_{adj} = 1 - \left[\left(1-r^2\right)\frac{n-1}{n-k-1}\right] \] }")),
+                      p(sprintf(r"{
+\[
+\begin{align}
+r^2_{\text{adj}} & = 1 - \left[ \left( 1-r^2 \right) \frac{n-1}{n-k-1} \right] \\
+r^2_{\text{adj}} & = %0.3f
+\end{align}
+\]
+}",
+summary(model)$adj.r.squared)),
                       p(r"[where \(k\) is the number of independent (explanatory) variables in the regression equation.]"),
                       p(strong("Interpretation:"),
-                        sprintf(r"[therefore, %.0f%% of the variation in the response variable is explained by the multiple linear regression model when adjusted for the number of explanatory variables and the sample size.]",
+                        sprintf(r"[therefore, %0.1f%% of the variation in the response variable is explained by the multiple linear regression model when adjusted for the number of explanatory variables and the sample size.]",
                                 summary(model)$adj.r.squared * 100)))
         })
         output$linearModelANOVA <- renderPrint({ anova(model) })
