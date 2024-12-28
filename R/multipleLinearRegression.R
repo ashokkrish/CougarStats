@@ -5,6 +5,7 @@ library(datamods)
 library(magrittr)
 library(ggplot2)
 library(dplyr)
+library(knitr) # for kable to produce HTML tables.
 
 MLRSidebarUI <- function(id) {
   ns <- NS(id)
@@ -52,7 +53,8 @@ MLRMainPanelUI <- function(id) {
              tabPanel(title = "ANOVA",
                       fluidPage(
                         fluidRow(uiOutput(ns("ANOVAHypothesisTesting"))),
-                        fluidRow(verbatimTextOutput(ns("linearModelANOVA")))
+                        fluidRow(tableOutput(ns("linearModelANOVA"))),
+                        fluidRow(uiOutput(ns("ANOVAHypothesisTestingContinued")))
                       )),
              tabPanel(title = "Diagnostics",
                       fluidPage(fluidRow(plotOutput(ns("linearModelRegressionLineAndPoints"))))),
@@ -177,14 +179,19 @@ MLRServer <- function(id) {
 
       output$ANOVAHypothesisTesting <- renderUI({
         withMathJax(
+          p(strong("Analysis of Variance (ANOVA)")),
           p("This ANOVA test is for the following hypothesis,"),
           ## TODO: use this if there are more than five independent variable
           ## selected, and while an alternative which uses the actual number is
           ## unimplemented.
-          p(r"{\[
-H_0: \beta_1 = \beta_2 = \cdots = \beta_k \text{(there is no linear relationship between the dependent variable and the independent variables.)} \\
-H_a: \text{at least one} \beta_j \ne 0, \text{where} j = 0, 1, \cdots, k. \text{(there is a linear relationship between the dependent variable and the independent variables.)}\\
-\]}")
+          p(r"{\( H_0: \beta_1 = \beta_2 = \cdots = \beta_k \) (there is no linear relationship between the dependent variable and the independent variables.) }",
+            br(),
+            r"{\(H_a:\) At least one \(\beta_j\ne 0\), where \(j = 0, 1, \cdots, k\). (there is a linear relationship between the dependent variable and the independent variables.)}"),
+          p(r"{In other words, "Taken collectively, does the entire set of explanatory variables contribute significantly to the prediction of the response?"}"),
+          p(r"{\(\alpha = 0.05\)}"),
+          p(sprintf(r"{\(n = %i\)}", nrow(uploadedTibble$data())),
+            br(),
+            sprintf(r"{\(k = %i\)}", nrow(uploadedTibble$data()) - 1))
         )
       })
 
@@ -265,22 +272,47 @@ H_a: \text{at least one} \beta_j \ne 0, \text{where} j = 0, 1, \cdots, k. \text{
         output$linearModelSummary <- renderPrint({ summary(model) })
         output$linearModelAdjustedR2 <- renderUI({
           eval(MLRValidation)
-          withMathJax(p(r"{ Adjusted \(r^2\) }"),
+          withMathJax(p(strong(r"{ Adjusted \(R^2\) }")),
                       p(sprintf(r"{
 \[
 \begin{align}
-r^2_{\text{adj}} & = 1 - \left[ \left( 1-r^2 \right) \frac{n-1}{n-k-1} \right] \\
-r^2_{\text{adj}} & = %0.3f
+R^2_{\text{adj}} & = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] \\
+R^2_{\text{adj}} & = %0.4f
 \end{align}
 \]
 }",
 summary(model)$adj.r.squared)),
                       p(r"[where \(k\) is the number of independent (explanatory) variables in the regression equation.]"),
                       p(strong("Interpretation:"),
-                        sprintf(r"[therefore, %0.1f%% of the variation in the response variable is explained by the multiple linear regression model when adjusted for the number of explanatory variables and the sample size.]",
+                        sprintf(r"[therefore, %.2f%% of the variation in the response variable is explained by the multiple linear regression model when adjusted for the number of explanatory variables and the sample size.]",
                                 summary(model)$adj.r.squared * 100)))
         })
-        output$linearModelANOVA <- renderPrint({ anova(model) })
+
+        output$linearModelANOVA <- renderTable({
+          options(knitr.kable.NA = "") # do not display NAs
+          modelANOVA <- anova(model)
+          SSR <- sum(modelANOVA$"Sum Sq"[-nrow(modelANOVA)]) # all but the residuals
+          SSE <- modelANOVA$"Sum Sq"[nrow(modelANOVA)]       # only the residuals
+          SST <- SSR + SSE
+          k <- nrow(modelANOVA) - 1
+          n <- nrow(uploadedTibble$data())
+          MSR <- SSR / k
+          MSE <- SSE / (n - k - 1)
+          F <- MSR / MSE
+
+          ## RETURN THE TABLE TO RENDER
+          tibble::tribble(
+                    ~"names",     ~"df",     ~"SS", ~"MS", ~"F", ~"p-Value of F",
+                    "Regression", k,         SSR,   MSR,   NA,   NA,
+                    "Residual",   n - k - 1, SSE,   MSE,   NA,   NA,
+                    "Total",      n - 1,     SST,   NA,    F,    NA
+                  ) %>% tibble::column_to_rownames(var = "names")
+        },
+        rownames = TRUE,
+        na = "",
+        striped = TRUE,
+        caption = "ANOVA Table")
+
         output$linearModelAIC <- renderPrint({
           print(AIC(model))
           print(paste("The AIC of the model and the AIC of the log-likelihood of the model are equal?", all.equal(AIC(model), AIC(logLik(model)))))
@@ -292,6 +324,37 @@ summary(model)$adj.r.squared)),
             geom_point() +
             labs(x = "Fitted values", y = "Residuals") +
             ggtitle("Residual Plot for Multiple Linear Regression")
+        })
+      })
+
+      output$ANOVAHypothesisTestingContinued <- renderUI({
+        with(uploadedTibble$data(), {
+          model <- lm(reformulate(as.character(lapply(input$explanatoryVariables, as.name)),
+                                  as.name(input$responseVariable)))
+          anovaModel <- anova(model)
+          regressionVariables <- nrow(anovaModel) - 1
+          modelANOVA <- anova(model)
+          SSR <- sum(modelANOVA$"Sum Sq"[-nrow(modelANOVA)]) # all but the residuals
+          SSE <- modelANOVA$"Sum Sq"[nrow(modelANOVA)]       # only the residuals
+          SST <- SSR + SSE
+          k <- nrow(modelANOVA) - 1
+          n <- nrow(uploadedTibble$data())
+          MSR <- SSR / k
+          MSE <- SSE / (n - k - 1)
+          F <- MSR / MSE
+          withMathJax(
+            p(strong("Test statistic")),
+            p(sprintf(r"{\(F = \frac{\text{MSR}}{\text{MSE}} = \frac{%0.2f}{%0.2f} = %0.2f \)}",
+                      MSR, MSE, F)),
+            p(sprintf(r"{\[\begin{align} R^2 & = \frac{\text{SSR}}{\text{SST}} \\ R^2_{\text{adj}} & = \frac{%0.2f}{%0.2f} \\ R^2_{\text{adj}} & = %0.2f \end{align}\]}",
+            anovaModel$SSR, anovaModel$SST, anovaModel$SSR / anovaModel$SST)),
+            p(strong("Using the P-Value method:")),
+            p({
+              pvalue <- pf(F, k, n - k - 1, lower.tail = FALSE)
+              sprintf("The p-value for the F statistic for this test is: %0.3f",
+                      pvalue)
+            })
+          )
         })
       })
 
