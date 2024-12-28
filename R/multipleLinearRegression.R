@@ -349,11 +349,8 @@ summary(model)$adj.r.squared)),
             p(sprintf(r"{\[\begin{align} R^2 & = \frac{\text{SSR}}{\text{SST}} \\ R^2_{\text{adj}} & = \frac{%0.2f}{%0.2f} \\ R^2_{\text{adj}} & = %0.2f \end{align}\]}",
             anovaModel$SSR, anovaModel$SST, anovaModel$SSR / anovaModel$SST)),
             p(strong("Using the P-Value method:")),
-            p({
-              pvalue <- pf(F, k, n - k - 1, lower.tail = FALSE)
-              sprintf("The p-value for the F statistic for this test is: %0.3f",
-                      pvalue)
-            })
+            p(sprintf("The p-value for the F statistic for this test is: %0.3f",
+                      pf(F, k, n - k - 1, lower.tail = FALSE)))
           )
         })
       })
