@@ -186,12 +186,12 @@ MLRServer <- function(id) {
           ## unimplemented.
           p(r"{\( H_0: \beta_1 = \beta_2 = \cdots = \beta_k \) (there is no linear relationship between the dependent variable and the independent variables.) }",
             br(),
-            r"{\(H_a:\) At least one \(\beta_j\ne 0\), where \(j = 0, 1, \cdots, k\). (there is a linear relationship between the dependent variable and the independent variables.)}"),
+            r"{\( H_a: \) At least one \(\beta_j\ne 0\), where \(j = 0, 1, \cdots, k\). (there is a linear relationship between the dependent variable and the independent variables.)}"),
           p(r"{In other words, "Taken collectively, does the entire set of explanatory variables contribute significantly to the prediction of the response?"}"),
-          p(r"{\(\alpha = 0.05\)}"),
-          p(sprintf(r"{\(n = %i\)}", nrow(uploadedTibble$data())),
+          p(r"{\( \alpha = 0.05\ \)}"),
+          p(sprintf(r"{\( n = %i \)}", nrow(uploadedTibble$data())),
             br(),
-            sprintf(r"{\(k = %i\)}", nrow(uploadedTibble$data()) - 1))
+            sprintf(r"{\( k = %i \)}", nrow(uploadedTibble$data()) - 1))
         )
       })
 
@@ -305,7 +305,7 @@ summary(model)$adj.r.squared)),
                     ~"names",     ~"df",     ~"SS", ~"MS", ~"F", ~"p-Value of F",
                     "Regression", k,         SSR,   MSR,   NA,   NA,
                     "Residual",   n - k - 1, SSE,   MSE,   NA,   NA,
-                    "Total",      n - 1,     SST,   NA,    F,    NA
+                    "Total",      n - 1,     SST,   NA,    F,    pf(F, k, n - k - 1, lower.tail = FALSE)
                   ) %>% tibble::column_to_rownames(var = "names")
         },
         rownames = TRUE,
@@ -346,8 +346,16 @@ summary(model)$adj.r.squared)),
             p(strong("Test statistic")),
             p(sprintf(r"{\(F = \frac{\text{MSR}}{\text{MSE}} = \frac{%0.2f}{%0.2f} = %0.2f \)}",
                       MSR, MSE, F)),
-            p(sprintf(r"{\[\begin{align} R^2 & = \frac{\text{SSR}}{\text{SST}} \\ R^2_{\text{adj}} & = \frac{%0.2f}{%0.2f} \\ R^2_{\text{adj}} & = %0.2f \end{align}\]}",
-            anovaModel$SSR, anovaModel$SST, anovaModel$SSR / anovaModel$SST)),
+            p(sprintf(r"{
+\[
+\begin{align}
+R^2 & = \frac{\text{SSR}}{\text{SST}} \\
+R^2_{\text{adj}} & = \frac{%0.2f}{%0.2f} \\
+R^2_{\text{adj}} & = %0.2f \\
+\end{align}
+\]
+}",
+anovaModel$SSR, anovaModel$SST, anovaModel$SSR / anovaModel$SST)),
             p(strong("Using the P-Value method:")),
             p(sprintf("The p-value for the F statistic for this test is: %0.3f",
                       pf(F, k, n - k - 1, lower.tail = FALSE)))
@@ -365,10 +373,19 @@ summary(model)$adj.r.squared)),
         hist(responseVariableData)
       })
 
-      ## FIXME #45: why isn't the effect of disableTab useful from R, when the
-      ## same function call in JavaScript will have an effect?
+### FIXME #45: why isn't the effect of disableTab useful from R, when the same
+### function call in JavaScript will have an effect?
       ## js$enableTab("MLR")
       ## js$enableTab("Diagnostics")
+
+### FIXME #53: this observer was meant to left-align display math /after/
+### MathJax has rendered it; this works in the JavaScript console in a browser,
+### but in the reactive context in which this runs and (more importantly) /when
+### it runs/ it doens't work.
+      ## observe({
+      ##   reactiveValuesToList(input) # whenever any input changes run the following script.
+      ##   JS("$('p.MathJax_LeftAlign div.MathJax_Display').css('text-align', 'left');")
+      ## })
     }) |> bindEvent(input$calculate)
   })
 }
