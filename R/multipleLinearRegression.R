@@ -111,7 +111,7 @@ MLRServer <- function(id) {
         updateSelectizeInput(
           inputId = "explanatoryVariables",
           choices =
-            dplyr::select(select_if(uploadedTibble$data(), \(x) any(is.numeric(x), is.factor(x))),
+            dplyr::select(select_if(uploadedTibble$data(), is.numeric),
                           !all_of(input$responseVariable)) %>%
             colnames(),
           selected = if (input$responseVariable %in% input$explanatoryVariables)
