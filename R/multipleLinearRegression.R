@@ -111,7 +111,7 @@ MLRServer <- function(id) {
         updateSelectizeInput(
           inputId = "explanatoryVariables",
           choices =
-            dplyr::select(select_if(uploadedTibble$data(), is.numeric),
+            dplyr::select(select_if(uploadedTibble$data(), \(x) any(is.numeric(x), is.factor(x))),
                           !all_of(input$responseVariable)) %>%
             colnames(),
           selected = if (input$responseVariable %in% input$explanatoryVariables)
@@ -180,7 +180,6 @@ MLRServer <- function(id) {
       output$ANOVAHypothesisTesting <- renderUI({
         withMathJax(
           p(strong("Analysis of Variance (ANOVA)")),
-          p("This ANOVA test is for the following hypothesis,"),
           ## TODO: use this if there are more than five independent variable
           ## selected, and while an alternative which uses the actual number is
           ## unimplemented.
@@ -214,9 +213,9 @@ MLRServer <- function(id) {
                       r"{\]}")),
               p("The estimated regression equation is"),
               p(with(uploadedTibble$data(), {
-                model <- lm(reformulate(as.character(lapply(input$explanatoryVariables,
-                                                            as.name)),
+                model <- lm(reformulate(as.character(lapply(input$explanatoryVariables, as.name)),
                                         as.name(input$responseVariable)))
+
                 ## Reactively generate the LaTeX for the regression model equation.
                 modelEquations <- with(as.list(coefficients(model)), {
                   req(as.list(coefficients(model)),
@@ -258,7 +257,7 @@ MLRServer <- function(id) {
                 })
               })))
         )
-      })
+      }) # output$linearModelEquations
 
       with(uploadedTibble$data(), {
         validate(need(isTruthy(input$explanatoryVariables),
@@ -266,8 +265,7 @@ MLRServer <- function(id) {
                  need(isTruthy(input$responseVariable),
                       "A response variable must be selected."))
 
-        model <- lm(reformulate(as.character(lapply(input$explanatoryVariables,
-                                                    as.name)),
+        model <- lm(reformulate(as.character(lapply(input$explanatoryVariables, as.name)),
                                 as.name(input$responseVariable)))
         output$linearModelSummary <- renderPrint({ summary(model) })
         output$linearModelAdjustedR2 <- renderUI({
