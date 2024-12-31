@@ -33,7 +33,7 @@ Read more about [Getting Started with Docker](https://www.docker.com/get-started
 - Calculate the descriptive statistics (ex. mean, median, mode, quartiles, IQR, standard deviation, check for potential outliers etc.)
 - Construct a Boxplot, Histogram, Stem and Leaf plot, and Scatterplot
 - Calculate the marginal, joint, union, and conditional probabilities for a contingency table 
-- Calculate exact and cumulative probabilities for Binomial and Poisson distributions
+- Calculate exact and cumulative probabilities for Binomial, Poisson and Hypergeometric distributions
 - Calculate cumulative probability for Normal distribution
 - Sample size estimation
 - Confidence interval and Hypothesis test for
@@ -54,21 +54,20 @@ Read more about [Getting Started with Docker](https://www.docker.com/get-started
 
 ## Developers
 ### Project supervisor
-- [Ashok Krishnamurthy Ph.D., MRU Associate Professor](https://github.com/ashokkrish): Template and model designer, copyright holder. See the [faculty biography page of Prof. Krishnamurthy](https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/ScienceTechnology/Departments/MathematicsComputing/Faculty/akrishnamurthy.htm).
+- [Ashok Krishnamurthy Ph.D.,](https://github.com/ashokkrish), Associate Professor, Mount Royal University: Template and model designer, copyright holder. See the [faculty biography page of Prof. Krishnamurthy](https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/ScienceTechnology/Departments/MathematicsComputing/Faculty/akrishnamurthy.htm).
 
 ### Current project members
-- [Bryce Carson](https://github.com/bryce-carson): Senior Developer
+
+- [Samantha Brian](https://github.com/samantha-v-brian): Senior Developer
 
 ### Past project members
-- [Michael Myer](https://github.com/m-myer): Senior Developer
-- [Samantha Brian](https://github.com/samantha-v-brian): Developer
-- [Michael Walsh](https://github.com/mwals360): Developer
+- [Bryce Carson](https://github.com/bryce-carson): Senior Developer
 
 ## Acknowledgements
 | Funding Agency / Coursework | Recipient | Date(s) |
 |--------|--------|--------|
-| Provost's Teaching and Learning Enhancement Grant (TLEG) | Bryce Carson | November 2024 through January 2025 |
-| Provost's Teaching and Learning Enhancement Grant (TLEG) | Michael Myer | September 2023 through April 2024 |
+| Provost's Teaching and Learning Enhancement Grant (TLEG) | [Bryce Carson](https://github.com/bryce-carson) | November 2024 through January 2025 |
+| Provost's Teaching and Learning Enhancement Grant (TLEG) | [Michael Myer](https://github.com/m-myer) | September 2023 through April 2024 |
 | Faculty of Science and Technology (FST) Student Research Award | Michael Myer | June through August 2023 |
 | COMP 5690: Senior Computer Science Project | Crystal Wai | September through December 2022 |
 
