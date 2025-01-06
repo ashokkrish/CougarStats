@@ -51,7 +51,7 @@ MLRMainPanelUI <- function(id) {
                         )),
              tabPanel(title = "ANOVA",
                       fluidPage(
-                        fluidRow(uiOutput(ns("ANOVAHypothesisTesting"))),
+                        fluidRow(uiOutput(ns("anovaHypotheses"))),
                         fluidRow(tableOutput(ns("linearModelANOVA"))),
                         fluidRow(uiOutput(ns("ANOVAHypothesisTestingContinued")))
                       )),
@@ -180,7 +180,7 @@ MLRServer <- function(id) {
         }
       }
 
-      output$ANOVAHypothesisTesting <- renderUI({
+      output$anovaHypotheses <- renderUI({
         withMathJax(
           p(strong("Analysis of Variance (ANOVA)")),
           ## TODO: use this if there are more than five independent variable
