@@ -6,6 +6,8 @@ library(magrittr)
 library(ggplot2)
 library(dplyr)
 library(knitr) # for kable to produce HTML tables.
+library(broom.helpers)
+library(GGally)
 
 MLRSidebarUI <- function(id) {
   ns <- NS(id)
@@ -43,13 +45,10 @@ MLRMainPanelUI <- function(id) {
                       import_ui(id = ns("dataImport"), from = c("file", "copypaste"))),
              tabPanel(title = "MLR",
                       fluidPage(
+                        ## the model equations are prefaced with a listing of the variables in the model
                         fluidRow(uiOutput(ns("linearModelEquations"))),
-                        fluidRow(verbatimTextOutput(ns("linearModelSummary"))),
-                        fluidRow(uiOutput(ns("linearModelAdjustedR2"))),
-                        ## NOTE: Ashok didn't ask for these, but they're here.
-                        ## fluidRow(verbatimTextOutput(ns("linearModelAIC"))),
-                        ## fluidRow(verbatimTextOutput(ns("linearModelBIC")))
-                      )),
+                        fluidRow(tableOutput(ns("linearModelCoefficients")))
+                        )),
              tabPanel(title = "ANOVA",
                       fluidPage(
                         fluidRow(uiOutput(ns("ANOVAHypothesisTesting"))),
@@ -57,8 +56,12 @@ MLRMainPanelUI <- function(id) {
                         fluidRow(uiOutput(ns("ANOVAHypothesisTestingContinued")))
                       )),
              tabPanel(title = "Diagnostics",
+                      ## Limit the width of the rows in a really jank way. It's
+                      ## okay: desktop is the only target platform.
+                      fluidPage(fluidRow(column(8, uiOutput(ns("rsquareAdjustedRSquareInterpretation"))),
+                                         column(4)))),
+             tabPanel(title = "Diagnostic Plots",
                       fluidPage(fluidRow(plotOutput(ns("linearModelRegressionLineAndPoints"))))),
-             tabPanel(title = "Diagnostic Plots"),
 
              ## FIXME #49: if the version is 5 then import_ui will break! NOTE:
              ## write a support request on the Posit Shiny subform asking for
@@ -202,15 +205,13 @@ MLRServer <- function(id) {
         withMathJax(
           div(id = "linear-model-equations",
               p("The variables in the model are"),
-              p(paste(r"{\[}",
-                      r"(\begin{align})",
-                      sprintf(r"[y    &= \text{%s} \\]", input$responseVariable),
-                      paste(sprintf(r"[x_%d &= \text{%s}]",
+              p(paste(r"{\(}",
+                      sprintf(r"[y    = \text{%s} \\]", input$responseVariable),
+                      paste(sprintf(r"[x_%d = \text{%s}]",
                                     seq_along(input$explanatoryVariables),
                                     input$explanatoryVariables),
                             collapse = r"[\\]"),
-                      r"(\end{align})",
-                      r"{\]}")),
+                      r"{\)}")),
               p("The estimated regression equation is"),
               p(with(uploadedTibble$data(), {
                 model <- lm(reformulate(as.character(lapply(input$explanatoryVariables, as.name)),
@@ -221,14 +222,13 @@ MLRServer <- function(id) {
                   req(as.list(coefficients(model)),
                       cancelOutput = "progress")
                   paste(
-                    r"{\[}",
-                    r"[\begin{align}]",
+                    r"{\(}",
                     gsub(
                       pattern = r"{\+(\ +)?-}",
                       replacement = "-",
                       x = paste(
                         c(
-                          sprintf(r"[\hat{y} &= \hat{\beta_0} &+ %s]",
+                          sprintf(r"[\hat{y} = \hat{\beta_0} + %s]",
                                   paste(
                                     sprintf(
                                       r"[\hat{%s}]",
@@ -236,22 +236,21 @@ MLRServer <- function(id) {
                                              seq_along(input$explanatoryVariables))
                                     ),
                                     paste0(r"{x_}", seq_along(input$explanatoryVariables)),
-                                    collapse = "&+"
+                                    collapse = "+"
                                   )),
-                          sprintf(r"[\hat{y} &= %.3f &+ %s]",
+                          sprintf(r"[\hat{y} = %.3f + %s]",
                                   get("(Intercept)"),
                                   paste(
                                     as.character(lapply(mget(as.character(lapply(input$explanatoryVariables, as.name))),
                                                         \(x) sprintf(r"[%.3f]", x))),
                                     paste0(r"{x_}", seq_along(input$explanatoryVariables)),
-                                    collapse = "&+"
+                                    collapse = "+"
                                   )),
                           ""
                         ),
                         collapse = r"[\\]"
                       )),
-                    r"[\end{align}]",
-                    r"{\]}",
+                    r"{\)}",
                     sep = r"{\\}"
                   )
                 })
@@ -267,23 +266,80 @@ MLRServer <- function(id) {
 
         model <- lm(reformulate(as.character(lapply(input$explanatoryVariables, as.name)),
                                 as.name(input$responseVariable)))
-        output$linearModelSummary <- renderPrint({ summary(model) })
-        output$linearModelAdjustedR2 <- renderUI({
+        output$linearModelCoefficients <- renderTable({
+          library(tibble)
+          library(tidyr)
+          c <- coef(model)
+          ## FIXME: this doesn't work, apparently.
+          ## if ("(Intercept)" %in% names(coef)) {
+          ##   names(c)[which(names(c) == "(Intercept)")] <- r"[\(\hat{\beta_0}\)]"
+          ## }
+          tibble(name = names(c), coef = c) %>%
+            pivot_wider(names_from = name, values_from = coef)
+        })
+        output$rsquareAdjustedRSquareInterpretation <- renderUI({
           eval(MLRValidation)
-          withMathJax(p(strong(r"{ Adjusted \(R^2\) }")),
-                      p(sprintf(r"{
-\[
-\begin{align}
-R^2_{\text{adj}} & = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] \\
-R^2_{\text{adj}} & = %0.4f
-\end{align}
-\]
+
+          ## FIXME: Copied from elsewhere. Duplications like this should REALLY be
+          ## abstracted using a reactive value list.
+          modelANOVA <- anova(model)
+          SSR <- sum(modelANOVA$"Sum Sq"[-nrow(modelANOVA)]) # all but the residuals
+          SSE <- modelANOVA$"Sum Sq"[nrow(modelANOVA)]       # only the residuals
+          SST <- SSR + SSE
+
+
+          ## FIXME:
+          ## Warning in cor(modelANOVA, use = "complete.obs") :
+          ##   the standard deviation is zero
+          ##
+          ## Only "complete" (no NAs) observations.
+          output$simpleCorrelationMatrix <- renderTable({
+            cor(uploadedTibble$data()[, input$explanatoryVariables], use = "complete.obs")
+          })
+
+          withMathJax(
+            p(sprintf(r"[\( \displaystyle R^2 = \frac{\text{SSR}}{\text{SST}} = \frac{%0.4f}{%0.4f} \\ 1 - R^2 = %0.4f = %0.2f\%% \)]",
+                      SSR, SST,
+                      1 - ( SSR / SST ),
+                      (1 - ( SSR / SST )) * 100)),
+            p(strong(r"{ Adjusted \(R^2\) }")),
+            p(sprintf(r"{
+\(
+\displaystyle
+R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] \\
+R^2_{\text{adj}} = %0.4f
+\)
 }",
 summary(model)$adj.r.squared)),
-                      p(r"[where \(k\) is the number of independent (explanatory) variables in the regression equation.]"),
-                      p(strong("Interpretation:"),
-                        sprintf(r"[therefore, %.2f%% of the variation in the response variable is explained by the multiple linear regression model when adjusted for the number of explanatory variables and the sample size.]",
-                                summary(model)$adj.r.squared * 100)))
+p(r"[where \(k\) is the number of independent (explanatory) variables in the regression model, and \(n\) is the number of observations in the dataset.]"),
+p(strong("Interpretation:"),
+  sprintf(r"[therefore, \(%.2f\%%\) of the variation in the response variable is explained by the multiple linear regression model when adjusted for the number of explanatory variables and the sample size.]",
+          summary(model)$adj.r.squared * 100)),
+p(strong("Correlation matrix")),
+tableOutput("MLR-simpleCorrelationMatrix"), # FIXME: I needed to prepend the module id to the output id for the block to work.
+
+p(strong("Multicollinearity")),
+p("Multicollinearity can be assessed in multiple ways. The simplest is to look at the magnitude of autocorrelation in a scatterplot and the magnitude of correlation between the independent variables as in this first methodology."),
+plotOutput("MLR-ggscatmat"),
+plotOutput("MLR-ggnostic"),
+
+p("Another way to determine if multicollinearity is a problem is to assess the variance inflation factor."),
+plotOutput("MLR-vif"),
+p("A third approach is a hybrid one, using a visualization of a statistic (\\(\\tau\\) \"tau\") which quantifies the extent of collinearity in the dataset, and a ranking of the independent variables contribution to the collinearity (a multicollinearity index)."),
+plotOutput("MLR-tau")
+)
+        })
+
+        output$multicollinearityGgpairs <- renderPlot({
+          ggpairs(anova(model))
+        })
+
+        output$ggscatmat <- renderPlot({
+          ggscatmat(uploadedTibble$data()[, input$explanatoryVariables], columns = input$explanatoryVariables)
+        })
+
+        output$ggnostic <- renderPlot({
+          ggnostic(model)
         })
 
         output$linearModelANOVA <- renderTable({
@@ -345,13 +401,11 @@ summary(model)$adj.r.squared)),
             p(sprintf(r"{\(F = \frac{\text{MSR}}{\text{MSE}} = \frac{%0.2f}{%0.2f} = %0.2f \)}",
                       MSR, MSE, F)),
             p(sprintf(r"{
-\[
-\begin{align}
-R^2 & = \frac{\text{SSR}}{\text{SST}} \\
-R^2_{\text{adj}} & = \frac{%0.2f}{%0.2f} \\
-R^2_{\text{adj}} & = %0.2f \\
-\end{align}
-\]
+\(
+R^2 = \frac{\text{SSR}}{\text{SST}} \\
+R^2_{\text{adj}} = \frac{%0.2f}{%0.2f} \\
+R^2_{\text{adj}} = %0.2f \\
+\)
 }",
 anovaModel$SSR, anovaModel$SST, anovaModel$SSR / anovaModel$SST)),
             p(strong("Using the P-Value method:")),
