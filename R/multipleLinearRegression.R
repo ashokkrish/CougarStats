@@ -357,7 +357,7 @@ plotOutput("MLR-tau")
 
           ## RETURN THE TABLE TO RENDER
           tibble::tribble(
-                    ~"names",     ~"df",     ~"SS", ~"MS", ~"F", ~"P-value",
+                    ~"Source",     ~"df",     ~"SS", ~"MS", ~"F", ~"P-value",
                     "Regression", k,         SSR,   MSR,   F,    pf(F, k, n - k - 1, lower.tail = FALSE),
                     "Residual",   n - k - 1, SSE,   MSE,   NA,   NA,
                     "Total",      n - 1,     SST,   NA,    NA,   NA
