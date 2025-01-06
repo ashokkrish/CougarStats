@@ -52,8 +52,8 @@ MLRMainPanelUI <- function(id) {
              tabPanel(title = "ANOVA",
                       fluidPage(
                         fluidRow(uiOutput(ns("anovaHypotheses"))),
-                        fluidRow(tableOutput(ns("linearModelANOVA"))),
-                        fluidRow(uiOutput(ns("ANOVAHypothesisTestingContinued")))
+                        fluidRow(tableOutput(ns("anovaTable"))),
+                        fluidRow(uiOutput(ns("anovaPValueMethod")))
                       )),
              tabPanel(title = "Diagnostics",
                       ## Limit the width of the rows in a really jank way. It's
@@ -343,7 +343,7 @@ plotOutput("MLR-tau")
           ggnostic(model)
         })
 
-        output$linearModelANOVA <- renderTable({
+        output$anovaTable <- renderTable({
           options(knitr.kable.NA = "") # do not display NAs
           modelANOVA <- anova(model)
           SSR <- sum(modelANOVA$"Sum Sq"[-nrow(modelANOVA)]) # all but the residuals
@@ -382,7 +382,7 @@ plotOutput("MLR-tau")
         })
       })
 
-      output$ANOVAHypothesisTestingContinued <- renderUI({
+      output$anovaPValueMethod <- renderUI({
         with(uploadedTibble$data(), {
           model <- lm(reformulate(as.character(lapply(input$explanatoryVariables, as.name)),
                                   as.name(input$responseVariable)))
