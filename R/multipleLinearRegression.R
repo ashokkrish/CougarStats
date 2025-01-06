@@ -358,9 +358,9 @@ plotOutput("MLR-tau")
           ## RETURN THE TABLE TO RENDER
           tibble::tribble(
                     ~"names",     ~"df",     ~"SS", ~"MS", ~"F", ~"p-Value of F",
-                    "Regression", k,         SSR,   MSR,   NA,   NA,
+                    "Regression", k,         SSR,   MSR,   F,    pf(F, k, n - k - 1, lower.tail = FALSE),
                     "Residual",   n - k - 1, SSE,   MSE,   NA,   NA,
-                    "Total",      n - 1,     SST,   NA,    F,    pf(F, k, n - k - 1, lower.tail = FALSE)
+                    "Total",      n - 1,     SST,   NA,    NA,   NA
                   ) %>% tibble::column_to_rownames(var = "names")
         },
         rownames = TRUE,
