@@ -45,7 +45,7 @@ MLRMainPanelUI <- function(id) {
                       import_ui(id = ns("dataImport"), from = c("file", "copypaste"))),
              tabPanel(title = "MLR",
                       fluidPage(
-                        ## the model equations are prefaced with a listing of the variables in the model
+                        ## NOTE: variables and equations are both in linearModelEquations.
                         fluidRow(uiOutput(ns("linearModelEquations"))),
                         fluidRow(tableOutput(ns("linearModelCoefficients")))
                         )),
