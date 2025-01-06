@@ -183,9 +183,10 @@ MLRServer <- function(id) {
       output$anovaHypotheses <- renderUI({
         withMathJax(
           p(strong("Analysis of Variance (ANOVA)")),
-          ## TODO: use this if there are more than five independent variable
-          ## selected, and while an alternative which uses the actual number is
-          ## unimplemented.
+          ## TODO: until an alternative which uses the actual number of
+          ## variables is implemented, use this form of the null-hypothesis (and
+          ## when the alternative is implemented use this when there are more
+          ## than five independent variables selected).
           p(r"{\( H_0: \beta_1 = \beta_2 = \cdots = \beta_k \) (there is no linear relationship between the dependent variable and the independent variables.) }",
             br(),
             r"{\( H_a: \) At least one \(\beta_j\ne 0\), where \(j = 0, 1, \cdots, k\). (there is a linear relationship between the dependent variable and the independent variables.)}"),
