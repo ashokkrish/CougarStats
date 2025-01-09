@@ -2321,7 +2321,6 @@ statInfrServer <- function(id) {
                 SigLvl()),
         br(),
         br(),
-        br(),
         p(tags$b("Test Statistic:")))
 
       givenOutput <- printOneMeanGiven()
@@ -2442,7 +2441,6 @@ statInfrServer <- function(id) {
       {
         pValue <- "P \\lt 0.0001"
       }
-
 
       if(alternative == "two.sided"){
         pvalCalc <- paste("2 \\times P(", testStat, "\\, \\gt \\; \\mid", tsValue, "\\mid)")
@@ -2641,7 +2639,6 @@ statInfrServer <- function(id) {
       return(htPlot)
     }
 
-
     hypTTestPlot <- function(testStatistic, degfree, critValue, altHypothesis){
       tTail = qt(0.999, df = degfree, lower.tail = FALSE)
       tHead = qt(0.999, df = degfree, lower.tail = TRUE)
@@ -2771,7 +2768,6 @@ statInfrServer <- function(id) {
       conclusion <- PrintANOVAConclusion(sigLvl, reject)
       tagAppendChildren(hypothesis, testStat, pValue, anovaCV, conclusion)
     }
-
 
     PrintANOVAHyp <- function(sigLvl) {
       anovaData <- anovaOneWayResults()$data
@@ -3119,9 +3115,10 @@ statInfrServer <- function(id) {
             tr(
               lapply(colnames(chiSqData), th,
                      style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);')
+                )
+              )
             )
           )
-        ))
       }
 
       return(headers)
@@ -3181,7 +3178,6 @@ statInfrServer <- function(id) {
         sprintf("\\( \\alpha = %s \\)",
                 sigLvl),
         br(),
-        br(),
         br()
       )
 
@@ -3198,7 +3194,6 @@ statInfrServer <- function(id) {
 
       tagAppendChildren(chiSqOutput, chiSqFormula, chiSqPVal, chiSqCV, chiSqConclusion)
     }
-
 
     PrintChiSqFormula <- function(chiSqStat) {
       data <- chiSqResults()$Matrix
@@ -3238,7 +3233,6 @@ statInfrServer <- function(id) {
 
       return(formula)
     }
-
 
     PrintChiSqYatesFormula <- function(chiSqStat) {
       data <- chiSqResults()$Matrix
@@ -3293,7 +3287,6 @@ statInfrServer <- function(id) {
 
       return(formula)
     }
-
 
     PrintChiSqPVal <- function(pValue, tsValue, pValSymbol, sigLvl, reject) {
 
@@ -3468,8 +3461,6 @@ statInfrServer <- function(id) {
         )
       }
     }
-
-
 
  #  ========================================================================= #
  ## -------- Reactives ------------------------------------------------------
@@ -3658,7 +3649,6 @@ statInfrServer <- function(id) {
       return(oneMeanZInt)
     })
 
-
     OneMeanZIntRaw <- reactive({
       req(si_iv$is_valid())
 
@@ -3680,7 +3670,6 @@ statInfrServer <- function(id) {
       return(oneMeanZInt)
     })
 
-
     OneMeanTIntSumm <- reactive({
       req(si_iv$is_valid())
 
@@ -3693,7 +3682,6 @@ statInfrServer <- function(id) {
 
       return(oneMeanTInt)
     })
-
 
     OneMeanTIntRaw <- reactive({
       req(si_iv$is_valid())
@@ -3714,7 +3702,6 @@ statInfrServer <- function(id) {
 
       return(oneMeanTInt)
     })
-
 
     OneMeanZTestSumm <- reactive({
       req(si_iv$is_valid())
@@ -3742,7 +3729,6 @@ statInfrServer <- function(id) {
         popuSD <- input$popuSDUpload
       }
 
-
       sampleSize <- length(dat)
       sampleMean <- mean(dat)
       hypMeanVal <- input$hypMean
@@ -3753,7 +3739,6 @@ statInfrServer <- function(id) {
 
       return (oneMeanZTest)
     })
-
 
     OneMeanTTestSumm <- reactive({
       req(si_iv$is_valid())
@@ -3769,9 +3754,6 @@ statInfrServer <- function(id) {
 
       return(oneMeanTTest)
     })
-
-
-
 
     OneMeanTTestRaw <- reactive({
       req(si_iv$is_valid())
@@ -3794,7 +3776,6 @@ statInfrServer <- function(id) {
 
       return(oneMeanTTest)
     })
-
 
     GetOneMeanCI <- reactive({
 
@@ -3931,8 +3912,6 @@ statInfrServer <- function(id) {
       return(dat)
     })
 
-
-
     IndMeansSigmaKnown <- reactive({
 
       if (input$dataAvailability2 == 'Summarized Data') {
@@ -3945,7 +3924,6 @@ statInfrServer <- function(id) {
 
       return(sigmaKnown)
     })
-
 
     IndMeansHypInfo <- reactive({
       hypTestSymbols <- list()
@@ -3978,7 +3956,6 @@ statInfrServer <- function(id) {
       return(hypTestSymbols)
     })
 
-
     IndMeansZInt <- reactive({
       req(si_iv$is_valid())
 
@@ -3995,7 +3972,6 @@ statInfrServer <- function(id) {
 
       return(twoSampZInt)
     })
-
 
     IndMeansTInt <- reactive({
       req(si_iv$is_valid())
@@ -4014,7 +3990,6 @@ statInfrServer <- function(id) {
       return(twoSampTInt)
     })
 
-
     IndMeansZTest <- reactive({
       req(si_iv$is_valid())
 
@@ -4032,7 +4007,6 @@ statInfrServer <- function(id) {
       return(twoSampZTest)
     })
 
-
     IndMeansTTest <- reactive({
       req(si_iv$is_valid())
 
@@ -4049,7 +4023,6 @@ statInfrServer <- function(id) {
 
       return(twoSampTTest)
     })
-
 
  ### ------------ Dependent Means Reactives -----------------------------------
 
@@ -4115,7 +4088,6 @@ statInfrServer <- function(id) {
       }
 
     })
-
 
  ### ------------ ANOVA Reactives ---------------------------------------------
     anovaUploadData <- eventReactive(input$anovaUserData, {
@@ -4350,7 +4322,7 @@ statInfrServer <- function(id) {
       if(!oneSDht_iv$is_valid()) {
         ## message("The one sample standard deviation hypothesis test InputValidator object is invalid!")
         validate(
-          need(input$hypStdDeviation, "Hypothesized Population Standard Deviation (\u03C3\u2080) is required (and must be a number).") %then%
+          need(input$hypStdDeviation, "Hypothesized Population Standard Deviation (\u03C3\u2080) is required.") %then%
           need(input$hypStdDeviation > 0 && input$hypStdDeviation < 1, "Hypothesized Population Standard Deviation (\u03C3\u2080) must be positive. (\u03C3\u2080 > 0)."),
           errorClass = "myClass")
       }
@@ -4555,7 +4527,6 @@ statInfrServer <- function(id) {
 
       }
 
-
  #### ---------------- ANOVA Validation
       if(!anovaupload_iv$is_valid()) {
         if(is.null(input$anovaUserData)) {
@@ -4588,7 +4559,6 @@ statInfrServer <- function(id) {
           need(anovaStackedIsValid() == TRUE, "Please select distinct columns for Response Variable and Factors."),
           errorClass = "myClass")
       }
-
 
  #### ---------------- Chi-Square Validation
       if(!chiSq2x2_iv$is_valid()) {
@@ -4686,22 +4656,15 @@ statInfrServer <- function(id) {
 
  ### ------------ One Mean Outputs --------------------------------------------
 
-
  #### ---------------- CI ----
     output$oneMeanCI <- renderUI({
-
       printOneMeanCI()
-
     })
-
 
  #### ------------------ HT ----
     output$oneMeanHT <- renderUI({
-
       printOneMeanHT()
-
     })
-
 
  #### ---------------- HT Plot ----
     output$oneMeanHTPlot <- renderPlot({
@@ -4805,7 +4768,6 @@ statInfrServer <- function(id) {
     }, height = function() {GetPlotHeight(input[["oneMeanBoxplot-Height"]], input[["oneMeanBoxplot-HeightPx"]], ui = FALSE)},
        width = function() {GetPlotWidth(input[["oneMeanBoxplot-Width"]], input[["oneMeanBoxplot-WidthPx"]], ui = FALSE)}
     )
-
 
 ### ------------ One Sample Standard Deviation Outputs -----------------------
 #### ---- One population standard deviation confidence interval CI ----
@@ -4925,7 +4887,8 @@ br(),
         } else if (input$altHypothesis == 2) {
           nullHypString <- "=";
           altHypString <- "\\ne";
-          pValueMethodRelationalOperatorString <- "\\gt";
+          pValueMethodRelationalOperatorString <- "\\lt"; 
+          # BUG: The correct p-value is P = 2 × min(P(chisquare ≤ TS), P(chisquare ≥ TS))
           chiSqCValueLower <- qchisq(SigLvl()/2, degreesOfFreedom);
           chiSqCValueUpper <- qchisq(1 - SigLvl()/2, degreesOfFreedom);
           chiSqCValue <- c(chiSqCValueLower, chiSqCValueUpper)
@@ -5097,7 +5060,7 @@ br(),
         br(),
         sprintf("\\( \\alpha = %0.2f \\)", SigLvl()), br(),
 
-        br(),
+        #br(),
         br(),
         p(tags$b("Test Statistic:")),
         ## Givens
@@ -5113,9 +5076,9 @@ br(),
             \(
             \displaystyle \chi^2 = \frac{(n-1)s^2}{\sigma^2_0}
             \)
-           ]--"), br(),
+           ]--"),
 
-        br(),
+        #br(),
         br(),
         ## Calculations
         sprintf(
@@ -5126,13 +5089,13 @@ br(),
            \)
            )--",
           input$SSDSampleSize,  input$SSDStdDev,  input$hypStdDeviation, chiSqTestStatistic
-        ), br(),
+        ),
 
         br(),
         br(),
         p(tags$b("Using P-Value Method:")),
         sprintf("\\( P = %s P\\left( \\chi^2 %s %s \\right) = %0.4f \\)",
-                if (input$altHypothesis %in% c(1, 3)) "" else "2",
+                if (input$altHypothesis %in% c(1, 3)) "" else "2 \\times",
                 pValueMethodRelationalOperatorString,
                 sprintf("%0.3f", chiSqTestStatistic),
                 chiSqPValue), br(),
@@ -5142,7 +5105,9 @@ br(),
         br(),
         br(),
         p(tags$b("Using Critical Value Method:")),
-        sprintf("\\(df = n - 1 = %d - 1 = %d\\)", input$SSDSampleSize, degreesOfFreedom), br(),
+        sprintf("\\(df = n - 1 = %d - 1 = %d\\)", input$SSDSampleSize, degreesOfFreedom), 
+        br(),
+        br(),
         if (input$altHypothesis != 2) {
           HTML(sprintf("Critical value(s): \\( \\chi^2_{%0.2f,%d} = %0.3f \\) <br/>",
                        SigLvl(),
@@ -5160,6 +5125,7 @@ br(),
                   chiSqCValue[[2]]))
         },
 
+        br(),
         ## Chi square critical value conclusion.
         ## Example from mu: "Since the test statistic (z) falls within the rejection region, reject H0."
         if (input$altHypothesis != 2) {
@@ -5194,6 +5160,8 @@ br(),
                          chiSqCValue[[1]], chiSqTestStatistic, chiSqCValue[[2]]))
           }
         },
+
+        br(),
         {
           conclusionString <-
             function(significanceLevel = SigLvl(),
@@ -5205,7 +5173,7 @@ br(),
                              " falls in the %s region,",
                              " \\(\\chi^2 = %0.3f\\) which is %s than \\(%0.3f\\), we %sreject \\(H_0\\)",
                              " as there is %ssufficient evidence to accept the",
-                             " proposed alternative hypothesis."),
+                             " alternative hypothesis."),
                       if (accept) "acceptance" else "rejection",
                       testStatisticValue,
                       if (lessThan) "less" else "greater",
@@ -5238,7 +5206,7 @@ br(),
                              " falls in the rejection region,",
                              " \\(\\chi^2 = %0.3f\\) which is less than (or equal to) \\(%0.3f\\), we reject \\(H_0\\)",
                              " as there is sufficient evidence to accept the",
-                             " proposed alternative hypothesis."),
+                             " alternative hypothesis."),
                       chiSqTestStatistic,
                       chiSqCValue[[1]])
             } else if ((chiSqTestStatistic >= chiSqCValue[[2]])) {
@@ -5247,7 +5215,7 @@ br(),
                              " falls in the rejection region,",
                              " \\(\\chi^2 = %0.3f\\) which is greater than (or equal to) \\(%0.3f\\), we reject \\(H_0\\)",
                              " as there is sufficient evidence to accept the",
-                             " proposed alternative hypothesis."),
+                             " alternative hypothesis."),
                       chiSqTestStatistic,
                       chiSqCValue[[2]])
             } else {
@@ -5256,7 +5224,7 @@ br(),
                              " falls in the acceptance region,",
                              " \\(\\chi^2 = %0.3f\\) which is between \\(%0.3f\\) and \\(%0.3f\\), we do not reject \\(H_0\\)",
                              " as there is insufficient evidence to accept the",
-                             " proposed alternative hypothesis."),
+                             " alternative hypothesis."),
                       chiSqTestStatistic,
                       chiSqCValue[[1]],
                       chiSqCValue[[2]])
@@ -5268,9 +5236,8 @@ br(),
         plotOutput(session$ns("onePopulationSDHTChiSqPlot"), width = "50%", height = "400px"),
 
         ## Overall conclusion
-        ## An example conclusion from mu hypothesis testing: At α=0.05, since the test statistic falls in the rejection region we reject H0 and conclude that there is enough statistical evidence to support that μ≠99.
         br(),
-        p(tags$b("Conclusion:")), br(),
+        p(tags$b("Conclusion:")),
         {
           if (accept) {
             conclusion <- sprintf("At \\(\\alpha = %0.2f\\), since the test statistic falls in the acceptance region we fail to reject \\(H_0\\) and conclude that there is not enough statistical evidence to support that \\(\\sigma %s %s\\).",
@@ -5288,7 +5255,6 @@ br(),
         },
         br()) # withMathJax
     }) # renderUI
-
 
 ### ------------ One Prop Outputs --------------------------------------------
 
@@ -5437,8 +5403,7 @@ output$onePropCI <- renderUI({
           br(),
           sprintf("\\( \\alpha = %g \\)",
                   SigLvl()),
-          br(),
-          br(),
+          #br(),
           br(),
           p(tags$b("Test Statistic:")),
           sprintf("Given:"),
@@ -5976,12 +5941,10 @@ output$onePropCI <- renderUI({
         br(),
       )
 
-
       indHTConclusion <- printHTConclusion(region, reject, suffEvidence, intrpInfo$altHyp, "\\mu_{2}")
 
       tagAppendChildren(indHTHead, indHTPVal, indHTTail, indHTConclusion)
     })
-
 
     output$sigmaKnownHTFormula <- renderUI({
 
@@ -6014,7 +5977,6 @@ output$onePropCI <- renderUI({
         )
       )
     })
-
 
     output$sigmaUnknownHTFormula <- renderUI({
 
@@ -6098,10 +6060,7 @@ output$onePropCI <- renderUI({
           )
         )
       }
-
-
     })
-
 
  #### ---------------- HT Plot ----
     output$indMeansHTPlot <- renderPlot({
@@ -6115,7 +6074,6 @@ output$onePropCI <- renderUI({
 
       intrpInfo <- IndMeansHypInfo()
       htPlotCritVal <- data[2]
-
 
       if(IndMeansSigmaKnown() == 'bothKnown') {
         indMeansPlot <- hypZTestPlot(data['Test Statistic'], htPlotCritVal, intrpInfo$alternative)
@@ -6223,7 +6181,6 @@ output$onePropCI <- renderUI({
         br(),
         br()
       )
-
     })
 
  #### ---------------- HT ----
@@ -6528,8 +6485,7 @@ output$onePropCI <- renderUI({
           br(),
           sprintf("\\( \\alpha = %g \\)",
                   SigLvl()),
-          br(),
-          br(),
+          #br(),
           br(),
           p(tags$b("Test Statistic:")),
           sprintf("Given:"),
