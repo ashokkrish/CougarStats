@@ -2631,7 +2631,9 @@ probDistServer <- function(id) {
         if(input$numTrialsBinom < 50)
         {
           dfBinom <- data.frame(value = seq(0, input$numTrialsBinom), 
-                                value = round(dbinom(x = 0:input$numTrialsBinom, size = input$numTrialsBinom, prob = input$successProbBinom), 4))
+                                value = round(dbinom(x = 0:input$numTrialsBinom, 
+                                                     size = input$numTrialsBinom, 
+                                                     prob = input$successProbBinom), 4))
           colnames(dfBinom) <- c("X", "P(X = x)")
           
           datatable(dfBinom,
@@ -2690,28 +2692,9 @@ probDistServer <- function(id) {
               panel.grid.minor = element_blank(),
               plot.title = element_text(size = 18, hjust = 0.5),
               panel.border = element_rect(color = "black", fill = NA, linewidth = 0.5),
-              plot.background = element_rect(color = "black", fill = NA, linewidth = 0.5),
+              plot.background = element_rect(color = "black", fill = NA, linewidth = 1),
               plot.margin = margin(10, 10, 10, 5, unit = "mm")
         )
-      
-      # interactPlot <- plot_ly(dfBinom, 
-      #                         x = ~X, 
-      #                         y = ~P, 
-      #                         type = 'bar', 
-      #                         marker = list(color = 'skyblue')) %>%
-      #   layout(
-      #     xaxis = list(
-      #       title = bquote(bold("Number of Successes (" * bolditalic(x) * ")")),
-      #       tickfont = list(size = 14)
-      #     ),
-      #     yaxis = list(
-      #       title = bquote(bold("P(" * bolditalic(X == x) * ")")),
-      #       tickfont = list(size = 14)
-      #     ),
-      #     title = list(text = bquote(bold("Binomial Distribution: " * bolditalic(X) * " ~ Bin(" * bolditalic(n) * " = , " * bolditalic(p) * " = )")), 
-      #                  font = list(size = 18)),
-      #     showlegend = FALSE
-      #   )
       
     })
     
@@ -3033,8 +3016,8 @@ probDistServer <- function(id) {
                   titlePanel("Probability Distribution Table"),
                   hr(),
                   DTOutput(session$ns("HypGeoDistrTable"), width = "25%"),
-                  # br(),
-                  # plotOutput(session$ns("HypGeoDistrBarPlot"), width = "50%")
+                  br(),
+                  plotOutput(session$ns("HypGeoDistrBarPlot"), width = "50%")
                 )
               ) # withMathJax
             ) # tagList
@@ -3079,6 +3062,32 @@ probDistServer <- function(id) {
         }
       }) # HypGeoDistrTable
     }) # goHypGeo
+    
+    output$HypGeoDistrBarPlot <- renderPlot({
+      
+      req(input$sampSizeHypGeo < 50)
+      
+      dfHypGeo <- data.frame(value = seq(max(0, input$sampSizeHypGeo + input$popSuccessesHypGeo - input$popSizeHypGeo), min(input$popSuccessesHypGeo, input$sampSizeHypGeo)), 
+                             prob = round(dhyper(x = max(0, input$sampSizeHypGeo + input$popSuccessesHypGeo - input$popSizeHypGeo):min(input$popSuccessesHypGeo, input$sampSizeHypGeo), input$popSuccessesHypGeo, (input$popSizeHypGeo - input$popSuccessesHypGeo), input$sampSizeHypGeo), 4))
+      
+      ggplot(dfHypGeo, aes(x = value, y = prob)) +
+        geom_bar(stat = "identity", fill = "skyblue", color = "black") +
+        labs(x = bquote(bold("Number of Successes (" * bolditalic(x) * ")")),
+             y = bquote(bold("P(" * bolditalic(X == x) * ")")),
+             title = bquote(bold("Hypergeometric Distribution"))
+            ) +
+        scale_y_continuous(expand = expansion(mult = c(0, 0.05))) +
+        theme(axis.text = element_text(size = 14),
+              axis.title = element_text(size = 16),
+              panel.grid.major = element_blank(),
+              panel.grid.minor = element_blank(),
+              plot.title = element_text(size = 18, hjust = 0.5),
+              panel.border = element_rect(color = "black", fill = NA, linewidth = 0.5),
+              plot.background = element_rect(color = "black", fill = NA, linewidth = 1),
+              plot.margin = margin(10, 10, 10, 5, unit = "mm")
+        )
+      
+    }) #HypGeoDistrBarPlot
     
  ### ------------ Negative Binomial ------------------------------------------
 
