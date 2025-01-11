@@ -10,6 +10,7 @@ library(broom.helpers)
 library(GGally)
 library(tibble)
 library(tidyr)
+library(car)
 
 MLRSidebarUI <- function(id) {
   ns <- NS(id)
@@ -305,7 +306,8 @@ MLRServer <- function(id) {
           ## Only "complete" (no NAs) observations.
           output$simpleCorrelationMatrix <- renderTable({
             cor(uploadedTibble$data()[, input$explanatoryVariables], use = "complete.obs")
-          })
+          },
+          rownames = TRUE)
 
           withMathJax(
             p(sprintf(r"[\( \displaystyle R^2 = \frac{\text{SSR}}{\text{SST}} = \frac{%0.4f}{%0.4f} \\ 1 - R^2 = %0.4f = %0.2f\%% \)]",
@@ -331,17 +333,35 @@ p(sprintf(r"[Schwarz's Bayesian criterion, the so-called "BIC": \(%0.4f\)]", BIC
 p(strong("Correlation matrix")),
 tableOutput("MLR-simpleCorrelationMatrix"), # FIXME: I needed to prepend the module id to the output id for the block to work.
 
-p(strong("Multicollinearity")),
-p("Multicollinearity can be assessed in multiple ways. The simplest is to look at the magnitude of autocorrelation in a scatterplot and the magnitude of correlation between the independent variables as in this first methodology."),
-plotOutput("MLR-ggscatmat"),
-plotOutput("MLR-ggnostic"),
-
-p("Another way to determine if multicollinearity is a problem is to assess the variance inflation factor."),
-plotOutput("MLR-vif"),
-p("A third approach is a hybrid one, using a visualization of a statistic (\\(\\tau\\) \"tau\") which quantifies the extent of collinearity in the dataset, and a ranking of the independent variables contribution to the collinearity (a multicollinearity index)."),
-plotOutput("MLR-tau")
-)
+p(strong("Multicollinearity Detection")),
+p("Multicollinearity can be detected in multiple ways. Select a method using the dropdown."),
+selectInput("MLR-multicolSelect",
+            "Detection method",
+            list("Graphical" = "scatmat",
+                 "VIFs" = "vifs")),
+uiOutput("MLR-detectionMethodUI"))
         })
+
+        output$detectionMethodUI <- renderUI({
+          validate(need(isTruthy(input$multicolSelect), "Select a detection method"))
+
+          switch(input$multicolSelect,
+                 scatmat = fluidRow(column(12,
+                                           p("The diagonal of this plot are the distributions of the data in each variable. The lower triangle is the scatterplots of one variable against another; if the points form a more-or-less straight line then the variables are correlated. The upper triangle has the correlation coefficients between two variables."),
+                                           plotOutput("MLR-ggscatmat"))),
+                 vifs = fluidRow(column(12,
+                                        p("A VIF greater than 10 suggests strong multicollinearity caused by the respective variable with that variance inflation factor. VIFs between 5 and 10 hint at moderate multicollinearity. Values less than 5 are acceptable, with only a low degree of multicollinearity detected."),
+                                        tableOutput("MLR-vifs"))),
+                 p(""))
+        })
+
+        output$vifs <- renderTable({
+          df <- tryCatch({
+            as.data.frame(car::vif(model))
+          }, error = \(e) print(e))
+          validate(need(is.data.frame(df), "Couldn't produce a data frame from the VIF function of the model. Usually this means there are aliased coefficients in the model. Re-attempt after verifying the data, or renaming the columns."))
+          df
+        }, rownames = TRUE)
 
         output$multicollinearityGgpairs <- renderPlot({
           ggpairs(anova(model))
@@ -349,7 +369,9 @@ plotOutput("MLR-tau")
 
         output$ggscatmat <- renderPlot({
           ggscatmat(uploadedTibble$data()[, input$explanatoryVariables], columns = input$explanatoryVariables)
-        })
+        },
+        width = 800,
+        height = 600)
 
         output$ggnostic <- renderPlot({
           ggnostic(model)
@@ -421,12 +443,17 @@ R^2_{\text{adj}} = %0.2f \\
 \)
 }",
 anovaModel$SSR, anovaModel$SST, anovaModel$SSR / anovaModel$SST)),
-            p(strong("Using the P-Value method:")),
-            p(sprintf("The p-value for the F statistic for this test is %0.3f, %s",
-                      p <- pf(F, k, n - k - 1, lower.tail = FALSE),
-                      if (p < 0.05) r"[which is less than \(\alpha = 0.05\), so there is sufficient evidence to reject the alternative hypothesis.]"
-                      else r"[which is equal to or greater than \(\alpha = 0.05\), so there is insufficient evidence to reject the alternative hypothesis. Therefore we are forced to accept the alternative hypothesis \(H_a\) that there is a linear relationship between at least one model variable coefficient and the independent variable.]"))
-          )
+p(strong("Using the P-Value method:")),
+{
+  pValue <- pf(F, k, n - k - 1, lower.tail = FALSE)
+  p(sprintf(r"[Since the p-value is %s than \(\alpha\) (\(%0.3f %s 0.05\)), %s.]",
+            if (pValue <= 0.05) "less" else "greater",
+            pValue,
+            if (pValue <= 0.05) r"[\le]" else r"[\ge]",
+            if (pValue <= 0.05) r"[we reject the null hypothesis (\(H_0\)) and conclude there is enough statistical evidence to support the alternative hypothesis (\(H_a\))]"
+            else r"[we do not reject the null hypothesis (\(H_0\)) and conclude there isn't enough statistical evidence to support the alternative hypothesis (\(H_a\)).]"))
+}
+)
         })
       })
 
