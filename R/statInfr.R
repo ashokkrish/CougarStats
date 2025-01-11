@@ -4888,11 +4888,14 @@ br(),
           nullHypString <- "=";
           altHypString <- "\\ne";
           pValueMethodRelationalOperatorString <- "\\lt"; 
-          # BUG: The correct p-value is P = 2 × min(P(chisquare ≤ TS), P(chisquare ≥ TS))
           chiSqCValueLower <- qchisq(SigLvl()/2, degreesOfFreedom);
           chiSqCValueUpper <- qchisq(1 - SigLvl()/2, degreesOfFreedom);
           chiSqCValue <- c(chiSqCValueLower, chiSqCValueUpper)
-          chiSqPValue <- 2 * pchisq(chiSqTestStatistic, degreesOfFreedom, lower.tail = isLeftTailed);
+          ## NOTE: The correct p-value is P = 2 × min(P(chisquare ≤ TS), P(chisquare ≥ TS))
+          ## lower.tail: logical; if TRUE (default), probabilities are P[X <= x],
+          ## otherwise, P[X > x].
+          chiSqPValue <- 2 * min(pchisq(chiSqTestStatistic, degreesOfFreedom, lower.tail = TRUE),
+                                 pchisq(chiSqTestStatistic, degreesOfFreedom, lower.tail = FALSE))
         } else {
           nullHypString <- "\\leq";
           altHypString <- "\\gt";
@@ -5094,11 +5097,21 @@ br(),
         br(),
         br(),
         p(tags$b("Using P-Value Method:")),
-        sprintf("\\( P = %s P\\left( \\chi^2 %s %s \\right) = %0.4f \\)",
-                if (input$altHypothesis %in% c(1, 3)) "" else "2 \\times",
-                pValueMethodRelationalOperatorString,
-                sprintf("%0.3f", chiSqTestStatistic),
-                chiSqPValue), br(),
+        if (input$altHypothesis == 1) {
+          ## NOTE: Ashok says to use "\ge" not "\gt" in the right side of the P-value calculation.
+          ## > but you've written here an inclusive relation in each case
+          ## @bryce-carson Don't worry about it, Chi-square is continuous probability distribution and this won't have any major effect.
+          sprintf("\\( P = 2 \\times min(P\\left( \\chi^2 \le %0.3f \\right), P\\left( \\chi^2 \ge %0.3f \\right)) = %0.4f \\)",
+                  chiSqTestStatistic,
+                  chiSqTestStatistic,
+                  chiSqPValue)
+        } else {
+          sprintf("\\( P = P\\left( \\chi^2 %s %s \\right) = %0.4f \\)",
+                  pValueMethodRelationalOperatorString,
+                  sprintf("%0.3f", chiSqTestStatistic),
+                  chiSqPValue),
+        },
+        br(),
         br(),
         rejectionOrAcceptanceStatement, br(),
 
