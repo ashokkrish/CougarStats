@@ -5101,7 +5101,7 @@ br(),
           ## NOTE: Ashok says to use "\ge" not "\gt" in the right side of the P-value calculation.
           ## > but you've written here an inclusive relation in each case
           ## @bryce-carson Don't worry about it, Chi-square is continuous probability distribution and this won't have any major effect.
-          sprintf("\\( P = 2 \\times min(P\\left( \\chi^2 \le %0.3f \\right), P\\left( \\chi^2 \ge %0.3f \\right)) = %0.4f \\)",
+          sprintf("\\( P = 2 \\times min(P\\left( \\chi^2 \\le %0.3f \\right), P\\left( \\chi^2 \\ge %0.3f \\right)) = %0.4f \\)",
                   chiSqTestStatistic,
                   chiSqTestStatistic,
                   chiSqPValue)
@@ -5109,7 +5109,7 @@ br(),
           sprintf("\\( P = P\\left( \\chi^2 %s %s \\right) = %0.4f \\)",
                   pValueMethodRelationalOperatorString,
                   sprintf("%0.3f", chiSqTestStatistic),
-                  chiSqPValue),
+                  chiSqPValue)
         },
         br(),
         br(),
