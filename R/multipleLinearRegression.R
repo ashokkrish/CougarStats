@@ -325,6 +325,9 @@ p(r"[where \(k\) is the number of independent (explanatory) variables in the reg
 p(strong("Interpretation:"),
   sprintf(r"[therefore, \(%.2f\%%\) of the variation in the response variable is explained by the multiple linear regression model when adjusted for the number of explanatory variables and the sample size.]",
           summary(model)$adj.r.squared * 100)),
+p(strong("Information Criteria")),
+p(sprintf(r"[Akaike's "An Information Criterion": \(%0.4f\)]", AIC(model))),
+p(sprintf(r"[Schwarz's Bayesian criterion, the so-called "BIC": \(%0.4f\)]", BIC(model))),
 p(strong("Correlation matrix")),
 tableOutput("MLR-simpleCorrelationMatrix"), # FIXME: I needed to prepend the module id to the output id for the block to work.
 
