@@ -5097,7 +5097,7 @@ br(),
         br(),
         br(),
         p(tags$b("Using P-Value Method:")),
-        if (input$altHypothesis == 1) {
+        if (input$altHypothesis == 2) {
           ## NOTE: Ashok says to use "\ge" not "\gt" in the right side of the P-value calculation.
           ## > but you've written here an inclusive relation in each case
           ## @bryce-carson Don't worry about it, Chi-square is continuous probability distribution and this won't have any major effect.
