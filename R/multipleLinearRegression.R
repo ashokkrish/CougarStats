@@ -361,7 +361,7 @@ plotOutput("MLR-tau")
                     "Regression", k,         SSR,   MSR,   F,    pf(F, k, n - k - 1, lower.tail = FALSE),
                     "Residual",   n - k - 1, SSE,   MSE,   NA,   NA,
                     "Total",      n - 1,     SST,   NA,    NA,   NA
-                  ) %>% tibble::column_to_rownames(var = "names")
+                  ) %>% tibble::column_to_rownames(var = "Source")
         },
         rownames = TRUE,
         na = "",
