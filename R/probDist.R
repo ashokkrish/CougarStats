@@ -3017,7 +3017,7 @@ probDistServer <- function(id) {
                   hr(),
                   DTOutput(session$ns("HypGeoDistrTable"), width = "25%"),
                   br(),
-                  plotOutput(session$ns("HypGeoDistrBarPlot"), width = "50%")
+                  plotOutput(session$ns("HypGeoDistrBarPlot"), width = "60%")
                 )
               ) # withMathJax
             ) # tagList
@@ -3074,9 +3074,10 @@ probDistServer <- function(id) {
         geom_bar(stat = "identity", fill = "skyblue", color = "black") +
         labs(x = bquote(bold("Number of Successes (" * bolditalic(x) * ")")),
              y = bquote(bold("P(" * bolditalic(X == x) * ")")),
-             title = bquote(bold("Hypergeometric Distribution"))
+             title = bquote(bold("Hypergeometric Distribution: " * bolditalic(X) * " ~ HypGeo(" * bolditalic(N) * " = " * .(input$popSizeHypGeo) * ", " * bolditalic(M) * " = " * .(input$popSuccessesHypGeo) * ", " * bolditalic(n) * " = " * .(input$sampSizeHypGeo) * ")"))
             ) +
         scale_y_continuous(expand = expansion(mult = c(0, 0.05))) +
+        scale_x_continuous(breaks = seq(min(dfHypGeo$value), max(dfHypGeo$value), by = 1)) +
         theme(axis.text = element_text(size = 14),
               axis.title = element_text(size = 16),
               panel.grid.major = element_blank(),
