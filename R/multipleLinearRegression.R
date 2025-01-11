@@ -267,17 +267,15 @@ MLRServer <- function(id) {
 
         model <- lm(reformulate(as.character(lapply(input$explanatoryVariables, as.name)),
                                 as.name(input$responseVariable)))
+
         output$linearModelCoefficients <- renderTable({
           library(tibble)
           library(tidyr)
-          c <- coef(model)
-          ## FIXME: this doesn't work, apparently.
-          ## if ("(Intercept)" %in% names(coef)) {
-          ##   names(c)[which(names(c) == "(Intercept)")] <- r"[\(\hat{\beta_0}\)]"
-          ## }
-          tibble(name = names(c), coef = c) %>%
-            pivot_wider(names_from = name, values_from = coef)
+          summary(model)$coefficients %>%
+                         as.data.frame() %>%
+                         tibble::rownames_to_column(var = "Source")
         })
+
         output$rsquareAdjustedRSquareInterpretation <- renderUI({
           eval(MLRValidation)
 
