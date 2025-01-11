@@ -419,8 +419,10 @@ R^2_{\text{adj}} = %0.2f \\
 }",
 anovaModel$SSR, anovaModel$SST, anovaModel$SSR / anovaModel$SST)),
             p(strong("Using the P-Value method:")),
-            p(sprintf("The p-value for the F statistic for this test is: %0.3f",
-                      pf(F, k, n - k - 1, lower.tail = FALSE)))
+            p(sprintf("The p-value for the F statistic for this test is %0.3f, %s",
+                      p <- pf(F, k, n - k - 1, lower.tail = FALSE),
+                      if (p < 0.05) r"[which is less than \(\alpha = 0.05\), so there is sufficient evidence to reject the alternative hypothesis.]"
+                      else r"[which is equal to or greater than \(\alpha = 0.05\), so there is insufficient evidence to reject the alternative hypothesis. Therefore we are forced to accept the alternative hypothesis \(H_a\) that there is a linear relationship between at least one model variable coefficient and the independent variable.]"))
           )
         })
       })
