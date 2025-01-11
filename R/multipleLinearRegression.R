@@ -8,6 +8,8 @@ library(dplyr)
 library(knitr) # for kable to produce HTML tables.
 library(broom.helpers)
 library(GGally)
+library(tibble)
+library(tidyr)
 
 MLRSidebarUI <- function(id) {
   ns <- NS(id)
@@ -47,7 +49,12 @@ MLRMainPanelUI <- function(id) {
                       fluidPage(
                         ## NOTE: variables and equations are both in linearModelEquations.
                         fluidRow(uiOutput(ns("linearModelEquations"))),
-                        fluidRow(tableOutput(ns("linearModelCoefficients")))
+                        fluidRow(column(12,
+                                        p(strong("Coefficients")),
+                                        tableOutput(ns("linearModelCoefficients")))),
+                        fluidRow(column(12,
+                                        p(strong("Confidence Intervals")),
+                                        tableOutput(ns("linearModelConfidenceIntervals"))))
                         )),
              tabPanel(title = "ANOVA",
                       fluidPage(
@@ -269,11 +276,15 @@ MLRServer <- function(id) {
                                 as.name(input$responseVariable)))
 
         output$linearModelCoefficients <- renderTable({
-          library(tibble)
-          library(tidyr)
           summary(model)$coefficients %>%
                          as.data.frame() %>%
                          tibble::rownames_to_column(var = "Source")
+        })
+
+        output$linearModelConfidenceIntervals <- renderTable({
+          confint(model) %>%
+            as.data.frame() %>%
+            tibble::rownames_to_column(var = "Source")
         })
 
         output$rsquareAdjustedRSquareInterpretation <- renderUI({
