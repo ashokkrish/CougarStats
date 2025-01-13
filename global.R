@@ -39,6 +39,7 @@ library(thematic)
 library(datamods)
 library(magrittr)
 library(olsrr)
+library(ggResidpanel)
 
 source("R/authors.R")
 

@@ -11,6 +11,7 @@ library(GGally)
 library(tibble)
 library(tidyr)
 library(car)
+library(ggResidpanel)
 
 MLRSidebarUI <- function(id) {
   ns <- NS(id)
@@ -69,7 +70,8 @@ MLRMainPanelUI <- function(id) {
                       fluidPage(fluidRow(column(8, uiOutput(ns("rsquareAdjustedRSquareInterpretation"))),
                                          column(4)))),
              tabPanel(title = "Diagnostic Plots",
-                      fluidPage(fluidRow(plotOutput(ns("linearModelRegressionLineAndPoints"))))),
+                      fluidPage(fluidRow(plotOutput(ns("linearModelRegressionLineAndPoints"))),
+                                fluidRow(plotOutput(ns("linearModelResidualsPanelPlot"))))),
 
              ## FIXME #49: if the version is 5 then import_ui will break! NOTE:
              ## write a support request on the Posit Shiny subform asking for
@@ -413,6 +415,9 @@ uiOutput("MLR-detectionMethodUI"))
             geom_point() +
             labs(x = "Fitted values", y = "Residuals") +
             ggtitle("Residual Plot for Multiple Linear Regression")
+        })
+        output$linearModelResidualsPanelPlot <- renderPlot({
+          resid_panel(model)
         })
       })
 
