@@ -66,7 +66,7 @@ statInfrUI <- function(id) {
                                 "Categorical"),
             choiceNames  = list("Inference about 1 sample\\(\\)",
                                 "Inference about 2 samples\\(\\)",
-                                "Inference about more than 2 samples (e.g. ANOVA)\\(\\)",
+                                "Inference about more than 2 samples (e.g. ANOVA or Kruskal-Wallis)\\(\\)",
                                 "Inference for Categorical Data (e.g \\( \\chi^2 \\) test)"),
             selected     = "1"),
 
@@ -835,37 +835,50 @@ statInfrUI <- function(id) {
                 ), # Ind Means !Summarized
               ), # "input.siMethod == '2'",
 
- ### ------------ Multiple Samples (ANOVA) ------------------------------------
+ ### ------------ Multiple Samples (ANOVA or Kruskal-Wallis) ------------------------------------
               conditionalPanel(
                 ns = ns,
                 condition = 'input.siMethod == "Multiple"',
 
-                fileInput(
-                  inputId = ns("anovaUserData"),
-                  label   = strong("Upload your Data (.csv or .xls or .xlsx or .txt)"),
-                  accept  = c("text/csv",
-                              "text/comma-separated-values",
-                              "text/plain",
-                              ".csv",
-                              ".xls",
-                              ".xlsx")),
-
-                hidden(tagList(
-                  div(
-                    id = ns("anovaUploadInputs"),
-
-                    radioButtons(
-                      inputId = ns("anovaFormat"),
-                      label   = strong("Data Format"),
-                      choiceNames = c("Values in multiple columns",
-                                      "Responses and factors stacked in two columns"),
-                      choiceValues = c("Multiple",
-                                       "Stacked")),
-
+                br(),
+                
+                radioButtons(
+                  inputId = ns("multipleMethodChoice"),
+                  label   = NULL,
+                  choiceNames = c("ANOVA", "Kruskal-Wallis"),
+                  choiceValues = c("anova", "kw")
+                ),
+                
+                conditionalPanel(
+                  ns = ns,
+                  condition = 'input.multipleMethodChoice == "anova"',
+                  
+                  fileInput(
+                    inputId = ns("anovaUserData"),
+                    label   = strong("Upload your Data (.csv or .xls or .xlsx or .txt)"),
+                    accept  = c("text/csv",
+                                "text/comma-separated-values",
+                                "text/plain",
+                                ".csv",
+                                ".xls",
+                                ".xlsx")),
+                  
+                  hidden(tagList(
+                    div(
+                      id = ns("anovaUploadInputs"),
+                      
+                      radioButtons(
+                        inputId = ns("anovaFormat"),
+                        label   = strong("Data Format"),
+                        choiceNames = c("Values in multiple columns",
+                                        "Responses and factors stacked in two columns"),
+                        choiceValues = c("Multiple",
+                                         "Stacked")),
+                      
                       conditionalPanel(
                         ns = ns,
                         condition = "input.anovaFormat == 'Multiple'",
-
+                        
                         selectizeInput(
                           inputId = ns("anovaMultiColumns"),
                           label = strong("Choose columns to conduct analysis"),
@@ -876,11 +889,11 @@ statInfrUI <- function(id) {
                                          placeholder = 'Select two or more columns',
                                          onInitialize = I('function() { this.setValue(""); }')))
                       ), #multiple
-
+                      
                       conditionalPanel(
                         ns = ns,
                         condition = "input.anovaFormat == 'Stacked'",
-
+                        
                         selectizeInput(
                           inputId = ns("anovaResponse"),
                           label = strong("Response Variable"),
@@ -888,7 +901,7 @@ statInfrUI <- function(id) {
                           selected = NULL,
                           options = list(placeholder = 'Select a variable',
                                          onInitialize = I('function() { this.setValue(""); }'))),
-
+                        
                         selectizeInput(
                           inputId = ns("anovaFactors"),
                           label = strong("Factors"),
@@ -897,10 +910,10 @@ statInfrUI <- function(id) {
                           options = list(placeholder = 'Select a factor',
                                          onInitialize = I('function() { this.setValue(""); }')))
                       ) #stacked
-
+                      
                     ), #anovaUploadInputs div
                   )), #hidden tagList
-
+                
                   radioButtons(
                     inputId  = ns("anovaSigLvl"),
                     label    = strong("Significance Level (\\( \\alpha\\))"),
@@ -909,14 +922,14 @@ statInfrUI <- function(id) {
                                  "1%"),
                     selected = "5%",
                     inline   = TRUE),
-
+                  
                   checkboxGroupInput(
                     inputId = ns("anovaOptions"),
                     label = p(strong("Options")),
                     choiceNames = c("Include post hoc tests"),
                     choiceValues = c("posthoc"),
                     selected = NULL),
-
+                  
                   selectizeInput(
                     inputId = ns("anovaGraphs"),
                     label = strong("Graphs"),
@@ -928,9 +941,25 @@ statInfrUI <- function(id) {
                     selected = c("Side-by-side Boxplot",
                                  "Plot Group Means"),
                     options = list(hideSelected = FALSE,
-                                   placeholder = 'Select graph(s) to display'))
-
-                ), #Multiple Samples
+                                   placeholder = 'Select graph(s) to display')), 
+                
+                ), #anova conditionalPanel
+                  
+                conditionalPanel(
+                  ns = ns,
+                  condition = 'input.multipleMethodChoice == "kw"',
+                
+                fileInput(
+                  inputId = ns("kwUserData"),
+                  label   = strong("Upload your Data (.csv or .xls or .xlsx or .txt)"),
+                  accept  = c("text/csv",
+                              "text/comma-separated-values",
+                              "text/plain",
+                              ".csv",
+                              ".xls",
+                              ".xlsx")),
+                ) #Kruskal-Wallis conditionalPanel
+              ), #Multiple Samples conditionalPanel
 
  ### ------------ Categorical Samples (Chi-Square) ----------------------------
                 conditionalPanel(
