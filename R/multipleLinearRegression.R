@@ -31,9 +31,9 @@ MLRSidebarUI <- function(id) {
                     "Explanatory Variables (\\(x_1, x_2, x_3, \\cdots , x_n\\))",
                     multiple = TRUE,
                     choices = NULL),
-        ## FIXME #44: styling issue.
-        fluidRow(actionButton(ns("calculate"), "Calculate", class = "act-btn"),
-                 actionButton(ns("reset"), "Reset", class = "act-btn")))
+        actionButton(ns("calculate"), "Calculate", class = "act-btn"),
+        actionButton(ns("reset"), "Reset", class = "act-btn"))
+      
     ))
 }
 
