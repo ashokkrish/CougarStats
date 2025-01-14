@@ -19,11 +19,6 @@ MLRSidebarUI <- function(id) {
     div(
       id = "MLRSidebar",
       useShinyjs(),
-      ## FIXME #45: the script isn't working; unfortunately, it seems there is
-      ## an upstream bug or a severely complex issue which is preventing the
-      ## script objects from being correctly associated.
-      ## extendShinyjs(script = "enableDisableTabPanel.js", functions = c("disableTab", "enableTab")),
-      ## includeCSS(path = "www/enableDisableTabPanel.css"),
       withMathJax(
         helpText("Only numeric variables are selectable."),
         ## DONE: the choices need to be updated dynamically.
@@ -47,31 +42,10 @@ MLRMainPanelUI <- function(id) {
   navbarPage(title = NULL,
              tabPanel(title = "Data Import",
                       import_ui(id = ns("dataImport"), from = c("file", "copypaste"))),
-             tabPanel(title = "MLR",
-                      fluidPage(
-                        ## NOTE: variables and equations are both in linearModelEquations.
-                        fluidRow(uiOutput(ns("linearModelEquations"))),
-                        fluidRow(column(12,
-                                        p(strong("Coefficients")),
-                                        tableOutput(ns("linearModelCoefficients")))),
-                        fluidRow(column(12,
-                                        p(strong("Confidence Intervals")),
-                                        tableOutput(ns("linearModelConfidenceIntervals"))))
-                        )),
-             tabPanel(title = "ANOVA",
-                      fluidPage(
-                        fluidRow(uiOutput(ns("anovaHypotheses"))),
-                        fluidRow(tableOutput(ns("anovaTable"))),
-                        fluidRow(uiOutput(ns("anovaPValueMethod")))
-                      )),
-             tabPanel(title = "Diagnostics",
-                      ## Limit the width of the rows in a really jank way. It's
-                      ## okay: desktop is the only target platform.
-                      fluidPage(fluidRow(column(8, uiOutput(ns("rsquareAdjustedRSquareInterpretation"))),
-                                         column(4)))),
-             tabPanel(title = "Diagnostic Plots",
-                      fluidPage(fluidRow(plotOutput(ns("linearModelRegressionLineAndPoints"))),
-                                fluidRow(plotOutput(ns("linearModelResidualsPanelPlot"))))),
+             tabPanel(title = "MLR", uiOutput(ns("Equations")) ),
+             tabPanel(title = "ANOVA", uiOutput(ns("ANOVA"))),
+             tabPanel(title = "Diagnostics", uiOutput(ns("Diagnostics"))),
+             tabPanel(title = "Diagnostic Plots", uiOutput(ns("DiagnosticPlots"))),
 
              ## FIXME #49: if the version is 5 then import_ui will break! NOTE:
              ## write a support request on the Posit Shiny subform asking for
@@ -84,17 +58,12 @@ MLRServer <- function(id) {
     ## TODO: display a help message in the sidebar indicating that non-numeric
     ## columns will not be available.
     uploadedTibble <- import_server("dataImport", return_class = "tbl_df")
+    ns <- session$ns
 
-    ## FIXME #45: why isn't the effect of disableTab useful from R, when the
-    ## same function call in JavaScript will have an effect?
-    ## js$disableTab("MLR")
-    ## js$disableTab("Diagnostics")
-    ## observe({
-    ##   shinyjs::reset(id = "responseVariable")
-    ##   shinyjs::reset(id = "explanatoryVariables")
-    ##   js$disableTab("MLR")
-    ##   js$disableTab("Diagnostics")
-    ## }) |> bindEvent(input$reset)
+    observe({
+      shinyjs::reset(id = "responseVariable")
+      shinyjs::reset(id = "explanatoryVariables")
+    }) |> bindEvent(input$reset)
 
     ## Update the choices for the select inputs when the uploadedTibble changes.
     observe({
@@ -107,7 +76,7 @@ MLRServer <- function(id) {
 
     ## Validate that the response variable is not included in the explanatory variables.
     observe({
-      ## NOTE: why is the response variable requirement preceeding the
+      ## FIXME: why is the response variable requirement preceeding the
       ## conditional statement operating upon the boolean result of the
       ## availability of the uploaded data tibble? A little cart before the
       ## horse, but it hasn't been problematic yet. NOTE: it's delicate because
@@ -149,6 +118,8 @@ MLRServer <- function(id) {
     MLRValidation <-
       quote(validate(
         need(uploadedTibble$name(), "Upload some data."),
+        need(isTruthy(input$responseVariable),
+             "A response variable is required."),
         need(is.numeric(uploadedTibble$data()[[input$responseVariable]]),
              "The response variable must be numeric."),
         need(isTruthy(input$explanatoryVariables),
@@ -163,33 +134,33 @@ MLRServer <- function(id) {
                                     storeNameIfAnyNA))),
              sprintf("All explanatory variables must not contain NAs. These variables contain NAs: %s.",
                      paste(isNAVariables, sep = ", ")))))
+    
+    nonnumericVariables <- NULL
+    storeNameIfNotNumeric <- function(var) {
+      if (is.numeric(uploadedTibble$data()[[var]]))
+        return(TRUE)
+      else {
+        ## Replace or concatenate to the value of the nonnumericVariables
+        ## variable.
+        if (is.null(nonnumericVariables)) nonnumericVarialbes <- var
+        else nonnumericVariables %<>% c(var)
+        return(FALSE)
+      }
+    }
+    
+    isNAVariables <- NULL
+    storeNameIfAnyNA <- function(var) {
+      if (anyNA(uploadedTibble$data()[[var]]))
+        return(TRUE)
+      else {
+        ## Replace or concatenate to the value of the isNAVariables variable.
+        if (is.null(isNAVariables)) isNAVariables <- var
+        else isNAVariables %<>% c(var)
+        return(FALSE)
+      }
+    }
 
     observe({ # input$calculate
-      nonnumericVariables <- NULL
-      storeNameIfNotNumeric <- function(var) {
-        if (is.numeric(uploadedTibble$data()[[var]]))
-          return(TRUE)
-        else {
-          ## Replace or concatenate to the value of the nonnumericVariables
-          ## variable.
-          if (is.null(nonnumericVariables)) nonnumericVarialbes <- var
-          else nonnumericVariables %<>% c(var)
-          return(FALSE)
-        }
-      }
-
-      isNAVariables <- NULL
-      storeNameIfAnyNA <- function(var) {
-        if (anyNA(uploadedTibble$data()[[var]]))
-          return(TRUE)
-        else {
-          ## Replace or concatenate to the value of the isNAVariables variable.
-          if (is.null(isNAVariables)) isNAVariables <- var
-          else isNAVariables %<>% c(var)
-          return(FALSE)
-        }
-      }
-
       output$anovaHypotheses <- renderUI({
         withMathJax(
           p(strong("Analysis of Variance (ANOVA)")),
@@ -209,64 +180,6 @@ MLRServer <- function(id) {
       })
 
       output$linearModelEquations <- renderUI({
-        req(input$explanatoryVariables,
-            cancelOuput = "progress")
-        ## eval(MLRValidation)
-
-        withMathJax(
-          div(id = "linear-model-equations",
-              p("The variables in the model are"),
-              p(paste(r"{\(}",
-                      sprintf(r"[y    = \text{%s} \\]", input$responseVariable),
-                      paste(sprintf(r"[x_%d = \text{%s}]",
-                                    seq_along(input$explanatoryVariables),
-                                    input$explanatoryVariables),
-                            collapse = r"[\\]"),
-                      r"{\)}")),
-              p("The estimated regression equation is"),
-              p(with(uploadedTibble$data(), {
-                model <- lm(reformulate(as.character(lapply(input$explanatoryVariables, as.name)),
-                                        as.name(input$responseVariable)))
-
-                ## Reactively generate the LaTeX for the regression model equation.
-                modelEquations <- with(as.list(coefficients(model)), {
-                  req(as.list(coefficients(model)),
-                      cancelOutput = "progress")
-                  paste(
-                    r"{\(}",
-                    gsub(
-                      pattern = r"{\+(\ +)?-}",
-                      replacement = "-",
-                      x = paste(
-                        c(
-                          sprintf(r"[\hat{y} = \hat{\beta_0} + %s]",
-                                  paste(
-                                    sprintf(
-                                      r"[\hat{%s}]",
-                                      paste0(r"[\beta_]",
-                                             seq_along(input$explanatoryVariables))
-                                    ),
-                                    paste0(r"{x_}", seq_along(input$explanatoryVariables)),
-                                    collapse = "+"
-                                  )),
-                          sprintf(r"[\hat{y} = %.3f + %s]",
-                                  get("(Intercept)"),
-                                  paste(
-                                    as.character(lapply(mget(as.character(lapply(input$explanatoryVariables, as.name))),
-                                                        \(x) sprintf(r"[%.3f]", x))),
-                                    paste0(r"{x_}", seq_along(input$explanatoryVariables)),
-                                    collapse = "+"
-                                  )),
-                          ""
-                        ),
-                        collapse = r"[\\]"
-                      )),
-                    r"{\)}",
-                    sep = r"{\\}"
-                  )
-                })
-              })))
-        )
       }) # output$linearModelEquations
 
       with(uploadedTibble$data(), {
@@ -279,21 +192,27 @@ MLRServer <- function(id) {
                                 as.name(input$responseVariable)))
 
         output$linearModelCoefficients <- renderTable({
-          summary(model)$coefficients %>%
-                         as.data.frame() %>%
-                         tibble::rownames_to_column(var = "Source")
-        })
+          summary(model)$coefficients %>% as.data.frame()
+          # %>% tibble::rownames_to_column(var = "Source")
+        },
+        rownames = TRUE,
+        na = "",
+        striped = TRUE,
+        caption = "Coefficients")
 
         output$linearModelConfidenceIntervals <- renderTable({
           confint(model) %>%
-            as.data.frame() %>%
-            tibble::rownames_to_column(var = "Source")
-        })
+            as.data.frame()
+          # %>% tibble::rownames_to_column(var = "Source")
+        },
+        rownames = TRUE,
+        na = "",
+        striped = TRUE,
+        caption = "Confidence Intervals")
 
         output$rsquareAdjustedRSquareInterpretation <- renderUI({
-          eval(MLRValidation)
 
-          ## FIXME: Copied from elsewhere. Duplications like this should REALLY be
+          ## TODO: Copied from elsewhere. Duplications like this should REALLY be
           ## abstracted using a reactive value list.
           modelANOVA <- anova(model)
           SSR <- sum(modelANOVA$"Sum Sq"[-nrow(modelANOVA)]) # all but the residuals
@@ -309,7 +228,10 @@ MLRServer <- function(id) {
           output$simpleCorrelationMatrix <- renderTable({
             cor(uploadedTibble$data()[, input$explanatoryVariables], use = "complete.obs")
           },
-          rownames = TRUE)
+          rownames = TRUE,
+          striped = TRUE,
+          na = "",
+          caption = "Correlation Matrix")
 
           withMathJax(
             p(sprintf(r"[\( \displaystyle R^2 = \frac{\text{SSR}}{\text{SST}} = \frac{%0.4f}{%0.4f} \\ 1 - R^2 = %0.4f = %0.2f\%% \)]",
@@ -358,6 +280,7 @@ uiOutput("MLR-detectionMethodUI"))
         })
 
         output$vifs <- renderTable({
+            
           df <- tryCatch({
             as.data.frame(car::vif(model))
           }, error = \(e) print(e))
@@ -408,7 +331,9 @@ uiOutput("MLR-detectionMethodUI"))
           print(AIC(model))
           print(paste("The AIC of the model and the AIC of the log-likelihood of the model are equal?", all.equal(AIC(model), AIC(logLik(model)))))
         })
-        output$linearModelBIC <- renderPrint({ BIC(model) })
+        output$linearModelBIC <- renderPrint({
+          BIC(model)
+        })
         output$linearModelRegressionLineAndPoints <- renderPlot({
           ggplot(model, aes(x = model$fitted.values, y = model$residuals)) +
             geom_hline(yintercept = 0, color = "red", linetype = "dashed") +
@@ -471,20 +396,104 @@ p(strong("Using the P-Value method:")),
                       "Response variable must be numeric."))
         hist(responseVariableData)
       })
-
-### FIXME #45: why isn't the effect of disableTab useful from R, when the same
-### function call in JavaScript will have an effect?
-      ## js$enableTab("MLR")
-      ## js$enableTab("Diagnostics")
-
-### FIXME #53: this observer was meant to left-align display math /after/
-### MathJax has rendered it; this works in the JavaScript console in a browser,
-### but in the reactive context in which this runs and (more importantly) /when
-### it runs/ it doens't work.
-      ## observe({
-      ##   reactiveValuesToList(input) # whenever any input changes run the following script.
-      ##   JS("$('p.MathJax_LeftAlign div.MathJax_Display').css('text-align', 'left');")
-      ## })
+      
     }) |> bindEvent(input$calculate)
+    
+    output$Equations <- renderUI({
+      eval(MLRValidation)
+      
+      fluidPage(
+        ## NOTE: variables and equations are both in linearModelEquations.
+        fluidRow(
+          withMathJax(
+            div(id = "linear-model-equations",
+                p("The variables in the model are"),
+                p(paste(r"{\(}",
+                        sprintf(r"[y    = \text{%s} \\]", input$responseVariable),
+                        paste(sprintf(r"[x_%d = \text{%s}]",
+                                      seq_along(input$explanatoryVariables),
+                                      input$explanatoryVariables),
+                              collapse = r"[\\]"),
+                        r"{\)}")),
+                p("The estimated regression equation is"),
+                p(with(uploadedTibble$data(), {
+                  model <- lm(reformulate(as.character(lapply(input$explanatoryVariables, as.name)),
+                                          as.name(input$responseVariable)))
+                  
+                  ## Reactively generate the LaTeX for the regression model equation.
+                  modelEquations <- with(as.list(coefficients(model)), {
+                    req(as.list(coefficients(model)),
+                        cancelOutput = "progress")
+                    paste(
+                      r"{\(}",
+                      gsub(
+                        pattern = r"{\+(\ +)?-}",
+                        replacement = "-",
+                        x = paste(
+                          c(
+                            sprintf(r"[\hat{y} = \hat{\beta_0} + %s]",
+                                    paste(
+                                      sprintf(
+                                        r"[\hat{%s}]",
+                                        paste0(r"[\beta_]",
+                                               seq_along(input$explanatoryVariables))
+                                      ),
+                                      paste0(r"{x_}", seq_along(input$explanatoryVariables)),
+                                      collapse = "+"
+                                    )),
+                            sprintf(r"[\hat{y} = %.3f + %s]",
+                                    get("(Intercept)"),
+                                    paste(
+                                      as.character(lapply(mget(as.character(lapply(input$explanatoryVariables, as.name))),
+                                                          \(x) sprintf(r"[%.3f]", x))),
+                                      paste0(r"{x_}", seq_along(input$explanatoryVariables)),
+                                      collapse = "+"
+                                    )),
+                            ""
+                          ),
+                          collapse = r"[\\]"
+                        )),
+                      r"{\)}",
+                      sep = r"{\\}"
+                    )
+                  })
+                })))
+          )),
+        fluidRow(column(12,
+                        p(strong("Coefficients")),
+                        tableOutput(ns("linearModelCoefficients")))),
+        fluidRow(column(12,
+                        p(strong("Confidence Intervals")),
+                        tableOutput(ns("linearModelConfidenceIntervals"))))
+      )
+    })
+    
+    output$ANOVA <- renderUI({
+      eval(MLRValidation)
+      
+      fluidPage(
+        fluidRow(uiOutput(ns("anovaHypotheses"))),
+        fluidRow(tableOutput(ns("anovaTable"))),
+        fluidRow(uiOutput(ns("anovaPValueMethod")))
+      )
+    })
+    
+    output$Diagnostics <- renderUI({
+      eval(MLRValidation)
+      
+      ## Limit the width of the rows in a really jank way. It's
+      ## okay: desktop is the only target platform.
+      fluidPage(fluidRow(column(8, uiOutput(ns("rsquareAdjustedRSquareInterpretation"))),
+                         column(4)))
+    })
+    
+    output$DiagnosticPlots <- renderUI({
+      eval(MLRValidation)
+      
+      fluidPage(fluidRow(plotOutput(ns("linearModelRegressionLineAndPoints"))),
+                fluidRow(plotOutput(ns("linearModelResidualsPanelPlot"))))
+    })
+    
+    
   })
 }
