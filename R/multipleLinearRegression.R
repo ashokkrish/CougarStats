@@ -32,8 +32,8 @@ MLRSidebarUI <- function(id) {
                     multiple = TRUE,
                     choices = NULL),
         ## FIXME #44: styling issue.
-        fluidRow(actionButton(ns("calculate"), "Calculate"),
-                 actionButton(ns("reset"), "Reset")))
+        fluidRow(actionButton(ns("calculate"), "Calculate", class = "act-btn"),
+                 actionButton(ns("reset"), "Reset", class = "act-btn")))
     ))
 }
 
