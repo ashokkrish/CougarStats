@@ -1627,6 +1627,8 @@ statInfrServer <- function(id) {
     twoprop_iv <- InputValidator$new()
     twopropht_iv <- InputValidator$new()
     kwupload_iv <- InputValidator$new()
+    kwmulti_iv <- InputValidator$new()
+    kwstacked_iv <- InputValidator$new()
     anovaupload_iv <- InputValidator$new()
     anovamulti_iv <- InputValidator$new()
     anovastacked_iv <- InputValidator$new()
@@ -1823,6 +1825,19 @@ statInfrServer <- function(id) {
     onepropht_iv$add_rule("hypProportion", sv_gt(0))
     onepropht_iv$add_rule("hypProportion", sv_lt(1))
 
+    # Kruskal-Wallis
+    kwupload_iv$add_rule("kwUserData", sv_required())
+    kwupload_iv$add_rule("kwUserData", ~ if(is.null(fileInputs$kwStatus) || fileInputs$kwStatus == 'reset') "Required")
+    kwupload_iv$add_rule("kwUserData", ~ if(!(tolower(tools::file_ext(input$kwUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+    kwupload_iv$add_rule("kwUserData", ~ if(ncol(kwUploadData()) < 2) "Data must include at least two columns")
+    
+    kwmulti_iv$add_rule("kwMultiColumns", ~ if(length(input$kwMultiColumns) < 2) "Select at least two columns")
+    
+    kwstacked_iv$add_rule("kwResponse", sv_required())
+    kwstacked_iv$add_rule("kwFactors", sv_required())
+    kwstacked_iv$add_rule("kwResponse", ~ if(kwStackedIsValid() == FALSE) "Response variable and factors column cannot be the same")
+    kwstacked_iv$add_rule("kwFactors", ~ if(kwStackedIsValid() == FALSE) "Response variable and factors column cannot be the same")
+
     # Anova
     anovaupload_iv$add_rule("anovaUserData", sv_required())
     anovaupload_iv$add_rule("anovaUserData", ~ if(is.null(fileInputs$anovaStatus) || fileInputs$anovaStatus == 'reset') "Required")
@@ -1830,12 +1845,6 @@ statInfrServer <- function(id) {
     anovaupload_iv$add_rule("anovaUserData", ~ if(ncol(anovaUploadData()) < 2) "Data must include at least two columns")
     # anovaupload_iv$add_rule("anovaUserData", ~ if(nrow(anovaUploadData()) < 2) "")
     
-    # Kruskal-Wallis
-    kwupload_iv$add_rule("kwUserData", sv_required())
-    kwupload_iv$add_rule("kwUserData", ~ if(is.null(fileInputs$kwStatus) || fileInputs$kwStatus == 'reset') "Required")
-    kwupload_iv$add_rule("kwUserData", ~ if(!(tolower(tools::file_ext(input$kwUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
-    kwupload_iv$add_rule("kwUserData", ~ if(ncol(kwUploadData()) < 2) "Data must include at least two columns")
-
     # anovamulti_iv$add_rule("anovaMultiColumns", sv_required())
     anovamulti_iv$add_rule("anovaMultiColumns", ~ if(length(input$anovaMultiColumns) < 2) "Select at least two columns")
 
@@ -1990,11 +1999,21 @@ statInfrServer <- function(id) {
                                       input$popuParameters == 'Population Proportions' &&
                                       input$inferenceType2 == 'Hypothesis Testing'))
 
-    anovaupload_iv$condition(~ isTRUE(input$siMethod == 'Multiple' &&
-                                        input$multipleMethodChoice == 'anova'))
-    
     kwupload_iv$condition(~ isTRUE(input$siMethod == 'Multiple' &&
                                      input$multipleMethodChoice == 'kw'))
+    
+    kwmulti_iv$condition(~ isTRUE(input$siMethod == 'Multiple' &&
+                                       input$kwFormat == 'Multiple' &&
+                                       input$multipleMethodChoice == 'kw' &&
+                                       kwupload_iv$is_valid()))
+    
+    kwstacked_iv$condition(~ isTRUE(input$siMethod == 'Multiple' &&
+                                         input$kwFormat == 'Stacked' &&
+                                         input$multipleMethodChoice == 'kw' &&
+                                         kwupload_iv$is_valid()))
+    
+    anovaupload_iv$condition(~ isTRUE(input$siMethod == 'Multiple' &&
+                                        input$multipleMethodChoice == 'anova'))
 
     anovamulti_iv$condition(~ isTRUE(input$siMethod == 'Multiple' &&
                                        input$anovaFormat == 'Multiple' &&
@@ -2046,8 +2065,10 @@ statInfrServer <- function(id) {
     si_iv$add_validator(twoprop_iv)
     si_iv$add_validator(twopropht_iv)
     twoprop_iv$add_validator(twopropht_iv)
-    si_iv$add_validator(anovaupload_iv)
     si_iv$add_validator(kwupload_iv)
+    si_iv$add_validator(kwmulti_iv)
+    si_iv$add_validator(kwstacked_iv)
+    si_iv$add_validator(anovaupload_iv)
     si_iv$add_validator(anovamulti_iv)
     si_iv$add_validator(anovastacked_iv)
     si_iv$add_validator(chiSq2x2_iv)
@@ -2092,6 +2113,8 @@ statInfrServer <- function(id) {
     twoprop_iv$enable()
     twopropht_iv$enable()
     kwupload_iv$enable()
+    kwmulti_iv$enable()
+    kwstacked_iv$enable()
     anovaupload_iv$enable()
     anovamulti_iv$enable()
     anovastacked_iv$enable()
@@ -4210,6 +4233,19 @@ statInfrServer <- function(id) {
       )
     })
     
+    kwStackedIsValid <- eventReactive({input$kwResponse
+      input$kwFactors}, {
+        valid <- TRUE
+
+        if(!is.null(input$kwResponse) && !is.null(input$kwFactors)) {
+          if(input$kwResponse == input$kwFactors) {
+            valid <- FALSE
+          }
+        }
+
+        return(valid)
+    })
+    
  ### ------------ ANOVA Reactives ---------------------------------------------
     anovaUploadData <- eventReactive(input$anovaUserData, {
       ext <- tools::file_ext(input$anovaUserData$name)
@@ -4663,6 +4699,23 @@ statInfrServer <- function(id) {
           need(ncol(kwUploadData()) >= 2, "File must contain at least 2 distinct columns of data to choose from for analysis."),
           errorClass = "myClass")
         
+      }
+      
+      if(!kwmulti_iv$is_valid()) {
+        validate(
+          need(length(input$kwMultiColumns) >= 2, "Please select two or more columns to conduct analysis."),
+          errorClass = "myClass")
+      }
+      
+      if(!kwstacked_iv$is_valid()) {
+        validate(
+          need(!is.null(input$kwResponse) && input$kwResponse != '', "Please select a Response Variable."),
+          need(!is.null(input$kwFactors) && input$kwFactors != '', "Please select a Factors column."),
+          errorClass = "myClass")
+
+        validate(
+          need(kwStackedIsValid() == TRUE, "Please select distinct columns for Response Variable and Factors."),
+          errorClass = "myClass")
       }
       
  #### ---------------- ANOVA Validation
