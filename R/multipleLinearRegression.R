@@ -55,6 +55,18 @@ MLRMainPanelUI <- function(id) {
 
 MLRServer <- function(id) {
   moduleServer(id, function(input, output, session) {
+    redrawing <- FALSE
+    session$onFlushed(function() {
+      if (redrawing) {
+        shinyjs::runjs(r"[$('#rc-MLR-anovaTable > table > thead > tr').children().css({'font-style': 'italic'})]")
+        redrawing <<- FALSE
+      }
+    },
+    
+    once = FALSE)
+    
+    
+    
     ## TODO: display a help message in the sidebar indicating that non-numeric
     ## columns will not be available.
     uploadedTibble <- import_server("dataImport", return_class = "tbl_df")
@@ -192,13 +204,13 @@ MLRServer <- function(id) {
                                 as.name(input$responseVariable)))
 
         output$linearModelCoefficients <- renderTable({
-          summary(model)$coefficients %>% as.data.frame()
-          # %>% tibble::rownames_to_column(var = "Source")
+          df <- summary(model)$coefficients %>% as.data.frame()
+          df[, 4] <- format(df[, 4], digits = 4)
+          df
         },
         rownames = TRUE,
         na = "",
-        striped = TRUE,
-        caption = "Coefficients")
+        striped = TRUE, align = 'c')
 
         output$linearModelConfidenceIntervals <- renderTable({
           confint(model) %>%
@@ -207,8 +219,7 @@ MLRServer <- function(id) {
         },
         rownames = TRUE,
         na = "",
-        striped = TRUE,
-        caption = "Confidence Intervals")
+        striped = TRUE, align = 'c')
 
         output$rsquareAdjustedRSquareInterpretation <- renderUI({
 
@@ -230,14 +241,13 @@ MLRServer <- function(id) {
           },
           rownames = TRUE,
           striped = TRUE,
-          na = "",
-          caption = "Correlation Matrix")
+          na = "", align = 'c')
 
           withMathJax(
-            p(sprintf(r"[\( \displaystyle R^2 = \frac{\text{SSR}}{\text{SST}} = \frac{%0.4f}{%0.4f} \\ 1 - R^2 = %0.4f = %0.2f\%% \)]",
-                      SSR, SST,
-                      1 - ( SSR / SST ),
-                      (1 - ( SSR / SST )) * 100)),
+            p(sprintf(r"[\( \displaystyle R^2 = \frac{\text{SSR}}{\text{SST}} = \frac{%0.4f}{%0.4f} = %0.4f\)]",
+                      SSR,
+                      SST,
+                      SSR / SST)),
             p(strong(r"{ Adjusted \(R^2\) }")),
             p(sprintf(r"{
 \(
@@ -252,30 +262,30 @@ p(strong("Interpretation:"),
   sprintf(r"[therefore, \(%.2f\%%\) of the variation in the response variable is explained by the multiple linear regression model when adjusted for the number of explanatory variables and the sample size.]",
           summary(model)$adj.r.squared * 100)),
 p(strong("Information Criteria")),
-p(sprintf(r"[Akaike's "An Information Criterion": \(%0.4f\)]", AIC(model))),
-p(sprintf(r"[Schwarz's Bayesian criterion, the so-called "BIC": \(%0.4f\)]", BIC(model))),
+p(sprintf(r"[Akaike Information Criterion (AIC): \(%0.4f\)]", AIC(model))),
+p(sprintf(r"[Bayesian Information Criterion (BIC): \(%0.4f\)]", BIC(model))),
 p(strong("Correlation matrix")),
 tableOutput("MLR-simpleCorrelationMatrix"), # FIXME: I needed to prepend the module id to the output id for the block to work.
 
 p(strong("Multicollinearity Detection")),
 p("Multicollinearity can be detected in multiple ways. Select a method using the dropdown."),
-selectInput("MLR-multicolSelect",
+selectInput(session$ns("detectionMethodSelect"),
             "Detection method",
             list("Graphical" = "scatmat",
                  "VIFs" = "vifs")),
-uiOutput("MLR-detectionMethodUI"))
+uiOutput(session$ns("detectionMethodUI")))
         })
 
         output$detectionMethodUI <- renderUI({
-          validate(need(isTruthy(input$multicolSelect), "Select a detection method"))
+          validate(need(isTruthy(input$detectionMethodSelect), "Select a detection method"))
 
-          switch(input$multicolSelect,
+          switch(input$detectionMethodSelect,
                  scatmat = fluidRow(column(12,
                                            p("The diagonal of this plot are the distributions of the data in each variable. The lower triangle is the scatterplots of one variable against another; if the points form a more-or-less straight line then the variables are correlated. The upper triangle has the correlation coefficients between two variables."),
-                                           plotOutput("MLR-ggscatmat"))),
+                                           plotOutput(session$ns("ggscatmat")))),
                  vifs = fluidRow(column(12,
                                         p("A VIF greater than 10 suggests strong multicollinearity caused by the respective variable with that variance inflation factor. VIFs between 5 and 10 hint at moderate multicollinearity. Values less than 5 are acceptable, with only a low degree of multicollinearity detected."),
-                                        tableOutput("MLR-vifs"))),
+                                        tableOutput(session$ns("vifs")))),
                  p(""))
         })
 
@@ -286,7 +296,7 @@ uiOutput("MLR-detectionMethodUI"))
           }, error = \(e) print(e))
           validate(need(is.data.frame(df), "Couldn't produce a data frame from the VIF function of the model. Usually this means there are aliased coefficients in the model. Re-attempt after verifying the data, or renaming the columns."))
           df
-        }, rownames = TRUE)
+        }, rownames = TRUE, align = "c")
 
         output$multicollinearityGgpairs <- renderPlot({
           ggpairs(anova(model))
@@ -303,6 +313,7 @@ uiOutput("MLR-detectionMethodUI"))
         })
 
         output$anovaTable <- renderTable({
+          redrawing <<- TRUE
           options(knitr.kable.NA = "") # do not display NAs
           modelANOVA <- anova(model)
           SSR <- sum(modelANOVA$"Sum Sq"[-nrow(modelANOVA)]) # all but the residuals
@@ -317,15 +328,17 @@ uiOutput("MLR-detectionMethodUI"))
           ## RETURN THE TABLE TO RENDER
           tibble::tribble(
                     ~"Source",     ~"df",     ~"SS", ~"MS", ~"F", ~"P-value",
-                    "Regression", k,         SSR,   MSR,   F,    pf(F, k, n - k - 1, lower.tail = FALSE),
+                    "Regression", k,         SSR,   MSR,   F,    format(pf(F, k, n - k - 1, lower.tail = FALSE), digits = 4),
                     "Residual",   n - k - 1, SSE,   MSE,   NA,   NA,
                     "Total",      n - 1,     SST,   NA,    NA,   NA
-                  ) %>% tibble::column_to_rownames(var = "Source")
+                  )
         },
-        rownames = TRUE,
         na = "",
-        striped = TRUE,
-        caption = "ANOVA Table")
+        striped = TRUE, align = 'c')
+        
+        observe({
+          shinyjs::runjs(r"[$('#rc-MLR-anovaTable > table > thead > tr').children().css({'font-style': 'italic'})]")
+        })
 
         output$linearModelAIC <- renderPrint({
           print(AIC(model))
@@ -362,7 +375,7 @@ uiOutput("MLR-detectionMethodUI"))
           MSE <- SSE / (n - k - 1)
           F <- MSR / MSE
           withMathJax(
-            p(strong("Test statistic")),
+            p(strong("Test Statistic")),
             p(sprintf(r"{\(F = \frac{\text{MSR}}{\text{MSE}} = \frac{%0.2f}{%0.2f} = %0.2f \)}",
                       MSR, MSE, F)),
             p(sprintf(r"{
@@ -373,7 +386,7 @@ R^2_{\text{adj}} = %0.2f \\
 \)
 }",
 anovaModel$SSR, anovaModel$SST, anovaModel$SSR / anovaModel$SST)),
-p(strong("Using the P-Value method:")),
+p(strong("Conclusion:")),
 {
   pValue <- pf(F, k, n - k - 1, lower.tail = FALSE)
   p(sprintf(r"[Since the p-value is %s than \(\alpha\) (\(%0.3f %s 0.05\)), %s.]",

@@ -580,6 +580,8 @@ descStatsServer <- function(id) {
       if(input$dataInput == 'Upload Data')
       {
         req(dsuploadvars_iv$is_valid())
+        
+        browser()
 
         for( x in input$dsUploadVars)
         {
