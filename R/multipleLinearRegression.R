@@ -180,14 +180,20 @@ MLRServer <- function(id) {
           ## variables is implemented, use this form of the null-hypothesis (and
           ## when the alternative is implemented use this when there are more
           ## than five independent variables selected).
-          p(r"{\( H_0: \beta_1 = \beta_2 = \cdots = \beta_k \) (there is no linear relationship between the dependent variable and the independent variables.) }",
+          p(r"{\( H_0: \beta_1 = \beta_2 = \cdots = \beta_k = 0\)}",
             br(),
-            r"{\( H_a: \) At least one \(\beta_j\ne 0\), where \(j = 0, 1, \cdots, k\). (there is a linear relationship between the dependent variable and the independent variables.)}"),
-          p(r"{In other words, "Taken collectively, does the entire set of explanatory variables contribute significantly to the prediction of the response?"}"),
+            r"{\( H_a: \) At least one \(\beta_j\ne 0\), where \(j = 1, \cdots, k\).}"),
+          
+          #(there is no linear relationship between the dependent variable and the independent variables.)
+          #(there is a linear relationship between the dependent variable and the independent variables.)
+          #p(r"{In other words, "Taken collectively, does the entire set of explanatory variables contribute significantly to the prediction of the response?"}"),
+          br(),
           p(r"{\( \alpha = 0.05\ \)}"),
-          p(sprintf(r"{\( n = %i \)}", nrow(uploadedTibble$data())),
-            br(),
-            sprintf(r"{\( k = %i \)}", nrow(uploadedTibble$data()) - 1))
+          br()
+          # p(sprintf(r"{\( n = %i \)}", nrow(uploadedTibble$data())),
+          #   br(),
+          #   sprintf(r"{\( k = %i \)}", nrow(uploadedTibble$data()) - 1) # This is a BUG. k is equal to the number of explanatory variables.
+          #   )
         )
       })
 
@@ -244,11 +250,12 @@ MLRServer <- function(id) {
           na = "", align = 'c')
 
           withMathJax(
+            p(strong(r"{ \(R^2\) and Adjusted \(R^2\) }")),
+            br(),
             p(sprintf(r"[\( \displaystyle R^2 = \frac{\text{SSR}}{\text{SST}} = \frac{%0.4f}{%0.4f} = %0.4f\)]",
                       SSR,
                       SST,
                       SSR / SST)),
-            p(strong(r"{ Adjusted \(R^2\) }")),
             p(sprintf(r"{
 \(
 \displaystyle
@@ -259,11 +266,13 @@ R^2_{\text{adj}} = %0.4f
 summary(model)$adj.r.squared)),
 p(r"[where \(k\) is the number of independent (explanatory) variables in the regression model, and \(n\) is the number of observations in the dataset.]"),
 p(strong("Interpretation:"),
-  sprintf(r"[therefore, \(%.2f\%%\) of the variation in the response variable is explained by the multiple linear regression model when adjusted for the number of explanatory variables and the sample size.]",
+  sprintf(r"[Roughly \(%.2f\%%\) of the variation in the response variable is explained by the multiple linear regression model when adjusted for the number of explanatory variables and the sample size.]",
           summary(model)$adj.r.squared * 100)),
+br(),
 p(strong("Information Criteria")),
 p(sprintf(r"[Akaike Information Criterion (AIC): \(%0.4f\)]", AIC(model))),
 p(sprintf(r"[Bayesian Information Criterion (BIC): \(%0.4f\)]", BIC(model))),
+br(),
 p(strong("Correlation matrix")),
 tableOutput("MLR-simpleCorrelationMatrix"), # FIXME: I needed to prepend the module id to the output id for the block to work.
 
