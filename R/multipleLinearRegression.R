@@ -32,7 +32,7 @@ MLRSidebarUI <- function(id) {
                     multiple = TRUE,
                     choices = NULL),
         actionButton(ns("calculate"), "Calculate", class = "act-btn"),
-        actionButton(ns("reset"), "Reset", class = "act-btn"))
+        actionButton(ns("reset"), "Reset Values", class = "act-btn"))
       
     ))
 }
@@ -328,9 +328,9 @@ uiOutput(session$ns("detectionMethodUI")))
           ## RETURN THE TABLE TO RENDER
           tibble::tribble(
                     ~"Source",     ~"df",     ~"SS", ~"MS", ~"F", ~"P-value",
-                    "Regression", k,         SSR,   MSR,   F,    format(pf(F, k, n - k - 1, lower.tail = FALSE), digits = 4),
-                    "Residual",   n - k - 1, SSE,   MSE,   NA,   NA,
-                    "Total",      n - 1,     SST,   NA,    NA,   NA
+                    "Regression", as.integer(k),         SSR,   MSR,   F,    format(pf(F, k, n - k - 1, lower.tail = FALSE), digits = 4),
+                    "Residual",   as.integer(n - k - 1), SSE,   MSE,   NA,   NA,
+                    "Total",      as.integer(n - 1),     SST,   NA,    NA,   NA
                   )
         },
         na = "",
