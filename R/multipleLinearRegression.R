@@ -183,17 +183,12 @@ MLRServer <- function(id) {
           p(r"{\( H_0: \beta_1 = \beta_2 = \cdots = \beta_k = 0\)}",
             br(),
             r"{\( H_a: \) At least one \(\beta_j\ne 0\), where \(j = 1, \cdots, k\).}"),
-          
-          #(there is no linear relationship between the dependent variable and the independent variables.)
-          #(there is a linear relationship between the dependent variable and the independent variables.)
-          #p(r"{In other words, "Taken collectively, does the entire set of explanatory variables contribute significantly to the prediction of the response?"}"),
           br(),
           p(r"{\( \alpha = 0.05\ \)}"),
-          br()
-          # p(sprintf(r"{\( n = %i \)}", nrow(uploadedTibble$data())),
-          #   br(),
-          #   sprintf(r"{\( k = %i \)}", nrow(uploadedTibble$data()) - 1) # This is a BUG. k is equal to the number of explanatory variables.
-          #   )
+          br(),
+          p(sprintf(r"{\( n = %i \)}", nrow(uploadedTibble$data())),
+            br(),
+            sprintf(r"{\( k = %i \)}", length(input$explanatoryVariables)))
         )
       })
 
@@ -328,7 +323,7 @@ uiOutput(session$ns("detectionMethodUI")))
           SSR <- sum(modelANOVA$"Sum Sq"[-nrow(modelANOVA)]) # all but the residuals
           SSE <- modelANOVA$"Sum Sq"[nrow(modelANOVA)]       # only the residuals
           SST <- SSR + SSE
-          k <- nrow(modelANOVA) - 1
+          k <- length(input$explanatoryVariables)
           n <- nrow(uploadedTibble$data())
           MSR <- SSR / k
           MSE <- SSE / (n - k - 1)
@@ -378,7 +373,7 @@ uiOutput(session$ns("detectionMethodUI")))
           SSR <- sum(modelANOVA$"Sum Sq"[-nrow(modelANOVA)]) # all but the residuals
           SSE <- modelANOVA$"Sum Sq"[nrow(modelANOVA)]       # only the residuals
           SST <- SSR + SSE
-          k <- nrow(modelANOVA) - 1
+          k <- length(input$explanatoryVariables)
           n <- nrow(uploadedTibble$data())
           MSR <- SSR / k
           MSE <- SSE / (n - k - 1)
