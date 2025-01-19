@@ -44,7 +44,7 @@ MLRMainPanelUI <- function(id) {
                       import_ui(id = ns("dataImport"), from = c("file", "copypaste"))),
              tabPanel(title = "MLR", uiOutput(ns("Equations")) ),
              tabPanel(title = "ANOVA", uiOutput(ns("ANOVA"))),
-             tabPanel(title = "Diagnostics", uiOutput(ns("Diagnostics"))),
+             tabPanel(title = "Multicollinearity Detection", uiOutput(ns("MulticollinearityDetection"))),
              tabPanel(title = "Diagnostic Plots", uiOutput(ns("DiagnosticPlots"))),
 
              ## FIXME #49: if the version is 5 then import_ui will break! NOTE:
@@ -247,37 +247,54 @@ MLRServer <- function(id) {
           withMathJax(
             p(strong(r"{ \(R^2\) and Adjusted \(R^2\) }")),
             br(),
-            p(sprintf(r"[\( \displaystyle R^2 = \frac{\text{SSR}}{\text{SST}} = \frac{%0.4f}{%0.4f} = %0.4f\)]",
-                      SSR,
-                      SST,
-                      SSR / SST)),
-            p(sprintf(r"{
+            p(sprintf(
+              r"[\( \displaystyle R^2 = \frac{\text{SSR}}{\text{SST}} = \frac{%0.4f}{%0.4f} = %0.4f\)]",
+              SSR,
+              SST,
+              SSR / SST
+            )),
+            p(sprintf(
+              r"{
 \(
 \displaystyle
 R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] \\
 R^2_{\text{adj}} = %0.4f
 \)
 }",
-summary(model)$adj.r.squared)),
-p(r"[where \(k\) is the number of independent (explanatory) variables in the regression model, and \(n\) is the number of observations in the dataset.]"),
-p(strong("Interpretation:"),
-  sprintf(r"[Roughly \(%.2f\%%\) of the variation in the response variable is explained by the multiple linear regression model when adjusted for the number of explanatory variables and the sample size.]",
-          summary(model)$adj.r.squared * 100)),
-br(),
-p(strong("Information Criteria")),
-p(sprintf(r"[Akaike Information Criterion (AIC): \(%0.4f\)]", AIC(model))),
-p(sprintf(r"[Bayesian Information Criterion (BIC): \(%0.4f\)]", BIC(model))),
-br(),
-p(strong("Correlation matrix")),
-tableOutput("MLR-simpleCorrelationMatrix"), # FIXME: I needed to prepend the module id to the output id for the block to work.
+              summary(model)$adj.r.squared
+            )),
+            p(r"[where \(k\) is the number of independent (explanatory) variables in the regression model, and \(n\) is the number of observations in the dataset.]"),
+            p(
+              strong("Interpretation:"),
+              sprintf(
+                r"[Roughly \(%.2f\%%\) of the variation in the response variable is explained by the multiple linear regression model when adjusted for the number of explanatory variables and the sample size.]",
+                summary(model)$adj.r.squared * 100
+              )
+            ),
+            br(),
+            p(strong("Information Criteria")),
+            p(sprintf(r"[Akaike Information Criterion (AIC): \(%0.4f\)]", AIC(model))),
+            p(sprintf(r"[Bayesian Information Criterion (BIC): \(%0.4f\)]", BIC(model))),
+            br(),
+            p(strong("Correlation matrix")),
+            tableOutput(session$ns("simpleCorrelationMatrix"))
+          )
+        })
 
-p(strong("Multicollinearity Detection")),
-p("Multicollinearity can be detected in multiple ways. Select a method using the dropdown."),
-selectInput(session$ns("detectionMethodSelect"),
-            "Detection method",
-            list("Graphical" = "scatmat",
-                 "VIFs" = "vifs")),
-uiOutput(session$ns("detectionMethodUI")))
+        output$multicollinearityDetectionMainPanelUI <- renderUI({
+          withMathJax(
+            p(strong("Multicollinearity Detection")),
+            p("Multicollinearity can be detected in multiple ways. Select a method using the dropdown."),
+            selectInput(
+              session$ns("detectionMethodSelect"),
+              "Detection method",
+              list(
+                "Graphical" = "scatmat",
+                "VIFs" = "vifs"
+              )
+            ),
+            uiOutput(session$ns("detectionMethodUI"))
+          )
         })
 
         output$detectionMethodUI <- renderUI({
@@ -491,17 +508,17 @@ p(strong("Conclusion:")),
       fluidPage(
         fluidRow(uiOutput(ns("anovaHypotheses"))),
         fluidRow(tableOutput(ns("anovaTable"))),
-        fluidRow(uiOutput(ns("anovaPValueMethod")))
+        fluidRow(uiOutput(ns("anovaPValueMethod"))),
+        fluidRow(uiOutput(ns("rsquareAdjustedRSquareInterpretation")))
       )
     })
     
-    output$Diagnostics <- renderUI({
+    output$MulticollinearityDetection <- renderUI({
       eval(MLRValidation)
       
       ## Limit the width of the rows in a really jank way. It's
       ## okay: desktop is the only target platform.
-      fluidPage(fluidRow(column(8, uiOutput(ns("rsquareAdjustedRSquareInterpretation"))),
-                         column(4)))
+      fluidPage(fluidRow(uiOutput(ns("multicollinearityDetectionMainPanelUI"))))
     })
     
     output$DiagnosticPlots <- renderUI({
