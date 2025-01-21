@@ -48,15 +48,21 @@ ui <- fluidPage(id = "mainContainer",
                            "border-radius: 4px",
                            sep = "; "
                          ),
-                         tags$a(
-                                href = "https://apps.apple.com/us/app/cougarstats/id6476070179",
-                                target = "_blank",
-                                tags$img(
-                                       src = "AppStoreLogo.svg",
-                                       title = "App Store Link",
-                                       width = "150px"
-                                     )
-                              ),
                          HTML(r"[<button id="togglemode" type="button" class="btn btn-warning">Toggle Dark Mode</button>]")),
+                tags$div(style = paste("position: absolute",
+                                       "top: 20px",
+                                       "right: 200px",
+                                       "z-index: 99",
+                                       "font-size: 18px",
+                                       "border: none",
+                                       "outline: none",
+                                       "color: white",
+                                       "cursor: pointer",
+                                       "padding: 15px",
+                                       "border-radius: 4px",
+                                       sep = "; "),
+                         tags$a(href = "https://apps.apple.com/us/app/cougarstats/id6476070179",
+                                target = "_blank",
+                                tags$img(src = "AppStoreLogo.svg", title = "App Store Link", width = "150px"))),
                 HEAD,
                 BODY)
