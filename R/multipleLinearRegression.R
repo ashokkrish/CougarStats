@@ -33,7 +33,6 @@ MLRSidebarUI <- function(id) {
                     choices = NULL),
         actionButton(ns("calculate"), "Calculate", class = "act-btn"),
         actionButton(ns("reset"), "Reset Values", class = "act-btn"))
-      
     ))
 }
 
@@ -62,11 +61,8 @@ MLRServer <- function(id) {
         redrawing <<- FALSE
       }
     },
-    
     once = FALSE)
-    
-    
-    
+
     ## TODO: display a help message in the sidebar indicating that non-numeric
     ## columns will not be available.
     uploadedTibble <- import_server("dataImport", return_class = "tbl_df")
@@ -206,7 +202,6 @@ MLRServer <- function(id) {
 
         output$linearModelCoefficients <- renderTable({
           df <- summary(model)$coefficients %>% as.data.frame()
-          df[, 4] <- format(df[, 4], digits = 4)
           df
         },
         rownames = TRUE,
@@ -283,7 +278,7 @@ R^2_{\text{adj}} = %0.4f
 
         output$multicollinearityDetectionMainPanelUI <- renderUI({
           withMathJax(
-            p(strong("Multicollinearity Detection")),
+            ## p(strong("Multicollinearity Detection")),
             p("Multicollinearity can be detected in multiple ways. Select a method using the dropdown."),
             selectInput(
               session$ns("detectionMethodSelect"),
@@ -349,7 +344,7 @@ R^2_{\text{adj}} = %0.4f
           ## RETURN THE TABLE TO RENDER
           tibble::tribble(
                     ~"Source",     ~"df",     ~"SS", ~"MS", ~"F", ~"P-value",
-                    "Regression", as.integer(k),         SSR,   MSR,   F,    format(pf(F, k, n - k - 1, lower.tail = FALSE), digits = 4),
+                    "Regression", as.integer(k),         SSR,   MSR,   F,    pf(F, k, n - k - 1, lower.tail = FALSE),
                     "Residual",   as.integer(n - k - 1), SSE,   MSE,   NA,   NA,
                     "Total",      as.integer(n - 1),     SST,   NA,    NA,   NA
                   )
@@ -397,7 +392,7 @@ R^2_{\text{adj}} = %0.4f
           F <- MSR / MSE
           withMathJax(
             p(strong("Test Statistic")),
-            p(sprintf(r"{\(F = \frac{\text{MSR}}{\text{MSE}} = \frac{%0.2f}{%0.2f} = %0.2f \)}",
+            p(sprintf(r"{\(\displaystyle F = \frac{\text{MSR}}{\text{MSE}} = \frac{%0.2f}{%0.2f} = %0.2f \)}",
                       MSR, MSE, F)),
             p(sprintf(r"{
 \(
