@@ -40,7 +40,7 @@ MLRMainPanelUI <- function(id) {
   ns <- NS(id)
   navbarPage(title = NULL,
              tabPanel(title = "Data Import",
-                      import_ui(id = ns("dataImport"), from = c("file", "copypaste"))),
+                      import_ui(id = ns("dataImport"), from = c("file", "copypaste", "env"))),
              tabPanel(title = "MLR", uiOutput(ns("Equations")) ),
              tabPanel(title = "ANOVA", uiOutput(ns("ANOVA"))),
              tabPanel(title = "Multicollinearity Detection", uiOutput(ns("MulticollinearityDetection"))),
