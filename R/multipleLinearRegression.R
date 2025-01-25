@@ -200,18 +200,12 @@ MLRServer <- function(id) {
         model <- lm(reformulate(as.character(lapply(input$explanatoryVariables, as.name)),
                                 as.name(input$responseVariable)))
 
-        output$linearModelCoefficients <- renderTable({
-          df <- summary(model)$coefficients %>% as.data.frame()
+        output$linearModelCoefConfint <- renderTable({
+          df <- summary(model)$coefficients %>%
+                             as.data.frame() %>%
+                             cbind(confint(model) %>%
+                               as.data.frame())
           df
-        },
-        rownames = TRUE,
-        na = "",
-        striped = TRUE, align = 'c')
-
-        output$linearModelConfidenceIntervals <- renderTable({
-          confint(model) %>%
-            as.data.frame()
-          # %>% tibble::rownames_to_column(var = "Source")
         },
         rownames = TRUE,
         na = "",
@@ -269,10 +263,7 @@ R^2_{\text{adj}} = %0.4f
             br(),
             p(strong("Information Criteria")),
             p(sprintf(r"[Akaike Information Criterion (AIC): \(%0.4f\)]", AIC(model))),
-            p(sprintf(r"[Bayesian Information Criterion (BIC): \(%0.4f\)]", BIC(model))),
-            br(),
-            p(strong("Correlation matrix")),
-            tableOutput(session$ns("simpleCorrelationMatrix"))
+            p(sprintf(r"[Bayesian Information Criterion (BIC): \(%0.4f\)]", BIC(model)))
           )
         })
 
@@ -288,7 +279,9 @@ R^2_{\text{adj}} = %0.4f
                 "VIFs" = "vifs"
               )
             ),
-            uiOutput(session$ns("detectionMethodUI"))
+            uiOutput(session$ns("detectionMethodUI")),
+            p(strong("Correlation matrix")),
+            tableOutput(session$ns("simpleCorrelationMatrix"))
           )
         })
 
@@ -489,11 +482,8 @@ p(strong("Conclusion:")),
                 })))
           )),
         fluidRow(column(12,
-                        p(strong("Coefficients")),
-                        tableOutput(ns("linearModelCoefficients")))),
-        fluidRow(column(12,
-                        p(strong("Confidence Intervals")),
-                        tableOutput(ns("linearModelConfidenceIntervals"))))
+                        p(strong("Coefficients and Confidence Intervals")),
+                        tableOutput(ns("linearModelCoefConfint"))))
       )
     })
     
