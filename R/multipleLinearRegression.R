@@ -14,6 +14,19 @@ library(car)
 library(ggResidpanel)
 library(waiter)
 
+## mnemonic: corset
+## To set below the diagonal to NA, just t(corsetAboveDiagNA).
+## Always calls "cor" with "use = 'complete.obs'".
+corsetAboveDiagNA <- function(dat) {
+  dat <- cor(dat, use = "complete.obs")
+  for (column in seq(ncol(dat))) {
+    if (!(column == ncol(dat))) {
+      dat[column, (column + 1):ncol(dat)] <- NA
+    }
+  }
+  return(dat)
+}
+
 MLRSidebarUI <- function(id) {
   ns <- NS(id)
   tagList(
@@ -252,7 +265,13 @@ MLRServer <- function(id) {
             ## Only "complete" (no NAs) observations.
             output$simpleCorrelationMatrix <- renderTable(
               {
-                cor(uploadedTibble$data()[, input$explanatoryVariables], use = "complete.obs")
+
+                corsetAboveDiagNA(
+                  uploadedTibble$data()[
+                    ,
+                    input$explanatoryVariables
+                  ]
+                )
               },
               rownames = TRUE,
               striped = TRUE,
@@ -306,26 +325,38 @@ R^2_{\text{adj}} = %0.4f
                   "VIFs" = "vifs"
                 )
               ),
-              uiOutput(session$ns("detectionMethodUI")),
-              p(strong("Correlation matrix")),
-              tableOutput(session$ns("simpleCorrelationMatrix"))
+              uiOutput(session$ns("detectionMethodUI"))
             )
           })
 
           output$detectionMethodUI <- renderUI({
             validate(need(isTruthy(input$detectionMethodSelect), "Select a detection method"))
 
-            switch(input$detectionMethodSelect,
-              scatmat = fluidRow(column(
-                12,
-                p("The diagonal of this plot are the distributions of the data in each variable. The lower triangle is the scatterplots of one variable against another; if the points form a more-or-less straight line then the variables are correlated. The upper triangle has the correlation coefficients between two variables."),
-                plotOutput(session$ns("ggscatmat"))
-              )),
-              vifs = fluidRow(column(
-                12,
-                p("A VIF greater than 10 suggests strong multicollinearity caused by the respective variable with that variance inflation factor. VIFs between 5 and 10 hint at moderate multicollinearity. Values less than 5 are acceptable, with only a low degree of multicollinearity detected."),
-                tableOutput(session$ns("vifs"))
-              )),
+            tagList(
+              switch(input$detectionMethodSelect,
+                scatmat = tagList(
+                  fluidRow(column(
+                    12,
+                    p("Along the diagonal of this plot are the distributions of the data in each variable. Below the diagonal are the scatterplots of one variable against another; if the points form a more-or-less straight line then the variables are correlated. Above the diagonal are the correlation coefficients between two variables."),
+                    plotOutput(session$ns("ggscatmat"))
+                  )),
+                  fluidRow(column(
+                    12, p(strong("Correlation matrix")),
+                    tableOutput(session$ns("simpleCorrelationMatrix"))
+                  ))
+                ),
+                vifs = tagList(
+                  fluidRow(column(
+                    12,
+                    p("A VIF greater than 10 suggests strong multicollinearity caused by the respective variable with that variance inflation factor. VIFs between 5 and 10 hint at moderate multicollinearity. Values less than 5 are acceptable, with only a low degree of multicollinearity detected."),
+                    tableOutput(session$ns("vifs"))
+                  )),
+                  fluidRow(column(
+                    12, p(strong("Correlation matrix")),
+                    tableOutput(session$ns("simpleCorrelationMatrix"))
+                  ))
+                )
+              ),
               p("")
             )
           })
@@ -591,9 +622,7 @@ R^2_{\text{adj}} = %0.2f \\
     output$MulticollinearityDetection <- renderUI({
       eval(MLRValidation)
       
-      ## Limit the width of the rows in a really jank way. It's
-      ## okay: desktop is the only target platform.
-      fluidPage(fluidRow(uiOutput(ns("multicollinearityDetectionMainPanelUI"))))
+      uiOutput(ns("multicollinearityDetectionMainPanelUI"))
     })
     
     output$DiagnosticPlots <- renderUI({
