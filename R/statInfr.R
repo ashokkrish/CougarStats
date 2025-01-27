@@ -7157,9 +7157,9 @@ output$onePropCI <- renderUI({
             
             
             # KW formula
-            sprintf("\\( K = \\frac{12}{n(n + 1)}\\sum_{j = 1}^{k}\\frac{R_j^2}{n_j} - 3(n + 1) = %f\\)", data$statistic), #add %d to the end here when you get the kw value
+            sprintf("\\( K = \\frac{12}{n(n + 1)}\\sum_{j = 1}^{k}\\frac{R_j^2}{n_j} - 3(n + 1) = %s\\)", as.character(round(data$statistic, 4))), #add %d to the end here when you get the kw value
             br(),
-            sprintf("\\(P = %f\\)", kw_pv),
+            sprintf("\\(P = %s\\)", as.character(kw_pv)),
             br(), br(),
             p(tags$b("Conclusion: ")),
             
