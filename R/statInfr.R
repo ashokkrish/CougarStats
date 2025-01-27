@@ -836,18 +836,20 @@ statInfrUI <- function(id) {
               ), # "input.siMethod == '2'",
 
  ### ------------ Multiple Samples (ANOVA or Kruskal-Wallis) ------------------------------------
-              # anova
               conditionalPanel(
                 ns = ns,
                 condition = 'input.siMethod == "Multiple"',
 
+                HTML("<label class='si-label'><b>Hypothesis Test</b></label>"),
+                
                 radioButtons(
                   inputId = ns("multipleMethodChoice"),
-                  label   = strong("Hypothesis Test"),
+                  label   = NULL,
                   choiceNames = c("ANOVA", "Kruskal-Wallis"),
                   choiceValues = c("anova", "kw")
                 ),
                 
+ #### ------------ ANOVA ------------------------------------
                 conditionalPanel(
                   ns = ns,
                   condition = 'input.multipleMethodChoice == "anova"',
@@ -944,7 +946,7 @@ statInfrUI <- function(id) {
                 
                 ), #anova conditionalPanel
                 
-                # kw  
+ #### ------------ Kruskal-Wallis ------------------------------------
                 conditionalPanel(
                   ns = ns,
                   condition = 'input.multipleMethodChoice == "kw"',
@@ -1012,7 +1014,7 @@ statInfrUI <- function(id) {
                 
                 radioButtons(
                   inputId = ns("kwSigLvl"),
-                  label = "Significance Level (\\( \\alpha\\))",
+                  label = strong("Significance Level (\\( \\alpha\\))"),
                   choices  = c("10%",
                                "5%",
                                "1%"),
@@ -1411,7 +1413,8 @@ statInfrUI <- function(id) {
               ), # Two Population Proportions
             ), # "input.siMethod == '2'"
 
- ### ------------ Multiple Samples (ANOVA) ------------------------------------
+ ### ------------ Multiple Samples ------------------------------------
+ #### ----------- ANOVA -----------------------------------------------
             conditionalPanel(
               ns = ns,
               condition = "input.siMethod == 'Multiple' && input.multipleMethodChoice == 'anova'",
@@ -1512,6 +1515,25 @@ statInfrUI <- function(id) {
                 )
               ) #anovaTabset tabsetPanel
             ), #Multiple Samples (ANOVA)
+
+ #### ------------ Kruskal-Wallis ------------------------------------
+            conditionalPanel(
+              ns = ns,
+              condition = "input.siMethod == 'Multiple' && input.multipleMethodChoice == 'kw'",
+              
+              
+              titlePanel(tags$strong(tags$u("Hypothesis Test"))),
+              br(),
+              
+              uiOutput(ns('kwHT'))
+              
+              # H0: The distributions of the groups are identical, and their medians are equal.
+              # Ha: At least one group differs in median from the others.
+              # 
+              # alpha = the value user selects from the radio button (one of 0.10 / 0.05 / 0.01)
+              
+              
+            ),
 
  ### ------------ Categorical Samples (Chi-Square) ----------------------------
             conditionalPanel(
@@ -1825,19 +1847,6 @@ statInfrServer <- function(id) {
     onepropht_iv$add_rule("hypProportion", sv_gt(0))
     onepropht_iv$add_rule("hypProportion", sv_lt(1))
 
-    # Kruskal-Wallis
-    kwupload_iv$add_rule("kwUserData", sv_required())
-    kwupload_iv$add_rule("kwUserData", ~ if(is.null(fileInputs$kwStatus) || fileInputs$kwStatus == 'reset') "Required")
-    kwupload_iv$add_rule("kwUserData", ~ if(!(tolower(tools::file_ext(input$kwUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
-    kwupload_iv$add_rule("kwUserData", ~ if(ncol(kwUploadData()) < 2) "Data must include at least two columns")
-    
-    kwmulti_iv$add_rule("kwMultiColumns", ~ if(length(input$kwMultiColumns) < 2) "Select at least two columns")
-    
-    kwstacked_iv$add_rule("kwResponse", sv_required())
-    kwstacked_iv$add_rule("kwFactors", sv_required())
-    kwstacked_iv$add_rule("kwResponse", ~ if(kwStackedIsValid() == FALSE) "Response variable and factors column cannot be the same")
-    kwstacked_iv$add_rule("kwFactors", ~ if(kwStackedIsValid() == FALSE) "Response variable and factors column cannot be the same")
-
     # Anova
     anovaupload_iv$add_rule("anovaUserData", sv_required())
     anovaupload_iv$add_rule("anovaUserData", ~ if(is.null(fileInputs$anovaStatus) || fileInputs$anovaStatus == 'reset') "Required")
@@ -1853,6 +1862,19 @@ statInfrServer <- function(id) {
     anovastacked_iv$add_rule("anovaResponse", ~ if(anovaStackedIsValid() == FALSE) "Response variable and factors column cannot be the same")
     anovastacked_iv$add_rule("anovaFactors", ~ if(anovaStackedIsValid() == FALSE) "Response variable and factors column cannot be the same")
 
+    # Kruskal-Wallis
+    kwupload_iv$add_rule("kwUserData", sv_required())
+    kwupload_iv$add_rule("kwUserData", ~ if(is.null(fileInputs$kwStatus) || fileInputs$kwStatus == 'reset') "Required")
+    kwupload_iv$add_rule("kwUserData", ~ if(!(tolower(tools::file_ext(input$kwUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+    kwupload_iv$add_rule("kwUserData", ~ if(ncol(kwUploadData()) < 2) "Data must include at least two columns")
+    
+    kwmulti_iv$add_rule("kwMultiColumns", ~ if(length(input$kwMultiColumns) < 2) "Select at least two columns")
+    
+    kwstacked_iv$add_rule("kwResponse", sv_required())
+    kwstacked_iv$add_rule("kwFactors", sv_required())
+    kwstacked_iv$add_rule("kwResponse", ~ if(kwStackedIsValid() == FALSE) "Response variable and factors column cannot be the same")
+    kwstacked_iv$add_rule("kwFactors", ~ if(kwStackedIsValid() == FALSE) "Response variable and factors column cannot be the same")
+    
     # Chi-Square
     ChiSqInputRules <- function(iv, inputID) {
       iv$add_rule(inputID, sv_required())
@@ -4217,34 +4239,6 @@ statInfrServer <- function(id) {
       }
 
     })
-
- ### ------------ Kruskal-Wallis Reactives ------------------------------------   
-    kwUploadData <- eventReactive(input$kwUserData, {
-      ext <- tools::file_ext(input$kwUserData$name)
-      ext <- tolower(ext)
-      
-      switch(ext,
-             csv = read_csv(input$kwUserData$datapath, show_col_types = FALSE),
-             xls = read_xls(input$kwUserData$datapath),
-             xlsx = read_xlsx(input$kwUserData$datapath),
-             txt = read_tsv(input$kwUserData$datapath, show_col_types = FALSE),
-             
-             validate("Improper file format.")
-      )
-    })
-    
-    kwStackedIsValid <- eventReactive({input$kwResponse
-      input$kwFactors}, {
-        valid <- TRUE
-
-        if(!is.null(input$kwResponse) && !is.null(input$kwFactors)) {
-          if(input$kwResponse == input$kwFactors) {
-            valid <- FALSE
-          }
-        }
-
-        return(valid)
-    })
     
  ### ------------ ANOVA Reactives ---------------------------------------------
     anovaUploadData <- eventReactive(input$anovaUserData, {
@@ -4308,7 +4302,70 @@ statInfrServer <- function(id) {
 
       return(results)
     })
+    
+    ### ------------ Kruskal-Wallis Reactives ------------------------------------   
+    kwUploadData <- eventReactive(input$kwUserData, {
+      ext <- tools::file_ext(input$kwUserData$name)
+      ext <- tolower(ext)
+      
+      switch(ext,
+             csv = read_csv(input$kwUserData$datapath, show_col_types = FALSE),
+             xls = read_xls(input$kwUserData$datapath),
+             xlsx = read_xlsx(input$kwUserData$datapath),
+             txt = read_tsv(input$kwUserData$datapath, show_col_types = FALSE),
+             
+             validate("Improper file format.")
+      )
+    })
+    
+    kwStackedIsValid <- eventReactive({input$kwResponse
+      input$kwFactors}, {
+        valid <- TRUE
+        
+        if(!is.null(input$kwResponse) && !is.null(input$kwFactors)) {
+          if(input$kwResponse == input$kwFactors) {
+            valid <- FALSE
+          }
+        }
+        
+        return(valid)
+      })
 
+    kwResults <- reactive({
+      req(si_iv$is_valid)
+      
+      results <- list()
+      
+      if (input$kwFormat == "Multiple"){
+        kwData <- stack(kwUploadData()[,input$kwMulticolumns])
+        factorCol <- "ind"
+        factorNames <- levels(kwData$ind) #levels(kwData[,factorCol])
+      } else {
+        kwData <- kwUploadData()
+        colnames(kwData)[colnames(kwData) == input$kwFactors] <- "ind"
+        colnames(kwData)[colnames(kwData) == input$kwResponse] <- "values"
+        kwData <- mutate(kwData, ind = factor(ind)) #kwData <- kwData %>% mutate(ind = factor(ind))
+        factorCol <- "ind"
+        factorNames <- levels(kwData$ind)
+      }
+      
+      kwData <- na.omit(kwData)
+      totalCount <- nrow(kwData)
+      numFactors <- length(factorNames)
+      
+      kwTest <- kruskal.test(formula = values ~ ind, data = kwData)
+      
+      results$data <- kwData
+      results$count <-totalCount
+      results$factorCol <- factorCol
+      results$numFactor <- numFactors
+      results$factorNames <- factorNames
+      results$test <- kwTest
+      
+      return(results)
+      
+    })
+    
     #### Chi-Square Reactives ----
     # chiSqData2x2 <- reactive({
     #   suppressWarnings(as.numeric(input$chiSqInput2x2))
@@ -4683,40 +4740,6 @@ statInfrServer <- function(id) {
           errorClass = "myClass")
 
       }
-
- #### ---------------- Kruskal-Wallis Validation    
-      if(!kwupload_iv$is_valid()) {
-        if(is.null(input$kwUserData)) {
-          validate("Please upload a file.")
-        }
-        
-        validate(
-          need(!is.null(fileInputs$kwStatus), "Please upload a file."),
-          errorClass = "myClass")
-        
-        validate(
-          need(nrow(kwUploadData()) > 0, "File is empty."),
-          need(ncol(kwUploadData()) >= 2, "File must contain at least 2 distinct columns of data to choose from for analysis."),
-          errorClass = "myClass")
-        
-      }
-      
-      if(!kwmulti_iv$is_valid()) {
-        validate(
-          need(length(input$kwMultiColumns) >= 2, "Please select two or more columns to conduct analysis."),
-          errorClass = "myClass")
-      }
-      
-      if(!kwstacked_iv$is_valid()) {
-        validate(
-          need(!is.null(input$kwResponse) && input$kwResponse != '', "Please select a Response Variable."),
-          need(!is.null(input$kwFactors) && input$kwFactors != '', "Please select a Factors column."),
-          errorClass = "myClass")
-
-        validate(
-          need(kwStackedIsValid() == TRUE, "Please select distinct columns for Response Variable and Factors."),
-          errorClass = "myClass")
-      }
       
  #### ---------------- ANOVA Validation
       if(!anovaupload_iv$is_valid()) {
@@ -4751,6 +4774,40 @@ statInfrServer <- function(id) {
           errorClass = "myClass")
       }
 
+ #### ---------------- Kruskal-Wallis Validation    
+      if(!kwupload_iv$is_valid()) {
+        if(is.null(input$kwUserData)) {
+          validate("Please upload a file.")
+        }
+        
+        validate(
+          need(!is.null(fileInputs$kwStatus), "Please upload a file."),
+          errorClass = "myClass")
+        
+        validate(
+          need(nrow(kwUploadData()) > 0, "File is empty."),
+          need(ncol(kwUploadData()) >= 2, "File must contain at least 2 distinct columns of data to choose from for analysis."),
+          errorClass = "myClass")
+        
+      }
+      
+      if(!kwmulti_iv$is_valid()) {
+        validate(
+          need(length(input$kwMultiColumns) >= 2, "Please select two or more columns to conduct analysis."),
+          errorClass = "myClass")
+      }
+      
+      if(!kwstacked_iv$is_valid()) {
+        validate(
+          need(!is.null(input$kwResponse) && input$kwResponse != '', "Please select a Response Variable."),
+          need(!is.null(input$kwFactors) && input$kwFactors != '', "Please select a Factors column."),
+          errorClass = "myClass")
+        
+        validate(
+          need(kwStackedIsValid() == TRUE, "Please select distinct columns for Response Variable and Factors."),
+          errorClass = "myClass")
+      }
+      
  #### ---------------- Chi-Square Validation
       if(!chiSq2x2_iv$is_valid()) {
         validate(
@@ -7077,6 +7134,38 @@ output$onePropCI <- renderUI({
       )
     })
 
+ ### ------------ Kruskal-Wallis Outputs ------------------------------------------
+    output$kwHT <- renderUI({
+      
+      data <- kwResults()$test
+      withMathJax()
+      
+      kwHead <- withMathJax(
+        tagList(
+          p(
+            sprintf("\\( H_{0}:\\) The distributions of the groups are identical, and their medians are equal."), br(),
+            sprintf("\\( H_{a}:\\) At least one group differs in median from the others."), br(), 
+            br(),
+            sprintf("\\( \\alpha = %s \\)", input$kwSigLvl),
+            
+            br(),
+            br(),
+            p(tags$b("Test Statistic:")),
+            
+            
+            # KW formula
+            sprintf("\\( K = \\frac{12}{n(n + 1)}\\sum_{j = 1}^{k}\\frac{R_j^2}{n_j} - 3(n + 1) = %f\\)", data$statistic), #add %d to the end here when you get the kw value
+            br(),
+            sprintf("P-value = %f", data$p.value),
+            
+          ) #p
+        ) #tagList
+      ) #withMathJax
+
+      tagAppendChildren(kwHead)
+    })
+    
+    
  ### ------------ Chi-Square Outputs ------------------------------------------
 
     output$chiSqObs <- renderDT({
