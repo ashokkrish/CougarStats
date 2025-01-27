@@ -7140,7 +7140,6 @@ output$onePropCI <- renderUI({
       data <- kwResults()$test
       kw_pv <- signif(data$p.value, 4)
       kw_sl <- as.numeric(substring(input$kwSigLvl, 1, nchar(input$kwSigLvl) - 1))/100
-      print(kw_sl)
       
       withMathJax()
       
