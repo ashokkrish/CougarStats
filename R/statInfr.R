@@ -4337,7 +4337,7 @@ statInfrServer <- function(id) {
       results <- list()
       
       if (input$kwFormat == "Multiple"){
-        kwData <- stack(kwUploadData()[,input$kwMulticolumns])
+        kwData <- stack(kwUploadData()[,input$kwMultiColumns])
         factorCol <- "ind"
         factorNames <- levels(kwData$ind) #levels(kwData[,factorCol])
       } else {
@@ -7138,6 +7138,9 @@ output$onePropCI <- renderUI({
     output$kwHT <- renderUI({
       
       data <- kwResults()$test
+      kw_pv <- signif(data$p.value, 4)
+      kw_sl <- input$kwSigLvl
+      
       withMathJax()
       
       kwHead <- withMathJax(
@@ -7146,7 +7149,7 @@ output$onePropCI <- renderUI({
             sprintf("\\( H_{0}:\\) The distributions of the groups are identical, and their medians are equal."), br(),
             sprintf("\\( H_{a}:\\) At least one group differs in median from the others."), br(), 
             br(),
-            sprintf("\\( \\alpha = %s \\)", input$kwSigLvl),
+            sprintf("\\( \\alpha = %s \\)", kw_sl),
             
             br(),
             br(),
@@ -7156,7 +7159,17 @@ output$onePropCI <- renderUI({
             # KW formula
             sprintf("\\( K = \\frac{12}{n(n + 1)}\\sum_{j = 1}^{k}\\frac{R_j^2}{n_j} - 3(n + 1) = %f\\)", data$statistic), #add %d to the end here when you get the kw value
             br(),
-            sprintf("P-value = %f", data$p.value),
+            sprintf("\\(P = %f\\)", kw_pv),
+            br(), br(),
+            p(tags$b("Conclusion: ")),
+            
+            if (kw_pv <= kw_sl){
+              sprintf("Since the p-value is less than the significance level (actual p-value <= \\(\\alpha\\)), we reject the null hypothesis. 
+                      There is sufficient evidence to conclude that at least one group's median is significantly different from the others.")
+            } else {
+              sprintf("Since the p-value is greater than the significance level (actual p-value > \\(\\alpha\\)), we fail to reject the null hypothesis. 
+                      There is insufficient evidence to conclude that the medians of the groups are significantly different.")
+            }
             
           ) #p
         ) #tagList
