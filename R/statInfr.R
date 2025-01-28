@@ -7138,10 +7138,22 @@ output$onePropCI <- renderUI({
     output$kwHT <- renderUI({
       
       data <- kwResults()$test
-      kw_pv <- signif(data$p.value, 4)
+      kw_test_rounded <- as.character(round(data$statistic, 4))
+      kw_pv <- data$p.value
+      kw_pv_rounded <- as.character(round(kw_pv, 4))
       kw_sl <- as.numeric(substring(input$kwSigLvl, 1, nchar(input$kwSigLvl) - 1))/100
       
       withMathJax()
+      
+      if (kw_pv <= kw_sl){
+        conclusion <- "Since the p-value is less than the significance level (actual p-value <= \\(\\alpha\\)), we reject the null hypothesis. 
+                             There is sufficient evidence to conclude that at least one group's median is significantly different from the others."
+        reject_null <- TRUE
+      } else {
+        conclusion <- "Since the p-value is greater than the significance level (actual p-value > \\(\\alpha\\)), we fail to reject the null hypothesis. 
+                             There is insufficient evidence to conclude that the medians of the groups are significantly different."
+        reject_null <- FALSE
+      }
       
       kwHead <- withMathJax(
         tagList(
@@ -7157,19 +7169,21 @@ output$onePropCI <- renderUI({
             
             
             # KW formula
-            sprintf("\\( K = \\frac{12}{n(n + 1)}\\sum_{j = 1}^{k}\\frac{R_j^2}{n_j} - 3(n + 1) = %s\\)", as.character(round(data$statistic, 4))), #add %d to the end here when you get the kw value
-            br(),
-            sprintf("\\(P = %s\\)", as.character(kw_pv)),
+            sprintf("\\( K = \\frac{12}{n(n + 1)}\\sum_{j = 1}^{k}\\frac{R_j^2}{n_j} - 3(n + 1) = %s\\)", kw_test_rounded), #add %d to the end here when you get the kw value
+            br(), br(),
+            p(tags$b("Using P-value method: ")),
+            sprintf("\\(P = P(x^2 \\geq %s) = %s\\)", kw_test_rounded, kw_pv_rounded),
+            br(), br(),
+            
+            if (reject_null == TRUE){
+              sprintf("Since \\(P \\leq %s\\), reject \\(H_{0}.\\)", kw_sl)
+            } else {
+              sprintf("Since \\(P > %s\\), do not reject \\(H_{0}.\\)", kw_sl)
+            },
+        
             br(), br(),
             p(tags$b("Conclusion: ")),
-            
-            if (kw_pv <= kw_sl){
-              sprintf("Since the p-value is less than the significance level (actual p-value <= \\(\\alpha\\)), we reject the null hypothesis. 
-                      There is sufficient evidence to conclude that at least one group's median is significantly different from the others.")
-            } else {
-              sprintf("Since the p-value is greater than the significance level (actual p-value > \\(\\alpha\\)), we fail to reject the null hypothesis. 
-                      There is insufficient evidence to conclude that the medians of the groups are significantly different.")
-            }
+            sprintf(conclusion),
             
           ) #p
         ) #tagList
