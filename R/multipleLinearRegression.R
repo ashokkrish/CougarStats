@@ -315,49 +315,18 @@ R^2_{\text{adj}} = %0.4f
 
           output$multicollinearityDetectionMainPanelUI <- renderUI({
             withMathJax(
-              ## p(strong("Multicollinearity Detection")),
-              p("Multicollinearity can be detected in multiple ways. Select a method using the dropdown."),
-              selectInput(
-                session$ns("detectionMethodSelect"),
-                "Detection method",
-                list(
-                  "Graphical" = "scatmat",
-                  "VIFs" = "vifs"
-                )
-              ),
-              uiOutput(session$ns("detectionMethodUI"))
-            )
-          })
-
-          output$detectionMethodUI <- renderUI({
-            validate(need(isTruthy(input$detectionMethodSelect), "Select a detection method"))
-
-            tagList(
-              switch(input$detectionMethodSelect,
-                scatmat = tagList(
-                  fluidRow(column(
-                    12,
-                    p("Along the diagonal of this plot are the distributions of the data in each variable. Below the diagonal are the scatterplots of one variable against another; if the points form a more-or-less straight line then the variables are correlated. Above the diagonal are the correlation coefficients between two variables."),
-                    plotOutput(session$ns("ggscatmat"))
-                  )),
-                  fluidRow(column(
-                    12, p(strong("Correlation matrix")),
-                    tableOutput(session$ns("simpleCorrelationMatrix"))
-                  ))
-                ),
-                vifs = tagList(
-                  fluidRow(column(
-                    12,
-                    p("A VIF greater than 10 suggests strong multicollinearity caused by the respective variable with that variance inflation factor. VIFs between 5 and 10 hint at moderate multicollinearity. Values less than 5 are acceptable, with only a low degree of multicollinearity detected."),
-                    tableOutput(session$ns("vifs"))
-                  )),
-                  fluidRow(column(
-                    12, p(strong("Correlation matrix")),
-                    tableOutput(session$ns("simpleCorrelationMatrix"))
-                  ))
-                )
-              ),
-              p("")
+              fluidRow(column(
+                12, p(strong("Correlation matrix")),
+                tableOutput(session$ns("simpleCorrelationMatrix"))
+              )),
+              fluidRow(column(
+                12, p("Along the diagonal of this plot are the distributions of the data in each variable. Below the diagonal are the scatterplots of one variable against another; if the points form a more-or-less straight line then the variables are correlated. Above the diagonal are the correlation coefficients between two variables."),
+                plotOutput(session$ns("ggscatmat"))
+              )),
+              fluidRow(column(
+                12, p("A VIF greater than 10 suggests strong multicollinearity caused by the respective variable with that variance inflation factor. VIFs between 5 and 10 hint at moderate multicollinearity. Values less than 5 are acceptable, with only a low degree of multicollinearity detected."),
+                tableOutput(session$ns("vifs"))
+              ))
             )
           })
 
@@ -380,13 +349,9 @@ R^2_{\text{adj}} = %0.4f
             ggpairs(anova(model))
           })
 
-          output$ggscatmat <- renderPlot(
-            {
-              ggscatmat(uploadedTibble$data()[, input$explanatoryVariables], columns = input$explanatoryVariables)
-            },
-            width = 800,
-            height = 600
-          )
+          output$ggscatmat <- renderPlot({
+            ggscatmat(uploadedTibble$data()[, input$explanatoryVariables], columns = input$explanatoryVariables)
+          })
 
           output$ggnostic <- renderPlot({
             ggnostic(model)
