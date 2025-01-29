@@ -1521,18 +1521,29 @@ statInfrUI <- function(id) {
               ns = ns,
               condition = "input.siMethod == 'Multiple' && input.multipleMethodChoice == 'kw'",
               
-              
-              titlePanel(tags$strong(tags$u("Hypothesis Test"))),
-              br(),
-              
-              uiOutput(ns('kwHT'))
-              
-              # H0: The distributions of the groups are identical, and their medians are equal.
-              # Ha: At least one group differs in median from the others.
-              # 
-              # alpha = the value user selects from the radio button (one of 0.10 / 0.05 / 0.01)
-              
-              
+              tabsetPanel(
+                id = ns("kwTabset"),
+                selected = "Analysis",
+                
+                tabPanel(
+                  id    = ns("kw"),
+                  title = "Analysis",
+                  
+                  titlePanel(tags$strong(tags$u("Hypothesis Test"))),
+                  br(),
+                  uiOutput(ns('kwHT')),
+                  br(),
+                  br(),
+                ),
+                
+                tabPanel(
+                  id    = ns("kwData"),
+                  title = "Uploaded Data",
+                  
+                  uiOutput(ns("renderKWData"))
+                )
+                
+              ), #tabsetPanel 
             ),
 
  ### ------------ Categorical Samples (Chi-Square) ----------------------------
@@ -7192,6 +7203,16 @@ output$onePropCI <- renderUI({
       tagAppendChildren(kwHead)
     })
     
+    output$kwUploadTable <- renderDT({
+      req(kwupload_iv$is_valid())
+      datatable(kwUploadData(),
+                options = list(pageLength = -1,
+                               lengthMenu = list(c(25, 50, 100, -1),
+                                                 c("25", "50", "100", "all")),
+                               columnDefs = list(list(className = 'dt-center',
+                                                      targets = 0:ncol(kwUploadData())))),
+      )
+    })
     
  ### ------------ Chi-Square Outputs ------------------------------------------
 
@@ -7575,6 +7596,19 @@ output$onePropCI <- renderUI({
         )
       })
 
+      observeEvent(input$goInference, {
+        output$renderKWData <- renderUI({
+          tagList(
+            titlePanel("Data File"),
+            br(),
+            br(),
+            div(DTOutput(session$ns("kwUploadTable")), style = "width: 75%"),
+            br(),
+            br()
+          )
+        })
+      })
+      
       output$renderChiSqObs <- renderUI({
         DTOutput(session$ns("chiSqObs"), width = '500px')
       })
