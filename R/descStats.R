@@ -419,7 +419,6 @@ descStatsServer <- function(id) {
     
     # Function for populating the value column of the datatable
     createDSColumn <- function(dat) ({
-      
       sampSize <- length(dat)
       sampSum <- sum(dat)
       sumSquares <- sum(dat^2)
@@ -450,10 +449,16 @@ descStatsServer <- function(id) {
         outliers <- paste(as.character(GetOutliers(dat, lowerFence, upperFence)), collapse=", ")
       }
       
-      sampRange <- Range(min(dat), max(dat)) 
-      sampStdDev <- round(sd(dat),4)
+      sampRange <- Range(min(dat), max(dat))
       sampVar <- round(var(dat),4)
       sampMeanSE <- round(sd(dat)/sqrt(length(dat)), 4)
+      sampStdDev <- sd(dat)
+      
+      if (sampStdDev < 0.0001) {
+        formattedSD <- sprintf("%.4e", sampStdDev)    # use scientific notation if SD is sufficiently small
+      } else {
+        formattedSD <- sprintf("%.4f", sampStdDev)
+      }
       
       coeffVar <- round(sampStdDev/xbar, 4)
       
@@ -499,7 +504,7 @@ descStatsServer <- function(id) {
                                     numOutliers,
                                     outliers,
                                     sampRange, 
-                                    sampStdDev, 
+                                    formattedSD, 
                                     sampVar, 
                                     sampMeanSE, 
                                     coeffVar, 
