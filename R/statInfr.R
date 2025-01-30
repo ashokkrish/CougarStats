@@ -7183,7 +7183,7 @@ output$onePropCI <- renderUI({
             sprintf("\\( K = \\frac{12}{n(n + 1)}\\sum_{j = 1}^{k}\\frac{R_j^2}{n_j} - 3(n + 1) = %s\\)", kw_test_rounded), #add %d to the end here when you get the kw value
             br(), br(),
             p(tags$b("Using P-value method: ")),
-            sprintf("\\(P = P(x^2 \\geq %s) = %s\\)", kw_test_rounded, kw_pv_rounded),
+            sprintf("\\(P = P(\\chi^2 \\geq %s) = %s\\)", kw_test_rounded, kw_pv_rounded),
             br(), br(),
             
             if (reject_null == TRUE){
