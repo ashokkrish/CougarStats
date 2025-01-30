@@ -235,19 +235,33 @@ MLRServer <- function(id) {
             as.name(input$responseVariable)
           ))
 
+          modelCoefficients <-
+            rownames_to_column(
+              as.data.frame(summary(model)$coefficients),
+              "Source"
+            )
+          modelConfidenceIntervals <-
+            rownames_to_column(as.data.frame(confint(model)), "Source")
           output$linearModelCoefConfint <- renderTable(
             {
-              df <- summary(model)$coefficients %>%
-                as.data.frame() %>%
-                cbind(confint(model) %>%
-                  as.data.frame())
-              df
+              dplyr::left_join(modelCoefficients,
+                modelConfidenceIntervals,
+                by = "Source"
+              )
             },
             rownames = TRUE,
             na = "",
             striped = TRUE,
             align = "c"
           )
+
+          output$lmCoefConfintTableCaption <- renderUI({
+            tagList(if (anyNA(modelConfidenceIntervals)) {
+              p("Some model components (e.g. dependent variables) did not have confidence intervals or coefficients, and are dropped from the table.")
+            } else {
+              p("")
+            })
+          })
 
           output$rsquareAdjustedRSquareInterpretation <- renderUI({
             ## TODO: Copied from elsewhere. Duplications like this should REALLY be
@@ -256,28 +270,6 @@ MLRServer <- function(id) {
             SSR <- sum(modelANOVA$"Sum Sq"[-nrow(modelANOVA)]) # all but the residuals
             SSE <- modelANOVA$"Sum Sq"[nrow(modelANOVA)] # only the residuals
             SST <- SSR + SSE
-
-
-            ## FIXME:
-            ## Warning in cor(modelANOVA, use = "complete.obs") :
-            ##   the standard deviation is zero
-            ##
-            ## Only "complete" (no NAs) observations.
-            output$simpleCorrelationMatrix <- renderTable(
-              {
-
-                corsetAboveDiagNA(
-                  uploadedTibble$data()[
-                    ,
-                    input$explanatoryVariables
-                  ]
-                )
-              },
-              rownames = TRUE,
-              striped = TRUE,
-              na = "",
-              align = "c"
-            )
 
             withMathJax(
               p(strong(r"{ \(R^2\) and Adjusted \(R^2\) }")),
@@ -317,18 +309,34 @@ R^2_{\text{adj}} = %0.4f
             withMathJax(
               fluidRow(column(
                 12, p(strong("Correlation matrix")),
+                p("Values below -0.75 and above 0.75 are very strong indicators that there is multicollinearity, and that the component of the model should be removed."),
                 tableOutput(session$ns("simpleCorrelationMatrix"))
               )),
               fluidRow(column(
-                12, p("Along the diagonal of this plot are the distributions of the data in each variable. Below the diagonal are the scatterplots of one variable against another; if the points form a more-or-less straight line then the variables are correlated. Above the diagonal are the correlation coefficients between two variables."),
+                12, p(strong("Graphical methods")),
+                p("Along the diagonal of this plot are the distributions of the data in each variable. Below the diagonal are the scatterplots of one variable against another; if the points form a more-or-less straight line then the variables are correlated. Above the diagonal are the correlation coefficients between two variables."),
                 plotOutput(session$ns("ggscatmat"))
               )),
               fluidRow(column(
-                12, p("A VIF greater than 10 suggests strong multicollinearity caused by the respective variable with that variance inflation factor. VIFs between 5 and 10 hint at moderate multicollinearity. Values less than 5 are acceptable, with only a low degree of multicollinearity detected."),
+                12, p(strong("Variance Inflation Factors")),
+                p("A VIF greater than 10 suggests strong multicollinearity caused by the respective variable with that variance inflation factor. VIFs between 5 and 10 hint at moderate multicollinearity. Values less than 5 are acceptable, with only a low degree of multicollinearity detected."),
                 tableOutput(session$ns("vifs"))
               ))
             )
           })
+
+          ## FIXME:
+          ## Warning in cor(modelANOVA, use = "complete.obs") :
+          ##   the standard deviation is zero
+          ##
+          ## Only "complete" (no NAs) observations.
+          output$simpleCorrelationMatrix <- renderTable({
+            corsetAboveDiagNA(uploadedTibble$data()[, input$explanatoryVariables])
+          },
+          rownames = TRUE,
+          striped = TRUE,
+          na = "",
+          align = "c")
 
           output$vifs <- renderTable(
             {
@@ -349,9 +357,10 @@ R^2_{\text{adj}} = %0.4f
             ggpairs(anova(model))
           })
 
-          output$ggscatmat <- renderPlot({
-            ggscatmat(uploadedTibble$data()[, input$explanatoryVariables], columns = input$explanatoryVariables)
-          })
+          output$ggscatmat <- renderPlot(
+            {
+              ggscatmat(uploadedTibble$data()[, input$explanatoryVariables], columns = input$explanatoryVariables)
+            })
 
           output$ggnostic <- renderPlot({
             ggnostic(model)
@@ -521,7 +530,7 @@ R^2_{\text{adj}} = %0.2f \\
                           paste(
                             as.character(lapply(
                               mget(as.character(lapply(input$explanatoryVariables, as.name))),
-                              \(x) sprintf(r"[%.3f]", x)
+                              \(x) if(!is.na(x)) sprintf(r"[%.3f]", x) else ""
                             )),
                             paste0(r"{x_}", seq_along(input$explanatoryVariables)),
                             collapse = "+"
@@ -535,7 +544,7 @@ R^2_{\text{adj}} = %0.2f \\
                   r"{\)}",
                   sep = r"{\\}"
                 )
-              })
+              }) # <- modelEquations
             }))
           )
         ))
@@ -544,7 +553,8 @@ R^2_{\text{adj}} = %0.2f \\
           column(
             12,
             p(strong("Coefficients and Confidence Intervals")),
-            tableOutput(ns("linearModelCoefConfint"))
+            tableOutput(ns("linearModelCoefConfint")),
+            uiOutput(ns("lmCoefConfintTableCaption"))
           )
         })
 
