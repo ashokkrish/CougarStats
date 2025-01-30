@@ -395,13 +395,6 @@ R^2_{\text{adj}} = %0.4f
           output$linearModelBIC <- renderPrint({
             BIC(model)
           })
-          output$linearModelRegressionLineAndPoints <- renderPlot({
-            ggplot(model, aes(x = model$fitted.values, y = model$residuals)) +
-              geom_hline(yintercept = 0, color = "red", linetype = "dashed") +
-              geom_point() +
-              labs(x = "Fitted values", y = "Residuals") +
-              ggtitle("Residual Plot for Multiple Linear Regression")
-          })
           output$linearModelResidualsPanelPlot <- renderPlot({
             resid_panel(model)
           })
@@ -593,8 +586,7 @@ R^2_{\text{adj}} = %0.2f \\
     output$DiagnosticPlots <- renderUI({
       eval(MLRValidation)
       
-      fluidPage(fluidRow(plotOutput(ns("linearModelRegressionLineAndPoints"))),
-                fluidRow(plotOutput(ns("linearModelResidualsPanelPlot"))))
+      fluidPage(fluidRow(plotOutput(ns("linearModelResidualsPanelPlot"))))
     })
     
     
