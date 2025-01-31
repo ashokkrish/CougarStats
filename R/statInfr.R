@@ -1529,7 +1529,7 @@ statInfrUI <- function(id) {
                   id    = ns("kw"),
                   title = "Analysis",
                   
-                  titlePanel(tags$strong(tags$u("Hypothesis Test"))),
+                  titlePanel("Hypothesis Test"),
                   br(),
                   uiOutput(ns('kwHT')),
                   br(),
