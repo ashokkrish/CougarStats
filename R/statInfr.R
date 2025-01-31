@@ -7157,12 +7157,12 @@ output$onePropCI <- renderUI({
       withMathJax()
       
       if (kw_pv <= kw_sl){
-        conclusion <- sprintf("Since the p-value is less than the significance level (actual p-value \\(\\leq %.2f\\)), we reject the null hypothesis. 
-                             There is sufficient evidence to conclude that at least one group's median is significantly different from the others.", kw_sl)
+        conclusion <- sprintf("Since the p-value is less than the significance level (%s \\(\\leq %.2f\\)), we reject the null hypothesis. 
+                             There is sufficient evidence to conclude that at least one group's median is significantly different from the others.", kw_pv_rounded, kw_sl)
         reject_null <- TRUE
       } else {
-        conclusion <- sprintf("Since the p-value is greater than the significance level (actual p-value \\(> %.2f\\)), we fail to reject the null hypothesis. 
-                             There is insufficient evidence to conclude that the medians of the groups are significantly different.", kw_sl)
+        conclusion <- sprintf("Since the p-value is greater than the significance level (%s \\(> %.2f\\)), we fail to reject the null hypothesis. 
+                             There is insufficient evidence to conclude that the medians of the groups are significantly different.", kw_pv_rounded, kw_sl)
         reject_null <- FALSE
       }
       
