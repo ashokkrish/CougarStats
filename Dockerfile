@@ -50,8 +50,8 @@ RUN R -e \
                     'magrittr',         \
                     'remotes'),         \
                   dependencies = TRUE); \
-  remotes::install_github("deepanshu88/shinyDarkmode"); \
-  remotes::install_github("rsquaredacademy/olsrr");"
+  remotes::install_github('deepanshu88/shinyDarkmode'); \
+  remotes::install_github('rsquaredacademy/olsrr');"
 
 # copy our application into the server, where 'R' is the local path to the app
 # Usage: docker build --build-arg APPLICATION_DIRECTORY=<the directory of the
