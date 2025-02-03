@@ -46,6 +46,7 @@ Read more about [Getting Started with Docker](https://www.docker.com/get-started
 - One-Way Analysis of Variance (ANOVA)
 - Chi-Square test of independence
 - Simple Linear Regression and Pearson Correlation Coefficient
+- Multiple Linear Regression
 
 ## Who is CougarStats for?
 
