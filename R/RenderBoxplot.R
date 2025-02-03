@@ -9,11 +9,12 @@ RenderBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, p
                  alpha = 1,
                  outlier.shape = NA) +
     geom_point(data = filter(df_boxplot, x %in% df_outliers),
-               size = 5) +
-    geom_text(data = filter(df_boxplot, x %in% df_outliers),
-              aes(x = x, y = 0, label = x),
-              size = 15 / .pt,
-              vjust = -1) +
+               size = 2) +
+    ## Uncomment the below to display the outlier values about the indicator
+    # geom_text(data = filter(df_boxplot, x %in% df_outliers),
+    #           aes(x = x, y = 0, label = x),
+    #           size = 15 / .pt,
+    #           vjust = -1) +
     labs(title = plotTitle,
          x = plotXlab,
          y = plotYlab) +
@@ -26,7 +27,6 @@ RenderBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, p
           plot.margin = unit(c(1, 1, 1, 1),"cm"),
           panel.border = element_rect(fill = NA)) +
     ylim(-1, 1)
-    
   
   if(length(unique(dat)) == 1) {
     bp <- bp + scale_x_continuous(breaks = dat, limits = c(dat[1] - 1, dat[1] + 1))
