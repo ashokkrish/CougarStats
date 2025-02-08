@@ -1192,47 +1192,65 @@ statInfrUI <- function(id) {
             condition = "input.siMethod == '1'",
 
  #### ---------------- 1 Pop Mean ---------------------------------------------
-            conditionalPanel(
-              ns = ns,
-              condition = "input.popuParameter == 'Population Mean'",
-
-              conditionalPanel(
-                ns = ns,
-                condition = "input.inferenceType == 'Confidence Interval'",
-
-                titlePanel(tags$u("Confidence Interval")),
-                br(),
-                uiOutput(ns('oneMeanCI')),
-                br()
-              ), # Confidence Interval
-
-              conditionalPanel(
-                ns = ns,
-                condition = "input.inferenceType == 'Hypothesis Testing'",
-
-                titlePanel(tags$u("Hypothesis Test")),
-                br(),
-                uiOutput(ns('oneMeanHT')),
-                br(),
-              ), # Hypothesis Testing
-
-              conditionalPanel(
-                ns = ns,
-                condition = "input.dataAvailability != 'Summarized Data' && input.oneMeanBoxplot == 1",
-
-                br(),
-                hr(),
-                br(),
-                titlePanel(tags$u("Boxplot")),
-                br(),
-                plotOptionsMenuUI(
-                  id = ns("oneMeanBoxplot"),
-                  plotType = "Boxplot",
-                  title = "Boxplot"),
-                uiOutput(ns("renderOneMeanBoxplot")),
-                br(),
-                br())
-              ), # One Population Mean
+            tabsetPanel(
+              id = ns("onePopMeanTabset"),
+              selected = "Analysis",
+              
+              tabPanel(
+                id = ns("onePopMean"),
+                title = "Analysis",
+                
+                conditionalPanel(
+                  ns = ns,
+                  condition = "input.popuParameter == 'Population Mean'",
+                  
+                  conditionalPanel(
+                    ns = ns,
+                    condition = "input.inferenceType == 'Confidence Interval'",
+                    
+                    titlePanel(tags$u("Confidence Interval")),
+                    br(),
+                    uiOutput(ns('oneMeanCI')),
+                    br()
+                  ), # Confidence Interval
+                  
+                  conditionalPanel(
+                    ns = ns,
+                    condition = "input.inferenceType == 'Hypothesis Testing'",
+                    
+                    titlePanel(tags$u("Hypothesis Test")),
+                    br(),
+                    uiOutput(ns('oneMeanHT')),
+                    br(),
+                  ), # Hypothesis Testing
+                  
+                  conditionalPanel(
+                    ns = ns,
+                    condition = "input.dataAvailability != 'Summarized Data' && input.oneMeanBoxplot == 1",
+                    
+                    br(),
+                    hr(),
+                    br(),
+                    titlePanel(tags$u("Boxplot")),
+                    br(),
+                    plotOptionsMenuUI(
+                      id = ns("oneMeanBoxplot"),
+                      plotType = "Boxplot",
+                      title = "Boxplot"),
+                    uiOutput(ns("renderOneMeanBoxplot")),
+                    br(),
+                    br())
+                ), # One Population Mean
+              ), #onePopMean Analysis tabPanel
+              
+              tabPanel(
+                id = ns("onePopMeanData"),
+                title = "Uploaded Data",
+                
+                uiOutput(ns("renderOnePopMeanData")),
+              ), #onePopMeanData Uploaded Data tabPanel
+              
+            ), #onePopMean tabsetPanel
 
 #### ---------------- 1 Pop Prop ---------------------------------------------
             conditionalPanel(
@@ -4915,6 +4933,18 @@ statInfrServer <- function(id) {
 
  ### ------------ One Mean Outputs --------------------------------------------
 
+ #### ------------- One Pop Mean Uploaded Data Table --------------------------
+    output$onePopMeanUploadTable <- renderDT({
+      req(onemeanupload_iv$is_valid())
+      datatable(OneMeanUploadData(),
+                options = list(pageLength = -1,
+                               lengthMenu = list(c(25, 50, 100, -1),
+                                                 c("25", "50", "100", "all")),
+                               columnDefs = list(list(className = 'dt-center',
+                                                      targets = 0:ncol(OneMeanUploadData())))),
+      )
+    })
+    
  #### ---------------- CI ----
     output$oneMeanCI <- renderUI({
       printOneMeanCI()
@@ -7414,6 +7444,19 @@ output$onePropCI <- renderUI({
       shinyjs::show(id = "oneMeanVariable")
       # }
     })
+    
+    observeEvent(input$goInference, {
+      output$renderOnePopMeanData <- renderUI({
+        tagList(
+          titlePanel("Data File"),
+          br(),
+          br(),
+          div(DTOutput(session$ns("onePopMeanUploadTable")), style = "width: 75%"),
+          br(),
+          br()
+        )
+      })
+    })
 
     observeEvent(input$indMeansUserData, priority = 5, {
       hide(id = "inferenceData")
@@ -7798,6 +7841,8 @@ output$onePropCI <- renderUI({
       fileInputs$depMeansStatus <- 'reset'
       fileInputs$anovaStatus <- 'reset'
       fileInputs$kwStatus <- 'reset'
+      
+      updateTabsetPanel(session, "onePopMeanTabset", selected = "Analysis")
     })
 
   })
