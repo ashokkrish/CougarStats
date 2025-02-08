@@ -1195,9 +1195,44 @@ statInfrUI <- function(id) {
             conditionalPanel(
               ns = ns,
               condition = "input.popuParameter == 'Population Mean'",
-              
-              uiOutput(ns("oneMeanTabset")),
-            ), # One Population Mean
+
+              conditionalPanel(
+                ns = ns,
+                condition = "input.inferenceType == 'Confidence Interval'",
+
+                titlePanel(tags$u("Confidence Interval")),
+                br(),
+                uiOutput(ns('oneMeanCI')),
+                br()
+              ), # Confidence Interval
+
+              conditionalPanel(
+                ns = ns,
+                condition = "input.inferenceType == 'Hypothesis Testing'",
+
+                titlePanel(tags$u("Hypothesis Test")),
+                br(),
+                uiOutput(ns('oneMeanHT')),
+                br(),
+              ), # Hypothesis Testing
+
+              conditionalPanel(
+                ns = ns,
+                condition = "input.dataAvailability != 'Summarized Data' && input.oneMeanBoxplot == 1",
+
+                br(),
+                hr(),
+                br(),
+                titlePanel(tags$u("Boxplot")),
+                br(),
+                plotOptionsMenuUI(
+                  id = ns("oneMeanBoxplot"),
+                  plotType = "Boxplot",
+                  title = "Boxplot"),
+                uiOutput(ns("renderOneMeanBoxplot")),
+                br(),
+                br())
+              ), # One Population Mean
 
 #### ---------------- 1 Pop Prop ---------------------------------------------
             conditionalPanel(
@@ -4880,65 +4915,6 @@ statInfrServer <- function(id) {
 
  ### ------------ One Mean Outputs --------------------------------------------
 
-    output$oneMeanTabset <- renderUI({
-      tab_list <- list(
-        tabPanel(
-          id = session$ns("oneMean"),
-          title = "Analysis",
-          
-          conditionalPanel(
-            ns = session$ns,
-            condition = "input.inferenceType == 'Confidence Interval'",
-            
-            titlePanel(tags$u("Confidence Interval")),
-            br(),
-            uiOutput(session$ns('oneMeanCI')),
-            br()
-          ), # Confidence Interval
-          
-          conditionalPanel(
-            ns = session$ns,
-            condition = "input.inferenceType == 'Hypothesis Testing'",
-            
-            titlePanel(tags$u("Hypothesis Test")),
-            br(),
-            uiOutput(session$ns('oneMeanHT')),
-            br(),
-          ), # Hypothesis Testing
-          
-          conditionalPanel(
-            ns = session$ns,
-            condition = "input.dataAvailability != 'Summarized Data' && input.oneMeanBoxplot == 1",
-            
-            br(),
-            hr(),
-            br(),
-            titlePanel(tags$u("Boxplot")),
-            br(),
-            plotOptionsMenuUI(
-              id = session$ns("oneMeanBoxplot"),
-              plotType = "Boxplot",
-              title = "Boxplot"),
-            uiOutput(session$ns("renderOneMeanBoxplot")),
-            br(),
-            br()
-          ),
-        ) #Analysis tabPanel
-      )
-      
-      if (input$dataAvailability == "Upload Data") {
-        tab_list <- append(tab_list, list(
-          tabPanel(
-            id = session$ns("oneMeanData"),
-            title = "Uploaded Data"
-          )
-        ))
-      }
-      
-      # create the tabsetPanel dynamically
-      do.call(tabsetPanel, c(id = session$ns("oneMeanTabset"), tab_list))
-    })
-    
  #### ---------------- CI ----
     output$oneMeanCI <- renderUI({
       printOneMeanCI()
