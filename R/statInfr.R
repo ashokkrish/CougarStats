@@ -645,7 +645,7 @@ statInfrUI <- function(id) {
                     condition = "input.bothsigmaKnownUpload == 'bothUnknown'",
 
                     radioButtons(
-                      inputId      = "bothsigmaEqualUpload",
+                      inputId      = ns("bothsigmaEqualUpload"),
                       label        = strong("Assume Population Variances are equal (\\( \\sigma_{1}^2\\) = \\( \\sigma_{2}^2\\))?"),
                       choiceValues = list("TRUE",
                                           "FALSE"),
@@ -1318,48 +1318,66 @@ statInfrUI <- function(id) {
               condition = "input.siMethod == '2'",
 
  #### ---------------- Independent Pop Means ----------------------------------
-              conditionalPanel(
-                ns = ns,
-                condition = "input.popuParameters == 'Independent Population Means'",
 
-                conditionalPanel(
-                  ns = ns,
-                  condition = "input.inferenceType2 == 'Confidence Interval'",
-
-                  titlePanel(tags$u("Confidence Interval")),
-                  br(),
-                  uiOutput(ns('indMeansCI')),
-                  br(),
-                ), # Confidence interval
-
-                conditionalPanel(
-                  ns = ns,
-                  condition = "input.inferenceType2 == 'Hypothesis Testing'",
-
-                  titlePanel(tags$u("Hypothesis Test")),
-                  br(),
-                  uiOutput(ns('indMeansHT')),
-                  br()
-                ), # Hypothesis Testing
-
-                conditionalPanel(
-                  ns = ns,
-                  condition = "input.dataAvailability2 != 'Summarized Data' && input.indMeansBoxplot == 1",
-
-                  br(),
-                  hr(),
-                  br(),
-                  titlePanel(tags$u("Boxplot")),
-                  br(),
-                  plotOptionsMenuUI(
-                    id = ns("indMeansBoxplot"),
-                    plotType = "Boxplot",
-                    title = "Boxplot"),
-                  uiOutput(ns("renderIndMeansBoxplot")),
-                  br(),
-                  br()
-                )
-              ), # Two Independent Samples
+              tabsetPanel(
+                id = ns("indPopMeansTabset"),
+                selected = "Analysis",
+                
+                tabPanel(
+                  id = ns("indPopMeans"),
+                  title = "Analysis",
+                  
+                  conditionalPanel(
+                    ns = ns,
+                    condition = "input.popuParameters == 'Independent Population Means'",
+                    
+                    conditionalPanel(
+                      ns = ns,
+                      condition = "input.inferenceType2 == 'Confidence Interval'",
+                      
+                      titlePanel(tags$u("Confidence Interval")),
+                      br(),
+                      uiOutput(ns('indMeansCI')),
+                      br(),
+                    ), # Confidence interval
+                    
+                    conditionalPanel(
+                      ns = ns,
+                      condition = "input.inferenceType2 == 'Hypothesis Testing'",
+                      
+                      titlePanel(tags$u("Hypothesis Test")),
+                      br(),
+                      uiOutput(ns('indMeansHT')),
+                      br()
+                    ), # Hypothesis Testing
+                    
+                    conditionalPanel(
+                      ns = ns,
+                      condition = "input.dataAvailability2 != 'Summarized Data' && input.indMeansBoxplot == 1",
+                      
+                      br(),
+                      hr(),
+                      br(),
+                      titlePanel(tags$u("Boxplot")),
+                      br(),
+                      plotOptionsMenuUI(
+                        id = ns("indMeansBoxplot"),
+                        plotType = "Boxplot",
+                        title = "Boxplot"),
+                      uiOutput(ns("renderIndMeansBoxplot")),
+                      br(),
+                      br()
+                    )
+                  ), # Two Independent Samples
+                ), # indPopMeans Analysis tabPanel
+                
+                tabPanel(
+                  id = ns("indPopMeansData"),
+                  title = "Uploaded Data",
+                  
+                  uiOutput(ns("renderIndPopMeansData"))
+                ), # indPopMeansData Uploaded Data tabPanel
+              ), # indPopMeansTabset
 
  #### ---------------- Dependent Pop Means ----------------------------------
               conditionalPanel(
@@ -5803,7 +5821,20 @@ output$onePropCI <- renderUI({
     })
 
  ### ------------- Ind Means Outputs ------------------------------------------
+    
+ #### ------------- Ind Pop Means Uploaded Data Table --------------------------
+   output$indPopMeansUploadTable <- renderDT({
+     req(indmeansupload_iv$is_valid())
+     datatable(IndMeansUploadData(),
+               options = list(pageLength = -1,
+                              lengthMenu = list(c(25, 50, 100, -1),
+                                                c("25", "50", "100", "all")),
+                              columnDefs = list(list(className = 'dt-center',
+                                                     targets = 0:ncol(IndMeansUploadData())))),
+     )
+   })
 
+    
  #### ---------------- CI ----
     output$indMeansCI <- renderUI({
 
@@ -7479,6 +7510,19 @@ output$onePropCI <- renderUI({
       shinyjs::show(id = "indMeansUplSample1")
       shinyjs::show(id = "indMeansUplSample2")
       # }
+    })
+    
+    observeEvent(input$goInference, {
+      output$renderIndPopMeansData <- renderUI({
+        tagList(
+          titlePanel("Data File"),
+          br(),
+          br(),
+          div(DTOutput(session$ns("indPopMeansUploadTable")), style = "width: 75%"),
+          br(),
+          br()
+        )
+      })
     })
 
     observeEvent(input$depMeansUserData, priority = 5, {
