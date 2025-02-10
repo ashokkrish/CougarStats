@@ -266,7 +266,15 @@ descStatsUI <- function(id) {
                       ), # fluidRow
                       br()
                     ), # Stem and Leaf
-                  )# Graphs tabPanel
+                  ), # Graphs tabPanel
+                  
+                  tabPanel(
+                    id = ns("dsData"),
+                    title = "Uploaded Data",
+                    
+                    uiOutput(ns("renderDSData"))
+                  ),
+                
                 )# dsTabset tabsetPanel
             ) #descrStatsData div
         )) #descriptiveStatsMP
@@ -652,7 +660,19 @@ descStatsServer <- function(id) {
       }
     })
     
-    
+    #### --------------- Render Uploaded Data Table ------------------------
+    observeEvent(input$goDescpStats, {
+      output$renderDSData <- renderUI({
+        tagList(
+          titlePanel("Data File"),
+          br(),
+          br(),
+          div(DTOutput(session$ns("dsUploadTable")), style = "width: 75%"),
+          br(),
+          br()
+        )
+      })
+    })
     
     observeEvent(input$goDescpStats, {
       
@@ -687,6 +707,18 @@ descStatsServer <- function(id) {
           
           validate("Sample Data must be numeric.")
         } 
+      })
+      
+#### ------------ Uploaded Data Table --------------------------------------------
+      output$dsUploadTable <- renderDT({
+        req(dsupload_iv$is_valid())
+        datatable(dsUploadData(),
+                  options = list(pageLength = 25,
+                                 lengthMenu = list(c(25, 50, 100, -1),
+                                                   c("25", "50", "100", "all")),
+                                 columnDefs = list(list(className = 'dt-center',
+                                                        targets = 0:ncol(dsUploadData())))),
+        )
       })
       
       if(ds_iv$is_valid())
@@ -980,6 +1012,7 @@ descStatsServer <- function(id) {
       shinyjs::hide(id = 'outputPanel')
       shinyjs::reset("inputPanel")
       fileInputs$dsStatus <- 'reset'
+      updateTabsetPanel(session, "dsTabset", selected = "Descriptive Statistics")
     })
     
     #  -------------------------------------------------------------------- #
