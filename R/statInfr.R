@@ -7916,6 +7916,7 @@ output$onePropCI <- renderUI({
     })
 
     observeEvent(input$goInference, {
+      # Hide/show tabs for 1 sample
       if (input$dataAvailability != "Upload Data"){
         updateTabsetPanel(session, "onePopMeanTabset", selected = "Analysis")
         hideTab(inputId = "onePopMeanTabset", target = "Uploaded Data")
@@ -7923,17 +7924,20 @@ output$onePropCI <- renderUI({
         showTab(inputId = "onePopMeanTabset", target = "Uploaded Data")
       }
       
-      
+      # Hide/show tabs for 2 sample independent populations
       if (input$dataAvailability2 != "Upload Data"){
         updateTabsetPanel(session, "indPopMeansTabset", selected = "Analysis")
         hideTab(inputId = "indPopMeansTabset", target = "Uploaded Data")
-        
+      } else {
+        showTab(inputId = "indPopMeansTabset", target = "Uploaded Data")
+      }
+      
+      # Hide/show tabs for 2 sample dependent populations
+      if (input$dataTypeDependent != "Upload Data"){
         updateTabsetPanel(session, "depPopMeansTabset", selected = "Analysis")
         hideTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
       } else {
-        showTab(inputId = "indPopMeansTabset", target = "Uploaded Data")
         showTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
-        
       }
     })
     
