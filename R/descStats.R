@@ -1007,6 +1007,15 @@ descStatsServer <- function(id) {
       shinyjs::show(id = "descriptiveStatsMP")
     })
     
+    observeEvent(input$goDescpStats, {
+      if(input$dataInput != "Upload Data"){
+        hideTab(inputId = "dsTabset", target = "Uploaded Data")
+      } else {
+        showTab(inputId = "dsTabset", target = "Uploaded Data")
+      }
+      
+    })
+    
     observeEvent(input$resetAll,{
       dsReset(TRUE)
       shinyjs::hide(id = 'outputPanel')

@@ -7915,6 +7915,28 @@ output$onePropCI <- renderUI({
       shinyjs::show(id = "inferenceMP")
     })
 
+    observeEvent(input$goInference, {
+      if (input$dataAvailability != "Upload Data"){
+        updateTabsetPanel(session, "onePopMeanTabset", selected = "Analysis")
+        hideTab(inputId = "onePopMeanTabset", target = "Uploaded Data")
+      } else {
+        showTab(inputId = "onePopMeanTabset", target = "Uploaded Data")
+      }
+      
+      
+      if (input$dataAvailability2 != "Upload Data"){
+        updateTabsetPanel(session, "indPopMeansTabset", selected = "Analysis")
+        hideTab(inputId = "indPopMeansTabset", target = "Uploaded Data")
+        
+        updateTabsetPanel(session, "depPopMeansTabset", selected = "Analysis")
+        hideTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
+      } else {
+        showTab(inputId = "indPopMeansTabset", target = "Uploaded Data")
+        showTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
+        
+      }
+    })
+    
     observeEvent(input$resetInference, {
       hide(id = "inferenceMP")
       hide(id = "anovaUploadInputs")
