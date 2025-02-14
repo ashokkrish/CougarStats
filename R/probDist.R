@@ -2816,15 +2816,15 @@ probDistServer <- function(id) {
                           poisson_mu)
                 ),
                 br(),
-                conditionalPanel(
-                  condition = "input.showPoissTable == 1",
-                  
-                  br(),
-                  titlePanel("Probability Distribution Table"),
-                  hr(),
-                  DTOutput(session$ns("poissDistrTable"), width = "25%"),
-                  br()
+                if (input$showPoissTable == TRUE){
+                  tagList(
+                    br(),
+                    titlePanel("Probability Distribution Table"),
+                    hr(),
+                    DTOutput(session$ns("poissDistrTable"), width = "25%"),
+                    br()
                   )
+                }
                 ) # withMathJax
               ) # tagList
           }) # withMathJax
