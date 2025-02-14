@@ -3451,9 +3451,11 @@ statInfrServer <- function(id) {
       data <- chiSqResults()$Matrix
       yates <- data[,"(O - E)"]
       yates <- round((abs(yates) - 0.5)^2 / data[,"E"], 4)
+      yates <- head(yates, -1)
 
       if(all(abs(data[nrow(data) - 1,"(O - E)"]) > 0.5)) {
 
+        chiSqStat <- sum(yates)
         chiSqSum <- ""
         chiSqSmplf <- ""
 
@@ -4429,7 +4431,7 @@ statInfrServer <- function(id) {
       
     })
     
-    #### Chi-Square Reactives ----
+    ### Chi-Square Reactives ----
     # chiSqData2x2 <- reactive({
     #   suppressWarnings(as.numeric(input$chiSqInput2x2))
     # })
