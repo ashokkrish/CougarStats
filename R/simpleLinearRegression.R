@@ -472,8 +472,8 @@ SLRServer <- function(id) {
       output$slrValidation <- renderUI({
         validate(
           need(isTruthy(slrupload_iv$is_valid()), "Uploaded data is not valid."),
-          need(!is.null(input$slrUserData), "Please upload a file."),
-          need(!is.null(fileInputs$slrStatus) &&
+          need(input$dataRegCor != "Upload Data" || !is.null(input$slrUserData), "Please upload a file."),
+          need(input$dataRegCor != "Upload Data" || !is.null(fileInputs$slrStatus) &&
                fileInputs$slrStatus == 'uploaded',
                "Please upload a file."),
           need(nrow(slrUploadData()) != 0, "File is empty."),

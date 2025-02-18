@@ -5124,8 +5124,8 @@ statInfrServer <- function(id) {
         br(),
 
         sprintf("For a %s Confidence Interval:", input$confidenceLevel),
-        # br(),
-        # sprintf("\\( \\alpha = 1 - %0.2f = %0.2f \\)", oneSDCIalpha, 1 - oneSDCIalpha),
+        br(),
+        sprintf("\\( \\alpha = 1 - %0.2f = %0.2f \\)", 1 - oneSDCIalpha, oneSDCIalpha),
         br(),
         sprintf("\\(  df = n - 1 = %d - 1 = %d \\)",
                 input$SSDSampleSize,
