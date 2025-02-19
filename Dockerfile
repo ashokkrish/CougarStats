@@ -11,7 +11,8 @@ RUN apt-get update && \
             libxt-dev \
             libssl-dev \
             libtcl \
-            libtk
+            libtk   \
+            libfftw3-dev
 
 ## Install R packages
 RUN R -e \
@@ -48,6 +49,8 @@ RUN R -e \
                     'thematic',         \
                     'datamods',         \
                     'magrittr',         \
+                    'ggResidpanel',     \
+                    'broom.helpers',    \
                     'remotes'),         \
                   dependencies = TRUE); \
   remotes::install_github('deepanshu88/shinyDarkmode'); \
