@@ -161,6 +161,11 @@ table.dataTable {                                           /**/
   .navbar-nav .nav-link.active {                                        /**/
     color: var(--off-white)!important;                                  /**/
   }
+  /* correcting conflict with shinyDarkmode - causing white banner background in light mode */
+  .navbar.navbar-default {
+  background-color:var(--bslib-navbar-default-bg) !important
+  }
+  /**/
   #mainBanner .nav-link.active {                                        /**/                               /**/
     font-size: 1.5rem;
   }                                                                       /**/
