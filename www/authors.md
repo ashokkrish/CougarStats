@@ -3,12 +3,11 @@
 - [Ashok Krishnamurthy Ph.D., MRU Associate Professor](https://github.com/ashokkrish): Template and model designer, copyright holder. See the [faculty biography page of Prof. Krishnamurthy](https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/ScienceTechnology/Departments/MathematicsComputing/Faculty/akrishnamurthy.htm).
 
 ### Current project members
-- [Bryce Carson](https://github.com/bryce-carson): Senior Developer
+- [Samantha Brian](https://github.com/samantha-v-brian): Senior Developer
 
 ### Past project members
 - [Michael Myer](https://github.com/m-myer): Senior Developer
-- [Samantha Brian](https://github.com/samantha-v-brian): Developer
-- [Michael Walsh](https://github.com/mwals360): Developer
+- [Bryce Carson](https://github.com/bryce-carson): Senior Developer
 
 <!-- ## Financial support of the development of CougarStats**  -->
 
