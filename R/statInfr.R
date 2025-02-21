@@ -7897,15 +7897,31 @@ output$onePropCI <- renderUI({
       hide(id = "inferenceData")
     })
 
-    observeEvent(input$dataAvailability, {
-      hide(id = "oneMeanVariable")
+    observeEvent(fileInputs$oneMeanStatus, {
+      if (fileInputs$oneMeanStatus == 'uploaded')
+        show(id = "oneMeanVariable")
+      else
+        hide(id = "oneMeanVariable")
     })
-
-    observeEvent(input$dataAvailability2, {
-      hide(id = "indMeansUplSample1")
-      hide(id = "indMeansUplSample2")
-      hide(id = "depMeansUplSample1")
-      hide(id = "depMeansUplSample2")
+    
+    observeEvent(fileInputs$indMeansStatus, {
+      if (fileInputs$indMeansStatus == 'uploaded'){
+        show(id = "indMeansUplSample1")
+        show(id = "indMeansUplSample2")
+      } else {
+        hide(id = "indMeansUplSample1")
+        hide(id = "indMeansUplSample2")
+      }
+    })
+    
+    observeEvent(fileInputs$depMeansStatus, {
+      if (fileInputs$depMeansStatus == 'uploaded'){
+        show(id = "depMeansUplSample1")
+        show(id = "depMeansUplSample2")
+      } else {
+        hide(id = "depMeansUplSample1")
+        hide(id = "depMeansUplSample2")
+      }
     })
 
     observeEvent(!anovaupload_iv$is_valid(), {
