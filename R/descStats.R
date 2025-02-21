@@ -991,7 +991,13 @@ descStatsServer <- function(id) {
     
     observeEvent(input$dataInput, {
       shinyjs::hide(id = 'outputPanel')
-      shinyjs::hide(id = 'dsUploadVars')
+    })
+    
+    observeEvent(fileInputs$dsStatus, {
+      if (fileInputs$dsStatus == "uploaded")
+        show(id = "dsUploadVars")
+      else
+        hide(id = "dsUploadVars")
     })
     
     observe({
