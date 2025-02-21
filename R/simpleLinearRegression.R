@@ -397,7 +397,7 @@ SLRServer <- function(id) {
              xlsx = read_xlsx(input$slrUserData$datapath),
              txt = read_tsv(input$slrUserData$datapath, show_col_types = FALSE),
 
-             validate("Improper file format"))
+             validate("Improper file format."))
     })
 
     sampleInfoRaw <- eventReactive({input$x
@@ -470,6 +470,7 @@ SLRServer <- function(id) {
       toggle(id = "SLRData", condition = regcor_iv$is_valid())
 
       output$slrValidation <- renderUI({
+
         validate(
           need(isTruthy(slrupload_iv$is_valid()), "Uploaded data is not valid."),
           need(input$dataRegCor != "Upload Data" || !is.null(input$slrUserData), "Please upload a file."),
@@ -861,16 +862,31 @@ SLRServer <- function(id) {
 
     observeEvent(input$dataRegCor, {
       hide(id = "regCorrMP")
-      hide(id = "slrResponse")
-      hide(id = "slrExplanatory")
+      
+      if (is.null(fileInputs$slrStatus) || fileInputs$slrStatus != "uploaded"){
+        hide(id = "slrResponse")
+        hide(id = "slrExplanatory")
+      }
+
       updateTextInput(inputId = "xlab", value = "x")
       updateTextInput(inputId = "ylab", value = "y")
       ## FIXME: the file upload won't reset to its original state simply by
       ## switching back and forth between data sources, which it should.
-      shinyjs::reset("userUploadedData")
-      fileInputs$slrStatus <- 'reset'
+      #shinyjs::reset("userUploadedData")
+      #fileInputs$slrStatus <- 'reset'
     })
 
+    observeEvent(input$dataRegCor, {
+      req(fileInputs$slrStatus)
+      if (fileInputs$slrStatus == "uploaded"){
+        show(id = "slrResponse")
+        show(id = "slrExplanatory")
+      } else {
+        hide(id = "slrResponse")
+        hide(id = "slrExplanatory")
+      }
+    })
+    
     observe({
       req(isTruthy(input$dataRegCor))
       if(input$dataRegCor == 'Enter Raw Data') {
