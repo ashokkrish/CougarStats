@@ -3767,14 +3767,17 @@ statInfrServer <- function(id) {
       ext <- tools::file_ext(input$oneMeanUserData$name)
       ext <- tolower(ext)
 
-      switch(ext,
-             csv = read_csv(input$oneMeanUserData$datapath, show_col_types = FALSE),
-             xls = read_xls(input$oneMeanUserData$datapath),
-             xlsx = read_xlsx(input$oneMeanUserData$datapath),
-             txt = read_tsv(input$oneMeanUserData$datapath, show_col_types = FALSE),
-
-             validate("Improper file format.")
+      data <- switch(ext,
+                     csv = read_csv(input$oneMeanUserData$datapath, show_col_types = FALSE),
+                     xls = read_xls(input$oneMeanUserData$datapath),
+                     xlsx = read_xlsx(input$oneMeanUserData$datapath),
+                     txt = read_tsv(input$oneMeanUserData$datapath, show_col_types = FALSE),
+        
+                     validate("Improper file format.")
       )
+      
+      data %>% 
+        na.omit()
     })
 
     OneMeanUploadStatus <- reactive({
@@ -3799,7 +3802,7 @@ statInfrServer <- function(id) {
         dat <- 0
       }
 
-      totaled <- list(sum(dat), sum(dat^2))
+      totaled <- list(round(sum(dat), 4), round(sum(dat^2), 4))
       return(totaled)
     })
 
@@ -5151,22 +5154,22 @@ statInfrServer <- function(id) {
         br(),
 
         sprintf(r"---{\(
-CI = \displaystyle
-\left(
-\sqrt{\frac{df}{\chi^2_{\alpha/2, df}}} \cdot s, \;\:
-\sqrt{\frac{df}{\chi^2_{1 - \alpha/2, df}}} \cdot s
-\right) \)}---"),
+          CI = \displaystyle
+          \left(
+          \sqrt{\frac{df}{\chi^2_{\alpha/2, df}}} \cdot s, \;\:
+          \sqrt{\frac{df}{\chi^2_{1 - \alpha/2, df}}} \cdot s
+          \right) \)}---"),
         br(),
-br(),
-br(),
+        br(),
+        br(),
 
         sprintf(r"---(
-\(
+          \(
           \begin{align}
           CI &= \left( \sqrt{\frac{%d}{%0.3f}} \cdot %0.3f, \;\: \sqrt{\frac{%d}{%0.3f}} \cdot %0.3f \right) \\ \\
              &= \left(%0.2f, %0.2f\right)
           \end{align}
-\)
+          \)
           )---",
           ## Left/lower
           oneSDCIdf, # df
