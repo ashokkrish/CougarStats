@@ -3271,8 +3271,13 @@ probDistServer <- function(id) {
             errorClass = "myClass")
         }
         
-        norm_mu <- input$popMean
         norm_sigma <- input$popSD
+        norm_mu <- input$popMean
+        
+        # If norm_mu is negative, surround it with parentheses for prettier output.
+        norm_mu_str <- input$popMean
+        if (norm_mu < 0)
+          norm_mu_str <- paste("(", norm_mu, ")", sep = "")
         
         if(input$calcNormal != 'between')
         {
@@ -3281,12 +3286,12 @@ probDistServer <- function(id) {
           
           if(input$calcNormal == "cumulative"){
             normProb <- paste("P(X \\leq ", norm_x,")")
-            normProbTransform <- paste("P \\left( \\dfrac{X - \\mu}{\\sigma} \\leq \\dfrac{", norm_x, " - ", norm_mu, "}{", norm_sigma, "} \\right)")
+            normProbTransform <- paste("P \\left( \\dfrac{X - \\mu}{\\sigma} \\leq \\dfrac{", norm_x, " - ", norm_mu_str, "}{", norm_sigma, "} \\right)")
             normForm <- paste("= P(Z \\leq", probValue, ")")
           }
           else if(input$calcNormal == "upperTail"){
             normProb <- paste("P(X \\gt ", norm_x,")")
-            normProbTransform <- paste("P \\left( \\dfrac{X - \\mu}{\\sigma} \\gt \\dfrac{", norm_x, " - ", norm_mu, "}{", norm_sigma, "} \\right)")
+            normProbTransform <- paste("P \\left( \\dfrac{X - \\mu}{\\sigma} \\gt \\dfrac{", norm_x, " - ", norm_mu_str, "}{", norm_sigma, "} \\right)")
             normForm <- paste("= P(Z \\gt", probValue, ")")
           }
         }
@@ -3300,8 +3305,8 @@ probDistServer <- function(id) {
             errorClass = "myClass")
           
           normProb <- paste("P(", norm_x1, " ",  " \\leq X \\leq"," ", norm_x2,")") 
-          normProbTransform <- paste("P \\left( \\dfrac{", norm_x1, " - ", norm_mu, "}{", norm_sigma, "} \\leq \\dfrac{X - \\mu}{\\sigma} \\leq",
-                                     "\\dfrac{", norm_x2, " - ", norm_mu, "}{", norm_sigma, "} \\right)")
+          normProbTransform <- paste("P \\left( \\dfrac{", norm_x1, " - ", norm_mu_str, "}{", norm_sigma, "} \\leq \\dfrac{X - \\mu}{\\sigma} \\leq",
+                                     "\\dfrac{", norm_x2, " - ", norm_mu_str, "}{", norm_sigma, "} \\right)")
           normForm <- paste("= P(", round((norm_x1 - norm_mu)/norm_sigma, 4), "\\leq Z \\leq", round((norm_x2 - norm_mu)/norm_sigma, 4), ") = ", 
                             round(pnorm(norm_x2,norm_mu, norm_sigma,lower.tail = TRUE), 4), " - ", round(pnorm(norm_x1,norm_mu, norm_sigma,lower.tail = TRUE), 4))
         }
@@ -3412,16 +3417,20 @@ probDistServer <- function(id) {
             errorClass = "myClass")
         }
         
+        norm_mu_str <- input$popMean
+        if (norm_mu_str < 0)
+          norm_mu_str <- paste("(", norm_mu_str, ")", sep = "")
+        
         if(input$calcNormSampDistr != 'between') {
           probValue <- round((input$sampDistrxValue - input$popMean)/(input$popSD/sqrt(input$sampDistrSize)), 4)
           
           if(input$calcNormSampDistr == "cumulative"){
             normProb <- paste("P(\\bar{X} \\leq ", input$sampDistrxValue,")")
-            normProbTransform <- paste("P \\left( \\dfrac{\\bar{X} - \\mu}{ \\left( \\dfrac{\\sigma}{\\sqrt{n}} \\right) } \\leq \\dfrac{", input$sampDistrxValue, " - ", input$popMean, "}{ \\left( \\dfrac{", input$popSD, "}{\\sqrt{", input$sampDistrSize, "}} \\right) } \\right)")
+            normProbTransform <- paste("P \\left( \\dfrac{\\bar{X} - \\mu}{ \\left( \\dfrac{\\sigma}{\\sqrt{n}} \\right) } \\leq \\dfrac{", input$sampDistrxValue, " - ", norm_mu_str, "}{ \\left( \\dfrac{", input$popSD, "}{\\sqrt{", input$sampDistrSize, "}} \\right) } \\right)")
             normForm <- paste("= P(Z \\leq", probValue, ")")
           } else if(input$calcNormSampDistr == "upperTail"){
             normProb <- paste("P(\\bar{X} \\gt ", input$sampDistrxValue,")")
-            normProbTransform <- paste("P \\left( \\dfrac{\\bar{X} - \\mu}{ \\left( \\dfrac{\\sigma}{\\sqrt{n}} \\right) } \\gt \\dfrac{", input$sampDistrxValue, " - ", input$popMean, "}{ \\left( \\dfrac{", input$popSD, "}{\\sqrt{", input$sampDistrSize, "}} \\right) } \\right)")
+            normProbTransform <- paste("P \\left( \\dfrac{\\bar{X} - \\mu}{ \\left( \\dfrac{\\sigma}{\\sqrt{n}} \\right) } \\gt \\dfrac{", input$sampDistrxValue, " - ", norm_mu_str, "}{ \\left( \\dfrac{", input$popSD, "}{\\sqrt{", input$sampDistrSize, "}} \\right) } \\right)")
             normForm <- paste("= P(Z \\gt", probValue, ")")
           }
         } else if(input$calcNormSampDistr == 'between') {
@@ -3435,8 +3444,8 @@ probDistServer <- function(id) {
           
           normProb <- paste("P(", norm_x1, " ",  " \\leq \\bar{X} \\leq"," ", norm_x2,")")
           
-          normProbTransform <- paste("P \\left( \\dfrac{", norm_x1, " - ", input$popMean, "}{ \\left( \\dfrac{", input$popSD, "}{\\sqrt{", input$sampDistrSize, "}} \\right) } \\leq \\dfrac{\\bar{X} - \\mu}{ \\left( \\dfrac{\\sigma}{\\sqrt{n}} \\right) } \\leq",
-                                     "\\dfrac{", norm_x2, " - ", input$popMean, "}{ \\left( \\dfrac{", input$popSD, "}{\\sqrt{", input$sampDistrSize, "}} \\right) } \\right)")
+          normProbTransform <- paste("P \\left( \\dfrac{", norm_x1, " - ", norm_mu_str, "}{ \\left( \\dfrac{", input$popSD, "}{\\sqrt{", input$sampDistrSize, "}} \\right) } \\leq \\dfrac{\\bar{X} - \\mu}{ \\left( \\dfrac{\\sigma}{\\sqrt{n}} \\right) } \\leq",
+                                     "\\dfrac{", norm_x2, " - ", norm_mu_str, "}{ \\left( \\dfrac{", input$popSD, "}{\\sqrt{", input$sampDistrSize, "}} \\right) } \\right)")
           normForm <- paste("= P(", round((norm_x1 - input$popMean)/(input$popSD/sqrt(input$sampDistrSize)), 4), "\\leq Z \\leq", round((norm_x2 - input$popMean)/(input$popSD/sqrt(input$sampDistrSize)), 4), ") = ", 
                             round(pnorm(norm_x2, input$popMean, sampSE, lower.tail = TRUE), 4), " - ", round(pnorm(norm_x1, input$popMean, sampSE, lower.tail = TRUE), 4))
         }
@@ -3535,12 +3544,16 @@ probDistServer <- function(id) {
         qTwo <- round(qnorm(0.5, input$popMean, input$popSD, TRUE), 4)
         qThree <- round(qnorm(0.75, input$popMean, input$popSD, TRUE), 4)
         
+        norm_mu_str <- input$popMean
+        if (norm_mu_str < 0)
+          norm_mu_str <- paste("(", norm_mu_str, ")", sep = "")
+        
         tagList(
           withMathJax(
             div(
               h3(
-                sprintf("Given \\( X \\sim N(\\mu  = %g, \\sigma = %g) \\) then",
-                        input$popMean,
+                sprintf("Given \\( X \\sim N(\\mu  = %s, \\sigma = %g) \\) then",
+                        norm_mu_str,
                         input$popSD)
                 ),
               hr(),
@@ -3550,7 +3563,7 @@ probDistServer <- function(id) {
                 column(width = 5,
                        div(style = "padding-top: 60px;",
                            sprintf("\\( P(X \\le x) = P \\left( \\dfrac{X - \\mu}{\\sigma} \\le \\dfrac{x - %s}{%s} \\right) \\)",
-                                   input$popMean,
+                                   norm_mu_str,
                                    input$popSD),
                            br(),
                            br(),
@@ -3561,7 +3574,7 @@ probDistServer <- function(id) {
                            br(),
                            br(),
                            sprintf("\\( \\displaystyle x = %s + (-0.6745 \\times %s) = %s\\)",
-                                   input$popMean,
+                                   norm_mu_str,
                                    input$popSD,
                                    qOne),
                            br(),
@@ -3579,7 +3592,7 @@ probDistServer <- function(id) {
                   div(
                     style = "padding-top: 60px;",
                     sprintf("\\( P(X \\le x) = P \\left( \\dfrac{X - \\mu}{\\sigma} \\le \\dfrac{x - %s}{%s} \\right) \\)",
-                            input$popMean,
+                            norm_mu_str,
                             input$popSD),
                     br(),
                     br(),
@@ -3590,7 +3603,7 @@ probDistServer <- function(id) {
                     br(),
                     br(),
                     sprintf("\\( \\displaystyle x = %s + (0 \\times %s) = %s\\)",
-                            input$popMean,
+                            norm_mu_str,
                             input$popSD,
                             qTwo),
                     br(),
@@ -3612,7 +3625,7 @@ probDistServer <- function(id) {
                   div(
                     style = "padding-top: 60px;",
                     sprintf("\\( P(X \\le x) = P \\left( \\dfrac{X - \\mu}{\\sigma} \\le \\dfrac{x - %s}{%s} \\right)\\)",
-                            input$popMean,
+                            norm_mu_str,
                             input$popSD),
                     br(),
                     br(),
@@ -3623,7 +3636,7 @@ probDistServer <- function(id) {
                     br(),
                     br(),
                     sprintf("\\( \\displaystyle x = %s + (0.6745 \\times %s) = %s\\)",
-                            input$popMean,
+                            norm_mu_str,
                             input$popSD,
                             qThree),
                     br(),
@@ -3878,12 +3891,16 @@ probDistServer <- function(id) {
         zVal <- round(qnorm(probability, 0, 1, TRUE), 4)
         percentile <- round(qnorm(probability, input$popMean, input$popSD, TRUE), 4)
         
+        norm_mu_str <- input$popMean
+        if (norm_mu_str < 0)
+          norm_mu_str <- paste("(", norm_mu_str, ")", sep="")
+        
         tagList(
           withMathJax(
             div(
               h3(
-                sprintf("Given \\( X \\sim N(\\mu  = %g, \\sigma = %g) \\) then",
-                        input$popMean,
+                sprintf("Given \\( X \\sim N(\\mu  = %s, \\sigma = %g) \\) then",
+                        norm_mu_str,
                         input$popSD)),
               hr(),
               br(),
@@ -3892,7 +3909,7 @@ probDistServer <- function(id) {
                 column(width = 5,
                        div(style = "padding-top: 60px;",
                            sprintf("\\( P(X \\le x) = P \\left( \\dfrac{X - \\mu}{\\sigma} \\le \\dfrac{x - %s}{%s} \\right)\\)",
-                                   input$popMean,
+                                   norm_mu_str,
                                    input$popSD),
                            br(),
                            br(),
@@ -3907,7 +3924,7 @@ probDistServer <- function(id) {
                            br(),
                            br(),
                            sprintf("\\( \\displaystyle x = %s + (%s \\times %s) = %s\\)",
-                                   input$popMean,
+                                   norm_mu_str,
                                    zVal,
                                    input$popSD,
                                    percentile),
