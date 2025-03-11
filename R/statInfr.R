@@ -3775,9 +3775,6 @@ statInfrServer <- function(id) {
         
                      validate("Improper file format.")
       )
-      
-      data %>% 
-        na.omit()
     })
 
     OneMeanUploadStatus <- reactive({
@@ -3909,7 +3906,7 @@ statInfrServer <- function(id) {
         dat <- createNumLst(input$sample1)
 
       } else if(input$dataAvailability == 'Upload Data') {
-        dat <- unlist(OneMeanUploadData()[,input$oneMeanVariable])
+        dat <- na.omit(unlist(OneMeanUploadData()[,input$oneMeanVariable]))
       }
 
       sampleSize <- length(dat)
@@ -3944,7 +3941,7 @@ statInfrServer <- function(id) {
         dat <- createNumLst(input$sample1)
         popuSD <- input$popuSDRaw
       } else if (input$dataAvailability == 'Upload Data') {
-        dat <- unlist(OneMeanUploadData()[,input$oneMeanVariable])
+        dat <- na.omit(unlist(OneMeanUploadData()[,input$oneMeanVariable]))
         popuSD <- input$popuSDUpload
       }
 
@@ -3981,7 +3978,7 @@ statInfrServer <- function(id) {
         dat <- createNumLst(input$sample1)
 
       } else if (input$dataAvailability == 'Upload Data') {
-        dat <- unlist(OneMeanUploadData()[,input$oneMeanVariable])
+        dat <- na.omit(unlist(OneMeanUploadData()[,input$oneMeanVariable]))
       }
 
       sampleSize <- length(dat)
