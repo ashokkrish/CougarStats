@@ -2561,11 +2561,15 @@ statInfrServer <- function(id) {
         formulaOutput <- tagAppendChildren(formulaOutput, br(), br())
       }
 
+      hypPopMean <- input$hypMean
+      if (hypPopMean < 0)
+        hypPopMean <- paste("(", hypPopMean, ")", sep = "")
+        
       calcOutput <- tagList(
         sprintf("\\(%s =  \\dfrac{%s - %s}{ \\dfrac{%s}{\\sqrt{%s}} }\\)",
                 testStat,
                 oneMeanData[2],
-                input$hypMean,
+                hypPopMean,
                 oneMeanData[3],
                 oneMeanData[1]),
         sprintf("\\( = \\dfrac{%0.4f}{%s} \\)",
@@ -3116,7 +3120,7 @@ statInfrServer <- function(id) {
 
       data <- rbind(data, c(sum(data[,"Df"]), sum(data[,"Sum Sq"]), NA, NA, NA))
       # print(data[,"Df"])
-      rownames(data) <- c("Between", "Error", "Total")
+      rownames(data) <- c("Between Groups (Model)", "Within Groups (Error)", "Total")
       colNames <- c("df", "Sum of Squares (SS)", "Mean Sum of Squares (MS)", "F-ratio", "P-Value")
 
       headers = htmltools::withTags(table(
