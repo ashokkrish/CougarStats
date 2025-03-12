@@ -3794,7 +3794,7 @@ statInfrServer <- function(id) {
         dat <- createNumLst(input$sample1)
 
       } else if (input$dataAvailability == 'Upload Data'){
-        dat <- unlist(OneMeanUploadData()[,input$oneMeanVariable])
+        dat <- na.omit(unlist(OneMeanUploadData()[,input$oneMeanVariable]))
       } else{
         dat <- 0
       }
