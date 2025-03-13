@@ -3301,7 +3301,7 @@ probDistServer <- function(id) {
           norm_x2 <- input$x2Value
           
           validate(
-            need(norm_x1 <= norm_x2, "Normally Distributed Variable (x1) must be less than or equal to Normally Distributed Variable (x2)"),
+            need((norm_x1 != norm_x2) && (norm_x1 <= norm_x2), "Normally Distributed Variable (x1) must be less than or equal to Normally Distributed Variable (x2)"),
             errorClass = "myClass")
           
           normProb <- paste("P(", norm_x1, " ",  " \\leq X \\leq"," ", norm_x2,")") 
