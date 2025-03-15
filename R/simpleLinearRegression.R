@@ -443,7 +443,7 @@ SLRServer <- function(id) {
  #  ========================================================================= #
  ## -------- Observers ------------------------------------------------------
  #  ========================================================================= #
-    observe({
+    observeEvent(input$slrUserData, {
       fileInputs$slrStatus <- 'uploaded'
       toggle(id = "regCorrMP", condition = slrupload_iv$is_valid())
 
@@ -455,7 +455,7 @@ SLRServer <- function(id) {
         show("slrExplanatory")
         show("slrResponse")
       }
-    }) |> bindEvent(input$slrUserData)
+    })
 
     ## NOTE: related to the old plot options UI.
     observeEvent(input$slrExplanatory, {
@@ -471,12 +471,14 @@ SLRServer <- function(id) {
 
       output$slrValidation <- renderUI({
 
+        if(!slrupload_iv$is_valid()){
+          if(is.null(input$slrUserData)) {
+            validate("Please upload a file.")
+          }
+        }
+        
         validate(
-          need(isTruthy(slrupload_iv$is_valid()), "Uploaded data is not valid."),
-          need(input$dataRegCor != "Upload Data" || !is.null(input$slrUserData), "Please upload a file."),
-          need(input$dataRegCor != "Upload Data" || !is.null(fileInputs$slrStatus) &&
-               fileInputs$slrStatus == 'uploaded',
-               "Please upload a file."),
+          need(slrupload_iv$is_valid(), "Please upload a file."),
           need(nrow(slrUploadData()) != 0, "File is empty."),
           need(ncol(slrUploadData()) > 1,
                "Data must include one response and (at least) one explanatory variable."),
