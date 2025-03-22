@@ -699,14 +699,14 @@ statInfrUI <- function(id) {
 
                   textAreaInput(
                     inputId     = ns("before"),
-                    label       = strong("Before"),
+                    label       = strong("Sample 1 (for e.g. Before)"),
                     value       = "484, 478, 492, 444, 436, 398, 464, 476",
                     placeholder = "Enter values separated by a comma with decimals as points",
                     rows        = 3),
 
                   textAreaInput(
                     inputId     = ns("after"),
-                    label       = strong("After"),
+                    label       = strong("Sample 2 (for e.g. After)"),
                     value       = "488, 478, 480, 426, 440, 410, 458, 460",
                     placeholder = "Enter values separated by a comma with decimals as points",
                     rows        = 3)
@@ -729,14 +729,14 @@ statInfrUI <- function(id) {
 
                   selectizeInput(
                     inputId = ns("depMeansUplSample1"),
-                    label   = strong("Choose a Column for 'Before' Sample Data"),
+                    label   = strong("Choose a Column for Sample 1"),
                     choices = c(""),
                     options = list(placeholder = 'Select a column',
                                    onInitialize = I('function() { this.setValue(""); }'))),
 
                   selectizeInput(
                     inputId = ns("depMeansUplSample2"),
-                    label   = strong("Choose a Column for 'After' Sample Data"),
+                    label   = strong("Choose a Column for Sample 2"),
                     choices = c(""),
                     options = list(placeholder = 'Select a column',
                                    onInitialize = I('function() { this.setValue(""); }'))),
@@ -1844,8 +1844,8 @@ statInfrServer <- function(id) {
                                               "Data must be at least 3 numeric values seperated by a comma (ie: 2,3,4)."))
 
 
-    depmeansraw_iv$add_rule("before", ~ if(length(createNumLst(input$before)) != length(createNumLst(input$after))) "Before and After must have the same number of observations.")
-    depmeansraw_iv$add_rule("after", ~ if(length(createNumLst(input$before)) != length(createNumLst(input$after))) "Before and After must have the same number of observations.")
+    depmeansraw_iv$add_rule("before", ~ if(length(createNumLst(input$before)) != length(createNumLst(input$after))) "Sample 1 and Sample 2 must have the same number of observations.")
+    depmeansraw_iv$add_rule("after", ~ if(length(createNumLst(input$before)) != length(createNumLst(input$after))) "Sample 1 and Sample 2 must have the same number of observations.")
 
     depmeansupload_iv$add_rule("depMeansUserData", sv_required())
     depmeansupload_iv$add_rule("depMeansUserData", ~ if(is.null(fileInputs$depMeansStatus) || fileInputs$depMeansStatus == 'reset') "Required")
@@ -1856,8 +1856,8 @@ statInfrServer <- function(id) {
 
     depmeansuploadvars_iv$add_rule("depMeansUplSample1", sv_required())
     depmeansuploadvars_iv$add_rule("depMeansUplSample2", sv_required())
-    depmeansuploadvars_iv$add_rule("depMeansUplSample1", ~ if(CheckDepUploadSamples() != 0) "Before and After must have the same number of observations.")
-    depmeansuploadvars_iv$add_rule("depMeansUplSample2", ~ if(CheckDepUploadSamples() != 0) "Before and After must have the same number of observations.")
+    depmeansuploadvars_iv$add_rule("depMeansUplSample1", ~ if(CheckDepUploadSamples() != 0) "Sample 1 and Sample 2 must have the same number of observations.")
+    depmeansuploadvars_iv$add_rule("depMeansUplSample2", ~ if(CheckDepUploadSamples() != 0) "Sample 1 and Sample 2 must have the same number of observations.")
 
     depmeansrawsd_iv$add_rule("after", ~ if(GetDepMeansData()$sd == 0) "Variance required in 'Before' and 'After' sample data for hypothesis testing.")
 
@@ -4724,14 +4724,14 @@ statInfrServer <- function(id) {
  #### ---------------- Dependent Population Means Validation
       if(!depmeansraw_iv$is_valid()) {
         validate(
-          need(input$before, "'Before' sample data requires a minimum of 3 data points.") %then%
-            need(length(createNumLst(input$before)) > 2, "'Before' sample Data requires a minimum of 3 data points."),
-          need(input$after, "'After' sample data requires a minimum of 3 data points.") %then%
-            need(length(createNumLst(input$after)) > 2, "'After' sample Data requires a minimum of 3 data points."),
+          need(input$before, "Sample 1 data requires a minimum of 3 data points.") %then%
+            need(length(createNumLst(input$before)) > 2, "Sample 1 data requires a minimum of 3 data points."),
+          need(input$after, "Sample 2 data requires a minimum of 3 data points.") %then%
+            need(length(createNumLst(input$after)) > 2, "Sample 2 data requires a minimum of 3 data points."),
           errorClass = "myClass")
 
         validate(
-          need(length(createNumLst(input$before)) == length(createNumLst(input$after)), "Same number of data points required for 'Before' and 'After' sample data."),
+          need(length(createNumLst(input$before)) == length(createNumLst(input$after)), "Same number of data points required for Sample 1 and Sample 2."),
           errorClass = "myClass")
       }
 
@@ -4756,7 +4756,7 @@ statInfrServer <- function(id) {
         validate(
           need(input$depMeansUplSample1, "Please select a column for the 'Before' sample data."),
           need(input$depMeansUplSample2, "Please select a column for the 'After' sample data."),
-          need(CheckDepUploadSamples() == 0, "Same number of data points required for 'Before' and 'After' sample data."),
+          need(CheckDepUploadSamples() == 0, "Same number of data points required for Sample 1 and Sample 2."),
           errorClass = "myClass")
       }
 
@@ -6459,7 +6459,7 @@ output$onePropCI <- renderUI({
       depData <- GetDepMeansData()
 
       df_depData <- data.frame(depData$before, depData$after, depData$d, depData$d^2)
-      names(df_depData) <- c("Before", "After", "<em>d</em> = (Before - After)", "<em>d</em><sup>2</sup>")
+      names(df_depData) <- c("Sample 1", "Sample 2", "<em>d</em> = (Sample 1 - Sample 2)", "<em>d</em><sup>2</sup>")
       df_depData <- bind_rows(df_depData, summarise(df_depData, across(where(is.numeric), sum)))
       rownames(df_depData)[nrow(df_depData)] <- "Totals"
 
