@@ -699,14 +699,14 @@ statInfrUI <- function(id) {
 
                   textAreaInput(
                     inputId     = ns("before"),
-                    label       = strong("Sample 1 (for e.g. Before)"),
+                    label       = strong("Sample 1 (e.g. Before, Pre-Treatment, Baseline)"),
                     value       = "484, 478, 492, 444, 436, 398, 464, 476",
                     placeholder = "Enter values separated by a comma with decimals as points",
                     rows        = 3),
 
                   textAreaInput(
                     inputId     = ns("after"),
-                    label       = strong("Sample 2 (for e.g. After)"),
+                    label       = strong("Sample 2 (e.g. After, Post-Treatment, Follow-Up)"),
                     value       = "488, 478, 480, 426, 440, 410, 458, 460",
                     placeholder = "Enter values separated by a comma with decimals as points",
                     rows        = 3)
