@@ -3358,7 +3358,10 @@ statInfrServer <- function(id) {
 
     PrintChiSqTest <- function() {
       data <- chiSqResults()
-      chiSqStat <- data$Matrix[nrow(data$Matrix), "(O - E)<sup>2</sup> / E"]
+      if (input$chiSquareYates){
+        chiSqStat <- data$Matrix[nrow(data$Matrix), "(|O - E| - 0.5)<sup>2</sup> / E"]
+      } else
+        chiSqStat <- data$Matrix[nrow(data$Matrix), "(O - E)<sup>2</sup> / E"]
 
       if(input$chisquareSigLvl == "10%") {
         sigLvl <- 0.1
@@ -7325,7 +7328,16 @@ output$onePropCI <- renderUI({
       req(si_iv$is_valid())
 
       chiSqTest <- suppressWarnings(ChiSquareTest(chiSqActiveMatrix(), input$chiSquareYates))
-      yates_applied <- "(|O - E| - 0.5)<sup>2</sup>" %in% colnames(chiSqTest$Matrix)     # check if yates correction used
+      
+      # choose columns based on whether Yates' correction applied or not
+      yates_applied <- input$chiSquareYates
+      selected_columns <- if (yates_applied) {
+        c("O", "E", "(O - E)", "(|O - E| - 0.5)<sup>2</sup>", "(|O - E| - 0.5)<sup>2</sup> / E", "Standardized Residuals")
+      } else {
+        c("O", "E", "(O - E)", "(O - E)<sup>2</sup>", "(O - E)<sup>2</sup> / E", "Standardized Residuals")
+      }
+      
+      selected_data <- chiSqTest$Matrix[, selected_columns, drop = FALSE]
 
       headers = htmltools::withTags(table(
         class = 'display',
@@ -7343,28 +7355,31 @@ output$onePropCI <- renderUI({
                class = 'dt-center',
                style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
                       border-top: 1px solid rgba(0, 0, 0, 0.15);'),
-            
-            if (yates_applied){
-              list(
-                th(HTML(paste("(|O - E| - 0.5)", sup(2))),
-                   class = 'dt-center',
-                   style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
+            list(
+              if (yates_applied) {
+                list(
+                  th(HTML(paste("(|O - E| - 0.5)", sup(2))),
+                     class = 'dt-center',
+                     style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
                       border-top: 1px solid rgba(0, 0, 0, 0.15);'),
-                th(HTML(paste("(|O - E| - 0.5)", sup(2), " / E")),
-                   class = 'dt-center',
-                   style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
+                  th(HTML(paste("(|O - E| - 0.5)", sup(2), " / E")),
+                     class = 'dt-center',
+                     style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
                       border-top: 1px solid rgba(0, 0, 0, 0.15);')
-              )
-            },
-            
-            th(HTML(paste("(O - E)", sup(2))),
-               class = 'dt-center',
-               style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
+                )
+              } else {
+                list(
+                  th(HTML(paste("(O - E)", sup(2))),
+                     class = 'dt-center',
+                     style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
                       border-top: 1px solid rgba(0, 0, 0, 0.15);'),
-            th(HTML(paste("(O - E)", sup(2), "/ E")),
-               class = 'dt-center',
-               style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
-                      border-top: 1px solid rgba(0, 0, 0, 0.15);'),
+                  th(HTML(paste("(O - E)", sup(2), "/ E")),
+                     class = 'dt-center',
+                     style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
+                      border-top: 1px solid rgba(0, 0, 0, 0.15);')
+                )
+              }
+            ),
             th("Standardized Residuals",
                class = 'dt-center',
                style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
@@ -7374,22 +7389,20 @@ output$onePropCI <- renderUI({
         )
       ))
       
-      column_defs <- list(
-        list(width = '130px', targets = c(0, 1, 2, 3, 4, 5)),
-        list(className = 'dt-center', targets = c(0, 1, 2, 3, 4, 5))
-      )
-      
-      if (yates_applied) {
-        # add extra column defs for the new columns if Yates correction applied
+      if (yates_applied){
         column_defs <- list(
-          list(width = '130px', targets = c(0, 1, 2)),  # standard columns
+          list(width = '130px', targets = c(0, 1, 2, 5)),  # standard columns
           list(width = '200px', targets = c(3, 4)),  # wider for Yates correction columns
-          list(width = '150px', targets = c(5, 6, 7)),  # remaining columns
-          list(className = 'dt-center', targets = c(0, 1, 2, 3, 4, 5, 6, 7))
+          list(className = 'dt-center', targets = c(0, 1, 2, 3, 4, 5))
+        )
+      } else {
+        column_defs <- list(
+          list(width = '130px', targets = c(0, 1, 2, 3, 4, 5)),
+          list(className = 'dt-center', targets = c(0, 1, 2, 3, 4, 5))
         )
       }
 
-      datatable(chiSqTest$Matrix,
+      datatable(selected_data,
                 class = 'cell-border stripe',
                 container = headers,
                 options = list(
@@ -7780,7 +7793,7 @@ output$onePropCI <- renderUI({
 
       output$renderChiSqResults <- renderUI({
         if (input$chiSquareYates){
-          DTOutput(session$ns("chiSqResultsMatrix"), width = "1100px")
+          DTOutput(session$ns("chiSqResultsMatrix"), width = "850px")
         } else
           DTOutput(session$ns("chiSqResultsMatrix"), width = "750px")
       })
