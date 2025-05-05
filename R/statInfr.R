@@ -418,10 +418,12 @@ statInfrUI <- function(id) {
               label        = NULL,
               choiceValues = list("Independent Population Means",
                                   "Dependent Population Means",
-                                  "Population Proportions"),
+                                  "Population Proportions",
+                                  "Two Population Standard Deviations"),
               choiceNames  = list("Two Independent Populations (\\( \\mu_{1} - \\mu_{2} \\))",
                                   "Dependent (Paired) Populations (\\( \\mu_{d} \\))",
-                                  "Two Population Proportions (\\( p_{1} - p_{2}\\))"),
+                                  "Two Population Proportions (\\( p_{1} - p_{2}\\))",
+                                  "Two Population Standard Deviations (\\( \\sigma_{1}/\\sigma_{2} \\))"),
               selected     = "Independent Population Means", #character(0), #
               inline       = FALSE), #,width = '1000px'),
 
@@ -835,6 +837,98 @@ statInfrUI <- function(id) {
                 ), # Ind Means !Summarized
               ), # "input.siMethod == '2'",
 
+ ### ------------ 2 Pop Standard Deviations ------------------------------------
+ 
+              conditionalPanel(
+                ns = ns,
+                condition = "input.siMethod == '2' && input.popuParameters == 'Two Population Standard Deviations'",
+                
+                radioButtons(
+                  inputId      = ns("dataAvailability3"),
+                  label        = strong("Data Availability"),
+                  choiceValues = list("Summary",
+                                      "Variance",
+                                      "Enter Raw Data"),
+                  choiceNames  = list(
+                    "\\( n_1,\\ n_2,\\ s_1,\\ s_2 \\)",
+                    "\\( n_1,\\ n_2,\\ s_1^2,\\ s_2^2 \\)",
+                    "Enter Raw Data"
+                  ),
+                  selected     = "Summary",
+                  inline       = TRUE),
+              
+ 
+ ### ------------ Summary (n1, n2, s1, s2) ------------------------------------
+   
+               conditionalPanel(
+                 ns = ns,
+                 condition = "input.dataAvailability3 == 'Summary'",
+                 
+                 numericInput(
+                   inputId = ns("sampleSize1"),
+                   label   = HTML("<strong>Sample Size 1 (</strong>&nbsp;<i>n</i><sub>1</sub>&nbsp;<strong>)</strong>"),
+                   value   = 12,
+                   min     = 1,
+                   step    = 1),
+                 
+                 numericInput(
+                   inputId = ns("sampleSize2"),
+                   label   = HTML("<strong>Sample Size 2 (</strong>&nbsp;<i>n</i><sub>2</sub>&nbsp;<strong>)</strong>"),
+                   value   = 18,
+                   min     = 1,
+                   step    = 1),
+                 
+                 numericInput(
+                   inputId = ns("stdDev1"),
+                   label   = HTML("<strong>Sample Standard Deviation 1 (</strong>&nbsp;<i>s</i><sub>1</sub>&nbsp;<strong>) Value</strong>"),
+                   value   = 3,
+                   min     = 1,
+                   step    = 0.01),
+                 
+                 numericInput(
+                   inputId = ns("stdDev2"),
+                   label   = HTML("<strong>Sample Standard Deviation 2 (</strong>&nbsp;<i>s</i><sub>2</sub>&nbsp;<strong>) Value</strong>"),
+                   value   = 4.8,
+                   min     = 1,
+                   step    = 0.01)
+               ),
+ 
+ ### ------------ Variance (n1, s1^2, n2, s2^2) ------------------------------------ 
+ 
+               conditionalPanel(
+                 ns = ns,
+                 condition = "input.dataAvailability3 == 'Variance'",
+                 
+                 numericInput(
+                   inputId = ns("n1"),
+                   label   = HTML("<i>n</i><sub>1</sub>"),
+                   value   = 12,
+                   min     = 1,
+                   step    = 1),
+                 
+                 numericInput(
+                   inputId = ns("s1^2"),
+                   label   = HTML("<i>s</i><sup>2</sup><sub>1</sub>"),
+                   value   = 18,
+                   min     = 1,
+                   step    = 1),
+                 
+                 numericInput(
+                   inputId = ns("n2"),
+                   label   = HTML("<i>n</i><sub>2</sub>"),
+                   value   = 3.5,
+                   min     = 1,
+                   step    = 0.01),
+                 
+                 numericInput(
+                   inputId = ns("s2^2"),
+                   label   = HTML("<i>s</i><sup>2</sup><sub>2</sub>"),
+                   value   = 4.8,
+                   min     = 1,
+                   step    = 0.01)
+               )
+              ),
+               
  ### ------------ Multiple Samples (ANOVA or Kruskal-Wallis) ------------------------------------
               conditionalPanel(
                 ns = ns,
@@ -1723,7 +1817,9 @@ statInfrServer <- function(id) {
     chiSq3x3_iv <- InputValidator$new()
 
  ### ------------ Rules -------------------------------------------------------
-
+    output$checkInput <- renderPrint({
+      input$popuParameters
+    })
     # sampleSize
     onemean_iv$add_rule("sampleSize", sv_required())
     onemean_iv$add_rule("sampleSize", sv_integer())
