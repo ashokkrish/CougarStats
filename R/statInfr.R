@@ -939,6 +939,19 @@ statInfrUI <- function(id) {
                  selected = 2,
                  options  = list(render = I(render))),
              ), # Hypothesis Testing
+               
+               
+               conditionalPanel(
+                 ns = ns,
+                 condition = "input.popuParameters == 'Independent Population Means' && input.dataAvailability2 != 'Summarized Data'",
+                 
+                 p(strong("Graph Options")),
+                 
+                 checkboxInput(
+                   inputId = ns("indMeansBoxplot"),
+                   label   = "Side-by-side Boxplot for Sample Data",
+                   value   = TRUE)
+               ), # Graph options
             ), # input.siMethod == 2
  
  ### ------------ Multiple Samples (ANOVA or Kruskal-Wallis) ------------------------------------
