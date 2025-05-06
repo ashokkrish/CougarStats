@@ -779,69 +779,12 @@ statInfrUI <- function(id) {
                   step    = 1),
               ), # Two Population Proportions
 
-              radioButtons(
-                inputId      = ns("inferenceType2"),
-                label        = strong("Inference Type"),
-                choiceValues = list("Confidence Interval",
-                                    "Hypothesis Testing"),
-                choiceNames  = list("Confidence Interval",
-                                    "Hypothesis Testing"),
-                selected     = "Confidence Interval", #character(0), #
-                inline       = TRUE), #,width = '1000px'),
-
-                conditionalPanel(
-                  ns = ns,
-                  condition = "input.inferenceType2 == 'Confidence Interval'",
-
-                  radioButtons(
-                    inputId  = ns("confidenceLevel2"),
-                    label    = strong("Confidence Level (\\( 1- \\alpha\\))"),
-                    choices  = c("90%",
-                                 "95%",
-                                 "99%"),
-                    selected = c("95%"),
-                    inline   = TRUE)
-                ), # Confidence Interval
-
-                conditionalPanel(
-                  ns = ns,
-                  condition = "input.inferenceType2 == 'Hypothesis Testing'",
-
-                  radioButtons(
-                    inputId  = ns("significanceLevel2"),
-                    label    = strong("Significance Level (\\( \\alpha\\))"),
-                    choices  = c("10%",
-                                 "5%",
-                                 "1%"),
-                    selected = c("5%"),
-                    inline   = TRUE),
-
-                  selectizeInput(
-                    inputId  = ns("altHypothesis2"),
-                    label    = strong("Alternate Hypothesis (\\( H_{a}\\))"),
-                    choices  = lessThanInequalGreaterThanChoices123,
-                    selected = 2,
-                    options  = list(render = I(render))),
-                ), # Hypothesis Testing
-
-                conditionalPanel(
-                  ns = ns,
-                  condition = "input.popuParameters == 'Independent Population Means' && input.dataAvailability2 != 'Summarized Data'",
-
-                  p(strong("Graph Options")),
-
-                  checkboxInput(
-                    inputId = ns("indMeansBoxplot"),
-                    label   = "Side-by-side Boxplot for Sample Data",
-                    value   = TRUE)
-                ), # Ind Means !Summarized
-              ), # "input.siMethod == '2'",
 
  ### ------------ 2 Pop Standard Deviations ------------------------------------
  
               conditionalPanel(
                 ns = ns,
-                condition = "input.siMethod == '2' && input.popuParameters == 'Two Population Standard Deviations'",
+                condition = "input.popuParameters == 'Two Population Standard Deviations'",
                 
                 radioButtons(
                   inputId      = ns("dataAvailability3"),
@@ -865,14 +808,14 @@ statInfrUI <- function(id) {
                  condition = "input.dataAvailability3 == 'Summary'",
                  
                  numericInput(
-                   inputId = ns("sampleSize1"),
+                   inputId = ns("SDSampleSize1"),
                    label   = HTML("<strong>Sample Size 1 (</strong>&nbsp;<i>n</i><sub>1</sub>&nbsp;<strong>)</strong>"),
                    value   = 12,
                    min     = 1,
                    step    = 1),
                  
                  numericInput(
-                   inputId = ns("sampleSize2"),
+                   inputId = ns("SDSampleSize2"),
                    label   = HTML("<strong>Sample Size 2 (</strong>&nbsp;<i>n</i><sub>2</sub>&nbsp;<strong>)</strong>"),
                    value   = 18,
                    min     = 1,
@@ -907,7 +850,7 @@ statInfrUI <- function(id) {
                    step    = 1),
                  
                  numericInput(
-                   inputId = ns("s1^2"),
+                   inputId = ns("s1sq"),
                    label   = HTML("<i>s</i><sup>2</sup><sub>1</sub>"),
                    value   = 18,
                    min     = 1,
@@ -916,19 +859,88 @@ statInfrUI <- function(id) {
                  numericInput(
                    inputId = ns("n2"),
                    label   = HTML("<i>n</i><sub>2</sub>"),
-                   value   = 3.5,
+                   value   = 4,
                    min     = 1,
                    step    = 0.01),
                  
                  numericInput(
-                   inputId = ns("s2^2"),
+                   inputId = ns("s2sq"),
                    label   = HTML("<i>s</i><sup>2</sup><sub>2</sub>"),
                    value   = 4.8,
                    min     = 1,
                    step    = 0.01)
-               )
-              ),
+                 ), # variance
+ 
+ ### ------------- Raw Data ---------------------------------------------------------
+             
+             conditionalPanel(
+               ns = ns,
+               condition = "input.dataAvailability3 == 'Enter Raw Data'",
                
+               textAreaInput(
+                 inputId     = ns("group1"),
+                 label       = strong("Sample 1 (e.g. Group A, Population 1)"),
+                 value       = "7, 1, 6, 2, 11, 3, 4, 5",
+                 placeholder = "Enter values separated by a comma with decimals as points",
+                 rows        = 3),
+               
+               textAreaInput(
+                 inputId     = ns("group2"),
+                 label       = strong("Sample 2 (e.g. Group B, Population 2)"),
+                 value       = "2, 5, 19, 3, 5, 11",
+                 placeholder = "Enter values separated by a comma with decimals as points",
+                 rows        = 3)
+             ), # Raw Data
+            ), # Two Pop Std Dev
+                 
+ ### ------------ Confidence Level, Inference Type ---------------------------------
+ 
+             radioButtons(
+               inputId      = ns("inferenceType2"),
+               label        = strong("Inference Type"),
+               choiceValues = list("Confidence Interval",
+                                   "Hypothesis Testing"),
+               choiceNames  = list("Confidence Interval",
+                                   "Hypothesis Testing"),
+               selected     = "Confidence Interval", #character(0), #
+               inline       = TRUE), #,width = '1000px'),
+             
+             conditionalPanel(
+               ns = ns,
+               condition = "input.inferenceType2 == 'Confidence Interval'",
+               
+               radioButtons(
+                 inputId  = ns("confidenceLevel2"),
+                 label    = strong("Confidence Level (\\( 1- \\alpha\\))"),
+                 choices  = c("90%",
+                              "95%",
+                              "99%"),
+                 selected = c("95%"),
+                 inline   = TRUE)
+             ), # Confidence Interval
+             
+             conditionalPanel(
+               ns = ns,
+               condition = "input.inferenceType2 == 'Hypothesis Testing'",
+               
+               radioButtons(
+                 inputId  = ns("significanceLevel2"),
+                 label    = strong("Significance Level (\\( \\alpha\\))"),
+                 choices  = c("10%",
+                              "5%",
+                              "1%"),
+                 selected = c("5%"),
+                 inline   = TRUE),
+               
+               selectizeInput(
+                 inputId  = ns("altHypothesis2"),
+                 label    = strong("Alternate Hypothesis (\\( H_{a}\\))"),
+                 choices  = lessThanInequalGreaterThanChoices123,
+                 selected = 2,
+                 options  = list(render = I(render))),
+             ), # Hypothesis Testing
+            ), # input.siMethod == 2
+ 
  ### ------------ Multiple Samples (ANOVA or Kruskal-Wallis) ------------------------------------
               conditionalPanel(
                 ns = ns,
@@ -1805,6 +1817,9 @@ statInfrServer <- function(id) {
     onepropht_iv <- InputValidator$new()
     twoprop_iv <- InputValidator$new()
     twopropht_iv <- InputValidator$new()
+    twostddev_iv <- InputValidator$new()
+    twostddevvar_iv <- InputValidator$new()
+    twostddevraw_iv <- InputValidator$new()
     kwupload_iv <- InputValidator$new()
     kwmulti_iv <- InputValidator$new()
     kwstacked_iv <- InputValidator$new()
@@ -1817,9 +1832,6 @@ statInfrServer <- function(id) {
     chiSq3x3_iv <- InputValidator$new()
 
  ### ------------ Rules -------------------------------------------------------
-    output$checkInput <- renderPrint({
-      input$popuParameters
-    })
     # sampleSize
     onemean_iv$add_rule("sampleSize", sv_required())
     onemean_iv$add_rule("sampleSize", sv_integer())
@@ -1983,6 +1995,53 @@ statInfrServer <- function(id) {
     twoprop_iv$add_rule("numSuccesses2", sv_gte(0))
     twopropht_iv$add_rule("numSuccesses2", ~ if(checkTwoProp() == 0) "At least one of (x1) and (x2) must be greater than 0.")
 
+    # SDSampleSize1
+    twostddev_iv$add_rule("SDSampleSize1", sv_required())
+    twostddev_iv$add_rule("SDSampleSize1", sv_integer())
+    twostddev_iv$add_rule("SDSampleSize1", sv_gt(0))
+    
+    # SDSampleSize2
+    twostddev_iv$add_rule("SDSampleSize2", sv_required())
+    twostddev_iv$add_rule("SDSampleSize2", sv_integer())
+    twostddev_iv$add_rule("SDSampleSize2", sv_gt(0))
+    
+    # stdDev1
+    twostddev_iv$add_rule("stdDev1", sv_required())
+    twostddev_iv$add_rule("stdDev1", sv_gt(0))
+    
+    # stdDev2
+    twostddev_iv$add_rule("stdDev2", sv_required())
+    twostddev_iv$add_rule("stdDev2", sv_gt(0))
+    
+    # Two Std Dev n1
+    twostddevvar_iv$add_rule("n1", sv_required())
+    twostddevvar_iv$add_rule("n1", sv_integer())
+    twostddevvar_iv$add_rule("n1", sv_gt(0))
+    
+    # Two Std Dev n2
+    twostddevvar_iv$add_rule("n2", sv_required())
+    twostddevvar_iv$add_rule("n2", sv_integer())
+    twostddevvar_iv$add_rule("n2", sv_gt(0))
+    
+    # Two Std Dev s1^2
+    twostddevvar_iv$add_rule("s1sq", sv_required())
+    twostddevvar_iv$add_rule("s1sq", sv_gt(0))
+  
+    # Two Std Dev s2^2
+    twostddevvar_iv$add_rule("s2sq", sv_required())
+    twostddevvar_iv$add_rule("s2sq", sv_gt(0))
+    
+    # raw group 1
+    twostddevraw_iv$add_rule("group1", sv_required())
+    twostddevraw_iv$add_rule("group1", sv_regex("^( )*(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
+                                               "Data must be numeric values seperated by a comma (ie: 2,3,4)"))
+    
+    # raw group 2
+    twostddevraw_iv$add_rule("group2", sv_required())
+    twostddevraw_iv$add_rule("group2", sv_regex("^( )*(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
+                                                "Data must be numeric values seperated by a comma (ie: 2,3,4)"))
+    twostddevraw_iv$add_rule("group2", ~ if (sd(createNumLst(input$group2)) == 0) "No variance in sample data")
+    
     # numTrialsProportion
     oneprop_iv$add_rule("numTrials", sv_required(message = "Numeric value required."))
     oneprop_iv$add_rule("numTrials", sv_integer())
@@ -2245,6 +2304,9 @@ statInfrServer <- function(id) {
     si_iv$add_validator(onepropht_iv)
     si_iv$add_validator(twoprop_iv)
     si_iv$add_validator(twopropht_iv)
+    si_iv$add_validator(twostddev_iv)
+    si_iv$add_validator(twostddevvar_iv)
+    si_iv$add_validator(twostddevraw_iv)
     twoprop_iv$add_validator(twopropht_iv)
     si_iv$add_validator(kwupload_iv)
     si_iv$add_validator(kwmulti_iv)
@@ -2293,6 +2355,9 @@ statInfrServer <- function(id) {
     onepropht_iv$enable()
     twoprop_iv$enable()
     twopropht_iv$enable()
+    twostddev_iv$enable()
+    twostddevvar_iv$enable()
+    twostddevraw_iv$enable()
     kwupload_iv$enable()
     kwmulti_iv$enable()
     kwstacked_iv$enable()
@@ -4907,6 +4972,51 @@ statInfrServer <- function(id) {
           need(input$numSuccesses2 <= input$numTrials2, "Number of Successes 2 (x2) cannot be greater than Number of Trials 2 (n2)"),
           errorClass = "myClass")
 
+      }
+
+ #### ---------------- Two Pop Std. Deviation Validation
+      
+      if(!twostddev_iv$is_valid()) {
+        validate(
+          need(input$SDSampleSize1, "Sample size 1 is required.") %then%
+            need(input$SDSampleSize1 %% 1 == 0 && input$SDSampleSize1 > 0, "Sample size 1 must be an integer greater than 0."),
+          need(input$SDSampleSize2, "Sample size 2 is required.") %then%
+            need(input$SDSampleSize2 %% 1 == 0 && input$SDSampleSize2 > 0, "Sample size 2 must be an integer greater than 0."),
+          need(input$stdDev1, "Sample standard deviation 1 is required.") %then%
+            need(input$stdDev1 > 0, "Sample standard deviation 1 must be greater than 0."),
+          need(input$stdDev2, "Sample standard deviation 2 is required.") %then%
+            need(input$stdDev2 > 0, "Sample standard deviation 2 must be greater than 0."),
+          errorClass = "myClass")
+      }
+     
+      if (!twostddevvar_iv$is_valid()) {
+        validate(
+          need(input$n1, "n1 is required.") %then%
+            need(input$n1 %% 1 == 0 && input$n1 > 0,
+                 "n1 must be an integer greater than 0."),
+          need(input$s1sq, "s1^2 is required.") %then%
+            need(input$s1sq > 0,
+                 "s1^2 must be greater than 0."),
+          need(input$n2, "n2 is required.") %then%
+            need(input$n2 %% 1 == 0 && input$n2 > 0,
+                 "n2 must be an integer greater than 0."),
+          need(input$s2sq, "s2^2 is required.") %then%
+            need(input$s2sq > 0,
+                 "s2^2 must be greater than 0."),
+          errorClass = "myClass"
+        )
+      }
+      
+      if (!twostddevraw_iv$is_valid()) {
+        validate(
+          need(input$group1, "Group 1 is required.") %then%
+            need(length(createNumLst(input$group1)) > 0, "Group 1 must contain numeric values.") %then%
+            need(sd(createNumLst(input$group1)) > 0, "Group 1 must have variance."),
+          need(input$group2, "Group 2 is required.") %then%
+            need(length(createNumLst(input$group2)) > 0, "Group 2 must contain numeric values.") %then%
+            need(sd(createNumLst(input$group2)) > 0, "Group 2 must have variance."),
+          errorClass = "myClass"
+        )
       }
       
  #### ---------------- ANOVA Validation
