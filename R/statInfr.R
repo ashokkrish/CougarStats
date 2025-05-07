@@ -1735,7 +1735,7 @@ statInfrServer <- function(id) {
     # sample1
     onemeanraw_iv$add_rule("sample1", sv_required())
     onemeanraw_iv$add_rule("sample1", sv_regex("^( )*(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                               "Data must be numeric values seperated by a comma (ie: 2,3,4)"))
+                                               "Data must be numeric values separated by a comma (ie: 2,3,4)"))
     onemeanraw_iv$add_rule("sample1", ~ if (sd(createNumLst(input$sample1)) == 0) "No variance in sample data")
 
     # One Mean Upload Data
@@ -1799,12 +1799,12 @@ statInfrServer <- function(id) {
     # raw_sample1
     indmeansraw_iv$add_rule("raw_sample1", sv_required())
     indmeansraw_iv$add_rule("raw_sample1", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                                    "Data must be at least 3 numeric values seperated by a comma (ie: 2,3,4)"))
+                                                    "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)"))
 
     # raw_sample2
     indmeansraw_iv$add_rule("raw_sample2", sv_required())
     indmeansraw_iv$add_rule("raw_sample2", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                                    "Data must be at least 3 numeric values seperated by a comma (ie: 2,3,4)."))
+                                                    "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)."))
 
     indmeansrawsd_iv$add_rule("popuSDRaw1", sv_required())
     indmeansrawsd_iv$add_rule("popuSDRaw1", sv_gt(0))
@@ -1836,12 +1836,12 @@ statInfrServer <- function(id) {
     # before
     depmeansraw_iv$add_rule("before", sv_required())
     depmeansraw_iv$add_rule("before", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                               "Data must be at least 3 numeric values seperated by a comma (ie: 2,3,4)"))
+                                               "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)"))
 
     # after
     depmeansraw_iv$add_rule("after", sv_required())
     depmeansraw_iv$add_rule("after", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                              "Data must be at least 3 numeric values seperated by a comma (ie: 2,3,4)."))
+                                              "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)."))
 
 
     depmeansraw_iv$add_rule("before", ~ if(length(createNumLst(input$before)) != length(createNumLst(input$after))) "Sample 1 and Sample 2 must have the same number of observations.")
