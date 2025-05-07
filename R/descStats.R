@@ -299,7 +299,7 @@ descStatsServer <- function(id) {
     # ------------------ #
     dsraw_iv$add_rule("descriptiveStat", sv_required())
     dsraw_iv$add_rule("descriptiveStat", sv_regex("^( )*(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$", 
-                                                  "Data must be numeric values seperated by a comma (ie: 2,3,4)"))
+                                                  "Data must be numeric values separated by a comma (ie: 2,3,4)"))
     dsupload_iv$add_rule("dsUserData", sv_required())
     dsupload_iv$add_rule("dsUserData", ~ if(is.null(fileInputs$dsStatus) || fileInputs$dsStatus == 'reset') "Required")
     dsupload_iv$add_rule("dsUserData", ~ if(!(tolower(tools::file_ext(input$dsUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
