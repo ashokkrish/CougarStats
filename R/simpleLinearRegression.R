@@ -301,13 +301,13 @@ SLRServer <- function(id) {
  ### ------------ Rules -------------------------------------------------------
     slrraw_iv$add_rule("x", sv_required())
     slrraw_iv$add_rule("x", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                     "Data must be numeric values seperated by a comma (ie: 2,3,4)."))
+                                     "Data must be numeric values separated by a comma (ie: 2,3,4)."))
     slrraw_iv$add_rule("x", ~ if(sampleInfoRaw()$diff != 0) "x and y must have the same number of observations.")
     slrraw_iv$add_rule("x", ~ if(sampleInfoRaw()$xSD == 0) "Not enough variance in Independent Variable.")
 
     slrraw_iv$add_rule("y", sv_required())
     slrraw_iv$add_rule("y", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                     "Data must be numeric values seperated by a comma (ie: 2,3,4)."))
+                                     "Data must be numeric values separated by a comma (ie: 2,3,4)."))
     slrraw_iv$add_rule("y", ~ if(sampleInfoRaw()$diff != 0) "x and y must have the same number of observations.")
     slrraw_iv$add_rule("y", ~ if(sampleInfoRaw()$ySD == 0) "Not enough variance in Dependent Variable.")
 
