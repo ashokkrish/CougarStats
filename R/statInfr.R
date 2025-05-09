@@ -878,16 +878,16 @@ statInfrUI <- function(id) {
                condition = "input.dataAvailability3 == 'Enter Raw Data'",
                
                textAreaInput(
-                 inputId     = ns("group1"),
-                 label       = strong("Sample 1 (e.g. Group A, Population 1)"),
-                 value       = "7, 1, 6, 2, 11, 3, 4, 5",
+                 inputId     = ns("rawSamp1SD"),
+                 label       = strong("Sample 1 (e.g Class A test scores)"),
+                 value       = "80, 54, 97, 76, 66, 87, 83, 91",
                  placeholder = "Enter values separated by a comma with decimals as points",
                  rows        = 3),
                
                textAreaInput(
-                 inputId     = ns("group2"),
-                 label       = strong("Sample 2 (e.g. Group B, Population 2)"),
-                 value       = "2, 5, 19, 3, 5, 11",
+                 inputId     = ns("rawSamp2SD"),
+                 label       = strong("Sample 2 (e.g Class B test scores)"),
+                 value       = "45, 54, 67, 95, 100, 82, 83, 74",
                  placeholder = "Enter values separated by a comma with decimals as points",
                  rows        = 3)
              ), # Raw Data
@@ -1582,8 +1582,36 @@ statInfrUI <- function(id) {
                   br(),
                 ), # Hypothesis Testing
               ), # Two Population Proportions
-            ), # "input.siMethod == '2'"
+            
 
+ ### ------------ Two Pop SD ------------------------------------------
+
+            conditionalPanel(
+              ns = ns,
+              condition = "input.popuParameters == 'Two Population Standard Deviations'",
+              
+              tabsetPanel(
+                id = ns("twoPopSDTabset"),
+                selected = "Analysis",
+                
+                tabPanel(
+                  id = ns("twoPopSD"),
+                  title = "Analysis",
+                  
+                  conditionalPanel(
+                    ns = ns,
+                    condition = "input.inferenceType2 == 'Confidence Interval'",
+                    
+                    titlePanel(tags$u("Confidence Interval")),
+                    br(),
+                    uiOutput(ns('twoPopSDCI')),
+                    br(),
+                    
+                   ) # CI
+                  )
+                 )
+                ), # Two Pop SD
+            ), # "input.siMethod == '2'"
  ### ------------ Multiple Samples ------------------------------------
  #### ----------- ANOVA -----------------------------------------------
             conditionalPanel(
@@ -2045,15 +2073,16 @@ statInfrServer <- function(id) {
     twostddevvar_iv$add_rule("s2sq", sv_gt(0))
     
     # raw group 1
-    twostddevraw_iv$add_rule("group1", sv_required())
-    twostddevraw_iv$add_rule("group1", sv_regex("^( )*(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                               "Data must be numeric values seperated by a comma (ie: 2,3,4)"))
+    twostddevraw_iv$add_rule("rawSamp1SD", sv_required())
+    twostddevraw_iv$add_rule("rawSamp1SD", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
+                                                    "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)."))
+    twostddevraw_iv$add_rule("rawSamp1SD", ~ if (sd(createNumLst(input$rawSamp1SD)) == 0) "No variance in sample data")
     
     # raw group 2
-    twostddevraw_iv$add_rule("group2", sv_required())
-    twostddevraw_iv$add_rule("group2", sv_regex("^( )*(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                                "Data must be numeric values seperated by a comma (ie: 2,3,4)"))
-    twostddevraw_iv$add_rule("group2", ~ if (sd(createNumLst(input$group2)) == 0) "No variance in sample data")
+    twostddevraw_iv$add_rule("rawSamp2SD", sv_required())
+    twostddevraw_iv$add_rule("rawSamp2SD", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
+                                                    "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)."))
+    twostddevraw_iv$add_rule("rawSamp2SD", ~ if (sd(createNumLst(input$rawSamp2SD)) == 0) "No variance in sample data")
     
     # numTrialsProportion
     oneprop_iv$add_rule("numTrials", sv_required(message = "Numeric value required."))
@@ -2251,6 +2280,18 @@ statInfrServer <- function(id) {
     twopropht_iv$condition(~ isTRUE(input$siMethod == '2' &&
                                       input$popuParameters == 'Population Proportions' &&
                                       input$inferenceType2 == 'Hypothesis Testing'))
+   
+    twostddev_iv$condition(~ isTRUE(input$siMethod == '2' &&
+                                      input$popuParameters == 'Two Population Standard Deviations' &&
+                                      input$dataAvailability3 == 'Summary'))
+    
+    twostddevvar_iv$condition(~ isTRUE(input$siMethod == '2' &&
+                                         input$popuParameters == 'Two Population Standard Deviations' &&
+                                         input$dataAvailability3 == 'Variance'))
+    
+    twostddevraw_iv$condition(~ isTRUE(input$siMethod == '2' &&
+                                         input$popuParameters == 'Two Population Standard Deviations' &&
+                                         input$dataAvailability3 == 'Enter Raw Data'))
 
     kwupload_iv$condition(~ isTRUE(input$siMethod == 'Multiple' &&
                                      input$multipleMethodChoice == 'kw'))
@@ -2859,7 +2900,7 @@ statInfrServer <- function(id) {
 
       return(pvalOutput)
     }
-
+  
     GetDepMeansData <- function() {
       req(si_iv$is_valid())
 
@@ -2882,7 +2923,38 @@ statInfrServer <- function(id) {
 
       return(dat)
     }
-
+    
+    TwoPopSDCI <- function(n1, sd1, n2, sd2, conf_level = 0.95, is_variance) {
+      df1 <- n1-1
+      df2 <- n2-1
+      
+      alpha <- 1 - conf_level
+      
+      if(is_variance) {
+        var1 <- sd1
+        var2 <- sd2
+      } else {  # else summary, so sd's need to be ^2
+        var1 <- sd1^2
+        var2 <- sd2^2
+      }
+      F_stat <- var1 / var2
+    
+      F_critical_lower <- qf(alpha/2, df2, df1)
+      F_critical_upper <- qf(1-alpha/2, df2, df1)
+      
+      CI_lower <- (var1 / var2) * (1 / F_critical_upper)
+      CI_upper <- (var1 / var2) * (1 / F_critical_lower)
+      
+      return(list(
+        CI_lower = CI_lower,
+        CI_upper = CI_upper,
+        F_lower = F_critical_lower,
+        F_upper = F_critical_upper,
+        F_statistic = F_stat
+      ))
+      
+    }
+    
     shadeHtArea <- function(df, critValue, altHypothesis) {
 
       if(altHypothesis == 'less') {
@@ -4485,6 +4557,49 @@ statInfrServer <- function(id) {
       }
 
     })
+ ### ------------ Two Pop SD Reactives --------------------------------------
+    GetTwoPopSDData <- reactive({
+      req(si_iv$is_valid())
+      
+      dat <- list()
+
+      if (input$dataAvailability3 == "Summary") {
+        dat$n1 <- input$SDSampleSize1
+        dat$n2 <- input$SDSampleSize2
+        dat$sd1 <- input$stdDev1
+        dat$sd2 <- input$stdDev2
+      } else if (input$dataAvailability3 == "Variance") {
+        dat$n1 <- input$n1
+        dat$n2 <- input$n2
+        dat$sd1 <- input$s1sq
+        dat$sd2 <- input$s2sq
+      }
+      
+      return(dat)
+    })
+    
+    GetTwoPopSDRawData <- reactive({
+      req(si_iv$is_valid())
+      
+      dat <- list()
+      
+      if(input$dataAvailability3 == 'Enter Raw Data') {
+        samp1 <- createNumLst(input$rawSamp1SD)
+        samp2 <- createNumLst(input$rawSamp2SD)
+      } else if(input$dataAvailability3 == 'Upload'){
+        # future work, uploading files not implemented currently
+      }
+      
+      dat$sample1 <- samp1
+      dat$sample2 <- samp2
+      dat$n1 <- length(samp1)
+      dat$n2 <- length(samp2)
+      dat$sd1 <- sd(dat$sample1)
+      dat$sd2 <- sd(dat$sample2)
+      
+      return(dat)
+    })
+      
     
  ### ------------ ANOVA Reactives ---------------------------------------------
     anovaUploadData <- eventReactive(input$anovaUserData, {
@@ -4993,12 +5108,16 @@ statInfrServer <- function(id) {
         validate(
           need(input$SDSampleSize1, "Sample size 1 is required.") %then%
             need(input$SDSampleSize1 %% 1 == 0 && input$SDSampleSize1 > 0, "Sample size 1 must be an integer greater than 0."),
+          
           need(input$SDSampleSize2, "Sample size 2 is required.") %then%
             need(input$SDSampleSize2 %% 1 == 0 && input$SDSampleSize2 > 0, "Sample size 2 must be an integer greater than 0."),
+          
           need(input$stdDev1, "Sample standard deviation 1 is required.") %then%
             need(input$stdDev1 > 0, "Sample standard deviation 1 must be greater than 0."),
+          
           need(input$stdDev2, "Sample standard deviation 2 is required.") %then%
             need(input$stdDev2 > 0, "Sample standard deviation 2 must be greater than 0."),
+          
           errorClass = "myClass")
       }
      
@@ -5007,27 +5126,33 @@ statInfrServer <- function(id) {
           need(input$n1, "n1 is required.") %then%
             need(input$n1 %% 1 == 0 && input$n1 > 0,
                  "n1 must be an integer greater than 0."),
+          
           need(input$s1sq, "s1^2 is required.") %then%
             need(input$s1sq > 0,
                  "s1^2 must be greater than 0."),
+          
           need(input$n2, "n2 is required.") %then%
             need(input$n2 %% 1 == 0 && input$n2 > 0,
                  "n2 must be an integer greater than 0."),
+          
           need(input$s2sq, "s2^2 is required.") %then%
             need(input$s2sq > 0,
                  "s2^2 must be greater than 0."),
+          
           errorClass = "myClass"
         )
       }
       
       if (!twostddevraw_iv$is_valid()) {
         validate(
-          need(input$group1, "Group 1 is required.") %then%
-            need(length(createNumLst(input$group1)) > 0, "Group 1 must contain numeric values.") %then%
-            need(sd(createNumLst(input$group1)) > 0, "Group 1 must have variance."),
-          need(input$group2, "Group 2 is required.") %then%
-            need(length(createNumLst(input$group2)) > 0, "Group 2 must contain numeric values.") %then%
-            need(sd(createNumLst(input$group2)) > 0, "Group 2 must have variance."),
+          need(input$rawSamp1SD, "Group 1 data requires a minimum of 3 numeric values.") %then%
+            need(length(createNumLst(input$rawSamp1SD)) >= 3, "Group 1 data requires a minimum of 3 numeric values.") %then%
+            need(sd(createNumLst(input$rawSamp1SD)) > 0, "Group 1 must have variance."),
+          
+          need(input$rawSamp2SD, "Group 2 data requires a minimum of 3 numeric values.") %then%
+            need(length(createNumLst(input$rawSamp2SD)) >= 3, "Group 2 data requires a minimum of 3 numeric values.") %then%
+            need(sd(createNumLst(input$rawSamp2SD)) > 0, "Group 2 must have variance."),
+          
           errorClass = "myClass"
         )
       }
@@ -7184,6 +7309,33 @@ output$onePropCI <- renderUI({
       htPlot
     })
 
+ ### ------------ Two Pop SD Outputs ----------------------------------------------
+    output$twoPopSDCI <- renderUI ({
+      req(si_iv$is_valid())
+      
+      if(input$dataAvailability3 == 'Enter Raw Data') {
+        data <- GetTwoPopSDRawData()
+      } else if(input$dataAvailability3 == 'Upload Data') {
+        # future work, upload not currently implemented
+      } else { # Summary or Variance
+        data <- GetTwoPopSDData()
+      }
+      
+      is_variance <- input$dataAvailability3 == 'Variance'
+      
+      CI <- TwoPopSDCI(data$n1, data$sd1, data$n2, data$sd2, ConfLvl(), is_variance)
+      df1 <- data$n1 - 1
+      df2 <- data$n2 - 1
+      
+      tagList(
+        withMathJax(
+          p("\\( \\displaystyle CI = \\left[ \\dfrac{s_1^2}{s_2^2} \\cdot \\dfrac{1}{F_{1 - \\alpha/2, df_2, df_1}},\\ \\dfrac{s_1^2}{s_2^2} \\cdot \\dfrac{1}{F_{\\alpha/2, df_2, df_1}} \\right] \\)"),
+          
+          p(sprintf("\\(df_1 = n_1 - 1 = %d - 1 = %d\\)", data$n1, df1)),
+          p(sprintf("\\(df_2 = n_2 - 1 = %d - 1 = %d\\)", data$n2, df2))
+          ))
+    })
+    
  ### ------------ ANOVA Outputs -----------------------------------------------
     output$anovaOutput <- renderUI({
       req(si_iv$is_valid())
