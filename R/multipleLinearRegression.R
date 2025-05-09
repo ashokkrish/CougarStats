@@ -108,30 +108,33 @@ MLRServer <- function(id) {
                            choices = colnames(select_if(uploadedTibble$data(), is.numeric)))
     }) |> bindEvent(uploadedTibble$data())
 
-    ## Validate that the response variable is not included in the explanatory variables.
-    observe({
-      if (isTruthy(uploadedTibble$data())) {
-        ## The newly-selected response variable is always removed from the
-        ## available choices for explanatory variables, but the explanatory
-        ## variables are updated to only deselect the newly-selected response
-        ## variable; other explanatory variables remain selected, if any, rather
-        ## than deselecting all variables whenever the response variable is
-        ## changed.
-        updateSelectizeInput(
-          inputId = "explanatoryVariables",
-          choices =
-            dplyr::select(select_if(uploadedTibble$data(), is.numeric),
-                          !all_of(input$responseVariable)) %>%
-            colnames(),
-          selected = if (input$responseVariable %in% input$explanatoryVariables)
-                       input$explanatoryVariables[input$explanatoryVariables !=
-                                                  input$responseVariable]
-                     else
-                       input$explanatoryVariables
-        )
+    observeEvent(input$responseVariable, {
+      # only run when we have data and a non-empty response variable
+      req(uploadedTibble$data(), input$responseVariable)
+      
+      # grab just the numeric columns
+      df_num <- uploadedTibble$data() %>% dplyr::select_if(is.numeric)
+      
+      # drop the response variable (any_of tolerates missing/empty)
+      choices <- df_num %>%
+        dplyr::select(-dplyr::any_of(input$responseVariable)) %>%
+        colnames()
+      
+      # if the responseVar was in the explanatory selection, remove it
+      selected_vars <- input$explanatoryVariables
+      if (input$responseVariable %in% selected_vars) {
+        selected_vars <- setdiff(selected_vars, input$responseVariable)
       }
-    }) |> bindEvent(input$responseVariable, ignoreNULL = TRUE)
-
+      
+      # update the widget
+      updateSelectizeInput(
+        session,
+        inputId    = "explanatoryVariables",
+        choices    = choices,
+        selected   = selected_vars
+      )
+    })
+    
     output$singleOrMultipleHelpText <- renderUI({
       if (length(input$explanatoryVariables) > 1) {
         div(class = "text-success", span("Multiple explanatory variables result in a multiple linear regression."))
