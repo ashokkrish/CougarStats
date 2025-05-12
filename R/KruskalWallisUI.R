@@ -171,27 +171,64 @@ kruskalWallisUpload <- function(kwUploadData_output, kwupload_iv_is_valid) {
   })
 }
 
-
 kwRankedTableOutput <- function(data) {
   renderUI({
     req(data)
     
     df <- if (is.reactive(data)) data() else data
     
-    ranked_data_formatted <- df %>%
+    ranked_data_wide <- df %>%
       dplyr::select(Group = ind, Value = values, Rank = Rank) %>%
-      dplyr::arrange(Rank)  # Sort by overall rank
+      dplyr::arrange(Group, Rank) %>%
+      dplyr::group_by(Group) %>%
+      dplyr::mutate(ObsID = row_number()) %>%
+      dplyr::ungroup() %>%
+      tidyr::pivot_wider(
+        id_cols = ObsID,
+        names_from = Group,
+        values_from = c(Value, Rank),
+        names_sep = " "  # Space separator for "groupname value" and "groupname rank"
+      ) %>%
+      dplyr::select(-ObsID) %>%
+      # Reorder columns to put Value before Rank for each group
+      dplyr::select(
+        order(
+          match(
+            gsub("(Value|Rank) (.*)", "\\2", names(.)), 
+            unique(gsub("(Value|Rank) (.*)", "\\2", names(.)))
+          ),
+          match(
+            gsub("(Value|Rank) (.*)", "\\1", names(.)), 
+            c("Value", "Rank")
+          )
+        )
+      ) %>%
+      # Clean up column names to match exact requested format
+      dplyr::rename_with(~gsub("Value (.*)", "\\1 Value", .)) %>%
+      dplyr::rename_with(~gsub("Rank (.*)", "\\1 Rank", .))
     
     tagList(
-      DT::datatable(
-        ranked_data_formatted,
-        rownames = FALSE,
-        options = list(
-          pageLength = 10,
-          lengthMenu = list(c(10, 25, 50, 100, -1), c("10", "25", "50", "100", "all")),
-          columnDefs = list(list(className = 'dt-center', targets = 0:2))
-        )
-      )
+      titlePanel("Ranked Results by Group"),
+      br(),
+      br(),
+      div(
+        DT::datatable(
+          ranked_data_wide,
+          rownames = FALSE,
+          options = list(
+            pageLength = 10,
+            lengthMenu = list(c(10, 25, 50, 100, -1), c("10", "25", "50", "100", "all")),
+            scrollX = TRUE,
+            columnDefs = list(
+              list(className = 'dt-center', targets = "_all"),
+              list(width = '120px', targets = "_all")  # Slightly wider columns for the names
+            )
+          )
+        ), 
+        style = "width: 95%"
+      ),
+      br(),
+      br()
     )
   })
 }

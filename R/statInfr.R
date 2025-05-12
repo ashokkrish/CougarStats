@@ -1591,7 +1591,7 @@ statInfrUI <- function(id) {
                   
                   tabPanel(
                     id    = ns("kwRM"),
-                    title = "Ranked Mean",
+                    title = "Data table with Ranks",
                     
                     DTOutput("renderrankedmean"),
                     
@@ -4819,7 +4819,7 @@ statInfrServer <- function(id) {
         validateKWInputs(
           kwupload_iv$is_valid,
           input$kwUserData,
-          fileInputs$kwStatus, # Assuming 'fileInputs' is defined elsewhere
+          fileInputs$kwStatus, 
           kwUploadData(),
           kwmulti_iv$is_valid,
           input$kwMultiColumns,
@@ -4828,7 +4828,6 @@ statInfrServer <- function(id) {
           input$kwFactors,
           kwStackedIsValid()
         )
-        # If all validations pass, the rest of your reactive/render code can proceed
       })
       
       
@@ -7670,20 +7669,6 @@ statInfrServer <- function(id) {
         })
       })
       
-      observeEvent(input$goInference, {
-        output$renderrankedmean <- renderUI({
-          tagList(
-            titlePanel("Ranked Mean"),
-            br(),
-            br(),
-            div(DTOutput(session$ns("renderKWRM")), style = "width: 75%"),
-            br(),
-            br()
-          )
-        })
-      })
-
-      
       output$renderChiSqObs <- renderUI({
         DTOutput(session$ns("chiSqObs"), width = '500px')
       })
@@ -7918,6 +7903,21 @@ statInfrServer <- function(id) {
       fileInputs$depMeansStatus <- 'reset'
       fileInputs$anovaStatus <- 'reset'
       fileInputs$kwStatus <- 'reset'
+      
+      updateSelectizeInput(session, "kwMultiColumns", 
+                           selected = "",
+                           choices = c(""),
+                           options = list(placeholder = 'Select two or more columns'))
+      
+      updateSelectizeInput(session, "kwResponse",
+                           selected = "",
+                           choices = c(""),
+                           options = list(placeholder = 'Select a variable'))
+      
+      updateSelectizeInput(session, "kwFactors",
+                           selected = "",
+                           choices = c(""),
+                           options = list(placeholder = 'Select a factor'))
       
       updateTabsetPanel(session, "onePopMeanTabset", selected = "Analysis")
     })
