@@ -1594,6 +1594,7 @@ statInfrUI <- function(id) {
                     title = "Ranked Mean",
                     
                     DTOutput("renderrankedmean"),
+                    
                     uiOutput(ns("renderKWRM"))
                   ),
                   

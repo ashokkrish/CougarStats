@@ -50,11 +50,10 @@ kwResults_func <- function(si_iv_is_valid, kwFormat, kwMultiColumns, kwUploadDat
   }
   
   kwData <- na.omit(kwData)
-  
+
   kwData <- kwData %>%
-    dplyr::group_by(ind) %>%
-    dplyr::mutate(Rank = rank(values, na.last = "keep", ties.method = "average")) %>%
-    dplyr::ungroup()  
+    dplyr::mutate(Rank = rank(values, na.last = "keep", ties.method = "average"))
+  
   
   totalCount <- nrow(kwData)    # n for Kruskal-Wallis
   numFactors <- length(factorNames)   # r for Kruskal-Wallis
@@ -172,24 +171,27 @@ kruskalWallisUpload <- function(kwUploadData_output, kwupload_iv_is_valid) {
   })
 }
 
+
 kwRankedTableOutput <- function(data) {
   renderUI({
     req(data)
     
-    print("kwRankedTableOutput: str(data):")
-    str(data)
+    df <- if (is.reactive(data)) data() else data
     
-    ranked_data_formatted <- data %>%
-      dplyr::select(ind = ind, Values = values, Rank = Rank) %>% 
-      dplyr::arrange(ind, Values) 
+    ranked_data_formatted <- df %>%
+      dplyr::select(Group = ind, Value = values, Rank = Rank) %>%
+      dplyr::arrange(Rank)  # Sort by overall rank
     
     tagList(
-      DT::datatable(ranked_data_formatted,
-                    options = list(pageLength = -1,
-                                   lengthMenu = list(c(25, 50, 100, -1),
-                                                     c("25", "50", "100", "all")),
-                                   columnDefs = list(list(className = 'dt-center',
-                                                          targets = 0:2))))
+      DT::datatable(
+        ranked_data_formatted,
+        rownames = FALSE,
+        options = list(
+          pageLength = 10,
+          lengthMenu = list(c(10, 25, 50, 100, -1), c("10", "25", "50", "100", "all")),
+          columnDefs = list(list(className = 'dt-center', targets = 0:2))
+        )
+      )
     )
   })
 }
