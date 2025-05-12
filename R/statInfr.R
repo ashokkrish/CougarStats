@@ -7667,6 +7667,8 @@ statInfrServer <- function(id) {
             br()
           )
         })
+        
+        output$renderKWRM<-kwRankedTableOutput(kwResults()$data)
       })
       
       output$renderChiSqObs <- renderUI({
