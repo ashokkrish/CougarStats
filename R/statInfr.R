@@ -1592,7 +1592,8 @@ statInfrUI <- function(id) {
                   tabPanel(
                     id    = ns("kwRM"),
                     title = "Ranked Mean",
-                    DTOutput("kwRM"),
+                    
+                    DTOutput("renderrankedmean"),
                     uiOutput(ns("renderKWRM"))
                   ),
                   
@@ -7669,12 +7670,12 @@ statInfrServer <- function(id) {
       })
       
       observeEvent(input$goInference, {
-        output$renderKWRM <- renderUI({
+        output$renderrankedmean <- renderUI({
           tagList(
             titlePanel("Ranked Mean"),
             br(),
             br(),
-            div(DTOutput(session$ns("kwRM")), style = "width: 75%"),
+            div(DTOutput(session$ns("renderKWRM")), style = "width: 75%"),
             br(),
             br()
           )
