@@ -1,5 +1,6 @@
 library(shiny)
 library(shinyjs)
+library(shinyWidgets)
 library(bslib)
 library(datamods)
 library(magrittr)
@@ -36,15 +37,26 @@ MLRSidebarUI <- function(id) {
       withMathJax(
         helpText("Only numeric variables are selectable."),
         ## DONE: the choices need to be updated dynamically.
-        selectInput(ns("responseVariable"),
-                    "Response Variable (\\(y\\))",
-                    choices = NULL),
+        selectInput(
+          ns("responseVariable"),
+          "Response Variable (\\(y\\))",
+          choices = NULL,
+          selectize = FALSE),
+                    
         helpText("Only numeric variables are selectable."),
         uiOutput(ns("singleOrMultipleHelpText")),
-        selectInput(ns("explanatoryVariables"),
-                    "Explanatory Variables (\\(x_1, x_2, x_3, \\cdots , x_n\\))",
-                    multiple = TRUE,
-                    choices = NULL),
+        pickerInput(
+          inputId  = ns("explanatoryVariables"),
+          label    = "Explanatory Variables (x₁, x₂, …, xₙ)",
+          choices  = NULL,
+          multiple = TRUE,
+          options  = list(
+          `actions-box` = TRUE,   # “Select all / Deselect all” buttons
+          `live-search` = TRUE,   # built-in search box
+          selectedTextFormat = "values",
+          multipleSeperator = ", "
+      )
+    ),
         actionButton(ns("calculate"), "Calculate", class = "act-btn"),
         actionButton(ns("reset"), "Reset Values", class = "act-btn"))
     ))
@@ -84,11 +96,22 @@ MLRServer <- function(id) {
     uploadedTibble <- import_server("dataImport", return_class = "tbl_df")
     ns <- session$ns
 
-    observe({
-      shinyjs::reset(id = "responseVariable")
-      shinyjs::reset(id = "explanatoryVariables")
-    }) |> bindEvent(input$reset)
-
+    observeEvent(input$reset, {
+      # clear the response‐variable dropdown
+      updateSelectInput(
+        session,
+        "responseVariable",
+        selected = character(0)
+      )
+      
+      # clear the explanatory‐variables picker
+      updatePickerInput(
+        session,
+        "explanatoryVariables",
+        selected = character(0)
+      )
+    })
+    
     ## NOTE: this is a very lame way to hide the main panel, but this is what is
     ## forced upon us by technical debt and the overall design of the
     ## application.
@@ -102,10 +125,11 @@ MLRServer <- function(id) {
     ## Update the choices for the select inputs when the uploadedTibble changes.
     observe({
       updateSelectInput(inputId = "responseVariable",
-                        choices = colnames(select_if(uploadedTibble$data(), is.numeric)))
+                        choices = colnames(select_if(uploadedTibble$data(), is.numeric)),
+                        selected = character(0))
 
-      updateSelectizeInput(inputId = "explanatoryVariables",
-                           choices = colnames(select_if(uploadedTibble$data(), is.numeric)))
+      updatePickerInput(inputId = "explanatoryVariables",
+                        choices = colnames(select_if(uploadedTibble$data(), is.numeric)))
     }) |> bindEvent(uploadedTibble$data())
 
     observeEvent(input$responseVariable, {
@@ -126,10 +150,11 @@ MLRServer <- function(id) {
         selected_vars <- setdiff(selected_vars, input$responseVariable)
       }
       
+      
       # update the widget
-      updateSelectizeInput(
+      updatePickerInput(
         session,
-        inputId    = "explanatoryVariables",
+        "explanatoryVariables",
         choices    = choices,
         selected   = selected_vars
       )
