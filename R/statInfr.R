@@ -807,69 +807,76 @@ statInfrUI <- function(id) {
                  ns = ns,
                  condition = "input.dataAvailability3 == 'Summary'",
                  
-                 numericInput(
-                   inputId = ns("SDSampleSize1"),
-                   label   = HTML("<strong>Sample Size 1 (</strong>&nbsp;<i>n</i><sub>1</sub>&nbsp;<strong>)</strong>"),
-                   value   = 12,
-                   min     = 1,
-                   step    = 1),
-                 
-                 numericInput(
-                   inputId = ns("SDSampleSize2"),
-                   label   = HTML("<strong>Sample Size 2 (</strong>&nbsp;<i>n</i><sub>2</sub>&nbsp;<strong>)</strong>"),
-                   value   = 18,
-                   min     = 1,
-                   step    = 1),
-                 
-                 numericInput(
-                   inputId = ns("stdDev1"),
-                   label   = HTML("<strong>Sample Standard Deviation 1 (</strong>&nbsp;<i>s</i><sub>1</sub>&nbsp;<strong>) Value</strong>"),
-                   value   = 3,
-                   min     = 1,
-                   step    = 0.01),
-                 
-                 numericInput(
-                   inputId = ns("stdDev2"),
-                   label   = HTML("<strong>Sample Standard Deviation 2 (</strong>&nbsp;<i>s</i><sub>2</sub>&nbsp;<strong>) Value</strong>"),
-                   value   = 4.8,
-                   min     = 1,
-                   step    = 0.01)
-               ),
+                 withMathJax(
+                   tagList(
+                     numericInput(
+                        inputId = ns("SDSampleSize1"),
+                        label   = HTML("<strong>Sample Size 1</strong> \\( (n_1) \\)"),
+                        value   = 12,
+                        min     = 1,
+                        step    = 1
+                      ),
+                      
+                      numericInput(
+                        inputId = ns("SDSampleSize2"),
+                        label   = HTML("<strong>Sample Size 2</strong> \\( (n_2) \\)"),
+                        value   = 18,
+                        min     = 1,
+                        step    = 1
+                      ),
+                      
+                      numericInput(
+                        inputId = ns("stdDev1"),
+                        label   = HTML("<strong>Sample Standard Deviation 1</strong> \\( (s_1) \\)"),
+                        value   = 3,
+                        min     = 1,
+                        step    = 0.01
+                      ),
+                      
+                      numericInput(
+                        inputId = ns("stdDev2"),
+                        label   = HTML("<strong>Sample Standard Deviation 2</strong> \\( (s_2) \\)"),
+                        value   = 4.8,
+                        min     = 1,
+                        step    = 0.01
+                      )
+                 ))), #summary,
  
  ### ------------ Variance (n1, s1^2, n2, s2^2) ------------------------------------ 
  
                conditionalPanel(
                  ns = ns,
                  condition = "input.dataAvailability3 == 'Variance'",
-                 
-                 numericInput(
-                   inputId = ns("n1"),
-                   label   = HTML("<i>n</i><sub>1</sub>"),
-                   value   = 12,
-                   min     = 1,
-                   step    = 1),
-                 
-                 numericInput(
-                   inputId = ns("s1sq"),
-                   label   = HTML("<i>s</i><sup>2</sup><sub>1</sub>"),
-                   value   = 18,
-                   min     = 1,
-                   step    = 1),
-                 
-                 numericInput(
-                   inputId = ns("n2"),
-                   label   = HTML("<i>n</i><sub>2</sub>"),
-                   value   = 4,
-                   min     = 1,
-                   step    = 0.01),
-                 
-                 numericInput(
-                   inputId = ns("s2sq"),
-                   label   = HTML("<i>s</i><sup>2</sup><sub>2</sub>"),
-                   value   = 4.8,
-                   min     = 1,
-                   step    = 0.01)
-                 ), # variance
+                 withMathJax(
+                   tagList(
+                     numericInput(
+                       inputId = ns("n1"),
+                       label   = HTML("<strong>Sample Size 1</strong> \\( (n_1) \\)"),
+                       value   = 12,
+                       min     = 1,
+                       step    = 1),
+                     
+                     numericInput(
+                       inputId = ns("s1sq"),
+                       label   = HTML("<strong>Sample Variance 1 </strong>\\( (s_1^2) \\)"),
+                       value   = 9,
+                       min     = 1,
+                       step    = 1),
+                     
+                     numericInput(
+                       inputId = ns("n2"),
+                       label   = HTML("<strong>Sample Size 2</strong> \\( (n_2) \\)"),
+                       value   = 18,
+                       min     = 1,
+                       step    = 0.01),
+                     
+                     numericInput(
+                       inputId = ns("s2sq"),
+                       label   = HTML("<strong>Sample Variance 2</strong> \\( (s_2^2) \\)"),
+                       value   = 23.04,
+                       min     = 1,
+                       step    = 0.01)
+                     ))), # variance
  
  ### ------------- Raw Data ---------------------------------------------------------
              
@@ -1607,10 +1614,19 @@ statInfrUI <- function(id) {
                     uiOutput(ns('twoPopSDCI')),
                     br(),
                     
-                   ) # CI
-                  )
-                 )
-                ), # Two Pop SD
+                   ), # CI
+                  
+                  conditionalPanel(
+                    ns = ns,
+                    condition = "input.inferenceType2 == 'Hypothesis Testing'",
+                    
+                    titlePanel(tags$u("Hypothesis Test")),
+                    br(),
+                    uiOutput(ns('twoPopSDHT')),
+                    br(),
+                    
+                  ) # HT
+                  ))), # Two Pop SD
             ), # "input.siMethod == '2'"
  ### ------------ Multiple Samples ------------------------------------
  #### ----------- ANOVA -----------------------------------------------
@@ -7321,19 +7337,32 @@ output$onePropCI <- renderUI({
         data <- GetTwoPopSDData()
       }
       
-      is_variance <- input$dataAvailability3 == 'Variance'
+      is_variance <- (input$dataAvailability3 == 'Variance')
       
       CI <- TwoPopSDCI(data$n1, data$sd1, data$n2, data$sd2, ConfLvl(), is_variance)
       df1 <- data$n1 - 1
       df2 <- data$n2 - 1
+      conf_percent <- ConfLvl() * 100
       
       tagList(
         withMathJax(
           p("\\( \\displaystyle CI = \\left[ \\dfrac{s_1^2}{s_2^2} \\cdot \\dfrac{1}{F_{1 - \\alpha/2, df_2, df_1}},\\ \\dfrac{s_1^2}{s_2^2} \\cdot \\dfrac{1}{F_{\\alpha/2, df_2, df_1}} \\right] \\)"),
           
           p(sprintf("\\(df_1 = n_1 - 1 = %d - 1 = %d\\)", data$n1, df1)),
-          p(sprintf("\\(df_2 = n_2 - 1 = %d - 1 = %d\\)", data$n2, df2))
+          p(sprintf("\\(df_2 = n_2 - 1 = %d - 1 = %d\\)", data$n2, df2)),
+          if (!is_variance) {
+            p(sprintf("\\(\\dfrac{s_1^2}{s_2^2} = \\dfrac{%.4f^2}{%.4f^2} = %.4f\\)", data$sd1, data$sd2, CI$F_statistic))
+          } else {
+            p(sprintf("\\(\\dfrac{s_1^2}{s_2^2} = \\dfrac{%.4f}{%.4f} = %.4f\\)", data$sd1, data$sd2, CI$F_statistic))
+          },
+          p(sprintf("\\(\\text{Confidence Interval: } [%.4f, %.4f]\\)", CI$CI_lower, CI$CI_upper))
+          
           ))
+    })
+    
+ ### ------------ Two Pop HT --------------------------------------------------
+    output$twoPopSDHT <- renderUI({
+      req(si_iv$is_valid())
     })
     
  ### ------------ ANOVA Outputs -----------------------------------------------
