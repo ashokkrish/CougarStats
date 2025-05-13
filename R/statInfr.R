@@ -4616,7 +4616,34 @@ statInfrServer <- function(id) {
       return(dat)
     })
       
-    
+    TwoPopSDHypInfo <- reactive({
+      hypTestSymbols <- list()
+      
+      if (input$altHypothesisVar == "greater") {
+        hypTestSymbols$alternative <- "greater"
+        hypTestSymbols$nullHyp <- "\\sigma^2_1 \\leq \\sigma^2_2"
+        hypTestSymbols$altHyp <- "\\sigma^2_1 \\gt \\sigma^2_2"
+        hypTestSymbols$critAlph <- "\\alpha"
+        hypTestSymbols$critSign <- ""
+        hypTestSymbols$alphaVal <- SigLvl()
+      } else if (input$altHypothesisVar == "two.sided") {
+        hypTestSymbols$alternative <- "two.sided"
+        hypTestSymbols$nullHyp <- "\\sigma^2_1 = \\sigma^2_2"
+        hypTestSymbols$altHyp <- "\\sigma^2_1 \\neq \\sigma^2_2"
+        hypTestSymbols$critAlph <- "\\alpha/2"
+        hypTestSymbols$critSign <- "\\pm"
+        hypTestSymbols$alphaVal <- SigLvl() / 2
+      } else { # less
+        hypTestSymbols$alternative <- "less"
+        hypTestSymbols$nullHyp <- "\\sigma^2_1 \\geq \\sigma^2_2"
+        hypTestSymbols$altHyp <- "\\sigma^2_1 \\lt \\sigma^2_2"
+        hypTestSymbols$critAlph <- "\\alpha"
+        hypTestSymbols$critSign <- "-"
+        hypTestSymbols$alphaVal <- SigLvl()
+      }
+      
+      return(hypTestSymbols)
+    })
  ### ------------ ANOVA Reactives ---------------------------------------------
     anovaUploadData <- eventReactive(input$anovaUserData, {
       ext <- tools::file_ext(input$anovaUserData$name)
