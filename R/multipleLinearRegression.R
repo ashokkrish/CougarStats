@@ -511,7 +511,7 @@ R^2_{\text{adj}} = %0.2f \\
               sprintf(r"[y    = \text{%s} \\]", input$responseVariable),
               paste(
                 sprintf(
-                  r"[x_%d = \text{%s}]",
+                  r"[x_{%d} = \text{%s}]",
                   seq_along(input$explanatoryVariables),
                   input$explanatoryVariables
                 ),
