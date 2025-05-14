@@ -4386,30 +4386,26 @@ statInfrServer <- function(id) {
     })
     
     ### ------------ Kruskal-Wallis Reactives ------------------------------------   
-      kwUploadData <- eventReactive(input$kwUserData, {
-        kwUploadData_func(input$kwUserData)
+    kwUploadData <- eventReactive(input$kwUserData, {
+      kwUploadData_func(input$kwUserData)
+    })
+    
+    kwStackedIsValid <- eventReactive({input$kwResponse
+      input$kwFactors}, {
+        kwStackedIsValid_func(input$kwResponse, input$kwFactors)
       })
+    
+    kwResults <- reactive({
       
-      kwStackedIsValid <- eventReactive({input$kwResponse
-        input$kwFactors}, {
-          kwStackedIsValid_func(input$kwResponse, input$kwFactors)
-        })
-      
-      kwResults <- reactive({
-        kwResults_func(
-          si_iv$is_valid,
-          input$kwFormat,
-          input$kwMultiColumns,
-          kwUploadData(),
-          input$kwFactors,
-          input$kwResponse,
-          
-          data <- kwUploadData(),
-          if ("ind" %in% names(data)) {
-            data <- data %>% dplyr::mutate(ind = factor(ind))
-          }
-        )
-      })
+      kwResults_func(
+        si_iv$is_valid,
+        input$kwFormat,
+        input$kwMultiColumns,
+        kwUploadData(),
+        input$kwFactors,
+        input$kwResponse
+      )
+    })
     
     ### Chi-Square Reactives ----
     # chiSqData2x2 <- reactive({

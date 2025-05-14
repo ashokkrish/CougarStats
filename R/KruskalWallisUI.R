@@ -43,7 +43,7 @@ kwResults_func <- function(si_iv_is_valid, kwFormat, kwMultiColumns, kwUploadDat
     kwData <- kwUploadData_output
     colnames(kwData)[colnames(kwData) == kwFactors] <- "ind"
     colnames(kwData)[colnames(kwData) == kwResponse] <- "values"
-    kwData <- mutate(kwData, ind = factor(ind))
+    kwData <- dplyr::mutate(ind = factor(ind))
     factorCol <- "ind"
     factorNames <- levels(kwData$ind)
     
@@ -192,6 +192,16 @@ kruskalWallisHT <- function(kwResults_output, kwSigLvl_input) {
           
           br(), br(),
           
+            if (kw_test_rounded <= kw_chi){
+              sprintf("
+                      We can see that the Test Statistic is less than or equal the value of Chi-square critical value (%s < %.2f).", kw_test_rounded, kw_chi)
+            }
+            else{
+              sprintf("We can see that the Test Statistic is greater than the value of Chi-square critical value (%s \\geq %.2f).", kw_test_rounded, kw_chi)
+            },
+          
+          br(), br(),
+          
           p(tags$b("Conclusion: ")),
           sprintf(
             if (kw_pv <= kw_sl){
@@ -251,7 +261,7 @@ kwRankedTableOutput <- function(data) {
           )
         )
       ) %>%
-
+      # Clean up column names to match exact requested format
       dplyr::rename_with(~gsub("Value (.*)", "\\1 Value", .)) %>%
       dplyr::rename_with(~gsub("Rank (.*)", "\\1 Rank", .))
     
