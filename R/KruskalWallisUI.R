@@ -36,10 +36,12 @@ kwResults_func <- function(si_iv_is_valid, kwFormat, kwMultiColumns, kwUploadDat
   results <- list()
   
   if (kwFormat == "Multiple"){
+    req(kwMultiColumns)
     kwData <- stack(kwUploadData_output[,kwMultiColumns])
     factorCol <- "ind"
     factorNames <- levels(kwData$ind)
   } else {
+    req(kwFactors, kwResponse)
     kwData <- kwUploadData_output
     colnames(kwData)[colnames(kwData) == kwFactors] <- "ind"
     colnames(kwData)[colnames(kwData) == kwResponse] <- "values"
@@ -190,7 +192,15 @@ kruskalWallisHT <- function(kwResults_output, kwSigLvl_input) {
           p(tags$b("Using the Chi-Square Critical Value Method: ")),
           sprintf("\\(\\chi^2 _{df, \\alpha} = \\chi^2_{%s, \\, %s} = %.2f \\)", kw_df, kw_sl, kw_chi),
           
-
+          br(), br(),
+          
+            if (kw_test_rounded <= kw_chi){
+              sprintf("
+                      We can see that the Test Statistic is less than or equal the value of Chi-square critical value (%s < %.2f).", kw_test_rounded, kw_chi)
+            }
+            else{
+              sprintf("We can see that the Test Statistic is greater than the value of Chi-square critical value (%s > %.2f).", kw_test_rounded, kw_chi)
+            },
           
           br(), br(),
           
