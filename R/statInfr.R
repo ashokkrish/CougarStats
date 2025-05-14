@@ -7657,6 +7657,7 @@ statInfrServer <- function(id) {
       })
       
       observeEvent(input$goInference, {
+        # refresh the Analysis output defined in KruskalWallisUI.R
         output$renderKWData <- renderUI({
           tagList(
             titlePanel("Data File"),
@@ -7667,7 +7668,7 @@ statInfrServer <- function(id) {
             br()
           )
         })
-        
+        # refresh the Ranking output defined in KruskalWallisUI.R
         output$renderKWRM<-kwRankedTableOutput(kwResults()$data)
       })
       

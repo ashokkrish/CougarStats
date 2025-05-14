@@ -117,12 +117,38 @@ validateKWInputs <- function(kwupload_iv_is_valid, kwUserData, fileInputs_kwStat
 kruskalWallisHT <- function(kwResults_output, kwSigLvl_input) {
   renderUI({
     req(kwResults_output())
-    data <- kwResults_output()$test
-    kw_test_rounded <- as.character(round(data$statistic, 4))
-    kw_pv <- data$p.value
-    kw_pv_rounded <- as.character(round(kw_pv, 4))
+    
+    results <- kwResults_output()
+    kwTest <- results$test
+    kwData <- results$data
+    totalCount <- results$count
+    factorNames <- results$factorNames
+    
+    # conditions for hypothesis testing 
+    kw_pv <- kwTest$p.value
     kw_sl <- as.numeric(substring(kwSigLvl_input(), 1, nchar(kwSigLvl_input()) - 1))/100
     
+    global_ranks <- kwData$Rank
+    group_sums <- tapply(global_ranks, kwData$ind, sum)
+    group_n <- tapply(global_ranks, kwData$ind, length)
+    
+    # used in P-Value calculations
+    data <- kwResults_output()$test
+    
+    kw_pv <- data$p.value
+    kw_pv_rounded <- as.character(round(kw_pv, 4))
+    
+    # used for calculating the Test Statistic
+    sum_R2_n <- sum(group_sums^2 / group_n)
+    step1 <- 12 / (totalCount * (totalCount + 1))
+    step2 <- step1 * sum_R2_n
+    step3 <- 3 * (totalCount + 1)
+    kwTstat <- step2-step3
+    kw_test_rounded <- as.character(round(kwTstat, 4))
+    
+    sum_parts <- sapply(seq_along(factorNames), function(i) {
+      sprintf("\\frac{(%.1f)^2}{%d}", group_sums[i], group_n[i])
+    })
     withMathJax(
       tagList(
         p(
@@ -132,7 +158,12 @@ kruskalWallisHT <- function(kwResults_output, kwSigLvl_input) {
           sprintf("\\( \\alpha = %s \\)", kw_sl),
           br(), br(),
           p(tags$b("Test Statistic:")),
-          sprintf("\\( K = \\frac{12}{n(n + 1)}\\sum_{j = 1}^{k}\\frac{R_j^2}{n_j} - 3(n + 1) = %s\\)", kw_test_rounded),
+          
+          sprintf("\\( H = \\frac{12}{n(n + 1)}\\sum_{j = 1}^{k}\\frac{R_j^2}{n_j} - 3(n + 1) \\)"), 
+          sprintf("\\( = \\frac{12}{%d(%d + 1)}\\left(%s\\right) - 3(%d + 1) \\)",
+                  totalCount, totalCount, paste(sum_parts, collapse = " + "), totalCount), 
+          sprintf("\\( = %s \\)", kw_test_rounded),
+          
           br(), br(),
           p(tags$b("Using P-value method: ")),
           sprintf("\\(P = P(\\chi^2 \\geq %s) = %s\\)", kw_test_rounded, kw_pv_rounded),
@@ -187,10 +218,9 @@ kwRankedTableOutput <- function(data) {
         id_cols = ObsID,
         names_from = Group,
         values_from = c(Value, Rank),
-        names_sep = " "  # Space separator for "groupname value" and "groupname rank"
+        names_sep = " "  
       ) %>%
       dplyr::select(-ObsID) %>%
-      # Reorder columns to put Value before Rank for each group
       dplyr::select(
         order(
           match(
@@ -221,7 +251,7 @@ kwRankedTableOutput <- function(data) {
             scrollX = TRUE,
             columnDefs = list(
               list(className = 'dt-center', targets = "_all"),
-              list(width = '120px', targets = "_all")  # Slightly wider columns for the names
+              list(width = '120px', targets = "_all")  
             )
           )
         ), 
