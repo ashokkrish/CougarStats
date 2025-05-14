@@ -43,7 +43,7 @@ kwResults_func <- function(si_iv_is_valid, kwFormat, kwMultiColumns, kwUploadDat
     kwData <- kwUploadData_output
     colnames(kwData)[colnames(kwData) == kwFactors] <- "ind"
     colnames(kwData)[colnames(kwData) == kwResponse] <- "values"
-    kwData <- dplyr::mutate(ind = factor(ind))
+    kwData <- kwData %>% dplyr::mutate(ind = factor(ind)) 
     factorCol <- "ind"
     factorNames <- levels(kwData$ind)
     
