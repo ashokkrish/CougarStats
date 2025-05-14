@@ -132,23 +132,30 @@ kruskalWallisHT <- function(kwResults_output, kwSigLvl_input) {
     group_sums <- tapply(global_ranks, kwData$ind, sum)
     group_n <- tapply(global_ranks, kwData$ind, length)
     
-    # used in P-Value calculations
-    data <- kwResults_output()$test
-    
-    kw_pv <- data$p.value
-    kw_pv_rounded <- as.character(round(kw_pv, 4))
-    
     # used for calculating the Test Statistic
     sum_R2_n <- sum(group_sums^2 / group_n)
     step1 <- 12 / (totalCount * (totalCount + 1))
     step2 <- step1 * sum_R2_n
     step3 <- 3 * (totalCount + 1)
     kwTstat <- step2-step3
+    
+    # used in P-Value calculations
+    data <- kwResults_output()$test
+    kw_pv <- data$p.value
+    kw_pv_rounded <- as.character(round(kw_pv, 4))
     kw_test_rounded <- as.character(round(kwTstat, 4))
     
+    # Degrees of Freedom 
+    kw_df <- length(factorNames) -1
+    # Chi Square CV
+    alph <-(1-(as.numeric(substring(kwSigLvl_input(), 1, nchar(kwSigLvl_input()) - 1))/100))
+    kw_chi<- (qchisq(alph,kw_df))
+
+    # the sum of the inner part of the T Statistic calculation
     sum_parts <- sapply(seq_along(factorNames), function(i) {
       sprintf("\\frac{(%.1f)^2}{%d}", group_sums[i], group_n[i])
     })
+    
     withMathJax(
       tagList(
         p(
@@ -165,15 +172,26 @@ kruskalWallisHT <- function(kwResults_output, kwSigLvl_input) {
           sprintf("\\( = %s \\)", kw_test_rounded),
           
           br(), br(),
+          
           p(tags$b("Using P-value method: ")),
           sprintf("\\(P = P(\\chi^2 \\geq %s) = %s\\)", kw_test_rounded, kw_pv_rounded),
+          
           br(), br(),
+          
           if (kw_pv <= kw_sl){
             sprintf("Since \\(P \\leq %s\\), reject \\(H_{0}.\\)", kw_sl)
           } else {
             sprintf("Since \\(P > %s\\), do not reject \\(H_{0}.\\)", kw_sl)
           },
+          
           br(), br(),
+          
+          # Trying to use Chi-Square CV method
+          p(tags$b("Using the Chi-Square Critical Value Method: ")),
+          sprintf("\\(\\chi^2 _{df, \\alpha} = \\chi^2_{%s, \\, %s} = %.2f \\)", kw_df, kw_sl, kw_chi),
+          
+          br(), br(),
+          
           p(tags$b("Conclusion: ")),
           sprintf(
             if (kw_pv <= kw_sl){
@@ -233,7 +251,7 @@ kwRankedTableOutput <- function(data) {
           )
         )
       ) %>%
-      # Clean up column names to match exact requested format
+
       dplyr::rename_with(~gsub("Value (.*)", "\\1 Value", .)) %>%
       dplyr::rename_with(~gsub("Rank (.*)", "\\1 Rank", .))
     

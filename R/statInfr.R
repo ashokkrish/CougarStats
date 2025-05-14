@@ -4363,7 +4363,7 @@ statInfrServer <- function(id) {
         anovaData <- anovaUploadData()
         colnames(anovaData)[colnames(anovaData) == input$anovaFactors] <- "ind"
         colnames(anovaData)[colnames(anovaData) == input$anovaResponse] <- "values"
-        anovaData <- anovaData %>% mutate(ind = factor(ind))
+        anovaData <- anovaData %>% dplyr::mutate(ind = factor(ind))
         factorCol <- "ind"
         factorNames <- levels(anovaData$ind)
       }
