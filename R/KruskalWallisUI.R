@@ -190,15 +190,7 @@ kruskalWallisHT <- function(kwResults_output, kwSigLvl_input) {
           p(tags$b("Using the Chi-Square Critical Value Method: ")),
           sprintf("\\(\\chi^2 _{df, \\alpha} = \\chi^2_{%s, \\, %s} = %.2f \\)", kw_df, kw_sl, kw_chi),
           
-          br(), br(),
-          
-            if (kw_test_rounded <= kw_chi){
-              sprintf("
-                      We can see that the Test Statistic is less than or equal the value of Chi-square critical value (%s < %.2f).", kw_test_rounded, kw_chi)
-            }
-            else{
-              sprintf("We can see that the Test Statistic is greater than the value of Chi-square critical value (%s \\geq %.2f).", kw_test_rounded, kw_chi)
-            },
+
           
           br(), br(),
           
