@@ -4402,7 +4402,12 @@ statInfrServer <- function(id) {
           input$kwMultiColumns,
           kwUploadData(),
           input$kwFactors,
-          input$kwResponse
+          input$kwResponse,
+          
+          data <- kwUploadData(),
+          if ("ind" %in% names(data)) {
+            data <- data %>% dplyr::mutate(ind = factor(ind))
+          }
         )
       })
     
