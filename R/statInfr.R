@@ -2055,12 +2055,12 @@ statInfrServer <- function(id) {
     # SDSampleSize1
     twostddev_iv$add_rule("SDSampleSize1", sv_required())
     twostddev_iv$add_rule("SDSampleSize1", sv_integer())
-    twostddev_iv$add_rule("SDSampleSize1", sv_gt(0))
+    twostddev_iv$add_rule("SDSampleSize1", sv_gt(1))
     
     # SDSampleSize2
     twostddev_iv$add_rule("SDSampleSize2", sv_required())
     twostddev_iv$add_rule("SDSampleSize2", sv_integer())
-    twostddev_iv$add_rule("SDSampleSize2", sv_gt(0))
+    twostddev_iv$add_rule("SDSampleSize2", sv_gt(1))
     
     # stdDev1
     twostddev_iv$add_rule("stdDev1", sv_required())
@@ -2073,12 +2073,12 @@ statInfrServer <- function(id) {
     # Two Std Dev n1
     twostddevvar_iv$add_rule("n1", sv_required())
     twostddevvar_iv$add_rule("n1", sv_integer())
-    twostddevvar_iv$add_rule("n1", sv_gt(0))
+    twostddevvar_iv$add_rule("n1", sv_gt(1))
     
     # Two Std Dev n2
     twostddevvar_iv$add_rule("n2", sv_required())
     twostddevvar_iv$add_rule("n2", sv_integer())
-    twostddevvar_iv$add_rule("n2", sv_gt(0))
+    twostddevvar_iv$add_rule("n2", sv_gt(1))
     
     # Two Std Dev s1^2
     twostddevvar_iv$add_rule("s1sq", sv_required())
@@ -2946,7 +2946,7 @@ statInfrServer <- function(id) {
       
       alpha <- 1 - conf_level
       
-      if(is_variance) {
+      if (is_variance) {
         var1 <- sd1
         var2 <- sd2
       } else {  # else summary, so sd's need to be ^2
@@ -2955,8 +2955,8 @@ statInfrServer <- function(id) {
       }
       F_stat <- var1 / var2
     
-      F_critical_lower <- qf(alpha/2, df2, df1)
-      F_critical_upper <- qf(1-alpha/2, df2, df1)
+      F_critical_lower <- qf(alpha/2, df1, df2)
+      F_critical_upper <- qf(1 - alpha/2, df1, df2)
       
       CI_lower <- (var1 / var2) * (1 / F_critical_upper)
       CI_upper <- (var1 / var2) * (1 / F_critical_lower)
@@ -2969,6 +2969,48 @@ statInfrServer <- function(id) {
         F_statistic = F_stat
       ))
       
+    }
+    
+    TwoPopSDHT <- function(n1, sd1, n2, sd2, sig_lvl, alt_hyp = "two.sided", is_variance) {
+      df1 <- n1-1
+      df2 <- n2-1
+      
+      if (is_variance) {
+        var1 <- sd1
+        var2 <- sd2
+      } else {  # else summary, so sd's need to be ^2
+        var1 <- sd1^2
+        var2 <- sd2^2
+      }
+      
+      F_stat <- var1/var2
+      
+      if (alt_hyp == "greater") {
+        p_value <- pf(F_stat, df1, df2, lower.tail = FALSE)
+        crit_val <- qf(1 - sig_lvl, df1, df2)
+        reject <- F_stat > crit_val
+        
+      } else if (alt_hyp == "less") {
+        p_value <- pf(F_stat, df1, df2, lower.tail = TRUE)
+        crit_val <- qf(sig_lvl, df1, df2)
+        reject <- F_stat < crit_val
+        
+      } else { # two sided
+        if (F_stat > 1) {
+          p_value <- 2 * pf(F_stat, df1, df2, lower.tail = FALSE)
+        } else {
+          p_value <- 2* pf(F_stat, df1, df2, lower.tail = TRUE)
+        }
+        crit_lower <- qf(sig_lvl / 2, df1, df2)
+        crit_upper <- qf(1 - sig_lvl / 2, df1, df2)
+        reject <- F_stat < crit_lower || F_stat > crit_upper
+      }
+      
+      return(list(
+        F_statistic = F_stat,
+        p_value = p_value,
+        reject_null = reject
+      ))
     }
     
     shadeHtArea <- function(df, critValue, altHypothesis) {
@@ -4619,14 +4661,14 @@ statInfrServer <- function(id) {
     TwoPopSDHypInfo <- reactive({
       hypTestSymbols <- list()
       
-      if (input$altHypothesisVar == "greater") {
+      if (input$altHypothesis2 == "greater") {
         hypTestSymbols$alternative <- "greater"
         hypTestSymbols$nullHyp <- "\\sigma^2_1 \\leq \\sigma^2_2"
         hypTestSymbols$altHyp <- "\\sigma^2_1 \\gt \\sigma^2_2"
         hypTestSymbols$critAlph <- "\\alpha"
         hypTestSymbols$critSign <- ""
         hypTestSymbols$alphaVal <- SigLvl()
-      } else if (input$altHypothesisVar == "two.sided") {
+      } else if (input$altHypothesis2 == "two.sided") {
         hypTestSymbols$alternative <- "two.sided"
         hypTestSymbols$nullHyp <- "\\sigma^2_1 = \\sigma^2_2"
         hypTestSymbols$altHyp <- "\\sigma^2_1 \\neq \\sigma^2_2"
@@ -4644,6 +4686,17 @@ statInfrServer <- function(id) {
       
       return(hypTestSymbols)
     })
+    
+  GetAllTwoPopSDData <- reactive({
+    if(input$dataAvailability3 == 'Enter Raw Data') {
+      data <- GetTwoPopSDRawData()
+    } else if(input$dataAvailability3 == 'Upload Data') {
+      # future work, upload not currently implemented
+    } else { # Summary or Variance
+      data <- GetTwoPopSDData()
+    }
+    return(data)
+  })
  ### ------------ ANOVA Reactives ---------------------------------------------
     anovaUploadData <- eventReactive(input$anovaUserData, {
       ext <- tools::file_ext(input$anovaUserData$name)
@@ -5150,10 +5203,10 @@ statInfrServer <- function(id) {
       if(!twostddev_iv$is_valid()) {
         validate(
           need(input$SDSampleSize1, "Sample size 1 is required.") %then%
-            need(input$SDSampleSize1 %% 1 == 0 && input$SDSampleSize1 > 0, "Sample size 1 must be an integer greater than 0."),
+            need(input$SDSampleSize1 %% 1 == 0 && input$SDSampleSize1 > 1, "Sample size 1 must be an integer greater than 1."),
           
           need(input$SDSampleSize2, "Sample size 2 is required.") %then%
-            need(input$SDSampleSize2 %% 1 == 0 && input$SDSampleSize2 > 0, "Sample size 2 must be an integer greater than 0."),
+            need(input$SDSampleSize2 %% 1 == 0 && input$SDSampleSize2 > 1, "Sample size 2 must be an integer greater than 1."),
           
           need(input$stdDev1, "Sample standard deviation 1 is required.") %then%
             need(input$stdDev1 > 0, "Sample standard deviation 1 must be greater than 0."),
@@ -5167,16 +5220,16 @@ statInfrServer <- function(id) {
       if (!twostddevvar_iv$is_valid()) {
         validate(
           need(input$n1, "n1 is required.") %then%
-            need(input$n1 %% 1 == 0 && input$n1 > 0,
-                 "n1 must be an integer greater than 0."),
+            need(input$n1 %% 1 == 0 && input$n1 > 1,
+                 "n1 must be an integer greater than 1."),
           
           need(input$s1sq, "s1^2 is required.") %then%
             need(input$s1sq > 0,
                  "s1^2 must be greater than 0."),
           
           need(input$n2, "n2 is required.") %then%
-            need(input$n2 %% 1 == 0 && input$n2 > 0,
-                 "n2 must be an integer greater than 0."),
+            need(input$n2 %% 1 == 0 && input$n2 > 1,
+                 "n2 must be an integer greater than 1."),
           
           need(input$s2sq, "s2^2 is required.") %then%
             need(input$s2sq > 0,
@@ -7353,17 +7406,11 @@ output$onePropCI <- renderUI({
     })
 
  ### ------------ Two Pop SD Outputs ----------------------------------------------
+ #### ----------- CI
     output$twoPopSDCI <- renderUI ({
       req(si_iv$is_valid())
       
-      if(input$dataAvailability3 == 'Enter Raw Data') {
-        data <- GetTwoPopSDRawData()
-      } else if(input$dataAvailability3 == 'Upload Data') {
-        # future work, upload not currently implemented
-      } else { # Summary or Variance
-        data <- GetTwoPopSDData()
-      }
-      
+      data <- GetAllTwoPopSDData()
       is_variance <- (input$dataAvailability3 == 'Variance')
       
       CI <- TwoPopSDCI(data$n1, data$sd1, data$n2, data$sd2, ConfLvl(), is_variance)
@@ -7387,9 +7434,40 @@ output$onePropCI <- renderUI({
           ))
     })
     
- ### ------------ Two Pop HT --------------------------------------------------
+ #### ------------ HT
     output$twoPopSDHT <- renderUI({
       req(si_iv$is_valid())
+      
+      data <- GetAllTwoPopSDData()
+      hyp_labels <- TwoPopSDHypInfo()
+      
+      is_variance <- (input$dataAvailability3 == 'Variance')
+      sig_lvl <- SigLvl()
+      alt_hyp <- hyp_labels$alternative
+      
+      HT <- TwoPopSDHT(data$n1, data$sd1, data$n2, data$sd2, sig_lvl, alt_hyp, is_variance)
+      df1 <- data$n1 - 1
+      df2 <- data$n2 - 1
+      
+      tagList(
+        withMathJax(
+          p(sprintf("\\(H_0: %s\\)", hyp_labels$nullHyp)),
+          p(sprintf("\\(H_A: %s\\)", hyp_labels$altHyp)),
+          p(sprintf("\\(df_1 = n_1 - 1 = %d - 1 = %d\\)", data$n1, df1)),
+          p(sprintf("\\(df_2 = n_2 - 1 = %d - 1 = %d\\)", data$n2, df2)),
+          if (!is_variance) {
+            p(sprintf("\\(F = \\dfrac{%.4f^2}{%.4f^2} = %.4f\\)", data$sd1, data$sd2, HT$F_statistic))
+          } else {
+            p(sprintf("\\(F = \\dfrac{%.4f}{%.4f} = %.4f\\)", data$sd1, data$sd2, HT$F_statistic))
+          },
+          p(sprintf("\\(p\\text{-value} = %.4f\\)", HT$p_value)),
+          p(if (HT$reject_null) {
+            "\\(\\text{Conclusion: Reject the null hypothesis.}\\)"
+          } else {
+            "\\(\\text{Conclusion: Fail to reject the null hypothesis.}\\)"
+          })
+        )
+      )
     })
     
  ### ------------ ANOVA Outputs -----------------------------------------------
