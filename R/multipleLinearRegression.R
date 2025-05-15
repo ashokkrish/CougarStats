@@ -66,7 +66,9 @@ MLRMainPanelUI <- function(id) {
   ns <- NS(id)
   navbarPage(title = NULL,
              tabPanel(title = "Data Import",
-                      import_ui(id = ns("dataImport"), from = c("file", "copypaste", "env"))),
+                      import_ui(
+                        id = ns("dataImport"), 
+                        from = c("file", "copypaste", "env"))),
              tabPanel(title = "MLR", uiOutput(ns("Equations")) ),
              tabPanel(title = "ANOVA", uiOutput(ns("ANOVA"))),
              tabPanel(title = "Multicollinearity Detection", uiOutput(ns("MulticollinearityDetection"))),
@@ -93,7 +95,9 @@ MLRServer <- function(id) {
 
     ## TODO: display a help message in the sidebar indicating that non-numeric
     ## columns will not be available.
-    uploadedTibble <- import_server("dataImport", return_class = "tbl_df")
+    uploadedTibble <- import_server(
+      "dataImport", 
+      return_class = "tbl_df")
     ns <- session$ns
 
     observeEvent(input$reset, {
@@ -280,7 +284,8 @@ MLRServer <- function(id) {
             rownames = TRUE,
             na = "",
             striped = TRUE,
-            align = "c"
+            align = "c",
+            digits = 3
           )
 
           output$lmCoefConfintTableCaption <- renderUI({
@@ -544,11 +549,13 @@ R^2_{\text{adj}} = %0.2f \\
                             sprintf(
                               r"[\hat{%s}]",
                               paste0(
-                                r"[\beta_]",
-                                seq_along(input$explanatoryVariables)
+                                r"[\beta_{]",
+                                seq_along(input$explanatoryVariables),
+                                r"[}]"
                               )
                             ),
-                            paste0(r"{x_}", seq_along(input$explanatoryVariables)),
+                            paste0(r"{x_{}", seq_along(input$explanatoryVariables),
+                            r"[}]"),
                             collapse = "+"
                           )
                         ),
@@ -560,7 +567,8 @@ R^2_{\text{adj}} = %0.2f \\
                               mget(as.character(lapply(input$explanatoryVariables, as.name))),
                               \(x) if(!is.na(x)) sprintf(r"[%.3f]", x) else ""
                             )),
-                            paste0(r"{x_}", seq_along(input$explanatoryVariables)),
+                            paste0(r"[x_{]", seq_along(input$explanatoryVariables),
+                            r"[}]"),
                             collapse = "+"
                           )
                         ),
