@@ -2955,11 +2955,11 @@ statInfrServer <- function(id) {
       }
       F_stat <- var1 / var2
     
-      F_critical_lower <- qf(alpha/2, df1, df2)
-      F_critical_upper <- qf(1 - alpha/2, df1, df2)
+      F_critical_lower <- qf(alpha/2, df2, df1)
+      F_critical_upper <- qf(1 - alpha/2, df2, df1)
       
-      CI_lower <- (var1 / var2) * (1 / F_critical_upper)
-      CI_upper <- (var1 / var2) * (1 / F_critical_lower)
+      CI_lower <- F_stat * F_critical_lower
+      CI_upper <- F_stat * F_critical_upper
       
       return(list(
         CI_lower = CI_lower,
@@ -3011,6 +3011,34 @@ statInfrServer <- function(id) {
         p_value = p_value,
         reject_null = reject
       ))
+    }
+    
+    printTwoPopVarGivens <- function (data, is_variance) {
+      if (is_variance) {
+        tagList(
+          sprintf("\\(n_1 = %d\\)", data$n1),
+          br(),
+          sprintf("\\(s_1^2 = %.4f\\)", data$sd1),
+          br(),
+          sprintf("\\(n_2 = %d\\)", data$n2),
+          br(),
+          sprintf("\\(s_2^2 = %.4f\\)", data$sd2),
+          br(),
+          br(),
+        )
+      } else {
+        tagList(
+          sprintf("\\(n_1 = %d\\)", data$n1),
+          br(),
+          sprintf("\\(s_1 = %.4f\\)", data$sd1),
+          br(),
+          sprintf("\\(n_2 = %d\\)", data$n2),
+          br(),
+          sprintf("\\(s_2 = %.4f\\)", data$sd2),
+          br(),
+          br(),
+        )
+      }
     }
     
     shadeHtArea <- function(df, critValue, altHypothesis) {
@@ -7417,20 +7445,56 @@ output$onePropCI <- renderUI({
       df1 <- data$n1 - 1
       df2 <- data$n2 - 1
       conf_percent <- ConfLvl() * 100
+      alpha <- 1 - ConfLvl()
       
       tagList(
         withMathJax(
-          p("\\( \\displaystyle CI = \\left[ \\dfrac{s_1^2}{s_2^2} \\cdot \\dfrac{1}{F_{1 - \\alpha/2, df_2, df_1}},\\ \\dfrac{s_1^2}{s_2^2} \\cdot \\dfrac{1}{F_{\\alpha/2, df_2, df_1}} \\right] \\)"),
           
-          p(sprintf("\\(df_1 = n_1 - 1 = %d - 1 = %d\\)", data$n1, df1)),
-          p(sprintf("\\(df_2 = n_2 - 1 = %d - 1 = %d\\)", data$n2, df2)),
+          if(input$dataAvailability3 != "Enter Raw Data") {
+            p("Given:")
+          } else {
+            p("From the Data:")
+          },
+          printTwoPopVarGivens(data, is_variance),
+          
+          sprintf("For a \\(%.0f\\%%\\) confidence interval:", conf_percent),
+          br(),
+          sprintf("\\(\\alpha = 1 - %.2f = %.2f\\)", ConfLvl(), alpha),
+          br(), br(),
+          
+          # df
+          sprintf("\\(df_1 = n_1 - 1 = %d - 1 = %d\\)", data$n1, df1),
+          br(),
+          sprintf("\\(df_2 = n_2 - 1 = %d - 1 = %d\\)", data$n2, df2),
+          br(), br(),
+          
+          # critical values 
+          sprintf("\\(F_{\\alpha/2,\\ df_2,\\ df_1} = F_{%.3f,\\ %d,\\ %d} = %.4f\\)", 
+                    alpha / 2, df2, df1, CI$F_lower),
+          br(),
+          sprintf("\\(F_{1 - \\alpha/2,\\ df_2,\\ df_1} = F_{%.3f,\\ %d,\\ %d} = %.4f\\)", 
+                    1 - (alpha / 2), df2, df1, CI$F_upper),
+          br(), br(),
+          
+          # F stat calculation
           if (!is_variance) {
             p(sprintf("\\(\\dfrac{s_1^2}{s_2^2} = \\dfrac{%.4f^2}{%.4f^2} = %.4f\\)", data$sd1, data$sd2, CI$F_statistic))
           } else {
             p(sprintf("\\(\\dfrac{s_1^2}{s_2^2} = \\dfrac{%.4f}{%.4f} = %.4f\\)", data$sd1, data$sd2, CI$F_statistic))
           },
-          p(sprintf("\\(\\text{Confidence Interval: } [%.4f, %.4f]\\)", CI$CI_lower, CI$CI_upper))
+          br(),
           
+          # formula
+          p("\\( \\displaystyle CI = \\left( F_{\\alpha/2,\\ df_1\\,,\\ df_2} \\cdot \\dfrac{s_1^2}{s_2^2},\\ F_{1 - \\alpha/2,\\ df_1\\,,\\ df_2} \\cdot \\dfrac{s_1^2}{s_2^2} \\right) \\)"),
+          
+          p(sprintf("\\( \\displaystyle CI = \\left( %.4f \\cdot %.4f,\\ %.4f \\cdot %.4f \\right) \\)",
+                    CI$F_lower, CI$F_statistic, CI$F_upper, CI$F_statistic)),
+          p(sprintf("\\( \\displaystyle CI = (%.4f, %.4f) \\)", CI$CI_lower, CI$CI_upper)),
+          br(),
+          
+          # interpretation
+          p(sprintf("We are %.0f%% confident that the ratio of the population variances is between \\(%.4f\\) and \\(%.4f\\).", 
+                    conf_percent, CI$CI_lower, CI$CI_upper))
           ))
     })
     
