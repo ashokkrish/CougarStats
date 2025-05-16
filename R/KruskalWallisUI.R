@@ -146,8 +146,12 @@ kruskalWallisHT <- function(kwResults_output, kwSigLvl_input) {
     kw_pv <- data$p.value
     kw_pv_rounded <- as.character(round(kw_pv, 4))
     kw_test_rounded <- as.character(round(kwTstat, 4))
+    kw_test_rounded_comparison <- as.character(round(data$statistic, 4))
     
+    
+
     # Degrees of Freedom 
+    kw_k <- length(factorNames)
     kw_df <- length(factorNames) -1
     # Chi Square CV
     alph <-(1-(as.numeric(substring(kwSigLvl_input(), 1, nchar(kwSigLvl_input()) - 1))/100))
@@ -165,14 +169,25 @@ kruskalWallisHT <- function(kwResults_output, kwSigLvl_input) {
           sprintf("\\( H_{a}:\\) At least one group differs in median from the others."), br(),
           br(),
           sprintf("\\( \\alpha = %s \\)", kw_sl),
+          br(), 
+          sprintf("\\( df = (k-1) = %s \\)", kw_k, kw_df),
+          
           br(), br(),
           p(tags$b("Test Statistic:")),
-          
+  
           sprintf("\\( H = \\frac{12}{n(n + 1)}\\sum_{j = 1}^{k}\\frac{R_j^2}{n_j} - 3(n + 1) \\)"), 
           sprintf("\\( = \\frac{12}{%d(%d + 1)}\\left(%s\\right) - 3(%d + 1) \\)",
                   totalCount, totalCount, paste(sum_parts, collapse = " + "), totalCount), 
           sprintf("\\( = %s \\)", kw_test_rounded),
-          
+          conditionalPanel(
+            condition = "output.kw_test_rounded !== output.kw_test_rounded_comparison",
+            helpText("* Note: The average of two data points was used in the case of a tie while calculating the rank score.")
+          ),
+          conditionalPanel(
+            condition = "output.kw_test_rounded === output.kw_test_rounded_comparison",
+            helpText("* Note: The average of two data points was used in the case of a tie while calculating the rank score.")
+          ),
+
           br(), br(),
           
           p(tags$b("Using P-value method: ")),
@@ -189,18 +204,8 @@ kruskalWallisHT <- function(kwResults_output, kwSigLvl_input) {
           br(), br(),
           
           # Trying to use Chi-Square CV method
-          p(tags$b("Using the Chi-Square Critical Value Method: ")),
-          sprintf("\\(\\chi^2 _{df, \\alpha} = \\chi^2_{%s, \\, %s} = %.2f \\)", kw_df, kw_sl, kw_chi),
-          
-          br(), br(),
-          
-            if (kw_test_rounded <= kw_chi){
-              sprintf("
-                      We can see that the Test Statistic is less than or equal the value of Chi-square critical value (%s < %.2f).", kw_test_rounded, kw_chi)
-            }
-            else{
-              sprintf("We can see that the Test Statistic is greater than the value of Chi-square critical value (%s > %.2f).", kw_test_rounded, kw_chi)
-            },
+          p(tags$b("Using the Critical Value Method: ")),
+          sprintf("\\(\\chi^2 _{df, \\alpha} = \\chi^2 _{(k - 1), \\alpha} = \\chi^2 _{(%s - 1), \\, %s} = \\chi^2_{%s, \\, %s} = %.2f \\)", kw_k, kw_sl, kw_df, kw_sl, kw_chi),
           
           br(), br(),
           
@@ -263,7 +268,7 @@ kwRankedTableOutput <- function(data) {
           )
         )
       ) %>%
-      # Clean up column names to match exact requested format
+      
       dplyr::rename_with(~gsub("Value (.*)", "\\1 Value", .)) %>%
       dplyr::rename_with(~gsub("Rank (.*)", "\\1 Rank", .))
     
