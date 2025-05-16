@@ -816,6 +816,15 @@ statInfrUI <- function(id) {
                         min     = 1,
                         step    = 1
                       ),
+                     
+                     
+                     numericInput(
+                       inputId = ns("stdDev1"),
+                       label   = HTML("<strong>Sample Standard Deviation 1</strong> \\( (s_1) \\)"),
+                       value   = 3,
+                       min     = 1,
+                       step    = 0.01
+                     ),
                       
                       numericInput(
                         inputId = ns("SDSampleSize2"),
@@ -824,14 +833,7 @@ statInfrUI <- function(id) {
                         min     = 1,
                         step    = 1
                       ),
-                      
-                      numericInput(
-                        inputId = ns("stdDev1"),
-                        label   = HTML("<strong>Sample Standard Deviation 1</strong> \\( (s_1) \\)"),
-                        value   = 3,
-                        min     = 1,
-                        step    = 0.01
-                      ),
+          
                       
                       numericInput(
                         inputId = ns("stdDev2"),
@@ -861,14 +863,14 @@ statInfrUI <- function(id) {
                        label   = HTML("<strong>Sample Variance 1 </strong>\\( (s_1^2) \\)"),
                        value   = 9,
                        min     = 1,
-                       step    = 1),
+                       step    = 0.01),
                      
                      numericInput(
                        inputId = ns("n2"),
                        label   = HTML("<strong>Sample Size 2</strong> \\( (n_2) \\)"),
                        value   = 18,
                        min     = 1,
-                       step    = 0.01),
+                       step    = 1),
                      
                      numericInput(
                        inputId = ns("s2sq"),
@@ -3041,6 +3043,19 @@ statInfrServer <- function(id) {
       }
     }
     
+    printDegreesFreedom<- function (df1, df2) {
+      n1 <- df1+1
+      n2 <- df2+1
+      
+      list(
+        sprintf("\\(df_1 = n_1 - 1 = %d - 1 = %d\\)", n1, df1),
+        br(),
+        sprintf("\\(df_2 = n_2 - 1 = %d - 1 = %d\\)", n2, df2),
+        br(), br()
+      )
+      
+    }
+    
     shadeHtArea <- function(df, critValue, altHypothesis) {
 
       if(altHypothesis == 'less') {
@@ -4689,14 +4704,14 @@ statInfrServer <- function(id) {
     TwoPopSDHypInfo <- reactive({
       hypTestSymbols <- list()
       
-      if (input$altHypothesis2 == "greater") {
+      if (input$altHypothesis2 == "3") {
         hypTestSymbols$alternative <- "greater"
         hypTestSymbols$nullHyp <- "\\sigma^2_1 \\leq \\sigma^2_2"
         hypTestSymbols$altHyp <- "\\sigma^2_1 \\gt \\sigma^2_2"
         hypTestSymbols$critAlph <- "\\alpha"
         hypTestSymbols$critSign <- ""
         hypTestSymbols$alphaVal <- SigLvl()
-      } else if (input$altHypothesis2 == "two.sided") {
+      } else if (input$altHypothesis2 == "2") {
         hypTestSymbols$alternative <- "two.sided"
         hypTestSymbols$nullHyp <- "\\sigma^2_1 = \\sigma^2_2"
         hypTestSymbols$altHyp <- "\\sigma^2_1 \\neq \\sigma^2_2"
@@ -7463,10 +7478,7 @@ output$onePropCI <- renderUI({
           br(), br(),
           
           # df
-          sprintf("\\(df_1 = n_1 - 1 = %d - 1 = %d\\)", data$n1, df1),
-          br(),
-          sprintf("\\(df_2 = n_2 - 1 = %d - 1 = %d\\)", data$n2, df2),
-          br(), br(),
+          printDegreesFreedom(df1, df2),
           
           # critical values 
           sprintf("\\(F_{\\alpha/2,\\ df_2,\\ df_1} = F_{%.3f,\\ %d,\\ %d} = %.4f\\)", 
@@ -7493,6 +7505,9 @@ output$onePropCI <- renderUI({
           br(),
           
           # interpretation
+          HTML(sprintf("<strong>Interpretation:</strong>")),
+          br(),
+          br(),
           p(sprintf("We are %.0f%% confident that the ratio of the population variances is between \\(%.4f\\) and \\(%.4f\\).", 
                     conf_percent, CI$CI_lower, CI$CI_upper))
           ))
@@ -7516,20 +7531,24 @@ output$onePropCI <- renderUI({
       tagList(
         withMathJax(
           p(sprintf("\\(H_0: %s\\)", hyp_labels$nullHyp)),
-          p(sprintf("\\(H_A: %s\\)", hyp_labels$altHyp)),
-          p(sprintf("\\(df_1 = n_1 - 1 = %d - 1 = %d\\)", data$n1, df1)),
-          p(sprintf("\\(df_2 = n_2 - 1 = %d - 1 = %d\\)", data$n2, df2)),
-          if (!is_variance) {
-            p(sprintf("\\(F = \\dfrac{%.4f^2}{%.4f^2} = %.4f\\)", data$sd1, data$sd2, HT$F_statistic))
+          p(sprintf("\\(H_a: %s\\)", hyp_labels$altHyp)),
+          sprintf("\\( \\alpha = %.2f \\)", sig_lvl),
+          br(), br(),
+          
+          if(input$dataAvailability3 != "Enter Raw Data") {
+            p("Given:")
           } else {
-            p(sprintf("\\(F = \\dfrac{%.4f}{%.4f} = %.4f\\)", data$sd1, data$sd2, HT$F_statistic))
+            p("From the Data")
           },
-          p(sprintf("\\(p\\text{-value} = %.4f\\)", HT$p_value)),
-          p(if (HT$reject_null) {
-            "\\(\\text{Conclusion: Reject the null hypothesis.}\\)"
+          printTwoPopVarGivens(data, is_variance),
+          printDegreesFreedom(df1, df2),
+          
+          #printFStat(data$sd1, data$sd2, HT$F_statistic)
+          if (!is_variance) {
+            p(sprintf("\\( \\dfrac{s_1^2}{s_2^2} = \\dfrac{%.4f^2}{%.4f^2} = %.4f \\)", data$sd1, data$sd2, HT$F_statistic))
           } else {
-            "\\(\\text{Conclusion: Fail to reject the null hypothesis.}\\)"
-          })
+            p(sprintf("\\( \\dfrac{s_1}{s_2} = \\dfrac{%.4f}{%.4f} = %.4f \\)", data$sd1, data$sd2, HT$F_statistic))
+          }
         )
       )
     })
