@@ -148,11 +148,9 @@ kruskalWallisHT <- function(kwResults_output, kwSigLvl_input) {
     kw_test_rounded <- as.character(round(kwTstat, 4))
     kw_test_rounded_comparison <- as.character(round(data$statistic, 4))
     
-    
-
     # Degrees of Freedom 
-    kw_k <- length(factorNames)
     kw_df <- length(factorNames) -1
+    
     # Chi Square CV
     alph <-(1-(as.numeric(substring(kwSigLvl_input(), 1, nchar(kwSigLvl_input()) - 1))/100))
     kw_chi<- (qchisq(alph,kw_df))
@@ -169,8 +167,10 @@ kruskalWallisHT <- function(kwResults_output, kwSigLvl_input) {
           sprintf("\\( H_{a}:\\) At least one group differs in median from the others."), br(),
           br(),
           sprintf("\\( \\alpha = %s \\)", kw_sl),
-          br(), 
-          sprintf("\\( df = (k-1) = %s \\)", kw_k, kw_df),
+          br(), br(),
+          sprintf("\\( n = %s \\)", totalCount),
+          br(),
+          sprintf("\\( df = %s \\)", kw_df),
           
           br(), br(),
           p(tags$b("Test Statistic:")),
@@ -205,7 +205,7 @@ kruskalWallisHT <- function(kwResults_output, kwSigLvl_input) {
           
           # Trying to use Chi-Square CV method
           p(tags$b("Using the Critical Value Method: ")),
-          sprintf("\\(\\chi^2 _{df, \\alpha} = \\chi^2 _{(k - 1), \\alpha} = \\chi^2 _{(%s - 1), \\, %s} = \\chi^2_{%s, \\, %s} = %.2f \\)", kw_k, kw_sl, kw_df, kw_sl, kw_chi),
+          sprintf("\\(\\chi^2 _{df, \\alpha} = \\chi^2 _{(k - 1), \\alpha} = \\chi^2_{%s, \\, %s} = %.2f \\)",  kw_df, kw_sl, kw_chi),
           
           br(), br(),
           
@@ -236,7 +236,7 @@ kruskalWallisUpload <- function(kwUploadData_output, kwupload_iv_is_valid) {
                                                     targets = 0:ncol(kwUploadData_output())))))
   })
 }
-
+# For the output in the second tabe in KW tab
 kwRankedTableOutput <- function(data) {
   renderUI({
     req(data)
