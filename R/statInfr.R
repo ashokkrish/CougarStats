@@ -3048,12 +3048,9 @@ statInfrServer <- function(id) {
       n2 <- df2+1
       
       list(
-        sprintf("\\(df_1 = n_1 - 1 = %d - 1 = %d\\)", n1, df1),
-        br(),
-        sprintf("\\(df_2 = n_2 - 1 = %d - 1 = %d\\)", n2, df2),
-        br(), br()
-      )
-      
+        p(sprintf("\\(df_1 = n_1 - 1 = %d - 1 = %d\\)", n1, df1)),
+        p(sprintf("\\(df_2 = n_2 - 1 = %d - 1 = %d\\)", n2, df2)),
+        br())
     }
     
     shadeHtArea <- function(df, critValue, altHypothesis) {
@@ -7472,21 +7469,19 @@ output$onePropCI <- renderUI({
           },
           printTwoPopVarGivens(data, is_variance),
           
-          sprintf("For a \\(%.0f\\%%\\) confidence interval:", conf_percent),
+          p(sprintf("For a \\(%.0f\\%%\\) confidence interval:", conf_percent)),
+          p(sprintf("\\(\\alpha = 1 - %.2f = %.2f\\)", ConfLvl(), alpha)),
           br(),
-          sprintf("\\(\\alpha = 1 - %.2f = %.2f\\)", ConfLvl(), alpha),
-          br(), br(),
           
           # df
           printDegreesFreedom(df1, df2),
           
           # critical values 
-          sprintf("\\(F_{\\alpha/2,\\ df_2,\\ df_1} = F_{%.3f,\\ %d,\\ %d} = %.4f\\)", 
-                    alpha / 2, df2, df1, CI$F_lower),
+          p(sprintf("\\(F_{\\alpha/2,\\ df_2,\\ df_1} = F_{%.3f,\\ %d,\\ %d} = %.4f\\)", 
+                    alpha / 2, df2, df1, CI$F_lower)),
+          p(sprintf("\\(F_{1 - \\alpha/2,\\ df_2,\\ df_1} = F_{%.3f,\\ %d,\\ %d} = %.4f\\)", 
+                    1 - (alpha / 2), df2, df1, CI$F_upper)),
           br(),
-          sprintf("\\(F_{1 - \\alpha/2,\\ df_2,\\ df_1} = F_{%.3f,\\ %d,\\ %d} = %.4f\\)", 
-                    1 - (alpha / 2), df2, df1, CI$F_upper),
-          br(), br(),
           
           # F stat calculation
           if (!is_variance) {
@@ -7498,9 +7493,10 @@ output$onePropCI <- renderUI({
           
           # formula
           p("\\( \\displaystyle CI = \\left( F_{\\alpha/2,\\ df_1\\,,\\ df_2} \\cdot \\dfrac{s_1^2}{s_2^2},\\ F_{1 - \\alpha/2,\\ df_1\\,,\\ df_2} \\cdot \\dfrac{s_1^2}{s_2^2} \\right) \\)"),
-          
+          br(),
           p(sprintf("\\( \\displaystyle CI = \\left( %.4f \\cdot %.4f,\\ %.4f \\cdot %.4f \\right) \\)",
                     CI$F_lower, CI$F_statistic, CI$F_upper, CI$F_statistic)),
+          br(),
           p(sprintf("\\( \\displaystyle CI = (%.4f, %.4f) \\)", CI$CI_lower, CI$CI_upper)),
           br(),
           
