@@ -418,10 +418,12 @@ statInfrUI <- function(id) {
               label        = NULL,
               choiceValues = list("Independent Population Means",
                                   "Dependent Population Means",
-                                  "Population Proportions"),
+                                  "Population Proportions",
+                                  "Two Population Standard Deviations"),
               choiceNames  = list("Two Independent Populations (\\( \\mu_{1} - \\mu_{2} \\))",
                                   "Dependent (Paired) Populations (\\( \\mu_{d} \\))",
-                                  "Two Population Proportions (\\( p_{1} - p_{2}\\))"),
+                                  "Two Population Proportions (\\( p_{1} - p_{2}\\))",
+                                  "Two Population Standard Deviations (\\( \\sigma_{1}/\\sigma_{2} \\))"),
               selected     = "Independent Population Means", #character(0), #
               inline       = FALSE), #,width = '1000px'),
 
@@ -777,64 +779,190 @@ statInfrUI <- function(id) {
                   step    = 1),
               ), # Two Population Proportions
 
-              radioButtons(
-                inputId      = ns("inferenceType2"),
-                label        = strong("Inference Type"),
-                choiceValues = list("Confidence Interval",
-                                    "Hypothesis Testing"),
-                choiceNames  = list("Confidence Interval",
-                                    "Hypothesis Testing"),
-                selected     = "Confidence Interval", #character(0), #
-                inline       = TRUE), #,width = '1000px'),
 
-                conditionalPanel(
-                  ns = ns,
-                  condition = "input.inferenceType2 == 'Confidence Interval'",
-
-                  radioButtons(
-                    inputId  = ns("confidenceLevel2"),
-                    label    = strong("Confidence Level (\\( 1- \\alpha\\))"),
-                    choices  = c("90%",
-                                 "95%",
-                                 "99%"),
-                    selected = c("95%"),
-                    inline   = TRUE)
-                ), # Confidence Interval
-
-                conditionalPanel(
-                  ns = ns,
-                  condition = "input.inferenceType2 == 'Hypothesis Testing'",
-
-                  radioButtons(
-                    inputId  = ns("significanceLevel2"),
-                    label    = strong("Significance Level (\\( \\alpha\\))"),
-                    choices  = c("10%",
-                                 "5%",
-                                 "1%"),
-                    selected = c("5%"),
-                    inline   = TRUE),
-
-                  selectizeInput(
-                    inputId  = ns("altHypothesis2"),
-                    label    = strong("Alternate Hypothesis (\\( H_{a}\\))"),
-                    choices  = lessThanInequalGreaterThanChoices123,
-                    selected = 2,
-                    options  = list(render = I(render))),
-                ), # Hypothesis Testing
-
-                conditionalPanel(
-                  ns = ns,
-                  condition = "input.popuParameters == 'Independent Population Means' && input.dataAvailability2 != 'Summarized Data'",
-
-                  p(strong("Graph Options")),
-
-                  checkboxInput(
-                    inputId = ns("indMeansBoxplot"),
-                    label   = "Side-by-side Boxplot for Sample Data",
-                    value   = TRUE)
-                ), # Ind Means !Summarized
-              ), # "input.siMethod == '2'",
-
+ ### ------------ 2 Pop Standard Deviations ------------------------------------
+ 
+              conditionalPanel(
+                ns = ns,
+                condition = "input.popuParameters == 'Two Population Standard Deviations'",
+                
+                radioButtons(
+                  inputId      = ns("dataAvailability3"),
+                  label        = strong("Data Availability"),
+                  choiceValues = list("Summary",
+                                      "Variance",
+                                      "Enter Raw Data"),
+                  choiceNames  = list(
+                    "\\( n_1,\\ n_2,\\ s_1,\\ s_2 \\)",
+                    "\\( n_1,\\ n_2,\\ s_1^2,\\ s_2^2 \\)",
+                    "Enter Raw Data"
+                  ),
+                  selected     = "Summary",
+                  inline       = TRUE),
+              
+ 
+ ### ------------ Summary (n1, n2, s1, s2) ------------------------------------
+   
+               conditionalPanel(
+                 ns = ns,
+                 condition = "input.dataAvailability3 == 'Summary'",
+                 
+                 withMathJax(
+                   tagList(
+                     numericInput(
+                        inputId = ns("SDSampleSize1"),
+                        label   = HTML("<strong>Sample Size 1</strong> \\( (n_1) \\)"),
+                        value   = 12,
+                        min     = 1,
+                        step    = 1
+                      ),
+                     
+                     
+                     numericInput(
+                       inputId = ns("stdDev1"),
+                       label   = HTML("<strong>Sample Standard Deviation 1</strong> \\( (s_1) \\)"),
+                       value   = 3,
+                       min     = 1,
+                       step    = 0.01
+                     ),
+                      
+                      numericInput(
+                        inputId = ns("SDSampleSize2"),
+                        label   = HTML("<strong>Sample Size 2</strong> \\( (n_2) \\)"),
+                        value   = 18,
+                        min     = 1,
+                        step    = 1
+                      ),
+          
+                      
+                      numericInput(
+                        inputId = ns("stdDev2"),
+                        label   = HTML("<strong>Sample Standard Deviation 2</strong> \\( (s_2) \\)"),
+                        value   = 4.8,
+                        min     = 1,
+                        step    = 0.01
+                      )
+                 ))), #summary,
+ 
+ ### ------------ Variance (n1, s1^2, n2, s2^2) ------------------------------------ 
+ 
+               conditionalPanel(
+                 ns = ns,
+                 condition = "input.dataAvailability3 == 'Variance'",
+                 withMathJax(
+                   tagList(
+                     numericInput(
+                       inputId = ns("n1"),
+                       label   = HTML("<strong>Sample Size 1</strong> \\( (n_1) \\)"),
+                       value   = 12,
+                       min     = 1,
+                       step    = 1),
+                     
+                     numericInput(
+                       inputId = ns("s1sq"),
+                       label   = HTML("<strong>Sample Variance 1 </strong>\\( (s_1^2) \\)"),
+                       value   = 9,
+                       min     = 1,
+                       step    = 0.01),
+                     
+                     numericInput(
+                       inputId = ns("n2"),
+                       label   = HTML("<strong>Sample Size 2</strong> \\( (n_2) \\)"),
+                       value   = 18,
+                       min     = 1,
+                       step    = 1),
+                     
+                     numericInput(
+                       inputId = ns("s2sq"),
+                       label   = HTML("<strong>Sample Variance 2</strong> \\( (s_2^2) \\)"),
+                       value   = 23.04,
+                       min     = 1,
+                       step    = 0.01)
+                     ))), # variance
+ 
+ ### ------------- Raw Data ---------------------------------------------------------
+             
+             conditionalPanel(
+               ns = ns,
+               condition = "input.dataAvailability3 == 'Enter Raw Data'",
+               
+               textAreaInput(
+                 inputId     = ns("rawSamp1SD"),
+                 label       = strong("Sample 1 (e.g Class A test scores)"),
+                 value       = "80, 54, 97, 76, 66, 87, 83, 91",
+                 placeholder = "Enter values separated by a comma with decimals as points",
+                 rows        = 3),
+               
+               textAreaInput(
+                 inputId     = ns("rawSamp2SD"),
+                 label       = strong("Sample 2 (e.g Class B test scores)"),
+                 value       = "45, 54, 67, 95, 100, 82, 83, 74",
+                 placeholder = "Enter values separated by a comma with decimals as points",
+                 rows        = 3)
+             ), # Raw Data
+            ), # Two Pop Std Dev
+                 
+ ### ------------ Confidence Level, Inference Type ---------------------------------
+ 
+             radioButtons(
+               inputId      = ns("inferenceType2"),
+               label        = strong("Inference Type"),
+               choiceValues = list("Confidence Interval",
+                                   "Hypothesis Testing"),
+               choiceNames  = list("Confidence Interval",
+                                   "Hypothesis Testing"),
+               selected     = "Confidence Interval", #character(0), #
+               inline       = TRUE), #,width = '1000px'),
+             
+             conditionalPanel(
+               ns = ns,
+               condition = "input.inferenceType2 == 'Confidence Interval'",
+               
+               radioButtons(
+                 inputId  = ns("confidenceLevel2"),
+                 label    = strong("Confidence Level (\\( 1- \\alpha\\))"),
+                 choices  = c("90%",
+                              "95%",
+                              "99%"),
+                 selected = c("95%"),
+                 inline   = TRUE)
+             ), # Confidence Interval
+             
+             conditionalPanel(
+               ns = ns,
+               condition = "input.inferenceType2 == 'Hypothesis Testing'",
+               
+               radioButtons(
+                 inputId  = ns("significanceLevel2"),
+                 label    = strong("Significance Level (\\( \\alpha\\))"),
+                 choices  = c("10%",
+                              "5%",
+                              "1%"),
+                 selected = c("5%"),
+                 inline   = TRUE),
+               
+               selectizeInput(
+                 inputId  = ns("altHypothesis2"),
+                 label    = strong("Alternate Hypothesis (\\( H_{a}\\))"),
+                 choices  = lessThanInequalGreaterThanChoices123,
+                 selected = 2,
+                 options  = list(render = I(render))),
+             ), # Hypothesis Testing
+               
+               
+               conditionalPanel(
+                 ns = ns,
+                 condition = "input.popuParameters == 'Independent Population Means' && input.dataAvailability2 != 'Summarized Data'",
+                 
+                 p(strong("Graph Options")),
+                 
+                 checkboxInput(
+                   inputId = ns("indMeansBoxplot"),
+                   label   = "Side-by-side Boxplot for Sample Data",
+                   value   = TRUE)
+               ), # Graph options
+            ), # input.siMethod == 2
+ 
  ### ------------ Multiple Samples (ANOVA or Kruskal-Wallis) ------------------------------------
               conditionalPanel(
                 ns = ns,
@@ -1463,8 +1591,45 @@ statInfrUI <- function(id) {
                   br(),
                 ), # Hypothesis Testing
               ), # Two Population Proportions
-            ), # "input.siMethod == '2'"
+            
 
+ ### ------------ Two Pop SD ------------------------------------------
+
+            conditionalPanel(
+              ns = ns,
+              condition = "input.popuParameters == 'Two Population Standard Deviations'",
+              
+              tabsetPanel(
+                id = ns("twoPopSDTabset"),
+                selected = "Analysis",
+                
+                tabPanel(
+                  id = ns("twoPopSD"),
+                  title = "Analysis",
+                  
+                  conditionalPanel(
+                    ns = ns,
+                    condition = "input.inferenceType2 == 'Confidence Interval'",
+                    
+                    titlePanel(tags$u("Confidence Interval")),
+                    br(),
+                    uiOutput(ns('twoPopSDCI')),
+                    br(),
+                    
+                   ), # CI
+                  
+                  conditionalPanel(
+                    ns = ns,
+                    condition = "input.inferenceType2 == 'Hypothesis Testing'",
+                    
+                    titlePanel(tags$u("Hypothesis Test")),
+                    br(),
+                    uiOutput(ns('twoPopSDHT')),
+                    br(),
+                    
+                  ) # HT
+                  ))), # Two Pop SD
+            ), # "input.siMethod == '2'"
  ### ------------ Multiple Samples ------------------------------------
  #### ----------- ANOVA -----------------------------------------------
             conditionalPanel(
@@ -1711,6 +1876,9 @@ statInfrServer <- function(id) {
     onepropht_iv <- InputValidator$new()
     twoprop_iv <- InputValidator$new()
     twopropht_iv <- InputValidator$new()
+    twostddev_iv <- InputValidator$new()
+    twostddevvar_iv <- InputValidator$new()
+    twostddevraw_iv <- InputValidator$new()
     kwupload_iv <- InputValidator$new()
     kwmulti_iv <- InputValidator$new()
     kwstacked_iv <- InputValidator$new()
@@ -1723,7 +1891,6 @@ statInfrServer <- function(id) {
     chiSq3x3_iv <- InputValidator$new()
 
  ### ------------ Rules -------------------------------------------------------
-
     # sampleSize
     onemean_iv$add_rule("sampleSize", sv_required())
     onemean_iv$add_rule("sampleSize", sv_integer())
@@ -1887,6 +2054,54 @@ statInfrServer <- function(id) {
     twoprop_iv$add_rule("numSuccesses2", sv_gte(0))
     twopropht_iv$add_rule("numSuccesses2", ~ if(checkTwoProp() == 0) "At least one of (x1) and (x2) must be greater than 0.")
 
+    # SDSampleSize1
+    twostddev_iv$add_rule("SDSampleSize1", sv_required())
+    twostddev_iv$add_rule("SDSampleSize1", sv_integer())
+    twostddev_iv$add_rule("SDSampleSize1", sv_gt(1))
+    
+    # SDSampleSize2
+    twostddev_iv$add_rule("SDSampleSize2", sv_required())
+    twostddev_iv$add_rule("SDSampleSize2", sv_integer())
+    twostddev_iv$add_rule("SDSampleSize2", sv_gt(1))
+    
+    # stdDev1
+    twostddev_iv$add_rule("stdDev1", sv_required())
+    twostddev_iv$add_rule("stdDev1", sv_gt(0))
+    
+    # stdDev2
+    twostddev_iv$add_rule("stdDev2", sv_required())
+    twostddev_iv$add_rule("stdDev2", sv_gt(0))
+    
+    # Two Std Dev n1
+    twostddevvar_iv$add_rule("n1", sv_required())
+    twostddevvar_iv$add_rule("n1", sv_integer())
+    twostddevvar_iv$add_rule("n1", sv_gt(1))
+    
+    # Two Std Dev n2
+    twostddevvar_iv$add_rule("n2", sv_required())
+    twostddevvar_iv$add_rule("n2", sv_integer())
+    twostddevvar_iv$add_rule("n2", sv_gt(1))
+    
+    # Two Std Dev s1^2
+    twostddevvar_iv$add_rule("s1sq", sv_required())
+    twostddevvar_iv$add_rule("s1sq", sv_gt(0))
+  
+    # Two Std Dev s2^2
+    twostddevvar_iv$add_rule("s2sq", sv_required())
+    twostddevvar_iv$add_rule("s2sq", sv_gt(0))
+    
+    # raw group 1
+    twostddevraw_iv$add_rule("rawSamp1SD", sv_required())
+    twostddevraw_iv$add_rule("rawSamp1SD", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
+                                                    "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)."))
+    twostddevraw_iv$add_rule("rawSamp1SD", ~ if (sd(createNumLst(input$rawSamp1SD)) == 0) "No variance in sample data")
+    
+    # raw group 2
+    twostddevraw_iv$add_rule("rawSamp2SD", sv_required())
+    twostddevraw_iv$add_rule("rawSamp2SD", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
+                                                    "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)."))
+    twostddevraw_iv$add_rule("rawSamp2SD", ~ if (sd(createNumLst(input$rawSamp2SD)) == 0) "No variance in sample data")
+    
     # numTrialsProportion
     oneprop_iv$add_rule("numTrials", sv_required(message = "Numeric value required."))
     oneprop_iv$add_rule("numTrials", sv_integer())
@@ -2083,6 +2298,18 @@ statInfrServer <- function(id) {
     twopropht_iv$condition(~ isTRUE(input$siMethod == '2' &&
                                       input$popuParameters == 'Population Proportions' &&
                                       input$inferenceType2 == 'Hypothesis Testing'))
+   
+    twostddev_iv$condition(~ isTRUE(input$siMethod == '2' &&
+                                      input$popuParameters == 'Two Population Standard Deviations' &&
+                                      input$dataAvailability3 == 'Summary'))
+    
+    twostddevvar_iv$condition(~ isTRUE(input$siMethod == '2' &&
+                                         input$popuParameters == 'Two Population Standard Deviations' &&
+                                         input$dataAvailability3 == 'Variance'))
+    
+    twostddevraw_iv$condition(~ isTRUE(input$siMethod == '2' &&
+                                         input$popuParameters == 'Two Population Standard Deviations' &&
+                                         input$dataAvailability3 == 'Enter Raw Data'))
 
     kwupload_iv$condition(~ isTRUE(input$siMethod == 'Multiple' &&
                                      input$multipleMethodChoice == 'kw'))
@@ -2149,6 +2376,9 @@ statInfrServer <- function(id) {
     si_iv$add_validator(onepropht_iv)
     si_iv$add_validator(twoprop_iv)
     si_iv$add_validator(twopropht_iv)
+    si_iv$add_validator(twostddev_iv)
+    si_iv$add_validator(twostddevvar_iv)
+    si_iv$add_validator(twostddevraw_iv)
     twoprop_iv$add_validator(twopropht_iv)
     si_iv$add_validator(kwupload_iv)
     si_iv$add_validator(kwmulti_iv)
@@ -2197,6 +2427,9 @@ statInfrServer <- function(id) {
     onepropht_iv$enable()
     twoprop_iv$enable()
     twopropht_iv$enable()
+    twostddev_iv$enable()
+    twostddevvar_iv$enable()
+    twostddevraw_iv$enable()
     kwupload_iv$enable()
     kwmulti_iv$enable()
     kwstacked_iv$enable()
@@ -2685,7 +2918,7 @@ statInfrServer <- function(id) {
 
       return(pvalOutput)
     }
-
+  
     GetDepMeansData <- function() {
       req(si_iv$is_valid())
 
@@ -2708,7 +2941,118 @@ statInfrServer <- function(id) {
 
       return(dat)
     }
-
+    
+    TwoPopSDCI <- function(n1, sd1, n2, sd2, conf_level = 0.95, is_variance) {
+      df1 <- n1-1
+      df2 <- n2-1
+      
+      alpha <- 1 - conf_level
+      
+      if (is_variance) {
+        var1 <- sd1
+        var2 <- sd2
+      } else {  # else summary, so sd's need to be ^2
+        var1 <- sd1^2
+        var2 <- sd2^2
+      }
+      F_stat <- var1 / var2
+    
+      F_critical_lower <- qf(alpha/2, df2, df1)
+      F_critical_upper <- qf(1 - alpha/2, df2, df1)
+      
+      CI_lower <- F_stat * F_critical_lower
+      CI_upper <- F_stat * F_critical_upper
+      
+      return(list(
+        CI_lower = CI_lower,
+        CI_upper = CI_upper,
+        F_lower = F_critical_lower,
+        F_upper = F_critical_upper,
+        F_statistic = F_stat
+      ))
+      
+    }
+    
+    TwoPopSDHT <- function(n1, sd1, n2, sd2, sig_lvl, alt_hyp = "two.sided", is_variance) {
+      df1 <- n1-1
+      df2 <- n2-1
+      
+      if (is_variance) {
+        var1 <- sd1
+        var2 <- sd2
+      } else {  # else summary, so sd's need to be ^2
+        var1 <- sd1^2
+        var2 <- sd2^2
+      }
+      
+      F_stat <- var1/var2
+      
+      if (alt_hyp == "greater") {
+        p_value <- pf(F_stat, df1, df2, lower.tail = FALSE)
+        crit_val <- qf(1 - sig_lvl, df1, df2)
+        reject <- F_stat > crit_val
+        
+      } else if (alt_hyp == "less") {
+        p_value <- pf(F_stat, df1, df2, lower.tail = TRUE)
+        crit_val <- qf(sig_lvl, df1, df2)
+        reject <- F_stat < crit_val
+        
+      } else { # two sided
+        if (F_stat > 1) {
+          p_value <- 2 * pf(F_stat, df1, df2, lower.tail = FALSE)
+        } else {
+          p_value <- 2* pf(F_stat, df1, df2, lower.tail = TRUE)
+        }
+        crit_lower <- qf(sig_lvl / 2, df1, df2)
+        crit_upper <- qf(1 - sig_lvl / 2, df1, df2)
+        reject <- F_stat < crit_lower || F_stat > crit_upper
+      }
+      
+      return(list(
+        F_statistic = F_stat,
+        p_value = p_value,
+        reject_null = reject
+      ))
+    }
+    
+    printTwoPopVarGivens <- function (data, is_variance) {
+      if (is_variance) {
+        tagList(
+          sprintf("\\(n_1 = %d\\)", data$n1),
+          br(),
+          sprintf("\\(s_1^2 = %.4f\\)", data$sd1),
+          br(),
+          sprintf("\\(n_2 = %d\\)", data$n2),
+          br(),
+          sprintf("\\(s_2^2 = %.4f\\)", data$sd2),
+          br(),
+          br(),
+        )
+      } else {
+        tagList(
+          sprintf("\\(n_1 = %d\\)", data$n1),
+          br(),
+          sprintf("\\(s_1 = %.4f\\)", data$sd1),
+          br(),
+          sprintf("\\(n_2 = %d\\)", data$n2),
+          br(),
+          sprintf("\\(s_2 = %.4f\\)", data$sd2),
+          br(),
+          br(),
+        )
+      }
+    }
+    
+    printDegreesFreedom<- function (df1, df2) {
+      n1 <- df1+1
+      n2 <- df2+1
+      
+      list(
+        p(sprintf("\\(df_1 = n_1 - 1 = %d - 1 = %d\\)", n1, df1)),
+        p(sprintf("\\(df_2 = n_2 - 1 = %d - 1 = %d\\)", n2, df2)),
+        br())
+    }
+    
     shadeHtArea <- function(df, critValue, altHypothesis) {
 
       if(altHypothesis == 'less') {
@@ -4311,7 +4655,88 @@ statInfrServer <- function(id) {
       }
 
     })
+ ### ------------ Two Pop SD Reactives --------------------------------------
+    GetTwoPopSDData <- reactive({
+      req(si_iv$is_valid())
+      
+      dat <- list()
+
+      if (input$dataAvailability3 == "Summary") {
+        dat$n1 <- input$SDSampleSize1
+        dat$n2 <- input$SDSampleSize2
+        dat$sd1 <- input$stdDev1
+        dat$sd2 <- input$stdDev2
+      } else if (input$dataAvailability3 == "Variance") {
+        dat$n1 <- input$n1
+        dat$n2 <- input$n2
+        dat$sd1 <- input$s1sq
+        dat$sd2 <- input$s2sq
+      }
+      
+      return(dat)
+    })
     
+    GetTwoPopSDRawData <- reactive({
+      req(si_iv$is_valid())
+      
+      dat <- list()
+      
+      if(input$dataAvailability3 == 'Enter Raw Data') {
+        samp1 <- createNumLst(input$rawSamp1SD)
+        samp2 <- createNumLst(input$rawSamp2SD)
+      } else if(input$dataAvailability3 == 'Upload'){
+        # future work, uploading files not implemented currently
+      }
+      
+      dat$sample1 <- samp1
+      dat$sample2 <- samp2
+      dat$n1 <- length(samp1)
+      dat$n2 <- length(samp2)
+      dat$sd1 <- sd(dat$sample1)
+      dat$sd2 <- sd(dat$sample2)
+      
+      return(dat)
+    })
+      
+    TwoPopSDHypInfo <- reactive({
+      hypTestSymbols <- list()
+      
+      if (input$altHypothesis2 == "3") {
+        hypTestSymbols$alternative <- "greater"
+        hypTestSymbols$nullHyp <- "\\sigma^2_1 \\leq \\sigma^2_2"
+        hypTestSymbols$altHyp <- "\\sigma^2_1 \\gt \\sigma^2_2"
+        hypTestSymbols$critAlph <- "\\alpha"
+        hypTestSymbols$critSign <- ""
+        hypTestSymbols$alphaVal <- SigLvl()
+      } else if (input$altHypothesis2 == "2") {
+        hypTestSymbols$alternative <- "two.sided"
+        hypTestSymbols$nullHyp <- "\\sigma^2_1 = \\sigma^2_2"
+        hypTestSymbols$altHyp <- "\\sigma^2_1 \\neq \\sigma^2_2"
+        hypTestSymbols$critAlph <- "\\alpha/2"
+        hypTestSymbols$critSign <- "\\pm"
+        hypTestSymbols$alphaVal <- SigLvl() / 2
+      } else { # less
+        hypTestSymbols$alternative <- "less"
+        hypTestSymbols$nullHyp <- "\\sigma^2_1 \\geq \\sigma^2_2"
+        hypTestSymbols$altHyp <- "\\sigma^2_1 \\lt \\sigma^2_2"
+        hypTestSymbols$critAlph <- "\\alpha"
+        hypTestSymbols$critSign <- "-"
+        hypTestSymbols$alphaVal <- SigLvl()
+      }
+      
+      return(hypTestSymbols)
+    })
+    
+  GetAllTwoPopSDData <- reactive({
+    if(input$dataAvailability3 == 'Enter Raw Data') {
+      data <- GetTwoPopSDRawData()
+    } else if(input$dataAvailability3 == 'Upload Data') {
+      # future work, upload not currently implemented
+    } else { # Summary or Variance
+      data <- GetTwoPopSDData()
+    }
+    return(data)
+  })
  ### ------------ ANOVA Reactives ---------------------------------------------
     anovaUploadData <- eventReactive(input$anovaUserData, {
       ext <- tools::file_ext(input$anovaUserData$name)
@@ -4811,6 +5236,61 @@ statInfrServer <- function(id) {
           need(input$numSuccesses2 <= input$numTrials2, "Number of Successes 2 (x2) cannot be greater than Number of Trials 2 (n2)"),
           errorClass = "myClass")
 
+      }
+
+ #### ---------------- Two Pop Std. Deviation Validation
+      
+      if(!twostddev_iv$is_valid()) {
+        validate(
+          need(input$SDSampleSize1, "Sample size 1 is required.") %then%
+            need(input$SDSampleSize1 %% 1 == 0 && input$SDSampleSize1 > 1, "Sample size 1 must be an integer greater than 1."),
+          
+          need(input$SDSampleSize2, "Sample size 2 is required.") %then%
+            need(input$SDSampleSize2 %% 1 == 0 && input$SDSampleSize2 > 1, "Sample size 2 must be an integer greater than 1."),
+          
+          need(input$stdDev1, "Sample standard deviation 1 is required.") %then%
+            need(input$stdDev1 > 0, "Sample standard deviation 1 must be greater than 0."),
+          
+          need(input$stdDev2, "Sample standard deviation 2 is required.") %then%
+            need(input$stdDev2 > 0, "Sample standard deviation 2 must be greater than 0."),
+          
+          errorClass = "myClass")
+      }
+     
+      if (!twostddevvar_iv$is_valid()) {
+        validate(
+          need(input$n1, "n1 is required.") %then%
+            need(input$n1 %% 1 == 0 && input$n1 > 1,
+                 "n1 must be an integer greater than 1."),
+          
+          need(input$s1sq, "s1^2 is required.") %then%
+            need(input$s1sq > 0,
+                 "s1^2 must be greater than 0."),
+          
+          need(input$n2, "n2 is required.") %then%
+            need(input$n2 %% 1 == 0 && input$n2 > 1,
+                 "n2 must be an integer greater than 1."),
+          
+          need(input$s2sq, "s2^2 is required.") %then%
+            need(input$s2sq > 0,
+                 "s2^2 must be greater than 0."),
+          
+          errorClass = "myClass"
+        )
+      }
+      
+      if (!twostddevraw_iv$is_valid()) {
+        validate(
+          need(input$rawSamp1SD, "Group 1 data requires a minimum of 3 numeric values.") %then%
+            need(length(createNumLst(input$rawSamp1SD)) >= 3, "Group 1 data requires a minimum of 3 numeric values.") %then%
+            need(sd(createNumLst(input$rawSamp1SD)) > 0, "Group 1 must have variance."),
+          
+          need(input$rawSamp2SD, "Group 2 data requires a minimum of 3 numeric values.") %then%
+            need(length(createNumLst(input$rawSamp2SD)) >= 3, "Group 2 data requires a minimum of 3 numeric values.") %then%
+            need(sd(createNumLst(input$rawSamp2SD)) > 0, "Group 2 must have variance."),
+          
+          errorClass = "myClass"
+        )
       }
       
  #### ---------------- ANOVA Validation
@@ -6965,6 +7445,110 @@ output$onePropCI <- renderUI({
       htPlot
     })
 
+ ### ------------ Two Pop SD Outputs ----------------------------------------------
+ #### ----------- CI
+    output$twoPopSDCI <- renderUI ({
+      req(si_iv$is_valid())
+      
+      data <- GetAllTwoPopSDData()
+      is_variance <- (input$dataAvailability3 == 'Variance')
+      
+      CI <- TwoPopSDCI(data$n1, data$sd1, data$n2, data$sd2, ConfLvl(), is_variance)
+      df1 <- data$n1 - 1
+      df2 <- data$n2 - 1
+      conf_percent <- ConfLvl() * 100
+      alpha <- 1 - ConfLvl()
+      
+      tagList(
+        withMathJax(
+          
+          if(input$dataAvailability3 != "Enter Raw Data") {
+            p("Given:")
+          } else {
+            p("From the Data:")
+          },
+          printTwoPopVarGivens(data, is_variance),
+          
+          p(sprintf("For a \\(%.0f\\%%\\) confidence interval:", conf_percent)),
+          p(sprintf("\\(\\alpha = 1 - %.2f = %.2f\\)", ConfLvl(), alpha)),
+          br(),
+          
+          # df
+          printDegreesFreedom(df1, df2),
+          
+          # critical values 
+          p(sprintf("\\(F_{\\alpha/2,\\ df_2,\\ df_1} = F_{%.3f,\\ %d,\\ %d} = %.4f\\)", 
+                    alpha / 2, df2, df1, CI$F_lower)),
+          p(sprintf("\\(F_{1 - \\alpha/2,\\ df_2,\\ df_1} = F_{%.3f,\\ %d,\\ %d} = %.4f\\)", 
+                    1 - (alpha / 2), df2, df1, CI$F_upper)),
+          br(),
+          
+          # F stat calculation
+          if (!is_variance) {
+            p(sprintf("\\(\\dfrac{s_1^2}{s_2^2} = \\dfrac{%.4f^2}{%.4f^2} = %.4f\\)", data$sd1, data$sd2, CI$F_statistic))
+          } else {
+            p(sprintf("\\(\\dfrac{s_1^2}{s_2^2} = \\dfrac{%.4f}{%.4f} = %.4f\\)", data$sd1, data$sd2, CI$F_statistic))
+          },
+          br(),
+          
+          # formula
+          p("\\( \\displaystyle CI = \\left( F_{\\alpha/2,\\ df_1\\,,\\ df_2} \\cdot \\dfrac{s_1^2}{s_2^2},\\ F_{1 - \\alpha/2,\\ df_1\\,,\\ df_2} \\cdot \\dfrac{s_1^2}{s_2^2} \\right) \\)"),
+          br(),
+          p(sprintf("\\( \\displaystyle CI = \\left( %.4f \\cdot %.4f,\\ %.4f \\cdot %.4f \\right) \\)",
+                    CI$F_lower, CI$F_statistic, CI$F_upper, CI$F_statistic)),
+          br(),
+          p(sprintf("\\( \\displaystyle CI = (%.4f, %.4f) \\)", CI$CI_lower, CI$CI_upper)),
+          br(),
+          
+          # interpretation
+          HTML(sprintf("<strong>Interpretation:</strong>")),
+          br(),
+          br(),
+          p(sprintf("We are %.0f%% confident that the ratio of the population variances is between \\(%.4f\\) and \\(%.4f\\).", 
+                    conf_percent, CI$CI_lower, CI$CI_upper))
+          ))
+    })
+    
+ #### ------------ HT
+    output$twoPopSDHT <- renderUI({
+      req(si_iv$is_valid())
+      
+      data <- GetAllTwoPopSDData()
+      hyp_labels <- TwoPopSDHypInfo()
+      
+      is_variance <- (input$dataAvailability3 == 'Variance')
+      sig_lvl <- SigLvl()
+      alt_hyp <- hyp_labels$alternative
+      
+      HT <- TwoPopSDHT(data$n1, data$sd1, data$n2, data$sd2, sig_lvl, alt_hyp, is_variance)
+      df1 <- data$n1 - 1
+      df2 <- data$n2 - 1
+      
+      tagList(
+        withMathJax(
+          p(sprintf("\\(H_0: %s\\)", hyp_labels$nullHyp)),
+          p(sprintf("\\(H_a: %s\\)", hyp_labels$altHyp)),
+          sprintf("\\( \\alpha = %.2f \\)", sig_lvl),
+          br(), br(),
+          
+          if(input$dataAvailability3 != "Enter Raw Data") {
+            p("Given:")
+          } else {
+            p("From the Data")
+          },
+          printTwoPopVarGivens(data, is_variance),
+          printDegreesFreedom(df1, df2),
+          
+          #printFStat(data$sd1, data$sd2, HT$F_statistic)
+          if (!is_variance) {
+            p(sprintf("\\( \\dfrac{s_1^2}{s_2^2} = \\dfrac{%.4f^2}{%.4f^2} = %.4f \\)", data$sd1, data$sd2, HT$F_statistic))
+          } else {
+            p(sprintf("\\( \\dfrac{s_1}{s_2} = \\dfrac{%.4f}{%.4f} = %.4f \\)", data$sd1, data$sd2, HT$F_statistic))
+          }
+        )
+      )
+    })
+    
  ### ------------ ANOVA Outputs -----------------------------------------------
     output$anovaOutput <- renderUI({
       req(si_iv$is_valid())
