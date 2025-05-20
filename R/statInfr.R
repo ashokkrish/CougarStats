@@ -419,10 +419,12 @@ statInfrUI <- function(id) {
               label        = NULL,
               choiceValues = list("Independent Population Means",
                                   "Dependent Population Means",
-                                  "Population Proportions"),
+                                  "Population Proportions",
+                                  "Two Population Standard Deviations"),
               choiceNames  = list("Two Independent Populations (\\( \\mu_{1} - \\mu_{2} \\))",
                                   "Dependent (Paired) Populations (\\( \\mu_{d} \\))",
-                                  "Two Population Proportions (\\( p_{1} - p_{2}\\))"),
+                                  "Two Population Proportions (\\( p_{1} - p_{2}\\))",
+                                  "Two Population Standard Deviations (\\( \\sigma_{1}/\\sigma_{2} \\))"),
               selected     = "Independent Population Means", #character(0), #
               inline       = FALSE), #,width = '1000px'),
             
@@ -1721,6 +1723,9 @@ statInfrServer <- function(id) {
     onepropht_iv <- InputValidator$new()
     twoprop_iv <- InputValidator$new()
     twopropht_iv <- InputValidator$new()
+    twostddev_iv <- InputValidator$new()
+    twostddevvar_iv <- InputValidator$new()
+    twostddevraw_iv <- InputValidator$new()
     kwupload_iv <- InputValidator$new()
     kwmulti_iv <- InputValidator$new()
     kwstacked_iv <- InputValidator$new()
@@ -2159,6 +2164,9 @@ statInfrServer <- function(id) {
     si_iv$add_validator(onepropht_iv)
     si_iv$add_validator(twoprop_iv)
     si_iv$add_validator(twopropht_iv)
+    si_iv$add_validator(twostddev_iv)
+    si_iv$add_validator(twostddevvar_iv)
+    si_iv$add_validator(twostddevraw_iv)
     twoprop_iv$add_validator(twopropht_iv)
     si_iv$add_validator(kwupload_iv)
     si_iv$add_validator(kwmulti_iv)
@@ -2207,6 +2215,9 @@ statInfrServer <- function(id) {
     onepropht_iv$enable()
     twoprop_iv$enable()
     twopropht_iv$enable()
+    twostddev_iv$enable()
+    twostddevvar_iv$enable()
+    twostddevraw_iv$enable()
     kwupload_iv$enable()
     kwmulti_iv$enable()
     kwstacked_iv$enable()
