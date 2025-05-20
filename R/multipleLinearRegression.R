@@ -42,7 +42,7 @@ MLRSidebarUI <- function(id) {
           "Response Variable (\\(y\\))",
           choices = NULL,
           selectize = FALSE),
-                    
+        
         helpText("Only numeric variables are selectable."),
         uiOutput(ns("singleOrMultipleHelpText")),
         pickerInput(
@@ -51,12 +51,12 @@ MLRSidebarUI <- function(id) {
           choices  = NULL,
           multiple = TRUE,
           options  = list(
-          `actions-box` = TRUE,   # “Select all / Deselect all” buttons
-          `live-search` = TRUE,   # built-in search box
-          selectedTextFormat = "values",
-          multipleSeperator = ", "
-      )
-    ),
+            `actions-box` = TRUE,   # “Select all / Deselect all” buttons
+            `live-search` = TRUE,   # built-in search box
+            selectedTextFormat = "values",
+            multipleSeperator = ", "
+          )
+        ),
         actionButton(ns("calculate"), "Calculate", class = "act-btn"),
         actionButton(ns("reset"), "Reset Values", class = "act-btn"))
     ))
@@ -65,17 +65,19 @@ MLRSidebarUI <- function(id) {
 MLRMainPanelUI <- function(id) {
   ns <- NS(id)
   navbarPage(title = NULL,
-             tabPanel(title = "Data Import",
-                      import_ui(
-                        id = ns("dataImport"), 
-                        from = c("file", "copypaste", "env"))),
+             tabPanel(
+              title = "Data Import",
+              div(id = ns("importContainer")),
+               import_file_ui(
+                 id    = ns("dataImport"),
+                 title = "")),
              tabPanel(title = "MLR", uiOutput(ns("Equations")) ),
              tabPanel(title = "ANOVA", uiOutput(ns("ANOVA"))),
              tabPanel(title = "Multicollinearity Detection", uiOutput(ns("MulticollinearityDetection"))),
              tabPanel(title = "Diagnostic Plots", uiOutput(ns("DiagnosticPlots"))),
-
+             
              id = ns("mainPanel"),
-
+             
              ## FIXME #49: if the version is 5 then import_ui will break! NOTE:
              ## write a support request on the Posit Shiny subform asking for
              ## advice. I don't understand why this is this way.
@@ -92,14 +94,41 @@ MLRServer <- function(id) {
       }
     },
     once = FALSE)
-
+    
     ## TODO: display a help message in the sidebar indicating that non-numeric
     ## columns will not be available.
-    uploadedTibble <- import_server(
-      "dataImport", 
-      return_class = "tbl_df")
+    uploadedTibble <- import_file_server(
+      id = "dataImport",
+      trigger_return = "change",
+      btn_show_data = FALSE,
+      return_class = "tbl_df"
+      
+    )
+    
+    noFileCalculate <- reactiveVal(FALSE)
+    
+    observeEvent(uploadedTibble$data(),{
+      req(uploadedTibble$data())
+      cols <- uploadedTibble$data() %>%
+        dplyr::select_if(is.numeric) %>%
+        colnames()
+      
+      updateSelectInput(
+        session,
+        inputId  = "responseVariable",
+        choices  = cols,
+        selected = character(0)
+      )
+      
+      # populate the explanatory‐variables picker
+      updatePickerInput(
+        session,
+        inputId = "explanatoryVariables",
+        choices = cols
+      )
+    })
     ns <- session$ns
-
+    
     observeEvent(input$reset, {
       # clear the response‐variable dropdown
       updateSelectInput(
@@ -125,17 +154,17 @@ MLRServer <- function(id) {
     }),
     input$responseVariable,
     input$explanatoryVariables)
-
+    
     ## Update the choices for the select inputs when the uploadedTibble changes.
     observe({
       updateSelectInput(inputId = "responseVariable",
                         choices = colnames(select_if(uploadedTibble$data(), is.numeric)),
                         selected = character(0))
-
+      
       updatePickerInput(inputId = "explanatoryVariables",
                         choices = colnames(select_if(uploadedTibble$data(), is.numeric)))
     }) |> bindEvent(uploadedTibble$data())
-
+    
     observeEvent(input$responseVariable, {
       # only run when we have data and a non-empty response variable
       req(uploadedTibble$data(), input$responseVariable)
@@ -177,10 +206,20 @@ MLRServer <- function(id) {
     MLRValidation <-
       quote(validate(
         need(uploadedTibble$name(), "Upload some data."),
-        need(isTruthy(input$responseVariable),
+        need(isTruthy(input$responseVariable), # This should ideally catch character(0)
              "A response variable is required."),
-        need(is.numeric(uploadedTibble$data()[[input$responseVariable]]),
-             "The response variable must be numeric."),
+        # MODIFIED THIRD NEED CONDITION:
+        need(
+          (
+            !is.null(input$responseVariable) &&
+              length(input$responseVariable) == 1 &&
+              nzchar(input$responseVariable[1]) &&
+              (input$responseVariable[1] %in% names(uploadedTibble$data())) &&
+              is.numeric(uploadedTibble$data()[[input$responseVariable[1]]])
+          ),
+          "Response variable must be an existing, single, and numeric column."
+        ),
+        # ... rest of your MLRValidation conditions
         need(isTruthy(input$explanatoryVariables),
              "Explanatory variables are required."),
         need(length(as.character(input$explanatoryVariables)) >= 2,
@@ -224,7 +263,6 @@ MLRServer <- function(id) {
       ##   c("Equations", "ANOVA", "MulticollinearityDetection", "DiagnosticPlots"),
       ##   waiter_show
       ## )
-
       isolate({
 
         output$anovaHypotheses <- renderUI({
@@ -526,6 +564,8 @@ R^2_{\text{adj}} = %0.2f \\
             )),
             p("The estimated regression equation is"),
             p(with(uploadedTibble$data(), {
+              req(uploadedTibble$data(), cancelOutput = TRUE)
+              req(isTruthy(input$responseVariable), cancelOutput = TRUE)
               model <- lm(reformulate(
                 as.character(lapply(input$explanatoryVariables, as.name)),
                 as.name(input$responseVariable)
