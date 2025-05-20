@@ -52,7 +52,7 @@ kwResults_func <- function(si_iv_is_valid, kwFormat, kwMultiColumns, kwUploadDat
   }
   
   kwData <- na.omit(kwData)
-
+  
   kwData <- kwData %>%
     dplyr::mutate(Rank = rank(values, na.last = "keep", ties.method = "average"))
   
@@ -74,9 +74,9 @@ kwResults_func <- function(si_iv_is_valid, kwFormat, kwMultiColumns, kwUploadDat
 
 ### ---------------- Kruskal-Wallis Validation ------------------------------------
 validateKWInputs <- function(kwupload_iv_is_valid, kwUserData, fileInputs_kwStatus,
-      kwUploadData_output, kwmulti_iv_is_valid, input_kwMultiColumns, kwstacked_iv_is_valid,
-      input_kwResponse, input_kwFactors, kwStackedIsValid_output) 
-  {
+                             kwUploadData_output, kwmulti_iv_is_valid, input_kwMultiColumns, kwstacked_iv_is_valid,
+                             input_kwResponse, input_kwFactors, kwStackedIsValid_output) 
+{
   if(!kwupload_iv_is_valid()) {
     if(is.null(kwUserData)) {
       validate("Please upload a file.")
@@ -148,13 +148,17 @@ kruskalWallisHT <- function(kwResults_output, kwSigLvl_input) {
     kw_test_rounded <- as.character(round(kwTstat, 4))
     kw_test_rounded_comparison <- as.character(round(data$statistic, 4))
     
+    #to be used in the rejection/acceptance graph
+    kw_test <- as.numeric(round(data$statistic, 4))
+    
     # Degrees of Freedom 
     kw_df <- length(factorNames) -1
+    kw_k <- length(factorNames)
     
     # Chi Square CV
     alph <-(1-(as.numeric(substring(kwSigLvl_input(), 1, nchar(kwSigLvl_input()) - 1))/100))
     kw_chi<- (qchisq(alph,kw_df))
-
+    
     # the sum of the inner part of the T Statistic calculation
     sum_parts <- sapply(seq_along(factorNames), function(i) {
       sprintf("\\frac{(%.1f)^2}{%d}", group_sums[i], group_n[i])
@@ -170,25 +174,21 @@ kruskalWallisHT <- function(kwResults_output, kwSigLvl_input) {
           br(), br(),
           sprintf("\\( n = %s \\)", totalCount),
           br(),
-          sprintf("\\( df = %s \\)", kw_df),
+          sprintf("\\( k = %s \\)", kw_k),
           
           br(), br(),
           p(tags$b("Test Statistic:")),
-  
+          
           sprintf("\\( H = \\frac{12}{n(n + 1)}\\sum_{j = 1}^{k}\\frac{R_j^2}{n_j} - 3(n + 1) \\)"), 
           sprintf("\\( = \\frac{12}{%d(%d + 1)}\\left(%s\\right) - 3(%d + 1) \\)",
                   totalCount, totalCount, paste(sum_parts, collapse = " + "), totalCount), 
-          sprintf("\\( = %s \\)", kw_test_rounded),
-          conditionalPanel(
-            condition = "output.kw_test_rounded !== output.kw_test_rounded_comparison",
-            helpText("* Note: The average of two data points was used in the case of a tie while calculating the rank score.")
-          ),
-          conditionalPanel(
-            condition = "output.kw_test_rounded === output.kw_test_rounded_comparison",
-            helpText("* Note: The average of two data points was used in the case of a tie while calculating the rank score.")
-          ),
-
-          br(), br(),
+          sprintf("\\( = %s \\)", kw_test_rounded_comparison),
+          br(), 
+            if (kw_test_rounded_comparison != kw_test_rounded){
+              helpText("* Note: The average of data points was used in the case of a tie while calculating the rank score.")
+            },
+          
+          br(), 
           
           p(tags$b("Using P-value method: ")),
           sprintf("\\(P = P(\\chi^2 \\geq %s) = %s\\)", kw_test_rounded, kw_pv_rounded),
@@ -205,7 +205,15 @@ kruskalWallisHT <- function(kwResults_output, kwSigLvl_input) {
           
           # Trying to use Chi-Square CV method
           p(tags$b("Using the Critical Value Method: ")),
-          sprintf("\\(\\chi^2 _{df, \\alpha} = \\chi^2 _{(k - 1), \\alpha} = \\chi^2_{%s, \\, %s} = %.2f \\)",  kw_df, kw_sl, kw_chi),
+          sprintf("\\(\\chi^2 _{\\alpha, \\, df} = \\chi^2 _{\\alpha, \\, (k - 1)} = \\chi^2_{\\, %s, \\, %s} = %.4f \\)", kw_sl, kw_df, kw_chi),
+          br(), br(), 
+          
+          if (kw_chi <= as.numeric(kw_test_rounded_comparison)){
+            sprintf("Since the test statistic \\(\\chi^2\\) falls within the rejection region, reject \\(H_{0}.\\)")
+                    #\\(%.4f \\leq %s\\), reject \\(H_{0}.\\)", kw_chi, kw_test_rounded_comparison)
+          } else if (kw_chi > as.numeric(kw_test_rounded_comparison)) {
+            sprintf("Since \\(%.4f > %s\\), do not reject \\(H_{0}.\\)", kw_chi, kw_test_rounded_comparison)
+          },
           
           br(), br(),
           
