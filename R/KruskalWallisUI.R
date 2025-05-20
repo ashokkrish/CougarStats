@@ -3,6 +3,7 @@ library(readr)
 library(readxl)
 library(dplyr)
 library(DT)
+library(ggplot2)
 
 ### ------------ Kruskal-Wallis Reactives ------------------------------------   
 kwUploadData_func <- function(kwUserData) {
@@ -117,6 +118,7 @@ validateKWInputs <- function(kwupload_iv_is_valid, kwUserData, fileInputs_kwStat
 
 ### ---------------- Kruskal-Wallis Outputs------------------------------------
 kruskalWallisHT <- function(kwResults_output, kwSigLvl_input) {
+
   renderUI({
     req(kwResults_output())
     
@@ -144,7 +146,7 @@ kruskalWallisHT <- function(kwResults_output, kwSigLvl_input) {
     # used in P-Value calculations
     data <- kwResults_output()$test
     kw_pv <- data$p.value
-    kw_pv_rounded <- as.character(round(kw_pv, 4))
+    kw_pv_rounded <- as.numeric(round(kw_pv, 4))
     kw_test_rounded <- as.character(round(kwTstat, 4))
     kw_test_rounded_comparison <- as.character(round(data$statistic, 4))
     
@@ -205,7 +207,7 @@ kruskalWallisHT <- function(kwResults_output, kwSigLvl_input) {
           
           # Trying to use Chi-Square CV method
           p(tags$b("Using the Critical Value Method: ")),
-          sprintf("\\(\\chi^2 _{\\alpha, \\, df} = \\chi^2 _{\\alpha, \\, (k - 1)} = \\chi^2_{\\, %s, \\, %s} = %.4f \\)", kw_sl, kw_df, kw_chi),
+          sprintf("Critical Value  = \\(\\chi^2 _{\\alpha, \\, df} = \\chi^2 _{\\alpha, \\, (k - 1)} = \\chi^2_{\\, %s, \\, %s} = %.4f \\)", kw_sl, kw_df, kw_chi),
           br(), br(), 
           
           if (kw_chi <= as.numeric(kw_test_rounded_comparison)){
@@ -214,23 +216,157 @@ kruskalWallisHT <- function(kwResults_output, kwSigLvl_input) {
           } else if (kw_chi > as.numeric(kw_test_rounded_comparison)) {
             sprintf("Since \\(%.4f > %s\\), do not reject \\(H_{0}.\\)", kw_chi, kw_test_rounded_comparison)
           },
-          
-          br(), br(),
-          
-          p(tags$b("Conclusion: ")),
-          sprintf(
-            if (kw_pv <= kw_sl){
-              sprintf("Since the p-value is less than the significance level (%s \\(\\leq %.2f\\)), we reject the null hypothesis.
-                     There is sufficient evidence to conclude that at least one group's median is significantly different from the others.", kw_pv_rounded, kw_sl)
-            } else {
-              sprintf("Since the p-value is greater than the significance level (%s \\(> %.2f\\)), we fail to reject the null hypothesis.
-                     There is insufficient evidence to conclude that the medians of the groups are significantly different.", kw_pv_rounded, kw_sl)
-            }
-          )
         )
       )
     )
   })
+}
+kwConclusion <- function(kwResults, kwSigLvl_input) {
+  renderUI({
+    req(kwResults())
+    
+    results <- kwResults()
+    kwTest <- results$test
+    kw_pv <- kwTest$p.value
+    kw_pv_rounded <- as.character(round(kw_pv, 4))
+    
+    if(kwSigLvl_input() == "10%") {
+      kw_sl <- 10
+    } else if(kwSigLvl_input() == "5%") {
+      kw_sl <- 5
+    } else {
+      kw_sl <- 1
+    }
+    
+    tagList(
+      p(tags$b("Conclusion: ")),
+      if (kw_pv <= kw_sl) {
+        p(sprintf("At the \\(%.2f\\) significance level, there is sufficient statistical evidence in support of the alternative hypothesis \\( (H_{a})\\)
+that at least one group differs in median from the others.", kw_sl))
+      } else {
+        p(sprintf("At the \\(%.2f\\) significance level, there is not enough statistical evidence in support of the alternative
+                  hypothesis \\( (H_{a}) \\) that at least one group differs in median from the others."), kw_sl)
+      }
+    )
+  })
+}
+
+kruskalWallisPlot <- function(kwResults_output, kwSigLvl_input) {
+  renderPlot({
+    req(kwResults_output())
+    
+    results <- kwResults_output()
+    kwTest <- results$test
+    kw_df <- length(results$factorNames) - 1 
+    kwTstat <- round(kwTest$statistic, 4)
+    
+    if(kwSigLvl_input() == "10%") {
+      sigLvl <- 0.1
+    } else if(kwSigLvl_input() == "5%") {
+      sigLvl <- 0.05
+    } else {
+      sigLvl <- 0.01
+    }
+    
+    cv <- round(qchisq(1 - sigLvl, df = kw_df), 4)
+    
+    xMax <- max(10, cv * 1.5, kwTstat * 1.5)
+    xSeq <- c(seq(0, xMax, length.out = 75), cv, kwTstat)
+    rrLabel <- c((cv + max(xSeq))/2)
+    x_vector <- sort(c(xSeq, rrLabel))
+    p_vector <- dchisq(x_vector, df = kw_df)
+    
+    kw_dataframe <- distinct(data.frame(x = x_vector, y = p_vector))
+    cv_dataframe <- filter(kw_dataframe, x %in% cv)
+    ts_dataframe <- filter(kw_dataframe, x %in% kwTstat)
+    rrLabelDF <- filter(kw_dataframe, x %in% rrLabel)
+    arLabelDF <- filter(kw_dataframe, y %in% max(p_vector))
+    
+    ggplot(kw_dataframe,
+           aes(x = x, y = y)) +
+      stat_function(fun = dchisq,
+                    args = list(df = kw_df),
+                    geom = "Density",
+                    fill = NA) +
+      shadeHtArea2(kw_dataframe, cv, "greater") +
+      geom_segment(data = filter(kw_dataframe, y %in% max(p_vector)),
+                   aes(x = 0, xend = 0, y = 0, yend = y, alpha = 0.5),
+                   linetype = "solid",
+                   linewidth = 0.75,
+                   color='black',
+                   show.legend = FALSE) +
+      geom_text(data = filter(kw_dataframe, x %in% c(0)),
+                aes(x = x, y = 0, label = "0"),
+                size = 14 / .pt,
+                fontface = "bold",
+                nudge_y = -.03,
+                check_overlap = TRUE) +
+      geom_segment(data = cv_dataframe,
+                   aes(x = x, xend = x, y = 0, yend = y),
+                   linetype = "solid",
+                   lineend = 'butt',
+                   linewidth = 1.5,
+                   color='#023B70') +
+      geom_text(data = cv_dataframe,
+                aes(x = x, y = 0, label = x),
+                size = 14 / .pt,
+                fontface = "bold",
+                nudge_y = -.03,
+                check_overlap = TRUE) +
+      geom_segment(data = ts_dataframe,
+                   aes(x = x, xend = x, y = 0, yend = y + .055),
+                   linetype = "solid",
+                   linewidth = 1.25,
+                   
+                   color='#BD130B') +
+      geom_text(data = ts_dataframe,
+                aes(x = x, y = y, label = x),
+                size = 14 / .pt,
+                fontface = "bold",
+                nudge_y = .075,
+                check_overlap = TRUE) +
+      geom_text(data = arLabelDF,
+                aes(x = x, y = 0, label = "A R"),
+                size = 16 / .pt,
+                fontface = "bold",
+                vjust = -5,
+                check_overlap = TRUE) +
+      geom_text(data = rrLabelDF,
+                aes(x = x, y = y, label = "R R"),
+                size = 16 / .pt,
+                fontface = "bold",
+                vjust = -5,
+                check_overlap = TRUE) +
+      theme_void() +
+      ylab("") +
+      xlab(expression(chi^2)) + 
+      scale_y_continuous(breaks = NULL) +
+      theme(axis.title.x = element_text(size = 20,
+                                        family = "serif",
+                                        face = "bold.italic"))
+  })
+}
+
+shadeHtArea2 <- function(data, cv, direction = "greater") {
+  if(direction == "greater") {
+    subset <- data[data$x >= cv, ]
+    x <- c(cv, subset$x, max(data$x))
+    y <- c(0, subset$y, 0)
+  } else if(direction == "less") {
+    subset <- data[data$x <= cv, ]
+    x <- c(min(data$x), subset$x, cv)
+    y <- c(0, subset$y, 0)
+  } else { # two-tailed (?)
+    subset1 <- data[data$x <= cv[1], ]
+    subset2 <- data[data$x >= cv[2], ]
+    x <- c(min(data$x), subset1$x, cv[1], cv[2], subset2$x, max(data$x))
+    y <- c(0, subset1$y, 0, 0, subset2$y, 0)
+  }
+  
+  geom_polygon(data = data.frame(x = x, y = y), 
+               aes(x = x, y = y), 
+               fill = "#023B70", 
+               alpha = 0.2)
 }
 
 kruskalWallisUpload <- function(kwUploadData_output, kwupload_iv_is_valid) {

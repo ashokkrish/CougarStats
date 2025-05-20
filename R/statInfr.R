@@ -1588,7 +1588,9 @@ statInfrUI <- function(id) {
                     br(),
                     uiOutput(ns('kwHT')),
                     br(),
+                    plotOutput(ns('kruskalWallisPlot'), width = "50%", height = "400px"),
                     br(),
+                    uiOutput(ns('kwConclusionOutput'))
                   ),
                   
                   tabPanel(
@@ -7210,6 +7212,8 @@ statInfrServer <- function(id) {
     output$kwHT <- kruskalWallisHT(kwResults, reactive({input$kwSigLvl}))
     output$kwUploadTable <- kruskalWallisUpload(kwUploadData, reactive({kwupload_iv$is_valid()}))
     output$renderKWRM <- kwRankedTableOutput(kwResults()$data)
+    output$kruskalWallisPlot <- kruskalWallisPlot(kwResults, reactive({input$kwSigLvl}))
+    output$kwConclusionOutput <- kwConclusion(kwResults, reactive({input$kwSigLvl}))
     ### ------------ Chi-Square Outputs ------------------------------------------
     
     output$chiSqObs <- renderDT({
