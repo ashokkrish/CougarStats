@@ -241,10 +241,10 @@ kwConclusion <- function(kwResults, kwSigLvl_input) {
     tagList(
       p(tags$b("Conclusion: ")),
       if (kw_pv <= kw_sl) {
-        p(sprintf("At the \\(%.2f\\) significance level, there is sufficient statistical evidence in support of the alternative hypothesis \\( (H_{a})\\)
+        p(sprintf("At the %1.0f%% significance level, there is sufficient statistical evidence in support of the alternative hypothesis \\( (H_{a})\\)
 that at least one group differs in median from the others.", kw_sl))
       } else {
-        p(sprintf("At the \\(%.2f\\) significance level, there is not enough statistical evidence in support of the alternative
+        p(sprintf("At the %1.0f%% significance level, there is not enough statistical evidence in support of the alternative
                   hypothesis \\( (H_{a}) \\) that at least one group differs in median from the others."), kw_sl)
       }
     )
