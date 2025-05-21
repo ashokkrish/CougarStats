@@ -58,8 +58,8 @@ MLRSidebarUI <- function(id) {
           )
         ),
         actionButton(ns("calculate"), "Calculate", class = "act-btn"),
-        actionButton(ns("reset"), "Reset Values", class = "act-btn"))
-    ))
+        actionButton(ns("reset"), "Reset Values", class = "act-btn")
+    )))
 }
 
 MLRMainPanelUI <- function(id) {
@@ -68,7 +68,8 @@ MLRMainPanelUI <- function(id) {
              tabPanel(
               title = "Data Import",
               div(id = ns("importContainer")),
-               import_file_ui(
+              uiOutput(ns("fileImportUserMessage")),
+              import_file_ui(
                  id    = ns("dataImport"),
                  title = "")),
              tabPanel(title = "MLR", uiOutput(ns("Equations")) ),
@@ -257,14 +258,33 @@ MLRServer <- function(id) {
         return(FALSE)
       }
     }
-
+    
+    output$fileImportUserMessage <- renderUI({ # This version responds to the button
+      if (noFileCalculate()) {
+        tags$div(class = "shiny-output-error-validation",
+                 "Required: Cannot calculate without a data file.")
+      } else {
+        NULL
+      }
+    })
+    
     observe({ # input$calculate
       ## lapply(
       ##   c("Equations", "ANOVA", "MulticollinearityDetection", "DiagnosticPlots"),
       ##   waiter_show
       ## )
+      
+      if (!isTruthy(uploadedTibble$data())) {
+        noFileCalculate(TRUE)
+        return()
+      } else {
+        noFileCalculate(FALSE)
+        # Proceed with calculations if data is present
+        # Your existing isolate block for calculations would go here.
+      }
+    
       isolate({
-
+        
         output$anovaHypotheses <- renderUI({
           withMathJax(
             p(strong("Analysis of Variance (ANOVA)")),
@@ -642,6 +662,12 @@ R^2_{\text{adj}} = %0.2f \\
       updateNavbarPage(inputId = "mainPanel", selected = "MLR")
     }) |> bindEvent(input$calculate)
     
+    observe({
+      if(isTruthy(uploadedTibble$data())){
+        noFileCalculate(FALSE)
+      }
+    }) |> bindEvent(uploadedTibble$data(), ignoreNULL = FALSE, ignoreInit = TRUE)
+
     output$Equations <- renderUI({
       eval(MLRValidation)
 
