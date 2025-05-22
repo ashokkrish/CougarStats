@@ -3104,10 +3104,10 @@ statInfrServer <- function(id) {
     twoPopVarOutputText <- function(HT, sig_lvl) {
       if (!HT$reject_null) {
         region <- "acceptance"
-        isWord <- "is"
+        isWord <- "isn't"
       } else {
         region <- "rejection"
-        isWord <- "isn't"
+        isWord <- "is"
       }
       rejectWord = if (HT$p_value <= sig_lvl) "reject" else "do not reject"
       pValSign = if (HT$p_value <= sig_lvl) "\\leq" else ">"
