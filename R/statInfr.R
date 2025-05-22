@@ -420,11 +420,11 @@ statInfrUI <- function(id) {
               choiceValues = list("Independent Population Means",
                                   "Dependent Population Means",
                                   "Population Proportions",
-                                  "Two Population Variance"),
+                                  "Two Population Variances"),
               choiceNames  = list("Two Independent Populations (\\( \\mu_{1} - \\mu_{2} \\))",
                                   "Dependent (Paired) Populations (\\( \\mu_{d} \\))",
                                   "Two Population Proportions (\\( p_{1} - p_{2}\\))",
-                                  "Two Population Variance (\\( \\sigma_{1}^2/\\sigma_{2}^2 \\))"),
+                                  "Two Population Variances (\\( \\sigma_{1}^2/\\sigma_{2}^2 \\))"),
               selected     = "Independent Population Means", #character(0), #
               inline       = FALSE), #,width = '1000px'),
             
@@ -786,7 +786,7 @@ statInfrUI <- function(id) {
             
             conditionalPanel(
               ns = ns,
-              condition = "input.popuParameters == 'Two Population Variance'",
+              condition = "input.popuParameters == 'Two Population Variances'",
               
               radioButtons(
                 inputId      = ns("dataAvailability3"),
@@ -1598,7 +1598,7 @@ statInfrUI <- function(id) {
                 
                 conditionalPanel(
                   ns = ns,
-                  condition = "input.popuParameters == 'Two Population Variance'",
+                  condition = "input.popuParameters == 'Two Population Variances'",
                   
                   tabsetPanel(
                     id = ns("twoPopSDTabset"),
@@ -2315,15 +2315,15 @@ statInfrServer <- function(id) {
                                       input$inferenceType2 == 'Hypothesis Testing'))
     
     twopopSD_iv$condition(~ isTRUE(input$siMethod == '2' &&
-                                      input$popuParameters == 'Two Population Variance' &&
+                                      input$popuParameters == 'Two Population Variances' &&
                                       input$dataAvailability3 == 'Summary'))
     
     twopopvar_iv$condition(~ isTRUE(input$siMethod == '2' &&
-                                         input$popuParameters == 'Two Population Variance' &&
+                                         input$popuParameters == 'Two Population Variances' &&
                                          input$dataAvailability3 == 'Variance'))
     
     twopopvarraw_iv$condition(~ isTRUE(input$siMethod == '2' &&
-                                         input$popuParameters == 'Two Population Variance' &&
+                                         input$popuParameters == 'Two Population Variances' &&
                                          input$dataAvailability3 == 'Enter Raw Data'))
     
     kwupload_iv$condition(~ isTRUE(input$siMethod == 'Multiple' &&
@@ -4788,14 +4788,14 @@ statInfrServer <- function(id) {
         hypTestSymbols$nullHyp <- "\\sigma^2_1 = \\sigma^2_2"
         hypTestSymbols$altHyp <- "\\sigma^2_1 \\neq \\sigma^2_2"
         hypTestSymbols$critAlph <- "\\alpha/2"
-        hypTestSymbols$critSign <- "\\pm"
+        hypTestSymbols$critSign <- ""
         hypTestSymbols$alphaVal <- SigLvl() / 2
       } else { # less
         hypTestSymbols$alternative <- "less"
         hypTestSymbols$nullHyp <- "\\sigma^2_1 \\geq \\sigma^2_2"
         hypTestSymbols$altHyp <- "\\sigma^2_1 \\lt \\sigma^2_2"
         hypTestSymbols$critAlph <- "\\alpha"
-        hypTestSymbols$critSign <- "-"
+        hypTestSymbols$critSign <- ""
         hypTestSymbols$alphaVal <- SigLvl()
       }
       
@@ -7558,9 +7558,9 @@ statInfrServer <- function(id) {
           } else {
             p("From the Data")
           },
+          
           printTwoPopVarGivens(data, is_variance),
           #printDegreesFreedom(df1, df2),
-          
           printFStat(data$sd1, data$sd2, HT$F_statistic, is_variance),
           br(),
           
