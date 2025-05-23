@@ -3120,11 +3120,11 @@ statInfrServer <- function(id) {
       ))
     }
     
-    printFStat <- function(sd1, sd2, F_statistic, is_variance) {
+    printFStat <- function(sd1, sd2, F_statistic, is_variance, is_HT = FALSE) {
       if (!is_variance) {
-        p(sprintf("\\(F = \\dfrac{s_1^2}{s_2^2} = \\dfrac{%.4f^2}{%.4f^2} = %.4f \\)", sd1, sd2, F_statistic))
+        p(sprintf("\\(%s\\dfrac{s_1^2}{s_2^2} = \\dfrac{%.4f^2}{%.4f^2} = %.4f \\)", if (is_HT) "F = " else "", sd1, sd2, F_statistic))
       } else {
-        p(sprintf("\\(F = \\dfrac{s_1^2}{s_2^2} = \\dfrac{%.4f}{%.4f} = %.4f \\)", sd1, sd2, F_statistic))
+        p(sprintf("\\(%s\\dfrac{s_1^2}{s_2^2} = \\dfrac{%.4f}{%.4f} = %.4f \\)", if (is_HT) "F = " else "", sd1, sd2, F_statistic))
       }
     }
     shadeHtArea <- function(df, critValue, altHypothesis) {
@@ -7560,8 +7560,8 @@ statInfrServer <- function(id) {
           },
           
           printTwoPopVarGivens(data, is_variance),
-          #printDegreesFreedom(df1, df2),
-          printFStat(data$sd1, data$sd2, HT$F_statistic, is_variance),
+          
+          printFStat(data$sd1, data$sd2, HT$F_statistic, is_variance, is_HT = TRUE),
           br(),
           
           printFTestPVal(
@@ -7575,21 +7575,36 @@ statInfrServer <- function(id) {
           # crit value method
           p(tags$b("Using Critical Value Method:")),
           if(alt_hyp == "two.sided") {
-            sprintf("Critical Values \\( = %s F_{%.3f} \\) and \\( %s F_{%.3f} \\)",
-                   hyp_labels$critSign, HT$crit_lower,
-                   hyp_labels$critSign, HT$crit_upper)
+            list(
+              p(sprintf("Critical Values:")),
+              sprintf("\\(F_{\\alpha/2,\\ df_2,\\ df_1} = F_{%.3f,\\ %d,\\ %d} = %.4f\\)", 
+                      sig_lvl/2, df2, df1, HT$crit_lower), br(),
+              sprintf("\\(F_{1-\\alpha/2,\\ df_1,\\ df_2} = F_{%.3f,\\ %d,\\ %d} = %.4f\\)", 
+                      1-sig_lvl/2, df1, df2, HT$crit_upper)
+            )
+            
+          } else if (alt_hyp == "greater") {
+            sprintf("Critical Value = \\(F_{1-\\alpha,\\ df_1,\\ df_2} = F_{%.2f,\\ %d,\\ %d} = %.4f\\)", 
+                    1-sig_lvl, df1, df2, HT$crit_val)
+            
           } else {
-            sprintf("Critical Value \\( = %s F_{%.3f} \\)", hyp_labels$critSign, HT$crit_val)
+            sprintf("Critical Value = \\(F_{\\alpha,\\ df_2,\\ df_1} = F_{%.2f,\\ %d,\\ %d} = %.4f\\)", 
+                    sig_lvl, df2, df1, HT$crit_val)
           },
           br(), br(),
+          
+          p(sprintf("where")),
+          div(style = "margin-left: 20px;",
+              printDegreesFreedom(df1, df2)),
               
-          sprintf("Since the test statistic \\(F\\) falls within the %s region, %s \\( H_0 \\).",
+          sprintf("Since the test statistic \\((F)\\) falls within the %s region, %s \\( H_0 \\).",
                  text$region, text$rejectWord),
           br(), br(), br(),
           
           # conclusion
           p(strong("Conclusion:")),
-          sprintf("At \\(\\alpha = %.2f\\), since the test statistic falls within the %s region, we %s \\(H_0\\) and conclude that there %s enough statistical evidence to support that alternative hypothesis.",
+          sprintf("At \\(\\alpha = %.2f\\), since the test statistic falls within the %s region, we %s \\(H_0\\)
+                  and conclude that there %s enough statistical evidence to support the alternative hypothesis.",
                  sig_lvl, text$region, text$rejectWord, text$isWord)
         )
       )
