@@ -10,7 +10,7 @@
 ### Past project members
 - [Michael Myer](https://github.com/m-myer): Senior Developer
 - [Bryce Carson](https://github.com/bryce-carson): Senior Developer
-- [Samantha Brian](https://github.com/samantha-v-brian): Senior Developer
+- [Samantha Brian](https://github.com/sam-vb): Senior Developer
 
 <!-- ## Financial support of the development of CougarStats**  -->
 
