@@ -1865,6 +1865,8 @@ statInfrServer <- function(id) {
     onemean_iv <- InputValidator$new()
     onemeansdknown_iv <- InputValidator$new()
     onemeansdunk_iv <- InputValidator$new()
+    onemeansdknownraw_iv <- InputValidator$new()
+    onemeansdunkraw_iv <- InputValidator$new()
     onemeanraw_iv <- InputValidator$new()
     onemeanht_iv <- InputValidator$new()
     onemeanupload_iv <- InputValidator$new()
@@ -1931,8 +1933,8 @@ statInfrServer <- function(id) {
     onemeansdknown_iv$add_rule("popuSD", sv_gt(0))
     
     # popuSDRaw
-    onemeanraw_iv$add_rule("popuSDRaw", sv_required())
-    onemeanraw_iv$add_rule("popuSDRaw", sv_gt(0))
+    onemeansdknownraw_iv$add_rule("popuSDRaw", sv_required())
+    onemeansdknownraw_iv$add_rule("popuSDRaw", sv_gt(0))
     
     # popuSDUpload
     onemeanuploadsd_iv$add_rule("popuSDUpload", sv_required())
@@ -2206,6 +2208,16 @@ statInfrServer <- function(id) {
                                          input$dataAvailability == 'Summarized Data' &&
                                          input$sigmaKnown == 'Unknown'))
     
+    onemeansdknownraw_iv$condition(~ isTRUE(input$siMethod == '1' &&
+                                           input$popuParameter == 'Population Mean' &&
+                                           input$dataAvailability == 'Enter Raw Data' &&
+                                           input$sigmaKnownRaw == 'rawKnown'))
+    
+    onemeansdunkraw_iv$condition(~ isTRUE(input$siMethod == '1' &&
+                                         input$popuParameter == 'Population Mean' &&
+                                         input$dataAvailability == 'Enter Raw Data' &&
+                                         input$sigmaKnownRaw == 'rawUnknown'))
+    
     onemeanraw_iv$condition(~ isTRUE(input$siMethod == '1' &&
                                        input$popuParameter == 'Population Mean' &&
                                        input$dataAvailability == 'Enter Raw Data'))
@@ -2368,6 +2380,8 @@ statInfrServer <- function(id) {
     si_iv$add_validator(onemean_iv)
     si_iv$add_validator(onemeansdknown_iv)
     si_iv$add_validator(onemeansdunk_iv)
+    si_iv$add_validator(onemeansdunkraw_iv)
+    si_iv$add_validator(onemeansdknownraw_iv)
     si_iv$add_validator(onemeanraw_iv)
     si_iv$add_validator(onemeanht_iv)
     si_iv$add_validator(onemeanupload_iv)
@@ -2418,6 +2432,8 @@ statInfrServer <- function(id) {
     onemean_iv$enable()
     onemeansdknown_iv$enable()
     onemeansdunk_iv$enable()
+    onemeansdknownraw_iv$enable()
+    onemeansdunkraw_iv$enable()
     onemeanraw_iv$enable()
     onemeanht_iv$enable()
     onemeanupload_iv$enable()
@@ -4996,9 +5012,16 @@ statInfrServer <- function(id) {
         validate(
           need(input$sample1, "Sample Data required.") %then%
             need(length(createNumLst(input$sample1)) > 1, "Sample Data requires a minimum of 2 data points."),
-          need(input$popuSDRaw & input$popuSDRaw > 0, "Population Standard Deviation must be positive."),
           #need(input$popuSDRaw > 0, "Population Standard Deviation must be greater than 0"),
           errorClass = "myClass")
+      }
+      
+      if (!onemeansdknownraw_iv$is_valid()) {
+        validate(
+          need(input$popuSDRaw, "Population Standard Deviation is required.") %then%
+            need(input$popuSDRaw > 0, "Population Standard Deviation must be greater than 0"),
+          errorClass = "myClass"
+        )
       }
       
       if(!onemeansdknown_iv$is_valid()) {
