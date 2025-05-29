@@ -2163,6 +2163,17 @@ statInfrServer <- function(id) {
     kwupload_iv$add_rule("kwUserData", ~ if(!(tolower(tools::file_ext(input$kwUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
     kwupload_iv$add_rule("kwUserData", ~ if(ncol(kwUploadData()) < 2) "Data must include at least two columns")
     
+    kwupload_iv$add_rule("kwUserData", ~ {
+      df <- kwUploadData()
+      if (!is.null(df)) {
+        for (col in names(df)) {
+          if (length(unique(df[[col]])) == 1) {
+            return(paste0("Column '", col, "' has the same value for all rows."))
+          }
+        }
+      }
+    })
+
     kwmulti_iv$add_rule("kwMultiColumns", ~ if(length(input$kwMultiColumns) < 2) "Select at least two columns")
     
     kwstacked_iv$add_rule("kwResponse", sv_required())
