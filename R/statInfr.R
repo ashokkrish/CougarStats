@@ -1865,6 +1865,8 @@ statInfrServer <- function(id) {
     onemean_iv <- InputValidator$new()
     onemeansdknown_iv <- InputValidator$new()
     onemeansdunk_iv <- InputValidator$new()
+    onemeansdknownraw_iv <- InputValidator$new()
+    onemeansdunkraw_iv <- InputValidator$new()
     onemeanraw_iv <- InputValidator$new()
     onemeanht_iv <- InputValidator$new()
     onemeanupload_iv <- InputValidator$new()
@@ -1931,8 +1933,8 @@ statInfrServer <- function(id) {
     onemeansdknown_iv$add_rule("popuSD", sv_gt(0))
     
     # popuSDRaw
-    onemeanraw_iv$add_rule("popuSDRaw", sv_required())
-    onemeanraw_iv$add_rule("popuSDRaw", sv_gt(0))
+    onemeansdknownraw_iv$add_rule("popuSDRaw", sv_required())
+    onemeansdknownraw_iv$add_rule("popuSDRaw", sv_gt(0))
     
     # popuSDUpload
     onemeanuploadsd_iv$add_rule("popuSDUpload", sv_required())
@@ -2161,6 +2163,17 @@ statInfrServer <- function(id) {
     kwupload_iv$add_rule("kwUserData", ~ if(!(tolower(tools::file_ext(input$kwUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
     kwupload_iv$add_rule("kwUserData", ~ if(ncol(kwUploadData()) < 2) "Data must include at least two columns")
     
+    kwupload_iv$add_rule("kwUserData", ~ {
+      df <- kwUploadData()
+      if (!is.null(df)) {
+        for (col in names(df)) {
+          if (length(unique(df[[col]])) == 1) {
+            return(paste0("Column '", col, "' has the same value for all rows."))
+          }
+        }
+      }
+    })
+
     kwmulti_iv$add_rule("kwMultiColumns", ~ if(length(input$kwMultiColumns) < 2) "Select at least two columns")
     
     kwstacked_iv$add_rule("kwResponse", sv_required())
@@ -2205,6 +2218,16 @@ statInfrServer <- function(id) {
                                          input$popuParameter == 'Population Mean' &&
                                          input$dataAvailability == 'Summarized Data' &&
                                          input$sigmaKnown == 'Unknown'))
+    
+    onemeansdknownraw_iv$condition(~ isTRUE(input$siMethod == '1' &&
+                                           input$popuParameter == 'Population Mean' &&
+                                           input$dataAvailability == 'Enter Raw Data' &&
+                                           input$sigmaKnownRaw == 'rawKnown'))
+    
+    onemeansdunkraw_iv$condition(~ isTRUE(input$siMethod == '1' &&
+                                         input$popuParameter == 'Population Mean' &&
+                                         input$dataAvailability == 'Enter Raw Data' &&
+                                         input$sigmaKnownRaw == 'rawUnknown'))
     
     onemeanraw_iv$condition(~ isTRUE(input$siMethod == '1' &&
                                        input$popuParameter == 'Population Mean' &&
@@ -2368,6 +2391,8 @@ statInfrServer <- function(id) {
     si_iv$add_validator(onemean_iv)
     si_iv$add_validator(onemeansdknown_iv)
     si_iv$add_validator(onemeansdunk_iv)
+    si_iv$add_validator(onemeansdunkraw_iv)
+    si_iv$add_validator(onemeansdknownraw_iv)
     si_iv$add_validator(onemeanraw_iv)
     si_iv$add_validator(onemeanht_iv)
     si_iv$add_validator(onemeanupload_iv)
@@ -2418,6 +2443,8 @@ statInfrServer <- function(id) {
     onemean_iv$enable()
     onemeansdknown_iv$enable()
     onemeansdunk_iv$enable()
+    onemeansdknownraw_iv$enable()
+    onemeansdunkraw_iv$enable()
     onemeanraw_iv$enable()
     onemeanht_iv$enable()
     onemeanupload_iv$enable()
@@ -3120,11 +3147,11 @@ statInfrServer <- function(id) {
       ))
     }
     
-    printFStat <- function(sd1, sd2, F_statistic, is_variance) {
+    printFStat <- function(sd1, sd2, F_statistic, is_variance, is_HT = FALSE) {
       if (!is_variance) {
-        p(sprintf("\\(F = \\dfrac{s_1^2}{s_2^2} = \\dfrac{%.4f^2}{%.4f^2} = %.4f \\)", sd1, sd2, F_statistic))
+        p(sprintf("\\(%s\\dfrac{s_1^2}{s_2^2} = \\dfrac{%.4f^2}{%.4f^2} = %.4f \\)", if (is_HT) "F = " else "", sd1, sd2, F_statistic))
       } else {
-        p(sprintf("\\(F = \\dfrac{s_1^2}{s_2^2} = \\dfrac{%.4f}{%.4f} = %.4f \\)", sd1, sd2, F_statistic))
+        p(sprintf("\\(%s\\dfrac{s_1^2}{s_2^2} = \\dfrac{%.4f}{%.4f} = %.4f \\)", if (is_HT) "F = " else "", sd1, sd2, F_statistic))
       }
     }
     shadeHtArea <- function(df, critValue, altHypothesis) {
@@ -4996,9 +5023,16 @@ statInfrServer <- function(id) {
         validate(
           need(input$sample1, "Sample Data required.") %then%
             need(length(createNumLst(input$sample1)) > 1, "Sample Data requires a minimum of 2 data points."),
-          need(input$popuSDRaw & input$popuSDRaw > 0, "Population Standard Deviation must be positive."),
           #need(input$popuSDRaw > 0, "Population Standard Deviation must be greater than 0"),
           errorClass = "myClass")
+      }
+      
+      if (!onemeansdknownraw_iv$is_valid()) {
+        validate(
+          need(input$popuSDRaw, "Population Standard Deviation is required.") %then%
+            need(input$popuSDRaw > 0, "Population Standard Deviation must be greater than 0"),
+          errorClass = "myClass"
+        )
       }
       
       if(!onemeansdknown_iv$is_valid()) {
@@ -5362,21 +5396,42 @@ statInfrServer <- function(id) {
       }
       
       #### ---------------- Kruskal-Wallis Validation    
-      observe({
-        validateKWInputs(
-          kwupload_iv$is_valid,
-          input$kwUserData,
-          fileInputs$kwStatus, 
-          kwUploadData(),
-          kwmulti_iv$is_valid,
-          input$kwMultiColumns,
-          kwstacked_iv$is_valid,
-          input$kwResponse,
-          input$kwFactors,
-          kwStackedIsValid()
+      if(!kwupload_iv$is_valid()) {
+        if(is.null(input$kwUserData)) {
+          validate("Please upload a file.")
+        }
+        
+        validate(
+          need(!is.null(fileInputs$kwStatus)&& fileInputs$kwStatus == 'uploaded', "Please upload a file."),
+          errorClass = "myClass"
         )
-      })
+        
+        validate(
+          need(nrow(kwUploadData()) > 0, "File is empty."),
+          need(ncol(kwUploadData()) >= 2, "File must contain at least 2 distinct columns of data to choose from for analysis."),
+          errorClass = "myClass"
+        )
+      }
       
+      if(!kwmulti_iv$is_valid()) {
+        validate(
+          need(length(input$kwMultiColumns) >= 2, "Please select two or more columns to conduct analysis."),
+          errorClass = "myClass"
+        )
+      }
+      
+      if(!kwstacked_iv$is_valid()) {
+        validate(
+          need(!is.null(input$kwResponse) && input$kwResponse != '', "Please select a Response Variable."),
+          need(!is.null(input$kwFactors) && input$kwFactors != '', "Please select a Factors column."),
+          errorClass = "myClass"
+        )
+        
+        validate(
+          need(kwStackedIsValid() == TRUE, "Please select distinct columns for Response Variable and Factors."),
+          errorClass = "myClass"
+        )
+      }    
       
       #### ---------------- Chi-Square Validation
       if(!chiSq2x2_iv$is_valid()) {
@@ -7560,8 +7615,8 @@ statInfrServer <- function(id) {
           },
           
           printTwoPopVarGivens(data, is_variance),
-          #printDegreesFreedom(df1, df2),
-          printFStat(data$sd1, data$sd2, HT$F_statistic, is_variance),
+          
+          printFStat(data$sd1, data$sd2, HT$F_statistic, is_variance, is_HT = TRUE),
           br(),
           
           printFTestPVal(
@@ -7575,21 +7630,36 @@ statInfrServer <- function(id) {
           # crit value method
           p(tags$b("Using Critical Value Method:")),
           if(alt_hyp == "two.sided") {
-            sprintf("Critical Values \\( = %s F_{%.3f} \\) and \\( %s F_{%.3f} \\)",
-                   hyp_labels$critSign, HT$crit_lower,
-                   hyp_labels$critSign, HT$crit_upper)
+            list(
+              p(sprintf("Critical Values:")),
+              sprintf("\\(F_{\\alpha/2,\\ df_2,\\ df_1} = F_{%.3f,\\ %d,\\ %d} = %.4f\\)", 
+                      sig_lvl/2, df2, df1, HT$crit_lower), br(),
+              sprintf("\\(F_{1-\\alpha/2,\\ df_1,\\ df_2} = F_{%.3f,\\ %d,\\ %d} = %.4f\\)", 
+                      1-sig_lvl/2, df1, df2, HT$crit_upper)
+            )
+            
+          } else if (alt_hyp == "greater") {
+            sprintf("Critical Value = \\(F_{1-\\alpha,\\ df_1,\\ df_2} = F_{%.2f,\\ %d,\\ %d} = %.4f\\)", 
+                    1-sig_lvl, df1, df2, HT$crit_val)
+            
           } else {
-            sprintf("Critical Value \\( = %s F_{%.3f} \\)", hyp_labels$critSign, HT$crit_val)
+            sprintf("Critical Value = \\(F_{\\alpha,\\ df_2,\\ df_1} = F_{%.2f,\\ %d,\\ %d} = %.4f\\)", 
+                    sig_lvl, df2, df1, HT$crit_val)
           },
           br(), br(),
+          
+          p(sprintf("where")),
+          div(style = "margin-left: 20px;",
+              printDegreesFreedom(df1, df2)),
               
-          sprintf("Since the test statistic \\(F\\) falls within the %s region, %s \\( H_0 \\).",
+          sprintf("Since the test statistic \\((F)\\) falls within the %s region, %s \\( H_0 \\).",
                  text$region, text$rejectWord),
           br(), br(), br(),
           
           # conclusion
           p(strong("Conclusion:")),
-          sprintf("At \\(\\alpha = %.2f\\), since the test statistic falls within the %s region, we %s \\(H_0\\) and conclude that there %s enough statistical evidence to support that alternative hypothesis.",
+          sprintf("At \\(\\alpha = %.2f\\), since the test statistic falls within the %s region, we %s \\(H_0\\)
+                  and conclude that there %s enough statistical evidence to support the alternative hypothesis.",
                  sig_lvl, text$region, text$rejectWord, text$isWord)
         )
       )
