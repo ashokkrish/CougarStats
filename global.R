@@ -79,6 +79,7 @@ source('R/TwoPropZTest.R')
 source("R/simpleLinearRegression.R")
 source("R/multipleLinearRegression.R")
 source("R/regressionAndCorrelation.R")
+source("R/logisticRegression.R")
 
 options(scipen = 999) # options(scipen = 0)
 ## options(shiny.reactlog = TRUE)
