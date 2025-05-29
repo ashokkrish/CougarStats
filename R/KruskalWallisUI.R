@@ -73,49 +73,6 @@ kwResults_func <- function(si_iv_is_valid, kwFormat, kwMultiColumns, kwUploadDat
   return(results)
 }
 
-### ---------------- Kruskal-Wallis Validation ------------------------------------
-validateKWInputs <- function(kwupload_iv_is_valid, kwUserData, fileInputs_kwStatus,
-                             kwUploadData_output, kwmulti_iv_is_valid, input_kwMultiColumns, kwstacked_iv_is_valid,
-                             input_kwResponse, input_kwFactors, kwStackedIsValid_output) 
-{
-  if(!kwupload_iv_is_valid()) {
-    if(is.null(kwUserData)) {
-      validate("Please upload a file.")
-    }
-    
-    validate(
-      need(!is.null(fileInputs_kwStatus), "Please upload a file."),
-      errorClass = "myClass"
-    )
-    
-    validate(
-      need(nrow(kwUploadData_output) > 0, "File is empty."),
-      need(ncol(kwUploadData_output) >= 2, "File must contain at least 2 distinct columns of data to choose from for analysis."),
-      errorClass = "myClass"
-    )
-  }
-  
-  if(!kwmulti_iv_is_valid()) {
-    validate(
-      need(length(input_kwMultiColumns) >= 2, "Please select two or more columns to conduct analysis."),
-      errorClass = "myClass"
-    )
-  }
-  
-  if(!kwstacked_iv_is_valid()) {
-    validate(
-      need(!is.null(input_kwResponse) && input_kwResponse != '', "Please select a Response Variable."),
-      need(!is.null(input_kwFactors) && input_kwFactors != '', "Please select a Factors column."),
-      errorClass = "myClass"
-    )
-    
-    validate(
-      need(kwStackedIsValid_output == TRUE, "Please select distinct columns for Response Variable and Factors."),
-      errorClass = "myClass"
-    )
-  }
-}
-
 ### ---------------- Kruskal-Wallis Outputs------------------------------------
 kruskalWallisHT <- function(kwResults_output, kwSigLvl_input) {
 
@@ -193,7 +150,7 @@ kruskalWallisHT <- function(kwResults_output, kwSigLvl_input) {
           br(), 
           
           p(tags$b("Using P-value method: ")),
-          sprintf("\\(P = P(\\chi^2 \\geq %s) = %s\\)", kw_test_rounded, kw_pv_rounded),
+          sprintf("\\(P = P(\\chi^2 \\geq %s) = %s\\)", kw_test_rounded_comparison, kw_pv_rounded),
           
           br(), br(),
           

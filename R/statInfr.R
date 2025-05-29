@@ -5385,21 +5385,42 @@ statInfrServer <- function(id) {
       }
       
       #### ---------------- Kruskal-Wallis Validation    
-      observe({
-        validateKWInputs(
-          kwupload_iv$is_valid,
-          input$kwUserData,
-          fileInputs$kwStatus, 
-          kwUploadData(),
-          kwmulti_iv$is_valid,
-          input$kwMultiColumns,
-          kwstacked_iv$is_valid,
-          input$kwResponse,
-          input$kwFactors,
-          kwStackedIsValid()
+      if(!kwupload_iv$is_valid()) {
+        if(is.null(input$kwUserData)) {
+          validate("Please upload a file.")
+        }
+        
+        validate(
+          need(!is.null(fileInputs$kwStatus)&& fileInputs$kwStatus == 'uploaded', "Please upload a file."),
+          errorClass = "myClass"
         )
-      })
+        
+        validate(
+          need(nrow(kwUploadData()) > 0, "File is empty."),
+          need(ncol(kwUploadData()) >= 2, "File must contain at least 2 distinct columns of data to choose from for analysis."),
+          errorClass = "myClass"
+        )
+      }
       
+      if(!kwmulti_iv$is_valid()) {
+        validate(
+          need(length(input$kwMultiColumns) >= 2, "Please select two or more columns to conduct analysis."),
+          errorClass = "myClass"
+        )
+      }
+      
+      if(!kwstacked_iv$is_valid()) {
+        validate(
+          need(!is.null(input$kwResponse) && input$kwResponse != '', "Please select a Response Variable."),
+          need(!is.null(input$kwFactors) && input$kwFactors != '', "Please select a Factors column."),
+          errorClass = "myClass"
+        )
+        
+        validate(
+          need(kwStackedIsValid() == TRUE, "Please select distinct columns for Response Variable and Factors."),
+          errorClass = "myClass"
+        )
+      }    
       
       #### ---------------- Chi-Square Validation
       if(!chiSq2x2_iv$is_valid()) {
