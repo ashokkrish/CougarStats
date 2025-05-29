@@ -65,12 +65,12 @@ Read more about [Getting Started with Docker](https://www.docker.com/get-started
 ### Past project members
 - [Michael Myer](https://github.com/m-myer): Senior Developer
 - [Bryce Carson](https://github.com/bryce-carson): Senior Developer
-- [Samantha Brian](https://github.com/samantha-v-brian): Senior Developer
+- [Samantha Brian](https://github.com/sam-vb): Senior Developer
 
 ## Acknowledgements
 | Funding Agency / Coursework | Recipient | Date(s) |
 |--------|--------|--------|
-| Provost's Teaching and Learning Enhancement Grant (TLEG) | [Samantha Brian](https://github.com/samantha-v-brian) | January 2025 through May 2025 |
+| Provost's Teaching and Learning Enhancement Grant (TLEG) | [Samantha Brian](https://github.com/sam-vb) | January 2025 through May 2025 |
 | Provost's Teaching and Learning Enhancement Grant (TLEG) | [Bryce Carson](https://github.com/bryce-carson) | November 2024 through January 2025 |
 | Provost's Teaching and Learning Enhancement Grant (TLEG) | [Michael Myer](https://github.com/m-myer) | September 2023 through April 2024 |
 | Faculty of Science and Technology (FST) Student Research Award | Michael Myer | June through August 2023 |
