@@ -39,15 +39,6 @@ sampSizeEstUI <- function(id) {
           #            Prop & Margin of Error, Prop & Width of Interval
           
           # Population Mean + (MoE or WoI)
-          radioButtons(
-            inputId      = ns("sseEstimationType"),
-            label        = strong("Estimation Type"),
-            choiceValues = list("Margin of Error",
-                                "Width of Interval"),
-            choiceNames  = list("Margin of Error (\\( E\\)) ",
-                                "Width of Interval (\\( W\\))"),
-            selected     = "Margin of Error",
-            inline       = TRUE),
           
           conditionalPanel(
             ns = ns,
@@ -59,6 +50,16 @@ sampSizeEstUI <- function(id) {
               value   = "12", 
               min     = 0.00001, 
               step    = 0.00001),
+            
+          radioButtons(
+            inputId      = ns("sseEstimationType"),
+            label        = strong("Estimation Type"),
+            choiceValues = list("Margin of Error",
+                                "Width of Interval"),
+            choiceNames  = list("Margin of Error (\\( E\\)) ",
+                                "Width of Interval (\\( W\\))"),
+            selected     = "Margin of Error",
+            inline       = TRUE),
             
             conditionalPanel(
               ns = ns,
@@ -97,9 +98,19 @@ sampSizeEstUI <- function(id) {
               min     = 0.00001, 
               step    = 0.01),
             
+            radioButtons(
+              inputId      = ns("sseEstimationType2"),
+              label        = strong("Estimation Type"),
+              choiceValues = list("Margin of Error",
+                                  "Width of Interval"),
+              choiceNames  = list("Margin of Error (\\( E\\)) ",
+                                  "Width of Interval (\\( W\\))"),
+              selected     = "Margin of Error",
+              inline       = TRUE),
+            
             conditionalPanel(
               ns = ns,
-              condition = "input.sseEstimationType == 'Margin of Error'",
+              condition = "input.sseEstimationType2 == 'Margin of Error'",
               
               numericInput(
                 inputId = ns("ssePropMargErr"),
@@ -111,7 +122,7 @@ sampSizeEstUI <- function(id) {
             
             conditionalPanel(
               ns = ns,
-              condition = "input.sseEstimationType == 'Width of Interval'",
+              condition = "input.sseEstimationType2 == 'Width of Interval'",
               
               numericInput(
                 inputId = ns("ssePropWoI"),
@@ -223,9 +234,9 @@ sampSizeEstServer <- function(id) {
     
     sseProp_iv$condition( ~ isTRUE(input$sampSizeEstParameter == 'Population Proportion'))
     ssePropMargin_iv$condition( ~ isTRUE(input$sampSizeEstParameter == 'Population Proportion' &&
-                                         input$sseEstimationType == 'Margin of Error'))
+                                         input$sseEstimationType2 == 'Margin of Error'))
     ssePropWidth_iv$condition( ~ isTRUE(input$sampSizeEstParameter == 'Population Proportion' &&
-                                        input$sseEstimationType == 'Width of Interval'))
+                                        input$sseEstimationTyp2e == 'Width of Interval'))
 
  ### ------------ Dependencies ------------------------------------------------
     
@@ -265,7 +276,7 @@ sampSizeEstServer <- function(id) {
     
     
     getSampSizeEstProp <- function(critVal, phat, margErr, widthInt) {
-      if(input$sseEstimationType == "Width of Interval"){
+      if(input$sseEstimationType2 == "Width of Interval"){
         n <- phat * (1 - phat) * (critVal / (widthInt/2))^2
       }
       else{
@@ -423,7 +434,7 @@ sampSizeEstServer <- function(id) {
         br(),
         
         # Print Population Proportion formula for SSE using Margin of Error
-        if(input$sseEstimationType == "Margin of Error"){
+        if(input$sseEstimationType2 == "Margin of Error"){
           list(
             sprintf("\\( n = \\hat{p} (1 - \\hat{p}) \\left( \\dfrac{Z_{\\alpha / 2}}{E} \\right)^{2} \\)"),
             sprintf("\\( = \\; %s \\; (%s) \\left( \\dfrac{%s}{%s} \\right)^{2} \\)",
@@ -461,7 +472,7 @@ sampSizeEstServer <- function(id) {
                 nEstimate,
                 input$confLeveln,
                 input$sseTargetProp),
-        if(input$sseEstimationType == "Margin of Error"){
+        if(input$sseEstimationType2 == "Margin of Error"){
           list(
             sprintf("margin of error \\( (E) = %s \\).", input$ssePropMargErr),
             br()
