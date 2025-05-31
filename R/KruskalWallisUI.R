@@ -73,6 +73,8 @@ kwResults_func <- function(si_iv_is_valid, kwFormat, kwMultiColumns, kwUploadDat
   return(results)
 }
 
+### ---------------- Kruskal-Wallis Validation ------------------------------------
+
 ### ---------------- Kruskal-Wallis Outputs------------------------------------
 kruskalWallisHT <- function(kwResults_output, kwSigLvl_input) {
 
@@ -144,7 +146,7 @@ kruskalWallisHT <- function(kwResults_output, kwSigLvl_input) {
           sprintf("\\( = %s \\)", kw_test_rounded_comparison),
           br(), 
             if (kw_test_rounded_comparison != kw_test_rounded){
-              helpText("* Note: The average of data points was used in the case of a tie while calculating the rank score.")
+              helpText("* Note: The average of data points was used in the case of a tie while calculating the rank score and a correction was performed.")
             },
           
           br(), 
@@ -186,23 +188,30 @@ kwConclusion <- function(kwResults, kwSigLvl_input) {
     kwTest <- results$test
     kw_pv <- kwTest$p.value
     kw_pv_rounded <- as.character(round(kw_pv, 4))
+    kw_test_rounded_comparison <- round(kwTest$statistic, 4)
+    kw_df <- length(results$factorNames) - 1
     
-    if(kwSigLvl_input() == "10%") {
-      kw_sl <- 10
+        if(kwSigLvl_input() == "10%") {
+      kw_sl <- 0.10
+      kw_sl_display <- 10
     } else if(kwSigLvl_input() == "5%") {
-      kw_sl <- 5
+      kw_sl <- 0.05
+      kw_sl_display <- 5
     } else {
-      kw_sl <- 1
+      kw_sl <- 0.01
+      kw_sl_display <- 1
     }
+    
+    kw_chi <- round(qchisq(1 - kw_sl, df = kw_df), 4)
     
     tagList(
       p(tags$b("Conclusion: ")),
-      if (kw_pv <= kw_sl) {
+      if (kw_chi <= kw_test_rounded_comparison) {
         p(sprintf("At the %1.0f%% significance level, there is sufficient statistical evidence in support of the alternative hypothesis \\( (H_{a})\\)
-that at least one group differs in median from the others.", kw_sl))
-      } else {
+that at least one group differs in median from the others.", kw_sl_display))
+      } else{
         p(sprintf("At the %1.0f%% significance level, there is not enough statistical evidence in support of the alternative
-                  hypothesis \\( (H_{a}) \\) that at least one group differs in median from the others."), kw_sl)
+                  hypothesis \\( (H_{a}) \\) that at least one group differs in median from the others.", kw_sl_display))
       }
     )
   })
