@@ -140,7 +140,13 @@ kruskalWallisHT <- function(kwResults_output, kwSigLvl_input) {
           br(), br(),
           p(tags$b("Test Statistic:")),
           
-          sprintf("\\( H = \\frac{12}{n(n + 1)}\\sum_{j = 1}^{k}\\frac{R_j^2}{n_j} - 3(n + 1) \\)"), 
+          if(kw_test_rounded_comparison != kw_test_rounded){
+            sprintf("\\( H_{corrected} = \\")
+          }
+          else{
+            sprintf("\\( H = \\")
+          },
+          sprintf("\\frac{12}{n(n + 1)}\\sum_{j = 1}^{k}\\frac{R_j^2}{n_j} - 3(n + 1) \\)"), 
           sprintf("\\( = \\frac{12}{%d(%d + 1)}\\left(%s\\right) - 3(%d + 1) \\)",
                   totalCount, totalCount, paste(sum_parts, collapse = " + "), totalCount), 
           sprintf("\\( = %s \\)", kw_test_rounded_comparison),

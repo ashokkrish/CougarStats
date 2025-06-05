@@ -420,11 +420,11 @@ statInfrUI <- function(id) {
               choiceValues = list("Independent Population Means",
                                   "Dependent Population Means",
                                   "Population Proportions",
-                                  "Two Population Variances"),
+                                  "Two Population Standard Deviations"),
               choiceNames  = list("Two Independent Populations (\\( \\mu_{1} - \\mu_{2} \\))",
                                   "Dependent (Paired) Populations (\\( \\mu_{d} \\))",
                                   "Two Population Proportions (\\( p_{1} - p_{2}\\))",
-                                  "Two Population Variances (\\( \\sigma_{1}^2/\\sigma_{2}^2 \\))"),
+                                  "Two Population Standard Deviations (\\( \\sigma_{1}/\\sigma_{2} \\))"),
               selected     = "Independent Population Means", #character(0), #
               inline       = FALSE), #,width = '1000px'),
             
@@ -786,7 +786,7 @@ statInfrUI <- function(id) {
             
             conditionalPanel(
               ns = ns,
-              condition = "input.popuParameters == 'Two Population Variances'",
+              condition = "input.popuParameters == 'Two Population Standard Deviations'",
               
               radioButtons(
                 inputId      = ns("dataAvailability3"),
@@ -812,7 +812,7 @@ statInfrUI <- function(id) {
                 withMathJax(
                   tagList(
                     numericInput(
-                      inputId = ns("varSampleSize1"),
+                      inputId = ns("SDSampleSize1"),
                       label   = HTML("<strong>Sample Size 1</strong> \\( (n_1) \\)"),
                       value   = 12,
                       min     = 1,
@@ -829,7 +829,7 @@ statInfrUI <- function(id) {
                     ),
                     
                     numericInput(
-                      inputId = ns("varSampleSize2"),
+                      inputId = ns("SDSampleSize2"),
                       label   = HTML("<strong>Sample Size 2</strong> \\( (n_2) \\)"),
                       value   = 18,
                       min     = 1,
@@ -902,7 +902,7 @@ statInfrUI <- function(id) {
                   placeholder = "Enter values separated by a comma with decimals as points",
                   rows        = 3)
               ), # Raw Data
-            ), # Two Pop Var
+            ), # Two Pop Std Dev
             
             ### ------------ Confidence Level, Inference Type ---------------------------------
             
@@ -1594,11 +1594,11 @@ statInfrUI <- function(id) {
                 ), # Two Population Proportions
                 
                 
-                ### ------------ Two Pop Variance ----------------------------------
+                ### ------------ Two Pop SD ------------------------------------------
                 
                 conditionalPanel(
                   ns = ns,
-                  condition = "input.popuParameters == 'Two Population Variances'",
+                  condition = "input.popuParameters == 'Two Population Standard Deviations'",
                   
                   tabsetPanel(
                     id = ns("twoPopSDTabset"),
@@ -1625,11 +1625,11 @@ statInfrUI <- function(id) {
                         
                         titlePanel(tags$u("Hypothesis Test")),
                         br(),
-                        uiOutput(ns('TwoPopVarHT')),
+                        uiOutput(ns('twoPopSDHT')),
                         br(),
                         
                       ) # HT
-                    ))), # Two Pop Var
+                    ))), # Two Pop SD
               ), # "input.siMethod == '2'"
               
               ### ------------ Multiple Samples ------------------------------------
@@ -1865,8 +1865,6 @@ statInfrServer <- function(id) {
     onemean_iv <- InputValidator$new()
     onemeansdknown_iv <- InputValidator$new()
     onemeansdunk_iv <- InputValidator$new()
-    onemeansdknownraw_iv <- InputValidator$new()
-    onemeansdunkraw_iv <- InputValidator$new()
     onemeanraw_iv <- InputValidator$new()
     onemeanht_iv <- InputValidator$new()
     onemeanupload_iv <- InputValidator$new()
@@ -1891,10 +1889,11 @@ statInfrServer <- function(id) {
     onepropht_iv <- InputValidator$new()
     twoprop_iv <- InputValidator$new()
     twopropht_iv <- InputValidator$new()
-    twopopSD_iv <- InputValidator$new()
-    twopopvar_iv <- InputValidator$new()
-    twopopvarraw_iv <- InputValidator$new()
+    twostddev_iv <- InputValidator$new()
+    twostddevvar_iv <- InputValidator$new()
+    twostddevraw_iv <- InputValidator$new()
     kwupload_iv <- InputValidator$new()
+    
     kwmulti_iv <- InputValidator$new()
     kwstacked_iv <- InputValidator$new()
     anovaupload_iv <- InputValidator$new()
@@ -1933,8 +1932,8 @@ statInfrServer <- function(id) {
     onemeansdknown_iv$add_rule("popuSD", sv_gt(0))
     
     # popuSDRaw
-    onemeansdknownraw_iv$add_rule("popuSDRaw", sv_required())
-    onemeansdknownraw_iv$add_rule("popuSDRaw", sv_gt(0))
+    onemeanraw_iv$add_rule("popuSDRaw", sv_required())
+    onemeanraw_iv$add_rule("popuSDRaw", sv_gt(0))
     
     # popuSDUpload
     onemeanuploadsd_iv$add_rule("popuSDUpload", sv_required())
@@ -2070,53 +2069,53 @@ statInfrServer <- function(id) {
     twoprop_iv$add_rule("numSuccesses2", sv_gte(0))
     twopropht_iv$add_rule("numSuccesses2", ~ if(checkTwoProp() == 0) "At least one of (x1) and (x2) must be greater than 0.")
     
-    # varSampleSize1
-    twopopSD_iv$add_rule("varSampleSize1", sv_required())
-    twopopSD_iv$add_rule("varSampleSize1", sv_integer())
-    twopopSD_iv$add_rule("varSampleSize1", sv_gt(1))
+    # SDSampleSize1
+    twostddev_iv$add_rule("SDSampleSize1", sv_required())
+    twostddev_iv$add_rule("SDSampleSize1", sv_integer())
+    twostddev_iv$add_rule("SDSampleSize1", sv_gt(1))
     
-    # varSampleSize2
-    twopopSD_iv$add_rule("varSampleSize2", sv_required())
-    twopopSD_iv$add_rule("varSampleSize2", sv_integer())
-    twopopSD_iv$add_rule("varSampleSize2", sv_gt(1))
+    # SDSampleSize2
+    twostddev_iv$add_rule("SDSampleSize2", sv_required())
+    twostddev_iv$add_rule("SDSampleSize2", sv_integer())
+    twostddev_iv$add_rule("SDSampleSize2", sv_gt(1))
     
     # stdDev1
-    twopopSD_iv$add_rule("stdDev1", sv_required())
-    twopopSD_iv$add_rule("stdDev1", sv_gt(0))
+    twostddev_iv$add_rule("stdDev1", sv_required())
+    twostddev_iv$add_rule("stdDev1", sv_gt(0))
     
     # stdDev2
-    twopopSD_iv$add_rule("stdDev2", sv_required())
-    twopopSD_iv$add_rule("stdDev2", sv_gt(0))
+    twostddev_iv$add_rule("stdDev2", sv_required())
+    twostddev_iv$add_rule("stdDev2", sv_gt(0))
     
-    # Two Pop Var n1
-    twopopvar_iv$add_rule("n1", sv_required())
-    twopopvar_iv$add_rule("n1", sv_integer())
-    twopopvar_iv$add_rule("n1", sv_gt(1))
+    # Two Std Dev n1
+    twostddevvar_iv$add_rule("n1", sv_required())
+    twostddevvar_iv$add_rule("n1", sv_integer())
+    twostddevvar_iv$add_rule("n1", sv_gt(1))
     
-    # Two Pop Var n2
-    twopopvar_iv$add_rule("n2", sv_required())
-    twopopvar_iv$add_rule("n2", sv_integer())
-    twopopvar_iv$add_rule("n2", sv_gt(1))
+    # Two Std Dev n2
+    twostddevvar_iv$add_rule("n2", sv_required())
+    twostddevvar_iv$add_rule("n2", sv_integer())
+    twostddevvar_iv$add_rule("n2", sv_gt(1))
     
-    # Two Pop Var s1^2
-    twopopvar_iv$add_rule("s1sq", sv_required())
-    twopopvar_iv$add_rule("s1sq", sv_gt(0))
+    # Two Std Dev s1^2
+    twostddevvar_iv$add_rule("s1sq", sv_required())
+    twostddevvar_iv$add_rule("s1sq", sv_gt(0))
     
-    # Two Pop Var s2^2
-    twopopvar_iv$add_rule("s2sq", sv_required())
-    twopopvar_iv$add_rule("s2sq", sv_gt(0))
+    # Two Std Dev s2^2
+    twostddevvar_iv$add_rule("s2sq", sv_required())
+    twostddevvar_iv$add_rule("s2sq", sv_gt(0))
     
     # raw group 1
-    twopopvarraw_iv$add_rule("rawSamp1SD", sv_required())
-    twopopvarraw_iv$add_rule("rawSamp1SD", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
+    twostddevraw_iv$add_rule("rawSamp1SD", sv_required())
+    twostddevraw_iv$add_rule("rawSamp1SD", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
                                                     "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)."))
-    twopopvarraw_iv$add_rule("rawSamp1SD", ~ if (sd(createNumLst(input$rawSamp1SD)) == 0) "No variance in sample data")
+    twostddevraw_iv$add_rule("rawSamp1SD", ~ if (sd(createNumLst(input$rawSamp1SD)) == 0) "No variance in sample data")
     
     # raw group 2
-    twopopvarraw_iv$add_rule("rawSamp2SD", sv_required())
-    twopopvarraw_iv$add_rule("rawSamp2SD", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
+    twostddevraw_iv$add_rule("rawSamp2SD", sv_required())
+    twostddevraw_iv$add_rule("rawSamp2SD", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
                                                     "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)."))
-    twopopvarraw_iv$add_rule("rawSamp2SD", ~ if (sd(createNumLst(input$rawSamp2SD)) == 0) "No variance in sample data")
+    twostddevraw_iv$add_rule("rawSamp2SD", ~ if (sd(createNumLst(input$rawSamp2SD)) == 0) "No variance in sample data")
     
     
     # numTrialsProportion
@@ -2163,17 +2162,18 @@ statInfrServer <- function(id) {
     kwupload_iv$add_rule("kwUserData", ~ if(!(tolower(tools::file_ext(input$kwUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
     kwupload_iv$add_rule("kwUserData", ~ if(ncol(kwUploadData()) < 2) "Data must include at least two columns")
     
-    kwupload_iv$add_rule("kwUserData", ~ {
-      df <- kwUploadData()
-      if (!is.null(df)) {
-        for (col in names(df)) {
-          if (length(unique(df[[col]])) == 1) {
-            return(paste0("Column '", col, "' has the same value for all rows."))
-          }
-        }
-      }
-    })
-
+    #kwupload_iv$add_rule("kwUserData", ~ {
+    #  df <- kwUploadData()
+    #  if (!is.null(df)) {
+    #    for (col in names(df)) {
+    #      if (length(unique(df[[col]])) == 1) {
+    #        return(paste0("Column '", col, "' has the same value for all rows."))
+    #      }
+    #    }
+    #  }
+    #})
+    
+    
     kwmulti_iv$add_rule("kwMultiColumns", ~ if(length(input$kwMultiColumns) < 2) "Select at least two columns")
     
     kwstacked_iv$add_rule("kwResponse", sv_required())
@@ -2218,16 +2218,6 @@ statInfrServer <- function(id) {
                                          input$popuParameter == 'Population Mean' &&
                                          input$dataAvailability == 'Summarized Data' &&
                                          input$sigmaKnown == 'Unknown'))
-    
-    onemeansdknownraw_iv$condition(~ isTRUE(input$siMethod == '1' &&
-                                           input$popuParameter == 'Population Mean' &&
-                                           input$dataAvailability == 'Enter Raw Data' &&
-                                           input$sigmaKnownRaw == 'rawKnown'))
-    
-    onemeansdunkraw_iv$condition(~ isTRUE(input$siMethod == '1' &&
-                                         input$popuParameter == 'Population Mean' &&
-                                         input$dataAvailability == 'Enter Raw Data' &&
-                                         input$sigmaKnownRaw == 'rawUnknown'))
     
     onemeanraw_iv$condition(~ isTRUE(input$siMethod == '1' &&
                                        input$popuParameter == 'Population Mean' &&
@@ -2337,16 +2327,16 @@ statInfrServer <- function(id) {
                                       input$popuParameters == 'Population Proportions' &&
                                       input$inferenceType2 == 'Hypothesis Testing'))
     
-    twopopSD_iv$condition(~ isTRUE(input$siMethod == '2' &&
-                                      input$popuParameters == 'Two Population Variances' &&
+    twostddev_iv$condition(~ isTRUE(input$siMethod == '2' &&
+                                      input$popuParameters == 'Two Population Standard Deviations' &&
                                       input$dataAvailability3 == 'Summary'))
     
-    twopopvar_iv$condition(~ isTRUE(input$siMethod == '2' &&
-                                         input$popuParameters == 'Two Population Variances' &&
+    twostddevvar_iv$condition(~ isTRUE(input$siMethod == '2' &&
+                                         input$popuParameters == 'Two Population Standard Deviations' &&
                                          input$dataAvailability3 == 'Variance'))
     
-    twopopvarraw_iv$condition(~ isTRUE(input$siMethod == '2' &&
-                                         input$popuParameters == 'Two Population Variances' &&
+    twostddevraw_iv$condition(~ isTRUE(input$siMethod == '2' &&
+                                         input$popuParameters == 'Two Population Standard Deviations' &&
                                          input$dataAvailability3 == 'Enter Raw Data'))
     
     kwupload_iv$condition(~ isTRUE(input$siMethod == 'Multiple' &&
@@ -2391,8 +2381,6 @@ statInfrServer <- function(id) {
     si_iv$add_validator(onemean_iv)
     si_iv$add_validator(onemeansdknown_iv)
     si_iv$add_validator(onemeansdunk_iv)
-    si_iv$add_validator(onemeansdunkraw_iv)
-    si_iv$add_validator(onemeansdknownraw_iv)
     si_iv$add_validator(onemeanraw_iv)
     si_iv$add_validator(onemeanht_iv)
     si_iv$add_validator(onemeanupload_iv)
@@ -2416,9 +2404,9 @@ statInfrServer <- function(id) {
     si_iv$add_validator(onepropht_iv)
     si_iv$add_validator(twoprop_iv)
     si_iv$add_validator(twopropht_iv)
-    si_iv$add_validator(twopopSD_iv)
-    si_iv$add_validator(twopopvar_iv)
-    si_iv$add_validator(twopopvarraw_iv)
+    si_iv$add_validator(twostddev_iv)
+    si_iv$add_validator(twostddevvar_iv)
+    si_iv$add_validator(twostddevraw_iv)
     twoprop_iv$add_validator(twopropht_iv)
     si_iv$add_validator(kwupload_iv)
     si_iv$add_validator(kwmulti_iv)
@@ -2443,8 +2431,6 @@ statInfrServer <- function(id) {
     onemean_iv$enable()
     onemeansdknown_iv$enable()
     onemeansdunk_iv$enable()
-    onemeansdknownraw_iv$enable()
-    onemeansdunkraw_iv$enable()
     onemeanraw_iv$enable()
     onemeanht_iv$enable()
     onemeanupload_iv$enable()
@@ -2469,9 +2455,9 @@ statInfrServer <- function(id) {
     onepropht_iv$enable()
     twoprop_iv$enable()
     twopropht_iv$enable()
-    twopopSD_iv$enable()
-    twopopvar_iv$enable()
-    twopopvarraw_iv$enable()
+    twostddev_iv$enable()
+    twostddevvar_iv$enable()
+    twostddevraw_iv$enable()
     kwupload_iv$enable()
     kwmulti_iv$enable()
     kwstacked_iv$enable()
@@ -2983,7 +2969,6 @@ statInfrServer <- function(id) {
       
       return(dat)
     }
-    
     TwoPopSDCI <- function(n1, sd1, n2, sd2, conf_level = 0.95, is_variance) {
       df1 <- n1-1
       df2 <- n2-1
@@ -3015,12 +3000,9 @@ statInfrServer <- function(id) {
       
     }
     
-    TwoPopVarHT <- function(n1, sd1, n2, sd2, sig_lvl, alt_hyp = "two.sided", is_variance) {
+    TwoPopSDHT <- function(n1, sd1, n2, sd2, sig_lvl, alt_hyp = "two.sided", is_variance) {
       df1 <- n1-1
       df2 <- n2-1
-      crit_lower <- 0
-      crit_upper <- 0
-      crit_val <- 0
       
       if (is_variance) {
         var1 <- sd1
@@ -3056,10 +3038,7 @@ statInfrServer <- function(id) {
       return(list(
         F_statistic = F_stat,
         p_value = p_value,
-        reject_null = reject,
-        crit_upper = crit_upper,
-        crit_lower = crit_lower,
-        crit_val = crit_val
+        reject_null = reject
       ))
     }
     
@@ -3101,59 +3080,6 @@ statInfrServer <- function(id) {
         br())
     }
     
-    printFTestPVal <- function(pValue, testStatVal, alternative, pValSign, rejectWord) {
-      if (pValue < 0.0001) {
-        pValueFormatted <- "P \\lt 0.0001"
-      } else {
-        pValueFormatted <- sprintf("%.4f", pValue)
-      }
-      
-      if (alternative == "two.sided") {
-        pvalCalc <- sprintf("2 \\times P(F \\gt |%.4f|)", testStatVal)
-      } else if (alternative == "greater") {
-        pvalCalc <- sprintf("P(F \\gt %.4f)", testStatVal)
-      } else {
-        pvalCalc <- sprintf("P(F \\lt %.4f)", testStatVal)
-      }
-      
-      tagList(
-        p(tags$b("Using P-Value Method:")),
-        sprintf("\\(P = %s = %s\\)", pvalCalc, pValueFormatted),
-        br(), br(),
-        sprintf("Since \\( P %s %.2f \\), %s \\(H_0\\).",
-                pValSign,
-                SigLvl(),
-                rejectWord),
-        br(), br(), br(),
-      )
-    }
-    
-    twoPopVarOutputText <- function(HT, sig_lvl) {
-      if (!HT$reject_null) {
-        region <- "acceptance"
-        isWord <- "isn't"
-      } else {
-        region <- "rejection"
-        isWord <- "is"
-      }
-      rejectWord = if (HT$p_value <= sig_lvl) "reject" else "do not reject"
-      pValSign = if (HT$p_value <= sig_lvl) "\\leq" else ">"
-      
-      return(list(
-        region = region,
-        isWord = isWord,
-        rejectWord = rejectWord,
-        pValSign = pValSign
-      ))
-    }
-    
-    printFStat <- function(sd1, sd2, F_statistic, is_variance, is_HT = FALSE) {
-      if (!is_variance) {
-        p(sprintf("\\(%s\\dfrac{s_1^2}{s_2^2} = \\dfrac{%.4f^2}{%.4f^2} = %.4f \\)", if (is_HT) "F = " else "", sd1, sd2, F_statistic))
-      } else {
-        p(sprintf("\\(%s\\dfrac{s_1^2}{s_2^2} = \\dfrac{%.4f}{%.4f} = %.4f \\)", if (is_HT) "F = " else "", sd1, sd2, F_statistic))
-      }
-    }
     shadeHtArea <- function(df, critValue, altHypothesis) {
       
       if(altHypothesis == 'less') {
@@ -4757,15 +4683,15 @@ statInfrServer <- function(id) {
       
     })
     
-    ### ------------ Two Pop Variance Reactives --------------------------------------
+    ### ------------ Two Pop SD Reactives --------------------------------------
     GetTwoPopSDData <- reactive({
       req(si_iv$is_valid())
       
       dat <- list()
       
       if (input$dataAvailability3 == "Summary") {
-        dat$n1 <- input$varSampleSize1
-        dat$n2 <- input$varSampleSize2
+        dat$n1 <- input$SDSampleSize1
+        dat$n2 <- input$SDSampleSize2
         dat$sd1 <- input$stdDev1
         dat$sd2 <- input$stdDev2
       } else if (input$dataAvailability3 == "Variance") {
@@ -4800,7 +4726,7 @@ statInfrServer <- function(id) {
       return(dat)
     })
     
-    TwoPopVarHypInfo <- reactive({
+    TwoPopSDHypInfo <- reactive({
       hypTestSymbols <- list()
       
       if (input$altHypothesis2 == "3") {
@@ -4815,21 +4741,21 @@ statInfrServer <- function(id) {
         hypTestSymbols$nullHyp <- "\\sigma^2_1 = \\sigma^2_2"
         hypTestSymbols$altHyp <- "\\sigma^2_1 \\neq \\sigma^2_2"
         hypTestSymbols$critAlph <- "\\alpha/2"
-        hypTestSymbols$critSign <- ""
+        hypTestSymbols$critSign <- "\\pm"
         hypTestSymbols$alphaVal <- SigLvl() / 2
       } else { # less
         hypTestSymbols$alternative <- "less"
         hypTestSymbols$nullHyp <- "\\sigma^2_1 \\geq \\sigma^2_2"
         hypTestSymbols$altHyp <- "\\sigma^2_1 \\lt \\sigma^2_2"
         hypTestSymbols$critAlph <- "\\alpha"
-        hypTestSymbols$critSign <- ""
+        hypTestSymbols$critSign <- "-"
         hypTestSymbols$alphaVal <- SigLvl()
       }
       
       return(hypTestSymbols)
     })
     
-    GetAllTwoPopVarData <- reactive({
+    GetAllTwoPopSDData <- reactive({
       if(input$dataAvailability3 == 'Enter Raw Data') {
         data <- GetTwoPopSDRawData()
       } else if(input$dataAvailability3 == 'Upload Data') {
@@ -5023,16 +4949,9 @@ statInfrServer <- function(id) {
         validate(
           need(input$sample1, "Sample Data required.") %then%
             need(length(createNumLst(input$sample1)) > 1, "Sample Data requires a minimum of 2 data points."),
+          need(input$popuSDRaw & input$popuSDRaw > 0, "Population Standard Deviation must be positive."),
           #need(input$popuSDRaw > 0, "Population Standard Deviation must be greater than 0"),
           errorClass = "myClass")
-      }
-      
-      if (!onemeansdknownraw_iv$is_valid()) {
-        validate(
-          need(input$popuSDRaw, "Population Standard Deviation is required.") %then%
-            need(input$popuSDRaw > 0, "Population Standard Deviation must be greater than 0"),
-          errorClass = "myClass"
-        )
       }
       
       if(!onemeansdknown_iv$is_valid()) {
@@ -5307,15 +5226,15 @@ statInfrServer <- function(id) {
         
       }
       
-      #### ---------------- Two Pop Variance Validation
+      #### ---------------- Two Pop Std. Deviation Validation
       
-      if(!twopopSD_iv$is_valid()) {
+      if(!twostddev_iv$is_valid()) {
         validate(
-          need(input$varSampleSize1, "Sample size 1 is required.") %then%
-            need(input$varSampleSize1 %% 1 == 0 && input$varSampleSize1 > 1, "Sample size 1 must be an integer greater than 1."),
+          need(input$SDSampleSize1, "Sample size 1 is required.") %then%
+            need(input$SDSampleSize1 %% 1 == 0 && input$SDSampleSize1 > 1, "Sample size 1 must be an integer greater than 1."),
           
-          need(input$varSampleSize2, "Sample size 2 is required.") %then%
-            need(input$varSampleSize2 %% 1 == 0 && input$varSampleSize2 > 1, "Sample size 2 must be an integer greater than 1."),
+          need(input$SDSampleSize2, "Sample size 2 is required.") %then%
+            need(input$SDSampleSize2 %% 1 == 0 && input$SDSampleSize2 > 1, "Sample size 2 must be an integer greater than 1."),
           
           need(input$stdDev1, "Sample standard deviation 1 is required.") %then%
             need(input$stdDev1 > 0, "Sample standard deviation 1 must be greater than 0."),
@@ -5326,7 +5245,7 @@ statInfrServer <- function(id) {
           errorClass = "myClass")
       }
       
-      if (!twopopvar_iv$is_valid()) {
+      if (!twostddevvar_iv$is_valid()) {
         validate(
           need(input$n1, "n1 is required.") %then%
             need(input$n1 %% 1 == 0 && input$n1 > 1,
@@ -5348,7 +5267,7 @@ statInfrServer <- function(id) {
         )
       }
       
-      if (!twopopvarraw_iv$is_valid()) {
+      if (!twostddevraw_iv$is_valid()) {
         validate(
           need(input$rawSamp1SD, "Group 1 data requires a minimum of 3 numeric values.") %then%
             need(length(createNumLst(input$rawSamp1SD)) >= 3, "Group 1 data requires a minimum of 3 numeric values.") %then%
@@ -5431,7 +5350,7 @@ statInfrServer <- function(id) {
           need(kwStackedIsValid() == TRUE, "Please select distinct columns for Response Variable and Factors."),
           errorClass = "myClass"
         )
-      }    
+      }
       
       #### ---------------- Chi-Square Validation
       if(!chiSq2x2_iv$is_valid()) {
@@ -7518,12 +7437,12 @@ statInfrServer <- function(id) {
       htPlot
     })
     
-    ### ------------ Two Pop Variance Outputs ----------------------------------------------
+    ### ------------ Two Pop SD Outputs ----------------------------------------------
     #### ----------- CI
     output$twoPopSDCI <- renderUI ({
       req(si_iv$is_valid())
       
-      data <- GetAllTwoPopVarData()
+      data <- GetAllTwoPopSDData()
       is_variance <- (input$dataAvailability3 == 'Variance')
       
       CI <- TwoPopSDCI(data$n1, data$sd1, data$n2, data$sd2, ConfLvl(), is_variance)
@@ -7557,18 +7476,19 @@ statInfrServer <- function(id) {
           br(),
           
           # F stat calculation
-          printFStat(data$sd1, data$sd2, CI$F_statistic, is_variance),
-          
-          # formula
-          p("\\( \\displaystyle CI = \\left( F_{\\alpha/2,\\ df_2\\,,\\ df_1} \\cdot \\dfrac{s_1^2}{s_2^2},\\ F_{1 - \\alpha/2,\\ df_2\\,,\\ df_1} \\cdot \\dfrac{s_1^2}{s_2^2} \\right) \\)"),
+          if (!is_variance) {
+            p(sprintf("\\(\\dfrac{s_1^2}{s_2^2} = \\dfrac{%.4f^2}{%.4f^2} = %.4f\\)", data$sd1, data$sd2, CI$F_statistic))
+          } else {
+            p(sprintf("\\(\\dfrac{s_1^2}{s_2^2} = \\dfrac{%.4f}{%.4f} = %.4f\\)", data$sd1, data$sd2, CI$F_statistic))
+          },
           br(),
           
-          # formula with subbed in values
+          # formula
+          p("\\( \\displaystyle CI = \\left( F_{\\alpha/2,\\ df_1\\,,\\ df_2} \\cdot \\dfrac{s_1^2}{s_2^2},\\ F_{1 - \\alpha/2,\\ df_1\\,,\\ df_2} \\cdot \\dfrac{s_1^2}{s_2^2} \\right) \\)"),
+          br(),
           p(sprintf("\\( \\displaystyle CI = \\left( %.4f \\cdot %.4f,\\ %.4f \\cdot %.4f \\right) \\)",
                     CI$F_lower, CI$F_statistic, CI$F_upper, CI$F_statistic)),
           br(),
-          
-          # CI
           p(sprintf("\\( \\displaystyle CI = (%.4f, %.4f) \\)", CI$CI_lower, CI$CI_upper)),
           br(),
           
@@ -7583,84 +7503,41 @@ statInfrServer <- function(id) {
     
     
     #### ------------ HT
-    output$TwoPopVarHT <- renderUI({
+    output$twoPopSDHT <- renderUI({
       req(si_iv$is_valid())
       
-      data <- GetAllTwoPopVarData()
-      hyp_labels <- TwoPopVarHypInfo()
+      data <- GetAllTwoPopSDData()
+      hyp_labels <- TwoPopSDHypInfo()
       
       is_variance <- (input$dataAvailability3 == 'Variance')
       sig_lvl <- SigLvl()
       alt_hyp <- hyp_labels$alternative
       
-      HT <- TwoPopVarHT(data$n1, data$sd1, data$n2, data$sd2, sig_lvl, alt_hyp, is_variance)
+      HT <- TwoPopSDHT(data$n1, data$sd1, data$n2, data$sd2, sig_lvl, alt_hyp, is_variance)
       df1 <- data$n1 - 1
       df2 <- data$n2 - 1
       
-      text <- twoPopVarOutputText(HT, sig_lvl)
-
       tagList(
         withMathJax(
-          # hypotheses
           p(sprintf("\\(H_0: %s\\)", hyp_labels$nullHyp)),
           p(sprintf("\\(H_a: %s\\)", hyp_labels$altHyp)),
-          p(sprintf("\\( \\alpha = %.2f \\)", sig_lvl)),
-          
-          p(strong("Test Statistic:")), 
+          sprintf("\\( \\alpha = %.2f \\)", sig_lvl),
+          br(), br(),
           
           if(input$dataAvailability3 != "Enter Raw Data") {
             p("Given:")
           } else {
             p("From the Data")
           },
-          
           printTwoPopVarGivens(data, is_variance),
+          printDegreesFreedom(df1, df2),
           
-          printFStat(data$sd1, data$sd2, HT$F_statistic, is_variance, is_HT = TRUE),
-          br(),
-          
-          printFTestPVal(
-            pValue = HT$p_value,
-            testStatVal = HT$F_statistic,
-            alternative = alt_hyp,
-            pValSign = text$pValSign,
-            rejectWord = text$rejectWord
-          ),
-          
-          # crit value method
-          p(tags$b("Using Critical Value Method:")),
-          if(alt_hyp == "two.sided") {
-            list(
-              p(sprintf("Critical Values:")),
-              sprintf("\\(F_{\\alpha/2,\\ df_2,\\ df_1} = F_{%.3f,\\ %d,\\ %d} = %.4f\\)", 
-                      sig_lvl/2, df2, df1, HT$crit_lower), br(),
-              sprintf("\\(F_{1-\\alpha/2,\\ df_1,\\ df_2} = F_{%.3f,\\ %d,\\ %d} = %.4f\\)", 
-                      1-sig_lvl/2, df1, df2, HT$crit_upper)
-            )
-            
-          } else if (alt_hyp == "greater") {
-            sprintf("Critical Value = \\(F_{1-\\alpha,\\ df_1,\\ df_2} = F_{%.2f,\\ %d,\\ %d} = %.4f\\)", 
-                    1-sig_lvl, df1, df2, HT$crit_val)
-            
+          #printFStat(data$sd1, data$sd2, HT$F_statistic)
+          if (!is_variance) {
+            p(sprintf("\\( \\dfrac{s_1^2}{s_2^2} = \\dfrac{%.4f^2}{%.4f^2} = %.4f \\)", data$sd1, data$sd2, HT$F_statistic))
           } else {
-            sprintf("Critical Value = \\(F_{\\alpha,\\ df_2,\\ df_1} = F_{%.2f,\\ %d,\\ %d} = %.4f\\)", 
-                    sig_lvl, df2, df1, HT$crit_val)
-          },
-          br(), br(),
-          
-          p(sprintf("where")),
-          div(style = "margin-left: 20px;",
-              printDegreesFreedom(df1, df2)),
-              
-          sprintf("Since the test statistic \\((F)\\) falls within the %s region, %s \\( H_0 \\).",
-                 text$region, text$rejectWord),
-          br(), br(), br(),
-          
-          # conclusion
-          p(strong("Conclusion:")),
-          sprintf("At \\(\\alpha = %.2f\\), since the test statistic falls within the %s region, we %s \\(H_0\\)
-                  and conclude that there %s enough statistical evidence to support the alternative hypothesis.",
-                 sig_lvl, text$region, text$rejectWord, text$isWord)
+            p(sprintf("\\( \\dfrac{s_1}{s_2} = \\dfrac{%.4f}{%.4f} = %.4f \\)", data$sd1, data$sd2, HT$F_statistic))
+          }
         )
       )
     })
