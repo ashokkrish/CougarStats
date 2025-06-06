@@ -98,6 +98,12 @@ sampSizeEstUI <- function(id) {
               min     = 0.00001, 
               step    = 0.01),
             
+            checkboxInput(
+              inputId = ns("normalDistribution"),
+              label   = "Assume data follows a normal distribution",
+              value   = TRUE
+            ),
+            
             radioButtons(
               inputId      = ns("sseEstimationType2"),
               label        = strong("Estimation Type"),
@@ -357,7 +363,7 @@ sampSizeEstServer <- function(id) {
     
  #### ---------------- Mean Estimate output -----------------------------------
     output$sampSizeMeanEstimate <- renderUI({
-      
+      req(sseMean_iv, sseMeanMargin_iv, sseMeanWidth_iv)
       n <- getSampSizeEstMean(criticalValue(), input$ssePopuSD, input$sseMeanMargErr, input$sseMeanWoI)
       nEstimate <- ceiling(n)
       
@@ -424,67 +430,103 @@ sampSizeEstServer <- function(id) {
     
  #### ---------------- Proportion Estimate output -----------------------------
     output$sampSizePropEstimate <- renderUI({
+      req(sseProp_iv, ssePropMargin_iv, ssePropWidth_iv)
       
-      n <- getSampSizeEstProp(criticalValue(), input$sseTargetProp, input$ssePropMargErr, input$ssePropWoI)
-      nEstimate <- ceiling(n)
-      
-      tagList(
-        withMathJax(),
-        br(),
-        br(),
+      if(isTRUE(input$normalDistribution)) {
+        n <- getSampSizeEstProp(criticalValue(), input$sseTargetProp, input$ssePropMargErr, input$ssePropWoI)
+        nEstimate <- ceiling(n)
         
-        # Print Population Proportion formula for SSE using Margin of Error
-        if(input$sseEstimationType2 == "Margin of Error"){
-          list(
-            sprintf("\\( n = \\hat{p} (1 - \\hat{p}) \\left( \\dfrac{Z_{\\alpha / 2}}{E} \\right)^{2} \\)"),
-            sprintf("\\( = \\; %s \\; (%s) \\left( \\dfrac{%s}{%s} \\right)^{2} \\)",
-                    input$sseTargetProp,
-                    1 - input$sseTargetProp,
-                    criticalValue(),
-                    input$ssePropMargErr),
-            sprintf("\\( = \\; %0.4f \\)",
-                    n)
-          )
-        }
-        # Print Population Proportion formula for SSE using Width of Interval
-        else {
-          list(
-            sprintf("\\( n = \\hat{p} (1 - \\hat{p}) \\left( \\dfrac{(2)Z_{\\alpha / 2}}{W} \\right)^{2} \\)"),
-            sprintf("\\( = \\; %s \\; (%s) \\left( \\dfrac{(2)%s}{(%s)} \\right)^{2} \\)",
-                    input$sseTargetProp,
-                    1 - input$sseTargetProp,
-                    criticalValue(),
-                    input$ssePropWoI),
-            sprintf("\\( = \\; %0.4f \\)",
-                    n)
-          )
-        },
+        tagList(
+          withMathJax(),
+          br(),
+          br(),
+          
+          # Print Population Proportion formula for SSE using Margin of Error
+          if(input$sseEstimationType2 == "Margin of Error"){
+            list(
+              sprintf("\\( n = \\hat{p} (1 - \\hat{p}) \\left( \\dfrac{Z_{\\alpha / 2}}{E} \\right)^{2} \\)"),
+              sprintf("\\( = \\; %s \\; (%s) \\left( \\dfrac{%s}{%s} \\right)^{2} \\)",
+                      input$sseTargetProp,
+                      1 - input$sseTargetProp,
+                      criticalValue(),
+                      input$ssePropMargErr),
+              sprintf("\\( = \\; %0.4f \\)",
+                      n)
+            )
+          }
+          # Print Population Proportion formula for SSE using Width of Interval
+          else {
+            list(
+              sprintf("\\( n = \\hat{p} (1 - \\hat{p}) \\left( \\dfrac{(2)Z_{\\alpha / 2}}{W} \\right)^{2} \\)"),
+              sprintf("\\( = \\; %s \\; (%s) \\left( \\dfrac{(2)%s}{(%s)} \\right)^{2} \\)",
+                      input$sseTargetProp,
+                      1 - input$sseTargetProp,
+                      criticalValue(),
+                      input$ssePropWoI),
+              sprintf("\\( = \\; %0.4f \\)",
+                      n)
+            )
+          },
+          
+          br(),
+          br(),
+          sprintf("\\( n \\approx %1.0f \\)",
+                  nEstimate),
+          br(),
+          br(),
+          br(),
+          sprintf("The recommended sample size (\\( n \\)) is \\(%1.0f\\) for a \\( %s \\)%% confidence 
+                level with a target proportion \\( (\\hat{p}) = %s\\) and a ",
+                  nEstimate,
+                  input$confLeveln,
+                  input$sseTargetProp),
+          if(input$sseEstimationType2 == "Margin of Error"){
+            list(
+              sprintf("margin of error \\( (E) = %s \\).", input$ssePropMargErr),
+              br()
+            )
+          }
+          else{
+            list(
+              sprintf("width of interval \\( (W) = %s \\).", input$ssePropWoI),
+              br()
+            )
+          }
+        ) #tagList
         
-        br(),
-        br(),
-        sprintf("\\( n \\approx %1.0f \\)",
-                nEstimate),
-        br(),
-        br(),
-        br(),
-        sprintf("The recommended sample size (\\( n \\)) is \\(%1.0f\\) for a \\( %s \\)%% confidence 
-              level with a target proportion \\( (\\hat{p}) = %s\\) and a ",
-                nEstimate,
-                input$confLeveln,
-                input$sseTargetProp),
-        if(input$sseEstimationType2 == "Margin of Error"){
-          list(
-            sprintf("margin of error \\( (E) = %s \\).", input$ssePropMargErr),
-            br()
+      } else { # Clopper-Pearson method (normalDistribution unchecked)
+        
+        conf.level = switch(input$confLeveln,
+                            "90%" = 0.90,
+                            "95%" = 0.95,
+                            "99%" = 0.99)
+       
+        if (input$sseEstimationType2 == "Margin of Error") {
+          n <- sample_size_clopper_pearson(
+            p0 = input$sseTargetProp,
+            conf.level,
+            margin.error = input$ssePropMargErr
+          )
+        } else {
+          n <- sample_size_clopper_pearson(
+            p0 = input$sseTargetProp,
+            conf.level, 
+            width = input$ssePropWoI
           )
         }
-        else{
-          list(
-            sprintf("width of interval \\( (W) = %s \\).", input$ssePropWoI),
-            br()
-          )
-        }
-      ) #tagList
+        
+        nEstimate <- ceiling(n)
+        
+        tagList(
+          withMathJax(),
+          br(),
+          
+          sprintf("\\( n = %d \\)", nEstimate),
+          br(),
+          br(),
+          tags$em("* Note: There is no closed-form formula as there is in the case of the normal approximation. Instead, sample size was determined numerically by checking whether the resulting exact confidence interval satisfies the desired width and confidence level. This is called the Clopper-Pearson exact binomial method (also known as the exact confidence interval for a binomial proportion).")
+        )
+      }
     })
     
  ### ------------ Component Display -------------------------------------------
