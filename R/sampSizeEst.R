@@ -265,35 +265,37 @@ sampSizeEstServer <- function(id) {
     
  #### ---------------- Validation ---------------------------------------------
     output$ssEstimationValidation <- renderUI({
-      
       if (!sse_iv$is_valid()) {
         
-        if (input$sampSizeEstParameter == 'Population Mean') {
+        # Common validation for Margin of Error or Width of Interval depending on selected estimation type
+        if (input$sseEstimationType == "Margin of Error") {
           validate(
             need(input$sseMargErr, "Margin of Error is required.") %then%
               need(input$sseMargErr > 0, "Margin of Error must be positive."),
-            
+            errorClass = "myClass"
+          )
+        } else if (input$sseEstimationType == "Width of Interval") {
+          validate(
             need(input$sseWoI, "Width of Interval is required.") %then%
               need(input$sseWoI > 0, "Width of Interval must be positive."),
-            
-            need(input$ssePopuSD, "Population Standard Deviation is required.") %then%
-              need(input$ssePopuSD > 0, "Population Standard Deviation must be positive."),
-            
             errorClass = "myClass"
           )
         }
         
+        # Population Mean specific validation
+        if (input$sampSizeEstParameter == 'Population Mean') {
+          validate(
+            need(input$ssePopuSD, "Population Standard Deviation is required.") %then%
+              need(input$ssePopuSD > 0, "Population Standard Deviation must be positive."),
+            errorClass = "myClass"
+          )
+        }
+        
+        # Population Proportion specific validation
         if (input$sampSizeEstParameter == 'Population Proportion') {
           validate(
-            need(input$sseMargErr, "Margin of Error is required.") %then%
-              need(input$sseMargErr > 0, "Margin of Error must be positive."),
-            
-            need(input$sseWoI, "Width of Interval is required.") %then%
-              need(input$sseWoI > 0, "Width of Interval must be positive."),
-            
             need(input$sseTargetProp, "Target Proportion is required.") %then%
               need(input$sseTargetProp > 0 && input$sseTargetProp < 1, "Target Proportion must be between 0 and 1."),
-            
             errorClass = "myClass"
           )
         }
