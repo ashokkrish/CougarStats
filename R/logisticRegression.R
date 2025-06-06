@@ -31,7 +31,7 @@ LogisticRegressionSidebarUI <- function(id) {
           selectize = FALSE
         ),
         uiOutput(ns("responseVariableWarning")), 
-        helpText("Select one or more explanatory variables (numeric or categorical)."),
+        helpText("Select one or more explanatory variables (numeric)."),
         pickerInput(
           ns("explanatoryVariables"), 
           "Explanatory Variables (x₁, x₂, …, xₙ)",
@@ -251,7 +251,7 @@ LogisticRegressionServer <- function(id) {
           
           final_table <- summary_coeffs %>%
             mutate(
-              Wald = (`z value`)^2,
+              Wald = (Estimate / `Std. Error`)^2 ,
               df = 1
             ) %>%
             rownames_to_column("Term") %>%
@@ -265,8 +265,8 @@ LogisticRegressionServer <- function(id) {
               df,
               P = `Pr(>|z|)`,
               OR,
-              `Lower 95%CI for OR` = Lower_CI_OR,
-              `Upper 95%CI for OR` = Upper_CI_OR
+              `Lower 95% CI for OR` = Lower_CI_OR,
+              `Upper 95% CI for OR` = Upper_CI_OR
             )
           
           final_table
