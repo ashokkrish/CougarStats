@@ -4,12 +4,12 @@ regressionAndCorrelationUI <- function(id) {
   ns <- NS(id)
   sidebarLayout(
     sidebarPanel(
-      shinyjs::useShinyjs(), # Ensure useShinyjs is called
+      shinyjs::useShinyjs(), 
       radioButtons(ns("multiple"),
                    tags$b("Regression type"),
                    choices = list("Simple Linear Regression and Correlation Analysis" = "SLR",
                                   "Multiple Linear Regression" = "MLR",
-                                  "Logistic Regression" = "LOGR"), # Added Logistic Regression
+                                  "Binary Logistic Regression" = "LOGR"), # Added Logistic Regression
                    selected = "SLR" 
       ),
       uiOutput(ns("regressionSidebarUI")) # Changed to a more generic name

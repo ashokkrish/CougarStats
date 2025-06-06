@@ -565,6 +565,7 @@ R^2_{\text{adj}} = %0.2f \\
           ))
           hist(responseVariableData)
         })
+        
         output$linearModelEquations <- renderUI(withMathJax(
           div(
             id = "linear-model-equations",
