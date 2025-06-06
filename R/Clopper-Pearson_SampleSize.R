@@ -12,7 +12,7 @@ sample_size_clopper_pearson <- function(p0 = 0.5, conf.level = 0.95, margin.erro
     margin.error <- width / 2
   }
   
-  if (margin.error <= 0) return(NA)
+  if (!is.null(margin.error) && margin.error <= 0) return(NA)
   
   alpha <- 1 - conf.level
   E <- margin.error
