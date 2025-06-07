@@ -7,9 +7,9 @@ sampSizeEstUI <- function(id) {
   
   tagList(
     sidebarLayout(
- #  ========================================================================= #  
- ## -------- Sidebar Panel -------------------------------------------------- 
- #  ========================================================================= #
+      #  ========================================================================= #  
+      ## -------- Sidebar Panel -------------------------------------------------- 
+      #  ========================================================================= #
       sidebarPanel(
         withMathJax(),
         shinyjs::useShinyjs(),
@@ -49,7 +49,41 @@ sampSizeEstUI <- function(id) {
               label   = strong("Population Standard Deviation (\\( \\sigma\\))"),
               value   = "12", 
               min     = 0.00001, 
-              step    = 0.00001)
+              step    = 0.00001),
+            
+            radioButtons(
+              inputId      = ns("sseEstimationType"),
+              label        = strong("Estimation Type"),
+              choiceValues = list("Margin of Error",
+                                  "Width of Interval"),
+              choiceNames  = list("Margin of Error (\\( E\\)) ",
+                                  "Width of Interval (\\( W\\))"),
+              selected     = "Margin of Error",
+              inline       = TRUE),
+            
+            conditionalPanel(
+              ns = ns,
+              condition = "input.sseEstimationType == 'Margin of Error'",
+              
+              numericInput(
+                inputId = ns("sseMeanMargErr"),
+                label   = strong("Margin of Error (\\( E\\))"),
+                value   = "8", 
+                min     = 0.00001, 
+                step    = 0.01)
+            ), #sseEstimationType == 'Margin of Error'
+            
+            conditionalPanel(
+              ns = ns,
+              condition = "input.sseEstimationType == 'Width of Interval'",
+              
+              numericInput(
+                inputId = ns("sseMeanWoI"),
+                label   = strong("Width of Interval (\\( W\\))"),
+                value   = "16", 
+                min     = 0.00001, 
+                step    = 0.01)
+            ) #sseEstimationType == 'Width of Interval'
           ), #sampSizeEstParameter == 'Population Mean'
           
           # Population Proportion + (MoE or WoI)                                             
@@ -68,42 +102,42 @@ sampSizeEstUI <- function(id) {
               inputId = ns("normalDistribution"),
               label   = "Assume data follows a normal distribution",
               value   = TRUE
-            )
+            ),
+            
+            radioButtons(
+              inputId      = ns("sseEstimationTypeProp"),
+              label        = strong("Estimation Type"),
+              choiceValues = list("Margin of Error",
+                                  "Width of Interval"),
+              choiceNames  = list("Margin of Error (\\( E\\)) ",
+                                  "Width of Interval (\\( W\\))"),
+              selected     = "Margin of Error",
+              inline       = TRUE),
+            
+            conditionalPanel(
+              ns = ns,
+              condition = "input.sseEstimationTypeProp == 'Margin of Error'",
+              
+              numericInput(
+                inputId = ns("ssePropMargErr"),
+                label   = strong("Margin of Error (\\( E\\))"),
+                value   = "0.01", 
+                min     = 0.00001, 
+                step    = 0.01)
+            ), #sseEstimationType == 'Margin of Error'
+            
+            conditionalPanel(
+              ns = ns,
+              condition = "input.sseEstimationTypeProp == 'Width of Interval'",
+              
+              numericInput(
+                inputId = ns("ssePropWoI"),
+                label   = strong("Width of Interval (\\( W\\))"),
+                value   = "0.02", 
+                min     = 0.00001, 
+                step    = 0.01)
+            ) #sseEstimationType == 'Width of Interval'
           ), #sampSizeEstParameter == 'Population Proportion'
-          
-          radioButtons(
-            inputId      = ns("sseEstimationType"),
-            label        = strong("Estimation Type"),
-            choiceValues = list("Margin of Error",
-                                "Width of Interval"),
-            choiceNames  = list("Margin of Error (\\( E\\)) ",
-                                "Width of Interval (\\( W\\))"),
-            selected     = "Margin of Error",
-            inline       = TRUE),
-          
-          conditionalPanel(
-            ns = ns,
-            condition = "input.sseEstimationType == 'Margin of Error'",
-            
-            numericInput(
-              inputId = ns("sseMargErr"),
-              label   = strong("Margin of Error (\\( E\\))"),
-              value   = "8", 
-              min     = 0.00001, 
-              step    = 0.01)
-          ), #sseEstimationType == 'Margin of Error'
-          
-          conditionalPanel(
-            ns = ns,
-            condition = "input.sseEstimationType == 'Width of Interval'",
-            
-            numericInput(
-              inputId = ns("sseWoI"),
-              label   = strong("Width of Interval (\\( W\\))"),
-              value   = "16", 
-              min     = 0.00001, 
-              step    = 0.01)
-          ), #sseEstimationType == 'Width of Interval'
           
           actionButton(
             inputId = ns("goSampSizeEst"), 
@@ -116,37 +150,35 @@ sampSizeEstUI <- function(id) {
             class = "act-btn")
         ) #inputPanel
       ), #sidebarPanel
- 
-     
-    
- #  ========================================================================= #  
- ## -------- Main Panel ----------------------------------------------------- 
- #  ========================================================================= #
+      
+      #  ========================================================================= #  
+      ## -------- Main Panel ----------------------------------------------------- 
+      #  ========================================================================= #
       mainPanel(
         div(
           id = ns("ssEstimationMP"),
-              
+          
           uiOutput(ns("ssEstimationValidation")),
-              
+          
           div(
             id = ns("ssEstimationData"),
-                  
- #### ------------ Samp Size Mean Est -----------------------------------------
+            
+            #### ------------ Samp Size Mean Est -----------------------------------------
             conditionalPanel(
               ns = ns,
               condition = "input.sampSizeEstParameter == 'Population Mean'",
-                                    
+              
               titlePanel(tags$u("Sample Size Estimate (\\( n \\))")),
               br(),
               uiOutput(ns('sampSizeMeanEstimate')),
               br(),
             ), #sampSizeEstParameter == Population Mean
-                  
- #### ------------ Samp Size Prop Est -----------------------------------------
+            
+            #### ------------ Samp Size Prop Est -----------------------------------------
             conditionalPanel( 
               ns = ns,
               condition = "input.sampSizeEstParameter == 'Population Proportion'",
-                                  
+              
               titlePanel(tags$u("Sample Size Estimate (\\( n \\))")),
               br(),
               uiOutput(ns('sampSizePropEstimate')),
@@ -166,59 +198,78 @@ sampSizeEstUI <- function(id) {
 sampSizeEstServer <- function(id) {
   moduleServer(id, function(input, output, session) {
     
- #  ========================================================================= #
- ## -------- Data Validation ------------------------------------------------
- #  ========================================================================= #
+    #  ========================================================================= #
+    ## -------- Data Validation ------------------------------------------------
+    #  ========================================================================= #
     sse_iv <- InputValidator$new()
     sseMean_iv <- InputValidator$new()
-    sseMargin_iv <- InputValidator$new()
-    sseWidth_iv <- InputValidator$new()
+    sseMeanMargin_iv <- InputValidator$new()
+    sseMeanWidth_iv <- InputValidator$new()
     sseProp_iv <- InputValidator$new()
-
- ### ------------ Rules -------------------------------------------------------
+    ssePropMargin_iv <- InputValidator$new()
+    ssePropWidth_iv <- InputValidator$new()
     
- #### ---------------- popuSD 
+    ### ------------ Rules -------------------------------------------------------
+    
+    #### ---------------- popuSD 
     sseMean_iv$add_rule("ssePopuSD", sv_required())
     sseMean_iv$add_rule("ssePopuSD", sv_gt(0))
-    sseMargin_iv$add_rule("sseMargErr", sv_required())
-    sseMargin_iv$add_rule("sseMargErr", sv_gt(0))
-    sseWidth_iv$add_rule("sseWoI", sv_required())
-    sseWidth_iv$add_rule("sseWoI", sv_gt(0))
+    sseMeanMargin_iv$add_rule("sseMeanMargErr", sv_required())
+    sseMeanMargin_iv$add_rule("sseMeanMargErr", sv_gt(0))
+    sseMeanWidth_iv$add_rule("sseMeanWoI", sv_required())
+    sseMeanWidth_iv$add_rule("sseMeanWoI", sv_gt(0))
     
- #### ---------------- targetProp 
+    #### ---------------- targetProp 
     sseProp_iv$add_rule("sseTargetProp", sv_required())
     sseProp_iv$add_rule("sseTargetProp", sv_gt(0))
     sseProp_iv$add_rule("sseTargetProp", sv_lt(1))
-
- ### ------------ Conditions --------------------------------------------------
+    ssePropMargin_iv$add_rule("ssePropMargErr", sv_required())
+    ssePropMargin_iv$add_rule("ssePropMargErr", sv_gt(0))
+    ssePropMargin_iv$add_rule("ssePropMargErr", sv_lte(1))
+    ssePropWidth_iv$add_rule("ssePropWoI", sv_required())
+    ssePropWidth_iv$add_rule("ssePropWoI", sv_gt(0))
+    ssePropWidth_iv$add_rule("ssePropWoI", sv_lte(1))
+    
+    ### ------------ Conditions --------------------------------------------------
     
     sseMean_iv$condition( ~ isTRUE(input$sampSizeEstParameter == 'Population Mean'))
+    sseMeanMargin_iv$condition( ~ isTRUE(input$sampSizeEstParameter == 'Population Mean' &&
+                                           input$sseEstimationType == 'Margin of Error'))
+    sseMeanWidth_iv$condition( ~ isTRUE(input$sampSizeEstParameter == 'Population Mean' &&
+                                          input$sseEstimationType == 'Width of Interval'))
     
     sseProp_iv$condition( ~ isTRUE(input$sampSizeEstParameter == 'Population Proportion'))
-
-    sseMargin_iv$condition( ~ isTRUE(input$sseEstimationType == 'Margin of Error'))
-    sseWidth_iv$condition( ~ isTRUE(input$sseEstimationType == 'Width of Interval'))
- ### ------------ Dependencies ------------------------------------------------
+    ssePropMargin_iv$condition( ~ isTRUE(input$sampSizeEstParameter == 'Population Proportion' &&
+                                           input$sseEstimationTypeProp == 'Margin of Error'))
+    ssePropWidth_iv$condition( ~ isTRUE(input$sampSizeEstParameter == 'Population Proportion' &&
+                                          input$sseEstimationTypeProp == 'Width of Interval'))
+    
+    ### ------------ Dependencies ------------------------------------------------
     
     sse_iv$add_validator(sseMean_iv)
-    sse_iv$add_validator(sseMargin_iv)
-    sse_iv$add_validator(sseWidth_iv)
+    sse_iv$add_validator(sseMeanMargin_iv)
+    sse_iv$add_validator(sseMeanWidth_iv)
     
     sse_iv$add_validator(sseProp_iv)
+    sse_iv$add_validator(ssePropMargin_iv)
+    sse_iv$add_validator(ssePropWidth_iv)
     
- ### ------------ Activation --------------------------------------------------
+    ### ------------ Activation --------------------------------------------------
     
     sse_iv$enable()
     
     sseMean_iv$enable()
-    sseMargin_iv$enable()
-    sseWidth_iv$enable()
+    sseMeanMargin_iv$enable()
+    sseMeanWidth_iv$enable()
     
     sseProp_iv$enable()
+    ssePropMargin_iv$enable()
+    ssePropWidth_iv$enable()
     
- #  ========================================================================= #
- ## -------- Functions ------------------------------------------------------
- #  ========================================================================= #
+    
+    #  ========================================================================= #
+    ## -------- Functions ------------------------------------------------------
+    #  ========================================================================= #
     getSampSizeEstMean <- function(critVal, popuSD, margErr, widthInt) {
       if(input$sseEstimationType == "Width of Interval"){
         n <- ((2 * critVal * popuSD) / widthInt) ^ 2
@@ -241,9 +292,9 @@ sampSizeEstServer <- function(id) {
     }
     
     
- #  ========================================================================= #
- ## -------- Reactives ------------------------------------------------------
- #  ========================================================================= #
+    #  ========================================================================= #
+    ## -------- Reactives ------------------------------------------------------
+    #  ========================================================================= #
     criticalValue <- reactive({
       
       if(input$confLeveln == "90%") {
@@ -257,55 +308,61 @@ sampSizeEstServer <- function(id) {
     })
     
     
- #  ========================================================================= #
- ## -------- Observers ------------------------------------------------------
- #  ========================================================================= #
+    #  ========================================================================= #
+    ## -------- Observers ------------------------------------------------------
+    #  ========================================================================= #
     
- ### ------------ Outputs -----------------------------------------------------
+    ### ------------ Outputs -----------------------------------------------------
     
- #### ---------------- Validation ---------------------------------------------
+    #### ---------------- Validation ---------------------------------------------
     output$ssEstimationValidation <- renderUI({
       if (!sse_iv$is_valid()) {
         
-        # Common validation for Margin of Error or Width of Interval depending on selected estimation type
-        if (input$sseEstimationType == "Margin of Error") {
-          validate(
-            need(input$sseMargErr, "Margin of Error is required.") %then%
-              need(input$sseMargErr > 0, "Margin of Error must be positive."),
-            errorClass = "myClass"
-          )
-        } else if (input$sseEstimationType == "Width of Interval") {
-          validate(
-            need(input$sseWoI, "Width of Interval is required.") %then%
-              need(input$sseWoI > 0, "Width of Interval must be positive."),
-            errorClass = "myClass"
-          )
-        }
-        
-        # Population Mean specific validation
+        # Population Mean
         if (input$sampSizeEstParameter == 'Population Mean') {
           validate(
             need(input$ssePopuSD, "Population Standard Deviation is required.") %then%
               need(input$ssePopuSD > 0, "Population Standard Deviation must be positive."),
+     
+            if (input$sseEstimationType == 'Margin of Error') {
+              need(input$sseMeanMargErr, "Margin of Error is required.") %then%
+                need(input$sseMeanMargErr > 0, "Margin of Error must be positive.")
+            },
+            if (input$sseEstimationType == 'Width of Interval') {
+              need(input$sseMeanWoI, "Width of Interval is required.") %then%
+                need(input$sseMeanWoI > 0, "Width of Interval must be positive.")
+            },
             errorClass = "myClass"
           )
         }
         
-        # Population Proportion specific validation
-        if (input$sampSizeEstParameter == 'Population Proportion') {
+        # Population Proportion
+        else if (input$sampSizeEstParameter == 'Population Proportion') {
           validate(
             need(input$sseTargetProp, "Target Proportion is required.") %then%
-              need(input$sseTargetProp > 0 && input$sseTargetProp < 1, "Target Proportion must be between 0 and 1."),
+              need(input$sseTargetProp > 0 && input$sseTargetProp < 1,
+                   "Target Proportion must be greater than 0 and less than 1."),
+            
+            if (input$sseEstimationTypeProp == 'Margin of Error') { 
+              need(input$ssePropMargErr, "Margin of Error is required.") %then%
+                need(input$ssePropMargErr > 0 && input$ssePropMargErr <= 1,
+                     "Margin of Error must be greater than 0 and less than or equal to 1.")
+            },
+            if (input$sseEstimationTypeProp == 'Width of Interval') {
+              need(input$ssePropWoI, "Width of Interval is required.") %then%
+                need(input$ssePropWoI > 0 && input$ssePropWoI <= 1,
+                     "Width of Interval must be greater than 0 and less than or equal to 1.")
+            },
             errorClass = "myClass"
           )
         }
       }
     })
     
- #### ---------------- Mean Estimate output -----------------------------------
+    #### ---------------- Mean Estimate output -----------------------------------
     output$sampSizeMeanEstimate <- renderUI({
-      req(sseMean_iv, sseMargin_iv, sseWidth_iv)
-      n <- getSampSizeEstMean(criticalValue(), input$ssePopuSD, input$sseMargErr, input$sseWoI)
+      
+      n <- getSampSizeEstMean(criticalValue(), input$ssePopuSD, input$sseMeanMargErr, input$sseMeanWoI)
       nEstimate <- ceiling(n)
       
       tagList(
@@ -320,7 +377,7 @@ sampSizeEstServer <- function(id) {
             sprintf("\\( = \\left( \\dfrac{ (%s)(%s) }{%s} \\right)^{2} \\)",
                     criticalValue(),
                     input$ssePopuSD,
-                    input$sseMargErr),
+                    input$sseMeanMargErr),
             sprintf("\\( = %0.4f \\)",
                     n)
           )
@@ -332,7 +389,7 @@ sampSizeEstServer <- function(id) {
             sprintf("\\( = \\left( \\dfrac{ (2)(%s)(%s) }{%s} \\right)^{2} \\)",
                     criticalValue(),
                     input$ssePopuSD,
-                    input$sseWoI),
+                    input$sseMeanWoI),
             sprintf("\\( = %0.4f \\)",
                     n)
           )
@@ -355,26 +412,24 @@ sampSizeEstServer <- function(id) {
         # Print blurb with Margin of Error
         if(input$sseEstimationType == "Margin of Error"){
           list(
-            sprintf("margin of error \\( (E) = %s \\)", input$sseMargErr),
+            sprintf("margin of error \\( (E) = %s \\)", input$sseMeanMargErr),
             br()
           )
         }
         # Print blurb with Width of Interval
         else{
           list(
-            sprintf("width of interval \\( (W) = %s \\)", input$sseWoI),
+            sprintf("width of interval \\( (W) = %s \\)", input$sseMeanWoI),
             br()
           )
         }
       ) #tagList
     })
     
- #### ---------------- Proportion Estimate output -----------------------------
+    #### ---------------- Proportion Estimate output -----------------------------
     output$sampSizePropEstimate <- renderUI({
-      req(sseProp_iv, sseMargin_iv, sseWidth_iv)
-      
       if(isTRUE(input$normalDistribution)) {
-        n <- getSampSizeEstProp(criticalValue(), input$sseTargetProp, input$sseMargErr, input$sseWoI)
+        n <- getSampSizeEstProp(criticalValue(), input$sseTargetProp, input$ssePropMargErr, input$ssePropWoI)
         nEstimate <- ceiling(n)
         
         tagList(
@@ -383,14 +438,14 @@ sampSizeEstServer <- function(id) {
           br(),
           
           # Print Population Proportion formula for SSE using Margin of Error
-          if(input$sseEstimationType == "Margin of Error"){
+          if(input$sseEstimationTypeProp == "Margin of Error"){
             list(
               sprintf("\\( n = \\hat{p} (1 - \\hat{p}) \\left( \\dfrac{Z_{\\alpha / 2}}{E} \\right)^{2} \\)"),
               sprintf("\\( = \\; %s \\; (%s) \\left( \\dfrac{%s}{%s} \\right)^{2} \\)",
                       input$sseTargetProp,
                       1 - input$sseTargetProp,
                       criticalValue(),
-                      input$sseMargErr),
+                      input$ssePropMargErr),
               sprintf("\\( = \\; %0.4f \\)",
                       n)
             )
@@ -403,7 +458,7 @@ sampSizeEstServer <- function(id) {
                       input$sseTargetProp,
                       1 - input$sseTargetProp,
                       criticalValue(),
-                      input$sseWoI),
+                      input$ssePropWoI),
               sprintf("\\( = \\; %0.4f \\)",
                       n)
             )
@@ -421,56 +476,55 @@ sampSizeEstServer <- function(id) {
                   nEstimate,
                   input$confLeveln,
                   input$sseTargetProp),
-          if(input$sseEstimationType == "Margin of Error"){
+          if(input$sseEstimationTypeProp == "Margin of Error"){
             list(
-              sprintf("margin of error \\( (E) = %s \\).", input$sseMargErr),
+              sprintf("margin of error \\( (E) = %s \\).", input$ssePropMargErr),
               br()
             )
           }
           else{
             list(
-              sprintf("width of interval \\( (W) = %s \\).", input$sseWoI),
+              sprintf("width of interval \\( (W) = %s \\).", input$ssePropWoI),
               br()
             )
           }
         ) #tagList
-        
-      } else { # Clopper-Pearson method (normalDistribution unchecked)
-        
-        conf.level = switch(input$confLeveln,
-                            "90%" = 0.90,
-                            "95%" = 0.95,
-                            "99%" = 0.99)
-       
-        if (input$sseEstimationType == "Margin of Error") {
-          n <- sample_size_clopper_pearson(
-            p0 = input$sseTargetProp,
-            conf.level,
-            margin.error = input$sseMargErr
-          )
-        } else {
-          n <- sample_size_clopper_pearson(
-            p0 = input$sseTargetProp,
-            conf.level, 
-            width = input$sseWoI
-          )
-        }
-        
-        nEstimate <- ceiling(n)
-        
-        tagList(
-          withMathJax(),
-          br(),
-          
-          sprintf("\\( n = %d \\)", nEstimate),
-          br(),
-          br(),
-          tags$em("* Note: There is no closed-form formula as there is in the case of the normal approximation. Instead, sample size was determined numerically by checking whether the resulting exact confidence interval satisfies the desired width and confidence level. This is called the Clopper-Pearson exact binomial method (also known as the exact confidence interval for a binomial proportion).")
+    } else {
+      
+      conf.level = switch(input$confLeveln,
+                          "90%" = 0.90,
+                          "95%" = 0.95,
+                          "99%" = 0.99)
+      
+      if (input$sseEstimationTypeProp == "Margin of Error") {
+        n <- sample_size_clopper_pearson(
+          p0 = input$sseTargetProp,
+          conf.level,
+          margin.error = input$ssePropMargErr
+        )
+      } else {
+        n <- sample_size_clopper_pearson(
+          p0 = input$sseTargetProp,
+          conf.level, 
+          width = input$ssePropWoI
         )
       }
+      
+      nEstimate <- ceiling(n)
+      
+      tagList(
+        withMathJax(),
+        br(),
+        
+        sprintf("\\( n = %d \\)", nEstimate),
+        br(),
+        br(),
+        tags$em("* Note: There is no closed-form formula as there is in the case of the normal approximation. Instead, sample size was determined numerically by checking whether the resulting exact confidence interval satisfies the desired width and confidence level. This is called the Clopper-Pearson exact binomial method (also known as the exact confidence interval for a binomial proportion).")
+      )
+    }
     })
     
- ### ------------ Component Display -------------------------------------------
+    ### ------------ Component Display -------------------------------------------
     
     observeEvent(input$goSampSizeEst, {
       if(sse_iv$is_valid()) {
