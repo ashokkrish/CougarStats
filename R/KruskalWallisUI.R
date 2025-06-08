@@ -42,7 +42,8 @@ kwResults_func <- function(si_iv_is_valid, kwFormat, kwMultiColumns, kwUploadDat
     factorCol <- "ind"
     factorNames <- levels(kwData$ind)
   } else {
-    req(kwFactors, kwResponse)
+    req(kwFactors)
+    req(kwResponse)
     kwData <- kwUploadData_output
     colnames(kwData)[colnames(kwData) == kwFactors] <- "ind"
     colnames(kwData)[colnames(kwData) == kwResponse] <- "values"
@@ -344,6 +345,16 @@ shadeHtArea2 <- function(data, cv, direction = "greater") {
 kruskalWallisUpload <- function(kwUploadData_output, kwupload_iv_is_valid) {
   renderDT({
     req(kwupload_iv_is_valid())
+    datatable(kwUploadData_output(),
+              options = list(pageLength = -1,
+                             lengthMenu = list(c(25, 50, 100, -1),
+                                               c("25", "50", "100", "all")),
+                             columnDefs = list(list(className = 'dt-center',
+                                                    targets = 0:ncol(kwUploadData_output())))))
+  })
+}
+kruskalWallisUploadInitial <- function(kwUploadData_output) {
+  renderDT({
     datatable(kwUploadData_output(),
               options = list(pageLength = -1,
                              lengthMenu = list(c(25, 50, 100, -1),

@@ -1736,6 +1736,8 @@ statInfrUI <- function(id) {
               ), #Multiple Samples (ANOVA)
               
               #### ------------ Kruskal-Wallis ------------------------------------
+              
+              
               conditionalPanel(
                 ns = ns,
                 condition = "input.siMethod == 'Multiple' && input.multipleMethodChoice == 'kw'",
@@ -1831,7 +1833,10 @@ statInfrUI <- function(id) {
                 ) #Fisher
               ) # input.siMethod == 'Categorical'
           ) #inferenceData
-        ) #inferenceMP
+        ), #inferenceMP
+        
+        uiOutput(ns("kwRawContainer"))
+
       ), #mainPanel
     ) #sidebarLayout
   ) # UI tagList
@@ -3729,7 +3734,7 @@ statInfrServer <- function(id) {
     
     PrintChiSqTest <- function() {
       data <- chiSqResults()
-      if (input$chiSquareYates && input$chisquareDimension == '2 x 2'){
+      if (input$chiSquareYates){
         chiSqStat <- data$Matrix[nrow(data$Matrix), "(|O - E| - 0.5)<sup>2</sup> / E"]
       } else
         chiSqStat <- data$Matrix[nrow(data$Matrix), "(O - E)<sup>2</sup> / E"]
@@ -3797,7 +3802,7 @@ statInfrServer <- function(id) {
         chiSqSmplf <- paste0(chiSqSmplf, data[row,"(O - E)<sup>2</sup> / E"]," + ")
       }
       
-      chiSqSum <- paste0(chiSqSum, "\\dfrac{(", data[nrow(data) - 1,"O"], " - ", data[nrow(data) - 1,"E"], ")^2}{", data[nrow(data) - 1,"E"], "}")
+      chiSqSum <- paste0(chiSqSum, "\\dfrac{(", data[nrow(data) - 1,"O"], " - ", data[nrow(data) - 1,"E"], ")^2}{", data[ncol(data) - 1,"E"], "}")
       chiSqSmplf <- paste0(chiSqSmplf, data[nrow(data) - 1,"(O - E)<sup>2</sup> / E"])
       
       formula <- tagList(
@@ -4833,6 +4838,8 @@ statInfrServer <- function(id) {
     kwUploadData <- eventReactive(input$kwUserData, {
       kwUploadData_func(input$kwUserData)
     })
+    
+    kwDisplayState <- reactiveVal("none")  # "none", "raw", "analysis
     
     kwStackedIsValid <- eventReactive({input$kwResponse
       input$kwFactors}, {
@@ -7822,9 +7829,32 @@ statInfrServer <- function(id) {
     ### ------------ Kruskal-Wallis Outputs ------------------------------------------
     output$kwHT <- kruskalWallisHT(kwResults, reactive({input$kwSigLvl}))
     output$kwUploadTable <- kruskalWallisUpload(kwUploadData, reactive({kwupload_iv$is_valid()}))
+    output$kwInitialUploadTable <- kruskalWallisUploadInitial(kwUploadData)
     output$renderKWRM <- kwRankedTableOutput(kwResults()$data)
     output$kruskalWallisPlot <- kruskalWallisPlot(kwResults, reactive({input$kwSigLvl}))
     output$kwConclusionOutput <- kwConclusion(kwResults, reactive({input$kwSigLvl}))
+    output$debug_kw_state <- renderText({
+      paste(
+        "multipleMethodChoice:", input$multipleMethodChoice, "|",
+        "kwUserData exists:", !is.null(input$kwUserData), "|",
+        "kwUserData name:", if(!is.null(input$kwUserData)) input$kwUserData$name else "NULL", "|",
+        "siMethod:", input$siMethod
+      )
+    })
+    output$kwRawContainer <- renderUI({
+      req(input$multipleMethodChoice == 'kw')
+      req(input$kwUserData)
+      req(kwDisplayState() == "raw")  # Only show when in "raw" state
+      
+      tabsetPanel(
+        id = session$ns("kwRaw"),
+        selected = "Uploaded Data",
+        tabPanel(
+          title = "Uploaded Data",
+          uiOutput(session$ns("renderKWRaw"))
+        )
+      )
+    })
     ### ------------ Chi-Square Outputs ------------------------------------------
     
     output$chiSqObs <- renderDT({
@@ -7842,28 +7872,80 @@ statInfrServer <- function(id) {
       
       chiSqTest <- suppressWarnings(ChiSquareTest(chiSqActiveMatrix(), input$chiSquareYates))
       
+      # choose columns based on whether Yates' correction applied or not
       yates_applied <- input$chiSquareYates
-      dimension <- input$chisquareDimension
-      if (yates_applied && dimension == '2 x 2'){
-        selected_cols <- c("O", "E", "(O - E)", "(|O - E| - 0.5)<sup>2</sup>", "(|O - E| - 0.5)<sup>2</sup> / E", "Standardized Residuals")
+      selected_columns <- if (yates_applied) {
+        c("O", "E", "(O - E)", "(|O - E| - 0.5)<sup>2</sup>", "(|O - E| - 0.5)<sup>2</sup> / E", "Standardized Residuals")
       } else {
-        selected_cols <- c("O", "E", "(O - E)", "(O - E)<sup>2</sup>", "(O - E)<sup>2</sup> / E", "Standardized Residuals")
+        c("O", "E", "(O - E)", "(O - E)<sup>2</sup>", "(O - E)<sup>2</sup> / E", "Standardized Residuals")
       }
       
-      display_matrix <- chiSqTest$Matrix[, selected_cols, drop = FALSE]
+      selected_data <- chiSqTest$Matrix[, selected_columns, drop = FALSE]
       
-      headers <- htmltools::withTags(table(
+      headers = htmltools::withTags(table(
         class = 'display',
         thead(
-          tr(lapply(selected_cols, function(colname) {
-            th(HTML(colname),
+          tr(
+            th("O",
                class = 'dt-center',
-               style = 'border-right: 1px solid rgba(0, 0, 0, 0.15); border-top: 1px solid rgba(0, 0, 0, 0.15);')
-          }))
+               style = "border: 1px solid rgba(0, 0, 0, 0.15);
+                      border-bottom: 1px solid  rgba(0, 0, 0, 0.3);"),
+            th("E",
+               class = 'dt-center',
+               style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
+                      border-top: 1px solid rgba(0, 0, 0, 0.15);'),
+            th("(O - E)",
+               class = 'dt-center',
+               style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
+                      border-top: 1px solid rgba(0, 0, 0, 0.15);'),
+            list(
+              if (yates_applied) {
+                list(
+                  th(HTML(paste("(|O - E| - 0.5)", sup(2))),
+                     class = 'dt-center',
+                     style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
+                      border-top: 1px solid rgba(0, 0, 0, 0.15);'),
+                  th(HTML(paste("(|O - E| - 0.5)", sup(2), " / E")),
+                     class = 'dt-center',
+                     style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
+                      border-top: 1px solid rgba(0, 0, 0, 0.15);')
+                )
+              } else {
+                list(
+                  th(HTML(paste("(O - E)", sup(2))),
+                     class = 'dt-center',
+                     style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
+                      border-top: 1px solid rgba(0, 0, 0, 0.15);'),
+                  th(HTML(paste("(O - E)", sup(2), "/ E")),
+                     class = 'dt-center',
+                     style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
+                      border-top: 1px solid rgba(0, 0, 0, 0.15);')
+                )
+              }
+            ),
+            th("Standardized Residuals",
+               class = 'dt-center',
+               style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
+                      border-top: 1px solid rgba(0, 0, 0, 0.15);')
+            
+          )
         )
       ))
       
-      datatable(display_matrix,
+      if (yates_applied){
+        column_defs <- list(
+          list(width = '130px', targets = c(0, 1, 2, 5)),  # standard columns
+          list(width = '200px', targets = c(3, 4)),  # wider for Yates correction columns
+          list(className = 'dt-center', targets = c(0, 1, 2, 3, 4, 5))
+        )
+      } else {
+        column_defs <- list(
+          list(width = '130px', targets = c(0, 1, 2, 3, 4, 5)),
+          list(className = 'dt-center', targets = c(0, 1, 2, 3, 4, 5))
+        )
+      }
+      
+      datatable(selected_data,
                 class = 'cell-border stripe',
                 container = headers,
                 options = list(
@@ -7874,17 +7956,15 @@ statInfrServer <- function(id) {
                   paging = FALSE,
                   autoWidth = FALSE,
                   scrollX = TRUE,
-                  columnDefs = list(
-                    list(width = '130px', targets = c(0, 1, 2, 3, 4, 5)),
-                    list(className = 'dt-center', targets = c(0, 1, 2, 3, 4, 5)))
+                  columnDefs = column_defs
                 ),
                 selection = "none",
                 escape = FALSE,
                 filter = "none",
                 rownames = FALSE) %>%
-        formatStyle(columns = 0:ncol(display_matrix),
+        formatStyle(columns = 0:ncol(chiSqTest$Matrix),
                     target = 'row',
-                    fontWeight = styleRow(dim(display_matrix)[1], "bold"))
+                    fontWeight = styleRow(dim(chiSqTest$Matrix)[1], "bold"))
     })
     
     
@@ -8130,13 +8210,25 @@ statInfrServer <- function(id) {
       }
     })
     
-    observeEvent(input$kwUserData, priority = 10, {
+    observeEvent(input$kwUserData, {
       
+      output$renderKWRaw <- renderUI({
+        tagList(
+          titlePanel("Data File"),
+          br(), br(),
+          div(DTOutput(session$ns("kwInitialUploadTable")), style = "width: 75%"),
+          br(), br(),
+        )
+      })
+      
+      kwDisplayState("raw")
+
       #hide(id = "inferenceData")
       hide(id = "kwUploadInputs")
       
       fileInputs$kwStatus <- 'uploaded'
-      
+      output$kwInitialUploadTable <- kruskalWallisUploadInitial(kwUploadData)
+    
       if(kwupload_iv$is_valid())
       {
         freezeReactiveValue(input, "kwMultiColumns")
@@ -8234,6 +8326,11 @@ statInfrServer <- function(id) {
       })
       
       observeEvent(input$goInference, {
+        # show the analysis panel instead of initial uploaded data
+        kwDisplayState("analysis")
+        
+        req(kwUploadData())
+        req(kwupload_iv$is_valid())
         # refresh the Analysis output defined in KruskalWallisUI.R
         output$renderKWData <- renderUI({
           tagList(
@@ -8245,6 +8342,7 @@ statInfrServer <- function(id) {
             br()
           )
         })
+        
         # refresh the Ranking output defined in KruskalWallisUI.R
         output$renderKWRM<-kwRankedTableOutput(kwResults()$data)
       })
