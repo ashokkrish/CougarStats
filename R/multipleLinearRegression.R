@@ -330,16 +330,22 @@ MLRServer <- function(id) {
               as.data.frame(summary(model)$coefficients),
               "Source"
             )
-          modelConfidenceIntervals <-
-            rownames_to_column(as.data.frame(confint(model)), "Source")
+          
+          # Get CIs, convert to data frame, and rename columns
+          modelConfidenceIntervals <- as.data.frame(confint(model))
+          colnames(modelConfidenceIntervals) <- c("Lower 95% CI", "Upper 95% CI")
+          modelConfidenceIntervals <- rownames_to_column(modelConfidenceIntervals, "Source")
+          
           output$linearModelCoefConfint <- renderTable(
             {
-              dplyr::left_join(modelCoefficients,
-                modelConfidenceIntervals,
-                by = "Source"
+              final_table <- dplyr::left_join(modelCoefficients,
+                                              modelConfidenceIntervals,
+                                              by = "Source"
               )
+              
+              tibble::column_to_rownames(final_table, var = "Source")
             },
-            rownames = TRUE,
+            rownames = TRUE, # This tells renderTable to display the row names
             na = "",
             striped = TRUE,
             align = "c",
@@ -565,6 +571,7 @@ R^2_{\text{adj}} = %0.2f \\
           ))
           hist(responseVariableData)
         })
+        
         output$linearModelEquations <- renderUI(withMathJax(
           div(
             id = "linear-model-equations",
@@ -582,7 +589,7 @@ R^2_{\text{adj}} = %0.2f \\
               ),
               r"{\)}"
             )),
-            p("The estimated regression equation is"),
+            p("The estimated multiple linear regression equation is"),
             p(with(uploadedTibble$data(), {
               req(uploadedTibble$data(), cancelOutput = TRUE)
               req(isTruthy(input$responseVariable), cancelOutput = TRUE)
