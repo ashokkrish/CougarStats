@@ -11,10 +11,10 @@ library(dplyr)
 library(broom)
 library(broom.helpers)
 library(DT)
-library(DescTools)           # for PseudoR2()
-library(ResourceSelection)   # for hoslem.test()
-library(shinyalert)          # for pop-up notices
-library(tibble)              # for rownames_to_column
+library(DescTools)           
+library(ResourceSelection)   
+library(shinyalert)       
+library(tibble)              
 
 # --- UI Function for Logistic Regression Sidebar ---
 LogisticRegressionSidebarUI <- function(id) {
@@ -23,7 +23,7 @@ LogisticRegressionSidebarUI <- function(id) {
     div(
       id = ns("LOGRSidebar"), 
       withMathJax(
-        helpText("Select a binary response variable (must have exactly two unique values)."),
+        helpText("Select a binary response variable (must have exactly two unique values: 0 or 1)."),
         selectInput(
           ns("responseVariable"), 
           "Response Variable (\\(y\\)) – Binary",
@@ -218,24 +218,24 @@ LogisticRegressionServer <- function(id) {
           )
           
           symbolic_terms <- paste(
-            sprintf("\\beta_{%d}x_{%d}", 1:length(explanatory_vars_names), 1:length(explanatory_vars_names)),
+            sprintf("\\hat{\\beta}_{%d}x_{%d}", 1:length(explanatory_vars_names), 1:length(explanatory_vars_names)),
             collapse = " + "
           )
-          log_odds_general <- paste0("\\text{logit}(p) = \\beta_0 + ", symbolic_terms)
+          log_odds_general <- paste0("\\text{logit}(\\hat{p}) = \\hat{\\beta}_0 + ", symbolic_terms)
           
           model_coeffs <- coefficients(fit)
           value_terms <- paste(sprintf("%+.3f \\cdot \\text{%s}",
                                        model_coeffs[-1],
                                        gsub("_", "\\\\_", names(model_coeffs)[-1])),
                                collapse = " ")
-          log_odds_specific <- sprintf("logit(\\hat{p}) = %.3f %s", model_coeffs[1], value_terms)
+          log_odds_specific <- sprintf("\\text{logit}(\\hat{p}) = %.3f %s", model_coeffs[1], value_terms)
           
           combined_latex <- sprintf("\\(%s \\\\ %s\\)", log_odds_general, log_odds_specific)
           
           div(
             p("The variables in the model are"),
             p(variable_list),
-            p("The estimated regression equation is"),
+            p("The estimated binary regression equation is"),
             p(combined_latex)
           )
         }))
@@ -256,7 +256,6 @@ LogisticRegressionServer <- function(id) {
             ) %>%
             rownames_to_column("Term") %>%
             left_join(rownames_to_column(or_and_ci, "Term"), by = "Term") %>%
-            # **CORRECTED LINE**: Explicitly call dplyr::select to avoid package conflicts
             dplyr::select(
               Term,
               Coefficient = Estimate,
@@ -269,14 +268,16 @@ LogisticRegressionServer <- function(id) {
               `Upper 95% CI for OR` = Upper_CI_OR
             )
           
-          final_table
-        }, striped = TRUE, na = "", align = "c", digits = 3)
+          # Convert the 'Term' column back to row names for display
+          tibble::column_to_rownames(final_table, var = "Term")
+          
+        }, rownames = TRUE, striped = TRUE, na = "", align = "c", digits = 3)
         
         output$logisticModelCoefficientsAndConfidenceIntervals <- renderUI({
           column(
             12,
             p(strong("Coefficients and Confidence Intervals")),
-            p("Coefficients are the log-odds. The Wald chi-square statistic tests the hypothesis that a given coefficient is zero. Odds Ratios (OR) and their 95% confidence intervals are also provided."),
+            p("Coefficients are the log-odds. The Wald statistic tests the hypothesis that a given coefficient is zero. Odds Ratios (OR) and their 95% confidence intervals are also provided."),
             tableOutput(ns("logrCoefConfintTable"))
           )
         })
