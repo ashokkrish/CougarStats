@@ -63,8 +63,6 @@ LogisticRegressionMainPanelUI <- function(id) {
                  id = ns("dataImport"),
                  title = "")),
              tabPanel(title = "LR", uiOutput(ns("Equations"))),
-             tabPanel(title = "ANOVA", uiOutput(ns("ANOVA"))),
-             
              id = ns("mainPanel"), 
              theme = bs_theme(version = 4)
   )
@@ -224,18 +222,24 @@ LogisticRegressionServer <- function(id) {
           log_odds_general <- paste0("\\text{logit}(\\hat{p}) = \\hat{\\beta}_0 + ", symbolic_terms)
           
           model_coeffs <- coefficients(fit)
-          value_terms <- paste(sprintf("%+.3f \\cdot \\text{%s}",
-                                       model_coeffs[-1],
-                                       gsub("_", "\\\\_", names(model_coeffs)[-1])),
-                               collapse = " ")
-          log_odds_specific <- sprintf("\\text{logit}(\\hat{p}) = %.3f %s", model_coeffs[1], value_terms)
+          explanatory_coeffs <- model_coeffs[-1]
           
+          value_terms <- paste(
+            sprintf("%+.3f x_{%d}", explanatory_coeffs, seq_along(explanatory_coeffs)),
+            collapse = " "
+          )
+          
+          log_odds_specific <- gsub(
+            "\\+ -", "- ",
+            sprintf("\\text{logit}(\\hat{p}) = %.3f %s", model_coeffs[1], value_terms)
+          )
+        
           combined_latex <- sprintf("\\(%s \\\\ %s\\)", log_odds_general, log_odds_specific)
           
           div(
             p("The variables in the model are"),
             p(variable_list),
-            p("The estimated binary regression equation is"),
+            p("The estimated binary logistic regression equation is"),
             p(combined_latex)
           )
         }))
@@ -293,10 +297,6 @@ LogisticRegressionServer <- function(id) {
             fluidRow(uiOutput(ns("logisticModelEquations"))),
             fluidRow(uiOutput(ns("logisticModelCoefficientsAndConfidenceIntervals")))
           )
-        })
-        
-        output$ANOVA <- renderUI({
-          # Placeholder for ANOVA content
         })
         
       }) # End isolate
