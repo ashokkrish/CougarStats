@@ -3802,7 +3802,7 @@ statInfrServer <- function(id) {
         chiSqSmplf <- paste0(chiSqSmplf, data[row,"(O - E)<sup>2</sup> / E"]," + ")
       }
       
-      chiSqSum <- paste0(chiSqSum, "\\dfrac{(", data[nrow(data) - 1,"O"], " - ", data[nrow(data) - 1,"E"], ")^2}{", data[ncol(data) - 1,"E"], "}")
+      chiSqSum <- paste0(chiSqSum, "\\dfrac{(", data[nrow(data) - 1,"O"], " - ", data[nrow(data) - 1,"E"], ")^2}{", data[nrow(data) - 1,"E"], "}")
       chiSqSmplf <- paste0(chiSqSmplf, data[nrow(data) - 1,"(O - E)<sup>2</sup> / E"])
       
       formula <- tagList(
@@ -8598,6 +8598,38 @@ statInfrServer <- function(id) {
                            options = list(placeholder = 'Select a factor'))
       
       updateTabsetPanel(session, "onePopMeanTabset", selected = "Analysis")
+    })
+    
+    observe({
+      
+      if (input$chisquareMethod == "Fisher"){
+        updateRadioButtons(session, "chisquareDimension", selected = "2 x 2")
+        
+        # hide radio buttons
+        runjs("$('input[value=\"2 x 3\"]').parent().hide();
+               $('input[value=\"3 x 2\"]').parent().hide();
+               $('input[value=\"3 x 3\"]').parent().hide();
+              ")
+        
+        # hide matrices
+        hide(id = "chiSqInput2x3")
+        hide(id = "chiSqInput3x2")
+        hide(id = "chiSqInput3x3")
+      }
+      else {
+        
+        # show radio buttons
+        runjs("$('input[value=\"2 x 3\"]').parent().show();
+               $('input[value=\"3 x 2\"]').parent().show();
+               $('input[value=\"3 x 3\"]').parent().show();
+              ")
+        
+        # show matrices
+        show(id = "chiSqInput2x3")
+        show(id = "chiSqInput3x2")
+        show(id = "chiSqInput3x3")
+      }
+      
     })
     
   })
