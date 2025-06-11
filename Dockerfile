@@ -51,7 +51,9 @@ RUN R -e \
                     'magrittr',         \
                     'ggResidpanel',     \
                     'broom.helpers',    \
-                    'remotes'),         \
+                    'remotes',          \
+                    'ResourceSelection',\
+                    'shinyalert'),      \
                   dependencies = TRUE); \
   remotes::install_github('deepanshu88/shinyDarkmode'); \
   remotes::install_github('rsquaredacademy/olsrr');"
