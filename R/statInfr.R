@@ -6833,7 +6833,7 @@ statInfrServer <- function(id) {
       }
       
       sd2Sqrd <- data$sd2^2
-      if( sd1Sqrd >= 0.0001) {
+      if( sd2Sqrd >= 0.0001) {
         sd2Sqrd <- round(sd2Sqrd, 4)
       } else {
         sd2Sqrd <- signif(sd2Sqrd, 1)
