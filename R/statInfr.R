@@ -8632,5 +8632,19 @@ statInfrServer <- function(id) {
       
     })
     
+    
+    # TEMPORARY: if the user selects Statistical Inference > Inference about 2 samples > Two Population Standard Deviations (σ1/σ2), hide Hypothesis Testing
+    observe({
+      
+      if (input$popuParameters == "Two Population Standard Deviations"){
+        updateRadioButtons(session, "inferenceType2", selected = "Confidence Interval")
+        runjs("$('input[value=\"Hypothesis Testing\"]').parent().hide();")
+      }
+      else {
+        runjs("$('input[value=\"Hypothesis Testing\"]').parent().show();")
+      }
+      
+    })
+    
   })
 }
