@@ -3794,7 +3794,7 @@ statInfrServer <- function(id) {
     
     PrintChiSqTest <- function() {
       data <- chiSqResults()
-      if (input$chiSquareYates){
+      if (input$chiSquareYates && input$chisquareDimension == '2 x 2'){
         chiSqStat <- data$Matrix[nrow(data$Matrix), "(|O - E| - 0.5)<sup>2</sup> / E"]
       } else
         chiSqStat <- data$Matrix[nrow(data$Matrix), "(O - E)<sup>2</sup> / E"]
@@ -7984,78 +7984,28 @@ statInfrServer <- function(id) {
       
       # choose columns based on whether Yates' correction applied or not
       yates_applied <- input$chiSquareYates
-      selected_columns <- if (yates_applied) {
-        c("O", "E", "(O - E)", "(|O - E| - 0.5)<sup>2</sup>", "(|O - E| - 0.5)<sup>2</sup> / E", "Standardized Residuals")
+      dimension <- input$chisquareDimension
+      if (yates_applied && dimension == '2 x 2'){
+        selected_cols <- c("O", "E", "(O - E)", "(|O - E| - 0.5)<sup>2</sup>", "(|O - E| - 0.5)<sup>2</sup> / E", "Standardized Residuals")
       } else {
-        c("O", "E", "(O - E)", "(O - E)<sup>2</sup>", "(O - E)<sup>2</sup> / E", "Standardized Residuals")
+        selected_cols <- c("O", "E", "(O - E)", "(O - E)<sup>2</sup>", "(O - E)<sup>2</sup> / E", "Standardized Residuals")
       }
       
-      selected_data <- chiSqTest$Matrix[, selected_columns, drop = FALSE]
+      display_matrix <- chiSqTest$Matrix[, selected_cols, drop = FALSE]
       
-      headers = htmltools::withTags(table(
+      headers <- htmltools::withTags(table(
         class = 'display',
         thead(
-          tr(
-            th("O",
+          tr(lapply(selected_cols, function(colname) {
+            th(HTML(colname),
                class = 'dt-center',
-               style = "border: 1px solid rgba(0, 0, 0, 0.15);
-                      border-bottom: 1px solid  rgba(0, 0, 0, 0.3);"),
-            th("E",
-               class = 'dt-center',
-               style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
-                      border-top: 1px solid rgba(0, 0, 0, 0.15);'),
-            th("(O - E)",
-               class = 'dt-center',
-               style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
-                      border-top: 1px solid rgba(0, 0, 0, 0.15);'),
-            list(
-              if (yates_applied) {
-                list(
-                  th(HTML(paste("(|O - E| - 0.5)", sup(2))),
-                     class = 'dt-center',
-                     style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
-                      border-top: 1px solid rgba(0, 0, 0, 0.15);'),
-                  th(HTML(paste("(|O - E| - 0.5)", sup(2), " / E")),
-                     class = 'dt-center',
-                     style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
-                      border-top: 1px solid rgba(0, 0, 0, 0.15);')
-                )
-              } else {
-                list(
-                  th(HTML(paste("(O - E)", sup(2))),
-                     class = 'dt-center',
-                     style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
-                      border-top: 1px solid rgba(0, 0, 0, 0.15);'),
-                  th(HTML(paste("(O - E)", sup(2), "/ E")),
-                     class = 'dt-center',
-                     style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
-                      border-top: 1px solid rgba(0, 0, 0, 0.15);')
-                )
-              }
-            ),
-            th("Standardized Residuals",
-               class = 'dt-center',
-               style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
-                      border-top: 1px solid rgba(0, 0, 0, 0.15);')
-            
+               style = 'border-right: 1px solid rgba(0, 0, 0, 0.15); border-top: 1px solid rgba(0, 0, 0, 0.15);')
+          })
           )
         )
       ))
       
-      if (yates_applied){
-        column_defs <- list(
-          list(width = '130px', targets = c(0, 1, 2, 5)),  # standard columns
-          list(width = '200px', targets = c(3, 4)),  # wider for Yates correction columns
-          list(className = 'dt-center', targets = c(0, 1, 2, 3, 4, 5))
-        )
-      } else {
-        column_defs <- list(
-          list(width = '130px', targets = c(0, 1, 2, 3, 4, 5)),
-          list(className = 'dt-center', targets = c(0, 1, 2, 3, 4, 5))
-        )
-      }
-      
-      datatable(selected_data,
+      datatable(display_matrix,
                 class = 'cell-border stripe',
                 container = headers,
                 options = list(
@@ -8066,15 +8016,17 @@ statInfrServer <- function(id) {
                   paging = FALSE,
                   autoWidth = FALSE,
                   scrollX = TRUE,
-                  columnDefs = column_defs
+                  columnDefs = list(
+                    list(width = '130px', targets = c(0, 1, 2, 3, 4, 5)),
+                    list(className = 'dt-center', targets = c(0, 1, 2, 3, 4, 5)))
                 ),
                 selection = "none",
                 escape = FALSE,
                 filter = "none",
                 rownames = FALSE) %>%
-        formatStyle(columns = 0:ncol(chiSqTest$Matrix),
+        formatStyle(columns = 0:ncol(display_matrix),
                     target = 'row',
-                    fontWeight = styleRow(dim(chiSqTest$Matrix)[1], "bold"))
+                    fontWeight = styleRow(dim(display_matrix)[1], "bold"))
     })
     
     
