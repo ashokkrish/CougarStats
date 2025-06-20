@@ -8017,7 +8017,8 @@ statInfrServer <- function(id) {
                   autoWidth = FALSE,
                   scrollX = TRUE,
                   columnDefs = list(
-                    list(width = '130px', targets = c(0, 1, 2, 3, 4, 5)),
+                    list(width = '130px', targets = c(0, 1, 2, 3, 5)),
+                    list(width = '160px', targets = 4),
                     list(className = 'dt-center', targets = c(0, 1, 2, 3, 4, 5)))
                 ),
                 selection = "none",
