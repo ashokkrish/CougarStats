@@ -3121,10 +3121,10 @@ statInfrServer <- function(id) {
     twoPopVarOutputText <- function(HT, sig_lvl) {
       if (!HT$reject_null) {
         region <- "acceptance"
-        isWord <- "is"
+        isWord <- "isn't"
       } else {
         region <- "rejection"
-        isWord <- "isn't"
+        isWord <- "is"
       }
       rejectWord = if (HT$p_value <= sig_lvl) "reject" else "do not reject"
       pValSign = if (HT$p_value <= sig_lvl) "\\leq" else ">"
@@ -7652,8 +7652,8 @@ statInfrServer <- function(id) {
           # conclusion
           p(strong("Conclusion:")),
           sprintf("At \\(\\alpha = %.2f\\), since the test statistic falls within the %s region, we %s \\(H_0\\)
-                  and conclude that there %s enough statistical evidence to support the alternative hypothesis.",
-                  sig_lvl, text$region, text$rejectWord, text$isWord)
+                  and conclude that there %s enough statistical evidence to support that \\(%s\\)",
+                  sig_lvl, text$region, text$rejectWord, text$isWord, hyp_labels$altHyp)
         )
       )
     })
