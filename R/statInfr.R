@@ -779,7 +779,7 @@ statInfrUI <- function(id) {
                 min     = 1,
                 step    = 1),
             ), # Two Population Proportions
-
+            
             
             
             ### ------------ 2 Pop Standard Deviations ------------------------------------
@@ -1443,193 +1443,193 @@ statInfrUI <- function(id) {
               
               ### ------------ 2 Samples ---------------------------------------------------
               conditionalPanel( #### Two Samp ----
-                ns = ns,
-                condition = "input.siMethod == '2'",
-                
-                #### ---------------- Independent Pop Means ----------------------------------
-                conditionalPanel(
-                  ns = ns,
-                  condition = "input.popuParameters == 'Independent Population Means'",
-                  
-                  tabsetPanel(
-                    id = ns("indPopMeansTabset"),
-                    selected = "Analysis",
-                    
-                    tabPanel(
-                      id = ns("indPopMeans"),
-                      title = "Analysis",
-                      
-                      conditionalPanel(
-                        ns = ns,
-                        condition = "input.inferenceType2 == 'Confidence Interval'",
-                        
-                        titlePanel(tags$u("Confidence Interval")),
-                        br(),
-                        uiOutput(ns('indMeansCI')),
-                        br(),
-                      ), # Confidence interval
-                      
-                      conditionalPanel(
-                        ns = ns,
-                        condition = "input.inferenceType2 == 'Hypothesis Testing'",
-                        
-                        titlePanel(tags$u("Hypothesis Test")),
-                        br(),
-                        uiOutput(ns('indMeansHT')),
-                        br()
-                      ), # Hypothesis Testing
-                      
-                      conditionalPanel(
-                        ns = ns,
-                        condition = "input.dataAvailability2 != 'Summarized Data' && input.indMeansBoxplot == 1",
-                        
-                        br(),
-                        hr(),
-                        br(),
-                        titlePanel(tags$u("Boxplot")),
-                        br(),
-                        plotOptionsMenuUI(
-                          id = ns("indMeansBoxplot"),
-                          plotType = "Boxplot",
-                          title = "Boxplot"),
-                        uiOutput(ns("renderIndMeansBoxplot")),
-                        br(),
-                        br()
-                      )
-                    ), # indPopMeans Analysis tabPanel
-                    
-                    tabPanel(
-                      id = ns("indPopMeansData"),
-                      title = "Uploaded Data",
-                      
-                      uiOutput(ns("renderIndPopMeansData"))
-                    ), # indPopMeansData Uploaded Data tabPanel
-                    
-                  ), # indPopMeansTabset
-                ), # Two Independent Samples
-                #### ---------------- Dependent Pop Means ----------------------------------
-                conditionalPanel(
-                  ns = ns,
-                  condition = "input.popuParameters == 'Dependent Population Means'",
-                  
-                  tabsetPanel(
-                    id = ns("depPopMeansTabset"),
-                    selected = "Analysis",
-                    
-                    tabPanel(
-                      id = ns("depPopMeans"),
-                      title = "Analysis",
-                      
-                      conditionalPanel(
-                        ns = ns,
-                        condition = "input.inferenceType2 == 'Confidence Interval'",
-                        
-                        titlePanel(tags$u("Confidence Interval")),
-                        br(),
-                        uiOutput(ns('depMeansCI')),
-                        br(),
-                      ), # CI
-                      
-                      conditionalPanel(
-                        ns = ns,
-                        condition = "input.inferenceType2 == 'Hypothesis Testing'",
-                        
-                        titlePanel(tags$u("Hypothesis Test")),
-                        br(),
-                        uiOutput(ns('depMeansHT')),
-                        br()
-                      ), # HT
-                      
-                      hr(),
-                      br(),
-                      titlePanel(tags$u("Data")),
-                      br(),
-                      
-                      fluidRow(
-                        column(width = 8,
-                               uiOutput(ns('depMeansTable')),
-                        ),
-                        
-                        column(width = 4,
-                               br(),
-                        )
-                      ),
-                      br(),
-                      br(),
-                    ), #depPopMeans Analysis tabPanel
-                    
-                    tabPanel(
-                      id = ns("depPopMeansData"),
-                      title = "Uploaded Data",
-                      
-                      uiOutput(ns("renderDepPopMeansData")),
-                    ), #depPopMeansData Uploaded Data tabPanel
-                    
-                  ), # depPopMeansTabset
-                ), # Two Dependent Samples
-                #### ---------------- 2 Pop Proportions --------------------------------------
-                conditionalPanel(
-                  ns = ns,
-                  condition = "input.popuParameters == 'Population Proportions'",
-                  
-                  conditionalPanel(
-                    ns = ns,
-                    condition = "input.inferenceType2 == 'Confidence Interval'",
-                    
-                    titlePanel(tags$u("Confidence Interval")),
-                    br(),
-                    uiOutput(ns('twoPropCI')),
-                    br(),
-                  ), # Confidence Interval
-                  
-                  conditionalPanel(
-                    ns = ns,
-                    condition = "input.inferenceType2 == 'Hypothesis Testing'",
-                    
-                    titlePanel(tags$u("Hypothesis Test")),
-                    br(),
-                    uiOutput(ns('twoPropHT')),
-                    br(),
-                  ), # Hypothesis Testing
-                ), # Two Population Proportions
-                
-                
-                ### ------------ Two Pop Var ------------------------------------------
-                
-                conditionalPanel(
-                  ns = ns,
-                  condition = "input.popuParameters == 'Two Population Variances'",
-                  
-                  tabsetPanel(
-                    id = ns("twoPopVarTabset"),
-                    selected = "Analysis",
-                    
-                    tabPanel(
-                      id = ns("twoPopVar"),
-                      title = "Analysis",
-                      
-                      conditionalPanel(
-                        ns = ns,
-                        condition = "input.inferenceType2 == 'Confidence Interval'",
-                        
-                        titlePanel(tags$u("Confidence Interval")),
-                        br(),
-                        uiOutput(ns('twoPopVarCI')),
-                        br(),
-                        
-                      ), # CI
-                      
-                      conditionalPanel(
-                        ns = ns,
-                        condition = "input.inferenceType2 == 'Hypothesis Testing'",
-                        
-                        titlePanel(tags$u("Hypothesis Test")),
-                        br(),
-                        uiOutput(ns('twoPopVarHT')),
-                        br(),
-                        
-                      ) # HT
-                    ))), # Two Pop Var
+                                ns = ns,
+                                condition = "input.siMethod == '2'",
+                                
+                                #### ---------------- Independent Pop Means ----------------------------------
+                                conditionalPanel(
+                                  ns = ns,
+                                  condition = "input.popuParameters == 'Independent Population Means'",
+                                  
+                                  tabsetPanel(
+                                    id = ns("indPopMeansTabset"),
+                                    selected = "Analysis",
+                                    
+                                    tabPanel(
+                                      id = ns("indPopMeans"),
+                                      title = "Analysis",
+                                      
+                                      conditionalPanel(
+                                        ns = ns,
+                                        condition = "input.inferenceType2 == 'Confidence Interval'",
+                                        
+                                        titlePanel(tags$u("Confidence Interval")),
+                                        br(),
+                                        uiOutput(ns('indMeansCI')),
+                                        br(),
+                                      ), # Confidence interval
+                                      
+                                      conditionalPanel(
+                                        ns = ns,
+                                        condition = "input.inferenceType2 == 'Hypothesis Testing'",
+                                        
+                                        titlePanel(tags$u("Hypothesis Test")),
+                                        br(),
+                                        uiOutput(ns('indMeansHT')),
+                                        br()
+                                      ), # Hypothesis Testing
+                                      
+                                      conditionalPanel(
+                                        ns = ns,
+                                        condition = "input.dataAvailability2 != 'Summarized Data' && input.indMeansBoxplot == 1",
+                                        
+                                        br(),
+                                        hr(),
+                                        br(),
+                                        titlePanel(tags$u("Boxplot")),
+                                        br(),
+                                        plotOptionsMenuUI(
+                                          id = ns("indMeansBoxplot"),
+                                          plotType = "Boxplot",
+                                          title = "Boxplot"),
+                                        uiOutput(ns("renderIndMeansBoxplot")),
+                                        br(),
+                                        br()
+                                      )
+                                    ), # indPopMeans Analysis tabPanel
+                                    
+                                    tabPanel(
+                                      id = ns("indPopMeansData"),
+                                      title = "Uploaded Data",
+                                      
+                                      uiOutput(ns("renderIndPopMeansData"))
+                                    ), # indPopMeansData Uploaded Data tabPanel
+                                    
+                                  ), # indPopMeansTabset
+                                ), # Two Independent Samples
+                                #### ---------------- Dependent Pop Means ----------------------------------
+                                conditionalPanel(
+                                  ns = ns,
+                                  condition = "input.popuParameters == 'Dependent Population Means'",
+                                  
+                                  tabsetPanel(
+                                    id = ns("depPopMeansTabset"),
+                                    selected = "Analysis",
+                                    
+                                    tabPanel(
+                                      id = ns("depPopMeans"),
+                                      title = "Analysis",
+                                      
+                                      conditionalPanel(
+                                        ns = ns,
+                                        condition = "input.inferenceType2 == 'Confidence Interval'",
+                                        
+                                        titlePanel(tags$u("Confidence Interval")),
+                                        br(),
+                                        uiOutput(ns('depMeansCI')),
+                                        br(),
+                                      ), # CI
+                                      
+                                      conditionalPanel(
+                                        ns = ns,
+                                        condition = "input.inferenceType2 == 'Hypothesis Testing'",
+                                        
+                                        titlePanel(tags$u("Hypothesis Test")),
+                                        br(),
+                                        uiOutput(ns('depMeansHT')),
+                                        br()
+                                      ), # HT
+                                      
+                                      hr(),
+                                      br(),
+                                      titlePanel(tags$u("Data")),
+                                      br(),
+                                      
+                                      fluidRow(
+                                        column(width = 8,
+                                               uiOutput(ns('depMeansTable')),
+                                        ),
+                                        
+                                        column(width = 4,
+                                               br(),
+                                        )
+                                      ),
+                                      br(),
+                                      br(),
+                                    ), #depPopMeans Analysis tabPanel
+                                    
+                                    tabPanel(
+                                      id = ns("depPopMeansData"),
+                                      title = "Uploaded Data",
+                                      
+                                      uiOutput(ns("renderDepPopMeansData")),
+                                    ), #depPopMeansData Uploaded Data tabPanel
+                                    
+                                  ), # depPopMeansTabset
+                                ), # Two Dependent Samples
+                                #### ---------------- 2 Pop Proportions --------------------------------------
+                                conditionalPanel(
+                                  ns = ns,
+                                  condition = "input.popuParameters == 'Population Proportions'",
+                                  
+                                  conditionalPanel(
+                                    ns = ns,
+                                    condition = "input.inferenceType2 == 'Confidence Interval'",
+                                    
+                                    titlePanel(tags$u("Confidence Interval")),
+                                    br(),
+                                    uiOutput(ns('twoPropCI')),
+                                    br(),
+                                  ), # Confidence Interval
+                                  
+                                  conditionalPanel(
+                                    ns = ns,
+                                    condition = "input.inferenceType2 == 'Hypothesis Testing'",
+                                    
+                                    titlePanel(tags$u("Hypothesis Test")),
+                                    br(),
+                                    uiOutput(ns('twoPropHT')),
+                                    br(),
+                                  ), # Hypothesis Testing
+                                ), # Two Population Proportions
+                                
+                                
+                                ### ------------ Two Pop Var ------------------------------------------
+                                
+                                conditionalPanel(
+                                  ns = ns,
+                                  condition = "input.popuParameters == 'Two Population Variances'",
+                                  
+                                  tabsetPanel(
+                                    id = ns("twoPopVarTabset"),
+                                    selected = "Analysis",
+                                    
+                                    tabPanel(
+                                      id = ns("twoPopVar"),
+                                      title = "Analysis",
+                                      
+                                      conditionalPanel(
+                                        ns = ns,
+                                        condition = "input.inferenceType2 == 'Confidence Interval'",
+                                        
+                                        titlePanel(tags$u("Confidence Interval")),
+                                        br(),
+                                        uiOutput(ns('twoPopVarCI')),
+                                        br(),
+                                        
+                                      ), # CI
+                                      
+                                      conditionalPanel(
+                                        ns = ns,
+                                        condition = "input.inferenceType2 == 'Hypothesis Testing'",
+                                        
+                                        titlePanel(tags$u("Hypothesis Test")),
+                                        br(),
+                                        uiOutput(ns('twoPopVarHT')),
+                                        br(),
+                                        
+                                      ) # HT
+                                    ))), # Two Pop Var
               ), # "input.siMethod == '2'"
               
               ### ------------ Multiple Samples ------------------------------------
@@ -1836,7 +1836,7 @@ statInfrUI <- function(id) {
         ), #inferenceMP
         
         uiOutput(ns("kwRawContainer"))
-
+        
       ), #mainPanel
     ) #sidebarLayout
   ) # UI tagList
@@ -2333,12 +2333,12 @@ statInfrServer <- function(id) {
                                       input$inferenceType2 == 'Hypothesis Testing'))
     
     twopopvarsum_iv$condition(~ isTRUE(input$siMethod == '2' &&
-                                      input$popuParameters == 'Two Population Variances' &&
-                                      input$dataAvailability3 == 'Summary'))
+                                         input$popuParameters == 'Two Population Variances' &&
+                                         input$dataAvailability3 == 'Summary'))
     
     twopopvar_iv$condition(~ isTRUE(input$siMethod == '2' &&
-                                         input$popuParameters == 'Two Population Variances' &&
-                                         input$dataAvailability3 == 'Variance'))
+                                      input$popuParameters == 'Two Population Variances' &&
+                                      input$dataAvailability3 == 'Variance'))
     
     twopopvarraw_iv$condition(~ isTRUE(input$siMethod == '2' &&
                                          input$popuParameters == 'Two Population Variances' &&
@@ -7628,12 +7628,12 @@ statInfrServer <- function(id) {
                       1-sig_lvl/2, df1, df2, HT$crit_upper)
             )
             
-          # greater than
+            # greater than
           } else if (alt_hyp == "greater") {
             sprintf("Critical Value = \\(F_{1-\\alpha,\\ df_1,\\ df_2} = F_{%.2f,\\ %d,\\ %d} = %.4f\\)", 
                     1-sig_lvl, df1, df2, HT$crit_val)
             
-          # less than
+            # less than
           } else {
             sprintf("Critical Value = \\(F_{\\alpha,\\ df_2,\\ df_1} = F_{%.2f,\\ %d,\\ %d} = %.4f\\)", 
                     sig_lvl, df2, df1, HT$crit_val)
@@ -8285,31 +8285,36 @@ statInfrServer <- function(id) {
       })
       
       kwDisplayState("raw")
-
+      
       #hide(id = "inferenceData")
       hide(id = "kwUploadInputs")
       
       fileInputs$kwStatus <- 'uploaded'
       output$kwInitialUploadTable <- kruskalWallisUploadInitial(kwUploadData)
-    
+      # New Change ------- 2025-06-21  added lines updateRadioButtons, selected = character(0)
       if(kwupload_iv$is_valid())
       {
+      
+        updateRadioButtons(session, "kwFormat", selected = "Multiple")
+        
         freezeReactiveValue(input, "kwMultiColumns")
         updateSelectizeInput(session = getDefaultReactiveDomain(),
                              "kwMultiColumns",
-                             choices = c(colnames(kwUploadData()))
+                             choices = c(colnames(kwUploadData())),
+                             selected = character(0)
         )
         
         freezeReactiveValue(input, "kwResponse")
         updateSelectizeInput(session = getDefaultReactiveDomain(),
                              "kwResponse",
-                             choices = c(colnames(kwUploadData()))
+                             choices = c(colnames(kwUploadData())),
+                             selected = character(0)
         )
-        
         freezeReactiveValue(input, "kwFactors")
         updateSelectizeInput(session = getDefaultReactiveDomain(),
                              "kwFactors",
-                             choices = c(colnames(kwUploadData()))
+                             choices = c(colnames(kwUploadData())),
+                             selected = character(0)
         )
         
         shinyjs::show(id = "kwUploadInputs")
