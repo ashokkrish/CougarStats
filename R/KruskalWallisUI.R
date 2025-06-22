@@ -16,6 +16,7 @@ kwUploadData_func <- function(kwUserData) {
          xlsx = read_xlsx(kwUserData$datapath),
          txt = read_tsv(kwUserData$datapath, show_col_types = FALSE),
          validate("Improper file format.")
+         
   )
 }
 
@@ -78,7 +79,7 @@ kwResults_func <- function(si_iv_is_valid, kwFormat, kwMultiColumns, kwUploadDat
 
 ### ---------------- Kruskal-Wallis Outputs------------------------------------
 kruskalWallisHT <- function(kwResults_output, kwSigLvl_input) {
-
+  
   renderUI({
     req(kwResults_output())
     
@@ -96,8 +97,13 @@ kruskalWallisHT <- function(kwResults_output, kwSigLvl_input) {
     group_sums <- tapply(global_ranks, kwData$ind, sum)
     group_n <- tapply(global_ranks, kwData$ind, length)
     
+    # Remove NA values for calculations
+    valid_groups <- !is.na(group_sums) & !is.na(group_n)
+    group_sums_clean <- group_sums[valid_groups]
+    group_n_clean <- group_n[valid_groups]
+    
     # used for calculating the Test Statistic
-    sum_R2_n <- sum(group_sums^2 / group_n)
+    sum_R2_n <- sum(group_sums_clean^2 / group_n_clean)
     step1 <- 12 / (totalCount * (totalCount + 1))
     step2 <- step1 * sum_R2_n
     step3 <- 3 * (totalCount + 1)
@@ -121,9 +127,10 @@ kruskalWallisHT <- function(kwResults_output, kwSigLvl_input) {
     alph <-(1-(as.numeric(substring(kwSigLvl_input(), 1, nchar(kwSigLvl_input()) - 1))/100))
     kw_chi<- (qchisq(alph,kw_df))
     
-    # the sum of the inner part of the T Statistic calculation
-    sum_parts <- sapply(seq_along(factorNames), function(i) {
-      sprintf("\\frac{(%.1f)^2}{%d}", group_sums[i], group_n[i])
+    # the sum of the inner part of the T Statistic calculation - use clean groups
+    actual_groups <- names(group_sums_clean)
+    sum_parts <- sapply(seq_along(actual_groups), function(i) {
+      sprintf("\\frac{(%.1f)^2}{%d}", group_sums_clean[i], group_n_clean[i])
     })
     
     withMathJax(
@@ -141,7 +148,7 @@ kruskalWallisHT <- function(kwResults_output, kwSigLvl_input) {
           br(), br(),
           p(tags$b("Test Statistic:")),
           
-          if(kw_test_rounded_comparison != kw_test_rounded){
+          if(!is.na(kw_test_rounded_comparison) && !is.na(kw_test_rounded) && kw_test_rounded_comparison != kw_test_rounded){
             sprintf("\\( H_{corrected} = \\")
           }
           else{
@@ -152,9 +159,9 @@ kruskalWallisHT <- function(kwResults_output, kwSigLvl_input) {
                   totalCount, totalCount, paste(sum_parts, collapse = " + "), totalCount), 
           sprintf("\\( = %s \\)", kw_test_rounded_comparison),
           br(), 
-            if (kw_test_rounded_comparison != kw_test_rounded){
-              helpText("* Note: The average of data points was used in the case of a tie while calculating the rank score and a correction was performed.")
-            },
+          if (!is.na(kw_test_rounded_comparison) && !is.na(kw_test_rounded) && kw_test_rounded_comparison != kw_test_rounded){
+            helpText("* Note: The average of data points was used in the case of a tie while calculating the rank score and a correction was performed.")
+          },
           
           br(), 
           
@@ -163,10 +170,12 @@ kruskalWallisHT <- function(kwResults_output, kwSigLvl_input) {
           
           br(), br(),
           
-          if (kw_pv <= kw_sl){
+          if (!is.na(kw_pv) && !is.na(kw_sl) && kw_pv <= kw_sl){
             sprintf("Since \\(P \\leq %s\\), reject \\(H_{0}.\\)", kw_sl)
-          } else {
+          } else if (!is.na(kw_pv) && !is.na(kw_sl) && kw_pv > kw_sl) {
             sprintf("Since \\(P > %s\\), do not reject \\(H_{0}.\\)", kw_sl)
+          } else{
+            "Unable to determine significance due to insufficient data."
           },
           
           br(), br(),
@@ -176,11 +185,12 @@ kruskalWallisHT <- function(kwResults_output, kwSigLvl_input) {
           sprintf("Critical Value  = \\(\\chi^2 _{\\alpha, \\, df} = \\chi^2 _{\\alpha, \\, (k - 1)} = \\chi^2_{\\, %s, \\, %s} = %.4f \\)", kw_sl, kw_df, kw_chi),
           br(), br(), 
           
-          if (kw_chi <= as.numeric(kw_test_rounded_comparison)){
+          if (!is.na(kw_chi) && !is.na(kw_test_rounded_comparison) && kw_chi <= as.numeric(kw_test_rounded_comparison)){
             sprintf("Since the test statistic \\(\\chi^2\\) falls within the rejection region, reject \\(H_{0}.\\)")
-                    #\\(%.4f \\leq %s\\), reject \\(H_{0}.\\)", kw_chi, kw_test_rounded_comparison)
-          } else if (kw_chi > as.numeric(kw_test_rounded_comparison)) {
+          } else if (!is.na(kw_chi) && !is.na(kw_test_rounded_comparison) && kw_chi > as.numeric(kw_test_rounded_comparison)) {
             sprintf("Since \\(%.4f > %s\\), do not reject \\(H_{0}.\\)", kw_chi, kw_test_rounded_comparison)
+          } else {
+            "Unable to determine critical value comparison due to insufficient data."
           },
         )
       )
