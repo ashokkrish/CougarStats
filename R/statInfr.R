@@ -3099,7 +3099,7 @@ statInfrServer <- function(id) {
       }
       
       if (alternative == "two.sided") {
-        pvalCalc <- sprintf("2 \\times P(F \\gt |%.4f|)", testStatVal)
+        pvalCalc <- sprintf("2 \\times P(F \\gt %.4f)", testStatVal)
       } else if (alternative == "greater") {
         pvalCalc <- sprintf("P(F \\gt %.4f)", testStatVal)
       } else {
@@ -7652,7 +7652,7 @@ statInfrServer <- function(id) {
           # conclusion
           p(strong("Conclusion:")),
           sprintf("At \\(\\alpha = %.2f\\), since the test statistic falls within the %s region, we %s \\(H_0\\)
-                  and conclude that there %s enough statistical evidence to support that \\(%s\\)",
+                  and conclude that there %s enough statistical evidence to support that \\(%s\\).",
                   sig_lvl, text$region, text$rejectWord, text$isWord, hyp_labels$altHyp)
         )
       )
