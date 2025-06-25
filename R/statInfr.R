@@ -3099,7 +3099,7 @@ statInfrServer <- function(id) {
       }
       
       if (alternative == "two.sided") {
-        pvalCalc <- sprintf("2 \\times P(F \\gt %.4f)", testStatVal)
+        pvalCalc <- sprintf("2 \\times P(F \\lt %.4f)", testStatVal)
       } else if (alternative == "greater") {
         pvalCalc <- sprintf("P(F \\gt %.4f)", testStatVal)
       } else {
