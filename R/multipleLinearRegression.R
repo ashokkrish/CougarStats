@@ -43,7 +43,7 @@ MLRSidebarUI <- function(id) {
           choices = NULL,
           selectize = FALSE),
         
-        helpText("Only numeric variables are selectable."),
+        helpText("Select two or more explanatory variables (numeric)."),
         uiOutput(ns("singleOrMultipleHelpText")),
         pickerInput(
           inputId  = ns("explanatoryVariables"),
@@ -199,8 +199,6 @@ MLRServer <- function(id) {
         div(class = "text-success", span("Multiple explanatory variables result in a multiple linear regression."))
       } else if (length(input$explanatoryVariables) == 1) {
         div(class = "text-danger", span("Select at least one more explanatory variable; a single explanatory variable results in a simple linear regression."))
-      } else {
-        div(class = "text-primary", span("Select at least two explanatory variables."))
       }
     })
 
