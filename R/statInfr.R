@@ -8477,12 +8477,11 @@ statInfrServer <- function(id) {
       })
       
       observeEvent(input$goInference, {
-        # show the analysis panel instead of initial uploaded data
         kwDisplayState("analysis")
         
         req(kwUploadData())
         req(kwupload_iv$is_valid())
-        # refresh the Analysis output defined in KruskalWallisUI.R
+        
         output$renderKWData <- renderUI({
           tagList(
             titlePanel("Data File"),
@@ -8493,9 +8492,45 @@ statInfrServer <- function(id) {
             br()
           )
         })
+      })
+      
+      observe({
+        req(kwResults())
         
-        # refresh the Ranking output defined in KruskalWallisUI.R
-        output$renderKWRM<-kwRankedTableOutput(kwResults()$data)
+        if (!is.null(kwResults()$validation_error)) {
+          output$analysisContent <- renderUI({
+            tagList(
+              p(kwResults()$validation_error, style = "color: red; font-weight: bold; font-size: 16px;")
+            )
+          })
+        } else {
+          output$analysisContent <- renderUI({
+            tagList(
+              kruskalWallisHT(kwResults, reactive(input$kwSigLvl))(),
+              br(),
+              kruskalWallisPlot(kwResults, reactive(input$kwSigLvl))(),
+              br(),
+              kwConclusion(kwResults, reactive(input$kwSigLvl))()
+            )
+          })
+        }
+      })
+      
+      observe({
+        req(kwResults())
+        
+        results <- kwResults()
+        
+        if (!is.null(results$data)) {
+          output$renderKWRM <- kwRankedTableOutput(results$data)
+        } else {
+          output$renderKWRM <- renderUI({ 
+            tagList(
+              p("No data available for ranking.", 
+                style = "color: #666; font-style: italic; text-align: center; padding: 20px;")
+            )
+          })
+        }
       })
       
       output$renderChiSqObs <- renderUI({
