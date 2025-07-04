@@ -6,6 +6,31 @@ library(DT)
 library(ggplot2)
 
 ### ------------ Kruskal-Wallis Reactives ------------------------------------   
+kwValidateVariance_func <- function(kwData) {
+  # Check if all values are identical
+  unique_values <- unique(kwData$values)
+  if (length(unique_values) == 1) {
+    return(list(
+      is_valid = FALSE,
+      message = "All values in the dataset are identical. The Kruskal-Wallis test cannot be performed as there is no variance in the data."
+    ))
+  }
+  
+  # Check if there are at least 2 groups with different values
+  group_medians <- kwData %>%
+    group_by(ind) %>%
+    summarise(median_val = median(values, na.rm = TRUE), .groups = 'drop')
+  
+  if (length(unique(group_medians$median_val)) == 1) {
+    return(list(
+      is_valid = FALSE,
+      message = "All groups have identical median values. The Kruskal-Wallis test may not be meaningful."
+    ))
+  }
+  
+  return(list(is_valid = TRUE, message = ""))
+}
+
 kwUploadData_func <- function(kwUserData) {
   ext <- tools::file_ext(kwUserData$name)
   ext <- tolower(ext)
@@ -16,6 +41,7 @@ kwUploadData_func <- function(kwUserData) {
          xlsx = read_xlsx(kwUserData$datapath),
          txt = read_tsv(kwUserData$datapath, show_col_types = FALSE),
          validate("Improper file format.")
+         
   )
 }
 
@@ -65,30 +91,47 @@ kwResults_func <- function(si_iv_is_valid, kwFormat, kwMultiColumns, kwUploadDat
   kwTest <- kruskal.test(formula = values ~ ind, data = kwData)
   
   results$data <- kwData
-  results$count <-totalCount
+  results$count <- totalCount
   results$factorCol <- factorCol
   results$numFactor <- numFactors
   results$factorNames <- factorNames
+  validation_result <- kwValidateVariance_func(kwData)
+  if (!validation_result$is_valid) {
+    results$validation_error <- validation_result$message
+    results$is_valid <- FALSE
+    results$test <- NULL  # Don't run the test if validation fails
+    return(results)
+  }
+  
+  kwTest <- kruskal.test(formula = values ~ ind, data = kwData)
   results$test <- kwTest
+  results$is_valid <- TRUE
+  results$validation_error <- NULL  # Explicitly set to NULL when valid
+  
+  return(results)
   
   return(results)
 }
 
-### ---------------- Kruskal-Wallis Validation ------------------------------------
-
 ### ---------------- Kruskal-Wallis Outputs------------------------------------
 kruskalWallisHT <- function(kwResults_output, kwSigLvl_input) {
-
+  
   renderUI({
     req(kwResults_output())
     
     results <- kwResults_output()
+    
+    if (!is.null(results$validation_error)) {
+      return(
+        p(results$validation_error, style = "color: red; font-weight: bold; font-size: 16px;")
+      )
+    }
+    
     kwTest <- results$test
     kwData <- results$data
     totalCount <- results$count
     factorNames <- results$factorNames
     
-    # conditions for hypothesis testing 
     kw_pv <- kwTest$p.value
     kw_sl <- as.numeric(substring(kwSigLvl_input(), 1, nchar(kwSigLvl_input()) - 1))/100
     
@@ -96,34 +139,33 @@ kruskalWallisHT <- function(kwResults_output, kwSigLvl_input) {
     group_sums <- tapply(global_ranks, kwData$ind, sum)
     group_n <- tapply(global_ranks, kwData$ind, length)
     
-    # used for calculating the Test Statistic
-    sum_R2_n <- sum(group_sums^2 / group_n)
+    valid_groups <- !is.na(group_sums) & !is.na(group_n)
+    group_sums_clean <- group_sums[valid_groups]
+    group_n_clean <- group_n[valid_groups]
+    
+    sum_R2_n <- sum(group_sums_clean^2 / group_n_clean)
     step1 <- 12 / (totalCount * (totalCount + 1))
     step2 <- step1 * sum_R2_n
     step3 <- 3 * (totalCount + 1)
     kwTstat <- step2-step3
     
-    # used in P-Value calculations
     data <- kwResults_output()$test
     kw_pv <- data$p.value
     kw_pv_rounded <- as.numeric(round(kw_pv, 4))
     kw_test_rounded <- as.character(round(kwTstat, 4))
     kw_test_rounded_comparison <- as.character(round(data$statistic, 4))
     
-    #to be used in the rejection/acceptance graph
     kw_test <- as.numeric(round(data$statistic, 4))
     
-    # Degrees of Freedom 
     kw_df <- length(factorNames) -1
     kw_k <- length(factorNames)
     
-    # Chi Square CV
     alph <-(1-(as.numeric(substring(kwSigLvl_input(), 1, nchar(kwSigLvl_input()) - 1))/100))
     kw_chi<- (qchisq(alph,kw_df))
     
-    # the sum of the inner part of the T Statistic calculation
-    sum_parts <- sapply(seq_along(factorNames), function(i) {
-      sprintf("\\frac{(%.1f)^2}{%d}", group_sums[i], group_n[i])
+    actual_groups <- names(group_sums_clean)
+    sum_parts <- sapply(seq_along(actual_groups), function(i) {
+      sprintf("\\frac{(%.1f)^2}{%d}", group_sums_clean[i], group_n_clean[i])
     })
     
     withMathJax(
@@ -141,7 +183,7 @@ kruskalWallisHT <- function(kwResults_output, kwSigLvl_input) {
           br(), br(),
           p(tags$b("Test Statistic:")),
           
-          if(kw_test_rounded_comparison != kw_test_rounded){
+          if(!is.na(kw_test_rounded_comparison) && !is.na(kw_test_rounded) && kw_test_rounded_comparison != kw_test_rounded){
             sprintf("\\( H_{corrected} = \\")
           }
           else{
@@ -152,9 +194,9 @@ kruskalWallisHT <- function(kwResults_output, kwSigLvl_input) {
                   totalCount, totalCount, paste(sum_parts, collapse = " + "), totalCount), 
           sprintf("\\( = %s \\)", kw_test_rounded_comparison),
           br(), 
-            if (kw_test_rounded_comparison != kw_test_rounded){
-              helpText("* Note: The average of data points was used in the case of a tie while calculating the rank score and a correction was performed.")
-            },
+          if (!is.na(kw_test_rounded_comparison) && !is.na(kw_test_rounded) && kw_test_rounded_comparison != kw_test_rounded){
+            helpText("* Note: The average of data points was used in the case of a tie while calculating the rank score and a correction was performed.")
+          },
           
           br(), 
           
@@ -163,10 +205,12 @@ kruskalWallisHT <- function(kwResults_output, kwSigLvl_input) {
           
           br(), br(),
           
-          if (kw_pv <= kw_sl){
+          if (!is.na(kw_pv) && !is.na(kw_sl) && kw_pv <= kw_sl){
             sprintf("Since \\(P \\leq %s\\), reject \\(H_{0}.\\)", kw_sl)
-          } else {
+          } else if (!is.na(kw_pv) && !is.na(kw_sl) && kw_pv > kw_sl) {
             sprintf("Since \\(P > %s\\), do not reject \\(H_{0}.\\)", kw_sl)
+          } else{
+            "Unable to determine significance due to insufficient data."
           },
           
           br(), br(),
@@ -176,11 +220,12 @@ kruskalWallisHT <- function(kwResults_output, kwSigLvl_input) {
           sprintf("Critical Value  = \\(\\chi^2 _{\\alpha, \\, df} = \\chi^2 _{\\alpha, \\, (k - 1)} = \\chi^2_{\\, %s, \\, %s} = %.4f \\)", kw_sl, kw_df, kw_chi),
           br(), br(), 
           
-          if (kw_chi <= as.numeric(kw_test_rounded_comparison)){
+          if (!is.na(kw_chi) && !is.na(kw_test_rounded_comparison) && kw_chi <= as.numeric(kw_test_rounded_comparison)){
             sprintf("Since the test statistic \\(\\chi^2\\) falls within the rejection region, reject \\(H_{0}.\\)")
-                    #\\(%.4f \\leq %s\\), reject \\(H_{0}.\\)", kw_chi, kw_test_rounded_comparison)
-          } else if (kw_chi > as.numeric(kw_test_rounded_comparison)) {
+          } else if (!is.na(kw_chi) && !is.na(kw_test_rounded_comparison) && kw_chi > as.numeric(kw_test_rounded_comparison)) {
             sprintf("Since \\(%.4f > %s\\), do not reject \\(H_{0}.\\)", kw_chi, kw_test_rounded_comparison)
+          } else {
+            "Unable to determine critical value comparison due to insufficient data."
           },
         )
       )
@@ -192,13 +237,18 @@ kwConclusion <- function(kwResults, kwSigLvl_input) {
     req(kwResults())
     
     results <- kwResults()
+    
+    if (!is.null(results$validation_error)) {
+      return(NULL)
+    }
+    
     kwTest <- results$test
     kw_pv <- kwTest$p.value
     kw_pv_rounded <- as.character(round(kw_pv, 4))
     kw_test_rounded_comparison <- round(kwTest$statistic, 4)
     kw_df <- length(results$factorNames) - 1
     
-        if(kwSigLvl_input() == "10%") {
+    if(kwSigLvl_input() == "10%") {
       kw_sl <- 0.10
       kw_sl_display <- 10
     } else if(kwSigLvl_input() == "5%") {
@@ -229,6 +279,11 @@ kruskalWallisPlot <- function(kwResults_output, kwSigLvl_input) {
     req(kwResults_output())
     
     results <- kwResults_output()
+    
+    if (!is.null(results$validation_error)) {
+      return(NULL)
+    }
+    
     kwTest <- results$test
     kw_df <- length(results$factorNames) - 1 
     kwTstat <- round(kwTest$statistic, 4)

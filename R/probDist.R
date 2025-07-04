@@ -654,8 +654,8 @@ probDistUI <- function(id) {
             radioButtons(
               inputId      = ns("calcQuantiles"),
               label        = strong("Type of Calculation"),
-              choiceValues = list("Probability", "Quantile"),
-              choiceNames  = list("Probability", "Quantile"),
+              choiceValues = list("Probability", "Inverse Cumulative Distribution Function"),
+              choiceNames  = list("Probability", "Inverse Cumulative Distribution Function"),
               inline       = TRUE),
           
       #### ---------------- Probability ---------------------------------------------
@@ -778,7 +778,7 @@ probDistUI <- function(id) {
       #### ---------------- Quantile ------------------------------------------------
             conditionalPanel( 
               ns = ns,
-              condition = "input.calcQuantiles == 'Quantile'",
+              condition = "input.calcQuantiles == 'Inverse Cumulative Distribution Function'",
               
               radioButtons(
                 inputId      = ns("calcQuartiles"),
@@ -1025,7 +1025,7 @@ probDistUI <- function(id) {
       #### ---------------- Quantile ------------------------------------------------
              conditionalPanel(
                ns = ns,
-               condition = "input.calcQuantiles == 'Quantile'",
+               condition = "input.calcQuantiles == 'Inverse Cumulative Distribution Function'",
                 
                conditionalPanel(
                  ns = ns,
@@ -1424,7 +1424,7 @@ probDistServer <- function(id) {
                                           input$sampMeanDistr == 1))
     
     percentile_iv$condition(~ isTRUE(input$probability == 'Normal' &&
-                                       input$calcQuantiles == 'Quantile' &&
+                                       input$calcQuantiles == 'Inverse Cumulative Distribution Function' &&
                                        input$calcQuartiles == 'Percentile'))
 
  ### ------------ Dependencies ------------------------------------------------
@@ -2597,16 +2597,13 @@ probDistServer <- function(id) {
                   br(),
                   br(),
                   br(),
-                  sprintf("Population Mean \\( (\\mu) = np = %g\\)",
-                          binom_mu),
+                  sprintf("\\( E(X) = \\mu = np = %g \\)", binom_mu),
+                  br(), 
                   br(),
+                  sprintf("\\( SD(X) = \\sigma = \\sqrt{np(1 - p)} = %g \\)", binom_sd),
+                  br(), 
                   br(),
-                  sprintf("Population Standard Deviation \\( (\\sigma) = \\sqrt{np(1 - p)} = %g\\)",
-                          binom_sd),
-                  br(),
-                  br(),
-                  sprintf("Population Variance \\( (\\sigma^{2}) = np(1 - p) = %g\\)",
-                          binom_var)
+                  sprintf("\\( Var(X) = \\sigma^2 = np(1 - p) = %g \\)", binom_var)
                 ),
                 br(),
                 conditionalPanel(
@@ -2804,16 +2801,13 @@ probDistServer <- function(id) {
                   br(),
                   br(),
                   br(),
-                  sprintf("Population Mean \\( (\\mu) = \\mu = %g\\)",
-                          poisson_mu),
+                  sprintf("\\( E(X) = \\mu = %g \\)", poisson_mu),
+                  br(), 
                   br(),
+                  sprintf("\\( SD(X) = \\sigma = \\sqrt{\\mu} = %g \\)", poisson_sd),
+                  br(), 
                   br(),
-                  sprintf("Population Standard Deviation \\( (\\sigma) = \\sqrt{\\mu} = %g\\)",
-                          poisson_sd),
-                  br(),
-                  br(),
-                  sprintf("Population Variance \\( (\\sigma^{2}) = \\mu = %g\\)",
-                          poisson_mu)
+                  sprintf("\\( Var(X) = \\sigma^2 = \\mu = %g \\)", poisson_mu)
                 ),
                 br(),
                 if (input$showPoissTable == TRUE){
@@ -2995,16 +2989,13 @@ probDistServer <- function(id) {
                   br(),
                   br(),
                   br(),
-                  sprintf("Population Mean \\( (\\mu) = n\\left(\\dfrac{M}{N}\\right) = %g\\)",
-                          HypGeo_mu),
+                  sprintf("\\(E(X) = \\mu = n\\left(\\dfrac{M}{N}\\right) = %g \\)", HypGeo_mu),
                   br(),
                   br(),
-                  sprintf("Population Standard Deviation \\( (\\sigma) = \\sqrt{n\\left(\\dfrac{M}{N}\\right)\\left(\\dfrac{N-M}{N}\\right)\\left(\\dfrac{N-n}{N-1}\\right)} = %g\\)",
-                          HypGeo_sd),
+                  sprintf("\\(SD(X) = \\sigma = \\sqrt{n\\left(\\dfrac{M}{N}\\right)\\left(\\dfrac{N-M}{N}\\right)\\left(\\dfrac{N-n}{N-1}\\right)} = %g \\)", HypGeo_sd),
                   br(),
                   br(),
-                  sprintf("Population Variance \\( (\\sigma^{2}) = n\\left(\\dfrac{M}{N}\\right)\\left(\\dfrac{N-M}{N}\\right)\\left(\\dfrac{N-n}{N-1}\\right) = %g\\)",
-                          HypGeo_var)
+                  sprintf("\\(Var(X) = \\sigma^2 = n\\left(\\dfrac{M}{N}\\right)\\left(\\dfrac{N-M}{N}\\right)\\left(\\dfrac{N-n}{N-1}\\right) = %g \\)", HypGeo_var)
                 )
                 ,
                 br(),
@@ -3209,16 +3200,13 @@ probDistServer <- function(id) {
                 br(),
                 br(),
                 br(),
-                sprintf("Population Mean \\( (\\mu) = \\dfrac{r(1 - p)}{p} = %g\\)",
-                        NegBin_mu),
+                sprintf("\\(E(X) = \\mu = \\dfrac{r(1 - p)}{p} = %g \\)", NegBin_mu),
+                br(), 
                 br(),
+                sprintf("\\(SD(X) = \\sigma = \\sqrt{\\dfrac{r(1 - p)}{p^2}} = %g \\)", NegBin_sd),
+                br(), 
                 br(),
-                sprintf("Population Standard Deviation \\( (\\sigma) = \\sqrt{\\dfrac{r(1 - p)}{p^2}} = %g\\)",
-                        NegBin_sd),
-                br(),
-                br(),
-                sprintf("Population Variance \\( (\\sigma^{2}) = \\dfrac{r(1 - p)}{p^2} = %g\\)",
-                        NegBin_var)
+                sprintf("\\(Var(X) = \\sigma^2 = \\dfrac{r(1 - p)}{p^2} = %g \\)", NegBin_var)
               )
               #,
               # br(),
