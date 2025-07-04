@@ -654,8 +654,8 @@ probDistUI <- function(id) {
             radioButtons(
               inputId      = ns("calcQuantiles"),
               label        = strong("Type of Calculation"),
-              choiceValues = list("Probability", "Quantile"),
-              choiceNames  = list("Probability", "Quantile"),
+              choiceValues = list("Probability", "Inverse Cumulative Distribution Function"),
+              choiceNames  = list("Probability", "Inverse Cumulative Distribution Function"),
               inline       = TRUE),
           
       #### ---------------- Probability ---------------------------------------------
@@ -778,7 +778,7 @@ probDistUI <- function(id) {
       #### ---------------- Quantile ------------------------------------------------
             conditionalPanel( 
               ns = ns,
-              condition = "input.calcQuantiles == 'Quantile'",
+              condition = "input.calcQuantiles == 'Inverse Cumulative Distribution Function'",
               
               radioButtons(
                 inputId      = ns("calcQuartiles"),
@@ -1025,7 +1025,7 @@ probDistUI <- function(id) {
       #### ---------------- Quantile ------------------------------------------------
              conditionalPanel(
                ns = ns,
-               condition = "input.calcQuantiles == 'Quantile'",
+               condition = "input.calcQuantiles == 'Inverse Cumulative Distribution Function'",
                 
                conditionalPanel(
                  ns = ns,
@@ -1424,7 +1424,7 @@ probDistServer <- function(id) {
                                           input$sampMeanDistr == 1))
     
     percentile_iv$condition(~ isTRUE(input$probability == 'Normal' &&
-                                       input$calcQuantiles == 'Quantile' &&
+                                       input$calcQuantiles == 'Inverse Cumulative Distribution Function' &&
                                        input$calcQuartiles == 'Percentile'))
 
  ### ------------ Dependencies ------------------------------------------------
