@@ -2952,6 +2952,65 @@ statInfrServer <- function(id) {
       return(pvalOutput)
     }
     
+    PrintIndMeansSummaryTable <- function(data) {
+      df <- data.frame(
+        "Sample Size" = c(data$n1, data$n2),
+        "Sample Mean" = c(data$xbar1, data$xbar2),
+        "Sample Standard Deviation" = c(data$sd1, data$sd2),
+        "Sample Variance" = c(data$sd1^2, data$sd2^2),
+        row.names = c("Sample 1", "Sample 2"),
+        check.names = FALSE
+      )
+      
+      colNames <- c("Sample Size", "Sample Mean", "Sample Standard Deviation", "Sample Variance")
+      
+      # Build custom header with a blank cell for rownames and styled column headers
+      headers <- htmltools::withTags(table(
+        class = 'display',
+        thead(
+          tr(
+            th("",
+               style = "border: 1px solid rgba(0, 0, 0, 0.15);
+                    border-bottom: 1px solid rgba(0, 0, 0, 0.3);"),
+            lapply(colNames, th,
+                   style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
+                        border-top: 1px solid rgba(0, 0, 0, 0.15);')
+          )
+        )
+      ))
+      
+      datatable(df,
+                class = 'cell-border stripe',
+                container = headers,
+                options = list(
+                  dom = 't',
+                  pageLength = -1,
+                  ordering = FALSE,
+                  searching = FALSE,
+                  paging = FALSE,
+                  autoWidth = FALSE,
+                  scrollX = TRUE,
+                  columnDefs = list(
+                    list(className = 'dt-center', targets = 0:4),
+                    list(width = '150px', targets = 0:4)
+                  )
+                ),
+                selection = "none",
+                escape = FALSE,
+                filter = "none"
+      ) %>%
+        formatRound(columns = 1, digits = 0) %>%
+        formatRound(columns = 2:4, digits = 4) %>%
+        formatStyle(columns = 0, fontWeight = 'bold')
+    }
+    
+    showSummaryTable <- function() {
+      showTable <-
+        (input$dataAvailability2 == "Enter Raw Data" && input$bothsigmaKnownRaw == "bothUnknown") ||
+        (input$dataAvailability2 == "Upload Data" && input$bothsigmaKnownUpload == "bothUnknown")
+      return (showTable)
+    }
+    
     GetDepMeansData <- function() {
       req(si_iv$is_valid())
       
@@ -2974,6 +3033,7 @@ statInfrServer <- function(id) {
       
       return(dat)
     }
+    
     TwoPopVarCI <- function(n1, sd1, n2, sd2, conf_level = 0.95, is_variance) {
       df1 <- n1-1
       df2 <- n2-1
@@ -4483,7 +4543,7 @@ statInfrServer <- function(id) {
     })
     
     ### ------------ Independent Sample Means reactives --------------------------
-    
+
     IndMeansSummData <- reactive({
       req(si_iv$is_valid())
       
@@ -6398,7 +6458,6 @@ statInfrServer <- function(id) {
       )
     })
     
-    
     #### ---------------- CI ----
     output$indMeansCI <- renderUI({
       
@@ -6560,11 +6619,20 @@ statInfrServer <- function(id) {
       
       tInt <- IndMeansTInt()
       
+      showTable <- showSummaryTable()
+
       if(data$sigmaEqual) {
         sp <- round(sqrt(((data$n1-1) * data$sd1^2 + (data$n2-1) * data$sd2^2) / (data$n1 + data$n2 - 2)), 4)
         
         tagList(
           withMathJax(
+            br(),
+            if (showTable) {
+              list(
+                PrintIndMeansSummaryTable(data),
+                br(),
+                br())
+            },
             sprintf("\\( \\displaystyle CI = (\\bar{x}_{1} - \\bar{x}_{2}) \\pm \\left( t_{\\alpha/2, \\, df} \\cdot s_{p} \\sqrt{ \\dfrac{1}{n_{1}} + \\dfrac{1}{n_{2}} } \\right) \\)"),
             br(),
             br(),
@@ -6616,6 +6684,13 @@ statInfrServer <- function(id) {
         
         tagList(
           withMathJax(
+            br(),
+            if (showTable) {
+              list(
+                PrintIndMeansSummaryTable(data),
+                br(),
+                br())
+            },
             sprintf("\\( \\displaystyle CI = (\\bar{x}_{1} - \\bar{x}_{2}) \\pm \\left( t_{\\alpha/2, \\, \\nu} \\cdot \\sqrt{ \\dfrac{s^2_{1}}{n_{1}} + \\dfrac{s^2_{2}}{n_{2}} } \\right) \\)"),
             br(),
             br(),
@@ -6705,7 +6780,7 @@ statInfrServer <- function(id) {
       else if(IndMeansSigmaKnown() == 'bothUnknown'){
         hTest <- IndMeansTTest()
         testStat <- "t"
-        
+    
         if(data$sigmaEqual) {
           critValDF <- paste(intrpInfo$critSign, "t_{", intrpInfo$critAlph, ", \\, n_{1} + n_{2} - 2} = ", intrpInfo$critSign, "t_{", intrpInfo$alphaVal, ", \\, ", hTest['df'], "}")
         } else {
@@ -6734,7 +6809,7 @@ statInfrServer <- function(id) {
       } else {
         critVal <- hTest[2]
       }
-      
+      showTable <- showSummaryTable()
       indHTHead <- tagList(
         
         p(
@@ -6751,6 +6826,14 @@ statInfrServer <- function(id) {
                     SigLvl()),
             br(),
             br(),
+            
+            if (showTable) {
+              list(
+                PrintIndMeansSummaryTable(data),
+                br(),
+                br())
+            },
+            
             p(tags$b("Test Statistic:")),
             conditionalPanel(
               ns = session$ns,
