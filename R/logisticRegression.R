@@ -68,8 +68,13 @@ LogisticRegressionMainPanelUI <- function(id) {
                  id = ns("dataImport"),
                  title = "")),
              tabPanel(title = "LR", uiOutput(ns("Equations"))),
+             tabPanel(title = "Analysis of Deviance",
+                      uiOutput(ns("anovaOutput"))
+             ),
              id = ns("mainPanel"),
              theme = bs_theme(version = 4)
+             
+             
   )
 }
 
@@ -271,7 +276,7 @@ LogisticRegressionServer <- function(id) {
               SE = `Std. Error`,
               Wald,
               df,
-              P = `Pr(>|z|)`,
+              `p-value` = `Pr(>|z|)`,
               OR,
               `Lower 95% CI for OR` = Lower_CI_OR,
               `Upper 95% CI for OR` = Upper_CI_OR
@@ -298,13 +303,55 @@ LogisticRegressionServer <- function(id) {
             need(isTruthy(input$responseVariable), "A response variable is required."),
             need(isTruthy(input$explanatoryVariables), "Explanatory variables are required.")
           )
-          fluidPage(
-            fluidRow(uiOutput(ns("logisticModelEquations"))),
-            fluidRow(uiOutput(ns("logisticModelCoefficientsAndConfidenceIntervals")))
+          tagList(
+            h3("Calculations and Formulas"),
+            uiOutput(ns("logisticModelEquations")),
+            uiOutput(ns("logisticModelCoefficientsAndConfidenceIntervals"))
           )
         })
         
       }) # End isolate
+      # --- ANOVA-style table for Logistic Regression ---
+      # Likelihood Ratio Test
+      anova_table <- anova(fit, test = "LRT")
+      
+      output$anovaOutput <- renderUI({
+        fluidPage(
+          h3("Analysis of Deviance Table (Likelihood Ratio Test)"),
+          withMathJax(),
+          h4("Calculations and Formulas"),
+          p("The deviance is a measure of the goodness of fit of a logistic regression model. A smaller deviance indicates a better fit. The deviance for a model is calculated as:"),
+          p("$$ D = -2 \\log(\\mathcal{L}) $$"),
+          p("where \\(\\mathcal{L}\\) is the likelihood of the model."),
+          p("The Likelihood Ratio Test (LRT) statistic is used to compare nested models. It is the difference in deviance between the two models:"),
+          p("$$ \\text{LRT} = D_0 - D_1 = -2 \\log\\left(\\frac{\\mathcal{L}_0}{\\mathcal{L}_1}\\right) $$"),
+          p("where \\(D_0\\) and \\(\\mathcal{L}_0\\) are the deviance and likelihood of the null model (the simpler model), and \\(D_1\\) and \\(\\mathcal{L}_1\\) are for the alternative model. This LRT statistic follows a \\(\\chi^2\\) distribution with degrees of freedom equal to the difference in the number of parameters between the two models."),
+          br(),
+          DTOutput(ns("lrAnovaTable")),
+          br(),
+          h4("Interpretation"),
+          p("The 'Df' column shows the degrees of freedom for each term. The 'Deviance' column shows the change in deviance when the term is added to the model. The 'p-value' column gives the p-value for the likelihood ratio test. A small p-value (typically < 0.05) indicates that the variable is statistically significant and contributes to the model's explanatory power.")
+        )
+      })
+      
+      # Display the table using DT package for better formatting
+      output$lrAnovaTable <- renderDT({
+        # Rename the p-value column
+        anova_df <- as.data.frame(anova_table)
+        colnames(anova_df)[colnames(anova_df) == "Pr(>Chi)"] <- "p-value"
+        
+        datatable(
+          anova_df,
+          options = list(
+            dom = 't', # Display table only
+            searching = FALSE,
+            paging = FALSE,
+            ordering = FALSE
+          ),
+          caption = 'Analysis of Deviance Table (Likelihood Ratio Test)',
+          rownames = TRUE
+        ) %>% formatRound(columns = c('Deviance', 'p-value'), digits = 3)
+      })
       
       shinyjs::show("mainPanel")
       updateNavbarPage(session, "mainPanel", selected = "LR")
