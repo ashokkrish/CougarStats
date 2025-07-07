@@ -80,7 +80,7 @@ source("R/simpleLinearRegression.R")
 source("R/multipleLinearRegression.R")
 source("R/regressionAndCorrelation.R")
 source("R/logisticRegression.R")
-source("R/pca.R")
+source("R/principalComponentAnalysis.R")
 
 options(scipen = 999) # options(scipen = 0)
 ## options(shiny.reactlog = TRUE)
