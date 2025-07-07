@@ -418,10 +418,12 @@ statInfrUI <- function(id) {
               inputId      = ns("popuParameters"),
               label        = NULL,
               choiceValues = list("Independent Population Means",
+                                  "Wilcoxon rank sum test",
                                   "Dependent Population Means",
                                   "Population Proportions",
                                   "Two Population Variances"),
               choiceNames  = list("Two Independent Populations (\\( \\mu_{1} - \\mu_{2} \\))",
+                                  "Wilcoxon rank sum test (or the Mann-Whitney U test)",
                                   "Dependent (Paired) Populations (\\( \\mu_{d} \\))",
                                   "Two Population Proportions (\\( p_{1} - p_{2}\\))",
                                   "Two Population Variances (\\( \\sigma_{1}^2/\\sigma_{2}^2 \\))"),
@@ -680,6 +682,73 @@ statInfrUI <- function(id) {
               ), # Upload Data
             ), # Two Independent Samples
             
+            #### ---------------- Wilcoxon Rank Sum Test ------------------------------------------
+            conditionalPanel(
+              ns = ns,
+              condition = "input.popuParameters == 'Wilcoxon rank sum test'",
+              
+              radioButtons(
+                inputId      = ns("wilcoxonRankSumTestData"),
+                label        = strong("Data Availability"),
+                choiceValues = list("Enter Raw Data",
+                                    "Upload Data"),
+                choiceNames  = list("Enter Raw Data",
+                                    "Upload Data"),
+                selected     = "Enter Raw Data", #character(0), #
+                inline       = TRUE), #,width = '1000px'),
+              
+              ##### -------------------- Raw Data ------------------------------------------
+              conditionalPanel(
+                ns = ns,
+                condition = "input.wilcoxonRankSumTestData == 'Enter Raw Data'",
+                
+                textAreaInput(
+                  inputId     = ns("rankSumRaw1"),
+                  label       = strong("Sample 1"),
+                  value       = "101.1,  111.1,  107.6,  98.1,  99.5,  98.7,  103.3,  108.9,  109.1,  103.3",
+                  placeholder = "Enter values separated by a comma with decimals as points",
+                  rows        = 3),
+                
+                textAreaInput(
+                  inputId     = ns("rankSumRaw2"),
+                  label       = strong("Sample 2"),
+                  value       = "107.1,  105.0,  98.0,  97.9,  103.3,  104.6,  100.1,  98.2,  97.9",
+                  placeholder = "Enter values separated by a comma with decimals as points",
+                  rows        = 3),
+              ), # Wilcoxon Raw Data
+              
+              ##### -------------------- Uploaded Data -------------------------------------
+              conditionalPanel(
+                ns = ns,
+                condition = "input.wilcoxonRankSumTestData == 'Upload Data'",
+                
+                fileInput(
+                  inputId = ns("wilcoxonUpl"),
+                  label   = strong("Upload your Data (.csv or .xls or .xlsx or .txt)"),
+                  accept  = c("text/csv",
+                              "text/comma-separated-values",
+                              "text/plain",
+                              ".csv",
+                              ".xls",
+                              ".xlsx")),
+                
+                selectizeInput(
+                  inputId = ns("wilcoxonUpl1"),
+                  label   = strong("Choose a Column for Sample 1"),
+                  choices = c(""),
+                  options = list(placeholder = 'Select a column',
+                                 onInitialize = I('function() { this.setValue(""); }'))),
+                
+                selectizeInput(
+                  inputId = ns("wilcoxonUpl2"),
+                  label   = strong("Choose a Column for Sample 2"),
+                  choices = c(""),
+                  options = list(placeholder = 'Select a column',
+                                 onInitialize = I('function() { this.setValue(""); }'))),
+              ), # Upload Data
+            ), # Wilcoxon Rank Sum Test
+            
+            
             #### ---------------- Dep Pop Means ------------------------------------------
             conditionalPanel(
               ns = ns,
@@ -906,19 +975,24 @@ statInfrUI <- function(id) {
             
             ### ------------ Confidence Level, Inference Type ---------------------------------
             
-            radioButtons(
-              inputId      = ns("inferenceType2"),
-              label        = strong("Inference Type"),
-              choiceValues = list("Confidence Interval",
-                                  "Hypothesis Testing"),
-              choiceNames  = list("Confidence Interval",
-                                  "Hypothesis Testing"),
-              selected     = "Confidence Interval", #character(0), #
-              inline       = TRUE), #,width = '1000px'),
+            conditionalPanel(
+              ns = ns,
+              condition = "input.popuParameters != 'Wilcoxon rank sum test'",
+              
+              radioButtons(
+                inputId      = ns("inferenceType2"),
+                label        = strong("Inference Type"),
+                choiceValues = list("Confidence Interval",
+                                    "Hypothesis Testing"),
+                choiceNames  = list("Confidence Interval",
+                                    "Hypothesis Testing"),
+                selected     = "Confidence Interval",
+                inline       = TRUE)
+            ),
             
             conditionalPanel(
               ns = ns,
-              condition = "input.inferenceType2 == 'Confidence Interval'",
+              condition = "input.inferenceType2 == 'Confidence Interval' && input.popuParameters != 'Wilcoxon rank sum test'",
               
               radioButtons(
                 inputId  = ns("confidenceLevel2"),
@@ -932,7 +1006,7 @@ statInfrUI <- function(id) {
             
             conditionalPanel(
               ns = ns,
-              condition = "input.inferenceType2 == 'Hypothesis Testing'",
+              condition = "input.inferenceType2 == 'Hypothesis Testing' || input.popuParameters == 'Wilcoxon rank sum test'",
               
               radioButtons(
                 inputId  = ns("significanceLevel2"),
@@ -1593,7 +1667,31 @@ statInfrUI <- function(id) {
                                   ), # Hypothesis Testing
                                 ), # Two Population Proportions
                                 
-                                
+                                #### ---------------- Wilcoxon Rank Sum --------------------------------------
+                                conditionalPanel(
+                                  ns = ns,
+                                  condition = "input.popuParameters == 'Wilcoxon rank sum test'",
+                                  
+                                tabsetPanel(
+                                  id = ns("wilcoxonRankSumTabset"),
+                                  selected = "Analysis",
+                                  
+                                  tabPanel(
+                                    id = ns("wilcoxonRankSumTab"),
+                                    title = "Analysis",
+                                    
+                                    conditionalPanel(
+                                      ns = ns,
+                                      condition = "input.inferenceType2 == 'Hypothesis Testing' || input.inferenceType2 == 'Confidence Interval'",
+                                      
+                                      titlePanel(tags$u("Hypothesis Test")),
+                                      br(),
+                                      uiOutput(ns('wilcoxonRankSum')),
+                                      br(),
+                                      ), # Hypothesis Testing
+                                    ), # Analysis Tab
+                                  ), # Wilcoxon rank sum Tabs whole
+                                ),
                                 ### ------------ Two Pop Var ------------------------------------------
                                 
                                 conditionalPanel(
@@ -4543,7 +4641,7 @@ statInfrServer <- function(id) {
     })
     
     ### ------------ Independent Sample Means reactives --------------------------
-
+    
     IndMeansSummData <- reactive({
       req(si_iv$is_valid())
       
@@ -6620,7 +6718,7 @@ statInfrServer <- function(id) {
       tInt <- IndMeansTInt()
       
       showTable <- showSummaryTable()
-
+      
       if(data$sigmaEqual) {
         sp <- round(sqrt(((data$n1-1) * data$sd1^2 + (data$n2-1) * data$sd2^2) / (data$n1 + data$n2 - 2)), 4)
         
@@ -6780,7 +6878,7 @@ statInfrServer <- function(id) {
       else if(IndMeansSigmaKnown() == 'bothUnknown'){
         hTest <- IndMeansTTest()
         testStat <- "t"
-    
+        
         if(data$sigmaEqual) {
           critValDF <- paste(intrpInfo$critSign, "t_{", intrpInfo$critAlph, ", \\, n_{1} + n_{2} - 2} = ", intrpInfo$critSign, "t_{", intrpInfo$alphaVal, ", \\, ", hTest['df'], "}")
         } else {
@@ -8357,6 +8455,11 @@ statInfrServer <- function(id) {
     })
     
     observeEvent(input$kwUserData, {
+
+      output$analysisContent <- renderUI({ NULL })
+      output$renderKWRM <- renderUI({ NULL })
+      output$renderKWData <- renderUI({ NULL })
+
       
       output$renderKWRaw <- renderUI({
         tagList(
@@ -8374,10 +8477,10 @@ statInfrServer <- function(id) {
       
       fileInputs$kwStatus <- 'uploaded'
       output$kwInitialUploadTable <- kruskalWallisUploadInitial(kwUploadData)
+      
       # New Change ------- 2025-06-21  added lines updateRadioButtons, selected = character(0)
       if(kwupload_iv$is_valid())
       {
-      
         updateRadioButtons(session, "kwFormat", selected = "Multiple")
         
         freezeReactiveValue(input, "kwMultiColumns")
@@ -8497,10 +8600,28 @@ statInfrServer <- function(id) {
       observe({
         req(kwResults())
         
-        if (!is.null(kwResults()$validation_error)) {
+        results <- NULL
+        tryCatch({
+          results <- kwResults()
+        }, error = function(e) {
+          cat("Error in kwResults():", e$message, "\n")
+          return(NULL)
+        })
+        
+        if (is.null(results)) {
           output$analysisContent <- renderUI({
             tagList(
-              p(kwResults()$validation_error, style = "color: red; font-weight: bold; font-size: 16px;")
+              p("Unable to calculate results. Please check your data and selections.", 
+                style = "color: red; font-weight: bold; font-size: 16px;")
+            )
+          })
+          return()
+        }
+        
+        if (!is.null(results$validation_error)) {
+          output$analysisContent <- renderUI({
+            tagList(
+              p(results$validation_error, style = "color: red; font-weight: bold; font-size: 16px;")
             )
           })
         } else {
@@ -8519,7 +8640,23 @@ statInfrServer <- function(id) {
       observe({
         req(kwResults())
         
-        results <- kwResults()
+        results <- NULL
+        tryCatch({
+          results <- kwResults()
+        }, error = function(e) {
+          cat("Error in kwResults() for ranking:", e$message, "\n")
+          return(NULL)
+        })
+        
+        if (is.null(results)) {
+          output$renderKWRM <- renderUI({ 
+            tagList(
+              p("Unable to generate ranking table.", 
+                style = "color: #666; font-style: italic; text-align: center; padding: 20px;")
+            )
+          })
+          return()
+        }
         
         if (!is.null(results$data)) {
           output$renderKWRM <- kwRankedTableOutput(results$data)
@@ -8598,6 +8735,8 @@ statInfrServer <- function(id) {
                        height = GetPlotHeight(input[["indMeansBoxplot-Height"]], input[["indMeansBoxplot-HeightPx"]], ui = TRUE),
                        width = GetPlotWidth(input[["indMeansBoxplot-Width"]], input[["indMeansBoxplot-WidthPx"]], ui = TRUE))
           })
+        } else if(input$popuParameters == "Wilcoxon rank sum test") {
+          
           
         } else if(input$popuParameters == 'Dependent Population Means') {
           
@@ -8754,6 +8893,14 @@ statInfrServer <- function(id) {
         hideTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
       } else {
         showTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
+      }
+      
+      # Hide/show tabs for Wilcoxon Rank Sum 
+      if (input$dataAvailability2 != "Upload Data"){
+        updateTabsetPanel(session, "wilcoxonRankSumTabset", selected = "Analysis")
+        hideTab(inputId = "wilcoxonRankSumTab", target = "Uploaded Data")
+      } else {
+        showTab(inputId = "wilcoxonRankSumTabset", target = "Uploaded Data")
       }
     })
     
