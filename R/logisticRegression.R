@@ -350,7 +350,7 @@ LogisticRegressionServer <- function(id) {
           ),
           caption = 'Analysis of Deviance Table (Likelihood Ratio Test)',
           rownames = TRUE
-        ) %>% formatRound(columns = c('Deviance', 'p-value'), digits = 3)
+        ) %>% formatRound(columns = c('Deviance', 'p-value', 'Resid. Dev'), digits = 3)
       })
       
       shinyjs::show("mainPanel")

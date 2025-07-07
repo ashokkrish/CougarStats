@@ -1,15 +1,9 @@
-# pca.R
 
-# Required libraries
 library(shiny)
 library(shinyjs)
 library(datamods)
 library(bslib)
 
-#' PCA Sidebar UI Function
-#'
-#' @param id A string, the namespace id for the module.
-#' @return A UI definition for the sidebar panel.
 PCASidebarUI <- function(id) {
   ns <- NS(id)
   tagList(
@@ -31,18 +25,12 @@ PCASidebarUI <- function(id) {
   )
 }
 
-#' PCA Main Panel UI Function
-#'
-#' @param id A string, the namespace id for the module.
-#' @return A UI definition for the main panel, with tabs.
 PCAMainPanelUI <- function(id) {
   ns <- NS(id)
   tagList(
     useShinyjs(),
-    # Data import UI is now at the top level, always visible
     import_file_ui(id = ns("dataImport"), title = ""),
     
-    # This div contains the results panels and is hidden by default
     hidden(
       div(
         id = ns("pcaResultsPanel"),
@@ -59,11 +47,6 @@ PCAMainPanelUI <- function(id) {
   )
 }
 
-#' PCA Server Function
-#'
-#' This function contains the server-side logic for the PCA tab.
-#'
-#' @param id A string, the namespace id for the module.
 PCAServer <- function(id) {
   moduleServer(id, function(input, output, session) {
     
@@ -75,24 +58,19 @@ PCAServer <- function(id) {
       return_class = "tbl_df"
     )
     
-    # Show results on "Calculate"
+
     observeEvent(input$calculate, {
       req(imported_data$data())
       shinyjs::show("pcaResultsPanel")
     })
     
-    # Hide results on "Reset"
     observeEvent(input$reset, {
       shinyjs::hide("pcaResultsPanel")
     })
     
-    # Observer to react to the imported data and transformation choice for analysis
     observe({
       req(imported_data$data())
-      
-      # Placeholder for where you would add the PCA logic.
-      # This logic would use input$transformation and imported_data$data()
-      
+
     })
   })
 }
