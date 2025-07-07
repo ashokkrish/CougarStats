@@ -11,41 +11,46 @@ library(dplyr)
 library(broom)
 library(broom.helpers)
 library(DT)
-library(DescTools)           
-library(ResourceSelection)   
-library(shinyalert)       
-library(tibble)              
+library(DescTools)
+library(ResourceSelection)
+library(shinyalert)
+library(tibble)
 
 # --- UI Function for Logistic Regression Sidebar ---
 LogisticRegressionSidebarUI <- function(id) {
   ns <- NS(id)
   tagList(
     div(
-      id = ns("LOGRSidebar"), 
+      id = ns("LOGRSidebar"),
       withMathJax(
         helpText("Select a binary response variable (must have exactly two unique values: 0 or 1)."),
-        selectInput(
-          ns("responseVariable"), 
+        pickerInput(
+          ns("responseVariable"),
           "Response Variable (\\(y\\)) – Binary",
-          choices  = NULL,
-          selectize = FALSE
+          choices = NULL,
+          multiple = FALSE, # This ensures only one selection is allowed
+          options = list(
+            `live-search` = TRUE,
+            title = "Nothing selected"
+          )
         ),
-        uiOutput(ns("responseVariableWarning")), 
+        uiOutput(ns("responseVariableWarning")),
         helpText("Select one or more explanatory variables (numeric)."),
         pickerInput(
-          ns("explanatoryVariables"), 
+          ns("explanatoryVariables"),
           "Explanatory Variables (x₁, x₂, …, xₙ)",
           choices  = NULL,
           multiple = TRUE,
           options = list(
             `actions-box`       = TRUE,
             `live-search`       = TRUE,
+            title = "Nothing selected",
             selectedTextFormat = "values",
             multipleSeperator  = ", "
           )
         ),
-        actionButton(ns("calculate"), "Calculate",    class = "act-btn"), 
-        actionButton(ns("reset"),     "Reset Values", class = "act-btn")     
+        actionButton(ns("calculate"), "Calculate",    class = "act-btn"),
+        actionButton(ns("reset"),     "Reset Values", class = "act-btn")
       )
     )
   )
@@ -63,8 +68,13 @@ LogisticRegressionMainPanelUI <- function(id) {
                  id = ns("dataImport"),
                  title = "")),
              tabPanel(title = "LR", uiOutput(ns("Equations"))),
-             id = ns("mainPanel"), 
+             tabPanel(title = "Analysis of Deviance",
+                      uiOutput(ns("anovaOutput"))
+             ),
+             id = ns("mainPanel"),
              theme = bs_theme(version = 4)
+             
+             
   )
 }
 
@@ -72,16 +82,16 @@ LogisticRegressionMainPanelUI <- function(id) {
 LogisticRegressionServer <- function(id) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
-    shinyjs::useShinyjs() 
+    shinyjs::useShinyjs()
     
     imported <- import_file_server(
-      id            = "dataImport", 
+      id            = "dataImport",
       trigger_return = "change",
       btn_show_data = FALSE,
       return_class  = "tbl_df"
     )
     
-    noFileCalculate <- reactiveVal(FALSE) 
+    noFileCalculate <- reactiveVal(FALSE)
     
     bindEvent(observe({
       shinyjs::hide("mainPanel")
@@ -94,22 +104,22 @@ LogisticRegressionServer <- function(id) {
       df <- imported$data()
       if (!is.null(df) && ncol(df) > 0) {
         vars <- names(df)
-        updateSelectInput(session, "responseVariable", choices = c("", vars), selected = "")
+        updatePickerInput(session, "responseVariable", choices = vars, selected = character(0))
         updatePickerInput(session, "explanatoryVariables", choices = vars, selected = character(0))
-      } else { 
-        updateSelectInput(session, "responseVariable", choices = c(""), selected = "")
+      } else {
+        updatePickerInput(session, "responseVariable", choices = c(""), selected = character(0))
         updatePickerInput(session, "explanatoryVariables", choices = c(""), selected = character(0))
       }
-      output$responseVariableWarning <- renderUI(NULL) 
-    }, ignoreNULL = FALSE) 
+      output$responseVariableWarning <- renderUI(NULL)
+    }, ignoreNULL = FALSE)
     
     observeEvent(input$responseVariable, {
       df <- imported$data()
-      response_var_name <- input$responseVariable 
+      response_var_name <- input$responseVariable
       
       if (!is.null(df) && isTruthy(response_var_name) && response_var_name %in% names(df)) {
         vals <- na.omit(df[[response_var_name]])
-        if (length(unique(vals)) != 2 && length(vals) > 0) { 
+        if (length(unique(vals)) != 2 && length(vals) > 0) {
           output$responseVariableWarning <- renderUI(
             tags$p(class = "text-danger", style="font-size:0.9em; padding-top:5px;",
                    "Warning: Response variable must have exactly two unique values for logistic regression.")
@@ -117,22 +127,22 @@ LogisticRegressionServer <- function(id) {
         } else {
           output$responseVariableWarning <- renderUI(NULL)
         }
-        expls <- setdiff(names(df), response_var_name) 
+        expls <- setdiff(names(df), response_var_name)
         current_expl <- isolate(input$explanatoryVariables)
         valid_current_expl <- current_expl[current_expl %in% expls]
         updatePickerInput(session, "explanatoryVariables", choices = expls, selected = valid_current_expl)
       } else {
         output$responseVariableWarning <- renderUI(NULL)
-        if(!is.null(df)) { 
+        if(!is.null(df)) {
           updatePickerInput(session, "explanatoryVariables", choices = names(df), selected = isolate(input$explanatoryVariables))
-        } else { 
+        } else {
           updatePickerInput(session, "explanatoryVariables", choices = c(""), selected = character(0))
         }
       }
     }, ignoreNULL = FALSE, ignoreInit = TRUE)
     
     observeEvent(input$reset, {
-      updateSelectInput(session, "responseVariable", selected = "")
+      updatePickerInput(session, "responseVariable", selected = character(0))
       updatePickerInput(session, "explanatoryVariables", selected = character(0))
       output$responseVariableWarning <- renderUI(NULL)
       noFileCalculate(FALSE)
@@ -158,7 +168,7 @@ LogisticRegressionServer <- function(id) {
       explanatory_vars_names <- isolate(input$explanatoryVariables)
       
       if (!isTruthy(response_var_name) || !isTruthy(explanatory_vars_names) || length(explanatory_vars_names) == 0) {
-        shinyalert::shinyalert("Input Error", "Please select a response variable and at least one explanatory variable.", type = "error", confirmButtonColor = "#18536F")
+        shinyalert::shinyalert("Input Error", "Please select a response variable and at least one explanatory variable.", type = "error", confirmButtonCol = "#18536F")
         return()
       }
       
@@ -167,7 +177,7 @@ LogisticRegressionServer <- function(id) {
       df_model_data <- na.omit(df_model_data)
       
       if(nrow(df_model_data) < (length(explanatory_vars_names) + 2) || nrow(df_model_data) == 0) {
-        shinyalert::shinyalert("Error", "Not enough observations after removing NAs for model fitting, or no data selected.", type = "error", confirmButtonColor = "#18536F")
+        shinyalert::shinyalert("Error", "Not enough observations after removing NAs for model fitting, or no data selected.", type = "error", confirmButtonCol = "#18536F")
         return()
       }
       
@@ -175,7 +185,7 @@ LogisticRegressionServer <- function(id) {
       if (!is.factor(response_column_data)) { response_column_data <- as.factor(response_column_data) }
       
       if (nlevels(response_column_data) != 2) {
-        shinyalert::shinyalert("Error", "Response variable must resolve to exactly two distinct values after NA removal for logistic regression.", type = "error", confirmButtonColor = "#18536F")
+        shinyalert::shinyalert("Error", "Response variable must resolve to exactly two distinct values after NA removal for logistic regression.", type = "error", confirmButtonCol = "#18536F")
         return()
       }
       df_model_data[[response_var_name]] <- as.numeric(response_column_data) - 1
@@ -191,7 +201,7 @@ LogisticRegressionServer <- function(id) {
       fit <- tryCatch({
         glm(as.formula(formula_str), data = df_model_data, family = binomial(link = "logit"))
       }, error = function(e) {
-        shinyalert::shinyalert("Model Fitting Error", paste("Error in glm:", e$message), type = "error", confirmButtonColor = "#18536F")
+        shinyalert::shinyalert("Model Fitting Error", paste("Error in glm:", e$message), type = "error", confirmButtonCol = "#18536F")
         return(NULL)
       })
       
@@ -233,7 +243,7 @@ LogisticRegressionServer <- function(id) {
             "\\+ -", "- ",
             sprintf("\\text{logit}(\\hat{p}) = %.3f %s", model_coeffs[1], value_terms)
           )
-        
+          
           combined_latex <- sprintf("\\(%s \\\\ %s\\)", log_odds_general, log_odds_specific)
           
           div(
@@ -266,7 +276,7 @@ LogisticRegressionServer <- function(id) {
               SE = `Std. Error`,
               Wald,
               df,
-              P = `Pr(>|z|)`,
+              `p-value` = `Pr(>|z|)`,
               OR,
               `Lower 95% CI for OR` = Lower_CI_OR,
               `Upper 95% CI for OR` = Upper_CI_OR
@@ -293,13 +303,55 @@ LogisticRegressionServer <- function(id) {
             need(isTruthy(input$responseVariable), "A response variable is required."),
             need(isTruthy(input$explanatoryVariables), "Explanatory variables are required.")
           )
-          fluidPage(
-            fluidRow(uiOutput(ns("logisticModelEquations"))),
-            fluidRow(uiOutput(ns("logisticModelCoefficientsAndConfidenceIntervals")))
+          tagList(
+            h3("Calculations and Formulas"),
+            uiOutput(ns("logisticModelEquations")),
+            uiOutput(ns("logisticModelCoefficientsAndConfidenceIntervals"))
           )
         })
         
       }) # End isolate
+      # --- ANOVA-style table for Logistic Regression ---
+      # Likelihood Ratio Test
+      anova_table <- anova(fit, test = "LRT")
+      
+      output$anovaOutput <- renderUI({
+        fluidPage(
+          h3("Analysis of Deviance Table (Likelihood Ratio Test)"),
+          withMathJax(),
+          h4("Calculations and Formulas"),
+          p("The deviance is a measure of the goodness of fit of a logistic regression model. A smaller deviance indicates a better fit. The deviance for a model is calculated as:"),
+          p("$$ D = -2 \\log(\\mathcal{L}) $$"),
+          p("where \\(\\mathcal{L}\\) is the likelihood of the model."),
+          p("The Likelihood Ratio Test (LRT) statistic is used to compare nested models. It is the difference in deviance between the two models:"),
+          p("$$ \\text{LRT} = D_0 - D_1 = -2 \\log\\left(\\frac{\\mathcal{L}_0}{\\mathcal{L}_1}\\right) $$"),
+          p("where \\(D_0\\) and \\(\\mathcal{L}_0\\) are the deviance and likelihood of the null model (the simpler model), and \\(D_1\\) and \\(\\mathcal{L}_1\\) are for the alternative model. This LRT statistic follows a \\(\\chi^2\\) distribution with degrees of freedom equal to the difference in the number of parameters between the two models."),
+          br(),
+          DTOutput(ns("lrAnovaTable")),
+          br(),
+          h4("Interpretation"),
+          p("The 'Df' column shows the degrees of freedom for each term. The 'Deviance' column shows the change in deviance when the term is added to the model. The 'p-value' column gives the p-value for the likelihood ratio test. A small p-value (typically < 0.05) indicates that the variable is statistically significant and contributes to the model's explanatory power.")
+        )
+      })
+      
+      # Display the table using DT package for better formatting
+      output$lrAnovaTable <- renderDT({
+        # Rename the p-value column
+        anova_df <- as.data.frame(anova_table)
+        colnames(anova_df)[colnames(anova_df) == "Pr(>Chi)"] <- "p-value"
+        
+        datatable(
+          anova_df,
+          options = list(
+            dom = 't', # Display table only
+            searching = FALSE,
+            paging = FALSE,
+            ordering = FALSE
+          ),
+          caption = 'Analysis of Deviance Table (Likelihood Ratio Test)',
+          rownames = TRUE
+        ) %>% formatRound(columns = c('Deviance', 'p-value', 'Resid. Dev'), digits = 3)
+      })
       
       shinyjs::show("mainPanel")
       updateNavbarPage(session, "mainPanel", selected = "LR")

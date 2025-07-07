@@ -1,3 +1,5 @@
+# R/multipleLinearRegression.R
+
 library(shiny)
 library(shinyjs)
 library(shinyWidgets)
@@ -36,14 +38,18 @@ MLRSidebarUI <- function(id) {
       useShinyjs(),
       withMathJax(
         helpText("Only numeric variables are selectable."),
-        ## DONE: the choices need to be updated dynamically.
-        selectInput(
+        pickerInput(
           ns("responseVariable"),
           "Response Variable (\\(y\\))",
           choices = NULL,
-          selectize = FALSE),
+          multiple = FALSE,
+          options = list(
+            `live-search` = TRUE,
+            title = "Nothing selected"
+          )
+        ),
         
-        helpText("Only numeric variables are selectable."),
+        helpText("Select two or more explanatory variables (numeric)."),
         uiOutput(ns("singleOrMultipleHelpText")),
         pickerInput(
           inputId  = ns("explanatoryVariables"),
@@ -59,17 +65,17 @@ MLRSidebarUI <- function(id) {
         ),
         actionButton(ns("calculate"), "Calculate", class = "act-btn"),
         actionButton(ns("reset"), "Reset Values", class = "act-btn")
-    )))
+      )))
 }
 
 MLRMainPanelUI <- function(id) {
   ns <- NS(id)
   navbarPage(title = NULL,
              tabPanel(
-              title = "Data Import",
-              div(id = ns("importContainer")),
-              uiOutput(ns("fileImportUserMessage")),
-              import_file_ui(
+               title = "Data Import",
+               div(id = ns("importContainer")),
+               uiOutput(ns("fileImportUserMessage")),
+               import_file_ui(
                  id    = ns("dataImport"),
                  title = "")),
              tabPanel(title = "MLR", uiOutput(ns("Equations")) ),
@@ -78,10 +84,6 @@ MLRMainPanelUI <- function(id) {
              tabPanel(title = "Diagnostic Plots", uiOutput(ns("DiagnosticPlots"))),
              
              id = ns("mainPanel"),
-             
-             ## FIXME #49: if the version is 5 then import_ui will break! NOTE:
-             ## write a support request on the Posit Shiny subform asking for
-             ## advice. I don't understand why this is this way.
              theme = bs_theme(version = 4))
 }
 
@@ -96,8 +98,6 @@ MLRServer <- function(id) {
     },
     once = FALSE)
     
-    ## TODO: display a help message in the sidebar indicating that non-numeric
-    ## columns will not be available.
     uploadedTibble <- import_file_server(
       id = "dataImport",
       trigger_return = "change",
@@ -114,7 +114,7 @@ MLRServer <- function(id) {
         dplyr::select_if(is.numeric) %>%
         colnames()
       
-      updateSelectInput(
+      updatePickerInput(
         session,
         inputId  = "responseVariable",
         choices  = cols,
@@ -132,7 +132,7 @@ MLRServer <- function(id) {
     
     observeEvent(input$reset, {
       # clear the response‐variable dropdown
-      updateSelectInput(
+      updatePickerInput(
         session,
         "responseVariable",
         selected = character(0)
@@ -146,9 +146,6 @@ MLRServer <- function(id) {
       )
     })
     
-    ## NOTE: this is a very lame way to hide the main panel, but this is what is
-    ## forced upon us by technical debt and the overall design of the
-    ## application.
     bindEvent(observe({
       shinyjs::hide("mainPanel")
       updateNavbarPage(inputId = "mainPanel", selected = "Data Import")
@@ -158,7 +155,7 @@ MLRServer <- function(id) {
     
     ## Update the choices for the select inputs when the uploadedTibble changes.
     observe({
-      updateSelectInput(inputId = "responseVariable",
+      updatePickerInput(inputId = "responseVariable",
                         choices = colnames(select_if(uploadedTibble$data(), is.numeric)),
                         selected = character(0))
       
@@ -199,11 +196,9 @@ MLRServer <- function(id) {
         div(class = "text-success", span("Multiple explanatory variables result in a multiple linear regression."))
       } else if (length(input$explanatoryVariables) == 1) {
         div(class = "text-danger", span("Select at least one more explanatory variable; a single explanatory variable results in a simple linear regression."))
-      } else {
-        div(class = "text-primary", span("Select at least two explanatory variables."))
       }
     })
-
+    
     MLRValidation <-
       quote(validate(
         need(uploadedTibble$name(), "Upload some data."),
@@ -269,29 +264,18 @@ MLRServer <- function(id) {
     })
     
     observe({ # input$calculate
-      ## lapply(
-      ##   c("Equations", "ANOVA", "MulticollinearityDetection", "DiagnosticPlots"),
-      ##   waiter_show
-      ## )
-      
       if (!isTruthy(uploadedTibble$data())) {
         noFileCalculate(TRUE)
         return()
       } else {
         noFileCalculate(FALSE)
-        # Proceed with calculations if data is present
-        # Your existing isolate block for calculations would go here.
       }
-    
+      
       isolate({
         
         output$anovaHypotheses <- renderUI({
           withMathJax(
             p(strong("Analysis of Variance (ANOVA)")),
-            ## TODO: until an alternative which uses the actual number of
-            ## variables is implemented, use this form of the null-hypothesis (and
-            ## when the alternative is implemented use this when there are more
-            ## than five independent variables selected).
             p(
               r"{\( H_0: \beta_1 = \beta_2 = \cdots = \beta_k = 0\)}",
               br(),
@@ -307,7 +291,7 @@ MLRServer <- function(id) {
             )
           )
         })
-
+        
         with(uploadedTibble$data(), {
           validate(
             need(
@@ -319,12 +303,12 @@ MLRServer <- function(id) {
               "A response variable must be selected."
             )
           )
-
+          
           model <- lm(reformulate(
             as.character(lapply(input$explanatoryVariables, as.name)),
             as.name(input$responseVariable)
           ))
-
+          
           modelCoefficients <-
             rownames_to_column(
               as.data.frame(summary(model)$coefficients),
@@ -351,7 +335,7 @@ MLRServer <- function(id) {
             align = "c",
             digits = 3
           )
-
+          
           output$lmCoefConfintTableCaption <- renderUI({
             tagList(if (anyNA(modelConfidenceIntervals)) {
               p("Some model components (e.g. dependent variables) did not have confidence intervals or coefficients, and are dropped from the table.")
@@ -359,15 +343,13 @@ MLRServer <- function(id) {
               p("")
             })
           })
-
+          
           output$rsquareAdjustedRSquareInterpretation <- renderUI({
-            ## TODO: Copied from elsewhere. Duplications like this should REALLY be
-            ## abstracted using a reactive value list.
             modelANOVA <- anova(model)
             SSR <- sum(modelANOVA$"Sum Sq"[-nrow(modelANOVA)]) # all but the residuals
             SSE <- modelANOVA$"Sum Sq"[nrow(modelANOVA)] # only the residuals
             SST <- SSR + SSE
-
+            
             withMathJax(
               p(strong(r"{ \(R^2\) and Adjusted \(R^2\) }")),
               br(),
@@ -385,23 +367,23 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] \\
 R^2_{\text{adj}} = %0.4f
 \)
 }",
-                summary(model)$adj.r.squared
+summary(model)$adj.r.squared
               )),
-              p(r"[where \(k\) is the number of independent (explanatory) variables in the regression model, and \(n\) is the number of observations in the dataset.]"),
-              p(
-                strong("Interpretation:"),
-                sprintf(
-                  r"[Roughly \(%.2f\%%\) of the variation in the response variable is explained by the multiple linear regression model when adjusted for the number of explanatory variables and the sample size.]",
-                  summary(model)$adj.r.squared * 100
-                )
-              ),
-              br(),
-              p(strong("Information Criteria")),
-              p(sprintf(r"[Akaike Information Criterion (AIC): \(%0.4f\)]", AIC(model))),
-              p(sprintf(r"[Bayesian Information Criterion (BIC): \(%0.4f\)]", BIC(model)))
+p(r"[where \(k\) is the number of independent (explanatory) variables in the regression model, and \(n\) is the number of observations in the dataset.]"),
+p(
+  strong("Interpretation:"),
+  sprintf(
+    r"[Roughly \(%.2f\%%\) of the variation in the response variable is explained by the multiple linear regression model when adjusted for the number of explanatory variables and the sample size.]",
+    summary(model)$adj.r.squared * 100
+  )
+),
+br(),
+p(strong("Information Criteria")),
+p(sprintf(r"[Akaike Information Criterion (AIC): \(%0.4f\)]", AIC(model))),
+p(sprintf(r"[Bayesian Information Criterion (BIC): \(%0.4f\)]", BIC(model)))
             )
           })
-
+          
           output$multicollinearityDetectionMainPanelUI <- renderUI({
             withMathJax(
               fluidRow(column(
@@ -421,12 +403,7 @@ R^2_{\text{adj}} = %0.4f
               ))
             )
           })
-
-          ## FIXME:
-          ## Warning in cor(modelANOVA, use = "complete.obs") :
-          ##   the standard deviation is zero
-          ##
-          ## Only "complete" (no NAs) observations.
+          
           output$simpleCorrelationMatrix <- renderTable({
             corsetAboveDiagNA(uploadedTibble$data()[, input$explanatoryVariables])
           },
@@ -434,7 +411,7 @@ R^2_{\text{adj}} = %0.4f
           striped = TRUE,
           na = "",
           align = "c")
-
+          
           output$vifs <- renderTable(
             {
               df <- tryCatch(
@@ -449,20 +426,20 @@ R^2_{\text{adj}} = %0.4f
             rownames = TRUE,
             align = "c"
           )
-
+          
           output$multicollinearityGgpairs <- renderPlot({
             ggpairs(anova(model))
           })
-
+          
           output$ggscatmat <- renderPlot(
             {
               ggscatmat(uploadedTibble$data()[, input$explanatoryVariables], columns = input$explanatoryVariables)
             })
-
+          
           output$ggnostic <- renderPlot({
             ggnostic(model)
           })
-
+          
           output$anovaTable <- renderTable(
             {
               redrawing <<- TRUE
@@ -476,7 +453,7 @@ R^2_{\text{adj}} = %0.4f
               MSR <- SSR / k
               MSE <- SSE / (n - k - 1)
               F <- MSR / MSE
-
+              
               ## RETURN THE TABLE TO RENDER
               tibble::tribble(
                 ~"Source", ~"df", ~"SS", ~"MS", ~"F", ~"P-value",
@@ -489,11 +466,11 @@ R^2_{\text{adj}} = %0.4f
             striped = TRUE,
             align = "c"
           )
-
+          
           observe({
             shinyjs::runjs(r"[$('#rc-MLR-anovaTable > table > thead > tr').children().css({'font-style': 'italic'})]")
           })
-
+          
           output$linearModelAIC <- renderPrint({
             print(AIC(model))
             print(paste("The AIC of the model and the AIC of the log-likelihood of the model are equal?", all.equal(AIC(model), AIC(logLik(model)))))
@@ -505,7 +482,7 @@ R^2_{\text{adj}} = %0.4f
             resid_panel(model)
           })
         })
-
+        
         output$anovaPValueMethod <- renderUI({
           with(uploadedTibble$data(), {
             model <- lm(reformulate(
@@ -537,27 +514,27 @@ R^2_{\text{adj}} = \frac{%0.2f}{%0.2f} \\
 R^2_{\text{adj}} = %0.2f \\
 \)
 }",
-                anovaModel$SSR, anovaModel$SST, anovaModel$SSR / anovaModel$SST
+anovaModel$SSR, anovaModel$SST, anovaModel$SSR / anovaModel$SST
               )),
-              p(strong("Conclusion:")),
-              {
-                pValue <- pf(F, k, n - k - 1, lower.tail = FALSE)
-                p(sprintf(
-                  r"[Since the p-value is %s than \(\alpha\) (\(%0.3f %s 0.05\)), %s.]",
-                  if (pValue <= 0.05) "less" else "greater",
-                  pValue,
-                  if (pValue <= 0.05) r"[\le]" else r"[\ge]",
-                  if (pValue <= 0.05) {
-                    r"[we reject the null hypothesis (\(H_0\)) and conclude there is enough statistical evidence to support the alternative hypothesis (\(H_a\))]"
-                  } else {
-                    r"[we do not reject the null hypothesis (\(H_0\)) and conclude there isn't enough statistical evidence to support the alternative hypothesis (\(H_a\)).]"
-                  }
-                ))
-              }
+p(strong("Conclusion:")),
+{
+  pValue <- pf(F, k, n - k - 1, lower.tail = FALSE)
+  p(sprintf(
+    r"[Since the p-value is %s than \(\alpha\) (\(%0.3f %s 0.05\)), %s.]",
+    if (pValue <= 0.05) "less" else "greater",
+    pValue,
+    if (pValue <= 0.05) r"[\le]" else r"[\ge]",
+    if (pValue <= 0.05) {
+      r"[we reject the null hypothesis (\(H_0\)) and conclude there is enough statistical evidence to support the alternative hypothesis (\(H_a\))]"
+    } else {
+      r"[we do not reject the null hypothesis (\(H_0\)) and conclude there isn't enough statistical evidence to support the alternative hypothesis (\(H_a\)).]"
+    }
+  ))
+}
             )
           })
         })
-
+        
         output$plot <- renderPlot({
           validate(need(uploadedTibble$name(), "Upload some data."))
           validate(need(
@@ -597,11 +574,11 @@ R^2_{\text{adj}} = %0.2f \\
                 as.character(lapply(input$explanatoryVariables, as.name)),
                 as.name(input$responseVariable)
               ))
-
+              
               ## Reactively generate the LaTeX for the regression model equation.
               modelEquations <- with(as.list(coefficients(model)), {
                 req(as.list(coefficients(model)),
-                  cancelOutput = "progress"
+                    cancelOutput = "progress"
                 )
                 paste(
                   r"{\(}",
@@ -622,7 +599,7 @@ R^2_{\text{adj}} = %0.2f \\
                               )
                             ),
                             paste0(r"{x_{}", seq_along(input$explanatoryVariables),
-                            r"[}]"),
+                                   r"[}]"),
                             collapse = "+"
                           )
                         ),
@@ -635,7 +612,7 @@ R^2_{\text{adj}} = %0.2f \\
                               \(x) if(!is.na(x)) sprintf(r"[%.3f]", x) else ""
                             )),
                             paste0(r"[x_{]", seq_along(input$explanatoryVariables),
-                            r"[}]"),
+                                   r"[}]"),
                             collapse = "+"
                           )
                         ),
@@ -651,7 +628,7 @@ R^2_{\text{adj}} = %0.2f \\
             }))
           )
         ))
-
+        
         output$linearModelCoefficientsAndConfidenceIntervals <- renderUI({
           column(
             12,
@@ -660,10 +637,10 @@ R^2_{\text{adj}} = %0.2f \\
             uiOutput(ns("lmCoefConfintTableCaption"))
           )
         })
-
+        
       }) ## end of isolation
-
-
+      
+      
       shinyjs::show("")
       shinyjs::show("mainPanel")
       updateNavbarPage(inputId = "mainPanel", selected = "MLR")
@@ -674,10 +651,10 @@ R^2_{\text{adj}} = %0.2f \\
         noFileCalculate(FALSE)
       }
     }) |> bindEvent(uploadedTibble$data(), ignoreNULL = FALSE, ignoreInit = TRUE)
-
+    
     output$Equations <- renderUI({
       eval(MLRValidation)
-
+      
       fluidPage(
         ## NOTE: variables and equations are both in linearModelEquations.
         fluidRow(uiOutput(ns("linearModelEquations"))),
