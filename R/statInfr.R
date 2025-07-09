@@ -943,6 +943,39 @@ statInfrUI <- function(id) {
                 selected = c("5%"),
                 inline   = TRUE),
               
+              conditionalPanel(
+                ns = ns,
+                condition = "input.popuParameters == 'Independent Population Means'",
+                
+                numericInput(
+                  inputId = ns("indMeansMuNaught"),
+                  label   = strong(HTML("Hypothesized Population Mean Difference \\( (\\mu_{1} - \\mu_{2})_{0} \\) Value")),
+                  value   = 0,
+                  step    = 0.00001)
+              ), # indMeansMuNaught
+              
+              conditionalPanel(
+                ns = ns,
+                condition = "input.popuParameters == 'Dependent Population Means'",
+                
+                numericInput(
+                  inputId = ns("depMeansMuNaught"),
+                  label   = strong(HTML("Hypothesized Population Mean Difference \\( (\\mu_{d})_{0} \\) Value")),
+                  value   = 0,
+                  step    = 0.00001)
+              ), # depMeansMuNaught
+              
+              conditionalPanel(
+                ns = ns,
+                condition = "input.popuParameters == 'Population Proportions'",
+                
+                numericInput(
+                  inputId = ns("propMuNaught"),
+                  label   = strong(HTML("Hypothesized Population Proportion Difference \\( (p_{1} - p_{2})_{0} \\) Value")),
+                  value   = 0,
+                  step    = 0.00001)
+              ), # propMuNaught
+              
               selectizeInput(
                 inputId  = ns("altHypothesis2"),
                 label    = strong("Alternate Hypothesis (\\( H_{a}\\))"),
@@ -6877,7 +6910,8 @@ statInfrServer <- function(id) {
           conditionalPanel(
             ns = session$ns,
             condition = "(input.dataAvailability2 == 'Summarized Data' && input.bothsigmaKnown == 'bothUnknown' && input.bothsigmaEqual == 'FALSE') ||
-                       (input.dataAvailability2 == 'Enter Raw Data' && input.bothsigmaKnownRaw == 'bothUnknown' && input.bothsigmaEqualRaw == 'FALSE')
+                       (input.dataAvailability2 == 'Enter Raw Data' && input.bothsigmaKnownRaw == 'bothUnknown' && input.bothsigmaEqualRaw == 'FALSE') ||
+                       (input.dataAvailability2 == 'Upload Data' && input.bothsigmaKnownUpload == 'bothUnknown' && input.bothsigmaEqualUpload == 'FALSE')
                        ",
             br(),
             p("where"),
