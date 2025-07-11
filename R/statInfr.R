@@ -970,11 +970,11 @@ statInfrUI <- function(id) {
                 condition = "input.popuParameters == 'Population Proportions'",
                 
                 numericInput(
-                  inputId = ns("propMuNaught"),
+                  inputId = ns("propDiffNaught"),
                   label   = strong(HTML("Hypothesized Population Proportion Difference \\( (p_{1} - p_{2})_{0} \\) Value")),
                   value   = 0,
                   step    = 0.00001)
-              ), # propMuNaught
+              ), # propDiffNaught
               
               selectizeInput(
                 inputId  = ns("altHypothesis2"),
@@ -1929,6 +1929,7 @@ statInfrServer <- function(id) {
     onepropht_iv <- InputValidator$new()
     twoprop_iv <- InputValidator$new()
     twopropht_iv <- InputValidator$new()
+    twopropdiffnaught_iv <- InputValidator$new()
     twopopvarsum_iv <- InputValidator$new()
     twopopvar_iv <- InputValidator$new()
     twopopvarraw_iv <- InputValidator$new()
@@ -2112,6 +2113,11 @@ statInfrServer <- function(id) {
     twoprop_iv$add_rule("numSuccesses2", sv_integer())
     twoprop_iv$add_rule("numSuccesses2", sv_gte(0))
     twopropht_iv$add_rule("numSuccesses2", ~ if(checkTwoProp() == 0) "At least one of (x1) and (x2) must be greater than 0.")
+    
+    # diff naught
+    twopropdiffnaught_iv$add_rule("propDiffNaught", sv_required())
+    twopropdiffnaught_iv$add_rule("propDiffNaught", sv_gte(-1, message = "Value must be between -1 and 1 (inclusive)."))
+    twopropdiffnaught_iv$add_rule("propDiffNaught", sv_lte(1, message = "Value must be between -1 and 1 (inclusive)."))
     
     # SDSampleSize1
     twopopvarsum_iv$add_rule("SDSampleSize1", sv_required())
@@ -2391,6 +2397,10 @@ statInfrServer <- function(id) {
                                          input$popuParameters == 'Two Population Variances' &&
                                          input$dataAvailability3 == 'Enter Raw Data'))
     
+    twopropdiffnaught_iv$condition(~ isTRUE(input$siMethod == '2' &&
+                                      input$popuParameters == 'Population Proportions' &&
+                                      input$inferenceType2 == 'Hypothesis Testing'))
+    
     kwupload_iv$condition(~ isTRUE(input$siMethod == 'Multiple' &&
                                      input$multipleMethodChoice == 'kw'))
     
@@ -2458,6 +2468,7 @@ statInfrServer <- function(id) {
     si_iv$add_validator(onepropht_iv)
     si_iv$add_validator(twoprop_iv)
     si_iv$add_validator(twopropht_iv)
+    si_iv$add_validator(twopropdiffnaught_iv)
     si_iv$add_validator(twopopvarsum_iv)
     si_iv$add_validator(twopopvar_iv)
     si_iv$add_validator(twopopvarraw_iv)
@@ -2511,6 +2522,7 @@ statInfrServer <- function(id) {
     onepropht_iv$enable()
     twoprop_iv$enable()
     twopropht_iv$enable()
+    twopropdiffnaught_iv$enable()
     twopopvarsum_iv$enable()
     twopopvar_iv$enable()
     twopopvarraw_iv$enable()
@@ -5423,6 +5435,15 @@ statInfrServer <- function(id) {
         
       }
       
+      if(!twopropdiffnaught_iv$is_valid()) {
+        validate(
+          need(input$propDiffNaught != "", "Hypothesized value of the Population Proportion Difference is required."),
+          need(input$propDiffNaught >= -1, "Hypothesized value of the Population Proportion Difference must be between -1 and +1, inclusive."),
+          need(input$propDiffNaught <= 1, "Hypothesized value of the Population Proportion Difference must be between -1 and +1, inclusive."),
+          errorClass = "myClass"
+        )
+      }
+      
       #### ---------------- Two Pop Variance Validation
       
       if(!twopopvarsum_iv$is_valid()) {
@@ -7391,7 +7412,6 @@ statInfrServer <- function(id) {
     
     #### ---------------- HT Plot ----
     output$depMeansHTPlot <- renderPlot({
-      req(si_iv$is_valid())
       
       if(GetDepMeansData()$sd != 0) {
         tTest <- DepMeansTTest()
@@ -7504,8 +7524,10 @@ statInfrServer <- function(id) {
     output$twoPropHT <- renderUI({
       req(si_iv$is_valid())
       
-      twoPropZTest <- TwoPropZTest(input$numSuccesses1, input$numTrials1, input$numSuccesses2, input$numTrials2, 0, IndMeansHypInfo()$alternative, SigLvl())
+      diffNaught <- input$propDiffNaught
+      twoPropZTest <- TwoPropZTest(input$numSuccesses1, input$numTrials1, input$numSuccesses2, input$numTrials2, diffNaught, IndMeansHypInfo()$alternative, SigLvl())
       twoPropZTest["Z Critical"] <- round(twoPropZTest["Z Critical"], cvDigits)
+      
       
       if(input$altHypothesis2 == "2")
       {
@@ -7601,15 +7623,16 @@ statInfrServer <- function(id) {
           br(),
           br(),
           br(),
-          sprintf("\\( z = \\dfrac{ (%0.4f - %0.4f) - 0}{\\sqrt{%0.4f(1-%0.4f)\\left(\\dfrac{1}{%g} + \\dfrac{1}{%g}\\right)}}\\)",
+          sprintf("\\( z = \\dfrac{ (%0.4f - %0.4f) - %s}{\\sqrt{%0.4f(1-%0.4f)\\left(\\dfrac{1}{%g} + \\dfrac{1}{%g}\\right)}}\\)",
                   twoPropZTest["Sample Proportion 1"],
                   twoPropZTest["Sample Proportion 2"],
+                  if (diffNaught < 0) sprintf("(%.4f)", diffNaught) else sprintf("%.4f", diffNaught),
                   twoPropZTest["Pooled Proportion"],
                   twoPropZTest["Pooled Proportion"],
                   input$numTrials1,
                   input$numTrials2),
           sprintf("\\( = \\dfrac{%0.4f}{%0.4f} \\)",
-                  twoPropZTest["Sample Proportion 1"] - twoPropZTest["Sample Proportion 2"],
+                  twoPropZTest["Sample Proportion 1"] - twoPropZTest["Sample Proportion 2"] - diffNaught,
                   twoPropZTest["Std Error"]),
           br(),
           br(),
