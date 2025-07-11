@@ -1917,10 +1917,12 @@ statInfrServer <- function(id) {
     indmeansrawsd_iv <- InputValidator$new()
     indmeansrawsdunk_iv <- InputValidator$new()
     indmeansuploadsd_iv <- InputValidator$new()
+    indmeansmunaught_iv <- InputValidator$new()
     depmeansraw_iv <- InputValidator$new()
     depmeansupload_iv <- InputValidator$new()
     depmeansuploadvars_iv <- InputValidator$new()
     depmeansrawsd_iv <- InputValidator$new()
+    depmeansmunaught_iv <- InputValidator$new()
     oneSD_iv <- InputValidator$new()
     oneSDht_iv <- InputValidator$new()
     oneprop_iv <- InputValidator$new()
@@ -2052,6 +2054,8 @@ statInfrServer <- function(id) {
     indmeansuploadvar_iv$add_rule("indMeansUplSample1", sv_required())
     indmeansuploadvar_iv$add_rule("indMeansUplSample2", sv_required())
     
+    # ind means Mu Naught
+    indmeansmunaught_iv$add_rule("indMeansMuNaught", sv_required())
     
     # before
     depmeansraw_iv$add_rule("before", sv_required())
@@ -2080,6 +2084,8 @@ statInfrServer <- function(id) {
     depmeansuploadvars_iv$add_rule("depMeansUplSample2", ~ if(CheckDepUploadSamples() != 0) "Sample 1 and Sample 2 must have the same number of observations.")
     
     depmeansrawsd_iv$add_rule("after", ~ if(GetDepMeansData()$sd == 0) "Variance required in 'Before' and 'After' sample data for hypothesis testing.")
+    
+    depmeansmunaught_iv$add_rule("depMeansMuNaught", sv_required())
     
     # sample standard deviation
     oneSD_iv$add_rule("SSDSampleSize", sv_required())
@@ -2323,6 +2329,10 @@ statInfrServer <- function(id) {
                                                        input$dataAvailability2 == 'Upload Data' &&
                                                        input$bothsigmaKnownUpload == 'bothKnown') })
     
+    indmeansmunaught_iv$condition(~ isTRUE(input$siMethod == '2' &&
+                                             input$popuParameters == 'Independent Population Means' &&
+                                             input$inferenceType2 == 'Hypothesis Testing'))
+    
     depmeansraw_iv$condition(~ isTRUE(input$siMethod == '2' &&
                                         input$popuParameters == 'Dependent Population Means' &&
                                         input$dataTypeDependent == 'Enter Raw Data'))
@@ -2340,6 +2350,10 @@ statInfrServer <- function(id) {
                                           input$popuParameters == 'Dependent Population Means' &&
                                           input$dataTypeDependent == 'Enter Raw Data' &&
                                           depmeansraw_iv$is_valid()))
+    
+    depmeansmunaught_iv$condition(~ isTRUE(input$siMethod == '2' &&
+                                             input$popuParameters == 'Dependent Population Means' &&
+                                             input$inferenceType2 == 'Hypothesis Testing'))
     
     oneSD_iv$condition(~ isTRUE(input$siMethod == '1' &&
                                   input$popuParameter == 'Population Standard Deviation'))
@@ -2433,9 +2447,11 @@ statInfrServer <- function(id) {
     si_iv$add_validator(indmeansupload_iv)
     si_iv$add_validator(indmeansuploadvar_iv)
     si_iv$add_validator(indmeansuploadsd_iv)
+    si_iv$add_validator(indmeansmunaught_iv)
     si_iv$add_validator(depmeansraw_iv)
     si_iv$add_validator(depmeansupload_iv)
     si_iv$add_validator(depmeansuploadvars_iv)
+    si_iv$add_validator(depmeansmunaught_iv)
     si_iv$add_validator(oneSD_iv)
     si_iv$add_validator(oneSDht_iv)
     si_iv$add_validator(oneprop_iv)
@@ -2483,10 +2499,12 @@ statInfrServer <- function(id) {
     indmeansupload_iv$enable()
     indmeansuploadvar_iv$enable()
     indmeansuploadsd_iv$enable()
+    indmeansmunaught_iv$enable()
     depmeansraw_iv$enable
     depmeansupload_iv$enable()
     depmeansuploadvars_iv$enable()
     depmeansrawsd_iv$enable()
+    depmeansmunaught_iv$enable()
     oneSD_iv$enable()
     oneSDht_iv$enable()
     oneprop_iv$enable()
@@ -3045,7 +3063,9 @@ statInfrServer <- function(id) {
     }
     
     GetDepMeansData <- function() {
-      req(si_iv$is_valid())
+      ### JB note: this req caused a bunch of errors for input validation on Mu Naught in Dep Means hypothesis testing
+      ### leaving it commented out for now
+      # req(si_iv$is_valid())
       
       dat <- list()
       
@@ -3063,6 +3083,7 @@ statInfrServer <- function(id) {
       dat$n  <- length(sampBefore)
       dat$dbar <- sum(dat$d) / dat$n
       dat$sd <- sqrt(sum((dat$d - dat$dbar)^2) / (dat$n - 1))
+      dat$muNaught <- input$depMeansMuNaught
       
       return(dat)
     }
@@ -4753,7 +4774,9 @@ statInfrServer <- function(id) {
         data <- GetMeansUploadData()
       }
       
-      twoSampZTest <- TwoSampZTest(data$xbar1, data$sd1, data$n1, data$xbar2, data$sd2, data$n2, IndMeansHypInfo()$alternative, SigLvl())
+      muNaught <- input$indMeansMuNaught
+      
+      twoSampZTest <- TwoSampZTest(data$xbar1, data$sd1, data$n1, data$xbar2, data$sd2, data$n2, IndMeansHypInfo()$alternative, SigLvl(), muNaught)
       twoSampZTest["Z Critical"] <- round(twoSampZTest["Z Critical"], cvDigits)
       
       return(twoSampZTest)
@@ -4770,7 +4793,9 @@ statInfrServer <- function(id) {
         data <- GetMeansUploadData()
       }
       
-      twoSampTTest <- TwoSampTTest(data$xbar1, data$sd1, data$n1, data$xbar2, data$sd2, data$n2, data$sigmaEqual, IndMeansHypInfo()$alternative, SigLvl())
+      muNaught <- input$indMeansMuNaught
+      
+      twoSampTTest <- TwoSampTTest(data$xbar1, data$sd1, data$n1, data$xbar2, data$sd2, data$n2, data$sigmaEqual, IndMeansHypInfo()$alternative, SigLvl(), muNaught)
       twoSampTTest["T Critical"] <- round(twoSampTTest["T Critical"], cvDigits)
       
       return(twoSampTTest)
@@ -4823,7 +4848,7 @@ statInfrServer <- function(id) {
       
       data <- GetDepMeansData()
       
-      depMeansTTest <- TTest(data$n, data$dbar, data$sd, 0, IndMeansHypInfo()$alternative, SigLvl())
+      depMeansTTest <- TTest(data$n, data$dbar, data$sd, data$muNaught, IndMeansHypInfo()$alternative, SigLvl())
       depMeansTTest["T Critical"] <- round(depMeansTTest["T Critical"], cvDigits)
       
       return(depMeansTTest)
@@ -5297,6 +5322,12 @@ statInfrServer <- function(id) {
           errorClass = "myClass")
       }
       
+      if(!indmeansmunaught_iv$is_valid()) {
+        validate(
+          need(input$indMeansMuNaught, "Hypothesized value of the Population Mean Difference is required."),
+          errorClass = "myClass")
+      }
+      
       #### ---------------- Dependent Population Means Validation
       if(!depmeansraw_iv$is_valid()) {
         validate(
@@ -5351,6 +5382,12 @@ statInfrServer <- function(id) {
           errorClass = "myClass")
       }
       
+      if(!depmeansmunaught_iv$is_valid()) {
+        validate(
+          need(input$depMeansMuNaught, "Hypothesized value of the Population Mean Difference is required."),
+          errorClass = "myClass")
+      }
+      
       #### ---------------- Two Population Proportion Validation
       if(!twopropht_iv$is_valid()) {
         validate(
@@ -5386,7 +5423,7 @@ statInfrServer <- function(id) {
         
       }
       
-      #### ---------------- Two Pop Std. Deviation Validation
+      #### ---------------- Two Pop Variance Validation
       
       if(!twopopvarsum_iv$is_valid()) {
         validate(
@@ -6804,7 +6841,7 @@ statInfrServer <- function(id) {
         data <- GetMeansUploadData()
       }
       
-      #get test type and results based on sigma known/unknown
+      # get test type and results based on sigma known/unknown
       if(IndMeansSigmaKnown() == 'bothKnown'){
         hTest <- IndMeansZTest()
         testStat <- "z"
@@ -6971,15 +7008,17 @@ statInfrServer <- function(id) {
       }
       
       zTest <- IndMeansZTest()
+      muNaught <- input$indMeansMuNaught
       
       tagList(
         withMathJax(
           sprintf("\\( z = \\dfrac{ (\\bar{x}_{1} - \\bar{x}_{2}) - (\\mu_{1} - \\mu_{2})_{0} }{ \\sqrt{ \\dfrac{\\sigma_{1}^2}{n_{1}} + \\dfrac{\\sigma_{2}^2}{n_{2}} } } \\)"),
           br(),
           br(),
-          sprintf("\\( \\phantom{z} = \\dfrac{ (%.4f - %s) - 0}{ \\sqrt{ \\dfrac{%.4f^2}{%.0f} + \\dfrac{%.4f^2}{%.0f} } } = \\dfrac{%.4f}{%.4f} = %.4f \\)",
+          sprintf("\\( \\phantom{z} = \\dfrac{ (%.4f - %s) -%s}{ \\sqrt{ \\dfrac{%.4f^2}{%.0f} + \\dfrac{%.4f^2}{%.0f} } } = \\dfrac{%.4f}{%.4f} = %.4f \\)",
                   data$xbar1,
                   if (data$xbar2 < 0) sprintf("(%.4f)", data$xbar2) else sprintf("%.4f", data$xbar2),
+                  if (muNaught < 0) sprintf("(%.4f)", muNaught) else sprintf("%.4f", muNaught),
                   data$sd1,
                   data$n1,
                   data$sd2,
@@ -7016,6 +7055,7 @@ statInfrServer <- function(id) {
         sd2Sqrd <- signif(sd2Sqrd, 1)
       }
       
+      muNaught <- input$indMeansMuNaught
       tTest <- IndMeansTTest()
       
       if(data$sigmaEqual == TRUE) {
@@ -7040,9 +7080,10 @@ statInfrServer <- function(id) {
             br(),
             br(),
             br(),
-            sprintf("\\( \\phantom{t} = \\dfrac{ (%.4f - %s) - 0 }{ %.4f \\sqrt{ \\dfrac{1}{%.0f} + \\dfrac{1}{%.0f} } } \\)",
+            sprintf("\\( \\phantom{t} = \\dfrac{ (%.4f - %s) - %s }{ %.4f \\sqrt{ \\dfrac{1}{%.0f} + \\dfrac{1}{%.0f} } } \\)",
                     data$xbar1,
                     if (data$xbar2 < 0) sprintf("(%.4f)", data$xbar2) else sprintf("%.4f", data$xbar2),
+                    if (muNaught < 0) sprintf("(%.4f)", muNaught) else sprintf("%.4f", muNaught),
                     sp,
                     data$n1,
                     data$n2),
@@ -7060,9 +7101,10 @@ statInfrServer <- function(id) {
             sprintf("\\( t = \\dfrac{ (\\bar{x}_{1} - \\bar{x}_{2}) - (\\mu_{1} - \\mu_{2})_{0} }{ \\sqrt{ \\dfrac{s_{1}^2}{n_{1}} + \\dfrac{s_{2}^2}{n_{2}} } } \\)"),
             br(),
             br(),
-            sprintf("\\( \\phantom{t} = \\dfrac{ (%.4f - %s) - 0 }{ \\sqrt{ \\dfrac{%.4f^2}{%.0f} + \\dfrac{%.4f^2}{%.0f} } } = \\dfrac{%.4f}{%.4f} = %.4f \\)",
+            sprintf("\\( \\phantom{t} = \\dfrac{ (%.4f - %s) - %s }{ \\sqrt{ \\dfrac{%.4f^2}{%.0f} + \\dfrac{%.4f^2}{%.0f} } } = \\dfrac{%.4f}{%.4f} = %.4f \\)",
                     data$xbar1,
                     if (data$xbar2 < 0) sprintf("(%.4f)", data$xbar2) else sprintf("%.4f", data$xbar2),
+                    if (muNaught < 0) sprintf("(%.4f)", muNaught) else sprintf("%.4f", muNaught),
                     data$sd1,
                     data$n1,
                     data$sd2,
@@ -7211,11 +7253,12 @@ statInfrServer <- function(id) {
     
     #### ---------------- HT ----
     output$depMeansHT <- renderUI({
-      
       req(GetDepMeansData()$sd != 0)
+      
       tTest <- DepMeansTTest()
       dSum <- sum(GetDepMeansData()$d)
       dSqrdSum <- sum(GetDepMeansData()$d^2)
+      muNaught <- input$depMeansMuNaught
       
       intrpInfo <- IndMeansHypInfo()
       
@@ -7284,18 +7327,19 @@ statInfrServer <- function(id) {
           br(),
           br(),
           br(),
-          sprintf("\\( t = \\dfrac{%g - 0}{ \\left( \\dfrac{ %g }{ \\sqrt{ %g } } \\right) } \\)",
+          sprintf("\\( t = \\dfrac{%g - %s}{ \\left( \\dfrac{ %g }{ \\sqrt{ %g } } \\right) } \\)",
                   tTest["Sample Mean"],
+                  if (muNaught < 0) sprintf("(%.4f)", muNaught) else sprintf("%.4f", muNaught),
                   tTest["Sample SD"],
                   tTest["Sample Size"]),
           sprintf("\\( \\displaystyle \\; = \\; \\dfrac{%g}{ \\left( \\dfrac{ %g }{ %g } \\right) } \\)",
-                  tTest["Sample Mean"],
+                  tTest["Numerator"],
                   tTest["Sample SD"],
                   sqrt(tTest["Sample Size"])),
           br(),
           br(),
           sprintf("\\( \\displaystyle \\phantom{t} = \\; \\dfrac{ %g }{ %g } \\)",
-                  tTest["Sample Mean"],
+                  tTest["Numerator"],
                   tTest["Std Error"]),
           sprintf("\\( \\displaystyle \\; = \\; %g \\)",
                   tTest["Test Statistic"]),
@@ -7347,6 +7391,7 @@ statInfrServer <- function(id) {
     
     #### ---------------- HT Plot ----
     output$depMeansHTPlot <- renderPlot({
+      req(si_iv$is_valid())
       
       if(GetDepMeansData()$sd != 0) {
         tTest <- DepMeansTTest()

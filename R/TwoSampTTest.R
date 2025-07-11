@@ -4,7 +4,7 @@
 # var.equal: whether or not population variances can be assumed equal. Default is TRUE.
 # s_level: Significance Level   
 
-TwoSampTTest <- function(xbar1, s1, n1, xbar2, s2, n2, var.equal = TRUE, alternative = c("two.sided", "less", "greater"),  s_level = 0.05)
+TwoSampTTest <- function(xbar1, s1, n1, xbar2, s2, n2, var.equal = TRUE, alternative = c("two.sided", "less", "greater"),  s_level = 0.05, muNaught = 0)
 {
   if(var.equal == TRUE)
   {
@@ -22,7 +22,7 @@ TwoSampTTest <- function(xbar1, s1, n1, xbar2, s2, n2, var.equal = TRUE, alterna
     df <- ((s1^2/n1 + s2^2/n2)^2)/((s1^2/n1)^2/(n1-1) + (s2^2/n2)^2/(n2-1))
   }  
 
-  tstat <- (xbar1 - xbar2)/se
+  tstat <- ((xbar1 - xbar2) - muNaught)/se
 
   if(alternative == 'two.sided'){
     p_value <- 2*pt(abs(tstat), df, lower.tail = FALSE)
@@ -39,7 +39,7 @@ TwoSampTTest <- function(xbar1, s1, n1, xbar2, s2, n2, var.equal = TRUE, alterna
   
   #If var.equal == TRUE then sp must be printed in dat: PENDING
 
-  dat <- sapply(c((xbar1 - xbar2), t.crit, df, se, tstat, p_value), function(x){ if(x < 0.0001 && x > 0) {signif(x,1)} else {round(x, 4)}})
+  dat <- sapply(c(((xbar1 - xbar2) - muNaught), t.crit, df, se, tstat, p_value), function(x){ if(x < 0.0001 && x > 0) {signif(x,1)} else {round(x, 4)}})
   
   names(dat) <- c("Difference of means", "T Critical", "df", "Std Error", "Test Statistic", "P-Value")
   
