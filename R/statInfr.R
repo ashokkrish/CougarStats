@@ -5437,9 +5437,9 @@ statInfrServer <- function(id) {
       
       if(!twopropdiffnaught_iv$is_valid()) {
         validate(
-          need(input$propDiffNaught != "", "Hypothesized Difference in Proportions is required.") %then%
-            need(input$propDiffNaught >= -1, "Value must be between -1 and +1 inclusive.") %then%
-            need(input$propDiffNaught <= 1, "Value must be between -1 and +1 inclusive."),
+          need(input$propDiffNaught != "", "Hypothesized value of the Population Proportion Difference is required.") %then%
+            need(input$propDiffNaught >= -1, "Hypothesized value of the Population Proportion Difference must be between -1 and +1, inclusive.") %then%
+            need(input$propDiffNaught <= 1, "Hypothesized value of the Population Proportion Difference must be between -1 and +1, inclusive."),
           errorClass = "myClass"
         )
       }
