@@ -42,6 +42,7 @@ kwUploadData_func <- function(kwUserData) {
          txt = read_tsv(kwUserData$datapath, show_col_types = FALSE),
          validate("Improper file format.")
          
+         
   )
 }
 
@@ -160,6 +161,11 @@ kruskalWallisHT <- function(kwResults_output, kwSigLvl_input) {
     global_ranks <- kwData$Rank
     group_sums <- tapply(global_ranks, kwData$ind, sum)
     group_n <- tapply(global_ranks, kwData$ind, length)
+    
+    # Remove NA values for calculations
+    valid_groups <- !is.na(group_sums) & !is.na(group_n)
+    group_sums_clean <- group_sums[valid_groups]
+    group_n_clean <- group_n[valid_groups]
     
     valid_groups <- !is.na(group_sums) & !is.na(group_n)
     group_sums_clean <- group_sums[valid_groups]

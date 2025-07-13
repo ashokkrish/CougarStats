@@ -852,6 +852,7 @@ statInfrUI <- function(id) {
             
             
             
+            
             ### ------------ 2 Pop Standard Deviations ------------------------------------
             
             conditionalPanel(
