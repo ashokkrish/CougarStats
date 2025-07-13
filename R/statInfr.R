@@ -2229,6 +2229,35 @@ statInfrServer <- function(id) {
     indmeansuploadvar_iv$add_rule("indMeansUplSample1", sv_required())
     indmeansuploadvar_iv$add_rule("indMeansUplSample2", sv_required())
     
+    #diana
+    #wilcoxonUpl
+    wilcoxonUpload_iv$add_rule("wilcoxonUpl", sv_required())
+    wilcoxonUpload_iv$add_rule("wilcoxonUpl", ~ if(is.null(fileInputs$rankSumStatus) || fileInputs$rankSumStatus == 'reset') "Required")
+    wilcoxonUpload_iv$add_rule("wilcoxonUpl", ~ if(!(tolower(tools::file_ext(input$wilcoxonUpl$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+    wilcoxonUpload_iv$add_rule("wilcoxonUpl", ~ if(nrow(WilcoxonUploadData()) == 0) "File is empty.")
+    wilcoxonUpload_iv$add_rule("wilcoxonUpl", ~ if(ncol(WilcoxonUploadData()) < 2) "File must contain at least 2 distinct samples to choose from for analysis.")
+    wilcoxonUpload_iv$add_rule("wilcoxonUpl", ~ if(nrow(WilcoxonUploadData()) < 3) "Samples must include at least 2 observations.")
+    wilcoxonraw_iv$add_rule("rankSumRaw1", sv_required())
+    wilcoxonraw_iv$add_rule("rankSumRaw1", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
+                                               "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)"))
+    wilcoxonraw_iv$add_rule("rankSumRaw2", sv_required())
+    wilcoxonraw_iv$add_rule("rankSumRaw2", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
+                                              "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)."))
+    wilcoxonRanksuploadvars_iv$add_rule("wilcoxonUpl1", sv_required())
+    wilcoxonRanksuploadvars_iv$add_rule("wilcoxonUpl2", sv_required())
+    wilcoxonRanksuploadvars_iv$add_rule("wilcoxonUpl1", ~ if(CheckRankSumUploadSamples() != 0) "Sample 1 and Sample 2 must have the same number of observations.")
+    wilcoxonRanksuploadvars_iv$add_rule("wilcoxonUpl2", ~ if(CheckRankSumUploadSamples() != 0) "Sample 1 and Sample 2 must have the same number of observations.")
+    #wRankSumrawsd_iv$add_rule("rankSumRaw2", ~ if(GetwRankSumMeansData()$sd == 0) "Variance required in Sample 1 and Sample 2 data for hypothesis testing.")
+    wRankSumrawsd_iv$add_rule("rankSumRaw2", ~ {
+      data <- GetwRankSumMeansData()
+      if(is.null(data) || 
+         length(unique(data$samp1)) <= 1 || 
+         length(unique(data$samp2)) <= 1) {
+        "Variance required in Sample 1 and Sample 2 data for hypothesis testing."
+      }
+    })
+    # ind means Mu Naught
+    indmeansmunaught_iv$add_rule("indMeansMuNaught", sv_required())
     
     # before
     depmeansraw_iv$add_rule("before", sv_required())
@@ -2506,6 +2535,29 @@ statInfrServer <- function(id) {
                                                        input$popuParameters == 'Independent Population Means' &&
                                                        input$dataAvailability2 == 'Upload Data' &&
                                                        input$bothsigmaKnownUpload == 'bothKnown') })
+  
+ 
+    wilcoxonraw_iv$condition(~ isTRUE(input$siMethod == '2' &&
+                                        input$popuParameters == 'Wilcoxon rank sum test' &&
+                                        input$wilcoxonRankSumTestData == 'Enter Raw Data'))
+    
+    wilcoxonUpload_iv$condition(~ isTRUE(input$siMethod == '2' &&
+                                           input$popuParameters == 'Wilcoxon rank sum test' &&
+                                           input$wilcoxonRankSumTestData == 'Upload Data'))
+    
+    wilcoxonRanksuploadvars_iv$condition(~ isTRUE(input$siMethod == '2' &&
+                                               input$popuParameters == 'Wilcoxon rank sum test' &&
+                                               input$wilcoxonRankSumTestData == 'Upload Data' &&
+                                               wilcoxonUpload_iv$is_valid()))
+    
+    wRankSumrawsd_iv$condition(~ isTRUE(input$siMethod == '2' &&
+                                          input$popuParameters == 'Wilcoxon rank sum test' &&
+                                          input$wilcoxonRankSumTestData == 'Enter Raw Data' &&
+                                          wilcoxonraw_iv$is_valid()))
+  
+    indmeansmunaught_iv$condition(~ isTRUE(input$siMethod == '2' &&
+                                             input$popuParameters == 'Independent Population Means' &&
+                                             input$inferenceType2 == 'Hypothesis Testing'))
     
     depmeansraw_iv$condition(~ isTRUE(input$siMethod == '2' &&
                                         input$popuParameters == 'Dependent Population Means' &&
@@ -2625,6 +2677,10 @@ statInfrServer <- function(id) {
     si_iv$add_validator(indmeansupload_iv)
     si_iv$add_validator(indmeansuploadvar_iv)
     si_iv$add_validator(indmeansuploadsd_iv)
+    si_iv$add_validator(wilcoxonUpload_iv)
+    si_iv$add_validator(wilcoxonraw_iv)
+    si_iv$add_validator(wilcoxonRanksuploadvars_iv)
+    si_iv$add_validator(indmeansmunaught_iv)
     si_iv$add_validator(depmeansraw_iv)
     si_iv$add_validator(depmeansupload_iv)
     si_iv$add_validator(depmeansuploadvars_iv)
@@ -2677,6 +2733,11 @@ statInfrServer <- function(id) {
     indmeansupload_iv$enable()
     indmeansuploadvar_iv$enable()
     indmeansuploadsd_iv$enable()
+    wilcoxonraw_iv$enable()
+    #diana
+    #wilcoxonRankuploadvars_iv$enable()
+    wilcoxonUpload_iv$enable()
+    indmeansmunaught_iv$enable()
     depmeansraw_iv$enable
     depmeansupload_iv$enable()
     depmeansuploadvars_iv$enable()
@@ -3262,8 +3323,8 @@ statInfrServer <- function(id) {
       dat$n  <- length(sampBefore)
       dat$dbar <- sum(dat$d) / dat$n
       dat$sd <- sqrt(sum((dat$d - dat$dbar)^2) / (dat$n - 1))
-      dat$muNaught <- input$depMeansMuNaught
-      
+      dat$muNaught <- input$depMeansMuNaught 
+           
       return(dat)
     }
   #fix this diana  
