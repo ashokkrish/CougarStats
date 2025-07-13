@@ -43,10 +43,12 @@ Read more about [Getting Started with Docker](https://www.docker.com/get-started
     - one population standard deviation
     - one population proportion
     - difference between two population proportions
+    - ratio of two population variances
 - One-Way Analysis of Variance (ANOVA)
 - Chi-Square test of independence
 - Simple Linear Regression and Pearson Correlation Coefficient
 - Multiple Linear Regression
+- Binary Logistic Regression
 
 ## Who is CougarStats for?
 
@@ -61,6 +63,7 @@ Read more about [Getting Started with Docker](https://www.docker.com/get-started
 - [Darren Law Yan Lun](https://github.com/darrenlyl): Senior Developer
 - [Diana Vi](https://github.com/dianahuff): Senior Developer
 - [Jacie Bennett](https://github.com/jacie-b): Senior Developer
+- [Yakov Aluph](https://github.com/YakovAluph): Senior Developer
 
 ### Past project members
 - [Michael Myer](https://github.com/m-myer): Senior Developer

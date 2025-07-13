@@ -2,7 +2,7 @@
 # X2 and n2
 # s_level: Significance Level   
 
-TwoPropZTest <- function(X1, n1, X2, n2, hyp_diff, alternative = c("two.sided", "less", "greater"),  s_level = 0.05)
+TwoPropZTest <- function(X1, n1, X2, n2, hyp_diff = 0, alternative = c("two.sided", "less", "greater"),  s_level = 0.05)
 {
   phat1 <- X1/n1
   

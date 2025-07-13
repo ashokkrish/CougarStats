@@ -1018,6 +1018,39 @@ statInfrUI <- function(id) {
                 selected = c("5%"),
                 inline   = TRUE),
               
+              conditionalPanel(
+                ns = ns,
+                condition = "input.popuParameters == 'Independent Population Means'",
+                
+                numericInput(
+                  inputId = ns("indMeansMuNaught"),
+                  label   = strong(HTML("Hypothesized Population Mean Difference \\( (\\mu_{1} - \\mu_{2})_{0} \\) Value")),
+                  value   = 0,
+                  step    = 0.00001)
+              ), # indMeansMuNaught
+              
+              conditionalPanel(
+                ns = ns,
+                condition = "input.popuParameters == 'Dependent Population Means'",
+                
+                numericInput(
+                  inputId = ns("depMeansMuNaught"),
+                  label   = strong(HTML("Hypothesized Population Mean Difference \\( (\\mu_{d})_{0} \\) Value")),
+                  value   = 0,
+                  step    = 0.00001)
+              ), # depMeansMuNaught
+              
+              conditionalPanel(
+                ns = ns,
+                condition = "input.popuParameters == 'Population Proportions'",
+                
+                numericInput(
+                  inputId = ns("propDiffNaught"),
+                  label   = strong(HTML("Hypothesized Population Proportion Difference \\( (p_{1} - p_{2})_{0} \\) Value")),
+                  value   = 0,
+                  step    = 0.00001)
+              ), # propDiffNaught
+              
               selectizeInput(
                 inputId  = ns("altHypothesis2"),
                 label    = strong("Alternate Hypothesis (\\( H_{a}\\))"),
@@ -2055,6 +2088,7 @@ statInfrServer <- function(id) {
     indmeansrawsd_iv <- InputValidator$new()
     indmeansrawsdunk_iv <- InputValidator$new()
     indmeansuploadsd_iv <- InputValidator$new()
+    indmeansmunaught_iv <- InputValidator$new()
     wilcoxonUpload_iv <- InputValidator$new()
     wilcoxonraw_iv <- InputValidator$new()
     wilcoxonRanksuploadvars_iv <- InputValidator$new()
@@ -2063,12 +2097,14 @@ statInfrServer <- function(id) {
     depmeansupload_iv <- InputValidator$new()
     depmeansuploadvars_iv <- InputValidator$new()
     depmeansrawsd_iv <- InputValidator$new()
+    depmeansmunaught_iv <- InputValidator$new()
     oneSD_iv <- InputValidator$new()
     oneSDht_iv <- InputValidator$new()
     oneprop_iv <- InputValidator$new()
     onepropht_iv <- InputValidator$new()
     twoprop_iv <- InputValidator$new()
     twopropht_iv <- InputValidator$new()
+    twopropdiffnaught_iv <- InputValidator$new()
     twopopvarsum_iv <- InputValidator$new()
     twopopvar_iv <- InputValidator$new()
     twopopvarraw_iv <- InputValidator$new()
@@ -2193,33 +2229,6 @@ statInfrServer <- function(id) {
     indmeansuploadvar_iv$add_rule("indMeansUplSample1", sv_required())
     indmeansuploadvar_iv$add_rule("indMeansUplSample2", sv_required())
     
-    #diana
-    #wilcoxonUpl
-    wilcoxonUpload_iv$add_rule("wilcoxonUpl", sv_required())
-    wilcoxonUpload_iv$add_rule("wilcoxonUpl", ~ if(is.null(fileInputs$rankSumStatus) || fileInputs$rankSumStatus == 'reset') "Required")
-    wilcoxonUpload_iv$add_rule("wilcoxonUpl", ~ if(!(tolower(tools::file_ext(input$wilcoxonUpl$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
-    wilcoxonUpload_iv$add_rule("wilcoxonUpl", ~ if(nrow(WilcoxonUploadData()) == 0) "File is empty.")
-    wilcoxonUpload_iv$add_rule("wilcoxonUpl", ~ if(ncol(WilcoxonUploadData()) < 2) "File must contain at least 2 distinct samples to choose from for analysis.")
-    wilcoxonUpload_iv$add_rule("wilcoxonUpl", ~ if(nrow(WilcoxonUploadData()) < 3) "Samples must include at least 2 observations.")
-    wilcoxonraw_iv$add_rule("rankSumRaw1", sv_required())
-    wilcoxonraw_iv$add_rule("rankSumRaw1", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                               "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)"))
-    wilcoxonraw_iv$add_rule("rankSumRaw2", sv_required())
-    wilcoxonraw_iv$add_rule("rankSumRaw2", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                              "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)."))
-    wilcoxonRanksuploadvars_iv$add_rule("wilcoxonUpl1", sv_required())
-    wilcoxonRanksuploadvars_iv$add_rule("wilcoxonUpl2", sv_required())
-    wilcoxonRanksuploadvars_iv$add_rule("wilcoxonUpl1", ~ if(CheckRankSumUploadSamples() != 0) "Sample 1 and Sample 2 must have the same number of observations.")
-    wilcoxonRanksuploadvars_iv$add_rule("wilcoxonUpl2", ~ if(CheckRankSumUploadSamples() != 0) "Sample 1 and Sample 2 must have the same number of observations.")
-    #wRankSumrawsd_iv$add_rule("rankSumRaw2", ~ if(GetwRankSumMeansData()$sd == 0) "Variance required in Sample 1 and Sample 2 data for hypothesis testing.")
-    wRankSumrawsd_iv$add_rule("rankSumRaw2", ~ {
-      data <- GetwRankSumMeansData()
-      if(is.null(data) || 
-         length(unique(data$samp1)) <= 1 || 
-         length(unique(data$samp2)) <= 1) {
-        "Variance required in Sample 1 and Sample 2 data for hypothesis testing."
-      }
-    })
     
     # before
     depmeansraw_iv$add_rule("before", sv_required())
@@ -2249,6 +2258,8 @@ statInfrServer <- function(id) {
     
     depmeansrawsd_iv$add_rule("after", ~ if(GetDepMeansData()$sd == 0) "Variance required in 'Before' and 'After' sample data for hypothesis testing.")
     
+    depmeansmunaught_iv$add_rule("depMeansMuNaught", sv_required())
+    
     # sample standard deviation
     oneSD_iv$add_rule("SSDSampleSize", sv_required())
     oneSD_iv$add_rule("SSDSampleSize", sv_integer())
@@ -2274,6 +2285,11 @@ statInfrServer <- function(id) {
     twoprop_iv$add_rule("numSuccesses2", sv_integer())
     twoprop_iv$add_rule("numSuccesses2", sv_gte(0))
     twopropht_iv$add_rule("numSuccesses2", ~ if(checkTwoProp() == 0) "At least one of (x1) and (x2) must be greater than 0.")
+    
+    # diff naught
+    twopropdiffnaught_iv$add_rule("propDiffNaught", sv_required())
+    twopropdiffnaught_iv$add_rule("propDiffNaught", sv_gte(-1, message = "Value must be between -1 and 1 (inclusive)."))
+    twopropdiffnaught_iv$add_rule("propDiffNaught", sv_lte(1, message = "Value must be between -1 and 1 (inclusive)."))
     
     # SDSampleSize1
     twopopvarsum_iv$add_rule("SDSampleSize1", sv_required())
@@ -2490,26 +2506,7 @@ statInfrServer <- function(id) {
                                                        input$popuParameters == 'Independent Population Means' &&
                                                        input$dataAvailability2 == 'Upload Data' &&
                                                        input$bothsigmaKnownUpload == 'bothKnown') })
-  
- 
-    wilcoxonraw_iv$condition(~ isTRUE(input$siMethod == '2' &&
-                                        input$popuParameters == 'Wilcoxon rank sum test' &&
-                                        input$wilcoxonRankSumTestData == 'Enter Raw Data'))
     
-    wilcoxonUpload_iv$condition(~ isTRUE(input$siMethod == '2' &&
-                                           input$popuParameters == 'Wilcoxon rank sum test' &&
-                                           input$wilcoxonRankSumTestData == 'Upload Data'))
-    
-    wilcoxonRanksuploadvars_iv$condition(~ isTRUE(input$siMethod == '2' &&
-                                               input$popuParameters == 'Wilcoxon rank sum test' &&
-                                               input$wilcoxonRankSumTestData == 'Upload Data' &&
-                                               wilcoxonUpload_iv$is_valid()))
-    
-    wRankSumrawsd_iv$condition(~ isTRUE(input$siMethod == '2' &&
-                                          input$popuParameters == 'Wilcoxon rank sum test' &&
-                                          input$wilcoxonRankSumTestData == 'Enter Raw Data' &&
-                                          wilcoxonraw_iv$is_valid()))
-  
     depmeansraw_iv$condition(~ isTRUE(input$siMethod == '2' &&
                                         input$popuParameters == 'Dependent Population Means' &&
                                         input$dataTypeDependent == 'Enter Raw Data'))
@@ -2527,6 +2524,10 @@ statInfrServer <- function(id) {
                                           input$popuParameters == 'Dependent Population Means' &&
                                           input$dataTypeDependent == 'Enter Raw Data' &&
                                           depmeansraw_iv$is_valid()))
+    
+    depmeansmunaught_iv$condition(~ isTRUE(input$siMethod == '2' &&
+                                             input$popuParameters == 'Dependent Population Means' &&
+                                             input$inferenceType2 == 'Hypothesis Testing'))
     
     oneSD_iv$condition(~ isTRUE(input$siMethod == '1' &&
                                   input$popuParameter == 'Population Standard Deviation'))
@@ -2563,6 +2564,10 @@ statInfrServer <- function(id) {
     twopopvarraw_iv$condition(~ isTRUE(input$siMethod == '2' &&
                                          input$popuParameters == 'Two Population Variances' &&
                                          input$dataAvailability3 == 'Enter Raw Data'))
+    
+    twopropdiffnaught_iv$condition(~ isTRUE(input$siMethod == '2' &&
+                                      input$popuParameters == 'Population Proportions' &&
+                                      input$inferenceType2 == 'Hypothesis Testing'))
     
     kwupload_iv$condition(~ isTRUE(input$siMethod == 'Multiple' &&
                                      input$multipleMethodChoice == 'kw'))
@@ -2620,18 +2625,17 @@ statInfrServer <- function(id) {
     si_iv$add_validator(indmeansupload_iv)
     si_iv$add_validator(indmeansuploadvar_iv)
     si_iv$add_validator(indmeansuploadsd_iv)
-    si_iv$add_validator(wilcoxonUpload_iv)
-    si_iv$add_validator(wilcoxonraw_iv)
-    si_iv$add_validator(wilcoxonRanksuploadvars_iv)
     si_iv$add_validator(depmeansraw_iv)
     si_iv$add_validator(depmeansupload_iv)
     si_iv$add_validator(depmeansuploadvars_iv)
+    si_iv$add_validator(depmeansmunaught_iv)
     si_iv$add_validator(oneSD_iv)
     si_iv$add_validator(oneSDht_iv)
     si_iv$add_validator(oneprop_iv)
     si_iv$add_validator(onepropht_iv)
     si_iv$add_validator(twoprop_iv)
     si_iv$add_validator(twopropht_iv)
+    si_iv$add_validator(twopropdiffnaught_iv)
     si_iv$add_validator(twopopvarsum_iv)
     si_iv$add_validator(twopopvar_iv)
     si_iv$add_validator(twopopvarraw_iv)
@@ -2673,20 +2677,18 @@ statInfrServer <- function(id) {
     indmeansupload_iv$enable()
     indmeansuploadvar_iv$enable()
     indmeansuploadsd_iv$enable()
-    wilcoxonraw_iv$enable()
-    #diana
-    #wilcoxonRankuploadvars_iv$enable()
-    wilcoxonUpload_iv$enable()
     depmeansraw_iv$enable
     depmeansupload_iv$enable()
     depmeansuploadvars_iv$enable()
     depmeansrawsd_iv$enable()
+    depmeansmunaught_iv$enable()
     oneSD_iv$enable()
     oneSDht_iv$enable()
     oneprop_iv$enable()
     onepropht_iv$enable()
     twoprop_iv$enable()
     twopropht_iv$enable()
+    twopropdiffnaught_iv$enable()
     twopopvarsum_iv$enable()
     twopopvar_iv$enable()
     twopopvarraw_iv$enable()
@@ -3240,7 +3242,9 @@ statInfrServer <- function(id) {
     }
     
     GetDepMeansData <- function() {
-      req(si_iv$is_valid())
+      ### JB note: this req caused a bunch of errors for input validation on Mu Naught in Dep Means hypothesis testing
+      ### leaving it commented out for now
+      # req(si_iv$is_valid())
       
       dat <- list()
       
@@ -3258,6 +3262,7 @@ statInfrServer <- function(id) {
       dat$n  <- length(sampBefore)
       dat$dbar <- sum(dat$d) / dat$n
       dat$sd <- sqrt(sum((dat$d - dat$dbar)^2) / (dat$n - 1))
+      dat$muNaught <- input$depMeansMuNaught
       
       return(dat)
     }
@@ -5088,7 +5093,9 @@ statInfrServer <- function(id) {
         data <- GetMeansUploadData()
       }
       
-      twoSampZTest <- TwoSampZTest(data$xbar1, data$sd1, data$n1, data$xbar2, data$sd2, data$n2, IndMeansHypInfo()$alternative, SigLvl())
+      muNaught <- input$indMeansMuNaught
+      
+      twoSampZTest <- TwoSampZTest(data$xbar1, data$sd1, data$n1, data$xbar2, data$sd2, data$n2, IndMeansHypInfo()$alternative, SigLvl(), muNaught)
       twoSampZTest["Z Critical"] <- round(twoSampZTest["Z Critical"], cvDigits)
       
       return(twoSampZTest)
@@ -5105,7 +5112,9 @@ statInfrServer <- function(id) {
         data <- GetMeansUploadData()
       }
       
-      twoSampTTest <- TwoSampTTest(data$xbar1, data$sd1, data$n1, data$xbar2, data$sd2, data$n2, data$sigmaEqual, IndMeansHypInfo()$alternative, SigLvl())
+      muNaught <- input$indMeansMuNaught
+      
+      twoSampTTest <- TwoSampTTest(data$xbar1, data$sd1, data$n1, data$xbar2, data$sd2, data$n2, data$sigmaEqual, IndMeansHypInfo()$alternative, SigLvl(), muNaught)
       twoSampTTest["T Critical"] <- round(twoSampTTest["T Critical"], cvDigits)
       
       return(twoSampTTest)
@@ -5258,7 +5267,7 @@ statInfrServer <- function(id) {
       
       data <- GetDepMeansData()
       
-      depMeansTTest <- TTest(data$n, data$dbar, data$sd, 0, IndMeansHypInfo()$alternative, SigLvl())
+      depMeansTTest <- TTest(data$n, data$dbar, data$sd, data$muNaught, IndMeansHypInfo()$alternative, SigLvl())
       depMeansTTest["T Critical"] <- round(depMeansTTest["T Critical"], cvDigits)
       
       return(depMeansTTest)
@@ -5732,6 +5741,12 @@ statInfrServer <- function(id) {
           errorClass = "myClass")
       }
       
+      if(!indmeansmunaught_iv$is_valid()) {
+        validate(
+          need(input$indMeansMuNaught, "Hypothesized value of the Population Mean Difference is required."),
+          errorClass = "myClass")
+      }
+      
       ### ---------------- Wilcoxon Rank Sum Validation
       if(!wilcoxonraw_iv$is_valid()) {
         validate(
@@ -5839,6 +5854,12 @@ statInfrServer <- function(id) {
           errorClass = "myClass")
       }
       
+      if(!depmeansmunaught_iv$is_valid()) {
+        validate(
+          need(input$depMeansMuNaught, "Hypothesized value of the Population Mean Difference is required."),
+          errorClass = "myClass")
+      }
+      
       #### ---------------- Two Population Proportion Validation
       if(!twopropht_iv$is_valid()) {
         validate(
@@ -5874,7 +5895,16 @@ statInfrServer <- function(id) {
         
       }
       
-      #### ---------------- Two Pop Std. Deviation Validation
+      if(!twopropdiffnaught_iv$is_valid()) {
+        validate(
+          need(input$propDiffNaught != "", "Hypothesized value of the Population Proportion Difference is required.") %then%
+            need(input$propDiffNaught >= -1, "Hypothesized value of the Population Proportion Difference must be between -1 and +1, inclusive.") %then%
+            need(input$propDiffNaught <= 1, "Hypothesized value of the Population Proportion Difference must be between -1 and +1, inclusive."),
+          errorClass = "myClass"
+        )
+      }
+      
+      #### ---------------- Two Pop Variance Validation
       
       if(!twopopvarsum_iv$is_valid()) {
         validate(
@@ -7104,9 +7134,9 @@ statInfrServer <- function(id) {
             sprintf("\\( \\displaystyle CI = (\\bar{x}_{1} - \\bar{x}_{2}) \\pm \\left( z_{\\alpha/2} \\sqrt{ \\dfrac{\\sigma_{1}^2}{n_{1}} + \\dfrac{\\sigma_{2}^2}{n_{2}} } \\right) \\)"),
             br(),
             br(),
-            sprintf("\\( \\displaystyle \\quad = (%g - %g) \\pm \\left( %g \\sqrt{ \\dfrac{%g^2}{%g} + \\dfrac{%g^2}{%g} } \\right) \\)",
+            sprintf("\\( \\displaystyle \\quad = (%.4f - %s) \\pm \\left( %.4f \\sqrt{ \\dfrac{%.4f^2}{%.0f} + \\dfrac{%.4f^2}{%.0f} } \\right) \\)",
                     data$xbar1,
-                    data$xbar2,
+                    if (data$xbar2 < 0) sprintf("(%.4f)", data$xbar2) else sprintf("%.4f", data$xbar2),
                     zInt['Z Critical'],
                     data$sd1,
                     data$n1,
@@ -7182,9 +7212,9 @@ statInfrServer <- function(id) {
             br(),
             br(),
             br(),
-            sprintf("\\( \\displaystyle CI = (%g - %g) \\pm \\left( %g \\cdot %g \\sqrt{ \\dfrac{1}{%g} + \\dfrac{1}{%g} } \\right) \\)",
+            sprintf("\\( \\displaystyle CI = (%.4f - %s) \\pm \\left( %.4f \\cdot %.4f \\sqrt{ \\dfrac{1}{%.0f} + \\dfrac{1}{%.0f} } \\right) \\)",
                     data$xbar1,
-                    data$xbar2,
+                    if (data$xbar2 < 0) sprintf("(%.4f)", data$xbar2) else sprintf("%.4f", data$xbar2),
                     tInt['T Critical'],
                     sp,
                     data$n1,
@@ -7252,9 +7282,9 @@ statInfrServer <- function(id) {
             br(),
             br(),
             br(),
-            sprintf("\\( CI = (%g - %g) \\pm \\left( %g \\cdot \\sqrt{ \\dfrac{%g^2}{%g} + \\dfrac{%g^2}{%g} } \\right) \\)",
+            sprintf("\\( CI = (%.4f - %s) \\pm \\left( %.4f \\cdot \\sqrt{ \\dfrac{%.4f^2}{%.0f} + \\dfrac{%.4f^2}{%.0f} } \\right) \\)",
                     data$xbar1,
-                    data$xbar2,
+                    if (data$xbar2 < 0) sprintf("(%.4f)", data$xbar2) else sprintf("%.4f", data$xbar2),
                     tInt['T Critical'],
                     data$sd1,
                     data$n1,
@@ -7294,7 +7324,7 @@ statInfrServer <- function(id) {
         data <- GetMeansUploadData()
       }
       
-      #get test type and results based on sigma known/unknown
+      # get test type and results based on sigma known/unknown
       if(IndMeansSigmaKnown() == 'bothKnown'){
         hTest <- IndMeansZTest()
         testStat <- "z"
@@ -7400,7 +7430,8 @@ statInfrServer <- function(id) {
           conditionalPanel(
             ns = session$ns,
             condition = "(input.dataAvailability2 == 'Summarized Data' && input.bothsigmaKnown == 'bothUnknown' && input.bothsigmaEqual == 'FALSE') ||
-                       (input.dataAvailability2 == 'Enter Raw Data' && input.bothsigmaKnownRaw == 'bothUnknown' && input.bothsigmaEqualRaw == 'FALSE')
+                       (input.dataAvailability2 == 'Enter Raw Data' && input.bothsigmaKnownRaw == 'bothUnknown' && input.bothsigmaEqualRaw == 'FALSE') ||
+                       (input.dataAvailability2 == 'Upload Data' && input.bothsigmaKnownUpload == 'bothUnknown' && input.bothsigmaEqualUpload == 'FALSE')
                        ",
             br(),
             p("where"),
@@ -7460,15 +7491,17 @@ statInfrServer <- function(id) {
       }
       
       zTest <- IndMeansZTest()
+      muNaught <- input$indMeansMuNaught
       
       tagList(
         withMathJax(
           sprintf("\\( z = \\dfrac{ (\\bar{x}_{1} - \\bar{x}_{2}) - (\\mu_{1} - \\mu_{2})_{0} }{ \\sqrt{ \\dfrac{\\sigma_{1}^2}{n_{1}} + \\dfrac{\\sigma_{2}^2}{n_{2}} } } \\)"),
           br(),
           br(),
-          sprintf("\\( \\phantom{z} = \\dfrac{ (%g - %g) - 0}{ \\sqrt{ \\dfrac{%g^2}{%g} + \\dfrac{%g^2}{%g} } } = \\dfrac{%g}{%s} = %0.4f \\)",
+          sprintf("\\( \\phantom{z} = \\dfrac{ (%.4f - %s) -%s}{ \\sqrt{ \\dfrac{%.4f^2}{%.0f} + \\dfrac{%.4f^2}{%.0f} } } = \\dfrac{%.4f}{%.4f} = %.4f \\)",
                   data$xbar1,
-                  data$xbar2,
+                  if (data$xbar2 < 0) sprintf("(%.4f)", data$xbar2) else sprintf("%.4f", data$xbar2),
+                  if (muNaught < 0) sprintf("(%.4f)", muNaught) else sprintf("%.4f", muNaught),
                   data$sd1,
                   data$n1,
                   data$sd2,
@@ -7505,6 +7538,7 @@ statInfrServer <- function(id) {
         sd2Sqrd <- signif(sd2Sqrd, 1)
       }
       
+      muNaught <- input$indMeansMuNaught
       tTest <- IndMeansTTest()
       
       if(data$sigmaEqual == TRUE) {
@@ -7529,9 +7563,10 @@ statInfrServer <- function(id) {
             br(),
             br(),
             br(),
-            sprintf("\\( \\phantom{t} = \\dfrac{ (%g - %g) - 0 }{ %g \\sqrt{ \\dfrac{1}{%g} + \\dfrac{1}{%g} } } \\)",
+            sprintf("\\( \\phantom{t} = \\dfrac{ (%.4f - %s) - %s }{ %.4f \\sqrt{ \\dfrac{1}{%.0f} + \\dfrac{1}{%.0f} } } \\)",
                     data$xbar1,
-                    data$xbar2,
+                    if (data$xbar2 < 0) sprintf("(%.4f)", data$xbar2) else sprintf("%.4f", data$xbar2),
+                    if (muNaught < 0) sprintf("(%.4f)", muNaught) else sprintf("%.4f", muNaught),
                     sp,
                     data$n1,
                     data$n2),
@@ -7549,9 +7584,10 @@ statInfrServer <- function(id) {
             sprintf("\\( t = \\dfrac{ (\\bar{x}_{1} - \\bar{x}_{2}) - (\\mu_{1} - \\mu_{2})_{0} }{ \\sqrt{ \\dfrac{s_{1}^2}{n_{1}} + \\dfrac{s_{2}^2}{n_{2}} } } \\)"),
             br(),
             br(),
-            sprintf("\\( \\phantom{t} = \\dfrac{ (%g - %g) - 0 }{ \\sqrt{ \\dfrac{%g^2}{%g} + \\dfrac{%g^2}{%g} } } = \\dfrac{%g}{%g} = %0.4f \\)",
+            sprintf("\\( \\phantom{t} = \\dfrac{ (%.4f - %s) - %s }{ \\sqrt{ \\dfrac{%.4f^2}{%.0f} + \\dfrac{%.4f^2}{%.0f} } } = \\dfrac{%.4f}{%.4f} = %.4f \\)",
                     data$xbar1,
-                    data$xbar2,
+                    if (data$xbar2 < 0) sprintf("(%.4f)", data$xbar2) else sprintf("%.4f", data$xbar2),
+                    if (muNaught < 0) sprintf("(%.4f)", muNaught) else sprintf("%.4f", muNaught),
                     data$sd1,
                     data$n1,
                     data$sd2,
@@ -7971,11 +8007,12 @@ statInfrServer <- function(id) {
     
     #### ---------------- HT ----
     output$depMeansHT <- renderUI({
-      
       req(GetDepMeansData()$sd != 0)
+      
       tTest <- DepMeansTTest()
       dSum <- sum(GetDepMeansData()$d)
       dSqrdSum <- sum(GetDepMeansData()$d^2)
+      muNaught <- input$depMeansMuNaught
       
       intrpInfo <- IndMeansHypInfo()
       
@@ -8044,18 +8081,19 @@ statInfrServer <- function(id) {
           br(),
           br(),
           br(),
-          sprintf("\\( t = \\dfrac{%g - 0}{ \\left( \\dfrac{ %g }{ \\sqrt{ %g } } \\right) } \\)",
+          sprintf("\\( t = \\dfrac{%g - %s}{ \\left( \\dfrac{ %g }{ \\sqrt{ %g } } \\right) } \\)",
                   tTest["Sample Mean"],
+                  if (muNaught < 0) sprintf("(%.4f)", muNaught) else sprintf("%.4f", muNaught),
                   tTest["Sample SD"],
                   tTest["Sample Size"]),
           sprintf("\\( \\displaystyle \\; = \\; \\dfrac{%g}{ \\left( \\dfrac{ %g }{ %g } \\right) } \\)",
-                  tTest["Sample Mean"],
+                  tTest["Numerator"],
                   tTest["Sample SD"],
                   sqrt(tTest["Sample Size"])),
           br(),
           br(),
           sprintf("\\( \\displaystyle \\phantom{t} = \\; \\dfrac{ %g }{ %g } \\)",
-                  tTest["Sample Mean"],
+                  tTest["Numerator"],
                   tTest["Std Error"]),
           sprintf("\\( \\displaystyle \\; = \\; %g \\)",
                   tTest["Test Statistic"]),
@@ -8219,8 +8257,10 @@ statInfrServer <- function(id) {
     output$twoPropHT <- renderUI({
       req(si_iv$is_valid())
       
-      twoPropZTest <- TwoPropZTest(input$numSuccesses1, input$numTrials1, input$numSuccesses2, input$numTrials2, 0, IndMeansHypInfo()$alternative, SigLvl())
+      diffNaught <- input$propDiffNaught
+      twoPropZTest <- TwoPropZTest(input$numSuccesses1, input$numTrials1, input$numSuccesses2, input$numTrials2, diffNaught, IndMeansHypInfo()$alternative, SigLvl())
       twoPropZTest["Z Critical"] <- round(twoPropZTest["Z Critical"], cvDigits)
+      
       
       if(input$altHypothesis2 == "2")
       {
@@ -8316,15 +8356,16 @@ statInfrServer <- function(id) {
           br(),
           br(),
           br(),
-          sprintf("\\( z = \\dfrac{ (%0.4f - %0.4f) - 0}{\\sqrt{%0.4f(1-%0.4f)\\left(\\dfrac{1}{%g} + \\dfrac{1}{%g}\\right)}}\\)",
+          sprintf("\\( z = \\dfrac{ (%0.4f - %0.4f) - %s}{\\sqrt{%0.4f(1-%0.4f)\\left(\\dfrac{1}{%g} + \\dfrac{1}{%g}\\right)}}\\)",
                   twoPropZTest["Sample Proportion 1"],
                   twoPropZTest["Sample Proportion 2"],
+                  if (diffNaught < 0) sprintf("(%.4f)", diffNaught) else sprintf("%.4f", diffNaught),
                   twoPropZTest["Pooled Proportion"],
                   twoPropZTest["Pooled Proportion"],
                   input$numTrials1,
                   input$numTrials2),
           sprintf("\\( = \\dfrac{%0.4f}{%0.4f} \\)",
-                  twoPropZTest["Sample Proportion 1"] - twoPropZTest["Sample Proportion 2"],
+                  twoPropZTest["Sample Proportion 1"] - twoPropZTest["Sample Proportion 2"] - diffNaught,
                   twoPropZTest["Std Error"]),
           br(),
           br(),
