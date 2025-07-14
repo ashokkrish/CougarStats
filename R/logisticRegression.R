@@ -16,6 +16,9 @@ library(ResourceSelection)
 library(shinyalert)
 library(tibble)
 
+# Source the plot options menu
+source("R/plotOptionsMenu.R")
+
 # --- UI Function for Logistic Regression Sidebar ---
 LogisticRegressionSidebarUI <- function(id) {
   ns <- NS(id)
@@ -67,14 +70,18 @@ LogisticRegressionMainPanelUI <- function(id) {
                import_file_ui(
                  id = ns("dataImport"),
                  title = "")),
-             tabPanel(title = "LR", uiOutput(ns("Equations"))),
+             tabPanel(title = "LR",
+                      uiOutput(ns("Equations")),
+                      hr(),
+                      h3("Logistic Regression Plot"),
+                      plotOptionsMenuUI(ns("logrPlotOptions"), "Scatterplot"),
+                      plotOutput(ns("logrScatterplot"))
+             ),
              tabPanel(title = "Analysis of Deviance",
                       uiOutput(ns("anovaOutput"))
              ),
              id = ns("mainPanel"),
              theme = bs_theme(version = 4)
-             
-             
   )
 }
 
@@ -83,6 +90,9 @@ LogisticRegressionServer <- function(id) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     shinyjs::useShinyjs()
+    
+    # Call the plot options module server
+    plotOptionsMenuServer("logrPlotOptions")
     
     imported <- import_file_server(
       id            = "dataImport",
@@ -326,6 +336,11 @@ LogisticRegressionServer <- function(id) {
           p("The Likelihood Ratio Test (LRT) statistic is used to compare nested models. It is the difference in deviance between the two models:"),
           p("$$ \\text{LRT} = D_0 - D_1 = -2 \\log\\left(\\frac{\\mathcal{L}_0}{\\mathcal{L}_1}\\right) $$"),
           p("where \\(D_0\\) and \\(\\mathcal{L}_0\\) are the deviance and likelihood of the null model (the simpler model), and \\(D_1\\) and \\(\\mathcal{L}_1\\) are for the alternative model. This LRT statistic follows a \\(\\chi^2\\) distribution with degrees of freedom equal to the difference in the number of parameters between the two models."),
+          p("The residual deviance is the deviance of the model with all predictors included:"),
+          p("$$ D_{residual} = -2 \\sum_{i=1}^{n} [y_i \\log(\\hat{p}_i) + (1 - y_i) \\log(1 - \\hat{p}_i)] $$"),
+          p("The residual degrees of freedom is the number of observations minus the number of parameters in the model:"),
+          p("$$ df_{residual} = n - (k + 1) $$"),
+          p("where \\(n\\) is the number of observations and \\(k\\) is the number of explanatory variables."),
           br(),
           DTOutput(ns("lrAnovaTable")),
           br(),
@@ -351,6 +366,21 @@ LogisticRegressionServer <- function(id) {
           caption = 'Analysis of Deviance Table (Likelihood Ratio Test)',
           rownames = TRUE
         ) %>% formatRound(columns = c('Deviance', 'p-value', 'Resid. Dev'), digits = 3)
+      })
+      
+      # Scatterplot with logistic curve
+      output$logrScatterplot <- renderPlot({
+        req(df_model_data, input$responseVariable, input$explanatoryVariables)
+        
+        ggplot(df_model_data, aes_string(x = explanatory_vars_names[1], y = response_var_name)) +
+          geom_point(alpha = 0.5, color = input[["logrPlotOptions-PointsColour"]]) +
+          geom_smooth(method = "glm", method.args = list(family = "binomial"), se = FALSE, color = input[["logrPlotOptions-Colour"]], linewidth = input[["logrPlotOptions-LineWidth"]]) +
+          labs(
+            title = input[["logrPlotOptions-Title"]],
+            x = input[["logrPlotOptions-Xlab"]],
+            y = input[["logrPlotOptions-Ylab"]]
+          ) +
+          theme_minimal()
       })
       
       shinyjs::show("mainPanel")
