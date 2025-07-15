@@ -1535,10 +1535,18 @@ statInfrUI <- function(id) {
                                        )
                               ),
                               
-                              tabPanel(title = "Graphs",
-                                       br(),
-                                       plotOutput(ns("onePropBarGraph")),
-                                       plotOutput(ns("onePropPieChart"))
+                              tabPanel(
+                                title = "Graphs",
+                                br(),
+                                div(
+                                  style = "display: flex; justify-content: flex-start;",
+                                  plotOutput(ns("onePropBarGraph"), width = "400px")
+                                ),
+                                br(),
+                                div(
+                                  style = "display: flex; justify-content: flex-start;",
+                                  plotOutput(ns("onePropPieChart"), width = "400px")
+                                )
                               ))), # One Population Proportion
                 
                 #### ---------------- 1 Pop Standard deviation -------------------------------
@@ -1698,27 +1706,48 @@ statInfrUI <- function(id) {
                                 conditionalPanel(
                                   ns = ns,
                                   condition = "input.popuParameters == 'Population Proportions'",
-                                  
-                                  conditionalPanel(
-                                    ns = ns,
-                                    condition = "input.inferenceType2 == 'Confidence Interval'",
+           
+                                  tabsetPanel(
+                                    id = ns("twoPropTabset"),
+                                    selected = "Analysis",
                                     
-                                    titlePanel(tags$u("Confidence Interval")),
+                                    tabPanel(
+                                      id = ns("twoProp"),
+                                      title = "Analysis",
+                                      
+                                      conditionalPanel(
+                                        ns = ns,
+                                        condition = "input.inferenceType2 == 'Confidence Interval'",
+                                        
+                                        titlePanel(tags$u("Confidence Interval")),
+                                        br(),
+                                        uiOutput(ns('twoPropCI')),
+                                        br(),
+                                      ), # Confidence Interval
+                                      
+                                      conditionalPanel(
+                                        ns = ns,
+                                        condition = "input.inferenceType2 == 'Hypothesis Testing'",
+                                        
+                                        titlePanel(tags$u("Hypothesis Test")),
+                                        br(),
+                                        uiOutput(ns('twoPropHT')),
+                                        br(),
+                                        ), # Hypothesis Testing
+                                  ), # Analysis Panel
+                                  tabPanel(
+                                    id = ns("twoPropGraphs"),
+                                    title = "Graphs",
                                     br(),
-                                    uiOutput(ns('twoPropCI')),
-                                    br(),
-                                  ), # Confidence Interval
-                                  
-                                  conditionalPanel(
-                                    ns = ns,
-                                    condition = "input.inferenceType2 == 'Hypothesis Testing'",
-                                    
-                                    titlePanel(tags$u("Hypothesis Test")),
-                                    br(),
-                                    uiOutput(ns('twoPropHT')),
-                                    br(),
-                                  ), # Hypothesis Testing
-                                ), # Two Population Proportions
+                                    div(
+                                      style = "width: 600px; text-align: left;",
+                                      plotOutput(ns("twoPropBarPlot"), height = "400px")),
+                                    div(
+                                      style = "display: flex; justify-content: flex-start;", 
+                                      plotOutput(ns("twoPropPieChart"), 
+                                                 width = "600px", height = "500px"))
+                                  ), # Graph Panel
+                                )), # Two Population Proportions
 
                                 #### ---------------- Wilcoxon Rank Sum --------------------------------------
                                 conditionalPanel(
@@ -6819,22 +6848,52 @@ statInfrServer <- function(id) {
     
     #### ----------------- #3 Graphs! ---------
     output$onePropBarGraph <- renderPlot({
-      req(si_iv$is_valid() && input$numTrials >= input$numSuccesses);
+      req(si_iv$is_valid() && input$numTrials >= input$numSuccesses)
       
-      x <- tibble(count = c(input$numSuccesses, input$numTrials - input$numSuccesses),
-                  label = c("Successes", "Failures"))
-      ggplot(data = x, mapping = aes(x = label, y = count)) + geom_col() + theme_classic()
-      ## barplot(x$value, names.arg = x$label)
+      df <- tibble(
+        Outcome = c("Successes", "Failures"),
+        Count = c(input$numSuccesses, input$numTrials - input$numSuccesses)
+      )
+      
+      ggplot(df, aes(x = Outcome, y = Count, fill = Outcome)) +
+        geom_col(width = 0.5) +
+        labs(
+          title = "Bar Chart: Count of Successes vs Failures",
+          y = "Count", x = ""
+        ) +
+        scale_fill_manual(values = c("Successes" = "#4CAF50", "Failures" = "#F44336")) +
+        theme_classic() +
+        theme(
+          axis.text = element_text(size = 14, face = "bold"),
+          axis.title = element_text(size = 16, face = "bold"),
+          plot.title = element_text(size = 18, face = "bold"),
+          legend.position = "none"
+        )
     },
-    width = 400,
+    width = 500,
     height = 400)
     
     output$onePropPieChart <- renderPlot({
-      req(si_iv$is_valid() && input$numTrials >= input$numSuccesses);
+      req(si_iv$is_valid() && input$numTrials >= input$numSuccesses)
       
-      x <- c("Successes" = input$numSuccesses,
-             "Failures" = input$numTrials - input$numSuccesses)
-      pie(x)
+      x <- tibble(
+        Outcome = c("Successes", "Failures"),
+        Count = c(input$numSuccesses, input$numTrials - input$numSuccesses)
+      )
+      
+      ggplot(x, aes(x = "", y = Count, fill = Outcome)) +
+        geom_col(width = 1, color = "white") +
+        coord_polar(theta = "y") +
+        scale_fill_manual(values = c("Successes" = "#4CAF50", "Failures" = "#F44336")) +
+        labs(title = "Success vs Failure Distribution") +
+        theme_void() +
+        theme(
+          legend.title = element_blank(),
+          plot.title = element_text(hjust = 0.5, face = "bold", size = 16),  # center title
+          legend.text = element_text(size = 12),
+          plot.margin = margin(0, 0, 0, 0),
+          plot.background = element_rect(fill = "white", color = NA)
+        )
     })
     
     #### ---------------- CI ----
@@ -8365,7 +8424,6 @@ statInfrServer <- function(id) {
       }
       
       twoPropHTHead <- tagList(
-        plotOutput(session$ns('twoPropBarPlot')),
         withMathJax(
           sprintf("\\( H_{0}: %s p_{2}\\)",
                   nullHyp),
@@ -8487,7 +8545,7 @@ statInfrServer <- function(id) {
       htPlot
     })
     
-    #### --------------- Stacked Bar Plot ----
+    #### --------------- Stacked Bar Plot and Pie Chart ----
     output$twoPropBarPlot <- renderPlot({
       req(input$numTrials1 >= input$numSuccesses1,
           input$numTrials2 >= input$numSuccesses2)
@@ -8513,6 +8571,38 @@ statInfrServer <- function(id) {
           plot.title = element_text(size = 18, face = "bold"),
           legend.title = element_text(size = 14),
           legend.text = element_text(size = 12)
+        )
+    })
+    
+    output$twoPropPieChart <- renderPlot({
+      req(input$numTrials1 >= input$numSuccesses1,
+          input$numTrials2 >= input$numSuccesses2)
+      
+      df <- tibble(
+        Group = rep(c("Group 1", "Group 2"), each = 2),
+        Outcome = c("Successes", "Failures", "Successes", "Failures"),
+        Count = c(input$numSuccesses1, input$numTrials1 - input$numSuccesses1,
+                  input$numSuccesses2, input$numTrials2 - input$numSuccesses2)
+      )
+      
+      # Calculate percentage for labels
+      df <- df %>%
+        group_by(Group) %>%
+        mutate(Percent = Count / sum(Count),
+               Label = paste0(Outcome, " (", scales::percent(Percent), ")"))
+      
+      ggplot(df, aes(x = "", y = Count, fill = Outcome)) +
+        geom_col(color = "white") +
+        coord_polar(theta = "y") +
+        facet_wrap(~Group) +    # Separate pie charts per group
+        scale_fill_manual(values = c("Successes" = "#4CAF50", "Failures" = "#F44336")) +
+        labs(title = "Success vs Failure Distribution by Group") +
+        theme_void() +
+        theme(
+          legend.title = element_blank(),
+          legend.text = element_text(size = 14),
+          plot.title = element_text(size = 16, face = "bold", hjust = 0.5),
+          strip.text = element_text(size = 14, face = "bold")
         )
     })
     
