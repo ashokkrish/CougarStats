@@ -1448,56 +1448,54 @@ statInfrUI <- function(id) {
                 condition = "input.siMethod == '1'",
                 
                 #### ---------------- 1 Pop Mean ---------------------------------------------
-                tabsetPanel(
-                  id = ns("onePopMeanTabset"),
-                  selected = "Analysis",
-                  
-                  tabPanel(
-                    id = ns("onePopMean"),
-                    title = "Analysis",
-                    
                     conditionalPanel(
                       ns = ns,
                       condition = "input.popuParameter == 'Population Mean'",
                       
-                      conditionalPanel(
-                        ns = ns,
-                        condition = "input.inferenceType == 'Confidence Interval'",
+                      tabsetPanel(
+                        id = ns("onePopMeanTabset"),
                         
-                        titlePanel(tags$u("Confidence Interval")),
-                        br(),
-                        uiOutput(ns('oneMeanCI')),
-                        br()
-                      ), # Confidence Interval
+                        tabPanel(
+                          id = ns("onePopMean"),
+                          title = "Analysis",
+                          
+                              conditionalPanel(
+                                ns = ns,
+                                condition = "input.inferenceType == 'Confidence Interval'",
+                                
+                                titlePanel(tags$u("Confidence Interval")),
+                                br(),
+                                uiOutput(ns('oneMeanCI')),
+                                br()
+                              ), # Confidence Interval
+                              
+                              conditionalPanel(
+                                ns = ns,
+                                condition = "input.inferenceType == 'Hypothesis Testing'",
+                                
+                                titlePanel(tags$u("Hypothesis Test")),
+                                br(),
+                                uiOutput(ns('oneMeanHT')),
+                                br(),
+                              ), # Hypothesis Testing
                       
-                      conditionalPanel(
-                        ns = ns,
-                        condition = "input.inferenceType == 'Hypothesis Testing'",
-                        
-                        titlePanel(tags$u("Hypothesis Test")),
-                        br(),
-                        uiOutput(ns('oneMeanHT')),
-                        br(),
-                      ), # Hypothesis Testing
-                      
-                      conditionalPanel(
-                        ns = ns,
-                        condition = "input.dataAvailability != 'Summarized Data' && input.oneMeanBoxplot == 1",
-                        
-                        br(),
-                        hr(),
-                        br(),
-                        titlePanel(tags$u("Boxplot")),
-                        br(),
-                        plotOptionsMenuUI(
-                          id = ns("oneMeanBoxplot"),
-                          plotType = "Boxplot",
-                          title = "Boxplot"),
-                        uiOutput(ns("renderOneMeanBoxplot")),
-                        br(),
-                        br())
+                              conditionalPanel(
+                                ns = ns,
+                                condition = "input.dataAvailability != 'Summarized Data' && input.oneMeanBoxplot == 1",
+                                
+                                br(),
+                                hr(),
+                                br(),
+                                titlePanel(tags$u("Boxplot")),
+                                br(),
+                                plotOptionsMenuUI(
+                                  id = ns("oneMeanBoxplot"),
+                                  plotType = "Boxplot",
+                                  title = "Boxplot"),
+                                uiOutput(ns("renderOneMeanBoxplot")),
+                                br(),
+                                br())
                     ), # One Population Mean
-                  ), #onePopMean Analysis tabPanel
                   
                   tabPanel(
                     id = ns("onePopMeanData"),
@@ -1505,7 +1503,7 @@ statInfrUI <- function(id) {
                     
                     uiOutput(ns("renderOnePopMeanData")),
                   ), #onePopMeanData Uploaded Data tabPanel
-                  
+                  ), #onePopMean Analysis tabPanel
                 ), #onePopMean tabsetPanel
                 
                 #### ---------------- 1 Pop Prop ---------------------------------------------
@@ -1514,7 +1512,8 @@ statInfrUI <- function(id) {
                   condition = "input.popuParameter == 'Population Proportion'",
                   
                   tabsetPanel(type = "tabs",
-                              tabPanel(title = "Inferences",
+                              id = ns("onePropTabset"),
+                              tabPanel(title = "Analysis",
                                        conditionalPanel(
                                          ns = ns,
                                          condition = "input.inferenceType == 'Confidence Interval'",
@@ -1522,8 +1521,8 @@ statInfrUI <- function(id) {
                                          titlePanel(tags$u("Confidence Interval")),
                                          br(),
                                          uiOutput(ns('onePropCI')),
-                                         br(),
-                                       ), # Confidence Interval
+                                         br()
+                                       ),
                                        
                                        conditionalPanel(
                                          ns = ns,
@@ -1532,14 +1531,15 @@ statInfrUI <- function(id) {
                                          titlePanel(tags$u("Hypothesis Test")),
                                          br(),
                                          uiOutput(ns('onePropHT')),
-                                         br(),
-                                       ) # Hypothesis Testing
+                                         br()
+                                       )
                               ),
+                              
                               tabPanel(title = "Graphs",
                                        br(),
                                        plotOutput(ns("onePropBarGraph")),
-                                       plotOutput(ns("onePropPieChart")))
-                  )), # One Population Proportion
+                                       plotOutput(ns("onePropPieChart"))
+                              ))), # One Population Proportion
                 
                 #### ---------------- 1 Pop Standard deviation -------------------------------
                 conditionalPanel(
@@ -6266,8 +6266,10 @@ statInfrServer <- function(id) {
         dat <- createNumLst(input$sample1)
       } else if(input$dataAvailability == 'Upload Data') {
         dat <- na.omit(unlist(OneMeanUploadData()[,input$oneMeanVariable]))
+      } else {
+        return(NA)
       }
-      
+
       quartile1 <-  fivenum(dat)[2]
       quartile3 <-  fivenum(dat)[4]
       sampIQR <- round(quartile3 - quartile1, 4)
@@ -8149,13 +8151,13 @@ statInfrServer <- function(id) {
                   tTest["Sample SD"],
                   tTest["Sample Size"]),
           sprintf("\\( \\displaystyle \\; = \\; \\dfrac{%g}{ \\left( \\dfrac{ %g }{ %g } \\right) } \\)",
-                  tTest["Numerator"],
+                  tTest["Sample Mean"] - muNaught, # MUST CHANGE BACK TO NUMERATOR
                   tTest["Sample SD"],
                   sqrt(tTest["Sample Size"])),
           br(),
           br(),
           sprintf("\\( \\displaystyle \\phantom{t} = \\; \\dfrac{ %g }{ %g } \\)",
-                  tTest["Numerator"],
+                  tTest["Sample Mean"] - muNaught, # MUST CHANGE BACK TO NUMERATOR
                   tTest["Std Error"]),
           sprintf("\\( \\displaystyle \\; = \\; %g \\)",
                   tTest["Test Statistic"]),
@@ -8363,6 +8365,7 @@ statInfrServer <- function(id) {
       }
       
       twoPropHTHead <- tagList(
+        plotOutput(session$ns('twoPropBarPlot')),
         withMathJax(
           sprintf("\\( H_{0}: %s p_{2}\\)",
                   nullHyp),
@@ -8482,6 +8485,35 @@ statInfrServer <- function(id) {
       
       htPlot <- hypZTestPlot(twoPropZTest["Test Statistic"], htPlotCritVal, IndMeansHypInfo()$alternative)
       htPlot
+    })
+    
+    #### --------------- Stacked Bar Plot ----
+    output$twoPropBarPlot <- renderPlot({
+      req(input$numTrials1 >= input$numSuccesses1,
+          input$numTrials2 >= input$numSuccesses2)
+      
+      df <- tibble(
+        Group = c("Group 1", "Group 1", "Group 2", "Group 2"),
+        Outcome = c("Successes", "Failures", "Successes", "Failures"),
+        Count = c(input$numSuccesses1, input$numTrials1 - input$numSuccesses1,
+                  input$numSuccesses2, input$numTrials2 - input$numSuccesses2)
+      )
+      
+      ggplot(df, aes(x = Group, y = Count, fill = Outcome)) +
+        geom_col(position = "fill", width = 0.5) +
+        scale_y_continuous(labels = scales::percent_format()) +
+        labs(
+          title = "Stacked Bar Chart: Proportion of Successes vs Failures",
+          y = "Proportion", x = ""
+        ) +
+        scale_fill_manual(values = c("Successes" = "#4CAF50", "Failures" = "#F44336")) +
+        theme(
+          axis.text = element_text(size = 14, face = "bold"),
+          axis.title = element_text(size = 16, face = "bold"),
+          plot.title = element_text(size = 18, face = "bold"),
+          legend.title = element_text(size = 14),
+          legend.text = element_text(size = 12)
+        )
     })
     
     ### ------------ Two Pop Var Outputs ----------------------------------------------

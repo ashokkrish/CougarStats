@@ -1,7 +1,5 @@
 TTest <- function(n, xbar, s, mu = 0, alternative = c("two.sided", "less", "greater"),  s_level = 0.05)
 {
-  if (is.null(mu) || is.na(mu)) mu <- 0
-  
   se <- s/sqrt(n)
   
   tstat <- (xbar - mu)/se
@@ -21,9 +19,9 @@ TTest <- function(n, xbar, s, mu = 0, alternative = c("two.sided", "less", "grea
     t.crit <- qt(1 - s_level, df)
   }
   
-  dat <- sapply(c(n, xbar, (xbar - mu), s, t.crit, se, tstat, p_value, df), function(x){ if(x < 0.0001 && x > 0) {signif(x,1)} else {round(x, 4)}})
+  dat <- sapply(c(n, xbar, s, t.crit, se, tstat, p_value, df), function(x){ if(x < 0.0001 && x > 0) {signif(x,1)} else {round(x, 4)}})
   
-  names(dat) <- c("Sample Size", "Sample Mean", "Numerator", "Sample SD", "T Critical", "Std Error", "Test Statistic", "P-Value", "df")
+  names(dat) <- c("Sample Size", "Sample Mean", "Sample SD", "T Critical", "Std Error", "Test Statistic", "P-Value", "df")
   
   return(dat)
 }
