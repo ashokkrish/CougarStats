@@ -2163,7 +2163,12 @@ statInfrServer <- function(id) {
     onemeanraw_iv$add_rule("sample1", sv_required())
     onemeanraw_iv$add_rule("sample1", sv_regex("^( )*(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
                                                "Data must be numeric values separated by a comma (ie: 2,3,4)"))
-    onemeanraw_iv$add_rule("sample1", ~ if (sd(createNumLst(input$sample1)) == 0) "No variance in sample data")
+    # raw data, SD unknown
+    onemeanraw_iv$add_rule("sample1", ~ {
+      if (input$sigmaKnownRaw == "rawUnknown" && sd(createNumLst(input$sample1)) == 0) {
+        "No variance in sample data"
+      }
+    })
     
     # One Mean Upload Data
     onemeanupload_iv$add_rule("oneMeanUserData", sv_required())
@@ -2186,6 +2191,15 @@ statInfrServer <- function(id) {
     
     # oneMeanVariable
     onemeanuploadvar_iv$add_rule("oneMeanVariable", sv_required())
+    onemeanuploadvar_iv$add_rule("oneMeanVariable", ~ {
+      data <- OneMeanUploadData()
+      col  <- input$oneMeanVariable
+      if (is.null(col) || col == "" || !(col %in% names(data))) return(NULL)
+      if (input$sigmaKnownUpload == "Unknown" &&
+          sd(data[[col]], na.rm = TRUE) == 0) {
+        "No variance in selected column"
+      }
+    })
     
     # sampSD
     onemeansdunk_iv$add_rule("sampSD", sv_required())
@@ -5682,7 +5696,20 @@ statInfrServer <- function(id) {
         validate(
           need(input$oneMeanVariable != "", "Please select a column for analysis."),
           errorClass = "myClass")
+        
+        data <- OneMeanUploadData()
+        col <- input$oneMeanVariable
+      
+        if (!is.null(data) && !is.null(col) && input$sigmaKnownUpload == "Unknown") {
+          if (sd(data[[col]], na.rm = TRUE) == 0) {
+            validate(
+              need(FALSE, "When the sample standard deviation is 0, the t test statistic is undefined."),
+              errorClass = "myClass"
+            )
+          }
+        }
       }
+    
       
       if(!onemeanuploadsd_iv$is_valid()) {
         validate(
