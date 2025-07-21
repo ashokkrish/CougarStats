@@ -2163,7 +2163,12 @@ statInfrServer <- function(id) {
     onemeanraw_iv$add_rule("sample1", sv_required())
     onemeanraw_iv$add_rule("sample1", sv_regex("^( )*(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
                                                "Data must be numeric values separated by a comma (ie: 2,3,4)"))
-    onemeanraw_iv$add_rule("sample1", ~ if (sd(createNumLst(input$sample1)) == 0) "No variance in sample data")
+    # raw data, SD unknown
+    onemeanraw_iv$add_rule("sample1", ~ {
+      if (input$sigmaKnownRaw == "rawUnknown" && (sd(createNumLst(input$sample1)) == 0)) {
+        "No variance in sample data"
+      }
+    })
     
     # One Mean Upload Data
     onemeanupload_iv$add_rule("oneMeanUserData", sv_required())
@@ -2186,6 +2191,15 @@ statInfrServer <- function(id) {
     
     # oneMeanVariable
     onemeanuploadvar_iv$add_rule("oneMeanVariable", sv_required())
+    onemeanuploadvar_iv$add_rule("oneMeanVariable", ~ {
+      data <- OneMeanUploadData()
+      col  <- input$oneMeanVariable
+      if (is.null(col) || col == "" || !(col %in% names(data))) return(NULL)
+      if (input$sigmaKnownUpload == "Unknown" &&
+          sd(data[[col]], na.rm = TRUE) == 0) {
+        "No variance in selected column"
+      }
+    })
     
     # sampSD
     onemeansdunk_iv$add_rule("sampSD", sv_required())
@@ -2258,6 +2272,33 @@ statInfrServer <- function(id) {
     
     indmeansuploadvar_iv$add_rule("indMeansUplSample1", sv_required())
     indmeansuploadvar_iv$add_rule("indMeansUplSample2", sv_required())
+    indmeansuploadvar_iv$add_rule("indMeansUplSample1", ~ {
+      d <- IndMeansUploadData()
+      c1 <- input$indMeansUplSample1
+      c2 <- input$indMeansUplSample2
+      
+      if (input$bothsigmaKnownUpload == "bothUnknown") {
+        if (c1 %in% names(d) && c2 %in% names(d)) {
+          if (sd(d[[c1]], na.rm = TRUE) == 0 && sd(d[[c2]], na.rm = TRUE) == 0) {
+            return("At least 1 of the selected columns must have variance.")
+          }
+        }
+      }
+    })
+    
+    indmeansuploadvar_iv$add_rule("indMeansUplSample2", ~ {
+      d <- IndMeansUploadData()
+      c1 <- input$indMeansUplSample1
+      c2 <- input$indMeansUplSample2
+      
+      if (input$bothsigmaKnownUpload == "bothUnknown") {
+        if (c1 %in% names(d) && c2 %in% names(d)) {
+          if (sd(d[[c1]], na.rm = TRUE) == 0 && sd(d[[c2]], na.rm = TRUE) == 0) {
+            return("At least 1 of the selected columns must have variance.")
+          }
+        }
+      }
+    })
     
     #diana
     #wilcoxonUpl
@@ -2344,6 +2385,18 @@ statInfrServer <- function(id) {
     twoprop_iv$add_rule("numSuccesses2", sv_integer())
     twoprop_iv$add_rule("numSuccesses2", sv_gte(0))
     twopropht_iv$add_rule("numSuccesses2", ~ if(checkTwoProp() == 0) "At least one of (x1) and (x2) must be greater than 0.")
+    twopropht_iv$add_rule("numSuccesses1", ~ {
+      if (input$numSuccesses1 == input$numTrials1 &&
+          input$numSuccesses2 == input$numTrials2) {
+        "Both sample proportions are equal to 1."
+      }
+    })
+    twopropht_iv$add_rule("numSuccesses2", ~ {
+      if (input$numSuccesses1 == input$numTrials1 &&
+          input$numSuccesses2 == input$numTrials2) {
+        "Both sample proportions are equal to 1."
+      }
+    })
     
     # diff naught
     twopropdiffnaught_iv$add_rule("propDiffNaught", sv_required())
@@ -2829,6 +2882,18 @@ statInfrServer <- function(id) {
       return(conclusion)
     }
     
+    getTTestErrorMsg <- function(sampleData, muNaught) {
+      sampleMean <- mean(sampleData, na.rm = TRUE)
+      sampleSD   <- sd(sampleData, na.rm = TRUE)
+      
+      if (sampleSD != 0) return(NULL)
+      
+      if (isTRUE(all.equal(sampleMean, muNaught))) {
+        return("When the sample standard deviation is 0, and the hypothesized value of the population mean is equal to the sample mean, the test statistic (t) is indeterminate.")
+      } else {
+        return("When the sample standard deviation is 0, the test statistic (t) is undefined.")
+      }
+    }
     
     printOneMeanCI <- function() {
       
@@ -5071,7 +5136,7 @@ statInfrServer <- function(id) {
     })
     
     GetMeansUploadData <- reactive({
-      req(si_iv$is_valid())
+      req(input$indMeansUplSample1, input$indMeansUplSample2)
       
       dat <- list()
       
@@ -5640,13 +5705,29 @@ statInfrServer <- function(id) {
           errorClass = "myClass")
       }
       
-      if(!onemeanraw_iv$is_valid()) {
+      if (!onemeanraw_iv$is_valid()) {
         validate(
           need(input$sample1, "Sample Data required.") %then%
             need(length(createNumLst(input$sample1)) > 1, "Sample Data requires a minimum of 2 data points."),
           need(input$popuSDRaw & input$popuSDRaw > 0, "Population Standard Deviation must be positive."),
-          #need(input$popuSDRaw > 0, "Population Standard Deviation must be greater than 0"),
-          errorClass = "myClass")
+          errorClass = "myClass"
+        )
+        
+        if (input$sigmaKnownRaw == "rawUnknown") {
+          sampleData <- createNumLst(input$sample1)
+          muNaught   <- input$hypMean
+          if(is.null(muNaught)) {
+            msg <- "When the sample standard deviation is 0, the test statistic (t) is undefined."
+          } else {
+            msg <- getTTestErrorMsg(sampleData, muNaught)
+          }
+          if (!is.null(msg)) {
+            validate(
+              need(FALSE, msg),
+              errorClass = "myClass"
+            )
+          }
+        }
       }
       
       if(!onemeansdknown_iv$is_valid()) {
@@ -5681,8 +5762,23 @@ statInfrServer <- function(id) {
       if(!onemeanuploadvar_iv$is_valid()) {
         validate(
           need(input$oneMeanVariable != "", "Please select a column for analysis."),
-          errorClass = "myClass")
+          errorClass = "myClass"
+        )
+        data <- OneMeanUploadData()
+        col <- input$oneMeanVariable
+        muNaught <- input$hypMean
+        
+        if (!is.null(data) && !is.null(col) && input$sigmaKnownUpload == "Unknown") {
+          msg <- getTTestErrorMsg(data[[col]], muNaught)
+          if (!is.null(msg)) {
+            validate(
+              need(FALSE, msg),
+              errorClass = "myClass"
+            )
+          }
+        }
       }
+    
       
       if(!onemeanuploadsd_iv$is_valid()) {
         validate(
@@ -5823,6 +5919,18 @@ statInfrServer <- function(id) {
           need(input$indMeansUplSample1, "Please select a column for Sample 1."),
           need(input$indMeansUplSample2, "Please select a column for Sample 2."),
           errorClass = "myClass")
+        
+        if (input$bothsigmaKnownUpload == "bothUnknown") {
+          data <- GetMeansUploadData()
+          sd1 <- data$sd1
+          sd2 <- data$sd2
+          
+          validate(
+            need(!(sd1 == 0 && sd2 == 0),
+                 "Both selected columns have a sample standard deviation of 0, so the test statistic (t) is undefined."),
+            errorClass = "myClass"
+          )
+        }
       }
       
       if(!indmeansuploadsd_iv$is_valid()) {
@@ -5952,10 +6060,13 @@ statInfrServer <- function(id) {
       }
       
       #### ---------------- Two Population Proportion Validation
-      if(!twopropht_iv$is_valid()) {
+      if (!twopropht_iv$is_valid()) {
         validate(
           need(checkTwoProp() > 0, "The test statistic (t) will be undefined when the Number of Successes 1 (x1) and Number of Successes 2 (x2) are both 0."),
-          errorClass = "myClass")
+          need(!(input$numSuccesses1 == input$numTrials1 && input$numSuccesses2 == input$numTrials2),
+               "The pooled proportion equals 1, which results in an undefined test statistic (z). This happens when the number of successes equals the number of trials for both samples."),
+          errorClass = "myClass"
+        )
       }
       
       if(!twoprop_iv$is_valid()) {
@@ -7195,6 +7306,7 @@ statInfrServer <- function(id) {
         sample1 <- createNumLst(input$raw_sample1)
         sample2 <- createNumLst(input$raw_sample2)
       } else if(input$dataAvailability2 == 'Upload Data') {
+        req(input$indMeansUplSample1, input$indMeansUplSample2)
         sample1 <- na.omit(unlist(IndMeansUploadData()[,input$indMeansUplSample1]))
         sample2 <- na.omit(unlist(IndMeansUploadData()[,input$indMeansUplSample2]))
       }
@@ -7235,9 +7347,6 @@ statInfrServer <- function(id) {
     width = function() {GetPlotWidth(input[["indMeansBoxplot-Width"]], input[["indMeansBoxplot-WidthPx"]], ui = FALSE)}
     )
     
-    
-    
-    
     output$sigmaKnownCIFormula <- renderUI({
       
       if (input$dataAvailability2 == 'Summarized Data') {
@@ -7247,7 +7356,7 @@ statInfrServer <- function(id) {
       } else if(input$dataAvailability2 == 'Upload Data') {
         data <- GetMeansUploadData()
       }
-      
+
       zInt <- IndMeansZInt()
       
       tagList(
@@ -7434,7 +7543,7 @@ statInfrServer <- function(id) {
     
     #### ----------------- HT ----
     output$indMeansHT <- renderUI({
-      
+
       withMathJax()
       
       intrpInfo <- IndMeansHypInfo()
