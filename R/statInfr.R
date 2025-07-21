@@ -8647,7 +8647,7 @@ statInfrServer <- function(id) {
     output$twoPropHTPlot <- renderPlot({
       req(si_iv$is_valid())
       
-      twoPropZTest <- TwoPropZTest(input$numSuccesses1, input$numTrials1, input$numSuccesses2, input$numTrials2, 0, IndMeansHypInfo()$alternative, SigLvl())
+      twoPropZTest <- TwoPropZTest(input$numSuccesses1, input$numTrials1, input$numSuccesses2, input$numTrials2, input$propDiffNaught, IndMeansHypInfo()$alternative, SigLvl())
       htPlotCritVal <- round(twoPropZTest["Z Critical"], cvDigits)
       
       htPlot <- hypZTestPlot(twoPropZTest["Test Statistic"], htPlotCritVal, IndMeansHypInfo()$alternative)
