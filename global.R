@@ -7,39 +7,55 @@
 
 library(aplpack)
 library(bslib)
+library(broom)
+library(broom.helpers)
 library(car)
 library(colourpicker)
 library(DescTools)
 library(dplyr)
 library(DT)
-library(generics)
-library(ggplot2)
-library(plotly)
-library(ggpubr)
-library(ggsci)
 library(e1071)
+library(forecast)
+library(generics)
+library(GGally)
+library(ggfortify)
+library(ggplot2)
+library(ggpubr)
+library(ggResidpanel)
+library(ggsci)
+library(gridExtra)
+library(htmltools)
+library(katex)
+library(knitr)
+library(latex2exp)
+library(magrittr)
 library(markdown)
+library(moments)
 library(nortest)
+library(olsrr)
+library(plotly)
+library(psych)
 library(readr)
 library(readxl)
+library(ResourceSelection)
 library(rstatix)
 library(shiny)
+library(shinyalert)
 library(shinyDarkmode)
-library(shinythemes)
 library(shinyjs)
 library(shinyMatrix)
+library(shinythemes)
 library(shinyvalidate)
 library(shinyWidgets)
+library(thematic)
+library(tibble)
+library(tidyr)
 library(tinytex)
+library(waiter)
 library(writexl)
 library(xtable)
 library(MASS)
-library(latex2exp)
-library(thematic)
 library(datamods)
-library(magrittr)
-library(olsrr)
-library(ggResidpanel)
 
 source("R/authors.R")
 
@@ -93,23 +109,23 @@ render <- "
   option: function(data, escape){return '<div class=\"option\">'+data.label+'</div>';},
   item: function(data, escape){return '<div class=\"item\">'+data.label+'</div>';}
 }"
-
-## NOTE: advanced understanding of R is required to interpret these results.
-## It's not for the faint of heart.
-## warning("What follows is the base R conflicts() report: all MASK-ed or MASK-ing symbols are given.",
-##         immediate. = TRUE)
-## print(conflicts(detail = TRUE))
-
-## NOTE: see #41.
-## warning("Following this is the conflicted::conflict_scout() report.",
-##         immediate. = TRUE)
-## print(conflicted::conflict_scout())
-
-## TODO: reenable this line before deployment.
-## conflicted::conflicts_prefer(shinyjs::show, dplyr::filter, dplyr::select)
-
-## See the theming issue brought up in #33; use thematic to attempt to make base
-## R graphics compliant with ggplot theming, and to anticipate the impact of
-## dark mode.
-ggplot2::theme_set(ggplot2::theme_minimal())
-thematic_shiny()
+  
+  ## NOTE: advanced understanding of R is required to interpret these results.
+  ## It's not for the faint of heart.
+  ## warning("What follows is the base R conflicts() report: all MASK-ed or MASK-ing symbols are given.",
+  ##         immediate. = TRUE)
+  ## print(conflicts(detail = TRUE))
+  
+  ## NOTE: see #41.
+  ## warning("Following this is the conflicted::conflict_scout() report.",
+  ##         immediate. = TRUE)
+  ## print(conflicted::conflict_scout())
+  
+  ## TODO: reenable this line before deployment.
+  ## conflicted::conflicts_prefer(shinyjs::show, dplyr::filter, dplyr::select)
+  
+  ## See the theming issue brought up in #33; use thematic to attempt to make base
+  ## R graphics compliant with ggplot theming, and to anticipate the impact of
+  ## dark mode.
+  ggplot2::theme_set(ggplot2::theme_minimal())
+  thematic_shiny()

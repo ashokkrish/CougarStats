@@ -70,21 +70,25 @@ MLRSidebarUI <- function(id) {
 
 MLRMainPanelUI <- function(id) {
   ns <- NS(id)
-  navbarPage(title = NULL,
-             tabPanel(
-               title = "Data Import",
-               div(id = ns("importContainer")),
-               uiOutput(ns("fileImportUserMessage")),
-               import_file_ui(
-                 id    = ns("dataImport"),
-                 title = "")),
-             tabPanel(title = "MLR", uiOutput(ns("Equations")) ),
-             tabPanel(title = "ANOVA", uiOutput(ns("ANOVA"))),
-             tabPanel(title = "Multicollinearity Detection", uiOutput(ns("MulticollinearityDetection"))),
-             tabPanel(title = "Diagnostic Plots", uiOutput(ns("DiagnosticPlots"))),
-             
-             id = ns("mainPanel"),
-             theme = bs_theme(version = 4))
+  tagList(
+    useShinyjs(),
+    navbarPage(title = NULL,
+               tabPanel(
+                 title = "Data Import",
+                 value = "data_import_tab",
+                 div(id = ns("importContainer")),
+                 uiOutput(ns("fileImportUserMessage")),
+                 import_file_ui(
+                   id    = ns("dataImport"),
+                   title = "")),
+               tabPanel(title = "MLR", uiOutput(ns("Equations")) ),
+               tabPanel(title = "ANOVA", uiOutput(ns("ANOVA"))),
+               tabPanel(title = "Multicollinearity Detection", uiOutput(ns("MulticollinearityDetection"))),
+               tabPanel(title = "Diagnostic Plots", uiOutput(ns("DiagnosticPlots"))),
+               
+               id = ns("mainPanel"),
+               theme = bs_theme(version = 4))
+  )
 }
 
 MLRServer <- function(id) {
@@ -107,6 +111,15 @@ MLRServer <- function(id) {
     )
     
     noFileCalculate <- reactiveVal(FALSE)
+    
+    observeEvent(TRUE, {
+      shinyjs::delay(0, {
+        hideTab(inputId = "mainPanel", target = "MLR")
+        hideTab(inputId = "mainPanel", target = "ANOVA")
+        hideTab(inputId = "mainPanel", target = "Multicollinearity Detection")
+        hideTab(inputId = "mainPanel", target = "Diagnostic Plots")
+      })
+    }, once = TRUE)
     
     observeEvent(uploadedTibble$data(),{
       req(uploadedTibble$data())
@@ -131,27 +144,16 @@ MLRServer <- function(id) {
     ns <- session$ns
     
     observeEvent(input$reset, {
-      # clear the response‐variable dropdown
-      updatePickerInput(
-        session,
-        "responseVariable",
-        selected = character(0)
-      )
+      hideTab(inputId = "mainPanel", target = "MLR")
+      hideTab(inputId = "mainPanel", target = "ANOVA")
+      hideTab(inputId = "mainPanel", target = "Multicollinearity Detection")
+      hideTab(inputId = "mainPanel", target = "Diagnostic Plots")
       
-      # clear the explanatory‐variables picker
-      updatePickerInput(
-        session,
-        "explanatoryVariables",
-        selected = character(0)
-      )
+      updatePickerInput(session, "responseVariable", selected = character(0))
+      updatePickerInput(session, "explanatoryVariables", selected = character(0))
+      
+      updateNavbarPage(session, "mainPanel", selected = "data_import_tab")
     })
-    
-    bindEvent(observe({
-      shinyjs::hide("mainPanel")
-      updateNavbarPage(inputId = "mainPanel", selected = "Data Import")
-    }),
-    input$responseVariable,
-    input$explanatoryVariables)
     
     ## Update the choices for the select inputs when the uploadedTibble changes.
     observe({
@@ -640,10 +642,11 @@ p(strong("Conclusion:")),
         
       }) ## end of isolation
       
-      
-      shinyjs::show("")
-      shinyjs::show("mainPanel")
-      updateNavbarPage(inputId = "mainPanel", selected = "MLR")
+      showTab(inputId = "mainPanel", target = "MLR")
+      showTab(inputId = "mainPanel", target = "ANOVA")
+      showTab(inputId = "mainPanel", target = "Multicollinearity Detection")
+      showTab(inputId = "mainPanel", target = "Diagnostic Plots")
+      updateNavbarPage(session, "mainPanel", selected = "MLR")
     }) |> bindEvent(input$calculate)
     
     observe({

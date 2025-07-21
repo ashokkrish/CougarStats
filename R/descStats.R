@@ -477,19 +477,24 @@ descStatsServer <- function(id) {
       }
       
       if(sampSize < 3){
-        sampSkewness <- round(skewness(dat, type = 1), 4)
+        # Use e1071::skewness to specify the package
+        sampSkewness <- round(e1071::skewness(dat, type = 1), 4)
       } else {
-        sampSkewness <- round(skewness(dat, type = 2), 4)
+        # Use e1071::skewness to specify the package
+        sampSkewness <- round(e1071::skewness(dat, type = 2), 4)
       }
       if(sampSize < 4){
-        sampKurtosis <- round(kurtosis(dat, type = 1), 4)
+        # Use e1071::kurtosis to specify the package
+        sampKurtosis <- round(e1071::kurtosis(dat, type = 1), 4)
       } else {
-        sampKurtosis <- round(kurtosis(dat, type = 2), 4)
+        # Use e1071::kurtosis to specify the package
+        sampKurtosis <- round(e1071::kurtosis(dat, type = 2), 4)
       }
       
       if(is.nan(sampSkewness)) {
         sampSkewness <- "Not enough variability or data points in the dataset."
       }
+      
       
       if(is.nan(sampKurtosis)) {
         sampKurtosis <- "Not enough variability or data points in the dataset."
