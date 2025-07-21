@@ -78,9 +78,8 @@ PCAMainPanelUI <- function(id) {
                         h3("Covariance Matrix"),
                         DTOutput(ns("covarianceMatrix")),
                         hr(),
-                        h3("Scree Plot & Eigenvalues"),
+                        h3("Scree Plot"),
                         plotOutput(ns("screePlot")),
-                        DTOutput(ns("eigenvalues")),
                         hr(),
                         h3("Interpretation of Results"),
                         uiOutput(ns("pcaInterpretation"))
@@ -323,17 +322,10 @@ PCAServer <- function(id) {
              x = "Principal Component",
              y = "Eigenvalue (Variance)") +
         theme_minimal() +
-        theme(plot.title = element_text(hjust = 0.5))
-    })
-    
-    output$eigenvalues <- renderDT({
-      req(pca_results())
-      eigenvalues <- pca_results()$sdev^2
-      eigen_df <- data.frame(
-        Component = 1:length(eigenvalues),
-        Eigenvalue = eigenvalues
-      )
-      datatable(eigen_df, options = list(dom = 't')) %>% formatRound(columns = 2, digits = 3)
+        theme(
+          plot.title = element_text(hjust = 0.5),
+          axis.text = element_text(size = 14) # Enlarge axis text
+        )
     })
     
     output$rotatedLoadings <- renderDT({
