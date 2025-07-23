@@ -9415,6 +9415,9 @@ statInfrServer <- function(id) {
       if (input$sidebysidewRankSum || input$sidebysidewRankQQ) {
         showTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
       } else {
+        if (input$wilcoxonRankSumTabset == "Graphs") {
+          updateTabsetPanel(inputId = 'wilcoxonRankSumTabset', selected = "Analysis")
+        }
         hideTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
       }
     })
@@ -9933,9 +9936,6 @@ statInfrServer <- function(id) {
       if (input$sidebysidewRankSum == 1 || input$sidebysidewRankQQ == 1){
         showTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
       } else {
-        if (input$wilcoxonRankSumTabset == "Graphs") {
-          updateTabsetPanel(inputId = 'wilcoxonRankSumTabset', selected = "Analysis")
-        }
         hideTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
       }
       
