@@ -1085,6 +1085,11 @@ statInfrUI <- function(id) {
               checkboxInput(
                 inputId = ns("indMeansBoxplot"),
                 label   = "Side-by-side Boxplot for Sample Data",
+                value   = TRUE),
+              
+              checkboxInput(
+                inputId = ns("indMeansQQPlot"),
+                label   = "Q-Q Plots for Sample 1 and Sample 2",
                 value   = TRUE)
             ), # Ind Means !Summarized
             
@@ -1628,7 +1633,12 @@ statInfrUI <- function(id) {
                                         br(),
                                         uiOutput(ns('indMeansHT')),
                                         br()
-                                      ), # Hypothesis Testing
+                                      ) # Hypothesis Testing
+                                    ), # indPopMeans Analysis tabPanel
+                                    
+                                    tabPanel(
+                                      id = ns("indPopMeans"),
+                                      title = "Graphs",
                                       
                                       conditionalPanel(
                                         ns = ns,
@@ -1646,8 +1656,26 @@ statInfrUI <- function(id) {
                                         uiOutput(ns("renderIndMeansBoxplot")),
                                         br(),
                                         br()
+                                      ),
+                                      
+                                      conditionalPanel(
+                                        ns = ns,
+                                        condition = "input.dataAvailability2 != 'Summarized Data' && input.indMeansQQPlot == 1",
+                                        
+                                        br(),
+                                        hr(),
+                                        br(),
+                                        titlePanel(tags$u("Q-Q Plots")),
+                                        br(),
+                                        plotOptionsMenuUI(
+                                          id = ns("indMeansQQPlot"),
+                                          plotType = "QQ Plot",
+                                          title = "Q-Q Plots"),
+                                        uiOutput(ns("renderIndMeansQQPlot")),
+                                        br(),
+                                        br()
                                       )
-                                    ), # indPopMeans Analysis tabPanel
+                                    ), # indPopMeans Graphs tabPanel
                                     
                                     tabPanel(
                                       id = ns("indPopMeansData"),
@@ -2872,6 +2900,7 @@ statInfrServer <- function(id) {
     #  ========================================================================= #
     plotOptionsMenuServer("oneMeanBoxplot")
     plotOptionsMenuServer("indMeansBoxplot")
+    plotOptionsMenuServer("indMeansQQPlot")
     plotOptionsMenuServer("sidebysidewRankSum")
     plotOptionsMenuServer("anovaBoxplot")
     plotOptionsMenuServer("anovaHistogram")
@@ -7252,6 +7281,58 @@ statInfrServer <- function(id) {
       )
     })
     
+    #### ------------- Q-Q Plots --------------------------
+    
+    output$indMeansQQPlot <- renderPlot({
+      req(input$indMeansQQPlot)
+      
+      if (input$dataAvailability2 == "Enter Raw Data") {
+        dat1 <- createNumLst(input$raw_sample1)
+        dat2 <- createNumLst(input$raw_sample2)
+      } else if (input$dataAvailability2 == "Upload Data") {
+        dat1 <- na.omit(unlist(IndMeansUploadData()[,input$indMeansUplSample1]))
+        dat2 <- na.omit(unlist(IndMeansUploadData()[,input$indMeansUplSample2]))
+      }
+      
+      df1 <- tibble(values = dat1)
+      df2 <- tibble(values = dat2)
+      
+      qq1 <- RenderQQPlot(
+        dat = df1,
+        plotColour = input[["indMeansQQPlot-Colour"]],
+        plotTitle = "QQ Plot: Sample 1",
+        plotXlab = input[["indMeansQQPlot-Xlab"]],
+        plotYlab = input[["indMeansQQPlot-Ylab"]],
+        gridlines = input[["indMeansQQPlot-Gridlines"]],
+        flip = input[["indMeansQQPlot-Flip"]]
+      )
+      
+      qq2 <- RenderQQPlot(
+        dat = df2,
+        plotColour = input[["indMeansQQPlot-Colour"]],
+        plotTitle = "QQ Plot: Sample 2",
+        plotXlab = input[["indMeansQQPlot-Xlab"]],
+        plotYlab = input[["indMeansQQPlot-Ylab"]],
+        gridlines = input[["indMeansQQPlot-Gridlines"]],
+        flip = input[["indMeansQQPlot-Flip"]]
+      )
+      
+      plot_pair <- ggpubr::ggarrange(qq1, qq2, ncol = 2)
+      
+      ggpubr::annotate_figure(
+        plot_pair,
+        top = ggpubr::text_grob(
+          input[["indMeansQQPlot-Title"]],
+          face = "bold",
+          size = 24
+        )
+      )
+    }, height = function() {
+      GetPlotHeight(input[["indMeansQQPlot-Height"]], input[["indMeansQQPlot-HeightPx"]], ui = FALSE)
+    }, width = function() {
+      GetPlotWidth(input[["indMeansQQPlot-Width"]], input[["indMeansQQPlot-WidthPx"]], ui = FALSE)
+    })
+    
     #### ---------------- CI ----
     output$indMeansCI <- renderUI({
       
@@ -9993,6 +10074,11 @@ statInfrServer <- function(id) {
             plotOutput(session$ns("indMeansBoxplot"),
                        height = GetPlotHeight(input[["indMeansBoxplot-Height"]], input[["indMeansBoxplot-HeightPx"]], ui = TRUE),
                        width = GetPlotWidth(input[["indMeansBoxplot-Width"]], input[["indMeansBoxplot-WidthPx"]], ui = TRUE))
+          })
+          output$renderIndMeansQQPlot <- renderUI({
+            plotOutput(session$ns("indMeansQQPlot"),
+                       height = GetPlotHeight(input[["indMeansQQPlot-Height"]], input[["indMeansQQPlot-HeightPx"]], ui = TRUE),
+                       width = GetPlotWidth(input[["indMeansQQPlot-Width"]], input[["indMeansQQPlot-WidthPx"]], ui = TRUE))
           })
         } else if(input$popuParameters == "Wilcoxon rank sum test") {
           output$renderSidebysidewRankSum <- renderUI({
