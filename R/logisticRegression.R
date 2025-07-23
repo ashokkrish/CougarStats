@@ -74,8 +74,12 @@ LogisticRegressionMainPanelUI <- function(id) {
                    id = ns("dataImport"),
                    title = "")),
                tabPanel(title = "LR",
-                        uiOutput(ns("Equations")),
-                        hr(),
+                        uiOutput(ns("Equations"))
+               ),
+               tabPanel(title = "Analysis of Deviance",
+                        uiOutput(ns("anovaOutput"))
+               ),
+               tabPanel(title = "Diagnostic Plot",
                         conditionalPanel(
                           ns = ns,
                           condition = "input.explanatoryVariables && input.explanatoryVariables.length === 1",
@@ -85,9 +89,6 @@ LogisticRegressionMainPanelUI <- function(id) {
                             plotOutput(ns("logrScatterplot"))
                           )
                         )
-               ),
-               tabPanel(title = "Analysis of Deviance",
-                        uiOutput(ns("anovaOutput"))
                ),
                id = ns("mainPanel"),
                theme = bs_theme(version = 4)
@@ -333,6 +334,7 @@ LogisticRegressionServer <- function(id) {
       
       showTab(inputId = "mainPanel", target = "LR")
       showTab(inputId = "mainPanel", target = "Analysis of Deviance")
+      showTab(inputId = "mainPanel", target = "Diagnostic plot")
       updateNavbarPage(session, "mainPanel", selected = "LR")
     }
     
@@ -354,6 +356,7 @@ LogisticRegressionServer <- function(id) {
       shinyjs::delay(0, {
         hideTab(inputId = "mainPanel", target = "LR")
         hideTab(inputId = "mainPanel", target = "Analysis of Deviance")
+        hideTab(inputId = "mainPanel", target = "Diagnostic plot")
       })
     }, once = TRUE)
     
@@ -401,6 +404,7 @@ LogisticRegressionServer <- function(id) {
     observeEvent(input$reset, {
       hideTab(inputId = "mainPanel", target = "LR")
       hideTab(inputId = "mainPanel", target = "Analysis of Deviance")
+      hideTab(inputId = "mainPanel", target = "Diagnostic plot")
       
       calculation_done(FALSE)
       
