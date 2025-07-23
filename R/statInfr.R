@@ -7774,7 +7774,7 @@ statInfrServer <- function(id) {
         nullHyp <- paste0("Median_{", name1, "} \\leq Median_{", name2, "}")
         altHyp <- paste0("Median_{", name1, "} \\gt Median_{", name2, "}")
         altern <- "greater"
-        u_test <- u2_statistic
+        u_test <- u1_statistic
         z_stat <- ((observed_W - mu_w) / sigma_w)
         in_rejection_region <- z_stat > z_critical
         p_value <- pnorm(z_stat, lower.tail = FALSE)
@@ -7976,7 +7976,7 @@ statInfrServer <- function(id) {
         } else if (input$altHypothesis2 == "1") { 
           u_test_val <- u1_statistic
         } else { 
-          u_test_val <- u2_statistic 
+          u_test_val <- u1_statistic 
         }
         z_stat_val <- ((u_test_val - u_mean) / u_std_dev)
       } else { 
