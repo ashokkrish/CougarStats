@@ -852,6 +852,7 @@ statInfrUI <- function(id) {
             
             
             
+            
             ### ------------ 2 Pop Standard Deviations ------------------------------------
             
             conditionalPanel(
@@ -1018,6 +1019,39 @@ statInfrUI <- function(id) {
                 selected = c("5%"),
                 inline   = TRUE),
               
+              conditionalPanel(
+                ns = ns,
+                condition = "input.popuParameters == 'Independent Population Means'",
+                
+                numericInput(
+                  inputId = ns("indMeansMuNaught"),
+                  label   = strong(HTML("Hypothesized Population Mean Difference \\( (\\mu_{1} - \\mu_{2})_{0} \\) Value")),
+                  value   = 0,
+                  step    = 0.00001)
+              ), # indMeansMuNaught
+              
+              conditionalPanel(
+                ns = ns,
+                condition = "input.popuParameters == 'Dependent Population Means'",
+                
+                numericInput(
+                  inputId = ns("depMeansMuNaught"),
+                  label   = strong(HTML("Hypothesized Population Mean Difference \\( (\\mu_{d})_{0} \\) Value")),
+                  value   = 0,
+                  step    = 0.00001)
+              ), # depMeansMuNaught
+              
+              conditionalPanel(
+                ns = ns,
+                condition = "input.popuParameters == 'Population Proportions'",
+                
+                numericInput(
+                  inputId = ns("propDiffNaught"),
+                  label   = strong(HTML("Hypothesized Population Proportion Difference \\( (p_{1} - p_{2})_{0} \\) Value")),
+                  value   = 0,
+                  step    = 0.00001)
+              ), # propDiffNaught
+              
               selectizeInput(
                 inputId  = ns("altHypothesis2"),
                 label    = strong("Alternate Hypothesis (\\( H_{a}\\))"),
@@ -1025,23 +1059,6 @@ statInfrUI <- function(id) {
                 selected = 2,
                 options  = list(render = I(render))),
             ), # Hypothesis Testing
-            conditionalPanel(
-              ns = ns,
-              condition = "input.popuParameters == 'Wilcoxon rank sum test'", # This is the outer condition
-              checkboxInput(
-                inputId = ns("normaprowrs"),
-                label   = "Use normal approximation",
-                value   = FALSE ),
-              conditionalPanel(
-                ns = ns,
-                condition = "input.normaprowrs == true", # This is the inner condition, checking the checkbox
-                radioButtons(
-                  inputId  = ns("continuityCorrectionOption"),
-                  label    = strong("Continuity correction"),
-                  choices  = c("True", "False"),
-                  selected = "True", # 'selected' argument takes a single value, not a vector
-                  inline   = TRUE ))
-            ),
             
             conditionalPanel(
               ns = ns,
@@ -1063,12 +1080,12 @@ statInfrUI <- function(id) {
               
               checkboxInput(
                 inputId = ns("sidebysidewRankSum"),
-                label   = "Side-by-side Boxplot",
-                value   = FALSE),
+                label   = "Side-by-side Boxplot (single plot)",
+                value   = TRUE),
               checkboxInput(
                 inputId = ns("sidebysidewRankQQ"),
-                label   = "Q-Q plots for Sample 1 and Sample 2",
-                value   = FALSE)
+                label   = "Q-Q plots for Sample 1 and Sample 2 (total 2 plots)",
+                value   = TRUE)
             ), # Wilcoxon Rank Sum Graphs
             
             
@@ -1431,17 +1448,16 @@ statInfrUI <- function(id) {
                 condition = "input.siMethod == '1'",
                 
                 #### ---------------- 1 Pop Mean ---------------------------------------------
-                tabsetPanel(
-                  id = ns("onePopMeanTabset"),
-                  selected = "Analysis",
+                conditionalPanel(
+                  ns = ns,
+                  condition = "input.popuParameter == 'Population Mean'",
                   
-                  tabPanel(
-                    id = ns("onePopMean"),
-                    title = "Analysis",
+                  tabsetPanel(
+                    id = ns("onePopMeanTabset"),
                     
-                    conditionalPanel(
-                      ns = ns,
-                      condition = "input.popuParameter == 'Population Mean'",
+                    tabPanel(
+                      id = ns("onePopMean"),
+                      title = "Analysis",
                       
                       conditionalPanel(
                         ns = ns,
@@ -1480,15 +1496,14 @@ statInfrUI <- function(id) {
                         br(),
                         br())
                     ), # One Population Mean
-                  ), #onePopMean Analysis tabPanel
-                  
-                  tabPanel(
-                    id = ns("onePopMeanData"),
-                    title = "Uploaded Data",
                     
-                    uiOutput(ns("renderOnePopMeanData")),
-                  ), #onePopMeanData Uploaded Data tabPanel
-                  
+                    tabPanel(
+                      id = ns("onePopMeanData"),
+                      title = "Uploaded Data",
+                      
+                      uiOutput(ns("renderOnePopMeanData")),
+                    ), #onePopMeanData Uploaded Data tabPanel
+                  ), #onePopMean Analysis tabPanel
                 ), #onePopMean tabsetPanel
                 
                 #### ---------------- 1 Pop Prop ---------------------------------------------
@@ -1497,7 +1512,8 @@ statInfrUI <- function(id) {
                   condition = "input.popuParameter == 'Population Proportion'",
                   
                   tabsetPanel(type = "tabs",
-                              tabPanel(title = "Inferences",
+                              id = ns("onePropTabset"),
+                              tabPanel(title = "Analysis",
                                        conditionalPanel(
                                          ns = ns,
                                          condition = "input.inferenceType == 'Confidence Interval'",
@@ -1505,8 +1521,8 @@ statInfrUI <- function(id) {
                                          titlePanel(tags$u("Confidence Interval")),
                                          br(),
                                          uiOutput(ns('onePropCI')),
-                                         br(),
-                                       ), # Confidence Interval
+                                         br()
+                                       ),
                                        
                                        conditionalPanel(
                                          ns = ns,
@@ -1515,14 +1531,23 @@ statInfrUI <- function(id) {
                                          titlePanel(tags$u("Hypothesis Test")),
                                          br(),
                                          uiOutput(ns('onePropHT')),
-                                         br(),
-                                       ) # Hypothesis Testing
+                                         br()
+                                       )
                               ),
-                              tabPanel(title = "Graphs",
-                                       br(),
-                                       plotOutput(ns("onePropBarGraph")),
-                                       plotOutput(ns("onePropPieChart")))
-                  )), # One Population Proportion
+                              
+                              tabPanel(
+                                title = "Graphs",
+                                br(),
+                                div(
+                                  style = "display: flex; justify-content: flex-start;",
+                                  plotOutput(ns("onePropBarGraph"), width = "400px")
+                                ),
+                                br(),
+                                div(
+                                  style = "display: flex; justify-content: flex-start;",
+                                  plotOutput(ns("onePropPieChart"), width = "400px")
+                                )
+                              ))), # One Population Proportion
                 
                 #### ---------------- 1 Pop Standard deviation -------------------------------
                 conditionalPanel(
@@ -1682,26 +1707,47 @@ statInfrUI <- function(id) {
                                   ns = ns,
                                   condition = "input.popuParameters == 'Population Proportions'",
                                   
-                                  conditionalPanel(
-                                    ns = ns,
-                                    condition = "input.inferenceType2 == 'Confidence Interval'",
+                                  tabsetPanel(
+                                    id = ns("twoPropTabset"),
+                                    selected = "Analysis",
                                     
-                                    titlePanel(tags$u("Confidence Interval")),
-                                    br(),
-                                    uiOutput(ns('twoPropCI')),
-                                    br(),
-                                  ), # Confidence Interval
-                                  
-                                  conditionalPanel(
-                                    ns = ns,
-                                    condition = "input.inferenceType2 == 'Hypothesis Testing'",
-                                    
-                                    titlePanel(tags$u("Hypothesis Test")),
-                                    br(),
-                                    uiOutput(ns('twoPropHT')),
-                                    br(),
-                                  ), # Hypothesis Testing
-                                ), # Two Population Proportions
+                                    tabPanel(
+                                      id = ns("twoProp"),
+                                      title = "Analysis",
+                                      
+                                      conditionalPanel(
+                                        ns = ns,
+                                        condition = "input.inferenceType2 == 'Confidence Interval'",
+                                        
+                                        titlePanel(tags$u("Confidence Interval")),
+                                        br(),
+                                        uiOutput(ns('twoPropCI')),
+                                        br(),
+                                      ), # Confidence Interval
+                                      
+                                      conditionalPanel(
+                                        ns = ns,
+                                        condition = "input.inferenceType2 == 'Hypothesis Testing'",
+                                        
+                                        titlePanel(tags$u("Hypothesis Test")),
+                                        br(),
+                                        uiOutput(ns('twoPropHT')),
+                                        br(),
+                                      ), # Hypothesis Testing
+                                    ), # Analysis Panel
+                                    tabPanel(
+                                      id = ns("twoPropGraphs"),
+                                      title = "Graphs",
+                                      br(),
+                                      div(
+                                        style = "width: 600px; text-align: left;",
+                                        plotOutput(ns("twoPropBarPlot"), height = "400px")),
+                                      div(
+                                        style = "display: flex; justify-content: flex-start;", 
+                                        plotOutput(ns("twoPropPieChart"), 
+                                                   width = "600px", height = "500px"))
+                                    ), # Graph Panel
+                                  )), # Two Population Proportions
                                 
                                 #### ---------------- Wilcoxon Rank Sum --------------------------------------
                                 conditionalPanel(
@@ -1743,41 +1789,35 @@ statInfrUI <- function(id) {
                                     tabPanel(
                                       id = ns("wilcoxonRankSumGraphs"),
                                       title = "Graphs",
+                                      
+                                      # Side-by-side Boxplot
                                       conditionalPanel(
                                         ns = ns,
-                                        condition = "input.popuParameters == 'Wilcoxon rank sum test' && (input.sidebysidewRankSum == 1 || input.sidebysidewRankQQ == 1)",
-                                        
-                                        # Side-by-side Boxplot
-                                        conditionalPanel(
-                                          ns = ns,
-                                          condition = "input.popuParameters == 'Wilcoxon rank sum test' && input.sidebysidewRankSum == 1",
-                                          titlePanel("Side-by-side Boxplot"),
-                                          br(),
-                                          plotOptionsMenuUI(
-                                            id = ns("sidebysidewRankSum"),
-                                            plotType = "Boxplot",
-                                            title = "Boxplot"
-                                          ),
-                                          plotOutput(ns("sidebysidewRankSum")),
-                                          br(),
-                                          br()
-                                        ),
-                                        
-                                        # Q-Q Plots
-                                        conditionalPanel(
-                                          ns = ns,
-                                          condition = "input.popuParameters == 'Wilcoxon rank sum test' && input.sidebysidewRankQQ == 1",
-                                          titlePanel("Q-Q Plots for Sample 1 and Sample 2"),
-                                          br(),
-                                          plotOptionsMenuUI(
-                                            id = ns("sidebysidewRankQQ"),
-                                            plotType = "QQ Plot",
-                                            title = "Q-Q Plots"
-                                          ),
-                                          plotOutput(ns("sidebysidewRankQQ")),
-                                          br(),
-                                          br()
-                                        )
+                                        condition = "input.popuParameters == 'Wilcoxon rank sum test' && input.sidebysidewRankSum == 1",
+                                        titlePanel("Side by Side Boxplot"),
+                                        br(),
+                                        plotOptionsMenuUI(
+                                          id = ns("sidebysidewRankSum"),
+                                          plotType = "Boxplot",
+                                          title = "Boxplot"),
+                                        plotOutput(ns("sidebysidewRankSum")),
+                                        br(),
+                                        br()
+                                      ),
+                                      
+                                      # Q-Q Plots
+                                      conditionalPanel(
+                                        ns = ns,
+                                        condition = "input.popuParameters == 'Wilcoxon rank sum test' && input.sidebysidewRankQQ == 1",
+                                        titlePanel("Q-Q Plots for Sample 1 and Sample 2"),
+                                        br(),
+                                        plotOptionsMenuUI(
+                                          id = ns("sidebysidewRankQQ"),
+                                          plotType = "QQ Plot",
+                                          title = "Q-Q Plots"),
+                                        plotOutput(ns("sidebysidewRankQQ")),
+                                        br(),
+                                        br()
                                       )
                                     ),
                                     tabPanel(
@@ -2078,6 +2118,7 @@ statInfrServer <- function(id) {
     indmeansrawsd_iv <- InputValidator$new()
     indmeansrawsdunk_iv <- InputValidator$new()
     indmeansuploadsd_iv <- InputValidator$new()
+    indmeansmunaught_iv <- InputValidator$new()
     wilcoxonUpload_iv <- InputValidator$new()
     wilcoxonraw_iv <- InputValidator$new()
     wilcoxonRanksuploadvars_iv <- InputValidator$new()
@@ -2086,12 +2127,14 @@ statInfrServer <- function(id) {
     depmeansupload_iv <- InputValidator$new()
     depmeansuploadvars_iv <- InputValidator$new()
     depmeansrawsd_iv <- InputValidator$new()
+    depmeansmunaught_iv <- InputValidator$new()
     oneSD_iv <- InputValidator$new()
     oneSDht_iv <- InputValidator$new()
     oneprop_iv <- InputValidator$new()
     onepropht_iv <- InputValidator$new()
     twoprop_iv <- InputValidator$new()
     twopropht_iv <- InputValidator$new()
+    twopropdiffnaught_iv <- InputValidator$new()
     twopopvarsum_iv <- InputValidator$new()
     twopopvar_iv <- InputValidator$new()
     twopopvarraw_iv <- InputValidator$new()
@@ -2257,6 +2300,8 @@ statInfrServer <- function(id) {
       }
     })
     
+    #diana
+    #wilcoxonUpl
     wilcoxonUpload_iv$add_rule("wilcoxonUpl", sv_required())
     wilcoxonUpload_iv$add_rule("wilcoxonUpl", ~ if(is.null(fileInputs$rankSumStatus) || fileInputs$rankSumStatus == 'reset') "Required")
     wilcoxonUpload_iv$add_rule("wilcoxonUpl", ~ if(!(tolower(tools::file_ext(input$wilcoxonUpl$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
@@ -2271,6 +2316,8 @@ statInfrServer <- function(id) {
                                                     "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)."))
     wilcoxonRanksuploadvars_iv$add_rule("wilcoxonUpl1", sv_required())
     wilcoxonRanksuploadvars_iv$add_rule("wilcoxonUpl2", sv_required())
+    wilcoxonRanksuploadvars_iv$add_rule("wilcoxonUpl1", ~ if(CheckRankSumUploadSamples() != 0) "Sample 1 and Sample 2 must have the same number of observations.")
+    wilcoxonRanksuploadvars_iv$add_rule("wilcoxonUpl2", ~ if(CheckRankSumUploadSamples() != 0) "Sample 1 and Sample 2 must have the same number of observations.")
     #wRankSumrawsd_iv$add_rule("rankSumRaw2", ~ if(GetwRankSumMeansData()$sd == 0) "Variance required in Sample 1 and Sample 2 data for hypothesis testing.")
     wRankSumrawsd_iv$add_rule("rankSumRaw2", ~ {
       data <- GetwRankSumMeansData()
@@ -2280,14 +2327,8 @@ statInfrServer <- function(id) {
         "Variance required in Sample 1 and Sample 2 data for hypothesis testing."
       }
     })
-    wilcoxonUpload_iv$add_rule("wilcoxonUpl", ~ {
-      data <- WilcoxonUploadData()
-      if (!is.null(data) && nrow(data) > 0) {
-        if (!all(sapply(data, is.numeric))) {
-          "Uploaded data contains non-numeric values. Please ensure all columns are numeric."
-        }
-      }
-    })
+    # ind means Mu Naught
+    indmeansmunaught_iv$add_rule("indMeansMuNaught", sv_required())
     
     # before
     depmeansraw_iv$add_rule("before", sv_required())
@@ -2316,6 +2357,8 @@ statInfrServer <- function(id) {
     depmeansuploadvars_iv$add_rule("depMeansUplSample2", ~ if(CheckDepUploadSamples() != 0) "Sample 1 and Sample 2 must have the same number of observations.")
     
     depmeansrawsd_iv$add_rule("after", ~ if(GetDepMeansData()$sd == 0) "Variance required in 'Before' and 'After' sample data for hypothesis testing.")
+    
+    depmeansmunaught_iv$add_rule("depMeansMuNaught", sv_required())
     
     # sample standard deviation
     oneSD_iv$add_rule("SSDSampleSize", sv_required())
@@ -2354,6 +2397,11 @@ statInfrServer <- function(id) {
         "Both sample proportions are equal to 1."
       }
     })
+    
+    # diff naught
+    twopropdiffnaught_iv$add_rule("propDiffNaught", sv_required())
+    twopropdiffnaught_iv$add_rule("propDiffNaught", sv_gte(-1, message = "Value must be between -1 and 1 (inclusive)."))
+    twopropdiffnaught_iv$add_rule("propDiffNaught", sv_lte(1, message = "Value must be between -1 and 1 (inclusive)."))
     
     # SDSampleSize1
     twopopvarsum_iv$add_rule("SDSampleSize1", sv_required())
@@ -2590,6 +2638,10 @@ statInfrServer <- function(id) {
                                           input$wilcoxonRankSumTestData == 'Enter Raw Data' &&
                                           wilcoxonraw_iv$is_valid()))
     
+    indmeansmunaught_iv$condition(~ isTRUE(input$siMethod == '2' &&
+                                             input$popuParameters == 'Independent Population Means' &&
+                                             input$inferenceType2 == 'Hypothesis Testing'))
+    
     depmeansraw_iv$condition(~ isTRUE(input$siMethod == '2' &&
                                         input$popuParameters == 'Dependent Population Means' &&
                                         input$dataTypeDependent == 'Enter Raw Data'))
@@ -2607,6 +2659,10 @@ statInfrServer <- function(id) {
                                           input$popuParameters == 'Dependent Population Means' &&
                                           input$dataTypeDependent == 'Enter Raw Data' &&
                                           depmeansraw_iv$is_valid()))
+    
+    depmeansmunaught_iv$condition(~ isTRUE(input$siMethod == '2' &&
+                                             input$popuParameters == 'Dependent Population Means' &&
+                                             input$inferenceType2 == 'Hypothesis Testing'))
     
     oneSD_iv$condition(~ isTRUE(input$siMethod == '1' &&
                                   input$popuParameter == 'Population Standard Deviation'))
@@ -2643,6 +2699,10 @@ statInfrServer <- function(id) {
     twopopvarraw_iv$condition(~ isTRUE(input$siMethod == '2' &&
                                          input$popuParameters == 'Two Population Variances' &&
                                          input$dataAvailability3 == 'Enter Raw Data'))
+    
+    twopropdiffnaught_iv$condition(~ isTRUE(input$siMethod == '2' &&
+                                              input$popuParameters == 'Population Proportions' &&
+                                              input$inferenceType2 == 'Hypothesis Testing'))
     
     kwupload_iv$condition(~ isTRUE(input$siMethod == 'Multiple' &&
                                      input$multipleMethodChoice == 'kw'))
@@ -2703,15 +2763,18 @@ statInfrServer <- function(id) {
     si_iv$add_validator(wilcoxonUpload_iv)
     si_iv$add_validator(wilcoxonraw_iv)
     si_iv$add_validator(wilcoxonRanksuploadvars_iv)
+    si_iv$add_validator(indmeansmunaught_iv)
     si_iv$add_validator(depmeansraw_iv)
     si_iv$add_validator(depmeansupload_iv)
     si_iv$add_validator(depmeansuploadvars_iv)
+    si_iv$add_validator(depmeansmunaught_iv)
     si_iv$add_validator(oneSD_iv)
     si_iv$add_validator(oneSDht_iv)
     si_iv$add_validator(oneprop_iv)
     si_iv$add_validator(onepropht_iv)
     si_iv$add_validator(twoprop_iv)
     si_iv$add_validator(twopropht_iv)
+    si_iv$add_validator(twopropdiffnaught_iv)
     si_iv$add_validator(twopopvarsum_iv)
     si_iv$add_validator(twopopvar_iv)
     si_iv$add_validator(twopopvarraw_iv)
@@ -2754,17 +2817,22 @@ statInfrServer <- function(id) {
     indmeansuploadvar_iv$enable()
     indmeansuploadsd_iv$enable()
     wilcoxonraw_iv$enable()
+    #diana
+    #wilcoxonRankuploadvars_iv$enable()
     wilcoxonUpload_iv$enable()
+    indmeansmunaught_iv$enable()
     depmeansraw_iv$enable
     depmeansupload_iv$enable()
     depmeansuploadvars_iv$enable()
     depmeansrawsd_iv$enable()
+    depmeansmunaught_iv$enable()
     oneSD_iv$enable()
     oneSDht_iv$enable()
     oneprop_iv$enable()
     onepropht_iv$enable()
     twoprop_iv$enable()
     twopropht_iv$enable()
+    twopropdiffnaught_iv$enable()
     twopopvarsum_iv$enable()
     twopopvar_iv$enable()
     twopopvarraw_iv$enable()
@@ -3330,7 +3398,9 @@ statInfrServer <- function(id) {
     }
     
     GetDepMeansData <- function() {
-      req(si_iv$is_valid())
+      ### JB note: this req caused a bunch of errors for input validation on Mu Naught in Dep Means hypothesis testing
+      ### leaving it commented out for now
+      # req(si_iv$is_valid())
       
       dat <- list()
       
@@ -3348,6 +3418,7 @@ statInfrServer <- function(id) {
       dat$n  <- length(sampBefore)
       dat$dbar <- sum(dat$d) / dat$n
       dat$sd <- sqrt(sum((dat$d - dat$dbar)^2) / (dat$n - 1))
+      dat$muNaught <- input$depMeansMuNaught 
       
       return(dat)
     }
@@ -3554,6 +3625,18 @@ statInfrServer <- function(id) {
                   fill = "#023B70",
                   color = NA,
                   alpha = 0.4)
+        
+        # } else if (altHypothesis == 'two.sided') {
+        #   geom_area(data = subset(df, x <= critValueLeft),
+        #             aes(y=y),
+        #             fill = "#023B70",
+        #             color = NA,
+        #             alpha = 0.4) +
+        #   geom_area(data = subset(df, x >= critValue),
+        #             aes(y=y),
+        #             fill = "#023B70",
+        #             color = NA,
+        #             alpha = 0.4)
         
       } else if (altHypothesis == 'greater') {
         geom_area(data = subset(df, x >= critValue),
@@ -3792,9 +3875,7 @@ statInfrServer <- function(id) {
       tsDF <- filter(df, x %in% testStatistic)
       centerDF <- filter(df, x %in% c(0))
       
-      htPlot <- ggplot(df, aes(x = x, y = y)) +
-        geom_hline(yintercept = 0, color = "black", linewidth = 0.25)
-      
+      htPlot <- ggplot(df, aes(x = x, y = y))
       
       if(altHypothesis == 'two.sided') {
         htPlot <- htPlot + 
@@ -3827,7 +3908,7 @@ statInfrServer <- function(id) {
       htPlot <- htPlot + 
         stat_function(fun = dnorm,
                       geom = "line",
-                      linewidth = 0.75) +
+                      linewidth = 1) +
         theme_void() +
         scale_y_continuous(breaks = NULL) +
         ylab("") + 
@@ -4143,13 +4224,22 @@ statInfrServer <- function(id) {
       cvOutput <- tagList(
         p(tags$b("Using Critical Value Method:")),
         sprintf("Critical Value \\( = F_{\\alpha, \\, (k - 1), \\, (n - k)} = F_{%s, \\, %s, \\, %s} = %s \\)",
-                alpha, df1, df2, critVal),
-        br(), br(),
+                alpha,
+                df1,
+                df2,
+                critVal),
+        br(),
+        br(),
         sprintf("Since the test statistic \\( F \\) falls within the %s region, %s \\( H_{0}\\).",
-                region, reject),
-        br(), br(), br(),
+                region,
+                reject),
+        br(),
+        br(),
+        br(),
         plotOutput(session$ns("oneWayAnovaPlot"), width = "50%", height = "400px"),
-        br(), br())
+        br(),
+        br()
+      )
     }
     
     PrintANOVAConclusion <- function(sigLvl, reject) {
@@ -5159,7 +5249,9 @@ statInfrServer <- function(id) {
         data <- GetMeansUploadData()
       }
       
-      twoSampZTest <- TwoSampZTest(data$xbar1, data$sd1, data$n1, data$xbar2, data$sd2, data$n2, IndMeansHypInfo()$alternative, SigLvl())
+      muNaught <- input$indMeansMuNaught
+      
+      twoSampZTest <- TwoSampZTest(data$xbar1, data$sd1, data$n1, data$xbar2, data$sd2, data$n2, IndMeansHypInfo()$alternative, SigLvl(), muNaught)
       twoSampZTest["Z Critical"] <- round(twoSampZTest["Z Critical"], cvDigits)
       
       return(twoSampZTest)
@@ -5176,7 +5268,9 @@ statInfrServer <- function(id) {
         data <- GetMeansUploadData()
       }
       
-      twoSampTTest <- TwoSampTTest(data$xbar1, data$sd1, data$n1, data$xbar2, data$sd2, data$n2, data$sigmaEqual, IndMeansHypInfo()$alternative, SigLvl())
+      muNaught <- input$indMeansMuNaught
+      
+      twoSampTTest <- TwoSampTTest(data$xbar1, data$sd1, data$n1, data$xbar2, data$sd2, data$n2, data$sigmaEqual, IndMeansHypInfo()$alternative, SigLvl(), muNaught)
       twoSampTTest["T Critical"] <- round(twoSampTTest["T Critical"], cvDigits)
       
       return(twoSampTTest)
@@ -5199,16 +5293,18 @@ statInfrServer <- function(id) {
       )
     })
     
-    CheckRankSumUploadSamples <- eventReactive (c(input$wilcoxonUpl1,input$wilcoxonUpl2), {
-      if(input$wilcoxonUpl1 == "" | input$wilcoxonUpl2 == "") {
-        return(0)
-      } else {
-        before <- unlist(WilcoxonUploadData()[, input$wilcoxonUpl1])
-        after <- unlist(WilcoxonUploadData()[, input$wilcoxonUpl2])
-        difference <- length(na.omit(before)) - length(na.omit(after))
-        return(difference)
-      }
-    })
+    CheckRankSumUploadSamples <- eventReactive (c(input$wilcoxonUpl1,
+                                                  input$wilcoxonUpl2), {
+                                                    
+                                                    if(input$wilcoxonUpl1 == "" | input$wilcoxonUpl2 == "") {
+                                                      return(0)
+                                                    } else {
+                                                      before <- unlist(WilcoxonUploadData()[, input$wilcoxonUpl1])
+                                                      after <- unlist(WilcoxonUploadData()[, input$wilcoxonUpl2])
+                                                      difference <- length(na.omit(before)) - length(na.omit(after))
+                                                      return(difference)
+                                                    }
+                                                  })
     wRankSumTInt <- reactive({
       req(si_iv$is_valid())
       
@@ -5327,7 +5423,7 @@ statInfrServer <- function(id) {
       
       data <- GetDepMeansData()
       
-      depMeansTTest <- TTest(data$n, data$dbar, data$sd, 0, IndMeansHypInfo()$alternative, SigLvl())
+      depMeansTTest <- TTest(data$n, data$dbar, data$sd, data$muNaught, IndMeansHypInfo()$alternative, SigLvl())
       depMeansTTest["T Critical"] <- round(depMeansTTest["T Critical"], cvDigits)
       
       return(depMeansTTest)
@@ -5516,6 +5612,21 @@ statInfrServer <- function(id) {
     })
     
     ### Chi-Square Reactives ----
+    # chiSqData2x2 <- reactive({
+    #   suppressWarnings(as.numeric(input$chiSqInput2x2))
+    # })
+    #
+    # chiSqData2x3 <- reactive({
+    #   suppressWarnings(as.numeric(input$chiSqInput2x3))
+    # })
+    #
+    # chiSqData3x2 <- reactive({
+    #   suppressWarnings(as.numeric(input$chiSqInput3x2))
+    # })
+    #
+    # chiSqData3x3 <- reactive({
+    #   suppressWarnings(as.numeric(input$chiSqInput3x3))
+    # })
     
     chiSqActiveData <- reactive({
       if(input$chisquareDimension == "2 x 2") {
@@ -5829,6 +5940,12 @@ statInfrServer <- function(id) {
           errorClass = "myClass")
       }
       
+      if(!indmeansmunaught_iv$is_valid()) {
+        validate(
+          need(input$indMeansMuNaught, "Hypothesized value of the Population Mean Difference is required."),
+          errorClass = "myClass")
+      }
+      
       ### ---------------- Wilcoxon Rank Sum Validation
       if(!wilcoxonraw_iv$is_valid()) {
         validate(
@@ -5936,6 +6053,12 @@ statInfrServer <- function(id) {
           errorClass = "myClass")
       }
       
+      if(!depmeansmunaught_iv$is_valid()) {
+        validate(
+          need(input$depMeansMuNaught, "Hypothesized value of the Population Mean Difference is required."),
+          errorClass = "myClass")
+      }
+      
       #### ---------------- Two Population Proportion Validation
       if (!twopropht_iv$is_valid()) {
         validate(
@@ -5974,7 +6097,16 @@ statInfrServer <- function(id) {
         
       }
       
-      #### ---------------- Two Pop Std. Deviation Validation
+      if(!twopropdiffnaught_iv$is_valid()) {
+        validate(
+          need(input$propDiffNaught != "", "Hypothesized value of the Population Proportion Difference is required.") %then%
+            need(input$propDiffNaught >= -1, "Hypothesized value of the Population Proportion Difference must be between -1 and +1, inclusive.") %then%
+            need(input$propDiffNaught <= 1, "Hypothesized value of the Population Proportion Difference must be between -1 and +1, inclusive."),
+          errorClass = "myClass"
+        )
+      }
+      
+      #### ---------------- Two Pop Variance Validation
       
       if(!twopopvarsum_iv$is_valid()) {
         validate(
@@ -6274,6 +6406,8 @@ statInfrServer <- function(id) {
         dat <- createNumLst(input$sample1)
       } else if(input$dataAvailability == 'Upload Data') {
         dat <- na.omit(unlist(OneMeanUploadData()[,input$oneMeanVariable]))
+      } else {
+        return(NA)
       }
       
       quartile1 <-  fivenum(dat)[2]
@@ -6615,10 +6749,10 @@ statInfrServer <- function(id) {
         br(),
         sprintf("\\( \\alpha = %0.2f \\)", SigLvl()), br(),
         
-        
+        #br(),
         br(),
         p(tags$b("Test Statistic:")),
-        
+        ## Givens
         sprintf("Given:"), br(),
         sprintf(r"--[\( n = %d \)]--", input$SSDSampleSize), br(),
         sprintf(r"--[\( s = %0.3f \)]--", input$SSDStdDev), br(),
@@ -6626,14 +6760,16 @@ statInfrServer <- function(id) {
         
         br(),
         br(),
-        
+        ## Formulas
         p(r"--[
             \(
             \displaystyle \chi^2 = \frac{(n-1)s^2}{\sigma^2_0}
             \)
            ]--"),
         
+        #br(),
         br(),
+        ## Calculations
         sprintf(
           r"--(
            \(
@@ -6648,6 +6784,9 @@ statInfrServer <- function(id) {
         br(),
         p(tags$b("Using P-Value Method:")),
         if (input$altHypothesis == 2) {
+          ## NOTE: Ashok says to use "\ge" not "\gt" in the right side of the P-value calculation.
+          ## > but you've written here an inclusive relation in each case
+          ## @bryce-carson Don't worry about it, Chi-square is continuous probability distribution and this won't have any major effect.
           sprintf("\\( P = 2 \\times min(P\\left( \\chi^2 \\le %0.3f \\right), P\\left( \\chi^2 \\ge %0.3f \\right)) = %0.4f \\)",
                   chiSqTestStatistic,
                   chiSqTestStatistic,
@@ -6820,22 +6959,52 @@ statInfrServer <- function(id) {
     
     #### ----------------- #3 Graphs! ---------
     output$onePropBarGraph <- renderPlot({
-      req(si_iv$is_valid() && input$numTrials >= input$numSuccesses);
+      req(si_iv$is_valid() && input$numTrials >= input$numSuccesses)
       
-      x <- tibble(count = c(input$numSuccesses, input$numTrials - input$numSuccesses),
-                  label = c("Successes", "Failures"))
-      ggplot(data = x, mapping = aes(x = label, y = count)) + geom_col() + theme_classic()
-      ## barplot(x$value, names.arg = x$label)
+      df <- tibble(
+        Outcome = c("Successes", "Failures"),
+        Count = c(input$numSuccesses, input$numTrials - input$numSuccesses)
+      )
+      
+      ggplot(df, aes(x = Outcome, y = Count, fill = Outcome)) +
+        geom_col(width = 0.5) +
+        labs(
+          title = "Bar Chart: Count of Successes vs Failures",
+          y = "Count", x = ""
+        ) +
+        scale_fill_manual(values = c("Successes" = "#4CAF50", "Failures" = "#F44336")) +
+        theme_classic() +
+        theme(
+          axis.text = element_text(size = 14, face = "bold"),
+          axis.title = element_text(size = 16, face = "bold"),
+          plot.title = element_text(size = 18, face = "bold"),
+          legend.position = "none"
+        )
     },
-    width = 400,
+    width = 500,
     height = 400)
     
     output$onePropPieChart <- renderPlot({
-      req(si_iv$is_valid() && input$numTrials >= input$numSuccesses);
+      req(si_iv$is_valid() && input$numTrials >= input$numSuccesses)
       
-      x <- c("Successes" = input$numSuccesses,
-             "Failures" = input$numTrials - input$numSuccesses)
-      pie(x)
+      x <- tibble(
+        Outcome = c("Successes", "Failures"),
+        Count = c(input$numSuccesses, input$numTrials - input$numSuccesses)
+      )
+      
+      ggplot(x, aes(x = "", y = Count, fill = Outcome)) +
+        geom_col(width = 1, color = "white") +
+        coord_polar(theta = "y") +
+        scale_fill_manual(values = c("Successes" = "#4CAF50", "Failures" = "#F44336")) +
+        labs(title = "Success vs Failure Distribution") +
+        theme_void() +
+        theme(
+          legend.title = element_blank(),
+          plot.title = element_text(hjust = 0.5, face = "bold", size = 16),  # center title
+          legend.text = element_text(size = 12),
+          plot.margin = margin(0, 0, 0, 0),
+          plot.background = element_rect(fill = "white", color = NA)
+        )
     })
     
     #### ---------------- CI ----
@@ -7147,6 +7316,21 @@ statInfrServer <- function(id) {
                                data = c(dat))
       df_outliers <- data.frame()
       
+      # quartile1 <-  fivenum(dat)[2]
+      # quartile3 <-  fivenum(dat)[4]
+      # sampIQR <- round(quartile3 - quartile1, 4)
+      # lowerFence <- round(quartile1 - (1.5*sampIQR), 4)
+      # upperFence <- round(quartile3 + (1.5*sampIQR), 4)
+      # numOutliers <- sum(dat < lowerFence) + sum(dat > upperFence)
+      #
+      # if(numOutliers == 0) {
+      #   outliers <- "There are no outliers."
+      #   df_outliers <- data.frame()
+      # } else {
+      #   outliers <- GetOutliers(dat, lowerFence, upperFence)
+      #   df_outliers <- as.data.frame(outliers)
+      # }
+      
       RenderSideBySideBoxplot(dat,
                               df_boxplot,
                               df_outliers,
@@ -7182,9 +7366,9 @@ statInfrServer <- function(id) {
             sprintf("\\( \\displaystyle CI = (\\bar{x}_{1} - \\bar{x}_{2}) \\pm \\left( z_{\\alpha/2} \\sqrt{ \\dfrac{\\sigma_{1}^2}{n_{1}} + \\dfrac{\\sigma_{2}^2}{n_{2}} } \\right) \\)"),
             br(),
             br(),
-            sprintf("\\( \\displaystyle \\quad = (%g - %g) \\pm \\left( %g \\sqrt{ \\dfrac{%g^2}{%g} + \\dfrac{%g^2}{%g} } \\right) \\)",
+            sprintf("\\( \\displaystyle \\quad = (%.4f - %s) \\pm \\left( %.4f \\sqrt{ \\dfrac{%.4f^2}{%.0f} + \\dfrac{%.4f^2}{%.0f} } \\right) \\)",
                     data$xbar1,
-                    data$xbar2,
+                    if (data$xbar2 < 0) sprintf("(%.4f)", data$xbar2) else sprintf("%.4f", data$xbar2),
                     zInt['Z Critical'],
                     data$sd1,
                     data$n1,
@@ -7260,9 +7444,9 @@ statInfrServer <- function(id) {
             br(),
             br(),
             br(),
-            sprintf("\\( \\displaystyle CI = (%g - %g) \\pm \\left( %g \\cdot %g \\sqrt{ \\dfrac{1}{%g} + \\dfrac{1}{%g} } \\right) \\)",
+            sprintf("\\( \\displaystyle CI = (%.4f - %s) \\pm \\left( %.4f \\cdot %.4f \\sqrt{ \\dfrac{1}{%.0f} + \\dfrac{1}{%.0f} } \\right) \\)",
                     data$xbar1,
-                    data$xbar2,
+                    if (data$xbar2 < 0) sprintf("(%.4f)", data$xbar2) else sprintf("%.4f", data$xbar2),
                     tInt['T Critical'],
                     sp,
                     data$n1,
@@ -7330,9 +7514,9 @@ statInfrServer <- function(id) {
             br(),
             br(),
             br(),
-            sprintf("\\( CI = (%g - %g) \\pm \\left( %g \\cdot \\sqrt{ \\dfrac{%g^2}{%g} + \\dfrac{%g^2}{%g} } \\right) \\)",
+            sprintf("\\( CI = (%.4f - %s) \\pm \\left( %.4f \\cdot \\sqrt{ \\dfrac{%.4f^2}{%.0f} + \\dfrac{%.4f^2}{%.0f} } \\right) \\)",
                     data$xbar1,
-                    data$xbar2,
+                    if (data$xbar2 < 0) sprintf("(%.4f)", data$xbar2) else sprintf("%.4f", data$xbar2),
                     tInt['T Critical'],
                     data$sd1,
                     data$n1,
@@ -7372,7 +7556,7 @@ statInfrServer <- function(id) {
         data <- GetMeansUploadData()
       }
       
-      #get test type and results based on sigma known/unknown
+      # get test type and results based on sigma known/unknown
       if(IndMeansSigmaKnown() == 'bothKnown'){
         hTest <- IndMeansZTest()
         testStat <- "z"
@@ -7478,7 +7662,8 @@ statInfrServer <- function(id) {
           conditionalPanel(
             ns = session$ns,
             condition = "(input.dataAvailability2 == 'Summarized Data' && input.bothsigmaKnown == 'bothUnknown' && input.bothsigmaEqual == 'FALSE') ||
-                       (input.dataAvailability2 == 'Enter Raw Data' && input.bothsigmaKnownRaw == 'bothUnknown' && input.bothsigmaEqualRaw == 'FALSE')
+                       (input.dataAvailability2 == 'Enter Raw Data' && input.bothsigmaKnownRaw == 'bothUnknown' && input.bothsigmaEqualRaw == 'FALSE') ||
+                       (input.dataAvailability2 == 'Upload Data' && input.bothsigmaKnownUpload == 'bothUnknown' && input.bothsigmaEqualUpload == 'FALSE')
                        ",
             br(),
             p("where"),
@@ -7538,15 +7723,17 @@ statInfrServer <- function(id) {
       }
       
       zTest <- IndMeansZTest()
+      muNaught <- input$indMeansMuNaught
       
       tagList(
         withMathJax(
           sprintf("\\( z = \\dfrac{ (\\bar{x}_{1} - \\bar{x}_{2}) - (\\mu_{1} - \\mu_{2})_{0} }{ \\sqrt{ \\dfrac{\\sigma_{1}^2}{n_{1}} + \\dfrac{\\sigma_{2}^2}{n_{2}} } } \\)"),
           br(),
           br(),
-          sprintf("\\( \\phantom{z} = \\dfrac{ (%g - %g) - 0}{ \\sqrt{ \\dfrac{%g^2}{%g} + \\dfrac{%g^2}{%g} } } = \\dfrac{%g}{%s} = %0.4f \\)",
+          sprintf("\\( \\phantom{z} = \\dfrac{ (%.4f - %s) -%s}{ \\sqrt{ \\dfrac{%.4f^2}{%.0f} + \\dfrac{%.4f^2}{%.0f} } } = \\dfrac{%.4f}{%.4f} = %.4f \\)",
                   data$xbar1,
-                  data$xbar2,
+                  if (data$xbar2 < 0) sprintf("(%.4f)", data$xbar2) else sprintf("%.4f", data$xbar2),
+                  if (muNaught < 0) sprintf("(%.4f)", muNaught) else sprintf("%.4f", muNaught),
                   data$sd1,
                   data$n1,
                   data$sd2,
@@ -7583,6 +7770,7 @@ statInfrServer <- function(id) {
         sd2Sqrd <- signif(sd2Sqrd, 1)
       }
       
+      muNaught <- input$indMeansMuNaught
       tTest <- IndMeansTTest()
       
       if(data$sigmaEqual == TRUE) {
@@ -7607,9 +7795,10 @@ statInfrServer <- function(id) {
             br(),
             br(),
             br(),
-            sprintf("\\( \\phantom{t} = \\dfrac{ (%g - %g) - 0 }{ %g \\sqrt{ \\dfrac{1}{%g} + \\dfrac{1}{%g} } } \\)",
+            sprintf("\\( \\phantom{t} = \\dfrac{ (%.4f - %s) - %s }{ %.4f \\sqrt{ \\dfrac{1}{%.0f} + \\dfrac{1}{%.0f} } } \\)",
                     data$xbar1,
-                    data$xbar2,
+                    if (data$xbar2 < 0) sprintf("(%.4f)", data$xbar2) else sprintf("%.4f", data$xbar2),
+                    if (muNaught < 0) sprintf("(%.4f)", muNaught) else sprintf("%.4f", muNaught),
                     sp,
                     data$n1,
                     data$n2),
@@ -7627,9 +7816,10 @@ statInfrServer <- function(id) {
             sprintf("\\( t = \\dfrac{ (\\bar{x}_{1} - \\bar{x}_{2}) - (\\mu_{1} - \\mu_{2})_{0} }{ \\sqrt{ \\dfrac{s_{1}^2}{n_{1}} + \\dfrac{s_{2}^2}{n_{2}} } } \\)"),
             br(),
             br(),
-            sprintf("\\( \\phantom{t} = \\dfrac{ (%g - %g) - 0 }{ \\sqrt{ \\dfrac{%g^2}{%g} + \\dfrac{%g^2}{%g} } } = \\dfrac{%g}{%g} = %0.4f \\)",
+            sprintf("\\( \\phantom{t} = \\dfrac{ (%.4f - %s) - %s }{ \\sqrt{ \\dfrac{%.4f^2}{%.0f} + \\dfrac{%.4f^2}{%.0f} } } = \\dfrac{%.4f}{%.4f} = %.4f \\)",
                     data$xbar1,
-                    data$xbar2,
+                    if (data$xbar2 < 0) sprintf("(%.4f)", data$xbar2) else sprintf("%.4f", data$xbar2),
+                    if (muNaught < 0) sprintf("(%.4f)", muNaught) else sprintf("%.4f", muNaught),
                     data$sd1,
                     data$n1,
                     data$sd2,
@@ -7700,17 +7890,6 @@ statInfrServer <- function(id) {
     })
     
     #### ---------------- HT ----
-    calculate_tie_correction <- function(combined_values) {
-      tie_counts <- table(combined_values)
-      
-      tie_correction <- 0
-      for (t_j in tie_counts) {
-        if (t_j > 1) {  
-          tie_correction <- tie_correction + (t_j^3 - t_j)
-        }}
-      return(tie_correction)
-    }
-    
     output$wilcoxonRankSum <- renderUI({
       
       req(!is.null(wilcoxonRankedData()))
@@ -7727,62 +7906,34 @@ statInfrServer <- function(id) {
         name1 <- "Sample 1"
         name2 <- "Sample 2"
       }
-      data_ranked <- wilcoxonRankedData()
+      
       n1 <- nrow(wilcoxonRankedData() %>% dplyr::filter(Group == name1))
       n2 <- nrow(wilcoxonRankedData() %>% dplyr::filter(Group == name2))
       nAll <- nrow(wilcoxonRankedData())
-      mu_w <- (sum(wilcoxonRankedData()$Group == name1) * (nrow(wilcoxonRankedData()) + 1)) / 2
       
+      mu_w <- (sum(wilcoxonRankedData()$Group == name1) * (nrow(wilcoxonRankedData()) + 1)) / 2
       sigma_w <- sqrt((sum(wilcoxonRankedData()$Group == name1) * sum(wilcoxonRankedData()$Group == name2) * (nrow(wilcoxonRankedData()) + 1)) / 12)
       observed_W <- sum(wilcoxonRankedData() %>% dplyr::filter(Group == name1) %>% dplyr::pull(Rank))
-      observed_W2 <- sum(wilcoxonRankedData() %>% dplyr::filter(Group == name2) %>% dplyr::pull(Rank))
-      significance <- 1 - SigLvl()
-      
-      u1_statistic <- observed_W-(n1*(n1+1)/2)
-      u2_statistic <- observed_W2-(n2*(n2+1)/2)
-      u_mean <- (n1*n2)/2
+      z_stat <- ((observed_W - mu_w)/sigma_w)
       
       if(input$altHypothesis2 == "2") {
         z_critical <- qnorm(1 - SigLvl()/2)
+        in_rejection_region <- abs(z_stat) > z_critical
         critVal <- paste("\\pm", round(qnorm(1 - SigLvl()/2), 3))
         nullHyp <- paste0("Median_{", name1, "} = Median_{", name2, "}")
         altHyp <- paste0("Median_{", name1, "} \\neq Median_{", name2, "}")
-        altern <- "two.sided"
-        u_test <- u1_statistic
-        z_stat <- ((observed_W - mu_w) / sigma_w)
-        in_rejection_region <- abs(z_stat) > z_critical
-        p_value <- 2 * pnorm(abs(z_stat), lower.tail = FALSE)
-        correction_factor <- 0
       } else if(input$altHypothesis2 == "1") {
         z_critical <- qnorm(SigLvl())
+        in_rejection_region <- z_stat < z_critical
         critVal <- round(qnorm(SigLvl()), 3)
         nullHyp <- paste0("Median_{", name1, "} \\geq Median_{", name2, "}")
         altHyp <- paste0("Median_{", name1, "} \\lt Median_{", name2, "}")
-        altern <- "less"
-        u_test <- u1_statistic
-        z_stat <- ((observed_W - mu_w) / sigma_w)
-        in_rejection_region <- z_stat < z_critical
-        p_value <- pnorm(z_stat, lower.tail = TRUE)
-        if (!is.null(input$continuityCorrectionOption) && !is.null(input$normaprowrs) &&
-            input$continuityCorrectionOption == "True" && input$normaprowrs == TRUE) {
-          correction_factor <- 0.5
-          z_stat <- ((observed_W - mu_w + correction_factor) / sigma_w)
-        } 
       } else {
         z_critical <- qnorm(1 - SigLvl())
+        in_rejection_region <- z_stat > z_critical
         critVal <- round(qnorm(1 - SigLvl()), 3)
         nullHyp <- paste0("Median_{", name1, "} \\leq Median_{", name2, "}")
         altHyp <- paste0("Median_{", name1, "} \\gt Median_{", name2, "}")
-        altern <- "greater"
-        u_test <- u1_statistic
-        z_stat <- ((observed_W - mu_w) / sigma_w)
-        in_rejection_region <- z_stat > z_critical
-        p_value <- pnorm(z_stat, lower.tail = FALSE)
-        if (!is.null(input$continuityCorrectionOption) && !is.null(input$normaprowrs) &&
-            input$continuityCorrectionOption == "True" && input$normaprowrs == TRUE) {
-          correction_factor <- -0.5
-          z_stat <- ((observed_W - mu_w + correction_factor) / sigma_w)
-        }
       }
       
       if(in_rejection_region) {
@@ -7797,39 +7948,6 @@ statInfrServer <- function(id) {
         region <- "acceptance"
       }
       
-      group1_data <- data_ranked %>%
-        dplyr::filter(Group == name1) %>%
-        dplyr::pull(Value)
-      
-      group2_data <- data_ranked %>%
-        dplyr::filter(Group == name2) %>%
-        dplyr::pull(Value)
-      
-      combined_values <- c(group1_data, group2_data)
-      has_ties <- length(unique(combined_values)) < length(combined_values)
-      if (has_ties){
-        is_exact <- FALSE
-      }
-      else{
-        is_exact <- TRUE
-      }
-      
-      tie_correction <- calculate_tie_correction(combined_values)
-      u_std_dev <- sqrt((n1 * n2 / 12) * ((nAll + 1) - (tie_correction / (nAll * (nAll - 1)))))
-      
-      if (length(group1_data) > 0 && length(group2_data) > 0 &&
-          is.numeric(group1_data) && is.numeric(group2_data)) {
-        test_result <- wilcox.test(group1_data, group2_data, paired = FALSE, alternative = altern, conf.level = significance, exact = is_exact)
-        p_value_wilcox <- test_result$p.value
-      } else {
-        p_value_wilcox <- NA 
-      }
-      mw_z_stat <- ((u_test - u_mean) / u_std_dev)
-      p_value <- p_value_wilcox
-      
-      if (input$normaprowrs == FALSE){
-        z_stat <- mw_z_stat
-      }
       rankSumHTHead <- tagList(
         p(
           withMathJax(),
@@ -7839,101 +7957,42 @@ statInfrServer <- function(id) {
           br(),
           sprintf("\\( H_{a}: %s\\)",
                   altHyp),
-          br(), br(),
+          br(),
+          br(),
           sprintf("\\( \\alpha = %s \\)", SigLvl()),
-          br(),br(),
-          sprintf("\\(n_{1} = %s\\)", n1),
           br(),
-          sprintf("\\(n_{2} = %s\\)", n2),
           br(),
-          sprintf("\\( n = n_{1} + n_{2} = %s \\)", nrow(wilcoxonRankedData())),
-          
+          sprintf("\\( N = %s \\)", nrow(wilcoxonRankedData())),
           br(),
-          
-          p(tags$b("Sum of Ranks:")),
-          sprintf("\\( \\qquad W_{1} = %s \\)", observed_W),
           br(),
-          sprintf("\\( \\qquad W_{2} = %s \\)", observed_W2),
-          br(),br(),
-          
-          if (input$normaprowrs == FALSE) {
-            tagList(
-              p(tags$b("Mann-Whitney U Statistic:")),
-              sprintf("\\( \\qquad U_{1} = W_{1} - \\frac{n_{1}(n_{1} + 1)}{2} = %s - \\frac{%s (%s + 1)}{2} = %s \\)", observed_W, n1, n1, u1_statistic),
-              br(),
-              sprintf("\\( \\qquad U_{2} = W_{2} - \\frac{n_{2}(n_{2} + 1)}{2} = %s - \\frac{%s (%s + 1)}{2} = %s \\)", observed_W2, n2, n2, u2_statistic),
-              br(),br(),
-              
-              p(tags$b("Mann-Whitney U Expected Mean:")),
-              sprintf("\\( \\qquad \\mu_{U} = \\frac{n_{1}n_{2}}{2} = \\frac{%s(%s)}{2} = %s \\)", n1, n2, u_mean),
-              br(),br(),
-              
-              p(tags$b("Mann-Whitney U Standard Deviation:")),
-              sprintf("\\( \\qquad \\sigma_U = \\sqrt{\\frac{n_1 n_2}{12}\\left( (n+1) - \\frac{\\sum_{j=1}^{g} (t_j^3 - t_j)}{n(n-1)}\\right)} = 
-                      \\sqrt{\\frac{%s \\times %s}{12}\\left( (%s+1) - \\frac{%s}{%s \\times (%s-1)}\\right)} = %s \\)",
-                      n1, n2, nAll, ifelse(has_ties, tie_correction, 0), nAll, nAll, round(u_std_dev, 4)),
-              br(), br(),
-              
-              p(tags$b("Mann-Whitney U Test Statistic:")),
-              sprintf("\\( \\qquad z = \\frac{U - \\mu_{U}}{\\sigma_{U}} = \\frac{%s - %s}{%s} = %s \\)",
-                      round(u_test, 4), round(u_mean, 4), round(u_std_dev, 4), round(mw_z_stat, 3)),
-              
-            )}
-          else if (input$normaprowrs == TRUE) {
-            tagList(
-              p(tags$b("Mean:")),
-              sprintf("\\( \\qquad \\mu_{W} = \\frac{n_{1}(n + 1)}{2} = \\frac{%s(%s + 1)}{2} = %s \\)",
-                      n1, nAll, (sum(wilcoxonRankedData()$Group == name1) * (nrow(wilcoxonRankedData()) + 1)) / 2
-              ),
-              br(), br(),
-              p(tags$b("Standard Deviation:")),
-              sprintf("\\( \\qquad  \\sigma_W = \\sqrt{\\frac{n_{1}n_{2}(n + 1)}{12}} = \\sqrt{\\frac{%s \\times %s (%s + 1)}{12}} = %s \\)",
-                      n1, n2, nAll, round(sigma_w, 4)),
-              br(),br(),
-              
-              p(tags$b("Test Statistic:")),
-              
-              if (!is.null(input$continuityCorrectionOption) && !is.null(input$normaprowrs) &&
-                  input$continuityCorrectionOption == "True" && input$normaprowrs == TRUE) {
-                
-                if(input$altHypothesis2 == "1") {
-                  sprintf("\\( \\qquad z = \\frac{W - \\mu_W + 0.5}{\\sigma_W} = \\frac{%s - %s + %s}{%s} = %s \\)",
-                          round(observed_W, 4), round(mu_w, 4), abs(correction_factor), round(sigma_w, 4), round(z_stat, 3))
-                }
-                else if(input$altHypothesis2 == "2") {
-                  sprintf("\\( \\qquad z = \\frac{W - \\mu_W}{\\sigma_W} = \\frac{%s - %s}{%s} = %s \\)",
-                          round(observed_W, 4), round(mu_w, 4), round(sigma_w, 4), round(z_stat, 3))
-                }
-                else {
-                  sprintf("\\( \\qquad z = \\frac{W - \\mu_W - 0.5}{\\sigma_W} = \\frac{%s - %s - %s}{%s} = %s \\)",
-                          round(observed_W, 4), round(mu_w, 4), abs(correction_factor), round(sigma_w, 4), round(z_stat, 3))
-                }
-              } else {
-                if(input$altHypothesis2 == "1") {
-                  sprintf("\\( \\qquad z = \\frac{W - \\mu_W}{\\sigma_W} = \\frac{%s - %s}{%s} = %s \\)",
-                          round(observed_W, 4), round(mu_w, 4), round(sigma_w, 4), round(z_stat, 3))
-                }
-                else if(input$altHypothesis2 == "2") {
-                  sprintf("\\( \\qquad z = \\frac{W - \\mu_W}{\\sigma_W} = \\frac{%s - %s}{%s} = %s \\)",
-                          round(observed_W, 4), round(mu_w, 4), round(sigma_w, 4), round(z_stat, 3))
-                }
-                else {
-                  sprintf("\\( \\qquad z = \\frac{W - \\mu_W}{\\sigma_W} = \\frac{%s - %s}{%s} = %s \\)",
-                          round(observed_W, 4), round(mu_w, 4), round(sigma_w, 4), round(z_stat, 3))
-                }
-              },
-            )},
-          
+          p(tags$b("Mean:")),
+          sprintf("\\( \\qquad \\mu_w = \\frac{n_{1}(N + 1)}{2} = \\frac{%s(%s + 1)}{2} = %s \\)",
+                  sum(wilcoxonRankedData()$Group == name1),
+                  nrow(wilcoxonRankedData()),
+                  (sum(wilcoxonRankedData()$Group == name1) * (nrow(wilcoxonRankedData()) + 1)) / 2
+          ),
           br(), br(),
+          p(tags$b("Standard Deviation:")),
+          sprintf("\\( \\qquad  \\sigma_W = \\sqrt{\\frac{n1n2(N + 1)}{12}} = \\sqrt{\\frac{%s \\times %s (%s + 1)}{12}} = %s \\)",
+                  sum(wilcoxonRankedData()$Group == name1),
+                  sum(wilcoxonRankedData()$Group == name2),
+                  nrow(wilcoxonRankedData()),
+                  signif(sqrt((sum(wilcoxonRankedData()$Group == name1) * sum(wilcoxonRankedData()$Group == name2) * (nrow(wilcoxonRankedData()) + 1)) / 12), 3)
+          ),
+          br(),br(),
+          p(tags$b("Sum of Ranks of Sample 1:")),
+          sprintf("\\( \\qquad W = %s \\)", observed_W),
+          br(),br(),
+          p(tags$b("Test Statistic:")),
           
-          p(tags$b("P-value:")),
-          sprintf("\\( \\qquad p \\text{-value} = %s \\)", ifelse(is.na(p_value), "NA", round(p_value, 4))),
-          br(), br(),
-          if (p_value <= SigLvl()) {
-            sprintf("\\( \\qquad \\text{Since } P \\leq %s, \\text{reject } H_0. \\)", SigLvl())
-          } else {
-            sprintf("\\( \\qquad \\text{Since } P > %s, \\text{do not reject } H_0. \\)", SigLvl())
-          },
+          sprintf("\\( \\qquad z = \\frac{W - \\mu_w}{\\sigma_W} = \\frac{%s - %s}{%s} = %s \\)",
+                  round(observed_W, 4),
+                  round(mu_w, 4),
+                  round(sigma_w, 4),
+                  round(z_stat, 3)
+          ),
+          br(),
+          br(),
         )
       )
       
@@ -7964,43 +8023,8 @@ statInfrServer <- function(id) {
     })
     
     #### ---------------- HT Plot ----
-    calculate_z_stat <- function(input, observed_W, mu_w, sigma_w, observed_W2, n1, n2, N, u1_statistic, u2_statistic, u_mean, u_std_dev,
-                                 has_ties, tie_correction) {
-      z_stat_val <- NA 
-      correction_factor <- 0
-      u_test_val <- NA 
-      
-      if (input$normaprowrs == FALSE) {
-        if (input$altHypothesis2 == "2") {
-          u_test_val <- u1_statistic
-        } else if (input$altHypothesis2 == "1") { 
-          u_test_val <- u1_statistic
-        } else { 
-          u_test_val <- u1_statistic 
-        }
-        z_stat_val <- ((u_test_val - u_mean) / u_std_dev)
-      } else { 
-        if (input$altHypothesis2 == "2") { 
-          z_stat_val <- ((observed_W - mu_w) / sigma_w)
-        } else if (input$altHypothesis2 == "1") { 
-          correction_factor <- 0.5
-          if (!is.null(input$continuityCorrectionOption) && input$continuityCorrectionOption == "True") {
-            z_stat_val <- ((observed_W - mu_w + correction_factor) / sigma_w)
-          } else {
-            z_stat_val <- ((observed_W - mu_w) / sigma_w)
-          }
-        } else { 
-          correction_factor <- -0.5
-          if (!is.null(input$continuityCorrectionOption) && input$continuityCorrectionOption == "True") {
-            z_stat_val <- ((observed_W - mu_w + correction_factor) / sigma_w)
-          } else {
-            z_stat_val <- ((observed_W - mu_w) / sigma_w)
-          }}}
-      return(z_stat_val)
-    }
-    
-    
     output$wilcoxonRankSumPlot <- renderPlot({
+      
       dat <- GetwRankSumMeansData()
       if(length(unique(dat$samp1)) > 1 || length(unique(dat$samp2)) > 1) {
         
@@ -8020,44 +8044,24 @@ statInfrServer <- function(id) {
         
         mu_w <- (n1 * (N + 1)) / 2
         sigma_w <- sqrt((n1 * n2 * (N + 1)) / 12)
-        
         observed_W <- sum(wilcoxonData %>% dplyr::filter(Group == name1) %>% dplyr::pull(Rank))
-        observed_W2 <- sum(wilcoxonData %>% dplyr::filter(Group == name2) %>% dplyr::pull(Rank))
+        z_stat <- (observed_W - mu_w) / sigma_w
         
-        u1_statistic <- observed_W - (n1 * (n1 + 1) / 2)
-        u2_statistic <- observed_W2 - (n2 * (n2 + 1) / 2)
-        u_mean <- (n1 * n2) / 2
+        intrpInfo <- IndMeansHypInfo()
         
-        group1_data_values <- wilcoxonData %>% dplyr::filter(Group == name1) %>% dplyr::pull(Value)
-        group2_data_values <- wilcoxonData %>% dplyr::filter(Group == name2) %>% dplyr::pull(Value)
-        combined_values <- c(group1_data_values, group2_data_values)
-        has_ties <- length(unique(combined_values)) < length(combined_values)
-        
-        calculate_tie_correction <- function(x) {
-          if (!is.numeric(x) || length(x) == 0) {
-            return(0)
-          }
-          tie_counts <- table(x[duplicated(x) | duplicated(x, fromLast = TRUE)])
-          sum(tie_counts^3 - tie_counts)
-        }
-        
-        tie_correction <- calculate_tie_correction(combined_values)
-        u_std_dev <- sqrt((n1 * n2 / 12) * ((N + 1) - (tie_correction / (N * (N - 1)))))
-        z_stat <- calculate_z_stat(input, observed_W, mu_w, sigma_w, observed_W2, n1, n2, N,
-                                   u1_statistic, u2_statistic, u_mean, u_std_dev,
-                                   has_ties, tie_correction)
-        alternative <- ""
-        z_critical <- NA
         if(input$altHypothesis2 == "2") {
           z_critical <- qnorm(1 - SigLvl()/2)
           alternative <- "two.sided"
-        } else if(input$altHypothesis2 == "1") {
-          z_critical <- qnorm(SigLvl())
-          alternative <- "less"
         } else {
-          z_critical <- qnorm(1 - SigLvl())
-          alternative <- "greater"
+          if(input$altHypothesis2 == "1") {
+            z_critical <- qnorm(SigLvl())
+            alternative <- "less"
+          } else {
+            z_critical <- qnorm(1 - SigLvl())
+            alternative <- "greater"
+          }
         }
+        
         wilcoxonPlot <- wilcoxonZTestPlot(z_stat, z_critical, alternative)
         wilcoxonPlot
       }
@@ -8235,11 +8239,12 @@ statInfrServer <- function(id) {
     
     #### ---------------- HT ----
     output$depMeansHT <- renderUI({
-      
       req(GetDepMeansData()$sd != 0)
+      
       tTest <- DepMeansTTest()
       dSum <- sum(GetDepMeansData()$d)
       dSqrdSum <- sum(GetDepMeansData()$d^2)
+      muNaught <- input$depMeansMuNaught
       
       intrpInfo <- IndMeansHypInfo()
       
@@ -8308,18 +8313,19 @@ statInfrServer <- function(id) {
           br(),
           br(),
           br(),
-          sprintf("\\( t = \\dfrac{%g - 0}{ \\left( \\dfrac{ %g }{ \\sqrt{ %g } } \\right) } \\)",
+          sprintf("\\( t = \\dfrac{%g - %s}{ \\left( \\dfrac{ %g }{ \\sqrt{ %g } } \\right) } \\)",
                   tTest["Sample Mean"],
+                  if (muNaught < 0) sprintf("(%.4f)", muNaught) else sprintf("%.4f", muNaught),
                   tTest["Sample SD"],
                   tTest["Sample Size"]),
           sprintf("\\( \\displaystyle \\; = \\; \\dfrac{%g}{ \\left( \\dfrac{ %g }{ %g } \\right) } \\)",
-                  tTest["Sample Mean"],
+                  tTest["Sample Mean"] - muNaught, # MUST CHANGE BACK TO NUMERATOR
                   tTest["Sample SD"],
                   sqrt(tTest["Sample Size"])),
           br(),
           br(),
           sprintf("\\( \\displaystyle \\phantom{t} = \\; \\dfrac{ %g }{ %g } \\)",
-                  tTest["Sample Mean"],
+                  tTest["Sample Mean"] - muNaught, # MUST CHANGE BACK TO NUMERATOR
                   tTest["Std Error"]),
           sprintf("\\( \\displaystyle \\; = \\; %g \\)",
                   tTest["Test Statistic"]),
@@ -8483,8 +8489,10 @@ statInfrServer <- function(id) {
     output$twoPropHT <- renderUI({
       req(si_iv$is_valid())
       
-      twoPropZTest <- TwoPropZTest(input$numSuccesses1, input$numTrials1, input$numSuccesses2, input$numTrials2, 0, IndMeansHypInfo()$alternative, SigLvl())
+      diffNaught <- input$propDiffNaught
+      twoPropZTest <- TwoPropZTest(input$numSuccesses1, input$numTrials1, input$numSuccesses2, input$numTrials2, diffNaught, IndMeansHypInfo()$alternative, SigLvl())
       twoPropZTest["Z Critical"] <- round(twoPropZTest["Z Critical"], cvDigits)
+      
       
       if(input$altHypothesis2 == "2")
       {
@@ -8580,15 +8588,16 @@ statInfrServer <- function(id) {
           br(),
           br(),
           br(),
-          sprintf("\\( z = \\dfrac{ (%0.4f - %0.4f) - 0}{\\sqrt{%0.4f(1-%0.4f)\\left(\\dfrac{1}{%g} + \\dfrac{1}{%g}\\right)}}\\)",
+          sprintf("\\( z = \\dfrac{ (%0.4f - %0.4f) - %s}{\\sqrt{%0.4f(1-%0.4f)\\left(\\dfrac{1}{%g} + \\dfrac{1}{%g}\\right)}}\\)",
                   twoPropZTest["Sample Proportion 1"],
                   twoPropZTest["Sample Proportion 2"],
+                  if (diffNaught < 0) sprintf("(%.4f)", diffNaught) else sprintf("%.4f", diffNaught),
                   twoPropZTest["Pooled Proportion"],
                   twoPropZTest["Pooled Proportion"],
                   input$numTrials1,
                   input$numTrials2),
           sprintf("\\( = \\dfrac{%0.4f}{%0.4f} \\)",
-                  twoPropZTest["Sample Proportion 1"] - twoPropZTest["Sample Proportion 2"],
+                  twoPropZTest["Sample Proportion 1"] - twoPropZTest["Sample Proportion 2"] - diffNaught,
                   twoPropZTest["Std Error"]),
           br(),
           br(),
@@ -8643,6 +8652,67 @@ statInfrServer <- function(id) {
       
       htPlot <- hypZTestPlot(twoPropZTest["Test Statistic"], htPlotCritVal, IndMeansHypInfo()$alternative)
       htPlot
+    })
+    
+    #### --------------- Stacked Bar Plot and Pie Chart ----
+    output$twoPropBarPlot <- renderPlot({
+      req(input$numTrials1 >= input$numSuccesses1,
+          input$numTrials2 >= input$numSuccesses2)
+      
+      df <- tibble(
+        Group = c("Group 1", "Group 1", "Group 2", "Group 2"),
+        Outcome = c("Successes", "Failures", "Successes", "Failures"),
+        Count = c(input$numSuccesses1, input$numTrials1 - input$numSuccesses1,
+                  input$numSuccesses2, input$numTrials2 - input$numSuccesses2)
+      )
+      
+      ggplot(df, aes(x = Group, y = Count, fill = Outcome)) +
+        geom_col(position = "fill", width = 0.5) +
+        scale_y_continuous(labels = scales::percent_format()) +
+        labs(
+          title = "Stacked Bar Chart: Proportion of Successes vs Failures",
+          y = "Proportion", x = ""
+        ) +
+        scale_fill_manual(values = c("Successes" = "#4CAF50", "Failures" = "#F44336")) +
+        theme(
+          axis.text = element_text(size = 14, face = "bold"),
+          axis.title = element_text(size = 16, face = "bold"),
+          plot.title = element_text(size = 18, face = "bold"),
+          legend.title = element_text(size = 14),
+          legend.text = element_text(size = 12)
+        )
+    })
+    
+    output$twoPropPieChart <- renderPlot({
+      req(input$numTrials1 >= input$numSuccesses1,
+          input$numTrials2 >= input$numSuccesses2)
+      
+      df <- tibble(
+        Group = rep(c("Group 1", "Group 2"), each = 2),
+        Outcome = c("Successes", "Failures", "Successes", "Failures"),
+        Count = c(input$numSuccesses1, input$numTrials1 - input$numSuccesses1,
+                  input$numSuccesses2, input$numTrials2 - input$numSuccesses2)
+      )
+      
+      # Calculate percentage for labels
+      df <- df %>%
+        group_by(Group) %>%
+        mutate(Percent = Count / sum(Count),
+               Label = paste0(Outcome, " (", scales::percent(Percent), ")"))
+      
+      ggplot(df, aes(x = "", y = Count, fill = Outcome)) +
+        geom_col(color = "white") +
+        coord_polar(theta = "y") +
+        facet_wrap(~Group) +    # Separate pie charts per group
+        scale_fill_manual(values = c("Successes" = "#4CAF50", "Failures" = "#F44336")) +
+        labs(title = "Success vs Failure Distribution by Group") +
+        theme_void() +
+        theme(
+          legend.title = element_blank(),
+          legend.text = element_text(size = 14),
+          plot.title = element_text(size = 16, face = "bold", hjust = 0.5),
+          strip.text = element_text(size = 14, face = "bold")
+        )
     })
     
     ### ------------ Two Pop Var Outputs ----------------------------------------------
@@ -9411,16 +9481,6 @@ statInfrServer <- function(id) {
       }
     })
     
-    observeEvent(c(input$sidebysidewRankSum, input$sidebysidewRankQQ), {
-      if (input$sidebysidewRankSum || input$sidebysidewRankQQ) {
-        showTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
-      } else {
-        if (input$wilcoxonRankSumTabset == "Graphs") {
-          updateTabsetPanel(inputId = 'wilcoxonRankSumTabset', selected = "Analysis")
-        }
-        hideTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
-      }
-    })
     observeEvent(input$goInference, {
       output$renderWRankSumMeansData <- renderUI({
         tagList(
@@ -9847,8 +9907,6 @@ statInfrServer <- function(id) {
       input$sampSD
       input$inferenceType
       input$inferenceType2
-      input$normaprowrs
-      input$input$continuityCorrectionOption
     }, {
       hide(id = "inferenceData")
     })
@@ -9931,14 +9989,6 @@ statInfrServer <- function(id) {
       } else {
         showTab(inputId = "wilcoxonRankSumTabset", target = "Uploaded Data")
       }
-      
-      # Hide/show tabs for Wilcoxon Rank Sum Graph
-      if (input$sidebysidewRankSum == 1 || input$sidebysidewRankQQ == 1){
-        showTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
-      } else {
-        hideTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
-      }
-      
     })
     
     observeEvent(input$resetInference, {
