@@ -334,7 +334,7 @@ LogisticRegressionServer <- function(id) {
       
       showTab(inputId = "mainPanel", target = "LR")
       showTab(inputId = "mainPanel", target = "Analysis of Deviance")
-      showTab(inputId = "mainPanel", target = "Diagnostic plot")
+      showTab(inputId = "mainPanel", target = "Diagnostic Plot")
       updateNavbarPage(session, "mainPanel", selected = "LR")
     }
     
@@ -356,7 +356,7 @@ LogisticRegressionServer <- function(id) {
       shinyjs::delay(0, {
         hideTab(inputId = "mainPanel", target = "LR")
         hideTab(inputId = "mainPanel", target = "Analysis of Deviance")
-        hideTab(inputId = "mainPanel", target = "Diagnostic plot")
+        hideTab(inputId = "mainPanel", target = "Diagnostic Plot")
       })
     }, once = TRUE)
     
@@ -404,7 +404,7 @@ LogisticRegressionServer <- function(id) {
     observeEvent(input$reset, {
       hideTab(inputId = "mainPanel", target = "LR")
       hideTab(inputId = "mainPanel", target = "Analysis of Deviance")
-      hideTab(inputId = "mainPanel", target = "Diagnostic plot")
+      hideTab(inputId = "mainPanel", target = "Diagnostic Plot")
       
       calculation_done(FALSE)
       
