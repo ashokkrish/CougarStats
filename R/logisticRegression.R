@@ -16,6 +16,9 @@ library(ResourceSelection)
 library(shinyalert)
 library(tibble)
 
+# Source the plot options menu
+source("R/plotOptionsMenu.R")
+
 # --- UI Function for Logistic Regression Sidebar ---
 LogisticRegressionSidebarUI <- function(id) {
   ns <- NS(id)
@@ -59,22 +62,36 @@ LogisticRegressionSidebarUI <- function(id) {
 # --- UI Function for Logistic Regression Main Panel ---
 LogisticRegressionMainPanelUI <- function(id) {
   ns <- NS(id)
-  navbarPage(title = NULL,
-             tabPanel(
-               title = "Data Import",
-               div (id = ns("importContainer")),
-               uiOutput(ns("fileImportUserMessage")),
-               import_file_ui(
-                 id = ns("dataImport"),
-                 title = "")),
-             tabPanel(title = "LR", uiOutput(ns("Equations"))),
-             tabPanel(title = "Analysis of Deviance",
-                      uiOutput(ns("anovaOutput"))
-             ),
-             id = ns("mainPanel"),
-             theme = bs_theme(version = 4)
-             
-             
+  tagList(
+    useShinyjs(),
+    navbarPage(title = NULL,
+               tabPanel(
+                 title = "Data Import",
+                 value = "data_import_tab",
+                 div (id = ns("importContainer")),
+                 uiOutput(ns("fileImportUserMessage")),
+                 import_file_ui(
+                   id = ns("dataImport"),
+                   title = "")),
+               tabPanel(title = "LR",
+                        uiOutput(ns("Equations")),
+                        hr(),
+                        conditionalPanel(
+                          ns = ns,
+                          condition = "input.explanatoryVariables && input.explanatoryVariables.length === 1",
+                          tagList(
+                            h3("Logistic Regression Plot"),
+                            plotOptionsMenuUI(ns("logrPlotOptions"), "Scatterplot"),
+                            plotOutput(ns("logrScatterplot"))
+                          )
+                        )
+               ),
+               tabPanel(title = "Analysis of Deviance",
+                        uiOutput(ns("anovaOutput"))
+               ),
+               id = ns("mainPanel"),
+               theme = bs_theme(version = 4)
+    )
   )
 }
 
@@ -82,7 +99,9 @@ LogisticRegressionMainPanelUI <- function(id) {
 LogisticRegressionServer <- function(id) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
-    shinyjs::useShinyjs()
+    
+    # Call the plot options module server
+    plotOptionsMenuServer("logrPlotOptions")
     
     imported <- import_file_server(
       id            = "dataImport",
@@ -92,70 +111,9 @@ LogisticRegressionServer <- function(id) {
     )
     
     noFileCalculate <- reactiveVal(FALSE)
+    calculation_done <- reactiveVal(FALSE)
     
-    bindEvent(observe({
-      shinyjs::hide("mainPanel")
-      updateNavbarPage(session, "mainPanel", selected = "Data Import")
-    }),
-    input$responseVariable,
-    input$explanatoryVariables)
-    
-    observeEvent(imported$data(), {
-      df <- imported$data()
-      if (!is.null(df) && ncol(df) > 0) {
-        vars <- names(df)
-        updatePickerInput(session, "responseVariable", choices = vars, selected = character(0))
-        updatePickerInput(session, "explanatoryVariables", choices = vars, selected = character(0))
-      } else {
-        updatePickerInput(session, "responseVariable", choices = c(""), selected = character(0))
-        updatePickerInput(session, "explanatoryVariables", choices = c(""), selected = character(0))
-      }
-      output$responseVariableWarning <- renderUI(NULL)
-    }, ignoreNULL = FALSE)
-    
-    observeEvent(input$responseVariable, {
-      df <- imported$data()
-      response_var_name <- input$responseVariable
-      
-      if (!is.null(df) && isTruthy(response_var_name) && response_var_name %in% names(df)) {
-        vals <- na.omit(df[[response_var_name]])
-        if (length(unique(vals)) != 2 && length(vals) > 0) {
-          output$responseVariableWarning <- renderUI(
-            tags$p(class = "text-danger", style="font-size:0.9em; padding-top:5px;",
-                   "Warning: Response variable must have exactly two unique values for logistic regression.")
-          )
-        } else {
-          output$responseVariableWarning <- renderUI(NULL)
-        }
-        expls <- setdiff(names(df), response_var_name)
-        current_expl <- isolate(input$explanatoryVariables)
-        valid_current_expl <- current_expl[current_expl %in% expls]
-        updatePickerInput(session, "explanatoryVariables", choices = expls, selected = valid_current_expl)
-      } else {
-        output$responseVariableWarning <- renderUI(NULL)
-        if(!is.null(df)) {
-          updatePickerInput(session, "explanatoryVariables", choices = names(df), selected = isolate(input$explanatoryVariables))
-        } else {
-          updatePickerInput(session, "explanatoryVariables", choices = c(""), selected = character(0))
-        }
-      }
-    }, ignoreNULL = FALSE, ignoreInit = TRUE)
-    
-    observeEvent(input$reset, {
-      updatePickerInput(session, "responseVariable", selected = character(0))
-      updatePickerInput(session, "explanatoryVariables", selected = character(0))
-      output$responseVariableWarning <- renderUI(NULL)
-      noFileCalculate(FALSE)
-    })
-    
-    output$fileImportUserMessage <- renderUI({
-      if (noFileCalculate()) {
-        tags$div(class = "shiny-output-error-validation",
-                 "Required: Cannot calculate without a data file.")
-      } else { NULL }
-    })
-    
-    observeEvent(input$calculate, {
+    perform_logr_analysis <- function() {
       if (!isTruthy(imported$data())) {
         noFileCalculate(TRUE)
         return()
@@ -326,6 +284,11 @@ LogisticRegressionServer <- function(id) {
           p("The Likelihood Ratio Test (LRT) statistic is used to compare nested models. It is the difference in deviance between the two models:"),
           p("$$ \\text{LRT} = D_0 - D_1 = -2 \\log\\left(\\frac{\\mathcal{L}_0}{\\mathcal{L}_1}\\right) $$"),
           p("where \\(D_0\\) and \\(\\mathcal{L}_0\\) are the deviance and likelihood of the null model (the simpler model), and \\(D_1\\) and \\(\\mathcal{L}_1\\) are for the alternative model. This LRT statistic follows a \\(\\chi^2\\) distribution with degrees of freedom equal to the difference in the number of parameters between the two models."),
+          p("The residual deviance is the deviance of the model with all predictors included:"),
+          p("$$ D_{residual} = -2 \\sum_{i=1}^{n} [y_i \\log(\\hat{p}_i) + (1 - y_i) \\log(1 - \\hat{p}_i)] $$"),
+          p("The residual degrees of freedom is the number of observations minus the number of parameters in the model:"),
+          p("$$ df_{residual} = n - (k + 1) $$"),
+          p("where \\(n\\) is the number of observations and \\(k\\) is the number of explanatory variables."),
           br(),
           DTOutput(ns("lrAnovaTable")),
           br(),
@@ -353,8 +316,108 @@ LogisticRegressionServer <- function(id) {
         ) %>% formatRound(columns = c('Deviance', 'p-value', 'Resid. Dev'), digits = 3)
       })
       
-      shinyjs::show("mainPanel")
+      # Scatterplot with logistic curve
+      output$logrScatterplot <- renderPlot({
+        req(df_model_data, input$responseVariable, input$explanatoryVariables)
+        
+        ggplot(df_model_data, aes_string(x = explanatory_vars_names[1], y = response_var_name)) +
+          geom_point(alpha = 0.5, color = input[["logrPlotOptions-PointsColour"]]) +
+          geom_smooth(method = "glm", method.args = list(family = "binomial"), se = FALSE, color = input[["logrPlotOptions-Colour"]], linewidth = input[["logrPlotOptions-LineWidth"]]) +
+          labs(
+            title = input[["logrPlotOptions-Title"]],
+            x = input[["logrPlotOptions-Xlab"]],
+            y = input[["logrPlotOptions-Ylab"]]
+          ) +
+          theme_minimal()
+      })
+      
+      showTab(inputId = "mainPanel", target = "LR")
+      showTab(inputId = "mainPanel", target = "Analysis of Deviance")
       updateNavbarPage(session, "mainPanel", selected = "LR")
+    }
+    
+    observeEvent(input$calculate, {
+      perform_logr_analysis()
+      calculation_done(TRUE)
+    })
+    
+    observe({
+      input$responseVariable
+      input$explanatoryVariables
+      
+      if (calculation_done()) {
+        perform_logr_analysis()
+      }
+    })
+    
+    observeEvent(TRUE, {
+      shinyjs::delay(0, {
+        hideTab(inputId = "mainPanel", target = "LR")
+        hideTab(inputId = "mainPanel", target = "Analysis of Deviance")
+      })
+    }, once = TRUE)
+    
+    observeEvent(imported$data(), {
+      df <- imported$data()
+      if (!is.null(df) && ncol(df) > 0) {
+        vars <- names(df)
+        updatePickerInput(session, "responseVariable", choices = vars, selected = character(0))
+        updatePickerInput(session, "explanatoryVariables", choices = vars, selected = character(0))
+      } else {
+        updatePickerInput(session, "responseVariable", choices = c(""), selected = character(0))
+        updatePickerInput(session, "explanatoryVariables", choices = c(""), selected = character(0))
+      }
+      output$responseVariableWarning <- renderUI(NULL)
+    }, ignoreNULL = FALSE)
+    
+    observeEvent(input$responseVariable, {
+      df <- imported$data()
+      response_var_name <- input$responseVariable
+      
+      if (!is.null(df) && isTruthy(response_var_name) && response_var_name %in% names(df)) {
+        vals <- na.omit(df[[response_var_name]])
+        if (length(unique(vals)) != 2 && length(vals) > 0) {
+          output$responseVariableWarning <- renderUI(
+            tags$p(class = "text-danger", style="font-size:0.9em; padding-top:5px;",
+                   "Warning: Response variable must have exactly two unique values for logistic regression.")
+          )
+        } else {
+          output$responseVariableWarning <- renderUI(NULL)
+        }
+        expls <- setdiff(names(df), response_var_name)
+        current_expl <- isolate(input$explanatoryVariables)
+        valid_current_expl <- current_expl[current_expl %in% expls]
+        updatePickerInput(session, "explanatoryVariables", choices = expls, selected = valid_current_expl)
+      } else {
+        output$responseVariableWarning <- renderUI(NULL)
+        if(!is.null(df)) {
+          updatePickerInput(session, "explanatoryVariables", choices = names(df), selected = isolate(input$explanatoryVariables))
+        } else {
+          updatePickerInput(session, "explanatoryVariables", choices = c(""), selected = character(0))
+        }
+      }
+    }, ignoreNULL = TRUE, ignoreInit = TRUE)
+    
+    observeEvent(input$reset, {
+      hideTab(inputId = "mainPanel", target = "LR")
+      hideTab(inputId = "mainPanel", target = "Analysis of Deviance")
+      
+      calculation_done(FALSE)
+      
+      updatePickerInput(session, "responseVariable", selected = character(0))
+      updatePickerInput(session, "explanatoryVariables", selected = character(0))
+      
+      output$responseVariableWarning <- renderUI(NULL)
+      noFileCalculate(FALSE)
+      
+      updateNavbarPage(session, "mainPanel", selected = "data_import_tab")
+    })
+    
+    output$fileImportUserMessage <- renderUI({
+      if (noFileCalculate()) {
+        tags$div(class = "shiny-output-error-validation",
+                 "Required: Cannot calculate without a data file.")
+      } else { NULL }
     })
   })
 }
