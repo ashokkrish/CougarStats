@@ -7172,7 +7172,7 @@ statInfrServer <- function(id) {
       } else if(input$dataAvailability2 == 'Upload Data') {
         data <- GetMeansUploadData()
       }
-      
+
       zInt <- IndMeansZInt()
       
       tagList(
@@ -7359,7 +7359,7 @@ statInfrServer <- function(id) {
     
     #### ----------------- HT ----
     output$indMeansHT <- renderUI({
-      
+
       withMathJax()
       
       intrpInfo <- IndMeansHypInfo()
@@ -9415,9 +9415,6 @@ statInfrServer <- function(id) {
       if (input$sidebysidewRankSum || input$sidebysidewRankQQ) {
         showTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
       } else {
-        if (input$wilcoxonRankSumTabset == "Graphs") {
-          updateTabsetPanel(inputId = 'wilcoxonRankSumTabset', selected = "Analysis")
-        }
         hideTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
       }
     })
