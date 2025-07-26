@@ -1730,23 +1730,6 @@ statInfrUI <- function(id) {
                                         uiOutput(ns('depMeansHT')),
                                         br()
                                       ), # HT
-                                      
-                                      hr(),
-                                      br(),
-                                      titlePanel(tags$u("Data")),
-                                      br(),
-                                      
-                                      fluidRow(
-                                        column(width = 8,
-                                               uiOutput(ns('depMeansTable')),
-                                        ),
-                                        
-                                        column(width = 4,
-                                               br(),
-                                        )
-                                      ),
-                                      br(),
-                                      br(),
                                     ), #depPopMeans Analysis tabPanel
                                     
                                     tabPanel(
@@ -1771,6 +1754,32 @@ statInfrUI <- function(id) {
                                         br()
                                       )  
                                     ), # Dep means graphs tab panel
+                                    
+                                    tabPanel(
+                                      id = ns("depMeansRawData"),
+                                      title = "Data",
+                                      
+                                      conditionalPanel(
+                                        ns = ns,
+                                        condition = "input.dataTypeDependent == 'Enter Raw Data'",
+                                        hr(),
+                                        br(),
+                                        titlePanel(tags$u("Data")),
+                                        br(),
+                                        
+                                        fluidRow(
+                                          column(width = 8,
+                                                 uiOutput(ns('depMeansTable')),
+                                          ),
+                                          
+                                          column(width = 4,
+                                                 br(),
+                                          )
+                                        ),
+                                        br(),
+                                        br(),
+                                      )
+                                    ), # Dep means raw data file
                                     
                                     tabPanel(
                                       id = ns("depPopMeansData"),
@@ -3137,7 +3146,7 @@ statInfrServer <- function(id) {
           br(),
           sprintf("\\( \\phantom{CII} n = %s \\; , \\)",
                   oneMeanData["Sample Size"]),
-          sprintf("\\( \\phantom{CII} \\bar{x} = \\dfrac{\\sum x}{n} = \\dfrac{%s}{%s} = %s \\)",
+          sprintf("\\( \\phantom{CII} \\bar{x} = \\dfrac{\\sum x}{n} = \\dfrac{%s}{%g} = %g \\)",
                   OneMeanTotaledData()[1],
                   oneMeanData["Sample Size"],
                   oneMeanData["Sample Mean"]),
@@ -3151,7 +3160,7 @@ statInfrServer <- function(id) {
           br(),
           sprintf("\\( \\phantom{CII} n = %s \\; , \\)",
                   oneMeanData["Sample Size"]),
-          sprintf("\\( \\phantom{CII} \\bar{x} = \\dfrac{\\sum x}{n} = \\dfrac{%s}{%s} = %s \\; , \\)",
+          sprintf("\\( \\phantom{CII} \\bar{x} = \\dfrac{\\sum x}{n} = \\dfrac{%s}{%g} = %g \\; , \\)",
                   OneMeanTotaledData()[1],
                   oneMeanData["Sample Size"],
                   oneMeanData["Sample Mean"]),
@@ -3159,7 +3168,7 @@ statInfrServer <- function(id) {
           sprintf("and"),
           br(),
           sprintf("\\( \\phantom{CII} s  = \\sqrt{ \\dfrac{\\sum x^{2} - \\dfrac{(\\sum x)^{2}}{n} }{n - 1} } \\)"),
-          sprintf("\\( = \\sqrt{ \\dfrac{%s - \\dfrac{(%s)^{2}}{%s} }{%s - 1} } = %s \\)",
+          sprintf("\\( = \\sqrt{ \\dfrac{%s - \\dfrac{(%s)^{2}}{%g} }{%g - 1} } = %g \\)",
                   OneMeanTotaledData()[2],
                   OneMeanTotaledData()[1],
                   oneMeanData["Sample Size"],
@@ -3302,18 +3311,18 @@ statInfrServer <- function(id) {
         hypPopMean <- paste("(", hypPopMean, ")", sep = "")
       
       calcOutput <- tagList(
-        sprintf("\\(%s =  \\dfrac{%s - %s}{ \\dfrac{%s}{\\sqrt{%s}} }\\)",
+        sprintf("\\(%s =  \\dfrac{%g - %g}{ \\dfrac{%g}{\\sqrt{%g}} }\\)",
                 testStat,
                 oneMeanData[2],
                 hypPopMean,
                 oneMeanData[3],
                 oneMeanData[1]),
-        sprintf("\\( = \\dfrac{%0.4f}{%s} \\)",
+        sprintf("\\( = \\dfrac{%g}{%g} \\)",
                 oneMeanData[2] - input$hypMean,
                 oneMeanData["Std Error"]),
         br(),
         br(),
-        sprintf("\\(\\phantom{%s} = %0.4f\\)",
+        sprintf("\\(\\phantom{%s} = %g\\)",
                 testStat,
                 oneMeanData[6]),
         br(),
@@ -3433,8 +3442,7 @@ statInfrServer <- function(id) {
       )
       
       colNames <- c("Sample Size", "Sample Mean", "Sample Standard Deviation", "Sample Variance")
-      
-      # Build custom header with a blank cell for rownames and styled column headers
+
       headers <- htmltools::withTags(table(
         class = 'display',
         style = 'max-width: 600px; table-layout: fixed; width: 100%;',
@@ -3508,6 +3516,7 @@ statInfrServer <- function(id) {
       
       return(dat)
     }
+    
     #fix this diana  
     GetwRankSumMeansData <- function() {
       req(si_iv$is_valid())
@@ -4918,7 +4927,7 @@ statInfrServer <- function(id) {
         dat <- 0
       }
       
-      totaled <- list(round(sum(dat), 4), round(sum(dat^2), 4))
+      totaled <- list(sum(dat), sum(dat^2))
       return(totaled)
     })
     
@@ -7844,10 +7853,10 @@ statInfrServer <- function(id) {
           sprintf("\\( z = \\dfrac{ (\\bar{x}_{1} - \\bar{x}_{2}) - (\\mu_{1} - \\mu_{2})_{0} }{ \\sqrt{ \\dfrac{\\sigma_{1}^2}{n_{1}} + \\dfrac{\\sigma_{2}^2}{n_{2}} } } \\)"),
           br(),
           br(),
-          sprintf("\\( \\phantom{z} = \\dfrac{ (%.4f - %s) -%s}{ \\sqrt{ \\dfrac{%.4f^2}{%.0f} + \\dfrac{%.4f^2}{%.0f} } } = \\dfrac{%.4f}{%.4f} = %.4f \\)",
+          sprintf("\\( \\phantom{z} = \\dfrac{ (%g - %s) -%s}{ \\sqrt{ \\dfrac{%g^2}{%.0f} + \\dfrac{%g^2}{%.0f} } } = \\dfrac{%g}{%g} = %g \\)",
                   data$xbar1,
-                  if (data$xbar2 < 0) sprintf("(%.4f)", data$xbar2) else sprintf("%.4f", data$xbar2),
-                  if (muNaught < 0) sprintf("(%.4f)", muNaught) else sprintf("%.4f", muNaught),
+                  if (data$xbar2 < 0) sprintf("(%g)", data$xbar2) else sprintf("%g", data$xbar2),
+                  if (muNaught < 0) sprintf("(%g)", muNaught) else sprintf("%g", muNaught),
                   data$sd1,
                   data$n1,
                   data$sd2,
@@ -7888,7 +7897,13 @@ statInfrServer <- function(id) {
       tTest <- IndMeansTTest()
       
       if(data$sigmaEqual == TRUE) {
-        sp <- round(sqrt(((data$n1-1) * data$sd1^2 + (data$n2-1) * data$sd2^2) / (data$n1 + data$n2 - 2)), 4)
+        
+        sp <- sqrt(((data$n1 - 1) * data$sd1^2 + (data$n2 - 1) * data$sd2^2) / (data$n1 + data$n2 - 2))
+        sp <- if (sp < 0.0001 && sp > -1e-2) {
+          signif(sp, 1)
+        } else {
+          sp
+        }
         
         tagList(
           withMathJax(
@@ -7909,14 +7924,14 @@ statInfrServer <- function(id) {
             br(),
             br(),
             br(),
-            sprintf("\\( \\phantom{t} = \\dfrac{ (%.4f - %s) - %s }{ %.4f \\sqrt{ \\dfrac{1}{%.0f} + \\dfrac{1}{%.0f} } } \\)",
+            sprintf("\\( \\phantom{t} = \\dfrac{ (%s - %s) - %s }{ %g \\sqrt{ \\dfrac{1}{%.0f} + \\dfrac{1}{%.0f} } } \\)",
                     data$xbar1,
-                    if (data$xbar2 < 0) sprintf("(%.4f)", data$xbar2) else sprintf("%.4f", data$xbar2),
+                    if (data$xbar2 < 0) sprintf("(%s)", data$xbar2) else sprintf("%s", data$xbar2),
                     if (muNaught < 0) sprintf("(%.4f)", muNaught) else sprintf("%.4f", muNaught),
                     sp,
                     data$n1,
                     data$n2),
-            sprintf("\\( = \\dfrac{%g}{%s} = %0.4f \\)",
+            sprintf("\\( = \\dfrac{%g}{%g} = %g \\)",
                     tTest['Difference of means'],
                     tTest['Std Error'],
                     tTest['Test Statistic']),
@@ -7930,7 +7945,7 @@ statInfrServer <- function(id) {
             sprintf("\\( t = \\dfrac{ (\\bar{x}_{1} - \\bar{x}_{2}) - (\\mu_{1} - \\mu_{2})_{0} }{ \\sqrt{ \\dfrac{s_{1}^2}{n_{1}} + \\dfrac{s_{2}^2}{n_{2}} } } \\)"),
             br(),
             br(),
-            sprintf("\\( \\phantom{t} = \\dfrac{ (%.4f - %s) - %s }{ \\sqrt{ \\dfrac{%.4f^2}{%.0f} + \\dfrac{%.4f^2}{%.0f} } } = \\dfrac{%.4f}{%.4f} = %.4f \\)",
+            sprintf("\\( \\phantom{t} = \\dfrac{ (%g - %s) - %s }{ \\sqrt{ \\dfrac{%.4f^2}{%.0f} + \\dfrac{%.4f^2}{%.0f} } } = \\dfrac{%s}{%s} = %.4f \\)",
                     data$xbar1,
                     if (data$xbar2 < 0) sprintf("(%.4f)", data$xbar2) else sprintf("%.4f", data$xbar2),
                     if (muNaught < 0) sprintf("(%.4f)", muNaught) else sprintf("%.4f", muNaught),
@@ -9831,6 +9846,14 @@ statInfrServer <- function(id) {
       }
     })
     
+    observeEvent(input$dataTypeDependent, {
+      if (input$dataTypeDependent == "Enter Raw Data") {
+        showTab(inputId = "depPopMeansTabset", target = "Data")
+      } else {
+        hideTab(inputId = "depPopMeansTabset", target = "Data")
+      }
+    })
+    
     observeEvent(input$goInference, {
       output$renderDepPopMeansData <- renderUI({
         tagList(
@@ -10399,6 +10422,13 @@ statInfrServer <- function(id) {
         hideTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
       } else {
         showTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
+      }
+      
+      if (input$dataTypeDependent != "Enter Raw Data"){
+        updateTabsetPanel(session, "depPopMeansTabset", selected = "Analysis")
+        hideTab(inputId = "depPopMeansTabset", target = "Data")
+      } else {
+        showTab(inputId = "depPopMeansTabset", target = "Data")
       }
       
       if(input$depMeansQQPlot) {

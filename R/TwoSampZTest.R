@@ -23,7 +23,7 @@ TwoSampZTest <- function(xbar1, sigma1, n1, xbar2, sigma2, n2, alternative = c("
     z.crit <- qnorm(1 - s_level)
   }
   
-  dat <- sapply(c(((xbar1 - xbar2) - muNaught), z.crit, se, zstat, p_value), function(x){ if(x < 0.0001 && x > 0) {signif(x,1)} else {round(x, 4)}})
+  dat <- sapply(c(((xbar1 - xbar2) - muNaught), z.crit, se, zstat, p_value), function(x){ if(x < 0.0001 && x > -1e-2) {signif(x,1)} else {round(x, 4)}})
   
   names(dat) <- c("Difference of means", "Z Critical", "Std Error", "Test Statistic", "P-Value")
   
