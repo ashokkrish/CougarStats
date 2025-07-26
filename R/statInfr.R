@@ -1085,8 +1085,25 @@ statInfrUI <- function(id) {
               checkboxInput(
                 inputId = ns("indMeansBoxplot"),
                 label   = "Side-by-side Boxplot for Sample Data",
+                value   = TRUE),
+              
+              checkboxInput(
+                inputId = ns("indMeansQQPlot"),
+                label   = "Q-Q Plots for Sample 1 and Sample 2",
                 value   = TRUE)
             ), # Ind Means !Summarized
+            
+            conditionalPanel(
+              ns = ns,
+              condition = "(input.popuParameters == 'Dependent Population Means')",
+              
+              p(strong("Graph Options")),
+              
+              checkboxInput(
+                inputId = ns("depMeansQQPlot"),
+                label   = "Q-Q Plot",
+                value   = TRUE)
+            ), # Dep Means Graphs
             
             conditionalPanel(
               ns = ns,
@@ -1628,7 +1645,12 @@ statInfrUI <- function(id) {
                                         br(),
                                         uiOutput(ns('indMeansHT')),
                                         br()
-                                      ), # Hypothesis Testing
+                                      ) # Hypothesis Testing
+                                    ), # indPopMeans Analysis tabPanel
+                                    
+                                    tabPanel(
+                                      id = ns("indPopMeansGraphs"),
+                                      title = "Graphs",
                                       
                                       conditionalPanel(
                                         ns = ns,
@@ -1646,8 +1668,26 @@ statInfrUI <- function(id) {
                                         uiOutput(ns("renderIndMeansBoxplot")),
                                         br(),
                                         br()
+                                      ),
+                                      
+                                      conditionalPanel(
+                                        ns = ns,
+                                        condition = "input.dataAvailability2 != 'Summarized Data' && input.indMeansQQPlot == 1",
+                                        
+                                        br(),
+                                        hr(),
+                                        br(),
+                                        titlePanel(tags$u("Q-Q Plots")),
+                                        br(),
+                                        plotOptionsMenuUI(
+                                          id = ns("indMeansQQPlot"),
+                                          plotType = "QQ Plot",
+                                          title = "Q-Q Plots"),
+                                        uiOutput(ns("renderIndMeansQQPlot")),
+                                        br(),
+                                        br()
                                       )
-                                    ), # indPopMeans Analysis tabPanel
+                                    ), # indPopMeans Graphs tabPanel
                                     
                                     tabPanel(
                                       id = ns("indPopMeansData"),
@@ -1708,6 +1748,29 @@ statInfrUI <- function(id) {
                                       br(),
                                       br(),
                                     ), #depPopMeans Analysis tabPanel
+                                    
+                                    tabPanel(
+                                      id = ns("depMeansGraphs"),
+                                      title = "Graphs",
+                                    
+                                      conditionalPanel(
+                                        ns = ns,
+                                        condition = "input.depMeansQQPlot == 1",
+                                        
+                                        br(),
+                                        hr(),
+                                        br(),
+                                        titlePanel(tags$u("Q-Q Plot")),
+                                        br(),
+                                        plotOptionsMenuUI(
+                                          id = ns("depMeansQQPlot"),
+                                          plotType = "QQ Plot",
+                                          title = "Q-Q Plots"),
+                                        uiOutput(ns("renderDepMeansQQPlot")),
+                                        br(),
+                                        br()
+                                      )  
+                                    ), # Dep means graphs tab panel
                                     
                                     tabPanel(
                                       id = ns("depPopMeansData"),
@@ -2183,7 +2246,7 @@ statInfrServer <- function(id) {
                                                "Data must be numeric values separated by a comma (ie: 2,3,4)"))
     # raw data, SD unknown
     onemeanraw_iv$add_rule("sample1", ~ {
-      if (input$sigmaKnownRaw == "rawUnknown" && (sd(createNumLst(input$sample1)) == 0)) {
+      if (input$sigmaKnownRaw == "rawUnknown" && input$inferenceType == 'Hypothesis Testing' && (sd(createNumLst(input$sample1)) == 0)) {
         "No variance in sample data"
       }
     })
@@ -2214,7 +2277,7 @@ statInfrServer <- function(id) {
       col  <- input$oneMeanVariable
       if (is.null(col) || col == "" || !(col %in% names(data))) return(NULL)
       if (input$sigmaKnownUpload == "Unknown" &&
-          sd(data[[col]], na.rm = TRUE) == 0) {
+          sd(data[[col]], na.rm = TRUE) == 0 && input$inferenceType == 'Hypothesis Testing') {
         "No variance in selected column"
       }
     })
@@ -2271,8 +2334,12 @@ statInfrServer <- function(id) {
     indmeansrawsd_iv$add_rule("popuSDRaw2", sv_required())
     indmeansrawsd_iv$add_rule("popuSDRaw2", sv_gt(0))
     
-    indmeansrawsdunk_iv$add_rule("raw_sample1", ~ if(sd(createNumLst(input$raw_sample1)) == 0 && sd(createNumLst(input$raw_sample2)) == 0) "Sample standard deviation cannot be 0 for both Sample 1 and Sample 2.")
-    indmeansrawsdunk_iv$add_rule("raw_sample2", ~ if(sd(createNumLst(input$raw_sample1)) == 0 && sd(createNumLst(input$raw_sample2)) == 0) "Sample standard deviation cannot be 0 for both Sample 1 and Sample 2.")
+    indmeansrawsdunk_iv$add_rule("raw_sample1", ~ if(sd(createNumLst(input$raw_sample1)) == 0 
+                                                     && sd(createNumLst(input$raw_sample2)) == 0 
+                                                     && input$inferenceType2 == 'Hypothesis Testing') "Sample standard deviation cannot be 0 for both Sample 1 and Sample 2.")
+    indmeansrawsdunk_iv$add_rule("raw_sample2", ~ if(sd(createNumLst(input$raw_sample1)) == 0 
+                                                     && sd(createNumLst(input$raw_sample2)) == 0 
+                                                     && input$inferenceType2 == 'Hypothesis Testing') "Sample standard deviation cannot be 0 for both Sample 1 and Sample 2.")
     
     #indMeansUserData
     indmeansupload_iv$add_rule("indMeansUserData", sv_required())
@@ -2295,7 +2362,7 @@ statInfrServer <- function(id) {
       c1 <- input$indMeansUplSample1
       c2 <- input$indMeansUplSample2
       
-      if (input$bothsigmaKnownUpload == "bothUnknown") {
+      if (input$bothsigmaKnownUpload == "bothUnknown" && input$inferenceType2 == 'Hypothesis Testing') {
         if (c1 %in% names(d) && c2 %in% names(d)) {
           if (sd(d[[c1]], na.rm = TRUE) == 0 && sd(d[[c2]], na.rm = TRUE) == 0) {
             return("At least 1 of the selected columns must have variance.")
@@ -2309,7 +2376,7 @@ statInfrServer <- function(id) {
       c1 <- input$indMeansUplSample1
       c2 <- input$indMeansUplSample2
       
-      if (input$bothsigmaKnownUpload == "bothUnknown") {
+      if (input$bothsigmaKnownUpload == "bothUnknown" && input$inferenceType2 == 'Hypothesis Testing') {
         if (c1 %in% names(d) && c2 %in% names(d)) {
           if (sd(d[[c1]], na.rm = TRUE) == 0 && sd(d[[c2]], na.rm = TRUE) == 0) {
             return("At least 1 of the selected columns must have variance.")
@@ -2872,6 +2939,8 @@ statInfrServer <- function(id) {
     #  ========================================================================= #
     plotOptionsMenuServer("oneMeanBoxplot")
     plotOptionsMenuServer("indMeansBoxplot")
+    plotOptionsMenuServer("indMeansQQPlot")
+    plotOptionsMenuServer("depMeansQQPlot")
     plotOptionsMenuServer("sidebysidewRankSum")
     plotOptionsMenuServer("anovaBoxplot")
     plotOptionsMenuServer("anovaHistogram")
@@ -2901,17 +2970,13 @@ statInfrServer <- function(id) {
       return(conclusion)
     }
     
-    getTTestErrorMsg <- function(sampleData, muNaught) {
+    getTTestErrorMsg <- function(sampleData) {
       sampleMean <- mean(sampleData, na.rm = TRUE)
       sampleSD   <- sd(sampleData, na.rm = TRUE)
       
       if (sampleSD != 0) return(NULL)
       
-      if (isTRUE(all.equal(sampleMean, muNaught))) {
-        return("When the sample standard deviation is 0, and the hypothesized value of the population mean is equal to the sample mean, the test statistic (t) is indeterminate.")
-      } else {
-        return("When the sample standard deviation is 0, the test statistic (t) is undefined.")
-      }
+      return("When the sample standard deviation is 0, the test statistic (t) is undefined.")
     }
     
     printOneMeanCI <- function() {
@@ -3372,6 +3437,7 @@ statInfrServer <- function(id) {
       # Build custom header with a blank cell for rownames and styled column headers
       headers <- htmltools::withTags(table(
         class = 'display',
+        style = 'max-width: 600px; table-layout: fixed; width: 100%;',
         thead(
           tr(
             th("",
@@ -3424,6 +3490,7 @@ statInfrServer <- function(id) {
       dat <- list()
       
       if(input$dataTypeDependent == 'Upload Data') {
+        req(input$depMeansUplSample1, input$depMeansUplSample2)
         sampBefore <- na.omit(unlist(DepMeansUploadData()[,input$depMeansUplSample1]))
         sampAfter <- na.omit(unlist(DepMeansUploadData()[,input$depMeansUplSample2]))
       } else if(input$dataTypeDependent == 'Enter Raw Data') {
@@ -5733,12 +5800,7 @@ statInfrServer <- function(id) {
         
         if (input$sigmaKnownRaw == "rawUnknown") {
           sampleData <- createNumLst(input$sample1)
-          muNaught   <- input$hypMean
-          if(is.null(muNaught)) {
-            msg <- "When the sample standard deviation is 0, the test statistic (t) is undefined."
-          } else {
-            msg <- getTTestErrorMsg(sampleData, muNaught)
-          }
+          msg <- getTTestErrorMsg(sampleData)
           if (!is.null(msg)) {
             validate(
               need(FALSE, msg),
@@ -5784,10 +5846,9 @@ statInfrServer <- function(id) {
         )
         data <- OneMeanUploadData()
         col <- input$oneMeanVariable
-        muNaught <- input$hypMean
         
         if (!is.null(data) && !is.null(col) && input$sigmaKnownUpload == "Unknown") {
-          msg <- getTTestErrorMsg(data[[col]], muNaught)
+          msg <- getTTestErrorMsg(data[[col]])
           if (!is.null(msg)) {
             validate(
               need(FALSE, msg),
@@ -6984,6 +7045,7 @@ statInfrServer <- function(id) {
         scale_fill_manual(values = c("Successes" = "#4CAF50", "Failures" = "#F44336")) +
         theme_classic() +
         theme(
+          axis.text.x = element_text(size = 14, face = "bold", color = "black"),
           axis.text = element_text(size = 14, face = "bold"),
           axis.title = element_text(size = 16, face = "bold"),
           plot.title = element_text(size = 18, face = "bold"),
@@ -7250,6 +7312,64 @@ statInfrServer <- function(id) {
                                columnDefs = list(list(className = 'dt-center',
                                                       targets = 0:ncol(IndMeansUploadData())))),
       )
+    })
+    
+    #### ------------- Q-Q Plots --------------------------
+    
+    output$indMeansQQPlot <- renderPlot({
+      # ind means qq plot
+      req(input$indMeansQQPlot)
+      
+      if (input$dataAvailability2 == "Enter Raw Data") {
+        dat1 <- createNumLst(input$raw_sample1)
+        dat2 <- createNumLst(input$raw_sample2)
+      } else if (input$dataAvailability2 == "Upload Data") {
+        req(input$indMeansUplSample1, input$indMeansUplSample2)
+        dat1 <- na.omit(unlist(IndMeansUploadData()[,input$indMeansUplSample1]))
+        dat2 <- na.omit(unlist(IndMeansUploadData()[,input$indMeansUplSample2]))
+      }
+      
+      df1 <- tibble(values = dat1)
+      df2 <- tibble(values = dat2)
+      
+      # QQ plot for sample 1
+      qq1 <- RenderQQPlot(
+        dat = df1,
+        plotColour = input[["indMeansQQPlot-Colour"]],
+        plotTitle = "QQ Plot: Sample 1",
+        plotXlab = input[["indMeansQQPlot-Xlab"]],
+        plotYlab = input[["indMeansQQPlot-Ylab"]],
+        gridlines = input[["indMeansQQPlot-Gridlines"]],
+        flip = input[["indMeansQQPlot-Flip"]]
+      )
+      
+      # QQ plot for sample 2
+      qq2 <- RenderQQPlot(
+        dat = df2,
+        plotColour = input[["indMeansQQPlot-Colour"]],
+        plotTitle = "QQ Plot: Sample 2",
+        plotXlab = input[["indMeansQQPlot-Xlab"]],
+        plotYlab = input[["indMeansQQPlot-Ylab"]],
+        gridlines = input[["indMeansQQPlot-Gridlines"]],
+        flip = input[["indMeansQQPlot-Flip"]]
+      )
+      
+      # pairs the graphs side by side
+      plot_pair <- ggpubr::ggarrange(qq1, qq2, ncol = 2)
+      
+      # title above the 2 graphs
+      ggpubr::annotate_figure(
+        plot_pair,
+        top = ggpubr::text_grob(
+          input[["indMeansQQPlot-Title"]],
+          face = "bold",
+          size = 24
+        )
+      )
+    }, height = function() {
+      GetPlotHeight(input[["indMeansQQPlot-Height"]], input[["indMeansQQPlot-HeightPx"]], ui = FALSE)
+    }, width = function() {
+      GetPlotWidth(input[["indMeansQQPlot-Width"]], input[["indMeansQQPlot-WidthPx"]], ui = FALSE)
     })
     
     #### ---------------- CI ----
@@ -8364,6 +8484,31 @@ statInfrServer <- function(id) {
       )
     })
     
+    #### ----------- Q-Q Plot ----------------------------------------------------------
+    output$depMeansQQPlot <- renderPlot({
+      # dep means qq plot
+      req(input$depMeansQQPlot)
+      
+      dat <- GetDepMeansData()
+      
+      # dat$d is the difference between the samples (i.e before - after)
+      df <- tibble(values = dat$d)
+
+      RenderQQPlot(
+        dat = df,
+        plotColour = input[["depMeansQQPlot-Colour"]],
+        plotTitle = input[["depMeansQQPlot-Title"]],
+        plotXlab = input[["depMeansQQPlot-Xlab"]],
+        plotYlab = input[["depMeansQQPlot-Ylab"]],
+        gridlines = input[["depMeansQQPlot-Gridlines"]],
+        flip = input[["depMeansQQPlot-Flip"]]
+      )
+    }, height = function() {
+      GetPlotHeight(input[["depMeansQQPlot-Height"]], input[["depMeansQQPlot-HeightPx"]], ui = FALSE)
+    }, width = function() {
+      GetPlotWidth(input[["depMeansQQPlot-Width"]], input[["depMeansQQPlot-WidthPx"]], ui = FALSE)
+    })
+    
     #### ---------------- Data Table ----
     output$depMeansData <- renderDT({
       depData <- GetDepMeansData()
@@ -8518,7 +8663,7 @@ statInfrServer <- function(id) {
           br(),
           br(),
           p(tags$b("Test Statistic:")),
-          sprintf("\\( \\displaystyle t = \\dfrac{\\bar{d} - \\mu_{0}}{ \\left( \\dfrac{ s_{d} }{ \\sqrt{n} } \\right) } \\qquad \\)"),
+          sprintf("\\( \\displaystyle t = \\dfrac{\\bar{d} - (\\mu_{d})_{0}}{ \\left( \\dfrac{ s_{d} }{ \\sqrt{n} } \\right) } \\qquad \\)"),
           br(),
           br(),
           p("where"),
@@ -8898,6 +9043,7 @@ statInfrServer <- function(id) {
         ) +
         scale_fill_manual(values = c("Successes" = "#4CAF50", "Failures" = "#F44336")) +
         theme(
+          axis.text.x = element_text(size = 14, face = "bold", color = "black"),
           axis.text = element_text(size = 14, face = "bold"),
           axis.title = element_text(size = 16, face = "bold"),
           plot.title = element_text(size = 18, face = "bold"),
@@ -9640,7 +9786,27 @@ statInfrServer <- function(id) {
       })
     })
     
+    observeEvent(c(input$indMeansBoxplot, input$indMeansQQPlot), {
+      if (input$indMeansBoxplot || input$indMeansQQPlot) {
+        showTab(inputId = "indPopMeansTabset", target = "Graphs")
+      } else {
+        if (input$indPopMeansTabset == "Graphs") {
+          updateTabsetPanel(inputId = 'indPopMeansTabset', selected = "Analysis")
+        }
+        hideTab(inputId = "indPopMeansTabset", target = "Graphs")
+      }
+    })
     
+    observeEvent(input$depMeansQQPlot, {
+      if (input$depMeansQQPlot) {
+        showTab(inputId = "depPopMeansTabset", target = "Graphs")
+      } else {
+        if (input$depPopMeansTabset == "Graphs") {
+          updateTabsetPanel(inputId = 'depPopMeansTabset', selected = "Analysis")
+        }
+        hideTab(inputId = "depPopMeansTabset", target = "Graphs")
+      }
+    })
     
     observeEvent(input$depMeansUserData, priority = 5, {
       hide(id = "inferenceData")
@@ -10039,6 +10205,11 @@ statInfrServer <- function(id) {
                        height = GetPlotHeight(input[["indMeansBoxplot-Height"]], input[["indMeansBoxplot-HeightPx"]], ui = TRUE),
                        width = GetPlotWidth(input[["indMeansBoxplot-Width"]], input[["indMeansBoxplot-WidthPx"]], ui = TRUE))
           })
+          output$renderIndMeansQQPlot <- renderUI({
+            plotOutput(session$ns("indMeansQQPlot"),
+                       height = GetPlotHeight(input[["indMeansQQPlot-Height"]], input[["indMeansQQPlot-HeightPx"]], ui = TRUE),
+                       width = GetPlotWidth(input[["indMeansQQPlot-Width"]], input[["indMeansQQPlot-WidthPx"]], ui = TRUE))
+          })
         } else if(input$popuParameters == "Wilcoxon rank sum test") {
           output$renderSidebysidewRankSum <- renderUI({
             plotOutput(session$ns("sidebysidewRankSum"),
@@ -10050,6 +10221,12 @@ statInfrServer <- function(id) {
           
           output$depMeansTable <- renderUI({
             DTOutput(session$ns("depMeansData"))
+          })
+          
+          output$renderDepMeansQQPlot <- renderUI({
+            plotOutput(session$ns("depMeansQQPlot"),
+                       height = GetPlotHeight(input[["depMeansQQPlot-Height"]], input[["depMeansQQPlot-HeightPx"]], ui = TRUE),
+                       width = GetPlotWidth(input[["depMeansQQPlot-Width"]], input[["depMeansQQPlot-WidthPx"]], ui = TRUE))
           })
         }
       } else if(input$siMethod == 'Categorical') {
@@ -10210,6 +10387,12 @@ statInfrServer <- function(id) {
         showTab(inputId = "indPopMeansTabset", target = "Uploaded Data")
       }
       
+      if(input$indMeansBoxplot || input$indMeansQQPlot) {
+        showTab(inputId = "indPopMeansTabset", target = "Graphs")
+      } else {
+        hideTab(inputId = "indPopMeansTabset", target = "Graphs")
+      }
+      
       # Hide/show tabs for 2 sample dependent populations
       if (input$dataTypeDependent != "Upload Data"){
         updateTabsetPanel(session, "depPopMeansTabset", selected = "Analysis")
@@ -10218,6 +10401,11 @@ statInfrServer <- function(id) {
         showTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
       }
       
+      if(input$depMeansQQPlot) {
+        showTab(inputId = "depPopMeansTabset", target = "Graphs")
+      } else {
+        hideTab(inputId = "depPopMeansTabset", target = "Graphs")
+      }
       # Hide/show tabs for Wilcoxon Rank Sum Upload
       if (input$wilcoxonRankSumTestData != "Upload Data"){
         updateTabsetPanel(session, "wilcoxonRankSumTabset", selected = "Analysis")
