@@ -3442,8 +3442,7 @@ statInfrServer <- function(id) {
       )
       
       colNames <- c("Sample Size", "Sample Mean", "Sample Standard Deviation", "Sample Variance")
-      
-      # Build custom header with a blank cell for rownames and styled column headers
+
       headers <- htmltools::withTags(table(
         class = 'display',
         style = 'max-width: 600px; table-layout: fixed; width: 100%;',
@@ -3517,6 +3516,7 @@ statInfrServer <- function(id) {
       
       return(dat)
     }
+    
     #fix this diana  
     GetwRankSumMeansData <- function() {
       req(si_iv$is_valid())
