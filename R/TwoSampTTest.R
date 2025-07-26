@@ -39,7 +39,7 @@ TwoSampTTest <- function(xbar1, s1, n1, xbar2, s2, n2, var.equal = TRUE, alterna
   
   #If var.equal == TRUE then sp must be printed in dat: PENDING
 
-  dat <- sapply(c(((xbar1 - xbar2) - muNaught), t.crit, df, se, tstat, p_value), function(x){ if(x < 0.0001 && x > 0) {signif(x,1)} else {round(x, 4)}})
+  dat <- sapply(c(((xbar1 - xbar2) - muNaught), t.crit, df, se, tstat, p_value), function(x){ if(x < 0.0001 && x > -1e-2) {signif(x,1)} else {round(x, 4)}})
   
   names(dat) <- c("Difference of means", "T Critical", "df", "Std Error", "Test Statistic", "P-Value")
   

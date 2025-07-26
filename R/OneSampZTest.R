@@ -17,7 +17,7 @@ ZTest <- function(n, xbar, sigma, mu = 0, alternative = c("two.sided", "less", "
     z.crit <- qnorm(1 - s_level)
   }
   
-  dat <- sapply(c(n, xbar, sigma, z.crit, se, zstat, p_value), function(x){ if(x < 0.0001 && x > 0) {signif(x,1)} else {round(x, 4)}})
+  dat <- sapply(c(n, xbar, sigma, z.crit, se, zstat, p_value), function(x){ if(x < 0.0001 && x > -1e-2) {signif(x,1)} else {round(x, 4)}})
   
   names(dat) <- c("Sample Size", "Sample Mean", "Population SD", "Z Critical", "Std Error", "Test Statistic", "P-Value")
   
