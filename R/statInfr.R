@@ -1097,11 +1097,11 @@ statInfrUI <- function(id) {
               checkboxInput(
                 inputId = ns("sidebysidewRankSum"),
                 label   = "Side-by-side Boxplot",
-                value   = FALSE),
+                value   = TRUE),
               checkboxInput(
                 inputId = ns("sidebysidewRankQQ"),
                 label   = "Q-Q plots for Sample 1 and Sample 2",
-                value   = FALSE)
+                value   = TRUE)
             ), # Wilcoxon Rank Sum Graphs
             
             
@@ -7899,10 +7899,7 @@ statInfrServer <- function(id) {
       
       req(!is.null(wilcoxonRankedData()))
       req(nrow(wilcoxonRankedData()) > 0)
-      
-      tTest <- wRankSumTTest()
-      intrpInfo <- IndMeansHypInfo()
-      
+
       if (input$wilcoxonRankSumTestData == 'Upload Data') {
         req(input$wilcoxonUpl1, input$wilcoxonUpl2)
         name1 <- input$wilcoxonUpl1
@@ -7933,10 +7930,17 @@ statInfrServer <- function(id) {
         altHyp <- paste0("Median_{", name1, "} \\neq Median_{", name2, "}")
         altern <- "two.sided"
         u_test <- u1_statistic
-        z_stat <- ((observed_W - mu_w) / sigma_w)
-        in_rejection_region <- abs(z_stat) > z_critical
-        p_value <- 2 * pnorm(abs(z_stat), lower.tail = FALSE)
         correction_factor <- 0
+        if (!is.null(input$continuityCorrectionOption) && !is.null(input$normaprowrs) &&
+            input$continuityCorrectionOption == "True" && input$normaprowrs == TRUE) {
+          if (observed_W > mu_w) {
+            correction_factor <- -0.5 # Subtract 0.5 if observed_W is in the upper tail
+          } else if (observed_W < mu_w) {
+            correction_factor <- 0.5  # Add 0.5 if observed_W is in the lower tail
+          }
+        }
+        z_stat <- ((observed_W - mu_w + correction_factor) / sigma_w)
+        in_rejection_region <- abs(z_stat) > z_critical
       } else if(input$altHypothesis2 == "1") {
         z_critical <- qnorm(SigLvl())
         critVal <- round(qnorm(SigLvl()), 3)
@@ -7944,14 +7948,13 @@ statInfrServer <- function(id) {
         altHyp <- paste0("Median_{", name1, "} \\lt Median_{", name2, "}")
         altern <- "less"
         u_test <- u1_statistic
-        z_stat <- ((observed_W - mu_w) / sigma_w)
-        in_rejection_region <- z_stat < z_critical
-        p_value <- pnorm(z_stat, lower.tail = TRUE)
+        correction_factor <- 0
         if (!is.null(input$continuityCorrectionOption) && !is.null(input$normaprowrs) &&
             input$continuityCorrectionOption == "True" && input$normaprowrs == TRUE) {
           correction_factor <- 0.5
-          z_stat <- ((observed_W - mu_w + correction_factor) / sigma_w)
         } 
+        z_stat <- ((observed_W - mu_w + correction_factor) / sigma_w)
+        in_rejection_region <- z_stat < z_critical
       } else {
         z_critical <- qnorm(1 - SigLvl())
         critVal <- round(qnorm(1 - SigLvl()), 3)
@@ -7959,14 +7962,14 @@ statInfrServer <- function(id) {
         altHyp <- paste0("Median_{", name1, "} \\gt Median_{", name2, "}")
         altern <- "greater"
         u_test <- u1_statistic
-        z_stat <- ((observed_W - mu_w) / sigma_w)
-        in_rejection_region <- z_stat > z_critical
-        p_value <- pnorm(z_stat, lower.tail = FALSE)
+        correction_factor <- 0
+
         if (!is.null(input$continuityCorrectionOption) && !is.null(input$normaprowrs) &&
             input$continuityCorrectionOption == "True" && input$normaprowrs == TRUE) {
           correction_factor <- -0.5
-          z_stat <- ((observed_W - mu_w + correction_factor) / sigma_w)
         }
+        z_stat <- ((observed_W - mu_w + correction_factor) / sigma_w)
+        in_rejection_region <- z_stat > z_critical
       }
       
       if(in_rejection_region) {
@@ -7987,29 +7990,68 @@ statInfrServer <- function(id) {
       group2_data <- data_ranked %>%
         dplyr::filter(Group == name2) %>%
         dplyr::pull(Value)
-      
       combined_values <- c(group1_data, group2_data)
-      has_ties <- length(unique(combined_values)) < length(combined_values)
-      if (has_ties){
-        is_exact <- FALSE
+      has_ties <- length(unique(combined_values)) < length(combined_values)      
+
+      #no ties in data for p value
+      if(has_ties){
+        if(input$altHypothesis2 == "2") {
+          p_value <- 2 * pnorm(abs(z_stat), lower.tail = FALSE)
+        } else if(input$altHypothesis2 == "1") {
+          p_value <- pnorm(z_stat, lower.tail = TRUE)
+        } else {
+          p_value <- pnorm(z_stat, lower.tail = FALSE)
+        }
       }
-      else{
-        is_exact <- TRUE
+      else if(!has_ties){
+        test_result <- suppressWarnings(
+          wilcox.test(group1_data, group2_data, paired = FALSE, alternative = altern, 
+                      conf.level = significance, exact = TRUE, conf.int = TRUE)
+        )
+        p_value <- test_result$p.value
+      }      
+      
+      if (!is.null(input$continuityCorrectionOption) && !is.null(input$normaprowrs) &&
+          input$continuityCorrectionOption == "True" && input$normaprowrs == TRUE){
+        if(has_ties){
+          test_result <- suppressWarnings(
+            wilcox.test(group1_data, group2_data, paired = FALSE, alternative = altern, 
+                        conf.level = significance, exact = TRUE, correct = TRUE)
+          )
+          p_value <- test_result$p.value
+        }
+        else{
+          test_result <- suppressWarnings(
+            wilcox.test(group1_data, group2_data, paired = FALSE, alternative = altern, 
+                        conf.level = significance, exact = FALSE, correct = TRUE)
+          )
+          p_value <- test_result$p.value
+        }
+      } 
+      else if (!is.null(input$continuityCorrectionOption) && !is.null(input$normaprowrs) &&
+               input$continuityCorrectionOption == "False" && input$normaprowrs == TRUE){
+        if(has_ties){
+          test_result <- suppressWarnings(
+            wilcox.test(group1_data, group2_data, paired = FALSE, alternative = altern, 
+                        conf.level = significance, exact = TRUE, correct = FALSE)
+          )
+          p_value <- test_result$p.value
+        }
+        else{
+          test_result <- suppressWarnings(
+            wilcox.test(group1_data, group2_data, paired = FALSE, alternative = altern, 
+                        conf.level = significance, exact = FALSE, correct = FALSE)
+          )
+          p_value <- test_result$p.value
+        }
+        
       }
       
       tie_correction <- calculate_tie_correction(combined_values)
       u_std_dev <- sqrt((n1 * n2 / 12) * ((nAll + 1) - (tie_correction / (nAll * (nAll - 1)))))
-      
-      if (length(group1_data) > 0 && length(group2_data) > 0 &&
-          is.numeric(group1_data) && is.numeric(group2_data)) {
-        test_result <- wilcox.test(group1_data, group2_data, paired = FALSE, alternative = altern, conf.level = significance, exact = is_exact)
-        p_value_wilcox <- test_result$p.value
-      } else {
-        p_value_wilcox <- NA 
-      }
       mw_z_stat <- ((u_test - u_mean) / u_std_dev)
-      p_value <- p_value_wilcox
-      
+
+
       if (input$normaprowrs == FALSE){
         z_stat <- mw_z_stat
       }
@@ -8079,28 +8121,38 @@ statInfrServer <- function(id) {
               if (!is.null(input$continuityCorrectionOption) && !is.null(input$normaprowrs) &&
                   input$continuityCorrectionOption == "True" && input$normaprowrs == TRUE) {
                 
-                if(input$altHypothesis2 == "1") {
+                if(input$altHypothesis2 == "1") { # Less than alternative
                   sprintf("\\( \\qquad z = \\frac{W - \\mu_W + 0.5}{\\sigma_W} = \\frac{%s - %s + %s}{%s} = %s \\)",
                           round(observed_W, 4), round(mu_w, 4), abs(correction_factor), round(sigma_w, 4), round(z_stat, 3))
                 }
-                else if(input$altHypothesis2 == "2") {
-                  sprintf("\\( \\qquad z = \\frac{W - \\mu_W}{\\sigma_W} = \\frac{%s - %s}{%s} = %s \\)",
-                          round(observed_W, 4), round(mu_w, 4), round(sigma_w, 4), round(z_stat, 3))
+                else if(input$altHypothesis2 == "2") { # Two-sided alternative
+                  if (observed_W > mu_w) {
+                    sprintf("\\( \\qquad z = \\frac{W - \\mu_W - 0.5}{\\sigma_W} = \\frac{%s - %s - %s}{%s} = %s \\)",
+                            round(observed_W, 4), round(mu_w, 4), abs(correction_factor), round(sigma_w, 4), round(z_stat, 3))
+                  } else if (observed_W < mu_w) {
+                    sprintf("\\( \\qquad z = \\frac{W - \\mu_W + 0.5}{\\sigma_W} = \\frac{%s - %s + %s}{%s} = %s \\)",
+                            round(observed_W, 4), round(mu_w, 4), abs(correction_factor), round(sigma_w, 4), round(z_stat, 3))
+                  } else { # observed_W == mu_w, no continuity correction applied in formula
+                    sprintf("\\( \\qquad z = \\frac{W - \\mu_W}{\\sigma_W} = \\frac{%s - %s}{%s} = %s \\)",
+                            round(observed_W, 4), round(mu_w, 4), round(sigma_w, 4), round(z_stat, 3))
+                  }
                 }
-                else {
+                else { # Greater than alternative (assuming input$altHypothesis2 corresponds to "greater")
                   sprintf("\\( \\qquad z = \\frac{W - \\mu_W - 0.5}{\\sigma_W} = \\frac{%s - %s - %s}{%s} = %s \\)",
                           round(observed_W, 4), round(mu_w, 4), abs(correction_factor), round(sigma_w, 4), round(z_stat, 3))
                 }
-              } else {
-                if(input$altHypothesis2 == "1") {
+                
+              } else { # No continuity correction
+                if(input$altHypothesis2 == "1") { # Less than alternative
                   sprintf("\\( \\qquad z = \\frac{W - \\mu_W}{\\sigma_W} = \\frac{%s - %s}{%s} = %s \\)",
                           round(observed_W, 4), round(mu_w, 4), round(sigma_w, 4), round(z_stat, 3))
                 }
-                else if(input$altHypothesis2 == "2") {
+                else if(input$altHypothesis2 == "2") { # Two-sided alternative
                   sprintf("\\( \\qquad z = \\frac{W - \\mu_W}{\\sigma_W} = \\frac{%s - %s}{%s} = %s \\)",
                           round(observed_W, 4), round(mu_w, 4), round(sigma_w, 4), round(z_stat, 3))
+                  # REMOVE THIS LINE: sprintf("Help")
                 }
-                else {
+                else { # Greater than alternative
                   sprintf("\\( \\qquad z = \\frac{W - \\mu_W}{\\sigma_W} = \\frac{%s - %s}{%s} = %s \\)",
                           round(observed_W, 4), round(mu_w, 4), round(sigma_w, 4), round(z_stat, 3))
                 }
@@ -8109,7 +8161,7 @@ statInfrServer <- function(id) {
           
           br(), br(),
           
-          p(tags$b("P-value:")),
+          p(tags$b("Using P-value Method:")),
           sprintf("\\( \\qquad p \\text{-value} = %s \\)", ifelse(is.na(p_value), "NA", round(p_value, 4))),
           br(), br(),
           if (p_value <= SigLvl()) {
@@ -8149,36 +8201,29 @@ statInfrServer <- function(id) {
     #### ---------------- HT Plot ----
     calculate_z_stat <- function(input, observed_W, mu_w, sigma_w, observed_W2, n1, n2, N, u1_statistic, u2_statistic, u_mean, u_std_dev,
                                  has_ties, tie_correction) {
-      z_stat_val <- NA 
+      z_stat_val <- NA
       correction_factor <- 0
-      u_test_val <- NA 
+
+      u_test_val <- u1_statistic 
       
       if (input$normaprowrs == FALSE) {
-        if (input$altHypothesis2 == "2") {
-          u_test_val <- u1_statistic
-        } else if (input$altHypothesis2 == "1") { 
-          u_test_val <- u1_statistic
-        } else { 
-          u_test_val <- u1_statistic 
-        }
         z_stat_val <- ((u_test_val - u_mean) / u_std_dev)
       } else { 
-        if (input$altHypothesis2 == "2") { 
-          z_stat_val <- ((observed_W - mu_w) / sigma_w)
-        } else if (input$altHypothesis2 == "1") { 
-          correction_factor <- 0.5
-          if (!is.null(input$continuityCorrectionOption) && input$continuityCorrectionOption == "True") {
-            z_stat_val <- ((observed_W - mu_w + correction_factor) / sigma_w)
-          } else {
-            z_stat_val <- ((observed_W - mu_w) / sigma_w)
+        if (!is.null(input$continuityCorrectionOption) && input$continuityCorrectionOption == "True") {
+          if (input$altHypothesis2 == "2") {
+            if (observed_W > mu_w) {
+              correction_factor <- -0.5
+            } else if (observed_W < mu_w) {
+              correction_factor <- 0.5
+            }
+          } else if (input$altHypothesis2 == "1") { # Less than test
+            correction_factor <- 0.5
+          } else { 
+            correction_factor <- -0.5
           }
-        } else { 
-          correction_factor <- -0.5
-          if (!is.null(input$continuityCorrectionOption) && input$continuityCorrectionOption == "True") {
-            z_stat_val <- ((observed_W - mu_w + correction_factor) / sigma_w)
-          } else {
-            z_stat_val <- ((observed_W - mu_w) / sigma_w)
-          }}}
+        }
+        z_stat_val <- ((observed_W - mu_w + correction_factor) / sigma_w)
+      }
       return(z_stat_val)
     }
     
