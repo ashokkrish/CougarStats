@@ -1733,38 +1733,12 @@ statInfrUI <- function(id) {
                                     ), #depPopMeans Analysis tabPanel
                                     
                                     tabPanel(
-                                      id = ns("depMeansGraphs"),
-                                      title = "Graphs",
-                                    
-                                      conditionalPanel(
-                                        ns = ns,
-                                        condition = "input.depMeansQQPlot == 1",
-                                        
-                                        br(),
-                                        hr(),
-                                        br(),
-                                        titlePanel(tags$u("Q-Q Plot")),
-                                        br(),
-                                        plotOptionsMenuUI(
-                                          id = ns("depMeansQQPlot"),
-                                          plotType = "QQ Plot",
-                                          title = "Q-Q Plots"),
-                                        uiOutput(ns("renderDepMeansQQPlot")),
-                                        br(),
-                                        br()
-                                      )  
-                                    ), # Dep means graphs tab panel
-                                    
-                                    tabPanel(
                                       id = ns("depMeansRawData"),
-                                      title = "Data",
+                                      title = "Data with Calculations",
                                       
                                       conditionalPanel(
                                         ns = ns,
                                         condition = "input.dataTypeDependent == 'Enter Raw Data'",
-                                        hr(),
-                                        br(),
-                                        titlePanel(tags$u("Data")),
                                         br(),
                                         
                                         fluidRow(
@@ -1788,6 +1762,28 @@ statInfrUI <- function(id) {
                                       uiOutput(ns("renderDepPopMeansData")),
                                     ), #depPopMeansData Uploaded Data tabPanel
                                     
+                                    tabPanel(
+                                      id = ns("depMeansGraphs"),
+                                      title = "Graphs",
+                                    
+                                      conditionalPanel(
+                                        ns = ns,
+                                        condition = "input.depMeansQQPlot == 1",
+                                        
+                                        br(),
+                                        hr(),
+                                        br(),
+                                        titlePanel(tags$u("Q-Q Plot")),
+                                        br(),
+                                        plotOptionsMenuUI(
+                                          id = ns("depMeansQQPlot"),
+                                          plotType = "QQ Plot",
+                                          title = "Q-Q Plots"),
+                                        uiOutput(ns("renderDepMeansQQPlot")),
+                                        br(),
+                                        br()
+                                      )  
+                                    ), # Dep means graphs tab panel
                                   ), # depPopMeansTabset
                                 ), # Two Dependent Samples
                                 #### ---------------- 2 Pop Proportions --------------------------------------
@@ -9848,9 +9844,9 @@ statInfrServer <- function(id) {
     
     observeEvent(input$dataTypeDependent, {
       if (input$dataTypeDependent == "Enter Raw Data") {
-        showTab(inputId = "depPopMeansTabset", target = "Data")
+        showTab(inputId = "depPopMeansTabset", target = "Data with Calculations")
       } else {
-        hideTab(inputId = "depPopMeansTabset", target = "Data")
+        hideTab(inputId = "depPopMeansTabset", target = "Data with Calculations")
       }
     })
     
@@ -10426,9 +10422,9 @@ statInfrServer <- function(id) {
       
       if (input$dataTypeDependent != "Enter Raw Data"){
         updateTabsetPanel(session, "depPopMeansTabset", selected = "Analysis")
-        hideTab(inputId = "depPopMeansTabset", target = "Data")
+        hideTab(inputId = "depPopMeansTabset", target = "Data with Calculations")
       } else {
-        showTab(inputId = "depPopMeansTabset", target = "Data")
+        showTab(inputId = "depPopMeansTabset", target = "Data with Calculations")
       }
       
       if(input$depMeansQQPlot) {
