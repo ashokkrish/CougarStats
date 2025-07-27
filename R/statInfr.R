@@ -802,14 +802,14 @@ statInfrUI <- function(id) {
                 
                 selectizeInput(
                   inputId = ns("depMeansUplSample1"),
-                  label   = strong("Choose a Column for Sample 1"),
+                  label   = strong("Column for Sample 1 (e.g. Before, Pre-Treatment, Baseline)"),
                   choices = c(""),
                   options = list(placeholder = 'Select a column',
                                  onInitialize = I('function() { this.setValue(""); }'))),
                 
                 selectizeInput(
                   inputId = ns("depMeansUplSample2"),
-                  label   = strong("Choose a Column for Sample 2"),
+                  label   = strong("Column for Sample 2 (e.g. After, Post-Treatment, Follow-Up)"),
                   choices = c(""),
                   options = list(placeholder = 'Select a column',
                                  onInitialize = I('function() { this.setValue(""); }'))),
@@ -1101,7 +1101,7 @@ statInfrUI <- function(id) {
               
               checkboxInput(
                 inputId = ns("depMeansQQPlot"),
-                label   = "Q-Q Plot",
+                label   = "Q-Q Plot of the Difference (d)",
                 value   = TRUE)
             ), # Dep Means Graphs
             
@@ -1655,9 +1655,6 @@ statInfrUI <- function(id) {
                                       conditionalPanel(
                                         ns = ns,
                                         condition = "input.dataAvailability2 != 'Summarized Data' && input.indMeansBoxplot == 1",
-                                        
-                                        br(),
-                                        hr(),
                                         br(),
                                         titlePanel(tags$u("Boxplot")),
                                         br(),
@@ -1731,30 +1728,7 @@ statInfrUI <- function(id) {
                                         br()
                                       ), # HT
                                     ), #depPopMeans Analysis tabPanel
-                                    
-                                    tabPanel(
-                                      id = ns("depMeansRawData"),
-                                      title = "Data with Calculations",
-                                      
-                                      conditionalPanel(
-                                        ns = ns,
-                                        condition = "input.dataTypeDependent == 'Enter Raw Data'",
-                                        br(),
-                                        
-                                        fluidRow(
-                                          column(width = 8,
-                                                 uiOutput(ns('depMeansTable')),
-                                          ),
-                                          
-                                          column(width = 4,
-                                                 br(),
-                                          )
-                                        ),
-                                        br(),
-                                        br(),
-                                      )
-                                    ), # Dep means raw data file
-                                    
+                                     
                                     tabPanel(
                                       id = ns("depPopMeansData"),
                                       title = "Uploaded Data",
@@ -1763,15 +1737,29 @@ statInfrUI <- function(id) {
                                     ), #depPopMeansData Uploaded Data tabPanel
                                     
                                     tabPanel(
+                                      id = ns("depMeansDataCalcs"),
+                                      title = "Data with Calculations",
+                                      br(),
+                                      fluidRow(
+                                        column(width = 8,
+                                               uiOutput(ns('depMeansTable')),
+                                        ),
+                                        
+                                        column(width = 4,
+                                               br(),
+                                        )
+                                      ),
+                                      br(),
+                                      br(),
+                                    ), # Dep means table with calcs
+                                    
+                                    tabPanel(
                                       id = ns("depMeansGraphs"),
                                       title = "Graphs",
                                     
                                       conditionalPanel(
                                         ns = ns,
                                         condition = "input.depMeansQQPlot == 1",
-                                        
-                                        br(),
-                                        hr(),
                                         br(),
                                         titlePanel(tags$u("Q-Q Plot")),
                                         br(),
@@ -2956,6 +2944,20 @@ statInfrServer <- function(id) {
     #  ========================================================================= #
     ## -------- Functions ------------------------------------------------------
     #  ========================================================================= #
+    getOutliers <- function(sample, sampleName) {
+      f <- fivenum(sample)  # Tukey hinges
+      iqr <- f[4] - f[2]
+      lower <- f[2] - 1.5 * iqr
+      upper <- f[4] + 1.5 * iqr
+      outliers <- sample[sample < lower | sample > upper]
+      
+      if(length(outliers) == 0) {
+        return(data.frame(sample = character(0), data = numeric(0)))
+      } else {
+        return(data.frame(sample = sampleName, data = outliers))
+      }
+    }
+    
     printHTConclusion <- function(region, reject, suffEvidence, altHyp, altHypValue) {
       conclusion <- tagList(
         withMathJax(),
@@ -6494,39 +6496,14 @@ statInfrServer <- function(id) {
         return(NA)
       }
       
-      quartile1 <-  fivenum(dat)[2]
-      quartile3 <-  fivenum(dat)[4]
-      sampIQR <- round(quartile3 - quartile1, 4)
-      lowerFence <- round(quartile1 - (1.5*sampIQR), 4)
-      upperFence <- round(quartile3 + (1.5*sampIQR), 4)
-      numOutliers <- sum(dat < lowerFence) + sum(dat > upperFence)
-      
-      if(numOutliers == 0) {
-        outliers <- "There are no outliers."
-        df_outliers <- data.frame()
-      } else {
-        ## Copied from descStats.R
-        GetOutliers <- function(dat, lower, upper) {
-          outliers <- c()
-          
-          for(x in dat) {
-            if(x < lower | x > upper) {
-              outliers <-c(outliers, x)
-            }
-          }
-          
-          return(sort(outliers))
-        }
-        outliers <- GetOutliers(dat, lowerFence, upperFence)
-        df_outliers <- as.data.frame(outliers)
-      }
-      
-      
+      df_outliers <- getOutliers(dat, "Sample")
+      outlier_vals <- df_outliers$data
+
       df_boxplot <- data.frame(x = dat)
       
       RenderBoxplot(dat,
                     df_boxplot,
-                    df_outliers,
+                    outlier_vals,
                     input[["oneMeanBoxplot-Colour"]],
                     input[["oneMeanBoxplot-Title"]],
                     input[["oneMeanBoxplot-Xlab"]],
@@ -7448,7 +7425,12 @@ statInfrServer <- function(id) {
       dat <- c(sample1, sample2)
       df_boxplot <- data.frame(sample = c(rep("Sample 1",length(sample1)), rep("Sample 2",length(sample2))),
                                data = c(dat))
-      df_outliers <- data.frame()
+      
+      # outlier detection for both samples
+      df_outliers <- rbind(
+        getOutliers(sample1, "Sample 1"),
+        getOutliers(sample2, "Sample 2")
+      )
       
       RenderSideBySideBoxplot(dat,
                               df_boxplot,
@@ -8437,7 +8419,11 @@ statInfrServer <- function(id) {
       dat <- c(rankSumRaw1, rankSumRaw2)
       df_boxplot <- data.frame(sample = c(rep("Sample 1",length(rankSumRaw1)), rep("Sample 2",length(rankSumRaw2))),
                                data = c(dat))
-      df_outliers <- data.frame()
+      
+      df_outliers <- rbind(
+        getOutliers(rankSumRaw1, "Sample 1"),
+        getOutliers(rankSumRaw2, "Sample 2")
+      )
       
       RenderSideBySideBoxplot(dat,
                               df_boxplot,
@@ -8495,7 +8481,7 @@ statInfrServer <- function(id) {
       )
     })
     
-    #### ----------- Q-Q Plot ----------------------------------------------------------
+    #### ----------- Q-Q Plots ----------------------------------------------------------
     output$depMeansQQPlot <- renderPlot({
       # dep means qq plot
       req(input$depMeansQQPlot)
@@ -9446,7 +9432,33 @@ statInfrServer <- function(id) {
       df_boxplot <- data.frame(sample = c(data[,"ind"]),
                                data = c(data[,"values"]))
       colnames(df_boxplot) <- c("sample", "data")
-      df_outliers <- data.frame()
+      
+      # function to detect outliers for a vector
+      getAnovaOutliers <- function(vec) {
+        f <- fivenum(vec)
+        iqr <- f[4] - f[2]
+        lower <- f[2] - 1.5 * iqr
+        upper <- f[4] + 1.5 * iqr
+        vec[vec < lower | vec > upper]
+      }
+      
+      # find outliers for each col
+      unique_samples <- unique(df_boxplot$sample)
+      
+      df_outliers <- do.call(rbind, lapply(unique_samples, function(samp) {
+        vals <- df_boxplot$data[df_boxplot$sample == samp]
+        outs <- getAnovaOutliers(vals)
+        if(length(outs) > 0) {
+          data.frame(sample = samp, data = outs)
+        } else {
+          NULL
+        }
+      }))
+      
+      # if no outliers, create empty df with correct columns
+      if(is.null(df_outliers) || nrow(df_outliers) == 0) {
+        df_outliers <- data.frame(sample = character(0), data = numeric(0))
+      }
       
       RenderSideBySideBoxplot(df_boxplot[,"data"],
                               df_boxplot,
@@ -9839,14 +9851,6 @@ statInfrServer <- function(id) {
         )
         shinyjs::show(id = "depMeansUplSample1")
         shinyjs::show(id = "depMeansUplSample2")
-      }
-    })
-    
-    observeEvent(input$dataTypeDependent, {
-      if (input$dataTypeDependent == "Enter Raw Data") {
-        showTab(inputId = "depPopMeansTabset", target = "Data with Calculations")
-      } else {
-        hideTab(inputId = "depPopMeansTabset", target = "Data with Calculations")
       }
     })
     
@@ -10418,13 +10422,6 @@ statInfrServer <- function(id) {
         hideTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
       } else {
         showTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
-      }
-      
-      if (input$dataTypeDependent != "Enter Raw Data"){
-        updateTabsetPanel(session, "depPopMeansTabset", selected = "Analysis")
-        hideTab(inputId = "depPopMeansTabset", target = "Data with Calculations")
-      } else {
-        showTab(inputId = "depPopMeansTabset", target = "Data with Calculations")
       }
       
       if(input$depMeansQQPlot) {

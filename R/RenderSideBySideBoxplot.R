@@ -2,17 +2,25 @@ library(ggplot2)
 
 RenderSideBySideBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, plotXlab, plotYlab, boxWidth, gridlines, flip) {
 
-    bp <- ggplot(df_boxplot, aes(x = data, y = sample)) +
-    stat_boxplot(geom ='errorbar', width = 0.15) +
+  df_outliers <- df_outliers %>%
+    group_by(sample, data) %>%
+    summarise(count = n(), .groups = 'drop') %>%
+    mutate(label = ifelse(count > 1, paste0(data, " (", count, ")"), as.character(data)))
+  
+  bp <- ggplot(df_boxplot, aes(x = data, y = sample)) +
+    stat_boxplot(geom = 'errorbar', width = 0.15) +
     geom_boxplot(width = boxWidth,
                  fill = plotColour,
-                 alpha = 1) +
-    # geom_point(data = filter(df_boxplot, data %in% df_outliers),
-    #            size = 5) +
-    # geom_text(data = filter(df_boxplot, data %in% df_outliers),
-    #           aes(label = data),
-    #           size = 15 / .pt,
-    #           vjust = -1.25) +
+                 alpha = 1,
+                 outlier.shape = NA) +
+    geom_point(data = df_outliers,
+               aes(x = data, y = sample),
+               size = 2) +
+    geom_text(data = df_outliers,
+              aes(x = data, y = sample, label = label),
+              size = 15 / .pt,
+              fontface = "bold",
+              vjust = -1.25) +
     labs(title = plotTitle,
          x = plotXlab,
          y = plotYlab) +
