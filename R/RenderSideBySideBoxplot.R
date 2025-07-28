@@ -1,7 +1,8 @@
 library(ggplot2)
 
 RenderSideBySideBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, plotXlab, plotYlab, boxWidth, gridlines, flip) {
-
+  
+  # outlier label - formatting: outlier (count)
   df_outliers <- df_outliers %>%
     group_by(sample, data) %>%
     summarise(count = n(), .groups = 'drop') %>%
@@ -12,14 +13,13 @@ RenderSideBySideBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, pl
     geom_boxplot(width = boxWidth,
                  fill = plotColour,
                  alpha = 1,
-                 outlier.shape = NA) +
+                 outlier.shape = NA) + # this turns automatic outlier calculations off
     geom_point(data = df_outliers,
                aes(x = data, y = sample),
                size = 2) +
     geom_text(data = df_outliers,
               aes(x = data, y = sample, label = label),
               size = 15 / .pt,
-              fontface = "bold",
               vjust = -1.25) +
     labs(title = plotTitle,
          x = plotXlab,

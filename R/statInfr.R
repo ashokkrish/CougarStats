@@ -1510,14 +1510,22 @@ statInfrUI <- function(id) {
                         br(),
                         uiOutput(ns('oneMeanHT')),
                         br(),
-                      ), # Hypothesis Testing
+                      ) # Hypothesis Testing
+                    ), # One Population Mean
+                    
+                    tabPanel(
+                      id = ns("onePopMeanData"),
+                      title = "Uploaded Data",
                       
+                      uiOutput(ns("renderOnePopMeanData")),
+                    ), #onePopMeanData Uploaded Data tabPanel
+                    
+                    tabPanel(
+                      id = ns("onePopMeanData"),
+                      title = "Graphs",
                       conditionalPanel(
                         ns = ns,
                         condition = "input.dataAvailability != 'Summarized Data' && input.oneMeanBoxplot == 1",
-                        
-                        br(),
-                        hr(),
                         br(),
                         titlePanel(tags$u("Boxplot")),
                         br(),
@@ -1527,17 +1535,9 @@ statInfrUI <- function(id) {
                           title = "Boxplot"),
                         uiOutput(ns("renderOneMeanBoxplot")),
                         br(),
-                        br())
-                    ), # One Population Mean
-                    
-                    tabPanel(
-                      id = ns("onePopMeanData"),
-                      title = "Uploaded Data",
-                      
-                      uiOutput(ns("renderOnePopMeanData")),
-                    ), #onePopMeanData Uploaded Data tabPanel
-                  ), #onePopMean Analysis tabPanel
-                ), #onePopMean tabsetPanel
+                      ),
+                  ), #onePopMean Graphs tabPanel
+                )), #onePopMean tabsetPanel
                 
                 #### ---------------- 1 Pop Prop ---------------------------------------------
                 conditionalPanel(
@@ -1766,7 +1766,7 @@ statInfrUI <- function(id) {
                                         plotOptionsMenuUI(
                                           id = ns("depMeansQQPlot"),
                                           plotType = "QQ Plot",
-                                          title = "Q-Q Plots"),
+                                          title = "Q-Q Plot"),
                                         uiOutput(ns("renderDepMeansQQPlot")),
                                         br(),
                                         br()
@@ -2944,11 +2944,13 @@ statInfrServer <- function(id) {
     #  ========================================================================= #
     ## -------- Functions ------------------------------------------------------
     #  ========================================================================= #
+    
+    
     getOutliers <- function(sample, sampleName) {
       f <- fivenum(sample)  # Tukey hinges
       iqr <- f[4] - f[2]
-      lower <- f[2] - 1.5 * iqr
-      upper <- f[4] + 1.5 * iqr
+      lower <- f[2] - 1.5 * iqr # lower fence
+      upper <- f[4] + 1.5 * iqr # upper fence
       outliers <- sample[sample < lower | sample > upper]
       
       if(length(outliers) == 0) {
@@ -9760,6 +9762,18 @@ statInfrServer <- function(id) {
       # }
     })
     
+    
+    observeEvent(input$oneMeanBoxplot, {
+      if (input$oneMeanBoxplot && input$dataAvailability != 'Summarized Data') {
+        showTab(inputId = "onePopMeanTabset", target = "Graphs")
+      } else {
+        if (input$onePopMeanTabset == "Graphs") {
+          updateTabsetPanel(inputId = 'onePopMeanTabset', selected = "Analysis")
+        }
+        hideTab(inputId = "onePopMeanTabset", target = "Graphs")
+      }
+    })
+    
     observeEvent(input$goInference, {
       output$renderOnePopMeanData <- renderUI({
         tagList(
@@ -10400,6 +10414,12 @@ statInfrServer <- function(id) {
         hideTab(inputId = "onePopMeanTabset", target = "Uploaded Data")
       } else {
         showTab(inputId = "onePopMeanTabset", target = "Uploaded Data")
+      }
+      
+      if(input$oneMeanBoxplot && input$dataAvailability != "Summarized Data") {
+        showTab(inputId = "onePopMeanTabset", target = "Graphs")
+      } else {
+        hideTab(inputId = "onePopMeanTabset", target = "Graphs")
       }
       
       # Hide/show tabs for 2 sample independent populations
