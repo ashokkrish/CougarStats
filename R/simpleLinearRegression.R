@@ -65,7 +65,29 @@ SLRMainPanelUI <- function(id) {
           #### ---------------- SLR Tab ------------------------------------------------
           tabPanel(
             title = "Simple Linear Regression",
-            value = "Simple Linear Regression", # Optional, for selection by value
+            value = "Simple Linear Regression",
+            
+            titlePanel("Estimated equation of the regression line"),
+            br(),
+            uiOutput(ns('regLineEquation')),
+            
+          ), # slr tabpanel
+          
+          #### ---------------- Calculations Tab -------------------------------------
+          tabPanel(
+            title = "Calculations",
+            value = "Calculations",
+            
+            titlePanel("Data"),
+            br(),
+            DTOutput(ns("slrDataTable"), width = "750px"),
+            br()
+          ), # Calculations tabpanel
+          
+          #### ---------------- Scatterplot Tab --------------------------------------
+          tabPanel(
+            title = "Scatterplot",
+            value = "Scatterplot",
             
             conditionalPanel(
               ns = ns,
@@ -82,87 +104,20 @@ SLRMainPanelUI <- function(id) {
                 dim         = "in px",
                 includeFlip = FALSE),
               uiOutput(ns("renderSLRScatterplot")),
-              br(),
-              hr(),
-            ), #scatterPlot == 1
-            
-            titlePanel("Data"),
-            br(),
-            DTOutput(ns("slrDataTable"), width = "750px"),
-            br(),
-            hr(),
-            
-            titlePanel("Estimated equation of the regression line"),
-            br(),
-            uiOutput(ns('regLineEquation')),
-            
-            # verbatimTextOutput(ns("linearRegression")),
-            # br(),
-            # hr(),
-            #
-            # titlePanel("95% confidence interval for regression parameters"),
-            # br(),
-            # verbatimTextOutput(ns("confintLinReg")),
-            # br(),
-            # hr(),
-            #
-            # titlePanel("ANOVA for regression"),
-            # br(),
-            # verbatimTextOutput(ns("anovaLinReg")),
-            #br(),
-          ), # slr tabpanel
-          #### ---------------- Normality of Residuals Tab -----------------------------
-                                        # tabPanel(
-                                        #   id    = ns("normality"),
-                                        #   title = "Normality of Residuals",
-                                        #
-                                        #   #----------------------------------#
-                                        #   # Tests for normality of residuals #
-                                        #   #----------------------------------#
-                                        #   titlePanel("Anderson-Darling test"),
-                                        #   verbatimTextOutput(ns("AndersonDarlingTest")),
-                                        #   br(),
-                                        #
-                                        #   titlePanel("Kolmogorov-Smirnov test"),
-                                        #   verbatimTextOutput(ns("KolmogorovSmirnovTest")),
-                                        #   br(),
-                                        #
-                                        #   titlePanel("Shapiro-Wilk test"),
-                                        #   verbatimTextOutput(ns("ShapiroTest")),
-                                        #   br(),
-                                        # ),
-
-#### ---------------- Residual Plots Tab -------------------------------------
-                                        # tabPanel(
-                                        #   id    = ns("resid"),
-                                        #   title = "Residual Plots",
-                                        #   #-----------------------------#
-                                        #   # Plots for Residual Analysis #
-                                        #   #-----------------------------#
-                                        #   titlePanel("Q-Q plot"),
-                                        #   plotOutput(ns("qqplot"), width = "500px"),
-                                        #   br(),
-                                        #
-                                        #   titlePanel("Other diagnostic plots"),
-                                        #   plotOutput(ns("moreplots"), width = "500px"),
-                                        #   br(),
-                                        # ),
-
-
+              br()
+            )
+          ), # Scatterplot tabpanel
+          
           #### ---------------- Correlation Coefficient Analysis Tab -------------------
           tabPanel(
             title = "Correlation Analysis",
-            value = "Correlation Analysis", # Optional
+            value = "Correlation Analysis",
             
             titlePanel("Pearson's Product-Moment Correlation"),
             br(),
             br(),
             uiOutput(ns('pearsonCorFormula')),
             br(),
-            # verbatimTextOutput(ns("PearsonCorTest")),
-            # br(),
-            # verbatimTextOutput(ns("PearsonConfInt")),
-            # br(),
             hr(),
             
             titlePanel("Kendall's Rank Correlation"),
@@ -181,7 +136,7 @@ SLRMainPanelUI <- function(id) {
           #### ---------------- Data File Tab ------------------------------------------
           tabPanel(
             title = "Uploaded Data",
-            value = "Uploaded Data", # Matches existing value
+            value = "Uploaded Data",
             
             titlePanel("Data File"),
             br(),
@@ -701,37 +656,6 @@ SLRServer <- function(id) {
         output$anovaLinReg <- renderPrint({
           anova(model) # Prints the ANOVA table
         })
-        
-        #----------------------------------#
-        # Tests for normality of residuals #
-        #----------------------------------#
-        
-        # Anderson-Darling Normality Test
-        # output$AndersonDarlingTest <- renderPrint({
-        #   ad.test(model$residuals)
-        # })
-        #
-        # # Kolmogorov-Smirnov Normality Test
-        # output$KolmogorovSmirnovTest <- renderPrint({
-        #   ks.test(model$residuals, "pnorm")
-        # })
-        #
-        # # Shapiro-Wilk Normality Test
-        # output$ShapiroTest <- renderPrint({
-        #   shapiro.test(model$residuals)
-        # })
-        #
-        # # Q-Q plot for residuals
-        # output$qqplot <- renderPlot({
-        #   #qqnorm(model$residuals, ylab = "Residuals", xlab = "Z Scores", main = "Q-Q plot of Standardized Residuals", pch = 19) #+
-        #   #qqline(model$residuals)
-        #   qqPlot(model$residuals, main = "Q-Q Plot", xlab = "Z Scores",  ylab = "Residuals", pch = 19)
-        # })
-        #
-        # output$moreplots <- renderPlot({
-        #   par(mfrow = c(2, 2))
-        #   plot(model, which = 1:4, pch = 19)
-        # })
         
         
         req(length(datx) > 1) ## correlation coefficient ----

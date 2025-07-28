@@ -85,7 +85,7 @@ MLRMainPanelUI <- function(id) {
                tabPanel(title = "ANOVA", uiOutput(ns("ANOVA"))),
                tabPanel(title = "Multicollinearity Detection", uiOutput(ns("MulticollinearityDetection"))),
                tabPanel(title = "Diagnostic Plots", uiOutput(ns("DiagnosticPlots"))),
-               
+               tabPanel(title = "Uploaded Data", DTOutput(ns("uploadedDataTable"))),
                id = ns("mainPanel"),
                theme = bs_theme(version = 4))
   )
@@ -118,6 +118,7 @@ MLRServer <- function(id) {
         hideTab(inputId = "mainPanel", target = "ANOVA")
         hideTab(inputId = "mainPanel", target = "Multicollinearity Detection")
         hideTab(inputId = "mainPanel", target = "Diagnostic Plots")
+        hideTab(inputId = "mainPanel", target = "Uploaded Data")
       })
     }, once = TRUE)
     
@@ -148,6 +149,7 @@ MLRServer <- function(id) {
       hideTab(inputId = "mainPanel", target = "ANOVA")
       hideTab(inputId = "mainPanel", target = "Multicollinearity Detection")
       hideTab(inputId = "mainPanel", target = "Diagnostic Plots")
+      hideTab(inputId = "mainPanel", target = "Uploaded Data")
       
       updatePickerInput(session, "responseVariable", selected = character(0))
       updatePickerInput(session, "explanatoryVariables", selected = character(0))
@@ -642,10 +644,19 @@ p(strong("Conclusion:")),
         
       }) ## end of isolation
       
+      output$uploadedDataTable <- renderDT({
+        req(uploadedTibble$data())
+        datatable(uploadedTibble$data(),
+                  options = list(pageLength = -1,
+                                 lengthMenu = list(c(10, 25, 50, -1), c("10", "25", "50", "All"))))
+      })
+      
+      
       showTab(inputId = "mainPanel", target = "MLR")
       showTab(inputId = "mainPanel", target = "ANOVA")
       showTab(inputId = "mainPanel", target = "Multicollinearity Detection")
       showTab(inputId = "mainPanel", target = "Diagnostic Plots")
+      showTab(inputId = "mainPanel", target = "Uploaded Data")
       updateNavbarPage(session, "mainPanel", selected = "MLR")
     }) |> bindEvent(input$calculate)
     
