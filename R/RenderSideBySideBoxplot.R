@@ -2,7 +2,7 @@ library(ggplot2)
 
 RenderSideBySideBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, plotXlab, plotYlab, boxWidth, gridlines, flip) {
   
-  # outlier label - formatting: outlier (count)
+  # count duplicates of outliers per group and add count to labels if > 1
   df_outliers <- df_outliers %>%
     group_by(sample, data) %>%
     summarise(count = n(), .groups = 'drop') %>%

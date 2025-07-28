@@ -9435,7 +9435,7 @@ statInfrServer <- function(id) {
                                data = c(data[,"values"]))
       colnames(df_boxplot) <- c("sample", "data")
       
-      # function to detect outliers for a vector
+      # function to detect outliers for a numeric vector
       getAnovaOutliers <- function(vec) {
         f <- fivenum(vec)
         iqr <- f[4] - f[2]
@@ -9443,10 +9443,11 @@ statInfrServer <- function(id) {
         upper <- f[4] + 1.5 * iqr
         vec[vec < lower | vec > upper]
       }
-      
-      # find outliers for each col
+    
       unique_samples <- unique(df_boxplot$sample)
       
+      # loop over each unique sample, extract its data, detect outliers using getAnovaOutliers(),
+      # and combine the non-empty results into a single dataframe
       df_outliers <- do.call(rbind, lapply(unique_samples, function(samp) {
         vals <- df_boxplot$data[df_boxplot$sample == samp]
         outs <- getAnovaOutliers(vals)

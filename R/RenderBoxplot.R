@@ -2,7 +2,7 @@ library(ggplot2)
 
 RenderBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, plotXlab, plotYlab, boxWidth, gridlines, flip) {
   
-  # group outliers, if there are duplicates, a (count) appears in the label
+  # count duplicates of outliers and add count to labels if > 1
   outlier_labels <- df_boxplot %>%
     filter(x %in% df_outliers) %>%
     group_by(x) %>%
