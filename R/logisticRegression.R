@@ -85,10 +85,13 @@ LogisticRegressionMainPanelUI <- function(id) {
                           condition = "input.explanatoryVariables && input.explanatoryVariables.length === 1",
                           tagList(
                             h3("Logistic Regression Plot"),
-                            plotOptionsMenuUI(ns("logrPlotOptions"), "Scatterplot"),
+                            plotOptionsMenuUI(ns("logrPlotOptions"), "Scatterplot", xlab = "x", ylab = "y"),
                             plotOutput(ns("logrScatterplot"))
                           )
                         )
+               ),
+               tabPanel(title = "Uploaded Data",
+                        DTOutput(ns("uploadedDataTable"))
                ),
                id = ns("mainPanel"),
                theme = bs_theme(version = 4)
@@ -114,21 +117,25 @@ LogisticRegressionServer <- function(id) {
     noFileCalculate <- reactiveVal(FALSE)
     calculation_done <- reactiveVal(FALSE)
     
-    perform_logr_analysis <- function() {
+    observeEvent(input$explanatoryVariables, {
+      if (!isTruthy(input$explanatoryVariables)) {
+        output$anovaOutput <- renderUI({})
+      }
+    }, ignoreNULL = FALSE)
+    
+    perform_logr_analysis <- function(silent_validation = FALSE) {
       if (!isTruthy(imported$data())) {
-        noFileCalculate(TRUE)
-        return()
-      } else {
-        noFileCalculate(FALSE)
+        if (!silent_validation) shinyalert::shinyalert("Input Error", "Please upload a data file.", type = "error", confirmButtonCol = "#18536F")
+        return(NULL)
       }
       
       df_orig <- imported$data()
       response_var_name <- input$responseVariable
-      explanatory_vars_names <- isolate(input$explanatoryVariables)
+      explanatory_vars_names <- input$explanatoryVariables
       
       if (!isTruthy(response_var_name) || !isTruthy(explanatory_vars_names) || length(explanatory_vars_names) == 0) {
-        shinyalert::shinyalert("Input Error", "Please select a response variable and at least one explanatory variable.", type = "error", confirmButtonCol = "#18536F")
-        return()
+        if (!silent_validation) shinyalert::shinyalert("Input Error", "Please select a response variable and at least one explanatory variable.", type = "error", confirmButtonCol = "#18536F")
+        return(NULL)
       }
       
       selected_vars_for_model <- unique(c(response_var_name, explanatory_vars_names))
@@ -136,16 +143,16 @@ LogisticRegressionServer <- function(id) {
       df_model_data <- na.omit(df_model_data)
       
       if(nrow(df_model_data) < (length(explanatory_vars_names) + 2) || nrow(df_model_data) == 0) {
-        shinyalert::shinyalert("Error", "Not enough observations after removing NAs for model fitting, or no data selected.", type = "error", confirmButtonCol = "#18536F")
-        return()
+        if (!silent_validation) shinyalert::shinyalert("Error", "Not enough observations after removing NAs for model fitting, or no data selected.", type = "error", confirmButtonCol = "#18536F")
+        return(NULL)
       }
       
       response_column_data <- df_model_data[[response_var_name]]
       if (!is.factor(response_column_data)) { response_column_data <- as.factor(response_column_data) }
       
       if (nlevels(response_column_data) != 2) {
-        shinyalert::shinyalert("Error", "Response variable must resolve to exactly two distinct values after NA removal for logistic regression.", type = "error", confirmButtonCol = "#18536F")
-        return()
+        if (!silent_validation) shinyalert::shinyalert("Error", "Response variable must resolve to exactly two distinct values after NA removal for logistic regression.", type = "error", confirmButtonCol = "#18536F")
+        return(NULL)
       }
       df_model_data[[response_var_name]] <- as.numeric(response_column_data) - 1
       
@@ -160,116 +167,137 @@ LogisticRegressionServer <- function(id) {
       fit <- tryCatch({
         glm(as.formula(formula_str), data = df_model_data, family = binomial(link = "logit"))
       }, error = function(e) {
-        shinyalert::shinyalert("Model Fitting Error", paste("Error in glm:", e$message), type = "error", confirmButtonCol = "#18536F")
+        if (!silent_validation) shinyalert::shinyalert("Model Fitting Error", paste("Error in glm:", e$message), type = "error", confirmButtonCol = "#18536F")
         return(NULL)
       })
       
-      if (!isTruthy(fit)) { return() }
+      if (!isTruthy(fit)) { return(NULL) }
       
-      isolate({
-        
-        # --- 1. Render the Equations UI ---
-        output$logisticModelEquations <- renderUI(withMathJax({
-          variable_list <- paste(
-            r"{\(}",
-            sprintf(r"[y    = \text{%s} \\]", response_var_name),
-            paste(
-              sprintf(
-                r"[x_{%d} = \text{%s}]",
-                seq_along(explanatory_vars_names),
-                explanatory_vars_names
-              ),
-              collapse = r"[\\]"
+      return(list(fit = fit, data = df_model_data, response = response_var_name, explanatory = explanatory_vars_names))
+    }
+    
+    observeEvent(input$calculate, {
+      results <- perform_logr_analysis(silent_validation = FALSE)
+      if (!is.null(results)) {
+        render_analysis_results(results)
+        calculation_done(TRUE)
+      }
+    })
+    
+    observe({
+      req(calculation_done())
+      results <- perform_logr_analysis(silent_validation = TRUE)
+      if (!is.null(results)) {
+        render_analysis_results(results)
+      } else {
+        # Clear outputs if inputs become invalid reactively
+        output$Equations <- renderUI({})
+        output$anovaOutput <- renderUI({})
+      }
+    }) |> bindEvent(input$responseVariable, input$explanatoryVariables, ignoreInit = TRUE)
+    
+    render_analysis_results <- function(results) {
+      fit <- results$fit
+      df_model_data <- results$data
+      response_var_name <- results$response
+      explanatory_vars_names <- results$explanatory
+      
+      # --- 1. Render the Equations UI ---
+      output$logisticModelEquations <- renderUI(withMathJax({
+        variable_list <- paste(
+          r"{\(}",
+          sprintf(r"[y    = \text{%s} \\]", response_var_name),
+          paste(
+            sprintf(
+              r"[x_{%d} = \text{%s}]",
+              seq_along(explanatory_vars_names),
+              explanatory_vars_names
             ),
-            r"{\)}"
-          )
-          
-          symbolic_terms <- paste(
-            sprintf("\\hat{\\beta}_{%d}x_{%d}", 1:length(explanatory_vars_names), 1:length(explanatory_vars_names)),
-            collapse = " + "
-          )
-          log_odds_general <- paste0("\\text{logit}(\\hat{p}) = \\hat{\\beta}_0 + ", symbolic_terms)
-          
-          model_coeffs <- coefficients(fit)
-          explanatory_coeffs <- model_coeffs[-1]
-          
-          value_terms <- paste(
-            sprintf("%+.3f x_{%d}", explanatory_coeffs, seq_along(explanatory_coeffs)),
-            collapse = " "
-          )
-          
-          log_odds_specific <- gsub(
-            "\\+ -", "- ",
-            sprintf("\\text{logit}(\\hat{p}) = %.3f %s", model_coeffs[1], value_terms)
-          )
-          
-          combined_latex <- sprintf("\\(%s \\\\ %s\\)", log_odds_general, log_odds_specific)
-          
-          div(
-            p("The variables in the model are"),
-            p(variable_list),
-            p("The estimated binary logistic regression equation is"),
-            p(combined_latex)
-          )
-        }))
+            collapse = r"[\\]"
+          ),
+          r"{\)}"
+        )
         
-        # --- 2. Render the Coefficients and CIs Table with requested columns ---
-        output$logrCoefConfintTable <- renderTable({
-          
-          summary_coeffs <- as.data.frame(summary(fit)$coefficients)
-          
-          or_and_ci <- exp(cbind(OR = coef(fit), confint(fit)))
-          colnames(or_and_ci) <- c("OR", "Lower_CI_OR", "Upper_CI_OR")
-          or_and_ci <- as.data.frame(or_and_ci)
-          
-          final_table <- summary_coeffs %>%
-            mutate(
-              Wald = (Estimate / `Std. Error`)^2 ,
-              df = 1
-            ) %>%
-            rownames_to_column("Term") %>%
-            left_join(rownames_to_column(or_and_ci, "Term"), by = "Term") %>%
-            dplyr::select(
-              Term,
-              Coefficient = Estimate,
-              SE = `Std. Error`,
-              Wald,
-              df,
-              `p-value` = `Pr(>|z|)`,
-              OR,
-              `Lower 95% CI for OR` = Lower_CI_OR,
-              `Upper 95% CI for OR` = Upper_CI_OR
-            )
-          
-          # Convert the 'Term' column back to row names for display
-          tibble::column_to_rownames(final_table, var = "Term")
-          
-        }, rownames = TRUE, striped = TRUE, na = "", align = "c", digits = 3)
+        symbolic_terms <- paste(
+          sprintf("\\hat{\\beta}_{%d}x_{%d}", 1:length(explanatory_vars_names), 1:length(explanatory_vars_names)),
+          collapse = " + "
+        )
+        log_odds_general <- paste0("\\text{logit}(\\hat{p}) = \\hat{\\beta}_0 + ", symbolic_terms)
         
-        output$logisticModelCoefficientsAndConfidenceIntervals <- renderUI({
-          column(
-            12,
-            p(strong("Coefficients and Confidence Intervals")),
-            p("Coefficients are the log-odds. The Wald statistic tests the hypothesis that a given coefficient is zero. Odds Ratios (OR) and their 95% confidence intervals are also provided."),
-            tableOutput(ns("logrCoefConfintTable"))
-          )
-        })
+        model_coeffs <- coefficients(fit)
+        explanatory_coeffs <- model_coeffs[-1]
         
-        # --- 3. Render the Main "Equations" Tab UI (parent container) ---
-        output$Equations <- renderUI({
-          validate(
-            need(imported$name(), "Upload some data."),
-            need(isTruthy(input$responseVariable), "A response variable is required."),
-            need(isTruthy(input$explanatoryVariables), "Explanatory variables are required.")
-          )
-          tagList(
-            h3("Calculations and Formulas"),
-            uiOutput(ns("logisticModelEquations")),
-            uiOutput(ns("logisticModelCoefficientsAndConfidenceIntervals"))
-          )
-        })
+        value_terms <- paste(
+          sprintf("%+.3f x_{%d}", explanatory_coeffs, seq_along(explanatory_coeffs)),
+          collapse = " "
+        )
         
-      }) # End isolate
+        log_odds_specific <- gsub(
+          "\\+ -", "- ",
+          sprintf("\\text{logit}(\\hat{p}) = %.3f %s", model_coeffs[1], value_terms)
+        )
+        
+        combined_latex <- sprintf("\\(%s \\\\ %s\\)", log_odds_general, log_odds_specific)
+        
+        div(
+          p("The variables in the model are"),
+          p(variable_list),
+          p("The estimated binary logistic regression equation is"),
+          p(combined_latex)
+        )
+      }))
+      
+      # --- 2. Render the Coefficients and CIs Table with requested columns ---
+      output$logrCoefConfintTable <- renderTable({
+        
+        summary_coeffs <- as.data.frame(summary(fit)$coefficients)
+        
+        or_and_ci <- exp(cbind(OR = coef(fit), confint(fit)))
+        colnames(or_and_ci) <- c("OR", "Lower_CI_OR", "Upper_CI_OR")
+        or_and_ci <- as.data.frame(or_and_ci)
+        
+        final_table <- summary_coeffs %>%
+          mutate(
+            Wald = (Estimate / `Std. Error`)^2 ,
+            df = 1
+          ) %>%
+          rownames_to_column("Term") %>%
+          left_join(rownames_to_column(or_and_ci, "Term"), by = "Term") %>%
+          dplyr::select(
+            Term,
+            Coefficient = Estimate,
+            SE = `Std. Error`,
+            Wald,
+            df,
+            `p-value` = `Pr(>|z|)`,
+            OR,
+            `Lower 95% CI for OR` = Lower_CI_OR,
+            `Upper 95% CI for OR` = Upper_CI_OR
+          )
+        
+        # Convert the 'Term' column back to row names for display
+        tibble::column_to_rownames(final_table, var = "Term")
+        
+      }, rownames = TRUE, striped = TRUE, na = "", align = "c", digits = 3)
+      
+      output$logisticModelCoefficientsAndConfidenceIntervals <- renderUI({
+        column(
+          12,
+          p(strong("Coefficients and Confidence Intervals")),
+          p("Coefficients are the log-odds. The Wald statistic tests the hypothesis that a given coefficient is zero. Odds Ratios (OR) and their 95% confidence intervals are also provided."),
+          tableOutput(ns("logrCoefConfintTable"))
+        )
+      })
+      
+      # --- 3. Render the Main "Equations" Tab UI (parent container) ---
+      output$Equations <- renderUI({
+        tagList(
+          h3("Calculations and Formulas"),
+          uiOutput(ns("logisticModelEquations")),
+          uiOutput(ns("logisticModelCoefficientsAndConfidenceIntervals"))
+        )
+      })
+      
       # --- ANOVA-style table for Logistic Regression ---
       # Likelihood Ratio Test
       anova_table <- anova(fit, test = "LRT")
@@ -326,37 +354,39 @@ LogisticRegressionServer <- function(id) {
           geom_smooth(method = "glm", method.args = list(family = "binomial"), se = FALSE, color = input[["logrPlotOptions-Colour"]], linewidth = input[["logrPlotOptions-LineWidth"]]) +
           labs(
             title = input[["logrPlotOptions-Title"]],
-            x = input[["logrPlotOptions-Xlab"]],
-            y = input[["logrPlotOptions-Ylab"]]
+            x = "x",
+            y = "y"
           ) +
-          theme_minimal()
+          theme(plot.title = element_text(size = 24, face = "bold", hjust = 0.5),
+                axis.title.x = element_text(size = 16, face = "bold", vjust = -1.5),
+                axis.title.y = element_text(size = 16, face = "bold"),
+                axis.text.x.bottom = element_text(size = 12),
+                axis.text.y.left = element_text(size = 12),
+                panel.background = element_rect(fill = "white", colour = "black"),
+                panel.grid.major = element_blank(),
+                panel.grid.minor = element_blank())
+      })
+      
+      output$uploadedDataTable <- renderDT({
+        req(imported$data())
+        datatable(imported$data(),
+                  options = list(pageLength = -1,
+                                 lengthMenu = list(c(10, 25, 50, -1), c("10", "25", "50", "All"))))
       })
       
       showTab(inputId = "mainPanel", target = "LR")
       showTab(inputId = "mainPanel", target = "Analysis of Deviance")
       showTab(inputId = "mainPanel", target = "Diagnostic Plot")
+      showTab(inputId = "mainPanel", target = "Uploaded Data")
       updateNavbarPage(session, "mainPanel", selected = "LR")
     }
-    
-    observeEvent(input$calculate, {
-      perform_logr_analysis()
-      calculation_done(TRUE)
-    })
-    
-    observe({
-      input$responseVariable
-      input$explanatoryVariables
-      
-      if (calculation_done()) {
-        perform_logr_analysis()
-      }
-    })
     
     observeEvent(TRUE, {
       shinyjs::delay(0, {
         hideTab(inputId = "mainPanel", target = "LR")
         hideTab(inputId = "mainPanel", target = "Analysis of Deviance")
         hideTab(inputId = "mainPanel", target = "Diagnostic Plot")
+        hideTab(inputId = "mainPanel", target = "Uploaded Data")
       })
     }, once = TRUE)
     
@@ -405,6 +435,7 @@ LogisticRegressionServer <- function(id) {
       hideTab(inputId = "mainPanel", target = "LR")
       hideTab(inputId = "mainPanel", target = "Analysis of Deviance")
       hideTab(inputId = "mainPanel", target = "Diagnostic Plot")
+      hideTab(inputId = "mainPanel", target = "Uploaded Data")
       
       calculation_done(FALSE)
       

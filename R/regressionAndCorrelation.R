@@ -9,8 +9,7 @@ regressionAndCorrelationUI <- function(id) {
                    tags$b("Methodology"),
                    choices = list("Simple Linear Regression and Correlation Analysis" = "SLR",
                                   "Multiple Linear Regression" = "MLR",
-                                  "Binary Logistic Regression" = "LOGR",
-                                  "Principal Component Analysis" = "PCA"),
+                                  "Binary Logistic Regression" = "LOGR"),
                    selected = "SLR"
       ),
       uiOutput(ns("regressionSidebarUI"))
@@ -40,11 +39,11 @@ regressionAndCorrelationServer <- function(id) {
       paste0("logr_dynamic_instance_", logr_instance_counter())
     })
     
-    # --- Dynamic ID Generation for PCA ---
-    pca_instance_counter <- reactiveVal(0)
-    current_pca_module_id <- reactive({
-      paste0("pca_dynamic_instance_", pca_instance_counter())
-    })
+    # # --- Dynamic ID Generation for PCA ---
+    # pca_instance_counter <- reactiveVal(0)
+    # current_pca_module_id <- reactive({
+    #   paste0("pca_dynamic_instance_", pca_instance_counter())
+    # })
     
     # Observer for the main radio button (input$multiple)
     observeEvent(input$multiple, {
@@ -71,17 +70,17 @@ regressionAndCorrelationServer <- function(id) {
           req(current_logr_module_id())
           LogisticRegressionMainPanelUI(session$ns(current_logr_module_id()))
         })
-      } else if (input$multiple == "PCA") {
-        pca_instance_counter(pca_instance_counter() + 1)
-        output$regressionSidebarUI <- renderUI({
-          req(current_pca_module_id())
-          PCASidebarUI(session$ns(current_pca_module_id()))
-        })
-        output$regressionMainPanelUI <- renderUI({
-          req(current_pca_module_id())
-          PCAMainPanelUI(session$ns(current_pca_module_id()))
-        })
-      }
+      } #else if (input$multiple == "PCA") {
+      # pca_instance_counter(pca_instance_counter() + 1)
+      # output$regressionSidebarUI <- renderUI({
+      #   req(current_pca_module_id())
+      #   PCASidebarUI(session$ns(current_pca_module_id()))
+      # })
+      # output$regressionMainPanelUI <- renderUI({
+      #   req(current_pca_module_id())
+      #   PCAMainPanelUI(session$ns(current_pca_module_id()))
+      # })
+      #}
     }, ignoreNULL = FALSE, ignoreInit = FALSE) # Corrected this line
     
     observeEvent(current_mlr_module_id(), {
@@ -94,10 +93,10 @@ regressionAndCorrelationServer <- function(id) {
       LogisticRegressionServer(current_logr_module_id())
     }, ignoreNULL = TRUE)
     
-    observeEvent(current_pca_module_id(), {
-      req(input$multiple == "PCA")
-      PCAServer(current_pca_module_id())
-    }, ignoreNULL = TRUE)
+    # observeEvent(current_pca_module_id(), {
+    #   req(input$multiple == "PCA")
+    #   PCAServer(current_pca_module_id())
+    # }, ignoreNULL = TRUE)
     
   })
 }
