@@ -5803,7 +5803,8 @@ statInfrServer <- function(id) {
         validate(
           need(input$sample1, "Sample Data required.") %then%
             need(length(createNumLst(input$sample1)) > 1, "Sample Data requires a minimum of 2 data points."),
-          need(input$popuSDRaw & input$popuSDRaw > 0, "Population Standard Deviation must be positive."),
+          need(input$popuSDRaw,"Population Standard Deviation is required.") %then%
+            need(input$popuSDRaw > 0, "Population Standard Deviation must be positive."),
           errorClass = "myClass"
         )
         
