@@ -2256,8 +2256,13 @@ statInfrServer <- function(id) {
     onemeansdknown_iv$add_rule("popuSD", sv_gt(0))
     
     # popuSDRaw
-    onemeanraw_iv$add_rule("popuSDRaw", sv_required())
-    onemeanraw_iv$add_rule("popuSDRaw", sv_gt(0))
+    onemeanraw_iv$add_rule("popuSDRaw", ~ {
+      if (input$sigmaKnownRaw == "rawKnown" && is.na(input$popuSDRaw)) {
+        "Required"
+      } else if (input$sigmaKnownRaw == "rawKnown" && input$popuSDRaw <= 0) {
+        "Must be greater than 0"
+      }
+    })
     
     # popuSDUpload
     onemeanuploadsd_iv$add_rule("popuSDUpload", sv_required())
@@ -5803,8 +5808,10 @@ statInfrServer <- function(id) {
         validate(
           need(input$sample1, "Sample Data required.") %then%
             need(length(createNumLst(input$sample1)) > 1, "Sample Data requires a minimum of 2 data points."),
-          need(input$popuSDRaw,"Population Standard Deviation is required.") %then%
-            need(input$popuSDRaw > 0, "Population Standard Deviation must be positive."),
+          if (input$sigmaKnownRaw == "rawKnown") {
+            need(input$popuSDRaw,"Population Standard Deviation is required.") %then%
+              need(input$popuSDRaw > 0, "Population Standard Deviation must be positive.")
+          },
           errorClass = "myClass"
         )
         
