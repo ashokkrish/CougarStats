@@ -1840,7 +1840,7 @@ statInfrUI <- function(id) {
                                         ns = ns,
                                         condition = "input.inferenceType2 == 'Hypothesis Testing' || input.inferenceType2 == 'Confidence Interval'",
                                         
-                                        titlePanel("Hypothesis Test"),
+                                        titlePanel(tags$u("Hypothesis Test")),
                                         br(),
                                         uiOutput(ns('wilcoxonRankSum')),
                                         br(),
@@ -8053,8 +8053,8 @@ statInfrServer <- function(id) {
       if(input$altHypothesis2 == "2") {
         z_critical <- qnorm(1 - SigLvl()/2)
         critVal <- paste("\\pm", round(qnorm(1 - SigLvl()/2), 3))
-        nullHyp <- paste0("Median_{", name1, "} = Median_{", name2, "}")
-        altHyp <- paste0("Median_{", name1, "} \\neq Median_{", name2, "}")
+        nullHyp <- paste0("\\text{Median}_{\\text{", name1, "}} = \\text{Median}_{\\text{", name2, "}}")
+        altHyp <- paste0("\\text{Median}_{\\text{", name1, "}} \\neq \\text{Median}_{\\text{", name2, "}}")
         altern <- "two.sided"
         u_test <- u1_statistic
         correction_factor <- 0
@@ -8071,8 +8071,8 @@ statInfrServer <- function(id) {
       } else if(input$altHypothesis2 == "1") {
         z_critical <- qnorm(SigLvl())
         critVal <- round(qnorm(SigLvl()), 3)
-        nullHyp <- paste0("Median_{", name1, "} \\geq Median_{", name2, "}")
-        altHyp <- paste0("Median_{", name1, "} \\lt Median_{", name2, "}")
+        nullHyp <- paste0("\\text{Median}_{\\text{", name1, "}} \\geq \\text{Median}_{\\text{", name2, "}}")
+        altHyp <- paste0("\\text{Median}_{\\text{", name1, "}} \\lt \\text{Median}_{\\text{", name2, "}}")
         altern <- "less"
         u_test <- u1_statistic
         correction_factor <- 0
@@ -8085,8 +8085,8 @@ statInfrServer <- function(id) {
       } else {
         z_critical <- qnorm(1 - SigLvl())
         critVal <- round(qnorm(1 - SigLvl()), 3)
-        nullHyp <- paste0("Median_{", name1, "} \\leq Median_{", name2, "}")
-        altHyp <- paste0("Median_{", name1, "} \\gt Median_{", name2, "}")
+        nullHyp <- paste0("\\text{Median}_{\\text{", name1, "}} \\leq \\text{Median}_{\\text{", name2, "}}")
+        altHyp <- paste0("\\text{Median}_{\\text{", name1, "}} \\gt \\text{Median}_{\\text{", name2, "}}")
         altern <- "greater"
         u_test <- u1_statistic
         correction_factor <- 0
@@ -8199,12 +8199,9 @@ statInfrServer <- function(id) {
       rankSumHTHead <- tagList(
         p(
           withMathJax(),
-          
-          sprintf("\\( H_{0}: %s\\)",
-                  nullHyp),
+          sprintf("\\( H_{0}:\\ %s\\)", nullHyp),
           br(),
-          sprintf("\\( H_{a}: %s\\)",
-                  altHyp),
+          sprintf("\\( H_{a}:\\ %s\\)", altHyp),
           br(), br(),
           sprintf("\\( \\alpha = %s \\)", SigLvl()),
           br(),br(),
@@ -8217,18 +8214,19 @@ statInfrServer <- function(id) {
           br(),
           
           p(tags$b("Sum of Ranks:")),
-          sprintf("\\( \\qquad W_{1} = %s \\)", observed_W),
+          sprintf("\\(  W_{1} = %s \\)", observed_W),
           br(),
-          sprintf("\\( \\qquad W_{2} = %s \\)", observed_W2),
+          sprintf("\\(  W_{2} = %s \\)", observed_W2),
           br(),br(),
           
           if (input$normaprowrs == "Exact") {
             tagList(
-              p(tags$b("Mann-Whitney U Statistic:")),
-              sprintf("\\( \\qquad U = W_{1} - \\frac{n_{1}(n_{1} + 1)}{2} = %s - \\frac{%s (%s + 1)}{2} = %s \\)", observed_W, n1, n1, u1_statistic),
+              p(tags$b("Mann-Whitney ", tags$i("U"), " Statistic:")),
+              sprintf("\\(  U_{1} = W_{1} - \\frac{n_{1}(n_{1} + 1)}{2} = %s - \\frac{%s (%s + 1)}{2} = %s \\)", observed_W, n1, n1, u1_statistic),
               br(), br(), 
-          #    sprintf("\\( \\qquad U_{2} = W_{2} - \\frac{n_{2}(n_{2} + 1)}{2} = %s - \\frac{%s (%s + 1)}{2} = %s \\)", observed_W2, n2, n2, u2_statistic),
-          #    br(),br(),
+              sprintf("\\( U_{2} = W_{2} - \\frac{n_{2}(n_{2} + 1)}{2} = %s - \\frac{%s (%s + 1)}{2} = %s \\)", observed_W2, n2, n2, u2_statistic),
+              helpText("*Note: By default, U1 is always chosen as a test statistic."),
+              br(),
             
           #    p(tags$b("Mann-Whitney U Expected Mean:")),
           #    sprintf("\\( \\qquad \\mu_{U} = \\frac{n_{1}n_{2}}{2} = \\frac{%s(%s)}{2} = %s \\)", n1, n2, u_mean),
@@ -8249,12 +8247,12 @@ statInfrServer <- function(id) {
           if (input$normaprowrs == "Normal approximation (for large samples)") {
             tagList(
               p(tags$b("Mean:")),
-              sprintf("\\( \\qquad \\mu_{W} = \\frac{n_{1}(n + 1)}{2} = \\frac{%s(%s + 1)}{2} = %s \\)",
+              sprintf("\\(  \\mu_{W} = \\frac{n_{1}(n + 1)}{2} = \\frac{%s(%s + 1)}{2} = %s \\)",
                       n1, nAll, (sum(wilcoxonRankedData()$Group == name1) * (nrow(wilcoxonRankedData()) + 1)) / 2
               ),
               br(), br(),
               p(tags$b("Standard Deviation:")),
-              sprintf("\\( \\qquad  \\sigma_W = \\sqrt{\\frac{n_{1}n_{2}(n + 1)}{12}} = \\sqrt{\\frac{%s \\times %s (%s + 1)}{12}} = %s \\)",
+              sprintf("\\( \\sigma_W = \\sqrt{\\frac{n_{1}n_{2}(n + 1)}{12}} = \\sqrt{\\frac{%s \\times %s (%s + 1)}{12}} = %s \\)",
                       n1, n2, nAll, round(sigma_w, 4)),
               br(),br(),
               
@@ -8264,29 +8262,29 @@ statInfrServer <- function(id) {
                   input$continuityCorrectionOption == "True" && input$normaprowrs == "Normal approximation (for large samples)") {
                 
                 if(input$altHypothesis2 == "1") { # Less than alternative
-                  sprintf("\\( \\qquad z = \\frac{W - \\mu_W + 0.5}{\\sigma_W} = \\frac{%s - %s + %s}{%s} = %s \\)",
+                  sprintf("\\(  z = \\frac{W - \\mu_W + 0.5}{\\sigma_W} = \\frac{%s - %s + %s}{%s} = %s \\)",
                           round(observed_W, 4), round(mu_w, 4), abs(correction_factor), round(sigma_w, 4), round(z_stat, 3))
                 }
                 else if(input$altHypothesis2 == "2") { # Two-sided alternative
                   if (observed_W > mu_w) {
-                    sprintf("\\( \\qquad z = \\frac{W - \\mu_W - 0.5}{\\sigma_W} = \\frac{%s - %s - %s}{%s} = %s \\)",
+                    sprintf("\\(  z = \\frac{W - \\mu_W - 0.5}{\\sigma_W} = \\frac{%s - %s - %s}{%s} = %s \\)",
                             round(observed_W, 4), round(mu_w, 4), abs(correction_factor), round(sigma_w, 4), round(z_stat, 3))
                   } else if (observed_W < mu_w) {
-                    sprintf("\\( \\qquad z = \\frac{W - \\mu_W + 0.5}{\\sigma_W} = \\frac{%s - %s + %s}{%s} = %s \\)",
+                    sprintf("\\(  z = \\frac{W - \\mu_W + 0.5}{\\sigma_W} = \\frac{%s - %s + %s}{%s} = %s \\)",
                             round(observed_W, 4), round(mu_w, 4), abs(correction_factor), round(sigma_w, 4), round(z_stat, 3))
                   } else { # observed_W == mu_w, no continuity correction applied in formula
-                    sprintf("\\( \\qquad z = \\frac{W - \\mu_W}{\\sigma_W} = \\frac{%s - %s}{%s} = %s \\)",
+                    sprintf("\\( z = \\frac{W - \\mu_W}{\\sigma_W} = \\frac{%s - %s}{%s} = %s \\)",
                             round(observed_W, 4), round(mu_w, 4), round(sigma_w, 4), round(z_stat, 3))
                   }
                 }
                 else { # Greater than alternative (assuming input$altHypothesis2 corresponds to "greater")
-                  sprintf("\\( \\qquad z = \\frac{W - \\mu_W - 0.5}{\\sigma_W} = \\frac{%s - %s - %s}{%s} = %s \\)",
+                  sprintf("\\( z = \\frac{W - \\mu_W - 0.5}{\\sigma_W} = \\frac{%s - %s - %s}{%s} = %s \\)",
                           round(observed_W, 4), round(mu_w, 4), abs(correction_factor), round(sigma_w, 4), round(z_stat, 3))
                 }
                 
               } else { # No continuity correction
                 if(input$altHypothesis2 == "1") { # Less than alternative
-                  sprintf("\\( \\qquad z = \\frac{W - \\mu_W}{\\sigma_W} = \\frac{%s - %s}{%s} = %s \\)",
+                  sprintf("\\(  z = \\frac{W - \\mu_W}{\\sigma_W} = \\frac{%s - %s}{%s} = %s \\)",
                           round(observed_W, 4), round(mu_w, 4), round(sigma_w, 4), round(z_stat, 3))
                 }
                 else if(input$altHypothesis2 == "2") { # Two-sided alternative
@@ -8294,7 +8292,7 @@ statInfrServer <- function(id) {
                           round(observed_W, 4), round(mu_w, 4), round(sigma_w, 4), round(z_stat, 3))
                 }
                 else { # Greater than alternative
-                  sprintf("\\( \\qquad z = \\frac{W - \\mu_W}{\\sigma_W} = \\frac{%s - %s}{%s} = %s \\)",
+                  sprintf("\\( z = \\frac{W - \\mu_W}{\\sigma_W} = \\frac{%s - %s}{%s} = %s \\)",
                           round(observed_W, 4), round(mu_w, 4), round(sigma_w, 4), round(z_stat, 3))
                 }
               },
@@ -8304,7 +8302,7 @@ statInfrServer <- function(id) {
           
           
           p(tags$b("Using P-value Method:")),
-          sprintf("\\( \\qquad p \\text{-value} = %s \\)", ifelse(is.na(p_value), "NA", round(p_value, 4))),
+          sprintf("\\( P = %s \\)", ifelse(is.na(p_value), "NA", round(p_value, 4))),
           if (has_ties && input$normaprowrs == "Exact"){
             helpText("*Note: Exact p-values cannot be computed in the presence of ties. Normal approximation was used.")
           },
@@ -8312,11 +8310,11 @@ statInfrServer <- function(id) {
           br(),
           if (p_value <= SigLvl()) {
             tagList(
-            sprintf("\\( \\qquad \\text{Since } P \\leq %s, \\text{reject } H_0. \\)", SigLvl()),
+            sprintf("\\( \\text{Since } P \\leq %s, \\text{reject } H_0. \\)", SigLvl()),
             br(), br())
           } else {
             tagList(
-            sprintf("\\( \\qquad \\text{Since } P > %s, \\text{do not reject } H_0. \\)", SigLvl()),
+            sprintf("\\( \\text{Since } P > %s, \\text{do not reject } H_0. \\)", SigLvl()),
             br(), br())
           },
           
@@ -8325,41 +8323,41 @@ statInfrServer <- function(id) {
               p(tags$b("Using Critical Value Method:")),
 
               if (input$altHypothesis2 == "2") { # Two-sided
-                sprintf("\\( \\qquad \\text{Rejection region: } U \\leq %s \\text{ or } U \\geq %s \\)",
+                sprintf("\\( \\text{Rejection Region: } U \\leq %s \\text{ or } U \\geq %s \\)",
                         round(lower, 3), round(upper, 3))
               } else if (input$altHypothesis2 == "1") { # Left-sided
-                sprintf("\\( \\qquad \\text{Rejection region: } U \\leq %s \\)", round(lower, 3))
+                sprintf("\\(  \\text{Rejection Region: } U \\leq %s \\)", round(lower, 3))
               } else { # Right-sided
-                sprintf("\\( \\qquad \\text{Rejection region: } U \\geq %s \\)", round(upper, 3))
+                sprintf("\\(  \\text{Rejection Region: } U \\geq %s \\)", round(upper, 3))
               },
               br(),
               
-              sprintf("\\( \\qquad \\text{Observed Test Statistic } U = %s \\)", round(u1_statistic, 3)),
+              sprintf("\\( \\text{Observed Test Statistic: } U = %s \\)", round(u1_statistic, 3)),
               br(), br(),
 
               if (input$altHypothesis2 == "2") { # Two-sided decision
                 if (u1_statistic <= lower || u1_statistic >= upper) {
-                  sprintf("\\( \\qquad \\text{Since observed } U = %s \\text{ falls in the rejection region } (U \\leq %s \\text{ or } U \\geq %s), \\text{reject } H_0. \\)",
-                          round(u1_statistic, 3), round(lower, 3), round(upper, 3))
+                  sprintf("\\( \\text{Since the test statistic } U_{1} \\text{ falls in the rejection region } (U \\leq %s \\text{ or } U \\geq %s), \\text{reject } H_0. \\)",
+                          round(lower, 3), round(upper, 3))
                 } else {
-                  sprintf("\\( \\qquad \\text{Since observed } U = %s \\text{ does not fall in the rejection region } (%s < U < %s), \\text{do not reject } H_0. \\)",
-                          round(u1_statistic, 3), round(lower, 3), round(upper, 3))
+                  sprintf("\\( \\text{Since the test statistic } U_{1} \\text{ does not fall in the rejection region } (%s < U < %s), \\text{do not reject } H_0. \\)",
+                           round(lower, 3), round(upper, 3))
                 }
               } else if (input$altHypothesis2 == "1") { # Left-sided decision
                 if (u1_statistic <= lower) {
-                  sprintf("\\( \\qquad \\text{Since observed } U = %s \\text{ falls in the rejection region } (U \\leq %s), \\text{reject } H_0. \\)",
-                          round(u1_statistic, 3), round(lower, 3))
+                  sprintf("\\( \\text{Since the test statistic } U_{1} \\text{ falls in the rejection region } (U \\leq %s), \\text{reject } H_0. \\)",
+                           round(lower, 3))
                 } else {
-                  sprintf("\\( \\qquad \\text{Since observed } U = %s \\text{ does not fall in the rejection region } (U > %s), \\text{do not reject } H_0. \\)",
-                          round(u1_statistic, 3), round(lower, 3))
+                  sprintf("\\( \\text{Since the test statistic } U_{1} \\text{ does not fall in the rejection region } (U > %s), \\text{do not reject } H_0. \\)",
+                          round(lower, 3))
                 }
               } else { # Right-sided decision
                 if (u1_statistic >= upper) {
-                  sprintf("\\( \\qquad \\text{Since observed } U = %s \\text{ falls in the rejection region } (U \\geq %s), \\text{reject } H_0. \\)",
-                          round(u1_statistic, 3), round(upper, 3))
+                  sprintf("\\( \\text{Since the test statistic } U_{1} \\text{ falls in the rejection region } (U \\geq %s), \\text{reject } H_0. \\)",
+                           round(upper, 3))
                 } else {
-                  sprintf("\\( \\qquad \\text{Since observed } U = %s \\text{ does not fall in the rejection region } (U < %s), \\text{do not reject } H_0. \\)",
-                          round(u1_statistic, 3), round(upper, 3))
+                  sprintf("\\( \\text{Since the test statistic } U_{1} \\text{ does not fall in the rejection region } (U < %s), \\text{do not reject } H_0. \\)",
+                          round(upper, 3))
                 }
               }
           )}
