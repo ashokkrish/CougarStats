@@ -2258,8 +2258,6 @@ statInfrServer <- function(id) {
     onemeansdknown_iv$add_rule("popuSD", sv_gt(0))
     
     # popuSDRaw
-    onemeanraw_iv$add_rule("popuSDRaw", sv_required())
-    onemeanraw_iv$add_rule("popuSDRaw", sv_gt(0))
     onemeanraw_iv$add_rule("popuSDRaw", ~ {
       if (input$sigmaKnownRaw == "rawKnown" && is.na(input$popuSDRaw)) {
         "Required"
