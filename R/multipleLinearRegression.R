@@ -483,7 +483,8 @@ p(sprintf(r"[Bayesian Information Criterion (BIC): \(%0.4f\)]", BIC(model)))
             BIC(model)
           })
           output$linearModelResidualsPanelPlot <- renderPlot({
-            resid_panel(model)
+            par(mfrow = c(2, 2))
+            plot(model, pch = 20)
           })
         })
         

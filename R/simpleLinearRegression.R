@@ -566,7 +566,8 @@ SLRServer <- function(id) {
         )
         
         output$slrResidualsPanelPlot <- renderPlot({
-          resid_panel(model)
+          par(mfrow = c(2, 2))
+          plot(model, pch = 20)
         })
         
         if (summary(model)$coefficients["datx", "Estimate"] > 0) {
