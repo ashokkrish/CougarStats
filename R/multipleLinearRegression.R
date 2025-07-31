@@ -1,22 +1,5 @@
 # R/multipleLinearRegression.R
 
-library(shiny)
-library(shinyjs)
-library(shinyWidgets)
-library(bslib)
-library(datamods)
-library(magrittr)
-library(ggplot2)
-library(dplyr)
-library(knitr) # for kable to produce HTML tables.
-library(broom.helpers)
-library(GGally)
-library(tibble)
-library(tidyr)
-library(car)
-library(ggResidpanel)
-library(waiter)
-
 ## mnemonic: corset
 ## To set below the diagonal to NA, just t(corsetAboveDiagNA).
 ## Always calls "cor" with "use = 'complete.obs'".
