@@ -8321,12 +8321,12 @@ statInfrServer <- function(id) {
               p(tags$b("Using Critical Value Method:")),
 
               if (input$altHypothesis2 == "2") { # Two-sided
-                sprintf("\\( \\text{Rejection Region: } U \\leq %s \\text{ or } U \\geq %s \\)",
+                sprintf("\\( \\text{Rejection Region: reject }H_0 \\text{ whenever } U \\leq %s \\text{ or } U \\geq %s \\)",
                         round(lower, 3), round(upper, 3))
               } else if (input$altHypothesis2 == "1") { # Left-sided
-                sprintf("\\(  \\text{Rejection Region: } U \\leq %s \\)", round(lower, 3))
+                sprintf("\\(  \\text{Rejection Region: reject }H_0 \\text{ whenever } U \\leq %s \\)", round(lower, 3))
               } else { # Right-sided
-                sprintf("\\(  \\text{Rejection Region: } U \\geq %s \\)", round(upper, 3))
+                sprintf("\\(  \\text{Rejection Region: reject }H_0 \\text{ whenever } U \\geq %s \\)", round(upper, 3))
               },
               br(),
               
