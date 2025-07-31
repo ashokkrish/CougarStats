@@ -1,21 +1,5 @@
 # CougarStats-Darren/R/logisticRegression.R
 
-library(shiny)
-library(shinyjs)
-library(shinyWidgets)
-library(bslib)
-library(datamods)
-library(magrittr)
-library(ggplot2)
-library(dplyr)
-library(broom)
-library(broom.helpers)
-library(DT)
-library(DescTools)
-library(ResourceSelection)
-library(shinyalert)
-library(tibble)
-
 # Source the plot options menu
 source("R/plotOptionsMenu.R")
 
