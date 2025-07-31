@@ -349,7 +349,7 @@ LogisticRegressionServer <- function(id) {
       output$logrScatterplot <- renderPlot({
         req(df_model_data, input$responseVariable, input$explanatoryVariables)
         
-        ggplot(df_model_data, aes_string(x = explanatory_vars_names[1], y = response_var_name)) +
+        ggplot(df_model_data, aes(x = .data[explanatory_vars_names[1]], y = .data[response_var_name])) +
           geom_point(alpha = 0.5, color = input[["logrPlotOptions-PointsColour"]]) +
           geom_smooth(method = "glm", method.args = list(family = "binomial"), se = FALSE, color = input[["logrPlotOptions-Colour"]], linewidth = input[["logrPlotOptions-LineWidth"]]) +
           labs(

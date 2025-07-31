@@ -33,6 +33,7 @@ library(thematic)
 library(tinytex)
 library(writexl)
 library(xtable)
+library(ggResidpanel)
 
 source("R/RenderBoxplot.R")
 source("R/RenderMeanPlot.R")
@@ -107,6 +108,15 @@ SLRMainPanelUI <- function(id) {
               br()
             )
           ), # Scatterplot tabpanel
+          
+          #### ---------------- Diagnostic Plots Tab ---------------------------------
+          tabPanel(
+            title = "Diagnostic Plots",
+            value = "Diagnostic Plots",
+            fluidPage(
+              plotOutput(ns("slrResidualsPanelPlot"))
+            )
+          ), # Diagnostic Plots tabpanel
           
           #### ---------------- Correlation Coefficient Analysis Tab -------------------
           tabPanel(
@@ -554,6 +564,11 @@ SLRServer <- function(id) {
                          ui = FALSE)
           }
         )
+        
+        output$slrResidualsPanelPlot <- renderPlot({
+          par(mfrow = c(2, 2))
+          plot(model, pch = 20)
+        })
         
         if (summary(model)$coefficients["datx", "Estimate"] > 0) {
           slopeDirection <- "increase"
