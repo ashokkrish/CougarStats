@@ -54,6 +54,21 @@ RUN R -e \
                     'remotes',          \
                     'ResourceSelection',\
                     'shinyalert'),      \
+                    'shinyDarkmode',    \
+                    'shinyjs',          \
+                    'shinyMatrix',      \
+                    'shinythemes',      \
+                    'shinyvalidate',    \
+                    'shinyWidgets',     \
+                    'thematic',         \
+                    'tibble',           \
+                    'tidyr',            \
+                    'tinytex',          \
+                    'waiter',           \
+                    'writexl',          \
+                    'xtable',           \
+                    'MASS',             \
+                    'datamods'),        \
                   dependencies = TRUE); \
   remotes::install_github('deepanshu88/shinyDarkmode'); \
   remotes::install_github('rsquaredacademy/olsrr');"
