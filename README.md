@@ -44,9 +44,11 @@ Read more about [Getting Started with Docker](https://www.docker.com/get-started
     - one population proportion
     - difference between two population proportions
     - ratio of two population variances
+- Wilcoxon rank sum test (or the Mann-Whitney U test)
 - One-Way Analysis of Variance (ANOVA)
+- Kruskal-Wallis Test
 - Chi-Square test of independence
-- Simple Linear Regression and Pearson Correlation Coefficient
+- Simple Linear Regression and Correlation Analysis
 - Multiple Linear Regression
 - Binary Logistic Regression
 
@@ -65,14 +67,11 @@ Read more about [Getting Started with Docker](https://www.docker.com/get-started
 - [Jacie Bennett](https://github.com/jacie-b): Senior Developer
 - [Yakov Aluph](https://github.com/YakovAluph): Senior Developer
 
-### Past project members
-- [Michael Myer](https://github.com/m-myer): Senior Developer
-- [Bryce Carson](https://github.com/bryce-carson): Senior Developer
-- [Samantha Brian](https://github.com/sam-vb): Senior Developer
-
 ## Acknowledgements
 | Funding Agency / Coursework | Recipient | Date(s) |
 |--------|--------|--------|
+| Faculty of Science and Technology (FST) Student Research Award | Jacie Bennett | May 2025 through August 2025 |
+| Faculty of Science and Technology (FST) Student Research Award | Diana Vi | May 2025 through August 2025 |
 | Provost's Teaching and Learning Enhancement Grant (TLEG) | [Samantha Brian](https://github.com/sam-vb) | January 2025 through May 2025 |
 | Provost's Teaching and Learning Enhancement Grant (TLEG) | [Bryce Carson](https://github.com/bryce-carson) | November 2024 through January 2025 |
 | Provost's Teaching and Learning Enhancement Grant (TLEG) | [Michael Myer](https://github.com/m-myer) | September 2023 through April 2024 |
