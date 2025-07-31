@@ -68,6 +68,7 @@ RUN R -e \
                     'writexl',          \
                     'xtable',           \
                     'MASS',             \
+                    'forecast',         \   
                     'datamods'),        \
                   dependencies = TRUE); \
   remotes::install_github('deepanshu88/shinyDarkmode'); \
