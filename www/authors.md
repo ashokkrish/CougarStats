@@ -6,17 +6,16 @@
 - [Darren Law Yan Lun](https://github.com/darrenlyl): Senior Developer
 - [Diana Vi](https://github.com/dianahuff): Senior Developer
 - [Jacie Bennett](https://github.com/jacie-b): Senior Developer
-
-### Past project members
-- [Michael Myer](https://github.com/m-myer): Senior Developer
-- [Bryce Carson](https://github.com/bryce-carson): Senior Developer
-- [Samantha Brian](https://github.com/sam-vb): Senior Developer
+- [Yakov Aluph](https://github.com/YakovAluph): Senior Developer
 
 <!-- ## Financial support of the development of CougarStats**  -->
 
 ## Acknowledgements
 | Funding Agency / Coursework | Recipient | Date(s) |
 |--------|--------|--------|
+| Alberta Innovates Summer Research Studentships | Darren Law Yan Lun | May 2025 through August 2025 |
+| Faculty of Science and Technology (FST) Student Research Award | Jacie Bennett | May 2025 through August 2025 |
+| Faculty of Science and Technology (FST) Student Research Award | Diana Vi | May 2025 through August 2025 |
 | Provost's Teaching and Learning Enhancement Grant (TLEG) | Samantha Brian | January 2025 through May 2025 |
 | Provost's Teaching and Learning Enhancement Grant (TLEG) | Bryce Carson | November 2024 through January 2025 |
 | Provost's Teaching and Learning Enhancement Grant (TLEG) | Michael Myer | September 2023 through April 2024 |
