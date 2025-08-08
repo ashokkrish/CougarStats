@@ -13,7 +13,7 @@ LogisticRegressionSidebarUI <- function(id) {
         helpText("Select a binary response variable (must have exactly two unique values: 0 or 1)."),
         pickerInput(
           ns("responseVariable"),
-          "Response Variable (\\(y\\)) – Binary",
+          strong("Response Variable (\\(y\\))"),
           choices = NULL,
           multiple = FALSE, # This ensures only one selection is allowed
           options = list(
@@ -22,10 +22,10 @@ LogisticRegressionSidebarUI <- function(id) {
           )
         ),
         uiOutput(ns("responseVariableWarning")),
-        helpText("Select one or more explanatory variables (numeric)."),
+        helpText("Select one or more explanatory variables."),
         pickerInput(
           ns("explanatoryVariables"),
-          "Explanatory Variables (x₁, x₂, …, xₙ)",
+          strong("Explanatory Variables (x₁, x₂, …, xₙ)"),
           choices  = NULL,
           multiple = TRUE,
           options = list(
@@ -226,7 +226,7 @@ LogisticRegressionServer <- function(id) {
         div(
           p("The variables in the model are"),
           p(variable_list),
-          p("The estimated binary logistic regression equation is"),
+          p("The estimated logistic regression equation is"),
           p(combined_latex)
         )
       }))

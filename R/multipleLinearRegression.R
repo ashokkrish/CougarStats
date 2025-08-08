@@ -23,7 +23,7 @@ MLRSidebarUI <- function(id) {
         helpText("Only numeric variables are selectable."),
         pickerInput(
           ns("responseVariable"),
-          "Response Variable (\\(y\\))",
+          strong("Response Variable (\\(y\\))"),
           choices = NULL,
           multiple = FALSE,
           options = list(
@@ -36,7 +36,7 @@ MLRSidebarUI <- function(id) {
         uiOutput(ns("singleOrMultipleHelpText")),
         pickerInput(
           inputId  = ns("explanatoryVariables"),
-          label    = "Explanatory Variables (x₁, x₂, …, xₙ)",
+          label    = strong("Explanatory Variables (x₁, x₂, …, xₙ)"),
           choices  = NULL,
           multiple = TRUE,
           options  = list(
@@ -64,7 +64,7 @@ MLRMainPanelUI <- function(id) {
                  import_file_ui(
                    id    = ns("dataImport"),
                    title = "")),
-               tabPanel(title = "MLR", uiOutput(ns("Equations")) ),
+               tabPanel(title = "Multiple Linear Regression", uiOutput(ns("Equations")) ),
                tabPanel(title = "ANOVA", uiOutput(ns("ANOVA"))),
                tabPanel(title = "Multicollinearity Detection", uiOutput(ns("MulticollinearityDetection"))),
                tabPanel(title = "Diagnostic Plots", uiOutput(ns("DiagnosticPlots"))),

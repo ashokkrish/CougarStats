@@ -473,10 +473,17 @@ SLRServer <- function(id) {
         }
         
         model <- lm(daty ~ datx)
+        y_hat <- fitted(model)
+        residuals <- residuals(model)
+        residuals_sq <- residuals^2
         
-        df <- data.frame(datx, daty, datx*daty, datx^2, daty^2)
-        names(df) <- c("x", "y", "xy", "x<sup>2</sup>", "y<sup>2</sup>")
+        df <- data.frame(datx, daty, datx*daty, datx^2, daty^2, y_hat, residuals, residuals_sq)
+        names(df) <- c("x", "y", "xy", "x<sup>2</sup>", "y<sup>2</sup>", "&ycirc;", "e = y - &ycirc;", "e<sup>2</sup>")
+        
         dfTotaled <- bind_rows(df, summarise(df, across(where(is.numeric), sum)))
+        
+        dfTotaled[nrow(dfTotaled), "e = y - &ycirc;"] <- sum(df$`e = y - &ycirc;`)
+        
         rownames(dfTotaled)[nrow(dfTotaled)] <- "Totals"
         
         sumXSumY <- dfTotaled["Totals", "x"] * dfTotaled["Totals", "y"]
