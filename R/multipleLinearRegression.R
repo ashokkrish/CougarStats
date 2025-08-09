@@ -97,7 +97,7 @@ MLRServer <- function(id) {
     
     observeEvent(TRUE, {
       shinyjs::delay(0, {
-        hideTab(inputId = "mainPanel", target = "MLR")
+        hideTab(inputId = "mainPanel", target = "Multiple Linear Regression")
         hideTab(inputId = "mainPanel", target = "ANOVA")
         hideTab(inputId = "mainPanel", target = "Multicollinearity Detection")
         hideTab(inputId = "mainPanel", target = "Diagnostic Plots")
@@ -128,7 +128,7 @@ MLRServer <- function(id) {
     ns <- session$ns
     
     observeEvent(input$reset, {
-      hideTab(inputId = "mainPanel", target = "MLR")
+      hideTab(inputId = "mainPanel", target = "Multiple Linear Regression")
       hideTab(inputId = "mainPanel", target = "ANOVA")
       hideTab(inputId = "mainPanel", target = "Multicollinearity Detection")
       hideTab(inputId = "mainPanel", target = "Diagnostic Plots")
@@ -636,12 +636,12 @@ p(strong("Conclusion:")),
       })
       
       
-      showTab(inputId = "mainPanel", target = "MLR")
+      showTab(inputId = "mainPanel", target = "Multiple Linear Regression")
       showTab(inputId = "mainPanel", target = "ANOVA")
       showTab(inputId = "mainPanel", target = "Multicollinearity Detection")
       showTab(inputId = "mainPanel", target = "Diagnostic Plots")
       showTab(inputId = "mainPanel", target = "Uploaded Data")
-      updateNavbarPage(session, "mainPanel", selected = "MLR")
+      updateNavbarPage(session, "mainPanel", selected = "Multiple Linear Regression")
     }) |> bindEvent(input$calculate)
     
     observe({
