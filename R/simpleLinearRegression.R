@@ -34,6 +34,12 @@ SLRMainPanelUI <- function(id) {
             titlePanel("Estimated equation of the regression line"),
             br(),
             uiOutput(ns('regLineEquation')),
+            br(),
+            hr(),
+            titlePanel("Coefficients"),
+            br(),
+            DTOutput(ns("slrCoefficientsTable")),
+            br()
             
           ), # slr tabpanel
           
@@ -149,18 +155,18 @@ SLRSidebarUI <- function(id) {
       condition = "input.dataRegCor == 'Enter Raw Data'",
       
       textAreaInput(
-        inputId     = ns("x"),
-        label       = strong("\\( x\\) (Independent Variable)"),
-        value       = "10, 13, 18, 19, 22, 24, 27, 29, 35, 38",
+        inputId     = ns("y"),
+        label       = strong("\\( y\\) (Response Variable)"),
+        value       = "66, 108, 161, 177, 228, 235, 268, 259, 275, 278",
         placeholder = "Enter values separated by a comma with decimals as points",
         rows        = 3),
       
       textAreaInput(
-        inputId     = ns("y"),
-        label       = strong("\\( y\\) (Dependent Variable)"),
-        value       = "66, 108, 161, 177, 228, 235, 268, 259, 275, 278",
+        inputId     = ns("x"),
+        label       = strong("\\( x\\) (Explanatory Variable)"),
+        value       = "10, 13, 18, 19, 22, 24, 27, 29, 35, 38",
         placeholder = "Enter values separated by a comma with decimals as points",
-        rows        = 3),
+        rows        = 3)
     ), #dataRegCor == 'Enter Raw Data'
     
     div(
@@ -180,18 +186,18 @@ SLRSidebarUI <- function(id) {
                       ".xlsx")),
         
         selectizeInput(
-          inputId = ns("slrExplanatory"),
-          label   = strong("Choose the Explanatory Variable (x)"),
-          choices = c(""),
-          options = list(placeholder = 'Select a variable',
-                         onInitialize = I('function() { this.setValue(""); }'))),
-        
-        selectizeInput(
           inputId = ns("slrResponse"),
           label   = strong("Choose the Response Variable (y)"),
           choices = c(""),
           options = list(placeholder = 'Select a variable',
                          onInitialize = I('function() { this.setValue(""); }'))),
+        
+        selectizeInput(
+          inputId = ns("slrExplanatory"),
+          label   = strong("Choose the Explanatory Variable (x)"),
+          choices = c(""),
+          options = list(placeholder = 'Select a variable',
+                         onInitialize = I('function() { this.setValue(""); }')))
       )), #dataRegCor == 'Upload Data'
     
     br(),
@@ -231,13 +237,13 @@ SLRServer <- function(id) {
     slrraw_iv$add_rule("x", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
                                      "Data must be numeric values separated by a comma (ie: 2,3,4)."))
     slrraw_iv$add_rule("x", ~ if(sampleInfoRaw()$diff != 0) "x and y must have the same number of observations.")
-    slrraw_iv$add_rule("x", ~ if(sampleInfoRaw()$xSD == 0) "Not enough variance in Independent Variable.")
+    slrraw_iv$add_rule("x", ~ if(sampleInfoRaw()$xSD == 0) "Not enough variance in Explanatory variable.")
     
     slrraw_iv$add_rule("y", sv_required())
     slrraw_iv$add_rule("y", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
                                      "Data must be numeric values separated by a comma (ie: 2,3,4)."))
     slrraw_iv$add_rule("y", ~ if(sampleInfoRaw()$diff != 0) "x and y must have the same number of observations.")
-    slrraw_iv$add_rule("y", ~ if(sampleInfoRaw()$ySD == 0) "Not enough variance in Dependent Variable.")
+    slrraw_iv$add_rule("y", ~ if(sampleInfoRaw()$ySD == 0) "Not enough variance in Response variable.")
     
     slrupload_iv$add_rule("slrUserData", sv_required())
     slrupload_iv$add_rule("slrUserData", ~ if(is.null(fileInputs$slrStatus) || fileInputs$slrStatus == 'reset') "Required")
@@ -438,8 +444,8 @@ SLRServer <- function(id) {
           daty <- as.data.frame(slrUploadData())[, input$slrResponse]
         } else {
           validate(
-            need(input$x, "Input required for the Independent Variable (x)."),
-            need(input$y, "Input required for the Dependent Variable (y)."),
+            need(input$x, "Input required for the Explanatory variable (x)."),
+            need(input$y, "Input required for the Response variable (y)."),
             errorClass = "myClass")
           
           datx <- createNumLst(input$x)
@@ -456,8 +462,8 @@ SLRServer <- function(id) {
         
         if(!slrraw_iv$is_valid()) {
           validate(
-            need(sampleInfoRaw()$xSD != 0, "The data for the Independent Variable (x) must have a standard deviation greater than 0 to perform regression and correlation analysis."),
-            need(sampleInfoRaw()$ySD != 0, "The data for the Dependent Variable (y) must have a standard deviation greater than 0 to perform regression and correlation analysis."),
+            need(sampleInfoRaw()$xSD != 0, "The data for the Explanatory variable (x) must have a standard deviation greater than 0 to perform regression and correlation analysis."),
+            need(sampleInfoRaw()$ySD != 0, "The data for the Response variable (y) must have a standard deviation greater than 0 to perform regression and correlation analysis."),
             errorClass = "myClass")
         }
       }) #output$slrValidation
@@ -473,10 +479,17 @@ SLRServer <- function(id) {
         }
         
         model <- lm(daty ~ datx)
+        y_hat <- fitted(model)
+        residuals <- residuals(model)
+        residuals_sq <- residuals^2
         
-        df <- data.frame(datx, daty, datx*daty, datx^2, daty^2)
-        names(df) <- c("x", "y", "xy", "x<sup>2</sup>", "y<sup>2</sup>")
+        df <- data.frame(datx, daty, datx*daty, datx^2, daty^2, y_hat, residuals, residuals_sq)
+        names(df) <- c("x", "y", "xy", "x<sup>2</sup>", "y<sup>2</sup>", "&ycirc;", "<em>e</em> = (<em>y</em> - <em>&ycirc;</em>)", "e<sup>2</sup>")
+        
         dfTotaled <- bind_rows(df, summarise(df, across(where(is.numeric), sum)))
+        
+        dfTotaled[nrow(dfTotaled), "<em>e</em> = (<em>y</em> - <em>&ycirc;</em>)"] <- sum(df$`<em>e</em> = (<em>y</em> - <em>&ycirc;</em>)`)
+        
         rownames(dfTotaled)[nrow(dfTotaled)] <- "Totals"
         
         sumXSumY <- dfTotaled["Totals", "x"] * dfTotaled["Totals", "y"]
@@ -623,8 +636,10 @@ SLRServer <- function(id) {
           )
         })
         
-        output$linearRegression <- renderPrint({
-          summary(model)
+        output$slrCoefficientsTable <- renderDT({
+          summary_df <- as.data.frame(summary(model)$coefficients)
+          datatable(summary_df, options = list(dom = 't')) %>% 
+            formatRound(columns = c("Estimate", "Std. Error", "t value", "Pr(>|t|)"), digits = 3)
         })
         
         output$confintLinReg <- renderPrint({

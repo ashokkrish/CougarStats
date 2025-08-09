@@ -23,7 +23,7 @@ MLRSidebarUI <- function(id) {
         helpText("Only numeric variables are selectable."),
         pickerInput(
           ns("responseVariable"),
-          "Response Variable (\\(y\\))",
+          strong("Response Variable (\\(y\\))"),
           choices = NULL,
           multiple = FALSE,
           options = list(
@@ -36,7 +36,7 @@ MLRSidebarUI <- function(id) {
         uiOutput(ns("singleOrMultipleHelpText")),
         pickerInput(
           inputId  = ns("explanatoryVariables"),
-          label    = "Explanatory Variables (x₁, x₂, …, xₙ)",
+          label    = strong("Explanatory Variables (x₁, x₂, …, xₙ)"),
           choices  = NULL,
           multiple = TRUE,
           options  = list(
@@ -64,7 +64,7 @@ MLRMainPanelUI <- function(id) {
                  import_file_ui(
                    id    = ns("dataImport"),
                    title = "")),
-               tabPanel(title = "MLR", uiOutput(ns("Equations")) ),
+               tabPanel(title = "Multiple Linear Regression", uiOutput(ns("Equations")) ),
                tabPanel(title = "ANOVA", uiOutput(ns("ANOVA"))),
                tabPanel(title = "Multicollinearity Detection", uiOutput(ns("MulticollinearityDetection"))),
                tabPanel(title = "Diagnostic Plots", uiOutput(ns("DiagnosticPlots"))),
@@ -97,7 +97,7 @@ MLRServer <- function(id) {
     
     observeEvent(TRUE, {
       shinyjs::delay(0, {
-        hideTab(inputId = "mainPanel", target = "MLR")
+        hideTab(inputId = "mainPanel", target = "Multiple Linear Regression")
         hideTab(inputId = "mainPanel", target = "ANOVA")
         hideTab(inputId = "mainPanel", target = "Multicollinearity Detection")
         hideTab(inputId = "mainPanel", target = "Diagnostic Plots")
@@ -128,7 +128,7 @@ MLRServer <- function(id) {
     ns <- session$ns
     
     observeEvent(input$reset, {
-      hideTab(inputId = "mainPanel", target = "MLR")
+      hideTab(inputId = "mainPanel", target = "Multiple Linear Regression")
       hideTab(inputId = "mainPanel", target = "ANOVA")
       hideTab(inputId = "mainPanel", target = "Multicollinearity Detection")
       hideTab(inputId = "mainPanel", target = "Diagnostic Plots")
@@ -636,12 +636,12 @@ p(strong("Conclusion:")),
       })
       
       
-      showTab(inputId = "mainPanel", target = "MLR")
+      showTab(inputId = "mainPanel", target = "Multiple Linear Regression")
       showTab(inputId = "mainPanel", target = "ANOVA")
       showTab(inputId = "mainPanel", target = "Multicollinearity Detection")
       showTab(inputId = "mainPanel", target = "Diagnostic Plots")
       showTab(inputId = "mainPanel", target = "Uploaded Data")
-      updateNavbarPage(session, "mainPanel", selected = "MLR")
+      updateNavbarPage(session, "mainPanel", selected = "Multiple Linear Regression")
     }) |> bindEvent(input$calculate)
     
     observe({

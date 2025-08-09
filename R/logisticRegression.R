@@ -13,7 +13,7 @@ LogisticRegressionSidebarUI <- function(id) {
         helpText("Select a binary response variable (must have exactly two unique values: 0 or 1)."),
         pickerInput(
           ns("responseVariable"),
-          "Response Variable (\\(y\\)) – Binary",
+          strong("Response Variable (\\(y\\))"),
           choices = NULL,
           multiple = FALSE, # This ensures only one selection is allowed
           options = list(
@@ -22,10 +22,10 @@ LogisticRegressionSidebarUI <- function(id) {
           )
         ),
         uiOutput(ns("responseVariableWarning")),
-        helpText("Select one or more explanatory variables (numeric)."),
+        helpText("Select one or more explanatory variables."),
         pickerInput(
           ns("explanatoryVariables"),
-          "Explanatory Variables (x₁, x₂, …, xₙ)",
+          strong("Explanatory Variables (x₁, x₂, …, xₙ)"),
           choices  = NULL,
           multiple = TRUE,
           options = list(
@@ -57,22 +57,17 @@ LogisticRegressionMainPanelUI <- function(id) {
                  import_file_ui(
                    id = ns("dataImport"),
                    title = "")),
-               tabPanel(title = "LR",
+               tabPanel(title = "Binary Logistic Regression",
                         uiOutput(ns("Equations"))
                ),
                tabPanel(title = "Analysis of Deviance",
                         uiOutput(ns("anovaOutput"))
                ),
                tabPanel(title = "Diagnostic Plot",
-                        conditionalPanel(
-                          ns = ns,
-                          condition = "input.explanatoryVariables && input.explanatoryVariables.length === 1",
-                          tagList(
-                            h3("Logistic Regression Plot"),
-                            plotOptionsMenuUI(ns("logrPlotOptions"), "Scatterplot", xlab = "x", ylab = "y"),
-                            plotOutput(ns("logrScatterplot"))
-                          )
-                        )
+                        value = "diagnostic_plot_tab",
+                        h3("Logistic Regression Plot"),
+                        plotOptionsMenuUI(ns("logrPlotOptions"), "Scatterplot", xlab = "x", ylab = "y"),
+                        plotOutput(ns("logrScatterplot"))
                ),
                tabPanel(title = "Uploaded Data",
                         DTOutput(ns("uploadedDataTable"))
@@ -358,18 +353,24 @@ LogisticRegressionServer <- function(id) {
                                  lengthMenu = list(c(10, 25, 50, -1), c("10", "25", "50", "All"))))
       })
       
-      showTab(inputId = "mainPanel", target = "LR")
+      showTab(inputId = "mainPanel", target = "Binary Logistic Regression")
       showTab(inputId = "mainPanel", target = "Analysis of Deviance")
-      showTab(inputId = "mainPanel", target = "Diagnostic Plot")
       showTab(inputId = "mainPanel", target = "Uploaded Data")
-      updateNavbarPage(session, "mainPanel", selected = "LR")
+      
+      if (length(explanatory_vars_names) == 1) {
+        showTab(inputId = "mainPanel", target = "diagnostic_plot_tab")
+      } else {
+        hideTab(inputId = "mainPanel", target = "diagnostic_plot_tab")
+      }
+      
+      updateNavbarPage(session, "mainPanel", selected = "Binary Logistic Regression")
     }
     
     observeEvent(TRUE, {
       shinyjs::delay(0, {
-        hideTab(inputId = "mainPanel", target = "LR")
+        hideTab(inputId = "mainPanel", target = "Binary Logistic Regression")
         hideTab(inputId = "mainPanel", target = "Analysis of Deviance")
-        hideTab(inputId = "mainPanel", target = "Diagnostic Plot")
+        hideTab(inputId = "mainPanel", target = "diagnostic_plot_tab")
         hideTab(inputId = "mainPanel", target = "Uploaded Data")
       })
     }, once = TRUE)
@@ -396,7 +397,7 @@ LogisticRegressionServer <- function(id) {
         if (length(unique(vals)) != 2 && length(vals) > 0) {
           output$responseVariableWarning <- renderUI(
             tags$p(class = "text-danger", style="font-size:0.9em; padding-top:5px;",
-                   "Warning: Response variable must have exactly two unique values for logistic regression.")
+                   "Warning: Response variable must have exactly two unique values for binary logistic regression.")
           )
         } else {
           output$responseVariableWarning <- renderUI(NULL)
@@ -416,9 +417,9 @@ LogisticRegressionServer <- function(id) {
     }, ignoreNULL = TRUE, ignoreInit = TRUE)
     
     observeEvent(input$reset, {
-      hideTab(inputId = "mainPanel", target = "LR")
+      hideTab(inputId = "mainPanel", target = "Binary Logistic Regression")
       hideTab(inputId = "mainPanel", target = "Analysis of Deviance")
-      hideTab(inputId = "mainPanel", target = "Diagnostic Plot")
+      hideTab(inputId = "mainPanel", target = "diagnostic_plot_tab")
       hideTab(inputId = "mainPanel", target = "Uploaded Data")
       
       calculation_done(FALSE)
