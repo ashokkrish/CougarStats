@@ -64,7 +64,7 @@ MLRMainPanelUI <- function(id) {
                  import_file_ui(
                    id    = ns("dataImport"),
                    title = "")),
-               tabPanel(title = "Multiple Linear Regression", uiOutput(ns("Equations")) ),
+               tabPanel(title = "Model", uiOutput(ns("Equations")) ),
                tabPanel(title = "ANOVA", uiOutput(ns("ANOVA"))),
                tabPanel(title = "Multicollinearity Detection", uiOutput(ns("MulticollinearityDetection"))),
                tabPanel(title = "Diagnostic Plots", uiOutput(ns("DiagnosticPlots"))),
@@ -97,7 +97,7 @@ MLRServer <- function(id) {
     
     observeEvent(TRUE, {
       shinyjs::delay(0, {
-        hideTab(inputId = "mainPanel", target = "Multiple Linear Regression")
+        hideTab(inputId = "mainPanel", target = "Model")
         hideTab(inputId = "mainPanel", target = "ANOVA")
         hideTab(inputId = "mainPanel", target = "Multicollinearity Detection")
         hideTab(inputId = "mainPanel", target = "Diagnostic Plots")
@@ -128,7 +128,7 @@ MLRServer <- function(id) {
     ns <- session$ns
     
     observeEvent(input$reset, {
-      hideTab(inputId = "mainPanel", target = "Multiple Linear Regression")
+      hideTab(inputId = "mainPanel", target = "Model")
       hideTab(inputId = "mainPanel", target = "ANOVA")
       hideTab(inputId = "mainPanel", target = "Multicollinearity Detection")
       hideTab(inputId = "mainPanel", target = "Diagnostic Plots")
@@ -636,12 +636,12 @@ p(strong("Conclusion:")),
       })
       
       
-      showTab(inputId = "mainPanel", target = "Multiple Linear Regression")
+      showTab(inputId = "mainPanel", target = "Model")
       showTab(inputId = "mainPanel", target = "ANOVA")
       showTab(inputId = "mainPanel", target = "Multicollinearity Detection")
       showTab(inputId = "mainPanel", target = "Diagnostic Plots")
       showTab(inputId = "mainPanel", target = "Uploaded Data")
-      updateNavbarPage(session, "mainPanel", selected = "Multiple Linear Regression")
+      updateNavbarPage(session, "mainPanel", selected = "Model")
     }) |> bindEvent(input$calculate)
     
     observe({

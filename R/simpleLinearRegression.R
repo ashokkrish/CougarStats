@@ -28,8 +28,8 @@ SLRMainPanelUI <- function(id) {
           
           #### ---------------- SLR Tab ------------------------------------------------
           tabPanel(
-            title = "Simple Linear Regression",
-            value = "Simple Linear Regression",
+            title = "Model",
+            value = "Model",
             
             titlePanel("Estimated equation of the regression line"),
             br(),
@@ -810,7 +810,7 @@ SLRServer <- function(id) {
       req(isTruthy(input$dataRegCor))
       if(input$dataRegCor == 'Enter Raw Data') {
         if (!is.null(input$slrNavbarPage) && input$slrNavbarPage == "Uploaded Data") { # Check if navbarPage exists and selected
-          updateNavbarPage(session, "slrNavbarPage", selected = "Simple Linear Regression")
+          updateNavbarPage(session, "slrNavbarPage", selected = "Model")
         }
         hideTab(inputId = "slrNavbarPage", target = "Uploaded Data")
       } else {
@@ -827,7 +827,7 @@ SLRServer <- function(id) {
       shinyjs::reset("inputPanel")
       fileInputs$slrStatus <- 'reset'
       if (!is.null(input$slrNavbarPage)) { # Check if navbarPage exists before trying to update
-        updateNavbarPage(session, "slrNavbarPage", selected = "Simple Linear Regression")
+        updateNavbarPage(session, "slrNavbarPage", selected = "Model")
       }
     })
     

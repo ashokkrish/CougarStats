@@ -57,7 +57,7 @@ LogisticRegressionMainPanelUI <- function(id) {
                  import_file_ui(
                    id = ns("dataImport"),
                    title = "")),
-               tabPanel(title = "Binary Logistic Regression",
+               tabPanel(title = "Model",
                         uiOutput(ns("Equations"))
                ),
                tabPanel(title = "Analysis of Deviance",
@@ -353,7 +353,7 @@ LogisticRegressionServer <- function(id) {
                                  lengthMenu = list(c(10, 25, 50, -1), c("10", "25", "50", "All"))))
       })
       
-      showTab(inputId = "mainPanel", target = "Binary Logistic Regression")
+      showTab(inputId = "mainPanel", target = "Model")
       showTab(inputId = "mainPanel", target = "Analysis of Deviance")
       showTab(inputId = "mainPanel", target = "Uploaded Data")
       
@@ -363,12 +363,12 @@ LogisticRegressionServer <- function(id) {
         hideTab(inputId = "mainPanel", target = "diagnostic_plot_tab")
       }
       
-      updateNavbarPage(session, "mainPanel", selected = "Binary Logistic Regression")
+      updateNavbarPage(session, "mainPanel", selected = "Model")
     }
     
     observeEvent(TRUE, {
       shinyjs::delay(0, {
-        hideTab(inputId = "mainPanel", target = "Binary Logistic Regression")
+        hideTab(inputId = "mainPanel", target = "Model")
         hideTab(inputId = "mainPanel", target = "Analysis of Deviance")
         hideTab(inputId = "mainPanel", target = "diagnostic_plot_tab")
         hideTab(inputId = "mainPanel", target = "Uploaded Data")
@@ -417,7 +417,7 @@ LogisticRegressionServer <- function(id) {
     }, ignoreNULL = TRUE, ignoreInit = TRUE)
     
     observeEvent(input$reset, {
-      hideTab(inputId = "mainPanel", target = "Binary Logistic Regression")
+      hideTab(inputId = "mainPanel", target = "Model")
       hideTab(inputId = "mainPanel", target = "Analysis of Deviance")
       hideTab(inputId = "mainPanel", target = "diagnostic_plot_tab")
       hideTab(inputId = "mainPanel", target = "Uploaded Data")
