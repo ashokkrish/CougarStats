@@ -112,6 +112,16 @@ descStatsUI <- function(id) {
                               placeholder = 'Select graph(s) to display')),
             br(),
             
+            conditionalPanel(
+              ns = ns,
+              condition = "input.dsGraphOptions.includes('Boxplot')",
+              checkboxInput(
+                inputId = ns("dsOutlierLabels"),
+                label   = "Show outlier labels in the boxplot",
+                value   = TRUE
+              )
+            ),
+            
             actionButton(
               inputId = ns("goDescpStats"), 
               label   = "Calculate",
@@ -888,7 +898,8 @@ descStatsServer <- function(id) {
                         input[["dsBoxplot-Ylab"]],
                         input[["dsBoxplot-BoxWidth"]]/10,
                         input[["dsBoxplot-Gridlines"]],
-                        input[["dsBoxplot-Flip"]])
+                        input[["dsBoxplot-Flip"]],
+                        input$dsOutlierLabels)
           
           
         }, height = function() {GetPlotHeight(input[["dsBoxplot-Height"]], input[["dsBoxplot-HeightPx"]], ui = FALSE)},

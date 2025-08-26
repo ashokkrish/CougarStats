@@ -1,26 +1,29 @@
 library(ggplot2)
 
-RenderBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, plotXlab, plotYlab, boxWidth, gridlines, flip) {
+RenderBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, plotXlab, plotYlab, boxWidth, gridlines, flip, showLabels = TRUE) {
+  df_outliers <- extractOutliers(dat)
+  label <- ""
+  outlier_data <- NULL
   
-  # count duplicates of outliers and add count to labels if > 1
-  outlier_labels <- df_boxplot %>%
-    filter(x %in% df_outliers) %>%
-    group_by(x) %>%
-    summarise(count = n(), .groups = 'drop') %>%
-    mutate(label = ifelse(count > 1, paste0(x, " (", count, ")"), as.character(x)))
-  
-  outlier_data <- df_boxplot %>%
-    filter(x %in% df_outliers) %>%
-    left_join(outlier_labels, by = "x")
+  if(showLabels && length(df_outliers) > 0) {
+    # count duplicates of outliers and add count to labels if > 1
+    outlier_labels <- df_boxplot %>%
+      filter(x %in% df_outliers) %>%
+      group_by(x) %>%
+      summarise(count = n(), .groups = 'drop') %>%
+      mutate(label = ifelse(count > 1, paste0(x, " (", count, ")"), as.character(x)))
+    
+    outlier_data <- df_boxplot %>%
+      filter(x %in% df_outliers) %>%
+      left_join(outlier_labels, by = "x")
+  }
+
   
   bp <- ggplot(df_boxplot, aes(x = x, y = 0)) +
     stat_boxplot(geom ='errorbar', width = 0.15) +
     geom_boxplot(width = boxWidth,
                  fill = plotColour,
-                 alpha = 1,
-                 outlier.shape = NA) +
-    geom_point(data = filter(df_boxplot, x %in% df_outliers),
-               size = 2) +
+                 alpha = 1) +
     ## Uncomment the below to display the outlier values about the indicator
     geom_text(data = outlier_data,
               aes(x = x, y = 0, label = label),
@@ -62,4 +65,15 @@ RenderBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, p
   }
   
   return(bp) 
+}
+
+extractOutliers <- function(x, coef = 1.5) {
+  x <- sort(x)
+  Q <- quantile(x, probs = c(0.25, 0.75), type = 7, na.rm = TRUE)
+  IQR <- Q[2] - Q[1]
+  lower_fence <- Q[1] - coef * IQR
+  upper_fence <- Q[2] + coef * IQR
+  outliers <- x[x < lower_fence | x > upper_fence]
+  #print(outliers)
+  return(outliers)
 }
