@@ -401,19 +401,9 @@ descStatsServer <- function(id) {
     }
     
     GetQuartiles <- function(dat) {
-      
-      quartiles <- list()
-      dat <- dat[order(dat)]
-      
-      if(length(dat) %% 2 != 0) { # remove median for odd lists
-        dat <- dat[-ceiling(length(dat)/2)] # ceiling(length(dat)/2) = middle index
-      }
-      
-      mid <- length(dat) / 2
-      quartiles$q1 <- median(dat[1:mid])
-      quartiles$q3 <- median(dat[(mid+1):length(dat)])
-      
-      return(quartiles)
+      dat <- sort(dat)
+      q <- quantile(dat, probs = c(0.25, 0.75), type = 7, na.rm = TRUE)
+      list(q1 = q[1], q3 = q[2])
     }
     
     GetOutliers <- function(dat, lower, upper) {

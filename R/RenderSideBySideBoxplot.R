@@ -21,7 +21,7 @@ RenderSideBySideBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, pl
     stat_boxplot(geom = 'errorbar', width = 0.15) +
     geom_boxplot(width = boxWidth,
                  fill = plotColour,
-                 alpha = 1) + # this turns automatic outlier calculations off
+                 alpha = 1) +
     geom_text(data = df_outliers,
               aes(x = data, y = sample, label = label),
               size = 15 / .pt,
