@@ -194,7 +194,6 @@ descStatsUI <- function(id) {
                         br(),
                         br()),
                       
-                    ), #fluidRow
                     
                     column(
                       width = 8,
@@ -213,7 +212,7 @@ descStatsUI <- function(id) {
                       br(),
                       br(),
                     ), #column
-                    
+                    ), #fluidRow
                   ),
               
                   tabPanel(
