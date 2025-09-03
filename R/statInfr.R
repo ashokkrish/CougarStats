@@ -405,18 +405,6 @@ statInfrUI <- function(id) {
                 inputId = ns("oneMeanBoxplot"),
                 label   = "Boxplot for Sample Data",
                 value   = TRUE),
-              
-              conditionalPanel(
-                ns = ns,
-                condition = "input.oneMeanBoxplot == 1",
-                div(style = "padding-left: 20px;",  # adjust px as needed
-                    checkboxInput(
-                      inputId = ns("oneMeanOutlierLabels"),
-                      label   = "Show outlier labels",
-                      value   = TRUE
-                    )
-                )
-              )
             ) # Pop Mean ! Summarized
           ), #"input.siMethod == '1'"
           
@@ -1101,18 +1089,6 @@ statInfrUI <- function(id) {
                 label   = "Side-by-side Boxplot for Sample Data",
                 value   = TRUE),
               
-              conditionalPanel(
-                ns = ns,
-                condition = "input.indMeansBoxplot == 1",
-                div(style = "padding-left: 20px;",
-                    checkboxInput(
-                      inputId = ns("indMeansOutlierLabels"),
-                      label   = "Show outlier labels",
-                      value   = TRUE
-                    )
-                )
-              ),
-              
               checkboxInput(
                 inputId = ns("indMeansQQPlot"),
                 label   = "Q-Q Plots for Sample 1 and Sample 2",
@@ -1141,18 +1117,6 @@ statInfrUI <- function(id) {
                 inputId = ns("sidebysidewRankSum"),
                 label   = "Side-by-side Boxplot",
                 value   = TRUE),
-              
-              conditionalPanel(
-                ns = ns,
-                condition = "input.sidebysidewRankSum == 1",
-                div(style = "padding-left: 20px;",
-                    checkboxInput(
-                      inputId = ns("sidebysideOutlierLabels"),
-                      label   = "Show outlier labels",
-                      value   = TRUE
-                    )
-                )
-              ),
               
               checkboxInput(
                 inputId = ns("sidebysidewRankQQ"),
@@ -1271,18 +1235,6 @@ statInfrUI <- function(id) {
                              "Plot Group Means"),
                 options = list(hideSelected = FALSE,
                                placeholder = 'Select graph(s) to display')), 
-              
-              conditionalPanel(
-                ns = ns,
-                condition = "input.anovaGraphs.includes('Side-by-side Boxplot')",
-                div(style = "padding-left: 20px;",
-                    checkboxInput(
-                      inputId = ns("anovaOutlierLabels"),
-                      label = "Show outlier labels in the boxplots",
-                      value = TRUE
-                    )
-                )
-              )
               
             ), #anova conditionalPanel
             
@@ -6572,7 +6524,7 @@ statInfrServer <- function(id) {
                     input[["oneMeanBoxplot-BoxWidth"]]/10,
                     input[["oneMeanBoxplot-Gridlines"]],
                     input[["oneMeanBoxplot-Flip"]],
-                    input$oneMeanOutlierLabels)
+                    input[["oneMeanBoxplot-OutlierLabels"]])
       
     }, height = function() {GetPlotHeight(input[["oneMeanBoxplot-Height"]], input[["oneMeanBoxplot-HeightPx"]], ui = FALSE)},
     width = function() {GetPlotWidth(input[["oneMeanBoxplot-Width"]], input[["oneMeanBoxplot-WidthPx"]], ui = FALSE)}
@@ -7504,7 +7456,7 @@ statInfrServer <- function(id) {
                               input[["indMeansBoxplot-BoxWidth"]] / 10,
                               input[["indMeansBoxplot-Gridlines"]],
                               input[["indMeansBoxplot-Flip"]],
-                              input$indMeansOutlierLabels)
+                              input[["indMeansBoxplot-OutlierLabels"]])
       
       
     }, height = function() {GetPlotHeight(input[["indMeansBoxplot-Height"]], input[["indMeansBoxplot-HeightPx"]], ui = FALSE)},
@@ -8565,7 +8517,7 @@ statInfrServer <- function(id) {
                               input[["sidebysidewRankSum-BoxWidth"]] / 10,
                               input[["sidebysidewRankSum-Gridlines"]],
                               input[["sidebysidewRankSum-Flip"]],
-                              input$sidebysideOutlierLabels)
+                              input[["sidebysidewRankSum-OutlierLabels"]])
       
     }, height = function() {GetPlotHeight(input[["sidebysidewRankSum-Height"]], input[["sidebysidewRankSum-HeightPx"]], ui = FALSE)},
     width = function() {GetPlotWidth(input[["sidebysidewRankSum-Width"]], input[["sidebysidewRankSum-WidthPx"]], ui = FALSE)}
@@ -9602,7 +9554,7 @@ statInfrServer <- function(id) {
                               input[["anovaBoxplot-BoxWidth"]] / 10,
                               input[["anovaBoxplot-Gridlines"]],
                               input[["anovaBoxplot-Flip"]],
-                              input$anovaOutlierLabels)
+                              input[["anovaBoxplot-OutlierLabels"]])
       
     }, height = function() {GetPlotHeight(input[["anovaBoxplot-Height"]], input[["anovaBoxplot-HeightPx"]], ui = FALSE)},
     width = function() {GetPlotWidth(input[["anovaBoxplot-Width"]], input[["anovaBoxplot-WidthPx"]], ui = FALSE)}
