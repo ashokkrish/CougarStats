@@ -135,6 +135,7 @@ descStatsUI <- function(id) {
         hidden(div(id = ns("descriptiveStatsMP"),
             uiOutput(ns("renderDescrStats")),
             
+            div(id = ns("outputPanel"),
             navbarPage(
               title = NULL,        
               id    = ns("dsTabset"),
@@ -283,6 +284,7 @@ descStatsUI <- function(id) {
             ) #descrStatsData div
         )) #descriptiveStatsMP
       ) #mainPanel
+      )
     ) #sidebarLayout
   )
 }
