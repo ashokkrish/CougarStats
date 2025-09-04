@@ -92,6 +92,7 @@ descStatsUI <- function(id) {
                            "Second Quartile or Median (Q2)", 
                            "Third Quartile (Q3)", 
                            "IQR",
+                           "Potential Outliers",
                            "Maximum", 
                            "Sample Standard Deviation",
                            "Sample Variance"),
@@ -398,8 +399,18 @@ descStatsServer <- function(id) {
     
     GetQuartiles <- function(dat) {
       dat <- sort(dat)
-      q <- quantile(dat, probs = c(0.25, 0.75), type = 7, na.rm = TRUE)
-      list(q1 = q[1], q3 = q[2])
+      quartiles <- list()
+      
+      # Remove median if length is odd
+      if(length(dat) %% 2 != 0) {
+        dat <- dat[-ceiling(length(dat)/2)]
+      }
+      
+      mid <- length(dat) / 2
+      quartiles$q1 <- median(dat[1:mid])
+      quartiles$q3 <- median(dat[(mid+1):length(dat)])
+      
+      return(quartiles)
     }
     
     GetOutliers <- function(dat, lower, upper) {

@@ -44,6 +44,7 @@ library(shinyWidgets)
 # includeFlip:
 #           Option for include plot orientation toggle. Included by default.
 #
+# FUTURE WORK:
 # includeOutlierLabels:
 #           Option for including labels above the outlier data points.
 #           Unchecked by default.
@@ -114,14 +115,15 @@ plotOptionsMenuUI <- function(id, plotType = NULL, title = "Plot", xlab = "", yl
         value = ylab, 
         placeholder = "y-axis label"
       ),
-      
-      if (!is.null(plotType) && plotType == "Boxplot") {
-        checkboxInput(
-          inputId = ns("OutlierLabels"),
-          label   = "Display outlier labels",
-          value   = FALSE
-        )
-      },
+    
+    # FUTURE WORK: Outlier Labels to be added to renderBoxplot functions
+    #  if (!is.null(plotType) && plotType == "Boxplot") {
+    #    checkboxInput(
+    #      inputId = ns("OutlierLabels"),
+    #      label   = "Display outlier labels",
+    #      value   = FALSE
+    #    )
+    #  },
       
       colourpicker::colourInput(
         inputId = ns("Colour"), 
@@ -196,8 +198,8 @@ addFlipCheckbox <- function(includeFlip, ns) {
       p(strong("Orientation")),
       checkboxInput(
         inputId = ns("Flip"),
-        label = "Plot Vertically",
-        value = FALSE
+        label = "Plot Horizontally",
+        value = TRUE
       )
     )
   }
