@@ -48,7 +48,11 @@ Read more about [Getting Started with Docker](https://www.docker.com/get-started
 - One-Way Analysis of Variance (ANOVA)
 - Kruskal-Wallis Test
 - Chi-Square test of independence
+- Fisher's Exact Test
 - Simple Linear Regression and Correlation Analysis
+     - Pearson's product-moment correlation
+     - Spearman's rank correlation coefficient
+     - Kendall's tau
 - Multiple Linear Regression
 - Binary Logistic Regression
 
@@ -66,6 +70,9 @@ Read more about [Getting Started with Docker](https://www.docker.com/get-started
 - [Darren Law Yan Lun](https://github.com/darrenlyl): Senior Developer
 - [Diana Vi](https://github.com/dianahuff): Senior Developer
 - [Yakov Aluph](https://github.com/YakovAluph): Senior Developer
+
+### Citation
+- Bennett, J., Brian, S., Carson, B., Krishnamurthy, A., Law Yan Lun, D., Myer, M., Vi, D., & Wai, C. (2025). CougarStats. Mount Royal University. https://www.cougarstats.ca/
 
 ## Acknowledgements
 | Funding Agency / Coursework | Recipient | Date(s) |
