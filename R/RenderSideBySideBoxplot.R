@@ -1,22 +1,27 @@
 library(ggplot2)
 
-RenderSideBySideBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, plotXlab, plotYlab, boxWidth, gridlines, flip) {
+RenderSideBySideBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, plotXlab, plotYlab, boxWidth, gridlines, flip, showLabels = TRUE) {
   
-  # count duplicates of outliers per group and add count to labels if > 1
-  df_outliers <- df_outliers %>%
-    group_by(sample, data) %>%
-    summarise(count = n(), .groups = 'drop') %>%
-    mutate(label = ifelse(count > 1, paste0(data, " (", count, ")"), as.character(data)))
+  df_outliers <- getSideBySideOutliers(
+    df_boxplot$data[df_boxplot$sample == "Sample 1"],
+    df_boxplot$data[df_boxplot$sample == "Sample 2"]
+  )
+  
+  label <- ""
+  
+  if(showLabels && nrow(df_outliers) > 0) {
+    # count duplicates of outliers per group and add count to labels if > 1
+    df_outliers <- df_outliers %>%
+      group_by(sample, data) %>%
+      summarise(count = n(), .groups = 'drop') %>%
+      mutate(label = ifelse(count > 1, paste0(data, " (", count, ")"), as.character(data)))
+  }
   
   bp <- ggplot(df_boxplot, aes(x = data, y = sample)) +
     stat_boxplot(geom = 'errorbar', width = 0.15) +
     geom_boxplot(width = boxWidth,
                  fill = plotColour,
-                 alpha = 1,
-                 outlier.shape = NA) + # this turns automatic outlier calculations off
-    geom_point(data = df_outliers,
-               aes(x = data, y = sample),
-               size = 2) +
+                 alpha = 1) +
     geom_text(data = df_outliers,
               aes(x = data, y = sample, label = label),
               size = 15 / .pt,
@@ -55,4 +60,28 @@ RenderSideBySideBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, pl
     }
 
   return(bp) 
+}
+
+getSideBySideOutliers <- function(sample1, sample2, coef = 1.5) {
+  
+  calc_outliers <- function(x, sample_name) {
+    Q <- quantile(x, probs = c(0.25, 0.75), type = 7, na.rm = TRUE)
+    IQR <- Q[2] - Q[1]
+    lower_fence <- Q[1] - coef * IQR
+    upper_fence <- Q[2] + coef * IQR
+    outliers <- x[x < lower_fence | x > upper_fence]
+    
+    if(length(outliers) == 0) {
+      return(data.frame(sample = character(0), data = numeric(0)))
+    } else {
+      return(data.frame(sample = sample_name, data = outliers))
+    }
+  }
+  
+  df_outliers <- rbind(
+    calc_outliers(sample1, "Sample 1"),
+    calc_outliers(sample2, "Sample 2")
+  )
+  
+  return(df_outliers)
 }

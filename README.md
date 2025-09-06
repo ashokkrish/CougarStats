@@ -48,7 +48,11 @@ Read more about [Getting Started with Docker](https://www.docker.com/get-started
 - One-Way Analysis of Variance (ANOVA)
 - Kruskal-Wallis Test
 - Chi-Square test of independence
+- Fisher's Exact Test
 - Simple Linear Regression and Correlation Analysis
+     - Pearson's product-moment correlation
+     - Spearman's rank correlation coefficient
+     - Kendall's tau
 - Multiple Linear Regression
 - Binary Logistic Regression
 
@@ -62,19 +66,23 @@ Read more about [Getting Started with Docker](https://www.docker.com/get-started
 - [Ashok Krishnamurthy Ph.D.,](https://github.com/ashokkrish), Associate Professor, Mount Royal University: Template and model designer, copyright holder. See the [faculty biography page of Prof. Krishnamurthy](https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/ScienceTechnology/Departments/MathematicsComputing/Faculty/akrishnamurthy.htm).
 
 ### Current project members
+- [Jacie Bennett](https://github.com/jacie-b): Senior Developer
 - [Darren Law Yan Lun](https://github.com/darrenlyl): Senior Developer
 - [Diana Vi](https://github.com/dianahuff): Senior Developer
-- [Jacie Bennett](https://github.com/jacie-b): Senior Developer
 - [Yakov Aluph](https://github.com/YakovAluph): Senior Developer
+
+### Citation
+- Bennett, J., Brian, S., Carson, B., Krishnamurthy, A., Law Yan Lun, D., Myer, M., Vi, D., & Wai, C. (2025). CougarStats. Mount Royal University. https://www.cougarstats.ca/
 
 ## Acknowledgements
 | Funding Agency / Coursework | Recipient | Date(s) |
 |--------|--------|--------|
+| Alberta Innovates Summer Research Studentships | Darren Law Yan Lun | May 2025 through August 2025 |
 | Faculty of Science and Technology (FST) Student Research Award | Jacie Bennett | May 2025 through August 2025 |
 | Faculty of Science and Technology (FST) Student Research Award | Diana Vi | May 2025 through August 2025 |
-| Provost's Teaching and Learning Enhancement Grant (TLEG) | [Samantha Brian](https://github.com/sam-vb) | January 2025 through May 2025 |
-| Provost's Teaching and Learning Enhancement Grant (TLEG) | [Bryce Carson](https://github.com/bryce-carson) | November 2024 through January 2025 |
-| Provost's Teaching and Learning Enhancement Grant (TLEG) | [Michael Myer](https://github.com/m-myer) | September 2023 through April 2024 |
+| Provost's Teaching and Learning Enhancement Grant (TLEG) | Samantha Brian | January 2025 through May 2025 |
+| Provost's Teaching and Learning Enhancement Grant (TLEG) | Bryce Carson | November 2024 through January 2025 |
+| Provost's Teaching and Learning Enhancement Grant (TLEG) | Michael Myer | September 2023 through April 2024 |
 | Faculty of Science and Technology (FST) Student Research Award | Michael Myer | June through August 2023 |
 | COMP 5690: Senior Computer Science Project | Crystal Wai | September through December 2022 |
 
