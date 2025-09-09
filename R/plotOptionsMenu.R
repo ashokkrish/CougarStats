@@ -79,7 +79,7 @@ plotOptionsMenuUI <- function(id, plotType = NULL, title = "Plot", xlab = "", yl
                               dim = "auto", includeGridlines = TRUE, includeFlip = TRUE, includeOutlierLabels = FALSE) {
   ns <- NS(id)
   
-  flip <- addFlipCheckbox(includeFlip, ns)
+  flip <- addFlipCheckbox(includeFlip, ns, plotType)
   grid <- addGridlines(includeGridlines, ns)
   extraOptions <- tagList()
   
@@ -190,7 +190,7 @@ plotOptionsMenuUI <- function(id, plotType = NULL, title = "Plot", xlab = "", yl
   )
 }
 
-addFlipCheckbox <- function(includeFlip, ns) {
+addFlipCheckbox <- function(includeFlip, ns, plotType) {
   flip <- tagList()
   
   if(includeFlip){
@@ -199,7 +199,11 @@ addFlipCheckbox <- function(includeFlip, ns) {
       checkboxInput(
         inputId = ns("Flip"),
         label = "Plot Horizontally",
-        value = TRUE
+        if(!is.null(plotType) && plotType == "Boxplot") {
+          value = TRUE
+        } else {
+          value = FALSE
+        },
       )
     )
   }

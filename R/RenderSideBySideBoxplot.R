@@ -2,30 +2,14 @@ library(ggplot2)
 
 RenderSideBySideBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, plotXlab, plotYlab, boxWidth, gridlines, flip, showLabels = TRUE) {
   
-  df_outliers <- getSideBySideOutliers(
-    df_boxplot$data[df_boxplot$sample == "Sample 1"],
-    df_boxplot$data[df_boxplot$sample == "Sample 2"]
-  )
-  
-  label <- ""
-  
-  if(showLabels && nrow(df_outliers) > 0) {
-    # count duplicates of outliers per group and add count to labels if > 1
-    df_outliers <- df_outliers %>%
-      group_by(sample, data) %>%
-      summarise(count = n(), .groups = 'drop') %>%
-      mutate(label = ifelse(count > 1, paste0(data, " (", count, ")"), as.character(data)))
-  }
-  
   bp <- ggplot(df_boxplot, aes(x = data, y = sample)) +
     stat_boxplot(geom = 'errorbar', width = 0.15) +
     geom_boxplot(width = boxWidth,
                  fill = plotColour,
                  alpha = 1) +
-    geom_text(data = df_outliers,
-              aes(x = data, y = sample, label = label),
-              size = 15 / .pt,
-              vjust = -1.25) +
+    geom_point(data = df_outliers,
+               aes(x = data, y = sample),
+               size = 2) +
     labs(title = plotTitle,
          x = plotXlab,
          y = plotYlab) +
