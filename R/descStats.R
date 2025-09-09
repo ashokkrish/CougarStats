@@ -86,12 +86,16 @@ descStatsUI <- function(id) {
                                           "Kurtosis")),
               selected = c("Observations",
                            "Mean",
+                           "Mode",
                            "Minimum", 
                            "First Quartile (Q1)", 
                            "Second Quartile or Median (Q2)", 
                            "Third Quartile (Q3)", 
+                           "IQR",
+                           "Potential Outliers",
                            "Maximum", 
-                           "Sample Standard Deviation"),
+                           "Sample Standard Deviation",
+                           "Sample Variance"),
               options  = pickerOptions(
                 actionsBox = TRUE,
                 selectedTextFormat = 'count',
@@ -133,15 +137,16 @@ descStatsUI <- function(id) {
             uiOutput(ns("renderDescrStats")),
             
             div(id = ns("outputPanel"),
-              tabsetPanel(
-                id       = ns("dsTabset"), 
-                selected = "Descriptive Statistics",
-                  
-                tabPanel(
-                  id    = ns("dsTable"), 
-                  title = "Descriptive Statistics", 
-                  value = "Descriptive Statistics",
-                  withMathJax(),
+            navbarPage(
+              title = NULL,        
+              id    = ns("dsTabset"),
+              theme = bs_theme(version = 4),
+              
+              tabPanel(
+                id = ns("dsTable"),
+                title = "Descriptive Statistics",
+                value = "Descriptive Statistics",
+                withMathJax(),
                   
                   conditionalPanel(
                     ns = ns,
@@ -175,7 +180,14 @@ descStatsUI <- function(id) {
                     ns = ns,
                     condition = "input.dsTableFilters.indexOf('Mean') > -1 | 
                                  input.dsTableFilters.indexOf('Sample Standard Deviation') > -1",
-                      
+                  )
+                ), # dsTable tabPanel
+                  
+                  tabPanel(
+                    id    = ns("dsCalculations"),
+                    title = "Calculations",
+                    value = 'Calculations',
+                    
                     fluidRow(
                       column(
                         width = 4,
@@ -183,34 +195,28 @@ descStatsUI <- function(id) {
                         DTOutput(ns("sampleDataTable")),
                         br(),
                         br()),
-                        
-                      column(
-                        width = 8,
-                        conditionalPanel(
-                          ns = ns,
-                          condition = "input.dsTableFilters.indexOf('Mean') > -1",
-                                 
-                          withMathJax(),
-                          titlePanel(tags$u("Sample Mean")),
-                          br(),
-                          uiOutput(ns("dsMeanCalc")),
-                          br()),
-                               
-                        conditionalPanel(
-                          ns = ns,
-                          condition = "input.dsTableFilters.indexOf('Sample Standard Deviation') > -1",
-                                 
-                          withMathJax(),
-                          titlePanel(tags$u("Sample Standard Deviation")),
-                          br(),
-                          uiOutput(ns("dsSDCalc")),
-                          br(),
-                          br(),
-                          br())),
-                      ), #fluidRow
-                    ),
-                  ),# dsTable tabPanel
-                  
+                      
+                    
+                    column(
+                      width = 8,
+                      
+                      withMathJax(),
+                      titlePanel(tags$u("Sample Mean")),
+                      br(),
+                      uiOutput(ns("dsMeanCalc")),
+                      br(),
+                      
+                      withMathJax(),
+                      titlePanel(tags$u("Sample Standard Deviation")),
+                      br(),
+                      uiOutput(ns("dsSDCalc")),
+                      br(),
+                      br(),
+                      br(),
+                    ), #column
+                    ), #fluidRow
+                  ),
+              
                   tabPanel(
                     id    = ns("dsGraphs"), 
                     title = "Graphs", 
@@ -275,10 +281,11 @@ descStatsUI <- function(id) {
                     uiOutput(ns("renderDSData"))
                   ),
                 
-                )# dsTabset tabsetPanel
+                # dsTabset tabsetPanel
             ) #descrStatsData div
         )) #descriptiveStatsMP
       ) #mainPanel
+      )
     ) #sidebarLayout
   )
 }
@@ -391,12 +398,12 @@ descStatsServer <- function(id) {
     }
     
     GetQuartiles <- function(dat) {
-      
+      dat <- sort(dat)
       quartiles <- list()
-      dat <- dat[order(dat)]
       
-      if(length(dat) %% 2 != 0) { # remove median for odd lists
-        dat <- dat[-ceiling(length(dat)/2)] # ceiling(length(dat)/2) = middle index
+      # Remove median if length is odd
+      if(length(dat) %% 2 != 0) {
+        dat <- dat[-ceiling(length(dat)/2)]
       }
       
       mid <- length(dat) / 2
@@ -888,7 +895,8 @@ descStatsServer <- function(id) {
                         input[["dsBoxplot-Ylab"]],
                         input[["dsBoxplot-BoxWidth"]]/10,
                         input[["dsBoxplot-Gridlines"]],
-                        input[["dsBoxplot-Flip"]])
+                        input[["dsBoxplot-Flip"]],
+                        input[["dsBoxplot-OutlierLabels"]])
           
           
         }, height = function() {GetPlotHeight(input[["dsBoxplot-Height"]], input[["dsBoxplot-HeightPx"]], ui = FALSE)},

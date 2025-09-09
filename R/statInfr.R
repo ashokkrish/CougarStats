@@ -404,7 +404,7 @@ statInfrUI <- function(id) {
               checkboxInput(
                 inputId = ns("oneMeanBoxplot"),
                 label   = "Boxplot for Sample Data",
-                value   = TRUE)
+                value   = TRUE),
             ) # Pop Mean ! Summarized
           ), #"input.siMethod == '1'"
           
@@ -1186,6 +1186,7 @@ statInfrUI <- function(id) {
                 inputId = ns("sidebysidewRankSum"),
                 label   = "Side-by-side Boxplot",
                 value   = TRUE),
+              
               checkboxInput(
                 inputId = ns("sidebysidewRankQQ"),
                 label   = "Q-Q plots for Sample 1 and Sample 2",
@@ -6883,7 +6884,8 @@ statInfrServer <- function(id) {
                     input[["oneMeanBoxplot-Ylab"]],
                     input[["oneMeanBoxplot-BoxWidth"]]/10,
                     input[["oneMeanBoxplot-Gridlines"]],
-                    input[["oneMeanBoxplot-Flip"]])
+                    input[["oneMeanBoxplot-Flip"]],
+                    input[["oneMeanBoxplot-OutlierLabels"]])
       
     }, height = function() {GetPlotHeight(input[["oneMeanBoxplot-Height"]], input[["oneMeanBoxplot-HeightPx"]], ui = FALSE)},
     width = function() {GetPlotWidth(input[["oneMeanBoxplot-Width"]], input[["oneMeanBoxplot-WidthPx"]], ui = FALSE)}
@@ -7814,7 +7816,8 @@ statInfrServer <- function(id) {
                               input[["indMeansBoxplot-Ylab"]],
                               input[["indMeansBoxplot-BoxWidth"]] / 10,
                               input[["indMeansBoxplot-Gridlines"]],
-                              input[["indMeansBoxplot-Flip"]])
+                              input[["indMeansBoxplot-Flip"]],
+                              input[["indMeansBoxplot-OutlierLabels"]])
       
       
     }, height = function() {GetPlotHeight(input[["indMeansBoxplot-Height"]], input[["indMeansBoxplot-HeightPx"]], ui = FALSE)},
@@ -8874,7 +8877,8 @@ statInfrServer <- function(id) {
                               input[["sidebysidewRankSum-Ylab"]],
                               input[["sidebysidewRankSum-BoxWidth"]] / 10,
                               input[["sidebysidewRankSum-Gridlines"]],
-                              input[["sidebysidewRankSum-Flip"]])
+                              input[["sidebysidewRankSum-Flip"]],
+                              input[["sidebysidewRankSum-OutlierLabels"]])
       
     }, height = function() {GetPlotHeight(input[["sidebysidewRankSum-Height"]], input[["sidebysidewRankSum-HeightPx"]], ui = FALSE)},
     width = function() {GetPlotWidth(input[["sidebysidewRankSum-Width"]], input[["sidebysidewRankSum-WidthPx"]], ui = FALSE)}
@@ -10161,7 +10165,8 @@ statInfrServer <- function(id) {
                               input[["anovaBoxplot-Ylab"]],
                               input[["anovaBoxplot-BoxWidth"]] / 10,
                               input[["anovaBoxplot-Gridlines"]],
-                              input[["anovaBoxplot-Flip"]])
+                              input[["anovaBoxplot-Flip"]],
+                              input[["anovaBoxplot-OutlierLabels"]])
       
     }, height = function() {GetPlotHeight(input[["anovaBoxplot-Height"]], input[["anovaBoxplot-HeightPx"]], ui = FALSE)},
     width = function() {GetPlotWidth(input[["anovaBoxplot-Width"]], input[["anovaBoxplot-WidthPx"]], ui = FALSE)}
