@@ -421,11 +421,13 @@ statInfrUI <- function(id) {
               choiceValues = list("Independent Population Means",
                                   "Wilcoxon rank sum test",
                                   "Dependent Population Means",
+                                  "Wilcoxon Signed Rank Test",
                                   "Population Proportions",
                                   "Two Population Variances"),
               choiceNames  = list("Two Independent Populations (\\( \\mu_{1} - \\mu_{2} \\))",
-                                  "Wilcoxon rank sum test (or the Mann-Whitney U test)",
+                                  "Wilcoxon Rank Sum Test (or the Mann-Whitney U Test)",
                                   "Dependent (Paired) Populations (\\( \\mu_{d} \\))",
+                                  "Wilcoxon Signed Rank Test",
                                   "Two Population Proportions (\\( p_{1} - p_{2}\\))",
                                   "Two Population Variances (\\( \\sigma_{1}^2/\\sigma_{2}^2 \\))"),
               selected     = "Independent Population Means", #character(0), #
@@ -816,6 +818,73 @@ statInfrUI <- function(id) {
               ) # Upload Data
             ), # Two Dependent Samples
             
+            #diana
+            #### ---------------- Wilcoxon Signed Rank Test ------------------------------------------
+            conditionalPanel(
+              ns = ns,
+              condition = "input.popuParameters == 'Wilcoxon Signed Rank Test'",
+              
+              radioButtons(
+                inputId      = ns("signedRankTest"),
+                label        = strong("Data Availability"),
+                choiceValues = list("Enter Raw Data",
+                                    "Upload Data"),
+                choiceNames  = list("Enter Raw Data",
+                                    "Upload Data"),
+                selected     = "Enter Raw Data",
+                inline       = TRUE),
+              
+              ##### -------------------- Raw Data ------------------------------------------
+              conditionalPanel(
+                ns = ns,
+                condition = "input.signedRankTest == 'Enter Raw Data'",
+                
+                textAreaInput(
+                  inputId     = ns("signedRankRaw1"),
+                  label       = strong("Sample 1"),
+                  value       = "484, 478, 492, 444, 436, 398, 464, 476",
+                  placeholder = "Enter values separated by a comma with decimals as points",
+                  rows        = 3),
+                
+                textAreaInput(
+                  inputId     = ns("signedRankRaw2"),
+                  label       = strong("Sample 2"),
+                  value       = "488, 478, 480, 426, 440, 410, 458, 460",
+                  placeholder = "Enter values separated by a comma with decimals as points",
+                  rows        = 3),
+              ), # Signed Rank Raw Data
+              
+              ##### -------------------- Uploaded Data -------------------------------------
+              conditionalPanel(
+                ns = ns,
+                condition = "input.signedRankTest == 'Upload Data'",
+                
+                fileInput(
+                  inputId = ns("signedRankUpl"),
+                  label   = strong("Upload your Data (.csv or .xls or .xlsx or .txt)"),
+                  accept  = c("text/csv",
+                              "text/comma-separated-values",
+                              "text/plain",
+                              ".csv",
+                              ".xls",
+                              ".xlsx")),
+                
+                selectizeInput(
+                  inputId = ns("signedRankUpl1"),
+                  label   = strong("Choose a Column for Sample 1"),
+                  choices = c(""),
+                  options = list(placeholder = 'Select a column',
+                                 onInitialize = I('function() { this.setValue(""); }'))),
+                
+                selectizeInput(
+                  inputId = ns("signedRankUpl2"),
+                  label   = strong("Choose a Column for Sample 2"),
+                  choices = c(""),
+                  options = list(placeholder = 'Select a column',
+                                 onInitialize = I('function() { this.setValue(""); }'))),
+              ), # Upload Data
+            ), # Wilcoxon Signed Rank Test
+            
             #### ---------------- 2 Pop Proportions --------------------------------------
             conditionalPanel(
               ns = ns,
@@ -979,7 +1048,7 @@ statInfrUI <- function(id) {
             
             conditionalPanel(
               ns = ns,
-              condition = "input.popuParameters != 'Wilcoxon rank sum test'",
+              condition = "input.popuParameters != 'Wilcoxon rank sum test' && input.popuParameters != 'Wilcoxon Signed Rank Test'",
               
               radioButtons(
                 inputId      = ns("inferenceType2"),
@@ -994,7 +1063,7 @@ statInfrUI <- function(id) {
             
             conditionalPanel(
               ns = ns,
-              condition = "input.inferenceType2 == 'Confidence Interval' && input.popuParameters != 'Wilcoxon rank sum test'",
+              condition = "input.inferenceType2 == 'Confidence Interval' && input.popuParameters != 'Wilcoxon rank sum test' && input.popuParameters != 'Wilcoxon Signed Rank Test'",
               
               radioButtons(
                 inputId  = ns("confidenceLevel2"),
@@ -1008,7 +1077,7 @@ statInfrUI <- function(id) {
             
             conditionalPanel(
               ns = ns,
-              condition = "input.inferenceType2 == 'Hypothesis Testing' || input.popuParameters == 'Wilcoxon rank sum test'",
+              condition = "input.inferenceType2 == 'Hypothesis Testing' || input.popuParameters == 'Wilcoxon rank sum test' || input.popuParameters == 'Wilcoxon Signed Rank Test'",
               
               radioButtons(
                 inputId  = ns("significanceLevel2"),
@@ -1697,6 +1766,54 @@ statInfrUI <- function(id) {
                                     
                                   ), # indPopMeansTabset
                                 ), # Two Independent Samples
+                                
+                                # diana
+                                #### ---------------- Signed Rank Test --------------------------------------
+                                conditionalPanel(
+                                  ns = ns,
+                                  condition = "input.popuParameters == 'Wilcoxon Signed Rank Test'",
+                                  
+                                  tabsetPanel(
+                                    id = ns("signedRankTabset"),
+                                    selected = "Analysis",
+                                    
+                                    tabPanel(
+                                      id = ns("signedRankTab"),
+                                      title = "Analysis",
+                                      
+                                      conditionalPanel(
+                                        ns = ns,
+                                        condition = "input.inferenceType2 == 'Hypothesis Testing' || input.inferenceType2 == 'Confidence Interval'",
+                                        
+                                        titlePanel(tags$u("Hypothesis Test")),
+                                        br(),
+                                        uiOutput(ns('signedRankHypothesisTest')),
+                                        br(),
+                                      ), # Hypothesis Testing
+                                    ), # Analysis Tab
+                                    tabPanel(
+                                      id = ns("signedRankDataRanks"),
+                                      title = "Data with Ranks",
+                                      
+                                      conditionalPanel(
+                                        ns = ns,
+                                        condition = "input.inferenceType2 == 'Hypothesis Testing' || input.inferenceType2 == 'Confidence Interval'",
+                                        
+                                        titlePanel("Ranked Results by Group"),
+                                        br(),
+                                        uiOutput(ns('signedRankDataRanks')),
+                                        br(),
+                                      ), # Ranked Results by Group
+                                    ), # Tabset
+                                    tabPanel(
+                                      id    = ns("signedRankUploadData"),
+                                      title = "Uploaded Data",
+                                      
+                                      uiOutput(ns("renderSignedRankUploadData"))
+                                    ),
+                                  ), # Uploaded Data
+                                ), # Signed Rank Tabs Whole
+                                
                                 #### ---------------- Dependent Pop Means ----------------------------------
                                 conditionalPanel(
                                   ns = ns,
@@ -2204,6 +2321,10 @@ statInfrServer <- function(id) {
     depmeansuploadvars_iv <- InputValidator$new()
     depmeansrawsd_iv <- InputValidator$new()
     depmeansmunaught_iv <- InputValidator$new()
+    signedRankUpload_iv <- InputValidator$new()
+    signedRankRaw_iv <- InputValidator$new()
+    signedRankUploadvars_iv <- InputValidator$new()
+    signedRankrawsd_iv <- InputValidator$new()
     oneSD_iv <- InputValidator$new()
     oneSDht_iv <- InputValidator$new()
     oneprop_iv <- InputValidator$new()
@@ -2447,6 +2568,44 @@ statInfrServer <- function(id) {
     depmeansrawsd_iv$add_rule("after", ~ if(GetDepMeansData()$sd == 0) "Variance required in 'Before' and 'After' sample data for hypothesis testing.")
     
     depmeansmunaught_iv$add_rule("depMeansMuNaught", sv_required())
+    #diana
+    # signed Rank Test
+    signedRankUpload_iv$add_rule("signedRankUpl", sv_required())
+    signedRankUpload_iv$add_rule("signedRankUpl", ~ if(is.null(fileInputs$signedRankStatus) || fileInputs$signedRankStatus == 'reset') "Required")
+    signedRankUpload_iv$add_rule("signedRankUpl", ~ if(!(tolower(tools::file_ext(input$signedRankUpl$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+    signedRankUpload_iv$add_rule("signedRankUpl", ~ if(nrow(signedRankUploadData()) == 0) "File is empty.")
+    signedRankUpload_iv$add_rule("signedRankUpl", ~ if(ncol(signedRankUploadData()) < 2) "File must contain at least 2 distinct samples to choose from for analysis.")
+    signedRankUpload_iv$add_rule("signedRankUpl", ~ if(nrow(signedRankUploadData()) < 3) "Samples must include at least 2 observations.")
+    signedRankRaw_iv$add_rule("signedRankRaw1", sv_required())
+    signedRankRaw_iv$add_rule("signedRankRaw1", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
+                                                         "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)"))
+    signedRankRaw_iv$add_rule("signedRankRaw2", sv_required())
+    signedRankRaw_iv$add_rule("signedRankRaw2", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
+                                                         "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)."))
+    signedRankRaw_iv$add_rule("signedRankRaw1", ~ if(length(createNumLst(input$signedRankRaw1)) != length(createNumLst(input$signedRankRaw2))) "Sample 1 and Sample 2 must have the same number of observations.")
+    signedRankRaw_iv$add_rule("signedRankRaw2", ~ if(length(createNumLst(input$signedRankRaw1)) != length(createNumLst(input$signedRankRaw2))) "Sample 1 and Sample 2 must have the same number of observations.")
+    
+    signedRankUploadvars_iv$add_rule("signedRankUpl1", sv_required())
+    signedRankUploadvars_iv$add_rule("signedRankUpl2", sv_required())
+    signedRankUploadvars_iv$add_rule("signedRankUpl1", ~ if(CheckSignedRankUploadSamples() != 0) "Sample 1 and Sample 2 must have the same number of observations.")
+    signedRankUploadvars_iv$add_rule("signedRankUpl2", ~ if(CheckSignedRankUploadSamples() != 0) "Sample 1 and Sample 2 must have the same number of observations.")
+    signedRankrawsd_iv$add_rule("signedRankRaw2", ~ {
+      data <- GetSignedRankMeansData()
+      if(is.null(data) || 
+         length(unique(data$samp1)) <= 1 || 
+         length(unique(data$samp2)) <= 1) {
+        "Variance required in Sample 1 and Sample 2 data for hypothesis testing."
+      }
+    })
+    signedRankUpload_iv$add_rule("signedRankUpl", ~ {
+      data <- signedRankUploadData()
+      if (!is.null(data) && nrow(data) > 0) {
+        if (!all(sapply(data, is.numeric))) {
+          "Uploaded data contains non-numeric values. Please ensure all columns are numeric."
+        }
+      }
+    })
+    
     
     # sample standard deviation
     oneSD_iv$add_rule("SSDSampleSize", sv_required())
@@ -2583,19 +2742,6 @@ statInfrServer <- function(id) {
     kwupload_iv$add_rule("kwUserData", ~ if(is.null(fileInputs$kwStatus) || fileInputs$kwStatus == 'reset') "Required")
     kwupload_iv$add_rule("kwUserData", ~ if(!(tolower(tools::file_ext(input$kwUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
     kwupload_iv$add_rule("kwUserData", ~ if(ncol(kwUploadData()) < 2) "Data must include at least two columns")
-    
-    #kwupload_iv$add_rule("kwUserData", ~ {
-    #  df <- kwUploadData()
-    #  if (!is.null(df)) {
-    #    for (col in names(df)) {
-    #      if (length(unique(df[[col]])) == 1) {
-    #        return(paste0("Column '", col, "' has the same value for all rows."))
-    #      }
-    #    }
-    #  }
-    #})
-    
-    
     kwmulti_iv$add_rule("kwMultiColumns", ~ if(length(input$kwMultiColumns) < 2) "Select at least two columns")
     
     kwstacked_iv$add_rule("kwResponse", sv_required())
@@ -2726,6 +2872,25 @@ statInfrServer <- function(id) {
                                           input$wilcoxonRankSumTestData == 'Enter Raw Data' &&
                                           wilcoxonraw_iv$is_valid()))
     
+    signedRankRaw_iv$condition(~ isTRUE(input$siMethod == '2' &&
+                                          input$popuParameters == 'Wilcoxon Signed Rank Test' &&
+                                          input$signedRankTest == 'Enter Raw Data'))
+    
+    signedRankUpload_iv$condition(~ isTRUE(input$siMethod == '2' &&
+                                             input$popuParameters == 'Wilcoxon Signed Rank Test' &&
+                                             input$signedRankTest == 'Upload Data'))
+    
+    signedRankUploadvars_iv$condition(~ isTRUE(input$siMethod == '2' &&
+                                                 input$popuParameters == 'Wilcoxon Signed Rank Test' &&
+                                                 input$signedRankTest == 'Upload Data' &&
+                                                 signedRankUpload_iv$is_valid()))
+    
+    signedRankrawsd_iv$condition(~ isTRUE(input$siMethod == '2' &&
+                                            input$popuParameters == 'Wilcoxon Signed Rank Test' &&
+                                            input$signedRankTest == 'Enter Raw Data' &&
+                                            signedRankRaw_iv$is_valid()))
+    
+    
     indmeansmunaught_iv$condition(~ isTRUE(input$siMethod == '2' &&
                                              input$popuParameters == 'Independent Population Means' &&
                                              input$inferenceType2 == 'Hypothesis Testing'))
@@ -2851,6 +3016,9 @@ statInfrServer <- function(id) {
     si_iv$add_validator(wilcoxonUpload_iv)
     si_iv$add_validator(wilcoxonraw_iv)
     si_iv$add_validator(wilcoxonRanksuploadvars_iv)
+    si_iv$add_validator(signedRankUpload_iv)
+    si_iv$add_validator(signedRankRaw_iv)
+    si_iv$add_validator(signedRankUploadvars_iv)
     si_iv$add_validator(indmeansmunaught_iv)
     si_iv$add_validator(depmeansraw_iv)
     si_iv$add_validator(depmeansupload_iv)
@@ -2912,6 +3080,9 @@ statInfrServer <- function(id) {
     depmeansuploadvars_iv$enable()
     depmeansrawsd_iv$enable()
     depmeansmunaught_iv$enable()
+    signedRankRaw_iv$enable()
+    signedRankUpload_iv$enable()
+#    signedRankUploadvars_iv$enable()
     oneSD_iv$enable()
     oneSDht_iv$enable()
     oneprop_iv$enable()
@@ -3524,7 +3695,7 @@ statInfrServer <- function(id) {
       return(dat)
     }
     
-    #fix this diana  
+
     GetwRankSumMeansData <- function() {
       req(si_iv$is_valid())
       
@@ -3536,6 +3707,29 @@ statInfrServer <- function(id) {
       } else if(input$wilcoxonRankSumTestData == 'Enter Raw Data') {
         samp1 <- createNumLst(input$rankSumRaw1)
         samp2 <- createNumLst(input$rankSumRaw2)
+      }
+      
+      dat$samp1 <- samp1
+      dat$samp2 <- samp2
+      dat$n1 <- length(samp1)
+      dat$n2 <- length(samp2)
+      dat$mean1 <- mean(samp1)
+      dat$mean2 <- mean(samp2)
+      
+      return(dat)
+    }
+    
+    GetSignedRankMeansData <- function() {
+      req(si_iv$is_valid())
+      
+      dat <- list()
+      
+      if(input$signedRankTest == 'Upload Data') {
+        samp1 <- na.omit(as.numeric(unlist(signedRankUploadData()[,input$signedRankUpl1])))
+        samp2 <- na.omit(as.numeric(unlist(signedRankUploadData()[,input$signedRankUpl2])))
+      } else if(input$signedRankTest == 'Enter Raw Data') {
+        samp1 <- createNumLst(input$signedRankRaw1)
+        samp2 <- createNumLst(input$signedRankRaw2)
       }
       
       dat$samp1 <- samp1
@@ -4820,7 +5014,8 @@ statInfrServer <- function(id) {
       rankSumStatus = NULL, 
       depMeansStatus = NULL,
       anovaStatus = NULL,
-      kwStatus = NULL
+      kwStatus = NULL,
+      signedRankStatus = NULL
     )
     
     ConfLvl <- reactive({
@@ -5531,6 +5726,131 @@ statInfrServer <- function(id) {
       
     })
     
+    #diana
+    ### ------------ Signed Rank Test Reactives ------------------------------------------
+    
+    signedRankUploadData <- eventReactive(input$signedRankUpl, {
+      
+      ext <- tools::file_ext(input$signedRankUpl$name)
+      ext <- tolower(ext)
+      
+      switch(ext,
+             csv = read_csv(input$signedRankUpl$datapath, show_col_types = FALSE),
+             xls = read_xls(input$signedRankUpl$datapath),
+             xlsx = read_xlsx(input$signedRankUpl$datapath),
+             txt = read_tsv(input$signedRankUpl$datapath, show_col_types = FALSE),
+             
+             validate("Improper file format")
+      )
+    })
+    
+    CheckSignedRankUploadSamples <- eventReactive (c(input$signedRankUpl1,input$signedRankUpl2), {
+      if(input$signedRankUpl1 == "" | input$signedRankUpl2 == "") {
+        return(0)
+      } else {
+        before <- unlist(signedRankUploadData()[, input$signedRankUpl1])
+        after <- unlist(signedRankUploadData()[, input$signedRankUpl2])
+        difference <- length(na.omit(before)) - length(na.omit(after))
+        return(difference)
+      }
+    })
+    signedRankTInt <- reactive({
+      req(si_iv$is_valid())
+      
+      data <- GetSignedRankMeansData()
+      
+      signedRankTInt <- TInterval(data$n, data$dbar, data$sd, ConfLvl())
+      signedRankTInt["T Critical"] <- round(signedRankTInt["T Critical"], cvDigits)
+      
+      return(signedRankTInt)
+    })
+    
+    signedRankTTest <- reactive({
+      req(si_iv$is_valid())
+      
+      data <- GetSignedRankMeansData()
+      
+      n_total <- data$n1 + data$n2
+      pooled_mean <- (data$mean1 * data$n1 + data$mean2 * data$n2) / n_total
+      combined_data <- c(data$samp1, data$samp2)
+      pooled_sd <- sd(combined_data)
+      
+      signedRankTTest <- TTest(n_total, pooled_mean, pooled_sd, 0, IndMeansHypInfo()$alternative, SigLvl())
+      signedRankTTest["T Critical"] <- round(signedRankTTest["T Critical"], cvDigits)
+      
+      return(signedRankTTest)
+    })
+    
+    signedRankedData <- reactive({
+      req(input$signedRankTest)
+      
+      if (input$signedRankTest == 'Enter Raw Data') {
+        sample1_vals <- as.numeric(unlist(strsplit(input$signedRankRaw1, ",")))
+        sample2_vals <- as.numeric(unlist(strsplit(input$signedRankRaw2, ",")))
+        
+        group1_name <- "Sample 1"
+        group2_name <- "Sample 2"
+        
+      } else if (input$signedRankTest == 'Upload Data') {
+        req(signedRankUpload_iv$is_valid())
+        uploaded_data <- signedRankUploadData()
+        req(input$signedRankUpl1, input$signedRankUpl2)
+        
+        sample1_vals <- na.omit(uploaded_data[[input$signedRankUpl1]])
+        sample2_vals <- na.omit(uploaded_data[[input$signedRankUpl2]])
+        
+        group1_name <- input$signedRankUpl1
+        group2_name <- input$signedRankUpl2
+        
+      } else {
+        return(NULL)
+      }
+      
+      # Ensure both samples have the same length (for pairing)
+      min_length <- min(length(sample1_vals), length(sample2_vals))
+      sample1_vals <- sample1_vals[1:min_length]
+      sample2_vals <- sample2_vals[1:min_length]
+      
+      # Create paired data frame
+      paired_data <- data.frame(
+        PairID = 1:min_length,
+        Sample1 = sample1_vals,
+        Sample2 = sample2_vals,
+        stringsAsFactors = FALSE
+      )
+      
+      # Calculate differences and ranks for Wilcoxon signed-rank test
+      signed_rank_data <- paired_data %>%
+        dplyr::mutate(
+          Difference = Sample2 - Sample1,
+          AbsDifference = abs(Difference)
+        ) %>%
+        # Remove zero differences (ties)
+        dplyr::filter(Difference != 0) %>%
+        # Rank the absolute differences
+        dplyr::mutate(
+          Rank = rank(AbsDifference, ties.method = "average"),
+          SignedRank = ifelse(Difference > 0, Rank, -Rank)
+        ) %>%
+        # Create the format expected by your table function
+        dplyr::select(
+          Group = PairID,  # Using PairID as a placeholder for Group
+          Sample1,
+          Sample2, 
+          Value = Difference,  # Using Difference as Value for compatibility
+          Rank,
+          SignedRank
+        ) %>%
+        dplyr::arrange(Rank)
+      
+      return(signed_rank_data)
+    })
+    
+    output$signedRankDataRanks <- renderUI({
+      req(signedRankedData())
+      SignedRankTableOutput(signedRankedData())
+    })
+    
     ### ------------ Two Prop Reactives ------------------------------------------
     checkTwoProp <- reactive({
       
@@ -6048,9 +6368,9 @@ statInfrServer <- function(id) {
       if(!wilcoxonraw_iv$is_valid()) {
         validate(
           need(input$rankSumRaw1, "Sample 1 data requires a minimum of 3 data points.") %then%
-            need(length(createNumLst(input$rankSumRaw1)) > 2, "Sample 1 data requires a minimum of 3 data points."),
+          need(length(createNumLst(input$rankSumRaw1)) > 2, "Sample 1 data requires a minimum of 3 data points."),
           need(input$rankSumRaw2, "Sample 2 data requires a minimum of 3 data points.") %then%
-            need(length(createNumLst(input$rankSumRaw2)) > 2, "Sample 2 data requires a minimum of 3 data points."),
+          need(length(createNumLst(input$rankSumRaw2)) > 2, "Sample 2 data requires a minimum of 3 data points."),
           errorClass = "myClass")
         
         validate(
@@ -6083,6 +6403,48 @@ statInfrServer <- function(id) {
           errorClass = "myClass")
       }
       
+      ### diana
+      ### ---------------- Wilcoxon Signed Rank Test Validation
+      
+      if(!signedRankRaw_iv$is_valid()) {
+        validate(
+          need(input$signedRankRaw1, "Sample 1 data requires a minimum of 3 data points.") %then%
+          need(length(createNumLst(input$signedRankRaw1)) > 2, "Sample 1 data requires a minimum of 3 data points."),
+          need(input$signedRankRaw2, "Sample 2 data requires a minimum of 3 data points.") %then%
+          need(length(createNumLst(input$signedRankRaw2)) > 2, "Sample 2 data requires a minimum of 3 data points."),
+          errorClass = "myClass")
+        
+        validate(
+          need(length(createNumLst(input$signedRankRaw1)) == length(createNumLst(input$signedRankRaw2)), "Same number of data points required for Sample 1 and Sample 2."),
+          errorClass = "myClass")
+      }
+      
+      if(!signedRankUpload_iv$is_valid()) {
+        
+        if(is.null(input$signedRankUpl)) {
+          validate("Please upload a file.")
+        }
+        
+        validate(
+          need(!is.null(fileInputs$signedRankStatus) && fileInputs$signedRankStatus == 'uploaded', "Please upload a file."),
+          errorClass = "myClass")
+        
+        validate(
+          need(nrow(signedRankUploadData()) > 0, "File is empty."),
+          need(ncol(signedRankUploadData()) >= 2, "File must contain at least 2 distinct sample 1 and sample 2 sets of data to choose from for analysis."),
+          need(nrow(signedRankUploadData()) >= 3, "Samples must include at least 3 observations."),
+          errorClass = "myClass")
+      }
+      
+      if(!signedRankUploadvars_iv$is_valid()) {
+        validate(
+          need(input$signedRankUpl1, "Please select a column for sample 1."),
+          need(input$signedRankUpl2, "Please select a column for sample 2."),
+          need(CheckSignedRankUploadSamples() == 0, "Same number of data points required for Sample 1 and Sample 2."),
+          errorClass = "myClass")
+      }
+
+      #### ---------------- Dependent Population Means Validation
       if(!depmeansrawsd_iv$is_valid()) {
         
         if(input$inferenceType2 == 'Hypothesis Testing'){
@@ -6097,7 +6459,6 @@ statInfrServer <- function(id) {
           need(GetDepMeansData()$sd != 0, sdValidation),
           errorClass = "myClass")
       }
-      #### ---------------- Dependent Population Means Validation
       if(!depmeansraw_iv$is_valid()) {
         validate(
           need(input$before, "Sample 1 data requires a minimum of 3 data points.") %then%
@@ -8833,6 +9194,257 @@ statInfrServer <- function(id) {
       }
       
     })
+    # diana
+    ### ------------ Signed Rank Test Outputs --------------------------------------------
+    output$signedRankHypothesisTest <- renderUI({
+      
+      req(!is.null(signedRankedData()))
+      req(nrow(signedRankedData()) > 0)
+      
+      if (input$signedRankTest == 'Upload Data') {
+        req(input$signedRankUpl1, input$signedRankUpl2)
+        name1 <- input$signedRankUpl1
+        name2 <- input$signedRankUpl2
+      } else {
+        name1 <- "Sample 1"
+        name2 <- "Sample 2"
+      }
+      
+      data_ranked <- signedRankedData()
+      
+      # Get the signed ranks and calculate test statistics
+      positive_ranks <- data_ranked$SignedRank[data_ranked$SignedRank > 0]
+      negative_ranks <- data_ranked$SignedRank[data_ranked$SignedRank < 0]
+      
+      # Calculate W+ and W- (sum of positive and negative ranks)
+      W_plus <- sum(positive_ranks)
+      W_minus <- sum(abs(negative_ranks))
+      
+      # Number of non-zero differences
+      n <- nrow(data_ranked)
+      
+      # Test statistic
+      W_stat <- W_plus
+      
+      # Expected value and standard deviation for normal approximation
+      mu_w <- n * (n + 1) / 4
+      sigma_w <- sqrt(n * (n + 1) * (2 * n + 1) / 24)
+      
+      significance <- 1 - SigLvl()
+      
+      # Determine hypothesis and critical values based on alternative
+      if(input$altHypothesis2 == "2") {
+        # Two-sided test
+        z_critical <- qnorm(1 - SigLvl()/2)
+        critVal <- paste("\\pm", round(qnorm(1 - SigLvl()/2), 3))
+        nullHyp <- paste0("\\text{Median difference} = 0")
+        altHyp <- paste0("\\text{Median difference} \\neq 0")
+        altern <- "two.sided"
+        z_stat <- (W_stat - mu_w) / sigma_w
+        in_rejection_region <- abs(z_stat) > z_critical
+        
+      } else if(input$altHypothesis2 == "1") {
+        # Less than (negative difference)
+        z_critical <- qnorm(SigLvl())
+        critVal <- round(qnorm(SigLvl()), 3)
+        nullHyp <- paste0("\\text{Median difference} \\geq 0")
+        altHyp <- paste0("\\text{Median difference} \\lt 0")
+        altern <- "less"
+        z_stat <- (W_stat - mu_w) / sigma_w
+        in_rejection_region <- z_stat < z_critical
+        
+      } else {
+        # Greater than (positive difference)
+        z_critical <- qnorm(1 - SigLvl())
+        critVal <- round(qnorm(1 - SigLvl()), 3)
+        nullHyp <- paste0("\\text{Median difference} \\leq 0")
+        altHyp <- paste0("\\text{Median difference} \\gt 0")
+        altern <- "greater"
+        z_stat <- (W_stat - mu_w) / sigma_w
+        in_rejection_region <- z_stat > z_critical
+      }
+      
+      # Determine rejection region text
+      if(in_rejection_region) {
+        pvalSymbol <- "\\leq"
+        suffEvidence <- "is"
+        reject <- "reject"
+        region <- "rejection"
+      } else {
+        pvalSymbol <- "\\gt"
+        suffEvidence <- "isn't"
+        reject <- "do not reject"
+        region <- "acceptance"
+      }
+      
+      # Get the original paired data for p-value calculation
+      sample1_data <- data_ranked$Sample1
+      sample2_data <- data_ranked$Sample2
+      
+      # Calculate p-value using normal approximation
+      if(input$altHypothesis2 == "2") {
+        p_value <- 2 * pnorm(abs(z_stat), lower.tail = FALSE)
+      } else if(input$altHypothesis2 == "1") {
+        p_value <- pnorm(z_stat, lower.tail = TRUE)
+      } else {
+        p_value <- pnorm(z_stat, lower.tail = FALSE)
+      }
+      
+      # Create the output HTML
+      signedRankHTHead <- tagList(
+        p(
+          withMathJax(),
+          sprintf("\\( H_{0}:\\ %s\\)", nullHyp),
+          br(),
+          sprintf("\\( H_{a}:\\ %s\\)", altHyp),
+          br(), br(),
+          sprintf("\\( \\alpha = %s \\)", SigLvl()),
+          br(),br(),
+          sprintf("\\(n = %s\\) (number of non-zero differences)", n),
+          br(),
+          
+          p(tags$b("Sum of Signed Ranks:")),
+          sprintf("\\(  W^{+} = %s \\) (sum of positive ranks)", W_plus),
+          br(),
+          sprintf("\\(  W^{-} = %s \\) (sum of negative ranks)", W_minus),
+          br(),br(),
+          
+          p(tags$b("Expected Value:")),
+          sprintf("\\(  \\mu_{W} = \\frac{n(n + 1)}{4} = \\frac{%s(%s + 1)}{4} = %s \\)",
+                  n, n, mu_w),
+          br(), br(),
+          
+          p(tags$b("Standard Deviation:")),
+          sprintf("\\( \\sigma_W = \\sqrt{\\frac{n(n + 1)(2n + 1)}{24}} = \\sqrt{\\frac{%s \\times %s \\times %s}{24}} = %s \\)",
+                  n, n + 1, 2*n + 1, round(sigma_w, 4)),
+          br(),br(),
+          
+          p(tags$b("Test Statistic:")),
+          sprintf("\\(  z = \\frac{W^{+} - \\mu_W}{\\sigma_W} = \\frac{%s - %s}{%s} = %s \\)",
+                  W_stat, mu_w, round(sigma_w, 4), round(z_stat, 3)),
+          br(), br(),
+          
+          p(tags$b("Using P-value Method:")),
+          sprintf("\\( P = %s \\)", round(p_value, 4)),
+          br(),
+          
+          if (p_value <= SigLvl()) {
+            tagList(
+              sprintf("\\( \\text{Since } P \\leq %s, \\text{reject } H_0. \\)", SigLvl()),
+              br(), br())
+          } else {
+            tagList(
+              sprintf("\\( \\text{Since } P > %s, \\text{do not reject } H_0. \\)", SigLvl()),
+              br(), br())
+          }
+        )
+      )
+      
+      # Critical value method output
+      signedRankHTTail <- tagList(
+        p(
+          withMathJax(),
+          p(tags$b("Using Critical Value Method:")),
+          sprintf("Critical Value(s) \\( = %s z_{%s} = %s \\)",
+                  if(input$altHypothesis2 == "2") "\\pm" else if(input$altHypothesis2 == "1") "-" else "",
+                  if(input$altHypothesis2 == "2") SigLvl()/2 else SigLvl(),
+                  critVal),
+          br(),
+          br(),
+          sprintf("Since the test statistic \\( (z = %s)\\) falls within the %s region, %s \\( H_{0}\\).",
+                  round(z_stat, 3),
+                  region,
+                  reject),
+          br(),
+        ),
+        
+        plotOutput(session$ns('signedRankPlot'), width = "75%", height = "300px"),
+        br()
+      )
+      
+      depHTConclusion <- printHTConclusion(region, reject, suffEvidence, altHyp, "")
+      
+      tagAppendChildren(signedRankHTHead, signedRankHTTail, depHTConclusion)
+    })
+    
+    
+    
+    output$signedRankPlot <- renderPlot({
+      
+      # Get the signed rank data
+      signedRankData <- signedRankedData()
+      
+      # Check if we have valid data
+      if (is.null(signedRankData) || nrow(signedRankData) == 0) {
+        return(NULL)
+      }
+      
+      # Get group names based on input type
+      if (input$signedRankTest == 'Upload Data') {
+        name1 <- input$signedRankUpl1
+        name2 <- input$signedRankUpl2
+      } else {
+        name1 <- "Sample 1"
+        name2 <- "Sample 2"
+      }
+      
+      # Calculate signed rank test statistics
+      positive_ranks <- signedRankData$SignedRank[signedRankData$SignedRank > 0]
+      negative_ranks <- signedRankData$SignedRank[signedRankData$SignedRank < 0]
+      
+      # Calculate W+ and W- (sum of positive and negative ranks)
+      W_plus <- sum(positive_ranks)
+      W_minus <- sum(abs(negative_ranks))
+      
+      # Number of non-zero differences
+      n <- nrow(signedRankData)
+      
+      # Test statistic (typically the smaller of W+ and W-)
+      # But for normal approximation, we often use W+
+      W_stat <- W_plus
+      
+      # Expected value and standard deviation for normal approximation
+      mu_w <- n * (n + 1) / 4
+      sigma_w <- sqrt(n * (n + 1) * (2 * n + 1) / 24)
+      
+      # Calculate z-statistic with continuity correction
+      if (W_stat > mu_w) {
+        z_stat <- (W_stat - 0.5 - mu_w) / sigma_w
+      } else {
+        z_stat <- (W_stat + 0.5 - mu_w) / sigma_w
+      }
+      
+      # Determine critical values based on alternative hypothesis
+      alternative <- ""
+      z_critical <- NA
+      
+      if(input$altHypothesis2 == "2") {
+        z_critical <- qnorm(1 - SigLvl()/2)
+        alternative <- "two.sided"
+      } else if(input$altHypothesis2 == "1") {
+        z_critical <- qnorm(SigLvl())
+        alternative <- "less"
+      } else {
+        z_critical <- qnorm(1 - SigLvl())
+        alternative <- "greater"
+      }
+      
+      # Generate the plot
+      wilcoxonPlot <- wilcoxonZTestPlot(z_stat, z_critical, alternative)
+      wilcoxonPlot
+    })
+    
+    output$signedRankUploadTable <- renderDT({
+      req(signedRankUpload_iv$is_valid())
+      datatable(signedRankUploadData(),
+                options = list(pageLength = -1,
+                               lengthMenu = list(c(25, 50, 100, -1),
+                                                 c("25", "50", "100", "all")),
+                               columnDefs = list(list(className = 'dt-center',
+                                                      targets = 0:ncol(signedRankUploadData())))),
+      )
+    })
+    
     
     ### ------------ Two Prop Outputs --------------------------------------------
     
@@ -9984,6 +10596,7 @@ statInfrServer <- function(id) {
         shinyjs::show(id = "wilcoxonUpl2")
       }
     })
+
     
     observeEvent(c(input$sidebysidewRankSum, input$sidebysidewRankQQ), {
       if (input$sidebysidewRankSum || input$sidebysidewRankQQ) {
@@ -10003,6 +10616,46 @@ statInfrServer <- function(id) {
           br(),
           br(),
           div(DTOutput(session$ns("wRankSumUploadTable")), style = "width: 75%"),
+          br(),
+          br()
+        )
+      })
+    })
+    
+    ### ---------- Wilcoxon Signed Rank Test Observers --------------------
+    
+    observeEvent(input$signedRankUpl, priority = 5, {
+      hide(id = "inferenceData")
+      hide(id = "signedRankUpl1")
+      hide(id = "signedRankUpl2")
+      fileInputs$signedRankStatus  <- 'uploaded'
+      
+      if(signedRankUpload_iv$is_valid()) {
+        
+        
+        freezeReactiveValue(input, "signedRankUpl1")
+        updateSelectInput(session = getDefaultReactiveDomain(),
+                          "signedRankUpl1",
+                          choices = c(colnames(signedRankUploadData()))
+        )
+        
+        freezeReactiveValue(input, "signedRankUpl2")
+        updateSelectInput(session = getDefaultReactiveDomain(),
+                          "signedRankUpl2",
+                          choices = c(colnames(signedRankUploadData()))
+        )
+        shinyjs::show(id = "signedRankUpl1")
+        shinyjs::show(id = "signedRankUpl2")
+      }
+    })
+    
+    observeEvent(input$goInference, {
+      output$renderSignedRankUploadData <- renderUI({
+        tagList(
+          titlePanel("Data File"),
+          br(),
+          br(),
+          div(DTOutput(session$ns("signedRankUploadTable")), style = "width: 75%"),
           br(),
           br()
         )
@@ -10418,6 +11071,10 @@ statInfrServer <- function(id) {
       hide(id = "inferenceMP")
       hide(id = "inferenceData")
     })
+    observeEvent(!signedRankrawsd_iv$is_valid(), {
+      hide(id = "inferenceMP")
+      hide(id = "inferenceData")
+    })
     observeEvent({
       input$siMethod
       input$sampleSize
@@ -10463,6 +11120,16 @@ statInfrServer <- function(id) {
       } else {
         hide(id = "wilcoxonUpl1")
         hide(id = "wilcoxonUpl2")
+      }
+    })
+    
+    observeEvent(fileInputs$signedRankStatus, {  
+      if (fileInputs$signedRankStatus == 'uploaded'){
+        show(id = "signedRankUpl1")
+        show(id = "signedRankUpl2")
+      } else {
+        hide(id = "signedRankUpl1")
+        hide(id = "signedRankUpl2")
       }
     })
     
@@ -10540,6 +11207,15 @@ statInfrServer <- function(id) {
       } else {
         hideTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
       }
+      
+      # Hide/show tabs for Wilcoxon Signed Rank Upload
+      if (input$signedRankTest != "Upload Data"){
+        updateTabsetPanel(session, "signedRankTabset", selected = "Analysis")
+        hideTab(inputId = "signedRankTabset", target = "Uploaded Data")
+      } else {
+        showTab(inputId = "signedRankTabset", target = "Uploaded Data")
+      }
+      
     })
     
     observeEvent(input$resetInference, {
@@ -10553,6 +11229,7 @@ statInfrServer <- function(id) {
       fileInputs$depMeansStatus <- 'reset'
       fileInputs$anovaStatus <- 'reset'
       fileInputs$kwStatus <- 'reset'
+      fileInputs$signedRankStatus <- 'reset'
       
       updateSelectizeInput(session, "kwMultiColumns", 
                            selected = "",

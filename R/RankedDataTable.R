@@ -56,3 +56,45 @@ RankedTableOutput <- function(data) {
     )
   })
 }
+
+# For the output in the Data table with Ranks Tab - Wilcoxon Signed Rank Test
+SignedRankTableOutput <- function(data) {
+  renderUI({
+    req(data)
+    
+    df <- if (is.reactive(data)) data() else data
+    
+    # The data now already has the signed rank calculations
+    # Just need to format it for display
+    display_data <- df %>%
+      dplyr::select(
+        `Sample1 Data` = Sample1,
+        `Sample2 Data` = Sample2,
+        Difference = Value,  # Value column contains the differences
+        Rank = Rank,
+        `Signed Rank` = SignedRank
+      ) %>%
+      dplyr::arrange(Rank)
+    
+    tagList(
+      div(
+        DT::datatable(
+          display_data,
+          rownames = FALSE,
+          options = list(
+            pageLength = 10,
+            lengthMenu = list(c(10, 25, 50, 100, -1), c("10", "25", "50", "100", "all")),
+            scrollX = TRUE,
+            columnDefs = list(
+              list(className = 'dt-center', targets = "_all"),
+              list(width = '120px', targets = "_all")
+            )
+          )
+        ), 
+        style = "width: 95%"
+      ),
+      br(),
+      br()
+    )
+  })
+}
