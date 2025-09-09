@@ -57,20 +57,17 @@ RankedTableOutput <- function(data) {
   })
 }
 
-# For the output in the Data table with Ranks Tab - Wilcoxon Signed Rank Test
 SignedRankTableOutput <- function(data) {
   renderUI({
     req(data)
     
     df <- if (is.reactive(data)) data() else data
-    
-    # The data now already has the signed rank calculations
-    # Just need to format it for display
+
     display_data <- df %>%
       dplyr::select(
         `Sample1 Data` = Sample1,
         `Sample2 Data` = Sample2,
-        Difference = Value,  # Value column contains the differences
+        Difference = Value,  
         Rank = Rank,
         `Signed Rank` = SignedRank
       ) %>%

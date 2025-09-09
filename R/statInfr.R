@@ -5806,34 +5806,28 @@ statInfrServer <- function(id) {
       } else {
         return(NULL)
       }
-      
-      # Ensure both samples have the same length (for pairing)
+
       min_length <- min(length(sample1_vals), length(sample2_vals))
       sample1_vals <- sample1_vals[1:min_length]
       sample2_vals <- sample2_vals[1:min_length]
-      
-      # Create paired data frame
+
       paired_data <- data.frame(
         PairID = 1:min_length,
         Sample1 = sample1_vals,
         Sample2 = sample2_vals,
         stringsAsFactors = FALSE
       )
-      
-      # Calculate differences and ranks for Wilcoxon signed-rank test
+
       signed_rank_data <- paired_data %>%
         dplyr::mutate(
           Difference = Sample2 - Sample1,
           AbsDifference = abs(Difference)
         ) %>%
-        # Remove zero differences (ties)
         dplyr::filter(Difference != 0) %>%
-        # Rank the absolute differences
         dplyr::mutate(
           Rank = rank(AbsDifference, ties.method = "average"),
           SignedRank = ifelse(Difference > 0, Rank, -Rank)
         ) %>%
-        # Create the format expected by your table function
         dplyr::select(
           Group = PairID,  # Using PairID as a placeholder for Group
           Sample1,
@@ -9215,30 +9209,23 @@ statInfrServer <- function(id) {
       }
       
       data_ranked <- signedRankedData()
-      
-      # Get the signed ranks and calculate test statistics
+
       positive_ranks <- data_ranked$SignedRank[data_ranked$SignedRank > 0]
       negative_ranks <- data_ranked$SignedRank[data_ranked$SignedRank < 0]
-      
-      # Calculate W+ and W- (sum of positive and negative ranks)
+
       W_plus <- sum(positive_ranks)
       W_minus <- sum(abs(negative_ranks))
-      
-      # Number of non-zero differences
+
       n <- nrow(data_ranked)
-      
-      # Test statistic
+
       W_stat <- W_plus
-      
-      # Expected value and standard deviation for normal approximation
+
       mu_w <- n * (n + 1) / 4
       sigma_w <- sqrt(n * (n + 1) * (2 * n + 1) / 24)
       
       significance <- 1 - SigLvl()
-      
-      # Determine hypothesis and critical values based on alternative
+
       if(input$altHypothesis2 == "2") {
-        # Two-sided test
         z_critical <- qnorm(1 - SigLvl()/2)
         critVal <- paste("\\pm", round(qnorm(1 - SigLvl()/2), 3))
         nullHyp <- paste0("\\text{Median difference} = 0")
@@ -9248,7 +9235,6 @@ statInfrServer <- function(id) {
         in_rejection_region <- abs(z_stat) > z_critical
         
       } else if(input$altHypothesis2 == "1") {
-        # Less than (negative difference)
         z_critical <- qnorm(SigLvl())
         critVal <- round(qnorm(SigLvl()), 3)
         nullHyp <- paste0("\\text{Median difference} \\geq 0")
@@ -9258,7 +9244,6 @@ statInfrServer <- function(id) {
         in_rejection_region <- z_stat < z_critical
         
       } else {
-        # Greater than (positive difference)
         z_critical <- qnorm(1 - SigLvl())
         critVal <- round(qnorm(1 - SigLvl()), 3)
         nullHyp <- paste0("\\text{Median difference} \\leq 0")
@@ -9267,8 +9252,7 @@ statInfrServer <- function(id) {
         z_stat <- (W_stat - mu_w) / sigma_w
         in_rejection_region <- z_stat > z_critical
       }
-      
-      # Determine rejection region text
+
       if(in_rejection_region) {
         pvalSymbol <- "\\leq"
         suffEvidence <- "is"
@@ -9280,12 +9264,10 @@ statInfrServer <- function(id) {
         reject <- "do not reject"
         region <- "acceptance"
       }
-      
-      # Get the original paired data for p-value calculation
+
       sample1_data <- data_ranked$Sample1
       sample2_data <- data_ranked$Sample2
-      
-      # Calculate p-value using normal approximation
+
       if(input$altHypothesis2 == "2") {
         p_value <- 2 * pnorm(abs(z_stat), lower.tail = FALSE)
       } else if(input$altHypothesis2 == "1") {
@@ -9293,8 +9275,7 @@ statInfrServer <- function(id) {
       } else {
         p_value <- pnorm(z_stat, lower.tail = FALSE)
       }
-      
-      # Create the output HTML
+
       signedRankHTHead <- tagList(
         p(
           withMathJax(),
@@ -9343,8 +9324,7 @@ statInfrServer <- function(id) {
           }
         )
       )
-      
-      # Critical value method output
+
       signedRankHTTail <- tagList(
         p(
           withMathJax(),
@@ -9374,16 +9354,13 @@ statInfrServer <- function(id) {
     
     
     output$signedRankPlot <- renderPlot({
-      
-      # Get the signed rank data
+
       signedRankData <- signedRankedData()
-      
-      # Check if we have valid data
+
       if (is.null(signedRankData) || nrow(signedRankData) == 0) {
         return(NULL)
       }
-      
-      # Get group names based on input type
+
       if (input$signedRankTest == 'Upload Data') {
         name1 <- input$signedRankUpl1
         name2 <- input$signedRankUpl2
@@ -9391,34 +9368,26 @@ statInfrServer <- function(id) {
         name1 <- "Sample 1"
         name2 <- "Sample 2"
       }
-      
-      # Calculate signed rank test statistics
+
       positive_ranks <- signedRankData$SignedRank[signedRankData$SignedRank > 0]
       negative_ranks <- signedRankData$SignedRank[signedRankData$SignedRank < 0]
-      
-      # Calculate W+ and W- (sum of positive and negative ranks)
+
       W_plus <- sum(positive_ranks)
       W_minus <- sum(abs(negative_ranks))
-      
-      # Number of non-zero differences
+
       n <- nrow(signedRankData)
-      
-      # Test statistic (typically the smaller of W+ and W-)
-      # But for normal approximation, we often use W+
+
       W_stat <- W_plus
-      
-      # Expected value and standard deviation for normal approximation
+
       mu_w <- n * (n + 1) / 4
       sigma_w <- sqrt(n * (n + 1) * (2 * n + 1) / 24)
-      
-      # Calculate z-statistic with continuity correction
+
       if (W_stat > mu_w) {
         z_stat <- (W_stat - 0.5 - mu_w) / sigma_w
       } else {
         z_stat <- (W_stat + 0.5 - mu_w) / sigma_w
       }
-      
-      # Determine critical values based on alternative hypothesis
+
       alternative <- ""
       z_critical <- NA
       
@@ -9432,8 +9401,7 @@ statInfrServer <- function(id) {
         z_critical <- qnorm(1 - SigLvl())
         alternative <- "greater"
       }
-      
-      # Generate the plot
+
       wilcoxonPlot <- wilcoxonZTestPlot(z_stat, z_critical, alternative)
       wilcoxonPlot
     })
