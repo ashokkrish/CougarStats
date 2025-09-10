@@ -1,71 +1,109 @@
 library(ggplot2)
+library(dplyr)
 
-RenderSideBySideBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, plotXlab, plotYlab, boxWidth, gridlines, flip, showLabels = TRUE) {
+RenderSideBySideBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, plotXlab, plotYlab, 
+                                    boxWidth, gridlines, flip, showLabels = TRUE) {
+  n <- length(dat) / 2
+  sample1 <- dat[1:n]
+  sample2 <- dat[(n+1):(2*n)]
   
-  bp <- ggplot(df_boxplot, aes(x = data, y = sample)) +
-    stat_boxplot(geom = 'errorbar', width = 0.15) +
-    geom_boxplot(width = boxWidth,
-                 fill = plotColour,
-                 alpha = 1) +
-    geom_point(data = df_outliers,
-               aes(x = data, y = sample),
-               size = 2) +
-    labs(title = plotTitle,
-         x = plotXlab,
-         y = plotYlab) +
-    theme_void() +
-    theme(plot.title = element_text(size = 24, face = "bold", hjust = 0.5, margin = margin(0,0,5,0)),
-          axis.title.x = element_text(size = 16, face = "bold", vjust = -1.5),
-          axis.title.y = element_text(size = 16, face = "bold"),
-          axis.text.x.bottom = element_text(size = 16, margin = margin(5,0,0,0)),
-          axis.text.y.left = element_text(size = 16, margin = margin(0,5,0,0)),
-          plot.margin = unit(c(1, 1, 1, 1),"cm"),
-          panel.border = element_rect(fill = NA)) 
-    
+  # compute stats for each sample and combine them
+  stats1 <- custom_box_stats(sample1) %>% mutate(x = 1)
+  stats2 <- custom_box_stats(sample2) %>% mutate(x = 2)
+  stats <- bind_rows(stats1, stats2)
   
-  if(length(unique(dat)) == 1) {
-    bp <- bp + scale_x_continuous(breaks = dat, limits = c(dat[1] - 1, dat[1] + 1))
-  } else {
-    bp <- bp + scale_x_continuous(n.breaks = 8, limits = c(min(dat) - 1, max(dat) + 1))
-  }
-    
-  if("Major" %in% gridlines) {
-    bp <- bp + theme(panel.grid.major = element_line(colour = "#D9D9D9"))
-  }
-    
-  if("Minor" %in% gridlines) {
-    bp <- bp + theme(panel.grid.minor = element_line(colour = "#D9D9D9"))
-  }
-    
-    if(flip == 1){
-      bp <- bp + coord_flip(clip="off") +
-        labs(x = plotYlab,
-             y = plotXlab)
-    }
-
-  return(bp) 
-}
-
-getSideBySideOutliers <- function(sample1, sample2, coef = 1.5) {
-  
-  calc_outliers <- function(x, sample_name) {
-    Q <- quantile(x, probs = c(0.25, 0.75), type = 7, na.rm = TRUE)
-    IQR <- Q[2] - Q[1]
-    lower_fence <- Q[1] - coef * IQR
-    upper_fence <- Q[2] + coef * IQR
-    outliers <- x[x < lower_fence | x > upper_fence]
-    
-    if(length(outliers) == 0) {
-      return(data.frame(sample = character(0), data = numeric(0)))
-    } else {
-      return(data.frame(sample = sample_name, data = outliers))
-    }
-  }
-  
-  df_outliers <- rbind(
-    calc_outliers(sample1, "Sample 1"),
-    calc_outliers(sample2, "Sample 2")
+  df_outliers <- tibble(
+    x = c(rep(1, length(stats1$outliers[[1]])), rep(2, length(stats2$outliers[[1]]))),
+    y = c(stats1$outliers[[1]], stats2$outliers[[1]])
   )
   
-  return(df_outliers)
+  bp <- ggplot() +
+    geom_boxplot(
+      data = stats,
+      aes(
+        x = factor(x),
+        ymin = ymin,
+        lower = lower,
+        middle = middle,
+        upper = upper,
+        ymax = ymax
+      ),
+      stat = "identity",
+      width = boxWidth,
+      fill = plotColour,
+      outlier.shape = NA
+    ) +
+    geom_point(
+      data = df_outliers,
+      aes(x = factor(x), y = y),
+      size = 2
+    ) +
+    labs(title = plotTitle, x = plotXlab, y = plotYlab) +
+    theme_void() +
+    theme(
+      plot.title = element_text(size = 24, face = "bold", hjust = 0.5, margin = margin(0,0,5,0)),
+      axis.title.x = element_text(size = 16, face = "bold", vjust = -1.5, margin = margin(5,0,0,0)),
+      axis.title.y = element_text(size = 16, face = "bold", margin = margin(0,5,0,0)),
+      axis.text.x.bottom = element_text(size = 16),
+      axis.text.y.left = element_text(size = 16),
+      plot.margin = unit(c(1,1,1,1), "cm"),
+      panel.border = element_rect(fill = NA)
+    ) +
+    scale_y_continuous(n.breaks = 10)
+  
+  # whisker "caps"
+  bp <- bp +
+    geom_segment(aes(x = 0.95, xend = 1.05, y = stats1$ymin, yend = stats1$ymin)) +
+    geom_segment(aes(x = 0.95, xend = 1.05, y = stats1$ymax, yend = stats1$ymax)) +
+    geom_segment(aes(x = 1.95, xend = 2.05, y = stats2$ymin, yend = stats2$ymin)) +
+    geom_segment(aes(x = 1.95, xend = 2.05, y = stats2$ymax, yend = stats2$ymax))
+  
+  # gridlines
+  if("Major" %in% gridlines) bp <- bp + theme(panel.grid.major = element_line(colour = "#D9D9D9"))
+  if("Minor" %in% gridlines) bp <- bp + theme(panel.grid.minor = element_line(colour = "#D9D9D9"))
+  
+  # flip
+  if(flip == 1){
+    bp <- bp + coord_flip(clip = "off") +
+      theme(axis.text.x.bottom = element_text(size = 16),
+            axis.text.y.left = element_blank()) +
+      labs(x = plotYlab, y = plotXlab)
+  }
+  
+  return(bp)
+}
+
+custom_box_stats <- function(x, coef = 1.5) {
+  x <- sort(x)
+  
+  # tukey quartile calculation
+  quartiles <- list()
+  if(length(x) %% 2 != 0) {
+    x_no_median <- x[-ceiling(length(x)/2)]
+  } else {
+    x_no_median <- x
+  }
+  mid <- length(x_no_median) / 2
+  Q1 <- median(x_no_median[1:mid])
+  Q2 <- median(x)
+  Q3 <- median(x_no_median[(mid+1):length(x_no_median)])
+  
+  IQR <- Q3 - Q1
+  lower_fence <- Q1 - coef * IQR
+  upper_fence <- Q3 + coef * IQR
+  
+  whisker_low <- min(x[x >= lower_fence])
+  whisker_high <- max(x[x <= upper_fence])
+  
+  outliers <- x[x < lower_fence | x > upper_fence]
+  
+  tibble(
+    x = 1,
+    ymin = whisker_low,
+    lower = Q1,
+    middle = Q2,
+    upper = Q3,
+    ymax = whisker_high,
+    outliers = list(outliers)
+  )
 }

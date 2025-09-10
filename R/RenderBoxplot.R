@@ -39,10 +39,7 @@ RenderBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, p
           axis.text.y.left = element_text(size = 16),
           plot.margin = unit(c(1,1,1,1), "cm"),
           panel.border = element_rect(fill = NA)) +
-    scale_y_continuous(
-      limits = c(min(dat, na.rm = TRUE) - 1, max(dat, na.rm = TRUE) + 1),
-      n.breaks = 10
-    )
+    scale_y_continuous(n.breaks = 10)
   
   # whisker "caps"
   bp <- bp +

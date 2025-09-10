@@ -1488,8 +1488,9 @@ statInfrUI <- function(id) {
                   ns = ns,
                   condition = "input.popuParameter == 'Population Mean'",
                   
-                  tabsetPanel(
+                  navbarPage(
                     id = ns("onePopMeanTabset"),
+                    title = NULL,
                     
                     tabPanel(
                       id = ns("onePopMean"),
@@ -1547,8 +1548,9 @@ statInfrUI <- function(id) {
                   ns = ns,
                   condition = "input.popuParameter == 'Population Proportion'",
                   
-                  tabsetPanel(type = "tabs",
+                  navbarPage(
                               id = ns("onePropTabset"),
+                              title = NULL,
                               tabPanel(title = "Analysis",
                                        conditionalPanel(
                                          ns = ns,
@@ -1622,9 +1624,10 @@ statInfrUI <- function(id) {
                                   ns = ns,
                                   condition = "input.popuParameters == 'Independent Population Means'",
                                   
-                                  tabsetPanel(
+                                  navbarPage(
                                     id = ns("indPopMeansTabset"),
                                     selected = "Analysis",
+                                    title = NULL,
                                     
                                     tabPanel(
                                       id = ns("indPopMeans"),
@@ -1703,9 +1706,10 @@ statInfrUI <- function(id) {
                                   ns = ns,
                                   condition = "input.popuParameters == 'Dependent Population Means'",
                                   
-                                  tabsetPanel(
+                                  navbarPage(
                                     id = ns("depPopMeansTabset"),
                                     selected = "Analysis",
+                                    title = NULL,
                                     
                                     tabPanel(
                                       id = ns("depPopMeans"),
@@ -1782,9 +1786,10 @@ statInfrUI <- function(id) {
                                   ns = ns,
                                   condition = "input.popuParameters == 'Population Proportions'",
                                   
-                                  tabsetPanel(
+                                  navbarPage(
                                     id = ns("twoPropTabset"),
                                     selected = "Analysis",
+                                    title = NULL,
                                     
                                     tabPanel(
                                       id = ns("twoProp"),
@@ -1829,9 +1834,10 @@ statInfrUI <- function(id) {
                                   ns = ns,
                                   condition = "input.popuParameters == 'Wilcoxon rank sum test'",
                                   
-                                  tabsetPanel(
+                                  navbarPage(
                                     id = ns("wilcoxonRankSumTabset"),
                                     selected = "Analysis",
+                                    title = NULL,
                                     
                                     tabPanel(
                                       id = ns("wilcoxonRankSumTab"),
@@ -1911,9 +1917,10 @@ statInfrUI <- function(id) {
                                   ns = ns,
                                   condition = "input.popuParameters == 'Two Population Variances'",
                                   
-                                  tabsetPanel(
+                                  navbarPage(
                                     id = ns("twoPopVarTabset"),
                                     selected = "Analysis",
+                                    title = NULL,
                                     
                                     tabPanel(
                                       id = ns("twoPopVar"),
@@ -1949,9 +1956,10 @@ statInfrUI <- function(id) {
                 ns = ns,
                 condition = "input.siMethod == 'Multiple' && input.multipleMethodChoice == 'anova'",
                 
-                tabsetPanel(
+                navbarPage(
                   id       = ns("anovaTabset"),
                   selected = "Analysis",
+                  title = NULL,
                   
                   tabPanel(
                     id    = ns("anova"),
@@ -2053,9 +2061,10 @@ statInfrUI <- function(id) {
                 ns = ns,
                 condition = "input.siMethod == 'Multiple' && input.multipleMethodChoice == 'kw'",
                 
-                tabsetPanel(
+                navbarPage(
                   id = ns("kwTabset"),
                   selected = "Analysis",
+                  title = NULL,
                   
                   tabPanel(
                     id    = ns("kw"),
@@ -2954,12 +2963,25 @@ statInfrServer <- function(id) {
     #  ========================================================================= #
     
     
-    getOutliers <- function(sample, sampleName) {
-      f <- fivenum(sample)  # Tukey hinges
-      iqr <- f[4] - f[2]
-      lower <- f[2] - 1.5 * iqr # lower fence
-      upper <- f[4] + 1.5 * iqr # upper fence
-      outliers <- sample[sample < lower | sample > upper]
+    getOutliers <- function(sample, sampleName, coef = 1.5) {
+      x <- sort(sample)
+      
+      if(length(x) %% 2 != 0) {
+        x_no_median <- x[-ceiling(length(x)/2)]
+      } else {
+        x_no_median <- x
+      }
+      
+      mid <- length(x_no_median) / 2
+      Q1 <- median(x_no_median[1:mid])
+      Q2 <- median(x)
+      Q3 <- median(x_no_median[(mid+1):length(x_no_median)])
+      
+      IQR <- Q3 - Q1
+      lower_fence <- Q1 - coef * IQR
+      upper_fence <- Q3 + coef * IQR
+      
+      outliers <- x[x < lower_fence | x > upper_fence]
       
       if(length(outliers) == 0) {
         return(data.frame(sample = character(0), data = numeric(0)))
@@ -10513,7 +10535,7 @@ statInfrServer <- function(id) {
         showTab(inputId = "indPopMeansTabset", target = "Uploaded Data")
       }
       
-      if(input$indMeansBoxplot || input$indMeansQQPlot) {
+      if(input$dataAvailability2 != "Summarized Data" && (input$indMeansBoxplot || input$indMeansQQPlot)) {
         showTab(inputId = "indPopMeansTabset", target = "Graphs")
       } else {
         hideTab(inputId = "indPopMeansTabset", target = "Graphs")
