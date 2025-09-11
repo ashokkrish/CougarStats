@@ -1680,7 +1680,7 @@ statInfrUI <- function(id) {
                                         br(),
                                         hr(),
                                         br(),
-                                        titlePanel(tags$u("Q-Q Plots")),
+                                        titlePanel(tags$u("Q-Q Plots for Sample 1 and Sample 2")),
                                         br(),
                                         plotOptionsMenuUI(
                                           id = ns("indMeansQQPlot"),
@@ -1768,12 +1768,12 @@ statInfrUI <- function(id) {
                                         ns = ns,
                                         condition = "input.depMeansQQPlot == 1",
                                         br(),
-                                        titlePanel(tags$u("Q-Q Plot")),
+                                        titlePanel(tags$u("Q-Q Plot of the Difference (d)")),
                                         br(),
                                         plotOptionsMenuUI(
                                           id = ns("depMeansQQPlot"),
                                           plotType = "QQ Plot",
-                                          title = "Q-Q Plot"),
+                                          title = "Q-Q Plot of the Difference (d)"),
                                         uiOutput(ns("renderDepMeansQQPlot")),
                                         br(),
                                         br()
@@ -7354,7 +7354,7 @@ statInfrServer <- function(id) {
       qq1 <- RenderQQPlot(
         dat = df1,
         plotColour = input[["indMeansQQPlot-Colour"]],
-        plotTitle = "QQ Plot: Sample 1",
+        plotTitle = "Sample 1 Q-Q Plot",
         plotXlab = input[["indMeansQQPlot-Xlab"]],
         plotYlab = input[["indMeansQQPlot-Ylab"]],
         gridlines = input[["indMeansQQPlot-Gridlines"]],
@@ -7365,7 +7365,7 @@ statInfrServer <- function(id) {
       qq2 <- RenderQQPlot(
         dat = df2,
         plotColour = input[["indMeansQQPlot-Colour"]],
-        plotTitle = "QQ Plot: Sample 2",
+        plotTitle = "Sample 2 Q-Q Plot",
         plotXlab = input[["indMeansQQPlot-Xlab"]],
         plotYlab = input[["indMeansQQPlot-Ylab"]],
         gridlines = input[["indMeansQQPlot-Gridlines"]],
