@@ -12,7 +12,10 @@ RUN apt-get update && \
             libssl-dev \
             libtcl \
             libtk   \
-            libfftw3-dev
+            libfftw3-dev \
+            libnode-dev \
+            nodejs && \
+    rm -rf /var/lib/apt/lists/*
 
 ## Install R packages
 RUN R -e \
