@@ -14,8 +14,7 @@ RUN apt-get update && \
             libtk   \
             libfftw3-dev \
             libnode-dev \
-            nodejs && \
-    rm -rf /var/lib/apt/lists/*
+            nodejs
 
 ## Install R packages
 RUN R -e \
