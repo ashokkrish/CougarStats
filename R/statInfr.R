@@ -5953,7 +5953,7 @@ statInfrServer <- function(id) {
             need(input$numSuccesses <= input$numTrials, "Number of Successes (x) cannot be greater than Number of Trials (n)"),
           errorClass = "myClass")
       } else if(input$siMethod == '1' && input$popuParameter == 'Population Proportion') {
-        req(input$numSuccesses && input$numTrials)
+        req(input$numSuccesses >= 0 && input$numTrials)
         validate(
           need(input$numSuccesses <= input$numTrials, "Number of Successes (x) cannot be greater than Number of Trials (n)"),
           errorClass = "myClass")
