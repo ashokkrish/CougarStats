@@ -267,6 +267,18 @@ ScatterplotOptions <- function(ns) {
       max = 10,
       value = 3,
       step = 1
+    ),
+    
+    checkboxInput(
+      inputId = ns("confidenceInterval"),
+      label = "Confidence Interval",
+      value = FALSE
+    ),
+    
+    checkboxInput(
+      inputId = ns("predictionInterval"),
+      label = "Prediction Interval",
+      value = FALSE
     )
   )
 }

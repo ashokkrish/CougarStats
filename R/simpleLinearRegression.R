@@ -519,6 +519,7 @@ SLRServer <- function(id) {
           { # scatterplot ----
             RenderScatterplot(
               df,
+              model,
               input[["slrScatter-Title"]],
               input[["slrScatter-Xlab"]],
               input[["slrScatter-Ylab"]],
@@ -526,7 +527,9 @@ SLRServer <- function(id) {
               input[["slrScatter-PointsColour"]],
               input[["slrScatter-LineWidth"]],
               input[["slrScatter-PointSize"]],
-              input[["slrScatter-Gridlines"]]
+              input[["slrScatter-Gridlines"]],
+              input[["slrScatter-confidenceInterval"]],
+              input[["slrScatter-predictionInterval"]]
             )
           },
           height = function() {
@@ -575,21 +578,21 @@ SLRServer <- function(id) {
                     dfTotaled["Totals", "x<sup>2</sup>"],
                     dfTotaled["Totals", "x"],
                     length(datx)),
-            sprintf("\\( \\, = \\, \\dfrac{ %g - (\\dfrac{ %g }{ %g }) }{ %g - \\dfrac{ %g }{ %g } } \\)",
-                    dfTotaled["Totals", "xy"],
-                    sumXSumY,
-                    length(datx),
-                    dfTotaled["Totals", "x<sup>2</sup>"],
-                    sumXSqrd,
-                    length(datx)),
+            # sprintf("\\( \\, = \\, \\dfrac{ %g - (\\dfrac{ %g }{ %g }) }{ %g - \\dfrac{ %g }{ %g } } \\)",
+            #         dfTotaled["Totals", "xy"],
+            #         sumXSumY,
+            #         length(datx),
+            #         dfTotaled["Totals", "x<sup>2</sup>"],
+            #         sumXSqrd,
+            #         length(datx)),
             sprintf("\\( \\, = \\, \\dfrac{ %g - (%g) }{ %g - %g } \\)",
                     dfTotaled["Totals", "xy"],
                     sumXSumY / length(datx),
                     dfTotaled["Totals", "x<sup>2</sup>"],
                     sumXSqrd / length(datx)),
-            sprintf("\\( \\, = \\, \\dfrac{ %g }{ %g } \\)",
-                    dfTotaled["Totals", "xy"] - (sumXSumY) / length(datx),
-                    dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx)),
+            # sprintf("\\( \\, = \\, \\dfrac{ %g }{ %g } \\)",
+            #         dfTotaled["Totals", "xy"] - (sumXSumY) / length(datx),
+            #         dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx)),
             sprintf("\\( \\, = \\, %0.4f \\)",
                     slopeEstimate),
             br(),
@@ -616,21 +619,13 @@ SLRServer <- function(id) {
             br(),
             br(),
             br(),
-            p(tags$b("Interpretation of regression coefficients:"),
+            p(tags$b("Interpretation:"),
               br(),
               br(),
               "Within the scope of observation, ", interceptEstimate, " is the estimated value of ",
               em("y"), " when ", em("x"), "= 0. A slope of ", slopeEstimate,
               " represents the estimated ", slopeDirection, " in ", em("y"),
               " for a unit increase of ", em("x.")),
-            # sprintf("Within the scope of observation, %s is the estimated value of ",
-            #         interceptEstimate),
-            
-            # sprintf("when x = 0. A slope of %s represents the estimated %s in y for a
-            #         unit increase of x.",
-            #
-            #         slopeEstimate,
-            #         slopeDirection),
             br(),
             br()
           )
@@ -638,8 +633,13 @@ SLRServer <- function(id) {
         
         output$slrCoefficientsTable <- renderDT({
           summary_df <- as.data.frame(summary(model)$coefficients)
-          datatable(summary_df, options = list(dom = 't')) %>% 
-            formatRound(columns = c("Estimate", "Std. Error", "t value", "Pr(>|t|)"), digits = 3)
+          conf_int <- as.data.frame(confint(model))
+          colnames(conf_int) <- c("Lower 95% CI", "Upper 95% CI")
+          
+          final_table <- cbind(summary_df, conf_int)
+          
+          datatable(final_table, options = list(dom = 't')) %>% 
+            formatRound(columns = c("Estimate", "Std. Error", "t value", "Pr(>|t|)", "Lower 95% CI", "Upper 95% CI"), digits = 3)
         })
         
         output$confintLinReg <- renderPrint({
