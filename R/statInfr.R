@@ -427,7 +427,7 @@ statInfrUI <- function(id) {
               choiceNames  = list("Two Independent Populations (\\( \\mu_{1} - \\mu_{2} \\))",
                                   "Wilcoxon Rank Sum Test (or the Mann-Whitney U Test)",
                                   "Dependent (Paired) Populations (\\( \\mu_{d} \\))",
-                                  "Wilcoxon Signed Rank Test",
+                                  "Wilcoxon Signed Rank Test (Paired)",
                                   "Two Population Proportions (\\( p_{1} - p_{2}\\))",
                                   "Two Population Variances (\\( \\sigma_{1}^2/\\sigma_{2}^2 \\))"),
               selected     = "Independent Population Means", #character(0), #
@@ -1192,6 +1192,18 @@ statInfrUI <- function(id) {
                 label   = "Q-Q plots for Sample 1 and Sample 2",
                 value   = TRUE)
             ), # Wilcoxon Rank Sum Graphs
+            #Wilcoxon Signed Rank Test
+            conditionalPanel(
+              ns = ns,
+              condition = "(input.popuParameters == 'Wilcoxon Signed Rank Test')",
+              
+              p(strong("Graph Options")),
+              
+              checkboxInput(
+                inputId = ns("signedRankQQPlot"),
+                label   = "Q-Q Plot of the Difference (d)",
+                value   = TRUE)
+            ),
             
             
           ), # "input.siMethod == '2'",
@@ -1800,12 +1812,34 @@ statInfrUI <- function(id) {
                                         ns = ns,
                                         condition = "input.inferenceType2 == 'Hypothesis Testing' || input.inferenceType2 == 'Confidence Interval'",
                                         
-                                        titlePanel("Ranked Results by Group"),
+                                        titlePanel("Results"),
                                         br(),
                                         uiOutput(ns('signedRankDataRanks')),
                                         br(),
                                       ), # Ranked Results by Group
                                     ), # Tabset
+                                    tabPanel(
+                                      id = ns("signedRankGraphs"),
+                                      title = "Graphs",
+                                      conditionalPanel(
+                                        ns = ns,
+                                        condition = "input.popuParameters == 'Wilcoxon Signed Rank Test' && input.signedRankQQPlot == 1",
+                                        
+                                        # Q-Q Plot for Differences
+                                        conditionalPanel(
+                                          ns = ns,
+                                          condition = "input.popuParameters == 'Wilcoxon Signed Rank Test' && input.signedRankQQPlot == 1",
+                                          titlePanel("Q-Q Plot of Differences"), 
+                                          br(),
+                                          plotOptionsMenuUI(
+                                            id = ns("signedRankQQ"),
+                                            plotType = "QQ Plot",
+                                            title = "Q-Q Plot of Differences"), 
+                                          plotOutput(ns("signedRankQQ")),
+                                          br(), br()
+                                        )
+                                      )
+                                    ),
                                     tabPanel(
                                       id    = ns("signedRankUploadData"),
                                       title = "Uploaded Data",
@@ -5820,7 +5854,7 @@ statInfrServer <- function(id) {
 
       signed_rank_data <- paired_data %>%
         dplyr::mutate(
-          Difference = Sample2 - Sample1,
+          Difference = Sample1 - Sample2,
           AbsDifference = abs(Difference)
         ) %>%
         dplyr::filter(Difference != 0) %>%
@@ -9295,12 +9329,12 @@ statInfrServer <- function(id) {
           br(),br(),
           
           p(tags$b("Expected Value:")),
-          sprintf("\\(  \\mu_{W} = \\frac{n(n + 1)}{4} = \\frac{%s(%s + 1)}{4} = %s \\)",
+          sprintf("\\(  \\mu_{W^+} = \\frac{n(n + 1)}{4} = \\frac{%s(%s + 1)}{4} = %s \\)",
                   n, n, mu_w),
           br(), br(),
           
           p(tags$b("Standard Deviation:")),
-          sprintf("\\( \\sigma_W = \\sqrt{\\frac{n(n + 1)(2n + 1)}{24}} = \\sqrt{\\frac{%s \\times %s \\times %s}{24}} = %s \\)",
+          sprintf("\\( \\sigma_{W^+} = \\sqrt{\\frac{n(n + 1)(2n + 1)}{24}} = \\sqrt{\\frac{%s \\times %s \\times %s}{24}} = %s \\)",
                   n, n + 1, 2*n + 1, round(sigma_w, 4)),
           br(),br(),
           
@@ -9417,6 +9451,60 @@ statInfrServer <- function(id) {
       )
     })
     
+    output$signedRankQQ <- renderPlot({
+      
+      req(input$signedRankQQPlot)
+      req(!is.null(signedRankedData()))
+      req(nrow(signedRankedData()) > 0)
+      
+      data_ranked <- signedRankedData()
+      differences <- data_ranked$Sample1 - data_ranked$Sample2
+      differences <- differences[differences != 0]
+      
+      safe_input <- function(input_name, default_value) {
+        value <- input[[input_name]]
+        if(is.null(value) || length(value) == 0 || (is.character(value) && value == "")) {
+          return(default_value)
+        }
+        return(value)
+      }
+      
+      plot_title <- safe_input("signedRankQQ-Title", "")
+      x_label <- safe_input("signedRankQQ-Xlab", "") 
+      y_label <- safe_input("signedRankQQ-Ylab", "")
+      plot_color <- safe_input("signedRankQQ-Colour", "blue")
+      gridlines <- safe_input("signedRankQQ-Gridlines", c())
+      flip_coords <- safe_input("signedRankQQ-Flip", 0)
+      
+      df_differences <- data.frame(values = differences)
+      
+      plot_result <- RenderQQPlot(df_differences, 
+                                  plot_color, 
+                                  plot_title, 
+                                  x_label, 
+                                  y_label, 
+                                  gridlines, 
+                                  flip_coords)
+      
+      return(plot_result)
+      
+    }, height = function() {
+      height_val <- input[["signedRankQQ-Height"]]
+      height_px_val <- input[["signedRankQQ-HeightPx"]]
+      if(is.null(height_val) || is.null(height_px_val)) {
+        return(400)
+      }
+      GetPlotHeight(height_val, height_px_val, ui = FALSE)
+    },
+    width = function() {
+      width_val <- input[["signedRankQQ-Width"]]
+      width_px_val <- input[["signedRankQQ-WidthPx"]]
+      if(is.null(width_val) || is.null(width_px_val)) {
+        return(600)
+      }
+      GetPlotWidth(width_val, width_px_val, ui = FALSE)
+    }
+    )
     
     ### ------------ Two Prop Outputs --------------------------------------------
     
@@ -10619,6 +10707,17 @@ statInfrServer <- function(id) {
         )
         shinyjs::show(id = "signedRankUpl1")
         shinyjs::show(id = "signedRankUpl2")
+      }
+    })
+    
+    observeEvent(input$signedRankQQPlot, {
+      if (input$signedRankQQPlot) {
+        showTab(inputId = "signedRankTabset", target = "Graphs")  
+      } else {
+        if (input$signedRankTabset == "Graphs") {  
+          updateTabsetPanel(inputId = 'signedRankTabset', selected = "Analysis") 
+        }
+        hideTab(inputId = "signedRankTabset", target = "Graphs")  
       }
     })
     

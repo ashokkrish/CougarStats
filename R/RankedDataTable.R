@@ -65,8 +65,8 @@ SignedRankTableOutput <- function(data) {
 
     display_data <- df %>%
       dplyr::select(
-        `Sample1 Data` = Sample1,
-        `Sample2 Data` = Sample2,
+        `Sample 1` = Sample1,
+        `Sample 2` = Sample2,
         Difference = Value,  
         Rank = Rank,
         `Signed Rank` = SignedRank
@@ -91,6 +91,7 @@ SignedRankTableOutput <- function(data) {
         style = "width: 95%"
       ),
       br(),
+      helpText("Note: Pairs with a difference equal to 0 will be dropped from the analysis."),
       br()
     )
   })
