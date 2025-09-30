@@ -54,7 +54,7 @@ probDistUI <- function(id) {
                          "Binomial", 
                          "Poisson",
                          "Hypergeometric",
-                         "Negative Binomial",
+                      #   "Negative Binomial",
                          "Normal"), 
             selected =  NULL,
             inline   = FALSE),
