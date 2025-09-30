@@ -28,23 +28,23 @@ RenderScatterplot <- function(df, model, plotTitle, plotXLab, plotYLab, regLineC
     conf_int <- suppressWarnings(predict(model, interval = "confidence"))
     df_conf <- cbind(df, conf_int)
     sPlot <- sPlot + 
-      geom_line(data = df_conf, aes(y = lwr, color = "Confidence Interval", linetype = "Confidence Interval")) +
-      geom_line(data = df_conf, aes(y = upr, color = "Confidence Interval", linetype = "Confidence Interval"), show.legend = FALSE)
+      geom_line(data = df_conf, aes(y = lwr, color = "Confidence Interval", linetype = "Confidence Interval"), linewidth = 1.2) +
+      geom_line(data = df_conf, aes(y = upr, color = "Confidence Interval", linetype = "Confidence Interval"), show.legend = FALSE, linewidth = 1.2)
   }
   
   if(showPredictionInterval) {
     pred_int <- suppressWarnings(predict(model, interval = "prediction"))
     df_pred <- cbind(df, pred_int)
     sPlot <- sPlot + 
-      geom_line(data = df_pred, aes(y = lwr, color = "Prediction Interval", linetype = "Prediction Interval")) +
-      geom_line(data = df_pred, aes(y = upr, color = "Prediction Interval", linetype = "Prediction Interval"), show.legend = FALSE)
+      geom_line(data = df_pred, aes(y = lwr, color = "Prediction Interval", linetype = "Prediction Interval"), linewidth = 1.2) +
+      geom_line(data = df_pred, aes(y = upr, color = "Prediction Interval", linetype = "Prediction Interval"), show.legend = FALSE, linewidth = 1.2)
   }
   
   sPlot <- sPlot + 
     scale_color_manual(name = NULL,
-                       values = c("Regression Line" = regLineColour, "Confidence Interval" = "green", "Prediction Interval" = "red")) +
+                       values = c("Regression Line" = regLineColour, "Confidence Interval" = "darkblue", "Prediction Interval" = "red")) +
     scale_linetype_manual(name = NULL,
-                          values = c("Regression Line" = "solid", "Confidence Interval" = "dotted", "Prediction Interval" = "dotted"))
+                          values = c("Regression Line" = "solid", "Confidence Interval" = "dashed", "Prediction Interval" = "dashed"))
   
   if("Major" %in% gridlines) {
     sPlot <- sPlot + theme(panel.grid.major = element_line(colour = "#D9D9D9"))
