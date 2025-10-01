@@ -54,7 +54,7 @@ probDistUI <- function(id) {
                          "Binomial", 
                          "Poisson",
                          "Hypergeometric",
-                      #   "Negative Binomial",
+                         "Negative Binomial",
                          "Normal"), 
             selected =  NULL,
             inline   = FALSE),
@@ -412,7 +412,7 @@ probDistUI <- function(id) {
             
             numericInput(
               inputId = ns("successNegBin"),
-              label   = strong("Number of Successes (\\( r\\))"),
+              label   = strong("Required Number of Successes (\\( r\\))"),
               value   = 3,
               min     = 0,
               step    = 1),
@@ -430,19 +430,19 @@ probDistUI <- function(id) {
             radioButtons(
               inputId      = ns("calcNegBin"),
               label        = NULL,
-              choiceValues = list("exact",
-                                  "between"),
-              choiceNames  = list("\\(P(X = x \\))",
-                                  "\\(P(x_1 \\leq X \\leq x_2)\\)"),
+              choiceValues = list("exact"),
+                                 # "between"),
+              choiceNames  = list("\\(P(X = x \\))"),
+                                #  "\\(P(x_1 \\leq X \\leq x_2)\\)"),
               inline       = FALSE),
             
             radioButtons(
               inputId = ns("trialsNegBin"),
               label = strong("Trials"),
-              choiceValues = list("failures",
-                                  "trials"),
-              choiceNames = list("Failures prior to the \\(r^{th}\\) success",
-                                 "Trials until (and including) the \\(r^{th}\\) success"),
+              choiceValues = list("failures"),
+                              #    "trials"),
+              choiceNames = list("Number of failures prior to the \\(r^{th}\\) success"),
+                              #   "Trials until (and including) the \\(r^{th}\\) success"),
               inline = TRUE,
             ),
             
@@ -469,7 +469,7 @@ probDistUI <- function(id) {
                 condition = "input.trialsNegBin == 'trials'",
                 
                 numericInput(
-                  inputId = ns("xNegBin"),
+                  inputId = ns("xTrialsNegBin"), # renamed from xNegBin to xTrialsNegBin, duplicate ns names caused lots of issues
                   label   = strong("Trials until (and including) the \\(r^{th}\\) success (\\( x\\))"),
                   value   = 4,
                   min     = 0,
@@ -2756,8 +2756,8 @@ probDistServer <- function(id) {
             if(!NegBinprob_iv$is_valid())
             {
               validate(
-                need(input$successNegBin , "Number of Successes (r) must be a positive integer")%then%
-                  need(input$successNegBin >= 0 && input$successNegBin %% 1 == 0, "Number of Successes (r) must be a positive integer"),
+                need(input$successNegBin , "Required Number of Successes (r) must be a positive integer")%then%
+                  need(input$successNegBin >= 0 && input$successNegBin %% 1 == 0, "Required Number of Successes (r) must be a positive integer"),
                 need(input$successProbNegBin, "Probability of Success (p) must be between 0 and 1") %then%
                   need(input$successProbNegBin > 0 && input$successProbNegBin <= 1, "Probability of Success (p) must be 0 < p  ≤ 1"),
                 need(input$xNegBin , "Number of Failures (x) must be a positive integer") %then%
@@ -2768,8 +2768,8 @@ probDistServer <- function(id) {
             if(!NegBinbetween_iv$is_valid())
             {
               validate(
-                need(input$successNegBin , "Number of Successes (r) must be a positive integer")%then%
-                  need(input$successNegBin >= 0 && input$successNegBin %% 1 == 0, "Number of Successes (r) must be a positive integer"),
+                need(input$successNegBin , "Required Number of Successes (r) must be a positive integer")%then%
+                  need(input$successNegBin >= 0 && input$successNegBin %% 1 == 0, "Required Number of Successes (r) must be a positive integer"),
                 need(input$successProbNegBin, "Probability of Success (p) must be between 0 and 1") %then%
                   need(input$successProbNegBin > 0 && input$successProbNegBin <= 1, "Probability of Success (p) must be 0 < p  ≤ 1"),
                 need(input$x1NegBin , "Number of Failures (x1) must be a positive integer") %then%
@@ -2780,8 +2780,8 @@ probDistServer <- function(id) {
             }
             
             validate(
-              need(input$successNegBin , "Number of Successes (r) must be a positive integer")%then%
-                need(input$successNegBin > 0 && input$successNegBin %% 1 == 0, "Number of Successes (r) must be a positive integer"),
+              need(input$successNegBin , "Required Number of Successes (r) must be a positive integer")%then%
+                need(input$successNegBin > 0 && input$successNegBin %% 1 == 0, "Required Number of Successes (r) must be a positive integer"),
               need(input$successProbNegBin, "Probability of Success (p) must be between 0 and 1") %then%
                 need(input$successProbNegBin >= 0 && input$successProbNegBin <= 1, "Probability of Success (p) must be between 0 and 1"),
               errorClass = "myClass")
@@ -2801,7 +2801,9 @@ probDistServer <- function(id) {
               
               if(input$calcNegBin == 'exact'){
                 NegBinProb <- paste("P(X = ", xNegBin, ")")
-                NegBinForm <- paste("\\binom{", xNegBin, "-1}{", successNegBin, "-1} ", successProbNegBin, "^", successNegBin, " (1-", successProbNegBin, ")^{", xNegBin, "-", successNegBin, "}")
+                NegBinForm <- paste("\\dbinom{", xNegBin, "+", successNegBin, "-1}{", successNegBin, "-1} ",
+                                    "(", successProbNegBin, ")^{", successNegBin, "}",
+                                    " (1-", successProbNegBin, ")^{", xNegBin, "}")
                 NegBinVal <- round(dnbinom(xNegBin, successNegBin, successProbNegBin), 4)
               }
             }
@@ -2828,8 +2830,8 @@ probDistServer <- function(id) {
                   hr(),
                   br(),
                   p(tags$b("Using the Probability Mass Function: ")),
-                  sprintf("\\( P(X = x) = \\binom{x-1}{r-1} p^r (1-p)^{x-r} \\)"),
-                  sprintf("\\( \\qquad \\) for \\( x = r, r+1, ... \\)"),
+                  sprintf("\\( P(X = x) = \\dbinom{x+r-1}{r-1} (p)^r (1-p)^{x} \\)"),
+                  sprintf("\\( \\qquad \\) for \\( x = 0,1,2,3,... \\)"),
                   br(),
                   br(),
                   br(),
