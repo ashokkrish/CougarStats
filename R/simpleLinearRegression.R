@@ -1,3 +1,4 @@
+options(scipen=999)
 source("R/RenderBoxplot.R")
 source("R/RenderMeanPlot.R")
 source("R/RenderQQPlot.R")
@@ -43,17 +44,6 @@ SLRMainPanelUI <- function(id) {
             
           ), # slr tabpanel
           
-          #### ---------------- Calculations Tab -------------------------------------
-          tabPanel(
-            title = "Calculations",
-            value = "Calculations",
-            
-            titlePanel("Data"),
-            br(),
-            DTOutput(ns("slrDataTable"), width = "750px"),
-            br()
-          ), # Calculations tabpanel
-          
           #### ---------------- Scatterplot Tab --------------------------------------
           tabPanel(
             title = "Scatterplot",
@@ -78,12 +68,39 @@ SLRMainPanelUI <- function(id) {
             )
           ), # Scatterplot tabpanel
           
+          #### ---------------- Calculations Tab -------------------------------------
+          tabPanel(
+            title = "Calculations",
+            value = "Calculations",
+            
+            titlePanel("Data"),
+            br(),
+            DTOutput(ns("slrDataTable"), width = "750px"),
+            br()
+          ), # Calculations tabpanel
+          
+          #### ---------------- ANOVA Tab -------------------------------------------
+          tabPanel(
+            title = "ANOVA",
+            value = "ANOVA",
+            
+            br(),
+            uiOutput(ns("anovaHypotheses")),
+            br(),
+            DTOutput(ns("anovaTable")),
+            br(),
+            uiOutput(ns("anovaConclusion"))
+          ),
+          
           #### ---------------- Diagnostic Plots Tab ---------------------------------
           tabPanel(
             title = "Diagnostic Plots",
             value = "Diagnostic Plots",
             fluidPage(
-              plotOutput(ns("slrResidualsPanelPlot"))
+              plotOutput(ns("slrResidualsPanelPlot1")),
+              plotOutput(ns("slrResidualsPanelPlot2")),
+              plotOutput(ns("slrResidualsPanelPlot3")),
+              plotOutput(ns("slrResidualsPanelPlot4"))
             )
           ), # Diagnostic Plots tabpanel
           
@@ -544,9 +561,17 @@ SLRServer <- function(id) {
           }
         )
         
-        output$slrResidualsPanelPlot <- renderPlot({
-          par(mfrow = c(2, 2))
-          plot(model, pch = 20)
+        output$slrResidualsPanelPlot1 <- renderPlot({
+          plot(model, which = 1, pch = 20, main = "", lwd = 2)
+        })
+        output$slrResidualsPanelPlot2 <- renderPlot({
+          plot(model, which = 2, pch = 20, main = "", lwd = 2)
+        })
+        output$slrResidualsPanelPlot3 <- renderPlot({
+          plot(model, which = 3, pch = 20, main = "", lwd = 2)
+        })
+        output$slrResidualsPanelPlot4 <- renderPlot({
+          plot(model, which = 5, pch = 20, main = "", lwd = 2)
         })
         
         if (summary(model)$coefficients["datx", "Estimate"] > 0) {
@@ -619,13 +644,13 @@ SLRServer <- function(id) {
             br(),
             br(),
             br(),
-            p(tags$b("Interpretation:"),
-              br(),
-              br(),
-              "Within the scope of observation, ", interceptEstimate, " is the estimated value of ",
-              em("y"), " when ", em("x"), "= 0. A slope of ", slopeEstimate,
-              " represents the estimated ", slopeDirection, " in ", em("y"),
-              " for a unit increase of ", em("x.")),
+            p(tags$b("Interpretation:")),
+            br(),
+            br(),
+            p(HTML(paste0("Within the scope of observation, ", interceptEstimate, " is the estimated value of ",
+                          em("y"), " when ", em("x"), "= 0. A slope of ", slopeEstimate,
+                          " represents the estimated ", slopeDirection, " in ", em("y"),
+                          " for a unit increase of ", em("x.")))),
             br(),
             br()
           )
@@ -766,6 +791,71 @@ SLRServer <- function(id) {
                     options = list(pageLength = -1,
                                    lengthMenu = list(c(25, 50, 100, -1),
                                                      c("25", "50", "100", "all"))))
+        })
+        
+        
+        # ANOVA Output
+        output$anovaHypotheses <- renderUI({
+          withMathJax(
+            p(strong("Hypotheses")),
+            p(
+              "\\( H_0: \\beta_1 = 0 \\)",
+              br(),
+              "\\( H_a: \\beta_1 \\neq 0 \\)"
+            ),
+            br(),
+            p("\\( \\alpha = 0.05 \\)")
+          )
+        })
+        
+        output$anovaTable <- renderDT({
+          anova_results <- anova(model)
+          # Create the desired data frame
+          anova_df <- data.frame(
+            Source = c("Regression (Model)", "Residual (Error)", "Total"),
+            df = c(anova_results$Df[1], anova_results$Df[2], sum(anova_results$Df)),
+            SS = c(anova_results$`Sum Sq`[1], anova_results$`Sum Sq`[2], sum(anova_results$`Sum Sq`)),
+            MS = c(anova_results$`Mean Sq`[1], anova_results$`Mean Sq`[2], NA),
+            F = c(anova_results$`F value`[1], NA, NA),
+            `P-value` = c(anova_results$`Pr(>F)`[1], NA, NA),
+            check.names = FALSE
+          )
+          datatable(
+            anova_df,
+            options = list(
+              dom = 't',
+              columnDefs = list(list(className = 'dt-center', targets = '_all')),
+              headerCallback = JS(
+                "function(thead, data, start, end, display) {",
+                "  $(thead).find('th').css('font-weight', 'bold');",
+                "}"
+              )
+            ),
+            rownames = FALSE
+          ) %>%
+            formatRound(columns = c('SS', 'MS', 'F', 'P-value'), digits = 3) %>%
+            formatStyle(columns = 'Source', fontWeight = 'bold') %>%
+            formatStyle("F", fontWeight = "bold")
+        })
+        
+        output$anovaConclusion <- renderUI({
+          anova_results <- anova(model)
+          p_value <- anova_results$`Pr(>F)`[1]
+          f_value <- anova_results$`F value`[1]
+          msr <- anova_results$`Mean Sq`[1]
+          mse <- anova_results$`Mean Sq`[2]
+          
+          withMathJax(
+            p(strong("Test Statistic:")),
+            p(sprintf("\\( F = \\frac{MSR}{MSE} = \\frac{%.3f}{%.3f} = %.3f \\)", msr, mse, f_value)),
+            br(),
+            p(strong("Conclusion:")),
+            if (p_value < 0.05) {
+              p(sprintf("Since the p-value (%.3f) is less than 0.05, we reject the null hypothesis.", p_value))
+            } else {
+              p(sprintf("Since the p-value (%.3f) is not less than 0.05, we fail to reject the null hypothesis", p_value))
+            }
+          )
         })
         
       } #if regcor_iv is valid
