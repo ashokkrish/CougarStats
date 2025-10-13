@@ -497,18 +497,16 @@ sampSizeEstServer <- function(id) {
                           "99%" = 0.99)
       
       if (input$sseEstimationTypeProp == "Margin of Error") {
-        n <- sample_size_clopper_pearson(
-          p0 = input$sseTargetProp,
-          conf.level,
-          margin.error = input$ssePropMargErr
-        )
+        E <- input$ssePropMargErr
       } else {
-        n <- sample_size_clopper_pearson(
-          p0 = input$sseTargetProp,
-          conf.level, 
-          width = input$ssePropWoI
-        )
+        E <- input$ssePropWoI / 2
       }
+      
+      n <- sample_size_clopper_pearson(
+        p0 = input$sseTargetProp,
+        conf.level = conf.level,
+        margin.error = E
+      )
       
       nEstimate <- ceiling(n)
       
