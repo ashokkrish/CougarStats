@@ -108,3 +108,29 @@ RenderWilcoxQQPlots <- function(sample1, sample2, plotColour, plotTitle, plotXla
   
   return(combined_plot)
 }
+
+RenderSignedRankQQPlot <- function(dat, plotColour, plotTitle, plotXlab, plotYlab, gridlines, flip) {
+  qp <- ggpubr::ggqqplot(dat, x = "values",
+                         title = plotTitle,
+                         xlab = plotXlab,
+                         ylab = plotYlab,
+                         color = plotColour) +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 24, face = "bold",
+                                margin = margin(0,0,10,0)),
+      axis.title.x = element_text(size = 16, face = "bold"),
+      axis.title.y = element_text(size = 16, face = "bold"),
+      axis.text.x = element_text(size = 16, margin = margin(5,0,5,0)),
+      axis.text.y = element_text(size = 16, margin = margin(0,5,0,5)),
+      panel.border = element_rect(fill = NA, colour = "black"),
+      panel.grid.major = if("Major" %in% gridlines) element_line(colour = "#D9D9D9") else element_blank(),
+      panel.grid.minor = if("Minor" %in% gridlines) element_line(colour = "#D9D9D9") else element_blank()
+    )
+  
+  if(flip == 1) {
+    qp <- qp + coord_flip() +
+      labs(x = plotYlab, y = plotXlab)
+  }
+  
+  return(qp)
+}
