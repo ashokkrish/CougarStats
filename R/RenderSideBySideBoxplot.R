@@ -58,11 +58,23 @@ RenderSideBySideBoxplot <- function(dat, df_boxplot, plotColour, plotTitle, plot
     scale_y_continuous(n.breaks = 10)
   
   # manually plot whisker caps
-  for(i in seq_along(stats_list)) {
-    s <- sample_levels[i]
+  for (i in seq_along(stats_list)) {
+    ymin_val <- stats_list[[i]]$ymin
+    ymax_val <- stats_list[[i]]$ymax
+    
+    cap_data <- data.frame(
+      x = i,
+      xmin = i - 0.05,
+      xmax = i + 0.05,
+      ymin = ymin_val,
+      ymax = ymax_val
+    )
+    
     bp <- bp +
-      geom_segment(aes(x = i - 0.05, xend = i + 0.05, y = stats_list[[i]]$ymin, yend = stats_list[[i]]$ymin)) +
-      geom_segment(aes(x = i - 0.05, xend = i + 0.05, y = stats_list[[i]]$ymax, yend = stats_list[[i]]$ymax))
+      geom_segment(data = cap_data,
+                   aes(x = xmin, xend = xmax, y = ymin, yend = ymin)) +
+      geom_segment(data = cap_data,
+                   aes(x = xmin, xend = xmax, y = ymax, yend = ymax))
   }
   
   # gridlines

@@ -1052,7 +1052,7 @@ probDistServer <- function(id) {
     
     NegBin_iv$add_rule("successNegBin", sv_required())
     NegBin_iv$add_rule("successNegBin", sv_integer())
-    NegBin_iv$add_rule("successNegBin", sv_gte(0))
+    NegBin_iv$add_rule("successNegBin", sv_gt(0))
     
     NegBin_iv$add_rule("successProbNegBin", sv_required())
     NegBin_iv$add_rule("successProbNegBin", sv_gt(0))
@@ -2756,20 +2756,20 @@ probDistServer <- function(id) {
             if(!NegBinprob_iv$is_valid())
             {
               validate(
-                need(input$successNegBin , "Required Number of Successes (r) must be a positive integer")%then%
-                  need(input$successNegBin >= 0 && input$successNegBin %% 1 == 0, "Required Number of Successes (r) must be a positive integer"),
+                need(input$successNegBin , "Required Number of Successes (r) must be greater than zero.")%then%
+                  need(input$successNegBin >= 0 && input$successNegBin %% 1 == 0, "Required Number of Successes (r) must be greater than zero."),
                 need(input$successProbNegBin, "Probability of Success (p) must be between 0 and 1") %then%
                   need(input$successProbNegBin > 0 && input$successProbNegBin <= 1, "Probability of Success (p) must be 0 < p  ≤ 1"),
-                need(input$xNegBin , "Number of Failures (x) must be a positive integer") %then%
-                  need(input$xNegBin >= 0 && input$xNegBin %% 1 == 0, "Number of Failures (x) must be a positive integer"),
+                need(input$xNegBin , "Number of Failures (x) prior to the rth success must be a positive integer.") %then%
+                  need(input$xNegBin >= 0 && input$xNegBin %% 1 == 0, "Number of Failures (x) prior to the rth success must be a positive integer."),
                 errorClass = "myClass")
             }
             
             if(!NegBinbetween_iv$is_valid())
             {
               validate(
-                need(input$successNegBin , "Required Number of Successes (r) must be a positive integer")%then%
-                  need(input$successNegBin >= 0 && input$successNegBin %% 1 == 0, "Required Number of Successes (r) must be a positive integer"),
+                need(input$successNegBin , "Required Number of Successes (r) must be greater than zero.")%then%
+                  need(input$successNegBin >= 0 && input$successNegBin %% 1 == 0, "Required Number of Successes (r) must be greater than zero."),
                 need(input$successProbNegBin, "Probability of Success (p) must be between 0 and 1") %then%
                   need(input$successProbNegBin > 0 && input$successProbNegBin <= 1, "Probability of Success (p) must be 0 < p  ≤ 1"),
                 need(input$x1NegBin , "Number of Failures (x1) must be a positive integer") %then%
@@ -2780,8 +2780,8 @@ probDistServer <- function(id) {
             }
             
             validate(
-              need(input$successNegBin , "Required Number of Successes (r) must be a positive integer")%then%
-                need(input$successNegBin > 0 && input$successNegBin %% 1 == 0, "Required Number of Successes (r) must be a positive integer"),
+              need(input$successNegBin , "Required Number of Successes (r) must be greater than zero.")%then%
+                need(input$successNegBin > 0 && input$successNegBin %% 1 == 0, "Required Number of Successes (r) must be greater than zero."),
               need(input$successProbNegBin, "Probability of Success (p) must be between 0 and 1") %then%
                 need(input$successProbNegBin >= 0 && input$successProbNegBin <= 1, "Probability of Success (p) must be between 0 and 1"),
               errorClass = "myClass")

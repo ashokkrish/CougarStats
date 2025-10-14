@@ -1137,7 +1137,7 @@ statInfrUI <- function(id) {
             radioButtons(
               inputId = ns("multipleMethodChoice"),
               label   = NULL,
-              choiceNames = c("ANOVA", "Kruskal-Wallis"),
+              choiceNames = c("One-way Analysis of Variance (ANOVA)", "Kruskal-Wallis"),
               choiceValues = c("anova", "kw")
             ),
             
@@ -9518,6 +9518,7 @@ statInfrServer <- function(id) {
     
     #### ----------------- Boxplot ----
     output$anovaBoxplot <- renderPlot({
+      req(si_iv$is_valid())
       data <- anovaOneWayResults()$data
       
       df_boxplot <- data.frame(sample = c(data[,"ind"]),
@@ -9541,6 +9542,7 @@ statInfrServer <- function(id) {
     
     #### ---------------- Histogram of Residuals ----
     output$anovaHistogram <- renderPlot({
+      req(si_iv$is_valid())
       data <- anovaOneWayResults()$residuals
       
       RenderHistogram(data,
@@ -9557,6 +9559,7 @@ statInfrServer <- function(id) {
     
     #### ---------------- QQ Plot of Residuals ----
     output$anovaQQplot <- renderPlot({
+      req(si_iv$is_valid())
       data <- anovaOneWayResults()$residuals
       
       qqplot_df <- data.frame(values = data)
@@ -9575,6 +9578,7 @@ statInfrServer <- function(id) {
     
     #### ---------------- Group Means Plot ----
     output$anovaMeanPlot<- renderPlot({
+      req(si_iv$is_valid())
       data <- as.data.frame(anovaOneWayResults()$data)
       groups <- anovaOneWayResults()$factornames
       
