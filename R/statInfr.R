@@ -2962,6 +2962,33 @@ statInfrServer <- function(id) {
     ## -------- Functions ------------------------------------------------------
     #  ========================================================================= #
     
+    getOutliers <- function(sample, sampleName, coef = 1.5) {
+      x <- sort(sample)
+      
+      if(length(x) %% 2 != 0) {
+        x_no_median <- x[-ceiling(length(x)/2)]
+      } else {
+        x_no_median <- x
+      }
+      
+      mid <- length(x_no_median) / 2
+      Q1 <- median(x_no_median[1:mid])
+      Q2 <- median(x)
+      Q3 <- median(x_no_median[(mid+1):length(x_no_median)])
+      
+      IQR <- Q3 - Q1
+      lower_fence <- Q1 - coef * IQR
+      upper_fence <- Q3 + coef * IQR
+      
+      outliers <- x[x < lower_fence | x > upper_fence]
+      
+      if(length(outliers) == 0) {
+        return(data.frame(sample = character(0), data = numeric(0)))
+      } else {
+        return(data.frame(sample = sampleName, data = outliers))
+      }
+    }
+    
     printHTConclusion <- function(region, reject, suffEvidence, altHyp, altHypValue) {
       conclusion <- tagList(
         withMathJax(),
