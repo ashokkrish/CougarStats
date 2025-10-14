@@ -282,10 +282,12 @@ descStatsUI <- function(id) {
                   ),
                 
                 # dsTabset tabsetPanel
-            ) #descrStatsData div
+            ), #descrStatsData div
+
         )) #descriptiveStatsMP
-      ) #mainPanel
+   
       )
+      )#mainPanel
     ) #sidebarLayout
   )
 }
@@ -314,7 +316,11 @@ descStatsServer <- function(id) {
     dsupload_iv$add_rule("dsUserData", ~ if(nrow(dsUploadData()) < 2) "Samples must include at least 2 observations")
     
     dsuploadvars_iv$add_rule("dsUploadVars", sv_required())
-    
+    dsuploadvars_iv$add_rule("dsUploadVars", ~ {
+      if (checkNumeric()) {
+        "Selected variable contains non-numeric data."
+      }
+    })
     # ------------------ #
     #     Conditions     #
     # ------------------ #
@@ -551,7 +557,6 @@ descStatsServer <- function(id) {
       return(dat)
     })
     
-    
     # Function to read the uploaded data file
     dsUploadData <- eventReactive(input$dsUserData, {
       ext <- tools::file_ext(input$dsUserData$name)
@@ -648,6 +653,15 @@ descStatsServer <- function(id) {
       return(df)
     })
     
+    checkNumeric <- eventReactive(input$dsUploadVars, {
+      dat <- as.data.frame(dsUploadData())[, input$dsUploadVars, drop = FALSE]
+      
+      # Check if any selected columns are non-numeric
+      invalid <- any(!sapply(dat, is.numeric))
+      
+      return(invalid)
+    })
+    
     # --------------------------------------------------------------------- #
     
     
@@ -708,6 +722,10 @@ descStatsServer <- function(id) {
         } else if(!dsuploadvars_iv$is_valid()) {
           validate(
             need(input$dsUploadVars != "", "Please select a variable."),
+            errorClass = "myClass"
+          )
+          validate(
+            need(!checkNumeric(), "Selected variable contains non-numeric data."),
             errorClass = "myClass"
           )
           

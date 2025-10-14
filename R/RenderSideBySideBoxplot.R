@@ -1,27 +1,33 @@
 library(ggplot2)
 library(dplyr)
 
-RenderSideBySideBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, plotXlab, plotYlab, 
+RenderSideBySideBoxplot <- function(dat, df_boxplot, plotColour, plotTitle, plotXlab, plotYlab, 
                                     boxWidth, gridlines, flip, showLabels = TRUE) {
-  n <- length(dat) / 2
-  sample1 <- dat[1:n]
-  sample2 <- dat[(n+1):(2*n)]
+  # determine samples dynamically
+  sample_levels <- unique(df_boxplot$sample)
+  n_samples <- length(sample_levels)
   
-  # compute stats for each sample and combine them
-  stats1 <- custom_box_stats(sample1) %>% mutate(x = 1)
-  stats2 <- custom_box_stats(sample2) %>% mutate(x = 2)
-  stats <- bind_rows(stats1, stats2)
+  # compute stats for each sample
+  stats_list <- lapply(sample_levels, function(s) {
+    custom_box_stats(dat[df_boxplot$sample == s]) %>% mutate(x = s)
+  })
+  stats <- bind_rows(stats_list)
   
-  df_outliers <- tibble(
-    x = c(rep(1, length(stats1$outliers[[1]])), rep(2, length(stats2$outliers[[1]]))),
-    y = c(stats1$outliers[[1]], stats2$outliers[[1]])
-  )
+  # collect outliers
+  df_outliers <- do.call(rbind, lapply(seq_along(sample_levels), function(i) {
+    s <- sample_levels[i]
+    tibble(
+      x = s,
+      y = stats_list[[i]]$outliers[[1]]
+    )
+  }))
   
+  # base plot
   bp <- ggplot() +
     geom_boxplot(
       data = stats,
       aes(
-        x = factor(x),
+        x = factor(x, levels = sample_levels),
         ymin = ymin,
         lower = lower,
         middle = middle,
@@ -35,7 +41,7 @@ RenderSideBySideBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, pl
     ) +
     geom_point(
       data = df_outliers,
-      aes(x = factor(x), y = y),
+      aes(x = factor(x, levels = sample_levels), y = y),
       size = 2
     ) +
     labs(title = plotTitle, x = plotXlab, y = plotYlab) +
@@ -51,12 +57,13 @@ RenderSideBySideBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, pl
     ) +
     scale_y_continuous(n.breaks = 10)
   
-  # whisker "caps"
-  bp <- bp +
-    geom_segment(aes(x = 0.95, xend = 1.05, y = stats1$ymin, yend = stats1$ymin)) +
-    geom_segment(aes(x = 0.95, xend = 1.05, y = stats1$ymax, yend = stats1$ymax)) +
-    geom_segment(aes(x = 1.95, xend = 2.05, y = stats2$ymin, yend = stats2$ymin)) +
-    geom_segment(aes(x = 1.95, xend = 2.05, y = stats2$ymax, yend = stats2$ymax))
+  # manually plot whisker caps
+  for(i in seq_along(stats_list)) {
+    s <- sample_levels[i]
+    bp <- bp +
+      geom_segment(aes(x = i - 0.05, xend = i + 0.05, y = stats_list[[i]]$ymin, yend = stats_list[[i]]$ymin)) +
+      geom_segment(aes(x = i - 0.05, xend = i + 0.05, y = stats_list[[i]]$ymax, yend = stats_list[[i]]$ymax))
+  }
   
   # gridlines
   if("Major" %in% gridlines) bp <- bp + theme(panel.grid.major = element_line(colour = "#D9D9D9"))

@@ -2962,34 +2962,6 @@ statInfrServer <- function(id) {
     ## -------- Functions ------------------------------------------------------
     #  ========================================================================= #
     
-    
-    getOutliers <- function(sample, sampleName, coef = 1.5) {
-      x <- sort(sample)
-      
-      if(length(x) %% 2 != 0) {
-        x_no_median <- x[-ceiling(length(x)/2)]
-      } else {
-        x_no_median <- x
-      }
-      
-      mid <- length(x_no_median) / 2
-      Q1 <- median(x_no_median[1:mid])
-      Q2 <- median(x)
-      Q3 <- median(x_no_median[(mid+1):length(x_no_median)])
-      
-      IQR <- Q3 - Q1
-      lower_fence <- Q1 - coef * IQR
-      upper_fence <- Q3 + coef * IQR
-      
-      outliers <- x[x < lower_fence | x > upper_fence]
-      
-      if(length(outliers) == 0) {
-        return(data.frame(sample = character(0), data = numeric(0)))
-      } else {
-        return(data.frame(sample = sampleName, data = outliers))
-      }
-    }
-    
     printHTConclusion <- function(region, reject, suffEvidence, altHyp, altHypValue) {
       conclusion <- tagList(
         withMathJax(),
@@ -7462,15 +7434,8 @@ statInfrServer <- function(id) {
       df_boxplot <- data.frame(sample = c(rep("Sample 1",length(sample1)), rep("Sample 2",length(sample2))),
                                data = c(dat))
       
-      # outlier detection for both samples
-      df_outliers <- rbind(
-        getOutliers(sample1, "Sample 1"),
-        getOutliers(sample2, "Sample 2")
-      )
-      
       RenderSideBySideBoxplot(dat,
                               df_boxplot,
-                              df_outliers,
                               input[["indMeansBoxplot-Colour"]],
                               input[["indMeansBoxplot-Title"]],
                               input[["indMeansBoxplot-Xlab"]],
@@ -8524,14 +8489,8 @@ statInfrServer <- function(id) {
       df_boxplot <- data.frame(sample = c(rep("Sample 1",length(rankSumRaw1)), rep("Sample 2",length(rankSumRaw2))),
                                data = c(dat))
       
-      df_outliers <- rbind(
-        getOutliers(rankSumRaw1, "Sample 1"),
-        getOutliers(rankSumRaw2, "Sample 2")
-      )
-      
       RenderSideBySideBoxplot(dat,
                               df_boxplot,
-                              df_outliers,
                               input[["sidebysidewRankSum-Colour"]],
                               input[["sidebysidewRankSum-Title"]],
                               input[["sidebysidewRankSum-Xlab"]],
@@ -9538,37 +9497,8 @@ statInfrServer <- function(id) {
                                data = c(data[,"values"]))
       colnames(df_boxplot) <- c("sample", "data")
       
-      # function to detect outliers for a numeric vector
-      getAnovaOutliers <- function(vec) {
-        f <- fivenum(vec)
-        iqr <- f[4] - f[2]
-        lower <- f[2] - 1.5 * iqr
-        upper <- f[4] + 1.5 * iqr
-        vec[vec < lower | vec > upper]
-      }
-      
-      unique_samples <- unique(df_boxplot$sample)
-      
-      # loop over each unique sample, extract its data, detect outliers using getAnovaOutliers(),
-      # and combine the non-empty results into a single dataframe
-      df_outliers <- do.call(rbind, lapply(unique_samples, function(samp) {
-        vals <- df_boxplot$data[df_boxplot$sample == samp]
-        outs <- getAnovaOutliers(vals)
-        if(length(outs) > 0) {
-          data.frame(sample = samp, data = outs)
-        } else {
-          NULL
-        }
-      }))
-      
-      # if no outliers, create empty df with correct columns
-      if(is.null(df_outliers) || nrow(df_outliers) == 0) {
-        df_outliers <- data.frame(sample = character(0), data = numeric(0))
-      }
-      
       RenderSideBySideBoxplot(df_boxplot[,"data"],
                               df_boxplot,
-                              df_outliers,
                               input[["anovaBoxplot-Colour"]],
                               input[["anovaBoxplot-Title"]],
                               input[["anovaBoxplot-Xlab"]],
