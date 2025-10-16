@@ -282,7 +282,7 @@ sampSizeEstServer <- function(id) {
     
     
     getSampSizeEstProp <- function(critVal, phat, margErr, widthInt) {
-      if(input$sseEstimationType == "Width of Interval"){
+      if(input$sseEstimationTypeProp == "Width of Interval"){
         n <- phat * (1 - phat) * (critVal / (widthInt/2))^2
       }
       else{
@@ -428,6 +428,8 @@ sampSizeEstServer <- function(id) {
     
     #### ---------------- Proportion Estimate output -----------------------------
     output$sampSizePropEstimate <- renderUI({
+     req(sse_iv$is_valid())
+      
       if(isTRUE(input$normalDistribution)) {
         n <- getSampSizeEstProp(criticalValue(), input$sseTargetProp, input$ssePropMargErr, input$ssePropWoI)
         nEstimate <- ceiling(n)
