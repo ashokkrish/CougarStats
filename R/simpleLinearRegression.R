@@ -513,15 +513,25 @@ SLRServer <- function(id) {
         sumXSqrd <- dfTotaled["Totals", "x"] ^ 2
         sumYSqrd <- dfTotaled["Totals", "y"] ^ 2
         
+        dfFormatted <- dfTotaled
+        for(col in names(dfFormatted)) {
+          if(is.numeric(dfFormatted[[col]])) {
+            dfFormatted[[col]] <- sapply(dfFormatted[[col]], function(x) {
+              if(is.na(x)) return(NA)
+              format(round(x, 3), nsmall = 0, scientific = FALSE)
+            })
+          }
+        }
+        
         output$slrDataTable <- renderDT(
-          datatable(round(dfTotaled, digits = 3),
+          datatable(dfFormatted,
                     options = list(pageLength = -1,
                                    lengthMenu = list(c(-1, 10, 25, 50, 100), c("All", "10", "25", "50", "100"))
                     ),
                     escape = FALSE
-          ) %>% formatStyle(names(dfTotaled),
+          ) %>% formatStyle(names(dfFormatted),
                             target = 'row',
-                            fontWeight = styleRow(dim(dfTotaled)[1], "bold"))
+                            fontWeight = styleRow(dim(dfFormatted)[1], "bold"))
         )
         
         output$renderSLRScatterplot <- renderUI({
@@ -595,14 +605,14 @@ SLRServer <- function(id) {
             br(),
             p("where"),
             sprintf("\\( \\qquad \\hat{\\beta}_{1} = \\dfrac{ \\sum xy - \\dfrac{ (\\sum x)(\\sum y) }{ n } }{ \\sum x^2 - \\dfrac{ (\\sum x)^2 }{ n } } \\)"),
-            sprintf("\\( \\, = \\, \\dfrac{ %g - \\dfrac{ (%g)(%g) }{ %g } }{ %g - \\dfrac{ (%g)^2 }{ %g } } \\)",
-                    dfTotaled["Totals", "xy"],
-                    dfTotaled["Totals", "x"],
-                    dfTotaled["Totals", "y"],
-                    length(datx),
-                    dfTotaled["Totals", "x<sup>2</sup>"],
-                    dfTotaled["Totals", "x"],
-                    length(datx)),
+            sprintf("\\( \\, = \\, \\dfrac{ %s - \\dfrac{ (%s)(%s) }{ %s } }{ %s - \\dfrac{ (%s)^2 }{ %s } } \\)",
+                    format(round(dfTotaled["Totals", "xy"], 3), nsmall = 0, scientific = FALSE),
+                    format(round(dfTotaled["Totals", "x"], 3), nsmall = 0, scientific = FALSE),
+                    format(round(dfTotaled["Totals", "y"], 3), nsmall = 0, scientific = FALSE),
+                    format(round(length(datx), 3), nsmall = 0, scientific = FALSE),
+                    format(round(dfTotaled["Totals", "x<sup>2</sup>"], 3), nsmall = 0, scientific = FALSE),
+                    format(round(dfTotaled["Totals", "x"], 3), nsmall = 0, scientific = FALSE),
+                    format(round(length(datx), 3), nsmall = 0, scientific = FALSE)),
             # sprintf("\\( \\, = \\, \\dfrac{ %g - (\\dfrac{ %g }{ %g }) }{ %g - \\dfrac{ %g }{ %g } } \\)",
             #         dfTotaled["Totals", "xy"],
             #         sumXSumY,
@@ -610,11 +620,11 @@ SLRServer <- function(id) {
             #         dfTotaled["Totals", "x<sup>2</sup>"],
             #         sumXSqrd,
             #         length(datx)),
-            sprintf("\\( \\, = \\, \\dfrac{ %g - (%g) }{ %g - %g } \\)",
-                    dfTotaled["Totals", "xy"],
-                    sumXSumY / length(datx),
-                    dfTotaled["Totals", "x<sup>2</sup>"],
-                    sumXSqrd / length(datx)),
+            sprintf("\\( \\, = \\, \\dfrac{ %s - (%s) }{ %s - %s } \\)",
+                    format(round(dfTotaled["Totals", "xy"], 3), nsmall = 0, scientific = FALSE),
+                    format(round(sumXSumY / length(datx), 3), nsmall = 0, scientific = FALSE),
+                    format(round(dfTotaled["Totals", "x<sup>2</sup>"], 3), nsmall = 0, scientific = FALSE),
+                    format(round(sumXSqrd / length(datx), 3), nsmall = 0, scientific = FALSE)),
             # sprintf("\\( \\, = \\, \\dfrac{ %g }{ %g } \\)",
             #         dfTotaled["Totals", "xy"] - (sumXSumY) / length(datx),
             #         dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx)),
@@ -624,12 +634,12 @@ SLRServer <- function(id) {
             br(),
             p("and"),
             sprintf("\\( \\qquad \\hat{\\beta}_{0} = \\bar{y} - \\hat{\\beta}_{1} \\bar{x}\\)"),
-            sprintf("\\( \\, = \\, %g - (%0.4f) (%g) \\)",
-                    mean(daty),
+            sprintf("\\( \\, = \\, %s - (%0.4f) (%s) \\)",
+                    format(round(mean(daty), 3), nsmall = 0, scientific = FALSE),
                     summary(model)$coefficients["datx", "Estimate"],
-                    mean(datx)),
-            sprintf("\\( \\, = \\, %g %s %0.4f\\)",
-                    mean(daty),
+                    format(round(mean(datx), 3), nsmall = 0, scientific = FALSE)),
+            sprintf("\\( \\, = \\, %s %s %0.4f\\)",
+                    format(round(mean(daty), 3), nsmall = 0, scientific = FALSE),
                     b0HatOp,
                     abs(slopeEstimate) * mean(datx)),
             sprintf("\\( \\, = \\, %0.4f \\)",
