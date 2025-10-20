@@ -465,9 +465,17 @@ p(sprintf(r"[Bayesian Information Criterion (BIC): \(%0.4f\)]", BIC(model)))
           output$linearModelBIC <- renderPrint({
             BIC(model)
           })
-          output$linearModelResidualsPanelPlot <- renderPlot({
-            par(mfrow = c(2, 2))
-            plot(model, pch = 20)
+          output$mlrResidualsPanelPlot1 <- renderPlot({
+            plot(model, which = 1, pch = 20, main = "", lwd = 2, sub.caption = "")
+          })
+          output$mlrResidualsPanelPlot2 <- renderPlot({
+            plot(model, which = 2, pch = 20, main = "", lwd = 2, sub.caption = "")
+          })
+          output$mlrResidualsPanelPlot3 <- renderPlot({
+            plot(model, which = 3, pch = 20, main = "", lwd = 2, sub.caption = "")
+          })
+          output$mlrResidualsPanelPlot4 <- renderPlot({
+            plot(model, which = 5, pch = 20, main = "", lwd = 2, sub.caption = "")
           })
         })
         
@@ -680,7 +688,12 @@ p(strong("Conclusion:")),
     output$DiagnosticPlots <- renderUI({
       eval(MLRValidation)
       
-      fluidPage(fluidRow(plotOutput(ns("linearModelResidualsPanelPlot"))))
+      fluidPage(
+        plotOutput(ns("mlrResidualsPanelPlot1")),
+        plotOutput(ns("mlrResidualsPanelPlot2")),
+        plotOutput(ns("mlrResidualsPanelPlot3")),
+        plotOutput(ns("mlrResidualsPanelPlot4"))
+      )
     })
     
     
