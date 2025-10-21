@@ -2656,8 +2656,18 @@ statInfrServer <- function(id) {
     })
     
     signedRankUploadvars_iv$add_rule("signedRankUpl1", ~ {
+      if(!rv$allowColumnValidation) {
+        return(NULL)
+      }
+      
       if(input$signedRankUpl1 != "" && input$signedRankUpl2 != "") {
         data <- signedRankUploadData()
+        if(!(input$signedRankUpl1 %in% colnames(data))) {
+          return("Selected column for Sample 1 does not exist in the uploaded file.")
+        }
+        if(!(input$signedRankUpl2 %in% colnames(data))) {
+          return("Selected column for Sample 2 does not exist in the uploaded file.")
+        }
         sample1 <- na.omit(unlist(data[, input$signedRankUpl1]))
         sample2 <- na.omit(unlist(data[, input$signedRankUpl2]))
         min_length <- min(length(sample1), length(sample2))
@@ -2671,8 +2681,18 @@ statInfrServer <- function(id) {
     })
     
     signedRankUploadvars_iv$add_rule("signedRankUpl2", ~ {
+      if(!rv$allowColumnValidation) {
+        return(NULL)
+      }
+      
       if(input$signedRankUpl1 != "" && input$signedRankUpl2 != "") {
         data <- signedRankUploadData()
+        if(!(input$signedRankUpl1 %in% colnames(data))) {
+          return("Selected column for Sample 1 does not exist in the uploaded file.")
+        }
+        if(!(input$signedRankUpl2 %in% colnames(data))) {
+          return("Selected column for Sample 2 does not exist in the uploaded file.")
+        }
         sample1 <- na.omit(unlist(data[, input$signedRankUpl1]))
         sample2 <- na.omit(unlist(data[, input$signedRankUpl2]))
         min_length <- min(length(sample1), length(sample2))
@@ -5806,7 +5826,8 @@ statInfrServer <- function(id) {
     
     ### ------------ Signed Rank Test Reactives ------------------------------------------
     rv <- reactiveValues(
-      calculatePressed = FALSE
+      calculatePressed = FALSE,
+      allowColumnValidation = TRUE
     )
     
     signedRankUploadData <- eventReactive(input$signedRankUpl, {
@@ -9308,29 +9329,40 @@ statInfrServer <- function(id) {
       }
       
       data_ranked <- signedRankedData()
-
+      
       positive_ranks <- data_ranked$SignedRank[data_ranked$SignedRank > 0]
       negative_ranks <- data_ranked$SignedRank[data_ranked$SignedRank < 0]
-
+      
       W_plus <- sum(positive_ranks)
       W_minus <- sum(abs(negative_ranks))
-
+      
       n <- nrow(data_ranked)
-
+      
       W_stat <- W_plus
-
+      
       mu_w <- n * (n + 1) / 4
-      sigma_w <- sqrt(n * (n + 1) * (2 * n + 1) / 24)
+
+      ranks <- abs(data_ranked$Rank)
+      tie_groups <- table(ranks)
+      tie_adjustment <- sum((tie_groups^3 - tie_groups) / 48)
+      sigma_w <- sqrt(n * (n + 1) * (2 * n + 1) / 24 - tie_adjustment)
       
       significance <- 1 - SigLvl()
 
+      if (W_stat > mu_w) {
+        z_stat <- (W_stat - 0.5 - mu_w) / sigma_w
+      } else if (W_stat < mu_w) {
+        z_stat <- (W_stat + 0.5 - mu_w) / sigma_w
+      } else {
+        z_stat <- 0
+      }
+      
       if(input$altHypothesis2 == "2") {
         z_critical <- qnorm(1 - SigLvl()/2)
         critVal <- paste("\\pm", round(qnorm(1 - SigLvl()/2), 3))
         nullHyp <- paste0("\\text{Median difference} = 0")
         altHyp <- paste0("\\text{Median difference} \\neq 0")
         altern <- "two.sided"
-        z_stat <- (W_stat - mu_w) / sigma_w
         in_rejection_region <- abs(z_stat) > z_critical
         
       } else if(input$altHypothesis2 == "1") {
@@ -9339,7 +9371,6 @@ statInfrServer <- function(id) {
         nullHyp <- paste0("\\text{Median difference} \\geq 0")
         altHyp <- paste0("\\text{Median difference} \\lt 0")
         altern <- "less"
-        z_stat <- (W_stat - mu_w) / sigma_w
         in_rejection_region <- z_stat < z_critical
         
       } else {
@@ -9348,10 +9379,9 @@ statInfrServer <- function(id) {
         nullHyp <- paste0("\\text{Median difference} \\leq 0")
         altHyp <- paste0("\\text{Median difference} \\gt 0")
         altern <- "greater"
-        z_stat <- (W_stat - mu_w) / sigma_w
         in_rejection_region <- z_stat > z_critical
       }
-
+      
       if(in_rejection_region) {
         pvalSymbol <- "\\leq"
         suffEvidence <- "is"
@@ -9363,7 +9393,7 @@ statInfrServer <- function(id) {
         reject <- "do not reject"
         region <- "acceptance"
       }
-
+      
       sample1_data <- data_ranked$Sample1
       sample2_data <- data_ranked$Sample2
 
@@ -9374,7 +9404,7 @@ statInfrServer <- function(id) {
       } else {
         p_value <- pnorm(z_stat, lower.tail = FALSE)
       }
-
+      
       signedRankHTHead <- tagList(
         p(
           withMathJax(),
@@ -9399,13 +9429,17 @@ statInfrServer <- function(id) {
           br(), br(),
           
           p(tags$b("Standard Deviation:")),
-          sprintf("\\( \\sigma_{W^+} = \\sqrt{\\frac{n(n + 1)(2n + 1)}{24}} = \\sqrt{\\frac{%s \\times %s \\times %s}{24}} = %s \\)",
-                  n, n + 1, 2*n + 1, round(sigma_w, 4)),
+          sprintf("\\( \\sigma_{W^+} = %s \\)", round(sigma_w, 4)),
           br(),br(),
           
           p(tags$b("Test Statistic:")),
-          sprintf("\\(  z = \\frac{W^{+} - \\mu_{W^+}}{\\sigma_{W^+}} = \\frac{%s - %s}{%s} = %s \\)",
-                  W_stat, mu_w, round(sigma_w, 4), round(z_stat, 3)),
+          sprintf("\\(  z = \\frac{W^{+} - \\mu_{W^+} %s 0.5}{\\sigma_{W^+}} = \\frac{%s - %s %s 0.5}{%s} = %s \\)",
+                  if(W_stat > mu_w) "-" else if(W_stat < mu_w) "+" else "\\pm",
+                  W_stat, 
+                  mu_w,
+                  if(W_stat > mu_w) "-" else if(W_stat < mu_w) "+" else "\\pm",
+                  round(sigma_w, 4), 
+                  round(z_stat, 3)),
           br(), br(),
           
           p(tags$b("Using P-value Method:")),
@@ -9423,7 +9457,7 @@ statInfrServer <- function(id) {
           }
         )
       )
-
+      
       signedRankHTTail <- tagList(
         p(
           withMathJax(),
@@ -9453,13 +9487,13 @@ statInfrServer <- function(id) {
     
     
     output$signedRankPlot <- renderPlot({
-
+      
       signedRankData <- signedRankedData()
-
+      
       if (is.null(signedRankData) || nrow(signedRankData) == 0) {
         return(NULL)
       }
-
+      
       if (input$signedRankTest == 'Upload Data') {
         name1 <- input$signedRankUpl1
         name2 <- input$signedRankUpl2
@@ -9467,26 +9501,32 @@ statInfrServer <- function(id) {
         name1 <- "Sample 1"
         name2 <- "Sample 2"
       }
-
+      
       positive_ranks <- signedRankData$SignedRank[signedRankData$SignedRank > 0]
       negative_ranks <- signedRankData$SignedRank[signedRankData$SignedRank < 0]
-
+      
       W_plus <- sum(positive_ranks)
       W_minus <- sum(abs(negative_ranks))
-
+      
       n <- nrow(signedRankData)
-
+      
       W_stat <- W_plus
-
+      
       mu_w <- n * (n + 1) / 4
-      sigma_w <- sqrt(n * (n + 1) * (2 * n + 1) / 24)
+
+      ranks <- abs(signedRankData$Rank)
+      tie_groups <- table(ranks)
+      tie_adjustment <- sum((tie_groups^3 - tie_groups) / 48)
+      sigma_w <- sqrt(n * (n + 1) * (2 * n + 1) / 24 - tie_adjustment)
 
       if (W_stat > mu_w) {
         z_stat <- (W_stat - 0.5 - mu_w) / sigma_w
-      } else {
+      } else if (W_stat < mu_w) {
         z_stat <- (W_stat + 0.5 - mu_w) / sigma_w
+      } else {
+        z_stat <- 0
       }
-
+      
       alternative <- ""
       z_critical <- NA
       
@@ -9500,7 +9540,7 @@ statInfrServer <- function(id) {
         z_critical <- qnorm(1 - SigLvl())
         alternative <- "greater"
       }
-
+      
       wilcoxonPlot <- wilcoxonZTestPlot(z_stat, z_critical, alternative)
       wilcoxonPlot
     })
@@ -10753,26 +10793,44 @@ statInfrServer <- function(id) {
     observeEvent(input$signedRankUpl, priority = 5, {
       rv$calculatePressed <- FALSE
 
+      rv$allowColumnValidation <- FALSE
+
       hide(id = "inferenceData")
       hide(id = "signedRankUpl1")
       hide(id = "signedRankUpl2")
       fileInputs$signedRankStatus <- 'uploaded'
+
+      freezeReactiveValue(input, "signedRankUpl1")
+      updateSelectInput(session = getDefaultReactiveDomain(),
+                        "signedRankUpl1",
+                        choices = c(""),
+                        selected = "")
+      
+      freezeReactiveValue(input, "signedRankUpl2")
+      updateSelectInput(session = getDefaultReactiveDomain(),
+                        "signedRankUpl2",
+                        choices = c(""),
+                        selected = "")
       
       if(signedRankUpload_iv$is_valid()) {
         freezeReactiveValue(input, "signedRankUpl1")
         updateSelectInput(session = getDefaultReactiveDomain(),
                           "signedRankUpl1",
-                          choices = c(colnames(signedRankUploadData()))
-        )
+                          choices = c("", colnames(signedRankUploadData())),
+                          selected = "")
         
         freezeReactiveValue(input, "signedRankUpl2")
         updateSelectInput(session = getDefaultReactiveDomain(),
                           "signedRankUpl2",
-                          choices = c(colnames(signedRankUploadData()))
-        )
+                          choices = c("", colnames(signedRankUploadData())),
+                          selected = "")
+        
         shinyjs::show(id = "signedRankUpl1")
         shinyjs::show(id = "signedRankUpl2")
       }
+
+      Sys.sleep(0.1)
+      rv$allowColumnValidation <- TRUE
     })
     
     observeEvent(input$signedRankQQPlot, {
