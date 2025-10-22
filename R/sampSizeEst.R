@@ -168,8 +168,8 @@ sampSizeEstUI <- function(id) {
               ns = ns,
               condition = "input.sampSizeEstParameter == 'Population Mean'",
               
-              titlePanel(tags$u("Sample Size Estimate (\\( n \\))")),
-              br(),
+              #titlePanel(tags$u("Sample Size Estimate (\\( n \\))")),
+              #br(),
               uiOutput(ns('sampSizeMeanEstimate')),
               br(),
             ), #sampSizeEstParameter == Population Mean
@@ -179,8 +179,8 @@ sampSizeEstUI <- function(id) {
               ns = ns,
               condition = "input.sampSizeEstParameter == 'Population Proportion'",
               
-              titlePanel(tags$u("Sample Size Estimate (\\( n \\))")),
-              br(),
+              #titlePanel(tags$u("Sample Size Estimate (\\( n \\))")),
+              #br(),
               uiOutput(ns('sampSizePropEstimate')),
               br(),
             ) #sampSizeEstParameter == Population Proportion
@@ -519,7 +519,7 @@ sampSizeEstServer <- function(id) {
         sprintf("\\( n = %d \\)", nEstimate),
         br(),
         br(),
-        tags$em("* Note: There is no closed-form formula as there is in the case of the normal approximation. Instead, sample size was determined numerically by checking whether the resulting exact confidence interval satisfies the desired width and confidence level. This is called the Clopper-Pearson exact binomial method (also known as the exact confidence interval for a binomial proportion).")
+        tags$em("Note: When the data cannot be assumed to follow a normal distribution, there isn’t a simple formula to calculate the required sample size. Instead, the sample size is found by testing different values until the exact confidence interval is narrow enough and meets the chosen confidence level. This approach is based on the Clopper–Pearson exact method for binomial proportions.")
       )
     }
     })

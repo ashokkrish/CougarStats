@@ -2582,11 +2582,21 @@ statInfrServer <- function(id) {
     
     # anovamulti_iv$add_rule("anovaMultiColumns", sv_required())
     anovamulti_iv$add_rule("anovaMultiColumns", ~ if(length(input$anovaMultiColumns) < 2) "Select at least two columns")
+    anovamulti_iv$add_rule("anovaMultiColumns", ~ {
+      if (checkNumeric(anovaUploadData(), input$anovaMultiColumns)) {
+        "Selected column(s) contain non-numeric data."
+      }
+    })
     
     anovastacked_iv$add_rule("anovaResponse", sv_required())
     anovastacked_iv$add_rule("anovaFactors", sv_required())
     anovastacked_iv$add_rule("anovaResponse", ~ if(anovaStackedIsValid() == FALSE) "Response variable and factors column cannot be the same")
     anovastacked_iv$add_rule("anovaFactors", ~ if(anovaStackedIsValid() == FALSE) "Response variable and factors column cannot be the same")
+    anovastacked_iv$add_rule("anovaResponse", ~ {
+      if (checkNumeric(anovaUploadData(), input$anovaResponse)) {
+        "Response variable must be numeric."
+      }
+    })
     
     # Kruskal-Wallis
     kwupload_iv$add_rule("kwUserData", sv_required())
@@ -2961,6 +2971,17 @@ statInfrServer <- function(id) {
     #  ========================================================================= #
     ## -------- Functions ------------------------------------------------------
     #  ========================================================================= #
+    
+    checkNumeric <- function(data, cols) {
+      if (is.null(cols) || length(cols) == 0 || !all(cols %in% colnames(data))) {
+        return(FALSE)  # no invalid columns if nothing selected
+      }
+      
+      dat <- as.data.frame(data)[, cols, drop = FALSE]
+      invalid <- any(!sapply(dat, is.numeric))
+      
+      return(invalid)
+    }
     
     getOutliers <- function(sample, sampleName, coef = 1.5) {
       x <- sort(sample)
@@ -6301,6 +6322,12 @@ statInfrServer <- function(id) {
         validate(
           need(length(input$anovaMultiColumns) >= 2, "Please select two or more columns to conduct analysis."),
           errorClass = "myClass")
+        
+        validate(
+          need(!checkNumeric(anovaUploadData(), input$anovaMultiColumns), 
+               "Selected columns must be numeric."),
+          errorClass = "myClass"
+        )
       }
       
       if(!anovastacked_iv$is_valid()) {
@@ -6312,6 +6339,12 @@ statInfrServer <- function(id) {
         validate(
           need(anovaStackedIsValid() == TRUE, "Please select distinct columns for Response Variable and Factors."),
           errorClass = "myClass")
+        
+        validate(
+          need(!checkNumeric(anovaUploadData(), input$anovaResponse), 
+               "Response variable must be numeric."),
+          errorClass = "myClass"
+        )
       }
       
       #### ---------------- Kruskal-Wallis Validation    
