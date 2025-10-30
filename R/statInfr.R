@@ -9341,7 +9341,7 @@ statInfrServer <- function(id) {
       W_stat <- W_plus
       
       mu_w <- n * (n + 1) / 4
-
+      
       ranks <- abs(data_ranked$Rank)
       tie_groups <- table(ranks)
       tie_adjustment <- sum((tie_groups^3 - tie_groups) / 48)
@@ -9349,12 +9349,14 @@ statInfrServer <- function(id) {
       
       significance <- 1 - SigLvl()
 
+      z_stat <- (W_stat - mu_w) / sigma_w
+
       if (W_stat > mu_w) {
-        z_stat <- (W_stat - 0.5 - mu_w) / sigma_w
+        z_stat_corrected <- (W_stat - 0.5 - mu_w) / sigma_w
       } else if (W_stat < mu_w) {
-        z_stat <- (W_stat + 0.5 - mu_w) / sigma_w
+        z_stat_corrected <- (W_stat + 0.5 - mu_w) / sigma_w
       } else {
-        z_stat <- 0
+        z_stat_corrected <- 0
       }
       
       if(input$altHypothesis2 == "2") {
@@ -9398,11 +9400,11 @@ statInfrServer <- function(id) {
       sample2_data <- data_ranked$Sample2
 
       if(input$altHypothesis2 == "2") {
-        p_value <- 2 * pnorm(abs(z_stat), lower.tail = FALSE)
+        p_value <- 2 * pnorm(abs(z_stat_corrected), lower.tail = FALSE)
       } else if(input$altHypothesis2 == "1") {
-        p_value <- pnorm(z_stat, lower.tail = TRUE)
+        p_value <- pnorm(z_stat_corrected, lower.tail = TRUE)
       } else {
-        p_value <- pnorm(z_stat, lower.tail = FALSE)
+        p_value <- pnorm(z_stat_corrected, lower.tail = FALSE)
       }
       
       signedRankHTHead <- tagList(
@@ -9433,11 +9435,9 @@ statInfrServer <- function(id) {
           br(),br(),
           
           p(tags$b("Test Statistic:")),
-          sprintf("\\(  z = \\frac{W^{+} - \\mu_{W^+} %s 0.5}{\\sigma_{W^+}} = \\frac{%s - %s %s 0.5}{%s} = %s \\)",
-                  if(W_stat > mu_w) "-" else if(W_stat < mu_w) "+" else "\\pm",
+          sprintf("\\(  z = \\frac{W^{+} - \\mu_{W^+}}{\\sigma_{W^+}} = \\frac{%s - %s}{%s} = %s \\)",
                   W_stat, 
                   mu_w,
-                  if(W_stat > mu_w) "-" else if(W_stat < mu_w) "+" else "\\pm",
                   round(sigma_w, 4), 
                   round(z_stat, 3)),
           br(), br(),
@@ -9483,7 +9483,6 @@ statInfrServer <- function(id) {
       
       tagAppendChildren(signedRankHTHead, signedRankHTTail, depHTConclusion)
     })
-    
     
     
     output$signedRankPlot <- renderPlot({
