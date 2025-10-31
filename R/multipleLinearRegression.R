@@ -401,14 +401,24 @@ p(sprintf(r"[Bayesian Information Criterion (BIC): \(%0.4f\)]", BIC(model)))
           
           output$vifs <- renderTable(
             {
-              df <- tryCatch(
-                {
-                  as.data.frame(car::vif(model))
-                },
-                error = \(e) print(e)
-              )
-              validate(need(is.data.frame(df), "Couldn't produce a data frame from the VIF function of the model. Usually this means there are aliased coefficients in the model. Re-attempt after verifying the data, or renaming the columns."))
-              df
+              req(uploadedTibble$data())
+              req(isTruthy(input$responseVariable))
+              req(isTruthy(input$explanatoryVariables))
+              req(length(as.character(input$explanatoryVariables)) >= 2)
+              with(uploadedTibble$data(), {
+                model <- lm(reformulate(
+                  as.character(lapply(input$explanatoryVariables, as.name)),
+                  as.name(input$responseVariable)
+                ))
+                df <- tryCatch(
+                  {
+                    as.data.frame(car::vif(model))
+                  },
+                  error = \(e) NULL
+                )
+                validate(need(is.data.frame(df), "Couldn't produce a data frame from the VIF function of the model. Usually this means there are aliased coefficients in the model. Re-attempt after verifying the data, or renaming the columns."))
+                df
+              })
             },
             rownames = TRUE,
             align = "c"
@@ -444,14 +454,15 @@ p(sprintf(r"[Bayesian Information Criterion (BIC): \(%0.4f\)]", BIC(model)))
               ## RETURN THE TABLE TO RENDER
               tibble::tribble(
                 ~"Source", ~"df", ~"SS", ~"MS", ~"F", ~"P-value",
-                "Regression", as.integer(k), SSR, MSR, F, pf(F, k, n - k - 1, lower.tail = FALSE),
-                "Residual", as.integer(n - k - 1), SSE, MSE, NA, NA,
+                "<strong>Regression (Model)</strong>", as.integer(k), SSR, MSR, F, pf(F, k, n - k - 1, lower.tail = FALSE),
+                "<strong>Residual (Error)</strong>", as.integer(n - k - 1), SSE, MSE, NA, NA,
                 "Total", as.integer(n - 1), SST, NA, NA, NA
               )
             },
             na = "",
             striped = TRUE,
-            align = "c"
+            align = "c",
+            sanitize.text.function = function(x) x
           )
           
           observe({
@@ -497,7 +508,7 @@ p(sprintf(r"[Bayesian Information Criterion (BIC): \(%0.4f\)]", BIC(model)))
             MSE <- SSE / (n - k - 1)
             F <- MSR / MSE
             withMathJax(
-              p(strong("Test Statistic")),
+              p(strong("Test Statistic:")),
               p(sprintf(
                 r"{\(\displaystyle F = \frac{\text{MSR}}{\text{MSE}} = \frac{%0.2f}{%0.2f} = %0.2f \)}",
                 MSR, MSE, F

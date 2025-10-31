@@ -84,10 +84,9 @@ SLRMainPanelUI <- function(id) {
             title = "ANOVA",
             value = "ANOVA",
             
-            br(),
             uiOutput(ns("anovaHypotheses")),
             br(),
-            DTOutput(ns("anovaTable")),
+            div(tableOutput(ns("anovaTable")), width = "100 px;"),
             br(),
             uiOutput(ns("anovaConclusion"))
           ),
@@ -807,7 +806,7 @@ SLRServer <- function(id) {
         # ANOVA Output
         output$anovaHypotheses <- renderUI({
           withMathJax(
-            p(strong("Hypotheses")),
+            p(strong("Analysis of Variance (ANOVA)")),
             p(
               "\\( H_0: \\beta_1 = 0 \\)",
               br(),
@@ -818,35 +817,24 @@ SLRServer <- function(id) {
           )
         })
         
-        output$anovaTable <- renderDT({
-          anova_results <- anova(model)
-          # Create the desired data frame
-          anova_df <- data.frame(
-            Source = c("Regression (Model)", "Residual (Error)", "Total"),
-            df = c(anova_results$Df[1], anova_results$Df[2], sum(anova_results$Df)),
-            SS = c(anova_results$`Sum Sq`[1], anova_results$`Sum Sq`[2], sum(anova_results$`Sum Sq`)),
-            MS = c(anova_results$`Mean Sq`[1], anova_results$`Mean Sq`[2], NA),
-            F = c(anova_results$`F value`[1], NA, NA),
-            `P-value` = c(anova_results$`Pr(>F)`[1], NA, NA),
-            check.names = FALSE
-          )
-          datatable(
-            anova_df,
-            options = list(
-              dom = 't',
-              columnDefs = list(list(className = 'dt-center', targets = '_all')),
-              headerCallback = JS(
-                "function(thead, data, start, end, display) {",
-                "  $(thead).find('th').css('font-weight', 'bold');",
-                "}"
-              )
-            ),
-            rownames = FALSE
-          ) %>%
-            formatRound(columns = c('SS', 'MS', 'F', 'P-value'), digits = 3) %>%
-            formatStyle(columns = 'Source', fontWeight = 'bold') %>%
-            formatStyle("F", fontWeight = "bold")
-        })
+        output$anovaTable <- renderTable(
+          {
+            anova_results <- anova(model)
+            data.frame(
+              Source = c("<strong>Regression (Model)</strong>", "<strong>Residual (Error)</strong>", "Total"),
+              df = c(anova_results$Df[1], anova_results$Df[2], sum(anova_results$Df)),
+              SS = c(anova_results$`Sum Sq`[1], anova_results$`Sum Sq`[2], sum(anova_results$`Sum Sq`)),
+              MS = c(anova_results$`Mean Sq`[1], anova_results$`Mean Sq`[2], NA),
+              F = c(anova_results$`F value`[1], NA, NA),
+              `P-value` = c(anova_results$`Pr(>F)`[1], NA, NA),
+              check.names = FALSE
+            )
+          },
+          na = "",
+          striped = TRUE,
+          align = "c",
+          sanitize.text.function = function(x) x
+        )
         
         output$anovaConclusion <- renderUI({
           anova_results <- anova(model)
@@ -857,8 +845,7 @@ SLRServer <- function(id) {
           
           withMathJax(
             p(strong("Test Statistic:")),
-            p(sprintf("\\( F = \\frac{MSR}{MSE} = \\frac{%.3f}{%.3f} = %.3f \\)", msr, mse, f_value)),
-            br(),
+            p(sprintf("\\( \\displaystyle F = \\frac{\\mathrm{MSR}}{\\mathrm{MSE}} = \\frac{%.3f}{%.3f} = %.3f \\)", msr, mse, f_value)),
             p(strong("Conclusion:")),
             if (p_value < 0.05) {
               p(sprintf("Since the p-value (%.3f) is less than 0.05, we reject the null hypothesis.", p_value))
