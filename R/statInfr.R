@@ -2262,6 +2262,7 @@ statInfrServer <- function(id) {
     onemeanupload_iv$add_rule("oneMeanUserData", ~ if(!(tolower(tools::file_ext(input$oneMeanUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
     onemeanupload_iv$add_rule("oneMeanUserData", ~ if(nrow(OneMeanUploadData()) == 0) "File is empty")
     onemeanupload_iv$add_rule("oneMeanUserData", ~ if(nrow(OneMeanUploadData()) < 3) "Samples must include at least 2 observations")
+
     
     # popuSD
     onemeansdknown_iv$add_rule("popuSD", sv_required())
@@ -2289,6 +2290,11 @@ statInfrServer <- function(id) {
       if (input$sigmaKnownUpload == "Unknown" &&
           sd(data[[col]], na.rm = TRUE) == 0 && input$inferenceType == 'Hypothesis Testing') {
         "No variance in selected column"
+      }
+    })
+    onemeanuploadvar_iv$add_rule("oneMeanVariable", ~ {
+      if (checkNumeric(OneMeanUploadData(), input$oneMeanVariable)) {
+        "Selected column contains non-numeric data."
       }
     })
     
@@ -2395,6 +2401,18 @@ statInfrServer <- function(id) {
       }
     })
     
+    indmeansuploadvar_iv$add_rule("indMeansUplSample1", ~ {
+      if (checkNumeric(IndMeansUploadData(), input$indMeansUplSample1)) {
+        "Selected column contains non-numeric data."
+      }
+    })
+    
+    indmeansuploadvar_iv$add_rule("indMeansUplSample2", ~ {
+      if (checkNumeric(IndMeansUploadData(), input$indMeansUplSample2)) {
+        "Selected column contains non-numeric data."
+      }
+    })
+    
     wilcoxonUpload_iv$add_rule("wilcoxonUpl", sv_required())
     wilcoxonUpload_iv$add_rule("wilcoxonUpl", ~ if(is.null(fileInputs$rankSumStatus) || fileInputs$rankSumStatus == 'reset') "Required")
     wilcoxonUpload_iv$add_rule("wilcoxonUpl", ~ if(!(tolower(tools::file_ext(input$wilcoxonUpl$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
@@ -2453,6 +2471,16 @@ statInfrServer <- function(id) {
     depmeansuploadvars_iv$add_rule("depMeansUplSample2", sv_required())
     depmeansuploadvars_iv$add_rule("depMeansUplSample1", ~ if(CheckDepUploadSamples() != 0) "Sample 1 and Sample 2 must have the same number of observations.")
     depmeansuploadvars_iv$add_rule("depMeansUplSample2", ~ if(CheckDepUploadSamples() != 0) "Sample 1 and Sample 2 must have the same number of observations.")
+    depmeansuploadvars_iv$add_rule("depMeansUplSample1", ~ {
+      if (checkNumeric(DepMeansUploadData(), input$depMeansUplSample1)) {
+        "Selected column contains non-numeric data."
+      }
+    })
+    depmeansuploadvars_iv$add_rule("depMeansUplSample2", ~ {
+      if (checkNumeric(DepMeansUploadData(), input$depMeansUplSample2)) {
+        "Selected column contains non-numeric data."
+      }
+    })
     
     depmeansrawsd_iv$add_rule("after", ~ if(GetDepMeansData()$sd == 0) "Variance required in 'Before' and 'After' sample data for hypothesis testing.")
     
@@ -6061,6 +6089,18 @@ statInfrServer <- function(id) {
           need(input$indMeansUplSample2, "Please select a column for Sample 2."),
           errorClass = "myClass")
         
+        validate(
+          need(!checkNumeric(IndMeansUploadData(), input$indMeansUplSample1),
+               "Sample 1 must be numeric."),
+          errorClass = "myClass"
+        )
+        
+        validate(
+          need(!checkNumeric(IndMeansUploadData(), input$indMeansUplSample2),
+               "Sample 2 must be numeric."),
+          errorClass = "myClass"
+        )
+        
         if (input$bothsigmaKnownUpload == "bothUnknown") {
           data <- GetMeansUploadData()
           sd1 <- data$sd1
@@ -6177,6 +6217,18 @@ statInfrServer <- function(id) {
           need(input$depMeansUplSample2, "Please select a column for the 'After' sample data."),
           need(CheckDepUploadSamples() == 0, "Same number of data points required for Sample 1 and Sample 2."),
           errorClass = "myClass")
+       
+         validate(
+          need(!checkNumeric(DepMeansUploadData(), input$depMeansUplSample1),
+               "Sample 1 must be numeric."),
+          errorClass = "myClass"
+        )
+        
+        validate(
+          need(!checkNumeric(DepMeansUploadData(), input$depMeansUplSample2),
+               "Sample 2 must be numeric."),
+          errorClass = "myClass"
+        )
       }
       
       if(!depmeansrawsd_iv$is_valid()) {
@@ -8771,12 +8823,12 @@ statInfrServer <- function(id) {
       depHTHead <- tagList(
         p(
           withMathJax(),
-          
-          sprintf("\\( H_{0}: %s 0\\)",
-                  nullHyp),
+          # GO HERE
+          sprintf("\\( H_{0}: %s %s\\)",
+                  nullHyp, muNaught),
           br(),
-          sprintf("\\( H_{a}: %s 0\\)",
-                  altHyp),
+          sprintf("\\( H_{a}: %s %s\\)",
+                  altHyp, muNaught),
           br(),
           br(),
           sprintf("\\( \\alpha = %s \\)",

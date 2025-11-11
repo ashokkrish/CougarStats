@@ -43,6 +43,7 @@ RenderBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, p
   
   # whisker "caps"
   bp <- bp +
+    geom_vline(xintercept = 0.5, linewidth = 0.5, color = "grey") +
     geom_segment(aes(x = 0.95, xend = 1.05, y = stats$ymin, yend = stats$ymin)) +
     geom_segment(aes(x = 0.95, xend = 1.05, y = stats$ymax, yend = stats$ymax))
   
