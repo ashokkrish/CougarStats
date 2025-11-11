@@ -71,6 +71,7 @@ RenderSideBySideBoxplot <- function(dat, df_boxplot, plotColour, plotTitle, plot
     )
     
     bp <- bp +
+      geom_vline(xintercept = 0.5, color = "grey", linewidth = 0.5) +
       geom_segment(data = cap_data,
                    aes(x = xmin, xend = xmax, y = ymin, yend = ymin)) +
       geom_segment(data = cap_data,
