@@ -5352,24 +5352,24 @@ statInfrServer <- function(id) {
       
       if(input$altHypothesis2 == "3"){
         hypTestSymbols$alternative <- "greater"
-        hypTestSymbols$nullHyp <- "\\mu_{1} \\leq"
-        hypTestSymbols$altHyp <- "\\mu_{1} \\gt"
+        hypTestSymbols$nullHyp <- "\\leq"
+        hypTestSymbols$altHyp <- "\\gt"
         hypTestSymbols$critAlph <- "\\alpha"
         hypTestSymbols$critSign <- ""
         hypTestSymbols$alphaVal <- SigLvl()
       }
       else if(input$altHypothesis2 == "2"){
         hypTestSymbols$alternative <- "two.sided"
-        hypTestSymbols$nullHyp <- "\\mu_{1} ="
-        hypTestSymbols$altHyp <- "\\mu_{1} \\neq"
+        hypTestSymbols$nullHyp <- "="
+        hypTestSymbols$altHyp <- "\\neq"
         hypTestSymbols$critAlph <- "\\alpha/2"
         hypTestSymbols$critSign <- "\\pm"
         hypTestSymbols$alphaVal <- SigLvl()/2
       }
       else{
         hypTestSymbols$alternative <- "less"
-        hypTestSymbols$nullHyp <- "\\mu_{1} \\geq"
-        hypTestSymbols$altHyp <- "\\mu_{1} \\lt"
+        hypTestSymbols$nullHyp <- "\\geq"
+        hypTestSymbols$altHyp <- "\\lt"
         hypTestSymbols$critAlph <- "\\alpha"
         hypTestSymbols$critSign <- "-"
         hypTestSymbols$alphaVal <- SigLvl()
@@ -7762,6 +7762,7 @@ statInfrServer <- function(id) {
       withMathJax()
       
       intrpInfo <- IndMeansHypInfo()
+      muNaught <- input$indMeansMuNaught
       
       if (input$dataAvailability2 == 'Summarized Data') {
         data <- IndMeansSummData()
@@ -7814,12 +7815,24 @@ statInfrServer <- function(id) {
         
         p(
           withMathJax(
-            #h4(tags$u("Performing the Hypothesis Test:")),
-            #br(),
-            sprintf("\\( H_{0}: \\mu_{1} = \\mu_{2}\\)"),
-            br(),
-            sprintf("\\( H_{a}: %s \\mu_{2}\\)",
-                    intrpInfo$altHyp),
+            if(!muNaught) {
+              list(
+                sprintf("\\( H_{0}: \\mu_{1} %s \\mu_{2}\\)",
+                        intrpInfo$nullHyp),
+                br(),
+                sprintf("\\( H_{a}: \\mu_{1} %s \\mu_{2}\\)",
+                        intrpInfo$altHyp)
+              )
+            } else {
+              list(
+                sprintf("\\( H_{0}: \\mu_{1} - \\mu_{2} %s %s\\)",
+                        intrpInfo$nullHyp, muNaught),
+                br(),
+                sprintf("\\( H_{a}: \\mu_{1} - \\mu_{2} %s %s\\)",
+                        intrpInfo$altHyp, muNaught)
+              )
+            },
+            
             br(),
             br(),
             sprintf("\\( \\alpha = %s \\)",
@@ -8019,7 +8032,7 @@ statInfrServer <- function(id) {
             sprintf("\\( \\phantom{t} = \\dfrac{ (%s - %s) - %s }{ %g \\sqrt{ \\dfrac{1}{%.0f} + \\dfrac{1}{%.0f} } } \\)",
                     data$xbar1,
                     if (data$xbar2 < 0) sprintf("(%s)", data$xbar2) else sprintf("%s", data$xbar2),
-                    if (muNaught < 0) sprintf("(%.4f)", muNaught) else sprintf("%.4f", muNaught),
+                    if (muNaught < 0) sprintf("(%g)", muNaught) else sprintf("%g", muNaught),
                     sp,
                     data$n1,
                     data$n2),
@@ -8040,7 +8053,7 @@ statInfrServer <- function(id) {
             sprintf("\\( \\phantom{t} = \\dfrac{ (%g - %s) - %s }{ \\sqrt{ \\dfrac{%.4f^2}{%.0f} + \\dfrac{%.4f^2}{%.0f} } } = \\dfrac{%s}{%s} = %.4f \\)",
                     data$xbar1,
                     if (data$xbar2 < 0) sprintf("(%.4f)", data$xbar2) else sprintf("%.4f", data$xbar2),
-                    if (muNaught < 0) sprintf("(%.4f)", muNaught) else sprintf("%.4f", muNaught),
+                    if (muNaught < 0) sprintf("(%g)", muNaught) else sprintf("%g", muNaught),
                     data$sd1,
                     data$n1,
                     data$sd2,
@@ -8708,8 +8721,8 @@ statInfrServer <- function(id) {
     #### ---------------- CI ----
     output$depMeansCI <- renderUI({
       tInt <- DepMeansTInt()
-      dSum <- sum(GetDepMeansData()$d)
-      dSqrdSum <- sum(GetDepMeansData()$d^2)
+      dSum <- round(sum(GetDepMeansData()$d), 4)
+      dSqrdSum <- round(sum(GetDepMeansData()$d^2), 4)
       
       p(
         withMathJax(),
@@ -8783,9 +8796,9 @@ statInfrServer <- function(id) {
       req(GetDepMeansData()$sd != 0)
       
       tTest <- DepMeansTTest()
-      dSum <- sum(GetDepMeansData()$d)
-      dSqrdSum <- sum(GetDepMeansData()$d^2)
-      muNaught <- input$depMeansMuNaught
+      dSum      <- round(sum(GetDepMeansData()$d), 4)
+      dSqrdSum  <- round(sum(GetDepMeansData()$d^2), 4)
+      muNaught  <- round(input$depMeansMuNaught, 4)
       
       intrpInfo <- IndMeansHypInfo()
       
@@ -8823,7 +8836,7 @@ statInfrServer <- function(id) {
       depHTHead <- tagList(
         p(
           withMathJax(),
-          # GO HERE
+
           sprintf("\\( H_{0}: %s %s\\)",
                   nullHyp, muNaught),
           br(),
@@ -8840,6 +8853,7 @@ statInfrServer <- function(id) {
           br(),
           br(),
           p("where"),
+          #HERE
           sprintf("\\( \\qquad \\bar{d} = \\dfrac{ \\sum d }{ n } = \\dfrac{%s}{%s} = %s \\; , \\)",
                   dSum,
                   tTest["Sample Size"],
@@ -8856,17 +8870,17 @@ statInfrServer <- function(id) {
           br(),
           sprintf("\\( t = \\dfrac{%g - %s}{ \\left( \\dfrac{ %g }{ \\sqrt{ %g } } \\right) } \\)",
                   tTest["Sample Mean"],
-                  if (muNaught < 0) sprintf("(%.4f)", muNaught) else sprintf("%.4f", muNaught),
+                  if (muNaught < 0) sprintf("(%g)", muNaught) else sprintf("%g", muNaught),
                   tTest["Sample SD"],
                   tTest["Sample Size"]),
           sprintf("\\( \\displaystyle \\; = \\; \\dfrac{%g}{ \\left( \\dfrac{ %g }{ %g } \\right) } \\)",
-                  tTest["Sample Mean"] - muNaught, # MUST CHANGE BACK TO NUMERATOR
+                  tTest["Sample Mean"] - muNaught, 
                   tTest["Sample SD"],
                   sqrt(tTest["Sample Size"])),
           br(),
           br(),
           sprintf("\\( \\displaystyle \\phantom{t} = \\; \\dfrac{ %g }{ %g } \\)",
-                  tTest["Sample Mean"] - muNaught, # MUST CHANGE BACK TO NUMERATOR
+                  tTest["Sample Mean"] - muNaught,
                   tTest["Std Error"]),
           sprintf("\\( \\displaystyle \\; = \\; %g \\)",
                   tTest["Test Statistic"]),
