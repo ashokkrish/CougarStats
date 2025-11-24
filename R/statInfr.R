@@ -1195,6 +1195,16 @@ statInfrUI <- function(id) {
             #Wilcoxon Signed Rank Test
             conditionalPanel(
               ns = ns,
+              condition  = "input.popuParameters == 'Wilcoxon Signed Rank Test'", 
+              radioButtons(
+                inputId  = ns("normaprowrs"),
+                label    = strong("Method"), # A more descriptive label
+                choices  = c("Exact", "Normal approximation (for large samples)"),
+                selected = "Exact",
+                inline   = TRUE),
+            ),
+            conditionalPanel(
+              ns = ns,
               condition = "(input.popuParameters == 'Wilcoxon Signed Rank Test')",
               
               p(strong("Graph Options")),
@@ -9400,63 +9410,68 @@ statInfrServer <- function(id) {
       sample2_data <- data_ranked$Sample2
 
       if(input$altHypothesis2 == "2") {
-        p_value <- 2 * pnorm(abs(z_stat_corrected), lower.tail = FALSE)
+        p_value <- 2 * pnorm(abs(z_stat), lower.tail = FALSE)
       } else if(input$altHypothesis2 == "1") {
-        p_value <- pnorm(z_stat_corrected, lower.tail = TRUE)
+        p_value <- pnorm(z_stat, lower.tail = TRUE)
       } else {
-        p_value <- pnorm(z_stat_corrected, lower.tail = FALSE)
+        p_value <- pnorm(z_stat, lower.tail = FALSE)
       }
-      
-      signedRankHTHead <- tagList(
-        p(
-          withMathJax(),
-          sprintf("\\( H_{0}:\\ %s\\)", nullHyp),
-          br(),
-          sprintf("\\( H_{a}:\\ %s\\)", altHyp),
-          br(), br(),
-          sprintf("\\( \\alpha = %s \\)", SigLvl()),
-          br(),br(),
-          sprintf("\\(n = %s\\) (number of non-zero differences)", n),
-          br(),
-          
-          p(tags$b("Sum of Signed Ranks:")),
-          sprintf("\\(  W^{+} = %s \\) (sum of positive ranks)", W_plus),
-          br(),
-          sprintf("\\(  W^{-} = %s \\) (sum of negative ranks)", W_minus),
-          br(),br(),
-          
-          p(tags$b("Expected Value:")),
-          sprintf("\\(  \\mu_{W^+} = \\frac{n(n + 1)}{4} = \\frac{%s(%s + 1)}{4} = %s \\)",
-                  n, n, mu_w),
-          br(), br(),
-          
-          p(tags$b("Standard Deviation:")),
-          sprintf("\\( \\sigma_{W^+} = %s \\)", round(sigma_w, 4)),
-          br(),br(),
-          
-          p(tags$b("Test Statistic:")),
-          sprintf("\\(  z = \\frac{W^{+} - \\mu_{W^+}}{\\sigma_{W^+}} = \\frac{%s - %s}{%s} = %s \\)",
-                  W_stat, 
-                  mu_w,
-                  round(sigma_w, 4), 
-                  round(z_stat, 3)),
-          br(), br(),
-          
-          p(tags$b("Using P-value Method:")),
-          sprintf("\\( P = %s \\)", round(p_value, 4)),
-          br(),
-          
-          if (p_value <= SigLvl()) {
-            tagList(
-              sprintf("\\( \\text{Since } P \\leq %s, \\text{reject } H_0. \\)", SigLvl()),
-              br(), br())
-          } else {
-            tagList(
-              sprintf("\\( \\text{Since } P > %s, \\text{do not reject } H_0. \\)", SigLvl()),
-              br(), br())
-          }
+      if (input$normaprowrs == "Exact") {
+        signedRankHTHead <- tagList(
+          p(
+            withMathJax(),
+            sprintf("\\( H_{0}:\\ %s\\)", nullHyp),
+            br(),
+            sprintf("\\( H_{a}:\\ %s\\)", altHyp),
+            br(), br(),
+            sprintf("\\( \\alpha = %s \\)", SigLvl()),
+            br(),br(),
+            sprintf("\\(n = %s\\) (number of non-zero differences)", n),
+            br(),
+            
+            p(tags$b("Sum of Signed Ranks:")),
+            sprintf("\\(  W^{+} = %s \\) (sum of positive ranks)", W_plus),
+            br(),
+            sprintf("\\(  W^{-} = %s \\) (sum of negative ranks)", W_minus),
+            br(),br(),
+            
+            p(tags$b("Expected Value:")),
+            sprintf("\\(  \\mu_{W^+} = \\frac{n(n + 1)}{4} = \\frac{%s(%s + 1)}{4} = %s \\)",
+                    n, n, mu_w),
+            br(), br(),
+            
+            p(tags$b("Standard Deviation:")),
+            sprintf("\\( \\sigma_{W^+} = %s \\)", round(sigma_w, 4)),
+            br(),br(),
+            
+            p(tags$b("Test Statistic:")),
+            sprintf("\\(  z = \\frac{W^{+} - \\mu_{W^+}}{\\sigma_{W^+}} = \\frac{%s - %s}{%s} = %s \\)",
+                    W_stat, 
+                    mu_w,
+                    round(sigma_w, 4), 
+                    round(z_stat, 3)),
+            br(), br(),
+            
+            p(tags$b("Using P-value Method:")),
+            sprintf("\\( P = %s \\)", round(p_value, 4)),
+            br(),
+            
+            if (p_value <= SigLvl()) {
+              tagList(
+                sprintf("\\( \\text{Since } P \\leq %s, \\text{reject } H_0. \\)", SigLvl()),
+                br(), br())
+            } else {
+              tagList(
+                sprintf("\\( \\text{Since } P > %s, \\text{do not reject } H_0. \\)", SigLvl()),
+                br(), br())
+            }
+          )
         )
-      )
+      }
+      # show for normal approximation for large samples
+      else {
+        signedRankHTHead <- tagList()
+      }
       
       signedRankHTTail <- tagList(
         p(
@@ -9518,13 +9533,7 @@ statInfrServer <- function(id) {
       tie_adjustment <- sum((tie_groups^3 - tie_groups) / 48)
       sigma_w <- sqrt(n * (n + 1) * (2 * n + 1) / 24 - tie_adjustment)
 
-      if (W_stat > mu_w) {
-        z_stat <- (W_stat - 0.5 - mu_w) / sigma_w
-      } else if (W_stat < mu_w) {
-        z_stat <- (W_stat + 0.5 - mu_w) / sigma_w
-      } else {
-        z_stat <- 0
-      }
+      z_stat <- (W_stat - mu_w) / sigma_w
       
       alternative <- ""
       z_critical <- NA
