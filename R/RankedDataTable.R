@@ -62,8 +62,31 @@ SignedRankTableOutput <- function(data) {
     req(data)
     
     df <- if (is.reactive(data)) data() else data
+    count_decimals <- function(x) {
+      x <- x[!is.na(x)]
+      if (length(x) == 0) return(0)
 
+      x_char <- format(x, scientific = FALSE, trim = TRUE)
+      decimal_places <- sapply(strsplit(x_char, "\\."), function(parts) {
+        if (length(parts) == 2) {
+          nchar(gsub("0+$", "", parts[2]))
+        } else {
+          0
+        }
+      })
+      max(decimal_places, na.rm = TRUE)
+    }
+    
+    max_decimals_sample1 <- count_decimals(df$Sample1)
+    max_decimals_sample2 <- count_decimals(df$Sample2)
+    max_decimals <- max(max_decimals_sample1, max_decimals_sample2)
+    
     display_data <- df %>%
+      dplyr::mutate(
+        Sample1 = round(Sample1, max_decimals),
+        Sample2 = round(Sample2, max_decimals),
+        Value = round(Value, max_decimals)
+      ) %>%
       dplyr::select(
         `Sample 1` = Sample1,
         `Sample 2` = Sample2,

@@ -9355,7 +9355,7 @@ statInfrServer <- function(id) {
       ranks <- abs(data_ranked$Rank)
       tie_groups <- table(ranks)
       tie_adjustment <- sum((tie_groups^3 - tie_groups) / 48)
-      sigma_w <- sqrt(n * (n + 1) * (2 * n + 1) / 24 - tie_adjustment)
+      sigma_w <- sqrt(n * (n+1) * ((2*n)+1) / 24)
       
       significance <- 1 - SigLvl()
 
@@ -9435,13 +9435,14 @@ statInfrServer <- function(id) {
             sprintf("\\(  W^{-} = %s \\) (sum of negative ranks)", W_minus),
             br(),br(),
             
-            p(tags$b("Expected Value:")),
+            p(tags$b("Mean:")),
             sprintf("\\(  \\mu_{W^+} = \\frac{n(n + 1)}{4} = \\frac{%s(%s + 1)}{4} = %s \\)",
                     n, n, mu_w),
             br(), br(),
             
             p(tags$b("Standard Deviation:")),
-            sprintf("\\( \\sigma_{W^+} = %s \\)", round(sigma_w, 4)),
+            sprintf("\\( \\sigma_{W^+} = \\sqrt{\\frac{n(n+1)(2n+1)}{24}} = \\sqrt{\\frac{%s (%s+1) (2 \\times %s +1)}{24}} = %s \\)",
+                    n, n, n, round(sigma_w, 4)),
             br(),br(),
             
             p(tags$b("Test Statistic:")),
@@ -9531,7 +9532,7 @@ statInfrServer <- function(id) {
       ranks <- abs(signedRankData$Rank)
       tie_groups <- table(ranks)
       tie_adjustment <- sum((tie_groups^3 - tie_groups) / 48)
-      sigma_w <- sqrt(n * (n + 1) * (2 * n + 1) / 24 - tie_adjustment)
+      sigma_w <- sqrt(n * (n + 1) * (2 * n + 1) / 24)
 
       z_stat <- (W_stat - mu_w) / sigma_w
       
