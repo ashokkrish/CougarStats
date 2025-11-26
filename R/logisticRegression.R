@@ -237,7 +237,8 @@ LogisticRegressionServer <- function(id) {
         
         final_table <- summary_coeffs %>%
           mutate(
-            Wald = (Estimate / `Std. Error`)^2 ,
+            `Wald 𝑍` = Estimate / `Std. Error`,
+            `Wald 𝜒²` = (Estimate / `Std. Error`)^2,
             df = 1
           ) %>%
           rownames_to_column("Term") %>%
@@ -246,9 +247,10 @@ LogisticRegressionServer <- function(id) {
             Term,
             Coefficient = Estimate,
             SE = `Std. Error`,
-            Wald,
+            `Wald 𝑍`,
+            `Wald 𝜒²`,
             df,
-            `p-value` = `Pr(>|z|)`,
+            `P-value` = `Pr(>|z|)`,
             OR,
             `Lower 95% CI for OR` = Lower_CI_OR,
             `Upper 95% CI for OR` = Upper_CI_OR
