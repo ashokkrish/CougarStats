@@ -65,7 +65,6 @@ SignedRankTableOutput <- function(data) {
     count_decimals <- function(x) {
       x <- x[!is.na(x)]
       if (length(x) == 0) return(0)
-
       x_char <- format(x, scientific = FALSE, trim = TRUE)
       decimal_places <- sapply(strsplit(x_char, "\\."), function(parts) {
         if (length(parts) == 2) {
@@ -85,12 +84,14 @@ SignedRankTableOutput <- function(data) {
       dplyr::mutate(
         Sample1 = round(Sample1, max_decimals),
         Sample2 = round(Sample2, max_decimals),
-        Value = round(Value, max_decimals)
+        Value = round(Value, max_decimals),
+        AbsDifference = abs(Value)  
       ) %>%
       dplyr::select(
         `Sample 1` = Sample1,
         `Sample 2` = Sample2,
-        Difference = Value,  
+        Difference = Value,
+        `Absolute Difference` = AbsDifference,
         Rank = Rank,
         `Signed Rank` = SignedRank
       ) %>%

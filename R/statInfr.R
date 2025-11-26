@@ -871,14 +871,14 @@ statInfrUI <- function(id) {
                 
                 selectizeInput(
                   inputId = ns("signedRankUpl1"),
-                  label   = strong("Choose a Column for Sample 1"),
+                  label   = strong("Column for Sample 1 (e.g. Before, Pre-Treatment, Baseline)"),
                   choices = c(""),
                   options = list(placeholder = 'Select a column',
                                  onInitialize = I('function() { this.setValue(""); }'))),
                 
                 selectizeInput(
                   inputId = ns("signedRankUpl2"),
-                  label   = strong("Choose a Column for Sample 2"),
+                  label   = strong("Column for Sample 2 (e.g. After, Post-Treatment, Follow-Up)"),
                   choices = c(""),
                   options = list(placeholder = 'Select a column',
                                  onInitialize = I('function() { this.setValue(""); }'))),
@@ -1822,7 +1822,7 @@ statInfrUI <- function(id) {
                                         ns = ns,
                                         condition = "input.inferenceType2 == 'Hypothesis Testing' || input.inferenceType2 == 'Confidence Interval'",
                                         
-                                        titlePanel("Results"),
+                                        #titlePanel("Results"),
                                         br(),
                                         uiOutput(ns('signedRankDataRanks')),
                                         br(),
