@@ -2649,7 +2649,7 @@ statInfrServer <- function(id) {
       if(length(sample1) == length(sample2)) {
         differences <- sample1 - sample2
         if(all(differences == 0) || var(differences) == 0) {
-          "Variance is required in sample 1 and sample 2 data for hypothesis testing"
+          "'Sample 1’' and 'Sample 2' data are the same."
         }
       }
     })
@@ -2660,7 +2660,7 @@ statInfrServer <- function(id) {
       if(length(sample1) == length(sample2)) {
         differences <- sample1 - sample2
         if(all(differences == 0) || var(differences) == 0) {
-          "Variance is required in sample 1 and sample 2 data for hypothesis testing"
+          "'Sample 1’' and 'Sample 2' data are the same."
         }
       }
     })
@@ -2684,7 +2684,7 @@ statInfrServer <- function(id) {
         if(min_length > 0) {
           differences <- sample1[1:min_length] - sample2[1:min_length]
           if(all(differences == 0) || var(differences) == 0) {
-            "Variance is required in sample 1 and sample 2 data for hypothesis testing"
+            "'Sample 1’' and 'Sample 2' data are the same."
           }
         }
       }
@@ -2709,7 +2709,7 @@ statInfrServer <- function(id) {
         if(min_length > 0) {
           differences <- sample1[1:min_length] - sample2[1:min_length]
           if(all(differences == 0) || var(differences) == 0) {
-            "Variance is required in sample 1 and sample 2 data for hypothesis testing"
+            "'Sample 1’' and 'Sample 2' data are the same."
           }
         }
       }
@@ -6526,7 +6526,7 @@ statInfrServer <- function(id) {
         if(length(createNumLst(input$signedRankRaw1)) == length(createNumLst(input$signedRankRaw2))) {
           differences <- createNumLst(input$signedRankRaw1) - createNumLst(input$signedRankRaw2)
           validate(
-            need(!all(differences == 0) && var(differences) != 0, "Variance is required in sample 1 and sample 2 data for hypothesis testings"),
+            need(!all(differences == 0) && var(differences) != 0, "'Sample 1’' and 'Sample 2' data are the same. Standard deviation of the difference is zero. In the Wilcoxon Signed Rank Test the pairs with a difference of 0 are dropped.  The effective sample size is now zero. Please check your data."),
             errorClass = "myClass")
         }
       }
@@ -6563,7 +6563,7 @@ statInfrServer <- function(id) {
           if(min_length > 0) {
             differences <- sample1[1:min_length] - sample2[1:min_length]
             validate(
-              need(!all(differences == 0) && var(differences) != 0, "Variance is required in sample 1 and sample 2 data for hypothesis testing"),
+              need(!all(differences == 0) && var(differences) != 0, "'Sample 1’' and 'Sample 2' data are the same. Standard deviation of the difference is zero. In the Wilcoxon Signed Rank Test the pairs with a difference of 0 are dropped.  The effective sample size is now zero. Please check your data."),
               errorClass = "myClass")
           }
         }
@@ -9416,7 +9416,31 @@ statInfrServer <- function(id) {
       } else {
         p_value <- pnorm(z_stat, lower.tail = FALSE)
       }
+      # Jacie: show for exact approximation
       if (input$normaprowrs == "Exact") {
+        signedRankHTHead <- tagList(
+          p(
+            withMathJax(),
+            sprintf("\\( H_{0}:\\ %s\\)", nullHyp),
+            br(),
+            sprintf("\\( H_{a}:\\ %s\\)", altHyp),
+            br(), br(),
+            sprintf("\\( \\alpha = %s \\)", SigLvl()),
+            br(),br(),
+            sprintf("\\(n = %s\\) (number of non-zero differences)", n),
+            br(),
+            
+            p(tags$b("Sum of Signed Ranks:")),
+            sprintf("\\(  W^{+} = %s \\) (sum of positive ranks)", W_plus),
+            br(),
+            sprintf("\\(  W^{-} = %s \\) (sum of negative ranks)", W_minus),
+            br(),br(),
+            
+          )
+        )
+      }
+      # Jacie: show for normal approximation for large samples
+      else {
         signedRankHTHead <- tagList(
           p(
             withMathJax(),
@@ -9467,12 +9491,8 @@ statInfrServer <- function(id) {
                 br(), br())
             }
           )
-        )
-      }
-      # show for normal approximation for large samples
-      else {
-        signedRankHTHead <- tagList()
-      }
+        )  
+        
       
       signedRankHTTail <- tagList(
         p(
@@ -9498,8 +9518,7 @@ statInfrServer <- function(id) {
       depHTConclusion <- printHTConclusion(region, reject, suffEvidence, altHyp, "")
       
       tagAppendChildren(signedRankHTHead, signedRankHTTail, depHTConclusion)
-    })
-    
+    }})
     
     output$signedRankPlot <- renderPlot({
       
