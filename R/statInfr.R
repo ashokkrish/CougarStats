@@ -2466,14 +2466,14 @@ statInfrServer <- function(id) {
     depmeansupload_iv$add_rule("depMeansUserData", ~ if(nrow(DepMeansUploadData()) == 0) "File is empty.")
     depmeansupload_iv$add_rule("depMeansUserData", ~ if(ncol(DepMeansUploadData()) < 2) "File must contain at least 2 distinct 'Before' and 'After' sets of data to choose from for analysis.")
     depmeansupload_iv$add_rule("depMeansUserData", ~ if(nrow(DepMeansUploadData()) < 4) "Samples must include at least 3 observations.")
-    depmeansuploadvars_iv$add_rule("depMeansUplSample1", ~ {
-      if (input$depMeansUplSample1 == input$depMeansUplSample2)
-        "'Sample 1’' and 'Sample 2' data are the same. Standard deviation of the difference is zero."
-    })
-    depmeansuploadvars_iv$add_rule("depMeansUplSample2", ~ {
-      if (input$depMeansUplSample1 == input$depMeansUplSample2)
-        "'Sample 1’' and 'Sample 2' data are the same. Standard deviation of the difference is zero."
-    })
+  #  depmeansuploadvars_iv$add_rule("depMeansUplSample1", ~ {
+  #    if (input$depMeansUplSample1 == input$depMeansUplSample2)
+  #      "'Sample 1’' and 'Sample 2' data are the same. Standard deviation of the difference is zero."
+  #  })
+  #  depmeansuploadvars_iv$add_rule("depMeansUplSample2", ~ {
+  #    if (input$depMeansUplSample1 == input$depMeansUplSample2)
+  #      "'Sample 1’' and 'Sample 2' data are the same. Standard deviation of the difference is zero."
+  #  })
     
     depmeansuploadvars_iv$add_rule("depMeansUplSample1", sv_required())
     depmeansuploadvars_iv$add_rule("depMeansUplSample2", sv_required())
