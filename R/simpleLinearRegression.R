@@ -35,11 +35,6 @@ SLRMainPanelUI <- function(id) {
             titlePanel("Estimated equation of the regression line"),
             br(),
             uiOutput(ns('regLineEquation')),
-            br(),
-            hr(),
-            titlePanel("Coefficients"),
-            br(),
-            DTOutput(ns("slrCoefficientsTable")),
             br()
             
           ), # slr tabpanel
@@ -79,6 +74,17 @@ SLRMainPanelUI <- function(id) {
             br()
           ), # Calculations tabpanel
           
+          #### ---------------- Inference Tab ----------------------------------------
+          tabPanel(
+            title = "Inference",
+            value = "Inference",
+            
+            titlePanel("Coefficients"),
+            br(),
+            DTOutput(ns("slrInferenceCoefficientsTable")),
+            br()
+          ), # Inference tabpanel
+          
           #### ---------------- ANOVA Tab -------------------------------------------
           tabPanel(
             title = "ANOVA",
@@ -117,7 +123,7 @@ SLRMainPanelUI <- function(id) {
             
             titlePanel("Kendall's Rank Correlation"),
             br(),
-            uiOutput(ns("kendallEstimate")),
+            uiOutput(ns("kendallFormula")),
             br(),
             hr(),
             
@@ -652,20 +658,27 @@ SLRServer <- function(id) {
                     abs(slopeEstimate)),
             br(),
             br(),
-            br(),
             p(tags$b("Interpretation:")),
-            br(),
-            br(),
             p(HTML(paste0("Within the scope of observation, ", interceptEstimate, " is the estimated value of ",
                           em("y"), " when ", em("x"), "= 0. A slope of ", slopeEstimate,
                           " represents the estimated ", slopeDirection, " in ", em("y"),
-                          " for a unit increase of ", em("x.")))),
-            br(),
-            br()
+                          " for a unit increase of ", em("x."))))
           )
         })
         
         output$slrCoefficientsTable <- renderDT({
+          summary_df <- as.data.frame(summary(model)$coefficients)
+          conf_int <- as.data.frame(confint(model))
+          colnames(conf_int) <- c("Lower 95% CI", "Upper 95% CI")
+          
+          final_table <- cbind(summary_df, conf_int)
+          
+          datatable(final_table, options = list(dom = 't')) %>% 
+            formatRound(columns = c("Estimate", "Std. Error", "t value", "Pr(>|t|)", "Lower 95% CI", "Upper 95% CI"), digits = 3)
+        })
+        
+        # Inference tab coefficients table (same as above)
+        output$slrInferenceCoefficientsTable <- renderDT({
           summary_df <- as.data.frame(summary(model)$coefficients)
           conf_int <- as.data.frame(confint(model))
           colnames(conf_int) <- c("Lower 95% CI", "Upper 95% CI")
@@ -714,8 +727,8 @@ SLRServer <- function(id) {
                 br(),
                 br(),
                 sprintf("\\( \\quad = \\; \\dfrac
-                                      {%g - \\dfrac{ (%g)(%g) }{ %g } }
-                                      {\\sqrt{ %g - \\dfrac{ (%g)^2 }{ %g } } \\sqrt{ %g - \\dfrac{ (%g) ^2 }{ %g } } } \\)",
+                                      {%s - \\dfrac{ (%s)(%s) }{ %s } }
+                                      {\\sqrt{ %s - \\dfrac{ (%s)^2 }{ %s } } \\sqrt{ %s - \\dfrac{ (%s) ^2 }{ %s } } } \\)",
                         dfTotaled["Totals", "xy"],
                         dfTotaled["Totals", "x"],
                         dfTotaled["Totals", "y"],
@@ -731,15 +744,15 @@ SLRServer <- function(id) {
                 br(),
                 
                 sprintf("\\( \\quad = \\; \\dfrac
-                                      { %g }
-                                      {\\sqrt{ %g } \\sqrt{ %g } } \\)",
+                                      { %s }
+                                      {\\sqrt{ %s } \\sqrt{ %s } } \\)",
                         dfTotaled["Totals", "xy"] - sumXSumY / length(datx),
                         dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx),
                         dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx)),
                 
                 sprintf("\\( = \\; \\dfrac
-                                      { %g }
-                                      { %g } \\)",
+                                      { %s }
+                                      { %s } \\)",
                         dfTotaled["Totals", "xy"] - sumXSumY / length(datx),
                         sqrt(dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx)) * sqrt(dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx))),
                 
@@ -787,6 +800,16 @@ SLRServer <- function(id) {
         output$kendallEstimate <- renderUI({
           sprintf("\\( \\tau \\; = \\; %0.4f \\)",
                   kendall$estimate)
+        })
+        
+        # Kendall formula for the Inference tab
+        output$kendallFormula <- renderUI({
+          n <- length(datx)
+          withMathJax(
+            sprintf("\\( \\displaystyle \\tau = \\dfrac{n_c - n_d}{\\binom{n}{2}} = \\dfrac{n_c - n_d}{\\dfrac{n(n-1)}{2}} \\)"),
+            br(),
+            sprintf("\\( \\tau \\; = \\; %0.3f \\)", kendall$estimate)
+          )
         })
         
         output$spearmanEstimate <- renderUI({
