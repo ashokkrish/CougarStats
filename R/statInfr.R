@@ -2466,6 +2466,14 @@ statInfrServer <- function(id) {
     depmeansupload_iv$add_rule("depMeansUserData", ~ if(nrow(DepMeansUploadData()) == 0) "File is empty.")
     depmeansupload_iv$add_rule("depMeansUserData", ~ if(ncol(DepMeansUploadData()) < 2) "File must contain at least 2 distinct 'Before' and 'After' sets of data to choose from for analysis.")
     depmeansupload_iv$add_rule("depMeansUserData", ~ if(nrow(DepMeansUploadData()) < 4) "Samples must include at least 3 observations.")
+    depmeansuploadvars_iv$add_rule("depMeansUplSample1", ~ {
+      if (input$depMeansUplSample1 == input$depMeansUplSample2)
+        "'Sample 1’' and 'Sample 2' data are the same. Standard deviation of the difference is zero."
+    })
+    depmeansuploadvars_iv$add_rule("depMeansUplSample2", ~ {
+      if (input$depMeansUplSample1 == input$depMeansUplSample2)
+        "'Sample 1’' and 'Sample 2' data are the same. Standard deviation of the difference is zero."
+    })
     
     depmeansuploadvars_iv$add_rule("depMeansUplSample1", sv_required())
     depmeansuploadvars_iv$add_rule("depMeansUplSample2", sv_required())
@@ -7812,10 +7820,10 @@ statInfrServer <- function(id) {
               )
             } else {
               list(
-                sprintf("\\( H_{0}: \\mu_{1} - \\mu_{2} %s %s\\)",
+                sprintf("\\( H_{0}: (\\mu_{1} - \\mu_{2}) %s %s\\)",
                         intrpInfo$nullHyp, muNaught),
                 br(),
-                sprintf("\\( H_{a}: \\mu_{1} - \\mu_{2} %s %s\\)",
+                sprintf("\\( H_{a}: (\\mu_{1} - \\mu_{2}) %s %s\\)",
                         intrpInfo$altHyp, muNaught)
               )
             },
@@ -7922,7 +7930,7 @@ statInfrServer <- function(id) {
         br(),
       )
       
-      indHTConclusion <- printHTConclusion(region, reject, suffEvidence, intrpInfo$altHyp, "\\mu_{2}")
+      indHTConclusion <- printHTConclusion(region, reject, suffEvidence, paste0("\\mu_{1} ", intrpInfo$altHyp), "\\mu_{2}")
       
       tagAppendChildren(indHTHead, indHTPVal, indHTTail, indHTConclusion)
     })
@@ -8912,7 +8920,7 @@ statInfrServer <- function(id) {
         br()
       )
       
-      depHTConclusion <- printHTConclusion(region, reject, suffEvidence, altHyp, 0)
+      depHTConclusion <- printHTConclusion(region, reject, suffEvidence, altHyp, muNaught)
       
       tagAppendChildren(depHTHead, depHTPVal, depHTTail, depHTConclusion)
     })
