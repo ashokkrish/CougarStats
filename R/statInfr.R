@@ -2482,7 +2482,8 @@ statInfrServer <- function(id) {
       }
     })
     
-    depmeansrawsd_iv$add_rule("after", ~ if(GetDepMeansData()$sd == 0) "Variance required in 'Before' and 'After' sample data for hypothesis testing.")
+    depmeansraw_iv$add_rule("before", ~ if(GetDepMeansData()$sd == 0) "'Sample 1’ and 'Sample 2' data are the same. Standard deviation of the difference is zero.")
+    depmeansraw_iv$add_rule("after", ~ if(GetDepMeansData()$sd == 0) "'Sample 1’ and 'Sample 2' data are the same. Standard deviation of the difference is zero.")
     
     depmeansmunaught_iv$add_rule("depMeansMuNaught", sv_required())
     
@@ -6165,21 +6166,7 @@ statInfrServer <- function(id) {
           need(CheckRankSumUploadSamples() == 0, "Same number of data points required for Sample 1 and Sample 2."),
           errorClass = "myClass")
       }
-      
-      if(!depmeansrawsd_iv$is_valid()) {
-        
-        if(input$inferenceType2 == 'Hypothesis Testing'){
-          sdValidation <- "The test statistic (t) will be undefined for sample data with a sample standard deviation of difference (sd) = 0."
-        } else {
-          sdValidation <- paste0("The confidence interval results in (",
-                                 GetDepMeansData()$dbar,
-                                 ",", GetDepMeansData()$dbar,
-                                 ") when the sample standard deviation of difference (sd) = 0.")
-        }
-        validate(
-          need(GetDepMeansData()$sd != 0, sdValidation),
-          errorClass = "myClass")
-      }
+
       #### ---------------- Dependent Population Means Validation
       if(!depmeansraw_iv$is_valid()) {
         validate(
@@ -6231,7 +6218,7 @@ statInfrServer <- function(id) {
         )
       }
       
-      if(!depmeansrawsd_iv$is_valid()) {
+      if(!depmeansraw_iv$is_valid()) {
         
         if(input$inferenceType2 == 'Hypothesis Testing'){
           sdValidation <- "The test statistic (t) will be undefined for sample data with a sample standard deviation of difference (sd) = 0."
