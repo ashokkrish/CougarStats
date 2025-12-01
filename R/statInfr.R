@@ -2482,7 +2482,8 @@ statInfrServer <- function(id) {
       }
     })
     
-    depmeansrawsd_iv$add_rule("after", ~ if(GetDepMeansData()$sd == 0) "Variance required in 'Before' and 'After' sample data for hypothesis testing.")
+    depmeansraw_iv$add_rule("before", ~ if(GetDepMeansData()$sd == 0) "'Sample 1’ and 'Sample 2' data are the same. Standard deviation of the difference is zero.")
+    depmeansraw_iv$add_rule("after", ~ if(GetDepMeansData()$sd == 0) "'Sample 1’ and 'Sample 2' data are the same. Standard deviation of the difference is zero.")
     
     depmeansmunaught_iv$add_rule("depMeansMuNaught", sv_required())
     
@@ -6165,21 +6166,7 @@ statInfrServer <- function(id) {
           need(CheckRankSumUploadSamples() == 0, "Same number of data points required for Sample 1 and Sample 2."),
           errorClass = "myClass")
       }
-      
-      if(!depmeansrawsd_iv$is_valid()) {
-        
-        if(input$inferenceType2 == 'Hypothesis Testing'){
-          sdValidation <- "The test statistic (t) will be undefined for sample data with a sample standard deviation of difference (sd) = 0."
-        } else {
-          sdValidation <- paste0("The confidence interval results in (",
-                                 GetDepMeansData()$dbar,
-                                 ",", GetDepMeansData()$dbar,
-                                 ") when the sample standard deviation of difference (sd) = 0.")
-        }
-        validate(
-          need(GetDepMeansData()$sd != 0, sdValidation),
-          errorClass = "myClass")
-      }
+
       #### ---------------- Dependent Population Means Validation
       if(!depmeansraw_iv$is_valid()) {
         validate(
@@ -6231,7 +6218,7 @@ statInfrServer <- function(id) {
         )
       }
       
-      if(!depmeansrawsd_iv$is_valid()) {
+      if(!depmeansraw_iv$is_valid()) {
         
         if(input$inferenceType2 == 'Hypothesis Testing'){
           sdValidation <- "The test statistic (t) will be undefined for sample data with a sample standard deviation of difference (sd) = 0."
@@ -6934,8 +6921,8 @@ statInfrServer <- function(id) {
         p(tags$b("Test Statistic:")),
         sprintf("Given:"), br(),
         sprintf(r"--[\( n = %d \)]--", input$SSDSampleSize), br(),
-        sprintf(r"--[\( s = %0.3f \)]--", input$SSDStdDev), br(),
-        sprintf(r"--[\( \sigma_0 = %0.3f \)]--", input$hypStdDeviation), br(),
+        sprintf(r"--[\( s = %0.4f \)]--", input$SSDStdDev), br(),
+        sprintf(r"--[\( \sigma_0 = %.4f \)]--", input$hypStdDeviation), br(),
         
         br(),
         br(),
@@ -6949,7 +6936,7 @@ statInfrServer <- function(id) {
           r"--(
            \(
            \displaystyle
-           \chi^2 = \frac{(%d - 1)  %0.3f ^2}{%0.3f^2} = %0.3f\\
+           \chi^2 = \frac{(%d - 1)  %0.4f ^2}{%0.4f^2} = %0.4f\\
            \)
            )--",
           input$SSDSampleSize,  input$SSDStdDev,  input$hypStdDeviation, chiSqTestStatistic
@@ -6959,14 +6946,14 @@ statInfrServer <- function(id) {
         br(),
         p(tags$b("Using P-Value Method:")),
         if (input$altHypothesis == 2) {
-          sprintf("\\( P = 2 \\times min(P\\left( \\chi^2 \\le %0.3f \\right), P\\left( \\chi^2 \\ge %0.3f \\right)) = %0.4f \\)",
+          sprintf("\\( P = 2 \\times min(P\\left( \\chi^2 \\le %0.4f \\right), P\\left( \\chi^2 \\ge %0.4f \\right)) = %0.4f \\)",
                   chiSqTestStatistic,
                   chiSqTestStatistic,
                   chiSqPValue)
         } else {
           sprintf("\\( P = P\\left( \\chi^2 %s %s \\right) = %0.4f \\)",
                   pValueMethodRelationalOperatorString,
-                  sprintf("%0.3f", chiSqTestStatistic),
+                  sprintf("%0.4f", chiSqTestStatistic),
                   chiSqPValue)
         },
         br(),
@@ -6980,14 +6967,14 @@ statInfrServer <- function(id) {
         br(),
         br(),
         if (input$altHypothesis != 2) {
-          HTML(sprintf("Critical value(s): \\( \\chi^2_{%0.2f,%d} = %0.3f \\) <br/>",
+          HTML(sprintf("Critical value(s): \\( \\chi^2_{%0.2f,%d} = %0.4f \\) <br/>",
                        SigLvl(),
                        degreesOfFreedom,
                        chiSqCValue))
         } else {
           HTML(sprintf("Critical value(s): <br/>
-                  \\( \\chi^2_{\\alpha/2,df} = \\chi^2_{%0.3f,%d} = %0.3f \\) <br/>
-                  \\( \\chi^2_{1 - \\alpha/2,df} = \\chi^2_{%0.3f,%d} = %0.3f \\) <br/>",
+                  \\( \\chi^2_{\\alpha/2,df} = \\chi^2_{%0.4f,%d} = %0.4f \\) <br/>
+                  \\( \\chi^2_{1 - \\alpha/2,df} = \\chi^2_{%0.4f,%d} = %0.4f \\) <br/>",
                   SigLvl() / 2,
                   degreesOfFreedom,
                   chiSqCValue[[1]],
@@ -7001,7 +6988,7 @@ statInfrServer <- function(id) {
         ## Example from mu: "Since the test statistic (z) falls within the rejection region, reject H0."
         if (input$altHypothesis != 2) {
           HTML(sprintf(
-            r"--(\(\begin{align} \displaystyle \chi^2 &%s \chi^2_{%0.2f,%d} \\ %0.3f &%s %0.3f  \\ \end{align} \)<br/>)--",
+            r"--(\(\begin{align} \displaystyle \chi^2 &%s \chi^2_{%0.2f,%d} \\ %0.4f &%s %0.4f  \\ \end{align} \)<br/>)--",
             ## Both of these are alternative hypothesis-dependent
             {
               if (chiSqTestStatistic < chiSqCValue) { relation("\\leq"); "\\leq" }
@@ -7022,11 +7009,11 @@ statInfrServer <- function(id) {
           
           if (!between) {
             HTML(sprintf(
-              r"--(\(\begin{align} \displaystyle \chi^2 &%s \chi^2_{%0.3f,%d} \\ %0.3f &%s %0.3f \\ \end{align} \)<br/>)--",
+              r"--(\(\begin{align} \displaystyle \chi^2 &%s \chi^2_{%0.4f,%d} \\ %0.4f &%s %0.4f \\ \end{align} \)<br/>)--",
               relation(), {if (lessThan) SigLvl()/2 else 1-SigLvl()/2}, degreesOfFreedom,
               chiSqTestStatistic, relation(), if (lessThan) chiSqCValue[[1]]))
           } else {
-            HTML(sprintf(r"--(\(\begin{align} \displaystyle \chi^2_{%0.3f,%d} &< \chi^2 &< \chi^2_{%0.3f,%d} \\ %0.3f &< %0.3f &< %0.3f \\ \end{align} \)<br/>)--",
+            HTML(sprintf(r"--(\(\begin{align} \displaystyle \chi^2_{%0.4f,%d} &< \chi^2 &< \chi^2_{%0.4f,%d} \\ %0.4f &< %0.4f &< %0.4f \\ \end{align} \)<br/>)--",
                          SigLvl()/2, degreesOfFreedom, 1-SigLvl()/2, degreesOfFreedom,
                          chiSqCValue[[1]], chiSqTestStatistic, chiSqCValue[[2]]))
           }
@@ -7042,7 +7029,7 @@ statInfrServer <- function(id) {
                      lessThan = TRUE) {
               sprintf(paste0("Since the test statistic \\( \\left( \\chi^2 \\right) \\)",
                              " falls in the %s region,",
-                             " \\(\\chi^2 = %0.3f\\) which is %s than \\(%0.3f\\), we %sreject \\(H_0\\)",
+                             " \\(\\chi^2 = %0.4f\\) which is %s than \\(%0.4f\\), we %sreject \\(H_0\\)",
                              " as there is %ssufficient evidence to accept the",
                              " alternative hypothesis."),
                       if (accept) "acceptance" else "rejection",
@@ -7075,7 +7062,7 @@ statInfrServer <- function(id) {
               accept <- FALSE
               sprintf(paste0("Since the test statistic \\( \\left( \\chi^2 \\right) \\)",
                              " falls in the rejection region,",
-                             " \\(\\chi^2 = %0.3f\\) which is less than (or equal to) \\(%0.3f\\), we reject \\(H_0\\)",
+                             " \\(\\chi^2 = %0.4f\\) which is less than (or equal to) \\(%0.3f\\), we reject \\(H_0\\)",
                              " as there is sufficient evidence to accept the",
                              " alternative hypothesis."),
                       chiSqTestStatistic,
@@ -7084,7 +7071,7 @@ statInfrServer <- function(id) {
               accept <- FALSE
               sprintf(paste0("Since the test statistic \\( \\left( \\chi^2 \\right) \\)",
                              " falls in the rejection region,",
-                             " \\(\\chi^2 = %0.3f\\) which is greater than (or equal to) \\(%0.3f\\), we reject \\(H_0\\)",
+                             " \\(\\chi^2 = %0.34\\) which is greater than (or equal to) \\(%0.4f\\), we reject \\(H_0\\)",
                              " as there is sufficient evidence to accept the",
                              " alternative hypothesis."),
                       chiSqTestStatistic,
@@ -7093,7 +7080,7 @@ statInfrServer <- function(id) {
               accept <- TRUE
               sprintf(paste0("Since the test statistic \\( \\left( \\chi^2 \\right) \\)",
                              " falls in the acceptance region,",
-                             " \\(\\chi^2 = %0.3f\\) which is between \\(%0.3f\\) and \\(%0.3f\\), we do not reject \\(H_0\\)",
+                             " \\(\\chi^2 = %0.3f\\) which is between \\(%0.4f\\) and \\(%0.4f\\), we do not reject \\(H_0\\)",
                              " as there is insufficient evidence to accept the",
                              " alternative hypothesis."),
                       chiSqTestStatistic,
