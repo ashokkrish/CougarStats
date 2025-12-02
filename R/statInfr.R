@@ -7930,7 +7930,15 @@ statInfrServer <- function(id) {
         br(),
       )
       
-      indHTConclusion <- printHTConclusion(region, reject, suffEvidence, paste0("\\mu_{1} ", intrpInfo$altHyp), "\\mu_{2}")
+      if (!muNaught) {
+        altHypExpr  <- paste0("\\mu_{1} ", intrpInfo$altHyp)
+        altHypValue <- "\\mu_{2}"
+      } else {
+        altHypExpr  <- paste0("(\\mu_{1} - \\mu_{2}) ", intrpInfo$altHyp)
+        altHypValue <- muNaught
+      }
+      
+      indHTConclusion <- printHTConclusion(region, reject, suffEvidence, altHypExpr, altHypValue)
       
       tagAppendChildren(indHTHead, indHTPVal, indHTTail, indHTConclusion)
     })
