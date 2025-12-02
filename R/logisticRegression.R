@@ -9,32 +9,41 @@ LogisticRegressionSidebarUI <- function(id) {
   tagList(
     div(
       id = ns("LOGRSidebar"),
+      useShinyjs(),
       withMathJax(
         helpText("Select a binary response variable (must have exactly two unique values: 0 or 1)."),
-        pickerInput(
-          ns("responseVariable"),
-          strong("Response Variable (\\(y\\))"),
-          choices = NULL,
-          multiple = FALSE, # This ensures only one selection is allowed
-          options = list(
-            `live-search` = TRUE,
-            title = "Nothing selected"
-          )
+        div(
+          id = ns("responseVariableWrapper"),
+          pickerInput(
+            ns("responseVariable"),
+            strong("Binary Response Variable (\\(y\\))"),
+            choices = NULL,
+            multiple = FALSE, # This ensures only one selection is allowed
+            options = list(
+              `live-search` = TRUE,
+              title = "Nothing selected"
+            )
+          ),
+          uiOutput(ns("responseVariableError"))
         ),
         uiOutput(ns("responseVariableWarning")),
         helpText("Select one or more explanatory variables."),
-        pickerInput(
-          ns("explanatoryVariables"),
-          strong("Explanatory Variables (x₁, x₂, …, xₙ)"),
-          choices  = NULL,
-          multiple = TRUE,
-          options = list(
-            `actions-box`       = TRUE,
-            `live-search`       = TRUE,
-            title = "Nothing selected",
-            selectedTextFormat = "values",
-            multipleSeperator  = ", "
-          )
+        div(
+          id = ns("explanatoryVariablesWrapper"),
+          pickerInput(
+            ns("explanatoryVariables"),
+            strong("Explanatory Variables (x₁, x₂, …, xₖ)"),
+            choices  = NULL,
+            multiple = TRUE,
+            options = list(
+              `actions-box`       = TRUE,
+              `live-search`       = TRUE,
+              title = "Nothing selected",
+              selectedTextFormat = "values",
+              multipleSeperator  = ", "
+            )
+          ),
+          uiOutput(ns("explanatoryVariablesError"))
         ),
         actionButton(ns("calculate"), "Calculate",    class = "act-btn"),
         actionButton(ns("reset"),     "Reset Values", class = "act-btn")
@@ -95,6 +104,11 @@ LogisticRegressionServer <- function(id) {
     
     noFileCalculate <- reactiveVal(FALSE)
     calculation_done <- reactiveVal(FALSE)
+    valid_analysis_results <- reactiveVal(NULL)  # Store valid results for the diagnostic plot
+    
+    # Reactive values for validation errors
+    responseVarError <- reactiveVal(FALSE)
+    explanatoryVarsError <- reactiveVal(FALSE)
     
     observeEvent(input$explanatoryVariables, {
       if (!isTruthy(input$explanatoryVariables)) {
@@ -102,27 +116,54 @@ LogisticRegressionServer <- function(id) {
       }
     }, ignoreNULL = FALSE)
     
-    perform_logr_analysis <- function(silent_validation = FALSE) {
-      if (!isTruthy(imported$data())) {
-        if (!silent_validation) shinyalert::shinyalert("Input Error", "Please upload a data file.", type = "error", confirmButtonCol = "#18536F")
-        return(NULL)
+    # Error message UI outputs
+    output$responseVariableError <- renderUI({
+      if (responseVarError()) {
+        tags$div(
+          class = "text-danger",
+          style = "font-size: 12px; margin-top: -10px; margin-bottom: 10px;",
+          icon("exclamation-circle"),
+          "Please select a binary response variable."
+        )
       }
-      
+    })
+    
+    output$explanatoryVariablesError <- renderUI({
+      if (explanatoryVarsError()) {
+        tags$div(
+          class = "text-danger",
+          style = "font-size: 12px; margin-top: -10px; margin-bottom: 10px;",
+          icon("exclamation-circle"),
+          "Please select at least one explanatory variable."
+        )
+      }
+    })
+    
+    # Clear errors when variables are selected
+    observeEvent(input$responseVariable, {
+      if (isTruthy(input$responseVariable)) {
+        responseVarError(FALSE)
+        shinyjs::removeClass(id = "responseVariableWrapper", class = "has-error")
+      }
+    })
+    
+    observeEvent(input$explanatoryVariables, {
+      if (length(input$explanatoryVariables) >= 1) {
+        explanatoryVarsError(FALSE)
+        shinyjs::removeClass(id = "explanatoryVariablesWrapper", class = "has-error")
+      }
+    })
+    
+    perform_logr_analysis <- function() {
       df_orig <- imported$data()
       response_var_name <- input$responseVariable
       explanatory_vars_names <- input$explanatoryVariables
-      
-      if (!isTruthy(response_var_name) || !isTruthy(explanatory_vars_names) || length(explanatory_vars_names) == 0) {
-        if (!silent_validation) shinyalert::shinyalert("Input Error", "Please select a response variable and at least one explanatory variable.", type = "error", confirmButtonCol = "#18536F")
-        return(NULL)
-      }
       
       selected_vars_for_model <- unique(c(response_var_name, explanatory_vars_names))
       df_model_data <- df_orig[, selected_vars_for_model, drop = FALSE]
       df_model_data <- na.omit(df_model_data)
       
       if(nrow(df_model_data) < (length(explanatory_vars_names) + 2) || nrow(df_model_data) == 0) {
-        if (!silent_validation) shinyalert::shinyalert("Error", "Not enough observations after removing NAs for model fitting, or no data selected.", type = "error", confirmButtonCol = "#18536F")
         return(NULL)
       }
       
@@ -130,7 +171,6 @@ LogisticRegressionServer <- function(id) {
       if (!is.factor(response_column_data)) { response_column_data <- as.factor(response_column_data) }
       
       if (nlevels(response_column_data) != 2) {
-        if (!silent_validation) shinyalert::shinyalert("Error", "Response variable must resolve to exactly two distinct values after NA removal for logistic regression.", type = "error", confirmButtonCol = "#18536F")
         return(NULL)
       }
       df_model_data[[response_var_name]] <- as.numeric(response_column_data) - 1
@@ -146,7 +186,6 @@ LogisticRegressionServer <- function(id) {
       fit <- tryCatch({
         glm(as.formula(formula_str), data = df_model_data, family = binomial(link = "logit"))
       }, error = function(e) {
-        if (!silent_validation) shinyalert::shinyalert("Model Fitting Error", paste("Error in glm:", e$message), type = "error", confirmButtonCol = "#18536F")
         return(NULL)
       })
       
@@ -155,25 +194,97 @@ LogisticRegressionServer <- function(id) {
       return(list(fit = fit, data = df_model_data, response = response_var_name, explanatory = explanatory_vars_names))
     }
     
-    observeEvent(input$calculate, {
-      results <- perform_logr_analysis(silent_validation = FALSE)
+    observe({ # input$calculate
+      if (!isTruthy(imported$data())) {
+        noFileCalculate(TRUE)
+        return()
+      } else {
+        noFileCalculate(FALSE)
+      }
+      
+      # Validate response variable
+      hasResponseVar <- isTruthy(input$responseVariable)
+      if (!hasResponseVar) {
+        responseVarError(TRUE)
+        shinyjs::addClass(id = "responseVariableWrapper", class = "has-error")
+      } else {
+        responseVarError(FALSE)
+        shinyjs::removeClass(id = "responseVariableWrapper", class = "has-error")
+      }
+      
+      # Validate explanatory variables (need at least 1)
+      hasExplanatoryVars <- isTruthy(input$explanatoryVariables) && length(input$explanatoryVariables) >= 1
+      if (!hasExplanatoryVars) {
+        explanatoryVarsError(TRUE)
+        shinyjs::addClass(id = "explanatoryVariablesWrapper", class = "has-error")
+      } else {
+        explanatoryVarsError(FALSE)
+        shinyjs::removeClass(id = "explanatoryVariablesWrapper", class = "has-error")
+      }
+      
+      # Only proceed if validation passes
+      if (!hasResponseVar || !hasExplanatoryVars) {
+        return()
+      }
+      
+      # Perform the analysis
+      results <- perform_logr_analysis()
       if (!is.null(results)) {
         render_analysis_results(results)
+        valid_analysis_results(results)
         calculation_done(TRUE)
+      } else {
+        valid_analysis_results(NULL)
       }
-    })
+    }) |> bindEvent(input$calculate)
     
     observe({
       req(calculation_done())
-      results <- perform_logr_analysis(silent_validation = TRUE)
+      results <- perform_logr_analysis()
       if (!is.null(results)) {
         render_analysis_results(results)
+        valid_analysis_results(results)
       } else {
         # Clear outputs if inputs become invalid reactively
         output$Equations <- renderUI({})
         output$anovaOutput <- renderUI({})
+        valid_analysis_results(NULL)
       }
     }) |> bindEvent(input$responseVariable, input$explanatoryVariables, ignoreInit = TRUE)
+    
+    # Clear errors when data is uploaded
+    observe({
+      if(isTruthy(imported$data())){
+        noFileCalculate(FALSE)
+      }
+    }) |> bindEvent(imported$data(), ignoreNULL = FALSE, ignoreInit = TRUE)
+    
+    # Scatterplot with logistic curve - rendered separately to ensure it only shows with valid model
+    output$logrScatterplot <- renderPlot({
+      results <- valid_analysis_results()
+      req(results)  # Only render when we have valid analysis results
+      
+      df_model_data <- results$data
+      response_var_name <- results$response
+      explanatory_vars_names <- results$explanatory
+      
+      ggplot(df_model_data, aes(x = .data[[explanatory_vars_names[1]]], y = .data[[response_var_name]])) +
+        geom_point(alpha = 0.5, color = input[["logrPlotOptions-PointsColour"]]) +
+        geom_smooth(method = "glm", method.args = list(family = "binomial"), se = FALSE, color = input[["logrPlotOptions-Colour"]], linewidth = input[["logrPlotOptions-LineWidth"]]) +
+        labs(
+          title = input[["logrPlotOptions-Title"]],
+          x = "x",
+          y = "y"
+        ) +
+        theme(plot.title = element_text(size = 24, face = "bold", hjust = 0.5),
+              axis.title.x = element_text(size = 16, face = "bold", vjust = -1.5),
+              axis.title.y = element_text(size = 16, face = "bold"),
+              axis.text.x.bottom = element_text(size = 12),
+              axis.text.y.left = element_text(size = 12),
+              panel.background = element_rect(fill = "white", colour = "black"),
+              panel.grid.major = element_blank(),
+              panel.grid.minor = element_blank())
+    })
     
     render_analysis_results <- function(results) {
       fit <- results$fit
@@ -326,28 +437,6 @@ LogisticRegressionServer <- function(id) {
         ) %>% formatRound(columns = c('Deviance', 'p-value', 'Resid. Dev'), digits = 3)
       })
       
-      # Scatterplot with logistic curve
-      output$logrScatterplot <- renderPlot({
-        req(df_model_data, input$responseVariable, input$explanatoryVariables)
-        
-        ggplot(df_model_data, aes(x = .data[[explanatory_vars_names[1]]], y = .data[[response_var_name]])) +
-          geom_point(alpha = 0.5, color = input[["logrPlotOptions-PointsColour"]]) +
-          geom_smooth(method = "glm", method.args = list(family = "binomial"), se = FALSE, color = input[["logrPlotOptions-Colour"]], linewidth = input[["logrPlotOptions-LineWidth"]]) +
-          labs(
-            title = input[["logrPlotOptions-Title"]],
-            x = "x",
-            y = "y"
-          ) +
-          theme(plot.title = element_text(size = 24, face = "bold", hjust = 0.5),
-                axis.title.x = element_text(size = 16, face = "bold", vjust = -1.5),
-                axis.title.y = element_text(size = 16, face = "bold"),
-                axis.text.x.bottom = element_text(size = 12),
-                axis.text.y.left = element_text(size = 12),
-                panel.background = element_rect(fill = "white", colour = "black"),
-                panel.grid.major = element_blank(),
-                panel.grid.minor = element_blank())
-      })
-      
       output$uploadedDataTable <- renderDT({
         req(imported$data())
         datatable(imported$data(),
@@ -425,9 +514,16 @@ LogisticRegressionServer <- function(id) {
       hideTab(inputId = "mainPanel", target = "Uploaded Data")
       
       calculation_done(FALSE)
+      valid_analysis_results(NULL)  # Clear analysis results on reset
       
       updatePickerInput(session, "responseVariable", selected = character(0))
       updatePickerInput(session, "explanatoryVariables", selected = character(0))
+      
+      # Clear validation errors
+      responseVarError(FALSE)
+      explanatoryVarsError(FALSE)
+      shinyjs::removeClass(id = "responseVariableWrapper", class = "has-error")
+      shinyjs::removeClass(id = "explanatoryVariablesWrapper", class = "has-error")
       
       output$responseVariableWarning <- renderUI(NULL)
       noFileCalculate(FALSE)
