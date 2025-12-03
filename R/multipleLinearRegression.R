@@ -244,7 +244,7 @@ MLRServer <- function(id) {
       else {
         ## Replace or concatenate to the value of the nonnumericVariables
         ## variable.
-        if (is.null(nonnumericVariables)) nonnumericVarialbes <- var
+        if (is.null(nonnumericVariables)) nonnumericVariables <- var
         else nonnumericVariables %<>% c(var)
         return(FALSE)
       }
