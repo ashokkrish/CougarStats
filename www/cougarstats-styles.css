@@ -312,3 +312,18 @@ table.dataTable {                                           /**/
   padding: 1rem;
   background-color: var(--main-color)
 }
+
+/* ------------------------------------------- */
+/* Validation error highlighting styles        */
+/* ------------------------------------------- */
+.has-error .bootstrap-select .dropdown-toggle,
+.has-error .bootstrap-select .dropdown-toggle:hover,
+.has-error .bootstrap-select .dropdown-toggle:focus {
+  border-color: #dc3545 !important;
+  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+}
+
+.has-error .bootstrap-select .dropdown-toggle {
+  background-color: #fff8f8 !important;
+}
+/*---------------------------------------------*/

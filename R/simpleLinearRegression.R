@@ -81,7 +81,7 @@ SLRMainPanelUI <- function(id) {
             
             titlePanel("Coefficients"),
             br(),
-            DTOutput(ns("slrInferenceCoefficientsTable")),
+            tableOutput(ns("slrInferenceCoefficientsTable")),
             br()
           ), # Inference tabpanel
           
@@ -678,16 +678,24 @@ SLRServer <- function(id) {
         })
         
         # Inference tab coefficients table (same as above)
-        output$slrInferenceCoefficientsTable <- renderDT({
-          summary_df <- as.data.frame(summary(model)$coefficients)
-          conf_int <- as.data.frame(confint(model))
-          colnames(conf_int) <- c("Lower 95% CI", "Upper 95% CI")
-          
-          final_table <- cbind(summary_df, conf_int)
-          
-          datatable(final_table, options = list(dom = 't')) %>% 
-            formatRound(columns = c("Estimate", "Std. Error", "t value", "Pr(>|t|)", "Lower 95% CI", "Upper 95% CI"), digits = 3)
-        })
+        output$slrInferenceCoefficientsTable <- renderTable(
+          {
+            summary_df <- as.data.frame(summary(model)$coefficients)
+            conf_int <- as.data.frame(confint(model))
+            colnames(conf_int) <- c("Lower 95% CI", "Upper 95% CI")
+            
+            # Rename "Pr(>|t|)" to "P-value"
+            names(summary_df)[names(summary_df) == "Pr(>|t|)"] <- "P-value"
+            
+            final_table <- cbind(summary_df, conf_int)
+            final_table
+          },
+          rownames = TRUE,
+          na = "",
+          striped = TRUE,
+          align = "c",
+          digits = 3
+        )
         
         output$confintLinReg <- renderPrint({
           confint(model) # Prints the 95% CI for the regression parameters
@@ -727,37 +735,37 @@ SLRServer <- function(id) {
                 br(),
                 br(),
                 sprintf("\\( \\quad = \\; \\dfrac
-                                      {%s - \\dfrac{ (%s)(%s) }{ %s } }
-                                      {\\sqrt{ %s - \\dfrac{ (%s)^2 }{ %s } } \\sqrt{ %s - \\dfrac{ (%s) ^2 }{ %s } } } \\)",
-                        dfTotaled["Totals", "xy"],
-                        dfTotaled["Totals", "x"],
-                        dfTotaled["Totals", "y"],
+                                      {%g - \\dfrac{ (%g)(%g) }{ %s } }
+                                      {\\sqrt{ %g - \\dfrac{ (%g)^2 }{ %s } } \\sqrt{ %g - \\dfrac{ (%g) ^2 }{ %s } } } \\)",
+                        round(dfTotaled["Totals", "xy"], 2),
+                        round(dfTotaled["Totals", "x"], 2),
+                        round(dfTotaled["Totals", "y"], 2),
                         length(datx),
-                        dfTotaled["Totals", "x<sup>2</sup>"],
-                        dfTotaled["Totals", "x"],
+                        round(dfTotaled["Totals", "x<sup>2</sup>"], 2),
+                        round(dfTotaled["Totals", "x"], 2),
                         length(datx),
-                        dfTotaled["Totals", "y<sup>2</sup>"],
-                        dfTotaled["Totals", "y"],
+                        round(dfTotaled["Totals", "y<sup>2</sup>"], 2),
+                        round(dfTotaled["Totals", "y"], 2),
                         length(datx)),
                 br(),
                 br(),
                 br(),
                 
                 sprintf("\\( \\quad = \\; \\dfrac
-                                      { %s }
-                                      {\\sqrt{ %s } \\sqrt{ %s } } \\)",
-                        dfTotaled["Totals", "xy"] - sumXSumY / length(datx),
-                        dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx),
-                        dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx)),
+                                      { %g }
+                                      {\\sqrt{ %g } \\sqrt{ %g } } \\)",
+                        round(dfTotaled["Totals", "xy"] - sumXSumY / length(datx), 2),
+                        round(dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx), 2),
+                        round(dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx), 2)),
                 
                 sprintf("\\( = \\; \\dfrac
-                                      { %s }
-                                      { %s } \\)",
-                        dfTotaled["Totals", "xy"] - sumXSumY / length(datx),
-                        sqrt(dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx)) * sqrt(dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx))),
+                                      { %g }
+                                      { %g } \\)",
+                        round(dfTotaled["Totals", "xy"] - sumXSumY / length(datx), 2),
+                        round(sqrt(dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx)) * sqrt(dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx)), 2)),
                 
-                sprintf("\\( = \\; %0.4f \\)",
-                        pearson$estimate),
+                sprintf("\\( = \\; %g \\)",
+                        round(pearson$estimate, 4)),
                 br(),
                 br(),
                 br(),

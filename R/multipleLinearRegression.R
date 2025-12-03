@@ -21,30 +21,38 @@ MLRSidebarUI <- function(id) {
       useShinyjs(),
       withMathJax(
         helpText("Only numeric variables are selectable."),
-        pickerInput(
-          ns("responseVariable"),
-          strong("Response Variable (\\(y\\))"),
-          choices = NULL,
-          multiple = FALSE,
-          options = list(
-            `live-search` = TRUE,
-            title = "Nothing selected"
-          )
+        div(
+          id = ns("responseVariableWrapper"),
+          pickerInput(
+            ns("responseVariable"),
+            strong("Response Variable (\\(y\\))"),
+            choices = NULL,
+            multiple = FALSE,
+            options = list(
+              `live-search` = TRUE,
+              title = "Nothing selected"
+            )
+          ),
+          uiOutput(ns("responseVariableError"))
         ),
         
         helpText("Select two or more explanatory variables (numeric)."),
         uiOutput(ns("singleOrMultipleHelpText")),
-        pickerInput(
-          inputId  = ns("explanatoryVariables"),
-          label    = strong("Explanatory Variables (x₁, x₂, …, xₙ)"),
-          choices  = NULL,
-          multiple = TRUE,
-          options  = list(
-            `actions-box` = TRUE,   # “Select all / Deselect all” buttons
-            `live-search` = TRUE,   # built-in search box
-            selectedTextFormat = "values",
-            multipleSeperator = ", "
-          )
+        div(
+          id = ns("explanatoryVariablesWrapper"),
+          pickerInput(
+            inputId  = ns("explanatoryVariables"),
+            label    = strong("Explanatory Variables (x₁, x₂, …, xₖ)"),
+            choices  = NULL,
+            multiple = TRUE,
+            options  = list(
+              `actions-box` = TRUE,   # "Select all / Deselect all" buttons
+              `live-search` = TRUE,   # built-in search box
+              selectedTextFormat = "values",
+              multipleSeperator = ", "
+            )
+          ),
+          uiOutput(ns("explanatoryVariablesError"))
         ),
         actionButton(ns("calculate"), "Calculate", class = "act-btn"),
         actionButton(ns("reset"), "Reset Values", class = "act-btn")
@@ -65,6 +73,7 @@ MLRMainPanelUI <- function(id) {
                    id    = ns("dataImport"),
                    title = "")),
                tabPanel(title = "Model", uiOutput(ns("Equations")) ),
+               tabPanel(title = "Inference", uiOutput(ns("Inference"))),
                tabPanel(title = "ANOVA", uiOutput(ns("ANOVA"))),
                tabPanel(title = "Multicollinearity Detection", uiOutput(ns("MulticollinearityDetection"))),
                tabPanel(title = "Diagnostic Plots", uiOutput(ns("DiagnosticPlots"))),
@@ -95,9 +104,14 @@ MLRServer <- function(id) {
     
     noFileCalculate <- reactiveVal(FALSE)
     
+    # Reactive values for validation errors
+    responseVarError <- reactiveVal(FALSE)
+    explanatoryVarsError <- reactiveVal(FALSE)
+    
     observeEvent(TRUE, {
       shinyjs::delay(0, {
         hideTab(inputId = "mainPanel", target = "Model")
+        hideTab(inputId = "mainPanel", target = "Inference")
         hideTab(inputId = "mainPanel", target = "ANOVA")
         hideTab(inputId = "mainPanel", target = "Multicollinearity Detection")
         hideTab(inputId = "mainPanel", target = "Diagnostic Plots")
@@ -129,6 +143,7 @@ MLRServer <- function(id) {
     
     observeEvent(input$reset, {
       hideTab(inputId = "mainPanel", target = "Model")
+      hideTab(inputId = "mainPanel", target = "Inference")
       hideTab(inputId = "mainPanel", target = "ANOVA")
       hideTab(inputId = "mainPanel", target = "Multicollinearity Detection")
       hideTab(inputId = "mainPanel", target = "Diagnostic Plots")
@@ -136,6 +151,12 @@ MLRServer <- function(id) {
       
       updatePickerInput(session, "responseVariable", selected = character(0))
       updatePickerInput(session, "explanatoryVariables", selected = character(0))
+      
+      # Clear validation errors
+      responseVarError(FALSE)
+      explanatoryVarsError(FALSE)
+      shinyjs::removeClass(id = "responseVariableWrapper", class = "has-error")
+      shinyjs::removeClass(id = "explanatoryVariablesWrapper", class = "has-error")
       
       updateNavbarPage(session, "mainPanel", selected = "data_import_tab")
     })
@@ -223,7 +244,7 @@ MLRServer <- function(id) {
       else {
         ## Replace or concatenate to the value of the nonnumericVariables
         ## variable.
-        if (is.null(nonnumericVariables)) nonnumericVarialbes <- var
+        if (is.null(nonnumericVariables)) nonnumericVariables <- var
         else nonnumericVariables %<>% c(var)
         return(FALSE)
       }
@@ -250,6 +271,43 @@ MLRServer <- function(id) {
       }
     })
     
+    output$responseVariableError <- renderUI({
+      if (responseVarError()) {
+        tags$div(
+          class = "text-danger",
+          style = "font-size: 12px; margin-top: -10px; margin-bottom: 10px;",
+          icon("exclamation-circle"),
+          "Please select a response variable."
+        )
+      }
+    })
+    
+    output$explanatoryVariablesError <- renderUI({
+      if (explanatoryVarsError()) {
+        tags$div(
+          class = "text-danger",
+          style = "font-size: 12px; margin-top: -10px; margin-bottom: 10px;",
+          icon("exclamation-circle"),
+          "Please select at least two explanatory variables."
+        )
+      }
+    })
+    
+    # Clear errors when variables are selected
+    observeEvent(input$responseVariable, {
+      if (isTruthy(input$responseVariable)) {
+        responseVarError(FALSE)
+        shinyjs::removeClass(id = "responseVariableWrapper", class = "has-error")
+      }
+    })
+    
+    observeEvent(input$explanatoryVariables, {
+      if (length(input$explanatoryVariables) >= 2) {
+        explanatoryVarsError(FALSE)
+        shinyjs::removeClass(id = "explanatoryVariablesWrapper", class = "has-error")
+      }
+    })
+    
     observe({ # input$calculate
       if (!isTruthy(uploadedTibble$data())) {
         noFileCalculate(TRUE)
@@ -258,404 +316,33 @@ MLRServer <- function(id) {
         noFileCalculate(FALSE)
       }
       
-      isolate({
-        
-        output$anovaHypotheses <- renderUI({
-          withMathJax(
-            p(strong("Analysis of Variance (ANOVA)")),
-            p(
-              r"{\( H_0: \beta_1 = \beta_2 = \cdots = \beta_k = 0\)}",
-              br(),
-              r"{\( H_a: \) At least one \(\beta_j\ne 0\), where \(j = 1, \cdots, k\).}"
-            ),
-            br(),
-            p(r"{\( \alpha = 0.05\ \)}"),
-            br(),
-            p(
-              sprintf(r"{\( n = %i \)}", nrow(uploadedTibble$data())),
-              br(),
-              sprintf(r"{\( k = %i \)}", length(input$explanatoryVariables))
-            )
-          )
-        })
-        
-        with(uploadedTibble$data(), {
-          validate(
-            need(
-              isTruthy(input$explanatoryVariables),
-              "Two or more explanatory variables must be selected."
-            ),
-            need(
-              isTruthy(input$responseVariable),
-              "A response variable must be selected."
-            )
-          )
-          
-          model <- lm(reformulate(
-            as.character(lapply(input$explanatoryVariables, as.name)),
-            as.name(input$responseVariable)
-          ))
-          
-          modelCoefficients <-
-            rownames_to_column(
-              as.data.frame(summary(model)$coefficients),
-              "Source"
-            )
-          
-          # Get CIs, convert to data frame, and rename columns
-          modelConfidenceIntervals <- as.data.frame(confint(model))
-          colnames(modelConfidenceIntervals) <- c("Lower 95% CI", "Upper 95% CI")
-          modelConfidenceIntervals <- rownames_to_column(modelConfidenceIntervals, "Source")
-          
-          output$linearModelCoefConfint <- renderTable(
-            {
-              final_table <- dplyr::left_join(modelCoefficients,
-                                              modelConfidenceIntervals,
-                                              by = "Source"
-              )
-              
-              tibble::column_to_rownames(final_table, var = "Source")
-            },
-            rownames = TRUE, # This tells renderTable to display the row names
-            na = "",
-            striped = TRUE,
-            align = "c",
-            digits = 3
-          )
-          
-          output$lmCoefConfintTableCaption <- renderUI({
-            tagList(if (anyNA(modelConfidenceIntervals)) {
-              p("Some model components (e.g. dependent variables) did not have confidence intervals or coefficients, and are dropped from the table.")
-            } else {
-              p("")
-            })
-          })
-          
-          output$rsquareAdjustedRSquareInterpretation <- renderUI({
-            modelANOVA <- anova(model)
-            SSR <- sum(modelANOVA$"Sum Sq"[-nrow(modelANOVA)]) # all but the residuals
-            SSE <- modelANOVA$"Sum Sq"[nrow(modelANOVA)] # only the residuals
-            SST <- SSR + SSE
-            
-            withMathJax(
-              p(strong(r"{ \(R^2\) and Adjusted \(R^2\) }")),
-              br(),
-              p(sprintf(
-                r"[\( \displaystyle R^2 = \frac{\text{SSR}}{\text{SST}} = \frac{%0.4f}{%0.4f} = %0.4f\)]",
-                SSR,
-                SST,
-                SSR / SST
-              )),
-              p(sprintf(
-                r"{
-\(
-\displaystyle
-R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] \\
-R^2_{\text{adj}} = %0.4f
-\)
-}",
-summary(model)$adj.r.squared
-              )),
-p(r"[where \(k\) is the number of independent (explanatory) variables in the regression model, and \(n\) is the number of observations in the dataset.]"),
-p(
-  strong("Interpretation:"),
-  sprintf(
-    r"[Roughly \(%.2f\%%\) of the variation in the response variable is explained by the multiple linear regression model when adjusted for the number of explanatory variables and the sample size.]",
-    summary(model)$adj.r.squared * 100
-  )
-),
-br(),
-p(strong("Information Criteria")),
-p(sprintf(r"[Akaike Information Criterion (AIC): \(%0.4f\)]", AIC(model))),
-p(sprintf(r"[Bayesian Information Criterion (BIC): \(%0.4f\)]", BIC(model)))
-            )
-          })
-          
-          output$multicollinearityDetectionMainPanelUI <- renderUI({
-            withMathJax(
-              fluidRow(column(
-                12, p(strong("Correlation matrix")),
-                p("Values below -0.75 and above 0.75 are very strong indicators that there is multicollinearity, and that the component of the model should be removed."),
-                tableOutput(session$ns("simpleCorrelationMatrix"))
-              )),
-              fluidRow(column(
-                12, p(strong("Graphical methods")),
-                p("Along the diagonal of this plot are the distributions of the data in each variable. Below the diagonal are the scatterplots of one variable against another; if the points form a more-or-less straight line then the variables are correlated. Above the diagonal are the correlation coefficients between two variables."),
-                plotOutput(session$ns("ggscatmat"))
-              )),
-              fluidRow(column(
-                12, p(strong("Variance Inflation Factors")),
-                p("A VIF greater than 10 suggests strong multicollinearity caused by the respective variable with that variance inflation factor. VIFs between 5 and 10 hint at moderate multicollinearity. Values less than 5 are acceptable, with only a low degree of multicollinearity detected."),
-                tableOutput(session$ns("vifs"))
-              ))
-            )
-          })
-          
-          output$simpleCorrelationMatrix <- renderTable({
-            corsetAboveDiagNA(uploadedTibble$data()[, input$explanatoryVariables])
-          },
-          rownames = TRUE,
-          striped = TRUE,
-          na = "",
-          align = "c")
-          
-          output$vifs <- renderTable(
-            {
-              req(uploadedTibble$data())
-              req(isTruthy(input$responseVariable))
-              req(isTruthy(input$explanatoryVariables))
-              req(length(as.character(input$explanatoryVariables)) >= 2)
-              with(uploadedTibble$data(), {
-                model <- lm(reformulate(
-                  as.character(lapply(input$explanatoryVariables, as.name)),
-                  as.name(input$responseVariable)
-                ))
-                df <- tryCatch(
-                  {
-                    as.data.frame(car::vif(model))
-                  },
-                  error = \(e) NULL
-                )
-                validate(need(is.data.frame(df), "Couldn't produce a data frame from the VIF function of the model. Usually this means there are aliased coefficients in the model. Re-attempt after verifying the data, or renaming the columns."))
-                df
-              })
-            },
-            rownames = TRUE,
-            align = "c"
-          )
-          
-          output$multicollinearityGgpairs <- renderPlot({
-            ggpairs(anova(model))
-          })
-          
-          output$ggscatmat <- renderPlot(
-            {
-              ggscatmat(uploadedTibble$data()[, input$explanatoryVariables], columns = input$explanatoryVariables)
-            })
-          
-          output$ggnostic <- renderPlot({
-            ggnostic(model)
-          })
-          
-          output$anovaTable <- renderTable(
-            {
-              redrawing <<- TRUE
-              options(knitr.kable.NA = "") # do not display NAs
-              modelANOVA <- anova(model)
-              SSR <- sum(modelANOVA$"Sum Sq"[-nrow(modelANOVA)]) # all but the residuals
-              SSE <- modelANOVA$"Sum Sq"[nrow(modelANOVA)] # only the residuals
-              SST <- SSR + SSE
-              k <- length(input$explanatoryVariables)
-              n <- nrow(uploadedTibble$data())
-              MSR <- SSR / k
-              MSE <- SSE / (n - k - 1)
-              F <- MSR / MSE
-              
-              ## RETURN THE TABLE TO RENDER
-              tibble::tribble(
-                ~"Source", ~"df", ~"SS", ~"MS", ~"F", ~"P-value",
-                "<strong>Regression (Model)</strong>", as.integer(k), SSR, MSR, F, pf(F, k, n - k - 1, lower.tail = FALSE),
-                "<strong>Residual (Error)</strong>", as.integer(n - k - 1), SSE, MSE, NA, NA,
-                "Total", as.integer(n - 1), SST, NA, NA, NA
-              )
-            },
-            na = "",
-            striped = TRUE,
-            align = "c",
-            sanitize.text.function = function(x) x
-          )
-          
-          observe({
-            shinyjs::runjs(r"[$('#rc-MLR-anovaTable > table > thead > tr').children().css({'font-style': 'italic'})]")
-          })
-          
-          output$linearModelAIC <- renderPrint({
-            print(AIC(model))
-            print(paste("The AIC of the model and the AIC of the log-likelihood of the model are equal?", all.equal(AIC(model), AIC(logLik(model)))))
-          })
-          output$linearModelBIC <- renderPrint({
-            BIC(model)
-          })
-          output$mlrResidualsPanelPlot1 <- renderPlot({
-            plot(model, which = 1, pch = 20, main = "", lwd = 2, sub.caption = "")
-          })
-          output$mlrResidualsPanelPlot2 <- renderPlot({
-            plot(model, which = 2, pch = 20, main = "", lwd = 2, sub.caption = "")
-          })
-          output$mlrResidualsPanelPlot3 <- renderPlot({
-            plot(model, which = 3, pch = 20, main = "", lwd = 2, sub.caption = "")
-          })
-          output$mlrResidualsPanelPlot4 <- renderPlot({
-            plot(model, which = 5, pch = 20, main = "", lwd = 2, sub.caption = "")
-          })
-        })
-        
-        output$anovaPValueMethod <- renderUI({
-          with(uploadedTibble$data(), {
-            model <- lm(reformulate(
-              as.character(lapply(input$explanatoryVariables, as.name)),
-              as.name(input$responseVariable)
-            ))
-            anovaModel <- anova(model)
-            regressionVariables <- nrow(anovaModel) - 1
-            modelANOVA <- anova(model)
-            SSR <- sum(modelANOVA$"Sum Sq"[-nrow(modelANOVA)]) # all but the residuals
-            SSE <- modelANOVA$"Sum Sq"[nrow(modelANOVA)] # only the residuals
-            SST <- SSR + SSE
-            k <- length(input$explanatoryVariables)
-            n <- nrow(uploadedTibble$data())
-            MSR <- SSR / k
-            MSE <- SSE / (n - k - 1)
-            F <- MSR / MSE
-            withMathJax(
-              p(strong("Test Statistic:")),
-              p(sprintf(
-                r"{\(\displaystyle F = \frac{\text{MSR}}{\text{MSE}} = \frac{%0.2f}{%0.2f} = %0.2f \)}",
-                MSR, MSE, F
-              )),
-              p(sprintf(
-                r"{
-\(
-R^2 = \frac{\text{SSR}}{\text{SST}} \\
-R^2_{\text{adj}} = \frac{%0.2f}{%0.2f} \\
-R^2_{\text{adj}} = %0.2f \\
-\)
-}",
-anovaModel$SSR, anovaModel$SST, anovaModel$SSR / anovaModel$SST
-              )),
-p(strong("Conclusion:")),
-{
-  pValue <- pf(F, k, n - k - 1, lower.tail = FALSE)
-  p(sprintf(
-    r"[Since the p-value is %s than \(\alpha\) (\(%0.3f %s 0.05\)), %s.]",
-    if (pValue <= 0.05) "less" else "greater",
-    pValue,
-    if (pValue <= 0.05) r"[\le]" else r"[\ge]",
-    if (pValue <= 0.05) {
-      r"[we reject the null hypothesis (\(H_0\)) and conclude there is enough statistical evidence to support the alternative hypothesis (\(H_a\))]"
-    } else {
-      r"[we do not reject the null hypothesis (\(H_0\)) and conclude there isn't enough statistical evidence to support the alternative hypothesis (\(H_a\)).]"
-    }
-  ))
-}
-            )
-          })
-        })
-        
-        output$plot <- renderPlot({
-          validate(need(uploadedTibble$name(), "Upload some data."))
-          validate(need(
-            isTruthy(input$responseVariable),
-            "Select at least one explanatory variable."
-          ))
-          responseVariableData <- uploadedTibble$data()[[input$responseVariable]]
-          validate(need(
-            is.numeric(responseVariableData),
-            "Response variable must be numeric."
-          ))
-          hist(responseVariableData)
-        })
-        
-        output$linearModelEquations <- renderUI(withMathJax(
-          div(
-            id = "linear-model-equations",
-            p("The variables in the model are"),
-            p(paste(
-              r"{\(}",
-              sprintf(r"[y    = \text{%s} \\]", input$responseVariable),
-              paste(
-                sprintf(
-                  r"[x_{%d} = \text{%s}]",
-                  seq_along(input$explanatoryVariables),
-                  input$explanatoryVariables
-                ),
-                collapse = r"[\\]"
-              ),
-              r"{\)}"
-            )),
-            p("The estimated multiple linear regression equation is"),
-            p(with(uploadedTibble$data(), {
-              req(uploadedTibble$data(), cancelOutput = TRUE)
-              req(isTruthy(input$responseVariable), cancelOutput = TRUE)
-              model <- lm(reformulate(
-                as.character(lapply(input$explanatoryVariables, as.name)),
-                as.name(input$responseVariable)
-              ))
-              
-              ## Reactively generate the LaTeX for the regression model equation.
-              modelEquations <- with(as.list(coefficients(model)), {
-                req(as.list(coefficients(model)),
-                    cancelOutput = "progress"
-                )
-                paste(
-                  r"{\(}",
-                  gsub(
-                    pattern = r"{\+(\ +)?-}",
-                    replacement = "-",
-                    x = paste(
-                      c(
-                        sprintf(
-                          r"[\hat{y} = \hat{\beta_0} + %s]",
-                          paste(
-                            sprintf(
-                              r"[\hat{%s}]",
-                              paste0(
-                                r"[\beta_{]",
-                                seq_along(input$explanatoryVariables),
-                                r"[}]"
-                              )
-                            ),
-                            paste0(r"{x_{}", seq_along(input$explanatoryVariables),
-                                   r"[}]"),
-                            collapse = "+"
-                          )
-                        ),
-                        sprintf(
-                          r"[\hat{y} = %.3f + %s]",
-                          get("(Intercept)"),
-                          paste(
-                            as.character(lapply(
-                              mget(as.character(lapply(input$explanatoryVariables, as.name))),
-                              \(x) if(!is.na(x)) sprintf(r"[%.3f]", x) else ""
-                            )),
-                            paste0(r"[x_{]", seq_along(input$explanatoryVariables),
-                                   r"[}]"),
-                            collapse = "+"
-                          )
-                        ),
-                        ""
-                      ),
-                      collapse = r"[\\]"
-                    )
-                  ),
-                  r"{\)}",
-                  sep = r"{\\}"
-                )
-              }) # <- modelEquations
-            }))
-          )
-        ))
-        
-        output$linearModelCoefficientsAndConfidenceIntervals <- renderUI({
-          column(
-            12,
-            p(strong("Coefficients and Confidence Intervals")),
-            tableOutput(ns("linearModelCoefConfint")),
-            uiOutput(ns("lmCoefConfintTableCaption"))
-          )
-        })
-        
-      }) ## end of isolation
+      # Validate response variable
+      hasResponseVar <- isTruthy(input$responseVariable)
+      if (!hasResponseVar) {
+        responseVarError(TRUE)
+        shinyjs::addClass(id = "responseVariableWrapper", class = "has-error")
+      } else {
+        responseVarError(FALSE)
+        shinyjs::removeClass(id = "responseVariableWrapper", class = "has-error")
+      }
       
-      output$uploadedDataTable <- renderDT({
-        req(uploadedTibble$data())
-        datatable(uploadedTibble$data(),
-                  options = list(pageLength = -1,
-                                 lengthMenu = list(c(10, 25, 50, -1), c("10", "25", "50", "All"))))
-      })
+      # Validate explanatory variables (need at least 2)
+      hasExplanatoryVars <- isTruthy(input$explanatoryVariables) && length(input$explanatoryVariables) >= 2
+      if (!hasExplanatoryVars) {
+        explanatoryVarsError(TRUE)
+        shinyjs::addClass(id = "explanatoryVariablesWrapper", class = "has-error")
+      } else {
+        explanatoryVarsError(FALSE)
+        shinyjs::removeClass(id = "explanatoryVariablesWrapper", class = "has-error")
+      }
       
+      # Only show tabs if validation passes
+      if (!hasResponseVar || !hasExplanatoryVars) {
+        return()
+      }
       
       showTab(inputId = "mainPanel", target = "Model")
+      showTab(inputId = "mainPanel", target = "Inference")
       showTab(inputId = "mainPanel", target = "ANOVA")
       showTab(inputId = "mainPanel", target = "Multicollinearity Detection")
       showTab(inputId = "mainPanel", target = "Diagnostic Plots")
@@ -674,11 +361,480 @@ p(strong("Conclusion:")),
       
       fluidPage(
         ## NOTE: variables and equations are both in linearModelEquations.
-        fluidRow(uiOutput(ns("linearModelEquations"))),
+        fluidRow(uiOutput(ns("linearModelEquations")))
+      )
+    })
+    
+    output$Inference <- renderUI({
+      eval(MLRValidation)
+      
+      fluidPage(
         fluidRow(uiOutput(ns("linearModelCoefficientsAndConfidenceIntervals")))
       )
     })
     
+    # Reactive coefficients and confidence intervals table
+    output$linearModelCoefConfint <- renderTable(
+      {
+        req(uploadedTibble$data())
+        req(isTruthy(input$responseVariable))
+        req(isTruthy(input$explanatoryVariables))
+        req(length(as.character(input$explanatoryVariables)) >= 2)
+        
+        with(uploadedTibble$data(), {
+          model <- lm(reformulate(
+            as.character(lapply(input$explanatoryVariables, as.name)),
+            as.name(input$responseVariable)
+          ))
+          
+          modelCoefficients <-
+            rownames_to_column(
+              as.data.frame(summary(model)$coefficients),
+              "Source"
+            )
+          
+          # Rename "Pr(>|t|)" to "P-value"
+          names(modelCoefficients)[names(modelCoefficients) == "Pr(>|t|)"] <- "P-value"
+          
+          # Get CIs, convert to data frame, and rename columns
+          modelConfidenceIntervals <- as.data.frame(confint(model))
+          colnames(modelConfidenceIntervals) <- c("Lower 95% CI", "Upper 95% CI")
+          modelConfidenceIntervals <- rownames_to_column(modelConfidenceIntervals, "Source")
+          
+          final_table <- dplyr::left_join(modelCoefficients,
+                                          modelConfidenceIntervals,
+                                          by = "Source"
+          )
+          
+          tibble::column_to_rownames(final_table, var = "Source")
+        })
+      },
+      rownames = TRUE,
+      na = "",
+      striped = TRUE,
+      align = "c",
+      digits = 3
+    )
+    
+    output$lmCoefConfintTableCaption <- renderUI({
+      req(uploadedTibble$data())
+      req(isTruthy(input$responseVariable))
+      req(isTruthy(input$explanatoryVariables))
+      req(length(as.character(input$explanatoryVariables)) >= 2)
+      
+      with(uploadedTibble$data(), {
+        model <- lm(reformulate(
+          as.character(lapply(input$explanatoryVariables, as.name)),
+          as.name(input$responseVariable)
+        ))
+        
+        modelConfidenceIntervals <- as.data.frame(confint(model))
+        
+        tagList(if (anyNA(modelConfidenceIntervals)) {
+          p("Some model components (e.g. dependent variables) did not have confidence intervals or coefficients, and are dropped from the table.")
+        } else {
+          p("")
+        })
+      })
+    })
+    
+    # Reactive Model tab outputs
+    output$linearModelCoefficientsAndConfidenceIntervals <- renderUI({
+      column(
+        12,
+        p(strong("Coefficients and Confidence Intervals")),
+        tableOutput(ns("linearModelCoefConfint")),
+        uiOutput(ns("lmCoefConfintTableCaption"))
+      )
+    })
+    
+    output$linearModelEquations <- renderUI({
+      req(uploadedTibble$data())
+      req(isTruthy(input$responseVariable))
+      req(isTruthy(input$explanatoryVariables))
+      req(length(as.character(input$explanatoryVariables)) >= 2)
+      
+      withMathJax(
+        div(
+          id = "linear-model-equations",
+          p("The variables in the model are"),
+          p(paste(
+            r"{\(}",
+            sprintf(r"[y    = \text{%s} \\]", input$responseVariable),
+            paste(
+              sprintf(
+                r"[x_{%d} = \text{%s}]",
+                seq_along(input$explanatoryVariables),
+                input$explanatoryVariables
+              ),
+              collapse = r"[\\]"
+            ),
+            r"{\)}"
+          )),
+          p("The estimated multiple linear regression equation is"),
+          p(with(uploadedTibble$data(), {
+            req(uploadedTibble$data(), cancelOutput = TRUE)
+            req(isTruthy(input$responseVariable), cancelOutput = TRUE)
+            model <- lm(reformulate(
+              as.character(lapply(input$explanatoryVariables, as.name)),
+              as.name(input$responseVariable)
+            ))
+            
+            ## Reactively generate the LaTeX for the regression model equation.
+            modelEquations <- with(as.list(coefficients(model)), {
+              req(as.list(coefficients(model)),
+                  cancelOutput = "progress"
+              )
+              paste(
+                r"{\(}",
+                gsub(
+                  pattern = r"{\+(\ +)?-}",
+                  replacement = "-",
+                  x = paste(
+                    c(
+                      sprintf(
+                        r"[\hat{y} = \hat{\beta_0} + %s]",
+                        paste(
+                          sprintf(
+                            r"[\hat{%s}]",
+                            paste0(
+                              r"[\beta_{]",
+                              seq_along(input$explanatoryVariables),
+                              r"[}]"
+                            )
+                          ),
+                          paste0(r"{x_{}", seq_along(input$explanatoryVariables),
+                                 r"[}]"),
+                          collapse = "+"
+                        )
+                      ),
+                      sprintf(
+                        r"[\hat{y} = %.3f + %s]",
+                        get("(Intercept)"),
+                        paste(
+                          as.character(lapply(
+                            mget(as.character(lapply(input$explanatoryVariables, as.name))),
+                            \(x) if(!is.na(x)) sprintf(r"[%.3f]", x) else ""
+                          )),
+                          paste0(r"[x_{]", seq_along(input$explanatoryVariables),
+                                 r"[}]"),
+                          collapse = "+"
+                        )
+                      ),
+                      ""
+                    ),
+                    collapse = r"[\\]"
+                  )
+                ),
+                r"{\)}",
+                sep = r"{\\}"
+              )
+            }) # <- modelEquations
+          }))
+        )
+      )
+    })
+    
+    # Reactive ANOVA tab outputs
+    output$anovaHypotheses <- renderUI({
+      req(uploadedTibble$data())
+      req(isTruthy(input$responseVariable))
+      req(isTruthy(input$explanatoryVariables))
+      req(length(as.character(input$explanatoryVariables)) >= 2)
+      
+      withMathJax(
+        p(strong("Analysis of Variance (ANOVA)")),
+        p(
+          r"{\( H_0: \beta_1 = \beta_2 = \cdots = \beta_k = 0\)}",
+          br(),
+          r"{\( H_a: \) At least one \(\beta_j\ne 0\), where \(j = 1, \cdots, k\).}"
+        ),
+        br(),
+        p(r"{\( \alpha = 0.05\ \)}"),
+        br(),
+        p(
+          sprintf(r"{\( n = %i \)}", nrow(uploadedTibble$data())),
+          br(),
+          sprintf(r"{\( k = %i \)}", length(input$explanatoryVariables))
+        )
+      )
+    })
+    
+    output$anovaTable <- renderTable(
+      {
+        req(uploadedTibble$data())
+        req(isTruthy(input$responseVariable))
+        req(isTruthy(input$explanatoryVariables))
+        req(length(as.character(input$explanatoryVariables)) >= 2)
+        
+        redrawing <<- TRUE
+        options(knitr.kable.NA = "") # do not display NAs
+        
+        with(uploadedTibble$data(), {
+          model <- lm(reformulate(
+            as.character(lapply(input$explanatoryVariables, as.name)),
+            as.name(input$responseVariable)
+          ))
+          
+          modelANOVA <- anova(model)
+          SSR <- sum(modelANOVA$"Sum Sq"[-nrow(modelANOVA)]) # all but the residuals
+          SSE <- modelANOVA$"Sum Sq"[nrow(modelANOVA)] # only the residuals
+          SST <- SSR + SSE
+          k <- length(input$explanatoryVariables)
+          n <- nrow(uploadedTibble$data())
+          MSR <- SSR / k
+          MSE <- SSE / (n - k - 1)
+          F <- MSR / MSE
+          
+          ## RETURN THE TABLE TO RENDER
+          tibble::tribble(
+            ~"Source", ~"df", ~"SS", ~"MS", ~"F", ~"P-value",
+            "<strong>Regression (Model)</strong>", as.integer(k), SSR, MSR, F, pf(F, k, n - k - 1, lower.tail = FALSE),
+            "<strong>Residual (Error)</strong>", as.integer(n - k - 1), SSE, MSE, NA, NA,
+            "Total", as.integer(n - 1), SST, NA, NA, NA
+          )
+        })
+      },
+      na = "",
+      striped = TRUE,
+      align = "c",
+      sanitize.text.function = function(x) x
+    )
+    
+    output$anovaPValueMethod <- renderUI({
+      req(uploadedTibble$data())
+      req(isTruthy(input$responseVariable))
+      req(isTruthy(input$explanatoryVariables))
+      req(length(as.character(input$explanatoryVariables)) >= 2)
+      
+      with(uploadedTibble$data(), {
+        model <- lm(reformulate(
+          as.character(lapply(input$explanatoryVariables, as.name)),
+          as.name(input$responseVariable)
+        ))
+        anovaModel <- anova(model)
+        regressionVariables <- nrow(anovaModel) - 1
+        modelANOVA <- anova(model)
+        SSR <- sum(modelANOVA$"Sum Sq"[-nrow(modelANOVA)]) # all but the residuals
+        SSE <- modelANOVA$"Sum Sq"[nrow(modelANOVA)] # only the residuals
+        SST <- SSR + SSE
+        k <- length(input$explanatoryVariables)
+        n <- nrow(uploadedTibble$data())
+        MSR <- SSR / k
+        MSE <- SSE / (n - k - 1)
+        F <- MSR / MSE
+        withMathJax(
+          p(strong("Test Statistic:")),
+          p(sprintf(
+            r"{\(\displaystyle F = \frac{\text{MSR}}{\text{MSE}} = \frac{%0.2f}{%0.2f} = %0.2f \)}",
+            MSR, MSE, F
+          )),
+          p(strong("Conclusion:")),
+          {
+            pValue <- pf(F, k, n - k - 1, lower.tail = FALSE)
+            p(sprintf(
+              r"[Since the p-value is %s than \(\alpha\) (\(%0.3f %s 0.05\)), %s.]",
+              if (pValue <= 0.05) "less" else "greater",
+              pValue,
+              if (pValue <= 0.05) r"[\le]" else r"[>]",
+              if (pValue <= 0.05) {
+                r"[we reject the null hypothesis (\(H_0\)) and conclude there is enough statistical evidence to support the alternative hypothesis (\(H_a\))]"
+              } else {
+                r"[we do not reject the null hypothesis (\(H_0\)) and conclude there isn't enough statistical evidence to support the alternative hypothesis (\(H_a\)).]"
+              }
+            ))
+          }
+        )
+      })
+    })
+    
+    output$rsquareAdjustedRSquareInterpretation <- renderUI({
+      req(uploadedTibble$data())
+      req(isTruthy(input$responseVariable))
+      req(isTruthy(input$explanatoryVariables))
+      req(length(as.character(input$explanatoryVariables)) >= 2)
+      
+      with(uploadedTibble$data(), {
+        model <- lm(reformulate(
+          as.character(lapply(input$explanatoryVariables, as.name)),
+          as.name(input$responseVariable)
+        ))
+        
+        modelANOVA <- anova(model)
+        SSR <- sum(modelANOVA$"Sum Sq"[-nrow(modelANOVA)]) # all but the residuals
+        SSE <- modelANOVA$"Sum Sq"[nrow(modelANOVA)] # only the residuals
+        SST <- SSR + SSE
+        
+        withMathJax(
+          p(strong(r"{ \(R^2\) and Adjusted \(R^2\) }")),
+          br(),
+          p(sprintf(
+            r"[\( \displaystyle R^2 = \frac{\text{SSR}}{\text{SST}} = \frac{%0.4f}{%0.4f} = %0.4f\)]",
+            SSR,
+            SST,
+            SSR / SST
+          )),
+          p(sprintf(
+            r"{
+\(
+\displaystyle
+R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] \\
+R^2_{\text{adj}} = %0.4f
+\)
+}",
+            summary(model)$adj.r.squared
+          )),
+          p(r"[where \(k\) is the number of independent (explanatory) variables in the regression model, and \(n\) is the number of observations in the dataset.]"),
+          p(
+            strong("Interpretation:"),
+            sprintf(
+              r"[Roughly \(%.2f\%%\) of the variation in the response variable is explained by the multiple linear regression model when adjusted for the number of explanatory variables and the sample size.]",
+              summary(model)$adj.r.squared * 100
+            )
+          ),
+          br(),
+          p(strong("Information Criteria")),
+          p(sprintf(r"[Akaike Information Criterion (AIC): \(%0.4f\)]", AIC(model))),
+          p(sprintf(r"[Bayesian Information Criterion (BIC): \(%0.4f\)]", BIC(model)))
+        )
+      })
+    })
+    
+    # Reactive Multicollinearity Detection tab outputs
+    output$multicollinearityDetectionMainPanelUI <- renderUI({
+      withMathJax(
+        fluidRow(column(
+          12, p(strong("Correlation matrix")),
+          p("Values below -0.75 and above 0.75 are very strong indicators that there is multicollinearity, and that the component of the model should be removed."),
+          tableOutput(ns("simpleCorrelationMatrix"))
+        )),
+        fluidRow(column(
+          12, p(strong("Graphical methods")),
+          p("Along the diagonal of this plot are the distributions of the data in each variable. Below the diagonal are the scatterplots of one variable against another; if the points form a more-or-less straight line then the variables are correlated. Above the diagonal are the correlation coefficients between two variables."),
+          plotOutput(ns("ggscatmat"))
+        )),
+        fluidRow(column(
+          12, p(strong("Variance Inflation Factors")),
+          p("A VIF greater than 10 suggests strong multicollinearity caused by the respective variable with that variance inflation factor. VIFs between 5 and 10 hint at moderate multicollinearity. Values less than 5 are acceptable, with only a low degree of multicollinearity detected."),
+          tableOutput(ns("vifs"))
+        ))
+      )
+    })
+    
+    output$simpleCorrelationMatrix <- renderTable({
+      req(uploadedTibble$data())
+      req(isTruthy(input$explanatoryVariables))
+      req(length(as.character(input$explanatoryVariables)) >= 2)
+      
+      corsetAboveDiagNA(uploadedTibble$data()[, input$explanatoryVariables])
+    },
+    rownames = TRUE,
+    striped = TRUE,
+    na = "",
+    align = "c")
+    
+    output$vifs <- renderTable(
+      {
+        req(uploadedTibble$data())
+        req(isTruthy(input$responseVariable))
+        req(isTruthy(input$explanatoryVariables))
+        req(length(as.character(input$explanatoryVariables)) >= 2)
+        with(uploadedTibble$data(), {
+          model <- lm(reformulate(
+            as.character(lapply(input$explanatoryVariables, as.name)),
+            as.name(input$responseVariable)
+          ))
+          df <- tryCatch(
+            {
+              as.data.frame(car::vif(model))
+            },
+            error = \(e) NULL
+          )
+          validate(need(is.data.frame(df), "Couldn't produce a data frame from the VIF function of the model. Usually this means there are aliased coefficients in the model. Re-attempt after verifying the data, or renaming the columns."))
+          df
+        })
+      },
+      rownames = TRUE,
+      align = "c"
+    )
+    
+    output$ggscatmat <- renderPlot({
+      req(uploadedTibble$data())
+      req(isTruthy(input$explanatoryVariables))
+      req(length(as.character(input$explanatoryVariables)) >= 2)
+      
+      ggscatmat(uploadedTibble$data()[, input$explanatoryVariables], columns = input$explanatoryVariables)
+    })
+    
+    # Reactive Diagnostic Plots tab outputs
+    output$mlrResidualsPanelPlot1 <- renderPlot({
+      req(uploadedTibble$data())
+      req(isTruthy(input$responseVariable))
+      req(isTruthy(input$explanatoryVariables))
+      req(length(as.character(input$explanatoryVariables)) >= 2)
+      
+      with(uploadedTibble$data(), {
+        model <- lm(reformulate(
+          as.character(lapply(input$explanatoryVariables, as.name)),
+          as.name(input$responseVariable)
+        ))
+        plot(model, which = 1, pch = 20, main = "", lwd = 2, sub.caption = "")
+      })
+    })
+    
+    output$mlrResidualsPanelPlot2 <- renderPlot({
+      req(uploadedTibble$data())
+      req(isTruthy(input$responseVariable))
+      req(isTruthy(input$explanatoryVariables))
+      req(length(as.character(input$explanatoryVariables)) >= 2)
+      
+      with(uploadedTibble$data(), {
+        model <- lm(reformulate(
+          as.character(lapply(input$explanatoryVariables, as.name)),
+          as.name(input$responseVariable)
+        ))
+        plot(model, which = 2, pch = 20, main = "", lwd = 2, sub.caption = "")
+      })
+    })
+    
+    output$mlrResidualsPanelPlot3 <- renderPlot({
+      req(uploadedTibble$data())
+      req(isTruthy(input$responseVariable))
+      req(isTruthy(input$explanatoryVariables))
+      req(length(as.character(input$explanatoryVariables)) >= 2)
+      
+      with(uploadedTibble$data(), {
+        model <- lm(reformulate(
+          as.character(lapply(input$explanatoryVariables, as.name)),
+          as.name(input$responseVariable)
+        ))
+        plot(model, which = 3, pch = 20, main = "", lwd = 2, sub.caption = "")
+      })
+    })
+    
+    output$mlrResidualsPanelPlot4 <- renderPlot({
+      req(uploadedTibble$data())
+      req(isTruthy(input$responseVariable))
+      req(isTruthy(input$explanatoryVariables))
+      req(length(as.character(input$explanatoryVariables)) >= 2)
+      
+      with(uploadedTibble$data(), {
+        model <- lm(reformulate(
+          as.character(lapply(input$explanatoryVariables, as.name)),
+          as.name(input$responseVariable)
+        ))
+        plot(model, which = 5, pch = 20, main = "", lwd = 2, sub.caption = "")
+      })
+    })
+    
+    # Reactive Uploaded Data tab output
+    output$uploadedDataTable <- renderDT({
+      req(uploadedTibble$data())
+      datatable(uploadedTibble$data(),
+                options = list(pageLength = -1,
+                               lengthMenu = list(c(10, 25, 50, -1), c("10", "25", "50", "All"))))
+    })
+
     output$ANOVA <- renderUI({
       eval(MLRValidation)
       
