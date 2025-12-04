@@ -240,6 +240,10 @@ LogisticRegressionServer <- function(id) {
     
     observe({
       req(calculation_done())
+      # Guard against empty variable selections (can happen when new file is uploaded)
+      req(isTruthy(input$responseVariable))
+      req(isTruthy(input$explanatoryVariables))
+      
       results <- perform_logr_analysis()
       if (!is.null(results)) {
         render_analysis_results(results)
@@ -252,11 +256,14 @@ LogisticRegressionServer <- function(id) {
       }
     }) |> bindEvent(input$responseVariable, input$explanatoryVariables, ignoreInit = TRUE)
     
-    # Clear errors when data is uploaded
+    # Clear errors and reset calculation state when data is uploaded
     observe({
       if(isTruthy(imported$data())){
         noFileCalculate(FALSE)
       }
+      # Reset calculation_done when new file is uploaded to prevent stale reactive triggers
+      calculation_done(FALSE)
+      valid_analysis_results(NULL)
     }) |> bindEvent(imported$data(), ignoreNULL = FALSE, ignoreInit = TRUE)
     
     # Scatterplot with logistic curve - rendered separately to ensure it only shows with valid model
