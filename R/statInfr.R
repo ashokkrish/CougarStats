@@ -2466,14 +2466,23 @@ statInfrServer <- function(id) {
     depmeansupload_iv$add_rule("depMeansUserData", ~ if(nrow(DepMeansUploadData()) == 0) "File is empty.")
     depmeansupload_iv$add_rule("depMeansUserData", ~ if(ncol(DepMeansUploadData()) < 2) "File must contain at least 2 distinct 'Before' and 'After' sets of data to choose from for analysis.")
     depmeansupload_iv$add_rule("depMeansUserData", ~ if(nrow(DepMeansUploadData()) < 4) "Samples must include at least 3 observations.")
-  #  depmeansuploadvars_iv$add_rule("depMeansUplSample1", ~ {
-  #    if (input$depMeansUplSample1 == input$depMeansUplSample2)
-  #      "'Sample 1’' and 'Sample 2' data are the same. Standard deviation of the difference is zero."
-  #  })
-  #  depmeansuploadvars_iv$add_rule("depMeansUplSample2", ~ {
-  #    if (input$depMeansUplSample1 == input$depMeansUplSample2)
-  #      "'Sample 1’' and 'Sample 2' data are the same. Standard deviation of the difference is zero."
-  #  })
+    #depmeansuploadvars_iv$add_rule("depMeansUplSample1", ~ {
+    #  if (input$depMeansUplSample1 != "" &&
+    #      input$depMeansUplSample2 != "" &&
+    #      (input$depMeansUplSample1 == input$depMeansUplSample2 ||
+    #       GetDepMeansData()$sd == 0)) {
+    #    "'Sample 1' and 'Sample 2' data are the same. Standard deviation of the difference is zero."
+    #  }
+    #})
+    
+    #depmeansuploadvars_iv$add_rule("depMeansUplSample2", ~ {
+    #  if (input$depMeansUplSample1 != "" &&
+    #      input$depMeansUplSample2 != "" &&
+    #      (input$depMeansUplSample1 == input$depMeansUplSample2 ||
+    #       GetDepMeansData()$sd == 0)) {
+    #    "'Sample 1' and 'Sample 2' data are the same. Standard deviation of the difference is zero."
+    #  }
+    #})
     
     depmeansuploadvars_iv$add_rule("depMeansUplSample1", sv_required())
     depmeansuploadvars_iv$add_rule("depMeansUplSample2", sv_required())
@@ -6224,6 +6233,12 @@ statInfrServer <- function(id) {
                "Sample 2 must be numeric."),
           errorClass = "myClass"
         )
+        
+       # validate(
+        #  need(input$depMeansUplSample1 != input$depMeansUplSample2,
+        #       "'Sample 1' and 'Sample 2' data are the same. Standard deviation of the difference is zero."),
+        #  errorClass = "myClass"
+        #)
       }
       
       if(!depmeansraw_iv$is_valid()) {
@@ -7098,8 +7113,11 @@ statInfrServer <- function(id) {
           }
         },
         
+        
         br(),
-        plotOutput(session$ns("onePopulationSDHTChiSqPlot"), width = "50%", height = "400px"),
+        
+        ### FUTURE WORK: Revisit chi squ plots as they are currently bugged
+        #plotOutput(session$ns("onePopulationSDHTChiSqPlot"), width = "50%", height = "400px"),
         
         ## Overall conclusion
         br(),
@@ -8378,15 +8396,15 @@ statInfrServer <- function(id) {
                   input$continuityCorrectionOption == "True" && input$normaprowrs == "Normal approximation (for large samples)") {
                 
                 if(input$altHypothesis2 == "1") { # Less than alternative
-                  sprintf("\\(  z = \\frac{W - \\mu_W + 0.5}{\\sigma_W} = \\frac{%s - %s + %s}{%s} = %s \\)",
+                  sprintf("\\( z = \\frac{W - \\mu_W + 0.5}{\\sigma_W} = \\frac{%s - %s + %s}{%s} = %s \\)",
                           round(observed_W, 4), round(mu_w, 4), abs(correction_factor), round(sigma_w, 4), round(z_stat, 3))
                 }
                 else if(input$altHypothesis2 == "2") { # Two-sided alternative
                   if (observed_W > mu_w) {
-                    sprintf("\\(  z = \\frac{W - \\mu_W - 0.5}{\\sigma_W} = \\frac{%s - %s - %s}{%s} = %s \\)",
+                    sprintf("\\( z = \\frac{W - \\mu_W - 0.5}{\\sigma_W} = \\frac{%s - %s - %s}{%s} = %s \\)",
                             round(observed_W, 4), round(mu_w, 4), abs(correction_factor), round(sigma_w, 4), round(z_stat, 3))
                   } else if (observed_W < mu_w) {
-                    sprintf("\\(  z = \\frac{W - \\mu_W + 0.5}{\\sigma_W} = \\frac{%s - %s + %s}{%s} = %s \\)",
+                    sprintf("\\( z = \\frac{W - \\mu_W + 0.5}{\\sigma_W} = \\frac{%s - %s + %s}{%s} = %s \\)",
                             round(observed_W, 4), round(mu_w, 4), abs(correction_factor), round(sigma_w, 4), round(z_stat, 3))
                   } else { # observed_W == mu_w, no continuity correction applied in formula
                     sprintf("\\( z = \\frac{W - \\mu_W}{\\sigma_W} = \\frac{%s - %s}{%s} = %s \\)",
@@ -8400,11 +8418,11 @@ statInfrServer <- function(id) {
                 
               } else { # No continuity correction
                 if(input$altHypothesis2 == "1") { # Less than alternative
-                  sprintf("\\(  z = \\frac{W - \\mu_W}{\\sigma_W} = \\frac{%s - %s}{%s} = %s \\)",
+                  sprintf("\\( z = \\frac{W - \\mu_W}{\\sigma_W} = \\frac{%s - %s}{%s} = %s \\)",
                           round(observed_W, 4), round(mu_w, 4), round(sigma_w, 4), round(z_stat, 3))
                 }
                 else if(input$altHypothesis2 == "2") { # Two-sided alternative
-                  sprintf("\\( \\qquad z = \\frac{W - \\mu_W}{\\sigma_W} = \\frac{%s - %s}{%s} = %s \\)",
+                  sprintf("\\( z = \\frac{W - \\mu_W}{\\sigma_W} = \\frac{%s - %s}{%s} = %s \\)",
                           round(observed_W, 4), round(mu_w, 4), round(sigma_w, 4), round(z_stat, 3))
                 }
                 else { # Greater than alternative
