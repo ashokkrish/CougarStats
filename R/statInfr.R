@@ -9773,38 +9773,13 @@ statInfrServer <- function(id) {
     })
     
     ### ------------ Kruskal-Wallis Outputs ------------------------------------------
-    output$kwHT <- renderUI({
-      req(si_iv$is_valid())
-      kruskalWallisHT(kwResults, reactive({input$kwSigLvl}))
-    })
-    
-    output$kwUploadTable <- renderUI({
-      req(si_iv$is_valid())
-      kruskalWallisUpload(kwUploadData, reactive({kwupload_iv$is_valid()}))
-    })
-    
-    output$kwInitialUploadTable <- renderUI({
-      req(si_iv$is_valid())
-      kruskalWallisUploadInitial(kwUploadData)
-    })
-    
-    output$renderKWRM <- renderUI({
-      req(si_iv$is_valid())
-      kwRankedTableOutput(kwResults()$data)
-    })
-    
-    output$kruskalWallisPlot <- renderPlot({
-      req(si_iv$is_valid())
-      kruskalWallisPlot(kwResults, reactive({input$kwSigLvl}))
-    })
-    
-    output$kwConclusionOutput <- renderUI({
-      req(si_iv$is_valid())
-      kwConclusion(kwResults, reactive({input$kwSigLvl}))
-    })
-    
+    output$kwHT <- kruskalWallisHT(kwResults, reactive({input$kwSigLvl}))
+    output$kwUploadTable <- kruskalWallisUpload(kwUploadData, reactive({kwupload_iv$is_valid()}))
+    output$kwInitialUploadTable <- kruskalWallisUploadInitial(kwUploadData)
+    output$renderKWRM <- kwRankedTableOutput(kwResults()$data)
+    output$kruskalWallisPlot <- kruskalWallisPlot(kwResults, reactive({input$kwSigLvl}))
+    output$kwConclusionOutput <- kwConclusion(kwResults, reactive({input$kwSigLvl}))
     output$debug_kw_state <- renderText({
-      req(si_iv$is_valid())
       paste(
         "multipleMethodChoice:", input$multipleMethodChoice, "|",
         "kwUserData exists:", !is.null(input$kwUserData), "|",
