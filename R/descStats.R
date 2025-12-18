@@ -40,6 +40,8 @@ descStatsUI <- function(id) {
               ns = ns,
               condition = "input.dataInput == 'Upload Data'",
               
+              HTML(uploadDataDisclaimer),
+              
               fileInput(
                 inputId = ns('dsUserData'), 
                 label   = strong('Upload your data (.csv or .xls or .xlsx or .txt)'),
