@@ -227,6 +227,8 @@ statInfrUI <- function(id) {
                 ns = ns,
                 condition = "input.dataAvailability == 'Upload Data'",
                 
+                HTML(uploadDataDisclaimer),
+                
                 fileInput(
                   inputId = ns("oneMeanUserData"),
                   label   = strong("Upload your Data (.csv or .xls or .xlsx or .txt)"),
@@ -611,6 +613,8 @@ statInfrUI <- function(id) {
                 ns = ns,
                 condition = "input.dataAvailability2 == 'Upload Data'",
                 
+                HTML(uploadDataDisclaimer),
+                
                 fileInput(
                   inputId = ns("indMeansUserData"),
                   label   = strong("Upload your Data (.csv or .xls or .xlsx or .txt)"),
@@ -723,6 +727,8 @@ statInfrUI <- function(id) {
                 ns = ns,
                 condition = "input.wilcoxonRankSumTestData == 'Upload Data'",
                 
+                HTML(uploadDataDisclaimer),
+                
                 fileInput(
                   inputId = ns("wilcoxonUpl"),
                   label   = strong("Upload your Data (.csv or .xls or .xlsx or .txt)"),
@@ -789,6 +795,8 @@ statInfrUI <- function(id) {
               conditionalPanel(
                 ns = ns,
                 condition = "input.dataTypeDependent == 'Upload Data'",
+                
+                HTML(uploadDataDisclaimer),
                 
                 fileInput(
                   inputId = ns("depMeansUserData"),
@@ -1146,6 +1154,8 @@ statInfrUI <- function(id) {
               ns = ns,
               condition = 'input.multipleMethodChoice == "anova"',
               
+              HTML(uploadDataDisclaimer),
+              
               fileInput(
                 inputId = ns("anovaUserData"),
                 label   = strong("Upload your Data (.csv or .xls or .xlsx or .txt)"),
@@ -1242,6 +1252,8 @@ statInfrUI <- function(id) {
             conditionalPanel(
               ns = ns,
               condition = 'input.multipleMethodChoice == "kw"',
+              
+              HTML(uploadDataDisclaimer),
               
               fileInput(
                 inputId = ns("kwUserData"),
@@ -2466,23 +2478,27 @@ statInfrServer <- function(id) {
     depmeansupload_iv$add_rule("depMeansUserData", ~ if(nrow(DepMeansUploadData()) == 0) "File is empty.")
     depmeansupload_iv$add_rule("depMeansUserData", ~ if(ncol(DepMeansUploadData()) < 2) "File must contain at least 2 distinct 'Before' and 'After' sets of data to choose from for analysis.")
     depmeansupload_iv$add_rule("depMeansUserData", ~ if(nrow(DepMeansUploadData()) < 4) "Samples must include at least 3 observations.")
-    #depmeansuploadvars_iv$add_rule("depMeansUplSample1", ~ {
-    #  if (input$depMeansUplSample1 != "" &&
-    #      input$depMeansUplSample2 != "" &&
-    #      (input$depMeansUplSample1 == input$depMeansUplSample2 ||
-    #       GetDepMeansData()$sd == 0)) {
-    #    "'Sample 1' and 'Sample 2' data are the same. Standard deviation of the difference is zero."
-    #  }
-    #})
+    depmeansuploadvars_iv$add_rule("depMeansUplSample1", ~ {
+      if (input$depMeansUplSample1 != "" &&
+          input$depMeansUplSample2 != "" &&
+          !checkNumeric(DepMeansUploadData(), input$depMeansUplSample1) &&
+          !checkNumeric(DepMeansUploadData(), input$depMeansUplSample2) &&
+          (input$depMeansUplSample1 == input$depMeansUplSample2 ||
+           GetDepMeansData()$sd == 0)) {
+        "'Sample 1' and 'Sample 2' data are the same. Standard deviation of the difference is zero."
+      }
+    })
     
-    #depmeansuploadvars_iv$add_rule("depMeansUplSample2", ~ {
-    #  if (input$depMeansUplSample1 != "" &&
-    #      input$depMeansUplSample2 != "" &&
-    #      (input$depMeansUplSample1 == input$depMeansUplSample2 ||
-    #       GetDepMeansData()$sd == 0)) {
-    #    "'Sample 1' and 'Sample 2' data are the same. Standard deviation of the difference is zero."
-    #  }
-    #})
+    depmeansuploadvars_iv$add_rule("depMeansUplSample2", ~ {
+      if (input$depMeansUplSample1 != "" &&
+          input$depMeansUplSample2 != "" &&
+          !checkNumeric(DepMeansUploadData(), input$depMeansUplSample1) &&
+          !checkNumeric(DepMeansUploadData(), input$depMeansUplSample2) &&
+          (input$depMeansUplSample1 == input$depMeansUplSample2 ||
+           GetDepMeansData()$sd == 0)) {
+        "'Sample 1' and 'Sample 2' data are the same. Standard deviation of the difference is zero."
+      }
+    })
     
     depmeansuploadvars_iv$add_rule("depMeansUplSample1", sv_required())
     depmeansuploadvars_iv$add_rule("depMeansUplSample2", sv_required())
@@ -2663,12 +2679,21 @@ statInfrServer <- function(id) {
     
     
     kwmulti_iv$add_rule("kwMultiColumns", ~ if(length(input$kwMultiColumns) < 2) "Select at least two columns")
+    kwmulti_iv$add_rule("kwMultiColumns", ~ {
+      if (checkNumeric(kwUploadData(), input$kwMultiColumns)) {
+        "Selected column(s) contain non-numeric data."
+      }
+    })
     
     kwstacked_iv$add_rule("kwResponse", sv_required())
     kwstacked_iv$add_rule("kwFactors", sv_required())
     kwstacked_iv$add_rule("kwResponse", ~ if(kwStackedIsValid() == FALSE) "Response variable and factors column cannot be the same")
     kwstacked_iv$add_rule("kwFactors", ~ if(kwStackedIsValid() == FALSE) "Response variable and factors column cannot be the same")
-    
+    kwstacked_iv$add_rule("kwResponse", ~ {
+      if (checkNumeric(kwUploadData(), input$kwResponse)) {
+        "Response variable must be numeric."
+      }
+    })
     # Chi-Square
     ChiSqInputRules <- function(iv, inputID) {
       iv$add_rule(inputID, sv_required())
@@ -5790,7 +5815,7 @@ statInfrServer <- function(id) {
       })
     
     kwResults <- reactive({
-      
+      req(si_iv$is_valid())
       kwResults_func(
         si_iv$is_valid,
         input$kwFormat,
@@ -6234,11 +6259,20 @@ statInfrServer <- function(id) {
           errorClass = "myClass"
         )
         
-       # validate(
-        #  need(input$depMeansUplSample1 != input$depMeansUplSample2,
-        #       "'Sample 1' and 'Sample 2' data are the same. Standard deviation of the difference is zero."),
-        #  errorClass = "myClass"
-        #)
+        validate(
+          need(
+            !(input$depMeansUplSample1 != "" &&
+                input$depMeansUplSample2 != "" &&
+                (input$depMeansUplSample1 == input$depMeansUplSample2 ||
+                   GetDepMeansData()$sd == 0)),
+            if (input$inferenceType2 == "Hypothesis Testing") {
+              "The test statistic (t) will be undefined for sample data with a sample standard deviation of difference (sd) = 0."
+            } else {
+              "The confidence interval results in (0,0) when the sample standard deviation of difference (sd) = 0."
+            }
+          ),
+          errorClass = "myClass"
+        )
       }
       
       if(!depmeansraw_iv$is_valid()) {
@@ -6432,6 +6466,12 @@ statInfrServer <- function(id) {
           need(length(input$kwMultiColumns) >= 2, "Please select two or more columns to conduct analysis."),
           errorClass = "myClass"
         )
+        
+        validate(
+          need(!checkNumeric(kwUploadData(), input$kwMultiColumns), 
+               "Selected columns must be numeric."),
+          errorClass = "myClass"
+        )
       }
       
       if(!kwstacked_iv$is_valid()) {
@@ -6443,6 +6483,11 @@ statInfrServer <- function(id) {
         
         validate(
           need(kwStackedIsValid() == TRUE, "Please select distinct columns for Response Variable and Factors."),
+          errorClass = "myClass"
+        )
+        validate(
+          need(!checkNumeric(kwUploadData(), input$kwResponse), 
+               "Response variable must be numeric."),
           errorClass = "myClass"
         )
       }
