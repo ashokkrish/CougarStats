@@ -12,7 +12,9 @@
 
 You can use the app on our website: <https://www.cougarstats.ca/>
 
-or using our backup on Shinyapp.io server by clicking <https://cougarstats.shinyapps.io/CougarStats/>
+or using our backup on Shinyapps.io server by clicking <https://cougarstats.shinyapps.io/CougarStats/>
+
+The name _CougarStats_ is inspired by Mount Royal University's athletics mascot, the cougar, symbolizing strength and agility, and by the app's focus on statistics.
 
 <!-- Alternatively you can send a pull request to download all the files in this repository and run the app by loading `global.R`, `ui.R`, and `server.R` and clicking `Run App`. Note that the ``CougarStats`` project is not on CRAN, just on github.
 
@@ -33,7 +35,7 @@ Read more about [Getting Started with Docker](https://www.docker.com/get-started
 - Calculate the descriptive statistics (ex. mean, median, mode, quartiles, IQR, standard deviation, check for potential outliers etc.)
 - Construct a Boxplot, Histogram, Stem and Leaf plot, and Scatterplot
 - Calculate the marginal, joint, union, and conditional probabilities for a contingency table 
-- Calculate exact and cumulative probabilities for Binomial, Poisson and Hypergeometric distributions
+- Calculate exact and cumulative probabilities for Binomial, Poisson, Hypergeometric and Negative Binomial distributions
 - Calculate cumulative probability for Normal distribution
 - Sample size estimation
 - Confidence interval and Hypothesis test for
@@ -56,7 +58,7 @@ Read more about [Getting Started with Docker](https://www.docker.com/get-started
 - Multiple Linear Regression
 - Binary Logistic Regression
 
-## Who is CougarStats for?
+## Who is _CougarStats_ for?
 
 - Students enrolled in an introductory statistics class
 - Instructors wanting to use an open-source tool in their labs
@@ -69,7 +71,7 @@ Read more about [Getting Started with Docker](https://www.docker.com/get-started
 - [Jacie Bennett](https://github.com/jacie-b): Senior Developer
 
 ### Citation
-- Krishnamurthy, A., et al. (2025). CougarStats: An R Shiny app for statistical data analysis [Web application]. https://www.cougarstats.ca/
+- Krishnamurthy, A., et al. (2025). _CougarStats_: An R Shiny app for statistical data analysis [Web application]. https://www.cougarstats.ca/
 
 ## Acknowledgements
 | Funding Agency / Coursework | Recipient | Date(s) |
