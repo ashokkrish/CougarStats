@@ -67,12 +67,9 @@ Read more about [Getting Started with Docker](https://www.docker.com/get-started
 
 ### Current project members
 - [Jacie Bennett](https://github.com/jacie-b): Senior Developer
-- [Darren Law Yan Lun](https://github.com/darrenlyl): Senior Developer
-- [Diana Vi](https://github.com/dianahuff): Senior Developer
-- [Yakov Aluph](https://github.com/YakovAluph): Senior Developer
 
 ### Citation
-- Bennett, J., Brian, S., Carson, B., Krishnamurthy, A., Law Yan Lun, D., Myer, M., Vi, D., & Wai, C. (2025). CougarStats. Mount Royal University. https://www.cougarstats.ca/
+- Krishnamurthy, A., et al. (2025). CougarStats: An R Shiny app for statistical data analysis [Web application]. https://www.cougarstats.ca/
 
 ## Acknowledgements
 | Funding Agency / Coursework | Recipient | Date(s) |
