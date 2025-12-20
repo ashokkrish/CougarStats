@@ -114,20 +114,20 @@ SLRMainPanelUI <- function(id) {
             title = "Correlation Analysis",
             value = "Correlation Analysis",
             
-            titlePanel("Pearson's Product-Moment Correlation"),
+            titlePanel("Pearson's Product-Moment Correlation Coefficient"),
             br(),
             br(),
             uiOutput(ns('pearsonCorFormula')),
             br(),
             hr(),
             
-            titlePanel("Kendall's Rank Correlation"),
+            titlePanel("Kendall's Rank Correlation Coefficient"),
             br(),
             uiOutput(ns("kendallFormula")),
             br(),
             hr(),
             
-            titlePanel("Spearman's Rank Correlation"),
+            titlePanel("Spearman's Rank Correlation Coefficient"),
             br(),
             uiOutput(ns("spearmanEstimate")),
             br(),
@@ -161,7 +161,7 @@ SLRSidebarUI <- function(id) {
   tagList(withMathJax(div(
     id = ns("inputPanel"),
     
-    ### ------------ Simple Linear Regression ------------------------------------
+    ### ------------ Simple Linear Regression (SLR) ------------------------------------
     radioButtons(
       inputId      = ns("dataRegCor"),
       label        = strong("Data"),
@@ -178,14 +178,14 @@ SLRSidebarUI <- function(id) {
       
       textAreaInput(
         inputId     = ns("y"),
-        label       = strong("\\( y\\) (Response Variable)"),
+        label       = strong("Response Variable (\\( y\\))"),
         value       = "66, 108, 161, 177, 228, 235, 268, 259, 275, 278",
         placeholder = "Enter values separated by a comma with decimals as points",
         rows        = 3),
       
       textAreaInput(
         inputId     = ns("x"),
-        label       = strong("\\( x\\) (Explanatory Variable)"),
+        label       = strong("Explanatory Variable (\\( x\\))"),
         value       = "10, 13, 18, 19, 22, 24, 27, 29, 35, 38",
         placeholder = "Enter values separated by a comma with decimals as points",
         rows        = 3)
@@ -209,14 +209,14 @@ SLRSidebarUI <- function(id) {
         
         selectizeInput(
           inputId = ns("slrResponse"),
-          label   = strong("Choose the Response Variable (y)"),
+          label   = strong("Choose the Response Variable (\\(y\\))"),
           choices = c(""),
           options = list(placeholder = 'Select a variable',
                          onInitialize = I('function() { this.setValue(""); }'))),
         
         selectizeInput(
           inputId = ns("slrExplanatory"),
-          label   = strong("Choose the Explanatory Variable (x)"),
+          label   = strong("Choose the Explanatory Variable (\\(x\\))"),
           choices = c(""),
           options = list(placeholder = 'Select a variable',
                          onInitialize = I('function() { this.setValue(""); }')))
@@ -295,19 +295,16 @@ SLRServer <- function(id) {
     regcor_iv$add_validator(slrupload_iv)
     regcor_iv$add_validator(slruploadvars_iv)
     
-    
     ### ------------ Activation --------------------------------------------------
     regcor_iv$enable()
     slrraw_iv$enable()
     slrupload_iv$enable()
     slruploadvars_iv$enable()
     
-    
     #  ========================================================================= #
     ## -------- Module Server Elements -----------------------------------------
     #  ========================================================================= #
     plotOptionsMenuServer("slrScatter")
-    
     
     #  ========================================================================= #
     ## -------- Functions ------------------------------------------------------
@@ -334,8 +331,7 @@ SLRServer <- function(id) {
       }
       return(width)
     }
-    
-    
+
     #  ========================================================================= #
     ## -------- Reactives ------------------------------------------------------
     #  ========================================================================= #
@@ -394,8 +390,7 @@ SLRServer <- function(id) {
                                              return(diff)
                                            }
                                          })
-    
-    
+
     #  ========================================================================= #
     ## -------- Observers ------------------------------------------------------
     #  ========================================================================= #
@@ -462,7 +457,7 @@ SLRServer <- function(id) {
           req(slruploadvars_iv$is_valid())
           show("slrExplanatory")
           show("slrResponse")
-          datx <- as.data.frame(slrUploadData())[, input$slrExplanatory]
+          datx <- as.data.frame(slrUploadData())[, input$slrExplanatory] # This line generates an error - Warning: Error in [.data.frame: undefined columns selected
           daty <- as.data.frame(slrUploadData())[, input$slrResponse]
         } else {
           validate(
@@ -489,7 +484,6 @@ SLRServer <- function(id) {
             errorClass = "myClass")
         }
       }) #output$slrValidation
-      
       
       if(regcor_iv$is_valid()) {
         if(input$dataRegCor == 'Upload Data') {
@@ -660,9 +654,9 @@ SLRServer <- function(id) {
             br(),
             p(tags$b("Interpretation:")),
             p(HTML(paste0("Within the scope of observation, ", interceptEstimate, " is the estimated value of ",
-                          em("y"), " when ", em("x"), "= 0. A slope of ", slopeEstimate,
-                          " represents the estimated ", slopeDirection, " in ", em("y"),
-                          " for a unit increase of ", em("x."))))
+                          "\\(y\\) when \\(x\\) = 0. A slope of ", slopeEstimate,
+                          " represents the estimated ", slopeDirection, " in  \\(y\\)",
+                          " for a unit increase of \\(x\\).")))
           )
         })
         
@@ -705,7 +699,6 @@ SLRServer <- function(id) {
           anova(model) # Prints the ANOVA table
         })
         
-        
         req(length(datx) > 1) ## correlation coefficient ----
         if(length(datx) > 2) {
           
@@ -735,34 +728,37 @@ SLRServer <- function(id) {
                 br(),
                 br(),
                 sprintf("\\( \\quad = \\; \\dfrac
-                                      {%g - \\dfrac{ (%g)(%g) }{ %s } }
-                                      {\\sqrt{ %g - \\dfrac{ (%g)^2 }{ %s } } \\sqrt{ %g - \\dfrac{ (%g) ^2 }{ %s } } } \\)",
-                        round(dfTotaled["Totals", "xy"], 2),
-                        round(dfTotaled["Totals", "x"], 2),
-                        round(dfTotaled["Totals", "y"], 2),
-                        length(datx),
-                        round(dfTotaled["Totals", "x<sup>2</sup>"], 2),
-                        round(dfTotaled["Totals", "x"], 2),
-                        length(datx),
-                        round(dfTotaled["Totals", "y<sup>2</sup>"], 2),
-                        round(dfTotaled["Totals", "y"], 2),
-                        length(datx)),
+                                      {%s - \\dfrac{ (%s)(%s) }{ %s } }
+                                      {\\sqrt{ %s - \\dfrac{ (%s)^2 }{ %s } } \\sqrt{ %s - \\dfrac{ (%s) ^2 }{ %s } } } \\)",
+                        format(round(dfTotaled["Totals", "xy"], 3), nsmall = 0, scientific = FALSE),
+                        format(round(dfTotaled["Totals", "x"], 3), nsmall = 0, scientific = FALSE),
+                        format(round(dfTotaled["Totals", "y"], 3), nsmall = 0, scientific = FALSE),
+                        format(length(datx), nsmall = 0, scientific = FALSE),
+                        format(round(dfTotaled["Totals", "x<sup>2</sup>"], 3), nsmall = 0, scientific = FALSE),
+                        format(round(dfTotaled["Totals", "x"], 2), nsmall = 0, scientific = FALSE),
+                        format(length(datx), nsmall = 0, scientific = FALSE),
+                        format(round(dfTotaled["Totals", "y<sup>2</sup>"], 3), nsmall = 0, scientific = FALSE),
+                        format(round(dfTotaled["Totals", "y"], 3), nsmall = 0, scientific = FALSE),
+                        format(length(datx), nsmall = 0, scientific = FALSE)
+                        ),
                 br(),
                 br(),
                 br(),
                 
                 sprintf("\\( \\quad = \\; \\dfrac
-                                      { %g }
-                                      {\\sqrt{ %g } \\sqrt{ %g } } \\)",
-                        round(dfTotaled["Totals", "xy"] - sumXSumY / length(datx), 2),
-                        round(dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx), 2),
-                        round(dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx), 2)),
+                                      { %s }
+                                      {\\sqrt{ %s } \\sqrt{ %s } } \\)",
+                        format(round(dfTotaled["Totals", "xy"] - sumXSumY / length(datx), 3), nsmall = 0, scientific = FALSE),
+                        format(round(dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx), 3), nsmall = 0, scientific = FALSE),
+                        format(round(dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx), 3), nsmall = 0, scientific = FALSE)
+                        ),
                 
                 sprintf("\\( = \\; \\dfrac
-                                      { %g }
-                                      { %g } \\)",
-                        round(dfTotaled["Totals", "xy"] - sumXSumY / length(datx), 2),
-                        round(sqrt(dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx)) * sqrt(dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx)), 2)),
+                                      { %s }
+                                      { %s } \\)",
+                        format(round(dfTotaled["Totals", "xy"] - sumXSumY / length(datx), 3), nsmall = 0, scientific = FALSE),
+                        format(round(sqrt(dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx)) * sqrt(dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx)), 3), nsmall = 0, scientific = FALSE)
+                        ),
                 
                 sprintf("\\( = \\; %g \\)",
                         round(pearson$estimate, 4)),
@@ -792,7 +788,6 @@ SLRServer <- function(id) {
             }
           }
           
-          
           # output$PearsonEstimate <- renderPrint({
           #   cat(noquote(paste(c("Pearson's r:", round(pearson$estimate[[1]], 4)))))
           # })
@@ -810,16 +805,17 @@ SLRServer <- function(id) {
                   kendall$estimate)
         })
         
-        # Kendall formula for the Inference tab
+        # Kendall's Tau formula
         output$kendallFormula <- renderUI({
           n <- length(datx)
           withMathJax(
             sprintf("\\( \\displaystyle \\tau = \\dfrac{n_c - n_d}{\\binom{n}{2}} = \\dfrac{n_c - n_d}{\\dfrac{n(n-1)}{2}} \\)"),
             br(),
-            sprintf("\\( \\tau \\; = \\; %0.3f \\)", kendall$estimate)
+            sprintf("\\( \\tau \\; = \\; %0.4f \\)", kendall$estimate)
           )
         })
         
+        # Spearman's rs formula
         output$spearmanEstimate <- renderUI({
           sprintf("\\( \\displaystyle r_{s} \\; = \\; 1 - \\dfrac{ 6 \\, \\sum\\limits_{i=1}^n d^2_{i}}{ n(n^2 - 1)} \\; = \\; %0.4f \\)",
                   spearman$estimate)
@@ -833,7 +829,6 @@ SLRServer <- function(id) {
                                                      c("25", "50", "100", "all"))))
         })
         
-        
         # ANOVA Output
         output$anovaHypotheses <- renderUI({
           withMathJax(
@@ -843,7 +838,7 @@ SLRServer <- function(id) {
               br(),
               "\\( H_a: \\beta_1 \\neq 0 \\)"
             ),
-            br(),
+            #br(),
             p("\\( \\alpha = 0.05 \\)")
           )
         })
@@ -878,10 +873,10 @@ SLRServer <- function(id) {
             p(strong("Test Statistic:")),
             p(sprintf("\\( \\displaystyle F = \\frac{\\mathrm{MSR}}{\\mathrm{MSE}} = \\frac{%.3f}{%.3f} = %.3f \\)", msr, mse, f_value)),
             p(strong("Conclusion:")),
-            if (p_value < 0.05) {
-              p(sprintf("Since the p-value (%.3f) is less than 0.05, we reject the null hypothesis.", p_value))
+            if (p_value <= 0.05) {
+              p(sprintf("Since the p-value is less than \\( \\alpha \\) (%.3f < 0.05), we reject the null hypothesis and conclude there is enough statistical evidence to support the alternative hypothesis.", p_value))
             } else {
-              p(sprintf("Since the p-value (%.3f) is not less than 0.05, we fail to reject the null hypothesis", p_value))
+              p(sprintf("Since the p-value is greater than \\( \\alpha \\) (%.3f >  0.05), we fail to reject the null hypothesis and conclude there isn't enough statistical evidence to support the alternative hypothesis.", p_value))
             }
           )
         })
@@ -936,7 +931,6 @@ SLRServer <- function(id) {
       }
     })
     
-    
     observeEvent(input$resetRegCor, {
       # hideTab(inputId = 'tabSet', target = 'Simple Linear Regression')
       # hideTab(inputId = 'tabSet', target = 'Normality of Residuals')
@@ -948,6 +942,5 @@ SLRServer <- function(id) {
         updateNavbarPage(session, "slrNavbarPage", selected = "Model")
       }
     })
-    
   })
 }
