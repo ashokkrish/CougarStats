@@ -200,7 +200,7 @@ addFlipCheckbox <- function(includeFlip, ns, plotType) {
         inputId = ns("Flip"),
         label = "Plot Horizontally",
         if(!is.null(plotType) && plotType == "Boxplot") {
-          value = TRUE
+          value = FALSE # set default to false FOR NOW
         } else {
           value = FALSE
         },
