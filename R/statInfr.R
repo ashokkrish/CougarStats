@@ -231,7 +231,7 @@ statInfrUI <- function(id) {
                 
                 fileInput(
                   inputId = ns("oneMeanUserData"),
-                  label   = strong("Upload your Data (.csv or .xls or .xlsx or .txt)"),
+                  label   = strong("Upload your data (.csv or .xls or .xlsx or .txt)"),
                   accept  = c("text/csv",
                               "text/comma-separated-values",
                               "text/plain",
@@ -617,7 +617,7 @@ statInfrUI <- function(id) {
                 
                 fileInput(
                   inputId = ns("indMeansUserData"),
-                  label   = strong("Upload your Data (.csv or .xls or .xlsx or .txt)"),
+                  label   = strong("Upload your data (.csv or .xls or .xlsx or .txt)"),
                   accept  = c("text/csv",
                               "text/comma-separated-values",
                               "text/plain",
@@ -627,14 +627,14 @@ statInfrUI <- function(id) {
                 
                 selectizeInput(
                   inputId = ns("indMeansUplSample1"),
-                  label   = strong("Choose a Column for Sample 1"),
+                  label   = strong("Column for Sample 1"),
                   choices = c(""),
                   options = list(placeholder = 'Select a column',
                                  onInitialize = I('function() { this.setValue(""); }'))),
                 
                 selectizeInput(
                   inputId = ns("indMeansUplSample2"),
-                  label   = strong("Choose a Column for Sample 2"),
+                  label   = strong("Column for Sample 2"),
                   choices = c(""),
                   options = list(placeholder = 'Select a column',
                                  onInitialize = I('function() { this.setValue(""); }'))),
@@ -731,7 +731,7 @@ statInfrUI <- function(id) {
                 
                 fileInput(
                   inputId = ns("wilcoxonUpl"),
-                  label   = strong("Upload your Data (.csv or .xls or .xlsx or .txt)"),
+                  label   = strong("Upload your data (.csv or .xls or .xlsx or .txt)"),
                   accept  = c("text/csv",
                               "text/comma-separated-values",
                               "text/plain",
@@ -741,14 +741,14 @@ statInfrUI <- function(id) {
                 
                 selectizeInput(
                   inputId = ns("wilcoxonUpl1"),
-                  label   = strong("Choose a Column for Sample 1"),
+                  label   = strong("Column for Sample 1"),
                   choices = c(""),
                   options = list(placeholder = 'Select a column',
                                  onInitialize = I('function() { this.setValue(""); }'))),
                 
                 selectizeInput(
                   inputId = ns("wilcoxonUpl2"),
-                  label   = strong("Choose a Column for Sample 2"),
+                  label   = strong("Column for Sample 2"),
                   choices = c(""),
                   options = list(placeholder = 'Select a column',
                                  onInitialize = I('function() { this.setValue(""); }'))),
@@ -800,7 +800,7 @@ statInfrUI <- function(id) {
                 
                 fileInput(
                   inputId = ns("depMeansUserData"),
-                  label   = strong("Upload your Data (.csv or .xls or .xlsx or .txt)"),
+                  label   = strong("Upload your data (.csv or .xls or .xlsx or .txt)"),
                   accept  = c("text/csv",
                               "text/comma-separated-values",
                               "text/plain",
@@ -1158,7 +1158,7 @@ statInfrUI <- function(id) {
               
               fileInput(
                 inputId = ns("anovaUserData"),
-                label   = strong("Upload your Data (.csv or .xls or .xlsx or .txt)"),
+                label   = strong("Upload your data (.csv or .xls or .xlsx or .txt)"),
                 accept  = c("text/csv",
                             "text/comma-separated-values",
                             "text/plain",
@@ -1257,7 +1257,7 @@ statInfrUI <- function(id) {
               
               fileInput(
                 inputId = ns("kwUserData"),
-                label   = strong("Upload your Data (.csv or .xls or .xlsx or .txt)"),
+                label   = strong("Upload your data (.csv or .xls or .xlsx or .txt)"),
                 accept  = c("text/csv",
                             "text/comma-separated-values",
                             "text/plain",
@@ -6242,8 +6242,8 @@ statInfrServer <- function(id) {
       
       if(!depmeansuploadvars_iv$is_valid()) {
         validate(
-          need(input$depMeansUplSample1, "Please select a column for the 'Before' sample data."),
-          need(input$depMeansUplSample2, "Please select a column for the 'After' sample data."),
+          need(input$depMeansUplSample1, "Please select a column for Sample 1 (e.g. Before, Pre-Treatment, Baseline)."),
+          need(input$depMeansUplSample2, "Please select a column for Sample 2 (e.g. After, Post-Treatment, Follow-Up)."),
           need(CheckDepUploadSamples() == 0, "Same number of data points required for Sample 1 and Sample 2."),
           errorClass = "myClass")
        
@@ -6433,7 +6433,7 @@ statInfrServer <- function(id) {
           errorClass = "myClass")
         
         validate(
-          need(anovaStackedIsValid() == TRUE, "Please select distinct columns for Response Variable and Factors."),
+          need(anovaStackedIsValid() == TRUE, "Please select distinct columns for the Response Variable and Factors."),
           errorClass = "myClass")
         
         validate(
