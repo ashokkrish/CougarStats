@@ -5817,7 +5817,6 @@ statInfrServer <- function(id) {
     kwResults <- reactive({
       req(si_iv$is_valid())
       kwResults_func(
-        si_iv$is_valid,
         input$kwFormat,
         input$kwMultiColumns,
         kwUploadData(),
