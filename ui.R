@@ -33,7 +33,7 @@ BODY <-
 
 ui <- fluidPage(id = "mainContainer",
                 theme = bs_theme(version = 4, primary = "#18536F"),
-                use_darkmode(),
+             ##   use_darkmode(),
                 tags$div(style = paste(
                            "position: fixed",
                            "top: 20px",

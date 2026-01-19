@@ -51,7 +51,7 @@ regressionAndCorrelationServer <- function(id) {
     current_knn_module_id <- reactive({
       paste0("knn_dynamic_instance_", knn_instance_counter())
     })
-    
+  
     
     # Observer for the main radio button (input$multiple)
     observeEvent(input$multiple, {
@@ -78,17 +78,17 @@ regressionAndCorrelationServer <- function(id) {
           req(current_logr_module_id())
           LogisticRegressionMainPanelUI(session$ns(current_logr_module_id()))
         })
-        # } else if (input$multiple == "PCA") {
-        # pca_instance_counter(pca_instance_counter() + 1)
-        # output$regressionSidebarUI <- renderUI({
-        #   req(current_pca_module_id())
-        #   PCASidebarUI(session$ns(current_pca_module_id()))
-        # })
-        # output$regressionMainPanelUI <- renderUI({
-        #   req(current_pca_module_id())
-        #   PCAMainPanelUI(session$ns(current_pca_module_id()))
-        # })
-        #}
+      # } else if (input$multiple == "PCA") {
+      # pca_instance_counter(pca_instance_counter() + 1)
+      # output$regressionSidebarUI <- renderUI({
+      #   req(current_pca_module_id())
+      #   PCASidebarUI(session$ns(current_pca_module_id()))
+      # })
+      # output$regressionMainPanelUI <- renderUI({
+      #   req(current_pca_module_id())
+      #   PCAMainPanelUI(session$ns(current_pca_module_id()))
+      # })
+      #}
       } else if (input$multiple == "KNN") {
         knn_instance_counter(knn_instance_counter() + 1)
         
@@ -101,7 +101,7 @@ regressionAndCorrelationServer <- function(id) {
           KNNMainPanelUI(session$ns(current_knn_module_id()))
         })
       }
-    }, ignoreNULL = FALSE, ignoreInit = FALSE) # Corrected this line
+      }, ignoreNULL = FALSE, ignoreInit = FALSE) # Corrected this line
     
     
     observeEvent(current_mlr_module_id(), {
