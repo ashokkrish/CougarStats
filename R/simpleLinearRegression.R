@@ -82,6 +82,8 @@ SLRMainPanelUI <- function(id) {
             titlePanel("Coefficients"),
             br(),
             tableOutput(ns("slrInferenceCoefficientsTable")),
+            br(),
+            uiOutput(ns("slrInferenceDetails")), # Added for detailed tables
             br()
           ), # Inference tabpanel
           
@@ -331,7 +333,7 @@ SLRServer <- function(id) {
       }
       return(width)
     }
-
+    
     #  ========================================================================= #
     ## -------- Reactives ------------------------------------------------------
     #  ========================================================================= #
@@ -390,7 +392,7 @@ SLRServer <- function(id) {
                                              return(diff)
                                            }
                                          })
-
+    
     #  ========================================================================= #
     ## -------- Observers ------------------------------------------------------
     #  ========================================================================= #
@@ -691,6 +693,99 @@ SLRServer <- function(id) {
           digits = 3
         )
         
+        # ---- NEW CODE START: Detailed Inference Tables ----
+        output$slrInferenceDetails <- renderUI({
+          req(model)
+          
+          # Extract Model Statistics
+          summ <- summary(model)
+          coefs <- summ$coefficients
+          
+          # Intercept (Beta 0) values
+          b0_est <- coefs["(Intercept)", "Estimate"]
+          b0_se  <- coefs["(Intercept)", "Std. Error"]
+          b0_t   <- coefs["(Intercept)", "t value"]
+          b0_p   <- coefs["(Intercept)", "Pr(>|t|)"]
+          
+          # Slope (Beta 1) values
+          b1_est <- coefs["datx", "Estimate"]
+          b1_se  <- coefs["datx", "Std. Error"]
+          b1_t   <- coefs["datx", "t value"]
+          b1_p   <- coefs["datx", "Pr(>|t|)"]
+          
+          # Data Statistics
+          n <- length(datx)
+          df <- df.residual(model) # n - 2
+          t_crit <- qt(0.975, df)
+          
+          sum_e2 <- sum(residuals(model)^2)
+          x_bar <- mean(datx)
+          sum_sq_diff_x <- sum((datx - x_bar)^2)
+          
+          # Helper for formatting numbers
+          fmt <- function(x) format(round(x, 4), nsmall = 4, scientific = FALSE)
+          
+          # Render the UI with MathJax
+          withMathJax(
+            fluidRow(
+              # --- LEFT COLUMN: Intercept Parameter ---
+              column(6,
+                     div(style = "border: 1px solid #ccc; padding: 10px; border-radius: 5px;",
+                         h4(HTML("Intercept Parameter (\\(\\beta_0\\))")),
+                         p(HTML("H<sub>0</sub>: \\(\\beta_0 = 0\\)")),
+                         p(HTML("H<sub>a</sub>: \\(\\beta_0 \\neq 0\\)")),
+                         p(HTML("\\(\\alpha = 0.05\\)")),
+                         
+                         # t-statistic equation
+                         p(HTML("$$t = \\frac{\\hat{\\beta}_0 - 0}{\\sqrt{\\frac{\\sum e^2}{n-2}} \\sqrt{\\frac{1}{n} + \\frac{\\bar{x}^2}{\\sum(x-\\bar{x})^2}}} $$")),
+                         p(HTML(sprintf("$$ = \\frac{%s - 0}{\\sqrt{\\frac{%s}{%d}} \\sqrt{\\frac{1}{%d} + \\frac{%s^2}{%s}}} $$", 
+                                        fmt(b0_est), fmt(sum_e2), df, n, fmt(x_bar), fmt(sum_sq_diff_x)))),
+                         p(HTML(sprintf("$$ = %s$$", fmt(b0_t)))),
+                         
+                         p(strong(sprintf("p-value: %s", format.pval(b0_p, digits=4, eps=0.0001)))),
+                         
+                         # Horizontal Line
+                         hr(style = "border-top: 1px solid #ccc;"),
+                         
+                         # Confidence Interval
+                         p("The 95% confidence interval for \\(\\beta_0\\) is"),
+                         p(HTML("$$\\hat{\\beta}_0 \\pm t_{\\alpha/2, n-2} \\sqrt{\\frac{\\sum e^2}{n-2}} \\sqrt{\\frac{1}{n} + \\frac{\\bar{x}^2}{\\sum(x-\\bar{x})^2}}$$")),
+                         p(HTML(sprintf("$$%s \\pm %s (%s)$$", fmt(b0_est), fmt(t_crit), fmt(b0_se)))),
+                         p(HTML(sprintf("$$= (%s, %s)$$", fmt(b0_est - t_crit * b0_se), fmt(b0_est + t_crit * b0_se))))
+                     )
+              ),
+              
+              # --- RIGHT COLUMN: Slope Parameter ---
+              column(6,
+                     div(style = "border: 1px solid #ccc; padding: 10px; border-radius: 5px;",
+                         h4(HTML("Slope Parameter (\\(\\beta_1\\))")),
+                         p(HTML("H<sub>0</sub>: \\(\\beta_1 = 0\\)")),
+                         p(HTML("H<sub>a</sub>: \\(\\beta_1 \\neq 0\\)")),
+                         p(HTML("\\(\\alpha = 0.05\\)")),
+                         
+                         # t-statistic equation
+                         p(HTML("$$t = \\frac{\\hat{\\beta}_1 - 0}{\\sqrt{\\frac{\\sum e^2}{n-2}} \\frac{1}{\\sqrt{\\sum(x-\\bar{x})^2}}} $$")),
+                         p(HTML(sprintf("$$ = \\frac{%s - 0}{\\sqrt{\\frac{%s}{%d}} \\frac{1}{\\sqrt{%s}}} $$", 
+                                        fmt(b1_est), fmt(sum_e2), df, fmt(sum_sq_diff_x)))),
+                         p(HTML(sprintf("$$ = %s$$", fmt(b1_t)))),
+                         
+                         p(strong(sprintf("p-value: %s", format.pval(b1_p, digits=4, eps=0.0001)))),
+                         
+                         # Horizontal Line
+                         hr(style = "border-top: 1px solid #ccc;"),
+                         
+                         # Confidence Interval
+                         p("The 95% confidence interval for \\(\\beta_1\\) is"),
+                         p(HTML("$$\\hat{\\beta}_1 \\pm t_{\\alpha/2, n-2} \\sqrt{\\frac{\\sum e^2}{n-2}} \\frac{1}{\\sqrt{\\sum(x-\\bar{x})^2}}$$")),
+                         p(HTML(sprintf("$$%s \\pm %s (%s)$$", fmt(b1_est), fmt(t_crit), fmt(b1_se)))),
+                         p(HTML(sprintf("$$= (%s, %s)$$", fmt(b1_est - t_crit * b1_se), fmt(b1_est + t_crit * b1_se))))
+                     )
+              )
+            )
+          )
+        })
+        # ---- NEW CODE END ----
+        
         output$confintLinReg <- renderPrint({
           confint(model) # Prints the 95% CI for the regression parameters
         })
@@ -740,7 +835,7 @@ SLRServer <- function(id) {
                         format(round(dfTotaled["Totals", "y<sup>2</sup>"], 3), nsmall = 0, scientific = FALSE),
                         format(round(dfTotaled["Totals", "y"], 3), nsmall = 0, scientific = FALSE),
                         format(length(datx), nsmall = 0, scientific = FALSE)
-                        ),
+                ),
                 br(),
                 br(),
                 br(),
@@ -751,14 +846,14 @@ SLRServer <- function(id) {
                         format(round(dfTotaled["Totals", "xy"] - sumXSumY / length(datx), 3), nsmall = 0, scientific = FALSE),
                         format(round(dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx), 3), nsmall = 0, scientific = FALSE),
                         format(round(dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx), 3), nsmall = 0, scientific = FALSE)
-                        ),
+                ),
                 
                 sprintf("\\( = \\; \\dfrac
                                       { %s }
                                       { %s } \\)",
                         format(round(dfTotaled["Totals", "xy"] - sumXSumY / length(datx), 3), nsmall = 0, scientific = FALSE),
                         format(round(sqrt(dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx)) * sqrt(dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx)), 3), nsmall = 0, scientific = FALSE)
-                        ),
+                ),
                 
                 sprintf("\\( = \\; %g \\)",
                         round(pearson$estimate, 4)),
