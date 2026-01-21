@@ -2485,11 +2485,7 @@ statInfrServer <- function(id) {
           !checkNumeric(DepMeansUploadData(), input$depMeansUplSample2) &&
           (input$depMeansUplSample1 == input$depMeansUplSample2 ||
            GetDepMeansData()$sd == 0)) {
-        if(input$depMeansUplSample1 == input$depMeansUplSample2) {
-          "'Sample 1’ and 'Sample 2' data are the same. Standard deviation of the difference is zero."
-        } else {
-          "Standard deviation of the difference (sd) is zero."
-        }
+        "Standard deviation of the difference (sd) is zero."
       }
     })
     
@@ -2500,11 +2496,7 @@ statInfrServer <- function(id) {
           !checkNumeric(DepMeansUploadData(), input$depMeansUplSample2) &&
           (input$depMeansUplSample1 == input$depMeansUplSample2 ||
            GetDepMeansData()$sd == 0)) {
-        if(input$depMeansUplSample1 == input$depMeansUplSample2) {
-          "'Sample 1’ and 'Sample 2' data are the same. Standard deviation of the difference is zero."
-        } else {
           "Standard deviation of the difference (sd) is zero."
-        }
       }
     })
     
