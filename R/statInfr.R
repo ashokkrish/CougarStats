@@ -2485,7 +2485,11 @@ statInfrServer <- function(id) {
           !checkNumeric(DepMeansUploadData(), input$depMeansUplSample2) &&
           (input$depMeansUplSample1 == input$depMeansUplSample2 ||
            GetDepMeansData()$sd == 0)) {
-        "'Sample 1' and 'Sample 2' data are the same. Standard deviation of the difference is zero."
+        if(input$depMeansUplSample1 == input$depMeansUplSample2) {
+          "'Sample 1’ and 'Sample 2' data are the same. Standard deviation of the difference is zero."
+        } else {
+          "Standard deviation of the difference (sd) is zero."
+        }
       }
     })
     
@@ -2496,7 +2500,11 @@ statInfrServer <- function(id) {
           !checkNumeric(DepMeansUploadData(), input$depMeansUplSample2) &&
           (input$depMeansUplSample1 == input$depMeansUplSample2 ||
            GetDepMeansData()$sd == 0)) {
-        "'Sample 1' and 'Sample 2' data are the same. Standard deviation of the difference is zero."
+        if(input$depMeansUplSample1 == input$depMeansUplSample2) {
+          "'Sample 1’ and 'Sample 2' data are the same. Standard deviation of the difference is zero."
+        } else {
+          "Standard deviation of the difference (sd) is zero."
+        }
       }
     })
     
@@ -2515,8 +2523,8 @@ statInfrServer <- function(id) {
       }
     })
     
-    depmeansraw_iv$add_rule("before", ~ if(GetDepMeansData()$sd == 0) "'Sample 1’ and 'Sample 2' data are the same. Standard deviation of the difference is zero.")
-    depmeansraw_iv$add_rule("after", ~ if(GetDepMeansData()$sd == 0) "'Sample 1’ and 'Sample 2' data are the same. Standard deviation of the difference is zero.")
+    depmeansraw_iv$add_rule("before", ~ if(GetDepMeansData()$sd == 0) "Standard deviation of the difference (sd) is zero.")
+    depmeansraw_iv$add_rule("after", ~ if(GetDepMeansData()$sd == 0) "Standard deviation of the difference (sd) is zero.")
     
     depmeansmunaught_iv$add_rule("depMeansMuNaught", sv_required())
     
@@ -5809,13 +5817,17 @@ statInfrServer <- function(id) {
     
     kwDisplayState <- reactiveVal("none")  # "none", "raw", "analysis
     
-    kwStackedIsValid <- eventReactive({input$kwResponse
-      input$kwFactors}, {
+    kwStackedIsValid <- eventReactive(
+      list(input$kwResponse, input$kwFactors),
+      {
         kwStackedIsValid_func(input$kwResponse, input$kwFactors)
-      })
+      }
+    )
     
     kwResults <- reactive({
+      req(input$siMethod == 'Multiple' && input$multipleMethodChoice == 'kw')
       req(si_iv$is_valid())
+      
       kwResults_func(
         input$kwFormat,
         input$kwMultiColumns,
@@ -6267,7 +6279,8 @@ statInfrServer <- function(id) {
             if (input$inferenceType2 == "Hypothesis Testing") {
               "The test statistic (t) will be undefined for sample data with a sample standard deviation of difference (sd) = 0."
             } else {
-              "The confidence interval results in (0,0) when the sample standard deviation of difference (sd) = 0."
+              sprintf("The confidence interval results in (%s,%s) when the sample standard deviation of difference (sd) = 0.", GetDepMeansData()$dbar,
+                      GetDepMeansData()$dbar)
             }
           ),
           errorClass = "myClass"
