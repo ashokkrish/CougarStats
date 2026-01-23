@@ -55,23 +55,23 @@ KNNSidebarUI <- function(id) {
     radioButtons(
       ns("task"),
       strong("Task"),
-      choices = c("Classification", "Regression"),
+      choices = c("Classification"),
       selected = "Classification"
     ),
     
     # Let user choose any k
-    numericInput(
-      ns("k"),
-      label = strong("k (number of neighbors)"),
-      value = 10,
-      min = 1,
-      step = 1
-    ),
-    
     sliderInput(
       ns("split"),
       label = strong("Train/Test split (%)"),
       min = 50, max = 90, value = 80, step = 1
+    ),
+    
+    numericInput(
+      ns("k"),
+      label = strong("Number of Neighbors (k)"),
+      value = 10,
+      min = 1,
+      step = 1
     ),
     
     checkboxInput(ns("standardize"), "Standardize predictors", value = TRUE),
@@ -79,7 +79,7 @@ KNNSidebarUI <- function(id) {
     # Response + predictors
     pickerInput(
       ns("response"),
-      strong("Response Variable (y)"),
+      strong("Response Variable (\\( y\\))"),
       choices = NULL,
       multiple = FALSE,
       options = list(`live-search` = TRUE, title = "Nothing selected")
@@ -121,7 +121,18 @@ KNNMainPanelUI <- function(id) {
         value = "results_tab",
         uiOutput(ns("resultsContainer"))
       ),
-  
+      
+      tabPanel(
+        title = "Plots",
+        value = "plots_tab",
+        uiOutput(ns("plotsContainer"))
+      ),
+      
+      tabPanel(
+        title = "Uploaded Data",
+        value = "uploaded_data_tab",
+        uiOutput(ns("uploadedDataContainer"))
+      ),
       
       id = ns("knnMainPanel"),
       theme = bs_theme(version = 4)
@@ -139,12 +150,134 @@ KNNServer <- function(id) {
       return_class = "tbl_df"
     )
     
+    # ---- Plots Tab Before Upload ----
+    output$plotsContainer <- renderUI({
+      df <- uploadedTibble$data()
+      
+      if (is.null(df)) {
+        return(tagList(
+          helpText("No plots yet. Upload a dataset in the Data Import tab.")
+        ))
+      }
+      
+      if (!isTruthy(input$response) || !isTruthy(input$predictors) || length(input$predictors) < 1) {
+        return(tagList(
+          helpText("To view plots, select a Response Variable and at least one Explanatory Variable, then return to this tab.")
+        ))
+      }
+      
+      tagList(
+        tags$h4("Class Distribution"),
+        plotOutput(session$ns("knnPlotClass"), height = "350px"),
+        
+        tags$hr(),
+        
+        tags$h4("Boxplots by Class"),
+        plotOutput(session$ns("knnPlotBox"), height = "600px"),
+        
+        tags$hr(),
+        
+        tags$h4("Density Plots by Class"),
+        plotOutput(session$ns("knnPlotDensity"), height = "600px")
+      )
+    })
+    
+    # ---- Uploaded Data container (message until dataset exists) ----
+    output$uploadedDataContainer <- renderUI({
+      if (is.null(uploadedTibble$data())) {
+        tagList(
+          helpText("No data yet. Upload a dataset in the Data Import tab to view it here.")
+        )
+      } else {
+        DT::DTOutput(session$ns("knnUploadTable"))
+      }
+    })
+    
+    # ---- Uploaded Data Table ----
+    output$knnUploadTable <- DT::renderDT({
+      req(uploadedTibble$data())
+      df <- uploadedTibble$data()
+      
+      DT::datatable(
+        df,
+        options = list(
+          pageLength = 25,
+          lengthMenu = list(c(25, 50, 100, -1), c("25", "50", "100", "all")),
+          scrollX = TRUE
+        )
+      )
+    })
+    
+    # ---- Plots Tab ----
+    plot_data <- reactive({
+      req(uploadedTibble$data())
+      df <- uploadedTibble$data()
+      
+      req(isTruthy(input$response))
+      req(isTruthy(input$predictors))
+      req(length(input$predictors) >= 1)
+      
+      x <- as.data.frame(df[, input$predictors, drop = FALSE])
+      y <- as.factor(df[[input$response]])
+      
+      list(x = x, y = y)
+    })
+    
+    # 1) Class distribution (plot(y))
+    output$knnPlotClass <- renderPlot({
+      pd <- plot_data()
+      y <- pd$y
+      
+      validate(
+        need(nlevels(y) >= 2, "Choose a categorical response variable to plot class distribution.")
+      )
+      
+      plot(y, main = "Class Distribution", xlab = "Class", ylab = "Frequency")
+    })
+    
+    # 2) Box plots
+    output$knnPlotBox <- renderPlot({
+      pd <- plot_data()
+      
+      validate(
+        need(nlevels(pd$y) >= 2, "Choose a categorical response variable for classification plots.")
+      )
+      
+      p <- caret::featurePlot(x = pd$x, y = pd$y, plot = "box")
+      
+      grid::grid.newpage()
+      print(p)
+    }, res = 96)
+    
+    # 3) Density plots (free scales)
+    output$knnPlotDensity <- renderPlot({
+      pd <- plot_data()
+      
+      validate(
+        need(nlevels(pd$y) >= 2, "Choose a categorical response variable for classification plots.")
+      )
+      
+      scales <- list(x = list(relation = "free"), y = list(relation = "free"))
+      p <- caret::featurePlot(x = pd$x, y = pd$y, plot = "density", scales = scales)
+      
+      grid::grid.newpage()
+      print(p)
+    }, res = 96)
+    
+    # ---- Validation (k required, must be > 0) ----
+    knn_iv <- shinyvalidate::InputValidator$new()
+    
+    knn_iv$add_rule("k", shinyvalidate::sv_required())
+    knn_iv$add_rule("k", shinyvalidate::sv_gt(0, message = "Must be greater than 0."))
+    
+    knn_iv$enable()
+    
     results_ready <- reactiveVal(FALSE)
+    calc_settings <- reactiveVal(NULL)
     
     output$resultsContainer <- renderUI({
       if (!isTRUE(results_ready())) {
         tagList(
-          tags$h3("Results"),
           helpText("No results yet. Upload a dataset, choose variables, then click Calculate.")
         )
       } else {
@@ -211,7 +344,7 @@ KNNServer <- function(id) {
       req(isTruthy(input$response))
       req(isTruthy(input$predictors))
       req(length(input$predictors) >= 1)
-      req(input$k >= 1)
+      req(knn_iv$is_valid())
       
       #split dataset for training & testing
       df <- uploadedTibble$data()
@@ -265,13 +398,39 @@ KNNServer <- function(id) {
         #evaluation metrics 
         metrics <- knn_classification_report(actual = y_test, predicted = pred)
         
+        # to keep train/split static until user clicks calculate
+        calc_settings(list(
+          split = input$split,
+          k = k,
+          n_total = n,
+          n_train = n_train
+        ))
+        
+        
         #Results UI layout
         output$resultsUI <- renderUI({
+          s <- calc_settings()
+          req(s)
+          
+          split_prop <- s$split / 100
+          k_calc <- sqrt(s$n_train)
+          
           tagList(
-            tags$h3("Results"),
+            shiny::withMathJax(),
+            
             tags$p(tags$strong("Task: "), input$task),
-            tags$p(tags$strong("k = "), k),
-            tags$p(tags$strong("Train split = "), paste0(input$split, "%")),
+            
+            tags$p(tags$strong("n = "), s$n_total),
+            
+            tags$p(tags$strong("n × train split = "),
+                   paste0(s$n_total, " × ", sprintf("%.2f", split_prop), " = ", s$n_train)),
+            
+            tags$p(tags$strong("k calculation: "),
+                   sprintf("\\( k = \\sqrt{n_{train}} = \\sqrt{%s} = %.4f \\Rightarrow %s \\)",
+                           s$n_train, k_calc, s$k)),
+            
+            tags$p(tags$strong("k = "), s$k),
+            tags$p(tags$strong("Train split = "), paste0(s$split, "%")),
             tags$p(tags$strong("Accuracy = "), sprintf("%.4f", metrics$accuracy)),
             
             tags$h4("Classification Report"),
@@ -281,6 +440,8 @@ KNNServer <- function(id) {
             tableOutput(session$ns("confMat"))
           )
         })
+        
+        
         
         results_ready(TRUE) #show the output UI now
         updateNavbarPage(session, "knnMainPanel", selected = "results_tab") #switch user to Results tab
