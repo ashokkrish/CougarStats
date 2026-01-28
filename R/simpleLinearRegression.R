@@ -737,10 +737,10 @@ SLRServer <- function(id) {
                          p(HTML("\\(\\alpha = 0.05\\)")),
                          
                          # t-statistic equation
-                         p(HTML("$$t = \\frac{\\hat{\\beta}_0 - 0}{\\sqrt{\\frac{\\sum e^2}{n-2}} \\sqrt{\\frac{1}{n} + \\frac{\\bar{x}^2}{\\sum(x-\\bar{x})^2}}} $$")),
-                         p(HTML(sprintf("$$ = \\frac{%s - 0}{\\sqrt{\\frac{%s}{%d}} \\sqrt{\\frac{1}{%d} + \\frac{%s^2}{%s}}} $$", 
+                         p(HTML("$$\\large{\\quad t = \\frac{\\hat{\\beta}_0 - 0}{\\left(\\sqrt{\\frac{\\left(\\sum e^2\\right)}{n-2}} \\times \\sqrt{\\frac{1}{n} + \\frac{\\bar{x}^2}{\\left(\\sum(x-\\bar{x})^2\\right)}}\\right)}}$$")),
+                         p(HTML(sprintf("$$\\large{\\quad = \\frac{%s - 0}{\\left(\\sqrt{\\frac{%s}{%d}} \\times \\sqrt{\\frac{1}{%d} + \\frac{%s^2}{%s}}\\right)}}$$", 
                                         fmt(b0_est), fmt(sum_e2), df, n, fmt(x_bar), fmt(sum_sq_diff_x)))),
-                         p(HTML(sprintf("$$ = %s$$", fmt(b0_t)))),
+                         p(HTML(sprintf("$$\\large{\\quad = %s}$$", fmt(b0_t)))),
                          
                          p(strong(sprintf("p-value: %s", format.pval(b0_p, digits=4, eps=0.0001)))),
                          
@@ -749,9 +749,9 @@ SLRServer <- function(id) {
                          
                          # Confidence Interval
                          p("The 95% confidence interval for \\(\\beta_0\\) is"),
-                         p(HTML("$$\\hat{\\beta}_0 \\pm t_{\\alpha/2, n-2} \\sqrt{\\frac{\\sum e^2}{n-2}} \\sqrt{\\frac{1}{n} + \\frac{\\bar{x}^2}{\\sum(x-\\bar{x})^2}}$$")),
-                         p(HTML(sprintf("$$%s \\pm %s (%s)$$", fmt(b0_est), fmt(t_crit), fmt(b0_se)))),
-                         p(HTML(sprintf("$$= (%s, %s)$$", fmt(b0_est - t_crit * b0_se), fmt(b0_est + t_crit * b0_se))))
+                         p(HTML("$$\\large{\\quad \\hat{\\beta}_0 \\pm t_{\\alpha/2, n-2} \\left(\\sqrt{\\frac{\\left(\\sum e^2\\right)}{n-2}} \\times \\sqrt{\\frac{1}{n} + \\frac{\\bar{x}^2}{\\left(\\sum(x-\\bar{x})^2\\right)}}\\right)}$$")),
+                         p(HTML(sprintf("$$\\large{\\quad %s \\pm %s \\times (%s)}$$", fmt(b0_est), fmt(t_crit), fmt(b0_se)))),
+                         p(HTML(sprintf("$$\\large{\\quad = (%s, %s)}$$", fmt(b0_est - t_crit * b0_se), fmt(b0_est + t_crit * b0_se))))
                      )
               ),
               
@@ -764,10 +764,10 @@ SLRServer <- function(id) {
                          p(HTML("\\(\\alpha = 0.05\\)")),
                          
                          # t-statistic equation
-                         p(HTML("$$t = \\frac{\\hat{\\beta}_1 - 0}{\\sqrt{\\frac{\\sum e^2}{n-2}} \\frac{1}{\\sqrt{\\sum(x-\\bar{x})^2}}} $$")),
-                         p(HTML(sprintf("$$ = \\frac{%s - 0}{\\sqrt{\\frac{%s}{%d}} \\frac{1}{\\sqrt{%s}}} $$", 
+                         p(HTML("$$\\large{\\quad t = \\frac{\\hat{\\beta}_1 - 0}{\\left(\\frac{\\sqrt{\\frac{\\left(\\sum e^2\\right)}{n-2}}}{\\sqrt{\\left(\\sum(x-\\bar{x})^2\\right)}}\\right)}}$$")),
+                         p(HTML(sprintf("$$\\large{\\quad = \\frac{%s - 0}{\\left(\\frac{\\sqrt{\\frac{%s}{%d}}}{\\sqrt{%s}}\\right)}}$$", 
                                         fmt(b1_est), fmt(sum_e2), df, fmt(sum_sq_diff_x)))),
-                         p(HTML(sprintf("$$ = %s$$", fmt(b1_t)))),
+                         p(HTML(sprintf("$$\\large{\\quad = %s}$$", fmt(b1_t)))),
                          
                          p(strong(sprintf("p-value: %s", format.pval(b1_p, digits=4, eps=0.0001)))),
                          
@@ -776,9 +776,9 @@ SLRServer <- function(id) {
                          
                          # Confidence Interval
                          p("The 95% confidence interval for \\(\\beta_1\\) is"),
-                         p(HTML("$$\\hat{\\beta}_1 \\pm t_{\\alpha/2, n-2} \\sqrt{\\frac{\\sum e^2}{n-2}} \\frac{1}{\\sqrt{\\sum(x-\\bar{x})^2}}$$")),
-                         p(HTML(sprintf("$$%s \\pm %s (%s)$$", fmt(b1_est), fmt(t_crit), fmt(b1_se)))),
-                         p(HTML(sprintf("$$= (%s, %s)$$", fmt(b1_est - t_crit * b1_se), fmt(b1_est + t_crit * b1_se))))
+                         p(HTML("$$\\large{\\quad \\hat{\\beta}_1 \\pm t_{\\alpha/2, n-2} \\left(\\frac{\\sqrt{\\frac{\\left(\\sum e^2\\right)}{n-2}}}{\\sqrt{\\left(\\sum(x-\\bar{x})^2\\right)}}\\right)}$$")),
+                         p(HTML(sprintf("$$\\large{\\quad %s \\pm %s (%s)}$$", fmt(b1_est), fmt(t_crit), fmt(b1_se)))),
+                         p(HTML(sprintf("$$\\large{\\quad = (%s, %s)}$$", fmt(b1_est - t_crit * b1_se), fmt(b1_est + t_crit * b1_se))))
                      )
               )
             )
@@ -816,15 +816,15 @@ SLRServer <- function(id) {
             
             output$pearsonCorFormula <- renderUI({
               withMathJax(
-                sprintf("\\( r \\; = \\; \\dfrac
-                                      {\\sum xy - \\dfrac{ (\\sum x)(\\sum y) }{ n } }
-                                      {\\sqrt{ \\sum x^2 - \\dfrac{ (\\sum x)^2 }{ n } } \\sqrt{ \\sum y^2 - \\dfrac{ (\\sum y) ^2 }{ n } } } \\)"),
+                sprintf("\\( \\large{\\quad r = \\dfrac
+                                      {\\left(\\sum xy\\right) - \\dfrac{ \\left(\\sum x\\right) \\times \\left(\\sum y\\right) }{ n } }
+                                      {\\sqrt{ \\left(\\sum x^2\\right) - \\dfrac{ \\left(\\sum x\\right)^2 }{ n } } \\times \\sqrt{ \\left(\\sum y^2\\right) - \\dfrac{ \\left(\\sum y\\right) ^2 }{ n } } }} \\)"),
                 br(),
                 br(),
                 br(),
-                sprintf("\\( \\quad = \\; \\dfrac
-                                      {%s - \\dfrac{ (%s)(%s) }{ %s } }
-                                      {\\sqrt{ %s - \\dfrac{ (%s)^2 }{ %s } } \\sqrt{ %s - \\dfrac{ (%s) ^2 }{ %s } } } \\)",
+                sprintf("\\( \\large{\\quad = \\dfrac
+                                      {%s - \\dfrac{ (%s) \\times (%s) }{ %s } }
+                                      {\\sqrt{ %s - \\dfrac{ (%s)^2 }{ %s } } \\times \\sqrt{ %s - \\dfrac{ (%s) ^2 }{ %s } } }} \\)",
                         format(round(dfTotaled["Totals", "xy"], 3), nsmall = 0, scientific = FALSE),
                         format(round(dfTotaled["Totals", "x"], 3), nsmall = 0, scientific = FALSE),
                         format(round(dfTotaled["Totals", "y"], 3), nsmall = 0, scientific = FALSE),
@@ -840,22 +840,22 @@ SLRServer <- function(id) {
                 br(),
                 br(),
                 
-                sprintf("\\( \\quad = \\; \\dfrac
+                sprintf("\\( \\large{\\quad = \\dfrac
                                       { %s }
-                                      {\\sqrt{ %s } \\sqrt{ %s } } \\)",
+                                      {\\sqrt{ %s } \\times \\sqrt{ %s } }} \\)",
                         format(round(dfTotaled["Totals", "xy"] - sumXSumY / length(datx), 3), nsmall = 0, scientific = FALSE),
                         format(round(dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx), 3), nsmall = 0, scientific = FALSE),
                         format(round(dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx), 3), nsmall = 0, scientific = FALSE)
                 ),
                 
-                sprintf("\\( = \\; \\dfrac
+                sprintf("\\( \\large{\\quad = \\dfrac
                                       { %s }
-                                      { %s } \\)",
+                                      { %s }} \\)",
                         format(round(dfTotaled["Totals", "xy"] - sumXSumY / length(datx), 3), nsmall = 0, scientific = FALSE),
                         format(round(sqrt(dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx)) * sqrt(dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx)), 3), nsmall = 0, scientific = FALSE)
                 ),
                 
-                sprintf("\\( = \\; %g \\)",
+                sprintf("\\( \\large{\\quad = %g} \\)",
                         round(pearson$estimate, 4)),
                 br(),
                 br(),
@@ -912,7 +912,7 @@ SLRServer <- function(id) {
         
         # Spearman's rs formula
         output$spearmanEstimate <- renderUI({
-          sprintf("\\( \\displaystyle r_{s} \\; = \\; 1 - \\dfrac{ 6 \\, \\sum\\limits_{i=1}^n d^2_{i}}{ n(n^2 - 1)} \\; = \\; %0.4f \\)",
+          sprintf("\\( \\large{\\quad r_{s} = 1 - \\dfrac{ 6 \\times \\left(\\sum\\limits_{i=1}^n d^2_{i}\\right)}{ n \\times (n^2 - 1)} = %0.4f} \\)",
                   spearman$estimate)
         })
         
