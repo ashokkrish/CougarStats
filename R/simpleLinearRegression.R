@@ -371,7 +371,12 @@ SLRServer <- function(id) {
       dat <- list()
       datx <- as.data.frame(slrUploadData())[, input$slrExplanatory]
       dat$invalid <- any(!is.numeric(datx))
-      dat$sd <- sd(datx, na.rm = TRUE)
+      if (!dat$invalid){
+        dat$sd <- sd(datx, na.rm = TRUE)
+      }
+      else{
+        dat$sd <- 0
+      }
       return(dat)
     })
     
@@ -379,7 +384,13 @@ SLRServer <- function(id) {
       dat <- list()
       daty <- as.data.frame(slrUploadData())[, input$slrResponse]
       dat$invalid <- any(!is.numeric(daty))
-      dat$sd <- sd(daty, na.rm = TRUE)
+      # Only calculate SD if numeric
+      if (!dat$invalid) {
+        dat$sd <- sd(daty, na.rm = TRUE)
+      } 
+      else {
+        dat$sd <- 0
+      }
       return(dat)
     })
     
