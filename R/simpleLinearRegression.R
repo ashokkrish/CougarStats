@@ -199,6 +199,8 @@ SLRSidebarUI <- function(id) {
         ns = ns,
         condition = "input.dataRegCor == 'Upload Data'",
         
+        HTML(uploadDataDisclaimer),
+        
         fileInput(
           inputId = ns("slrUserData"),
           label   = strong("Upload your data (.csv or .xls or .xlsx or .txt)"),
