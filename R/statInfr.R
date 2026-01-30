@@ -2296,19 +2296,22 @@ statInfrServer <- function(id) {
     # oneMeanVariable
     onemeanuploadvar_iv$add_rule("oneMeanVariable", sv_required())
     onemeanuploadvar_iv$add_rule("oneMeanVariable", ~ {
-      data <- OneMeanUploadData()
-      col  <- input$oneMeanVariable
-      if (is.null(col) || col == "" || !(col %in% names(data))) return(NULL)
-      if (input$sigmaKnownUpload == "Unknown" &&
-          sd(data[[col]], na.rm = TRUE) == 0 && input$inferenceType == 'Hypothesis Testing') {
-        "No variance in selected column"
-      }
-    })
-    onemeanuploadvar_iv$add_rule("oneMeanVariable", ~ {
       if (checkNumeric(OneMeanUploadData(), input$oneMeanVariable)) {
         "Selected column contains non-numeric data."
       }
     })
+    onemeanuploadvar_iv$add_rule("oneMeanVariable", ~ {
+      if (!(input$oneMeanVariable %in% names(OneMeanUploadData()))) return(NULL)
+      dat <- na.omit(unlist(OneMeanUploadData()[, input$oneMeanVariable]))
+      if (length(dat) < 2) "Samples must include at least 2 observations"
+    })
+    onemeanuploadvar_iv$add_rule("oneMeanVariable", ~ {
+      if (!(input$oneMeanVariable %in% names(OneMeanUploadData()))) return(NULL)
+      dat <- na.omit(unlist(OneMeanUploadData()[, input$oneMeanVariable]))
+      if (input$sigmaKnownUpload == "Unknown" && input$inferenceType == 'Hypothesis Testing' && length(dat) > 1 && sd(dat) == 0)
+        "No variance in selected column"
+    })
+
     
     # sampSD
     onemeansdunk_iv$add_rule("sampSD", sv_required())
@@ -2393,7 +2396,7 @@ statInfrServer <- function(id) {
       if (input$bothsigmaKnownUpload == "bothUnknown" && input$inferenceType2 == 'Hypothesis Testing') {
         if (c1 %in% names(d) && c2 %in% names(d)) {
           if (sd(d[[c1]], na.rm = TRUE) == 0 && sd(d[[c2]], na.rm = TRUE) == 0) {
-            return("At least 1 of the selected columns must have variance.")
+            return("Sample standard deviation cannot be 0 for both Sample 1 and Sample 2.")
           }
         }
       }
@@ -2407,7 +2410,7 @@ statInfrServer <- function(id) {
       if (input$bothsigmaKnownUpload == "bothUnknown" && input$inferenceType2 == 'Hypothesis Testing') {
         if (c1 %in% names(d) && c2 %in% names(d)) {
           if (sd(d[[c1]], na.rm = TRUE) == 0 && sd(d[[c2]], na.rm = TRUE) == 0) {
-            return("At least 1 of the selected columns must have variance.")
+            return("Sample standard deviation cannot be 0 for both Sample 1 and Sample 2.")
           }
         }
       }
@@ -3098,15 +3101,6 @@ statInfrServer <- function(id) {
       )
       
       return(conclusion)
-    }
-    
-    getTTestErrorMsg <- function(sampleData) {
-      sampleMean <- mean(sampleData, na.rm = TRUE)
-      sampleSD   <- sd(sampleData, na.rm = TRUE)
-      
-      if (sampleSD != 0) return(NULL)
-      
-      return("When the sample standard deviation is 0, the test statistic (t) is undefined.")
     }
     
     printOneMeanCI <- function() {
@@ -5936,13 +5930,13 @@ statInfrServer <- function(id) {
         
         if (input$sigmaKnownRaw == "rawUnknown") {
           sampleData <- createNumLst(input$sample1)
-          msg <- getTTestErrorMsg(sampleData)
-          if (!is.null(msg)) {
-            validate(
-              need(FALSE, msg),
-              errorClass = "myClass"
-            )
-          }
+          validate(
+          need(
+            sd(sampleData, na.rm = TRUE) != 0,
+               "When the sample standard deviation is 0, the test statistic (t) is undefined." 
+          ),
+          errorClass = "myClass"
+          )
         }
       }
       
@@ -5980,18 +5974,22 @@ statInfrServer <- function(id) {
           need(input$oneMeanVariable != "", "Please select a column for analysis."),
           errorClass = "myClass"
         )
-        data <- OneMeanUploadData()
-        col <- input$oneMeanVariable
-        
-        if (!is.null(data) && !is.null(col) && input$sigmaKnownUpload == "Unknown") {
-          msg <- getTTestErrorMsg(data[[col]])
-          if (!is.null(msg)) {
-            validate(
-              need(FALSE, msg),
-              errorClass = "myClass"
-            )
-          }
-        }
+        sampleData <- na.omit(unlist(OneMeanUploadData()[, input$oneMeanVariable]))
+        validate(
+          need(is.numeric(sampleData), "Selected column must be numeric."),
+          errorClass = "myClass"
+        )
+        validate(
+          need(length(sampleData) > 1, "Samples must include at least 2 observations."),
+          errorClass = "myClass"
+        )
+        validate(
+          need(
+            sd(sampleData, na.rm = TRUE) != 0,
+            "When the sample standard deviation is 0, the test statistic (t) is undefined."
+          ),
+          errorClass = "myClass"
+        )
       }
       
       
@@ -7366,7 +7364,7 @@ statInfrServer <- function(id) {
           br(),
           br(),
           sprintf("\\( \\alpha = %g \\)",
-                  SigLvl()),
+                  SigLvl()), br(),
           #br(),
           br(),
           p(tags$b("Test Statistic:")),
