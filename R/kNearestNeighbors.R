@@ -68,7 +68,7 @@ KNNSidebarUI <- function(id) {
     
     numericInput(
       ns("k"),
-      label = strong("Number of Neighbors (k)"),
+      label = strong(htmltools::HTML("Number of Neighbors (<em>k</em>)")),
       value = 10,
       min = 1,
       step = 1
@@ -76,10 +76,18 @@ KNNSidebarUI <- function(id) {
     
     checkboxInput(ns("standardize"), "Standardize predictors", value = TRUE),
     
+    tags$small(
+      style = "display: block; margin-top: 6px; color: #6c757d;",
+      "Note: CougarStats does not store, log, or share any data you upload. ",
+      "All uploaded files exist only for the duration of your session and are ",
+      "permanently deleted when the session ends."
+    ),
+    
+    
     # Response + predictors
     pickerInput(
       ns("response"),
-      strong("Response Variable (\\( y\\))"),
+      strong(htmltools::HTML("Response Variable (<em>y</em>)")),
       choices = NULL,
       multiple = FALSE,
       options = list(`live-search` = TRUE, title = "Nothing selected")
@@ -87,7 +95,7 @@ KNNSidebarUI <- function(id) {
     
     pickerInput(
       ns("predictors"),
-      strong("Explanatory Variables (x₁, x₂, ..., xₖ)"),
+      strong(htmltools::HTML("Explanatory Variables (<em>x₁, x₂, ..., xₖ</em>)")),
       choices = NULL,
       multiple = TRUE,
       options = list(`actions-box` = TRUE, `live-search` = TRUE, title = "Nothing selected")
@@ -150,38 +158,6 @@ KNNServer <- function(id) {
       return_class = "tbl_df"
     )
     
-    # ---- Plots Tab Before Upload ----
-    output$plotsContainer <- renderUI({
-      df <- uploadedTibble$data()
-      
-      if (is.null(df)) {
-        return(tagList(
-          helpText("No plots yet. Upload a dataset in the Data Import tab.")
-        ))
-      }
-      
-      if (!isTruthy(input$response) || !isTruthy(input$predictors) || length(input$predictors) < 1) {
-        return(tagList(
-          helpText("To view plots, select a Response Variable and at least one Explanatory Variable, then return to this tab.")
-        ))
-      }
-      
-      tagList(
-        tags$h4("Class Distribution"),
-        plotOutput(session$ns("knnPlotClass"), height = "350px"),
-        
-        tags$hr(),
-        
-        tags$h4("Boxplots by Class"),
-        plotOutput(session$ns("knnPlotBox"), height = "600px"),
-        
-        tags$hr(),
-        
-        tags$h4("Density Plots by Class"),
-        plotOutput(session$ns("knnPlotDensity"), height = "600px")
-      )
-    })
-    
     # ---- Uploaded Data container (message until dataset exists) ----
     output$uploadedDataContainer <- renderUI({
       if (is.null(uploadedTibble$data())) {
@@ -210,15 +186,15 @@ KNNServer <- function(id) {
     
     # ---- Plots Tab ----
     plot_data <- reactive({
+      req(isTRUE(plots_ready()))
       req(uploadedTibble$data())
+      s <- plot_settings()
+      req(s)
+      
       df <- uploadedTibble$data()
       
-      req(isTruthy(input$response))
-      req(isTruthy(input$predictors))
-      req(length(input$predictors) >= 1)
-      
-      x <- as.data.frame(df[, input$predictors, drop = FALSE])
-      y <- as.factor(df[[input$response]])
+      x <- as.data.frame(df[, s$predictors, drop = FALSE])
+      y <- as.factor(df[[s$response]])
       
       list(x = x, y = y)
     })
@@ -249,7 +225,7 @@ KNNServer <- function(id) {
       print(p)
     }, res = 96)
     
-    # 3) Density plots (free scales)
+    # 3) Density plots
     output$knnPlotDensity <- renderPlot({
       pd <- plot_data()
       
@@ -275,15 +251,85 @@ KNNServer <- function(id) {
     results_ready <- reactiveVal(FALSE)
     calc_settings <- reactiveVal(NULL)
     
+    plots_ready <- reactiveVal(FALSE)
+    plot_settings <- reactiveVal(NULL)
+    
+    results_ever_calculated <- reactiveVal(FALSE)
+    plots_ever_calculated <- reactiveVal(FALSE)
+    
+    # ---- Clear old outputs when any input changes after Calculate ----
+    observeEvent(
+      list(
+        uploadedTibble$data(),
+        input$split,
+        input$k,
+        input$standardize,
+        input$response,
+        input$predictors
+      ),
+      {
+        if (isTRUE(results_ready())) {
+          results_ready(FALSE)
+          calc_settings(NULL)
+        }
+        
+        if (isTRUE(plots_ready())) {
+          plots_ready(FALSE)
+          plot_settings(NULL)
+        }
+      },
+      ignoreInit = TRUE
+    )
+    
     output$resultsContainer <- renderUI({
       if (!isTRUE(results_ready())) {
-        tagList(
-          helpText("No results yet. Upload a dataset, choose variables, then click Calculate.")
-        )
-      } else {
-        uiOutput(session$ns("resultsUI"))
+        
+        # First time ever (before any Calculate)
+        if (!isTRUE(results_ever_calculated())) {
+          return(tagList(
+            helpText("No results yet. Upload a dataset, choose variables, then click Calculate.")
+          ))
+        }
+        
+        # User calculated before, but changed something
+        return(tagList(
+          helpText("Settings changed. Click Calculate to update results.")
+        ))
       }
+      
+      uiOutput(session$ns("resultsUI"))
     })
+    
+    output$plotsContainer <- renderUI({
+      if (!isTRUE(plots_ready())) {
+        
+        if (!isTRUE(plots_ever_calculated())) {
+          return(tagList(
+            helpText("No plots yet. Upload a dataset, choose variables, then click Calculate.")
+          ))
+        }
+        
+        return(tagList(
+          helpText("Settings changed. Click Calculate to update plots.")
+        ))
+      }
+      
+      tagList(
+        tags$h4("Class Distribution"),
+        plotOutput(session$ns("knnPlotClass"), height = "350px"),
+        
+        tags$hr(),
+        
+        tags$h4("Boxplots by Class"),
+        plotOutput(session$ns("knnPlotBox"), height = "600px"),
+        
+        tags$hr(),
+        
+        tags$h4("Density Plots by Class"),
+        plotOutput(session$ns("knnPlotDensity"), height = "600px")
+      )
+    })
+    
     
     
     observeEvent(uploadedTibble$data(), {
@@ -332,6 +378,14 @@ KNNServer <- function(id) {
     #reset button
     observeEvent(input$reset, {
       results_ready(FALSE)
+      plots_ready(FALSE)
+      
+      results_ever_calculated(FALSE)
+      plots_ever_calculated(FALSE)
+      
+      calc_settings(NULL)
+      plot_settings(NULL)
+      
       updatePickerInput(session, "response", selected = character(0))
       updatePickerInput(session, "predictors", selected = character(0))
       updateNavbarPage(session, "knnMainPanel", selected = "data_import_tab")
@@ -345,6 +399,16 @@ KNNServer <- function(id) {
       req(isTruthy(input$predictors))
       req(length(input$predictors) >= 1)
       req(knn_iv$is_valid())
+      
+      results_ever_calculated(TRUE)
+      plots_ever_calculated(TRUE)
+      
+      plot_settings(list(
+        response = input$response,
+        predictors = input$predictors
+      ))
+      plots_ready(TRUE)
+      
       
       #split dataset for training & testing
       df <- uploadedTibble$data()
