@@ -21,6 +21,10 @@
 
 ## Citation
 
-Krishnamurthy, A., et al. (2025). *CougarStats*: An R Shiny app for statistical data analysis [Web application]. https://www.cougarstats.ca/
+Krishnamurthy, A., et al. (2026). *CougarStats*: An R Shiny app for statistical data analysis [Web application]. https://www.cougarstats.ca/
+
+## Etymology
+
+The name *CougarStats* is inspired by Mount Royal University's athletics mascot, the cougar, symbolizing strength and agility, and by the app's focus on statistics.
 
 <!-- CougarStats is partially-derived from the senior project coursework of Crystal Wai, completed in Fall 2022 ([Mount Royal University _COMP 5690: Senior Computer Science Project_](https://catalog.mtroyal.ca/preview_course.php?catoid=26&coid=40800&print)).   -->

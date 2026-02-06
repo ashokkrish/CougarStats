@@ -2296,19 +2296,22 @@ statInfrServer <- function(id) {
     # oneMeanVariable
     onemeanuploadvar_iv$add_rule("oneMeanVariable", sv_required())
     onemeanuploadvar_iv$add_rule("oneMeanVariable", ~ {
-      data <- OneMeanUploadData()
-      col  <- input$oneMeanVariable
-      if (is.null(col) || col == "" || !(col %in% names(data))) return(NULL)
-      if (input$sigmaKnownUpload == "Unknown" &&
-          sd(data[[col]], na.rm = TRUE) == 0 && input$inferenceType == 'Hypothesis Testing') {
-        "No variance in selected column"
-      }
-    })
-    onemeanuploadvar_iv$add_rule("oneMeanVariable", ~ {
       if (checkNumeric(OneMeanUploadData(), input$oneMeanVariable)) {
         "Selected column contains non-numeric data."
       }
     })
+    onemeanuploadvar_iv$add_rule("oneMeanVariable", ~ {
+      if (!(input$oneMeanVariable %in% names(OneMeanUploadData()))) return(NULL)
+      dat <- na.omit(unlist(OneMeanUploadData()[, input$oneMeanVariable]))
+      if (length(dat) < 2) "Samples must include at least 2 observations"
+    })
+    onemeanuploadvar_iv$add_rule("oneMeanVariable", ~ {
+      if (!(input$oneMeanVariable %in% names(OneMeanUploadData()))) return(NULL)
+      dat <- na.omit(unlist(OneMeanUploadData()[, input$oneMeanVariable]))
+      if (input$sigmaKnownUpload == "Unknown" && input$inferenceType == 'Hypothesis Testing' && length(dat) > 1 && sd(dat) == 0)
+        "No variance in selected column"
+    })
+
     
     # sampSD
     onemeansdunk_iv$add_rule("sampSD", sv_required())
@@ -2386,34 +2389,6 @@ statInfrServer <- function(id) {
     indmeansuploadvar_iv$add_rule("indMeansUplSample1", sv_required())
     indmeansuploadvar_iv$add_rule("indMeansUplSample2", sv_required())
     indmeansuploadvar_iv$add_rule("indMeansUplSample1", ~ {
-      d <- IndMeansUploadData()
-      c1 <- input$indMeansUplSample1
-      c2 <- input$indMeansUplSample2
-      
-      if (input$bothsigmaKnownUpload == "bothUnknown" && input$inferenceType2 == 'Hypothesis Testing') {
-        if (c1 %in% names(d) && c2 %in% names(d)) {
-          if (sd(d[[c1]], na.rm = TRUE) == 0 && sd(d[[c2]], na.rm = TRUE) == 0) {
-            return("At least 1 of the selected columns must have variance.")
-          }
-        }
-      }
-    })
-    
-    indmeansuploadvar_iv$add_rule("indMeansUplSample2", ~ {
-      d <- IndMeansUploadData()
-      c1 <- input$indMeansUplSample1
-      c2 <- input$indMeansUplSample2
-      
-      if (input$bothsigmaKnownUpload == "bothUnknown" && input$inferenceType2 == 'Hypothesis Testing') {
-        if (c1 %in% names(d) && c2 %in% names(d)) {
-          if (sd(d[[c1]], na.rm = TRUE) == 0 && sd(d[[c2]], na.rm = TRUE) == 0) {
-            return("At least 1 of the selected columns must have variance.")
-          }
-        }
-      }
-    })
-    
-    indmeansuploadvar_iv$add_rule("indMeansUplSample1", ~ {
       if (checkNumeric(IndMeansUploadData(), input$indMeansUplSample1)) {
         "Selected column contains non-numeric data."
       }
@@ -2423,6 +2398,41 @@ statInfrServer <- function(id) {
       if (checkNumeric(IndMeansUploadData(), input$indMeansUplSample2)) {
         "Selected column contains non-numeric data."
       }
+    })
+    indmeansuploadvar_iv$add_rule("indMeansUplSample1", ~ {
+      d <- IndMeansUploadData()
+      col <- input$indMeansUplSample1
+      if (is.null(col) || col == "" || !(col %in% names(d))) return(NULL)
+      s1 <- na.omit(unlist(d[, col]))
+      if (length(s1) < 2) "Sample 1 must have at least 2 observations"
+    })
+    
+    indmeansuploadvar_iv$add_rule("indMeansUplSample2", ~ {
+      d <- IndMeansUploadData()
+      col <- input$indMeansUplSample2
+      if (is.null(col) || col == "" || !(col %in% names(d))) return(NULL)
+      s2 <- na.omit(unlist(d[, col]))
+      if (length(s2) < 2) "Sample 2 must have at least 2 observations"
+    })
+    
+    indmeansuploadvar_iv$add_rule("indMeansUplSample1", ~ {
+      d <- IndMeansUploadData()
+      if (input$indMeansUplSample1 == "" || input$indMeansUplSample2 == "" ||
+          !(input$indMeansUplSample1 %in% names(d)) || !(input$indMeansUplSample2 %in% names(d))) return(NULL)
+      s1 <- na.omit(unlist(d[, input$indMeansUplSample1]))
+      s2 <- na.omit(unlist(d[, input$indMeansUplSample2]))
+      if (input$bothsigmaKnownUpload == "bothUnknown" && input$inferenceType2 == 'Hypothesis Testing' && sd(s1) == 0 && sd(s2) == 0)
+        "Sample standard deviation cannot be 0 for both Sample 1 and Sample 2"
+    })
+    
+    indmeansuploadvar_iv$add_rule("indMeansUplSample2", ~ {
+      d <- IndMeansUploadData()
+      if (input$indMeansUplSample1 == "" || input$indMeansUplSample2 == "" ||
+          !(input$indMeansUplSample1 %in% names(d)) || !(input$indMeansUplSample2 %in% names(d))) return(NULL)
+      s1 <- na.omit(unlist(d[, input$indMeansUplSample1]))
+      s2 <- na.omit(unlist(d[, input$indMeansUplSample2]))
+      if (input$bothsigmaKnownUpload == "bothUnknown" && input$inferenceType2 == 'Hypothesis Testing' && sd(s1) == 0 && sd(s2) == 0)
+        "Sample standard deviation cannot be 0 for both Sample 1 and Sample 2"
     })
     
     wilcoxonUpload_iv$add_rule("wilcoxonUpl", sv_required())
@@ -2478,27 +2488,7 @@ statInfrServer <- function(id) {
     depmeansupload_iv$add_rule("depMeansUserData", ~ if(nrow(DepMeansUploadData()) == 0) "File is empty.")
     depmeansupload_iv$add_rule("depMeansUserData", ~ if(ncol(DepMeansUploadData()) < 2) "File must contain at least 2 distinct 'Before' and 'After' sets of data to choose from for analysis.")
     depmeansupload_iv$add_rule("depMeansUserData", ~ if(nrow(DepMeansUploadData()) < 4) "Samples must include at least 3 observations.")
-    depmeansuploadvars_iv$add_rule("depMeansUplSample1", ~ {
-      if (input$depMeansUplSample1 != "" &&
-          input$depMeansUplSample2 != "" &&
-          !checkNumeric(DepMeansUploadData(), input$depMeansUplSample1) &&
-          !checkNumeric(DepMeansUploadData(), input$depMeansUplSample2) &&
-          (input$depMeansUplSample1 == input$depMeansUplSample2 ||
-           GetDepMeansData()$sd == 0)) {
-        "'Sample 1' and 'Sample 2' data are the same. Standard deviation of the difference is zero."
-      }
-    })
-    
-    depmeansuploadvars_iv$add_rule("depMeansUplSample2", ~ {
-      if (input$depMeansUplSample1 != "" &&
-          input$depMeansUplSample2 != "" &&
-          !checkNumeric(DepMeansUploadData(), input$depMeansUplSample1) &&
-          !checkNumeric(DepMeansUploadData(), input$depMeansUplSample2) &&
-          (input$depMeansUplSample1 == input$depMeansUplSample2 ||
-           GetDepMeansData()$sd == 0)) {
-        "'Sample 1' and 'Sample 2' data are the same. Standard deviation of the difference is zero."
-      }
-    })
+ 
     
     depmeansuploadvars_iv$add_rule("depMeansUplSample1", sv_required())
     depmeansuploadvars_iv$add_rule("depMeansUplSample2", sv_required())
@@ -2515,8 +2505,52 @@ statInfrServer <- function(id) {
       }
     })
     
-    depmeansraw_iv$add_rule("before", ~ if(GetDepMeansData()$sd == 0) "'Sample 1’ and 'Sample 2' data are the same. Standard deviation of the difference is zero.")
-    depmeansraw_iv$add_rule("after", ~ if(GetDepMeansData()$sd == 0) "'Sample 1’ and 'Sample 2' data are the same. Standard deviation of the difference is zero.")
+    depmeansuploadvars_iv$add_rule("depMeansUplSample1", ~ {
+      d <- DepMeansUploadData()
+      col <- input$depMeansUplSample1
+      if (col == "" || !(col %in% names(d))) return(NULL)
+      if (length(na.omit(unlist(d[, col]))) < 3)
+        "Sample 1 must have at least 3 observations."
+    })
+    depmeansuploadvars_iv$add_rule("depMeansUplSample2", ~ {
+      d <- DepMeansUploadData()
+      col <- input$depMeansUplSample2
+      if (col == "" || !(col %in% names(d))) return(NULL)
+      if (length(na.omit(unlist(d[, col]))) < 3)
+        "Sample 2 must have at least 3 observations."
+    })
+    
+    depmeansuploadvars_iv$add_rule("depMeansUplSample1", ~ {
+      d <- DepMeansUploadData()
+      if (!(input$depMeansUplSample1 %in% names(d)) ||
+          !(input$depMeansUplSample2 %in% names(d))) return(NULL)
+      
+      if (input$depMeansUplSample1 != "" &&
+          input$depMeansUplSample2 != "" &&
+          !checkNumeric(DepMeansUploadData(), input$depMeansUplSample1) &&
+          !checkNumeric(DepMeansUploadData(), input$depMeansUplSample2) &&
+          (input$depMeansUplSample1 == input$depMeansUplSample2 ||
+           GetDepMeansData()$sd == 0)) {
+        "Standard deviation of the difference (sd) is zero."
+      }
+    })
+    depmeansuploadvars_iv$add_rule("depMeansUplSample2", ~ {
+      d <- DepMeansUploadData()
+      if (!(input$depMeansUplSample1 %in% names(d)) ||
+          !(input$depMeansUplSample2 %in% names(d))) return(NULL)
+      
+      if (input$depMeansUplSample1 != "" &&
+          input$depMeansUplSample2 != "" &&
+          !checkNumeric(DepMeansUploadData(), input$depMeansUplSample1) &&
+          !checkNumeric(DepMeansUploadData(), input$depMeansUplSample2) &&
+          (input$depMeansUplSample1 == input$depMeansUplSample2 ||
+           GetDepMeansData()$sd == 0)) {
+        "Standard deviation of the difference (sd) is zero."
+      }
+    })
+    
+    depmeansraw_iv$add_rule("before", ~ if(GetDepMeansData()$sd == 0) "Standard deviation of the difference (sd) is zero.")
+    depmeansraw_iv$add_rule("after", ~ if(GetDepMeansData()$sd == 0) "Standard deviation of the difference (sd) is zero.")
     
     depmeansmunaught_iv$add_rule("depMeansMuNaught", sv_required())
     
@@ -3098,15 +3132,6 @@ statInfrServer <- function(id) {
       )
       
       return(conclusion)
-    }
-    
-    getTTestErrorMsg <- function(sampleData) {
-      sampleMean <- mean(sampleData, na.rm = TRUE)
-      sampleSD   <- sd(sampleData, na.rm = TRUE)
-      
-      if (sampleSD != 0) return(NULL)
-      
-      return("When the sample standard deviation is 0, the test statistic (t) is undefined.")
     }
     
     printOneMeanCI <- function() {
@@ -5809,15 +5834,18 @@ statInfrServer <- function(id) {
     
     kwDisplayState <- reactiveVal("none")  # "none", "raw", "analysis
     
-    kwStackedIsValid <- eventReactive({input$kwResponse
-      input$kwFactors}, {
+    kwStackedIsValid <- eventReactive(
+      list(input$kwResponse, input$kwFactors),
+      {
         kwStackedIsValid_func(input$kwResponse, input$kwFactors)
-      })
+      }
+    )
     
     kwResults <- reactive({
+      req(input$siMethod == 'Multiple' && input$multipleMethodChoice == 'kw')
       req(si_iv$is_valid())
+      
       kwResults_func(
-        si_iv$is_valid,
         input$kwFormat,
         input$kwMultiColumns,
         kwUploadData(),
@@ -5933,13 +5961,13 @@ statInfrServer <- function(id) {
         
         if (input$sigmaKnownRaw == "rawUnknown") {
           sampleData <- createNumLst(input$sample1)
-          msg <- getTTestErrorMsg(sampleData)
-          if (!is.null(msg)) {
-            validate(
-              need(FALSE, msg),
-              errorClass = "myClass"
-            )
-          }
+          validate(
+          need(
+            sd(sampleData, na.rm = TRUE) != 0,
+               "When the sample standard deviation is 0, the test statistic (t) is undefined." 
+          ),
+          errorClass = "myClass"
+          )
         }
       }
       
@@ -5977,18 +6005,22 @@ statInfrServer <- function(id) {
           need(input$oneMeanVariable != "", "Please select a column for analysis."),
           errorClass = "myClass"
         )
-        data <- OneMeanUploadData()
-        col <- input$oneMeanVariable
-        
-        if (!is.null(data) && !is.null(col) && input$sigmaKnownUpload == "Unknown") {
-          msg <- getTTestErrorMsg(data[[col]])
-          if (!is.null(msg)) {
-            validate(
-              need(FALSE, msg),
-              errorClass = "myClass"
-            )
-          }
-        }
+        sampleData <- na.omit(unlist(OneMeanUploadData()[, input$oneMeanVariable]))
+        validate(
+          need(is.numeric(sampleData), "Selected column must be numeric."),
+          errorClass = "myClass"
+        )
+        validate(
+          need(length(sampleData) > 1, "Samples must include at least 2 observations."),
+          errorClass = "myClass"
+        )
+        validate(
+          need(
+            sd(sampleData, na.rm = TRUE) != 0,
+            "When the sample standard deviation is 0, the test statistic (t) is undefined."
+          ),
+          errorClass = "myClass"
+        )
       }
       
       
@@ -6141,6 +6173,17 @@ statInfrServer <- function(id) {
         validate(
           need(!checkNumeric(IndMeansUploadData(), input$indMeansUplSample2),
                "Sample 2 must be numeric."),
+          errorClass = "myClass")
+
+        sample1Data <- na.omit(unlist(IndMeansUploadData()[, input$indMeansUplSample1]))
+        validate(
+          need(length(sample1Data) > 1, "Sample 1 must have at least 2 observations."),
+          errorClass = "myClass"
+        )
+
+        sample2Data <- na.omit(unlist(IndMeansUploadData()[, input$indMeansUplSample2]))
+        validate(
+          need(length(sample2Data) > 1, "Sample 2 must have at least 2 observations."),
           errorClass = "myClass"
         )
         
@@ -6259,6 +6302,14 @@ statInfrServer <- function(id) {
           errorClass = "myClass"
         )
         
+        sample1 <- na.omit(unlist(DepMeansUploadData()[, input$depMeansUplSample1]))
+        sample2 <- na.omit(unlist(DepMeansUploadData()[, input$depMeansUplSample2]))
+        validate(
+          need(length(sample1) > 2, "Sample 1 must have at least 3 observations."),
+          need(length(sample2) > 2, "Sample 2 must have at least 3 observations."),
+          errorClass = "myClass"
+        )
+        
         validate(
           need(
             !(input$depMeansUplSample1 != "" &&
@@ -6268,11 +6319,13 @@ statInfrServer <- function(id) {
             if (input$inferenceType2 == "Hypothesis Testing") {
               "The test statistic (t) will be undefined for sample data with a sample standard deviation of difference (sd) = 0."
             } else {
-              "The confidence interval results in (0,0) when the sample standard deviation of difference (sd) = 0."
+              sprintf("The confidence interval results in (%s,%s) when the sample standard deviation of difference (sd) = 0.", GetDepMeansData()$dbar,
+                      GetDepMeansData()$dbar)
             }
           ),
           errorClass = "myClass"
         )
+  
       }
       
       if(!depmeansraw_iv$is_valid()) {
@@ -7362,7 +7415,7 @@ statInfrServer <- function(id) {
           br(),
           br(),
           sprintf("\\( \\alpha = %g \\)",
-                  SigLvl()),
+                  SigLvl()), br(),
           #br(),
           br(),
           p(tags$b("Test Statistic:")),
