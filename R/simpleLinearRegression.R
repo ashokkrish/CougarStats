@@ -706,7 +706,6 @@ SLRServer <- function(id) {
           digits = 3
         )
         
-        # ---- NEW CODE START: Detailed Inference Tables ----
         output$slrInferenceDetails <- renderUI({
           req(model)
           
