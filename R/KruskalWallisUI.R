@@ -58,8 +58,7 @@ kwStackedIsValid_func <- function(kwResponse, kwFactors) {
   return(valid)
 }
 
-kwResults_func <- function(si_iv_is_valid, kwFormat, kwMultiColumns, kwUploadData_output, kwFactors, kwResponse) {
-  req(si_iv_is_valid)
+kwResults_func <- function(kwFormat, kwMultiColumns, kwUploadData_output, kwFactors, kwResponse) {
   
   results <- list()
 

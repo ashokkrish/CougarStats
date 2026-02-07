@@ -445,7 +445,7 @@ descStatsServer <- function(id) {
       sampSize <- length(dat)
       sampSum <- sum(dat)
       sumSquares <- sum(dat^2)
-      xbar <- round(mean(dat),4)
+      xbar <- mean(dat)
       sampMode <- Modes(dat)
       
       if(sampMode == "No mode exists"){
