@@ -11,6 +11,7 @@ LogisticRegressionSidebarUI <- function(id) {
       id = ns("LOGRSidebar"),
       useShinyjs(),
       withMathJax(
+        HTML(uploadDataDisclaimer),
         helpText("Select a binary response variable (must have exactly two unique values: 0 or 1)."),
         div(
           id = ns("responseVariableWrapper"),
