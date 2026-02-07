@@ -472,7 +472,9 @@ SLRServer <- function(id) {
           req(slruploadvars_iv$is_valid())
           show("slrExplanatory")
           show("slrResponse")
-          datx <- as.data.frame(slrUploadData())[, input$slrExplanatory] # This line generates an error - Warning: Error in [.data.frame: undefined columns selected
+          req(input$slrExplanatory %in% colnames(slrUploadData()))
+          req(input$slrResponse %in% colnames(slrUploadData()))
+          datx <- as.data.frame(slrUploadData())[, input$slrExplanatory]
           daty <- as.data.frame(slrUploadData())[, input$slrResponse]
         } else {
           validate(
@@ -502,6 +504,8 @@ SLRServer <- function(id) {
       
       if(regcor_iv$is_valid()) {
         if(input$dataRegCor == 'Upload Data') {
+          req(input$slrExplanatory %in% colnames(slrUploadData()))
+          req(input$slrResponse %in% colnames(slrUploadData()))
           datx <- as.data.frame(slrUploadData())[, input$slrExplanatory]
           daty <- as.data.frame(slrUploadData())[, input$slrResponse]
         } else {
@@ -739,64 +743,58 @@ SLRServer <- function(id) {
           
           # Render the UI with MathJax
           withMathJax(
-            fluidRow(
+            fluidRow(style = "display: flex; flex-wrap: wrap;",
               # --- LEFT COLUMN: Intercept Parameter ---
-              column(6,
-                     div(style = "border: 1px solid #ccc; padding: 10px; border-radius: 5px;",
+              column(6, style = "display: flex;",
+                     div(style = "border: 1px solid #ccc; padding: 10px; border-radius: 5px; width: 100%;",
                          h4(HTML("Intercept Parameter (\\(\\beta_0\\))")),
                          p(HTML("H<sub>0</sub>: \\(\\beta_0 = 0\\)")),
                          p(HTML("H<sub>a</sub>: \\(\\beta_0 \\neq 0\\)")),
                          p(HTML("\\(\\alpha = 0.05\\)")),
                          
                          # t-statistic equation
-                         p(HTML("$$\\large{\\quad t = \\frac{\\hat{\\beta}_0 - 0}{\\left(\\sqrt{\\frac{\\left(\\sum e^2\\right)}{n-2}} \\times \\sqrt{\\frac{1}{n} + \\frac{\\bar{x}^2}{\\left(\\sum(x-\\bar{x})^2\\right)}}\\right)}}$$")),
-                         p(HTML(sprintf("$$\\large{\\quad = \\frac{%s - 0}{\\left(\\sqrt{\\frac{%s}{%d}} \\times \\sqrt{\\frac{1}{%d} + \\frac{%s^2}{%s}}\\right)}}$$", 
-                                        fmt(b0_est), fmt(sum_e2), df, n, fmt(x_bar), fmt(sum_sq_diff_x)))),
-                         p(HTML(sprintf("$$\\large{\\quad = %s}$$", fmt(b0_t)))),
+                         p(HTML(sprintf("$$\\small{t = \\frac{\\hat{\\beta}_0 - 0}{\\left(\\sqrt{\\frac{\\sum e^2}{n-2}} \\times \\sqrt{\\frac{1}{n} + \\frac{\\bar{x}^2}{\\sum(x-\\bar{x})^2}}\\right)} = \\frac{%s - 0}{%s} = %s}$$",
+                                        fmt(b0_est), fmt(b0_se), fmt(b0_t)))),
                          
-                         p(strong(sprintf("p-value: %s", format.pval(b0_p, digits=4, eps=0.0001)))),
+                         p(strong(sprintf("p-value = %s", fmt(b0_p)))),
                          
                          # Horizontal Line
                          hr(style = "border-top: 1px solid #ccc;"),
                          
                          # Confidence Interval
                          p("The 95% confidence interval for \\(\\beta_0\\) is"),
-                         p(HTML("$$\\large{\\quad \\hat{\\beta}_0 \\pm t_{\\alpha/2, n-2} \\left(\\sqrt{\\frac{\\left(\\sum e^2\\right)}{n-2}} \\times \\sqrt{\\frac{1}{n} + \\frac{\\bar{x}^2}{\\left(\\sum(x-\\bar{x})^2\\right)}}\\right)}$$")),
-                         p(HTML(sprintf("$$\\large{\\quad %s \\pm %s \\times (%s)}$$", fmt(b0_est), fmt(t_crit), fmt(b0_se)))),
-                         p(HTML(sprintf("$$\\large{\\quad = (%s, %s)}$$", fmt(b0_est - t_crit * b0_se), fmt(b0_est + t_crit * b0_se))))
+                         p(HTML(sprintf("$$\\scriptsize{\\hat{\\beta}_0 \\pm t_{\\alpha/2,\\,(n-2)} \\left(\\sqrt{\\frac{\\sum e^2}{n-2}} \\times \\sqrt{\\frac{1}{n} + \\frac{\\bar{x}^2}{\\sum(x-\\bar{x})^2}}\\right) \\;=\\; (%s, \\;%s)}$$",
+                                        fmt(b0_est - t_crit * b0_se), fmt(b0_est + t_crit * b0_se))))
                      )
               ),
               
               # --- RIGHT COLUMN: Slope Parameter ---
-              column(6,
-                     div(style = "border: 1px solid #ccc; padding: 10px; border-radius: 5px;",
+              column(6, style = "display: flex;",
+                     div(style = "border: 1px solid #ccc; padding: 10px; border-radius: 5px; width: 100%;",
                          h4(HTML("Slope Parameter (\\(\\beta_1\\))")),
                          p(HTML("H<sub>0</sub>: \\(\\beta_1 = 0\\)")),
                          p(HTML("H<sub>a</sub>: \\(\\beta_1 \\neq 0\\)")),
                          p(HTML("\\(\\alpha = 0.05\\)")),
                          
                          # t-statistic equation
-                         p(HTML("$$\\large{\\quad t = \\frac{\\hat{\\beta}_1 - 0}{\\left(\\frac{\\sqrt{\\frac{\\left(\\sum e^2\\right)}{n-2}}}{\\sqrt{\\left(\\sum(x-\\bar{x})^2\\right)}}\\right)}}$$")),
-                         p(HTML(sprintf("$$\\large{\\quad = \\frac{%s - 0}{\\left(\\frac{\\sqrt{\\frac{%s}{%d}}}{\\sqrt{%s}}\\right)}}$$", 
-                                        fmt(b1_est), fmt(sum_e2), df, fmt(sum_sq_diff_x)))),
-                         p(HTML(sprintf("$$\\large{\\quad = %s}$$", fmt(b1_t)))),
+                         p(HTML(sprintf("$$\\small{t = \\frac{\\hat{\\beta}_1 - 0}{\\left(\\frac{\\sqrt{\\frac{\\sum e^2}{n-2}}}{\\sqrt{\\sum(x-\\bar{x})^2}}\\right)} = \\frac{%s - 0}{%s} = %s}$$",
+                                        fmt(b1_est), fmt(b1_se), fmt(b1_t)))),
                          
-                         p(strong(sprintf("p-value: %s", format.pval(b1_p, digits=4, eps=0.0001)))),
+                         p(strong(sprintf("p-value = %s", fmt(b1_p)))),
                          
                          # Horizontal Line
                          hr(style = "border-top: 1px solid #ccc;"),
                          
                          # Confidence Interval
                          p("The 95% confidence interval for \\(\\beta_1\\) is"),
-                         p(HTML("$$\\large{\\quad \\hat{\\beta}_1 \\pm t_{\\alpha/2, n-2} \\left(\\frac{\\sqrt{\\frac{\\left(\\sum e^2\\right)}{n-2}}}{\\sqrt{\\left(\\sum(x-\\bar{x})^2\\right)}}\\right)}$$")),
-                         p(HTML(sprintf("$$\\large{\\quad %s \\pm %s (%s)}$$", fmt(b1_est), fmt(t_crit), fmt(b1_se)))),
-                         p(HTML(sprintf("$$\\large{\\quad = (%s, %s)}$$", fmt(b1_est - t_crit * b1_se), fmt(b1_est + t_crit * b1_se))))
+                         p(HTML(sprintf("$$\\small{\\hat{\\beta}_1 \\pm t_{\\alpha/2,\\,(n-2)} \\left(\\frac{\\sqrt{\\frac{\\sum e^2}{n-2}}}{\\sqrt{\\sum(x-\\bar{x})^2}}\\right) \\;=\\; (%s, \\;%s)}$$",
+                                        fmt(b1_est - t_crit * b1_se), fmt(b1_est + t_crit * b1_se))))
                      )
               )
             )
           )
         })
-        # ---- NEW CODE END ----
+        
         
         output$confintLinReg <- renderPrint({
           confint(model) # Prints the 95% CI for the regression parameters
