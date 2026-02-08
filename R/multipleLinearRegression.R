@@ -716,7 +716,7 @@ R^2_{\text{adj}} = %0.4f
       withMathJax(
         fluidRow(column(
           12, p(strong("Correlation matrix")),
-          p("Values below -0.75 and above 0.75 are very strong indicators that there is multicollinearity, and that the component of the model should be removed."),
+          p("Correlation values below –0.75 or above 0.75 indicate strong linear association between explanatory variables. Such strong correlations may signal potential multicollinearity. Consider whether one of the correlated variables can be removed, combined, or otherwise addressed."),
           tableOutput(ns("simpleCorrelationMatrix"))
         )),
         fluidRow(column(
@@ -725,7 +725,7 @@ R^2_{\text{adj}} = %0.4f
           plotOutput(ns("ggscatmat"))
         )),
         fluidRow(column(
-          12, p(strong("Variance Inflation Factors")),
+          12, p(strong("Variance Inflation Factors (VIFs)")),
           p("A VIF greater than 10 suggests strong multicollinearity caused by the respective variable with that variance inflation factor. VIFs between 5 and 10 hint at moderate multicollinearity. Values less than 5 are acceptable, with only a low degree of multicollinearity detected."),
           tableOutput(ns("vifs"))
         ))
@@ -761,7 +761,7 @@ R^2_{\text{adj}} = %0.4f
             },
             error = \(e) NULL
           )
-          validate(need(is.data.frame(df), "Couldn't produce a data frame from the VIF function of the model. Usually this means there are aliased coefficients in the model. Re-attempt after verifying the data, or renaming the columns."))
+          validate(need(is.data.frame(df), "Couldn't produce a data frame from the VIF function of the model. Usually this means there are aliased variables in the model. Re-attempt after verifying the data, or renaming the columns."))
           df
         })
       },
@@ -873,7 +873,5 @@ R^2_{\text{adj}} = %0.4f
         plotOutput(ns("mlrResidualsPanelPlot4"))
       )
     })
-    
-    
   })
 }
