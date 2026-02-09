@@ -43,6 +43,8 @@ PCASidebarUI <- function(id) {
                              "Standardized Box-Cox transformation"),
                  selected = "Original scale"),
     numericInput(ns("numFactors"), "Number of Factors", value = 2, min = 1, step = 1),
+    selectInput(ns("pcX"), "X-axis component", choices = NULL),
+    selectInput(ns("pcY"), "Y-axis component", choices = NULL),
     actionButton(ns("calculate"), "Calculate", class = "act-btn"),
     actionButton(ns("reset"), "Reset Values", class = "act-btn")
   )
@@ -77,12 +79,31 @@ PCAMainPanelUI <- function(id) {
                         hr(),
                         h3("Covariance Matrix"),
                         DTOutput(ns("covarianceMatrix")),
-                        hr(),
-                        h3("Scree Plot"),
-                        plotOutput(ns("screePlot")),
+                        #hr(),
+                        #h3("Scree Plot"),
+                        #plotOutput(ns("screePlot")),
                         hr(),
                         h3("Interpretation of Results"),
                         uiOutput(ns("pcaInterpretation"))
+               ),
+               tabPanel(
+                 title = "Plots",
+                 value = "plots_tab",
+                 
+                 h3("Scree Plot"),
+                 plotOutput(ns("screePlot"), height = "350px"),
+                 hr(),
+                 
+                 h3("Score Plot"),
+                 plotOutput(ns("scorePlot"), height = "450px"),
+                 hr(),
+                
+                 h3("Biplot"),
+                 plotOutput(ns("biplot"), height = "500px"),
+                 hr(),
+                 
+                 h3("Loadings Heatmap"),
+                 plotOutput(ns("loadingsHeatmap"), height = "450px")
                ),
                tabPanel(title = "Data Transformations", value = "transformations_tab", plotOutput(ns("transformationHistograms")))
     )
@@ -113,6 +134,7 @@ PCAServer <- function(id) {
       shinyjs::delay(0, {
         hideTab(inputId = "mainPanel", target = "pca_results_tab")
         hideTab(inputId = "mainPanel", target = "transformations_tab")
+        hideTab(inputId = "mainPanel", target = "plots_tab")
       })
     }, once = TRUE)
     
@@ -211,13 +233,86 @@ PCAServer <- function(id) {
       pca <- prcomp(transformed_data, center = TRUE, scale. = TRUE)
       pca_results(pca)
       
+      pcs <- colnames(pca$x)
+      updateSelectInput(session, "pcX", choices = pcs, selected = pcs[1])
+      updateSelectInput(session, "pcY", choices = pcs, selected = pcs[min(2, length(pcs))])
+      
       showTab(inputId = "mainPanel", target = "pca_results_tab")
       showTab(inputId = "mainPanel", target = "transformations_tab")
+      showTab(inputId = "mainPanel", target = "plots_tab")
       updateNavbarPage(session, "mainPanel", selected = "pca_results_tab")
     })
     
     
     # --- Render Outputs ---
+    
+    output$scorePlot <- renderPlot({
+      req(pca_results(), input$pcX, input$pcY)
+      
+      scores <- as.data.frame(pca_results()$x)
+      validate(
+        need(input$pcX %in% names(scores), "Invalid X component."),
+        need(input$pcY %in% names(scores), "Invalid Y component."),
+        need(input$pcX != input$pcY, "Choose two different components.")
+      )
+      
+      ggplot(scores, aes(x = .data[[input$pcX]], y = .data[[input$pcY]])) +
+        geom_point() +
+        labs(title = "Score Plot", x = input$pcX, y = input$pcY) +
+        theme_minimal()
+    })
+    
+    
+    output$biplot <- renderPlot({
+      req(pca_results(), input$pcX, input$pcY)
+      
+      ax1 <- as.integer(sub("PC", "", input$pcX))
+      ax2 <- as.integer(sub("PC", "", input$pcY))
+      
+      validate(
+        need(!is.na(ax1) && !is.na(ax2), "Invalid components selected."),
+        need(ax1 != ax2, "Choose two different components.")
+      )
+      
+      df <- imported_data$data()
+      grp <- NULL
+      if (!is.null(df)) {
+        non_num <- names(df)[!sapply(df, is.numeric)]
+        if (length(non_num) > 0) grp <- df[[non_num[1]]]
+      }
+      
+      factoextra::fviz_pca_biplot(
+        pca_results(),
+        axes = c(ax1, ax2),
+        geom.ind = "point",
+        col.ind = grp,
+        addEllipses = !is.null(grp),
+        repel = TRUE
+      ) +
+        ggplot2::labs(x = input$pcX, y = input$pcY)
+    })
+    
+    
+    output$loadingsHeatmap <- renderPlot({
+      req(pca_results())
+      
+      L <- as.data.frame(pca_results()$rotation)
+      
+      L <- L[, 1:min(10, ncol(L)), drop = FALSE]
+      
+      df_long <- data.frame(
+        Feature = rep(rownames(L), times = ncol(L)),
+        Component = rep(colnames(L), each = nrow(L)),
+        Loading = as.vector(as.matrix(L))
+      )
+      
+      ggplot(df_long, aes(x = Component, y = Feature, fill = Loading)) +
+        geom_tile() +
+        geom_text(aes(label = round(Loading, 2)), size = 3) +
+        labs(title = "Loadings Heatmap", x = NULL, y = NULL) +
+        theme_minimal()
+    })
+    
     
     output$pcaSummary <- renderDT({
       req(pca_results())
@@ -343,13 +438,19 @@ PCAServer <- function(id) {
     observeEvent(input$reset, {
       hideTab(inputId = "mainPanel", target = "pca_results_tab")
       hideTab(inputId = "mainPanel", target = "transformations_tab")
+      hideTab(inputId = "mainPanel", target = "plots_tab")
+      
       pca_results(NULL)
       analysis_data(NULL)
       original_data(NULL)
       updatePickerInput(session, "pcaVariables", selected = character(0))
       updateRadioButtons(session, "transformation", selected = "Original scale")
       updateNumericInput(session, "numFactors", value = 2)
+      updateSelectInput(session, "pcX", choices = character(0))
+      updateSelectInput(session, "pcY", choices = character(0))
+      
       updateNavbarPage(session, "mainPanel", selected = "data_import_tab")
+      
     })
   })
 }

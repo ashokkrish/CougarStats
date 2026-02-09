@@ -10,6 +10,7 @@ regressionAndCorrelationUI <- function(id) {
                    choices = list("Simple Linear Regression and Correlation Analysis" = "SLR",
                                   "Multiple Linear Regression" = "MLR",
                                   "Binary Logistic Regression" = "LOGR",
+                                  "Principal Component Analysis" = "PCA",
                                   "k-Nearest Neighbors" = "KNN"),
                    selected = "SLR"
       ),
@@ -41,10 +42,10 @@ regressionAndCorrelationServer <- function(id) {
     })
     
     # # --- Dynamic ID Generation for PCA ---
-    # pca_instance_counter <- reactiveVal(0)
-    # current_pca_module_id <- reactive({
-    #   paste0("pca_dynamic_instance_", pca_instance_counter())
-    # })
+    pca_instance_counter <- reactiveVal(0)
+    current_pca_module_id <- reactive({
+    paste0("pca_dynamic_instance_", pca_instance_counter())
+    })
     
     #Dynamic ID generation for KNN
     knn_instance_counter <- reactiveVal(0)
@@ -78,17 +79,16 @@ regressionAndCorrelationServer <- function(id) {
           req(current_logr_module_id())
           LogisticRegressionMainPanelUI(session$ns(current_logr_module_id()))
         })
-      # } else if (input$multiple == "PCA") {
-      # pca_instance_counter(pca_instance_counter() + 1)
-      # output$regressionSidebarUI <- renderUI({
-      #   req(current_pca_module_id())
-      #   PCASidebarUI(session$ns(current_pca_module_id()))
-      # })
-      # output$regressionMainPanelUI <- renderUI({
-      #   req(current_pca_module_id())
-      #   PCAMainPanelUI(session$ns(current_pca_module_id()))
-      # })
-      #}
+      } else if (input$multiple == "PCA") {
+      pca_instance_counter(pca_instance_counter() + 1)
+      output$regressionSidebarUI <- renderUI({
+         req(current_pca_module_id())
+         PCASidebarUI(session$ns(current_pca_module_id()))
+       })
+       output$regressionMainPanelUI <- renderUI({
+         req(current_pca_module_id())
+         PCAMainPanelUI(session$ns(current_pca_module_id()))
+       })
       } else if (input$multiple == "KNN") {
         knn_instance_counter(knn_instance_counter() + 1)
         
@@ -96,7 +96,7 @@ regressionAndCorrelationServer <- function(id) {
           req(current_knn_module_id())
           KNNSidebarUI(session$ns(current_knn_module_id()))
         })
-        output$regressionMainPanelUI <- renderUI({
+        output$regressionMainPanelUI <- renderUI({ d
           req(current_knn_module_id())
           KNNMainPanelUI(session$ns(current_knn_module_id()))
         })
@@ -114,10 +114,10 @@ regressionAndCorrelationServer <- function(id) {
       LogisticRegressionServer(current_logr_module_id())
     }, ignoreNULL = TRUE)
     
-    # observeEvent(current_pca_module_id(), {
-    #   req(input$multiple == "PCA")
-    #   PCAServer(current_pca_module_id())
-    # }, ignoreNULL = TRUE)
+     observeEvent(current_pca_module_id(), {
+       req(input$multiple == "PCA")
+       PCAServer(current_pca_module_id())
+     }, ignoreNULL = TRUE)
     
     observeEvent(current_knn_module_id(), {
       req(input$multiple == "KNN")
