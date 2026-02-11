@@ -479,7 +479,12 @@ MLRServer <- function(id) {
             # Loop through ORIGINAL input variables to preserve indices (1, 2, 3...)
             for(i in seq_along(input$explanatoryVariables)) {
               var_name <- input$explanatoryVariables[i]
+  
+              # Check if the name exists directly; if not, try wrapping in backticks
               val <- all_coefs[var_name]
+              if (is.na(val)) {
+               val <- all_coefs[paste0("`", var_name, "`")]
+  }
               
               # If the coefficient is NOT NA, we include it.
               # If it IS NA (dropped), we skip it completely (creating a gap in the indices shown).
