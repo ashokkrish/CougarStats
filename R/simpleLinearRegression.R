@@ -25,8 +25,7 @@ SLRMainPanelUI <- function(id) {
           title = NULL, # Title for the navbarPage
           id = ns("slrNavbarPage"),
           theme = bs_theme(version = 4),
-          
-          
+
           #### ---------------- SLR Tab ------------------------------------------------
           tabPanel(
             title = "Model",
@@ -36,7 +35,6 @@ SLRMainPanelUI <- function(id) {
             br(),
             uiOutput(ns('regLineEquation')),
             br()
-            
           ), # slr tabpanel
           
           #### ---------------- Scatterplot Tab --------------------------------------
@@ -67,9 +65,7 @@ SLRMainPanelUI <- function(id) {
           tabPanel(
             title = "Calculations",
             value = "Calculations",
-            
-            # titlePanel("Data"),
-            # br(),
+
             DTOutput(ns("slrDataTable"), width = "750px"),
             br()
           ), # Calculations tabpanel
@@ -78,13 +74,10 @@ SLRMainPanelUI <- function(id) {
           tabPanel(
             title = "Inference",
             value = "Inference",
-            
-            #titlePanel("Coefficients"),
-            # br(),
+
             tableOutput(ns("slrInferenceCoefficientsTable")),
             br(),
             uiOutput(ns("slrInferenceDetails")),
-            #br()
           ), # Inference tabpanel
           
           #### ---------------- ANOVA Tab -------------------------------------------
@@ -115,25 +108,45 @@ SLRMainPanelUI <- function(id) {
           tabPanel(
             title = "Correlation Analysis",
             value = "Correlation Analysis",
+
+            # Nested tabsetPanel
+            tabsetPanel(
+
+                  tabPanel(
+                    title = "Pearson",
+                    value = "Pearson",
+                    
+                    titlePanel("Pearson's Correlation Coefficient"),
+                    br(),
+                    br(),
+                    uiOutput(ns('pearsonCorFormula')),
+                    br(),
+                    hr(),
+                  ), # Pearson tabpanel
             
-            titlePanel("Pearson's Product-Moment Correlation Coefficient"),
-            br(),
-            br(),
-            uiOutput(ns('pearsonCorFormula')),
-            br(),
-            hr(),
+                  tabPanel(
+                    title = "Kendall",
+                    value = "Kendall",
+                    
+                    titlePanel("Kendall's Rank Correlation Coefficient"),
+                    br(),
+                    uiOutput(ns("kendallFormula")),
+                    br(),
+                    hr(),
+                  ), # Kendall tabpanel
             
-            titlePanel("Kendall's Rank Correlation Coefficient"),
-            br(),
-            uiOutput(ns("kendallFormula")),
-            br(),
-            hr(),
-            
-            titlePanel("Spearman's Rank Correlation Coefficient"),
-            br(),
-            uiOutput(ns("spearmanEstimate")),
-            br(),
-            br()
+                  tabPanel(
+                    title = "Spearman",
+                    value = "Spearman",
+      
+                    titlePanel("Spearman's Rank Correlation Coefficient"),
+                    br(),
+                    uiOutput(ns("spearmanEstimate")),
+                    br(),
+                    br(),
+                    hr(),
+                  ), # Spearman tabpanel
+            ), ## Nested tabsetPanel
           ), #correlation tabPanel
           
           #### ---------------- Data File Tab ------------------------------------------
@@ -923,7 +936,7 @@ SLRServer <- function(id) {
           # })
         } else {
           output$PearsonCorTest <- renderPrint ({
-            noquote("Pearson's Product-Moment Correlation requires a minimum sample size of 3 for computation.")
+            noquote("Pearson's Correlation requires a minimum sample size of 3 for computation.")
           })
         }
         
