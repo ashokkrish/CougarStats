@@ -96,7 +96,7 @@ regressionAndCorrelationServer <- function(id) {
           req(current_knn_module_id())
           KNNSidebarUI(session$ns(current_knn_module_id()))
         })
-        output$regressionMainPanelUI <- renderUI({ d
+        output$regressionMainPanelUI <- renderUI({
           req(current_knn_module_id())
           KNNMainPanelUI(session$ns(current_knn_module_id()))
         })

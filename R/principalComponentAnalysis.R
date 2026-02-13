@@ -1,5 +1,6 @@
+#R/principalComponentAnalysis.
+
 library(shiny)
-library(shinyjs)
 library(datamods)
 library(bslib)
 library(dplyr)
@@ -52,18 +53,21 @@ PCASidebarUI <- function(id) {
 
 PCAMainPanelUI <- function(id) {
   ns <- NS(id)
-  # Wrap in tagList to include useShinyjs()
-  tagList(
-    useShinyjs(),
-    navbarPage(title = NULL,
-               id = ns("mainPanel"),
-               theme = bs_theme(version = 4),
-               tabPanel(title = "Data Import",
-                        value = "data_import_tab",
-                        uiOutput(ns("fileImportUserMessage")),
-                        import_file_ui(id = ns("dataImport"), title = "")
+  navbarPage(title = NULL,
+             id = ns("mainPanel"),
+             selected = "data_import_tab",
+             theme = bs_theme(version = 4),
+               tabPanel(
+                 title = "Data Import",
+                 value = "data_import_tab",
+                 div(id = ns("importContainer")),
+                 uiOutput(ns("fileImportUserMessage")),
+                 import_file_ui(
+                   id = ns("dataImport"),
+                   title = ""
+                 )
                ),
-               tabPanel(title = "PCA Results",
+               tabPanel(title = "Results",
                         value = "pca_results_tab",
                         h3("Principal Component Analysis Summary"),
                         DTOutput(ns("pcaSummary")),
@@ -105,13 +109,20 @@ PCAMainPanelUI <- function(id) {
                  h3("Loadings Heatmap"),
                  plotOutput(ns("loadingsHeatmap"), height = "450px")
                ),
-               tabPanel(title = "Data Transformations", value = "transformations_tab", plotOutput(ns("transformationHistograms")))
+               
+               tabPanel(title = "Data Transformations", value = "transformations_tab", plotOutput(ns("transformationHistograms"))),
+               
+               tabPanel(
+                 title = "Uploaded Data",
+                 value = "uploaded_data_tab",
+                 uiOutput(ns("uploadedDataContainer"))
+               )
     )
-  )
 }
 
 
 # ============== SERVER ==============
+
 
 PCAServer <- function(id) {
   moduleServer(id, function(input, output, session) {
@@ -120,7 +131,7 @@ PCAServer <- function(id) {
     imported_data <- import_file_server(
       id = "dataImport",
       trigger_return = "change",
-      btn_show_data = TRUE,
+      btn_show_data = FALSE,
       return_class = "tbl_df"
     )
     
@@ -129,21 +140,62 @@ PCAServer <- function(id) {
     original_data <- reactiveVal(NULL)
     noFileCalculate <- reactiveVal(FALSE)
     
-    # Run once on startup to hide tabs
-    observeEvent(TRUE, {
-      shinyjs::delay(0, {
-        hideTab(inputId = "mainPanel", target = "pca_results_tab")
-        hideTab(inputId = "mainPanel", target = "transformations_tab")
-        hideTab(inputId = "mainPanel", target = "plots_tab")
-      })
+    session$onFlushed(function() {
+      hideTab(inputId = "mainPanel", target = "pca_results_tab")
+      hideTab(inputId = "mainPanel", target = "plots_tab")
+      hideTab(inputId = "mainPanel", target = "transformations_tab")
+      hideTab(inputId = "mainPanel", target = "uploaded_data_tab")
     }, once = TRUE)
     
     observeEvent(imported_data$data(), {
       df <- imported_data$data()
-      if (!is.null(df)) {
-        numeric_cols <- names(dplyr::select_if(df, is.numeric))
-        updatePickerInput(session, "pcaVariables", choices = numeric_cols)
+      req(df)
+      
+      numeric_cols <- names(dplyr::select_if(df, is.numeric))
+      updatePickerInput(session, "pcaVariables", choices = numeric_cols)
+    })
+    
+    # Clear results when user changes PCA options
+    observeEvent(
+      list(input$pcaVariables, input$transformation, input$numFactors),
+      {
+        pca_results(NULL)
+        analysis_data(NULL)
+        original_data(NULL)
+        
+        hideTab(inputId = ns("mainPanel"), target = "pca_results_tab")
+        hideTab(inputId = ns("mainPanel"), target = "plots_tab")
+        hideTab(inputId = ns("mainPanel"), target = "transformations_tab")
+        hideTab(inputId = ns("mainPanel"), target = "uploaded_data_tab")
+      },
+      ignoreInit = TRUE
+    )
+    
+    
+    # ---- Uploaded Data container ----
+    output$uploadedDataContainer <- renderUI({
+      if (is.null(imported_data$data())) {
+        tagList(
+          helpText("No data yet. Upload a dataset in the Data Import tab to view it here.")
+        )
+      } else {
+        DT::DTOutput(ns("pcaUploadTable"))
       }
+    })
+    
+    # ---- Uploaded Data table ----
+    output$pcaUploadTable <- DT::renderDT({
+      req(imported_data$data())
+      df <- imported_data$data()
+      
+      DT::datatable(
+        df,
+        options = list(
+          pageLength = 25,
+          lengthMenu = list(c(25, 50, 100, -1), c("25", "50", "100", "all")),
+          scrollX = TRUE
+        )
+      )
     })
     
     output$fileImportUserMessage <- renderUI({
@@ -238,9 +290,12 @@ PCAServer <- function(id) {
       updateSelectInput(session, "pcY", choices = pcs, selected = pcs[min(2, length(pcs))])
       
       showTab(inputId = "mainPanel", target = "pca_results_tab")
-      showTab(inputId = "mainPanel", target = "transformations_tab")
       showTab(inputId = "mainPanel", target = "plots_tab")
+      showTab(inputId = "mainPanel", target = "transformations_tab")
+      showTab(inputId = "mainPanel", target = "uploaded_data_tab")
+      
       updateNavbarPage(session, "mainPanel", selected = "pca_results_tab")
+      
     })
     
     
@@ -261,7 +316,6 @@ PCAServer <- function(id) {
         labs(title = "Score Plot", x = input$pcX, y = input$pcY) +
         theme_minimal()
     })
-    
     
     output$biplot <- renderPlot({
       req(pca_results(), input$pcX, input$pcY)
@@ -439,6 +493,10 @@ PCAServer <- function(id) {
       hideTab(inputId = "mainPanel", target = "pca_results_tab")
       hideTab(inputId = "mainPanel", target = "transformations_tab")
       hideTab(inputId = "mainPanel", target = "plots_tab")
+      hideTab(inputId = "mainPanel", target = "uploaded_data_tab")
+      
+      updateNavbarPage(session, "mainPanel", selected = "data_import_tab")
+      
       
       pca_results(NULL)
       analysis_data(NULL)
@@ -449,8 +507,7 @@ PCAServer <- function(id) {
       updateSelectInput(session, "pcX", choices = character(0))
       updateSelectInput(session, "pcY", choices = character(0))
       
-      updateNavbarPage(session, "mainPanel", selected = "data_import_tab")
-      
+      updateNavbarPage(session, ns("mainPanel"), selected = "data_import_tab")
     })
   })
 }
