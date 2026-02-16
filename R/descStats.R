@@ -2,7 +2,6 @@ library(htmltools)
 library(shiny)
 library(shinyWidgets)
 
-
 descStatsUI <- function(id) {
   ns <- NS(id)
   
@@ -110,8 +109,8 @@ descStatsUI <- function(id) {
               inputId  = ns("dsGraphOptions"),
               label    = strong("Graphs"), 
               choices  = c("Boxplot", 
-                           "Histogram", 
-                           "Stem and Leaf Plot"),
+                           "Histogram"), 
+                           #"Stem and Leaf Plot"),
               selected = c("Boxplot"),
               multiple = TRUE,
               options  = list(hideSelected = FALSE,
@@ -251,29 +250,29 @@ descStatsUI <- function(id) {
                       uiOutput(ns("renderDSHistogram"))
                     ), # Histogram
                     
-                    conditionalPanel(
-                      ns = ns,
-                      condition = "input.dsGraphOptions.indexOf('Stem and Leaf Plot') > -1",
-                      
-                      h3("Stem and Leaf Plot"),
-                      br(),
-                      fluidRow(
-                        column(
-                          width = 2, 
-                          div("")),
-                        
-                        column(
-                          width = 8, 
-                          verbatimTextOutput(ns("dsStemLeaf")),
-                          br(),
-                          p("* Note: Outlier values are listed under the HI/LO lists.")),
-                        
-                        column(
-                          width = 2, 
-                          div(""))
-                      ), # fluidRow
-                      br()
-                    ), # Stem and Leaf
+                    # conditionalPanel(
+                    #   ns = ns,
+                    #   condition = "input.dsGraphOptions.indexOf('Stem and Leaf Plot') > -1",
+                    #   
+                    #   h3("Stem and Leaf Plot"),
+                    #   br(),
+                    #   fluidRow(
+                    #     column(
+                    #       width = 2, 
+                    #       div("")),
+                    #     
+                    #     column(
+                    #       width = 8, 
+                    #       verbatimTextOutput(ns("dsStemLeaf")),
+                    #       br(),
+                    #       p("* Note: Outlier values are listed under the HI/LO lists.")),
+                    #     
+                    #     column(
+                    #       width = 2, 
+                    #       div(""))
+                    #   ), # fluidRow
+                    #   br()
+                    # ), # Stem and Leaf
                   ), # Graphs tabPanel
                   
                   tabPanel(
@@ -875,7 +874,6 @@ descStatsServer <- function(id) {
           df_outliers <- data.frame()
         }
         
-        
         output$renderDSBoxplot <- renderUI({
           tagList(
             plotOutput(
@@ -975,13 +973,13 @@ descStatsServer <- function(id) {
         }, height = function() {GetPlotHeight(input[["dsHisto-Height"]], input[["dsHisto-HeightPx"]], ui = FALSE)},
            width = function() {GetPlotWidth(input[["dsHisto-Width"]], input[["dsHisto-WidthPx"]], ui = FALSE)})
         
-        #---------------------- #
-        #### Stem and Leaf ----
-        #---------------------- #
-        
-        output$dsStemLeaf <- renderPrint({
-          stem.leaf(dat, unit = 1, m = 1, depths = FALSE)
-        })
+        # #---------------------- #
+        # #### Stem and Leaf ----
+        # #---------------------- #
+        # 
+        # output$dsStemLeaf <- renderPrint({
+        #   stem.leaf(dat, unit = 1, m = 1, depths = FALSE)
+        # })
         
         shinyjs::show(id = "outputPanel")
       } else {
