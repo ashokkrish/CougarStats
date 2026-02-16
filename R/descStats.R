@@ -107,7 +107,7 @@ descStatsUI <- function(id) {
             
             selectizeInput(
               inputId  = ns("dsGraphOptions"),
-              label    = strong("Graphs"), 
+              label    = strong("Graph Options"), 
               choices  = c("Boxplot", 
                            "Histogram"), 
                            #"Stem and Leaf Plot"),
@@ -153,8 +153,8 @@ descStatsUI <- function(id) {
                     ns = ns,
                     condition = "input.dsTableFilters == ''",
                     
-                    br(),
-                    p("Select one or more items from the Statistics menu to see more information.")
+                    #br(),
+                    p("Select one or more items from the Statistics menu.")
                   ),
                   
                   conditionalPanel(
@@ -175,8 +175,7 @@ descStatsUI <- function(id) {
                     helpText("* Note: Quartiles are calculated by excluding the median on both sides."),
                   ),
                   br(),
-                  br(),
-                    
+
                   conditionalPanel(
                     ns = ns,
                     condition = "input.dsTableFilters.indexOf('Mean') > -1 | 
@@ -195,8 +194,7 @@ descStatsUI <- function(id) {
                         br(),
                         DTOutput(ns("sampleDataTable")),
                         br(),
-                        br()),
-                      
+                        ),
                     
                     column(
                       width = 8,
@@ -205,17 +203,13 @@ descStatsUI <- function(id) {
                       titlePanel(tags$u("Sample Mean")),
                       br(),
                       uiOutput(ns("dsMeanCalc")),
-                      br(),
-                      
+
                       withMathJax(),
                       titlePanel(tags$u("Sample Standard Deviation")),
                       br(),
                       uiOutput(ns("dsSDCalc")),
-                      br(),
-                      br(),
-                      br(),
                     ), #column
-                    ), #fluidRow
+                   ), #fluidRow
                   ),
               
                   tabPanel(
@@ -243,7 +237,6 @@ descStatsUI <- function(id) {
                       
                       h3("Histogram"),
                       br(),
-                      
                       plotOptionsMenuUI(
                         id    = ns("dsHisto"),
                         title = "Histogram"),
@@ -280,19 +273,15 @@ descStatsUI <- function(id) {
                     title = "Uploaded Data",
                     
                     uiOutput(ns("renderDSData"))
-                  ),
-                
-                # dsTabset tabsetPanel
+                  ), # dsTabset tabsetPanel
             ), #descrStatsData div
-
-        )) #descriptiveStatsMP
-   
-      )
+          )
+        ) #descriptiveStatsMP
+       )
       )#mainPanel
     ) #sidebarLayout
   )
 }
-
 
 descStatsServer <- function(id) {
   moduleServer(id, function(input, output, session) {
@@ -344,11 +333,9 @@ descStatsServer <- function(id) {
     dsupload_iv$enable()
     dsuploadvars_iv$enable()
     
-    
     #  -------------------------------------------------------------------- #
     ## ------------------- Descriptive Stats functions --------------------
     #  -------------------------------------------------------------------- #
-    
     
     ### Module Server Elements ----
     # --------------------------------------------------------------------- #
@@ -432,12 +419,10 @@ descStatsServer <- function(id) {
       return(sort(outliers))
     }
     
-    
     # Function to find the population standard deviation
     pop.sd <- function(x) {
       sqrt(sum((x-mean(x))^2)/length(x))
     }
-    
     
     # Function for populating the value column of the datatable
     createDSColumn <- function(dat) ({
@@ -509,7 +494,6 @@ descStatsServer <- function(id) {
         sampSkewness <- "Not enough variability or data points in the dataset."
       }
       
-      
       if(is.nan(sampKurtosis)) {
         sampKurtosis <- "Not enough variability or data points in the dataset."
       }
@@ -540,10 +524,7 @@ descStatsServer <- function(id) {
       )
     })
     
-    
     # --------------------------------------------------------------------- #
-    
-    
     ### Reactives ----
     # --------------------------------------------------------------------- #
     
@@ -572,7 +553,6 @@ descStatsServer <- function(id) {
              validate("Improper file format.")
       )
     })
-    
     
     getDsDataframe <- reactive({
       
@@ -664,8 +644,6 @@ descStatsServer <- function(id) {
     })
     
     # --------------------------------------------------------------------- #
-    
-    
     ### Observers ----
     # --------------------------------------------------------------------- #
     
@@ -691,12 +669,7 @@ descStatsServer <- function(id) {
     observeEvent(input$goDescpStats, {
       output$renderDSData <- renderUI({
         tagList(
-          titlePanel("Data File"),
-          br(),
-          br(),
           div(DTOutput(session$ns("dsUploadTable")), style = "width: 75%"),
-          br(),
-          br()
         )
       })
     })
@@ -1010,7 +983,6 @@ descStatsServer <- function(id) {
       replaceData(dsTableProxy, newFilter, resetPaging = FALSE, rownames = FALSE)
     })
     
-    
     #  -------------------------------------------------------------------- #
     #  ------------------------ Component Display -------------------------
     #  -------------------------------------------------------------------- #
@@ -1064,9 +1036,7 @@ descStatsServer <- function(id) {
     #  -------------------------------------------------------------------- #
     
     # --------------------------------------------------------------------- #
-    
-    
+
     # **************************************************************************** #
-    
   })
 }
