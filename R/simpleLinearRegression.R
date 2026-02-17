@@ -276,13 +276,13 @@ SLRServer <- function(id) {
     slrraw_iv$add_rule("x", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
                                      "Data must be numeric values separated by a comma (ie: 2,3,4)."))
     slrraw_iv$add_rule("x", ~ if(sampleInfoRaw()$diff != 0) "x and y must have the same number of observations.")
-    slrraw_iv$add_rule("x", ~ if(sampleInfoRaw()$xSD == 0) "Not enough variance in Explanatory variable.")
+    slrraw_iv$add_rule("x", ~ if(sampleInfoRaw()$xSD == 0) "Explanatory variable has zero variance (all values are identical). At least two distinct values are required.")
     
     slrraw_iv$add_rule("y", sv_required())
     slrraw_iv$add_rule("y", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
                                      "Data must be numeric values separated by a comma (ie: 2,3,4)."))
     slrraw_iv$add_rule("y", ~ if(sampleInfoRaw()$diff != 0) "x and y must have the same number of observations.")
-    slrraw_iv$add_rule("y", ~ if(sampleInfoRaw()$ySD == 0) "Not enough variance in Response variable.")
+    slrraw_iv$add_rule("y", ~ if(sampleInfoRaw()$ySD == 0) "Response variable is constant. Correlation is undefined when a variable has zero variance.")
     
     slrupload_iv$add_rule("slrUserData", sv_required())
     slrupload_iv$add_rule("slrUserData", ~ if(is.null(fileInputs$slrStatus) || fileInputs$slrStatus == 'reset') "Required")
@@ -294,12 +294,12 @@ SLRServer <- function(id) {
     
     slruploadvars_iv$add_rule("slrExplanatory", sv_required())
     slruploadvars_iv$add_rule("slrExplanatory", ~ if(explanatoryInfoUploadSLR()$invalid) "Explanatory variable contains non-numeric data.")
-    slruploadvars_iv$add_rule("slrExplanatory", ~ if(explanatoryInfoUploadSLR()$sd == 0) "Not enough variance in Explanatory Variable.")
+    slruploadvars_iv$add_rule("slrExplanatory", ~ if(explanatoryInfoUploadSLR()$sd == 0) "Explanatory variable has zero variance (all values are identical). At least two distinct values are required.")
     
     slruploadvars_iv$add_rule("slrResponse", sv_required())
     slruploadvars_iv$add_rule("slrResponse", ~ if(sampleDiffUpload() != 0) "Missing values detected, x and y must have the same number of observations.")
     slruploadvars_iv$add_rule("slrResponse", ~ if(responseInfoUploadSLR()$invalid) "Response variable contains non-numeric data.")
-    slruploadvars_iv$add_rule("slrResponse", ~ if(responseInfoUploadSLR()$sd == 0) "Not enough variance in Response Variable.")
+    slruploadvars_iv$add_rule("slrResponse", ~ if(responseInfoUploadSLR()$sd == 0) "Response variable is constant. Correlation is undefined when a variable has zero variance.")
     
     ### ------------ Conditions --------------------------------------------------
     slrraw_iv$condition(~ isTRUE(input$dataRegCor == 'Enter Raw Data'))
@@ -475,9 +475,9 @@ SLRServer <- function(id) {
           
           validate(
             need(!explanatoryInfoUploadSLR()$invalid, "The Explanatory Variable (x) contains non-numeric data.") %then%
-              need(explanatoryInfoUploadSLR()$sd != 0, "The data for the Explanatory Variable (x) must have a standard deviation greater than 0 to perform regression and correlation analysis."),
+              need(explanatoryInfoUploadSLR()$sd != 0, "Explanatory Variable (x) must have a standard deviation greater than 0 to perform regression and correlation analysis."),
             need(!responseInfoUploadSLR()$invalid, "The Response Variable (y) contains non-numeric data.") %then%
-              need(responseInfoUploadSLR()$sd != 0, "The data for the Response Variable (y) must have a standard deviation greater than 0 to perform regression and correlation analysis."),
+              need(responseInfoUploadSLR()$sd != 0, "Response Variable (y) must have a standard deviation greater than 0 to perform correlation analysis."),
             errorClass = "myClass")
         }
         
@@ -509,8 +509,8 @@ SLRServer <- function(id) {
         
         if(!slrraw_iv$is_valid()) {
           validate(
-            need(sampleInfoRaw()$xSD != 0, "The data for the Explanatory variable (x) must have a standard deviation greater than 0 to perform regression and correlation analysis."),
-            need(sampleInfoRaw()$ySD != 0, "The data for the Response variable (y) must have a standard deviation greater than 0 to perform regression and correlation analysis."),
+            need(sampleInfoRaw()$xSD != 0, "Explanatory variable (x) must have a standard deviation greater than 0 to perform regression and correlation analysis."),
+            need(sampleInfoRaw()$ySD != 0, "Response variable (y) must have a standard deviation greater than 0 to perform correlation analysis."),
             errorClass = "myClass")
         }
       }) #output$slrValidation
