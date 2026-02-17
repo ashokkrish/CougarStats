@@ -75,8 +75,8 @@ SLRMainPanelUI <- function(id) {
             title = "Inference",
             value = "Inference",
 
-            tableOutput(ns("slrInferenceCoefficientsTable")),
-            br(),
+            # tableOutput(ns("slrInferenceCoefficientsTable")),
+            # br(),
             uiOutput(ns("slrInferenceDetails")),
           ), # Inference tabpanel
           
@@ -194,14 +194,14 @@ SLRSidebarUI <- function(id) {
       textAreaInput(
         inputId     = ns("y"),
         label       = strong("Response Variable (\\( y\\))"),
-        value       = "66, 108, 161, 177, 228, 235, 268, 259, 275, 278",
+        value       = "4, 14, 15, 18, 21, 26, 38",
         placeholder = "Enter values separated by a comma with decimals as points",
         rows        = 3),
       
       textAreaInput(
         inputId     = ns("x"),
         label       = strong("Explanatory Variable (\\( x\\))"),
-        value       = "10, 13, 18, 19, 22, 24, 27, 29, 35, 38",
+        value       = "61, 111, 125, 134, 169, 173, 244",
         placeholder = "Enter values separated by a comma with decimals as points",
         rows        = 3)
     ), #dataRegCor == 'Enter Raw Data'
@@ -708,36 +708,36 @@ SLRServer <- function(id) {
           )
         })
         
-        output$slrCoefficientsTable <- renderDT({
-          summary_df <- as.data.frame(summary(model)$coefficients)
-          conf_int <- as.data.frame(confint(model))
-          colnames(conf_int) <- c("Lower 95% CI", "Upper 95% CI")
-          
-          final_table <- cbind(summary_df, conf_int)
-          
-          datatable(final_table, options = list(dom = 't')) %>% 
-            formatRound(columns = c("Estimate", "Std. Error", "t value", "Pr(>|t|)", "Lower 95% CI", "Upper 95% CI"), digits = 4)
-        })
+        # output$slrCoefficientsTable <- renderDT({
+        #   summary_df <- as.data.frame(summary(model)$coefficients)
+        #   conf_int <- as.data.frame(confint(model))
+        #   colnames(conf_int) <- c("Lower 95% CI", "Upper 95% CI")
+        #   
+        #   final_table <- cbind(summary_df, conf_int)
+        #   
+        #   datatable(final_table, options = list(dom = 't')) %>% 
+        #     formatRound(columns = c("Estimate", "Std. Error", "t value", "Pr(>|t|)", "Lower 95% CI", "Upper 95% CI"), digits = 4)
+        # })
         
         # Inference tab coefficients table (same as above)
-        output$slrInferenceCoefficientsTable <- renderTable(
-          {
-            summary_df <- as.data.frame(summary(model)$coefficients)
-            conf_int <- as.data.frame(confint(model))
-            colnames(conf_int) <- c("Lower 95% CI", "Upper 95% CI")
-            
-            # Rename "Pr(>|t|)" to "P-value"
-            names(summary_df)[names(summary_df) == "Pr(>|t|)"] <- "P-value"
-            
-            final_table <- cbind(summary_df, conf_int)
-            final_table
-          },
-          rownames = TRUE,
-          na = "",
-          striped = TRUE,
-          align = "c",
-          digits = 4
-        )
+        # output$slrInferenceCoefficientsTable <- renderTable(
+        #   {
+        #     summary_df <- as.data.frame(summary(model)$coefficients)
+        #     conf_int <- as.data.frame(confint(model))
+        #     colnames(conf_int) <- c("Lower 95% CI", "Upper 95% CI")
+        #     
+        #     # Rename "Pr(>|t|)" to "P-value"
+        #     names(summary_df)[names(summary_df) == "Pr(>|t|)"] <- "P-value"
+        #     
+        #     final_table <- cbind(summary_df, conf_int)
+        #     final_table
+        #   },
+        #   rownames = TRUE,
+        #   na = "",
+        #   striped = TRUE,
+        #   align = "c",
+        #   digits = 4
+        # )
         
         output$slrInferenceDetails <- renderUI({
           req(model)
@@ -783,16 +783,27 @@ SLRServer <- function(id) {
                      column(6, style = "display: flex;",
                             div(style = "border: 1px solid #ccc; padding: 10px; border-radius: 5px; width: 100%;",
                                 h4(HTML("Intercept Parameter (\\(\\beta_0\\))")),
+                                br(),
                                 p(HTML("H<sub>0</sub>: \\(\\beta_0 = 0\\)")),
                                 p(HTML("H<sub>a</sub>: \\(\\beta_0 \\neq 0\\)")),
                                 p(HTML("\\(\\alpha = 0.05\\)")),
                                 
                                 # t-statistic equation
+                                p(strong("Test Statistic:")),
                                 p(class = "left-align-math",
                                   HTML(sprintf("$$\\small{t = \\frac{\\hat{\\beta}_0 - 0}{\\left(\\sqrt{\\frac{\\sum e^2}{n-2}} \\times \\sqrt{\\frac{1}{n} + \\frac{\\bar{x}^2}{\\sum(x-\\bar{x})^2}}\\right)} = \\frac{%s - 0}{%s} = %s}$$",
                                                fmt(b0_est), fmt(b0_se), fmt(b0_t)))),
                                 
                                 p(strong(sprintf("P-value = %s", fmt(b0_p)))),
+                                
+                                withMathJax(
+                                  p(strong("Conclusion:")),
+                                  if (b0_p <= 0.05) {
+                                    p(sprintf("Since the p-value is less than \\( \\alpha \\) (%.4f < 0.05), we reject the null hypothesis and conclude there is enough statistical evidence to support the alternative hypothesis.", b0_p))
+                                  } else {
+                                    p(sprintf("Since the p-value is greater than \\( \\alpha \\) (%.4f >  0.05), we fail to reject the null hypothesis and conclude there isn't enough statistical evidence to support the alternative hypothesis.", b0_p))
+                                  }
+                                ),
                                 
                                 # Horizontal Line
                                 hr(style = "border-top: 1px solid #ccc;"),
@@ -809,16 +820,27 @@ SLRServer <- function(id) {
                      column(6, style = "display: flex;",
                             div(style = "border: 1px solid #ccc; padding: 10px; border-radius: 5px; width: 100%;",
                                 h4(HTML("Slope Parameter (\\(\\beta_1\\))")),
+                                br(),
                                 p(HTML("H<sub>0</sub>: \\(\\beta_1 = 0\\)")),
                                 p(HTML("H<sub>a</sub>: \\(\\beta_1 \\neq 0\\)")),
                                 p(HTML("\\(\\alpha = 0.05\\)")),
                                 
                                 # t-statistic equation
+                                p(strong("Test Statistic:")),
                                 p(class = "left-align-math",
                                   HTML(sprintf("$$\\small{t = \\frac{\\hat{\\beta}_1 - 0}{\\left(\\frac{\\sqrt{\\frac{\\sum e^2}{n-2}}}{\\sqrt{\\sum(x-\\bar{x})^2}}\\right)} = \\frac{%s - 0}{%s} = %s}$$",
                                                fmt(b1_est), fmt(b1_se), fmt(b1_t)))),
                                 
                                 p(strong(sprintf("P-value = %s", fmt(b1_p)))),
+                                
+                                withMathJax(
+                                  p(strong("Conclusion:")),
+                                  if (b1_p <= 0.05) {
+                                    p(sprintf("Since the p-value is less than \\( \\alpha \\) (%.4f < 0.05), we reject the null hypothesis and conclude there is enough statistical evidence to support the alternative hypothesis.", b1_p))
+                                  } else {
+                                    p(sprintf("Since the p-value is greater than \\( \\alpha \\) (%.4f >  0.05), we fail to reject the null hypothesis and conclude there isn't enough statistical evidence to support the alternative hypothesis.", b1_p))
+                                  }
+                                ),
                                 
                                 # Horizontal Line
                                 hr(style = "border-top: 1px solid #ccc;"),
@@ -992,7 +1014,7 @@ SLRServer <- function(id) {
           {
             anova_results <- anova(model)
             data.frame(
-              Source = c("<strong>Regression (Model)</strong>", "<strong>Residual (Error)</strong>", "Total"),
+              Source = c("<strong>Regression (Model)</strong>", "<strong>Error (Residual)</strong>", "<strong>Total</strong>"),
               df = c(anova_results$Df[1], anova_results$Df[2], sum(anova_results$Df)),
               SS = c(anova_results$`Sum Sq`[1], anova_results$`Sum Sq`[2], sum(anova_results$`Sum Sq`)),
               MS = c(anova_results$`Mean Sq`[1], anova_results$`Mean Sq`[2], NA),
