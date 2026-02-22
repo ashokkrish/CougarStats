@@ -557,14 +557,15 @@ MLRServer <- function(id) {
             br(),
             r"{\( H_a: \) At least one \(\beta_j\ne 0\), where \(j = 1, \cdots, k\).}"
           ),
-          br(),
+          #br(),
           p(r"{\( \alpha = 0.05\ \)}"),
-          br(),
+          #br(),
           p(
             sprintf(r"{\( n = %i \)}", nrow(uploadedTibble$data())),
             br(),
             sprintf(r"{\( k = %i \)}", k)
-          )
+          ),
+          p(r"[where \(n\) is the sample size and \(k\) is the number of explanatory variables in the multiple regression model.]")
         )
       })
     })
@@ -601,8 +602,8 @@ MLRServer <- function(id) {
           tibble::tribble(
             ~"Source", ~"df", ~"SS", ~"MS", ~"F", ~"P-value",
             "<strong>Regression (Model)</strong>", as.integer(k), SSR, MSR, F_stat, pf(F_stat, k, n - k - 1, lower.tail = FALSE),
-            "<strong>Residual (Error)</strong>", as.integer(n - k - 1), SSE, MSE, NA, NA,
-            "Total", as.integer(n - 1), SST, NA, NA, NA
+            "<strong>Error (Residual)</strong>", as.integer(n - k - 1), SSE, MSE, NA, NA,
+            "<strong>Total</strong>", as.integer(n - 1), SST, NA, NA, NA
           )
         })
       },
@@ -682,7 +683,7 @@ MLRServer <- function(id) {
         n <- nrow(uploadedTibble$data())
         
         withMathJax(
-          p(strong(r"{ \(R^2\) and Adjusted \(R^2\) }")),
+          p(strong(r"{ \(R^2\) and Adjusted \(R^2\) :}")),
           br(),
           p(sprintf(
             r"[\( \displaystyle R^2 = \frac{\text{SSR}}{\text{SST}} = \frac{%0.4f}{%0.4f} = %0.4f\)]",
@@ -694,13 +695,11 @@ MLRServer <- function(id) {
             r"{
 \(
 \displaystyle
-R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] \\
-R^2_{\text{adj}} = %0.4f
+R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %0.4f
 \)
 }",
             summary(model)$adj.r.squared
           )),
-          p(r"[where \(k\) is the number of independent (explanatory) variables in the regression model, and \(n\) is the number of observations in the dataset.]"),
           p(
             strong("Interpretation:"),
             sprintf(
@@ -709,9 +708,11 @@ R^2_{\text{adj}} = %0.4f
             )
           ),
           br(),
-          p(strong("Information Criteria")),
-          p(sprintf(r"[Akaike Information Criterion (AIC): \(%0.4f\)]", AIC(model))),
-          p(sprintf(r"[Bayesian Information Criterion (BIC): \(%0.4f\)]", BIC(model)))
+          p(strong("Akaike Information Criteria (AIC):")),
+          p(sprintf(r"[AIC = \(%0.4f\)]", AIC(model))),
+          br(),
+          p(strong("Bayesian Information Criteria (BIC):")),
+          p(sprintf(r"[BIC = \(%0.4f\)]", BIC(model)))
         )
       })
     })
