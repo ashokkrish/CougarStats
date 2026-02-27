@@ -1235,7 +1235,7 @@ statInfrUI <- function(id) {
               
               selectizeInput(
                 inputId = ns("anovaGraphs"),
-                label = strong("Graphs"),
+                label = strong("Graph Options"),
                 choices = c("Side-by-side Boxplot",
                             "Histogram of Residuals",
                             "QQ Plot of Residuals",
@@ -1531,13 +1531,6 @@ statInfrUI <- function(id) {
                     
                     tabPanel(
                       id = ns("onePopMeanData"),
-                      title = "Uploaded Data",
-                      
-                      uiOutput(ns("renderOnePopMeanData")),
-                    ), #onePopMeanData Uploaded Data tabPanel
-                    
-                    tabPanel(
-                      id = ns("onePopMeanData"),
                       title = "Graphs",
                       conditionalPanel(
                         ns = ns,
@@ -1552,7 +1545,15 @@ statInfrUI <- function(id) {
                         uiOutput(ns("renderOneMeanBoxplot")),
                         br(),
                       ),
-                    ), #onePopMean Graphs tabPanel
+                    ), 
+                    
+                    tabPanel(
+                      id = ns("onePopMeanData"),
+                      title = "Uploaded Data",
+                      
+                      uiOutput(ns("renderOnePopMeanData")),
+                    ), #onePopMeanData Uploaded Data tabPanel
+                    #onePopMean Graphs tabPanel
                   )), #onePopMean tabsetPanel
                 
                 #### ---------------- 1 Pop Prop ---------------------------------------------
@@ -8992,12 +8993,12 @@ statInfrServer <- function(id) {
                   if (muNaught < 0) sprintf("(%g)", muNaught) else sprintf("%g", muNaught),
                   tTest["Sample SD"],
                   tTest["Sample Size"]),
-          sprintf("\\( \\displaystyle \\; = \\; \\dfrac{%g}{ \\left( \\dfrac{ %g }{ %g } \\right) } \\)",
-                  tTest["Sample Mean"] - muNaught, 
-                  tTest["Sample SD"],
-                  sqrt(tTest["Sample Size"])),
-          br(),
-          br(),
+   #       sprintf("\\( \\displaystyle \\; = \\; \\dfrac{%g}{ \\left( \\dfrac{ %g }{ %g } \\right) } \\)",
+  #                tTest["Sample Mean"] - muNaught, 
+   #               tTest["Sample SD"],
+  #                sqrt(tTest["Sample Size"])),
+   #       br(),
+    #      br(),
           sprintf("\\( \\displaystyle \\phantom{t} = \\; \\dfrac{ %g }{ %g } \\)",
                   tTest["Sample Mean"] - muNaught,
                   tTest["Std Error"]),

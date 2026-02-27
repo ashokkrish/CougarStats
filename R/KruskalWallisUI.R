@@ -490,7 +490,7 @@ kwRankedTableOutput <- function(data) {
           ranked_data_wide,
           rownames = FALSE,
           options = list(
-            pageLength = 10,
+            pageLength = -1,
             lengthMenu = list(c(10, 25, 50, 100, -1), c("10", "25", "50", "100", "all")),
             scrollX = TRUE,
             columnDefs = list(

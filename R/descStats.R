@@ -311,6 +311,12 @@ descStatsServer <- function(id) {
         "Selected variable contains non-numeric data."
       }
     })
+    dsuploadvars_iv$add_rule("dsUploadVars", ~ {
+      col_data <- dsUploadData()[[.x]]      
+      if(length(na.omit(col_data)) < 2) {   
+        "Selected column must have at least 2 observations."
+      }
+    })
     # ------------------ #
     #     Conditions     #
     # ------------------ #
@@ -700,6 +706,13 @@ descStatsServer <- function(id) {
           )
           validate(
             need(!checkNumeric(), "Selected variable contains non-numeric data."),
+            errorClass = "myClass"
+          )
+          validate(
+            need(
+              length(na.omit(dsUploadData()[[input$dsUploadVars]])) >= 2,
+              "Selected column must have at least 2 observations."
+            ),
             errorClass = "myClass"
           )
           
