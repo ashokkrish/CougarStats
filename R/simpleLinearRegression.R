@@ -154,9 +154,9 @@ SLRMainPanelUI <- function(id) {
             title = "Uploaded Data",
             value = "Uploaded Data",
             
-            titlePanel("Data File"),
-            br(),
-            br(),
+            # titlePanel("Data File"),
+            # br(),
+            # br(),
             div(
               DTOutput(ns("slrViewUpload")),
               style = "width: 75%"
