@@ -57,6 +57,7 @@ RUN R -e \
                     'remotes',          \
                     'ResourceSelection',\
                     'shinyalert',       \
+                    'shinyDarkmode',    \
                     'shinyjs',          \
                     'shinyMatrix',      \
                     'shinythemes',      \
@@ -81,11 +82,9 @@ RUN R -e \
                     'moments',          \
                     'psych',            \
                     'forecast'),        \
-                  dependencies = TRUE); 
-
-
-RUN R -e "remotes::install_github('deepanshu88/shinyDarkmode', lib='/usr/local/lib/R/site-library')"
-RUN R -e "remotes::install_github('rsquaredacademy/olsrr', lib='/usr/local/lib/R/site-library')"
+                  dependencies = TRUE); \
+  remotes::install_github('deepanshu88/shinyDarkmode'); \
+  remotes::install_github('rsquaredacademy/olsrr');"
 
 # copy our application into the server, where 'R' is the local path to the app
 # Usage: docker build --build-arg APPLICATION_DIRECTORY=<the directory of the
