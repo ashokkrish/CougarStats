@@ -139,6 +139,7 @@ PCAServer <- function(id) {
     analysis_data <- reactiveVal(NULL)
     original_data <- reactiveVal(NULL)
     noFileCalculate <- reactiveVal(FALSE)
+    grouping_var <- reactiveVal(NULL)
     
     session$onFlushed(function() {
       hideTab(inputId = "mainPanel", target = "pca_results_tab")
@@ -224,11 +225,31 @@ PCAServer <- function(id) {
         shinyalert::shinyalert("Input Error", "Number of factors cannot exceed the number of selected variables.", type = "error", confirmButtonCol = "#18536F")
         return()
       }
+
+      df <- imported_data$data()
       
-      data <- imported_data$data()
-      selected_data <- data %>%
-        dplyr::select(all_of(input$pcaVariables)) %>%
-        na.omit()
+      non_num <- names(df)[!sapply(df, is.numeric)]
+      group_col <- if (length(non_num) > 0) non_num[1] else NULL
+      
+      row_ok <- complete.cases(df[, input$pcaVariables, drop = FALSE])
+      
+      selected_data <- df[row_ok, input$pcaVariables, drop = FALSE]
+      selected_data <- as.data.frame(selected_data)
+      
+      if (!is.null(group_col)) {
+        grp <- df[row_ok, group_col, drop = TRUE]
+        grp <- as.character(grp)
+        grp[is.na(grp)] <- "Missing"
+        grouping_var(factor(grp))
+      } else {
+        grouping_var(NULL)
+      }
+
+      selected_data[] <- lapply(selected_data, function(x) as.numeric(as.character(x)))
+      
+      keep <- complete.cases(selected_data)
+      selected_data <- selected_data[keep, , drop = FALSE]
+      if (!is.null(group_col)) grouping_var(grouping_var()[keep])
       
       original_data(selected_data)
       
@@ -328,24 +349,34 @@ PCAServer <- function(id) {
         need(ax1 != ax2, "Choose two different components.")
       )
       
-      df <- imported_data$data()
-      grp <- NULL
-      if (!is.null(df)) {
-        non_num <- names(df)[!sapply(df, is.numeric)]
-        if (length(non_num) > 0) grp <- df[[non_num[1]]]
-      }
+      grp <- grouping_var()
       
-      factoextra::fviz_pca_biplot(
-        pca_results(),
+      n_ind <- nrow(pca_results()$x)
+      
+      valid_grp <- !is.null(grp) && is.atomic(grp) && length(grp) == n_ind
+      
+      args <- list(
+        X = pca_results(),
         axes = c(ax1, ax2),
         geom.ind = "point",
-        col.ind = grp,
-        addEllipses = !is.null(grp),
+        pointshape = 19,
         repel = TRUE
-      ) +
-        ggplot2::labs(x = input$pcX, y = input$pcY)
+      )
+      
+      if (valid_grp) {
+        grp <- as.factor(grp)
+        
+        counts <- table(grp)
+        can_ellipse <- all(counts >= 3)
+        
+        args$habillage <- grp
+        args$addEllipses <- can_ellipse
+      }
+      
+      p <- do.call(factoextra::fviz_pca_biplot, args)
+      
+      p + ggplot2::labs(x = input$pcX, y = input$pcY)
     })
-    
     
     output$loadingsHeatmap <- renderPlot({
       req(pca_results())
@@ -465,7 +496,7 @@ PCAServer <- function(id) {
       )
       
       ggplot(scree_data, aes(x = Component, y = Variance)) +
-        geom_line(aes(y = Variance), color = "black", size = 1) +
+        geom_line(aes(y = Variance), color = "black", linewidth = 1) +
         geom_point(color = "black", size = 3) +
         labs(title = "Scree Plot",
              x = "Principal Component",
