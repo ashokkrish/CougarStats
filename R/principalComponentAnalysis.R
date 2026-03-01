@@ -244,7 +244,13 @@ PCAServer <- function(id) {
           grp <- df[row_ok, group_col, drop = TRUE]
           grp <- as.character(grp)
           grp[is.na(grp)] <- "Missing"
-          grouping_var(factor(grp))
+          
+          n_groups <- length(unique(grp))
+          if (n_groups <= 12) {
+            grouping_var(factor(grp))
+          } else {
+            grouping_var(NULL)
+          }
         } else {
           grouping_var(NULL)
         }
