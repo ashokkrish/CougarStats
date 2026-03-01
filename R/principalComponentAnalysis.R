@@ -352,8 +352,18 @@ PCAServer <- function(id) {
       
       ggplot(scores, aes(x = .data[[input$pcX]], y = .data[[input$pcY]])) +
         geom_point() +
+        
+        geom_hline(yintercept = 0, linewidth = 0.8) +
+        geom_vline(xintercept = 0, linewidth = 0.8) +
+        
         labs(title = "Score Plot", x = input$pcX, y = input$pcY) +
-        theme_minimal()
+        theme_minimal() +
+        theme(
+          plot.title  = element_text(face = "bold", size = 18, hjust = 0.5),
+          axis.title.x = element_text(face = "bold", size = 14),
+          axis.title.y = element_text(face = "bold", size = 14),
+          axis.text   = element_text(size = 12)
+        )
     })
     
     output$biplot <- renderPlot({
@@ -510,22 +520,34 @@ PCAServer <- function(id) {
     output$screePlot <- renderPlot({
       req(pca_results())
       
-      # Create a data frame for plotting
       scree_data <- data.frame(
         Component = 1:length(pca_results()$sdev),
         Variance = pca_results()$sdev^2
       )
       
       ggplot(scree_data, aes(x = Component, y = Variance)) +
-        geom_line(aes(y = Variance), color = "black", linewidth = 1) +
-        geom_point(color = "black", size = 3) +
-        labs(title = "Scree Plot",
-             x = "Principal Component",
-             y = "Eigenvalue (Variance)") +
+        geom_line(linewidth = 1) +
+        geom_point(size = 3) +
+        
+        geom_hline(yintercept = 0, linewidth = 0.8) +
+        geom_vline(xintercept = 0, linewidth = 0.8) +
+        
+        scale_x_continuous(
+          limits = c(0, max(scree_data$Component) + 0.5),
+          breaks = scree_data$Component
+        ) +
+        
+        labs(
+          title = "Scree Plot",
+          x = "Principal Component",
+          y = "Eigenvalue (Variance)"
+        ) +
         theme_minimal() +
         theme(
-          plot.title = element_text(hjust = 0.5),
-          axis.text = element_text(size = 14) # Enlarge axis text
+          plot.title  = element_text(face = "bold", size = 18, hjust = 0.5),
+          axis.title.x = element_text(face = "bold", size = 14),
+          axis.title.y = element_text(face = "bold", size = 14),
+          axis.text   = element_text(size = 12)
         )
     })
     
