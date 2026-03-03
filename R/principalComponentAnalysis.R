@@ -410,24 +410,37 @@ PCAServer <- function(id) {
     }, res = 96)
     
     output$loadingsHeatmap <- renderPlot({
-      req(pca_results())
+      req(pca_results(), input$numFactors)
       
-      L <- as.data.frame(pca_results()$rotation)
+      loadings <- as.data.frame(pca_results()$rotation)
       
-      L <- L[, 1:min(10, ncol(L)), drop = FALSE]
+      k <- min(input$numFactors, ncol(loadings))
+      validate(need(k >= 1, "Choose at least 1 factor."))
       
-      df_long <- data.frame(
-        Feature = rep(rownames(L), times = ncol(L)),
-        Component = rep(colnames(L), each = nrow(L)),
-        Loading = as.vector(as.matrix(L))
-      )
+      loadings_k <- loadings[, 1:k, drop = FALSE]
       
-      ggplot(df_long, aes(x = Component, y = Feature, fill = Loading)) +
-        geom_tile() +
-        geom_text(aes(label = round(Loading, 2)), size = 3) +
-        labs(title = "Loadings Heatmap", x = NULL, y = NULL) +
-        theme_minimal()
-    })
+      loadings_melted <- reshape2::melt(as.matrix(loadings_k))
+      colnames(loadings_melted) <- c("Variable", "PC", "Loading")
+      
+      ggplot(loadings_melted, aes(x = PC, y = Variable, fill = Loading)) +
+        geom_tile(color = "white", linewidth = 0.5) +
+        scale_fill_gradient2(low = "#2E9DFD", mid = "white", high = "#FC4E07", midpoint = 0) +
+        geom_text(aes(label = round(Loading, 2)), color = "black", size = 3) +
+        theme_minimal() +
+        theme(
+          plot.title   = element_text(face = "bold", size = 18, hjust = 0.5),
+          axis.title.x = element_text(face = "bold", size = 14),
+          axis.title.y = element_text(face = "bold", size = 14),
+          axis.text.x  = element_text(vjust = 1, hjust = 0.5),
+          axis.text.y  = element_text(size = 11)
+        ) +
+        labs(
+          title = "PCA Loadings Heatmap",
+          x = "Principal Component",
+          y = "Chemical Variable",
+          fill = "Loading Value"
+        )
+    }, res = 96)
     
     
     output$pcaSummary <- renderDT({
@@ -520,28 +533,17 @@ PCAServer <- function(id) {
     output$screePlot <- renderPlot({
       req(pca_results())
       
-      scree_data <- data.frame(
-        Component = 1:length(pca_results()$sdev),
-        Variance = pca_results()$sdev^2
-      )
-      
-      ggplot(scree_data, aes(x = Component, y = Variance)) +
-        geom_line(linewidth = 1) +
-        geom_point(size = 3) +
-        
-        geom_hline(yintercept = 0, linewidth = 0.8) +
-        geom_vline(xintercept = 0, linewidth = 0.8) +
-        
-        scale_x_continuous(
-          limits = c(0, max(scree_data$Component) + 0.5),
-          breaks = scree_data$Component
-        ) +
-        
-        labs(
-          title = "Scree Plot",
-          x = "Principal Component",
-          y = "Eigenvalue (Variance)"
-        ) +
+      factoextra::fviz_eig(
+        pca_results(),
+        addlabels = TRUE,
+        ylim = c(0, 50),
+        main = "Scree Plot: Variance Explained by Principal Components",
+        xlab = "Principal Components",
+        ylab = "Percentage of Explained Variance",
+        barfill = "#2E9DFD",
+        barcolor = "#2E9DFD",
+        linecolor = "#FC4E07"
+      ) +
         theme_minimal() +
         theme(
           plot.title  = element_text(face = "bold", size = 18, hjust = 0.5),
@@ -549,7 +551,7 @@ PCAServer <- function(id) {
           axis.title.y = element_text(face = "bold", size = 14),
           axis.text   = element_text(size = 12)
         )
-    })
+    }, res = 96)
     
     output$rotatedLoadings <- renderDT({
       req(analysis_data())
