@@ -1,7 +1,3 @@
-library(htmltools)
-library(shiny)
-library(shinyWidgets)
-
 descStatsUI <- function(id) {
   ns <- NS(id)
   
@@ -592,8 +588,7 @@ descStatsServer <- function(id) {
                                     "Coefficient of Variation",
                                     "Skewness", 
                                     "Kurtosis"))
-      
-      
+
       if(input$dataInput == 'Upload Data')
       {
         req(dsuploadvars_iv$is_valid())
@@ -675,7 +670,7 @@ descStatsServer <- function(id) {
     observeEvent(input$goDescpStats, {
       output$renderDSData <- renderUI({
         tagList(
-          div(DTOutput(session$ns("dsUploadTable")), style = "width: 75%"),
+          div(DTOutput(session$ns("dsUploadTable")), style = "width: 75%")
         )
       })
     })
@@ -730,7 +725,7 @@ descStatsServer <- function(id) {
       output$dsUploadTable <- renderDT({
         req(dsupload_iv$is_valid())
         datatable(dsUploadData(),
-                  options = list(pageLength = 25,
+                  options = list(pageLength = -1,
                                  lengthMenu = list(c(25, 50, 100, -1),
                                                    c("25", "50", "100", "all")),
                                  columnDefs = list(list(className = 'dt-center',
@@ -772,11 +767,9 @@ descStatsServer <- function(id) {
                                                  escape = FALSE,
                                                  rownames = FALSE,
                                                  filter = "none",
-                                                 
         ))
         
         outputOptions(output, "dsTableData", suspendWhenHidden = FALSE)
-        
         
         if(input$dataInput == 'Upload Data')
         {
@@ -820,8 +813,6 @@ descStatsServer <- function(id) {
                     dfTotaled['Totals', 1],
                     df['Observations', 3],
                     df['Mean', 3]),
-            br(),
-            br(),
             br()
           )
         })
@@ -1045,10 +1036,6 @@ descStatsServer <- function(id) {
       fileInputs$dsStatus <- 'reset'
       updateTabsetPanel(session, "dsTabset", selected = "Descriptive Statistics")
     })
-    
-    #  -------------------------------------------------------------------- #
-    
-    # --------------------------------------------------------------------- #
 
     # **************************************************************************** #
   })
