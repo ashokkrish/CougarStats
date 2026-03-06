@@ -1,33 +1,3 @@
-library(aplpack)
-library(base)
-library(bslib)
-library(car)
-library(colourpicker)
-library(DescTools)
-library(dplyr)
-library(DT)
-library(generics)
-library(ggplot2)
-library(ggpubr)
-library(ggsci)
-library(e1071)
-library(nortest)
-library(plotly)
-library(readr)
-library(readxl)
-library(rstatix)
-library(shiny)
-library(shinythemes)
-library(shinyjs)
-library(shinyMatrix)
-library(shinyvalidate)
-library(shinyWidgets)
-library(tinytex)
-library(tools)
-library(writexl)
-library(xtable)
-library(MASS)
-
 source("R/KruskalWallisUI.R")
 source("R/RankedDataTable.R")
 # render <- "
@@ -858,9 +828,6 @@ statInfrUI <- function(id) {
                 step    = 1),
             ), # Two Population Proportions
             
-            
-            
-            
             ### ------------ 2 Pop Standard Deviations ------------------------------------
             
             conditionalPanel(
@@ -1131,8 +1098,6 @@ statInfrUI <- function(id) {
                 label   = "Q-Q plots for Sample 1 and Sample 2",
                 value   = TRUE)
             ), # Wilcoxon Rank Sum Graphs
-            
-            
           ), # "input.siMethod == '2'",
           
           ### ------------ Multiple Samples (ANOVA or Kruskal-Wallis) ------------------------------------
@@ -1324,7 +1289,6 @@ statInfrUI <- function(id) {
                              "1%"),
                 selected = "5%",
                 inline   = TRUE),
-              
             ) #Kruskal-Wallis conditionalPanel
           ), #Multiple Samples conditionalPanel
           
@@ -1711,7 +1675,6 @@ statInfrUI <- function(id) {
                                       
                                       uiOutput(ns("renderIndPopMeansData"))
                                     ), # indPopMeansData Uploaded Data tabPanel
-                                    
                                   ), # indPopMeansTabset
                                 ), # Two Independent Samples
                                 #### ---------------- Dependent Pop Means ----------------------------------
@@ -1780,7 +1743,6 @@ statInfrUI <- function(id) {
                                       conditionalPanel(
                                         ns = ns,
                                         condition = "input.depMeansQQPlot == 1",
-                                        br(),
                                         titlePanel(tags$u("Q-Q Plot of the Difference (d)")),
                                         br(),
                                         plotOptionsMenuUI(
@@ -1794,6 +1756,7 @@ statInfrUI <- function(id) {
                                     ), # Dep means graphs tab panel
                                   ), # depPopMeansTabset
                                 ), # Two Dependent Samples
+                                
                                 #### ---------------- 2 Pop Proportions --------------------------------------
                                 conditionalPanel(
                                   ns = ns,
@@ -1840,7 +1803,8 @@ statInfrUI <- function(id) {
                                         plotOutput(ns("twoPropPieChart"), 
                                                    width = "600px", height = "500px"))
                                     ), # Graph Panel
-                                  )), # Two Population Proportions
+                                  )
+                                ), # Two Population Proportions
                                 
                                 #### ---------------- Wilcoxon Rank Sum --------------------------------------
                                 conditionalPanel(
@@ -1891,6 +1855,7 @@ statInfrUI <- function(id) {
                                         conditionalPanel(
                                           ns = ns,
                                           condition = "input.popuParameters == 'Wilcoxon rank sum test' && input.sidebysidewRankSum == 1",
+                                          
                                           titlePanel("Side-by-side Boxplot"),
                                           br(),
                                           plotOptionsMenuUI(
@@ -1906,6 +1871,7 @@ statInfrUI <- function(id) {
                                         conditionalPanel(
                                           ns = ns,
                                           condition = "input.popuParameters == 'Wilcoxon rank sum test' && input.sidebysidewRankQQ == 1",
+                                          
                                           titlePanel("Q-Q Plots for Sample 1 and Sample 2"),
                                           br(),
                                           plotOptionsMenuUI(
@@ -1924,6 +1890,7 @@ statInfrUI <- function(id) {
                                     ),
                                   ), # Uploaded Data
                                 ), # Wilcoxon rank sum Tabs whole
+
                                 ### ------------ Two Pop Var ------------------------------------------
                                 
                                 conditionalPanel(
@@ -2068,8 +2035,6 @@ statInfrUI <- function(id) {
               ), #Multiple Samples (ANOVA)
               
               #### ------------ Kruskal-Wallis ------------------------------------
-              
-              
               conditionalPanel(
                 ns = ns,
                 condition = "input.siMethod == 'Multiple' && input.multipleMethodChoice == 'kw'",
@@ -3008,8 +2973,8 @@ statInfrServer <- function(id) {
     
     ## FIXME: If this validator object has been added to another validator
     ## object using InputValidator$add_validator, calls to enable() on this
-    ## validator will be ignored. Don't rely on this behaviour, if undefined, or
-    ## if out-of-sync with the documenation. When child validators exist they
+    ## validator will be ignored. Don't rely on this behavior, if undefined, or
+    ## if out-of-sync with the documentation. When child validators exist they
     ## are enabled or disabled recursively when parent is enabled or disabled,
     ## and actions on the child should be ignored.
     si_iv$enable()
@@ -3059,7 +3024,6 @@ statInfrServer <- function(id) {
     chiSq3x2_iv$enable()
     chiSq3x3_iv$enable()
     
-    
     #  ========================================================================= #
     ## -------- Module Server Elements -----------------------------------------
     #  ========================================================================= #
@@ -3072,7 +3036,6 @@ statInfrServer <- function(id) {
     plotOptionsMenuServer("anovaHistogram")
     plotOptionsMenuServer("anovaQQplot")
     plotOptionsMenuServer("anovaMeanPlot")
-    
     
     #  ========================================================================= #
     ## -------- Functions ------------------------------------------------------
@@ -3128,7 +3091,6 @@ statInfrServer <- function(id) {
                suffEvidence,
                altHyp,
                altHypValue),
-        br(),
         br()
       )
       
@@ -3254,7 +3216,6 @@ statInfrServer <- function(id) {
           givenOutput <- br()
           
         }
-        
       }
     }
     
@@ -3326,7 +3287,6 @@ statInfrServer <- function(id) {
           br()
         )
       }
-      
     }
     
     printOneMeanCICalc <- function() {
@@ -3664,7 +3624,7 @@ statInfrServer <- function(id) {
       return(dat)
     }
     
-    #fix this diana  
+    #Fix this!!!
     GetwRankSumMeansData <- function() {
       req(si_iv$is_valid())
       
@@ -4386,7 +4346,6 @@ statInfrServer <- function(id) {
       }
       
       data <- rbind(data, c(sum(data[,"Df"]), sum(data[,"Sum Sq"]), NA, NA, NA))
-      # print(data[,"Df"])
       rownames(data) <- c("Between Groups (Model)", "Within Groups (Error)", "Total")
       colNames <- c("df", "Sum of Squares (SS)", "Mean Sum of Squares (MS)", "F-ratio", "P-Value")
       
@@ -4600,8 +4559,8 @@ statInfrServer <- function(id) {
               lapply(colnames(chiSqData), th,
                      style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);')
             )
+           )
           )
-        )
         )
       }
       
@@ -6770,7 +6729,6 @@ statInfrServer <- function(id) {
         sprintf("\\( s = %0.2f \\)",
                 input$SSDStdDev),
         br(),
-        
         br(),
         br(),
         
@@ -6839,7 +6797,6 @@ statInfrServer <- function(id) {
         sprintf("We are %s confident that the population standard deviation (\\( \\sigma \\)) is between \\( %0.2f \\) and \\( %0.2f \\).",
                 input$confidenceLevel, oneSSDLowerPopStdDev, oneSSDUpperPopStdDev)
       )
-      
     })
     
     #### ---- One population standard deviation hypothesis testing HT ----
@@ -7215,7 +7172,7 @@ statInfrServer <- function(id) {
         
         br(),
         
-        ### FUTURE WORK: Revisit chi squ plots as they are currently bugged
+        ### FUTURE WORK: Revisit chi-square plots as they are currently bugged
         #plotOutput(session$ns("onePopulationSDHTChiSqPlot"), width = "50%", height = "400px"),
         
         ## Overall conclusion
@@ -7369,7 +7326,6 @@ statInfrServer <- function(id) {
       )
     })
     
-    
     #### ---------------- HT ----
     output$onePropHT <- renderUI({
       req(si_iv$is_valid() && input$numTrials >= input$numSuccesses)
@@ -7503,7 +7459,6 @@ statInfrServer <- function(id) {
       tagAppendChildren(onePropHTHead, onePropPVal, onePropHTTail, onePropHTConclusion)
     })
     
-    
     #### ---------------- HT Plot ----
     output$onePropHTPlot <- renderPlot({
       
@@ -7601,7 +7556,6 @@ statInfrServer <- function(id) {
       }
       
       tagList(
-        
         p(
           withMathJax(
             conditionalPanel(
@@ -7635,12 +7589,8 @@ statInfrServer <- function(id) {
             br()
           )
         )
-        
       )
-      
-      
     })
-    
     
     #### ---------------- Boxplot ----
     output$indMeansBoxplot <- renderPlot({
@@ -7687,7 +7637,6 @@ statInfrServer <- function(id) {
       zInt <- IndMeansZInt()
       
       tagList(
-        
         p(
           withMathJax(
             sprintf("\\( \\displaystyle CI = (\\bar{x}_{1} - \\bar{x}_{2}) \\pm \\left( z_{\\alpha/2} \\sqrt{ \\dfrac{\\sigma_{1}^2}{n_{1}} + \\dfrac{\\sigma_{2}^2}{n_{2}} } \\right) \\)"),
@@ -7717,7 +7666,6 @@ statInfrServer <- function(id) {
         
       )
     })
-    
     
     output$sigmaUnknownCIFormula <- renderUI({
       
@@ -7770,7 +7718,6 @@ statInfrServer <- function(id) {
             br(),
             br(),
             br(),
-            br(),
             sprintf("\\( \\displaystyle CI = (%.4f - %s) \\pm \\left( %.4f \\cdot %.4f \\sqrt{ \\dfrac{1}{%.0f} + \\dfrac{1}{%.0f} } \\right) \\)",
                     data$xbar1,
                     if (data$xbar2 < 0) sprintf("(%.4f)", data$xbar2) else sprintf("%.4f", data$xbar2),
@@ -7789,7 +7736,6 @@ statInfrServer <- function(id) {
             sprintf("\\( \\displaystyle \\quad = %g \\pm %g \\)",
                     tInt['Difference of means'],
                     tInt['ME'])
-            
           )
         )
       } else {
@@ -7863,10 +7809,7 @@ statInfrServer <- function(id) {
           )
         )
       }
-      
-      
     })
-    
     
     #### ----------------- HT ----
     output$indMeansHT <- renderUI({
@@ -8041,7 +7984,6 @@ statInfrServer <- function(id) {
                   reject),
           br(),
           br()
-          
         ),
         plotOutput(session$ns('indMeansHTPlot'), width = "75%", height = "300px"),
         br(),
@@ -8163,7 +8105,6 @@ statInfrServer <- function(id) {
             br()
           )
         )
-        
       } else {
         tagList(
           withMathJax(
@@ -8418,13 +8359,11 @@ statInfrServer <- function(id) {
           )
           p_value <- test_result$p.value
         }
-        
       }
       
       tie_correction <- calculate_tie_correction(combined_values)
       u_std_dev <- sqrt((n1 * n2 / 12) * ((nAll + 1) - (tie_correction / (nAll * (nAll - 1)))))
       mw_z_stat <- ((u_test - u_mean) / u_std_dev)
-      
       
       if (input$normaprowrs == "Exact"){
         z_stat <- mw_z_stat
@@ -8533,7 +8472,6 @@ statInfrServer <- function(id) {
             )}#,
           },
           
-          
           p(tags$b("Using P-value Method:")),
           sprintf("\\( P = %s \\)", ifelse(is.na(p_value), "NA", round(p_value, 4))),
           if (has_ties && input$normaprowrs == "Exact"){
@@ -8566,7 +8504,8 @@ statInfrServer <- function(id) {
               br(),
               
               sprintf("\\( \\text{Observed Test Statistic: } U = %s \\)", round(u1_statistic, 3)),
-              br(), br(),
+              br(),
+              br(),
 
               if (input$altHypothesis2 == "2") { # Two-sided decision
                 if (u1_statistic <= lower || u1_statistic >= upper) {
@@ -8774,8 +8713,7 @@ statInfrServer <- function(id) {
     }, height = function() {GetPlotHeight(input[["sidebysidewRankQQ-Height"]], input[["sidebysidewRankQQ-HeightPx"]], ui = FALSE)},
     width = function() {GetPlotWidth(input[["sidebysidewRankQQ-Width"]], input[["sidebysidewRankQQ-WidthPx"]], ui = FALSE)}
     )
-    
-    
+
     ### ------------ Dep Means Outputs -------------------------------------------
     
     #### ------------ Uploaded Data Table (no totals) ----------------------------------
@@ -8993,12 +8931,12 @@ statInfrServer <- function(id) {
                   if (muNaught < 0) sprintf("(%g)", muNaught) else sprintf("%g", muNaught),
                   tTest["Sample SD"],
                   tTest["Sample Size"]),
-   #       sprintf("\\( \\displaystyle \\; = \\; \\dfrac{%g}{ \\left( \\dfrac{ %g }{ %g } \\right) } \\)",
-  #                tTest["Sample Mean"] - muNaught, 
-   #               tTest["Sample SD"],
-  #                sqrt(tTest["Sample Size"])),
-   #       br(),
-    #      br(),
+  #       sprintf("\\( \\displaystyle \\; = \\; \\dfrac{%g}{ \\left( \\dfrac{ %g }{ %g } \\right) } \\)",
+  #               tTest["Sample Mean"] - muNaught, 
+  #               tTest["Sample SD"],
+  #               sqrt(tTest["Sample Size"])),
+  #       br(),
+  #       br(),
           sprintf("\\( \\displaystyle \\phantom{t} = \\; \\dfrac{ %g }{ %g } \\)",
                   tTest["Sample Mean"] - muNaught,
                   tTest["Std Error"]),
@@ -9167,7 +9105,6 @@ statInfrServer <- function(id) {
       diffNaught <- input$propDiffNaught
       twoPropZTest <- TwoPropZTest(input$numSuccesses1, input$numTrials1, input$numSuccesses2, input$numTrials2, diffNaught, IndMeansHypInfo()$alternative, SigLvl())
       twoPropZTest["Z Critical"] <- round(twoPropZTest["Z Critical"], cvDigits)
-      
       
       if(input$altHypothesis2 == "2")
       {
@@ -9453,8 +9390,7 @@ statInfrServer <- function(id) {
                     conf_percent, CI$CI_lower, CI$CI_upper))
         ))
     })
-    
-    
+
     #### ------------ HT
     output$twoPopVarHT <- renderUI({
       req(si_iv$is_valid())
@@ -9515,12 +9451,12 @@ statInfrServer <- function(id) {
                       1-sig_lvl/2, df1, df2, HT$crit_upper)
             )
             
-            # greater than
+          # greater than
           } else if (alt_hyp == "greater") {
             sprintf("Critical Value = \\(F_{1-\\alpha,\\ df_1,\\ df_2} = F_{%.2f,\\ %d,\\ %d} = %.4f\\)", 
                     1-sig_lvl, df1, df2, HT$crit_val)
             
-            # less than
+          # less than
           } else {
             sprintf("Critical Value = \\(F_{\\alpha,\\ df_2,\\ df_1} = F_{%.2f,\\ %d,\\ %d} = %.4f\\)", 
                     sig_lvl, df2, df1, HT$crit_val)
@@ -9855,6 +9791,7 @@ statInfrServer <- function(id) {
         )
       )
     })
+    
     ### ------------ Chi-Square Outputs ------------------------------------------
     
     output$chiSqObs <- renderDT({
@@ -10014,7 +9951,6 @@ statInfrServer <- function(id) {
         scale_y_continuous(breaks = NULL) +
         theme(axis.title.x = element_text(size = 20))
       # coord_cartesian(clip="off")
-      
     })
     
     output$fishersObs <- renderDT({
@@ -10026,7 +9962,6 @@ statInfrServer <- function(id) {
     output$fishersTest <- renderUI({
       PrintFishersTest()
     })
-    
     
     #  ========================================================================= #
     ## -------- Observers ------------------------------------------------------
@@ -10047,7 +9982,6 @@ statInfrServer <- function(id) {
       # }
     })
     
-    
     observeEvent(input$oneMeanBoxplot, {
       if (input$oneMeanBoxplot && input$dataAvailability != 'Summarized Data') {
         showTab(inputId = "onePopMeanTabset", target = "Graphs")
@@ -10062,12 +9996,7 @@ statInfrServer <- function(id) {
     observeEvent(input$goInference, {
       output$renderOnePopMeanData <- renderUI({
         tagList(
-          titlePanel("Data File"),
-          br(),
-          br(),
-          div(DTOutput(session$ns("onePopMeanUploadTable")), style = "width: 75%"),
-          br(),
-          br()
+          div(DTOutput(session$ns("onePopMeanUploadTable")), style = "width: 75%")
         )
       })
     })
@@ -10098,12 +10027,7 @@ statInfrServer <- function(id) {
     observeEvent(input$goInference, {
       output$renderIndPopMeansData <- renderUI({
         tagList(
-          titlePanel("Data File"),
-          br(),
-          br(),
-          div(DTOutput(session$ns("indPopMeansUploadTable")), style = "width: 75%"),
-          br(),
-          br()
+          div(DTOutput(session$ns("indPopMeansUploadTable")), style = "width: 75%")
         )
       })
     })
@@ -10156,12 +10080,7 @@ statInfrServer <- function(id) {
     observeEvent(input$goInference, {
       output$renderDepPopMeansData <- renderUI({
         tagList(
-          titlePanel("Data File"),
-          br(),
-          br(),
-          div(DTOutput(session$ns("depPopMeansUploadTable")), style = "width: 75%"),
-          br(),
-          br()
+          div(DTOutput(session$ns("depPopMeansUploadTable")), style = "width: 75%")
         )
       })
     })
@@ -10206,12 +10125,7 @@ statInfrServer <- function(id) {
     observeEvent(input$goInference, {
       output$renderWRankSumMeansData <- renderUI({
         tagList(
-          titlePanel("Data File"),
-          br(),
-          br(),
-          div(DTOutput(session$ns("wRankSumUploadTable")), style = "width: 75%"),
-          br(),
-          br()
+          div(DTOutput(session$ns("wRankSumUploadTable")), style = "width: 75%")
         )
       })
     })
@@ -10248,18 +10162,13 @@ statInfrServer <- function(id) {
     })
     
     observeEvent(input$kwUserData, {
-      
       output$analysisContent <- renderUI({ NULL })
       output$renderKWRM <- renderUI({ NULL })
       output$renderKWData <- renderUI({ NULL })
       
-      
       output$renderKWRaw <- renderUI({
         tagList(
-          titlePanel("Data File"),
-          br(), br(),
-          div(DTOutput(session$ns("kwInitialUploadTable")), style = "width: 75%"),
-          br(), br(),
+          div(DTOutput(session$ns("kwInitialUploadTable")), style = "width: 75%")
         )
       })
       
@@ -10318,12 +10227,7 @@ statInfrServer <- function(id) {
     observeEvent(input$goInference, {
       output$renderAnovaDataView <- renderUI({
         tagList(
-          titlePanel("Data File"),
-          br(),
-          br(),
-          div(DTOutput(session$ns("anovaUploadTable")), style = "width: 75%"),
-          br(),
-          br()
+          div(DTOutput(session$ns("anovaUploadTable")), style = "width: 75%")
         )
       })
       
@@ -10379,12 +10283,7 @@ statInfrServer <- function(id) {
         
         output$renderKWData <- renderUI({
           tagList(
-            titlePanel("Data File"),
-            br(),
-            br(),
-            div(DTOutput(session$ns("kwUploadTable")), style = "width: 75%"),
-            br(),
-            br()
+            div(DTOutput(session$ns("kwUploadTable")), style = "width: 75%")
           )
         })
       })
@@ -10519,7 +10418,6 @@ statInfrServer <- function(id) {
             print("amde it")
             hide(id = 'inferenceData')
           }
-          
         } else if (input$popuParameters == "Independent Population Means") {
           
           output$renderIndMeansBoxplot <- renderUI({
@@ -10581,7 +10479,7 @@ statInfrServer <- function(id) {
         #     br(),
         #   )
         # })
-        
+        #
         # output$render3x2ChiSq <- renderUI({
         #   tagList(
         #
@@ -10608,7 +10506,7 @@ statInfrServer <- function(id) {
         #   )
         # })
       }
-      #) # renderInference
+       #) # renderInference
     }) # input$goInference
     
     ### ------------ Component Display -------------------------------------------
@@ -10734,6 +10632,7 @@ statInfrServer <- function(id) {
       } else {
         hideTab(inputId = "depPopMeansTabset", target = "Graphs")
       }
+      
       # Hide/show tabs for Wilcoxon Rank Sum Upload
       if (input$wilcoxonRankSumTestData != "Upload Data"){
         updateTabsetPanel(session, "wilcoxonRankSumTabset", selected = "Analysis")
@@ -10741,6 +10640,7 @@ statInfrServer <- function(id) {
       } else {
         showTab(inputId = "wilcoxonRankSumTabset", target = "Uploaded Data")
       }
+      
       # Hide/show tabs for Wilcoxon Rank Sum Graph
       if (input$sidebysidewRankSum == 1 || input$sidebysidewRankQQ == 1){
         showTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
@@ -10808,8 +10708,6 @@ statInfrServer <- function(id) {
         show(id = "chiSqInput3x2")
         show(id = "chiSqInput3x3")
       }
-      
     })
-    
   })
 }
