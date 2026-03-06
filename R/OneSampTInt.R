@@ -21,4 +21,4 @@ TInterval <- function(n, xbar, s, c_level = 0.95)
 
 # Example usage:
 
-TInterval(18, 103.5375, 4.78, 0.95)
+# TInterval(18, 103.5375, 4.78, 0.95)
