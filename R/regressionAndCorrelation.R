@@ -11,7 +11,9 @@ regressionAndCorrelationUI <- function(id) {
                                   "Multiple Linear Regression" = "MLR",
                                   "Binary Logistic Regression" = "LOGR",
                                   "Principal Component Analysis" = "PCA",
-                                  "k-Nearest Neighbors" = "KNN"),
+                                  "k-Nearest Neighbors" = "KNN",
+                                  "Linear Discriminant Analysis" = "LDA"
+                                  ),
                    selected = "SLR"
       ),
       uiOutput(ns("regressionSidebarUI"))
@@ -51,6 +53,12 @@ regressionAndCorrelationServer <- function(id) {
     knn_instance_counter <- reactiveVal(0)
     current_knn_module_id <- reactive({
       paste0("knn_dynamic_instance_", knn_instance_counter())
+    })
+    
+    #Dynamic ID for LDA
+    lda_instance_counter <- reactiveVal(0)
+    current_lda_module_id <- reactive({
+      paste0("lda_dynamic_instance_", lda_instance_counter())
     })
   
     
@@ -100,6 +108,18 @@ regressionAndCorrelationServer <- function(id) {
           req(current_knn_module_id())
           KNNMainPanelUI(session$ns(current_knn_module_id()))
         })
+      } else if (input$multiple == "LDA") {
+        lda_instance_counter(lda_instance_counter() + 1)
+        
+        output$regressionSidebarUI <- renderUI({
+          req(current_lda_module_id())
+          LDASidebarUI(session$ns(current_lda_module_id()))
+        })
+        
+        output$regressionMainPanelUI <- renderUI({
+          req(current_lda_module_id())
+          LDAMainPanelUI(session$ns(current_lda_module_id()))
+        })
       }
       }, ignoreNULL = FALSE, ignoreInit = FALSE) # Corrected this line
     
@@ -123,6 +143,12 @@ regressionAndCorrelationServer <- function(id) {
       req(input$multiple == "KNN")
       KNNServer(current_knn_module_id())
     }, ignoreNULL = TRUE)
+    
+    observeEvent(current_lda_module_id(), {
+      req(input$multiple == "LDA")
+      LDAServer(current_lda_module_id())
+    }, ignoreNULL = TRUE)
+    
     
   })
 }
