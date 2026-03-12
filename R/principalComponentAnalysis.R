@@ -575,13 +575,25 @@ PCAServer <- function(id) {
     output$rotatedLoadings <- renderDT({
       req(analysis_data())
       
-      # Perform PCA with rotation using psych::principal
-      rotated_pca <- psych::principal(analysis_data(), nfactors = input$numFactors, rotate = "varimax")
+      validate(
+        need(input$numFactors < ncol(analysis_data()),
+             "Number of factors must be less than the number of selected variables for rotated PCA.")
+      )
       
-      # Extract rotated loadings
+      cor_mat <- cor(analysis_data(), use = "complete.obs")
+      cor_mat <- psych::cor.smooth(cor_mat)
+      
+      rotated_pca <- psych::principal(
+        cor_mat,
+        nfactors = input$numFactors,
+        rotate = "varimax",
+        scores = FALSE
+      )
+      
       rotated_loadings_df <- as.data.frame(unclass(rotated_pca$loadings))
       
-      datatable(rotated_loadings_df, options = list(dom = 't')) %>% formatRound(columns = 1:ncol(rotated_loadings_df), digits = 3)
+      datatable(rotated_loadings_df, options = list(dom = 't')) %>%
+        formatRound(columns = 1:ncol(rotated_loadings_df), digits = 3)
     })
     
     observeEvent(input$reset, {
