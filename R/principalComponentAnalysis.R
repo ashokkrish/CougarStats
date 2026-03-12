@@ -386,9 +386,6 @@ PCAServer <- function(id) {
       n_ind <- nrow(pca_results()$x)
       valid_grp <- !is.null(grp) && is.atomic(grp) && length(grp) == n_ind
       
-      # Only repel if the plot area is reasonably sized
-      use_repel <- (w >= 300 && h >= 300)
-      
       args <- list(
         X = pca_results(),
         axes = c(ax1, ax2),
@@ -406,7 +403,20 @@ PCAServer <- function(id) {
       
       p <- do.call(factoextra::fviz_pca_biplot, args)
       
-      p + ggplot2::labs(x = input$pcX, y = input$pcY)
+      p +
+        labs(
+          title = "PCA - Biplot",
+          x = input$pcX,
+          y = input$pcY
+        ) +
+        theme_minimal() +
+        theme(
+          plot.title   = element_text(face = "bold", size = 14, hjust = 0.5),
+          axis.title.x = element_text(face = "bold", size = 14),
+          axis.title.y = element_text(face = "bold", size = 14),
+          axis.text.x  = element_text(face = "bold", size = 12),
+          axis.text.y  = element_text(face = "bold", size = 12)
+        )
     }, res = 96)
     
     output$loadingsHeatmap <- renderPlot({
@@ -422,23 +432,32 @@ PCAServer <- function(id) {
       loadings_melted <- reshape2::melt(as.matrix(loadings_k))
       colnames(loadings_melted) <- c("Variable", "PC", "Loading")
       
+      loadings_melted$PC <- factor(
+        loadings_melted$PC,
+        levels = unique(loadings_melted$PC)
+      )
+      
       ggplot(loadings_melted, aes(x = PC, y = Variable, fill = Loading)) +
         geom_tile(color = "white", linewidth = 0.5) +
-        scale_fill_gradient2(low = "#2E9DFD", mid = "white", high = "#FC4E07", midpoint = 0) +
-        geom_text(aes(label = round(Loading, 2)), color = "black", size = 3) +
-        theme_minimal() +
-        theme(
-          plot.title   = element_text(face = "bold", size = 18, hjust = 0.5),
-          axis.title.x = element_text(face = "bold", size = 14),
-          axis.title.y = element_text(face = "bold", size = 14),
-          axis.text.x  = element_text(vjust = 1, hjust = 0.5),
-          axis.text.y  = element_text(size = 11)
+        scale_fill_gradient2(
+          low = "#2E9DFD",
+          mid = "white",
+          high = "#FC4E07",
+          midpoint = 0
         ) +
+        geom_text(aes(label = round(Loading, 2)), color = "black", size = 3) +
         labs(
           title = "PCA Loadings Heatmap",
           x = "Principal Component",
           y = "Chemical Variable",
           fill = "Loading Value"
+        ) +
+        theme_minimal() +
+        theme(
+          plot.title   = element_text(face = "bold", size = 14, hjust = 0.5),
+          axis.title.x = element_text(face = "bold", size = 14),
+          axis.title.y = element_text(face = "bold", size = 14),
+          axis.text    = element_text(face = "bold", size = 12, colour = "black")
         )
     }, res = 96)
     
