@@ -552,24 +552,26 @@ PCAServer <- function(id) {
     output$screePlot <- renderPlot({
       req(pca_results())
       
-      factoextra::fviz_eig(
-        pca_results(),
-        addlabels = TRUE,
-        ylim = c(0, 50),
-        main = "Scree Plot: Variance Explained by Principal Components",
-        xlab = "Principal Components",
-        ylab = "Percentage of Explained Variance",
-        barfill = "#2E9DFD",
-        barcolor = "#2E9DFD",
-        linecolor = "#FC4E07"
-      ) +
-        theme_minimal() +
-        theme(
-          plot.title  = element_text(face = "bold", size = 18, hjust = 0.5),
-          axis.title.x = element_text(face = "bold", size = 14),
-          axis.title.y = element_text(face = "bold", size = 14),
-          axis.text   = element_text(size = 12)
-        )
+      suppressWarnings(
+        factoextra::fviz_eig(
+          pca_results(),
+          addlabels = TRUE,
+          ylim = c(0, 50),
+          main = "Scree Plot: Variance Explained by Principal Components",
+          xlab = "Principal Components",
+          ylab = "Percentage of Explained Variance",
+          barfill = "#2E9DFD",
+          barcolor = "#2E9DFD",
+          linecolor = "#FC4E07"
+        ) +
+          theme_minimal() +
+          theme(
+            plot.title   = element_text(face = "bold", size = 18, hjust = 0.5),
+            axis.title.x = element_text(face = "bold", size = 14),
+            axis.title.y = element_text(face = "bold", size = 14),
+            axis.text    = element_text(size = 12)
+          )
+      )
     }, res = 96)
     
     output$rotatedLoadings <- renderDT({
@@ -581,13 +583,15 @@ PCAServer <- function(id) {
       )
       
       cor_mat <- cor(analysis_data(), use = "complete.obs")
-      cor_mat <- psych::cor.smooth(cor_mat)
+      cor_mat <- suppressWarnings(psych::cor.smooth(cor_mat))
       
-      rotated_pca <- psych::principal(
-        cor_mat,
-        nfactors = input$numFactors,
-        rotate = "varimax",
-        scores = FALSE
+      rotated_pca <- suppressWarnings(
+        psych::principal(
+          cor_mat,
+          nfactors = input$numFactors,
+          rotate = "varimax",
+          scores = FALSE
+        )
       )
       
       rotated_loadings_df <- as.data.frame(unclass(rotated_pca$loadings))
