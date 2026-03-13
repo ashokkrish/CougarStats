@@ -91,7 +91,8 @@ LDAServer <- function(id) {
 
     calc_results <- reactiveVal(NULL)
     plot_results <- reactiveVal(NULL)
-
+    lda_message <- reactiveVal(NULL)
+    
     # Uploaded Data tab
     output$uploadedDataContainer <- renderUI({
       if (is.null(uploadedTibble$data())) {
@@ -131,6 +132,7 @@ LDAServer <- function(id) {
       plots_ready(FALSE)
       calc_results(NULL)
       plot_results(NULL)
+      lda_message(NULL)
     })
 
     # Clear outputs if settings change after calculate
@@ -193,6 +195,20 @@ LDAServer <- function(id) {
         plotOutput(session$ns("ldaPlot"), height = "500px")
       )
     })
+    
+    output$fileImportUserMessage <- renderUI({
+      msg <- lda_message()
+      
+      if (is.null(msg)) return(NULL)
+      
+      div(
+        style = "margin-top:10px;",
+        div(
+          class = "alert alert-danger",
+          msg
+        )
+      )
+    })
 
     # Main calculation
     observeEvent(input$calculate, {
@@ -210,18 +226,50 @@ LDAServer <- function(id) {
 
       predictor_df <- analysis_df[, input$predictors, drop = FALSE]
       numeric_check <- sapply(predictor_df, is.numeric)
-
-      validate(
-        need(all(numeric_check), "All predictor variables must be numeric for LDA."),
-        need(nlevels(analysis_df[[input$response]]) >= 2, "Response variable must have at least 2 classes."),
-        need(nlevels(analysis_df[[input$response]]) >= 3, "The LD1 vs LD2 plot requires at least 3 classes.")
-      )
+      
+      class_counts <- table(analysis_df[[input$response]])
+      
+      if (!all(numeric_check)) {
+        showNotification("All predictor variables must be numeric for LDA.", type = "error", duration = 8)
+        return()
+      }
+      
+      if (nlevels(analysis_df[[input$response]]) < 2) {
+        showNotification("Response variable must have at least 2 classes.", type = "error", duration = 8)
+        return()
+      }
+      
+      if (length(input$predictors) < 1) {
+        showNotification("Select at least one predictor.", type = "error", duration = 8)
+        return()
+      }
+      
+      if (any(class_counts < 2)) {
+        lda_message(
+          "Each class must have at least 2 observations for LDA. One or more classes in your selected response variable have fewer than 2 rows."
+        )
+        return()
+        return()
+      }
 
       lda_formula <- as.formula(
         paste(input$response, "~", paste(input$predictors, collapse = " + "))
       )
-
-      lda_fit <- MASS::lda(lda_formula, data = analysis_df)
+      lda_message(NULL)
+      lda_fit <- tryCatch(
+        MASS::lda(lda_formula, data = analysis_df),
+        error = function(e) {
+          showNotification(
+            paste("LDA could not be computed:", e$message),
+            type = "error",
+            duration = 8
+          )
+          return(NULL)
+        }
+      )
+      
+      req(lda_fit)
+      
       lda_pred <- predict(lda_fit, analysis_df[, input$predictors, drop = FALSE])
 
       confusion_mat <- table(
@@ -234,9 +282,18 @@ LDAServer <- function(id) {
       singular_vals_sq <- lda_fit$svd^2
       prop_trace <- singular_vals_sq / sum(singular_vals_sq)
 
+      scores_mat <- as.data.frame(lda_pred$x)
+      
+      if (!"LD1" %in% names(scores_mat)) {
+        scores_mat$LD1 <- 0
+      }
+      if (!"LD2" %in% names(scores_mat)) {
+        scores_mat$LD2 <- 0
+      }
+      
       scores_df <- data.frame(
-        LD1 = lda_pred$x[, 1],
-        LD2 = lda_pred$x[, 2],
+        LD1 = scores_mat$LD1,
+        LD2 = scores_mat$LD2,
         Class = analysis_df[[input$response]]
       )
 
