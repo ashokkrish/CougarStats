@@ -368,8 +368,7 @@ sampSizeEstServer <- function(id) {
       tagList(
         withMathJax(),
         br(),
-        br(),
-        
+
         # Print Population Mean formula for SSE using Margin of Error
         if(input$sseEstimationType == "Margin of Error"){
           list(
@@ -401,7 +400,6 @@ sampSizeEstServer <- function(id) {
                 nEstimate),
         br(),
         br(),
-        br(),
         sprintf("The recommended sample size (\\( n \\)) is \\(%1.0f\\) for a \\( %s \\)%% confidence 
                   level with a population standard deviation \\( (\\sigma) = %s\\) and
                   a ",
@@ -412,14 +410,14 @@ sampSizeEstServer <- function(id) {
         # Print blurb with Margin of Error
         if(input$sseEstimationType == "Margin of Error"){
           list(
-            sprintf("margin of error \\( (E) = %s \\)", input$sseMeanMargErr),
+            sprintf("margin of error \\( (E) = %s \\).", input$sseMeanMargErr),
             br()
           )
         }
         # Print blurb with Width of Interval
         else{
           list(
-            sprintf("width of interval \\( (W) = %s \\)", input$sseMeanWoI),
+            sprintf("width of interval \\( (W) = %s \\).", input$sseMeanWoI),
             br()
           )
         }
@@ -436,7 +434,6 @@ sampSizeEstServer <- function(id) {
         
         tagList(
           withMathJax(),
-          br(),
           br(),
           
           # Print Population Proportion formula for SSE using Margin of Error
@@ -470,7 +467,6 @@ sampSizeEstServer <- function(id) {
           br(),
           sprintf("\\( n \\approx %1.0f \\)",
                   nEstimate),
-          br(),
           br(),
           br(),
           sprintf("The recommended sample size (\\( n \\)) is \\(%1.0f\\) for a \\( %s \\)%% confidence 

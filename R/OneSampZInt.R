@@ -19,8 +19,8 @@ ZInterval <- function(n, xbar, sigma, c_level = 0.95)
 
 # Example usage:
 
-ZInterval(18, 103.5375, 8.78, 0.90)
-
-ZInterval(18, 103.5375, 8.78, 0.95)
-
-ZInterval(18, 103.5375, 8.78, 0.99)
+# ZInterval(18, 103.5375, 8.78, 0.90)
+# 
+# ZInterval(18, 103.5375, 8.78, 0.95)
+# 
+# ZInterval(18, 103.5375, 8.78, 0.99)

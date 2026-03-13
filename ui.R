@@ -1,9 +1,35 @@
-HEAD <- tags$head(tags$link(rel = "stylesheet",
-                            type="text/css",
-                            href="cougarstats-styles.css"),
-                  tags$link(rel = "icon",
-                            type="image/x-icon",
-                            href="favicon.ico"))
+# Old Head - HEAD <- tags$head(tags$link(rel = "stylesheet",
+#                            type="text/css",
+#                            href="cougarstats-styles.css"),
+#                 tags$link(rel = "icon",
+#                           type="image/x-icon",
+#                          href="favicon.ico"))
+
+HEAD <- tags$head(
+  
+  # ---- Existing assets ----
+  tags$link(rel = "stylesheet",
+            type = "text/css",
+            href = "cougarstats-styles.css"),
+  
+  tags$link(rel = "icon",
+            type = "image/x-icon",
+            href = "favicon.ico"),
+  
+  # ---- Amplitude Analytics ----
+  tags$script(src = "https://cdn.amplitude.com/libs/analytics-browser-2.11.1-min.js.gz"),
+  tags$script(src = "https://cdn.amplitude.com/libs/plugin-session-replay-browser-1.25.0-min.js.gz"),
+  
+  tags$script(HTML("
+    window.amplitude.add(
+      window.sessionReplay.plugin({ sampleRate: 1 })
+    );
+    window.amplitude.init(
+      '9c16daacc728f3aa3e4fe91129eca5e8',
+      { autocapture: { elementInteractions: true } }
+    );
+  "))
+)
 
 BODY <-
   div(
