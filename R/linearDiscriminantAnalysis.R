@@ -26,7 +26,7 @@ LDASidebarUI <- function(id) {
       value = FALSE
     ),
 
-    actionButton(ns("calculate"), "Calculate LDA", class = "act-btn"),
+    actionButton(ns("calculate"), "Calculate", class = "act-btn"),
     actionButton(ns("reset"), "Reset Values", class = "act-btn")
   )
 }
@@ -82,6 +82,35 @@ LDAServer <- function(id) {
       btn_show_data = FALSE,
       return_class = "tbl_df"
     )
+    ##################################################
+    prepare_lda_response <- function(x) {
+      x_no_na <- x[!is.na(x)]
+      
+      if (length(x_no_na) == 0) {
+        return(NULL)
+      }
+      
+      # If already categorical-like, just convert to factor
+      if (is.factor(x) || is.character(x) || is.logical(x)) {
+        return(as.factor(x))
+      }
+      
+      # If numeric/integer, allow coded categories like 1,2,3
+      if (is.numeric(x) || is.integer(x)) {
+        unique_vals <- unique(x_no_na)
+        
+        # Optional safety check:
+        # if every row is basically its own class, this is probably not a categorical response
+        if (length(unique_vals) < 2) {
+          return(as.factor(x))
+        }
+        
+        return(factor(x, levels = sort(unique_vals)))
+      }
+      
+      # Fallback
+      as.factor(x)
+    }
 
     results_ready <- reactiveVal(FALSE)
     plots_ready <- reactiveVal(FALSE)
@@ -134,6 +163,24 @@ LDAServer <- function(id) {
       plot_results(NULL)
       lda_message(NULL)
     })
+    
+    observeEvent(input$response, {
+      req(uploadedTibble$data())
+      
+      df <- uploadedTibble$data()
+      cols <- colnames(df)
+      numeric_cols <- cols[sapply(df, is.numeric)]
+      
+      available_predictors <- setdiff(numeric_cols, input$response)
+      selected_predictors <- intersect(input$predictors, available_predictors)
+      
+      updatePickerInput(
+        session,
+        "predictors",
+        choices = available_predictors,
+        selected = selected_predictors
+      )
+    }, ignoreInit = TRUE)
 
     # Clear outputs if settings change after calculate
     observeEvent(
@@ -163,12 +210,12 @@ LDAServer <- function(id) {
 
         if (!isTRUE(results_ever_calculated())) {
           return(tagList(
-            helpText("No results yet. Upload a dataset, choose variables, then click Calculate LDA.")
+            helpText("No results yet. Upload a dataset, choose variables, then click Calculate.")
           ))
         }
 
         return(tagList(
-          helpText("Settings changed. Click Calculate LDA to update results.")
+          helpText("Settings changed. Click Calculate to update results.")
         ))
       }
 
@@ -181,12 +228,12 @@ LDAServer <- function(id) {
 
         if (!isTRUE(plots_ever_calculated())) {
           return(tagList(
-            helpText("No plots yet. Upload a dataset, choose variables, then click Calculate LDA.")
+            helpText("No plots yet. Upload a dataset, choose variables, then click Calculate.")
           ))
         }
 
         return(tagList(
-          helpText("Settings changed. Click Calculate LDA to update plots.")
+          helpText("Settings changed. Click Calculate to update plots.")
         ))
       }
 
@@ -221,13 +268,36 @@ LDAServer <- function(id) {
 
       analysis_df <- df[, c(input$predictors, input$response), drop = FALSE]
       analysis_df <- na.omit(analysis_df)
-
-      analysis_df[[input$response]] <- as.factor(analysis_df[[input$response]])
-
+      
+      analysis_df[[input$response]] <- prepare_lda_response(analysis_df[[input$response]])
+      
+      if (is.null(analysis_df[[input$response]])) {
+        showNotification("Response variable could not be prepared for LDA.", type = "error", duration = 8)
+        return()
+      }
+      
       predictor_df <- analysis_df[, input$predictors, drop = FALSE]
       numeric_check <- sapply(predictor_df, is.numeric)
       
       class_counts <- table(analysis_df[[input$response]])
+      
+      if (nlevels(analysis_df[[input$response]]) > floor(nrow(analysis_df) / 2)) {
+        showNotification(
+          "The selected response variable has too many unique values to be treated as a categorical class variable for LDA.",
+          type = "error",
+          duration = 8
+        )
+        return()
+      }
+      
+      if (nlevels(analysis_df[[input$response]]) > floor(nrow(analysis_df) / 2)) {
+        showNotification(
+          "The selected response variable has too many unique values to be treated as a categorical class variable for LDA.",
+          type = "error",
+          duration = 8
+        )
+        return()
+      }
       
       if (!all(numeric_check)) {
         showNotification("All predictor variables must be numeric for LDA.", type = "error", duration = 8)
