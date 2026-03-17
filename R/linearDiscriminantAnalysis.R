@@ -82,25 +82,21 @@ LDAServer <- function(id) {
       btn_show_data = FALSE,
       return_class = "tbl_df"
     )
-    ##################################################
+
     prepare_lda_response <- function(x) {
       x_no_na <- x[!is.na(x)]
       
       if (length(x_no_na) == 0) {
         return(NULL)
       }
-      
-      # If already categorical-like, just convert to factor
+
       if (is.factor(x) || is.character(x) || is.logical(x)) {
         return(as.factor(x))
       }
-      
-      # If numeric/integer, allow coded categories like 1,2,3
+
       if (is.numeric(x) || is.integer(x)) {
         unique_vals <- unique(x_no_na)
         
-        # Optional safety check:
-        # if every row is basically its own class, this is probably not a categorical response
         if (length(unique_vals) < 2) {
           return(as.factor(x))
         }
@@ -521,9 +517,17 @@ LDAServer <- function(id) {
           ) +
           theme_bw() +
           theme(
-            plot.title = element_text(hjust = 0.5, face = "bold"),
-            axis.title.x = element_text(face = "bold"),
-            axis.title.y = element_text(face = "bold")
+            plot.title = element_text(hjust = 0.5, face = "bold", size = 18),
+
+            axis.title.x = element_text(face = "bold", size = 14),
+            axis.title.y = element_text(face = "bold", size = 14),
+  
+            axis.text.x = element_text(size = 12),
+            axis.text.y = element_text(size = 12),
+
+            legend.title = element_text(size = 14, face = "bold"),
+            
+            legend.text = element_text(size = 12)
           )
       })
 
