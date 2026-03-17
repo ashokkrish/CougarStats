@@ -22,7 +22,7 @@ LDASidebarUI <- function(id) {
       id = ns("predictorsWrapper"),
       pickerInput(
         ns("predictors"),
-        strong("Predictor Variables"),
+        strong("Explanatory Variables"),
         choices = NULL,
         multiple = TRUE,
         options = list(`actions-box` = TRUE, `live-search` = TRUE, title = "Nothing selected")
@@ -34,6 +34,11 @@ LDASidebarUI <- function(id) {
       ns("useCV"),
       "Use Leave-One-Out Cross-Validation",
       value = FALSE
+    ),
+    
+    div(
+      style = "font-size: 12px; color: #6c757d; margin-top: 8px; margin-bottom: 20px;",
+      "Note: CougarStats does not store, log, or share any data you upload. All uploaded files exist only for the duration of your session and are permanently deleted when the session ends."
     ),
     
     actionButton(ns("calculate"), "Calculate", class = "act-btn"),
@@ -290,7 +295,7 @@ LDAServer <- function(id) {
           class = "text-danger",
           style = "font-size: 12px; margin-top: -10px; margin-bottom: 10px;",
           icon("exclamation-circle"),
-          "Please select at least one predictor variable."
+          "Please select at least one explanatory variable."
         )
       }
     })
@@ -365,7 +370,7 @@ LDAServer <- function(id) {
       }
       
       if (!all(numeric_check)) {
-        showNotification("All predictor variables must be numeric for LDA.", type = "error", duration = 8)
+        showNotification("All explanatory variables must be numeric for LDA.", type = "error", duration = 8)
         return()
       }
       
@@ -375,7 +380,7 @@ LDAServer <- function(id) {
       }
       
       if (length(input$predictors) < 1) {
-        showNotification("Select at least one predictor.", type = "error", duration = 8)
+        showNotification("Select at least one explanatory variables", type = "error", duration = 8)
         return()
       }
       
