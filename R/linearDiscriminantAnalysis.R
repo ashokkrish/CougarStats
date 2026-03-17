@@ -136,6 +136,14 @@ LDAServer <- function(id) {
     responseError <- reactiveVal(FALSE)
     predictorsError <- reactiveVal(FALSE)
     
+    observeEvent(TRUE, {
+      shinyjs::delay(0, {
+        hideTab(inputId = "ldaMainPanel", target = "results_tab")
+        hideTab(inputId = "ldaMainPanel", target = "plots_tab")
+        hideTab(inputId = "ldaMainPanel", target = "uploaded_data_tab")
+      })
+    }, once = TRUE)
+    
     # Uploaded Data tab
     output$uploadedDataContainer <- renderUI({
       if (is.null(uploadedTibble$data())) {
@@ -149,11 +157,11 @@ LDAServer <- function(id) {
 
     output$ldaUploadTable <- renderDT({
       req(uploadedTibble$data())
-
+      
       datatable(
         uploadedTibble$data(),
         options = list(
-          pageLength = 25,
+          pageLength = -1,
           lengthMenu = list(c(25, 50, 100, -1), c("25", "50", "100", "all")),
           scrollX = TRUE
         )
@@ -209,11 +217,15 @@ LDAServer <- function(id) {
           results_ready(FALSE)
           calc_results(NULL)
         }
-
+        
         if (isTRUE(plots_ready())) {
           plots_ready(FALSE)
           plot_results(NULL)
         }
+        
+        hideTab(inputId = "ldaMainPanel", target = "results_tab")
+        hideTab(inputId = "ldaMainPanel", target = "plots_tab")
+        hideTab(inputId = "ldaMainPanel", target = "uploaded_data_tab")
       },
       ignoreInit = TRUE
     )
@@ -607,12 +619,20 @@ LDAServer <- function(id) {
           )
       })
 
+      showTab(inputId = "ldaMainPanel", target = "results_tab")
+      showTab(inputId = "ldaMainPanel", target = "plots_tab")
+      showTab(inputId = "ldaMainPanel", target = "uploaded_data_tab")
+      
       updateNavbarPage(session, "ldaMainPanel", selected = "results_tab")
 
     }, ignoreInit = TRUE)
 
     # Reset
     observeEvent(input$reset, {
+      hideTab(inputId = "ldaMainPanel", target = "results_tab")
+      hideTab(inputId = "ldaMainPanel", target = "plots_tab")
+      hideTab(inputId = "ldaMainPanel", target = "uploaded_data_tab")
+      
       results_ready(FALSE)
       plots_ready(FALSE)
       results_ever_calculated(FALSE)
