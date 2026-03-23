@@ -9,7 +9,11 @@ regressionAndCorrelationUI <- function(id) {
                    tags$b("Methodology"),
                    choices = list("Simple Linear Regression and Correlation Analysis" = "SLR",
                                   "Multiple Linear Regression" = "MLR",
-                                  "Binary Logistic Regression" = "LOGR"),
+                                  "Binary Logistic Regression" = "LOGR",
+                                  "Principal Component Analysis" = "PCA",
+                                  "k-Nearest Neighbors" = "KNN",
+                                  "Linear Discriminant Analysis" = "LDA"
+                                  ),
                    selected = "SLR"
       ),
       uiOutput(ns("regressionSidebarUI"))
@@ -40,10 +44,23 @@ regressionAndCorrelationServer <- function(id) {
     })
     
     # # --- Dynamic ID Generation for PCA ---
-    # pca_instance_counter <- reactiveVal(0)
-    # current_pca_module_id <- reactive({
-    #   paste0("pca_dynamic_instance_", pca_instance_counter())
-    # })
+    pca_instance_counter <- reactiveVal(0)
+    current_pca_module_id <- reactive({
+    paste0("pca_dynamic_instance_", pca_instance_counter())
+    })
+    
+    #Dynamic ID generation for KNN
+    knn_instance_counter <- reactiveVal(0)
+    current_knn_module_id <- reactive({
+      paste0("knn_dynamic_instance_", knn_instance_counter())
+    })
+    
+    #Dynamic ID for LDA
+    lda_instance_counter <- reactiveVal(0)
+    current_lda_module_id <- reactive({
+      paste0("lda_dynamic_instance_", lda_instance_counter())
+    })
+  
     
     # Observer for the main radio button (input$multiple)
     observeEvent(input$multiple, {
@@ -70,18 +87,42 @@ regressionAndCorrelationServer <- function(id) {
           req(current_logr_module_id())
           LogisticRegressionMainPanelUI(session$ns(current_logr_module_id()))
         })
-      } #else if (input$multiple == "PCA") {
-      # pca_instance_counter(pca_instance_counter() + 1)
-      # output$regressionSidebarUI <- renderUI({
-      #   req(current_pca_module_id())
-      #   PCASidebarUI(session$ns(current_pca_module_id()))
-      # })
-      # output$regressionMainPanelUI <- renderUI({
-      #   req(current_pca_module_id())
-      #   PCAMainPanelUI(session$ns(current_pca_module_id()))
-      # })
-      #}
-    }, ignoreNULL = FALSE, ignoreInit = FALSE) # Corrected this line
+      } else if (input$multiple == "PCA") {
+      pca_instance_counter(pca_instance_counter() + 1)
+      output$regressionSidebarUI <- renderUI({
+         req(current_pca_module_id())
+         PCASidebarUI(session$ns(current_pca_module_id()))
+       })
+       output$regressionMainPanelUI <- renderUI({
+         req(current_pca_module_id())
+         PCAMainPanelUI(session$ns(current_pca_module_id()))
+       })
+      } else if (input$multiple == "KNN") {
+        knn_instance_counter(knn_instance_counter() + 1)
+        
+        output$regressionSidebarUI <- renderUI({
+          req(current_knn_module_id())
+          KNNSidebarUI(session$ns(current_knn_module_id()))
+        })
+        output$regressionMainPanelUI <- renderUI({
+          req(current_knn_module_id())
+          KNNMainPanelUI(session$ns(current_knn_module_id()))
+        })
+      } else if (input$multiple == "LDA") {
+        lda_instance_counter(lda_instance_counter() + 1)
+        
+        output$regressionSidebarUI <- renderUI({
+          req(current_lda_module_id())
+          LDASidebarUI(session$ns(current_lda_module_id()))
+        })
+        
+        output$regressionMainPanelUI <- renderUI({
+          req(current_lda_module_id())
+          LDAMainPanelUI(session$ns(current_lda_module_id()))
+        })
+      }
+      }, ignoreNULL = FALSE, ignoreInit = FALSE) # Corrected this line
+    
     
     observeEvent(current_mlr_module_id(), {
       req(input$multiple == "MLR")
@@ -93,10 +134,21 @@ regressionAndCorrelationServer <- function(id) {
       LogisticRegressionServer(current_logr_module_id())
     }, ignoreNULL = TRUE)
     
-    # observeEvent(current_pca_module_id(), {
-    #   req(input$multiple == "PCA")
-    #   PCAServer(current_pca_module_id())
-    # }, ignoreNULL = TRUE)
+     observeEvent(current_pca_module_id(), {
+       req(input$multiple == "PCA")
+       PCAServer(current_pca_module_id())
+     }, ignoreNULL = TRUE)
+    
+    observeEvent(current_knn_module_id(), {
+      req(input$multiple == "KNN")
+      KNNServer(current_knn_module_id())
+    }, ignoreNULL = TRUE)
+    
+    observeEvent(current_lda_module_id(), {
+      req(input$multiple == "LDA")
+      LDAServer(current_lda_module_id())
+    }, ignoreNULL = TRUE)
+    
     
   })
 }

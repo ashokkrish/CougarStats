@@ -1,5 +1,6 @@
+#R/principalComponentAnalysis.
+
 library(shiny)
-library(shinyjs)
 library(datamods)
 library(bslib)
 library(dplyr)
@@ -43,6 +44,8 @@ PCASidebarUI <- function(id) {
                              "Standardized Box-Cox transformation"),
                  selected = "Original scale"),
     numericInput(ns("numFactors"), "Number of Factors", value = 2, min = 1, step = 1),
+    selectInput(ns("pcX"), "X-axis component", choices = NULL),
+    selectInput(ns("pcY"), "Y-axis component", choices = NULL),
     actionButton(ns("calculate"), "Calculate", class = "act-btn"),
     actionButton(ns("reset"), "Reset Values", class = "act-btn")
   )
@@ -50,18 +53,21 @@ PCASidebarUI <- function(id) {
 
 PCAMainPanelUI <- function(id) {
   ns <- NS(id)
-  # Wrap in tagList to include useShinyjs()
-  tagList(
-    useShinyjs(),
-    navbarPage(title = NULL,
-               id = ns("mainPanel"),
-               theme = bs_theme(version = 4),
-               tabPanel(title = "Data Import",
-                        value = "data_import_tab",
-                        uiOutput(ns("fileImportUserMessage")),
-                        import_file_ui(id = ns("dataImport"), title = "")
+  navbarPage(title = NULL,
+             id = ns("mainPanel"),
+             selected = "data_import_tab",
+             theme = bs_theme(version = 4),
+               tabPanel(
+                 title = "Data Import",
+                 value = "data_import_tab",
+                 div(id = ns("importContainer")),
+                 uiOutput(ns("fileImportUserMessage")),
+                 import_file_ui(
+                   id = ns("dataImport"),
+                   title = ""
+                 )
                ),
-               tabPanel(title = "PCA Results",
+               tabPanel(title = "Results",
                         value = "pca_results_tab",
                         h3("Principal Component Analysis Summary"),
                         DTOutput(ns("pcaSummary")),
@@ -77,20 +83,46 @@ PCAMainPanelUI <- function(id) {
                         hr(),
                         h3("Covariance Matrix"),
                         DTOutput(ns("covarianceMatrix")),
-                        hr(),
-                        h3("Scree Plot"),
-                        plotOutput(ns("screePlot")),
+                        #hr(),
+                        #h3("Scree Plot"),
+                        #plotOutput(ns("screePlot")),
                         hr(),
                         h3("Interpretation of Results"),
                         uiOutput(ns("pcaInterpretation"))
                ),
-               tabPanel(title = "Data Transformations", value = "transformations_tab", plotOutput(ns("transformationHistograms")))
+               tabPanel(
+                 title = "Plots",
+                 value = "plots_tab",
+                 
+                 h3("Scree Plot"),
+                 plotOutput(ns("screePlot"), height = "350px"),
+                 hr(),
+                 
+                 h3("Score Plot"),
+                 plotOutput(ns("scorePlot"), height = "450px"),
+                 hr(),
+                
+                 h3("Biplot"),
+                 plotOutput(ns("biplot"), height = "500px"),
+                 hr(),
+                 
+                 h3("Loadings Heatmap"),
+                 plotOutput(ns("loadingsHeatmap"), height = "450px")
+               ),
+               
+               tabPanel(title = "Data Transformations", value = "transformations_tab", plotOutput(ns("transformationHistograms"))),
+               
+               tabPanel(
+                 title = "Uploaded Data",
+                 value = "uploaded_data_tab",
+                 uiOutput(ns("uploadedDataContainer"))
+               )
     )
-  )
 }
 
 
 # ============== SERVER ==============
+
 
 PCAServer <- function(id) {
   moduleServer(id, function(input, output, session) {
@@ -99,7 +131,7 @@ PCAServer <- function(id) {
     imported_data <- import_file_server(
       id = "dataImport",
       trigger_return = "change",
-      btn_show_data = TRUE,
+      btn_show_data = FALSE,
       return_class = "tbl_df"
     )
     
@@ -107,21 +139,64 @@ PCAServer <- function(id) {
     analysis_data <- reactiveVal(NULL)
     original_data <- reactiveVal(NULL)
     noFileCalculate <- reactiveVal(FALSE)
+    grouping_var <- reactiveVal(NULL)
     
-    # Run once on startup to hide tabs
-    observeEvent(TRUE, {
-      shinyjs::delay(0, {
-        hideTab(inputId = "mainPanel", target = "pca_results_tab")
-        hideTab(inputId = "mainPanel", target = "transformations_tab")
-      })
+    session$onFlushed(function() {
+      hideTab(inputId = "mainPanel", target = "pca_results_tab")
+      hideTab(inputId = "mainPanel", target = "plots_tab")
+      hideTab(inputId = "mainPanel", target = "transformations_tab")
+      hideTab(inputId = "mainPanel", target = "uploaded_data_tab")
     }, once = TRUE)
     
     observeEvent(imported_data$data(), {
       df <- imported_data$data()
-      if (!is.null(df)) {
-        numeric_cols <- names(dplyr::select_if(df, is.numeric))
-        updatePickerInput(session, "pcaVariables", choices = numeric_cols)
+      req(df)
+      
+      numeric_cols <- names(dplyr::select_if(df, is.numeric))
+      updatePickerInput(session, "pcaVariables", choices = numeric_cols)
+    })
+    
+    # Clear results when user changes PCA options
+    observeEvent(
+      list(input$pcaVariables, input$transformation, input$numFactors),
+      {
+        pca_results(NULL)
+        analysis_data(NULL)
+        original_data(NULL)
+        
+        hideTab(inputId = "mainPanel", target = "pca_results_tab")
+        hideTab(inputId = "mainPanel", target = "plots_tab")
+        hideTab(inputId = "mainPanel", target = "transformations_tab")
+        hideTab(inputId = "mainPanel", target = "uploaded_data_tab")
+      },
+      ignoreInit = TRUE
+    )
+    
+    
+    # ---- Uploaded Data container ----
+    output$uploadedDataContainer <- renderUI({
+      if (is.null(imported_data$data())) {
+        tagList(
+          helpText("No data yet. Upload a dataset in the Data Import tab to view it here.")
+        )
+      } else {
+        DT::DTOutput(ns("pcaUploadTable"))
       }
+    })
+    
+    # ---- Uploaded Data table ----
+    output$pcaUploadTable <- DT::renderDT({
+      req(imported_data$data())
+      df <- imported_data$data()
+      
+      DT::datatable(
+        df,
+        options = list(
+          pageLength = 25,
+          lengthMenu = list(c(25, 50, 100, -1), c("25", "50", "100", "all")),
+          scrollX = TRUE
+        )
+      )
     })
     
     output$fileImportUserMessage <- renderUI({
@@ -134,90 +209,258 @@ PCAServer <- function(id) {
     })
     
     observeEvent(input$calculate, {
-      if (!isTruthy(imported_data$data())) {
-        noFileCalculate(TRUE)
-        return()
-      } else {
-        noFileCalculate(FALSE)
-      }
       
-      if (!isTruthy(input$pcaVariables) || length(input$pcaVariables) < 2) {
-        shinyalert::shinyalert("Input Error", "Please select at least two variables for PCA.", type = "error", confirmButtonCol = "#18536F")
-        return()
-      }
-      
-      if(input$numFactors > length(input$pcaVariables)) {
-        shinyalert::shinyalert("Input Error", "Number of factors cannot exceed the number of selected variables.", type = "error", confirmButtonCol = "#18536F")
-        return()
-      }
-      
-      data <- imported_data$data()
-      selected_data <- data %>%
-        dplyr::select(all_of(input$pcaVariables)) %>%
-        na.omit()
-      
-      original_data(selected_data)
-      
-      if (ncol(selected_data) < 2) {
-        shinyalert::shinyalert("Error", "PCA requires at least two numeric columns.", type = "error", confirmButtonCol = "#18536F")
-        return()
-      }
-      
-      transformed_data <- switch(
-        input$transformation,
-        "Original scale" = selected_data,
-        "Logarithmic transformation" = {
-          if (any(selected_data < 0)) {
-            shinyalert::shinyalert("Error", "Log transformation cannot be applied to negative data.", type = "error", confirmButtonCol = "#18536F")
-            return(NULL)
-          }
-          if (any(selected_data == 0)) {
-            shinyalert::shinyalert("Info", "Data contains zeros. Applying a log(x+1) transformation.", type = "info", confirmButtonCol = "#18536F")
-            log(selected_data + 1)
-          } else {
-            log(selected_data)
-          }
-        },
-        "Box-Cox transformation" = {
-          if (any(selected_data <= 0)) {
-            shinyalert::shinyalert("Error", "Box-Cox transformation requires positive data.", type = "error", confirmButtonCol = "#18536F")
-            return(NULL)
-          }
-          boxcox_transformed <- as.data.frame(lapply(selected_data, function(x) {
-            bc <- forecast::BoxCox(x, forecast::BoxCox.lambda(x))
-            return(bc)
-          }))
-          names(boxcox_transformed) <- names(selected_data)
-          boxcox_transformed
-        },
-        "Standardized Box-Cox transformation" = {
-          if (any(selected_data <= 0)) {
-            shinyalert::shinyalert("Error", "Box-Cox transformation requires positive data.", type = "error", confirmButtonCol = "#18536F")
-            return(NULL)
-          }
-          boxcox_transformed <- as.data.frame(lapply(selected_data, function(x) {
-            bc <- forecast::BoxCox(x, forecast::BoxCox.lambda(x))
-            return(bc)
-          }))
-          names(boxcox_transformed) <- names(selected_data)
-          as.data.frame(scale(boxcox_transformed))
+      tryCatch({
+        
+        if (!isTruthy(imported_data$data())) {
+          noFileCalculate(TRUE)
+          return()
+        } else {
+          noFileCalculate(FALSE)
         }
-      )
+        
+        if (!isTruthy(input$pcaVariables) || length(input$pcaVariables) < 2) {
+          shinyalert::shinyalert("Input Error", "Please select at least two variables for PCA.",
+                                 type = "error", confirmButtonCol = "#18536F")
+          return()
+        }
+        
+        if (input$numFactors > length(input$pcaVariables)) {
+          shinyalert::shinyalert("Input Error", "Number of factors cannot exceed the number of selected variables.",
+                                 type = "error", confirmButtonCol = "#18536F")
+          return()
+        }
+        
+        df <- imported_data$data()
+        
+        non_num <- names(df)[!sapply(df, is.numeric)]
+        group_col <- if (length(non_num) > 0) non_num[1] else NULL
+        
+        row_ok <- complete.cases(df[, input$pcaVariables, drop = FALSE])
+        selected_data <- df[row_ok, input$pcaVariables, drop = FALSE]
+        selected_data <- as.data.frame(selected_data)
+        
+        if (!is.null(group_col)) {
+          grp <- df[row_ok, group_col, drop = TRUE]
+          grp <- as.character(grp)
+          grp[is.na(grp)] <- "Missing"
+          
+          n_groups <- length(unique(grp))
+          if (n_groups <= 12) {
+            grouping_var(factor(grp))
+          } else {
+            grouping_var(NULL)
+          }
+        } else {
+          grouping_var(NULL)
+        }
+        
+        selected_data[] <- lapply(selected_data, function(x) as.numeric(as.character(x)))
+        
+        keep <- complete.cases(selected_data)
+        selected_data <- selected_data[keep, , drop = FALSE]
+        if (!is.null(group_col)) grouping_var(grouping_var()[keep])
+        
+        
+        if (nrow(selected_data) < 2) {
+          shinyalert::shinyalert(
+            "Input Error",
+            "After removing missing values, there are fewer than 2 complete rows. PCA needs at least 2 rows.",
+            type = "error",
+            confirmButtonCol = "#18536F"
+          )
+          return()
+        }
+        
+        original_data(selected_data)
+        
+        transformed_data <- switch(
+          input$transformation,
+          "Original scale" = selected_data,
+          "Logarithmic transformation" = {
+            if (any(selected_data < 0)) {
+              shinyalert::shinyalert("Error", "Log transformation cannot be applied to negative data.",
+                                     type = "error", confirmButtonCol = "#18536F")
+              return(NULL)
+            }
+            if (any(selected_data == 0)) {
+              shinyalert::shinyalert("Info", "Data contains zeros. Applying a log(x+1) transformation.",
+                                     type = "info", confirmButtonCol = "#18536F")
+              log(selected_data + 1)
+            } else {
+              log(selected_data)
+            }
+          },
+          "Box-Cox transformation" = { ... },
+          "Standardized Box-Cox transformation" = { ... }
+        )
+        
+        if (is.null(transformed_data)) return()
+        
+        analysis_data(transformed_data)
+        
+        sds <- sapply(transformed_data, sd, na.rm = TRUE)
+        zero_var_cols <- names(sds)[is.na(sds) | sds == 0]
+        if (length(zero_var_cols) > 0) {
+          shinyalert::shinyalert(
+            "Input Error",
+            paste0("These selected variables have zero variance and cannot be used in PCA: ",
+                   paste(zero_var_cols, collapse = ", "), "."),
+            type = "error",
+            confirmButtonCol = "#18536F"
+          )
+          return()
+        }
+        
+        pca <- prcomp(transformed_data, center = TRUE, scale. = TRUE)
+        pca_results(pca)
+        
+        pcs <- colnames(pca$x)
+        updateSelectInput(session, "pcX", choices = pcs, selected = pcs[1])
+        updateSelectInput(session, "pcY", choices = pcs, selected = pcs[min(2, length(pcs))])
+        
+        showTab(inputId = "mainPanel", target = "pca_results_tab")
+        showTab(inputId = "mainPanel", target = "plots_tab")
+        showTab(inputId = "mainPanel", target = "transformations_tab")
+        showTab(inputId = "mainPanel", target = "uploaded_data_tab")
+        
+        updateNavbarPage(session, "mainPanel", selected = "pca_results_tab")
+        
+      }, error = function(e) {
+        shinyalert::shinyalert(
+          "PCA crashed",
+          paste("Error message:", conditionMessage(e)),
+          type = "error",
+          confirmButtonCol = "#18536F"
+        )
+      })
       
-      if (is.null(transformed_data)) return()
-      
-      analysis_data(transformed_data)
-      
-      pca <- prcomp(transformed_data, center = TRUE, scale. = TRUE)
-      pca_results(pca)
-      
-      showTab(inputId = "mainPanel", target = "pca_results_tab")
-      showTab(inputId = "mainPanel", target = "transformations_tab")
-      updateNavbarPage(session, "mainPanel", selected = "pca_results_tab")
     })
     
     
     # --- Render Outputs ---
+    
+    output$scorePlot <- renderPlot({
+      req(pca_results(), input$pcX, input$pcY)
+      
+      scores <- as.data.frame(pca_results()$x)
+      validate(
+        need(input$pcX %in% names(scores), "Invalid X component."),
+        need(input$pcY %in% names(scores), "Invalid Y component."),
+        need(input$pcX != input$pcY, "Choose two different components.")
+      )
+      
+      ggplot(scores, aes(x = .data[[input$pcX]], y = .data[[input$pcY]])) +
+        geom_point() +
+        
+        geom_hline(yintercept = 0, linewidth = 0.8) +
+        geom_vline(xintercept = 0, linewidth = 0.8) +
+        
+        labs(title = "Score Plot", x = input$pcX, y = input$pcY) +
+        theme_minimal() +
+        theme(
+          plot.title  = element_text(face = "bold", size = 18, hjust = 0.5),
+          axis.title.x = element_text(face = "bold", size = 14),
+          axis.title.y = element_text(face = "bold", size = 14),
+          axis.text   = element_text(size = 12)
+        )
+    })
+    
+    output$biplot <- renderPlot({
+      req(pca_results(), input$pcX, input$pcY)
+      req(input$mainPanel == "plots_tab")
+      
+      # Make sure the output has a real size (prevents zero-dimension viewport)
+      w <- session$clientData[[paste0("output_", ns("biplot"), "_width")]]
+      h <- session$clientData[[paste0("output_", ns("biplot"), "_height")]]
+      req(!is.null(w), !is.null(h), w > 10, h > 10)
+      
+      ax1 <- as.integer(sub("PC", "", input$pcX))
+      ax2 <- as.integer(sub("PC", "", input$pcY))
+      validate(
+        need(!is.na(ax1) && !is.na(ax2), "Invalid components selected."),
+        need(ax1 != ax2, "Choose two different components.")
+      )
+      
+      grp <- grouping_var()
+      n_ind <- nrow(pca_results()$x)
+      valid_grp <- !is.null(grp) && is.atomic(grp) && length(grp) == n_ind
+      
+      args <- list(
+        X = pca_results(),
+        axes = c(ax1, ax2),
+        geom.ind = "point",
+        pointshape = 19,
+        repel = FALSE
+      )
+      
+      if (valid_grp) {
+        grp <- as.factor(grp)
+        counts <- table(grp)
+        args$habillage <- grp
+        args$addEllipses <- all(counts >= 3)
+      }
+      
+      p <- do.call(factoextra::fviz_pca_biplot, args)
+      
+      p +
+        labs(
+          title = "PCA - Biplot",
+          x = input$pcX,
+          y = input$pcY
+        ) +
+        theme_minimal() +
+        theme(
+          plot.title   = element_text(face = "bold", size = 14, hjust = 0.5),
+          axis.title.x = element_text(face = "bold", size = 14),
+          axis.title.y = element_text(face = "bold", size = 14),
+          axis.text.x  = element_text(face = "bold", size = 12),
+          axis.text.y  = element_text(face = "bold", size = 12)
+        )
+    }, res = 96)
+    
+    output$loadingsHeatmap <- renderPlot({
+      req(pca_results(), input$numFactors)
+      
+      loadings <- as.data.frame(pca_results()$rotation)
+      
+      k <- min(input$numFactors, ncol(loadings))
+      validate(need(k >= 1, "Choose at least 1 factor."))
+      
+      loadings_k <- loadings[, 1:k, drop = FALSE]
+      
+      loadings_melted <- reshape2::melt(as.matrix(loadings_k))
+      colnames(loadings_melted) <- c("Variable", "PC", "Loading")
+      
+      loadings_melted$PC <- factor(
+        loadings_melted$PC,
+        levels = unique(loadings_melted$PC)
+      )
+      
+      ggplot(loadings_melted, aes(x = PC, y = Variable, fill = Loading)) +
+        geom_tile(color = "white", linewidth = 0.5) +
+        scale_fill_gradient2(
+          low = "#2E9DFD",
+          mid = "white",
+          high = "#FC4E07",
+          midpoint = 0
+        ) +
+        geom_text(aes(label = round(Loading, 2)), color = "black", size = 3) +
+        labs(
+          title = "PCA Loadings Heatmap",
+          x = "Principal Component",
+          y = "Chemical Variable",
+          fill = "Loading Value"
+        ) +
+        theme_minimal() +
+        theme(
+          plot.title   = element_text(face = "bold", size = 14, hjust = 0.5),
+          axis.title.x = element_text(face = "bold", size = 14),
+          axis.title.y = element_text(face = "bold", size = 14),
+          axis.text    = element_text(face = "bold", size = 12, colour = "black")
+        )
+    }, res = 96)
+    
     
     output$pcaSummary <- renderDT({
       req(pca_results())
@@ -309,47 +552,81 @@ PCAServer <- function(id) {
     output$screePlot <- renderPlot({
       req(pca_results())
       
-      # Create a data frame for plotting
-      scree_data <- data.frame(
-        Component = 1:length(pca_results()$sdev),
-        Variance = pca_results()$sdev^2
+      suppressWarnings(
+        factoextra::fviz_eig(
+          pca_results(),
+          addlabels = TRUE,
+          ylim = c(0, 50),
+          main = "Scree Plot: Variance Explained by Principal Components",
+          xlab = "Principal Components",
+          ylab = "Percentage of Explained Variance",
+          barfill = "#2E9DFD",
+          barcolor = "#2E9DFD",
+          linecolor = "#FC4E07"
+        ) +
+          theme_minimal() +
+          theme(
+            plot.title   = element_text(face = "bold", size = 18, hjust = 0.5),
+            axis.title.x = element_text(face = "bold", size = 14),
+            axis.title.y = element_text(face = "bold", size = 14),
+            axis.text    = element_text(size = 12)
+          )
       )
-      
-      ggplot(scree_data, aes(x = Component, y = Variance)) +
-        geom_line(aes(y = Variance), color = "black", size = 1) +
-        geom_point(color = "black", size = 3) +
-        labs(title = "Scree Plot",
-             x = "Principal Component",
-             y = "Eigenvalue (Variance)") +
-        theme_minimal() +
-        theme(
-          plot.title = element_text(hjust = 0.5),
-          axis.text = element_text(size = 14) # Enlarge axis text
-        )
-    })
+    }, res = 96)
     
     output$rotatedLoadings <- renderDT({
       req(analysis_data())
       
-      # Perform PCA with rotation using psych::principal
-      rotated_pca <- psych::principal(analysis_data(), nfactors = input$numFactors, rotate = "varimax")
+      validate(
+        need(input$numFactors < ncol(analysis_data()),
+             "Number of factors must be less than the number of selected variables for rotated PCA.")
+      )
       
-      # Extract rotated loadings
+      cor_mat <- cor(analysis_data(), use = "complete.obs")
+      cor_mat <- suppressWarnings(psych::cor.smooth(cor_mat))
+      
+      rotated_pca <- suppressWarnings(
+        psych::principal(
+          cor_mat,
+          nfactors = input$numFactors,
+          rotate = "varimax",
+          scores = FALSE
+        )
+      )
+      
       rotated_loadings_df <- as.data.frame(unclass(rotated_pca$loadings))
       
-      datatable(rotated_loadings_df, options = list(dom = 't')) %>% formatRound(columns = 1:ncol(rotated_loadings_df), digits = 3)
+      datatable(rotated_loadings_df, options = list(dom = 't')) %>%
+        formatRound(columns = 1:ncol(rotated_loadings_df), digits = 3)
     })
     
     observeEvent(input$reset, {
       hideTab(inputId = "mainPanel", target = "pca_results_tab")
       hideTab(inputId = "mainPanel", target = "transformations_tab")
+      hideTab(inputId = "mainPanel", target = "plots_tab")
+      hideTab(inputId = "mainPanel", target = "uploaded_data_tab")
+      
+      updateNavbarPage(session, "mainPanel", selected = "data_import_tab")
+      
+      
       pca_results(NULL)
       analysis_data(NULL)
       original_data(NULL)
       updatePickerInput(session, "pcaVariables", selected = character(0))
       updateRadioButtons(session, "transformation", selected = "Original scale")
       updateNumericInput(session, "numFactors", value = 2)
+      updateSelectInput(session, "pcX", choices = character(0))
+      updateSelectInput(session, "pcY", choices = character(0))
+      
       updateNavbarPage(session, "mainPanel", selected = "data_import_tab")
     })
+    
+    observe({
+      outputOptions(output, "biplot", suspendWhenHidden = TRUE)
+      outputOptions(output, "scorePlot", suspendWhenHidden = TRUE)
+      outputOptions(output, "screePlot", suspendWhenHidden = TRUE)
+      outputOptions(output, "loadingsHeatmap", suspendWhenHidden = TRUE)
+    })
+    
   })
 }
