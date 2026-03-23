@@ -2,31 +2,46 @@
 
 LDASidebarUI <- function(id) {
   ns <- NS(id)
-
+  
   tagList(
-    pickerInput(
-      ns("response"),
-      strong("Response Variable (Class)"),
-      choices = NULL,
-      multiple = FALSE,
-      options = list(`live-search` = TRUE, title = "Nothing selected")
+    useShinyjs(),
+    
+    div(
+      id = ns("responseWrapper"),
+      pickerInput(
+        ns("response"),
+        strong("Response Variable (Class)"),
+        choices = NULL,
+        multiple = FALSE,
+        options = list(`live-search` = TRUE, title = "Nothing selected")
+      ),
+      uiOutput(ns("responseError"))
     ),
-
-    pickerInput(
-      ns("predictors"),
-      strong("Predictor Variables"),
-      choices = NULL,
-      multiple = TRUE,
-      options = list(`actions-box` = TRUE, `live-search` = TRUE, title = "Nothing selected")
+    
+    div(
+      id = ns("predictorsWrapper"),
+      pickerInput(
+        ns("predictors"),
+        strong("Explanatory Variables"),
+        choices = NULL,
+        multiple = TRUE,
+        options = list(`actions-box` = TRUE, `live-search` = TRUE, title = "Nothing selected")
+      ),
+      uiOutput(ns("predictorsError"))
     ),
-
+    
     checkboxInput(
       ns("useCV"),
       "Use Leave-One-Out Cross-Validation",
       value = FALSE
     ),
-
-    actionButton(ns("calculate"), "Calculate LDA", class = "act-btn"),
+    
+    div(
+      style = "font-size: 12px; color: #6c757d; margin-top: 8px; margin-bottom: 20px;",
+      "Note: CougarStats does not store, log, or share any data you upload. All uploaded files exist only for the duration of your session and are permanently deleted when the session ends."
+    ),
+    
+    actionButton(ns("calculate"), "Calculate", class = "act-btn"),
     actionButton(ns("reset"), "Reset Values", class = "act-btn")
   )
 }
@@ -35,6 +50,7 @@ LDAMainPanelUI <- function(id) {
   ns <- NS(id)
 
   tagList(
+    useShinyjs(),
     navbarPage(
       title = NULL,
 
@@ -83,6 +99,29 @@ LDAServer <- function(id) {
       return_class = "tbl_df"
     )
 
+    prepare_lda_response <- function(x) {
+      x_no_na <- x[!is.na(x)]
+      
+      if (length(x_no_na) == 0) {
+        return(NULL)
+      }
+
+      if (is.factor(x) || is.character(x) || is.logical(x)) {
+        return(as.factor(x))
+      }
+
+      if (is.numeric(x) || is.integer(x)) {
+        unique_vals <- unique(x_no_na)
+        
+        if (length(unique_vals) < 2) {
+          return(as.factor(x))
+        }
+        
+        return(factor(x, levels = sort(unique_vals)))
+      }
+      as.factor(x)
+    }
+
     results_ready <- reactiveVal(FALSE)
     plots_ready <- reactiveVal(FALSE)
 
@@ -91,7 +130,20 @@ LDAServer <- function(id) {
 
     calc_results <- reactiveVal(NULL)
     plot_results <- reactiveVal(NULL)
-
+    lda_message <- reactiveVal(NULL)
+    
+    noFileCalculate <- reactiveVal(FALSE)
+    responseError <- reactiveVal(FALSE)
+    predictorsError <- reactiveVal(FALSE)
+    
+    observeEvent(TRUE, {
+      shinyjs::delay(0, {
+        hideTab(inputId = "ldaMainPanel", target = "results_tab")
+        hideTab(inputId = "ldaMainPanel", target = "plots_tab")
+        hideTab(inputId = "ldaMainPanel", target = "uploaded_data_tab")
+      })
+    }, once = TRUE)
+    
     # Uploaded Data tab
     output$uploadedDataContainer <- renderUI({
       if (is.null(uploadedTibble$data())) {
@@ -105,11 +157,11 @@ LDAServer <- function(id) {
 
     output$ldaUploadTable <- renderDT({
       req(uploadedTibble$data())
-
+      
       datatable(
         uploadedTibble$data(),
         options = list(
-          pageLength = 25,
+          pageLength = -1,
           lengthMenu = list(c(25, 50, 100, -1), c("25", "50", "100", "all")),
           scrollX = TRUE
         )
@@ -131,7 +183,26 @@ LDAServer <- function(id) {
       plots_ready(FALSE)
       calc_results(NULL)
       plot_results(NULL)
+      lda_message(NULL)
     })
+    
+    observeEvent(input$response, {
+      req(uploadedTibble$data())
+      
+      df <- uploadedTibble$data()
+      cols <- colnames(df)
+      numeric_cols <- cols[sapply(df, is.numeric)]
+      
+      available_predictors <- setdiff(numeric_cols, input$response)
+      selected_predictors <- intersect(input$predictors, available_predictors)
+      
+      updatePickerInput(
+        session,
+        "predictors",
+        choices = available_predictors,
+        selected = selected_predictors
+      )
+    }, ignoreInit = TRUE)
 
     # Clear outputs if settings change after calculate
     observeEvent(
@@ -146,11 +217,15 @@ LDAServer <- function(id) {
           results_ready(FALSE)
           calc_results(NULL)
         }
-
+        
         if (isTRUE(plots_ready())) {
           plots_ready(FALSE)
           plot_results(NULL)
         }
+        
+        hideTab(inputId = "ldaMainPanel", target = "results_tab")
+        hideTab(inputId = "ldaMainPanel", target = "plots_tab")
+        hideTab(inputId = "ldaMainPanel", target = "uploaded_data_tab")
       },
       ignoreInit = TRUE
     )
@@ -161,12 +236,12 @@ LDAServer <- function(id) {
 
         if (!isTRUE(results_ever_calculated())) {
           return(tagList(
-            helpText("No results yet. Upload a dataset, choose variables, then click Calculate LDA.")
+            helpText("No results yet. Upload a dataset, choose variables, then click Calculate.")
           ))
         }
 
         return(tagList(
-          helpText("Settings changed. Click Calculate LDA to update results.")
+          helpText("Settings changed. Click Calculate to update results.")
         ))
       }
 
@@ -179,12 +254,12 @@ LDAServer <- function(id) {
 
         if (!isTRUE(plots_ever_calculated())) {
           return(tagList(
-            helpText("No plots yet. Upload a dataset, choose variables, then click Calculate LDA.")
+            helpText("No plots yet. Upload a dataset, choose variables, then click Calculate.")
           ))
         }
 
         return(tagList(
-          helpText("Settings changed. Click Calculate LDA to update plots.")
+          helpText("Settings changed. Click Calculate to update plots.")
         ))
       }
 
@@ -193,35 +268,162 @@ LDAServer <- function(id) {
         plotOutput(session$ns("ldaPlot"), height = "500px")
       )
     })
+    
+    output$fileImportUserMessage <- renderUI({
+      if (noFileCalculate()) {
+        tags$div(
+          class = "shiny-output-error-validation",
+          "Required: Cannot calculate without a data file."
+        )
+      } else {
+        msg <- lda_message()
+        
+        if (is.null(msg)) return(NULL)
+        
+        div(
+          style = "margin-top:10px;",
+          div(
+            class = "alert alert-danger",
+            msg
+          )
+        )
+      }
+    })
+    
+    output$responseError <- renderUI({
+      if (responseError()) {
+        tags$div(
+          class = "text-danger",
+          style = "font-size: 12px; margin-top: -10px; margin-bottom: 10px;",
+          icon("exclamation-circle"),
+          "Please select a response variable."
+        )
+      }
+    })
+    
+    output$predictorsError <- renderUI({
+      if (predictorsError()) {
+        tags$div(
+          class = "text-danger",
+          style = "font-size: 12px; margin-top: -10px; margin-bottom: 10px;",
+          icon("exclamation-circle"),
+          "Please select at least one explanatory variable."
+        )
+      }
+    })
 
+        observeEvent(input$response, {
+      if (isTruthy(input$response)) {
+        responseError(FALSE)
+        shinyjs::removeClass(id = "responseWrapper", class = "has-error")
+      }
+    })
+
+    observeEvent(input$predictors, {
+      if (length(input$predictors) >= 1) {
+        predictorsError(FALSE)
+        shinyjs::removeClass(id = "predictorsWrapper", class = "has-error")
+      }
+    })
+    
     # Main calculation
     observeEvent(input$calculate, {
-      req(uploadedTibble$data())
-      req(isTruthy(input$response))
-      req(isTruthy(input$predictors))
-      req(length(input$predictors) >= 1)
-
-      df <- uploadedTibble$data()
+    if (!isTruthy(uploadedTibble$data())) {
+      noFileCalculate(TRUE)
+      return()
+    } else {
+      noFileCalculate(FALSE)
+    }
+    
+    if (!isTruthy(input$response)) {
+      responseError(TRUE)
+      shinyjs::addClass(id = "responseWrapper", class = "has-error")
+    } else {
+      responseError(FALSE)
+      shinyjs::removeClass(id = "responseWrapper", class = "has-error")
+    }
+    
+    if (!isTruthy(input$predictors) || length(input$predictors) < 1) {
+      predictorsError(TRUE)
+      shinyjs::addClass(id = "predictorsWrapper", class = "has-error")
+    } else {
+      predictorsError(FALSE)
+      shinyjs::removeClass(id = "predictorsWrapper", class = "has-error")
+    }
+    
+    if (!isTruthy(input$response) || !isTruthy(input$predictors) || length(input$predictors) < 1) {
+      return()
+    }
+    
+    df <- uploadedTibble$data()
 
       analysis_df <- df[, c(input$predictors, input$response), drop = FALSE]
       analysis_df <- na.omit(analysis_df)
-
-      analysis_df[[input$response]] <- as.factor(analysis_df[[input$response]])
-
+      
+      analysis_df[[input$response]] <- prepare_lda_response(analysis_df[[input$response]])
+      
+      if (is.null(analysis_df[[input$response]])) {
+        showNotification("Response variable could not be prepared for LDA.", type = "error", duration = 8)
+        return()
+      }
+      
       predictor_df <- analysis_df[, input$predictors, drop = FALSE]
       numeric_check <- sapply(predictor_df, is.numeric)
+      
+      class_counts <- table(analysis_df[[input$response]])
+      
+      if (nlevels(analysis_df[[input$response]]) > floor(nrow(analysis_df) / 2)) {
+        showNotification(
+          "The selected response variable has too many unique values to be treated as a categorical class variable for LDA.",
+          type = "error",
+          duration = 8
+        )
+        return()
+      }
+      
+      if (!all(numeric_check)) {
+        showNotification("All explanatory variables must be numeric for LDA.", type = "error", duration = 8)
+        return()
+      }
+      
+      if (nlevels(analysis_df[[input$response]]) < 2) {
+        showNotification("Response variable must have at least 2 classes.", type = "error", duration = 8)
+        return()
+      }
+      
+      if (length(input$predictors) < 1) {
+        showNotification("Select at least one explanatory variables", type = "error", duration = 8)
+        return()
+      }
+      
+      if (any(class_counts < 2)) {
+        lda_message(
+          "Each class must have at least 2 observations for LDA. One or more classes in your selected response variable have fewer than 2 rows."
+        )
+        return()
+      }
 
-      validate(
-        need(all(numeric_check), "All predictor variables must be numeric for LDA."),
-        need(nlevels(analysis_df[[input$response]]) >= 2, "Response variable must have at least 2 classes."),
-        need(nlevels(analysis_df[[input$response]]) >= 3, "The LD1 vs LD2 plot requires at least 3 classes.")
-      )
-
+      response_var <- paste0("`", input$response, "`")
+      predictor_vars <- paste0("`", input$predictors, "`")
+      
       lda_formula <- as.formula(
-        paste(input$response, "~", paste(input$predictors, collapse = " + "))
+        paste(response_var, "~", paste(predictor_vars, collapse = " + "))
       )
-
-      lda_fit <- MASS::lda(lda_formula, data = analysis_df)
+      lda_message(NULL)
+      lda_fit <- tryCatch(
+        MASS::lda(lda_formula, data = analysis_df),
+        error = function(e) {
+          showNotification(
+            paste("LDA could not be computed:", e$message),
+            type = "error",
+            duration = 8
+          )
+          return(NULL)
+        }
+      )
+      
+      req(lda_fit)
+      
       lda_pred <- predict(lda_fit, analysis_df[, input$predictors, drop = FALSE])
 
       confusion_mat <- table(
@@ -234,9 +436,18 @@ LDAServer <- function(id) {
       singular_vals_sq <- lda_fit$svd^2
       prop_trace <- singular_vals_sq / sum(singular_vals_sq)
 
+      scores_mat <- as.data.frame(lda_pred$x)
+      
+      if (!"LD1" %in% names(scores_mat)) {
+        scores_mat$LD1 <- 0
+      }
+      if (!"LD2" %in% names(scores_mat)) {
+        scores_mat$LD2 <- 0
+      }
+      
       scores_df <- data.frame(
-        LD1 = lda_pred$x[, 1],
-        LD2 = lda_pred$x[, 2],
+        LD1 = scores_mat$LD1,
+        LD2 = scores_mat$LD2,
         Class = analysis_df[[input$response]]
       )
 
@@ -394,25 +605,46 @@ LDAServer <- function(id) {
           ) +
           theme_bw() +
           theme(
-            plot.title = element_text(hjust = 0.5, face = "bold"),
-            axis.title.x = element_text(face = "bold"),
-            axis.title.y = element_text(face = "bold")
+            plot.title = element_text(hjust = 0.5, face = "bold", size = 18),
+
+            axis.title.x = element_text(face = "bold", size = 14),
+            axis.title.y = element_text(face = "bold", size = 14),
+  
+            axis.text.x = element_text(size = 12),
+            axis.text.y = element_text(size = 12),
+
+            legend.title = element_text(size = 14, face = "bold"),
+            
+            legend.text = element_text(size = 12)
           )
       })
 
+      showTab(inputId = "ldaMainPanel", target = "results_tab")
+      showTab(inputId = "ldaMainPanel", target = "plots_tab")
+      showTab(inputId = "ldaMainPanel", target = "uploaded_data_tab")
+      
       updateNavbarPage(session, "ldaMainPanel", selected = "results_tab")
 
     }, ignoreInit = TRUE)
 
     # Reset
     observeEvent(input$reset, {
+      hideTab(inputId = "ldaMainPanel", target = "results_tab")
+      hideTab(inputId = "ldaMainPanel", target = "plots_tab")
+      hideTab(inputId = "ldaMainPanel", target = "uploaded_data_tab")
+      
       results_ready(FALSE)
       plots_ready(FALSE)
       results_ever_calculated(FALSE)
       plots_ever_calculated(FALSE)
 
-      calc_results(NULL)
-      plot_results(NULL)
+      noFileCalculate(FALSE)
+      responseError(FALSE)
+      predictorsError(FALSE)
+      lda_message(NULL)
+      
+      shinyjs::removeClass(id = "responseWrapper", class = "has-error")
+      shinyjs::removeClass(id = "predictorsWrapper", class = "has-error")
 
       updatePickerInput(session, "response", selected = character(0))
       updatePickerInput(session, "predictors", selected = character(0))
