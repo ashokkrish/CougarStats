@@ -170,6 +170,7 @@ LDAServer <- function(id) {
 
     # Populate response/predictor choices
     observeEvent(uploadedTibble$data(), {
+      noFileCalculate(FALSE)
       req(uploadedTibble$data())
 
       df <- uploadedTibble$data()
@@ -610,8 +611,8 @@ LDAServer <- function(id) {
             axis.title.x = element_text(face = "bold", size = 14),
             axis.title.y = element_text(face = "bold", size = 14),
   
-            axis.text.x = element_text(size = 12),
-            axis.text.y = element_text(size = 12),
+            axis.text.x = element_text(face = "bold", size = 14),
+            axis.text.y = element_text(face = "bold", size = 14),
 
             legend.title = element_text(size = 14, face = "bold"),
             

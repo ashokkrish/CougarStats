@@ -362,7 +362,8 @@ PCAServer <- function(id) {
           plot.title  = element_text(face = "bold", size = 18, hjust = 0.5),
           axis.title.x = element_text(face = "bold", size = 14),
           axis.title.y = element_text(face = "bold", size = 14),
-          axis.text   = element_text(size = 12)
+          axis.text.x = element_text(face = "bold", size = 14),
+          axis.text.y = element_text(face = "bold", size = 14)
         )
     })
     
