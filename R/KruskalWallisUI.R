@@ -58,8 +58,7 @@ kwStackedIsValid_func <- function(kwResponse, kwFactors) {
   return(valid)
 }
 
-kwResults_func <- function(si_iv_is_valid, kwFormat, kwMultiColumns, kwUploadData_output, kwFactors, kwResponse) {
-  req(si_iv_is_valid)
+kwResults_func <- function(kwFormat, kwMultiColumns, kwUploadData_output, kwFactors, kwResponse) {
   
   results <- list()
 
@@ -491,7 +490,7 @@ kwRankedTableOutput <- function(data) {
           ranked_data_wide,
           rownames = FALSE,
           options = list(
-            pageLength = 10,
+            pageLength = -1,
             lengthMenu = list(c(10, 25, 50, 100, -1), c("10", "25", "50", "100", "all")),
             scrollX = TRUE,
             columnDefs = list(

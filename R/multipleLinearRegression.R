@@ -20,6 +20,7 @@ MLRSidebarUI <- function(id) {
       id = "MLRSidebar",
       useShinyjs(),
       withMathJax(
+        HTML(uploadDataDisclaimer),
         helpText("Only numeric variables are selectable."),
         div(
           id = ns("responseVariableWrapper"),
@@ -457,22 +458,8 @@ MLRServer <- function(id) {
       withMathJax(
         div(
           id = "linear-model-equations",
-          p("The variables in the model are"),
-          p(paste(
-            r"{\(}",
-            sprintf(r"[y    = \text{%s} \\]", input$responseVariable),
-            paste(
-              sprintf(
-                r"[x_{%d} = \text{%s}]",
-                seq_along(input$explanatoryVariables),
-                input$explanatoryVariables
-              ),
-              collapse = r"[\\]"
-            ),
-            r"{\)}"
-          )),
-          p("The estimated multiple linear regression equation is"),
-          p(with(uploadedTibble$data(), {
+          # 1. Calculate the model first to know what variables are kept
+          with(uploadedTibble$data(), {
             req(uploadedTibble$data(), cancelOutput = TRUE)
             req(isTruthy(input$responseVariable), cancelOutput = TRUE)
             model <- lm(reformulate(
@@ -480,57 +467,69 @@ MLRServer <- function(id) {
               as.name(input$responseVariable)
             ))
             
-            ## Reactively generate the LaTeX for the regression model equation.
-            modelEquations <- with(as.list(coefficients(model)), {
-              req(as.list(coefficients(model)),
-                  cancelOutput = "progress"
-              )
-              paste(
-                r"{\(}",
-                gsub(
-                  pattern = r"{\+(\ +)?-}",
-                  replacement = "-",
-                  x = paste(
-                    c(
-                      sprintf(
-                        r"[\hat{y} = \hat{\beta_0} + %s]",
-                        paste(
-                          sprintf(
-                            r"[\hat{%s}]",
-                            paste0(
-                              r"[\beta_{]",
-                              seq_along(input$explanatoryVariables),
-                              r"[}]"
-                            )
-                          ),
-                          paste0(r"{x_{}", seq_along(input$explanatoryVariables),
-                                 r"[}]"),
-                          collapse = "+"
-                        )
-                      ),
-                      sprintf(
-                        r"[\hat{y} = %.3f + %s]",
-                        get("(Intercept)"),
-                        paste(
-                          as.character(lapply(
-                            mget(as.character(lapply(input$explanatoryVariables, as.name))),
-                            \(x) if(!is.na(x)) sprintf(r"[%.3f]", x) else ""
-                          )),
-                          paste0(r"[x_{]", seq_along(input$explanatoryVariables),
-                                 r"[}]"),
-                          collapse = "+"
-                        )
-                      ),
-                      ""
-                    ),
-                    collapse = r"[\\]"
-                  )
-                ),
-                r"{\)}",
-                sep = r"{\\}"
-              )
-            }) # <- modelEquations
-          }))
+            # Get all coefficients (includes NAs for dropped variables)
+            all_coefs <- coef(model)
+            intercept <- all_coefs["(Intercept)"]
+            
+            # Lists to store the LaTeX strings
+            vars_definitions <- c()
+            sym_terms <- c()
+            num_terms <- c()
+            
+            # Loop through ORIGINAL input variables to preserve indices (1, 2, 3...)
+            for(i in seq_along(input$explanatoryVariables)) {
+              var_name <- input$explanatoryVariables[i]
+  
+              # Check if the name exists directly; if not, try wrapping in backticks
+              val <- all_coefs[var_name]
+              if (is.na(val)) {
+               val <- all_coefs[paste0("`", var_name, "`")]
+  }
+              
+              # If the coefficient is NOT NA, we include it.
+              # If it IS NA (dropped), we skip it completely (creating a gap in the indices shown).
+              if(!is.na(val)) {
+                # Add to definitions list using index 'i'
+                vars_definitions <- c(vars_definitions, sprintf(r"[x_{%d} = \text{%s}]", i, var_name))
+                
+                # Add to equation terms using index 'i'
+                sym_terms <- c(sym_terms, sprintf(r"[\hat{\beta_{%d}} x_{%d}]", i, i))
+                num_terms <- c(num_terms, sprintf(r"[%.3f x_{%d}]", val, i))
+              }
+            }
+            
+            # 3. Render the "Variables in the model" list
+            vars_definition_latex <- paste(
+              r"{\(}",
+              sprintf(r"[y    = \text{%s} \\]", input$responseVariable),
+              paste(vars_definitions, collapse = r"[\\]"),
+              r"{\)}"
+            )
+            
+            # 4. Render the Equation
+            sym_eq <- sprintf(r"[\hat{y} = \hat{\beta_0} + %s]", paste(sym_terms, collapse = " + "))
+            num_eq <- sprintf(r"[\hat{y} = %.3f + %s]", intercept, paste(num_terms, collapse = " + "))
+            
+            # Clean up double signs (e.g. "+ -")
+            sym_eq <- gsub(pattern = r"{\+(\ +)?-}", replacement = "-", x = sym_eq)
+            num_eq <- gsub(pattern = r"{\+(\ +)?-}", replacement = "-", x = num_eq)
+            
+            equation_latex <- paste(
+              r"{\(}",
+              sym_eq,
+              num_eq,
+              r"{\)}",
+              sep = r"{\\}"
+            )
+            
+            # Return the HTML structure
+            tagList(
+              p("The variables in the model are"),
+              p(vars_definition_latex),
+              p("The estimated multiple linear regression equation is"),
+              p(equation_latex)
+            )
+          })
         )
       )
     })
@@ -542,22 +541,33 @@ MLRServer <- function(id) {
       req(isTruthy(input$explanatoryVariables))
       req(length(as.character(input$explanatoryVariables)) >= 2)
       
-      withMathJax(
-        p(strong("Analysis of Variance (ANOVA)")),
-        p(
-          r"{\( H_0: \beta_1 = \beta_2 = \cdots = \beta_k = 0\)}",
-          br(),
-          r"{\( H_a: \) At least one \(\beta_j\ne 0\), where \(j = 1, \cdots, k\).}"
-        ),
-        br(),
-        p(r"{\( \alpha = 0.05\ \)}"),
-        br(),
-        p(
-          sprintf(r"{\( n = %i \)}", nrow(uploadedTibble$data())),
-          br(),
-          sprintf(r"{\( k = %i \)}", length(input$explanatoryVariables))
+      with(uploadedTibble$data(), {
+        model <- lm(reformulate(
+          as.character(lapply(input$explanatoryVariables, as.name)),
+          as.name(input$responseVariable)
+        ))
+        
+        # Use model rank for k to match ANOVA table
+        k <- model$rank - 1
+        
+        withMathJax(
+          p(strong("Analysis of Variance (ANOVA)")),
+          p(
+            r"{\( H_0: \beta_1 = \beta_2 = \cdots = \beta_k = 0\)}",
+            br(),
+            r"{\( H_a: \) At least one \(\beta_j\ne 0\), where \(j = 1, \cdots, k\).}"
+          ),
+          #br(),
+          p(r"{\( \alpha = 0.05\ \)}"),
+          #br(),
+          p(
+            sprintf(r"{\( n = %i \)}", nrow(uploadedTibble$data())),
+            br(),
+            sprintf(r"{\( k = %i \)}", k)
+          ),
+          p(r"[where \(n\) is the sample size and \(k\) is the number of explanatory variables in the multiple regression model.]")
         )
-      )
+      })
     })
     
     output$anovaTable <- renderTable(
@@ -580,18 +590,20 @@ MLRServer <- function(id) {
           SSR <- sum(modelANOVA$"Sum Sq"[-nrow(modelANOVA)]) # all but the residuals
           SSE <- modelANOVA$"Sum Sq"[nrow(modelANOVA)] # only the residuals
           SST <- SSR + SSE
-          k <- length(input$explanatoryVariables)
+          
+          # Use model rank
+          k <- model$rank - 1
           n <- nrow(uploadedTibble$data())
           MSR <- SSR / k
           MSE <- SSE / (n - k - 1)
-          F <- MSR / MSE
+          F_stat <- MSR / MSE
           
           ## RETURN THE TABLE TO RENDER
           tibble::tribble(
             ~"Source", ~"df", ~"SS", ~"MS", ~"F", ~"P-value",
-            "<strong>Regression (Model)</strong>", as.integer(k), SSR, MSR, F, pf(F, k, n - k - 1, lower.tail = FALSE),
-            "<strong>Residual (Error)</strong>", as.integer(n - k - 1), SSE, MSE, NA, NA,
-            "Total", as.integer(n - 1), SST, NA, NA, NA
+            "<strong>Regression (Model)</strong>", as.integer(k), SSR, MSR, F_stat, pf(F_stat, k, n - k - 1, lower.tail = FALSE),
+            "<strong>Error (Residual)</strong>", as.integer(n - k - 1), SSE, MSE, NA, NA,
+            "<strong>Total</strong>", as.integer(n - 1), SST, NA, NA, NA
           )
         })
       },
@@ -613,25 +625,26 @@ MLRServer <- function(id) {
           as.name(input$responseVariable)
         ))
         anovaModel <- anova(model)
-        regressionVariables <- nrow(anovaModel) - 1
-        modelANOVA <- anova(model)
-        SSR <- sum(modelANOVA$"Sum Sq"[-nrow(modelANOVA)]) # all but the residuals
-        SSE <- modelANOVA$"Sum Sq"[nrow(modelANOVA)] # only the residuals
-        SST <- SSR + SSE
-        k <- length(input$explanatoryVariables)
+        
+        SSR <- sum(anovaModel$"Sum Sq"[-nrow(anovaModel)]) # all but the residuals
+        SSE <- anovaModel$"Sum Sq"[nrow(anovaModel)] # only the residuals
+        
+        # Use model rank
+        k <- model$rank - 1
         n <- nrow(uploadedTibble$data())
         MSR <- SSR / k
         MSE <- SSE / (n - k - 1)
-        F <- MSR / MSE
+        F_stat <- MSR / MSE
+        
         withMathJax(
           p(strong("Test Statistic:")),
           p(sprintf(
             r"{\(\displaystyle F = \frac{\text{MSR}}{\text{MSE}} = \frac{%0.2f}{%0.2f} = %0.2f \)}",
-            MSR, MSE, F
+            MSR, MSE, F_stat
           )),
           p(strong("Conclusion:")),
           {
-            pValue <- pf(F, k, n - k - 1, lower.tail = FALSE)
+            pValue <- pf(F_stat, k, n - k - 1, lower.tail = FALSE)
             p(sprintf(
               r"[Since the p-value is %s than \(\alpha\) (\(%0.3f %s 0.05\)), %s.]",
               if (pValue <= 0.05) "less" else "greater",
@@ -665,8 +678,12 @@ MLRServer <- function(id) {
         SSE <- modelANOVA$"Sum Sq"[nrow(modelANOVA)] # only the residuals
         SST <- SSR + SSE
         
+        # Use model rank
+        k <- model$rank - 1
+        n <- nrow(uploadedTibble$data())
+        
         withMathJax(
-          p(strong(r"{ \(R^2\) and Adjusted \(R^2\) }")),
+          p(strong(r"{ \(R^2\) and Adjusted \(R^2\) :}")),
           br(),
           p(sprintf(
             r"[\( \displaystyle R^2 = \frac{\text{SSR}}{\text{SST}} = \frac{%0.4f}{%0.4f} = %0.4f\)]",
@@ -678,13 +695,11 @@ MLRServer <- function(id) {
             r"{
 \(
 \displaystyle
-R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] \\
-R^2_{\text{adj}} = %0.4f
+R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %0.4f
 \)
 }",
             summary(model)$adj.r.squared
           )),
-          p(r"[where \(k\) is the number of independent (explanatory) variables in the regression model, and \(n\) is the number of observations in the dataset.]"),
           p(
             strong("Interpretation:"),
             sprintf(
@@ -693,9 +708,11 @@ R^2_{\text{adj}} = %0.4f
             )
           ),
           br(),
-          p(strong("Information Criteria")),
-          p(sprintf(r"[Akaike Information Criterion (AIC): \(%0.4f\)]", AIC(model))),
-          p(sprintf(r"[Bayesian Information Criterion (BIC): \(%0.4f\)]", BIC(model)))
+          p(strong("Akaike Information Criteria (AIC):")),
+          p(sprintf(r"[AIC = \(%0.4f\)]", AIC(model))),
+          br(),
+          p(strong("Bayesian Information Criteria (BIC):")),
+          p(sprintf(r"[BIC = \(%0.4f\)]", BIC(model)))
         )
       })
     })
@@ -705,7 +722,7 @@ R^2_{\text{adj}} = %0.4f
       withMathJax(
         fluidRow(column(
           12, p(strong("Correlation matrix")),
-          p("Values below -0.75 and above 0.75 are very strong indicators that there is multicollinearity, and that the component of the model should be removed."),
+          p("Correlation values below –0.75 or above 0.75 indicate strong linear association between explanatory variables. Such strong correlations may signal potential multicollinearity. Consider whether one of the correlated variables can be removed, combined, or otherwise addressed."),
           tableOutput(ns("simpleCorrelationMatrix"))
         )),
         fluidRow(column(
@@ -714,7 +731,7 @@ R^2_{\text{adj}} = %0.4f
           plotOutput(ns("ggscatmat"))
         )),
         fluidRow(column(
-          12, p(strong("Variance Inflation Factors")),
+          12, p(strong("Variance Inflation Factors (VIFs)")),
           p("A VIF greater than 10 suggests strong multicollinearity caused by the respective variable with that variance inflation factor. VIFs between 5 and 10 hint at moderate multicollinearity. Values less than 5 are acceptable, with only a low degree of multicollinearity detected."),
           tableOutput(ns("vifs"))
         ))
@@ -750,7 +767,7 @@ R^2_{\text{adj}} = %0.4f
             },
             error = \(e) NULL
           )
-          validate(need(is.data.frame(df), "Couldn't produce a data frame from the VIF function of the model. Usually this means there are aliased coefficients in the model. Re-attempt after verifying the data, or renaming the columns."))
+          validate(need(is.data.frame(df), "Couldn't produce a data frame from the VIF function of the model. Usually this means there are aliased variables in the model. Re-attempt after verifying the data, or renaming the columns."))
           df
         })
       },
@@ -862,7 +879,5 @@ R^2_{\text{adj}} = %0.4f
         plotOutput(ns("mlrResidualsPanelPlot4"))
       )
     })
-    
-    
   })
 }

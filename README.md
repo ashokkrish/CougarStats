@@ -1,12 +1,8 @@
-<!---
-![CougarStats logo](https://github.com/cwai097/COMP5690/blob/master/www/CougarStats.png)
--->
-
 # _CougarStats_: An R Shiny App for Statistical Data Analysis
 
 ## Overview
 
-<img align="right" src="https://github.com/cwai097/COMP5690/blob/master/www/CougarStats.png" alt="rank" width="200" style="margin-top: 20px" />
+<img align="right" src="https://github.com/ashokkrish/CougarStats/blob/master/www/CougarStats.png" alt="rank" width="200" style="margin-top: 20px" />
 
 **CougarStats** is an open-source platform-independent browser-based interface for statistical data analysis. 
 
@@ -52,7 +48,7 @@ Read more about [Getting Started with Docker](https://www.docker.com/get-started
 - Chi-Square test of independence
 - Fisher's Exact Test
 - Simple Linear Regression and Correlation Analysis
-     - Pearson's product-moment correlation
+     - Pearson's correlation coefficient
      - Spearman's rank correlation coefficient
      - Kendall's tau
 - Multiple Linear Regression
@@ -60,7 +56,7 @@ Read more about [Getting Started with Docker](https://www.docker.com/get-started
 
 ## Who is _CougarStats_ for?
 
-- Students enrolled in an introductory statistics class
+- Students enrolled in an introductory/intermediate statistics class
 - Instructors wanting to use an open-source tool in their labs
 
 ## Developers
@@ -69,13 +65,15 @@ Read more about [Getting Started with Docker](https://www.docker.com/get-started
 
 ### Current project members
 - [Jacie Bennett](https://github.com/jacie-b): Senior Developer
+- [Maryam Abou El Nasr](https://github.com/Maryaen): Senior Developer
 
 ### Citation
-- Krishnamurthy, A., et al. (2025). _CougarStats_: An R Shiny app for statistical data analysis [Web application]. https://www.cougarstats.ca/
+- Krishnamurthy, A., et al. (2026). _CougarStats_: An R Shiny app for statistical data analysis [Web application]. https://www.cougarstats.ca/
 
 ## Acknowledgements
 | Funding Agency / Coursework | Recipient | Date(s) |
 |--------|--------|--------|
+| MATH 4199: Directed Readings | Maryam Abou El Nasr | January through April 2026 |
 | Alberta Innovates Summer Research Studentships | Darren Law Yan Lun | May 2025 through August 2025 |
 | Faculty of Science and Technology (FST) Student Research Award | Jacie Bennett | May 2025 through August 2025 |
 | Faculty of Science and Technology (FST) Student Research Award | Diana Vi | May 2025 through August 2025 |
@@ -84,6 +82,3 @@ Read more about [Getting Started with Docker](https://www.docker.com/get-started
 | Provost's Teaching and Learning Enhancement Grant (TLEG) | Michael Myer | September 2023 through April 2024 |
 | Faculty of Science and Technology (FST) Student Research Award | Michael Myer | June through August 2023 |
 | COMP 5690: Senior Computer Science Project | Crystal Wai | September through December 2022 |
-
-<!-- ## Acknowledgements
-CougarStats is partially-derived from the senior project coursework of Crystal Wai, completed in Fall 2022 ([Mount Royal University _COMP 5690: Senior Computer Science Project_](https://catalog.mtroyal.ca/preview_course.php?catoid=26&coid=40800&print)).   -->

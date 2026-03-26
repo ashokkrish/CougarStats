@@ -1,8 +1,3 @@
-library(htmltools)
-library(shiny)
-library(shinyWidgets)
-
-
 descStatsUI <- function(id) {
   ns <- NS(id)
   
@@ -108,10 +103,10 @@ descStatsUI <- function(id) {
             
             selectizeInput(
               inputId  = ns("dsGraphOptions"),
-              label    = strong("Graphs"), 
+              label    = strong("Graph Options"), 
               choices  = c("Boxplot", 
-                           "Histogram", 
-                           "Stem and Leaf Plot"),
+                           "Histogram"), 
+                           #"Stem and Leaf Plot"),
               selected = c("Boxplot"),
               multiple = TRUE,
               options  = list(hideSelected = FALSE,
@@ -154,8 +149,8 @@ descStatsUI <- function(id) {
                     ns = ns,
                     condition = "input.dsTableFilters == ''",
                     
-                    br(),
-                    p("Select one or more items from the Statistics menu to see more information.")
+                    #br(),
+                    p("Select one or more items from the Statistics menu.")
                   ),
                   
                   conditionalPanel(
@@ -176,8 +171,7 @@ descStatsUI <- function(id) {
                     helpText("* Note: Quartiles are calculated by excluding the median on both sides."),
                   ),
                   br(),
-                  br(),
-                    
+
                   conditionalPanel(
                     ns = ns,
                     condition = "input.dsTableFilters.indexOf('Mean') > -1 | 
@@ -196,8 +190,7 @@ descStatsUI <- function(id) {
                         br(),
                         DTOutput(ns("sampleDataTable")),
                         br(),
-                        br()),
-                      
+                        ),
                     
                     column(
                       width = 8,
@@ -206,17 +199,13 @@ descStatsUI <- function(id) {
                       titlePanel(tags$u("Sample Mean")),
                       br(),
                       uiOutput(ns("dsMeanCalc")),
-                      br(),
-                      
+
                       withMathJax(),
                       titlePanel(tags$u("Sample Standard Deviation")),
                       br(),
                       uiOutput(ns("dsSDCalc")),
-                      br(),
-                      br(),
-                      br(),
                     ), #column
-                    ), #fluidRow
+                   ), #fluidRow
                   ),
               
                   tabPanel(
@@ -244,36 +233,35 @@ descStatsUI <- function(id) {
                       
                       h3("Histogram"),
                       br(),
-                      
                       plotOptionsMenuUI(
                         id    = ns("dsHisto"),
                         title = "Histogram"),
                       uiOutput(ns("renderDSHistogram"))
                     ), # Histogram
                     
-                    conditionalPanel(
-                      ns = ns,
-                      condition = "input.dsGraphOptions.indexOf('Stem and Leaf Plot') > -1",
-                      
-                      h3("Stem and Leaf Plot"),
-                      br(),
-                      fluidRow(
-                        column(
-                          width = 2, 
-                          div("")),
-                        
-                        column(
-                          width = 8, 
-                          verbatimTextOutput(ns("dsStemLeaf")),
-                          br(),
-                          p("* Note: Outlier values are listed under the HI/LO lists.")),
-                        
-                        column(
-                          width = 2, 
-                          div(""))
-                      ), # fluidRow
-                      br()
-                    ), # Stem and Leaf
+                    # conditionalPanel(
+                    #   ns = ns,
+                    #   condition = "input.dsGraphOptions.indexOf('Stem and Leaf Plot') > -1",
+                    #   
+                    #   h3("Stem and Leaf Plot"),
+                    #   br(),
+                    #   fluidRow(
+                    #     column(
+                    #       width = 2, 
+                    #       div("")),
+                    #     
+                    #     column(
+                    #       width = 8, 
+                    #       verbatimTextOutput(ns("dsStemLeaf")),
+                    #       br(),
+                    #       p("* Note: Outlier values are listed under the HI/LO lists.")),
+                    #     
+                    #     column(
+                    #       width = 2, 
+                    #       div(""))
+                    #   ), # fluidRow
+                    #   br()
+                    # ), # Stem and Leaf
                   ), # Graphs tabPanel
                   
                   tabPanel(
@@ -281,19 +269,15 @@ descStatsUI <- function(id) {
                     title = "Uploaded Data",
                     
                     uiOutput(ns("renderDSData"))
-                  ),
-                
-                # dsTabset tabsetPanel
+                  ), # dsTabset tabsetPanel
             ), #descrStatsData div
-
-        )) #descriptiveStatsMP
-   
-      )
+          )
+        ) #descriptiveStatsMP
+       )
       )#mainPanel
     ) #sidebarLayout
   )
 }
-
 
 descStatsServer <- function(id) {
   moduleServer(id, function(input, output, session) {
@@ -323,6 +307,12 @@ descStatsServer <- function(id) {
         "Selected variable contains non-numeric data."
       }
     })
+    dsuploadvars_iv$add_rule("dsUploadVars", ~ {
+      col_data <- dsUploadData()[[.x]]      
+      if(length(na.omit(col_data)) < 2) {   
+        "Selected column must have at least 2 observations."
+      }
+    })
     # ------------------ #
     #     Conditions     #
     # ------------------ #
@@ -345,11 +335,9 @@ descStatsServer <- function(id) {
     dsupload_iv$enable()
     dsuploadvars_iv$enable()
     
-    
     #  -------------------------------------------------------------------- #
     ## ------------------- Descriptive Stats functions --------------------
     #  -------------------------------------------------------------------- #
-    
     
     ### Module Server Elements ----
     # --------------------------------------------------------------------- #
@@ -433,19 +421,17 @@ descStatsServer <- function(id) {
       return(sort(outliers))
     }
     
-    
     # Function to find the population standard deviation
     pop.sd <- function(x) {
       sqrt(sum((x-mean(x))^2)/length(x))
     }
-    
     
     # Function for populating the value column of the datatable
     createDSColumn <- function(dat) ({
       sampSize <- length(dat)
       sampSum <- sum(dat)
       sumSquares <- sum(dat^2)
-      xbar <- round(mean(dat),4)
+      xbar <- mean(dat)
       sampMode <- Modes(dat)
       
       if(sampMode == "No mode exists"){
@@ -510,7 +496,6 @@ descStatsServer <- function(id) {
         sampSkewness <- "Not enough variability or data points in the dataset."
       }
       
-      
       if(is.nan(sampKurtosis)) {
         sampKurtosis <- "Not enough variability or data points in the dataset."
       }
@@ -541,10 +526,7 @@ descStatsServer <- function(id) {
       )
     })
     
-    
     # --------------------------------------------------------------------- #
-    
-    
     ### Reactives ----
     # --------------------------------------------------------------------- #
     
@@ -573,7 +555,6 @@ descStatsServer <- function(id) {
              validate("Improper file format.")
       )
     })
-    
     
     getDsDataframe <- reactive({
       
@@ -607,8 +588,7 @@ descStatsServer <- function(id) {
                                     "Coefficient of Variation",
                                     "Skewness", 
                                     "Kurtosis"))
-      
-      
+
       if(input$dataInput == 'Upload Data')
       {
         req(dsuploadvars_iv$is_valid())
@@ -665,8 +645,6 @@ descStatsServer <- function(id) {
     })
     
     # --------------------------------------------------------------------- #
-    
-    
     ### Observers ----
     # --------------------------------------------------------------------- #
     
@@ -692,12 +670,7 @@ descStatsServer <- function(id) {
     observeEvent(input$goDescpStats, {
       output$renderDSData <- renderUI({
         tagList(
-          titlePanel("Data File"),
-          br(),
-          br(),
-          div(DTOutput(session$ns("dsUploadTable")), style = "width: 75%"),
-          br(),
-          br()
+          div(DTOutput(session$ns("dsUploadTable")), style = "width: 75%")
         )
       })
     })
@@ -730,6 +703,13 @@ descStatsServer <- function(id) {
             need(!checkNumeric(), "Selected variable contains non-numeric data."),
             errorClass = "myClass"
           )
+          validate(
+            need(
+              length(na.omit(dsUploadData()[[input$dsUploadVars]])) >= 2,
+              "Selected column must have at least 2 observations."
+            ),
+            errorClass = "myClass"
+          )
           
         } else if(!dsraw_iv$is_valid()) {
           validate(
@@ -745,7 +725,7 @@ descStatsServer <- function(id) {
       output$dsUploadTable <- renderDT({
         req(dsupload_iv$is_valid())
         datatable(dsUploadData(),
-                  options = list(pageLength = 25,
+                  options = list(pageLength = -1,
                                  lengthMenu = list(c(25, 50, 100, -1),
                                                    c("25", "50", "100", "all")),
                                  columnDefs = list(list(className = 'dt-center',
@@ -787,11 +767,9 @@ descStatsServer <- function(id) {
                                                  escape = FALSE,
                                                  rownames = FALSE,
                                                  filter = "none",
-                                                 
         ))
         
         outputOptions(output, "dsTableData", suspendWhenHidden = FALSE)
-        
         
         if(input$dataInput == 'Upload Data')
         {
@@ -835,8 +813,6 @@ descStatsServer <- function(id) {
                     dfTotaled['Totals', 1],
                     df['Observations', 3],
                     df['Mean', 3]),
-            br(),
-            br(),
             br()
           )
         })
@@ -874,7 +850,6 @@ descStatsServer <- function(id) {
         } else {
           df_outliers <- data.frame()
         }
-        
         
         output$renderDSBoxplot <- renderUI({
           tagList(
@@ -975,13 +950,13 @@ descStatsServer <- function(id) {
         }, height = function() {GetPlotHeight(input[["dsHisto-Height"]], input[["dsHisto-HeightPx"]], ui = FALSE)},
            width = function() {GetPlotWidth(input[["dsHisto-Width"]], input[["dsHisto-WidthPx"]], ui = FALSE)})
         
-        #---------------------- #
-        #### Stem and Leaf ----
-        #---------------------- #
-        
-        output$dsStemLeaf <- renderPrint({
-          stem.leaf(dat, unit = 1, m = 1, depths = FALSE)
-        })
+        # #---------------------- #
+        # #### Stem and Leaf ----
+        # #---------------------- #
+        # 
+        # output$dsStemLeaf <- renderPrint({
+        #   stem.leaf(dat, unit = 1, m = 1, depths = FALSE)
+        # })
         
         shinyjs::show(id = "outputPanel")
       } else {
@@ -1011,7 +986,6 @@ descStatsServer <- function(id) {
       
       replaceData(dsTableProxy, newFilter, resetPaging = FALSE, rownames = FALSE)
     })
-    
     
     #  -------------------------------------------------------------------- #
     #  ------------------------ Component Display -------------------------
@@ -1062,13 +1036,7 @@ descStatsServer <- function(id) {
       fileInputs$dsStatus <- 'reset'
       updateTabsetPanel(session, "dsTabset", selected = "Descriptive Statistics")
     })
-    
-    #  -------------------------------------------------------------------- #
-    
-    # --------------------------------------------------------------------- #
-    
-    
+
     # **************************************************************************** #
-    
   })
 }

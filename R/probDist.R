@@ -1,31 +1,3 @@
-# Load necessary libraries for the application
-library(aplpack)
-library(base)
-library(bslib)
-library(car)
-library(colourpicker)
-library(DescTools)
-library(dplyr)
-library(DT)
-library(generics)
-library(ggplot2)
-library(ggpubr)
-library(ggsci)
-library(e1071)
-library(nortest)
-library(readr)
-library(readxl)
-library(rstatix)
-library(shiny)
-library(shinyjs)
-library(shinyMatrix)
-library(shinyvalidate)
-library(shinyWidgets)
-library(tools)
-library(writexl)
-library(xtable)
-library(MASS)
-
 # =========================================================================== #  
 # ---- UI Components -------------------------------------------------------- 
 # =========================================================================== #
@@ -1337,7 +1309,6 @@ probDistServer <- function(id) {
       return(cMatrix)
     }
     
-    
     printMarginalProbs <- function(probMatrix, cMatrix){
       outputTagList <- tagList(
         withMathJax(),
@@ -1363,7 +1334,6 @@ probDistServer <- function(id) {
       }
       return(outputTagList)
     }
-    
     
     printJointProbs <- function(probMatrix, cMatrix){
       outputTagList <- tagList(
@@ -1548,7 +1518,9 @@ probDistServer <- function(id) {
       
       x <- round(seq(from = -3, to = 3, by = 0.1), 2)
       xSeq <- unique(sort(c(x, normLines)))
+      
       df <- distinct(data.frame(x = xSeq, y = dnorm(xSeq, mean = 0, sd = 1)))
+      
       lineDF <- filter(df, x %in% normLines)
       lineDF['z'] <- lineLabels
       meanDF <- filter(df, x %in% c(0))
@@ -1563,7 +1535,8 @@ probDistServer <- function(id) {
                   color = NA) +
         shadeNormArea(df, normValue, normLines, probType) +
         geom_segment(data = lineDF,
-                     aes(x = x, xend = x, y = 0, yend = y),
+                     aes(x = x, xend = x, yend = y),
+                     y = 0,
                      linetype = "solid",
                      lineend = 'round',
                      linewidth = 1.25,
@@ -1575,7 +1548,8 @@ probDistServer <- function(id) {
                   check_overlap = TRUE,
                   vjust = 1.5) +
         geom_segment(data = meanDF,
-                     aes(x = x, xend = x, y = 0, yend = y),
+                     aes(x = x, xend = x, yend = y),
+                     y = 0,
                      linetype = "dotted",
                      lineend = 'round',
                      linewidth = 1,
@@ -1613,8 +1587,7 @@ probDistServer <- function(id) {
       xSeq <- unique(sort(c(x, normLines)))
       
       df <- distinct(data.frame(x = xSeq, y = dnorm(xSeq, mean = 0, sd = 1)))
-      
-      
+
       lineDF <- filter(df, x %in% normLines)
       meanDF <- filter(df, x %in% c(0))
       
@@ -1628,7 +1601,8 @@ probDistServer <- function(id) {
                   color = NA) +
         shadeNormArea(df, normValue, normLines, probType) +
         geom_segment(data = lineDF,
-                     aes(x = x, xend = x, y = 0, yend = y),
+                     aes(x = x, xend = x, yend = y),
+                     y = 0,
                      linetype = "solid",
                      lineend = 'round',
                      linewidth = 1.25,
@@ -1640,7 +1614,8 @@ probDistServer <- function(id) {
                   check_overlap = TRUE,
                   vjust = 1.5) +
         geom_segment(data = meanDF,
-                     aes(x = x, xend = x, y = 0, yend = y),
+                     aes(x = x, xend = x, yend = y),
+                     y = 0,
                      linetype = "dotted",
                      lineend = 'round',
                      linewidth = 1,
@@ -1792,18 +1767,11 @@ probDistServer <- function(id) {
         tagList(
           titlePanel("Frequency Distribution Table"),
           hr(),
-          br(),
           DTOutput(session$ns("cTable2x2"), width = '500px'),
-          br(),
-          br(),
           br(),
           titlePanel("Probability Distribution Table"),
           hr(),
-          br(),
-          DTOutput(session$ns("probTable2x2"), width = '500px'),
-          br(),
-          br(),
-          br()
+          DTOutput(session$ns("probTable2x2"), width = '500px')
         )
       })
       
@@ -1829,18 +1797,11 @@ probDistServer <- function(id) {
         tagList(
           titlePanel("Frequency Distribution Table"),
           hr(),
-          br(),
           DTOutput(session$ns("cTable2x3"), width = '625px'),
-          br(),
-          br(),
           br(),
           titlePanel("Probability Distribution Table"),
           hr(),
-          br(),
-          DTOutput(session$ns("probTable2x3"), width = '625px'),
-          br(),
-          br(),
-          br()
+          DTOutput(session$ns("probTable2x3"), width = '625px')
         )
       })
       
@@ -1866,18 +1827,11 @@ probDistServer <- function(id) {
         tagList(
           titlePanel("Frequency Distribution Table"),
           hr(),
-          br(),
           DTOutput(session$ns("cTable3x2"), width = '500px'),
-          br(),
-          br(),
           br(),
           titlePanel("Probability Distribution Table"),
           hr(),
-          br(),
-          DTOutput(session$ns("probTable3x2"), width = '500px'),
-          br(),
-          br(),
-          br()
+          DTOutput(session$ns("probTable3x2"), width = '500px')
         )
       })
       
@@ -1903,18 +1857,11 @@ probDistServer <- function(id) {
         tagList(
           titlePanel("Frequency Distribution Table"),
           hr(),
-          br(),
           DTOutput(session$ns("cTable3x3"), width = '625px'),
-          br(),
-          br(),
           br(),
           titlePanel("Probability Distribution Table"),
           hr(),
-          br(),
-          DTOutput(session$ns("probTable3x3"), width = '625px'),
-          br(),
-          br(),
-          br()
+          DTOutput(session$ns("probTable3x3"), width = '625px')
         )
       })
       
@@ -2181,7 +2128,6 @@ probDistServer <- function(id) {
     })
     
     observeEvent(input$goBinom, {
-      
       output$renderProbabilityBinom <- renderUI({
         withMathJax(
           if(!pd_iv$is_valid())
@@ -2390,7 +2336,6 @@ probDistServer <- function(id) {
     })
     
     observeEvent(input$goPoisson, {
-      
       output$renderProbabilityPoisson <- renderUI({
         withMathJax(
           if(!pd_iv$is_valid())
@@ -2527,7 +2472,6 @@ probDistServer <- function(id) {
     }) 
     
     observeEvent(input$goHypGeo, {
-      
       output$renderProbabilityHypGeo <- renderUI({
         withMathJax(
           if(!pd_iv$is_valid())
@@ -2748,7 +2692,6 @@ probDistServer <- function(id) {
     }) 
     
     observeEvent(input$goNegBin, {
-      
       output$renderProbabilityNegBin <- renderUI({
         withMathJax(
           if(!pd_iv$is_valid())
@@ -3274,13 +3217,18 @@ probDistServer <- function(id) {
         
         probability <- 0.25
         probLine <- round(qnorm(0.25, input$popMean, input$popSD, TRUE), 4)
+        
         xStart <- input$popMean - (3 * input$popSD)
         xEnd <- input$popMean + (3 * input$popSD)
         
         x <- round(seq(from = xStart, to = xEnd, length.out = 60), 2)
         xSeq <- unique(sort(c(x, input$popMean, probLine)))
+        # The length.out = 60 argument is a visual resolution choice, not statistically motivated. 
+        # It’s acceptable for quick teaching visuals but is not optimal for polished density plots.
+        # Consider increasing this number to 200 at some point for publication quality and an interactive Shiny experience.
         
         df <- distinct(data.frame(x = xSeq, y = dnorm(xSeq, mean = input$popMean, sd = input$popSD)))
+        
         meanDF <- filter(df, x %in% c(input$popMean))
         lineDF <- filter(df, x %in% c(probLine))
         
@@ -3298,7 +3246,8 @@ probDistServer <- function(id) {
                     color = NA, 
                     alpha = 0.4) +
           geom_segment(data = lineDF,
-                       aes(x = x, xend = x, y = 0, yend = y),
+                       aes(x = x, xend = x, yend = y),
+                       y = 0,
                        linetype = "solid",
                        lineend = 'round',
                        linewidth = 1.25,
@@ -3310,7 +3259,8 @@ probDistServer <- function(id) {
                     check_overlap = TRUE,
                     vjust = 1.5) +
           geom_segment(data = meanDF,
-                       aes(x = x, xend = x, y = 0, yend = y),
+                       aes(x = x, xend = x, yend = y),
+                       y = 0,
                        linetype = "dotted",
                        lineend = 'round',
                        linewidth = 1,
@@ -3323,7 +3273,11 @@ probDistServer <- function(id) {
                     check_overlap = TRUE,
                     vjust = 1.5) +
           geom_segment(data = df,
-                       aes(x = xStart, xend = xEnd, y = 0, yend = 0),
+                       aes(),
+                       x = xStart,
+                       xend = xEnd,
+                       y = 0,
+                       yend = 0,
                        linetype = "solid",
                        linewidth = 0.5,
                        color='#021C38') +
@@ -3345,13 +3299,18 @@ probDistServer <- function(id) {
         
         probability <- 0.5
         probLine <- round(qnorm(probability, input$popMean, input$popSD, TRUE), 4)
+        
         xStart <- input$popMean - (3 * input$popSD)
         xEnd <- input$popMean + (3 * input$popSD)
         
         x <- round(seq(from = xStart, to = xEnd, length.out = 60), 2)
         xSeq <- unique(sort(c(x, input$popMean, probLine)))
+        # The length.out = 60 argument is a visual resolution choice, not statistically motivated. 
+        # It’s acceptable for quick teaching visuals but is not optimal for polished density plots.
+        # Consider increasing this number to 200 at some point for publication quality and an interactive Shiny experience.
         
         df <- distinct(data.frame(x = xSeq, y = dnorm(xSeq, mean = input$popMean, sd = input$popSD)))
+        
         meanDF <- filter(df, x %in% c(input$popMean))
         lineDF <- filter(df, x %in% c(probLine))
         
@@ -3369,7 +3328,8 @@ probDistServer <- function(id) {
                     color = NA, 
                     alpha = 0.4) +
           geom_segment(data = lineDF,
-                       aes(x = x, xend = x, y = 0, yend = y),
+                       aes(x = x, xend = x, yend = y),
+                       y = 0,
                        linetype = "solid",
                        lineend = 'round',
                        linewidth = 1.25,
@@ -3381,7 +3341,8 @@ probDistServer <- function(id) {
                     check_overlap = TRUE,
                     vjust = 1.5) +
           geom_segment(data = meanDF,
-                       aes(x = x, xend = x, y = 0, yend = y),
+                       aes(x = x, xend = x, yend = y),
+                       y = 0,
                        linetype = "dotted",
                        lineend = 'round',
                        linewidth = 1,
@@ -3394,7 +3355,11 @@ probDistServer <- function(id) {
                     check_overlap = TRUE,
                     vjust = 1.5) +
           geom_segment(data = df,
-                       aes(x = xStart, xend = xEnd, y = 0, yend = 0),
+                       aes(),
+                       x = xStart,
+                       xend = xEnd,
+                       y = 0,
+                       yend = 0,
                        linetype = "solid",
                        linewidth = 0.5,
                        color='#021C38') +
@@ -3416,13 +3381,18 @@ probDistServer <- function(id) {
         
         probability <- 0.75
         probLine <- round(qnorm(probability, input$popMean, input$popSD, TRUE), 4)
+        
         xStart <- input$popMean - (3 * input$popSD)
         xEnd <- input$popMean + (3 * input$popSD)
         
         x <- round(seq(from = xStart, to = xEnd, length.out = 60), 2)
         xSeq <- unique(sort(c(x, input$popMean, probLine)))
+        # The length.out = 60 argument is a visual resolution choice, not statistically motivated. 
+        # It’s acceptable for quick teaching visuals but is not optimal for polished density plots.
+        # Consider increasing this number to 200 at some point for publication quality and an interactive Shiny experience.
         
         df <- distinct(data.frame(x = xSeq, y = dnorm(xSeq, mean = input$popMean, sd = input$popSD)))
+        
         meanDF <- filter(df, x %in% c(input$popMean))
         lineDF <- filter(df, x %in% c(probLine))
         
@@ -3440,7 +3410,8 @@ probDistServer <- function(id) {
                     color = NA, 
                     alpha = 0.4) +
           geom_segment(data = lineDF,
-                       aes(x = x, xend = x, y = 0, yend = y),
+                       aes(x = x, xend = x, yend = y),
+                       y = 0,
                        linetype = "solid",
                        lineend = 'round',
                        linewidth = 1.25,
@@ -3452,7 +3423,8 @@ probDistServer <- function(id) {
                     check_overlap = TRUE,
                     vjust = 1.5) +
           geom_segment(data = meanDF,
-                       aes(x = x, xend = x, y = 0, yend = y),
+                       aes(x = x, xend = x, yend = y),
+                       y = 0,
                        linetype = "dotted",
                        lineend = 'round',
                        linewidth = 1,
@@ -3465,7 +3437,11 @@ probDistServer <- function(id) {
                     check_overlap = TRUE,
                     vjust = 1.5) +
           geom_segment(data = df,
-                       aes(x = xStart, xend = xEnd, y = 0, yend = 0),
+                       aes(),
+                       x = xStart,
+                       xend = xEnd,
+                       y = 0,
+                       yend = 0,
                        linetype = "solid",
                        linewidth = 0.5,
                        color='#021C38') +
@@ -3565,6 +3541,7 @@ probDistServer <- function(id) {
         
         probability <- input$percentileValue / 100
         percentileLine <- round(qnorm(probability, input$popMean, input$popSD, TRUE), 4)
+        
         xStart <- input$popMean - (3 * input$popSD)
         xEnd <- input$popMean + (3 * input$popSD)
         
@@ -3572,6 +3549,7 @@ probDistServer <- function(id) {
         xSeq <- unique(sort(c(x, input$popMean, percentileLine)))
         
         df <- distinct(data.frame(x = xSeq, y = dnorm(xSeq, mean = input$popMean, sd = input$popSD)))
+        
         meanDF <- filter(df, x %in% c(input$popMean))
         lineDF <- filter(df, x %in% c(percentileLine))
         
@@ -3589,7 +3567,8 @@ probDistServer <- function(id) {
                     color = NA, 
                     alpha = 0.4) +
           geom_segment(data = lineDF,
-                       aes(x = x, xend = x, y = 0, yend = y),
+                       aes(x = x, xend = x, yend = y),
+                       y = 0,
                        linetype = "solid",
                        lineend = 'round',
                        linewidth = 1,
@@ -3601,7 +3580,8 @@ probDistServer <- function(id) {
                     check_overlap = TRUE,
                     vjust = 1.5) +
           geom_segment(data = meanDF,
-                       aes(x = x, xend = x, y = 0, yend = y),
+                       aes(x = x, xend = x, yend = y),
+                       y = 0,
                        linetype = "dotted",
                        lineend = 'round',
                        linewidth = 1,
@@ -3614,7 +3594,11 @@ probDistServer <- function(id) {
                     check_overlap = TRUE,
                     vjust = 1.5) +
           geom_segment(data = df,
-                       aes(x = xStart, xend = xEnd, y = 0, yend = 0),
+                       aes(),
+                       x = xStart,
+                       xend = xEnd,
+                       y = 0,
+                       yend = 0,
                        linetype = "solid",
                        linewidth = 0.5,
                        color='#021C38') +
@@ -3789,4 +3773,3 @@ probDistServer <- function(id) {
     })
   })
 }
-
