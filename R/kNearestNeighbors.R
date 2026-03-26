@@ -597,7 +597,6 @@ KNNServer <- function(id) {
       }
       
       #else for regression
-
     }, ignoreInit = TRUE)
     
   })
