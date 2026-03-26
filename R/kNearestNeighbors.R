@@ -226,8 +226,21 @@ KNNServer <- function(id) {
         font.main = 2,
         cex.lab = 1.3,
         font.lab = 2,
-        cex.axis = 1.7
+        cex.axis = 1.0,
+        xaxt = "n"
       )
+      
+      axis(
+        side = 1,
+        at = seq_along(levels(y)),
+        labels = levels(y),
+        cex.axis = 1.2,
+        font = 1,
+        lwd = 1,
+        lwd.ticks = 1
+      )
+      
+      box(bty = "l")
     })
     # 2) Box plots
     output$knnPlotBox <- renderPlot({
