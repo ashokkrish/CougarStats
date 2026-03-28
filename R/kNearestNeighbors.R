@@ -265,7 +265,18 @@ KNNServer <- function(id) {
       )
       
       scales <- list(x = list(relation = "free"), y = list(relation = "free"))
-      p <- caret::featurePlot(x = pd$x, y = pd$y, plot = "density", scales = scales)
+      p <- caret::featurePlot(
+        x = pd$x,
+        y = pd$y,
+        plot = "density",
+        scales = scales,
+        auto.key = list(
+          columns = length(levels(pd$y)),  # one column per class
+          title = "Class",
+          cex.title = 1,
+          cex = 1
+        )
+      )
       
       grid::grid.newpage()
       print(p)
