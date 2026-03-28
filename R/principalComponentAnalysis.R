@@ -557,7 +557,7 @@ PCAServer <- function(id) {
         factoextra::fviz_eig(
           pca_results(),
           addlabels = TRUE,
-          ylim = c(0, 50),
+          ylim = c(0, 100),
           main = "Scree Plot: Variance Explained by Principal Components",
           xlab = "Principal Components",
           ylab = "Percentage of Explained Variance",
