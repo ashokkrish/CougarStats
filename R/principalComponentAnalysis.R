@@ -450,7 +450,7 @@ PCAServer <- function(id) {
         labs(
           title = "PCA Loadings Heatmap",
           x = "Principal Component",
-          y = "Chemical Variable",
+          y = "Variables",
           fill = "Loading Value"
         ) +
         theme_minimal() +
