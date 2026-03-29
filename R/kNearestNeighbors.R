@@ -265,21 +265,37 @@ KNNServer <- function(id) {
       )
       
       scales <- list(x = list(relation = "free"), y = list(relation = "free"))
+      
       p <- caret::featurePlot(
         x = pd$x,
         y = pd$y,
         plot = "density",
         scales = scales,
         auto.key = list(
-          columns = length(levels(pd$y)),  # one column per class
+          columns = length(levels(pd$y)),
           title = "Class",
           cex.title = 1,
-          cex = 1
+          cex = 1,
+          space = "bottom"
+        ),
+      )
+      
+      p <- update(
+        p,
+        main = "Density Plots by Class",
+        xlab = "Feature",
+        ylab = "Density",
+        par.settings = list(
+          axis.text = list(cex = 1.1),
+          par.xlab.text = list(cex = 1.3, font = 2),
+          par.ylab.text = list(cex = 1.3, font = 2),
+          par.main.text = list(cex = 1.5, font = 2)
         )
       )
       
       grid::grid.newpage()
       print(p)
+      
     }, res = 96)
     
     # ---- Validation (k required, must be > 0) ----
