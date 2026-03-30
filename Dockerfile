@@ -23,6 +23,7 @@ RUN R -e \
                     'aplpack',          \
                     'bslib',            \
                     'car',              \
+                    'caret',            \
                     'colourpicker',     \
                     'DescTools',        \
                     'dplyr',            \
@@ -33,6 +34,7 @@ RUN R -e \
                     'ggpubr',           \
                     'ggsci',            \
                     'e1071',            \
+                    'factoextra',       \
                     'markdown',         \
                     'nortest',          \
                     'readr',            \
