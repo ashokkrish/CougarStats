@@ -362,7 +362,8 @@ PCAServer <- function(id) {
           plot.title  = element_text(face = "bold", size = 18, hjust = 0.5),
           axis.title.x = element_text(face = "bold", size = 14),
           axis.title.y = element_text(face = "bold", size = 14),
-          axis.text   = element_text(size = 12)
+          axis.text.x = element_text(face = "bold", size = 14),
+          axis.text.y = element_text(face = "bold", size = 14)
         )
     })
     
@@ -449,7 +450,7 @@ PCAServer <- function(id) {
         labs(
           title = "PCA Loadings Heatmap",
           x = "Principal Component",
-          y = "Chemical Variable",
+          y = "Variables",
           fill = "Loading Value"
         ) +
         theme_minimal() +
@@ -556,7 +557,7 @@ PCAServer <- function(id) {
         factoextra::fviz_eig(
           pca_results(),
           addlabels = TRUE,
-          ylim = c(0, 50),
+          ylim = c(0, 100),
           main = "Scree Plot: Variance Explained by Principal Components",
           xlab = "Principal Components",
           ylab = "Percentage of Explained Variance",

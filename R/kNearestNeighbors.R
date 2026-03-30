@@ -52,6 +52,7 @@ KNNSidebarUI <- function(id) {
   ns <- NS(id)
   
   tagList(
+    useShinyjs(),
     radioButtons(
       ns("task"),
       strong("Task"),
@@ -85,20 +86,28 @@ KNNSidebarUI <- function(id) {
     
     
     # Response + predictors
-    pickerInput(
-      ns("response"),
-      strong(htmltools::HTML("Response Variable (<em>y</em>)")),
-      choices = NULL,
-      multiple = FALSE,
-      options = list(`live-search` = TRUE, title = "Nothing selected")
+    div(
+      id = ns("responseWrapper"),
+      pickerInput(
+        ns("response"),
+        strong(htmltools::HTML("Response Variable (<em>y</em>)")),
+        choices = NULL,
+        multiple = FALSE,
+        options = list(`live-search` = TRUE, title = "Nothing selected")
+      ),
+      uiOutput(ns("responseError"))
     ),
     
-    pickerInput(
-      ns("predictors"),
-      strong(htmltools::HTML("Explanatory Variables (<em>x₁, x₂, ..., xₖ</em>)")),
-      choices = NULL,
-      multiple = TRUE,
-      options = list(`actions-box` = TRUE, `live-search` = TRUE, title = "Nothing selected")
+    div(
+      id = ns("predictorsWrapper"),
+      pickerInput(
+        ns("predictors"),
+        strong(htmltools::HTML("Explanatory Variables (<em>x₁, x₂, ..., xₖ</em>)")),
+        choices = NULL,
+        multiple = TRUE,
+        options = list(`actions-box` = TRUE, `live-search` = TRUE, title = "Nothing selected")
+      ),
+      uiOutput(ns("predictorsError"))
     ),
     
     actionButton(ns("calculate"), "Calculate", class = "act-btn"),
@@ -199,7 +208,7 @@ KNNServer <- function(id) {
       list(x = x, y = y)
     })
     
-    # 1) Class distribution (plot(y))
+    # 1) Class distribution
     output$knnPlotClass <- renderPlot({
       pd <- plot_data()
       y <- pd$y
@@ -208,9 +217,31 @@ KNNServer <- function(id) {
         need(nlevels(y) >= 2, "Choose a categorical response variable to plot class distribution.")
       )
       
-      plot(y, main = "Class Distribution", xlab = "Class", ylab = "Frequency")
+      plot(
+        y,
+        main = "Class Distribution",
+        xlab = "Class",
+        ylab = "Frequency",
+        cex.main = 1.5,
+        font.main = 2,
+        cex.lab = 1.3,
+        font.lab = 2,
+        cex.axis = 1.0,
+        xaxt = "n"
+      )
+      
+      axis(
+        side = 1,
+        at = seq_along(levels(y)),
+        labels = levels(y),
+        cex.axis = 1.2,
+        font = 1,
+        lwd = 1,
+        lwd.ticks = 1
+      )
+      
+      box(bty = "l")
     })
-    
     # 2) Box plots
     output$knnPlotBox <- renderPlot({
       pd <- plot_data()
@@ -234,10 +265,37 @@ KNNServer <- function(id) {
       )
       
       scales <- list(x = list(relation = "free"), y = list(relation = "free"))
-      p <- caret::featurePlot(x = pd$x, y = pd$y, plot = "density", scales = scales)
+      
+      p <- caret::featurePlot(
+        x = pd$x,
+        y = pd$y,
+        plot = "density",
+        scales = scales,
+        auto.key = list(
+          columns = length(levels(pd$y)),
+          title = "Class",
+          cex.title = 1,
+          cex = 1,
+          space = "bottom"
+        ),
+      )
+      
+      p <- update(
+        p,
+        main = "Density Plots by Class",
+        xlab = "Feature",
+        ylab = "Density",
+        par.settings = list(
+          axis.text = list(cex = 1.1),
+          par.xlab.text = list(cex = 1.3, font = 2),
+          par.ylab.text = list(cex = 1.3, font = 2),
+          par.main.text = list(cex = 1.5, font = 2)
+        )
+      )
       
       grid::grid.newpage()
       print(p)
+      
     }, res = 96)
     
     # ---- Validation (k required, must be > 0) ----
@@ -256,6 +314,9 @@ KNNServer <- function(id) {
     
     results_ever_calculated <- reactiveVal(FALSE)
     plots_ever_calculated <- reactiveVal(FALSE)
+    
+    responseError <- reactiveVal(FALSE)
+    predictorsError <- reactiveVal(FALSE)
     
     # ---- Clear old outputs when any input changes after Calculate ----
     observeEvent(
@@ -331,6 +392,28 @@ KNNServer <- function(id) {
     })
     
     
+    output$responseError <- renderUI({
+      if (responseError()) {
+        tags$div(
+          class = "text-danger",
+          style = "font-size: 12px; margin-top: -10px; margin-bottom: 10px;",
+          icon("exclamation-circle"),
+          "Please select a response variable."
+        )
+      }
+    })
+    
+    output$predictorsError <- renderUI({
+      if (predictorsError()) {
+        tags$div(
+          class = "text-danger",
+          style = "font-size: 12px; margin-top: -10px; margin-bottom: 10px;",
+          icon("exclamation-circle"),
+          "Please select at least one explanatory variable."
+        )
+      }
+    })
+    
     
     observeEvent(uploadedTibble$data(), {
       req(uploadedTibble$data())  #Wait until data actually exists
@@ -375,6 +458,20 @@ KNNServer <- function(id) {
       updateNumericInput(session, "k", value = default_k)
     })
     
+    observeEvent(input$response, {
+      if (isTruthy(input$response)) {
+        responseError(FALSE)
+        shinyjs::removeClass(id = "responseWrapper", class = "has-error")
+      }
+    })
+    
+    observeEvent(input$predictors, {
+      if (length(input$predictors) >= 1) {
+        predictorsError(FALSE)
+        shinyjs::removeClass(id = "predictorsWrapper", class = "has-error")
+      }
+    })
+    
     #reset button
     observeEvent(input$reset, {
       results_ready(FALSE)
@@ -386,6 +483,12 @@ KNNServer <- function(id) {
       calc_settings(NULL)
       plot_settings(NULL)
       
+      responseError(FALSE)
+      predictorsError(FALSE)
+      
+      shinyjs::removeClass(id = "responseWrapper", class = "has-error")
+      shinyjs::removeClass(id = "predictorsWrapper", class = "has-error")
+      
       updatePickerInput(session, "response", selected = character(0))
       updatePickerInput(session, "predictors", selected = character(0))
       updateNavbarPage(session, "knnMainPanel", selected = "data_import_tab")
@@ -393,13 +496,30 @@ KNNServer <- function(id) {
     
     
     observeEvent(input$calculate, {
-      #validation
+      # validation
       req(uploadedTibble$data())
-      req(isTruthy(input$response))
-      req(isTruthy(input$predictors))
-      req(length(input$predictors) >= 1)
-      req(knn_iv$is_valid())
       
+      if (!isTruthy(input$response)) {
+        responseError(TRUE)
+        shinyjs::addClass(id = "responseWrapper", class = "has-error")
+      } else {
+        responseError(FALSE)
+        shinyjs::removeClass(id = "responseWrapper", class = "has-error")
+      }
+      
+      if (!isTruthy(input$predictors) || length(input$predictors) < 1) {
+        predictorsError(TRUE)
+        shinyjs::addClass(id = "predictorsWrapper", class = "has-error")
+      } else {
+        predictorsError(FALSE)
+        shinyjs::removeClass(id = "predictorsWrapper", class = "has-error")
+      }
+      
+      if (!isTruthy(input$response) || !isTruthy(input$predictors) || length(input$predictors) < 1) {
+        return()
+      }
+      
+      req(knn_iv$is_valid())
       results_ever_calculated(TRUE)
       plots_ever_calculated(TRUE)
       
@@ -517,7 +637,6 @@ KNNServer <- function(id) {
       }
       
       #else for regression
-
     }, ignoreInit = TRUE)
     
   })
