@@ -33,7 +33,7 @@ knn_classification_report <- function(actual, predicted) {
   
   #accuracy
   accuracy <- sum(diag(cm)) / sum(cm)
-
+  
   report <- data.frame(
     Class = classes,
     Precision = round(precision, 4),
@@ -318,6 +318,19 @@ KNNServer <- function(id) {
     responseError <- reactiveVal(FALSE)
     predictorsError <- reactiveVal(FALSE)
     
+    fileImportError <- reactiveVal(FALSE)
+    
+    output$fileImportUserMessage <- renderUI({
+      if (isTRUE(fileImportError())) {
+        tags$p(
+          style = "color: red; font-weight: bold; margin-bottom: 10px;",
+          "Required: Cannot calculate without a data file."
+        )
+      } else {
+        NULL
+      }
+    })
+    
     # ---- Clear old outputs when any input changes after Calculate ----
     observeEvent(
       list(
@@ -418,6 +431,8 @@ KNNServer <- function(id) {
     observeEvent(uploadedTibble$data(), {
       req(uploadedTibble$data())  #Wait until data actually exists
       
+      fileImportError(FALSE)
+      
       df0 <- uploadedTibble$data()
       cols <- colnames(df0) #Store the dataset and get column names
       
@@ -446,7 +461,7 @@ KNNServer <- function(id) {
         updatePickerInput(session, "response", choices = cols, selected = character(0))
       }
     })
-
+    
     #reacts to train/test split changes by recalculating a default k based on training size
     observeEvent(input$split, {
       req(uploadedTibble$data())
@@ -485,6 +500,7 @@ KNNServer <- function(id) {
       
       responseError(FALSE)
       predictorsError(FALSE)
+      fileImportError(FALSE)
       
       shinyjs::removeClass(id = "responseWrapper", class = "has-error")
       shinyjs::removeClass(id = "predictorsWrapper", class = "has-error")
@@ -497,8 +513,13 @@ KNNServer <- function(id) {
     
     observeEvent(input$calculate, {
       # validation
-      req(uploadedTibble$data())
+      if (is.null(uploadedTibble$data()) || NROW(uploadedTibble$data()) == 0) {
+        fileImportError(TRUE)
+        updateNavbarPage(session, "knnMainPanel", selected = "data_import_tab")
+        return()
+      }
       
+      fileImportError(FALSE)
       if (!isTruthy(input$response)) {
         responseError(TRUE)
         shinyjs::addClass(id = "responseWrapper", class = "has-error")
@@ -554,7 +575,7 @@ KNNServer <- function(id) {
       if (isTRUE(input$standardize)) {
         mu  <- colMeans(X_train, na.rm = TRUE)
         sdv <- apply(X_train, 2, sd, na.rm = TRUE)
-      
+        
         #prevents divide-by-zero
         sdv[is.na(sdv) | sdv == 0] <- 1
         
@@ -578,7 +599,7 @@ KNNServer <- function(id) {
           cl    = y_train,
           k     = k
         )
-       
+        
         #evaluation metrics 
         metrics <- knn_classification_report(actual = y_test, predicted = pred)
         
@@ -633,7 +654,7 @@ KNNServer <- function(id) {
         #send the data into the UI
         output$classReport  <- renderTable({ metrics$report }, striped = TRUE, bordered = TRUE)
         output$confMat      <- renderTable({ metrics$cm }, striped = TRUE, bordered = TRUE)
-
+        
       }
       
       #else for regression
@@ -641,3 +662,5 @@ KNNServer <- function(id) {
     
   })
 }
+
+
