@@ -12,7 +12,8 @@ regressionAndCorrelationUI <- function(id) {
                                   "Binary Logistic Regression" = "LOGR",
                                   "Principal Component Analysis" = "PCA",
                                   "k-Nearest Neighbors" = "KNN",
-                                  "Linear Discriminant Analysis" = "LDA"
+                                  "Linear Discriminant Analysis" = "LDA",
+                                  "Decision Trees (CART)" = "CART"
                                   ),
                    selected = "SLR"
       ),
@@ -61,6 +62,11 @@ regressionAndCorrelationServer <- function(id) {
       paste0("lda_dynamic_instance_", lda_instance_counter())
     })
   
+    #Dynamic ID for CART
+    cart_instance_counter <- reactiveVal(0)
+    current_cart_module_id <- reactive({
+      paste0("cart_dynamic_instance_", cart_instance_counter())
+    })
     
     # Observer for the main radio button (input$multiple)
     observeEvent(input$multiple, {
@@ -120,6 +126,18 @@ regressionAndCorrelationServer <- function(id) {
           req(current_lda_module_id())
           LDAMainPanelUI(session$ns(current_lda_module_id()))
         })
+      } else if (input$multiple == "CART") {
+        cart_instance_counter(cart_instance_counter() + 1)
+        
+        output$regressionSidebarUI <- renderUI({
+          req(current_cart_module_id())
+          CARTSidebarUI(session$ns(current_cart_module_id()))
+        })
+        
+        output$regressionMainPanelUI <- renderUI({
+          req(current_cart_module_id())
+          CARTMainPanelUI(session$ns(current_cart_module_id()))
+        })
       }
       }, ignoreNULL = FALSE, ignoreInit = FALSE) # Corrected this line
     
@@ -149,6 +167,10 @@ regressionAndCorrelationServer <- function(id) {
       LDAServer(current_lda_module_id())
     }, ignoreNULL = TRUE)
     
+    observeEvent(current_cart_module_id(), {
+      req(input$multiple == "CART")
+      CARTServer(current_cart_module_id())
+    }, ignoreNULL = TRUE)
     
   })
 }
