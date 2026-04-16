@@ -10,7 +10,7 @@ CARTSidebarUI <- function(id) {
       id = ns("maxDepthWrapper"),
       numericInput(
         ns("max_depth"),
-        "Maximum Tree Depth",
+        strong("Maximum Tree Depth"),
         value = 10,
         min = 0
       ),
@@ -21,7 +21,7 @@ CARTSidebarUI <- function(id) {
       id = ns("minSplitWrapper"),
       numericInput(
         ns("min_split"),
-        "Minimum Split Size",
+        strong("Minimum Split Size"),
         value = 20,
         min = 0
       ),
@@ -32,7 +32,7 @@ CARTSidebarUI <- function(id) {
       id = ns("cpWrapper"),
       numericInput(
         ns("cp"),
-        "Complexity Parameter",
+        strong("Complexity Parameter"),
         value = 0.01,
         min = 0,
         step = 0.01
@@ -49,7 +49,7 @@ CARTSidebarUI <- function(id) {
       id = ns("responseWrapper"),
       pickerInput(
         ns("response"),
-        HTML("Response Variable (<em>y</em>)"),
+        strong(HTML("Response Variable (<i>y</i>)")),
         choices = NULL,
         multiple = FALSE,
         options = list(`live-search` = TRUE, title = "Nothing selected")
@@ -61,7 +61,7 @@ CARTSidebarUI <- function(id) {
       id = ns("predictorsWrapper"),
       pickerInput(
         ns("predictors"),
-        HTML("Explanatory Variables (<em>x</em><sub>1</sub>, <em>x</em><sub>2</sub>, ..., <em>x</em><sub>k</sub>)"),
+        strong(HTML("Explanatory Variables (<em>x</em><sub>1</sub>, <em>x</em><sub>2</sub>, ..., <em>x</em><sub>k</sub>)")),
         choices = NULL,
         multiple = TRUE,
         options = list(`actions-box` = TRUE, `live-search` = TRUE, title = "Nothing selected")
