@@ -119,6 +119,7 @@ KNNMainPanelUI <- function(id) {
   ns <- NS(id)
   
   tagList(
+    useShinyjs(),
     navbarPage(
       title = NULL,
       
@@ -315,6 +316,12 @@ KNNServer <- function(id) {
     results_ever_calculated <- reactiveVal(FALSE)
     plots_ever_calculated <- reactiveVal(FALSE)
     
+    session$onFlushed(function() {
+      hideTab(inputId = "knnMainPanel", target = "results_tab")
+      hideTab(inputId = "knnMainPanel", target = "plots_tab")
+      hideTab(inputId = "knnMainPanel", target = "uploaded_data_tab")
+    }, once = TRUE)
+    
     responseError <- reactiveVal(FALSE)
     predictorsError <- reactiveVal(FALSE)
     
@@ -351,6 +358,11 @@ KNNServer <- function(id) {
           plots_ready(FALSE)
           plot_settings(NULL)
         }
+        
+        hideTab(inputId = "knnMainPanel", target = "results_tab")
+        hideTab(inputId = "knnMainPanel", target = "plots_tab")
+        hideTab(inputId = "knnMainPanel", target = "uploaded_data_tab")
+        updateNavbarPage(session, "knnMainPanel", selected = "data_import_tab")
       },
       ignoreInit = TRUE
     )
@@ -489,6 +501,11 @@ KNNServer <- function(id) {
     
     #reset button
     observeEvent(input$reset, {
+      
+      hideTab(inputId = "knnMainPanel", target = "results_tab")
+      hideTab(inputId = "knnMainPanel", target = "plots_tab")
+      hideTab(inputId = "knnMainPanel", target = "uploaded_data_tab")
+      
       results_ready(FALSE)
       plots_ready(FALSE)
       
@@ -541,14 +558,6 @@ KNNServer <- function(id) {
       }
       
       req(knn_iv$is_valid())
-      results_ever_calculated(TRUE)
-      plots_ever_calculated(TRUE)
-      
-      plot_settings(list(
-        response = input$response,
-        predictors = input$predictors
-      ))
-      plots_ready(TRUE)
       
       
       #split dataset for training & testing
@@ -646,14 +655,27 @@ KNNServer <- function(id) {
           )
         })
         
-        
-        
-        results_ready(TRUE) #show the output UI now
-        updateNavbarPage(session, "knnMainPanel", selected = "results_tab") #switch user to Results tab
-        
         #send the data into the UI
         output$classReport  <- renderTable({ metrics$report }, striped = TRUE, bordered = TRUE)
         output$confMat      <- renderTable({ metrics$cm }, striped = TRUE, bordered = TRUE)
+        
+        plot_settings(list(
+          response = input$response,
+          predictors = input$predictors
+        ))
+        
+        results_ready(TRUE)
+        plots_ready(TRUE)
+        results_ever_calculated(TRUE)
+        plots_ever_calculated(TRUE)
+        
+        showTab(inputId = "knnMainPanel", target = "results_tab")
+        showTab(inputId = "knnMainPanel", target = "plots_tab")
+        showTab(inputId = "knnMainPanel", target = "uploaded_data_tab")
+        
+        shinyjs::delay(100, {
+          updateNavbarPage(session, "knnMainPanel", selected = "results_tab")
+        })
         
       }
       
