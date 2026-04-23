@@ -12,7 +12,7 @@ CARTSidebarUI <- function(id) {
         ns("max_depth"),
         strong("Maximum Tree Depth"),
         value = 10,
-        min = 0
+        min = 1
       ),
       uiOutput(ns("maxDepthError"))
     ),
@@ -23,7 +23,7 @@ CARTSidebarUI <- function(id) {
         ns("min_split"),
         strong("Minimum Split Size"),
         value = 20,
-        min = 0
+        min = 1
       ),
       uiOutput(ns("minSplitError"))
     ),
@@ -34,7 +34,7 @@ CARTSidebarUI <- function(id) {
         ns("cp"),
         strong("Complexity Parameter"),
         value = 0.01,
-        min = 0,
+        min = 0.01,
         step = 0.01
       ),
       uiOutput(ns("cpError"))
@@ -140,16 +140,14 @@ CARTServer <- function(id) {
     noFileCalculate <- reactiveVal(FALSE)
     responseError <- reactiveVal(FALSE)
     predictorsError <- reactiveVal(FALSE)
-    maxDepthError <- reactiveVal(FALSE)
-    minSplitError <- reactiveVal(FALSE)
-    cpError <- reactiveVal(FALSE)
+    maxDepthError <- reactiveVal(NULL)
+    minSplitError <- reactiveVal(NULL)
+    cpError <- reactiveVal(NULL)
     
-    observeEvent(TRUE, {
-      shinyjs::delay(0, {
-        hideTab(inputId = "cartMainPanel", target = "results_tab")
-        hideTab(inputId = "cartMainPanel", target = "plots_tab")
-        hideTab(inputId = "cartMainPanel", target = "uploaded_data_tab")
-      })
+    session$onFlushed(function() {
+      hideTab(inputId = "cartMainPanel", target = "results_tab")
+      hideTab(inputId = "cartMainPanel", target = "plots_tab")
+      hideTab(inputId = "cartMainPanel", target = "uploaded_data_tab")
     }, once = TRUE)
     
     # Uploaded Data tab
@@ -236,6 +234,7 @@ CARTServer <- function(id) {
         hideTab(inputId = "cartMainPanel", target = "results_tab")
         hideTab(inputId = "cartMainPanel", target = "plots_tab")
         hideTab(inputId = "cartMainPanel", target = "uploaded_data_tab")
+        updateNavbarPage(session, "cartMainPanel", selected = "data_import_tab")
       },
       ignoreInit = TRUE
     )
@@ -326,34 +325,37 @@ CARTServer <- function(id) {
     })
     
     output$maxDepthError <- renderUI({
-      if (maxDepthError()) {
+      msg <- maxDepthError()
+      if (!is.null(msg)) {
         tags$div(
           class = "text-danger",
           style = "font-size: 12px; margin-top: -10px; margin-bottom: 10px;",
           icon("exclamation-circle"),
-          "Maximum Tree Depth is required and cannot be negative."
+          msg
         )
       }
     })
     
     output$minSplitError <- renderUI({
-      if (minSplitError()) {
+      msg <- minSplitError()
+      if (!is.null(msg)) {
         tags$div(
           class = "text-danger",
           style = "font-size: 12px; margin-top: -10px; margin-bottom: 10px;",
           icon("exclamation-circle"),
-          "Minimum Split Size is required and cannot be negative."
+          msg
         )
       }
     })
     
     output$cpError <- renderUI({
-      if (cpError()) {
+      msg <- cpError()
+      if (!is.null(msg)) {
         tags$div(
           class = "text-danger",
           style = "font-size: 12px; margin-top: -10px; margin-bottom: 10px;",
           icon("exclamation-circle"),
-          "Complexity Parameter is required and cannot be negative."
+          msg
         )
       }
     })
@@ -373,25 +375,25 @@ CARTServer <- function(id) {
     })
     
     observeEvent(input$max_depth, {
-      valid <- !is.null(input$max_depth) && !is.na(input$max_depth) && input$max_depth >= 0
+      valid <- !is.null(input$max_depth) && !is.na(input$max_depth) && input$max_depth >= 1
       if (valid) {
-        maxDepthError(FALSE)
+        maxDepthError(NULL)
         shinyjs::removeClass(id = "maxDepthWrapper", class = "has-error")
       }
     })
     
     observeEvent(input$min_split, {
-      valid <- !is.null(input$min_split) && !is.na(input$min_split) && input$min_split >= 0
+      valid <- !is.null(input$min_split) && !is.na(input$min_split) && input$min_split >= 1
       if (valid) {
-        minSplitError(FALSE)
+        minSplitError(NULL)
         shinyjs::removeClass(id = "minSplitWrapper", class = "has-error")
       }
     })
     
     observeEvent(input$cp, {
-      valid <- !is.null(input$cp) && !is.na(input$cp) && input$cp >= 0
+      valid <- !is.null(input$cp) && !is.na(input$cp) && input$cp > 0
       if (valid) {
-        cpError(FALSE)
+        cpError(NULL)
         shinyjs::removeClass(id = "cpWrapper", class = "has-error")
       }
     })
@@ -421,31 +423,49 @@ CARTServer <- function(id) {
         shinyjs::removeClass(id = "predictorsWrapper", class = "has-error")
       }
       
-      max_depth_valid <- !is.null(input$max_depth) && !is.na(input$max_depth) && input$max_depth >= 0
-      min_split_valid <- !is.null(input$min_split) && !is.na(input$min_split) && input$min_split >= 0
-      cp_valid <- !is.null(input$cp) && !is.na(input$cp) && input$cp >= 0
+      max_depth_valid <- !is.null(input$max_depth) && !is.na(input$max_depth) && input$max_depth >= 1
+      min_split_valid <- !is.null(input$min_split) && !is.na(input$min_split) && input$min_split >= 1
+      cp_valid <- !is.null(input$cp) && !is.na(input$cp) && input$cp > 0
       
-      if (!max_depth_valid) {
-        maxDepthError(TRUE)
+      if (is.null(input$max_depth) || is.na(input$max_depth)) {
+        maxDepthError("Please enter a maximum tree depth.")
+        shinyjs::addClass(id = "maxDepthWrapper", class = "has-error")
+      } else if (input$max_depth == 0) {
+        maxDepthError("Maximum Tree Depth must be at least 1.")
+        shinyjs::addClass(id = "maxDepthWrapper", class = "has-error")
+      } else if (input$max_depth < 0) {
+        maxDepthError(paste("Maximum Tree Depth cannot be negative. You entered", input$max_depth, "."))
         shinyjs::addClass(id = "maxDepthWrapper", class = "has-error")
       } else {
-        maxDepthError(FALSE)
+        maxDepthError(NULL)
         shinyjs::removeClass(id = "maxDepthWrapper", class = "has-error")
       }
       
-      if (!min_split_valid) {
-        minSplitError(TRUE)
+      if (is.null(input$min_split) || is.na(input$min_split)) {
+        minSplitError("Please enter a minimum split size.")
+        shinyjs::addClass(id = "minSplitWrapper", class = "has-error")
+      } else if (input$min_split == 0) {
+        minSplitError("Minimum Split Size must be at least 1.")
+        shinyjs::addClass(id = "minSplitWrapper", class = "has-error")
+      } else if (input$min_split < 0) {
+        minSplitError(paste("Minimum Split Size cannot be negative. You entered", input$min_split, "."))
         shinyjs::addClass(id = "minSplitWrapper", class = "has-error")
       } else {
-        minSplitError(FALSE)
+        minSplitError(NULL)
         shinyjs::removeClass(id = "minSplitWrapper", class = "has-error")
       }
       
-      if (!cp_valid) {
-        cpError(TRUE)
+      if (is.null(input$cp) || is.na(input$cp)) {
+        cpError("Please enter a complexity parameter.")
+        shinyjs::addClass(id = "cpWrapper", class = "has-error")
+      } else if (input$cp == 0) {
+        cpError("Complexity Parameter must be greater than 0.")
+        shinyjs::addClass(id = "cpWrapper", class = "has-error")
+      } else if (input$cp < 0) {
+        cpError(paste("Complexity Parameter cannot be negative. You entered", input$cp, "."))
         shinyjs::addClass(id = "cpWrapper", class = "has-error")
       } else {
-        cpError(FALSE)
+        cpError(NULL)
         shinyjs::removeClass(id = "cpWrapper", class = "has-error")
       }
       
@@ -567,6 +587,7 @@ CARTServer <- function(id) {
       
       if (nrow(importance_df) > 0) {
         importance_df <- importance_df[order(importance_df$Importance, decreasing = TRUE), , drop = FALSE]
+        importance_df$ImportancePct <- (importance_df$Importance / sum(importance_df$Importance)) * 100
       }
       
       res <- list(
@@ -642,11 +663,21 @@ CARTServer <- function(id) {
         r <- plot_results()
         req(r)
         
+        par(mar = c(1, 1, 3, 1))
+        
         rpart.plot::rpart.plot(
           r$fit,
-          main = "Decision Tree Diagram"
+          main = "Decision Tree Diagram",
+          extra = 104,
+          fallen.leaves = TRUE,
+          tweak = 1.05,
+          under = TRUE,
+          faclen = 0,
+          varlen = 0,
+          shadow.col = 0,
+          box.palette = "Blues"
         )
-      })
+      }, res = 96)
       
       output$varImportancePlot <- renderPlot({
         r <- plot_results()
@@ -661,14 +692,14 @@ CARTServer <- function(id) {
         imp_df <- r$importance
         imp_df$Variable <- factor(imp_df$Variable, levels = rev(imp_df$Variable))
         
-        ggplot(imp_df, aes(x = Variable, y = Importance)) +
+        ggplot(imp_df, aes(x = ImportancePct, y = Variable)) +
           geom_col(fill = "#18536F") +
-          coord_flip() +
           labs(
             title = "Variable Importance",
-            x = NULL,
-            y = "Importance"
+            x = "Importance (%)",
+            y = "Predictor"
           ) +
+          scale_x_continuous(labels = function(x) paste0(round(x, 1), "%")) +
           theme_bw() +
           theme(
             plot.title = element_text(hjust = 0.5, face = "bold", size = 18),
@@ -702,9 +733,9 @@ CARTServer <- function(id) {
       noFileCalculate(FALSE)
       responseError(FALSE)
       predictorsError(FALSE)
-      maxDepthError(FALSE)
-      minSplitError(FALSE)
-      cpError(FALSE)
+      maxDepthError(NULL)
+      minSplitError(NULL)
+      cpError(NULL)
       cart_message(NULL)
       
       shinyjs::removeClass(id = "responseWrapper", class = "has-error")
@@ -721,6 +752,7 @@ CARTServer <- function(id) {
       updatePickerInput(session, "predictors", selected = character(0))
       
       updateNavbarPage(session, "cartMainPanel", selected = "data_import_tab")
+      showTab(inputId = "cartMainPanel", target = "data_import_tab")
     })
   })
 }
