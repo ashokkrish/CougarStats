@@ -312,7 +312,7 @@ PCAServer <- function(id) {
         if (length(zero_var_cols) > 0) {
           shinyalert::shinyalert(
             "Input Error",
-            paste0("These selected variables have zero variance and cannot be used in PCA: ",
+            paste0("These selected variable(s) have zero variance and cannot be used in PCA: ",
                    paste(zero_var_cols, collapse = ", "), "."),
             type = "error",
             confirmButtonCol = "#18536F"
@@ -549,13 +549,13 @@ PCAServer <- function(id) {
     output$correlationMatrix <- renderDT({
       req(analysis_data())
       cor_matrix <- cor(analysis_data())
-      datatable(cor_matrix, options = list(dom = 't')) %>% formatRound(columns = 1:ncol(cor_matrix), digits = 3)
+      datatable(cor_matrix, options = list(dom = 't')) %>% formatRound(columns = 1:ncol(cor_matrix), digits = 4)
     })
     
     output$covarianceMatrix <- renderDT({
       req(analysis_data())
       cov_matrix <- cov(analysis_data())
-      datatable(cov_matrix, options = list(dom = 't')) %>% formatRound(columns = 1:ncol(cov_matrix), digits = 3)
+      datatable(cov_matrix, options = list(dom = 't')) %>% formatRound(columns = 1:ncol(cov_matrix), digits = 4)
     })
     
     output$screePlot <- renderPlot({
