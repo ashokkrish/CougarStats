@@ -21,10 +21,18 @@ library(psych) # For rotated solution
 PCASidebarUI <- function(id) {
   ns <- NS(id)
   tagList(
+    
+    div(
+      style = "font-size: 14px; color: #6c757d; margin-top: 8px; margin-bottom: 12px; font-style: italic;",
+      tags$strong(tags$em("Note: ")),
+      "CougarStats does not store, log, or share any data you upload. All uploaded files exist only for the duration of your session and are permanently deleted when the session ends."
+    ),
+    
     div(
       class = "si-label",
       tags$b("PCA Options")
     ),
+   
     pickerInput(
       ns("pcaVariables"),
       "Variables for PCA",

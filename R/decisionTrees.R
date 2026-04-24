@@ -7,6 +7,12 @@ CARTSidebarUI <- function(id) {
     useShinyjs(),
     
     div(
+      style = "font-size: 14px; color: #6c757d; margin-top: 8px; margin-bottom: 12px; font-style: italic;",
+      tags$strong(tags$em("Note: ")),
+      "CougarStats does not store, log, or share any data you upload. All uploaded files exist only for the duration of your session and are permanently deleted when the session ends."
+    ),
+    
+    div(
       id = ns("maxDepthWrapper"),
       numericInput(
         ns("max_depth"),
@@ -41,15 +47,15 @@ CARTSidebarUI <- function(id) {
     ),
     
     div(
-      style = "font-size: 12px; color: #6c757d; margin-top: 8px; margin-bottom: 12px;",
-      "Note: CougarStats does not store, log, or share any data you upload. All uploaded files exist only for the duration of your session and are permanently deleted when the session ends."
+      style = "font-size: 15px; color: #6c757d; margin-top: 8px; margin-bottom: 6px; ",
+      "Select a categorical variable, must have 2 or more unique categories."
     ),
     
     div(
       id = ns("responseWrapper"),
       pickerInput(
         ns("response"),
-        strong(HTML("Response Variable (<i>y</i>)")),
+        strong(HTML("Response Variable (Class)")),
         choices = NULL,
         multiple = FALSE,
         options = list(`live-search` = TRUE, title = "Nothing selected")
@@ -636,13 +642,13 @@ CARTServer <- function(id) {
             "Accuracy"
           ),
           Value = c(
-            length(unique(analysis_df[[input$response]])),
-            length(r$predictors),
-            r$n,
-            input$max_depth,
-            input$min_split,
-            input$cp,
-            round(r$accuracy, 4)
+            as.character(length(unique(analysis_df[[input$response]]))),
+            as.character(length(r$predictors)),
+            as.character(r$n),
+            as.character(as.integer(input$max_depth)),
+            as.character(as.integer(input$min_split)),
+            as.character(input$cp),
+            as.character(round(r$accuracy, 4))
           ),
           check.names = FALSE
         )

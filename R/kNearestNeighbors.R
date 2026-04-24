@@ -53,6 +53,14 @@ KNNSidebarUI <- function(id) {
   
   tagList(
     useShinyjs(),
+    
+    div(
+      style = "font-size: 14px; color: #6c757d; margin-top: 8px; margin-bottom: 12px; font-style: italic;",
+      tags$strong(tags$em("Note: ")),
+      "CougarStats does not store, log, or share any data you upload. All uploaded files exist only for the duration of your session and are permanently deleted when the session ends."
+    ),
+    
+    
     radioButtons(
       ns("task"),
       strong("Task"),
@@ -77,20 +85,12 @@ KNNSidebarUI <- function(id) {
     
     checkboxInput(ns("standardize"), "Standardize predictors", value = TRUE),
     
-    tags$small(
-      style = "display: block; margin-top: 6px; color: #6c757d;",
-      "Note: CougarStats does not store, log, or share any data you upload. ",
-      "All uploaded files exist only for the duration of your session and are ",
-      "permanently deleted when the session ends."
-    ),
-    
-    
     # Response + predictors
     div(
       id = ns("responseWrapper"),
       pickerInput(
         ns("response"),
-        strong(htmltools::HTML("Response Variable (<em>y</em>)")),
+        strong(htmltools::HTML("Response Variable (Class)")),
         choices = NULL,
         multiple = FALSE,
         options = list(`live-search` = TRUE, title = "Nothing selected")

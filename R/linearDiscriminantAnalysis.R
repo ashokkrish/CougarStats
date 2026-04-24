@@ -7,6 +7,13 @@ LDASidebarUI <- function(id) {
     useShinyjs(),
     
     div(
+      style = "font-size: 14px; color: #6c757d; margin-top: 8px; margin-bottom: 12px; font-style: italic;",
+      tags$strong(tags$em("Note: ")),
+      "CougarStats does not store, log, or share any data you upload. All uploaded files exist only for the duration of your session and are permanently deleted when the session ends."
+    ),
+    
+    
+    div(
       id = ns("responseWrapper"),
       pickerInput(
         ns("response"),
@@ -22,7 +29,7 @@ LDASidebarUI <- function(id) {
       id = ns("predictorsWrapper"),
       pickerInput(
         ns("predictors"),
-        strong("Explanatory Variables"),
+        strong(HTML("Explanatory Variables (<em>x</em><sub>1</sub>, <em>x</em><sub>2</sub>, ..., <em>x</em><sub>k</sub>)")),
         choices = NULL,
         multiple = TRUE,
         options = list(`actions-box` = TRUE, `live-search` = TRUE, title = "Nothing selected")
@@ -34,11 +41,6 @@ LDASidebarUI <- function(id) {
       ns("useCV"),
       "Use Leave-One-Out Cross-Validation",
       value = FALSE
-    ),
-    
-    div(
-      style = "font-size: 12px; color: #6c757d; margin-top: 8px; margin-bottom: 20px;",
-      "Note: CougarStats does not store, log, or share any data you upload. All uploaded files exist only for the duration of your session and are permanently deleted when the session ends."
     ),
     
     actionButton(ns("calculate"), "Calculate", class = "act-btn"),
