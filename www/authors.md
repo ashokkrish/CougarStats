@@ -11,6 +11,8 @@
 ## Acknowledgements
 | Funding Agency / Coursework | Recipient | Date(s) |
 |--------|--------|--------|
+| Alberta Innovates Summer Research Studentships | Murad Ahmed | May 2026 through August 2026 |
+| Faculty of Science and Technology (FST) Student Research Award | Kai Agoto | May 2026 through August 2026 |
 | MATH 4199: Directed Readings | Maryam Abou El Nasr | January through April 2026 |
 | Alberta Innovates Summer Research Studentships | Darren Law Yan Lun | May 2025 through August 2025 |
 | Faculty of Science and Technology (FST) Student Research Award | Jacie Bennett | May 2025 through August 2025 |
