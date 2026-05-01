@@ -25,6 +25,9 @@ RUN R -e \
                     'car',              \
                     'caret',            \
                     'colourpicker',     \
+                    'class',            \
+                    'rpart',            \
+                    'rpart.plot',       \
                     'DescTools',        \
                     'dplyr',            \
                     'DT',               \
