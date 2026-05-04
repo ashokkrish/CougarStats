@@ -52,7 +52,8 @@ BODY <-
                           tabPanel("Statistical Inference",
                                    statInfrUI(id = "si")),
                           tabPanel("Regression and Correlation",
-                                   regressionAndCorrelationUI(id = "rc")))),
+                                   regressionAndCorrelationUI(id = "rc")),
+                          tabPanel("Machine Learning", machineLearningUI(id = "ml")))),
       tabPanel("Authors", authorsUI())
     )
   )
