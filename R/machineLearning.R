@@ -23,6 +23,7 @@ machineLearningUI <- function(id) {
   )
 }
 
+
 machineLearningServer <- function(id) {
   moduleServer(id, function(input, output, session) {
     
@@ -40,42 +41,43 @@ machineLearningServer <- function(id) {
     observeEvent(input$method, {
       if (input$method == "PCA") {
         pca_instance_counter(pca_instance_counter() + 1)
-        output$mlSidebarUI  <- renderUI({ PCASidebarUI(session$ns(current_pca_module_id())) })
-        output$mlMainPanelUI <- renderUI({ PCAMainPanelUI(session$ns(current_pca_module_id())) })
+        output$mlSidebarUI  <- renderUI({ PCASidebarUI(current_pca_module_id())) })
+        output$mlMainPanelUI <- renderUI({ PCAMainPanelUI(current_pca_module_id())) })
       } else if (input$method == "KNN") {
         knn_instance_counter(knn_instance_counter() + 1)
-        output$mlSidebarUI  <- renderUI({ KNNSidebarUI(session$ns(current_knn_module_id())) })
-        output$mlMainPanelUI <- renderUI({ KNNMainPanelUI(session$ns(current_knn_module_id())) })
+        output$mlSidebarUI  <- renderUI({ KNNSidebarUI(current_knn_module_id())) })
+        output$mlMainPanelUI <- renderUI({ KNNMainPanelUI(current_knn_module_id())) })
       } else if (input$method == "LDA") {
         lda_instance_counter(lda_instance_counter() + 1)
-        output$mlSidebarUI  <- renderUI({ LDASidebarUI(session$ns(current_lda_module_id())) })
-        output$mlMainPanelUI <- renderUI({ LDAMainPanelUI(session$ns(current_lda_module_id())) })
+        output$mlSidebarUI  <- renderUI({ LDASidebarUI(current_lda_module_id())) })
+        output$mlMainPanelUI <- renderUI({ LDAMainPanelUI(current_lda_module_id())) })
       } else if (input$method == "CART") {
         cart_instance_counter(cart_instance_counter() + 1)
-        output$mlSidebarUI  <- renderUI({ CARTSidebarUI(session$ns(current_cart_module_id())) })
-        output$mlMainPanelUI <- renderUI({ CARTMainPanelUI(session$ns(current_cart_module_id())) })
+        output$mlSidebarUI  <- renderUI({ CARTSidebarUI(current_cart_module_id())) })
+        output$mlMainPanelUI <- renderUI({ CARTMainPanelUI(current_cart_module_id())) })
       }
     }, ignoreNULL = FALSE, ignoreInit = FALSE)
     
-    observeEvent(current_pca_module_id(), 
-                 { req(input$method == "PCA");  
-                   PCAServer(current_pca_module_id()) }, 
-                 ignoreNULL = TRUE)
+    observeEvent(current_pca_module_id(), {
+      req(input$method == "PCA")
+      PCAServer(current_pca_module_id())
+    }, ignoreNULL = TRUE)
     
-    observeEvent(current_knn_module_id(), 
-                 { req(input$method == "KNN"); 
-                   KNNServer(current_knn_module_id()) }, 
-                 ignoreNULL = TRUE)
+    observeEvent(current_knn_module_id(), {
+      req(input$method == "KNN")
+      KNNServer(current_knn_module_id())
+    }, ignoreNULL = TRUE)
     
-    observeEvent(current_lda_module_id(), 
-                 { req(input$method == "LDA"); 
-                   LDAServer(current_lda_module_id()) }, 
-                 ignoreNULL = TRUE)
+    observeEvent(current_lda_module_id(), {
+      req(input$method == "LDA")
+      LDAServer(current_lda_module_id())
+    }, ignoreNULL = TRUE)
     
-    observeEvent(current_cart_module_id(),
-                 { req(input$method == "CART"); 
-                   CARTServer(current_cart_module_id()) }, 
-                 ignoreNULL = TRUE)
+    observeEvent(current_cart_module_id(), {
+      req(input$method == "CART")
+      CARTServer(current_cart_module_id())
+    }, ignoreNULL = TRUE)
     
   })
 }
+
