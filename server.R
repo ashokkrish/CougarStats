@@ -6,4 +6,5 @@ server <- function(session, input, output) {
   sampSizeEstServer(id = "sse")
   statInfrServer(id = "si")
   regressionAndCorrelationServer(id = "rc")
+  machineLearningServer(id = "ml")
 }

@@ -108,6 +108,8 @@ source("R/kNearestNeighbors.R")
 source("R/linearDiscriminantAnalysis.R")
 source("R/principalComponentAnalysis.R")
 
+source("R/machineLearning.R")
+
 options(scipen = 999) # options(scipen = 0)
 ## options(shiny.reactlog = TRUE)
 
