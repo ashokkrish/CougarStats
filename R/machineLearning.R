@@ -23,7 +23,6 @@ machineLearningUI <- function(id) {
   )
 }
 
-
 machineLearningServer <- function(id) {
   moduleServer(id, function(input, output, session) {
     
@@ -41,20 +40,44 @@ machineLearningServer <- function(id) {
     observeEvent(input$method, {
       if (input$method == "PCA") {
         pca_instance_counter(pca_instance_counter() + 1)
-        output$mlSidebarUI  <- renderUI({ PCASidebarUI(current_pca_module_id())) })
-        output$mlMainPanelUI <- renderUI({ PCAMainPanelUI(current_pca_module_id())) })
+        output$mlSidebarUI  <- renderUI({
+          req(current_pca_module_id())
+          PCASidebarUI(session$ns(current_pca_module_id()))
+        })
+        output$mlMainPanelUI <- renderUI({
+          req(current_pca_module_id())
+          PCAMainPanelUI(session$ns(current_pca_module_id()))
+        })
       } else if (input$method == "KNN") {
         knn_instance_counter(knn_instance_counter() + 1)
-        output$mlSidebarUI  <- renderUI({ KNNSidebarUI(current_knn_module_id())) })
-        output$mlMainPanelUI <- renderUI({ KNNMainPanelUI(current_knn_module_id())) })
+        output$mlSidebarUI  <- renderUI({
+          req(current_knn_module_id())
+          KNNSidebarUI(session$ns(current_knn_module_id()))
+        })
+        output$mlMainPanelUI <- renderUI({
+          req(current_knn_module_id())
+          KNNMainPanelUI(session$ns(current_knn_module_id()))
+        })
       } else if (input$method == "LDA") {
         lda_instance_counter(lda_instance_counter() + 1)
-        output$mlSidebarUI  <- renderUI({ LDASidebarUI(current_lda_module_id())) })
-        output$mlMainPanelUI <- renderUI({ LDAMainPanelUI(current_lda_module_id())) })
+        output$mlSidebarUI  <- renderUI({
+          req(current_lda_module_id())
+          LDASidebarUI(session$ns(current_lda_module_id()))
+        })
+        output$mlMainPanelUI <- renderUI({
+          req(current_lda_module_id())
+          LDAMainPanelUI(session$ns(current_lda_module_id()))
+        })
       } else if (input$method == "CART") {
         cart_instance_counter(cart_instance_counter() + 1)
-        output$mlSidebarUI  <- renderUI({ CARTSidebarUI(current_cart_module_id())) })
-        output$mlMainPanelUI <- renderUI({ CARTMainPanelUI(current_cart_module_id())) })
+        output$mlSidebarUI  <- renderUI({
+          req(current_cart_module_id())
+          CARTSidebarUI(session$ns(current_cart_module_id()))
+        })
+        output$mlMainPanelUI <- renderUI({
+          req(current_cart_module_id())
+          CARTMainPanelUI(session$ns(current_cart_module_id()))
+        })
       }
     }, ignoreNULL = FALSE, ignoreInit = FALSE)
     
@@ -80,4 +103,3 @@ machineLearningServer <- function(id) {
     
   })
 }
-
