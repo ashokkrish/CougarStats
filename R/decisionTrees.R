@@ -2,48 +2,30 @@
 
 CARTSidebarUI <- function(id) {
   ns <- NS(id)
-  
+
   tagList(
     useShinyjs(),
-    
-    div(
-      style = "font-size: 14px; color: #6c757d; margin-top: 8px; margin-bottom: 12px; font-style: italic;",
-      tags$strong(tags$em("Note: ")),
-      "CougarStats does not store, log, or share any data you upload. All uploaded files exist only for the duration of your session and are permanently deleted when the session ends."
+
+    numericInput(
+      ns("max_depth"),
+      strong("Maximum Tree Depth"),
+      value = 10,
+      min = 1
     ),
-    
-    div(
-      id = ns("maxDepthWrapper"),
-      numericInput(
-        ns("max_depth"),
-        strong("Maximum Tree Depth"),
-        value = 10,
-        min = 1
-      ),
-      uiOutput(ns("maxDepthError"))
+
+    numericInput(
+      ns("min_split"),
+      strong("Minimum Split Size"),
+      value = 20,
+      min = 1
     ),
-    
-    div(
-      id = ns("minSplitWrapper"),
-      numericInput(
-        ns("min_split"),
-        strong("Minimum Split Size"),
-        value = 20,
-        min = 1
-      ),
-      uiOutput(ns("minSplitError"))
-    ),
-    
-    div(
-      id = ns("cpWrapper"),
-      numericInput(
-        ns("cp"),
-        strong("Complexity Parameter"),
-        value = 0.01,
-        min = 0.01,
-        step = 0.01
-      ),
-      uiOutput(ns("cpError"))
+
+    numericInput(
+      ns("cp"),
+      strong("Complexity Parameter"),
+      value = 0.01,
+      min = 0.01,
+      step = 0.01
     ),
     
     div(
@@ -75,6 +57,7 @@ CARTSidebarUI <- function(id) {
       uiOutput(ns("predictorsError"))
     ),
     
+    uiOutput(ns("fileImportUserMessage")),
     actionButton(ns("calculate"), "Calculate", class = "act-btn"),
     actionButton(ns("reset"), "Reset Values", class = "act-btn")
   )
@@ -87,17 +70,6 @@ CARTMainPanelUI <- function(id) {
     useShinyjs(),
     navbarPage(
       title = NULL,
-      
-      tabPanel(
-        title = "Data Import",
-        value = "data_import_tab",
-        div(id = ns("importContainer")),
-        uiOutput(ns("fileImportUserMessage")),
-        import_file_ui(
-          id = ns("dataImport"),
-          title = ""
-        )
-      ),
       
       tabPanel(
         title = "Results",
@@ -118,21 +90,15 @@ CARTMainPanelUI <- function(id) {
       ),
       
       id = ns("cartMainPanel"),
+      selected = "uploaded_data_tab",
       theme = bs_theme(version = 4)
     )
   )
 }
 
-CARTServer <- function(id) {
+CARTServer <- function(id, data) {
   moduleServer(id, function(input, output, session) {
-    
-    uploadedTibble <- import_file_server(
-      id = "dataImport",
-      trigger_return = "change",
-      btn_show_data = FALSE,
-      return_class = "tbl_df"
-    )
-    
+
     results_ready <- reactiveVal(FALSE)
     plots_ready <- reactiveVal(FALSE)
     
@@ -146,19 +112,24 @@ CARTServer <- function(id) {
     noFileCalculate <- reactiveVal(FALSE)
     responseError <- reactiveVal(FALSE)
     predictorsError <- reactiveVal(FALSE)
-    maxDepthError <- reactiveVal(NULL)
-    minSplitError <- reactiveVal(NULL)
-    cpError <- reactiveVal(NULL)
+
+    cart_iv <- shinyvalidate::InputValidator$new()
+    cart_iv$add_rule("max_depth", shinyvalidate::sv_required())
+    cart_iv$add_rule("max_depth", shinyvalidate::sv_gte(1, message = "Must be at least 1."))
+    cart_iv$add_rule("min_split", shinyvalidate::sv_required())
+    cart_iv$add_rule("min_split", shinyvalidate::sv_gte(1, message = "Must be at least 1."))
+    cart_iv$add_rule("cp", shinyvalidate::sv_required())
+    cart_iv$add_rule("cp", shinyvalidate::sv_gt(0, message = "Must be greater than 0."))
+    cart_iv$enable()
     
     session$onFlushed(function() {
       hideTab(inputId = "cartMainPanel", target = "results_tab")
       hideTab(inputId = "cartMainPanel", target = "plots_tab")
-      hideTab(inputId = "cartMainPanel", target = "uploaded_data_tab")
     }, once = TRUE)
     
     # Uploaded Data tab
     output$uploadedDataContainer <- renderUI({
-      if (is.null(uploadedTibble$data())) {
+      if (is.null(data())) {
         tagList(
           helpText("No data yet. Upload a dataset in the Data Import tab to view it here.")
         )
@@ -168,12 +139,12 @@ CARTServer <- function(id) {
     })
     
     output$cartUploadTable <- renderDT({
-      req(uploadedTibble$data())
+      req(data())
       
       datatable(
-        uploadedTibble$data(),
+        data(),
         options = list(
-          pageLength = -1,
+          pageLength = 25,
           lengthMenu = list(c(25, 50, 100, -1), c("25", "50", "100", "all")),
           scrollX = TRUE
         )
@@ -181,11 +152,11 @@ CARTServer <- function(id) {
     })
     
     # Populate response/predictor choices after upload
-    observeEvent(uploadedTibble$data(), {
+    observeEvent(data(), {
       noFileCalculate(FALSE)
-      req(uploadedTibble$data())
+      req(data())
       
-      df <- uploadedTibble$data()
+      df <- data()
       cols <- colnames(df)
       
       updatePickerInput(session, "response", choices = cols, selected = character(0))
@@ -200,9 +171,9 @@ CARTServer <- function(id) {
     
     # Keep response out of predictors
     observeEvent(input$response, {
-      req(uploadedTibble$data())
+      req(data())
       
-      df <- uploadedTibble$data()
+      df <- data()
       cols <- colnames(df)
       
       available_predictors <- setdiff(cols, input$response)
@@ -219,7 +190,7 @@ CARTServer <- function(id) {
     # Clear outputs if settings change after calculate
     observeEvent(
       list(
-        uploadedTibble$data(),
+        data(),
         input$response,
         input$predictors,
         input$max_depth,
@@ -239,8 +210,7 @@ CARTServer <- function(id) {
         
         hideTab(inputId = "cartMainPanel", target = "results_tab")
         hideTab(inputId = "cartMainPanel", target = "plots_tab")
-        hideTab(inputId = "cartMainPanel", target = "uploaded_data_tab")
-        updateNavbarPage(session, "cartMainPanel", selected = "data_import_tab")
+        updateNavbarPage(session, "cartMainPanel", selected = "uploaded_data_tab")
       },
       ignoreInit = TRUE
     )
@@ -330,42 +300,6 @@ CARTServer <- function(id) {
       }
     })
     
-    output$maxDepthError <- renderUI({
-      msg <- maxDepthError()
-      if (!is.null(msg)) {
-        tags$div(
-          class = "text-danger",
-          style = "font-size: 12px; margin-top: -10px; margin-bottom: 10px;",
-          icon("exclamation-circle"),
-          msg
-        )
-      }
-    })
-    
-    output$minSplitError <- renderUI({
-      msg <- minSplitError()
-      if (!is.null(msg)) {
-        tags$div(
-          class = "text-danger",
-          style = "font-size: 12px; margin-top: -10px; margin-bottom: 10px;",
-          icon("exclamation-circle"),
-          msg
-        )
-      }
-    })
-    
-    output$cpError <- renderUI({
-      msg <- cpError()
-      if (!is.null(msg)) {
-        tags$div(
-          class = "text-danger",
-          style = "font-size: 12px; margin-top: -10px; margin-bottom: 10px;",
-          icon("exclamation-circle"),
-          msg
-        )
-      }
-    })
-    
     observeEvent(input$response, {
       if (isTruthy(input$response)) {
         responseError(FALSE)
@@ -380,32 +314,8 @@ CARTServer <- function(id) {
       }
     })
     
-    observeEvent(input$max_depth, {
-      valid <- !is.null(input$max_depth) && !is.na(input$max_depth) && input$max_depth >= 1
-      if (valid) {
-        maxDepthError(NULL)
-        shinyjs::removeClass(id = "maxDepthWrapper", class = "has-error")
-      }
-    })
-    
-    observeEvent(input$min_split, {
-      valid <- !is.null(input$min_split) && !is.na(input$min_split) && input$min_split >= 1
-      if (valid) {
-        minSplitError(NULL)
-        shinyjs::removeClass(id = "minSplitWrapper", class = "has-error")
-      }
-    })
-    
-    observeEvent(input$cp, {
-      valid <- !is.null(input$cp) && !is.na(input$cp) && input$cp > 0
-      if (valid) {
-        cpError(NULL)
-        shinyjs::removeClass(id = "cpWrapper", class = "has-error")
-      }
-    })
-    
     observeEvent(input$calculate, {
-      if (!isTruthy(uploadedTibble$data())) {
+      if (!isTruthy(data())) {
         noFileCalculate(TRUE)
         return()
       } else {
@@ -429,62 +339,15 @@ CARTServer <- function(id) {
         shinyjs::removeClass(id = "predictorsWrapper", class = "has-error")
       }
       
-      max_depth_valid <- !is.null(input$max_depth) && !is.na(input$max_depth) && input$max_depth >= 1
-      min_split_valid <- !is.null(input$min_split) && !is.na(input$min_split) && input$min_split >= 1
-      cp_valid <- !is.null(input$cp) && !is.na(input$cp) && input$cp > 0
-      
-      if (is.null(input$max_depth) || is.na(input$max_depth)) {
-        maxDepthError("Please enter a maximum tree depth.")
-        shinyjs::addClass(id = "maxDepthWrapper", class = "has-error")
-      } else if (input$max_depth == 0) {
-        maxDepthError("Maximum Tree Depth must be at least 1.")
-        shinyjs::addClass(id = "maxDepthWrapper", class = "has-error")
-      } else if (input$max_depth < 0) {
-        maxDepthError(paste("Maximum Tree Depth cannot be negative. You entered", input$max_depth, "."))
-        shinyjs::addClass(id = "maxDepthWrapper", class = "has-error")
-      } else {
-        maxDepthError(NULL)
-        shinyjs::removeClass(id = "maxDepthWrapper", class = "has-error")
-      }
-      
-      if (is.null(input$min_split) || is.na(input$min_split)) {
-        minSplitError("Please enter a minimum split size.")
-        shinyjs::addClass(id = "minSplitWrapper", class = "has-error")
-      } else if (input$min_split == 0) {
-        minSplitError("Minimum Split Size must be at least 1.")
-        shinyjs::addClass(id = "minSplitWrapper", class = "has-error")
-      } else if (input$min_split < 0) {
-        minSplitError(paste("Minimum Split Size cannot be negative. You entered", input$min_split, "."))
-        shinyjs::addClass(id = "minSplitWrapper", class = "has-error")
-      } else {
-        minSplitError(NULL)
-        shinyjs::removeClass(id = "minSplitWrapper", class = "has-error")
-      }
-      
-      if (is.null(input$cp) || is.na(input$cp)) {
-        cpError("Please enter a complexity parameter.")
-        shinyjs::addClass(id = "cpWrapper", class = "has-error")
-      } else if (input$cp == 0) {
-        cpError("Complexity Parameter must be greater than 0.")
-        shinyjs::addClass(id = "cpWrapper", class = "has-error")
-      } else if (input$cp < 0) {
-        cpError(paste("Complexity Parameter cannot be negative. You entered", input$cp, "."))
-        shinyjs::addClass(id = "cpWrapper", class = "has-error")
-      } else {
-        cpError(NULL)
-        shinyjs::removeClass(id = "cpWrapper", class = "has-error")
-      }
-      
+      req(cart_iv$is_valid())
+
       if (!isTruthy(input$response) ||
           !isTruthy(input$predictors) ||
-          length(input$predictors) < 1 ||
-          !max_depth_valid ||
-          !min_split_valid ||
-          !cp_valid) {
+          length(input$predictors) < 1) {
         return()
       }
       
-      df <- uploadedTibble$data()
+      df <- data()
       
       analysis_df <- df[, c(input$predictors, input$response), drop = FALSE]
       analysis_df <- na.omit(analysis_df)
@@ -718,7 +581,6 @@ CARTServer <- function(id) {
       
       showTab(inputId = "cartMainPanel", target = "results_tab")
       showTab(inputId = "cartMainPanel", target = "plots_tab")
-      showTab(inputId = "cartMainPanel", target = "uploaded_data_tab")
       
       shinyjs::delay(100, {
         updateNavbarPage(session, "cartMainPanel", selected = "results_tab")
@@ -729,7 +591,6 @@ CARTServer <- function(id) {
     observeEvent(input$reset, {
       hideTab(inputId = "cartMainPanel", target = "results_tab")
       hideTab(inputId = "cartMainPanel", target = "plots_tab")
-      hideTab(inputId = "cartMainPanel", target = "uploaded_data_tab")
       
       results_ready(FALSE)
       plots_ready(FALSE)
@@ -739,16 +600,10 @@ CARTServer <- function(id) {
       noFileCalculate(FALSE)
       responseError(FALSE)
       predictorsError(FALSE)
-      maxDepthError(NULL)
-      minSplitError(NULL)
-      cpError(NULL)
       cart_message(NULL)
-      
+
       shinyjs::removeClass(id = "responseWrapper", class = "has-error")
       shinyjs::removeClass(id = "predictorsWrapper", class = "has-error")
-      shinyjs::removeClass(id = "maxDepthWrapper", class = "has-error")
-      shinyjs::removeClass(id = "minSplitWrapper", class = "has-error")
-      shinyjs::removeClass(id = "cpWrapper", class = "has-error")
       
       updateNumericInput(session, "max_depth", value = 10)
       updateNumericInput(session, "min_split", value = 20)
@@ -757,8 +612,7 @@ CARTServer <- function(id) {
       updatePickerInput(session, "response", selected = character(0))
       updatePickerInput(session, "predictors", selected = character(0))
       
-      updateNavbarPage(session, "cartMainPanel", selected = "data_import_tab")
-      showTab(inputId = "cartMainPanel", target = "data_import_tab")
+      updateNavbarPage(session, "cartMainPanel", selected = "uploaded_data_tab")
     })
   })
 }

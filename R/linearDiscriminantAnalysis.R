@@ -2,17 +2,10 @@
 
 LDASidebarUI <- function(id) {
   ns <- NS(id)
-  
+
   tagList(
     useShinyjs(),
-    
-    div(
-      style = "font-size: 14px; color: #6c757d; margin-top: 8px; margin-bottom: 12px; font-style: italic;",
-      tags$strong(tags$em("Note: ")),
-      "CougarStats does not store, log, or share any data you upload. All uploaded files exist only for the duration of your session and are permanently deleted when the session ends."
-    ),
-    
-    
+
     div(
       id = ns("responseWrapper"),
       pickerInput(
@@ -43,6 +36,7 @@ LDASidebarUI <- function(id) {
       value = FALSE
     ),
     
+    uiOutput(ns("fileImportUserMessage")),
     actionButton(ns("calculate"), "Calculate", class = "act-btn"),
     actionButton(ns("reset"), "Reset Values", class = "act-btn")
   )
@@ -55,17 +49,6 @@ LDAMainPanelUI <- function(id) {
     useShinyjs(),
     navbarPage(
       title = NULL,
-
-      tabPanel(
-        title = "Data Import",
-        value = "data_import_tab",
-        div(id = ns("importContainer")),
-        uiOutput(ns("fileImportUserMessage")),
-        import_file_ui(
-          id = ns("dataImport"),
-          title = ""
-        )
-      ),
 
       tabPanel(
         title = "Results",
@@ -86,20 +69,14 @@ LDAMainPanelUI <- function(id) {
       ),
 
       id = ns("ldaMainPanel"),
+      selected = "uploaded_data_tab",
       theme = bs_theme(version = 4)
     )
   )
 }
 
-LDAServer <- function(id) {
+LDAServer <- function(id, data) {
   moduleServer(id, function(input, output, session) {
-
-    uploadedTibble <- import_file_server(
-      id = "dataImport",
-      trigger_return = "change",
-      btn_show_data = FALSE,
-      return_class = "tbl_df"
-    )
 
     prepare_lda_response <- function(x) {
       x_no_na <- x[!is.na(x)]
@@ -142,13 +119,12 @@ LDAServer <- function(id) {
       shinyjs::delay(0, {
         hideTab(inputId = "ldaMainPanel", target = "results_tab")
         hideTab(inputId = "ldaMainPanel", target = "plots_tab")
-        hideTab(inputId = "ldaMainPanel", target = "uploaded_data_tab")
       })
     }, once = TRUE)
     
     # Uploaded Data tab
     output$uploadedDataContainer <- renderUI({
-      if (is.null(uploadedTibble$data())) {
+      if (is.null(data())) {
         tagList(
           helpText("No data yet. Upload a dataset in the Data Import tab to view it here.")
         )
@@ -158,12 +134,12 @@ LDAServer <- function(id) {
     })
 
     output$ldaUploadTable <- renderDT({
-      req(uploadedTibble$data())
+      req(data())
       
       datatable(
-        uploadedTibble$data(),
+        data(),
         options = list(
-          pageLength = -1,
+          pageLength = 25,
           lengthMenu = list(c(25, 50, 100, -1), c("25", "50", "100", "all")),
           scrollX = TRUE
         )
@@ -171,11 +147,11 @@ LDAServer <- function(id) {
     })
 
     # Populate response/predictor choices
-    observeEvent(uploadedTibble$data(), {
+    observeEvent(data(), {
       noFileCalculate(FALSE)
-      req(uploadedTibble$data())
+      req(data())
 
-      df <- uploadedTibble$data()
+      df <- data()
       cols <- colnames(df)
       numeric_cols <- cols[sapply(df, is.numeric)]
 
@@ -190,9 +166,9 @@ LDAServer <- function(id) {
     })
     
     observeEvent(input$response, {
-      req(uploadedTibble$data())
+      req(data())
       
-      df <- uploadedTibble$data()
+      df <- data()
       cols <- colnames(df)
       numeric_cols <- cols[sapply(df, is.numeric)]
       
@@ -210,7 +186,7 @@ LDAServer <- function(id) {
     # Clear outputs if settings change after calculate
     observeEvent(
       list(
-        uploadedTibble$data(),
+        data(),
         input$response,
         input$predictors,
         input$useCV
@@ -228,7 +204,6 @@ LDAServer <- function(id) {
         
         hideTab(inputId = "ldaMainPanel", target = "results_tab")
         hideTab(inputId = "ldaMainPanel", target = "plots_tab")
-        hideTab(inputId = "ldaMainPanel", target = "uploaded_data_tab")
       },
       ignoreInit = TRUE
     )
@@ -331,7 +306,7 @@ LDAServer <- function(id) {
     
     # Main calculation
     observeEvent(input$calculate, {
-    if (!isTruthy(uploadedTibble$data())) {
+    if (!isTruthy(data())) {
       noFileCalculate(TRUE)
       return()
     } else {
@@ -358,7 +333,7 @@ LDAServer <- function(id) {
       return()
     }
     
-    df <- uploadedTibble$data()
+    df <- data()
 
       analysis_df <- df[, c(input$predictors, input$response), drop = FALSE]
       analysis_df <- na.omit(analysis_df)
@@ -624,7 +599,6 @@ LDAServer <- function(id) {
 
       showTab(inputId = "ldaMainPanel", target = "results_tab")
       showTab(inputId = "ldaMainPanel", target = "plots_tab")
-      showTab(inputId = "ldaMainPanel", target = "uploaded_data_tab")
       
       updateNavbarPage(session, "ldaMainPanel", selected = "results_tab")
 
@@ -634,7 +608,6 @@ LDAServer <- function(id) {
     observeEvent(input$reset, {
       hideTab(inputId = "ldaMainPanel", target = "results_tab")
       hideTab(inputId = "ldaMainPanel", target = "plots_tab")
-      hideTab(inputId = "ldaMainPanel", target = "uploaded_data_tab")
       
       results_ready(FALSE)
       plots_ready(FALSE)
@@ -651,7 +624,7 @@ LDAServer <- function(id) {
 
       updatePickerInput(session, "response", selected = character(0))
       updatePickerInput(session, "predictors", selected = character(0))
-      updateNavbarPage(session, "ldaMainPanel", selected = "data_import_tab")
+      updateNavbarPage(session, "ldaMainPanel", selected = "uploaded_data_tab")
     })
   })
 }

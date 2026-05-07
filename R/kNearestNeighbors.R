@@ -50,17 +50,10 @@ knn_classification_report <- function(actual, predicted) {
 
 KNNSidebarUI <- function(id) {
   ns <- NS(id)
-  
+
   tagList(
     useShinyjs(),
-    
-    div(
-      style = "font-size: 14px; color: #6c757d; margin-top: 8px; margin-bottom: 12px; font-style: italic;",
-      tags$strong(tags$em("Note: ")),
-      "CougarStats does not store, log, or share any data you upload. All uploaded files exist only for the duration of your session and are permanently deleted when the session ends."
-    ),
-    
-    
+
     radioButtons(
       ns("task"),
       strong("Task"),
@@ -110,6 +103,7 @@ KNNSidebarUI <- function(id) {
       uiOutput(ns("predictorsError"))
     ),
     
+    uiOutput(ns("fileImportUserMessage")),
     actionButton(ns("calculate"), "Calculate", class = "act-btn"),
     actionButton(ns("reset"), "Reset Values", class = "act-btn")
   )
@@ -122,18 +116,7 @@ KNNMainPanelUI <- function(id) {
     useShinyjs(),
     navbarPage(
       title = NULL,
-      
-      tabPanel(
-        title = "Data Import",
-        value = "data_import_tab",
-        div(id = ns("importContainer")),
-        uiOutput(ns("fileImportUserMessage")),
-        import_file_ui(
-          id = ns("dataImport"),
-          title = ""
-        )
-      ),
-      
+
       tabPanel(
         title = "Results",
         value = "results_tab",
@@ -153,24 +136,18 @@ KNNMainPanelUI <- function(id) {
       ),
       
       id = ns("knnMainPanel"),
+      selected = "uploaded_data_tab",
       theme = bs_theme(version = 4)
     )
   )
 }
 
-KNNServer <- function(id) {
+KNNServer <- function(id, data) {
   moduleServer(id, function(input, output, session) {
-    
-    uploadedTibble <- import_file_server(
-      id = "dataImport",
-      trigger_return = "change",
-      btn_show_data = FALSE,
-      return_class = "tbl_df"
-    )
-    
+
     # ---- Uploaded Data container (message until dataset exists) ----
     output$uploadedDataContainer <- renderUI({
-      if (is.null(uploadedTibble$data())) {
+      if (is.null(data())) {
         tagList(
           helpText("No data yet. Upload a dataset in the Data Import tab to view it here.")
         )
@@ -181,8 +158,8 @@ KNNServer <- function(id) {
     
     # ---- Uploaded Data Table ----
     output$knnUploadTable <- DT::renderDT({
-      req(uploadedTibble$data())
-      df <- uploadedTibble$data()
+      req(data())
+      df <- data()
       
       DT::datatable(
         df,
@@ -197,11 +174,11 @@ KNNServer <- function(id) {
     # ---- Plots Tab ----
     plot_data <- reactive({
       req(isTRUE(plots_ready()))
-      req(uploadedTibble$data())
+      req(data())
       s <- plot_settings()
       req(s)
       
-      df <- uploadedTibble$data()
+      df <- data()
       
       x <- as.data.frame(df[, s$predictors, drop = FALSE])
       y <- as.factor(df[[s$response]])
@@ -319,7 +296,6 @@ KNNServer <- function(id) {
     session$onFlushed(function() {
       hideTab(inputId = "knnMainPanel", target = "results_tab")
       hideTab(inputId = "knnMainPanel", target = "plots_tab")
-      hideTab(inputId = "knnMainPanel", target = "uploaded_data_tab")
     }, once = TRUE)
     
     responseError <- reactiveVal(FALSE)
@@ -341,7 +317,7 @@ KNNServer <- function(id) {
     # ---- Clear old outputs when any input changes after Calculate ----
     observeEvent(
       list(
-        uploadedTibble$data(),
+        data(),
         input$split,
         input$k,
         input$standardize,
@@ -361,8 +337,7 @@ KNNServer <- function(id) {
         
         hideTab(inputId = "knnMainPanel", target = "results_tab")
         hideTab(inputId = "knnMainPanel", target = "plots_tab")
-        hideTab(inputId = "knnMainPanel", target = "uploaded_data_tab")
-        updateNavbarPage(session, "knnMainPanel", selected = "data_import_tab")
+        updateNavbarPage(session, "knnMainPanel", selected = "uploaded_data_tab")
       },
       ignoreInit = TRUE
     )
@@ -440,30 +415,29 @@ KNNServer <- function(id) {
     })
     
     
-    observeEvent(uploadedTibble$data(), {
-      req(uploadedTibble$data())  #Wait until data actually exists
-      
+    observeEvent(data(), {
+      req(data())
+
       fileImportError(FALSE)
-      
-      df0 <- uploadedTibble$data()
-      cols <- colnames(df0) #Store the dataset and get column names
-      
-      numeric_cols <- cols[sapply(df0, is.numeric)] #look for numeric cols only
-      
-      #Populate the dropdowns
+
+      df0 <- data()
+      cols <- colnames(df0)
+      numeric_cols <- cols[sapply(df0, is.numeric)]
+
       updatePickerInput(session, "response", choices = cols, selected = character(0))
       updatePickerInput(session, "predictors", choices = numeric_cols, selected = character(0))
-      
-      #Auto-calculate a default k based on dataset size
-      n <- nrow(df0)
-      n_train <- floor(n * (input$split / 100))
-      default_k <- max(1, round(sqrt(n_train)))
-      updateNumericInput(session, "k", value = default_k)
-    })
+
+      if (isTruthy(input$split)) {
+        n <- nrow(df0)
+        n_train <- floor(n * (input$split / 100))
+        default_k <- max(1, round(sqrt(n_train)))
+        updateNumericInput(session, "k", value = default_k)
+      }
+    }, ignoreNULL = TRUE)
     #reacts to changing from regression to classification or vice versa (x & y drop downs) OR new data
-    observeEvent(list(input$task, uploadedTibble$data()), {
-      req(uploadedTibble$data())
-      df0 <- uploadedTibble$data()
+    observeEvent(list(input$task, data()), {
+      req(data(), input$task)
+      df0 <- data()
       cols <- colnames(df0)
       numeric_cols <- cols[sapply(df0, is.numeric)]
       
@@ -476,9 +450,9 @@ KNNServer <- function(id) {
     
     #reacts to train/test split changes by recalculating a default k based on training size
     observeEvent(input$split, {
-      req(uploadedTibble$data())
+      req(data())
       
-      n <- nrow(uploadedTibble$data())
+      n <- nrow(data())
       n_train <- floor(n * (input$split / 100))
       default_k <- max(1, round(sqrt(n_train)))
       
@@ -524,15 +498,14 @@ KNNServer <- function(id) {
       
       updatePickerInput(session, "response", selected = character(0))
       updatePickerInput(session, "predictors", selected = character(0))
-      updateNavbarPage(session, "knnMainPanel", selected = "data_import_tab")
+      updateNavbarPage(session, "knnMainPanel", selected = "uploaded_data_tab")
     })
-    
-    
+
+
     observeEvent(input$calculate, {
       # validation
-      if (is.null(uploadedTibble$data()) || NROW(uploadedTibble$data()) == 0) {
+      if (is.null(data()) || NROW(data()) == 0) {
         fileImportError(TRUE)
-        updateNavbarPage(session, "knnMainPanel", selected = "data_import_tab")
         return()
       }
       
@@ -561,7 +534,7 @@ KNNServer <- function(id) {
       
       
       #split dataset for training & testing
-      df <- uploadedTibble$data()
+      df <- data()
       
       set.seed(123)
       
@@ -671,7 +644,6 @@ KNNServer <- function(id) {
         
         showTab(inputId = "knnMainPanel", target = "results_tab")
         showTab(inputId = "knnMainPanel", target = "plots_tab")
-        showTab(inputId = "knnMainPanel", target = "uploaded_data_tab")
         
         shinyjs::delay(100, {
           updateNavbarPage(session, "knnMainPanel", selected = "results_tab")

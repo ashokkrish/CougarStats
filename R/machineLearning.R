@@ -5,6 +5,11 @@ machineLearningUI <- function(id) {
   sidebarLayout(
     sidebarPanel(
       shinyjs::useShinyjs(),
+      HTML(uploadDataDisclaimer),
+      fileInput(ns("mlDataFile"),
+                tags$b("Upload Data (.csv, .tsv, .txt, .xls, .xlsx)"),
+                accept = c("text/csv", "text/comma-separated-values", "text/plain",
+                           ".csv", ".tsv", ".txt", ".xls", ".xlsx")),
       radioButtons(ns("method"),
                    tags$b("Methodology"),
                    choices = list(
@@ -25,18 +30,33 @@ machineLearningUI <- function(id) {
 
 machineLearningServer <- function(id) {
   moduleServer(id, function(input, output, session) {
-    
+
+    ml_data <- reactiveVal(NULL)
+
+    observeEvent(input$mlDataFile, {
+      req(input$mlDataFile)
+      ext <- tolower(tools::file_ext(input$mlDataFile$name))
+      df <- switch(ext,
+        csv  = read_csv(input$mlDataFile$datapath, show_col_types = FALSE),
+        tsv  = read_tsv(input$mlDataFile$datapath, show_col_types = FALSE),
+        txt  = read_tsv(input$mlDataFile$datapath, show_col_types = FALSE),
+        xls  = read_xls(input$mlDataFile$datapath),
+        xlsx = read_xlsx(input$mlDataFile$datapath)
+      )
+      ml_data(df)
+    })
+
     # Dynamic ID counters for each method
     pca_instance_counter  <- reactiveVal(0)
     knn_instance_counter  <- reactiveVal(0)
     lda_instance_counter  <- reactiveVal(0)
     cart_instance_counter <- reactiveVal(0)
-    
+
     current_pca_module_id  <- reactive({ paste0("ml_pca_",  pca_instance_counter()) })
     current_knn_module_id  <- reactive({ paste0("ml_knn_",  knn_instance_counter()) })
     current_lda_module_id  <- reactive({ paste0("ml_lda_",  lda_instance_counter()) })
     current_cart_module_id <- reactive({ paste0("ml_cart_", cart_instance_counter()) })
-    
+
     observeEvent(input$method, {
       if (input$method == "PCA") {
         pca_instance_counter(pca_instance_counter() + 1)
@@ -80,26 +100,26 @@ machineLearningServer <- function(id) {
         })
       }
     }, ignoreNULL = FALSE, ignoreInit = FALSE)
-    
+
     observeEvent(current_pca_module_id(), {
       req(input$method == "PCA")
-      PCAServer(current_pca_module_id())
+      PCAServer(current_pca_module_id(), ml_data)
     }, ignoreNULL = TRUE)
-    
+
     observeEvent(current_knn_module_id(), {
       req(input$method == "KNN")
-      KNNServer(current_knn_module_id())
+      KNNServer(current_knn_module_id(), ml_data)
     }, ignoreNULL = TRUE)
-    
+
     observeEvent(current_lda_module_id(), {
       req(input$method == "LDA")
-      LDAServer(current_lda_module_id())
+      LDAServer(current_lda_module_id(), ml_data)
     }, ignoreNULL = TRUE)
-    
+
     observeEvent(current_cart_module_id(), {
       req(input$method == "CART")
-      CARTServer(current_cart_module_id())
+      CARTServer(current_cart_module_id(), ml_data)
     }, ignoreNULL = TRUE)
-    
+
   })
 }
