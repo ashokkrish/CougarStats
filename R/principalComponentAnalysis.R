@@ -26,15 +26,24 @@ PCASidebarUI <- function(id) {
       tags$b("PCA Options")
     ),
 
-    pickerInput(
-      ns("pcaVariables"),
-      "Variables for PCA",
-      choices = NULL,
-      multiple = TRUE,
-      options = list(
-        `actions-box` = TRUE,
-        `live-search` = TRUE,
-        title = "Nothing selected"
+    div(
+      id = ns("predictorsWrapper"),
+      pickerInput(
+        ns("predictors"),
+        strong(HTML("Explanatory Variables (<em>x</em><sub>1</sub>, <em>x</em><sub>2</sub>, ..., <em>x</em><sub>k</sub>)")),
+        choices = NULL,
+        multiple = TRUE,
+        options = list(`actions-box` = TRUE, `live-search` = TRUE, title = "Nothing selected")
+      )
+    ),
+    div(
+      id = ns("responseWrapper"),
+      pickerInput(
+        ns("response"),
+        strong("Response Variable (biplot color, optional)"),
+        choices = NULL,
+        multiple = FALSE,
+        options = list(`live-search` = TRUE, title = "Nothing selected")
       )
     ),
     radioButtons(ns("transformation"),
@@ -116,7 +125,7 @@ PCAMainPanelUI <- function(id) {
 # ============== SERVER ==============
 
 
-PCAServer <- function(id, data) {
+PCAServer <- function(id, data, shared_explanatory, shared_response) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
@@ -142,20 +151,32 @@ PCAServer <- function(id, data) {
       req(df)
 
       numeric_cols <- names(dplyr::select_if(df, is.numeric))
-      updatePickerInput(session, "pcaVariables", choices = numeric_cols)
+      all_cols <- colnames(df)
+
+      pre_predictors <- intersect(shared_explanatory(), numeric_cols)
+      shared_resp    <- shared_response()
+      pre_response   <- if (isTruthy(shared_resp) && shared_resp %in% all_cols) shared_resp else character(0)
+
+      updatePickerInput(session, "predictors", choices = numeric_cols, selected = pre_predictors)
+      updatePickerInput(session, "response",   choices = all_cols,     selected = pre_response)
     }, ignoreNULL = TRUE)
     
+    observeEvent(input$predictors, { shared_explanatory(input$predictors) }, ignoreInit = TRUE)
+    observeEvent(input$response,   { shared_response(input$response)     }, ignoreInit = TRUE)
+
     # Clear results when user changes PCA options
     observeEvent(
-      list(input$pcaVariables, input$transformation, input$numFactors),
+      list(input$predictors, input$response, input$transformation, input$numFactors),
       {
         pca_results(NULL)
         analysis_data(NULL)
         original_data(NULL)
-        
+        grouping_var(NULL)
+
         hideTab(inputId = "mainPanel", target = "pca_results_tab")
         hideTab(inputId = "mainPanel", target = "plots_tab")
         hideTab(inputId = "mainPanel", target = "transformations_tab")
+        updateNavbarPage(session, "mainPanel", selected = "uploaded_data_tab")
       },
       ignoreInit = TRUE
     )
@@ -209,25 +230,24 @@ PCAServer <- function(id, data) {
           noFileCalculate(FALSE)
         }
         
-        if (!isTruthy(input$pcaVariables) || length(input$pcaVariables) < 2) {
-          shinyalert::shinyalert("Input Error", "Please select at least two variables for PCA.",
+        if (!isTruthy(input$predictors) || length(input$predictors) < 2) {
+          shinyalert::shinyalert("Input Error", "Please select at least two explanatory variables for PCA.",
                                  type = "error", confirmButtonCol = "#18536F")
           return()
         }
-        
-        if (input$numFactors > length(input$pcaVariables)) {
+
+        if (input$numFactors > length(input$predictors)) {
           shinyalert::shinyalert("Input Error", "Number of factors cannot exceed the number of selected variables.",
                                  type = "error", confirmButtonCol = "#18536F")
           return()
         }
-        
+
         df <- data()
-        
-        non_num <- names(df)[!sapply(df, is.numeric)]
-        group_col <- if (length(non_num) > 0) non_num[1] else NULL
-        
-        row_ok <- complete.cases(df[, input$pcaVariables, drop = FALSE])
-        selected_data <- df[row_ok, input$pcaVariables, drop = FALSE]
+
+        group_col <- if (isTruthy(input$response)) input$response else NULL
+
+        row_ok <- complete.cases(df[, input$predictors, drop = FALSE])
+        selected_data <- df[row_ok, input$predictors, drop = FALSE]
         selected_data <- as.data.frame(selected_data)
         
         if (!is.null(group_col)) {
@@ -594,7 +614,8 @@ PCAServer <- function(id, data) {
       pca_results(NULL)
       analysis_data(NULL)
       original_data(NULL)
-      updatePickerInput(session, "pcaVariables", selected = character(0))
+      updatePickerInput(session, "predictors", selected = character(0))
+      updatePickerInput(session, "response", selected = character(0))
       updateRadioButtons(session, "transformation", selected = "Original scale")
       updateNumericInput(session, "numFactors", value = 2)
       updateSelectInput(session, "pcX", choices = character(0))

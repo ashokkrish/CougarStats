@@ -16,7 +16,8 @@ machineLearningUI <- function(id) {
                      "Principal Component Analysis" = "PCA",
                      "k-Nearest Neighbors"          = "KNN",
                      "Linear Discriminant Analysis" = "LDA",
-                     "Decision Trees (CART)"        = "CART"
+                     "Decision Trees (CART)"        = "CART",
+                     "Random Forest"                = "RF"
                    ),
                    selected = "PCA"
       ),
@@ -32,6 +33,8 @@ machineLearningServer <- function(id) {
   moduleServer(id, function(input, output, session) {
 
     ml_data <- reactiveVal(NULL)
+    shared_explanatory <- reactiveVal(NULL)
+    shared_response    <- reactiveVal(NULL)
 
     observeEvent(input$mlDataFile, {
       req(input$mlDataFile)
@@ -51,11 +54,13 @@ machineLearningServer <- function(id) {
     knn_instance_counter  <- reactiveVal(0)
     lda_instance_counter  <- reactiveVal(0)
     cart_instance_counter <- reactiveVal(0)
+    rf_instance_counter   <- reactiveVal(0)
 
     current_pca_module_id  <- reactive({ paste0("ml_pca_",  pca_instance_counter()) })
     current_knn_module_id  <- reactive({ paste0("ml_knn_",  knn_instance_counter()) })
     current_lda_module_id  <- reactive({ paste0("ml_lda_",  lda_instance_counter()) })
     current_cart_module_id <- reactive({ paste0("ml_cart_", cart_instance_counter()) })
+    current_rf_module_id   <- reactive({ paste0("ml_rf_",   rf_instance_counter()) })
 
     observeEvent(input$method, {
       if (input$method == "PCA") {
@@ -98,27 +103,42 @@ machineLearningServer <- function(id) {
           req(current_cart_module_id())
           CARTMainPanelUI(session$ns(current_cart_module_id()))
         })
+      } else if (input$method == "RF") {
+        rf_instance_counter(rf_instance_counter() + 1)
+        output$mlSidebarUI  <- renderUI({
+          req(current_rf_module_id())
+          RFSidebarUI(session$ns(current_rf_module_id()))
+        })
+        output$mlMainPanelUI <- renderUI({
+          req(current_rf_module_id())
+          RFMainPanelUI(session$ns(current_rf_module_id()))
+        })
       }
     }, ignoreNULL = FALSE, ignoreInit = FALSE)
 
     observeEvent(current_pca_module_id(), {
       req(input$method == "PCA")
-      PCAServer(current_pca_module_id(), ml_data)
+      PCAServer(current_pca_module_id(), ml_data, shared_explanatory, shared_response)
     }, ignoreNULL = TRUE)
 
     observeEvent(current_knn_module_id(), {
       req(input$method == "KNN")
-      KNNServer(current_knn_module_id(), ml_data)
+      KNNServer(current_knn_module_id(), ml_data, shared_explanatory, shared_response)
     }, ignoreNULL = TRUE)
 
     observeEvent(current_lda_module_id(), {
       req(input$method == "LDA")
-      LDAServer(current_lda_module_id(), ml_data)
+      LDAServer(current_lda_module_id(), ml_data, shared_explanatory, shared_response)
     }, ignoreNULL = TRUE)
 
     observeEvent(current_cart_module_id(), {
       req(input$method == "CART")
-      CARTServer(current_cart_module_id(), ml_data)
+      CARTServer(current_cart_module_id(), ml_data, shared_explanatory, shared_response)
+    }, ignoreNULL = TRUE)
+
+    observeEvent(current_rf_module_id(), {
+      req(input$method == "RF")
+      RFServer(current_rf_module_id(), ml_data, shared_explanatory, shared_response)
     }, ignoreNULL = TRUE)
 
   })

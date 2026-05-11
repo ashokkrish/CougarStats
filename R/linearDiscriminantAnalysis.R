@@ -75,7 +75,7 @@ LDAMainPanelUI <- function(id) {
   )
 }
 
-LDAServer <- function(id, data) {
+LDAServer <- function(id, data, shared_explanatory, shared_response) {
   moduleServer(id, function(input, output, session) {
 
     prepare_lda_response <- function(x) {
@@ -155,8 +155,12 @@ LDAServer <- function(id, data) {
       cols <- colnames(df)
       numeric_cols <- cols[sapply(df, is.numeric)]
 
-      updatePickerInput(session, "response", choices = cols, selected = character(0))
-      updatePickerInput(session, "predictors", choices = numeric_cols, selected = character(0))
+      pre_predictors <- intersect(shared_explanatory(), numeric_cols)
+      shared_resp    <- shared_response()
+      pre_response   <- if (isTruthy(shared_resp) && shared_resp %in% cols) shared_resp else character(0)
+
+      updatePickerInput(session, "response",   choices = cols,         selected = pre_response)
+      updatePickerInput(session, "predictors", choices = numeric_cols, selected = pre_predictors)
 
       results_ready(FALSE)
       plots_ready(FALSE)
@@ -290,7 +294,8 @@ LDAServer <- function(id, data) {
       }
     })
 
-        observeEvent(input$response, {
+    observeEvent(input$response, {
+      shared_response(input$response)
       if (isTruthy(input$response)) {
         responseError(FALSE)
         shinyjs::removeClass(id = "responseWrapper", class = "has-error")
@@ -298,6 +303,7 @@ LDAServer <- function(id, data) {
     })
 
     observeEvent(input$predictors, {
+      shared_explanatory(input$predictors)
       if (length(input$predictors) >= 1) {
         predictorsError(FALSE)
         shinyjs::removeClass(id = "predictorsWrapper", class = "has-error")

@@ -142,7 +142,7 @@ KNNMainPanelUI <- function(id) {
   )
 }
 
-KNNServer <- function(id, data) {
+KNNServer <- function(id, data, shared_explanatory, shared_response) {
   moduleServer(id, function(input, output, session) {
 
     # ---- Uploaded Data container (message until dataset exists) ----
@@ -424,8 +424,10 @@ KNNServer <- function(id, data) {
       cols <- colnames(df0)
       numeric_cols <- cols[sapply(df0, is.numeric)]
 
-      updatePickerInput(session, "response", choices = cols, selected = character(0))
-      updatePickerInput(session, "predictors", choices = numeric_cols, selected = character(0))
+      pre_predictors <- intersect(shared_explanatory(), numeric_cols)
+
+      updatePickerInput(session, "response",   choices = cols,         selected = character(0))
+      updatePickerInput(session, "predictors", choices = numeric_cols, selected = pre_predictors)
 
       if (isTruthy(input$split)) {
         n <- nrow(df0)
@@ -440,11 +442,15 @@ KNNServer <- function(id, data) {
       df0 <- data()
       cols <- colnames(df0)
       numeric_cols <- cols[sapply(df0, is.numeric)]
-      
+
+      shared_resp <- shared_response()
+
       if (input$task == "Regression") {
-        updatePickerInput(session, "response", choices = numeric_cols, selected = character(0))
+        pre_response <- if (isTruthy(shared_resp) && shared_resp %in% numeric_cols) shared_resp else character(0)
+        updatePickerInput(session, "response", choices = numeric_cols, selected = pre_response)
       } else {
-        updatePickerInput(session, "response", choices = cols, selected = character(0))
+        pre_response <- if (isTruthy(shared_resp) && shared_resp %in% cols) shared_resp else character(0)
+        updatePickerInput(session, "response", choices = cols, selected = pre_response)
       }
     })
     
@@ -460,13 +466,15 @@ KNNServer <- function(id, data) {
     })
     
     observeEvent(input$response, {
+      shared_response(input$response)
       if (isTruthy(input$response)) {
         responseError(FALSE)
         shinyjs::removeClass(id = "responseWrapper", class = "has-error")
       }
     })
-    
+
     observeEvent(input$predictors, {
+      shared_explanatory(input$predictors)
       if (length(input$predictors) >= 1) {
         predictorsError(FALSE)
         shinyjs::removeClass(id = "predictorsWrapper", class = "has-error")

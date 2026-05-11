@@ -96,7 +96,7 @@ CARTMainPanelUI <- function(id) {
   )
 }
 
-CARTServer <- function(id, data) {
+CARTServer <- function(id, data, shared_explanatory, shared_response) {
   moduleServer(id, function(input, output, session) {
 
     results_ready <- reactiveVal(FALSE)
@@ -159,9 +159,13 @@ CARTServer <- function(id, data) {
       df <- data()
       cols <- colnames(df)
       
-      updatePickerInput(session, "response", choices = cols, selected = character(0))
-      updatePickerInput(session, "predictors", choices = cols, selected = character(0))
-      
+      pre_predictors <- intersect(shared_explanatory(), cols)
+      shared_resp    <- shared_response()
+      pre_response   <- if (isTruthy(shared_resp) && shared_resp %in% cols) shared_resp else character(0)
+
+      updatePickerInput(session, "response",   choices = cols, selected = pre_response)
+      updatePickerInput(session, "predictors", choices = cols, selected = pre_predictors)
+
       results_ready(FALSE)
       plots_ready(FALSE)
       calc_results(NULL)
@@ -301,13 +305,15 @@ CARTServer <- function(id, data) {
     })
     
     observeEvent(input$response, {
+      shared_response(input$response)
       if (isTruthy(input$response)) {
         responseError(FALSE)
         shinyjs::removeClass(id = "responseWrapper", class = "has-error")
       }
     })
-    
+
     observeEvent(input$predictors, {
+      shared_explanatory(input$predictors)
       if (length(input$predictors) >= 1) {
         predictorsError(FALSE)
         shinyjs::removeClass(id = "predictorsWrapper", class = "has-error")
