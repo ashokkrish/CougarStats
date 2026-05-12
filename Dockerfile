@@ -87,6 +87,7 @@ RUN R -e \
                     'moments',          \
                     'psych',            \
                     'forecast'          \
+                    'skedastic'         \
                     'lmtest',           \
                   dependencies = TRUE); \
   remotes::install_github('deepanshu88/shinyDarkmode'); \

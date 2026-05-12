@@ -366,13 +366,17 @@ MLRServer <- function(id) {
       )
     })
     
+    # Corresponds to the inference tab, after calcualtions
+    
     output$Inference <- renderUI({
       eval(MLRValidation)
       
       fluidPage(
         fluidRow(uiOutput(ns("linearModelCoefficientsAndConfidenceIntervals"))),
         fluidRow(hr()),
-        fluidRow(uiOutput(ns("bpTest")))
+        fluidRow(uiOutput(ns("bpTest"))),
+        fluidRow(hr()),
+        fluidRow(uiOutput(ns("whiteTest")))
       )
     })
     
@@ -458,6 +462,8 @@ MLRServer <- function(id) {
       )
     })
     
+    
+    # Breush-Pagan Test
     output$bpTest <- renderUI({
       req(uploadedTibble$data())
       req(isTruthy(input$responseVariable))
@@ -478,8 +484,8 @@ MLRServer <- function(id) {
         withMathJax(
           p(strong("Breusch-Pagan Test for Heteroscedasticity")),
           p("Tests whether the variance of residuals is constant (homoscedasticity)."),
-          p(r"{\( H_0: \) Homoscedasticity — residual variance is constant.}"),
-          p(r"{\( H_a: \) Heteroscedasticity — residual variance is not constant.}"),
+          p(r"{\( H_0: \) The variance of the residuals is constant / does not depend on the independent variable (Homoscedasticity is present).}"),
+          p(r"{\( H_a: \) The variance of the residuals is not constant / depends on the independent variable (Heteroscedasticity is present).}"),
           p(r"{\( \alpha = 0.05 \)}"),
           p(sprintf(
             r"{\( BP = %.4f, \quad df = %d, \quad p\text{-value} = %.4f \)}",
@@ -496,6 +502,50 @@ MLRServer <- function(id) {
         )
       })
     })
+    
+  # White Test
+    
+    output$whiteTest <- renderUI({
+      req(uploadedTibble$data())
+      req(isTruthy(input$responseVariable))
+      req(isTruthy(input$explanatoryVariables))
+      req(length(as.character(input$explanatoryVariables)) >= 2)
+      
+      with(uploadedTibble$data(), {
+        model <- lm(reformulate(
+          as.character(lapply(input$explanatoryVariables, as.name)),
+          as.name(input$responseVariable)
+        ))
+        
+        white_test  <- skedastic::white(model)
+        pval  <- white_test$p.value
+        W_stat <- white_test$statistic
+        df    <- white_test$parameter
+        
+        withMathJax(
+          p(strong("White Test for Heteroscedasticity")),
+          p("Tests whether the variance of residuals is constant (homoscedasticity)."),
+          p(r"{\( H_0: \) Homoscedasticity — residual variance is constant.}"),
+          p(r"{\( H_a: \) Heteroscedasticity — residual variance is not constant.}"),
+          p(r"{\( \alpha = 0.05 \)}"),
+          p(sprintf(
+            r"{\( W = %.4f, \quad df = %d, \quad p\text{-value} = %.4f \)}",
+            W_stat, df, pval
+          )),
+          p(
+            strong("Conclusion:"),
+            if (pval <= 0.05) {
+              r"(Since the p-value is less than \(\alpha\), we reject \(H_0\) and conclude there is evidence of heteroscedasticity.)"
+            } else {
+              r"(Since the p-value is greater than \(\alpha\), we fail to reject \(H_0\) and conclude there is no significant evidence of heteroscedasticity.)"
+            }
+          )
+        )
+      })
+    })
+    
+    
+    
     
     
     output$linearModelEquations <- renderUI({
