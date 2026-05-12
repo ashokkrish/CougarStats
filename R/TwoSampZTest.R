@@ -5,20 +5,29 @@
 
 TwoSampZTest <- function(xbar1, sigma1, n1, xbar2, sigma2, n2, alternative = c("two.sided", "less", "greater"),  s_level = 0.05, muNaught = 0)
 {
+  # try to resolve the alternative; match.arg will error if the actual argument is invalid
+  alternative_resolved <- tryCatch(
+    match.arg(alternative),
+    error = function(e) {
+      stop("`alternative` must be one of: \"two.sided\", \"less\", \"greater\" (received: ",
+        paste0(alternative, collapse = ", "), ").", 
+        call. = FALSE)
+    }
+  )
   se <- sqrt((sigma1^2/n1) + (sigma2^2/n2))
   
   zstat <- ((xbar1 - xbar2) - muNaught)/se
   
-  if(alternative == 'two.sided'){
+  if(alternative_resolved == 'two.sided'){
     p_value <- 2*pnorm(abs(zstat), lower.tail = FALSE)
     z.crit <- qnorm((1 - s_level) + s_level/2)
     #z.crit<- paste0("±",  z.crit, sep = "")
   }
-  else if(alternative == 'less') {
+  else if(alternative_resolved == 'less') {
     p_value <- pnorm(zstat, lower.tail = TRUE)
     z.crit <- -qnorm(1 - s_level)
   }
-  else if(alternative == 'greater') {
+  else if(alternative_resolved == 'greater') {
     p_value <- pnorm(zstat, lower.tail = FALSE)
     z.crit <- qnorm(1 - s_level)
   }

@@ -6,6 +6,16 @@
 
 TwoSampTTest <- function(xbar1, s1, n1, xbar2, s2, n2, var.equal = TRUE, alternative = c("two.sided", "less", "greater"),  s_level = 0.05, muNaught = 0)
 {
+  # try to resolve the alternative; match.arg will error if the actual argument is invalid
+  alternative_resolved <- tryCatch(
+    match.arg(alternative),
+    error = function(e) {
+      stop("`alternative` must be one of: \"two.sided\", \"less\", \"greater\" (received: ",
+        paste0(alternative, collapse = ", "), ").", 
+        call. = FALSE)
+    }
+  )
+    
   if(var.equal == TRUE)
   {
     # sp is the pooled standard deviation
@@ -24,15 +34,15 @@ TwoSampTTest <- function(xbar1, s1, n1, xbar2, s2, n2, var.equal = TRUE, alterna
 
   tstat <- ((xbar1 - xbar2) - muNaught)/se
 
-  if(alternative == 'two.sided'){
+  if(alternative_resolved == 'two.sided'){
     p_value <- 2*pt(abs(tstat), df, lower.tail = FALSE)
     t.crit <- qt((1 - s_level) + s_level/2, df)
   }
-  else if(alternative == 'less') {
+  else if(alternative_resolved == 'less') {
     p_value <- pt(tstat, df, lower.tail = TRUE)
     t.crit <- -qt(1 - s_level, df)
   }
-  else if(alternative == 'greater') {
+  else if(alternative_resolved == 'greater') {
     p_value <- pt(tstat, df, lower.tail = FALSE)
     t.crit <- qt(1 - s_level, df)
   }
