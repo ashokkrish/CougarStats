@@ -5,3 +5,6 @@
 .DS_Store
 CougarStats.Rproj
 .Rhistory
+.positai
+renv/library
+renv/staging
