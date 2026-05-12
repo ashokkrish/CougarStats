@@ -153,7 +153,7 @@ MLRServer <- function(id) {
       updatePickerInput(session, "responseVariable", selected = character(0))
       updatePickerInput(session, "explanatoryVariables", selected = character(0))
       
-      # Clear validation errors
+      # Clear validation errors # change this 2026-05-11
       responseVarError(FALSE)
       explanatoryVarsError(FALSE)
       shinyjs::removeClass(id = "responseVariableWrapper", class = "has-error")
@@ -177,7 +177,7 @@ MLRServer <- function(id) {
       req(uploadedTibble$data(), input$responseVariable)
       
       # grab just the numeric columns
-      df_num <- uploadedTibble$data() %>% dplyr::select_if(is.numeric)
+      df_num <- uploadedTibble$data() %>% dplyr::select_if(is.numeric) 
       
       # drop the response variable (any_of tolerates missing/empty)
       choices <- df_num %>%
@@ -370,11 +370,16 @@ MLRServer <- function(id) {
       eval(MLRValidation)
       
       fluidPage(
-        fluidRow(uiOutput(ns("linearModelCoefficientsAndConfidenceIntervals")))
+        fluidRow(uiOutput(ns("linearModelCoefficientsAndConfidenceIntervals"))),
+        fluidRow(hr()),
+        fluidRow(uiOutput(ns("bpTest")))
       )
     })
     
+    
+    
     # Reactive coefficients and confidence intervals table
+    
     output$linearModelCoefConfint <- renderTable(
       {
         req(uploadedTibble$data())
@@ -382,7 +387,11 @@ MLRServer <- function(id) {
         req(isTruthy(input$explanatoryVariables))
         req(length(as.character(input$explanatoryVariables)) >= 2)
         
+      
+        
         with(uploadedTibble$data(), {
+        
+          
           model <- lm(reformulate(
             as.character(lapply(input$explanatoryVariables, as.name)),
             as.name(input$responseVariable)
@@ -448,6 +457,46 @@ MLRServer <- function(id) {
         uiOutput(ns("lmCoefConfintTableCaption"))
       )
     })
+    
+    output$bpTest <- renderUI({
+      req(uploadedTibble$data())
+      req(isTruthy(input$responseVariable))
+      req(isTruthy(input$explanatoryVariables))
+      req(length(as.character(input$explanatoryVariables)) >= 2)
+      
+      with(uploadedTibble$data(), {
+        model <- lm(reformulate(
+          as.character(lapply(input$explanatoryVariables, as.name)),
+          as.name(input$responseVariable)
+        ))
+        
+        bp    <- lmtest::bptest(model)
+        pval  <- bp$p.value
+        bpStat <- bp$statistic
+        df    <- bp$parameter
+        
+        withMathJax(
+          p(strong("Breusch-Pagan Test for Heteroscedasticity")),
+          p("Tests whether the variance of residuals is constant (homoscedasticity)."),
+          p(r"{\( H_0: \) Homoscedasticity — residual variance is constant.}"),
+          p(r"{\( H_a: \) Heteroscedasticity — residual variance is not constant.}"),
+          p(r"{\( \alpha = 0.05 \)}"),
+          p(sprintf(
+            r"{\( BP = %.4f, \quad df = %d, \quad p\text{-value} = %.4f \)}",
+            bpStat, df, pval
+          )),
+          p(
+            strong("Conclusion:"),
+            if (pval <= 0.05) {
+              r"(Since the p-value is less than \(\alpha\), we reject \(H_0\) and conclude there is evidence of heteroscedasticity.)"
+            } else {
+              r"(Since the p-value is greater than \(\alpha\), we fail to reject \(H_0\) and conclude there is no significant evidence of heteroscedasticity.)"
+            }
+          )
+        )
+      })
+    })
+    
     
     output$linearModelEquations <- renderUI({
       req(uploadedTibble$data())
@@ -533,6 +582,8 @@ MLRServer <- function(id) {
         )
       )
     })
+    
+    
     
     # Reactive ANOVA tab outputs
     output$anovaHypotheses <- renderUI({
@@ -712,7 +763,11 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
           p(sprintf(r"[AIC = \(%0.4f\)]", AIC(model))),
           br(),
           p(strong("Bayesian Information Criteria (BIC):")),
-          p(sprintf(r"[BIC = \(%0.4f\)]", BIC(model)))
+          p(sprintf(r"[BIC = \(%0.4f\)]", BIC(model))),
+          br(),
+          p(strong("Mallows' Cp:")),
+          p(sprintf(r"[Cp = \(%0.4f\)]", ols_mallows_cp(model, model))),
+          br()
         )
       })
     })

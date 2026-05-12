@@ -63,6 +63,8 @@ library(tools)
 library(waiter)
 library(writexl)
 library(xtable)
+library(lmtest)
+
 
 source("R/authors.R")
 
