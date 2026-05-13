@@ -73,6 +73,11 @@ MLRMainPanelUI <- function(id) {
                  import_file_ui(
                    id    = ns("dataImport"),
                    title = "")),
+               tabPanel(
+                 title = "Variable Encoding",
+                 value = "encoding_tab",
+                 uiOutput(ns("encodingUI"))
+               ),
                tabPanel(title = "Model", uiOutput(ns("Equations")) ),
                tabPanel(title = "Inference", uiOutput(ns("Inference"))),
                tabPanel(title = "ANOVA", uiOutput(ns("ANOVA"))),
@@ -103,6 +108,12 @@ MLRServer <- function(id) {
       
     )
     
+    encodedData <- reactiveVal(NULL)
+    
+    observeEvent(uploadedTibble$data(), {
+      encodedData(uploadedTibble$data())
+    })
+    
     noFileCalculate <- reactiveVal(FALSE)
     
     # Reactive values for validation errors
@@ -120,9 +131,9 @@ MLRServer <- function(id) {
       })
     }, once = TRUE)
     
-    observeEvent(uploadedTibble$data(),{
-      req(uploadedTibble$data())
-      cols <- uploadedTibble$data() %>%
+    observeEvent(encodedData(),{
+      req(encodedData())
+      cols <- encodedData() %>%
         dplyr::select_if(is.numeric) %>%
         colnames()
       
@@ -165,19 +176,19 @@ MLRServer <- function(id) {
     ## Update the choices for the select inputs when the uploadedTibble changes.
     observe({
       updatePickerInput(inputId = "responseVariable",
-                        choices = colnames(select_if(uploadedTibble$data(), is.numeric)),
+                        choices = colnames(select_if(encodedData(), is.numeric)),
                         selected = character(0))
       
       updatePickerInput(inputId = "explanatoryVariables",
-                        choices = colnames(select_if(uploadedTibble$data(), is.numeric)))
-    }) |> bindEvent(uploadedTibble$data())
+                        choices = colnames(select_if(encodedData(), is.numeric)))
+    }) |> bindEvent(encodedData())
     
     observeEvent(input$responseVariable, {
       # only run when we have data and a non-empty response variable
-      req(uploadedTibble$data(), input$responseVariable)
+      req(encodedData(), input$responseVariable)
       
       # grab just the numeric columns
-      df_num <- uploadedTibble$data() %>% dplyr::select_if(is.numeric) 
+      df_num <- encodedData() %>% dplyr::select_if(is.numeric) 
       
       # drop the response variable (any_of tolerates missing/empty)
       choices <- df_num %>%
@@ -219,8 +230,8 @@ MLRServer <- function(id) {
             !is.null(input$responseVariable) &&
               length(input$responseVariable) == 1 &&
               nzchar(input$responseVariable[1]) &&
-              (input$responseVariable[1] %in% names(uploadedTibble$data())) &&
-              is.numeric(uploadedTibble$data()[[input$responseVariable[1]]])
+              (input$responseVariable[1] %in% names(encodedData())) &&
+              is.numeric(encodedData()[[input$responseVariable[1]]])
           ),
           "Response variable must be an existing, single, and numeric column."
         ),
@@ -240,7 +251,7 @@ MLRServer <- function(id) {
     
     nonnumericVariables <- NULL
     storeNameIfNotNumeric <- function(var) {
-      if (is.numeric(uploadedTibble$data()[[var]]))
+      if (is.numeric(encodedData()[[var]]))
         return(TRUE)
       else {
         ## Replace or concatenate to the value of the nonnumericVariables
@@ -253,7 +264,7 @@ MLRServer <- function(id) {
     
     isNAVariables <- NULL
     storeNameIfAnyNA <- function(var) {
-      if (anyNA(uploadedTibble$data()[[var]]))
+      if (anyNA(encodedData()[[var]]))
         return(TRUE)
       else {
         ## Replace or concatenate to the value of the isNAVariables variable.
@@ -270,6 +281,75 @@ MLRServer <- function(id) {
       } else {
         NULL
       }
+    })
+    output$encodingUI <- renderUI({
+      req(uploadedTibble$data())
+      
+      df <- uploadedTibble$data()
+      catCols <- df %>% 
+        dplyr::select_if(~ is.character(.) || is.factor(.)) %>% 
+        colnames()
+      
+      if (length(catCols) == 0) {
+        return(p("No categorical variables detected in the uploaded data."))
+      }
+      
+      tagList(
+        p(strong("Categorical Variable Encoding")),
+        p("The following categorical variables were detected. Select an encoding method for each."),
+        lapply(catCols, function(col) {
+          fluidRow(
+            column(4, p(strong(col), br(), 
+                        em(paste("Unique values:", 
+                                 paste(unique(df[[col]]), collapse = ", "))))),
+            column(4,
+                   selectInput(
+                     ns(paste0("encoding_", col)),
+                     label = NULL,
+                     choices = c(
+                       "Do not encode"  = "none",
+                       "Dummy encoding" = "dummy",
+                       "Label encoding" = "label"
+                     )
+                   )
+            )
+          )
+        }),
+        actionButton(ns("applyEncoding"), "Apply Encoding", class = "act-btn")
+      )
+    })
+    
+    observeEvent(input$applyEncoding, {
+      req(uploadedTibble$data())
+      
+      df <- uploadedTibble$data()
+      catCols <- df %>% 
+        dplyr::select_if(~ is.character(.) || is.factor(.)) %>% 
+        colnames()
+      
+      for (col in catCols) {
+        method <- input[[paste0("encoding_", col)]]
+        
+        if (method == "label") {
+          df[[col]] <- as.numeric(as.factor(df[[col]]))
+          
+        } else if (method == "dummy") {
+          dummies <- model.matrix(~ . - 1, data = df[col])[, -1, drop = FALSE]
+          colnames(dummies) <- paste0(col, "_", colnames(dummies))
+          df[[col]] <- NULL
+          df <- cbind(df, dummies)
+        }
+      }
+      
+      encodedData(df)
+      
+      newCols <- df %>% dplyr::select_if(is.numeric) %>% colnames()
+      updatePickerInput(session, "responseVariable", choices = newCols, selected = character(0))
+      updatePickerInput(session, "explanatoryVariables", choices = newCols, selected = character(0))
+      
+      updateNavbarPage(session, "mainPanel", selected = "encoding_tab")
+      
+      showNotification("Encoding applied successfully.", type = "message")
     })
     
     output$responseVariableError <- renderUI({
@@ -310,7 +390,7 @@ MLRServer <- function(id) {
     })
     
     observe({ # input$calculate
-      if (!isTruthy(uploadedTibble$data())) {
+      if (!isTruthy(encodedData())) {
         noFileCalculate(TRUE)
         return()
       } else {
@@ -352,10 +432,10 @@ MLRServer <- function(id) {
     }) |> bindEvent(input$calculate)
     
     observe({
-      if(isTruthy(uploadedTibble$data())){
+      if(isTruthy(encodedData())){
         noFileCalculate(FALSE)
       }
-    }) |> bindEvent(uploadedTibble$data(), ignoreNULL = FALSE, ignoreInit = TRUE)
+    }) |> bindEvent(encodedData(), ignoreNULL = FALSE, ignoreInit = TRUE)
     
     output$Equations <- renderUI({
       eval(MLRValidation)
@@ -386,14 +466,14 @@ MLRServer <- function(id) {
     
     output$linearModelCoefConfint <- renderTable(
       {
-        req(uploadedTibble$data())
+        req(encodedData())
         req(isTruthy(input$responseVariable))
         req(isTruthy(input$explanatoryVariables))
         req(length(as.character(input$explanatoryVariables)) >= 2)
         
       
         
-        with(uploadedTibble$data(), {
+        with(encodedData(), {
         
           
           model <- lm(reformulate(
@@ -431,12 +511,12 @@ MLRServer <- function(id) {
     )
     
     output$lmCoefConfintTableCaption <- renderUI({
-      req(uploadedTibble$data())
+      req(encodedData())
       req(isTruthy(input$responseVariable))
       req(isTruthy(input$explanatoryVariables))
       req(length(as.character(input$explanatoryVariables)) >= 2)
       
-      with(uploadedTibble$data(), {
+      with(encodedData(), {
         model <- lm(reformulate(
           as.character(lapply(input$explanatoryVariables, as.name)),
           as.name(input$responseVariable)
@@ -465,12 +545,12 @@ MLRServer <- function(id) {
     
     # Breush-Pagan Test
     output$bpTest <- renderUI({
-      req(uploadedTibble$data())
+      req(encodedData())
       req(isTruthy(input$responseVariable))
       req(isTruthy(input$explanatoryVariables))
       req(length(as.character(input$explanatoryVariables)) >= 2)
       
-      with(uploadedTibble$data(), {
+      with(encodedData(), {
         model <- lm(reformulate(
           as.character(lapply(input$explanatoryVariables, as.name)),
           as.name(input$responseVariable)
@@ -506,12 +586,12 @@ MLRServer <- function(id) {
   # White Test
     
     output$whiteTest <- renderUI({
-      req(uploadedTibble$data())
+      req(encodedData())
       req(isTruthy(input$responseVariable))
       req(isTruthy(input$explanatoryVariables))
       req(length(as.character(input$explanatoryVariables)) >= 2)
       
-      with(uploadedTibble$data(), {
+      with(encodedData(), {
         model <- lm(reformulate(
           as.character(lapply(input$explanatoryVariables, as.name)),
           as.name(input$responseVariable)
@@ -549,7 +629,7 @@ MLRServer <- function(id) {
     
     
     output$linearModelEquations <- renderUI({
-      req(uploadedTibble$data())
+      req(encodedData())
       req(isTruthy(input$responseVariable))
       req(isTruthy(input$explanatoryVariables))
       req(length(as.character(input$explanatoryVariables)) >= 2)
@@ -558,8 +638,8 @@ MLRServer <- function(id) {
         div(
           id = "linear-model-equations",
           # 1. Calculate the model first to know what variables are kept
-          with(uploadedTibble$data(), {
-            req(uploadedTibble$data(), cancelOutput = TRUE)
+          with(encodedData(), {
+            req(encodedData(), cancelOutput = TRUE)
             req(isTruthy(input$responseVariable), cancelOutput = TRUE)
             model <- lm(reformulate(
               as.character(lapply(input$explanatoryVariables, as.name)),
@@ -637,12 +717,12 @@ MLRServer <- function(id) {
     
     # Reactive ANOVA tab outputs
     output$anovaHypotheses <- renderUI({
-      req(uploadedTibble$data())
+      req(encodedData())
       req(isTruthy(input$responseVariable))
       req(isTruthy(input$explanatoryVariables))
       req(length(as.character(input$explanatoryVariables)) >= 2)
       
-      with(uploadedTibble$data(), {
+      with(encodedData(), {
         model <- lm(reformulate(
           as.character(lapply(input$explanatoryVariables, as.name)),
           as.name(input$responseVariable)
@@ -662,7 +742,7 @@ MLRServer <- function(id) {
           p(r"{\( \alpha = 0.05\ \)}"),
           #br(),
           p(
-            sprintf(r"{\( n = %i \)}", nrow(uploadedTibble$data())),
+            sprintf(r"{\( n = %i \)}", nrow(encodedData())),
             br(),
             sprintf(r"{\( k = %i \)}", k)
           ),
@@ -673,7 +753,7 @@ MLRServer <- function(id) {
     
     output$anovaTable <- renderTable(
       {
-        req(uploadedTibble$data())
+        req(encodedData())
         req(isTruthy(input$responseVariable))
         req(isTruthy(input$explanatoryVariables))
         req(length(as.character(input$explanatoryVariables)) >= 2)
@@ -681,7 +761,7 @@ MLRServer <- function(id) {
         redrawing <<- TRUE
         options(knitr.kable.NA = "") # do not display NAs
         
-        with(uploadedTibble$data(), {
+        with(encodedData(), {
           model <- lm(reformulate(
             as.character(lapply(input$explanatoryVariables, as.name)),
             as.name(input$responseVariable)
@@ -694,7 +774,7 @@ MLRServer <- function(id) {
           
           # Use model rank
           k <- model$rank - 1
-          n <- nrow(uploadedTibble$data())
+          n <- nrow(encodedData())
           MSR <- SSR / k
           MSE <- SSE / (n - k - 1)
           F_stat <- MSR / MSE
@@ -715,12 +795,12 @@ MLRServer <- function(id) {
     )
     
     output$anovaPValueMethod <- renderUI({
-      req(uploadedTibble$data())
+      req(encodedData())
       req(isTruthy(input$responseVariable))
       req(isTruthy(input$explanatoryVariables))
       req(length(as.character(input$explanatoryVariables)) >= 2)
       
-      with(uploadedTibble$data(), {
+      with(encodedData(), {
         model <- lm(reformulate(
           as.character(lapply(input$explanatoryVariables, as.name)),
           as.name(input$responseVariable)
@@ -732,7 +812,7 @@ MLRServer <- function(id) {
         
         # Use model rank
         k <- model$rank - 1
-        n <- nrow(uploadedTibble$data())
+        n <- nrow(encodedData())
         MSR <- SSR / k
         MSE <- SSE / (n - k - 1)
         F_stat <- MSR / MSE
@@ -763,12 +843,12 @@ MLRServer <- function(id) {
     })
     
     output$rsquareAdjustedRSquareInterpretation <- renderUI({
-      req(uploadedTibble$data())
+      req(encodedData())
       req(isTruthy(input$responseVariable))
       req(isTruthy(input$explanatoryVariables))
       req(length(as.character(input$explanatoryVariables)) >= 2)
       
-      with(uploadedTibble$data(), {
+      with(encodedData(), {
         model <- lm(reformulate(
           as.character(lapply(input$explanatoryVariables, as.name)),
           as.name(input$responseVariable)
@@ -781,7 +861,7 @@ MLRServer <- function(id) {
         
         # Use model rank
         k <- model$rank - 1
-        n <- nrow(uploadedTibble$data())
+        n <- nrow(encodedData())
         
         withMathJax(
           p(strong(r"{ \(R^2\) and Adjusted \(R^2\) :}")),
@@ -844,11 +924,11 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
     })
     
     output$simpleCorrelationMatrix <- renderTable({
-      req(uploadedTibble$data())
+      req(encodedData())
       req(isTruthy(input$explanatoryVariables))
       req(length(as.character(input$explanatoryVariables)) >= 2)
       
-      corsetAboveDiagNA(uploadedTibble$data()[, input$explanatoryVariables])
+      corsetAboveDiagNA(encodedData()[, input$explanatoryVariables])
     },
     rownames = TRUE,
     striped = TRUE,
@@ -857,11 +937,11 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
     
     output$vifs <- renderTable(
       {
-        req(uploadedTibble$data())
+        req(encodedData())
         req(isTruthy(input$responseVariable))
         req(isTruthy(input$explanatoryVariables))
         req(length(as.character(input$explanatoryVariables)) >= 2)
-        with(uploadedTibble$data(), {
+        with(encodedData(), {
           model <- lm(reformulate(
             as.character(lapply(input$explanatoryVariables, as.name)),
             as.name(input$responseVariable)
@@ -881,21 +961,21 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
     )
     
     output$ggscatmat <- renderPlot({
-      req(uploadedTibble$data())
+      req(encodedData())
       req(isTruthy(input$explanatoryVariables))
       req(length(as.character(input$explanatoryVariables)) >= 2)
       
-      ggscatmat(uploadedTibble$data()[, input$explanatoryVariables], columns = input$explanatoryVariables)
+      ggscatmat(encodedData()[, input$explanatoryVariables], columns = input$explanatoryVariables)
     })
     
     # Reactive Diagnostic Plots tab outputs
     output$mlrResidualsPanelPlot1 <- renderPlot({
-      req(uploadedTibble$data())
+      req(encodedData())
       req(isTruthy(input$responseVariable))
       req(isTruthy(input$explanatoryVariables))
       req(length(as.character(input$explanatoryVariables)) >= 2)
       
-      with(uploadedTibble$data(), {
+      with(encodedData(), {
         model <- lm(reformulate(
           as.character(lapply(input$explanatoryVariables, as.name)),
           as.name(input$responseVariable)
@@ -905,12 +985,12 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
     })
     
     output$mlrResidualsPanelPlot2 <- renderPlot({
-      req(uploadedTibble$data())
+      req(encodedData())
       req(isTruthy(input$responseVariable))
       req(isTruthy(input$explanatoryVariables))
       req(length(as.character(input$explanatoryVariables)) >= 2)
       
-      with(uploadedTibble$data(), {
+      with(encodedData(), {
         model <- lm(reformulate(
           as.character(lapply(input$explanatoryVariables, as.name)),
           as.name(input$responseVariable)
@@ -920,12 +1000,12 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
     })
     
     output$mlrResidualsPanelPlot3 <- renderPlot({
-      req(uploadedTibble$data())
+      req(encodedData())
       req(isTruthy(input$responseVariable))
       req(isTruthy(input$explanatoryVariables))
       req(length(as.character(input$explanatoryVariables)) >= 2)
       
-      with(uploadedTibble$data(), {
+      with(encodedData(), {
         model <- lm(reformulate(
           as.character(lapply(input$explanatoryVariables, as.name)),
           as.name(input$responseVariable)
@@ -935,12 +1015,12 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
     })
     
     output$mlrResidualsPanelPlot4 <- renderPlot({
-      req(uploadedTibble$data())
+      req(encodedData())
       req(isTruthy(input$responseVariable))
       req(isTruthy(input$explanatoryVariables))
       req(length(as.character(input$explanatoryVariables)) >= 2)
       
-      with(uploadedTibble$data(), {
+      with(encodedData(), {
         model <- lm(reformulate(
           as.character(lapply(input$explanatoryVariables, as.name)),
           as.name(input$responseVariable)
@@ -951,8 +1031,8 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
     
     # Reactive Uploaded Data tab output
     output$uploadedDataTable <- renderDT({
-      req(uploadedTibble$data())
-      datatable(uploadedTibble$data(),
+      req(encodedData())
+      datatable(encodedData(),
                 options = list(pageLength = -1,
                                lengthMenu = list(c(10, 25, 50, -1), c("10", "25", "50", "All"))))
     })
@@ -986,3 +1066,6 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
     })
   })
 }
+
+
+
