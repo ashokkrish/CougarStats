@@ -282,6 +282,8 @@ MLRServer <- function(id) {
         NULL
       }
     })
+    
+    
     output$encodingUI <- renderUI({
       req(uploadedTibble$data())
       
@@ -298,10 +300,13 @@ MLRServer <- function(id) {
         p(strong("Categorical Variable Encoding")),
         p("The following categorical variables were detected. Select an encoding method for each."),
         lapply(catCols, function(col) {
+          uniqueVals <- as.character(unique(df[[col]]))
+          
           fluidRow(
-            column(4, p(strong(col), br(), 
-                        em(paste("Unique values:", 
-                                 paste(unique(df[[col]]), collapse = ", "))))),
+            column(4,
+                   p(strong(col)),
+                   em(paste("Unique values:", length(uniqueVals)))
+            ),
             column(4,
                    selectInput(
                      ns(paste0("encoding_", col)),
@@ -310,6 +315,21 @@ MLRServer <- function(id) {
                        "Do not encode"  = "none",
                        "Dummy encoding" = "dummy",
                        "Label encoding" = "label"
+                     )
+                   )
+            ),
+            column(4,
+                   # Only show drag-and-drop when label encoding is selected
+                   conditionalPanel(
+                     condition = sprintf(
+                       "input['%s'] === 'label'",
+                       ns(paste0("encoding_", col))
+                     ),
+                     p(em("Drag to set order (top = 1):")),
+                     rank_list(
+                       text    = NULL,
+                       labels  = uniqueVals,
+                       input_id = ns(paste0("order_", col))
                      )
                    )
             )
@@ -331,7 +351,11 @@ MLRServer <- function(id) {
         method <- input[[paste0("encoding_", col)]]
         
         if (method == "label") {
-          df[[col]] <- as.numeric(as.factor(df[[col]]))
+          # Use the user-defined order from the drag-and-drop
+          userOrder <- input[[paste0("order_", col)]]
+          
+          df[[col]] <- factor(df[[col]], levels = userOrder, ordered = TRUE)
+          df[[col]] <- as.numeric(df[[col]])
           
         } else if (method == "dummy") {
           dummies <- model.matrix(~ . - 1, data = df[col])[, -1, drop = FALSE]
