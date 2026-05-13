@@ -31,32 +31,29 @@ HEAD <- tags$head(
   "))
 )
 
-BODY <-
-  div(
-    navbarPage(
-      id = "mainBanner",
-      title = div(class = "navbarLogo",
-                  img(src ="CougarStatsLogo.png", height = 100),
-                  span(" CougarStats ", class = "pageTitle")),
-      tabPanel("Methods",
-               navbarPage(title = NULL,
-                          ## tabPanel("Data Upload and Editing",
-                          ##          import_ui(id = "dataImport",
-                          ##                    from = c("file", "copypaste", "env"))),
-                          tabPanel("Descriptive Statistics",
-                                   descStatsUI(id = "ds")),
-                          tabPanel("Probability Distributions",
-                                   probDistUI(id = "pd")),
-                          tabPanel("Sample Size Estimation",
-                                   sampSizeEstUI(id = "sse")),
-                          tabPanel("Statistical Inference",
-                                   statInfrUI(id = "si")),
-                          tabPanel("Regression and Correlation",
-                                   regressionAndCorrelationUI(id = "rc")),
-                          tabPanel("Machine Learning", machineLearningUI(id = "ml")))),
-      tabPanel("Authors", authorsUI())
-    )
-  )
+BODY <- navbarPage(
+  id = "mainBanner",
+  title = div(class = "navbarLogo",
+              img(src ="CougarStatsLogo.png", height = 100),
+              span(" CougarStats ", class = "pageTitle")),
+  tabPanel("Methods",
+           navbarPage(title = NULL,
+                      ## tabPanel("Data Upload and Editing",
+                      ##          import_ui(id = "dataImport",
+                      ##                    from = c("file", "copypaste", "env"))),
+                      tabPanel("Descriptive Statistics",
+                               descStatsUI(id = "ds")),
+                      tabPanel("Probability Distributions",
+                               probDistUI(id = "pd")),
+                      tabPanel("Sample Size Estimation",
+                               sampSizeEstUI(id = "sse")),
+                      tabPanel("Statistical Inference",
+                               statInfrUI(id = "si")),
+                      tabPanel("Regression and Correlation",
+                               regressionAndCorrelationUI(id = "rc")),
+                      tabPanel("Machine Learning", machineLearningUI(id = "ml")))),
+  tabPanel("Authors", authorsUI())
+)
 
 ui <- fluidPage(id = "mainContainer",
                 theme = bs_theme(version = 4, primary = "#18536F"),
