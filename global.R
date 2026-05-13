@@ -1,7 +1,3 @@
-## install.packages("remotes")
-## remotes::install_github("deepanshu88/shinyDarkmode")
-## remotes::install_github("rsquaredacademy/olsrr")
-
 ## options(conflicts.policy = TRUE)
 ## library(conflicted)
 
@@ -122,35 +118,36 @@ options(scipen = 999) # options(scipen = 0)
 ## How many digits to round Critical Values
 cvDigits <- 3
 
-# wrap this in HTML() function to output the message
-# i.e HTML(uploadDataDisclaimer)
+## wrap this in HTML() function to output the message
+## i.e HTML(uploadDataDisclaimer)
 uploadDataDisclaimer <- "<small style='color:#999; display:block; margin-bottom:4px;'>
               <em><b>Note:</b> CougarStats does not store, log, or share any data you upload. 
               All uploaded files exist only for the duration of your session and are permanently deleted when the session ends.
               </em></small>"
 
-render <- "
+render <- HTML(r"[
 {
-  option: function(data, escape){return '<div class=\"option\">'+data.label+'</div>';},
-  item: function(data, escape){return '<div class=\"item\">'+data.label+'</div>';}
-}"
-  
-  ## NOTE: advanced understanding of R is required to interpret these results.
-  ## It's not for the faint of heart.
-  ## warning("What follows is the base R conflicts() report: all MASK-ed or MASK-ing symbols are given.",
-  ##         immediate. = TRUE)
-  ## print(conflicts(detail = TRUE))
-  
-  ## NOTE: see #41.
-  ## warning("Following this is the conflicted::conflict_scout() report.",
-  ##         immediate. = TRUE)
-  ## print(conflicted::conflict_scout())
-  
-  ## TODO: reenable this line before deployment.
-  ## conflicted::conflicts_prefer(shinyjs::show, dplyr::filter, dplyr::select)
-  
-  ## See the theming issue brought up in #33; use thematic to attempt to make base
-  ## R graphics compliant with ggplot theming, and to anticipate the impact of
-  ## dark mode.
-  ggplot2::theme_set(ggplot2::theme_minimal())
-  thematic_shiny()
+  option: function(data, escape) { return '<div class="option">' + data.label + '</div>';},
+  item: function(data, escape) { return '<div class="item">'+ data.label + '</div> ';}
+}
+]")
+
+## NOTE: advanced understanding of R is required to interpret these results.
+## It's not for the faint of heart.
+## warning("What follows is the base R conflicts() report: all MASK-ed or MASK-ing symbols are given.",
+##         immediate. = TRUE)
+## print(conflicts(detail = TRUE))
+
+## NOTE: see #41.
+## warning("Following this is the conflicted::conflict_scout() report.",
+##         immediate. = TRUE)
+## print(conflicted::conflict_scout())
+
+## TODO: reenable this line before deployment.
+## conflicted::conflicts_prefer(shinyjs::show, dplyr::filter, dplyr::select)
+
+## See the theming issue brought up in #33; use thematic to attempt to make base
+## R graphics compliant with ggplot theming, and to anticipate the impact of
+## dark mode.
+ggplot2::theme_set(ggplot2::theme_minimal())
+thematic_shiny()
