@@ -661,82 +661,103 @@ MLRServer <- function(id) {
       withMathJax(
         div(
           id = "linear-model-equations",
-          # 1. Calculate the model first to know what variables are kept
+          
           with(encodedData(), {
-            req(encodedData(), cancelOutput = TRUE)
-            req(isTruthy(input$responseVariable), cancelOutput = TRUE)
+            
             model <- lm(reformulate(
               as.character(lapply(input$explanatoryVariables, as.name)),
               as.name(input$responseVariable)
             ))
             
-            # Get all coefficients (includes NAs for dropped variables)
             all_coefs <- coef(model)
+            names(all_coefs) <- gsub("^`|`$", "", names(all_coefs))
+            
             intercept <- all_coefs["(Intercept)"]
             
-            # Lists to store the LaTeX strings
             vars_definitions <- c()
             sym_terms <- c()
             num_terms <- c()
             
-            # Loop through ORIGINAL input variables to preserve indices (1, 2, 3...)
             for(i in seq_along(input$explanatoryVariables)) {
-              var_name <- input$explanatoryVariables[i]
-  
-              # Check if the name exists directly; if not, try wrapping in backticks
-              val <- all_coefs[var_name]
-              if (is.na(val)) {
-               val <- all_coefs[paste0("`", var_name, "`")]
-  }
               
-              # If the coefficient is NOT NA, we include it.
-              # If it IS NA (dropped), we skip it completely (creating a gap in the indices shown).
+              var_name <- input$explanatoryVariables[i]
+              
+              val <- all_coefs[var_name]
+              
+              if (is.na(val)) {
+                val <- all_coefs[paste0("`", var_name, "`")]
+              }
+              
               if(!is.na(val)) {
-                # Add to definitions list using index 'i'
-                vars_definitions <- c(vars_definitions, sprintf(r"[x_{%d} = \text{%s}]", i, var_name))
                 
-                # Add to equation terms using index 'i'
-                sym_terms <- c(sym_terms, sprintf(r"[\hat{\beta_{%d}} x_{%d}]", i, i))
-                num_terms <- c(num_terms, sprintf(r"[%.3f x_{%d}]", val, i))
+                # Escape LaTeX special characters
+                safe_name <- var_name
+                safe_name <- gsub("\\\\", "\\\\\\\\", safe_name)
+                safe_name <- gsub("_", "\\\\_", safe_name)
+                safe_name <- gsub("\\$", "\\\\\\$", safe_name)
+                
+                vars_definitions <- c(
+                  vars_definitions,
+                  sprintf("x_{%d} = \\text{%s}", i, safe_name)
+                )
+                
+                sym_terms <- c(
+                  sym_terms,
+                  sprintf("\\hat{\\beta}_{%d}x_{%d}", i, i)
+                )
+                
+                num_terms <- c(
+                  num_terms,
+                  sprintf("%.3fx_{%d}", val, i)
+                )
               }
             }
             
-            # 3. Render the "Variables in the model" list
-            vars_definition_latex <- paste(
-              r"{\(}",
-              sprintf(r"[y    = \text{%s} \\]", input$responseVariable),
-              paste(vars_definitions, collapse = r"[\\]"),
-              r"{\)}"
+            safe_response <- input$responseVariable
+            safe_response <- gsub("\\\\", "\\\\\\\\", safe_response)
+            safe_response <- gsub("_", "\\\\_", safe_response)
+            safe_response <- gsub("\\$", "\\\\\\$", safe_response)
+            
+            vars_definition_latex <- paste0(
+              "$$",
+              "y = \\text{", safe_response, "} \\\\ ",
+              paste(vars_definitions, collapse = " \\\\ "),
+              "$$"
             )
             
-            # 4. Render the Equation
-            sym_eq <- sprintf(r"[\hat{y} = \hat{\beta_0} + %s]", paste(sym_terms, collapse = " + "))
-            num_eq <- sprintf(r"[\hat{y} = %.3f + %s]", intercept, paste(num_terms, collapse = " + "))
-            
-            # Clean up double signs (e.g. "+ -")
-            sym_eq <- gsub(pattern = r"{\+(\ +)?-}", replacement = "-", x = sym_eq)
-            num_eq <- gsub(pattern = r"{\+(\ +)?-}", replacement = "-", x = num_eq)
-            
-            equation_latex <- paste(
-              r"{\(}",
-              sym_eq,
-              num_eq,
-              r"{\)}",
-              sep = r"{\\}"
+            sym_eq <- paste0(
+              "$$",
+              "\\hat{y} = ",
+              "\\hat{\\beta}_0 + ",
+              paste(sym_terms, collapse = " + "),
+              "$$"
             )
             
-            # Return the HTML structure
+            num_eq <- paste0(
+              "$$",
+              "\\hat{y} = ",
+              round(intercept, 3),
+              " + ",
+              paste(num_terms, collapse = " + "),
+              "$$"
+            )
+            
+            sym_eq <- gsub("\\+ -", "- ", sym_eq)
+            num_eq <- gsub("\\+ -", "- ", num_eq)
+            
             tagList(
               p("The variables in the model are"),
-              p(vars_definition_latex),
+              HTML(vars_definition_latex),
+              
               p("The estimated multiple linear regression equation is"),
-              p(equation_latex)
+              
+              HTML(sym_eq),
+              HTML(num_eq)
             )
           })
         )
       )
     })
-    
     
     
     # Reactive ANOVA tab outputs
