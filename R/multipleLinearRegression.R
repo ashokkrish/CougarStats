@@ -64,6 +64,17 @@ MLRMainPanelUI <- function(id) {
   ns <- NS(id)
   tagList(
     useShinyjs(),
+    tags$head(
+      tags$style(HTML("
+        #linear-model-equations mjx-container[display='true'] {
+          display: flex !important;
+          justify-content: flex-start !important;
+          text-align: left !important;
+          padding-left: 0px !important;
+          margin-left: 0px !important;
+        }
+      "))
+    ),
     navbarPage(title = NULL,
                tabPanel(
                  title = "Data Import",
@@ -719,18 +730,26 @@ MLRServer <- function(id) {
             safe_response <- gsub("\\$", "\\\\\\$", safe_response)
             
             vars_definition_latex <- paste0(
-              "$$",
-              "y = \\text{", safe_response, "} \\\\ ",
-              paste(vars_definitions, collapse = " \\\\ "),
-              "$$"
+              "<div style='text-align:left;'>",
+              "\\(",
+              "y = \\text{", safe_response, "}",
+              "\\)",
+              "<br>",
+              paste(
+                paste0("\\(", vars_definitions, "\\)"),
+                collapse = "<br>"
+              ),
+              "</div>"
             )
             
             sym_eq <- paste0(
-              "$$",
+              "<div style='text-align:left;'>",
+              "\\(",
               "\\hat{y} = ",
               "\\hat{\\beta}_0 + ",
               paste(sym_terms, collapse = " + "),
-              "$$"
+              "\\)",
+              "</div>"
             )
             
             num_eq <- paste0(
@@ -958,8 +977,12 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
         fluidRow(column(
           12, p(strong("Graphical methods")),
           p("Along the diagonal of this plot are the distributions of the data in each variable. Below the diagonal are the scatterplots of one variable against another; if the points form a more-or-less straight line then the variables are correlated. Above the diagonal are the correlation coefficients between two variables."),
-          plotOutput(ns("ggscatmat"))
-        )),
+          
+          div(
+            style = "text-align:left;",
+            plotOutput(ns("ggscatmat"), width = "550px", height = "550px")
+          )
+        )), 
         fluidRow(column(
           12, p(strong("Variance Inflation Factors (VIFs)")),
           p("A VIF greater than 10 suggests strong multicollinearity caused by the respective variable with that variance inflation factor. VIFs between 5 and 10 hint at moderate multicollinearity. Values less than 5 are acceptable, with only a low degree of multicollinearity detected."),
@@ -1006,11 +1029,12 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
     )
     
     output$ggscatmat <- renderPlot({
-      req(encodedData())
-      req(isTruthy(input$explanatoryVariables))
-      req(length(as.character(input$explanatoryVariables)) >= 2)
+      par(mar = c(4,4,1,1))
       
-      ggscatmat(encodedData()[, input$explanatoryVariables], columns = input$explanatoryVariables)
+      ggscatmat(
+        encodedData()[, input$explanatoryVariables],
+        columns = input$explanatoryVariables
+      )
     })
     
     # Reactive Diagnostic Plots tab outputs
