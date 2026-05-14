@@ -195,14 +195,14 @@ SLRSidebarUI <- function(id) {
         inputId     = ns("y"),
         label       = strong("Response Variable (\\( y\\))"),
         value       = "4, 14, 15, 18, 21, 26, 38",
-        placeholder = "Enter values separated by a comma with decimals as points",
+        placeholder = "Enter numeric values separated by a comma with decimals as points. (eg: 1,2,3)",
         rows        = 3),
       
       textAreaInput(
         inputId     = ns("x"),
         label       = strong("Explanatory Variable (\\( x\\))"),
         value       = "61, 111, 125, 134, 169, 173, 244",
-        placeholder = "Enter values separated by a comma with decimals as points",
+        placeholder = "Enter numeric values separated by a comma with decimals as points (eg: 1,2,3).",
         rows        = 3)
     ), #dataRegCor == 'Enter Raw Data'
     
@@ -273,16 +273,32 @@ SLRServer <- function(id) {
     
     ### ------------ Rules -------------------------------------------------------
     slrraw_iv$add_rule("x", sv_required())
-    slrraw_iv$add_rule("x", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                     "Data must be numeric values separated by a comma (ie: 2,3,4)."))
+    slrraw_iv$add_rule("x", sv_regex("^\\s*-?\\d*\\.?\\d+(\\s*,\\s*-?\\d*\\.?\\d+)*\\s*$",
+                                     "Data must be numeric values separated by a comma (ie: 2,3,4 or 2, 30, 400)."))
+    
+    slrraw_iv$add_rule("x", ~ if(length(strsplit(input$x, ",")[[1]]) < 3) "Sample Data must include at least 3 numeric observations.")
     slrraw_iv$add_rule("x", ~ if(sampleInfoRaw()$diff != 0) "x and y must have the same number of observations.")
     slrraw_iv$add_rule("x", ~ if(sampleInfoRaw()$xSD == 0) "Explanatory variable has zero variance (all values are identical). At least two distinct values are required.")
     
     slrraw_iv$add_rule("y", sv_required())
-    slrraw_iv$add_rule("y", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                     "Data must be numeric values separated by a comma (ie: 2,3,4)."))
+    slrraw_iv$add_rule("y", sv_regex("^\\s*-?\\d*\\.?\\d+(\\s*,\\s*-?\\d*\\.?\\d+)*\\s*$",
+                                     "Data must be numeric values separated by a comma (ie: 2,3,4 or 2, 30, 400)."))
+    slrraw_iv$add_rule("y", ~ if(length(strsplit(input$x, ",")[[1]]) < 3) "Sample Data must include at least 3 numeric observations.")
     slrraw_iv$add_rule("y", ~ if(sampleInfoRaw()$diff != 0) "x and y must have the same number of observations.")
     slrraw_iv$add_rule("y", ~ if(sampleInfoRaw()$ySD == 0) "Response variable is constant. Correlation is undefined when a variable has zero variance.")
+    
+    # rule catches x and y from having the same observations 
+    slrraw_iv$add_rule("x", ~ {
+      
+      x_vals <- as.numeric(trimws(strsplit(input$x, ",")[[1]]))
+      y_vals <- as.numeric(trimws(strsplit(input$y, ",")[[1]]))
+      
+      if (identical(x_vals, y_vals)) {
+        "x and y cannot contain identical observations in the same order."
+      }
+      
+    })
+    
     
     slrupload_iv$add_rule("slrUserData", sv_required())
     slrupload_iv$add_rule("slrUserData", ~ if(is.null(fileInputs$slrStatus) || fileInputs$slrStatus == 'reset') "Required")
@@ -984,8 +1000,15 @@ SLRServer <- function(id) {
         
         # Spearman's rs formula
         output$spearmanEstimate <- renderUI({
-          sprintf("\\( \\large{\\quad r_{s} = 1 - \\dfrac{ 6 \\left(\\sum\\limits_{i=1}^n d^2_{i}\\right)}{ n (n^2 - 1)} = %0.4f} \\)",
-                  spearman$estimate)
+          withMathJax(
+            HTML(
+              sprintf(
+                "\\( \\large{\\quad r_{s} = 1 - \\dfrac{ 6 \\left(\\sum\\limits_{i=1}^n d^2_{i}\\right)}{ n (n^2 - 1)} = %0.4f} \\)",
+                spearman$estimate
+              )
+            )
+          )
+          
         })
         
         output$slrViewUpload <- renderDT({

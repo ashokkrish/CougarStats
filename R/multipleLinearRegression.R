@@ -43,7 +43,7 @@ MLRSidebarUI <- function(id) {
           id = ns("explanatoryVariablesWrapper"),
           pickerInput(
             inputId  = ns("explanatoryVariables"),
-            label    = strong("Explanatory Variables (x₁, x₂, …, xₖ)"),
+            label = HTML("<strong>Explanatory Variables (\\(x_1, x_2, x_3...x_n\\)) </strong> "),
             choices  = NULL,
             multiple = TRUE,
             options  = list(
