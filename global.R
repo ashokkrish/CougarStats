@@ -107,6 +107,7 @@ source("R/decisionTrees.R")
 source("R/kNearestNeighbors.R")
 source("R/linearDiscriminantAnalysis.R")
 source("R/principalComponentAnalysis.R")
+source("R/randomForest.R")
 
 source("R/machineLearning.R")
 
