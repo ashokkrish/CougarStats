@@ -7,6 +7,45 @@ probDistUI <- function(id) {
   ns <- NS(id)
   
   tagList(
+    tags$style(HTML("
+      .code-container {
+        border: 1px solid #ddd;
+        border-radius: 3px !important;
+        overflow: hidden;
+        margin-top: 5px !important;
+        max-height: none;
+      }
+      
+      .code-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #eaf3ff;
+        padding: 4px 10px;
+        font-size: 14px;
+        font-weight: bold;
+        border-bottom: 1px solid #ddd;
+      }
+      
+      .copy-btn {
+        cursor: pointer;
+        font-size: 14px;
+        user-select: none;
+      }
+      
+.code-body > div {
+  margin: 0;
+  padding: 4px 8px;
+
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 14px;
+  line-height: 1.3;
+
+  background: #f7f9fc;
+
+  white-space: pre;
+}
+      ")),
     sidebarLayout(
       #  ========================================================================== #  
       ## -------- Sidebar Panel --------------------------------------------------- 
@@ -715,25 +754,66 @@ probDistUI <- function(id) {
             ), 
             
             ### ------------ Binomial -----------------------------------------------------
+            
             conditionalPanel(
               ns = ns,
               condition = "input.probability == 'Binomial'",
-              hidden(div(id=ns("binomialResults"),
-                         navbarPage(title = "Binomial Distribution",
-                                    id = ns("binomialNavbar"),
-                                    theme = bs_theme(version = 4),
-                                    tabPanel(title = "Calculations",
-                                             uiOutput(ns("renderProbabilityBinom"))
-                                    ),
-                                    tabPanel(title = "Probability Distribution Table",
-                                             DTOutput(ns("binomDistrTable"), width = "25%"),
-                                    ),
-                                    tabPanel(title = "Probability Histogram",
-                                             plotOutput(ns("binomDistrBarPlot"), width = "50%")
-                                    )
-                         )
-              ))
-            ), 
+              hidden(
+                div(
+                  id = ns("binomialResults"),
+                  
+                  navbarPage(
+                    title = "Binomial Distribution",
+                    id = ns("binomialNavbar"),
+                    theme = bs_theme(version = 4),
+                    
+                    tabPanel(
+                      title = "Calculations",
+                      
+                      uiOutput(ns("renderProbabilityBinom")),
+                      
+                      br(),
+                      
+                      div(
+                        class = "code-container",
+                        
+                        div(
+                          class = "code-header",
+                          
+                          div("R Code"),
+                          
+                          tags$button(
+                            class = "copy-btn",
+                            type = "button",
+                            onclick = sprintf(
+                              "navigator.clipboard.writeText(document.getElementById('%s').innerText.trim())",
+                              ns("rcodeBinomBox")
+                            ),
+                            "Copy"
+                          )
+                        ),
+                        
+                        div(
+                          id = ns("rcodeBinomBox"),
+                          class = "code-body",
+                          textOutput(ns("rcodeBinom"))
+                        )
+                      )
+                    ),
+                    
+                    tabPanel(
+                      title = "Probability Distribution Table",
+                      DTOutput(ns("binomDistrTable"), width = "25%")
+                    ),
+                    
+                    tabPanel(
+                      title = "Probability Histogram",
+                      plotOutput(ns("binomDistrBarPlot"), width = "50%")
+                    )
+                  )
+                )
+              )
+            ),
             
             ### ------------ Poisson ------------------------------------------------------
             conditionalPanel(
@@ -2261,6 +2341,89 @@ probDistServer <- function(id) {
               )
             ) 
           })
+      })
+      
+      output$rcodeBinom <- renderText({
+        
+        if (input$calcBinom == "exact") {
+          
+          paste0(
+            "dbinom(x = ",
+            input$numSuccessesBinom,
+            ", size = ",
+            input$numTrialsBinom,
+            ", prob = ",
+            input$successProbBinom,
+            ")"
+          )
+          
+        } else if (input$calcBinom == "cumulative") {
+          
+          paste0(
+            "pbinom(x = ",
+            input$numSuccessesBinom,
+            ", size = ",
+            input$numTrialsBinom,
+            ", prob = ",
+            input$successProbBinom,
+            ")"
+          )
+          
+        } else if (input$calcBinom == "upperTail") {
+          
+          paste0(
+            "pbinom(x = ",
+            input$numSuccessesBinom - 1,
+            ", size = ",
+            input$numTrialsBinom,
+            ", prob = ",
+            input$successProbBinom,
+            ", lower.tail = FALSE)"
+          )
+          
+        } else if (input$calcBinom == "greaterThan") {
+          
+          paste0(
+            "pbinom(x = ",
+            input$numSuccessesBinom,
+            ", size = ",
+            input$numTrialsBinom,
+            ", prob = ",
+            input$successProbBinom,
+            ", lower.tail = FALSE)"
+          )
+          
+        } else if (input$calcBinom == "lessThan") {
+          
+          paste0(
+            "pbinom(x = ",
+            input$numSuccessesBinom - 1,
+            ", size = ",
+            input$numTrialsBinom,
+            ", prob = ",
+            input$successProbBinom,
+            ")"
+          )
+          
+        } else if (input$calcBinom == "between") {
+          
+          paste0(
+            "pbinom(x = ",
+            input$numSuccessesBinomx2,
+            ", size = ",
+            input$numTrialsBinom,
+            ", prob = ",
+            input$successProbBinom,
+            ") - ",
+            "pbinom(x = ",
+            input$numSuccessesBinomx1 - 1,
+            ", size = ",
+            input$numTrialsBinom,
+            ", prob = ",
+            input$successProbBinom,
+            ")"
+          )
+        }
       })
       
       output$binomDistrTable <- DT::renderDT({
