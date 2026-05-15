@@ -7,13 +7,18 @@ RFSidebarUI <- function(id) {
     useShinyjs(),
 
     div(
+      style = "font-size: 15px; color: #6c757d; margin-top: 8px; margin-bottom: 6px; ",
+      "Select a categorical variable, must have 2 or more unique categories."
+    ),
+
+    div(
       id = ns("responseWrapper"),
       pickerInput(
         ns("response"),
         strong("Response Variable (Class)"),
         choices = NULL,
-        multiple = FALSE,
-        options = list(`live-search` = TRUE, title = "Nothing selected")
+        multiple = TRUE,
+        options = list(`live-search` = TRUE, title = "Nothing selected", `max-options` = 1)
       ),
       uiOutput(ns("responseError"))
     ),

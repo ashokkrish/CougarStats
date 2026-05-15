@@ -39,12 +39,12 @@ CARTSidebarUI <- function(id) {
         ns("response"),
         strong(HTML("Response Variable (Class)")),
         choices = NULL,
-        multiple = FALSE,
-        options = list(`live-search` = TRUE, title = "Nothing selected")
+        multiple = TRUE,
+        options = list(`live-search` = TRUE, title = "Nothing selected", `max-options` = 1)
       ),
       uiOutput(ns("responseError"))
     ),
-    
+
     div(
       id = ns("predictorsWrapper"),
       pickerInput(
@@ -353,24 +353,25 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
         return()
       }
       
+      resp_col <- input$response[1]
       df <- data()
-      
-      analysis_df <- df[, c(input$predictors, input$response), drop = FALSE]
+
+      analysis_df <- df[, c(input$predictors, resp_col), drop = FALSE]
       analysis_df <- na.omit(analysis_df)
-      
+
       if (nrow(analysis_df) == 0) {
         showNotification("No complete cases remain after removing missing values.", type = "error", duration = 8)
         return()
       }
-      
-      analysis_df[[input$response]] <- as.factor(analysis_df[[input$response]])
-      
-      if (nlevels(analysis_df[[input$response]]) < 2) {
+
+      analysis_df[[resp_col]] <- as.factor(analysis_df[[resp_col]])
+
+      if (nlevels(analysis_df[[resp_col]]) < 2) {
         showNotification("Response variable must have at least 2 classes.", type = "error", duration = 8)
         return()
       }
-      
-      if (nlevels(analysis_df[[input$response]]) > floor(nrow(analysis_df) / 2)) {
+
+      if (nlevels(analysis_df[[resp_col]]) > floor(nrow(analysis_df) / 2)) {
         showNotification(
           "The selected response variable has too many unique values to be treated as a categorical class variable for CART.",
           type = "error",
@@ -397,7 +398,7 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
       
       cart_formula <- as.formula(
         paste(
-          paste0("`", input$response, "`"),
+          paste0("`", resp_col, "`"),
           "~",
           paste(paste0("`", input$predictors, "`"), collapse = " + ")
         )
@@ -443,7 +444,7 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
       req(cart_pred)
       
       confusion_mat <- table(
-        Actual = analysis_df[[input$response]],
+        Actual = analysis_df[[resp_col]],
         Predicted = cart_pred
       )
       
@@ -469,7 +470,7 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
         fit = cart_fit,
         confusion = confusion_mat,
         accuracy = accuracy,
-        response = input$response,
+        response = resp_col,
         predictors = input$predictors,
         n = nrow(analysis_df),
         importance = importance_df
@@ -511,7 +512,7 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
             "Accuracy"
           ),
           Value = c(
-            as.character(length(unique(analysis_df[[input$response]]))),
+            as.character(length(unique(analysis_df[[resp_col]]))),
             as.character(length(r$predictors)),
             as.character(r$n),
             as.character(as.integer(input$max_depth)),

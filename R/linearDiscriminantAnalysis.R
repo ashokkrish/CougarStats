@@ -7,17 +7,22 @@ LDASidebarUI <- function(id) {
     useShinyjs(),
 
     div(
+      style = "font-size: 15px; color: #6c757d; margin-top: 8px; margin-bottom: 6px; ",
+      "Select a categorical variable, must have 2 or more unique categories."
+    ),
+
+    div(
       id = ns("responseWrapper"),
       pickerInput(
         ns("response"),
         strong("Response Variable (Class)"),
         choices = NULL,
-        multiple = FALSE,
-        options = list(`live-search` = TRUE, title = "Nothing selected")
+        multiple = TRUE,
+        options = list(`live-search` = TRUE, title = "Nothing selected", `max-options` = 1)
       ),
       uiOutput(ns("responseError"))
     ),
-    
+
     div(
       id = ns("predictorsWrapper"),
       pickerInput(
@@ -339,24 +344,25 @@ LDAServer <- function(id, data, shared_explanatory, shared_response) {
       return()
     }
     
+    resp_col <- input$response[1]
     df <- data()
 
-      analysis_df <- df[, c(input$predictors, input$response), drop = FALSE]
+      analysis_df <- df[, c(input$predictors, resp_col), drop = FALSE]
       analysis_df <- na.omit(analysis_df)
-      
-      analysis_df[[input$response]] <- prepare_lda_response(analysis_df[[input$response]])
-      
-      if (is.null(analysis_df[[input$response]])) {
+
+      analysis_df[[resp_col]] <- prepare_lda_response(analysis_df[[resp_col]])
+
+      if (is.null(analysis_df[[resp_col]])) {
         showNotification("Response variable could not be prepared for LDA.", type = "error", duration = 8)
         return()
       }
-      
+
       predictor_df <- analysis_df[, input$predictors, drop = FALSE]
       numeric_check <- sapply(predictor_df, is.numeric)
-      
-      class_counts <- table(analysis_df[[input$response]])
-      
-      if (nlevels(analysis_df[[input$response]]) > floor(nrow(analysis_df) / 2)) {
+
+      class_counts <- table(analysis_df[[resp_col]])
+
+      if (nlevels(analysis_df[[resp_col]]) > floor(nrow(analysis_df) / 2)) {
         showNotification(
           "The selected response variable has too many unique values to be treated as a categorical class variable for LDA.",
           type = "error",
@@ -370,16 +376,16 @@ LDAServer <- function(id, data, shared_explanatory, shared_response) {
         return()
       }
       
-      if (nlevels(analysis_df[[input$response]]) < 2) {
+      if (nlevels(analysis_df[[resp_col]]) < 2) {
         showNotification("Response variable must have at least 2 classes.", type = "error", duration = 8)
         return()
       }
-      
+
       if (length(input$predictors) < 1) {
         showNotification("Select at least one explanatory variables", type = "error", duration = 8)
         return()
       }
-      
+
       if (any(class_counts < 2)) {
         lda_message(
           "Each class must have at least 2 observations for LDA. One or more classes in your selected response variable have fewer than 2 rows."
@@ -387,7 +393,7 @@ LDAServer <- function(id, data, shared_explanatory, shared_response) {
         return()
       }
 
-      response_var <- paste0("`", input$response, "`")
+      response_var <- paste0("`", resp_col, "`")
       predictor_vars <- paste0("`", input$predictors, "`")
       
       lda_formula <- as.formula(
@@ -411,7 +417,7 @@ LDAServer <- function(id, data, shared_explanatory, shared_response) {
       lda_pred <- predict(lda_fit, analysis_df[, input$predictors, drop = FALSE])
 
       confusion_mat <- table(
-        Actual = analysis_df[[input$response]],
+        Actual = analysis_df[[resp_col]],
         Predicted = lda_pred$class
       )
 
@@ -432,7 +438,7 @@ LDAServer <- function(id, data, shared_explanatory, shared_response) {
       scores_df <- data.frame(
         LD1 = scores_mat$LD1,
         LD2 = scores_mat$LD2,
-        Class = analysis_df[[input$response]]
+        Class = analysis_df[[resp_col]]
       )
 
       cv_confusion <- NULL
@@ -442,7 +448,7 @@ LDAServer <- function(id, data, shared_explanatory, shared_response) {
         lda_cv <- MASS::lda(lda_formula, data = analysis_df, CV = TRUE)
 
         cv_confusion <- table(
-          Actual = analysis_df[[input$response]],
+          Actual = analysis_df[[resp_col]],
           Predicted = lda_cv$class
         )
 
@@ -457,7 +463,7 @@ LDAServer <- function(id, data, shared_explanatory, shared_response) {
         scores = scores_df,
         cv_confusion = cv_confusion,
         cv_accuracy = cv_accuracy,
-        response = input$response,
+        response = resp_col,
         predictors = input$predictors,
         n = nrow(analysis_df)
       )

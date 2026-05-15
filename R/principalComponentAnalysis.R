@@ -27,6 +27,21 @@ PCASidebarUI <- function(id) {
     ),
 
     div(
+      style = "font-size: 15px; color: #6c757d; margin-top: 8px; margin-bottom: 6px; ",
+      "Select a categorical variable, must have 2 or more unique categories."
+    ),
+
+    div(
+      id = ns("responseWrapper"),
+      pickerInput(
+        ns("response"),
+        strong("Response Variable"),
+        choices = NULL,
+        multiple = TRUE,
+        options = list(`live-search` = TRUE, title = "Optional", `max-options` = 1)
+      )
+    ),
+    div(
       id = ns("predictorsWrapper"),
       pickerInput(
         ns("predictors"),
@@ -36,26 +51,25 @@ PCASidebarUI <- function(id) {
         options = list(`actions-box` = TRUE, `live-search` = TRUE, title = "Nothing selected")
       )
     ),
-    div(
-      id = ns("responseWrapper"),
-      pickerInput(
-        ns("response"),
-        strong("Response Variable (biplot color, optional)"),
-        choices = NULL,
-        multiple = FALSE,
-        options = list(`live-search` = TRUE, title = "Nothing selected")
-      )
-    ),
     radioButtons(ns("transformation"),
-                 label = "Data Transformation",
+                 label = strong("Data Transformation"),
                  choices = c("Original scale",
                              "Logarithmic transformation",
                              "Box-Cox transformation",
                              "Standardized Box-Cox transformation"),
                  selected = "Original scale"),
-    numericInput(ns("numFactors"), "Number of Factors", value = 2, min = 1, step = 1),
-    selectInput(ns("pcX"), "X-axis component", choices = NULL),
-    selectInput(ns("pcY"), "Y-axis component", choices = NULL),
+    div(
+      id = ns("numFactorsContainer"),
+      numericInput(ns("numFactors"), "Number of Factors", value = 2, min = 1, step = 1)
+    ),
+    div(
+      id = ns("pcXContainer"),
+      selectInput(ns("pcX"), "X-axis component", choices = NULL)
+    ),
+    div(
+      id = ns("pcYContainer"),
+      selectInput(ns("pcY"), "Y-axis component", choices = NULL)
+    ),
     uiOutput(ns("fileImportUserMessage")),
     actionButton(ns("calculate"), "Calculate", class = "act-btn"),
     actionButton(ns("reset"), "Reset Values", class = "act-btn")
@@ -144,6 +158,9 @@ PCAServer <- function(id, data, shared_explanatory, shared_response) {
       hideTab(inputId = "mainPanel", target = "pca_results_tab")
       hideTab(inputId = "mainPanel", target = "plots_tab")
       hideTab(inputId = "mainPanel", target = "transformations_tab")
+      shinyjs::hide("numFactorsContainer")
+      shinyjs::hide("pcXContainer")
+      shinyjs::hide("pcYContainer")
     }, once = TRUE)
     
     observeEvent(data(), {
@@ -166,7 +183,7 @@ PCAServer <- function(id, data, shared_explanatory, shared_response) {
 
     # Clear results when user changes PCA options
     observeEvent(
-      list(input$predictors, input$response, input$transformation, input$numFactors),
+      list(input$predictors, input$response, input$transformation),
       {
         pca_results(NULL)
         analysis_data(NULL)
@@ -176,6 +193,9 @@ PCAServer <- function(id, data, shared_explanatory, shared_response) {
         hideTab(inputId = "mainPanel", target = "pca_results_tab")
         hideTab(inputId = "mainPanel", target = "plots_tab")
         hideTab(inputId = "mainPanel", target = "transformations_tab")
+        shinyjs::hide("numFactorsContainer")
+        shinyjs::hide("pcXContainer")
+        shinyjs::hide("pcYContainer")
         updateNavbarPage(session, "mainPanel", selected = "uploaded_data_tab")
       },
       ignoreInit = TRUE
@@ -324,11 +344,16 @@ PCAServer <- function(id, data, shared_explanatory, shared_response) {
         
         pca <- prcomp(transformed_data, center = TRUE, scale. = TRUE)
         pca_results(pca)
-        
+
         pcs <- colnames(pca$x)
         updateSelectInput(session, "pcX", choices = pcs, selected = pcs[1])
         updateSelectInput(session, "pcY", choices = pcs, selected = pcs[min(2, length(pcs))])
-        
+        updateNumericInput(session, "numFactors", value = min(input$numFactors, length(pcs)), max = length(pcs))
+
+        shinyjs::show("numFactorsContainer")
+        shinyjs::show("pcXContainer")
+        shinyjs::show("pcYContainer")
+
         showTab(inputId = "mainPanel", target = "pca_results_tab")
         showTab(inputId = "mainPanel", target = "plots_tab")
         showTab(inputId = "mainPanel", target = "transformations_tab")
@@ -610,6 +635,9 @@ PCAServer <- function(id, data, shared_explanatory, shared_response) {
       hideTab(inputId = "mainPanel", target = "pca_results_tab")
       hideTab(inputId = "mainPanel", target = "transformations_tab")
       hideTab(inputId = "mainPanel", target = "plots_tab")
+      shinyjs::hide("numFactorsContainer")
+      shinyjs::hide("pcXContainer")
+      shinyjs::hide("pcYContainer")
 
       pca_results(NULL)
       analysis_data(NULL)

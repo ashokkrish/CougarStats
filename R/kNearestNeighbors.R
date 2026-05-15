@@ -54,13 +54,13 @@ KNNSidebarUI <- function(id) {
   tagList(
     useShinyjs(),
 
-    radioButtons(
-      ns("task"),
-      strong("Task"),
-      choices = c("Classification"),
-      selected = "Classification"
-    ),
-    
+    # radioButtons(
+    #   ns("task"),
+    #   strong("Task"),
+    #   choices = c("Classification"),
+    #   selected = "Classification"
+    # ),
+
     # Let user choose any k
     sliderInput(
       ns("split"),
@@ -78,19 +78,23 @@ KNNSidebarUI <- function(id) {
     
     checkboxInput(ns("standardize"), "Standardize predictors", value = TRUE),
     
-    # Response + predictors
+    div(
+      style = "font-size: 15px; color: #6c757d; margin-top: 8px; margin-bottom: 6px; ",
+      "Select a categorical variable, must have 2 or more unique categories."
+    ),
+
     div(
       id = ns("responseWrapper"),
       pickerInput(
         ns("response"),
         strong(htmltools::HTML("Response Variable (Class)")),
         choices = NULL,
-        multiple = FALSE,
-        options = list(`live-search` = TRUE, title = "Nothing selected")
+        multiple = TRUE,
+        options = list(`live-search` = TRUE, title = "Nothing selected", `max-options` = 1)
       ),
       uiOutput(ns("responseError"))
     ),
-    
+
     div(
       id = ns("predictorsWrapper"),
       pickerInput(
@@ -471,6 +475,15 @@ KNNServer <- function(id, data, shared_explanatory, shared_response) {
         responseError(FALSE)
         shinyjs::removeClass(id = "responseWrapper", class = "has-error")
       }
+
+      if (isTruthy(data())) {
+        df <- data()
+        cols <- colnames(df)
+        numeric_cols <- cols[sapply(df, is.numeric)]
+        available_predictors <- setdiff(numeric_cols, input$response)
+        selected_predictors  <- intersect(input$predictors, available_predictors)
+        updatePickerInput(session, "predictors", choices = available_predictors, selected = selected_predictors)
+      }
     })
 
     observeEvent(input$predictors, {
@@ -539,8 +552,8 @@ KNNServer <- function(id, data, shared_explanatory, shared_response) {
       }
       
       req(knn_iv$is_valid())
-      
-      
+      resp_col <- input$response[1]
+
       #split dataset for training & testing
       df <- data()
       
@@ -576,11 +589,11 @@ KNNServer <- function(id, data, shared_explanatory, shared_response) {
       k <- as.integer(input$k) #Ensures k is an integer
       
       #CLASSIFICATION vs REGRESSION
-      if (input$task == "Classification") {
+      if (is.null(input$task) || input$task == "Classification") {
         
         #Pulls the response column that the user selected & turns it into a factor
-        y_train <- as.factor(train[[input$response]])
-        y_test  <- as.factor(test[[input$response]])
+        y_train <- as.factor(train[[resp_col]])
+        y_test  <- as.factor(test[[resp_col]])
         
         #Run kNN classification algorithm
         pred <- class::knn(
@@ -641,7 +654,7 @@ KNNServer <- function(id, data, shared_explanatory, shared_response) {
         output$confMat      <- renderTable({ metrics$cm }, striped = TRUE, bordered = TRUE)
         
         plot_settings(list(
-          response = input$response,
+          response = resp_col,
           predictors = input$predictors
         ))
         
