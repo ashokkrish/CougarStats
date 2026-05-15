@@ -1777,9 +1777,10 @@ statInfrUI <- function(id) {
                                   ns = ns,
                                   condition = "input.popuParameters == 'Wilcoxon Signed Rank Test'",
                                   
-                                  tabsetPanel(
+                                  navbarPage(
                                     id = ns("signedRankTabset"),
                                     selected = "Analysis",
+                                    title = NULL,
                                     
                                     tabPanel(
                                       id = ns("signedRankTab"),

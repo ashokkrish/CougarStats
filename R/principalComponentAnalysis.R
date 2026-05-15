@@ -1,7 +1,6 @@
 #R/principalComponentAnalysis.
 
 library(shiny)
-library(datamods)
 library(bslib)
 library(dplyr)
 library(car) # For powerTransform
@@ -21,39 +20,57 @@ library(psych) # For rotated solution
 PCASidebarUI <- function(id) {
   ns <- NS(id)
   tagList(
-    
-    div(
-      style = "font-size: 14px; color: #6c757d; margin-top: 8px; margin-bottom: 12px; font-style: italic;",
-      tags$strong(tags$em("Note: ")),
-      "CougarStats does not store, log, or share any data you upload. All uploaded files exist only for the duration of your session and are permanently deleted when the session ends."
-    ),
-    
+
     div(
       class = "si-label",
       tags$b("PCA Options")
     ),
-   
-    pickerInput(
-      ns("pcaVariables"),
-      "Variables for PCA",
-      choices = NULL,
-      multiple = TRUE,
-      options = list(
-        `actions-box` = TRUE,
-        `live-search` = TRUE,
-        title = "Nothing selected"
+
+    div(
+      style = "font-size: 15px; color: #6c757d; margin-top: 8px; margin-bottom: 6px; ",
+      "Select a categorical variable, must have 2 or more unique categories."
+    ),
+
+    div(
+      id = ns("responseWrapper"),
+      pickerInput(
+        ns("response"),
+        strong("Response Variable"),
+        choices = NULL,
+        multiple = TRUE,
+        options = list(`live-search` = TRUE, title = "Optional", `max-options` = 1)
+      )
+    ),
+    div(
+      id = ns("predictorsWrapper"),
+      pickerInput(
+        ns("predictors"),
+        strong(HTML("Explanatory Variables (<em>x</em><sub>1</sub>, <em>x</em><sub>2</sub>, ..., <em>x</em><sub>k</sub>)")),
+        choices = NULL,
+        multiple = TRUE,
+        options = list(`actions-box` = TRUE, `live-search` = TRUE, title = "Nothing selected")
       )
     ),
     radioButtons(ns("transformation"),
-                 label = "Data Transformation",
+                 label = strong("Data Transformation"),
                  choices = c("Original scale",
                              "Logarithmic transformation",
                              "Box-Cox transformation",
                              "Standardized Box-Cox transformation"),
                  selected = "Original scale"),
-    numericInput(ns("numFactors"), "Number of Factors", value = 2, min = 1, step = 1),
-    selectInput(ns("pcX"), "X-axis component", choices = NULL),
-    selectInput(ns("pcY"), "Y-axis component", choices = NULL),
+    div(
+      id = ns("numFactorsContainer"),
+      numericInput(ns("numFactors"), "Number of Factors", value = 2, min = 1, step = 1)
+    ),
+    div(
+      id = ns("pcXContainer"),
+      selectInput(ns("pcX"), "X-axis component", choices = NULL)
+    ),
+    div(
+      id = ns("pcYContainer"),
+      selectInput(ns("pcY"), "Y-axis component", choices = NULL)
+    ),
+    uiOutput(ns("fileImportUserMessage")),
     actionButton(ns("calculate"), "Calculate", class = "act-btn"),
     actionButton(ns("reset"), "Reset Values", class = "act-btn")
   )
@@ -63,34 +80,24 @@ PCAMainPanelUI <- function(id) {
   ns <- NS(id)
   navbarPage(title = NULL,
              id = ns("mainPanel"),
-             selected = "data_import_tab",
+             selected = "uploaded_data_tab",
              theme = bs_theme(version = 4),
-               tabPanel(
-                 title = "Data Import",
-                 value = "data_import_tab",
-                 div(id = ns("importContainer")),
-                 uiOutput(ns("fileImportUserMessage")),
-                 import_file_ui(
-                   id = ns("dataImport"),
-                   title = ""
-                 )
-               ),
                tabPanel(title = "Results",
                         value = "pca_results_tab",
                         h3("Principal Component Analysis Summary"),
-                        DTOutput(ns("pcaSummary")),
+                        tableOutput(ns("pcaSummary")),
                         hr(),
                         h3("Component Loadings (Unrotated)"),
-                        DTOutput(ns("pcaLoadings")),
+                        tableOutput(ns("pcaLoadings")),
                         hr(),
                         h3("Component Loadings (Varimax Rotation)"),
-                        DTOutput(ns("rotatedLoadings")),
+                        tableOutput(ns("rotatedLoadings")),
                         hr(),
                         h3("Correlation Matrix"),
-                        DTOutput(ns("correlationMatrix")),
+                        tableOutput(ns("correlationMatrix")),
                         hr(),
                         h3("Covariance Matrix"),
-                        DTOutput(ns("covarianceMatrix")),
+                        tableOutput(ns("covarianceMatrix")),
                         #hr(),
                         #h3("Scree Plot"),
                         #plotOutput(ns("screePlot")),
@@ -132,50 +139,64 @@ PCAMainPanelUI <- function(id) {
 # ============== SERVER ==============
 
 
-PCAServer <- function(id) {
+PCAServer <- function(id, data, shared_explanatory, shared_response) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
-    
-    imported_data <- import_file_server(
-      id = "dataImport",
-      trigger_return = "change",
-      btn_show_data = FALSE,
-      return_class = "tbl_df"
-    )
-    
+
     pca_results <- reactiveVal(NULL)
     analysis_data <- reactiveVal(NULL)
     original_data <- reactiveVal(NULL)
     noFileCalculate <- reactiveVal(FALSE)
     grouping_var <- reactiveVal(NULL)
+
+    pca_iv <- shinyvalidate::InputValidator$new()
+    pca_iv$add_rule("numFactors", shinyvalidate::sv_required())
+    pca_iv$add_rule("numFactors", shinyvalidate::sv_gte(1, message = "Must be at least 1."))
+    pca_iv$enable()
     
     session$onFlushed(function() {
       hideTab(inputId = "mainPanel", target = "pca_results_tab")
       hideTab(inputId = "mainPanel", target = "plots_tab")
       hideTab(inputId = "mainPanel", target = "transformations_tab")
-      hideTab(inputId = "mainPanel", target = "uploaded_data_tab")
+      shinyjs::hide("numFactorsContainer")
+      shinyjs::hide("pcXContainer")
+      shinyjs::hide("pcYContainer")
     }, once = TRUE)
     
-    observeEvent(imported_data$data(), {
-      df <- imported_data$data()
+    observeEvent(data(), {
+      df <- data()
       req(df)
-      
+
       numeric_cols <- names(dplyr::select_if(df, is.numeric))
-      updatePickerInput(session, "pcaVariables", choices = numeric_cols)
-    })
+      all_cols <- colnames(df)
+
+      pre_predictors <- intersect(shared_explanatory(), numeric_cols)
+      shared_resp    <- shared_response()
+      pre_response   <- if (isTruthy(shared_resp) && shared_resp %in% all_cols) shared_resp else character(0)
+
+      updatePickerInput(session, "predictors", choices = numeric_cols, selected = pre_predictors)
+      updatePickerInput(session, "response",   choices = all_cols,     selected = pre_response)
+    }, ignoreNULL = TRUE)
     
+    observeEvent(input$predictors, { shared_explanatory(input$predictors) }, ignoreInit = TRUE)
+    observeEvent(input$response,   { shared_response(input$response)     }, ignoreInit = TRUE)
+
     # Clear results when user changes PCA options
     observeEvent(
-      list(input$pcaVariables, input$transformation, input$numFactors),
+      list(input$predictors, input$response, input$transformation),
       {
         pca_results(NULL)
         analysis_data(NULL)
         original_data(NULL)
-        
+        grouping_var(NULL)
+
         hideTab(inputId = "mainPanel", target = "pca_results_tab")
         hideTab(inputId = "mainPanel", target = "plots_tab")
         hideTab(inputId = "mainPanel", target = "transformations_tab")
-        hideTab(inputId = "mainPanel", target = "uploaded_data_tab")
+        shinyjs::hide("numFactorsContainer")
+        shinyjs::hide("pcXContainer")
+        shinyjs::hide("pcYContainer")
+        updateNavbarPage(session, "mainPanel", selected = "uploaded_data_tab")
       },
       ignoreInit = TRUE
     )
@@ -183,7 +204,7 @@ PCAServer <- function(id) {
     
     # ---- Uploaded Data container ----
     output$uploadedDataContainer <- renderUI({
-      if (is.null(imported_data$data())) {
+      if (is.null(data())) {
         tagList(
           helpText("No data yet. Upload a dataset in the Data Import tab to view it here.")
         )
@@ -194,8 +215,8 @@ PCAServer <- function(id) {
     
     # ---- Uploaded Data table ----
     output$pcaUploadTable <- DT::renderDT({
-      req(imported_data$data())
-      df <- imported_data$data()
+      req(data())
+      df <- data()
       
       DT::datatable(
         df,
@@ -217,35 +238,36 @@ PCAServer <- function(id) {
     })
     
     observeEvent(input$calculate, {
-      
+
       tryCatch({
-        
-        if (!isTruthy(imported_data$data())) {
+
+        req(pca_iv$is_valid())
+
+        if (!isTruthy(data())) {
           noFileCalculate(TRUE)
           return()
         } else {
           noFileCalculate(FALSE)
         }
         
-        if (!isTruthy(input$pcaVariables) || length(input$pcaVariables) < 2) {
-          shinyalert::shinyalert("Input Error", "Please select at least two variables for PCA.",
+        if (!isTruthy(input$predictors) || length(input$predictors) < 2) {
+          shinyalert::shinyalert("Input Error", "Please select at least two explanatory variables for PCA.",
                                  type = "error", confirmButtonCol = "#18536F")
           return()
         }
-        
-        if (input$numFactors > length(input$pcaVariables)) {
+
+        if (input$numFactors > length(input$predictors)) {
           shinyalert::shinyalert("Input Error", "Number of factors cannot exceed the number of selected variables.",
                                  type = "error", confirmButtonCol = "#18536F")
           return()
         }
-        
-        df <- imported_data$data()
-        
-        non_num <- names(df)[!sapply(df, is.numeric)]
-        group_col <- if (length(non_num) > 0) non_num[1] else NULL
-        
-        row_ok <- complete.cases(df[, input$pcaVariables, drop = FALSE])
-        selected_data <- df[row_ok, input$pcaVariables, drop = FALSE]
+
+        df <- data()
+
+        group_col <- if (isTruthy(input$response)) input$response else NULL
+
+        row_ok <- complete.cases(df[, input$predictors, drop = FALSE])
+        selected_data <- df[row_ok, input$predictors, drop = FALSE]
         selected_data <- as.data.frame(selected_data)
         
         if (!is.null(group_col)) {
@@ -322,15 +344,19 @@ PCAServer <- function(id) {
         
         pca <- prcomp(transformed_data, center = TRUE, scale. = TRUE)
         pca_results(pca)
-        
+
         pcs <- colnames(pca$x)
         updateSelectInput(session, "pcX", choices = pcs, selected = pcs[1])
         updateSelectInput(session, "pcY", choices = pcs, selected = pcs[min(2, length(pcs))])
-        
+        updateNumericInput(session, "numFactors", value = min(input$numFactors, length(pcs)), max = length(pcs))
+
+        shinyjs::show("numFactorsContainer")
+        shinyjs::show("pcXContainer")
+        shinyjs::show("pcYContainer")
+
         showTab(inputId = "mainPanel", target = "pca_results_tab")
         showTab(inputId = "mainPanel", target = "plots_tab")
         showTab(inputId = "mainPanel", target = "transformations_tab")
-        showTab(inputId = "mainPanel", target = "uploaded_data_tab")
         
         updateNavbarPage(session, "mainPanel", selected = "pca_results_tab")
         
@@ -471,17 +497,17 @@ PCAServer <- function(id) {
     }, res = 96)
     
     
-    output$pcaSummary <- renderDT({
+    output$pcaSummary <- renderTable({
       req(pca_results())
       summary_df <- as.data.frame(summary(pca_results())$importance)[, 1:input$numFactors, drop = FALSE]
-      datatable(summary_df, options = list(dom = 't')) %>% formatRound(columns = 1:ncol(summary_df), digits = 3)
-    })
-    
-    output$pcaLoadings <- renderDT({
+      round(summary_df, 3)
+    }, rownames = TRUE)
+
+    output$pcaLoadings <- renderTable({
       req(pca_results())
       loadings_df <- as.data.frame(pca_results()$rotation)[, 1:input$numFactors, drop = FALSE]
-      datatable(loadings_df, options = list(dom = 't')) %>% formatRound(columns = 1:ncol(loadings_df), digits = 3)
-    })
+      round(loadings_df, 3)
+    }, rownames = TRUE)
     
     output$pcaInterpretation <- renderUI({
       req(pca_results())
@@ -546,17 +572,15 @@ PCAServer <- function(id) {
       gridExtra::grid.arrange(p1, p2, ncol = 1)
     })
     
-    output$correlationMatrix <- renderDT({
+    output$correlationMatrix <- renderTable({
       req(analysis_data())
-      cor_matrix <- cor(analysis_data())
-      datatable(cor_matrix, options = list(dom = 't')) %>% formatRound(columns = 1:ncol(cor_matrix), digits = 4)
-    })
-    
-    output$covarianceMatrix <- renderDT({
+      round(cor(analysis_data()), 4)
+    }, rownames = TRUE)
+
+    output$covarianceMatrix <- renderTable({
       req(analysis_data())
-      cov_matrix <- cov(analysis_data())
-      datatable(cov_matrix, options = list(dom = 't')) %>% formatRound(columns = 1:ncol(cov_matrix), digits = 4)
-    })
+      round(cov(analysis_data()), 4)
+    }, rownames = TRUE)
     
     output$screePlot <- renderPlot({
       req(pca_results())
@@ -583,17 +607,17 @@ PCAServer <- function(id) {
       )
     }, res = 96)
     
-    output$rotatedLoadings <- renderDT({
+    output$rotatedLoadings <- renderTable({
       req(analysis_data())
-      
+
       validate(
         need(input$numFactors < ncol(analysis_data()),
              "Number of factors must be less than the number of selected variables for rotated PCA.")
       )
-      
+
       cor_mat <- cor(analysis_data(), use = "complete.obs")
       cor_mat <- suppressWarnings(psych::cor.smooth(cor_mat))
-      
+
       rotated_pca <- suppressWarnings(
         psych::principal(
           cor_mat,
@@ -602,32 +626,30 @@ PCAServer <- function(id) {
           scores = FALSE
         )
       )
-      
+
       rotated_loadings_df <- as.data.frame(unclass(rotated_pca$loadings))
-      
-      datatable(rotated_loadings_df, options = list(dom = 't')) %>%
-        formatRound(columns = 1:ncol(rotated_loadings_df), digits = 3)
-    })
+      round(rotated_loadings_df, 3)
+    }, rownames = TRUE)
     
     observeEvent(input$reset, {
       hideTab(inputId = "mainPanel", target = "pca_results_tab")
       hideTab(inputId = "mainPanel", target = "transformations_tab")
       hideTab(inputId = "mainPanel", target = "plots_tab")
-      hideTab(inputId = "mainPanel", target = "uploaded_data_tab")
-      
-      updateNavbarPage(session, "mainPanel", selected = "data_import_tab")
-      
-      
+      shinyjs::hide("numFactorsContainer")
+      shinyjs::hide("pcXContainer")
+      shinyjs::hide("pcYContainer")
+
       pca_results(NULL)
       analysis_data(NULL)
       original_data(NULL)
-      updatePickerInput(session, "pcaVariables", selected = character(0))
+      updatePickerInput(session, "predictors", selected = character(0))
+      updatePickerInput(session, "response", selected = character(0))
       updateRadioButtons(session, "transformation", selected = "Original scale")
       updateNumericInput(session, "numFactors", value = 2)
       updateSelectInput(session, "pcX", choices = character(0))
       updateSelectInput(session, "pcY", choices = character(0))
-      
-      updateNavbarPage(session, "mainPanel", selected = "data_import_tab")
+
+      updateNavbarPage(session, "mainPanel", selected = "uploaded_data_tab")
     })
     
     observe({
@@ -639,3 +661,4 @@ PCAServer <- function(id) {
     
   })
 }
+
