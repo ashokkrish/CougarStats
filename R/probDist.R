@@ -10,10 +10,11 @@ probDistUI <- function(id) {
     tags$style(HTML("
       .code-container {
         border: 1px solid #ddd;
-        border-radius: 3px !important;
+        border-radius: 3px;
         overflow: hidden;
-        margin-top: 5px !important;
+        margin-top: 5px;
         max-height: none;
+        width: 65%;
       }
       
       .code-header {
@@ -33,18 +34,17 @@ probDistUI <- function(id) {
         user-select: none;
       }
       
-.code-body > div {
-  margin: 0;
-  padding: 4px 8px;
-
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 14px;
-  line-height: 1.3;
-
-  background: #f7f9fc;
-
-  white-space: pre;
-}
+      .code-body > div {
+        padding: 4px 8px;
+      
+        font-family: 'Courier New', monospace;
+        font-size: 14px;
+        line-height: 1.3;
+      
+        background: #f7f9fc;
+      
+        white-space: pre;
+      }
       ")),
     sidebarLayout(
       #  ========================================================================== #  
