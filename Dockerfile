@@ -88,6 +88,7 @@ RUN R -e \
                     'psych',            \
                     'forecast'          \
                     'skedastic'         \
+                    'reactable'
                     'sortable'          \
                     'lmtest',           \
                   dependencies = TRUE); \

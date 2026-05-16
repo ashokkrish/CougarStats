@@ -17,6 +17,7 @@ SLRMainPanelUI <- function(id) {
     useShinyjs(),
     hidden(div(
       id = ns("regCorrMP"), # This div is hidden/shown
+      uiOutput(ns("perfectFitWarning")), # added to trap perfect fit
       uiOutput(ns("slrValidation")),
       
       div(
@@ -66,7 +67,7 @@ SLRMainPanelUI <- function(id) {
             title = "Calculations",
             value = "Calculations",
 
-            DTOutput(ns("slrDataTable"), width = "750px"),
+            reactableOutput(ns("slrDataTable"), width = "95%"),
             br()
           ), # Calculations tabpanel
           
@@ -108,46 +109,64 @@ SLRMainPanelUI <- function(id) {
           tabPanel(
             title = "Correlation Analysis",
             value = "Correlation Analysis",
-
-            # Nested tabsetPanel
+            
             tabsetPanel(
-
-                  tabPanel(
-                    title = "Pearson",
-                    value = "Pearson",
-                    
-                    titlePanel("Pearson's Correlation Coefficient"),
-                    br(),
-                    br(),
-                    uiOutput(ns('pearsonCorFormula')),
-                    br(),
-                    hr(),
-                  ), # Pearson tabpanel
+              type = "tabs",
+              id   = ns("correlationTabs"),
+              header = tags$style(HTML(sprintf(
+                "#%s .nav-tabs > li > a {
+         color: #1a3a5c;
+         font-weight: bold;
+         font-size: 15px;
+       }
+       #%s .nav-tabs > li.active > a {
+         background-color: #1a3a5c;
+         color: white;
+         border-color: #1a3a5c;
+       }
+       #%s .nav-tabs > li > a:hover {
+         background-color: #d0dce8;
+         color: #1a3a5c;
+       }",
+                ns("correlationTabs"),
+                ns("correlationTabs"),
+                ns("correlationTabs")
+              ))),
+              
+              tabPanel(
+                title = "Pearson",
+                value = "Pearson",
+                titlePanel("Pearson's Correlation Coefficient"),
+                br(),
+                br(),
+                uiOutput(ns('pearsonCorFormula')),
+                br(),
+                hr()
+              ),
+              
+              tabPanel(
+                title = "Kendall",
+                value = "Kendall",
+                titlePanel("Kendall's Rank Correlation Coefficient"),
+                br(),
+                uiOutput(ns("kendallFormula")),
+                br(),
+                hr()
+              ),
+              
+              tabPanel(
+                title = "Spearman",
+                value = "Spearman",
+                titlePanel("Spearman's Rank Correlation Coefficient"),
+                br(),
+                uiOutput(ns("spearmanEstimate")),
+                br(),
+                br(),
+                hr()
+              )
+            ) ## Nested tabsetPanel
             
-                  tabPanel(
-                    title = "Kendall",
-                    value = "Kendall",
-                    
-                    titlePanel("Kendall's Rank Correlation Coefficient"),
-                    br(),
-                    uiOutput(ns("kendallFormula")),
-                    br(),
-                    hr(),
-                  ), # Kendall tabpanel
-            
-                  tabPanel(
-                    title = "Spearman",
-                    value = "Spearman",
-      
-                    titlePanel("Spearman's Rank Correlation Coefficient"),
-                    br(),
-                    uiOutput(ns("spearmanEstimate")),
-                    br(),
-                    br(),
-                    hr(),
-                  ), # Spearman tabpanel
-            ), ## Nested tabsetPanel
-          ), #correlation tabPanel
+          ),
           
           #### ---------------- Data File Tab ------------------------------------------
           tabPanel(
@@ -287,17 +306,7 @@ SLRServer <- function(id) {
     slrraw_iv$add_rule("y", ~ if(sampleInfoRaw()$diff != 0) "x and y must have the same number of observations.")
     slrraw_iv$add_rule("y", ~ if(sampleInfoRaw()$ySD == 0) "Response variable is constant. Correlation is undefined when a variable has zero variance.")
     
-    # rule catches x and y from having the same observations 
-    slrraw_iv$add_rule("x", ~ {
-      
-      x_vals <- as.numeric(trimws(strsplit(input$x, ",")[[1]]))
-      y_vals <- as.numeric(trimws(strsplit(input$y, ",")[[1]]))
-      
-      if (identical(x_vals, y_vals)) {
-        "x and y cannot contain identical observations in the same order."
-      }
-      
-    })
+    
     
     
     slrupload_iv$add_rule("slrUserData", sv_required())
@@ -543,6 +552,7 @@ SLRServer <- function(id) {
         }
         
         model <- lm(daty ~ datx)
+        r_squared <- summary(model)$r.squared
         y_hat <- fitted(model)
         residuals <- residuals(model)
         residuals_sq <- residuals^2
@@ -570,22 +580,63 @@ SLRServer <- function(id) {
           }
         }
         
-        output$slrDataTable <- renderDT(
-          datatable(dfFormatted,
-                    options = list(pageLength = -1,
-                                   lengthMenu = list(c(-1, 10, 25, 50, 100), c("All", "10", "25", "50", "100"))
-                    ),
-                    escape = FALSE
-          ) %>% formatStyle(names(dfFormatted),
-                            target = 'row',
-                            fontWeight = styleRow(dim(dfFormatted)[1], "bold"))
-        )
+        # Perfect fit detection
+        output$perfectFitWarning <- renderUI({
+          if (isTRUE(all.equal(r_squared, 1))) {
+            div(
+              class = "alert alert-warning",
+              role  = "alert",
+              style = "margin-top: 10px;",
+              tags$b("\u26a0\ufe0f Perfect Fit Detected: "),
+              "The model has an R\u00b2 of 1 or -1, meaning the regession line fits the data perfectly. Resulting in an MSE equal to zero and a zero set of residuals.",
+              "This may indicate that ",
+              tags$b("x and y are identical or linearly dependent,"),
+              " which can produce unreliable inference results for the Parameters, ANOVA and Diagnostic Plots.",
+              " The results are displayed, but",
+              tags$b("interpret with caution.")
+            )
+          }
+        })
         
-        output$renderSLRScatterplot <- renderUI({
-          tagList(
-            plotOutput(session$ns("slrScatterplot"),
-                       height = GetPlotHeight(input[["slrScatter-Height"]], input[["slrScatter-HeightPx"]], ui = TRUE),
-                       width = GetPlotWidth(input[["slrScatter-Width"]], input[["slrScatter-WidthPx"]], ui = TRUE)),
+        
+        output$slrDataTable <- renderReactable({
+          
+          dataRows  <- dfFormatted[1:(nrow(dfFormatted) - 1), ]
+          totalsRow <- dfFormatted[nrow(dfFormatted), ]
+          
+          # Use original numeric df for sorting
+          numericRows <- df[1:(nrow(df) - 1), ]
+          
+          reactable(
+            numericRows,
+            sortable   = TRUE,
+            resizable  = TRUE,
+            bordered   = TRUE,
+            striped    = TRUE,
+            highlight  = TRUE,
+            pagination = FALSE,
+            fullWidth  = TRUE,
+            rownames   = TRUE,
+            columns = c(
+              # Row name column — just used to show "Totals" label in footer
+              list(".rownames" = colDef(
+                name   = "",
+                footer = tags$b("Totals"),
+                style  = list(color = "#333")
+              )),
+              # Data columns with HTML names and totals footer
+              setNames(
+                lapply(names(numericRows), function(col) {
+                  colDef(
+                    html   = TRUE,  # render HTML in column header
+                    name   = names(df)[match(col, names(numericRows))],
+                    format = colFormat(digits = 3),
+                    footer = tags$b(totalsRow[[col]])
+                  )
+                }),
+                names(numericRows)
+              )
+            )
           )
         })
         
@@ -676,21 +727,7 @@ SLRServer <- function(id) {
                     format(round(dfTotaled["Totals", "x<sup>2</sup>"], 3), nsmall = 0, scientific = FALSE),
                     format(round(dfTotaled["Totals", "x"], 3), nsmall = 0, scientific = FALSE),
                     format(round(length(datx), 3), nsmall = 0, scientific = FALSE)),
-            # sprintf("\\( \\, = \\, \\dfrac{ %g - (\\dfrac{ %g }{ %g }) }{ %g - \\dfrac{ %g }{ %g } } \\)",
-            #         dfTotaled["Totals", "xy"],
-            #         sumXSumY,
-            #         length(datx),
-            #         dfTotaled["Totals", "x<sup>2</sup>"],
-            #         sumXSqrd,
-            #         length(datx)),
-            # sprintf("\\( \\, = \\, \\dfrac{ %s - (%s) }{ %s - %s } \\)",
-            #         format(round(dfTotaled["Totals", "xy"], 3), nsmall = 0, scientific = FALSE),
-            #         format(round(sumXSumY / length(datx), 3), nsmall = 0, scientific = FALSE),
-            #         format(round(dfTotaled["Totals", "x<sup>2</sup>"], 3), nsmall = 0, scientific = FALSE),
-            #         format(round(sumXSqrd / length(datx), 3), nsmall = 0, scientific = FALSE)),
-            # sprintf("\\( \\, = \\, \\dfrac{ %g }{ %g } \\)",
-            #         dfTotaled["Totals", "xy"] - (sumXSumY) / length(datx),
-            #         dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx)),
+          
             sprintf("\\( \\, = \\, %0.4f \\)",
                     slopeEstimate),
             br(),
@@ -723,37 +760,6 @@ SLRServer <- function(id) {
                           " for a unit increase of \\(x\\).")))
           )
         })
-        
-        # output$slrCoefficientsTable <- renderDT({
-        #   summary_df <- as.data.frame(summary(model)$coefficients)
-        #   conf_int <- as.data.frame(confint(model))
-        #   colnames(conf_int) <- c("Lower 95% CI", "Upper 95% CI")
-        #   
-        #   final_table <- cbind(summary_df, conf_int)
-        #   
-        #   datatable(final_table, options = list(dom = 't')) %>% 
-        #     formatRound(columns = c("Estimate", "Std. Error", "t value", "Pr(>|t|)", "Lower 95% CI", "Upper 95% CI"), digits = 4)
-        # })
-        
-        # Inference tab coefficients table (same as above)
-        # output$slrInferenceCoefficientsTable <- renderTable(
-        #   {
-        #     summary_df <- as.data.frame(summary(model)$coefficients)
-        #     conf_int <- as.data.frame(confint(model))
-        #     colnames(conf_int) <- c("Lower 95% CI", "Upper 95% CI")
-        #     
-        #     # Rename "Pr(>|t|)" to "P-value"
-        #     names(summary_df)[names(summary_df) == "Pr(>|t|)"] <- "P-value"
-        #     
-        #     final_table <- cbind(summary_df, conf_int)
-        #     final_table
-        #   },
-        #   rownames = TRUE,
-        #   na = "",
-        #   striped = TRUE,
-        #   align = "c",
-        #   digits = 4
-        # )
         
         output$slrInferenceDetails <- renderUI({
           req(model)
@@ -1084,6 +1090,7 @@ SLRServer <- function(id) {
     
     observeEvent(input$dataRegCor, {
       hide(id = "regCorrMP")
+      output$perfectFitWarning <- renderUI({ NULL })
       
       if (is.null(fileInputs$slrStatus) || fileInputs$slrStatus != "uploaded"){
         hide(id = "slrResponse")
@@ -1122,6 +1129,7 @@ SLRServer <- function(id) {
     })
     
     observeEvent(input$resetRegCor, {
+      output$perfectFitWarning <- renderUI({ NULL })
       # hideTab(inputId = 'tabSet', target = 'Simple Linear Regression')
       # hideTab(inputId = 'tabSet', target = 'Normality of Residuals')
       # hideTab(inputId = 'tabSet', target = 'Residual Plots')
