@@ -773,6 +773,8 @@ probDistUI <- function(id) {
                       uiOutput(ns("renderProbabilityBinom")),
                       
                       br(),
+                      h3("R Code"),
+                      hr(),
                       
                       div(
                         class = "code-container",
@@ -2360,7 +2362,7 @@ probDistServer <- function(id) {
         } else if (input$calcBinom == "cumulative") {
           
           paste0(
-            "pbinom(x = ",
+            "pbinom(",
             input$numSuccessesBinom,
             ", size = ",
             input$numTrialsBinom,
@@ -2372,7 +2374,7 @@ probDistServer <- function(id) {
         } else if (input$calcBinom == "upperTail") {
           
           paste0(
-            "pbinom(x = ",
+            "pbinom(",
             input$numSuccessesBinom - 1,
             ", size = ",
             input$numTrialsBinom,
@@ -2384,7 +2386,7 @@ probDistServer <- function(id) {
         } else if (input$calcBinom == "greaterThan") {
           
           paste0(
-            "pbinom(x = ",
+            "pbinom(",
             input$numSuccessesBinom,
             ", size = ",
             input$numTrialsBinom,
@@ -2396,7 +2398,7 @@ probDistServer <- function(id) {
         } else if (input$calcBinom == "lessThan") {
           
           paste0(
-            "pbinom(x = ",
+            "pbinom(",
             input$numSuccessesBinom - 1,
             ", size = ",
             input$numTrialsBinom,
@@ -2408,14 +2410,14 @@ probDistServer <- function(id) {
         } else if (input$calcBinom == "between") {
           
           paste0(
-            "pbinom(x = ",
+            "pbinom(",
             input$numSuccessesBinomx2,
             ", size = ",
             input$numTrialsBinom,
             ", prob = ",
             input$successProbBinom,
             ") - ",
-            "pbinom(x = ",
+            "pbinom(",
             input$numSuccessesBinomx1 - 1,
             ", size = ",
             input$numTrialsBinom,
