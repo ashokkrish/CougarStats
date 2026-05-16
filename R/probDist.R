@@ -19,7 +19,7 @@ probDistUI <- function(id) {
       
       .code-header {
         display: flex;
-        justify-content: space-between;
+        justify-content: flex-end;
         align-items: center;
         background: #eaf3ff;
         padding: 4px 10px;
@@ -781,8 +781,6 @@ probDistUI <- function(id) {
                         
                         div(
                           class = "code-header",
-                          
-                          div("R Code"),
                           
                           tags$button(
                             class = "copy-btn",
