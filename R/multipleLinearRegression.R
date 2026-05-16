@@ -43,7 +43,7 @@ MLRSidebarUI <- function(id) {
           id = ns("explanatoryVariablesWrapper"),
           pickerInput(
             inputId  = ns("explanatoryVariables"),
-            label    = strong("Explanatory Variables (x₁, x₂, …, xₖ)"),
+            label = HTML("<strong>Explanatory Variables (\\(x_1, x_2, x_3...x_n\\)) </strong> "),
             choices  = NULL,
             multiple = TRUE,
             options  = list(
@@ -64,6 +64,17 @@ MLRMainPanelUI <- function(id) {
   ns <- NS(id)
   tagList(
     useShinyjs(),
+    tags$head(
+      tags$style(HTML("
+        #linear-model-equations mjx-container[display='true'] {
+          display: flex !important;
+          justify-content: flex-start !important;
+          text-align: left !important;
+          padding-left: 0px !important;
+          margin-left: 0px !important;
+        }
+      "))
+    ),
     navbarPage(title = NULL,
                tabPanel(
                  title = "Data Import",
@@ -73,6 +84,11 @@ MLRMainPanelUI <- function(id) {
                  import_file_ui(
                    id    = ns("dataImport"),
                    title = "")),
+               tabPanel(
+                 title = "Variable Encoding",
+                 value = "encoding_tab",
+                 uiOutput(ns("encodingUI"))
+               ),
                tabPanel(title = "Model", uiOutput(ns("Equations")) ),
                tabPanel(title = "Inference", uiOutput(ns("Inference"))),
                tabPanel(title = "ANOVA", uiOutput(ns("ANOVA"))),
@@ -103,6 +119,12 @@ MLRServer <- function(id) {
       
     )
     
+    encodedData <- reactiveVal(NULL)
+    
+    observeEvent(uploadedTibble$data(), {
+      encodedData(uploadedTibble$data())
+    })
+    
     noFileCalculate <- reactiveVal(FALSE)
     
     # Reactive values for validation errors
@@ -120,9 +142,9 @@ MLRServer <- function(id) {
       })
     }, once = TRUE)
     
-    observeEvent(uploadedTibble$data(),{
-      req(uploadedTibble$data())
-      cols <- uploadedTibble$data() %>%
+    observeEvent(encodedData(),{
+      req(encodedData())
+      cols <- encodedData() %>%
         dplyr::select_if(is.numeric) %>%
         colnames()
       
@@ -153,7 +175,7 @@ MLRServer <- function(id) {
       updatePickerInput(session, "responseVariable", selected = character(0))
       updatePickerInput(session, "explanatoryVariables", selected = character(0))
       
-      # Clear validation errors
+      # Clear validation errors # change this 2026-05-11
       responseVarError(FALSE)
       explanatoryVarsError(FALSE)
       shinyjs::removeClass(id = "responseVariableWrapper", class = "has-error")
@@ -165,19 +187,19 @@ MLRServer <- function(id) {
     ## Update the choices for the select inputs when the uploadedTibble changes.
     observe({
       updatePickerInput(inputId = "responseVariable",
-                        choices = colnames(select_if(uploadedTibble$data(), is.numeric)),
+                        choices = colnames(select_if(encodedData(), is.numeric)),
                         selected = character(0))
       
       updatePickerInput(inputId = "explanatoryVariables",
-                        choices = colnames(select_if(uploadedTibble$data(), is.numeric)))
-    }) |> bindEvent(uploadedTibble$data())
+                        choices = colnames(select_if(encodedData(), is.numeric)))
+    }) |> bindEvent(encodedData())
     
     observeEvent(input$responseVariable, {
       # only run when we have data and a non-empty response variable
-      req(uploadedTibble$data(), input$responseVariable)
+      req(encodedData(), input$responseVariable)
       
       # grab just the numeric columns
-      df_num <- uploadedTibble$data() %>% dplyr::select_if(is.numeric)
+      df_num <- encodedData() %>% dplyr::select_if(is.numeric) 
       
       # drop the response variable (any_of tolerates missing/empty)
       choices <- df_num %>%
@@ -219,8 +241,8 @@ MLRServer <- function(id) {
             !is.null(input$responseVariable) &&
               length(input$responseVariable) == 1 &&
               nzchar(input$responseVariable[1]) &&
-              (input$responseVariable[1] %in% names(uploadedTibble$data())) &&
-              is.numeric(uploadedTibble$data()[[input$responseVariable[1]]])
+              (input$responseVariable[1] %in% names(encodedData())) &&
+              is.numeric(encodedData()[[input$responseVariable[1]]])
           ),
           "Response variable must be an existing, single, and numeric column."
         ),
@@ -240,7 +262,7 @@ MLRServer <- function(id) {
     
     nonnumericVariables <- NULL
     storeNameIfNotNumeric <- function(var) {
-      if (is.numeric(uploadedTibble$data()[[var]]))
+      if (is.numeric(encodedData()[[var]]))
         return(TRUE)
       else {
         ## Replace or concatenate to the value of the nonnumericVariables
@@ -253,7 +275,7 @@ MLRServer <- function(id) {
     
     isNAVariables <- NULL
     storeNameIfAnyNA <- function(var) {
-      if (anyNA(uploadedTibble$data()[[var]]))
+      if (anyNA(encodedData()[[var]]))
         return(TRUE)
       else {
         ## Replace or concatenate to the value of the isNAVariables variable.
@@ -270,6 +292,99 @@ MLRServer <- function(id) {
       } else {
         NULL
       }
+    })
+    
+    
+    output$encodingUI <- renderUI({
+      req(uploadedTibble$data())
+      
+      df <- uploadedTibble$data()
+      catCols <- df %>% 
+        dplyr::select_if(~ is.character(.) || is.factor(.)) %>% 
+        colnames()
+      
+      if (length(catCols) == 0) {
+        return(p("No categorical variables detected in the uploaded data."))
+      }
+      
+      tagList(
+        p(strong("Categorical Variable Encoding")),
+        p("The following categorical variables were detected. Select an encoding method for each."),
+        lapply(catCols, function(col) {
+          uniqueVals <- as.character(unique(df[[col]]))
+          
+          fluidRow(
+            column(4,
+                   p(strong(col)),
+                   em(paste("Unique values:", length(uniqueVals)))
+            ),
+            column(4,
+                   selectInput(
+                     ns(paste0("encoding_", col)),
+                     label = NULL,
+                     choices = c(
+                       "Do not encode"  = "none",
+                       "Dummy encoding" = "dummy",
+                       "Label encoding" = "label"
+                     )
+                   )
+            ),
+            column(4,
+                   # Only show drag-and-drop when label encoding is selected
+                   conditionalPanel(
+                     condition = sprintf(
+                       "input['%s'] === 'label'",
+                       ns(paste0("encoding_", col))
+                     ),
+                     p(em("Drag to set order (top = 1):")),
+                     rank_list(
+                       text    = NULL,
+                       labels  = uniqueVals,
+                       input_id = ns(paste0("order_", col))
+                     )
+                   )
+            )
+          )
+        }),
+        actionButton(ns("applyEncoding"), "Apply Encoding", class = "act-btn")
+      )
+    })
+    
+    observeEvent(input$applyEncoding, {
+      req(uploadedTibble$data())
+      
+      df <- uploadedTibble$data()
+      catCols <- df %>% 
+        dplyr::select_if(~ is.character(.) || is.factor(.)) %>% 
+        colnames()
+      
+      for (col in catCols) {
+        method <- input[[paste0("encoding_", col)]]
+        
+        if (method == "label") {
+          # Use the user-defined order from the drag-and-drop
+          userOrder <- input[[paste0("order_", col)]]
+          
+          df[[col]] <- factor(df[[col]], levels = userOrder, ordered = TRUE)
+          df[[col]] <- as.numeric(df[[col]])
+          
+        } else if (method == "dummy") {
+          dummies <- model.matrix(~ . - 1, data = df[col])[, -1, drop = FALSE]
+          colnames(dummies) <- paste0(col, "_", colnames(dummies))
+          df[[col]] <- NULL
+          df <- cbind(df, dummies)
+        }
+      }
+      
+      encodedData(df)
+      
+      newCols <- df %>% dplyr::select_if(is.numeric) %>% colnames()
+      updatePickerInput(session, "responseVariable", choices = newCols, selected = character(0))
+      updatePickerInput(session, "explanatoryVariables", choices = newCols, selected = character(0))
+      
+      updateNavbarPage(session, "mainPanel", selected = "encoding_tab")
+      
+      showNotification("Encoding applied successfully.", type = "message")
     })
     
     output$responseVariableError <- renderUI({
@@ -310,7 +425,7 @@ MLRServer <- function(id) {
     })
     
     observe({ # input$calculate
-      if (!isTruthy(uploadedTibble$data())) {
+      if (!isTruthy(encodedData())) {
         noFileCalculate(TRUE)
         return()
       } else {
@@ -352,10 +467,10 @@ MLRServer <- function(id) {
     }) |> bindEvent(input$calculate)
     
     observe({
-      if(isTruthy(uploadedTibble$data())){
+      if(isTruthy(encodedData())){
         noFileCalculate(FALSE)
       }
-    }) |> bindEvent(uploadedTibble$data(), ignoreNULL = FALSE, ignoreInit = TRUE)
+    }) |> bindEvent(encodedData(), ignoreNULL = FALSE, ignoreInit = TRUE)
     
     output$Equations <- renderUI({
       eval(MLRValidation)
@@ -366,23 +481,36 @@ MLRServer <- function(id) {
       )
     })
     
+    # Corresponds to the inference tab, after calcualtions
+    
     output$Inference <- renderUI({
       eval(MLRValidation)
       
       fluidPage(
-        fluidRow(uiOutput(ns("linearModelCoefficientsAndConfidenceIntervals")))
+        fluidRow(uiOutput(ns("linearModelCoefficientsAndConfidenceIntervals"))),
+        fluidRow(hr()),
+        fluidRow(uiOutput(ns("bpTest"))),
+        fluidRow(hr()),
+        fluidRow(uiOutput(ns("whiteTest")))
       )
     })
     
+    
+    
     # Reactive coefficients and confidence intervals table
+    
     output$linearModelCoefConfint <- renderTable(
       {
-        req(uploadedTibble$data())
+        req(encodedData())
         req(isTruthy(input$responseVariable))
         req(isTruthy(input$explanatoryVariables))
         req(length(as.character(input$explanatoryVariables)) >= 2)
         
-        with(uploadedTibble$data(), {
+      
+        
+        with(encodedData(), {
+        
+          
           model <- lm(reformulate(
             as.character(lapply(input$explanatoryVariables, as.name)),
             as.name(input$responseVariable)
@@ -418,12 +546,12 @@ MLRServer <- function(id) {
     )
     
     output$lmCoefConfintTableCaption <- renderUI({
-      req(uploadedTibble$data())
+      req(encodedData())
       req(isTruthy(input$responseVariable))
       req(isTruthy(input$explanatoryVariables))
       req(length(as.character(input$explanatoryVariables)) >= 2)
       
-      with(uploadedTibble$data(), {
+      with(encodedData(), {
         model <- lm(reformulate(
           as.character(lapply(input$explanatoryVariables, as.name)),
           as.name(input$responseVariable)
@@ -449,8 +577,94 @@ MLRServer <- function(id) {
       )
     })
     
+    
+    # Breush-Pagan Test
+    output$bpTest <- renderUI({
+      req(encodedData())
+      req(isTruthy(input$responseVariable))
+      req(isTruthy(input$explanatoryVariables))
+      req(length(as.character(input$explanatoryVariables)) >= 2)
+      
+      with(encodedData(), {
+        model <- lm(reformulate(
+          as.character(lapply(input$explanatoryVariables, as.name)),
+          as.name(input$responseVariable)
+        ))
+        
+        bp    <- lmtest::bptest(model)
+        pval  <- bp$p.value
+        bpStat <- bp$statistic
+        df    <- bp$parameter
+        
+        withMathJax(
+          p(strong("Breusch-Pagan Test for Heteroscedasticity")),
+          p("Tests whether the variance of residuals is constant (homoscedasticity)."),
+          p(r"{\( H_0: \) The variance of the residuals is constant / does not depend on the independent variable (Homoscedasticity is present).}"),
+          p(r"{\( H_a: \) The variance of the residuals is not constant / depends on the independent variable (Heteroscedasticity is present).}"),
+          p(r"{\( \alpha = 0.05 \)}"),
+          p(sprintf(
+            r"{\( BP = %.4f, \quad df = %d, \quad p\text{-value} = %.4f \)}",
+            bpStat, df, pval
+          )),
+          p(
+            strong("Conclusion:"),
+            if (pval <= 0.05) {
+              r"(Since the p-value is less than \(\alpha\), we reject \(H_0\) and conclude there is evidence of heteroscedasticity.)"
+            } else {
+              r"(Since the p-value is greater than \(\alpha\), we fail to reject \(H_0\) and conclude there is no significant evidence of heteroscedasticity.)"
+            }
+          )
+        )
+      })
+    })
+    
+  # White Test
+    
+    output$whiteTest <- renderUI({
+      req(encodedData())
+      req(isTruthy(input$responseVariable))
+      req(isTruthy(input$explanatoryVariables))
+      req(length(as.character(input$explanatoryVariables)) >= 2)
+      
+      with(encodedData(), {
+        model <- lm(reformulate(
+          as.character(lapply(input$explanatoryVariables, as.name)),
+          as.name(input$responseVariable)
+        ))
+        
+        white_test  <- skedastic::white(model)
+        pval  <- white_test$p.value
+        W_stat <- white_test$statistic
+        df    <- white_test$parameter
+        
+        withMathJax(
+          p(strong("White Test for Heteroscedasticity")),
+          p("Tests whether the variance of residuals is constant (homoscedasticity)."),
+          p(r"{\( H_0: \) Homoscedasticity — residual variance is constant.}"),
+          p(r"{\( H_a: \) Heteroscedasticity — residual variance is not constant.}"),
+          p(r"{\( \alpha = 0.05 \)}"),
+          p(sprintf(
+            r"{\( W = %.4f, \quad df = %d, \quad p\text{-value} = %.4f \)}",
+            W_stat, df, pval
+          )),
+          p(
+            strong("Conclusion:"),
+            if (pval <= 0.05) {
+              r"(Since the p-value is less than \(\alpha\), we reject \(H_0\) and conclude there is evidence of heteroscedasticity.)"
+            } else {
+              r"(Since the p-value is greater than \(\alpha\), we fail to reject \(H_0\) and conclude there is no significant evidence of heteroscedasticity.)"
+            }
+          )
+        )
+      })
+    })
+    
+    
+    
+    
+    
     output$linearModelEquations <- renderUI({
-      req(uploadedTibble$data())
+      req(encodedData())
       req(isTruthy(input$responseVariable))
       req(isTruthy(input$explanatoryVariables))
       req(length(as.character(input$explanatoryVariables)) >= 2)
@@ -458,90 +672,121 @@ MLRServer <- function(id) {
       withMathJax(
         div(
           id = "linear-model-equations",
-          # 1. Calculate the model first to know what variables are kept
-          with(uploadedTibble$data(), {
-            req(uploadedTibble$data(), cancelOutput = TRUE)
-            req(isTruthy(input$responseVariable), cancelOutput = TRUE)
+          
+          with(encodedData(), {
+            
             model <- lm(reformulate(
               as.character(lapply(input$explanatoryVariables, as.name)),
               as.name(input$responseVariable)
             ))
             
-            # Get all coefficients (includes NAs for dropped variables)
             all_coefs <- coef(model)
+            names(all_coefs) <- gsub("^`|`$", "", names(all_coefs))
+            
             intercept <- all_coefs["(Intercept)"]
             
-            # Lists to store the LaTeX strings
             vars_definitions <- c()
             sym_terms <- c()
             num_terms <- c()
             
-            # Loop through ORIGINAL input variables to preserve indices (1, 2, 3...)
             for(i in seq_along(input$explanatoryVariables)) {
-              var_name <- input$explanatoryVariables[i]
-  
-              # Check if the name exists directly; if not, try wrapping in backticks
-              val <- all_coefs[var_name]
-              if (is.na(val)) {
-               val <- all_coefs[paste0("`", var_name, "`")]
-  }
               
-              # If the coefficient is NOT NA, we include it.
-              # If it IS NA (dropped), we skip it completely (creating a gap in the indices shown).
+              var_name <- input$explanatoryVariables[i]
+              
+              val <- all_coefs[var_name]
+              
+              if (is.na(val)) {
+                val <- all_coefs[paste0("`", var_name, "`")]
+              }
+              
               if(!is.na(val)) {
-                # Add to definitions list using index 'i'
-                vars_definitions <- c(vars_definitions, sprintf(r"[x_{%d} = \text{%s}]", i, var_name))
                 
-                # Add to equation terms using index 'i'
-                sym_terms <- c(sym_terms, sprintf(r"[\hat{\beta_{%d}} x_{%d}]", i, i))
-                num_terms <- c(num_terms, sprintf(r"[%.3f x_{%d}]", val, i))
+                # Escape LaTeX special characters
+                safe_name <- var_name
+                safe_name <- gsub("\\\\", "\\\\\\\\", safe_name)
+                safe_name <- gsub("_", "\\\\_", safe_name)
+                safe_name <- gsub("\\$", "\\\\\\$", safe_name)
+                
+                vars_definitions <- c(
+                  vars_definitions,
+                  sprintf("x_{%d} = \\text{%s}", i, safe_name)
+                )
+                
+                sym_terms <- c(
+                  sym_terms,
+                  sprintf("\\hat{\\beta}_{%d}x_{%d}", i, i)
+                )
+                
+                num_terms <- c(
+                  num_terms,
+                  sprintf("%.3fx_{%d}", val, i)
+                )
               }
             }
             
-            # 3. Render the "Variables in the model" list
-            vars_definition_latex <- paste(
-              r"{\(}",
-              sprintf(r"[y    = \text{%s} \\]", input$responseVariable),
-              paste(vars_definitions, collapse = r"[\\]"),
-              r"{\)}"
+            safe_response <- input$responseVariable
+            safe_response <- gsub("\\\\", "\\\\\\\\", safe_response)
+            safe_response <- gsub("_", "\\\\_", safe_response)
+            safe_response <- gsub("\\$", "\\\\\\$", safe_response)
+            
+            vars_definition_latex <- paste0(
+              "<div style='text-align:left;'>",
+              "\\(",
+              "y = \\text{", safe_response, "}",
+              "\\)",
+              "<br>",
+              paste(
+                paste0("\\(", vars_definitions, "\\)"),
+                collapse = "<br>"
+              ),
+              "</div>"
             )
             
-            # 4. Render the Equation
-            sym_eq <- sprintf(r"[\hat{y} = \hat{\beta_0} + %s]", paste(sym_terms, collapse = " + "))
-            num_eq <- sprintf(r"[\hat{y} = %.3f + %s]", intercept, paste(num_terms, collapse = " + "))
-            
-            # Clean up double signs (e.g. "+ -")
-            sym_eq <- gsub(pattern = r"{\+(\ +)?-}", replacement = "-", x = sym_eq)
-            num_eq <- gsub(pattern = r"{\+(\ +)?-}", replacement = "-", x = num_eq)
-            
-            equation_latex <- paste(
-              r"{\(}",
-              sym_eq,
-              num_eq,
-              r"{\)}",
-              sep = r"{\\}"
+            sym_eq <- paste0(
+              "<div style='text-align:left;'>",
+              "\\(",
+              "\\hat{y} = ",
+              "\\hat{\\beta}_0 + ",
+              paste(sym_terms, collapse = " + "),
+              "\\)",
+              "</div>"
             )
             
-            # Return the HTML structure
+            num_eq <- paste0(
+              "$$",
+              "\\hat{y} = ",
+              round(intercept, 3),
+              " + ",
+              paste(num_terms, collapse = " + "),
+              "$$"
+            )
+            
+            sym_eq <- gsub("\\+ -", "- ", sym_eq)
+            num_eq <- gsub("\\+ -", "- ", num_eq)
+            
             tagList(
               p("The variables in the model are"),
-              p(vars_definition_latex),
+              HTML(vars_definition_latex),
+              
               p("The estimated multiple linear regression equation is"),
-              p(equation_latex)
+              
+              HTML(sym_eq),
+              HTML(num_eq)
             )
           })
         )
       )
     })
     
+    
     # Reactive ANOVA tab outputs
     output$anovaHypotheses <- renderUI({
-      req(uploadedTibble$data())
+      req(encodedData())
       req(isTruthy(input$responseVariable))
       req(isTruthy(input$explanatoryVariables))
       req(length(as.character(input$explanatoryVariables)) >= 2)
       
-      with(uploadedTibble$data(), {
+      with(encodedData(), {
         model <- lm(reformulate(
           as.character(lapply(input$explanatoryVariables, as.name)),
           as.name(input$responseVariable)
@@ -561,7 +806,7 @@ MLRServer <- function(id) {
           p(r"{\( \alpha = 0.05\ \)}"),
           #br(),
           p(
-            sprintf(r"{\( n = %i \)}", nrow(uploadedTibble$data())),
+            sprintf(r"{\( n = %i \)}", nrow(encodedData())),
             br(),
             sprintf(r"{\( k = %i \)}", k)
           ),
@@ -572,7 +817,7 @@ MLRServer <- function(id) {
     
     output$anovaTable <- renderTable(
       {
-        req(uploadedTibble$data())
+        req(encodedData())
         req(isTruthy(input$responseVariable))
         req(isTruthy(input$explanatoryVariables))
         req(length(as.character(input$explanatoryVariables)) >= 2)
@@ -580,7 +825,7 @@ MLRServer <- function(id) {
         redrawing <<- TRUE
         options(knitr.kable.NA = "") # do not display NAs
         
-        with(uploadedTibble$data(), {
+        with(encodedData(), {
           model <- lm(reformulate(
             as.character(lapply(input$explanatoryVariables, as.name)),
             as.name(input$responseVariable)
@@ -593,7 +838,7 @@ MLRServer <- function(id) {
           
           # Use model rank
           k <- model$rank - 1
-          n <- nrow(uploadedTibble$data())
+          n <- nrow(encodedData())
           MSR <- SSR / k
           MSE <- SSE / (n - k - 1)
           F_stat <- MSR / MSE
@@ -614,12 +859,12 @@ MLRServer <- function(id) {
     )
     
     output$anovaPValueMethod <- renderUI({
-      req(uploadedTibble$data())
+      req(encodedData())
       req(isTruthy(input$responseVariable))
       req(isTruthy(input$explanatoryVariables))
       req(length(as.character(input$explanatoryVariables)) >= 2)
       
-      with(uploadedTibble$data(), {
+      with(encodedData(), {
         model <- lm(reformulate(
           as.character(lapply(input$explanatoryVariables, as.name)),
           as.name(input$responseVariable)
@@ -631,7 +876,7 @@ MLRServer <- function(id) {
         
         # Use model rank
         k <- model$rank - 1
-        n <- nrow(uploadedTibble$data())
+        n <- nrow(encodedData())
         MSR <- SSR / k
         MSE <- SSE / (n - k - 1)
         F_stat <- MSR / MSE
@@ -662,12 +907,12 @@ MLRServer <- function(id) {
     })
     
     output$rsquareAdjustedRSquareInterpretation <- renderUI({
-      req(uploadedTibble$data())
+      req(encodedData())
       req(isTruthy(input$responseVariable))
       req(isTruthy(input$explanatoryVariables))
       req(length(as.character(input$explanatoryVariables)) >= 2)
       
-      with(uploadedTibble$data(), {
+      with(encodedData(), {
         model <- lm(reformulate(
           as.character(lapply(input$explanatoryVariables, as.name)),
           as.name(input$responseVariable)
@@ -680,7 +925,7 @@ MLRServer <- function(id) {
         
         # Use model rank
         k <- model$rank - 1
-        n <- nrow(uploadedTibble$data())
+        n <- nrow(encodedData())
         
         withMathJax(
           p(strong(r"{ \(R^2\) and Adjusted \(R^2\) :}")),
@@ -712,7 +957,11 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
           p(sprintf(r"[AIC = \(%0.4f\)]", AIC(model))),
           br(),
           p(strong("Bayesian Information Criteria (BIC):")),
-          p(sprintf(r"[BIC = \(%0.4f\)]", BIC(model)))
+          p(sprintf(r"[BIC = \(%0.4f\)]", BIC(model))),
+          br(),
+          p(strong("Mallows' Cp:")),
+          p(sprintf(r"[Cp = \(%0.4f\)]", ols_mallows_cp(model, model))),
+          br()
         )
       })
     })
@@ -728,8 +977,12 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
         fluidRow(column(
           12, p(strong("Graphical methods")),
           p("Along the diagonal of this plot are the distributions of the data in each variable. Below the diagonal are the scatterplots of one variable against another; if the points form a more-or-less straight line then the variables are correlated. Above the diagonal are the correlation coefficients between two variables."),
-          plotOutput(ns("ggscatmat"))
-        )),
+          
+          div(
+            style = "text-align:left;",
+            plotOutput(ns("ggscatmat"), width = "550px", height = "550px")
+          )
+        )), 
         fluidRow(column(
           12, p(strong("Variance Inflation Factors (VIFs)")),
           p("A VIF greater than 10 suggests strong multicollinearity caused by the respective variable with that variance inflation factor. VIFs between 5 and 10 hint at moderate multicollinearity. Values less than 5 are acceptable, with only a low degree of multicollinearity detected."),
@@ -739,11 +992,11 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
     })
     
     output$simpleCorrelationMatrix <- renderTable({
-      req(uploadedTibble$data())
+      req(encodedData())
       req(isTruthy(input$explanatoryVariables))
       req(length(as.character(input$explanatoryVariables)) >= 2)
       
-      corsetAboveDiagNA(uploadedTibble$data()[, input$explanatoryVariables])
+      corsetAboveDiagNA(encodedData()[, input$explanatoryVariables])
     },
     rownames = TRUE,
     striped = TRUE,
@@ -752,11 +1005,11 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
     
     output$vifs <- renderTable(
       {
-        req(uploadedTibble$data())
+        req(encodedData())
         req(isTruthy(input$responseVariable))
         req(isTruthy(input$explanatoryVariables))
         req(length(as.character(input$explanatoryVariables)) >= 2)
-        with(uploadedTibble$data(), {
+        with(encodedData(), {
           model <- lm(reformulate(
             as.character(lapply(input$explanatoryVariables, as.name)),
             as.name(input$responseVariable)
@@ -776,21 +1029,22 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
     )
     
     output$ggscatmat <- renderPlot({
-      req(uploadedTibble$data())
-      req(isTruthy(input$explanatoryVariables))
-      req(length(as.character(input$explanatoryVariables)) >= 2)
+      par(mar = c(4,4,1,1))
       
-      ggscatmat(uploadedTibble$data()[, input$explanatoryVariables], columns = input$explanatoryVariables)
+      ggscatmat(
+        encodedData()[, input$explanatoryVariables],
+        columns = input$explanatoryVariables
+      )
     })
     
     # Reactive Diagnostic Plots tab outputs
     output$mlrResidualsPanelPlot1 <- renderPlot({
-      req(uploadedTibble$data())
+      req(encodedData())
       req(isTruthy(input$responseVariable))
       req(isTruthy(input$explanatoryVariables))
       req(length(as.character(input$explanatoryVariables)) >= 2)
       
-      with(uploadedTibble$data(), {
+      with(encodedData(), {
         model <- lm(reformulate(
           as.character(lapply(input$explanatoryVariables, as.name)),
           as.name(input$responseVariable)
@@ -800,12 +1054,12 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
     })
     
     output$mlrResidualsPanelPlot2 <- renderPlot({
-      req(uploadedTibble$data())
+      req(encodedData())
       req(isTruthy(input$responseVariable))
       req(isTruthy(input$explanatoryVariables))
       req(length(as.character(input$explanatoryVariables)) >= 2)
       
-      with(uploadedTibble$data(), {
+      with(encodedData(), {
         model <- lm(reformulate(
           as.character(lapply(input$explanatoryVariables, as.name)),
           as.name(input$responseVariable)
@@ -815,12 +1069,12 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
     })
     
     output$mlrResidualsPanelPlot3 <- renderPlot({
-      req(uploadedTibble$data())
+      req(encodedData())
       req(isTruthy(input$responseVariable))
       req(isTruthy(input$explanatoryVariables))
       req(length(as.character(input$explanatoryVariables)) >= 2)
       
-      with(uploadedTibble$data(), {
+      with(encodedData(), {
         model <- lm(reformulate(
           as.character(lapply(input$explanatoryVariables, as.name)),
           as.name(input$responseVariable)
@@ -830,12 +1084,12 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
     })
     
     output$mlrResidualsPanelPlot4 <- renderPlot({
-      req(uploadedTibble$data())
+      req(encodedData())
       req(isTruthy(input$responseVariable))
       req(isTruthy(input$explanatoryVariables))
       req(length(as.character(input$explanatoryVariables)) >= 2)
       
-      with(uploadedTibble$data(), {
+      with(encodedData(), {
         model <- lm(reformulate(
           as.character(lapply(input$explanatoryVariables, as.name)),
           as.name(input$responseVariable)
@@ -846,8 +1100,8 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
     
     # Reactive Uploaded Data tab output
     output$uploadedDataTable <- renderDT({
-      req(uploadedTibble$data())
-      datatable(uploadedTibble$data(),
+      req(encodedData())
+      datatable(encodedData(),
                 options = list(pageLength = -1,
                                lengthMenu = list(c(10, 25, 50, -1), c("10", "25", "50", "All"))))
     })
@@ -881,3 +1135,6 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
     })
   })
 }
+
+
+

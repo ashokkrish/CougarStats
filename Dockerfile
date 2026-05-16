@@ -86,7 +86,11 @@ RUN R -e \
                     'knitr',            \
                     'moments',          \
                     'psych',            \
-                    'forecast'),        \
+                    'forecast'          \
+                    'skedastic'         \
+                    'reactable'
+                    'sortable'          \
+                    'lmtest',           \
                   dependencies = TRUE); \
   remotes::install_github('deepanshu88/shinyDarkmode'); \
   remotes::install_github('rsquaredacademy/olsrr');"
