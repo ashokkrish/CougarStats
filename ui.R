@@ -30,7 +30,8 @@ CougarStatsLogo <- withTags(div(
   span(class = "pageTitle", "CougarStats")
 ))
 
-## FIXME: it is bad practice to next these; previously we were three deep, but now only two!
+## FIXME: it is bad practice to nest these; previously we were three deep, but
+## now only two!
 METHODS <- page_navbar(
   ## nav_panel(
   ##   "Data Upload and Editing",

@@ -1,3 +1,17 @@
+/* Per the 2026 MRU - Brand Guidelines PDF, the MRU website only colours
+(colours used only on their website to enhance legibility and accessibility):
+#003A5F; "Kerby Blue"
+#0F76D7;
+#A7E2FC;
+#E0F6FF;
+#6F767F;
+#030303;
+#F2F1F0;
+#F8F8F8;
+*/
+
+
+
 :root {
     --main-color: #18536F;
     --main-color-shadow: rgba(14,52,68,0.6);
@@ -128,9 +142,10 @@ table.dataTable {                                           /**/
 }
 
 
-/* Special note: this very specifically is used only for prettyRadioButtons with options
-                   that contain latex. Latex for some reason misaligns the option labels with
-                   its matching input button, so a margin must be forced onto the buttons */
+/* Special note: this very specifically is used only for prettyRadioButtons with
+   options that contain latex. For some reason, option labels containing latex
+   are misaligned with their matching input button, so a margin must be forced
+   onto the buttons */
 .latexRadio .shiny-options-group .pretty.p-round .state label:after, 
 .latexRadio .shiny-options-group .pretty.p-round .state label:before,
 .latexRadio .shiny-options-group .pretty input:checked~.state.p-primary-o label:before, 
