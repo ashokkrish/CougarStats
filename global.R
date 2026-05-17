@@ -1,7 +1,6 @@
 ## options(conflicts.policy = TRUE)
 ## library(conflicted)
 
-library(aplpack)
 library(base)
 library(bslib)
 library(broom)
