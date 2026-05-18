@@ -1039,7 +1039,20 @@ descStatsServer <- function(id) {
     observeEvent(input$resetAll,{
       dsReset(TRUE)
       shinyjs::hide(id = 'outputPanel')
-      shinyjs::reset("inputPanel")
+      shinyjs::reset("descriptiveStat")
+      shinyjs::reset("dsUserData")
+      shinyjs::reset("dsUploadVars")
+      
+      updatePickerInput(session, "dsTableFilters",
+                        selected = c("Observations", "Mean", "Mode",
+                                     "Minimum", "First Quartile (Q1)",
+                                     "Second Quartile or Median (Q2)",
+                                     "Third Quartile (Q3)", "IQR",
+                                     "Potential Outliers", "Maximum",
+                                     "Sample Standard Deviation",
+                                     "Sample Variance"))
+      updatePickerInput(session, "dsGraphOptions", selected = "Boxplot")
+
       fileInputs$dsStatus <- 'reset'
       updateTabsetPanel(session, "dsTabset", selected = "Descriptive Statistics")
     })
