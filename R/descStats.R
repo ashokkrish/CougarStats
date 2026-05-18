@@ -38,15 +38,17 @@ descStatsUI <- function(id) {
               HTML(uploadDataDisclaimer),
               
               fileInput(
-                inputId = ns('dsUserData'), 
-                label   = strong('Upload your data (.csv or .xls or .xlsx or .txt)'),
-                accept  = c('text/csv','text/comma-separated-values',
-                            'text/tab-separated-values',
-                            'text/plain',
-                            '.csv',
-                            '.txt',
-                            '.xls',
-                            '.xlsx')),
+                inputId = ns('dsUserData'),
+                label = strong('Upload your data (.csv, .xls, .xlsx, .txt, .sas7bdat, .sav)'),
+                accept = c('text/csv', 'text/comma-seperated-values', 
+                          'text/tab-separated-values',
+                          'text/plain',
+                          '.csv',
+                          '.txt',
+                          '.xls',
+                          '.xlsx',
+                          '.sas7bdat',
+                          '.sav')),
               
               selectizeInput(
                 inputId  = ns("dsUploadVars"),
@@ -101,16 +103,20 @@ descStatsUI <- function(id) {
               multiple = TRUE),
             br(),
             
-            selectizeInput(
-              inputId  = ns("dsGraphOptions"),
-              label    = strong("Graph Options"), 
-              choices  = c("Boxplot", 
-                           "Histogram"), 
-                           #"Stem and Leaf Plot"),
+            shinyWidgets::pickerInput(
+              inputId = ns("dsGraphOptions"),
+              label = strong("Graph Options"),
+              choices = c("Boxplot", "Histogram"),
               selected = c("Boxplot"),
               multiple = TRUE,
-              options  = list(hideSelected = FALSE,
-                              placeholder = 'Select graph(s) to display')),
+              options = list(
+                `actions-box` = TRUE,
+                `live-search` = TRUE,
+                selectedTextFormat = "values",
+                multipleSeperator = ", ",
+                title = "Select graph(s) to display"
+              )),
+
             br(),
             
             actionButton(
@@ -297,7 +303,7 @@ descStatsServer <- function(id) {
                                                   "Data must be numeric values separated by a comma (ie: 2,3,4)"))
     dsupload_iv$add_rule("dsUserData", sv_required())
     dsupload_iv$add_rule("dsUserData", ~ if(is.null(fileInputs$dsStatus) || fileInputs$dsStatus == 'reset') "Required")
-    dsupload_iv$add_rule("dsUserData", ~ if(!(tolower(tools::file_ext(input$dsUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+    dsupload_iv$add_rule("dsUserData", ~ if(!(tolower(tools::file_ext(input$dsUserData$name)) %in% c("csv", "txt", "xls", "xlsx", "sas7bdat", "sav"))) "File format not accepted.")    
     dsupload_iv$add_rule("dsUserData", ~ if(ncol(dsUploadData()) < 1) "Data must include one variable")
     dsupload_iv$add_rule("dsUserData", ~ if(nrow(dsUploadData()) < 2) "Samples must include at least 2 observations")
     
@@ -542,18 +548,19 @@ descStatsServer <- function(id) {
     })
     
     # Function to read the uploaded data file
-    dsUploadData <- eventReactive(input$dsUserData, {
-      ext <- tools::file_ext(input$dsUserData$name)
-      ext <- tolower(ext)
-      
-      switch(ext, 
-             csv = read_csv(input$dsUserData$datapath, show_col_types = FALSE),
-             xls = read_xls(input$dsUserData$datapath),
-             xlsx = read_xlsx(input$dsUserData$datapath),
-             txt = read_tsv(input$dsUserData$datapath, show_col_types = FALSE),
-             
-             validate("Improper file format.")
-      )
+    dsUploadData <- eventReactive(input$dsUserData,{
+      ext <- tolower(tools::file_ext(input$dsUserData$name))
+      path <- input$dsUserData$datapath
+
+      switch(ext,
+            csv = read_csv(path, show_col_types = FALSE),
+            xls = read_xls(path),
+            xlsx = read_xlsx(path),
+            txt = read_tsv(path, show_col_types = FALSE),
+            sas7bdat = read_sas(path),
+            sav = read_sav(path),
+            
+            validate ("Improper file format"))
     })
     
     getDsDataframe <- reactive({
