@@ -49,6 +49,7 @@ SLRMainPanelUI <- function(id) {
               
               titlePanel("Scatterplot"),
               br(),
+              
               plotOptionsMenuUI(
                 id          = ns("slrScatter"),
                 plotType    = "Scatterplot",
@@ -57,7 +58,8 @@ SLRMainPanelUI <- function(id) {
                 ylab        = "y",
                 dim         = "in px",
                 includeFlip = FALSE),
-              uiOutput(ns("renderSLRScatterplot")),
+              
+              plotOutput(ns("slrScatterplot")),
               br()
             )
           ), # Scatterplot tabpanel
@@ -110,64 +112,83 @@ SLRMainPanelUI <- function(id) {
             title = "Correlation Analysis",
             value = "Correlation Analysis",
             
-            tabsetPanel(
-              type = "tabs",
-              id   = ns("correlationTabs"),
-              header = tags$style(HTML(sprintf(
-                "#%s .nav-tabs > li > a {
-         color: #1a3a5c;
-         font-weight: bold;
-         font-size: 15px;
-       }
-       #%s .nav-tabs > li.active > a {
-         background-color: #1a3a5c;
-         color: white;
-         border-color: #1a3a5c;
-       }
-       #%s .nav-tabs > li > a:hover {
-         background-color: #d0dce8;
-         color: #1a3a5c;
-       }",
-                ns("correlationTabs"),
-                ns("correlationTabs"),
-                ns("correlationTabs")
-              ))),
-              
-              tabPanel(
-                title = "Pearson",
-                value = "Pearson",
-                titlePanel("Pearson's Correlation Coefficient"),
-                br(),
-                br(),
-                uiOutput(ns('pearsonCorFormula')),
-                br(),
-                hr()
-              ),
-              
-              tabPanel(
-                title = "Kendall",
-                value = "Kendall",
-                titlePanel("Kendall's Rank Correlation Coefficient"),
-                br(),
-                uiOutput(ns("kendallFormula")),
-                br(),
-                hr()
-              ),
-              
-              tabPanel(
-                title = "Spearman",
-                value = "Spearman",
-                titlePanel("Spearman's Rank Correlation Coefficient"),
-                br(),
-                uiOutput(ns("spearmanEstimate")),
-                br(),
-                br(),
-                hr()
-              )
-            ) ## Nested tabsetPanel
+            tags$style(HTML("
+    .correlation-tabs .nav-tabs {
+      border-bottom: none;
+      background-color: #f8f9fa;
+      display: flex;
+      padding: 0;
+      margin-bottom: 16px;
+    }
+    .correlation-tabs .nav-tabs > li > a {
+      color: #18536F;
+      font-weight: bold;
+      font-size: 15px;
+      border: none !important;
+      border-radius: 0 !important;
+      padding: 10px 24px;
+      background-color: #f8f9fa !important;
+    }
+    .correlation-tabs .nav-tabs > li.active > a,
+    .correlation-tabs .nav-tabs > li.active > a:focus,
+    .correlation-tabs .nav-tabs > li.active > a:hover,
+    .correlation-tabs .nav-tabs > li > a.active,
+    .correlation-tabs .nav-tabs > li > a.active:focus,
+    .correlation-tabs .nav-tabs > li > a.active:hover {
+      background-color: #18536F !important;
+      color: white !important;
+      border: none !important;
+      border-radius: 0 !important;
+      font-weight: bold !important;
+    }
+    .correlation-tabs .nav-tabs > li > a:hover {
+      background-color: #d0dce8 !important;
+      color: #1a3a5c !important;
+    }
+  ")),
             
-          ),
-          
+            div(
+              class = "correlation-tabs",
+              tabsetPanel(
+                type = "tabs",
+                id   = ns("correlationTabs"),
+                
+                tabPanel(
+                  title = "Pearson",
+                  value = "Pearson",
+                  titlePanel("Pearson's Correlation Coefficient"),
+                  br(),
+                  br(),
+                  uiOutput(ns('pearsonCorFormula')),
+                  br(),
+                  hr()
+                ),
+                
+                tabPanel(
+                  title = "Kendall",
+                  value = "Kendall",
+                  titlePanel("Kendall's Rank Correlation Coefficient"),
+                  br(),
+                  uiOutput(ns("kendallFormula")),
+                  br(),
+                  hr()
+                ),
+                
+                tabPanel(
+                  title = "Spearman",
+                  value = "Spearman",
+                  titlePanel("Spearman's Rank Correlation Coefficient"),
+                  br(),
+                  uiOutput(ns("spearmanEstimate")),
+                  br(),
+                  br(),
+                  hr()
+                )
+                
+              ) ## Nested tabsetPanel
+            )
+            
+          ), ## Correlation Analysis tabPanel
           #### ---------------- Data File Tab ------------------------------------------
           tabPanel(
             title = "Uploaded Data",
@@ -654,7 +675,8 @@ SLRServer <- function(id) {
               input[["slrScatter-PointSize"]],
               input[["slrScatter-Gridlines"]],
               input[["slrScatter-confidenceInterval"]],
-              input[["slrScatter-predictionInterval"]]
+              input[["slrScatter-predictionInterval"]],
+              input[["slrScatter-showRegressionLine"]]
             )
           },
           height = function() {
