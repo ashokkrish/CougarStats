@@ -92,7 +92,11 @@ SLRMainPanelUI <- function(id) {
             br(),
             div(tableOutput(ns("anovaTable")), width = "100 px;"),
             br(),
-            uiOutput(ns("anovaConclusion"))
+            uiOutput(ns("anovaConclusion")),
+            br(),
+            uiOutput(ns("anovaR2")),   # <-- add this
+            hr(),
+            
           ),
           
           #### ---------------- Diagnostic Plots Tab ---------------------------------
@@ -626,7 +630,7 @@ SLRServer <- function(id) {
           totalsRow <- dfFormatted[nrow(dfFormatted), ]
           
           # Use original numeric df for sorting
-          numericRows <- df[1:(nrow(df) - 1), ]
+          numericRows <- df
           
           reactable(
             numericRows,
@@ -649,10 +653,17 @@ SLRServer <- function(id) {
               setNames(
                 lapply(names(numericRows), function(col) {
                   colDef(
-                    html   = TRUE,  # render HTML in column header
-                    name   = names(df)[match(col, names(numericRows))],
-                    format = colFormat(digits = 3),
-                    footer = tags$b(totalsRow[[col]])
+                    html = TRUE,
+                    name = names(df)[match(col, names(numericRows))],
+                    footer = tags$b(totalsRow[[col]]),
+                    cell = function(value) {
+                      if (!is.numeric(value)) return(value) # checks to display integers or floats
+                      if (value == floor(value)) {
+                        formatC(value, format = "f", digits = 0)  # integer, no decimals
+                      } else {
+                        formatC(value, format = "f", digits = 3)  # decimal, 3 places
+                      }
+                    }
                   )
                 }),
                 names(numericRows)
@@ -1049,6 +1060,7 @@ SLRServer <- function(id) {
         
         # ANOVA Output
         output$anovaHypotheses <- renderUI({
+          n <- length(datx)
           withMathJax(
             p(strong("Analysis of Variance (ANOVA)")),
             p(
@@ -1056,8 +1068,8 @@ SLRServer <- function(id) {
               br(),
               "\\( H_a: \\beta_1 \\neq 0 \\)"
             ),
-            #br(),
-            p("\\( \\alpha = 0.05 \\)")
+            p("\\( \\alpha = 0.05 \\)"),
+            p(sprintf("\\( n = %d \\)", n))
           )
         })
         
@@ -1099,10 +1111,32 @@ SLRServer <- function(id) {
           )
         })
         
+        output$anovaR2 <- renderUI({
+          anova_results <- anova(model)
+          
+          ssr <- anova_results$`Sum Sq`[1]
+          sse <- anova_results$`Sum Sq`[2]
+          sst <- ssr + sse
+          r2  <- ssr / sst
+          
+          withMathJax(
+            p(strong("Coefficient of Determination (\\( R^2 \\))")),
+            tags$div(
+              style = "text-align: left;",
+              HTML(sprintf(
+                "\\( R^2 = \\dfrac{\\mathrm{SSR}}{\\mathrm{SSR} + \\mathrm{SSE}} = \\dfrac{\\mathrm{SSR}}{\\mathrm{SST}} = \\dfrac{%.4f}{%.4f + %.4f} = \\dfrac{%.4f}{%.4f} = %.4f \\)",
+                ssr, ssr, sse, ssr, sst, r2
+              ))
+            )
+          )
+        })
+        
       } #if regcor_iv is valid
       
       show(id = "regCorrMP")
     }) # input$goRegression
+    
+
     
     ### ------------ Component Display -------------------------------------------
     observeEvent(!regcor_iv$is_valid(), {
