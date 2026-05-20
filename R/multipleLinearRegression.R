@@ -222,6 +222,95 @@ MLRServer <- function(id) {
       )
     })
     
+   # try to fix multi col
+     # Clean predictors for multicollinearity diagnostics
+    mlrPredictors <- reactive({
+      
+      req(encodedData())
+      req(isTruthy(input$explanatoryVariables))
+      req(input$responseVariable)
+      
+      df <- encodedData()[, input$explanatoryVariables, drop = FALSE]
+      
+      removed_zero_var <- c()
+      removed_aliased  <- c()
+      
+      # --------------------------------------------------------
+      # Remove zero variance columns
+      # --------------------------------------------------------
+      
+      zero_var <- sapply(df, function(x)
+        sd(x, na.rm = TRUE) == 0
+      )
+      
+      if(any(zero_var)) {
+        
+        removed_zero_var <- names(df)[zero_var]
+        
+        df <- df[, !zero_var, drop = FALSE]
+      }
+      
+      # --------------------------------------------------------
+      # Detect aliased / linearly dependent predictors
+      # --------------------------------------------------------
+      
+      temp_df <- cbind(
+        y = encodedData()[[input$responseVariable]],
+        df
+      )
+      
+      model <- lm(y ~ ., data = temp_df)
+      
+      aliased <- alias(model)$Complete
+      
+      if(!is.null(aliased)) {
+        
+        removed_aliased <- rownames(aliased)
+        
+        df <- df[, !colnames(df) %in% removed_aliased, drop = FALSE]
+      }
+      
+      # --------------------------------------------------------
+      # Notifications
+      # --------------------------------------------------------
+      
+      if(length(removed_zero_var) > 0) {
+        
+        showNotification(
+          paste(
+            "Removed zero variance variable(s):",
+            paste(removed_zero_var, collapse = ", ")
+          ),
+          type = "warning"
+        )
+      }
+      
+      if(length(removed_aliased) > 0) {
+        
+        showNotification(
+          paste(
+            "Removed linearly dependent variable(s):",
+            paste(removed_aliased, collapse = ", ")
+          ),
+          type = "warning"
+        )
+      }
+      
+      validate(
+        need(
+          ncol(df) >= 2,
+          "Not enough valid explanatory variables remain after removing problematic predictors."
+        )
+      )
+      
+      df
+    })
+    
+    # try to fix multi co 
+    
+    
+    
+    
     output$singleOrMultipleHelpText <- renderUI({
       if (length(input$explanatoryVariables) > 1) {
         div(class = "text-success", span("Multiple explanatory variables result in a multiple linear regression."))
@@ -992,48 +1081,45 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
     })
     
     output$simpleCorrelationMatrix <- renderTable({
-      req(encodedData())
-      req(isTruthy(input$explanatoryVariables))
-      req(length(as.character(input$explanatoryVariables)) >= 2)
       
-      corsetAboveDiagNA(encodedData()[, input$explanatoryVariables])
+      corsetAboveDiagNA(mlrPredictors())
+      
     },
     rownames = TRUE,
     striped = TRUE,
     na = "",
     align = "c")
     
-    output$vifs <- renderTable(
-      {
-        req(encodedData())
-        req(isTruthy(input$responseVariable))
-        req(isTruthy(input$explanatoryVariables))
-        req(length(as.character(input$explanatoryVariables)) >= 2)
-        with(encodedData(), {
-          model <- lm(reformulate(
-            as.character(lapply(input$explanatoryVariables, as.name)),
-            as.name(input$responseVariable)
-          ))
-          df <- tryCatch(
-            {
-              as.data.frame(car::vif(model))
-            },
-            error = \(e) NULL
-          )
-          validate(need(is.data.frame(df), "Couldn't produce a data frame from the VIF function of the model. Usually this means there are aliased variables in the model. Re-attempt after verifying the data, or renaming the columns."))
-          df
-        })
-      },
-      rownames = TRUE,
-      align = "c"
-    )
+    output$vifs <- renderTable({
+      
+      req(input$responseVariable)
+      
+      clean_df <- cbind(
+        encodedData()[input$responseVariable],
+        mlrPredictors()
+      )
+      
+      model <- lm(
+        reformulate(
+          colnames(mlrPredictors()),
+          input$responseVariable
+        ),
+        data = clean_df
+      )
+      
+      as.data.frame(car::vif(model))
+      
+    },
+    rownames = TRUE,
+    align = "c")
     
     output$ggscatmat <- renderPlot({
+      
       par(mar = c(4,4,1,1))
       
       ggscatmat(
-        encodedData()[, input$explanatoryVariables],
-        columns = input$explanatoryVariables
+        mlrPredictors(),
+        columns = colnames(mlrPredictors())
       )
     })
     
