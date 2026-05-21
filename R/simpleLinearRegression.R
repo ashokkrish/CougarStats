@@ -15,6 +15,13 @@ SLRMainPanelUI <- function(id) {
   
   tagList(withMathJax(
     useShinyjs(),
+    tags$style(HTML("         # Message for disabling when perfect fit occurs
+      .disabled-tab {
+        pointer-events: none !important;
+        opacity: 0.4 !important;
+        cursor: not-allowed !important;
+      }
+    ")),
     hidden(div(
       id = ns("regCorrMP"), # This div is hidden/shown
       uiOutput(ns("perfectFitWarning")), # added to trap perfect fit
@@ -73,31 +80,77 @@ SLRMainPanelUI <- function(id) {
             br()
           ), # Calculations tabpanel
           
-          #### ---------------- Inference Tab ----------------------------------------
+          #### ---------------- Parameter Estimates and ANOVA Tab -------------------
           tabPanel(
-            title = "Inference",
-            value = "Inference",
-
-            # tableOutput(ns("slrInferenceCoefficientsTable")),
-            # br(),
-            uiOutput(ns("slrInferenceDetails")),
-          ), # Inference tabpanel
-          
-          #### ---------------- ANOVA Tab -------------------------------------------
-          tabPanel(
-            title = "ANOVA",
-            value = "ANOVA",
+            title = "Parameter Estimates and ANOVA",
+            value = "Parameter Estimates and ANOVA",
             
-            uiOutput(ns("anovaHypotheses")),
-            br(),
-            div(tableOutput(ns("anovaTable")), width = "100 px;"),
-            br(),
-            uiOutput(ns("anovaConclusion")),
-            br(),
-            uiOutput(ns("anovaR2")),   # <-- add this
-            hr(),
+            tags$style(HTML("
+    .inference-anova-tabs .nav-tabs {
+      border-bottom: none;
+      background-color: #f8f9fa;
+      display: flex;
+      padding: 0;
+      margin-bottom: 16px;
+    }
+    .inference-anova-tabs .nav-tabs > li > a {
+      color: #18536F;
+      font-weight: bold;
+      font-size: 15px;
+      border: none !important;
+      border-radius: 0 !important;
+      padding: 10px 24px;
+      background-color: #f8f9fa !important;
+    }
+    .inference-anova-tabs .nav-tabs > li.active > a,
+    .inference-anova-tabs .nav-tabs > li.active > a:focus,
+    .inference-anova-tabs .nav-tabs > li.active > a:hover,
+    .inference-anova-tabs .nav-tabs > li > a.active,
+    .inference-anova-tabs .nav-tabs > li > a.active:focus,
+    .inference-anova-tabs .nav-tabs > li > a.active:hover {
+      background-color: #18536F !important;
+      color: white !important;
+      border: none !important;
+      border-radius: 0 !important;
+      font-weight: bold !important;
+    }
+    .inference-anova-tabs .nav-tabs > li > a:hover {
+      background-color: #d0dce8 !important;
+      color: #1a3a5c !important;
+    }
+  ")),
             
-          ),
+            div(
+              class = "inference-anova-tabs",
+              tabsetPanel(
+                type = "tabs",
+                id   = ns("inferenceAnovaTabs"),
+                
+                tabPanel(
+                  title = "Parameter Estimates",
+                  value = "Parameter Estimates",
+                  br(),
+                  uiOutput(ns("slrInferenceDetails"))
+                ),
+                
+                tabPanel(
+                  title = "ANOVA",
+                  value = "ANOVA",
+                  br(),
+                  uiOutput(ns("anovaHypotheses")),
+                  br(),
+                  div(tableOutput(ns("anovaTable")), width = "100 px;"),
+                  br(),
+                  uiOutput(ns("anovaConclusion")),
+                  br(),
+                  uiOutput(ns("anovaR2")),
+                  hr()
+                )
+              )
+            )
+          ), # Parameter Estimates and ANOVA tabpanel
+            
+    
           
           #### ---------------- Diagnostic Plots Tab ---------------------------------
           tabPanel(
@@ -608,20 +661,41 @@ SLRServer <- function(id) {
         # Perfect fit detection
         output$perfectFitWarning <- renderUI({
           if (isTRUE(all.equal(r_squared, 1))) {
+            
+            # Hide the tabs
+            hideTab(inputId = "slrNavbarPage", target = "Parameter Estimates and ANOVA")
+            hideTab(inputId = "slrNavbarPage", target = "Diagnostic Plots")
+            
             div(
               class = "alert alert-warning",
               role  = "alert",
               style = "margin-top: 10px;",
               tags$b("\u26a0\ufe0f Perfect Fit Detected: "),
-              "The model has an R\u00b2 of 1 or -1, meaning the regession line fits the data perfectly. Resulting in an MSE equal to zero and a zero set of residuals.",
+              "The model has an R\u00b2 of 1 or -1, meaning the regression line fits the data perfectly. Resulting in an MSE equal to zero and a zero set of residuals.",
               "This may indicate that ",
               tags$b("x and y are identical or linearly dependent,"),
               " which can produce unreliable inference results for the Parameters, ANOVA and Diagnostic Plots.",
-              " The results are displayed, but",
-              tags$b("interpret with caution.")
+              tags$b("These tabs are now hidden")
             )
+          } else {
+            showTab(inputId = "slrNavbarPage", target = "Parameter Estimates and ANOVA")
+            showTab(inputId = "slrNavbarPage", target = "Diagnostic Plots")
+            NULL
           }
         })
+        
+          # Disables ANOVA, INFRENCE and DIAGNOSTIC PLOTS if perfect fit is triggered
+          isPerfectFit <- isTRUE(all.equal(r_squared, 1))
+          
+          if (isPerfectFit) {
+            hideTab(inputId = "slrNavbarPage", target = "Parameter Estimates and ANOVA")
+            hideTab(inputId = "slrNavbarPage", target = "Diagnostic Plots")
+          } else {
+            showTab(inputId = "slrNavbarPage", target = "Parameter Estimates and ANOVA")
+            showTab(inputId = "slrNavbarPage", target = "Diagnostic Plots")
+          }
+          
+          
         
         
         output$slrDataTable <- renderReactable({
@@ -1192,6 +1266,8 @@ SLRServer <- function(id) {
       hide(id = "regCorrMP")
       shinyjs::reset("inputPanel")
       fileInputs$slrStatus <- 'reset'
+      showTab(inputId = "slrNavbarPage", target = "Parameter Estimates and ANOVA")
+      showTab(inputId = "slrNavbarPage", target = "Diagnostic Plots") 
       if (!is.null(input$slrNavbarPage)) { # Check if navbarPage exists before trying to update
         updateNavbarPage(session, "slrNavbarPage", selected = "Model")
       }

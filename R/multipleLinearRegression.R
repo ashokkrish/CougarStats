@@ -90,8 +90,7 @@ MLRMainPanelUI <- function(id) {
                  uiOutput(ns("encodingUI"))
                ),
                tabPanel(title = "Model", uiOutput(ns("Equations")) ),
-               tabPanel(title = "Inference", uiOutput(ns("Inference"))),
-               tabPanel(title = "ANOVA", uiOutput(ns("ANOVA"))),
+               tabPanel(title = "ANOVA & Parameter Estimates", uiOutput(ns("ANOVAAndInference"))),
                tabPanel(title = "Multicollinearity Detection", uiOutput(ns("MulticollinearityDetection"))),
                tabPanel(title = "Diagnostic Plots", uiOutput(ns("DiagnosticPlots"))),
                tabPanel(title = "Uploaded Data", DTOutput(ns("uploadedDataTable"))),
@@ -134,8 +133,7 @@ MLRServer <- function(id) {
     observeEvent(TRUE, {
       shinyjs::delay(0, {
         hideTab(inputId = "mainPanel", target = "Model")
-        hideTab(inputId = "mainPanel", target = "Inference")
-        hideTab(inputId = "mainPanel", target = "ANOVA")
+        hideTab(inputId = "mainPanel", target = "ANOVA & Parameter Estimates")
         hideTab(inputId = "mainPanel", target = "Multicollinearity Detection")
         hideTab(inputId = "mainPanel", target = "Diagnostic Plots")
         hideTab(inputId = "mainPanel", target = "Uploaded Data")
@@ -547,8 +545,7 @@ MLRServer <- function(id) {
       }
       
       showTab(inputId = "mainPanel", target = "Model")
-      showTab(inputId = "mainPanel", target = "Inference")
-      showTab(inputId = "mainPanel", target = "ANOVA")
+      showTab(inputId = "mainPanel", target = "ANOVA & Parameter Estimates")
       showTab(inputId = "mainPanel", target = "Multicollinearity Detection")
       showTab(inputId = "mainPanel", target = "Diagnostic Plots")
       showTab(inputId = "mainPanel", target = "Uploaded Data")
@@ -572,17 +569,17 @@ MLRServer <- function(id) {
     
     # Corresponds to the inference tab, after calcualtions
     
-    output$Inference <- renderUI({
-      eval(MLRValidation)
-      
-      fluidPage(
-        fluidRow(uiOutput(ns("linearModelCoefficientsAndConfidenceIntervals"))),
-        fluidRow(hr()),
-        fluidRow(uiOutput(ns("bpTest"))),
-        fluidRow(hr()),
-        fluidRow(uiOutput(ns("whiteTest")))
-      )
-    })
+    # output$Inference <- renderUI({
+    #   eval(MLRValidation)
+    #   
+    #   fluidPage(
+    #     fluidRow(uiOutput(ns("linearModelCoefficientsAndConfidenceIntervals"))),
+    #     fluidRow(hr()),
+    #     fluidRow(uiOutput(ns("bpTest"))),
+    #     fluidRow(hr()),
+    #     fluidRow(uiOutput(ns("whiteTest")))
+    #   )
+    # })
     
     
     
@@ -1189,19 +1186,19 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
       req(encodedData())
       datatable(encodedData(),
                 options = list(pageLength = -1,
-                               lengthMenu = list(c(10, 25, 50, -1), c("10", "25", "50", "All"))))
+                               lengthMenu = list(c(25, 50, 100, -1), c("25", "50", "100", "All"))))
     })
 
-    output$ANOVA <- renderUI({
-      eval(MLRValidation)
-      
-      fluidPage(
-        fluidRow(uiOutput(ns("anovaHypotheses"))),
-        fluidRow(tableOutput(ns("anovaTable"))),
-        fluidRow(uiOutput(ns("anovaPValueMethod"))),
-        fluidRow(uiOutput(ns("rsquareAdjustedRSquareInterpretation")))
-      )
-    })
+    # output$ANOVA <- renderUI({
+    #   eval(MLRValidation)
+    #   
+    #   fluidPage(
+    #     fluidRow(uiOutput(ns("anovaHypotheses"))),
+    #     fluidRow(tableOutput(ns("anovaTable"))),
+    #     fluidRow(uiOutput(ns("anovaPValueMethod"))),
+    #     fluidRow(uiOutput(ns("rsquareAdjustedRSquareInterpretation")))
+    #   )
+    # })
     
     output$MulticollinearityDetection <- renderUI({
       eval(MLRValidation)
@@ -1209,17 +1206,96 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
       uiOutput(ns("multicollinearityDetectionMainPanelUI"))
     })
     
+    # NEW MERGED ANOVA AND INFERENCE TAB 
+    
+    output$ANOVAAndInference <- renderUI({
+      eval(MLRValidation)
+      
+      fluidPage(
+        tags$style(HTML("
+      .correlation-tabs .nav-tabs {
+        border-bottom: none;
+        background-color: #f8f9fa;
+        display: flex;
+        padding: 0;
+        margin-bottom: 16px;
+      }
+      .correlation-tabs .nav-tabs > li > a {
+        color: #18536F;
+        font-weight: bold;
+        font-size: 15px;
+        border: none !important;
+        border-radius: 0 !important;
+        padding: 10px 24px;
+        background-color: #f8f9fa !important;
+      }
+      .correlation-tabs .nav-tabs > li.active > a,
+      .correlation-tabs .nav-tabs > li.active > a:focus,
+      .correlation-tabs .nav-tabs > li.active > a:hover,
+      .correlation-tabs .nav-tabs > li > a.active,
+      .correlation-tabs .nav-tabs > li > a.active:focus,
+      .correlation-tabs .nav-tabs > li > a.active:hover {
+        background-color: #18536F !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 0 !important;
+        font-weight: bold !important;
+      }
+      .correlation-tabs .nav-tabs > li > a:hover {
+        background-color: #d0dce8 !important;
+        color: #1a3a5c !important;
+      }
+    ")),
+    div(
+      class = "correlation-tabs",
+      tabsetPanel(
+        tabPanel(
+          title = "Parameter Estimates",
+          br(),
+          fluidRow(uiOutput(ns("linearModelCoefficientsAndConfidenceIntervals"))),
+          fluidRow(hr()),
+          fluidRow(uiOutput(ns("bpTest"))),
+          fluidRow(hr()),
+          fluidRow(uiOutput(ns("whiteTest")))
+        ),
+        tabPanel(
+          title = "ANOVA",
+          br(),
+          fluidRow(uiOutput(ns("anovaHypotheses"))),
+          br(),
+          fluidRow(tableOutput(ns("anovaTable"))),
+          br(),
+          fluidRow(uiOutput(ns("anovaPValueMethod"))),
+          br(),
+          fluidRow(uiOutput(ns("rsquareAdjustedRSquareInterpretation"))),
+          br(),
+        )
+      )
+    )
+      )
+    }) 
+    
     output$DiagnosticPlots <- renderUI({
       eval(MLRValidation)
       
       fluidPage(
-        plotOutput(ns("mlrResidualsPanelPlot1")),
-        plotOutput(ns("mlrResidualsPanelPlot2")),
-        plotOutput(ns("mlrResidualsPanelPlot3")),
-        plotOutput(ns("mlrResidualsPanelPlot4"))
+        fluidRow(
+          column(12,
+                 plotOutput(ns("mlrResidualsPanelPlot1")),
+                 br(),
+                 plotOutput(ns("mlrResidualsPanelPlot2")),
+                 br(),
+                 plotOutput(ns("mlrResidualsPanelPlot3")),
+                 br(),
+                 plotOutput(ns("mlrResidualsPanelPlot4")),
+                 br()
+          )
+        )
       )
     })
-  })
+  
+    
+    })
 }
 
 
