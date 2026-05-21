@@ -7,45 +7,6 @@ probDistUI <- function(id) {
   ns <- NS(id)
   
   tagList(
-    tags$style(HTML("
-      .code-container {
-        border: 1px solid #ddd;
-        border-radius: 3px;
-        overflow: hidden;
-        margin-top: 5px;
-        max-height: none;
-        width: 65%;
-      }
-      
-      .code-header {
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-        background: #eaf3ff;
-        padding: 4px 10px;
-        font-size: 14px;
-        font-weight: bold;
-        border-bottom: 1px solid #ddd;
-      }
-      
-      .copy-btn {
-        cursor: pointer;
-        font-size: 14px;
-        user-select: none;
-      }
-      
-      .code-body > div {
-        padding: 4px 8px;
-      
-        font-family: 'Courier New', monospace;
-        font-size: 14px;
-        line-height: 1.3;
-      
-        background: #f7f9fc;
-      
-        white-space: pre;
-      }
-      ")),
     sidebarLayout(
       #  ========================================================================== #  
       ## -------- Sidebar Panel --------------------------------------------------- 
@@ -771,22 +732,25 @@ probDistUI <- function(id) {
                       title = "Calculations",
                       
                       uiOutput(ns("renderProbabilityBinom")),
-                      
                       br(),
-                      h3("R Code"),
-                      hr(),
-                      
                       div(
+                        id = "rcodeBinomWrapper",
                         class = "code-container",
                         
                         div(
                           class = "code-header",
-                          
+                          div("R Code"),
                           tags$button(
                             class = "copy-btn",
                             type = "button",
                             onclick = sprintf(
-                              "navigator.clipboard.writeText(document.getElementById('%s').innerText.trim())",
+                              "
+                              navigator.clipboard.writeText(document.getElementById('%s').innerText.trim());
+                              var btn = this;
+                              var old = btn.innerText;
+                              btn.innerText = '✓ Copied';
+                              setTimeout(function(){ btn.innerText = old; }, 1000);
+                              ",
                               ns("rcodeBinomBox")
                             ),
                             "Copy"
@@ -796,7 +760,7 @@ probDistUI <- function(id) {
                         div(
                           id = ns("rcodeBinomBox"),
                           class = "code-body",
-                          textOutput(ns("rcodeBinom"))
+                          htmlOutput(ns("rcodeBinom"))
                         )
                       )
                     ),
@@ -2343,86 +2307,93 @@ probDistServer <- function(id) {
           })
       })
       
-      output$rcodeBinom <- renderText({
-        
+      codeValue <- function(x) {
+        paste0('<span class="code-value">', as.character(x), '</span>')
+      }
+      
+      output$rcodeBinom <- renderUI({
+        req(pd_iv$is_valid())
         if (input$calcBinom == "exact") {
           
-          paste0(
+          HTML(paste0(
             "dbinom(x = ",
-            input$numSuccessesBinom,
+            codeValue(input$numSuccessesBinom),
             ", size = ",
-            input$numTrialsBinom,
+            codeValue(input$numTrialsBinom),
             ", prob = ",
-            input$successProbBinom,
+            codeValue(input$successProbBinom),
             ")"
-          )
+          ))
           
         } else if (input$calcBinom == "cumulative") {
           
-          paste0(
+          HTML(paste0(
             "pbinom(",
-            input$numSuccessesBinom,
+            codeValue(input$numSuccessesBinom),
             ", size = ",
-            input$numTrialsBinom,
+            codeValue(input$numTrialsBinom),
             ", prob = ",
-            input$successProbBinom,
+            codeValue(input$successProbBinom),
             ")"
-          )
+          ))
           
         } else if (input$calcBinom == "upperTail") {
           
-          paste0(
+          HTML(paste0(
             "pbinom(",
-            input$numSuccessesBinom - 1,
+            codeValue(input$numSuccessesBinom - 1),
             ", size = ",
-            input$numTrialsBinom,
+            codeValue(input$numTrialsBinom),
             ", prob = ",
-            input$successProbBinom,
-            ", lower.tail = FALSE)"
-          )
+            codeValue(input$successProbBinom),
+            ", lower.tail = ",
+            codeValue("FALSE"),
+            ")"
+          ))
           
         } else if (input$calcBinom == "greaterThan") {
           
-          paste0(
+          HTML(paste0(
             "pbinom(",
-            input$numSuccessesBinom,
+            codeValue(input$numSuccessesBinom),
             ", size = ",
-            input$numTrialsBinom,
+            codeValue(input$numTrialsBinom),
             ", prob = ",
-            input$successProbBinom,
-            ", lower.tail = FALSE)"
-          )
+            codeValue(input$successProbBinom),
+            ", lower.tail = ",
+            codeValue("FALSE"),
+            ")"
+          ))
           
         } else if (input$calcBinom == "lessThan") {
           
-          paste0(
+          HTML(paste0(
             "pbinom(",
-            input$numSuccessesBinom - 1,
+            codeValue(input$numSuccessesBinom - 1),
             ", size = ",
-            input$numTrialsBinom,
+            codeValue(input$numTrialsBinom),
             ", prob = ",
-            input$successProbBinom,
+            codeValue(input$successProbBinom),
             ")"
-          )
+          ))
           
         } else if (input$calcBinom == "between") {
           
-          paste0(
+          HTML(paste0(
             "pbinom(",
-            input$numSuccessesBinomx2,
+            codeValue(input$numSuccessesBinomx2),
             ", size = ",
-            input$numTrialsBinom,
+            codeValue(input$numTrialsBinom),
             ", prob = ",
-            input$successProbBinom,
-            ") - ",
-            "pbinom(",
-            input$numSuccessesBinomx1 - 1,
+            codeValue(input$successProbBinom),
+            ") - pbinom(",
+            codeValue(input$numSuccessesBinomx1 - 1),
             ", size = ",
-            input$numTrialsBinom,
+            codeValue(input$numTrialsBinom),
             ", prob = ",
-            input$successProbBinom,
+            codeValue(input$successProbBinom),
             ")"
-          )
+          ))
         }
       })
       
@@ -2496,6 +2467,23 @@ probDistServer <- function(id) {
               plot.margin = margin(10, 10, 10, 5, unit = "mm")
         )
       
+    })
+    
+    observe({
+      if (pd_iv$is_valid() &&
+          (
+            (input$calcBinom != "between" &&
+             input$numSuccessesBinom <= input$numTrialsBinom)
+            || (input$calcBinom == "between" &&
+             input$numSuccessesBinomx1 <= input$numSuccessesBinomx2 &&
+             input$numSuccessesBinomx1 <= input$numTrialsBinom &&
+             input$numSuccessesBinomx2 <= input$numTrialsBinom)
+          )
+      ) {
+        runjs("document.getElementById('rcodeBinomWrapper').style.display = 'block';")
+      } else {
+        runjs("document.getElementById('rcodeBinomWrapper').style.display = 'none';")
+      }
     })
     
     observeEvent(input$goPoisson, {
