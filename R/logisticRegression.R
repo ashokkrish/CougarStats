@@ -257,6 +257,7 @@ LogisticRegressionServer <- function(id) {
       }
     }) |> bindEvent(input$responseVariable, input$explanatoryVariables, ignoreInit = TRUE)
     
+    
     # Clear errors and reset calculation state when data is uploaded
     observe({
       if(isTruthy(imported$data())){
@@ -265,6 +266,20 @@ LogisticRegressionServer <- function(id) {
       # Reset calculation_done when new file is uploaded to prevent stale reactive triggers
       calculation_done(FALSE)
       valid_analysis_results(NULL)
+      
+      # Clear all rendered outputs
+      output$Equations       <- renderUI({})
+      output$anovaOutput     <- renderUI({})
+      output$uploadedDataTable <- renderDT({ NULL })
+      
+      # Hide result tabs
+      hideTab(inputId = "mainPanel", target = "Model")
+      hideTab(inputId = "mainPanel", target = "Analysis of Deviance")
+      hideTab(inputId = "mainPanel", target = "diagnostic_plot_tab")
+      hideTab(inputId = "mainPanel", target = "Uploaded Data")
+      
+      updateNavbarPage(session, "mainPanel", selected = "data_import_tab")
+      
     }) |> bindEvent(imported$data(), ignoreNULL = FALSE, ignoreInit = TRUE)
     
     # Scatterplot with logistic curve - rendered separately to ensure it only shows with valid model
@@ -449,7 +464,7 @@ LogisticRegressionServer <- function(id) {
         req(imported$data())
         datatable(imported$data(),
                   options = list(pageLength = -1,
-                                 lengthMenu = list(c(10, 25, 50, -1), c("10", "25", "50", "All"))))
+                                 lengthMenu = list(c(25, 50, 100, -1), c("25", "50", "100", "All"))))
       })
       
       showTab(inputId = "mainPanel", target = "Model")
@@ -486,6 +501,8 @@ LogisticRegressionServer <- function(id) {
       }
       output$responseVariableWarning <- renderUI(NULL)
     }, ignoreNULL = FALSE)
+    
+    
     
     observeEvent(input$responseVariable, {
       df <- imported$data()
