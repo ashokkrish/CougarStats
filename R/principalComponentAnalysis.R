@@ -4,7 +4,6 @@ library(shiny)
 library(bslib)
 library(dplyr)
 library(car) # For powerTransform
-library(shinyalert)
 library(ggplot2)
 library(GGally) # For ggpairs
 library(ggfortify) # For autoplot
@@ -20,11 +19,6 @@ library(psych) # For rotated solution
 PCASidebarUI <- function(id) {
   ns <- NS(id)
   tagList(
-
-    div(
-      class = "si-label",
-      tags$b("PCA Options")
-    ),
 
     div(
       style = "font-size: 15px; color: #6c757d; margin-top: 8px; margin-bottom: 6px; ",
@@ -49,7 +43,8 @@ PCASidebarUI <- function(id) {
         choices = NULL,
         multiple = TRUE,
         options = list(`actions-box` = TRUE, `live-search` = TRUE, title = "Nothing selected")
-      )
+      ),
+      uiOutput(ns("predictorsError"))
     ),
     radioButtons(ns("transformation"),
                  label = strong("Data Transformation"),
@@ -148,6 +143,8 @@ PCAServer <- function(id, data, shared_explanatory, shared_response) {
     original_data <- reactiveVal(NULL)
     noFileCalculate <- reactiveVal(FALSE)
     grouping_var <- reactiveVal(NULL)
+    predictorsError <- reactiveVal(FALSE)
+    pca_message <- reactiveVal(NULL)
 
     pca_iv <- shinyvalidate::InputValidator$new()
     pca_iv$add_rule("numFactors", shinyvalidate::sv_required())
@@ -178,7 +175,13 @@ PCAServer <- function(id, data, shared_explanatory, shared_response) {
       updatePickerInput(session, "response",   choices = all_cols,     selected = pre_response)
     }, ignoreNULL = TRUE)
     
-    observeEvent(input$predictors, { shared_explanatory(input$predictors) }, ignoreInit = TRUE)
+    observeEvent(input$predictors, {
+      shared_explanatory(input$predictors)
+      if (length(input$predictors) >= 2) {
+        predictorsError(FALSE)
+        shinyjs::removeClass(id = "predictorsWrapper", class = "has-error")
+      }
+    }, ignoreInit = TRUE)
     observeEvent(input$response,   { shared_response(input$response)     }, ignoreInit = TRUE)
 
     # Clear results when user changes PCA options
@@ -189,6 +192,7 @@ PCAServer <- function(id, data, shared_explanatory, shared_response) {
         analysis_data(NULL)
         original_data(NULL)
         grouping_var(NULL)
+        pca_message(NULL)
 
         hideTab(inputId = "mainPanel", target = "pca_results_tab")
         hideTab(inputId = "mainPanel", target = "plots_tab")
@@ -233,34 +237,55 @@ PCAServer <- function(id, data, shared_explanatory, shared_response) {
         tags$div(class = "shiny-output-error-validation",
                  "Required: Cannot calculate without a data file.")
       } else {
-        NULL
+        msg <- pca_message()
+        if (is.null(msg)) return(NULL)
+        div(
+          style = "margin-top:10px;",
+          div(class = "alert alert-danger", msg)
+        )
+      }
+    })
+
+    output$predictorsError <- renderUI({
+      if (predictorsError()) {
+        tags$div(
+          class = "text-danger",
+          style = "font-size: 12px; margin-top: -10px; margin-bottom: 10px;",
+          icon("exclamation-circle"),
+          "Please select at least two explanatory variables."
+        )
       }
     })
     
     observeEvent(input$calculate, {
 
+      # Clear any previous calculation error on each new attempt
+      pca_message(NULL)
+
+      req(pca_iv$is_valid())
+
+      if (!isTruthy(data())) {
+        noFileCalculate(TRUE)
+        return()
+      } else {
+        noFileCalculate(FALSE)
+      }
+
+      if (!isTruthy(input$predictors) || length(input$predictors) < 2) {
+        predictorsError(TRUE)
+        shinyjs::addClass(id = "predictorsWrapper", class = "has-error")
+        return()
+      } else {
+        predictorsError(FALSE)
+        shinyjs::removeClass(id = "predictorsWrapper", class = "has-error")
+      }
+
+      if (input$numFactors > length(input$predictors)) {
+        pca_message("Number of factors cannot exceed the number of selected variables.")
+        return()
+      }
+
       tryCatch({
-
-        req(pca_iv$is_valid())
-
-        if (!isTruthy(data())) {
-          noFileCalculate(TRUE)
-          return()
-        } else {
-          noFileCalculate(FALSE)
-        }
-        
-        if (!isTruthy(input$predictors) || length(input$predictors) < 2) {
-          shinyalert::shinyalert("Input Error", "Please select at least two explanatory variables for PCA.",
-                                 type = "error", confirmButtonCol = "#18536F")
-          return()
-        }
-
-        if (input$numFactors > length(input$predictors)) {
-          shinyalert::shinyalert("Input Error", "Number of factors cannot exceed the number of selected variables.",
-                                 type = "error", confirmButtonCol = "#18536F")
-          return()
-        }
 
         df <- data()
 
@@ -269,12 +294,12 @@ PCAServer <- function(id, data, shared_explanatory, shared_response) {
         row_ok <- complete.cases(df[, input$predictors, drop = FALSE])
         selected_data <- df[row_ok, input$predictors, drop = FALSE]
         selected_data <- as.data.frame(selected_data)
-        
+
         if (!is.null(group_col)) {
           grp <- df[row_ok, group_col, drop = TRUE]
           grp <- as.character(grp)
           grp[is.na(grp)] <- "Missing"
-          
+
           n_groups <- length(unique(grp))
           if (n_groups <= 12) {
             grouping_var(factor(grp))
@@ -284,38 +309,29 @@ PCAServer <- function(id, data, shared_explanatory, shared_response) {
         } else {
           grouping_var(NULL)
         }
-        
+
         selected_data[] <- lapply(selected_data, function(x) as.numeric(as.character(x)))
-        
+
         keep <- complete.cases(selected_data)
         selected_data <- selected_data[keep, , drop = FALSE]
         if (!is.null(group_col)) grouping_var(grouping_var()[keep])
-        
-        
+
         if (nrow(selected_data) < 2) {
-          shinyalert::shinyalert(
-            "Input Error",
-            "After removing missing values, there are fewer than 2 complete rows. PCA needs at least 2 rows.",
-            type = "error",
-            confirmButtonCol = "#18536F"
-          )
+          pca_message("After removing missing values, there are fewer than 2 complete rows. PCA needs at least 2 rows.")
           return()
         }
-        
+
         original_data(selected_data)
-        
+
         transformed_data <- switch(
           input$transformation,
           "Original scale" = selected_data,
           "Logarithmic transformation" = {
             if (any(selected_data < 0)) {
-              shinyalert::shinyalert("Error", "Log transformation cannot be applied to negative data.",
-                                     type = "error", confirmButtonCol = "#18536F")
+              pca_message("Log transformation cannot be applied to negative data.")
               return(NULL)
             }
             if (any(selected_data == 0)) {
-              shinyalert::shinyalert("Info", "Data contains zeros. Applying a log(x+1) transformation.",
-                                     type = "info", confirmButtonCol = "#18536F")
               log(selected_data + 1)
             } else {
               log(selected_data)
@@ -324,24 +340,21 @@ PCAServer <- function(id, data, shared_explanatory, shared_response) {
           "Box-Cox transformation" = { ... },
           "Standardized Box-Cox transformation" = { ... }
         )
-        
+
         if (is.null(transformed_data)) return()
-        
+
         analysis_data(transformed_data)
-        
+
         sds <- sapply(transformed_data, sd, na.rm = TRUE)
         zero_var_cols <- names(sds)[is.na(sds) | sds == 0]
         if (length(zero_var_cols) > 0) {
-          shinyalert::shinyalert(
-            "Input Error",
-            paste0("These selected variable(s) have zero variance and cannot be used in PCA: ",
-                   paste(zero_var_cols, collapse = ", "), "."),
-            type = "error",
-            confirmButtonCol = "#18536F"
-          )
+          pca_message(paste0(
+            "These selected variable(s) have zero variance and cannot be used in PCA: ",
+            paste(zero_var_cols, collapse = ", "), "."
+          ))
           return()
         }
-        
+
         pca <- prcomp(transformed_data, center = TRUE, scale. = TRUE)
         pca_results(pca)
 
@@ -357,18 +370,13 @@ PCAServer <- function(id, data, shared_explanatory, shared_response) {
         showTab(inputId = "mainPanel", target = "pca_results_tab")
         showTab(inputId = "mainPanel", target = "plots_tab")
         showTab(inputId = "mainPanel", target = "transformations_tab")
-        
+
         updateNavbarPage(session, "mainPanel", selected = "pca_results_tab")
-        
+
       }, error = function(e) {
-        shinyalert::shinyalert(
-          "PCA crashed",
-          paste("Error message:", conditionMessage(e)),
-          type = "error",
-          confirmButtonCol = "#18536F"
-        )
+        pca_message(paste("PCA error:", conditionMessage(e)))
       })
-      
+
     })
     
     
@@ -642,6 +650,11 @@ PCAServer <- function(id, data, shared_explanatory, shared_response) {
       pca_results(NULL)
       analysis_data(NULL)
       original_data(NULL)
+      noFileCalculate(FALSE)
+      predictorsError(FALSE)
+      pca_message(NULL)
+      shinyjs::removeClass(id = "predictorsWrapper", class = "has-error")
+
       updatePickerInput(session, "predictors", selected = character(0))
       updatePickerInput(session, "response", selected = character(0))
       updateRadioButtons(session, "transformation", selected = "Original scale")

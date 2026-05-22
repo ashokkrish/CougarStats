@@ -86,7 +86,9 @@ RUN R -e \
                     'knitr',            \
                     'moments',          \
                     'psych',            \
-                    'forecast'),        \
+                    'forecast',         \
+                    'randomForest',     \
+                    'pdp'),             \
                   dependencies = TRUE); \
   remotes::install_github('deepanshu88/shinyDarkmode'); \
   remotes::install_github('rsquaredacademy/olsrr');"
