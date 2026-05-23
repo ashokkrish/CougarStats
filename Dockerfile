@@ -90,8 +90,8 @@ RUN R -e \
                     'skedastic',        \
                     'reactable',        \
                     'sortable',         \
-                    'lmtest',           \
-                  dependencies = TRUE); \
+                    'lmtest'            \
+                  ), dependencies = TRUE); \
   remotes::install_github('deepanshu88/shinyDarkmode'); \
   remotes::install_github('rsquaredacademy/olsrr');"
 
