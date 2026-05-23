@@ -40,7 +40,6 @@ RUN R -e \
                     'ggfortify',        \
                     'ggplot2',          \
                     'ggpubr',           \
-                    'ggResidpanel',     \
                     'ggsci',            \
                     'gridExtra',        \
                     'htmltools',        \
@@ -82,6 +81,7 @@ RUN R -e \
                     'xtable'),          \
                   dependencies = TRUE); \
   remotes::install_github('deepanshu88/shinyDarkmode'); \
+  remotes::install_github('goodekat/ggResidpanel'); \
   remotes::install_github('rsquaredacademy/olsrr');"
 
 # copy our application into the server, where 'R' is the local path to the app
