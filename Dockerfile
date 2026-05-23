@@ -76,6 +76,7 @@ RUN R -e \
                     'tibble',           \
                     'tidyr',            \
                     'tinytex',          \
+		    'tools',            \
                     'waiter',           \
                     'writexl',          \
                     'xtable'),          \
