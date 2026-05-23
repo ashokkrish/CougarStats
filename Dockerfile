@@ -86,10 +86,10 @@ RUN R -e \
                     'knitr',            \
                     'moments',          \
                     'psych',            \
-                    'forecast'          \
-                    'skedastic'         \
-                    'reactable'
-                    'sortable'          \
+                    'forecast',         \
+                    'skedastic',        \
+                    'reactable',        \
+                    'sortable',         \
                     'lmtest',           \
                   dependencies = TRUE); \
   remotes::install_github('deepanshu88/shinyDarkmode'); \
