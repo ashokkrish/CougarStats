@@ -5,6 +5,7 @@
 
 ## options(conflicts.policy = TRUE)
 ## library(conflicted)
+print("GLOBAL START")
 
 library(aplpack)
 library(base)
@@ -59,6 +60,7 @@ library(shinyvalidate)
 library(shinyWidgets)
 library(skedastic)
 library(sortable)
+sortable::enable_modules()
 library(thematic)
 library(tibble)
 library(tidyr)

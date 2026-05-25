@@ -75,15 +75,18 @@ SLRMainPanelUI <- function(id) {
           tabPanel(
             title = "Calculations",
             value = "Calculations",
-
-            reactableOutput(ns("slrDataTable"), width = "100%"),
+            
+            div(
+              style = "overflow-x: auto;",
+              reactableOutput(ns("slrDataTable"), width = "100%")
+            ),
             br()
           ), # Calculations tabpanel
           
-          #### ---------------- Parameter Estimates and ANOVA Tab -------------------
+          #### ---------------- Inference Tab -------------------
           tabPanel(
-            title = "Parameter Estimates and ANOVA",
-            value = "Parameter Estimates and ANOVA",
+            title = "Inference",
+            value = "Inference",
             
             tags$style(HTML("
     .inference-anova-tabs .nav-tabs {
@@ -148,7 +151,7 @@ SLRMainPanelUI <- function(id) {
                 )
               )
             )
-          ), # Parameter Estimates and ANOVA tabpanel
+          ), # Inference tabpanel
             
     
           
@@ -650,15 +653,27 @@ SLRServer <- function(id) {
         pi_upper <- y_hat + t_crit * se_pred
         
         df <- data.frame(datx, daty, datx*daty, datx^2, daty^2, y_hat, residuals, residuals_sq, ci_lower, ci_upper, pi_lower, pi_upper)
-        names(df) <- c("x", "y", "xy", "x<sup>2</sup>", "y<sup>2</sup>", "&ycirc;", "<em>e</em> = (<em>y</em> - <em>&ycirc;</em>)", "e<sup>2</sup>", "95% CI For The Mean Response (Lower)", "95% CI For The Mean Response (Upper)", "95% Prediction Interval (Lower)", "95% Prediction Interval (Upper)")
+        names(df) <- c("x", "y", "xy", "x<sup>2</sup>", "y<sup>2</sup>", "&ycirc;",
+                       "<em>e</em> = (<em>y</em> - <em>&ycirc;</em>)", "e<sup>2</sup>",
+                       "95% CI<br>for the mean<br>response<br>(Lower)", 
+                       "95% CI<br>for the mean<br>response<br>(Upper)",
+                       "95% prediction<br>interval<br>(Lower)", 
+                       "95% prediction<br>interval<br>(Upper)")
         
         dfTotaled <- bind_rows(
           df,
           df %>%
-            summarise(across(c(x, y, xy, `x<sup>2</sup>`, `y<sup>2</sup>`,
-                               `&ycirc;`, `<em>e</em> = (<em>y</em> - <em>&ycirc;</em>)`,
-                               `e<sup>2</sup>`), sum),
-                      across(c(`95% CI For The Mean Response (Lower)`, `95% CI For The Mean Response (Upper)`, `95% Prediction Interval (Lower)`, `95% Prediction Interval (Upper)`), ~ NA_real_))
+            summarise(
+              across(c(x, y, xy, 
+                       `x<sup>2</sup>`, 
+                       `y<sup>2</sup>`,
+                       `&ycirc;`, 
+                       `<em>e</em> = (<em>y</em> - <em>&ycirc;</em>)`,
+                       `e<sup>2</sup>`), sum),
+              across(c(`95% CI<br>for the mean<br>response<br>(Lower)`,
+                       `95% CI<br>for the mean<br>response<br>(Upper)`,
+                       `95% prediction<br>interval<br>(Lower)`,
+                       `95% prediction<br>interval<br>(Upper)`), ~ NA_real_))
         )
         
         dfTotaled[nrow(dfTotaled), "<em>e</em> = (<em>y</em> - <em>&ycirc;</em>)"] <- sum(df$`<em>e</em> = (<em>y</em> - <em>&ycirc;</em>)`)
@@ -684,7 +699,7 @@ SLRServer <- function(id) {
           if (isTRUE(all.equal(r_squared, 1))) {
             
             # Hide the tabs
-            hideTab(inputId = "slrNavbarPage", target = "Parameter Estimates and ANOVA")
+            hideTab(inputId = "slrNavbarPage", target = "Inference")
             hideTab(inputId = "slrNavbarPage", target = "Diagnostic Plots")
             
             div(
@@ -699,7 +714,7 @@ SLRServer <- function(id) {
               tags$b("These tabs are now hidden")
             )
           } else {
-            showTab(inputId = "slrNavbarPage", target = "Parameter Estimates and ANOVA")
+            showTab(inputId = "slrNavbarPage", target = "Inference")
             showTab(inputId = "slrNavbarPage", target = "Diagnostic Plots")
             NULL
           }
@@ -709,10 +724,10 @@ SLRServer <- function(id) {
           isPerfectFit <- isTRUE(all.equal(r_squared, 1))
           
           if (isPerfectFit) {
-            hideTab(inputId = "slrNavbarPage", target = "Parameter Estimates and ANOVA")
+            hideTab(inputId = "slrNavbarPage", target = "Inference")
             hideTab(inputId = "slrNavbarPage", target = "Diagnostic Plots")
           } else {
-            showTab(inputId = "slrNavbarPage", target = "Parameter Estimates and ANOVA")
+            showTab(inputId = "slrNavbarPage", target = "Inference")
             showTab(inputId = "slrNavbarPage", target = "Diagnostic Plots")
           }
           
@@ -741,23 +756,29 @@ SLRServer <- function(id) {
               # Row name column — just used to show "Totals" label in footer
               list(".rownames" = colDef(
                 name   = "n",
+                align = "left",
                 footer = tags$b("Totals"),
                 style  = list(color = "#333"),
-                minWidth = 75
+                minWidth = 70
               )),
               # Data columns with HTML names and totals footer
               setNames(
                 lapply(names(numericRows), function(col) {
                   colDef(
-                    html = TRUE,
-                    name = names(df)[match(col, names(numericRows))],
-                    footer = tags$b(totalsRow[[col]]),
+                    html     = TRUE,
+                    align    = "left",
+                    name     = names(df)[match(col, names(numericRows))],
+                    footer   = if (is.na(dfTotaled[nrow(dfTotaled), col])) {
+                      ""
+                    } else {
+                      tags$b(totalsRow[[col]])
+                    },
                     cell = function(value) {
-                      if (!is.numeric(value)) return(value) # checks to display integers or floats
+                      if (!is.numeric(value)) return(value)
                       if (value == floor(value)) {
-                        formatC(value, format = "f", digits = 0)  # integer, no decimals
+                        formatC(value, format = "f", digits = 0)
                       } else {
-                        formatC(value, format = "f", digits = 3)  # decimal, 3 places
+                        formatC(value, format = "f", digits = 3)
                       }
                     }
                   )
@@ -1288,7 +1309,7 @@ SLRServer <- function(id) {
       hide(id = "regCorrMP")
       shinyjs::reset("inputPanel")
       fileInputs$slrStatus <- 'reset'
-      showTab(inputId = "slrNavbarPage", target = "Parameter Estimates and ANOVA")
+      showTab(inputId = "slrNavbarPage", target = "Inference")
       showTab(inputId = "slrNavbarPage", target = "Diagnostic Plots") 
       if (!is.null(input$slrNavbarPage)) { # Check if navbarPage exists before trying to update
         updateNavbarPage(session, "slrNavbarPage", selected = "Model")
