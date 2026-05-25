@@ -1144,13 +1144,42 @@ SLRServer <- function(id) {
         })
         
         # Kendall's Tau formula
+        # output$kendallFormula <- renderUI({
+        #   n <- length(datx)
+        #   withMathJax(
+        #     sprintf("\\( \\displaystyle \\tau = \\dfrac{n_c - n_d}{\\binom{n}{2}} = \\dfrac{n_c - n_d}{\\dfrac{n(n-1)}{2}} = %0.4f \\)",
+        #             kendall$estimate)#,
+        #     # br(),
+        #     # sprintf("\\( \\tau \\; = \\; %0.4f \\)", kendall$estimate)
+        #   )
+        # })
+        
         output$kendallFormula <- renderUI({
-          n <- length(datx)
+          n  <- length(datx)
+          n0 <- n * (n - 1) / 2
+          n1 <- sum(choose(table(datx), 2))
+          n2 <- sum(choose(table(daty), 2))
+          
+          # Compute nc and nd manually
+          nc <- 0
+          nd <- 0
+          for (i in 1:(n - 1)) {
+            for (j in (i + 1):n) {
+              dx <- datx[i] - datx[j]
+              dy <- daty[i] - daty[j]
+              if (sign(dx) == sign(dy) && dx != 0 && dy != 0) {
+                nc <- nc + 1
+              } else if (sign(dx) != sign(dy) && dx != 0 && dy != 0) {
+                nd <- nd + 1
+              }
+            }
+          }
+          
           withMathJax(
-            sprintf("\\( \\displaystyle \\tau = \\dfrac{n_c - n_d}{\\binom{n}{2}} = \\dfrac{n_c - n_d}{\\dfrac{n(n-1)}{2}} = %0.4f \\)",
-                    kendall$estimate)#,
-            # br(),
-            # sprintf("\\( \\tau \\; = \\; %0.4f \\)", kendall$estimate)
+            HTML(sprintf(
+              "\\( \\tau_b = \\dfrac{n_c - n_d}{\\sqrt{(n_0 - n_1)(n_0 - n_2)}} = \\dfrac{%d - %d}{\\sqrt{(%g - %g)(%g - %g)}} = %.4f \\)",
+              nc, nd, n0, n1, n0, n2, kendall$estimate
+            ))
           )
         })
         
