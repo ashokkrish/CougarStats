@@ -5,7 +5,7 @@
 
 ## options(conflicts.policy = TRUE)
 ## library(conflicted)
-print("GLOBAL START")
+
 
 library(aplpack)
 library(base)

@@ -1156,15 +1156,68 @@ SLRServer <- function(id) {
         
         # Spearman's rs formula
         output$spearmanEstimate <- renderUI({
-          withMathJax(
-            HTML(
-              sprintf(
-                "\\( \\large{\\quad r_{s} = 1 - \\dfrac{ 6 \\left(\\sum\\limits_{i=1}^n d^2_{i}\\right)}{ n (n^2 - 1)} = %0.4f} \\)",
-                spearman$estimate
-              )
-            )
+          
+          # Calculate ranks and differences
+          rank_x <- rank(datx)
+          rank_y <- rank(daty)
+          d      <- rank_x - rank_y
+          d_sq   <- d^2
+          sum_d_sq <- sum(d_sq)
+          n      <- length(datx)
+          
+          # Build data frame
+          spearman_df <- data.frame(
+            x      = datx,
+            y      = daty,
+            rank_x = rank_x,
+            rank_y = rank_y,
+            d      = d,
+            d_sq   = d_sq
           )
           
+          withMathJax(
+            
+            reactable(
+              spearman_df,
+              sortable   = FALSE,
+              bordered   = TRUE,
+              striped    = TRUE,
+              highlight  = TRUE,
+              pagination = FALSE,
+              fullWidth  = FALSE,
+              rownames   = FALSE,
+              columns = list(
+                x      = colDef(name = "x",      align = "center", footer = ""),
+                y      = colDef(name = "y",      align = "center", footer = ""),
+                rank_x = colDef(name = "Rank x", align = "center", footer = ""),
+                rank_y = colDef(name = "Rank y", align = "center", footer = ""),
+                d      = colDef(name = "d",      align = "center", footer = tags$b("Total")),
+                d_sq   = colDef(
+                  name   = HTML("d<sup>2</sup>"),
+                  html   = TRUE,
+                  align  = "center",
+                  footer = tags$b(sum_d_sq),
+                  cell   = function(value) formatC(value, format = "f", digits = 0)
+                )
+              )
+            ),
+            
+            br(),
+            
+            # Formula with values plugged in
+            div(
+              style = "text-align: left;",
+              HTML(sprintf(
+                "\\( r_s = 1 - \\dfrac{6 \\sum_{i=1}^n d_i^2}{n(n^2 - 1)} = 1 - \\dfrac{6 \\times %g}{%d(%d^2 - 1)} = %.4f \\)",
+                sum_d_sq, n, n, spearman$estimate
+              ))
+            
+            ),
+            
+            br()
+            
+            
+          )
         })
         
         output$slrViewUpload <- renderDT({
