@@ -76,7 +76,7 @@ SLRMainPanelUI <- function(id) {
             title = "Calculations",
             value = "Calculations",
 
-            reactableOutput(ns("slrDataTable"), width = "95%"),
+            reactableOutput(ns("slrDataTable"), width = "100%"),
             br()
           ), # Calculations tabpanel
           
@@ -635,10 +635,31 @@ SLRServer <- function(id) {
         residuals <- residuals(model)
         residuals_sq <- residuals^2
         
-        df <- data.frame(datx, daty, datx*daty, datx^2, daty^2, y_hat, residuals, residuals_sq)
-        names(df) <- c("x", "y", "xy", "x<sup>2</sup>", "y<sup>2</sup>", "&ycirc;", "<em>e</em> = (<em>y</em> - <em>&ycirc;</em>)", "e<sup>2</sup>")
+        n       <- length(datx)
+        x_bar   <- mean(datx)
+        mse     <- sum(residuals^2) / (n - 2)
+        ssx     <- sum((datx - x_bar)^2)
+        t_crit  <- qt(0.975, df = n - 2)
         
-        dfTotaled <- bind_rows(df, summarise(df, across(where(is.numeric), sum)))
+        se_mean  <- sqrt(mse * (1/n + (datx - x_bar)^2 / ssx))
+        se_pred  <- sqrt(mse * (1 + 1/n + (datx - x_bar)^2 / ssx))
+        
+        ci_lower <- y_hat - t_crit * se_mean
+        ci_upper <- y_hat + t_crit * se_mean
+        pi_lower <- y_hat - t_crit * se_pred
+        pi_upper <- y_hat + t_crit * se_pred
+        
+        df <- data.frame(datx, daty, datx*daty, datx^2, daty^2, y_hat, residuals, residuals_sq, ci_lower, ci_upper, pi_lower, pi_upper)
+        names(df) <- c("x", "y", "xy", "x<sup>2</sup>", "y<sup>2</sup>", "&ycirc;", "<em>e</em> = (<em>y</em> - <em>&ycirc;</em>)", "e<sup>2</sup>", "95% CI For The Mean Response (Lower)", "95% CI For The Mean Response (Upper)", "95% Prediction Interval (Lower)", "95% Prediction Interval (Upper)")
+        
+        dfTotaled <- bind_rows(
+          df,
+          df %>%
+            summarise(across(c(x, y, xy, `x<sup>2</sup>`, `y<sup>2</sup>`,
+                               `&ycirc;`, `<em>e</em> = (<em>y</em> - <em>&ycirc;</em>)`,
+                               `e<sup>2</sup>`), sum),
+                      across(c(`95% CI For The Mean Response (Lower)`, `95% CI For The Mean Response (Upper)`, `95% Prediction Interval (Lower)`, `95% Prediction Interval (Upper)`), ~ NA_real_))
+        )
         
         dfTotaled[nrow(dfTotaled), "<em>e</em> = (<em>y</em> - <em>&ycirc;</em>)"] <- sum(df$`<em>e</em> = (<em>y</em> - <em>&ycirc;</em>)`)
         
@@ -714,14 +735,15 @@ SLRServer <- function(id) {
             striped    = TRUE,
             highlight  = TRUE,
             pagination = FALSE,
-            fullWidth  = TRUE,
+            fullWidth  = FALSE,
             rownames   = TRUE,
             columns = c(
               # Row name column — just used to show "Totals" label in footer
               list(".rownames" = colDef(
-                name   = "",
+                name   = "n",
                 footer = tags$b("Totals"),
-                style  = list(color = "#333")
+                style  = list(color = "#333"),
+                minWidth = 75
               )),
               # Data columns with HTML names and totals footer
               setNames(
