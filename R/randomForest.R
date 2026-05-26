@@ -365,7 +365,18 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
         return()
       }
 
-      # 8. Resolve mtry — NA / blank means auto (NULL → randomForest uses floor(sqrt(p)))
+      # 8. Zero variance check
+      sds <- sapply(analysis_df[, input$predictors, drop = FALSE], sd, na.rm = TRUE)
+      zero_var_cols <- names(sds)[is.na(sds) | sds == 0]
+      if (length(zero_var_cols) > 0) {
+        rf_message(paste0(
+          "These selected variable(s) have zero variance and cannot be used in Random Forest: ",
+          paste(zero_var_cols, collapse = ", "), "."
+        ))
+        return()
+      }
+
+      # 9. Resolve mtry — NA / blank means auto (NULL → randomForest uses floor(sqrt(p)))
       mtry_val <- if (!is.numeric(input$mtry) || is.na(input$mtry)) {
         NULL
       } else {
