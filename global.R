@@ -1,5 +1,6 @@
 ## install.packages("remotes")
 ## remotes::install_github("deepanshu88/shinyDarkmode")
+## remotes::install_github('goodekat/ggResidpanel')
 ## remotes::install_github("rsquaredacademy/olsrr")
 
 ## options(conflicts.policy = TRUE)
@@ -40,19 +41,18 @@ library(markdown)
 library(MASS)
 library(moments)
 library(nortest)
-library(olsrr)
 library(plotly)
 library(psych)
-library(rpart)
-library(rpart.plot)
+library(reactable)
 library(readr)
 library(readxl)
-library(reactable)
+library(remotes)
 library(ResourceSelection)
+library(rpart)
+library(rpart.plot)
 library(rstatix)
 library(shiny)
 library(shinyalert)
-library(shinyDarkmode)
 library(shinyjs)
 library(shinyMatrix)
 library(shinythemes)
@@ -69,6 +69,17 @@ library(waiter)
 library(writexl)
 library(xtable)
 
+# shinyDarkmode, ggResidpanel and olsrr have been removed/archived from CRAN. 
+# So install.packages() silently skips it (no error during the Docker build), 
+# but then it fails at runtime when your app tries to library() it.
+
+# As a consequence in our Dockerfile, I have removed 'ggResidpanel', from the 
+# install.packages(c(...)) # block and added a one line to the GitHub installs
+# section at the bottom of the RUN step
+
+library(shinyDarkmode)
+library(ggResidpanel)
+library(olsrr)
 
 source("R/authors.R")
 
@@ -109,12 +120,12 @@ source("R/simpleLinearRegression.R")
 source("R/multipleLinearRegression.R")
 source("R/regressionAndCorrelation.R")
 source("R/logisticRegression.R")
+
 source("R/decisionTrees.R")
 source("R/kNearestNeighbors.R")
 source("R/linearDiscriminantAnalysis.R")
 source("R/principalComponentAnalysis.R")
 source("R/randomForest.R")
-
 source("R/machineLearning.R")
 
 options(scipen = 999) # options(scipen = 0)

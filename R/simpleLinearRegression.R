@@ -15,6 +15,13 @@ SLRMainPanelUI <- function(id) {
   
   tagList(withMathJax(
     useShinyjs(),
+    tags$style(HTML("         # Message for disabling when perfect fit occurs
+      .disabled-tab {
+        pointer-events: none !important;
+        opacity: 0.4 !important;
+        cursor: not-allowed !important;
+      }
+    ")),
     hidden(div(
       id = ns("regCorrMP"), # This div is hidden/shown
       uiOutput(ns("perfectFitWarning")), # added to trap perfect fit
@@ -49,6 +56,7 @@ SLRMainPanelUI <- function(id) {
               
               titlePanel("Scatterplot"),
               br(),
+              
               plotOptionsMenuUI(
                 id          = ns("slrScatter"),
                 plotType    = "Scatterplot",
@@ -57,7 +65,8 @@ SLRMainPanelUI <- function(id) {
                 ylab        = "y",
                 dim         = "in px",
                 includeFlip = FALSE),
-              uiOutput(ns("renderSLRScatterplot")),
+              
+              plotOutput(ns("slrScatterplot")),
               br()
             )
           ), # Scatterplot tabpanel
@@ -71,27 +80,77 @@ SLRMainPanelUI <- function(id) {
             br()
           ), # Calculations tabpanel
           
-          #### ---------------- Inference Tab ----------------------------------------
+          #### ---------------- Parameter Estimates and ANOVA Tab -------------------
           tabPanel(
-            title = "Inference",
-            value = "Inference",
-
-            # tableOutput(ns("slrInferenceCoefficientsTable")),
-            # br(),
-            uiOutput(ns("slrInferenceDetails")),
-          ), # Inference tabpanel
-          
-          #### ---------------- ANOVA Tab -------------------------------------------
-          tabPanel(
-            title = "ANOVA",
-            value = "ANOVA",
+            title = "Parameter Estimates and ANOVA",
+            value = "Parameter Estimates and ANOVA",
             
-            uiOutput(ns("anovaHypotheses")),
-            br(),
-            div(tableOutput(ns("anovaTable")), width = "100 px;"),
-            br(),
-            uiOutput(ns("anovaConclusion"))
-          ),
+            tags$style(HTML("
+    .inference-anova-tabs .nav-tabs {
+      border-bottom: none;
+      background-color: #f8f9fa;
+      display: flex;
+      padding: 0;
+      margin-bottom: 16px;
+    }
+    .inference-anova-tabs .nav-tabs > li > a {
+      color: #18536F;
+      font-weight: bold;
+      font-size: 15px;
+      border: none !important;
+      border-radius: 0 !important;
+      padding: 10px 24px;
+      background-color: #f8f9fa !important;
+    }
+    .inference-anova-tabs .nav-tabs > li.active > a,
+    .inference-anova-tabs .nav-tabs > li.active > a:focus,
+    .inference-anova-tabs .nav-tabs > li.active > a:hover,
+    .inference-anova-tabs .nav-tabs > li > a.active,
+    .inference-anova-tabs .nav-tabs > li > a.active:focus,
+    .inference-anova-tabs .nav-tabs > li > a.active:hover {
+      background-color: #18536F !important;
+      color: white !important;
+      border: none !important;
+      border-radius: 0 !important;
+      font-weight: bold !important;
+    }
+    .inference-anova-tabs .nav-tabs > li > a:hover {
+      background-color: #d0dce8 !important;
+      color: #1a3a5c !important;
+    }
+  ")),
+            
+            div(
+              class = "inference-anova-tabs",
+              tabsetPanel(
+                type = "tabs",
+                id   = ns("inferenceAnovaTabs"),
+                
+                tabPanel(
+                  title = "Parameter Estimates",
+                  value = "Parameter Estimates",
+                  br(),
+                  uiOutput(ns("slrInferenceDetails"))
+                ),
+                
+                tabPanel(
+                  title = "ANOVA",
+                  value = "ANOVA",
+                  br(),
+                  uiOutput(ns("anovaHypotheses")),
+                  br(),
+                  div(tableOutput(ns("anovaTable")), width = "100 px;"),
+                  br(),
+                  uiOutput(ns("anovaConclusion")),
+                  br(),
+                  uiOutput(ns("anovaR2")),
+                  hr()
+                )
+              )
+            )
+          ), # Parameter Estimates and ANOVA tabpanel
+            
+    
           
           #### ---------------- Diagnostic Plots Tab ---------------------------------
           tabPanel(
@@ -110,64 +169,83 @@ SLRMainPanelUI <- function(id) {
             title = "Correlation Analysis",
             value = "Correlation Analysis",
             
-            tabsetPanel(
-              type = "tabs",
-              id   = ns("correlationTabs"),
-              header = tags$style(HTML(sprintf(
-                "#%s .nav-tabs > li > a {
-         color: #1a3a5c;
-         font-weight: bold;
-         font-size: 15px;
-       }
-       #%s .nav-tabs > li.active > a {
-         background-color: #1a3a5c;
-         color: white;
-         border-color: #1a3a5c;
-       }
-       #%s .nav-tabs > li > a:hover {
-         background-color: #d0dce8;
-         color: #1a3a5c;
-       }",
-                ns("correlationTabs"),
-                ns("correlationTabs"),
-                ns("correlationTabs")
-              ))),
-              
-              tabPanel(
-                title = "Pearson",
-                value = "Pearson",
-                titlePanel("Pearson's Correlation Coefficient"),
-                br(),
-                br(),
-                uiOutput(ns('pearsonCorFormula')),
-                br(),
-                hr()
-              ),
-              
-              tabPanel(
-                title = "Kendall",
-                value = "Kendall",
-                titlePanel("Kendall's Rank Correlation Coefficient"),
-                br(),
-                uiOutput(ns("kendallFormula")),
-                br(),
-                hr()
-              ),
-              
-              tabPanel(
-                title = "Spearman",
-                value = "Spearman",
-                titlePanel("Spearman's Rank Correlation Coefficient"),
-                br(),
-                uiOutput(ns("spearmanEstimate")),
-                br(),
-                br(),
-                hr()
-              )
-            ) ## Nested tabsetPanel
+            tags$style(HTML("
+    .correlation-tabs .nav-tabs {
+      border-bottom: none;
+      background-color: #f8f9fa;
+      display: flex;
+      padding: 0;
+      margin-bottom: 16px;
+    }
+    .correlation-tabs .nav-tabs > li > a {
+      color: #18536F;
+      font-weight: bold;
+      font-size: 15px;
+      border: none !important;
+      border-radius: 0 !important;
+      padding: 10px 24px;
+      background-color: #f8f9fa !important;
+    }
+    .correlation-tabs .nav-tabs > li.active > a,
+    .correlation-tabs .nav-tabs > li.active > a:focus,
+    .correlation-tabs .nav-tabs > li.active > a:hover,
+    .correlation-tabs .nav-tabs > li > a.active,
+    .correlation-tabs .nav-tabs > li > a.active:focus,
+    .correlation-tabs .nav-tabs > li > a.active:hover {
+      background-color: #18536F !important;
+      color: white !important;
+      border: none !important;
+      border-radius: 0 !important;
+      font-weight: bold !important;
+    }
+    .correlation-tabs .nav-tabs > li > a:hover {
+      background-color: #d0dce8 !important;
+      color: #1a3a5c !important;
+    }
+  ")),
             
-          ),
-          
+            div(
+              class = "correlation-tabs",
+              tabsetPanel(
+                type = "tabs",
+                id   = ns("correlationTabs"),
+                
+                tabPanel(
+                  title = "Pearson",
+                  value = "Pearson",
+                  titlePanel("Pearson's Correlation Coefficient"),
+                  br(),
+                  br(),
+                  uiOutput(ns('pearsonCorFormula')),
+                  br(),
+                  hr()
+                ),
+                
+                tabPanel(
+                  title = "Kendall",
+                  value = "Kendall",
+                  titlePanel("Kendall's Rank Correlation Coefficient"),
+                  br(),
+                  uiOutput(ns("kendallFormula")),
+                  br(),
+                  hr()
+                ),
+                
+                tabPanel(
+                  title = "Spearman",
+                  value = "Spearman",
+                  titlePanel("Spearman's Rank Correlation Coefficient"),
+                  br(),
+                  uiOutput(ns("spearmanEstimate")),
+                  br(),
+                  br(),
+                  hr()
+                )
+                
+              ) ## Nested tabsetPanel
+            )
+            
+          ), ## Correlation Analysis tabPanel
           #### ---------------- Data File Tab ------------------------------------------
           tabPanel(
             title = "Uploaded Data",
@@ -583,20 +661,41 @@ SLRServer <- function(id) {
         # Perfect fit detection
         output$perfectFitWarning <- renderUI({
           if (isTRUE(all.equal(r_squared, 1))) {
+            
+            # Hide the tabs
+            hideTab(inputId = "slrNavbarPage", target = "Parameter Estimates and ANOVA")
+            hideTab(inputId = "slrNavbarPage", target = "Diagnostic Plots")
+            
             div(
               class = "alert alert-warning",
               role  = "alert",
               style = "margin-top: 10px;",
               tags$b("\u26a0\ufe0f Perfect Fit Detected: "),
-              "The model has an R\u00b2 of 1 or -1, meaning the regession line fits the data perfectly. Resulting in an MSE equal to zero and a zero set of residuals.",
+              "The model has an R\u00b2 of 1 or -1, meaning the regression line fits the data perfectly. Resulting in an MSE equal to zero and a zero set of residuals.",
               "This may indicate that ",
               tags$b("x and y are identical or linearly dependent,"),
               " which can produce unreliable inference results for the Parameters, ANOVA and Diagnostic Plots.",
-              " The results are displayed, but",
-              tags$b("interpret with caution.")
+              tags$b("These tabs are now hidden")
             )
+          } else {
+            showTab(inputId = "slrNavbarPage", target = "Parameter Estimates and ANOVA")
+            showTab(inputId = "slrNavbarPage", target = "Diagnostic Plots")
+            NULL
           }
         })
+        
+          # Disables ANOVA, INFRENCE and DIAGNOSTIC PLOTS if perfect fit is triggered
+          isPerfectFit <- isTRUE(all.equal(r_squared, 1))
+          
+          if (isPerfectFit) {
+            hideTab(inputId = "slrNavbarPage", target = "Parameter Estimates and ANOVA")
+            hideTab(inputId = "slrNavbarPage", target = "Diagnostic Plots")
+          } else {
+            showTab(inputId = "slrNavbarPage", target = "Parameter Estimates and ANOVA")
+            showTab(inputId = "slrNavbarPage", target = "Diagnostic Plots")
+          }
+          
+          
         
         
         output$slrDataTable <- renderReactable({
@@ -605,7 +704,7 @@ SLRServer <- function(id) {
           totalsRow <- dfFormatted[nrow(dfFormatted), ]
           
           # Use original numeric df for sorting
-          numericRows <- df[1:(nrow(df) - 1), ]
+          numericRows <- df
           
           reactable(
             numericRows,
@@ -628,10 +727,17 @@ SLRServer <- function(id) {
               setNames(
                 lapply(names(numericRows), function(col) {
                   colDef(
-                    html   = TRUE,  # render HTML in column header
-                    name   = names(df)[match(col, names(numericRows))],
-                    format = colFormat(digits = 3),
-                    footer = tags$b(totalsRow[[col]])
+                    html = TRUE,
+                    name = names(df)[match(col, names(numericRows))],
+                    footer = tags$b(totalsRow[[col]]),
+                    cell = function(value) {
+                      if (!is.numeric(value)) return(value) # checks to display integers or floats
+                      if (value == floor(value)) {
+                        formatC(value, format = "f", digits = 0)  # integer, no decimals
+                      } else {
+                        formatC(value, format = "f", digits = 3)  # decimal, 3 places
+                      }
+                    }
                   )
                 }),
                 names(numericRows)
@@ -654,7 +760,8 @@ SLRServer <- function(id) {
               input[["slrScatter-PointSize"]],
               input[["slrScatter-Gridlines"]],
               input[["slrScatter-confidenceInterval"]],
-              input[["slrScatter-predictionInterval"]]
+              input[["slrScatter-predictionInterval"]],
+              input[["slrScatter-showRegressionLine"]]
             )
           },
           height = function() {
@@ -1027,6 +1134,7 @@ SLRServer <- function(id) {
         
         # ANOVA Output
         output$anovaHypotheses <- renderUI({
+          n <- length(datx)
           withMathJax(
             p(strong("Analysis of Variance (ANOVA)")),
             p(
@@ -1034,8 +1142,8 @@ SLRServer <- function(id) {
               br(),
               "\\( H_a: \\beta_1 \\neq 0 \\)"
             ),
-            #br(),
-            p("\\( \\alpha = 0.05 \\)")
+            p("\\( \\alpha = 0.05 \\)"),
+            p(sprintf("\\( n = %d \\)", n))
           )
         })
         
@@ -1077,10 +1185,32 @@ SLRServer <- function(id) {
           )
         })
         
+        output$anovaR2 <- renderUI({
+          anova_results <- anova(model)
+          
+          ssr <- anova_results$`Sum Sq`[1]
+          sse <- anova_results$`Sum Sq`[2]
+          sst <- ssr + sse
+          r2  <- ssr / sst
+          
+          withMathJax(
+            p(strong("Coefficient of Determination (\\( R^2 \\))")),
+            tags$div(
+              style = "text-align: left;",
+              HTML(sprintf(
+                "\\( R^2 = \\dfrac{\\mathrm{SSR}}{\\mathrm{SSR} + \\mathrm{SSE}} = \\dfrac{\\mathrm{SSR}}{\\mathrm{SST}} = \\dfrac{%.4f}{%.4f + %.4f} = \\dfrac{%.4f}{%.4f} = %.4f \\)",
+                ssr, ssr, sse, ssr, sst, r2
+              ))
+            )
+          )
+        })
+        
       } #if regcor_iv is valid
       
       show(id = "regCorrMP")
     }) # input$goRegression
+    
+
     
     ### ------------ Component Display -------------------------------------------
     observeEvent(!regcor_iv$is_valid(), {
@@ -1136,6 +1266,8 @@ SLRServer <- function(id) {
       hide(id = "regCorrMP")
       shinyjs::reset("inputPanel")
       fileInputs$slrStatus <- 'reset'
+      showTab(inputId = "slrNavbarPage", target = "Parameter Estimates and ANOVA")
+      showTab(inputId = "slrNavbarPage", target = "Diagnostic Plots") 
       if (!is.null(input$slrNavbarPage)) { # Check if navbarPage exists before trying to update
         updateNavbarPage(session, "slrNavbarPage", selected = "Model")
       }
