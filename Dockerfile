@@ -88,7 +88,9 @@ RUN R -e \
                     'psych',            \
                     'forecast',         \
                     'randomForest',     \
-                    'pdp'),             \
+                    'iml',              \
+                    'treeshap',         \
+                    'shapviz'),         \
                   dependencies = TRUE); \
   remotes::install_github('deepanshu88/shinyDarkmode'); \
   remotes::install_github('rsquaredacademy/olsrr');"

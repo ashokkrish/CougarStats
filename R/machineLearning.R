@@ -10,6 +10,13 @@ machineLearningUI <- function(id) {
                 tags$b("Upload Data (.csv, .tsv, .txt, .xls, .xlsx)"),
                 accept = c("text/csv", "text/comma-separated-values", "text/plain",
                            ".csv", ".tsv", ".txt", ".xls", ".xlsx")),
+      actionButton(
+        ns("loadIris"),
+        label = tagList(icon("seedling"), "Load Example Dataset (iris)"),
+        class = "btn btn-outline-secondary btn-sm w-100",
+        style = "margin-top: -8px; margin-bottom: 6px;"
+      ),
+      uiOutput(ns("mlDataStatus")),
       radioButtons(ns("method"),
                    tags$b("Methodology"),
                    choices = list(
@@ -32,10 +39,12 @@ machineLearningUI <- function(id) {
 machineLearningServer <- function(id) {
   moduleServer(id, function(input, output, session) {
 
-    ml_data <- reactiveVal(NULL)
+    ml_data            <- reactiveVal(NULL)
     shared_explanatory <- reactiveVal(NULL)
     shared_response    <- reactiveVal(NULL)
+    data_source        <- reactiveVal(NULL)   # tracks what is currently loaded
 
+    # ---- File upload ----
     observeEvent(input$mlDataFile, {
       req(input$mlDataFile)
       ext <- tolower(tools::file_ext(input$mlDataFile$name))
@@ -46,10 +55,53 @@ machineLearningServer <- function(id) {
         xls  = read_xls(input$mlDataFile$datapath),
         xlsx = read_xlsx(input$mlDataFile$datapath)
       )
-      ml_data(df)
+      ml_data(as.data.frame(df))
+      data_source(list(
+        type = "file",
+        name = input$mlDataFile$name,
+        rows = nrow(df),
+        cols = ncol(df)
+      ))
     })
 
-    # Dynamic ID counters for each method
+    # ---- Example dataset ----
+    observeEvent(input$loadIris, {
+      shinyjs::reset("mlDataFile")      # clear old filename from the widget
+      shared_explanatory(NULL)          # clear stale cross-dataset selections
+      shared_response(NULL)
+      ml_data(as.data.frame(iris))
+      data_source(list(
+        type = "iris",
+        name = "iris",
+        rows = 150L,
+        cols = 5L
+      ))
+    })
+
+    # ---- Data source status label ----
+    output$mlDataStatus <- renderUI({
+      src <- data_source()
+      if (is.null(src)) return(NULL)
+      if (src$type == "iris") {
+        div(
+          class = "alert alert-info",
+          style = "padding: 5px 10px; font-size: 12px; margin-top: 2px; margin-bottom: 10px;",
+          icon("circle-check"),
+          HTML(paste0(" <strong>Example dataset loaded:</strong> iris (",
+                      src$rows, " rows × ", src$cols, " columns)"))
+        )
+      } else {
+        div(
+          class = "alert alert-success",
+          style = "padding: 5px 10px; font-size: 12px; margin-top: 2px; margin-bottom: 10px;",
+          icon("circle-check"),
+          HTML(paste0(" <strong>File loaded:</strong> ", src$name, " (",
+                      src$rows, " rows × ", src$cols, " columns)"))
+        )
+      }
+    })
+
+    # ---- Dynamic ID counters for each method ----
     pca_instance_counter  <- reactiveVal(0)
     knn_instance_counter  <- reactiveVal(0)
     lda_instance_counter  <- reactiveVal(0)
