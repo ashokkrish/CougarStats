@@ -16,7 +16,9 @@ HEAD <- tags$head(
             type = "image/x-icon",
             href = "favicon.ico"),
   
-  tags$link(rel = "stylesheet", type = "text/css", href = "code-block.css"),
+  tags$link(rel = "stylesheet", 
+            type = "text/css", 
+            href = "code-block.css"),
   
   # ---- Amplitude Analytics ----
   tags$script(src = "https://cdn.amplitude.com/libs/analytics-browser-2.11.1-min.js.gz"),

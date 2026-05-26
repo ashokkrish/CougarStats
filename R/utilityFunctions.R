@@ -37,3 +37,45 @@ GetPlotWidth  <- function(plotToggle, pxValue, ui) {
 `%then%` <- function(a, b) {
   if (is.null(a)) b else a
 }
+
+copyButton <- function(id, ns) {
+  tags$button(
+    class = "copy-btn",
+    type = "button",
+    onclick = sprintf(
+      "   navigator.clipboard.writeText(document.getElementById('%s').innerText.trim());
+          var btn = this;
+          var old = btn.innerText;
+          btn.innerText = '✓ Copied';
+          setTimeout(function(){
+            btn.innerText = old;
+          }, 1000);",
+      ns(id)
+    ),
+    "Copy"
+  )
+}
+
+codeBox <- function(title = "R Code", boxId, outputId, ns) {
+  
+  div(
+    id = ns(paste0(boxId, "Wrapper")),
+    class = "code-container",
+
+    div(
+      class = "code-header",
+      div(title),
+      copyButton(boxId, ns)
+    ),
+
+    div(
+      id = ns(boxId),
+      class = "code-body",
+      htmlOutput(ns(outputId))
+    )
+  )
+}
+
+codeValue <- function(x) {
+  paste0('<span class="code-value">', as.character(x), '</span>')
+}

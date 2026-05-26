@@ -733,35 +733,10 @@ probDistUI <- function(id) {
                       
                       uiOutput(ns("renderProbabilityBinom")),
                       br(),
-                      div(
-                        id = "rcodeBinomWrapper",
-                        class = "code-container",
-                        
-                        div(
-                          class = "code-header",
-                          div("R Code"),
-                          tags$button(
-                            class = "copy-btn",
-                            type = "button",
-                            onclick = sprintf(
-                              "
-                              navigator.clipboard.writeText(document.getElementById('%s').innerText.trim());
-                              var btn = this;
-                              var old = btn.innerText;
-                              btn.innerText = '✓ Copied';
-                              setTimeout(function(){ btn.innerText = old; }, 1000);
-                              ",
-                              ns("rcodeBinomBox")
-                            ),
-                            "Copy"
-                          )
-                        ),
-                        
-                        div(
-                          id = ns("rcodeBinomBox"),
-                          class = "code-body",
-                          htmlOutput(ns("rcodeBinom"))
-                        )
+                      codeBox(
+                        boxId = "rcodeBinomBox",
+                        outputId = "rcodeBinom",
+                        ns = ns
                       )
                     ),
                     
@@ -788,7 +763,13 @@ probDistUI <- function(id) {
                                     id = ns("poissonNavbar"),
                                     theme = bs_theme(version = 4),
                                     tabPanel(title = "Calculations",
-                                             uiOutput(ns("renderProbabilityPoisson"))
+                                             uiOutput(ns("renderProbabilityPoisson")),
+                                             br(),
+                                             codeBox(
+                                               boxId = "rcodePoissonBox",
+                                               outputId = "rcodePoisson",
+                                               ns = ns
+                                             )
                                     ),
                                     tabPanel(title = "Probability Distribution Table",
                                              DTOutput(ns("poissDistrTable"), width = "25%")
@@ -884,6 +865,7 @@ probDistUI <- function(id) {
 
 probDistServer <- function(id) {
   moduleServer(id, function(input, output, session) {
+    ns <- session$ns
     
     # ========================================================================== #
     ## -------- Data Validation ------------------------------------------------
@@ -2307,10 +2289,6 @@ probDistServer <- function(id) {
           })
       })
       
-      codeValue <- function(x) {
-        paste0('<span class="code-value">', as.character(x), '</span>')
-      }
-      
       output$rcodeBinom <- renderUI({
         req(pd_iv$is_valid())
         if (input$calcBinom == "exact") {
@@ -2475,17 +2453,27 @@ probDistServer <- function(id) {
             (input$calcBinom != "between" &&
              input$numSuccessesBinom <= input$numTrialsBinom)
             || (input$calcBinom == "between" &&
-             input$numSuccessesBinomx1 <= input$numSuccessesBinomx2 &&
-             input$numSuccessesBinomx1 <= input$numTrialsBinom &&
-             input$numSuccessesBinomx2 <= input$numTrialsBinom)
+                input$numSuccessesBinomx1 <= input$numSuccessesBinomx2 &&
+                input$numSuccessesBinomx1 <= input$numTrialsBinom &&
+                input$numSuccessesBinomx2 <= input$numTrialsBinom)
           )
       ) {
-        runjs("document.getElementById('rcodeBinomWrapper').style.display = 'block';")
+        
+        runjs(sprintf(
+          "document.getElementById('%s').style.display = 'block';",
+          ns("rcodeBinomBoxWrapper")
+        ))
+        
       } else {
-        runjs("document.getElementById('rcodeBinomWrapper').style.display = 'none';")
+        
+        runjs(sprintf(
+          "document.getElementById('%s').style.display = 'none';",
+          ns("rcodeBinomBoxWrapper")
+        ))
+        
       }
     })
-    
+
     observeEvent(input$goPoisson, {
       output$renderProbabilityPoisson <- renderUI({
         withMathJax(
@@ -2603,6 +2591,75 @@ probDistServer <- function(id) {
           }) 
       }) 
       
+      output$rcodePoisson <- renderUI({
+        req(pd_iv$is_valid())
+        
+        if (input$calcPoisson == "exact") {
+          
+          HTML(paste0(
+            "dpois(x = ",
+            codeValue(input$xPoisson),
+            ", lambda = ",
+            codeValue(input$muPoisson),
+            ")"
+          ))
+          
+        } else if (input$calcPoisson == "cumulative") {
+          
+          HTML(paste0(
+            "ppois(",
+            codeValue(input$xPoisson),
+            ", lambda = ",
+            codeValue(input$muPoisson),
+            ")"
+          ))
+          
+        } else if (input$calcPoisson == "upperTail") {
+          
+          HTML(paste0(
+            "ppois(",
+            codeValue(input$xPoisson - 1),
+            ", lambda = ",
+            codeValue(input$muPoisson),
+            ", lower.tail = FALSE)"
+          ))
+          
+        } else if (input$calcPoisson == "greaterThan") {
+          
+          HTML(paste0(
+            "ppois(",
+            codeValue(input$xPoisson),
+            ", lambda = ",
+            codeValue(input$muPoisson),
+            ", lower.tail = FALSE)"
+          ))
+          
+        } else if (input$calcPoisson == "lessThan") {
+          
+          HTML(paste0(
+            "ppois(",
+            codeValue(input$xPoisson - 1),
+            ", lambda = ",
+            codeValue(input$muPoisson),
+            ")"
+          ))
+          
+        } else if (input$calcPoisson == "between") {
+          
+          HTML(paste0(
+            "ppois(",
+            codeValue(input$x2Poisson),
+            ", lambda = ",
+            codeValue(input$muPoisson),
+            ") - ppois(",
+            codeValue(input$x1Poisson - 1),
+            ", lambda = ",
+            codeValue(input$muPoisson),
+            ")"
+          ))
+        }
+      })
+      
       output$poissDistrTable <- DT::renderDT({
         req(pd_iv$is_valid())
         
@@ -2619,7 +2676,26 @@ probDistServer <- function(id) {
                   rownames = FALSE,
                   filter = "none"
         ) %>% formatRound(2, digits = 4)
-      }) 
+      })
+      
+      observe({
+        req(input$xPoisson, input$x1Poisson, input$x2Poisson)
+        
+        if (pd_iv$is_valid() &&
+            input$xPoisson >= 0 &&
+            input$x1Poisson <= input$x2Poisson
+        ) {
+          runjs(sprintf(
+            "document.getElementById('%s').style.display = 'block';",
+            ns("rcodePoissonBoxWrapper")
+          ))
+        } else {
+          runjs(sprintf(
+            "document.getElementById('%s').style.display = 'none';",
+            ns("rcodePoissonBoxWrapper")
+          ))
+        }
+      })
     }) 
     
     observeEvent(input$goHypGeo, {
