@@ -39,8 +39,8 @@ descStatsUI <- function(id) {
               
               fileInput(
                 inputId = ns('dsUserData'),
-                label = strong('Upload your data (.csv, .xls, .xlsx, .txt, .sas7bdat, .sav)'),
-                accept = c('text/csv', 'text/comma-seperated-values', 
+                label = strong('Upload your data (.csv, .xls, .xlsx, .txt, .sas7bdat, .sav, .dta, .rds, .mtp, .mwx, .mpx)'),
+                accept = c('text/csv', 'text/comma-seperated-values',
                           'text/tab-separated-values',
                           'text/plain',
                           '.csv',
@@ -48,8 +48,25 @@ descStatsUI <- function(id) {
                           '.xls',
                           '.xlsx',
                           '.sas7bdat',
-                          '.sav')),
-              
+                          '.sav',
+                          '.dta',
+                          '.rds',
+                          '.mtp',
+                          '.mwx',
+                          '.mpx')),
+
+              conditionalPanel(
+                ns = ns,
+                condition = "output.dsShowSheetPicker == true",
+                selectizeInput(
+                  inputId  = ns("dsSheet"),
+                  label    = strong("Choose a Sheet"),
+                  choices  = c(""),
+                  multiple = FALSE,
+                  options  = list(placeholder = 'Select a sheet',
+                                  onInitialize = I('function() { this.setValue(""); }')))
+              ),
+
               selectizeInput(
                 inputId  = ns("dsUploadVars"),
                 label    = strong("Choose a Variable"),
@@ -194,7 +211,7 @@ descStatsUI <- function(id) {
                       column(
                         width = 4,
                         br(),
-                        DTOutput(ns("sampleDataTable")),
+                        reactableOutput(ns("sampleDataTable")),
                         br(),
                         ),
                     
@@ -303,7 +320,7 @@ descStatsServer <- function(id) {
                                                   "Data must be numeric values separated by a comma (ie: 2,3,4)"))
     dsupload_iv$add_rule("dsUserData", sv_required())
     dsupload_iv$add_rule("dsUserData", ~ if(is.null(fileInputs$dsStatus) || fileInputs$dsStatus == 'reset') "Required")
-    dsupload_iv$add_rule("dsUserData", ~ if(!(tolower(tools::file_ext(input$dsUserData$name)) %in% c("csv", "txt", "xls", "xlsx", "sas7bdat", "sav"))) "File format not accepted.")    
+    dsupload_iv$add_rule("dsUserData", ~ if(!(tolower(tools::file_ext(input$dsUserData$name)) %in% c("csv", "txt", "xls", "xlsx", "sas7bdat", "sav", "dta", "rds", "mtp", "mwx", "mpx"))) "File format not accepted.")
     dsupload_iv$add_rule("dsUserData", ~ if(ncol(dsUploadData()) < 1) "Data must include one variable")
     dsupload_iv$add_rule("dsUserData", ~ if(nrow(dsUploadData()) < 2) "Samples must include at least 2 observations")
     
@@ -340,7 +357,61 @@ descStatsServer <- function(id) {
     dsraw_iv$enable()
     dsupload_iv$enable()
     dsuploadvars_iv$enable()
-    
+
+    # ----------------------------------------------------------- #
+    #     Minitab file readers                                    #
+    # ----------------------------------------------------------- #
+    # Older Minitab Portable Worksheet (.mtp) – text-based.
+    read_mtp_helper <- function(path) {
+      raw <- foreign::read.mtp(path)
+      keep <- raw[vapply(raw, is.numeric, logical(1))]
+      validate(need(length(keep) > 0, "No numeric columns found in .mtp file."))
+      max_len <- max(vapply(keep, length, integer(1)))
+      keep <- lapply(keep, function(v) { length(v) <- max_len; v })
+      if (is.null(names(keep)) || any(names(keep) == ""))
+        names(keep) <- paste0("V", seq_along(keep))
+      as.data.frame(keep, stringsAsFactors = FALSE)
+    }
+
+    # Newer Minitab XML formats (.mwx / .mpx) – best-effort, schema varies.
+    read_minitab_xml <- function(path) {
+      tmp <- tempfile()
+      on.exit(unlink(tmp, recursive = TRUE), add = TRUE)
+      utils::unzip(path, exdir = tmp)
+      xml_files <- list.files(tmp, pattern = "\\.xml$", recursive = TRUE, full.names = TRUE)
+      validate(need(length(xml_files) > 0, "Could not find data inside Minitab file. Try exporting to .xlsx."))
+
+      doc <- NULL
+      for (f in xml_files) {
+        candidate <- try(xml2::read_xml(f), silent = TRUE)
+        if (inherits(candidate, "xml_document") &&
+            length(xml2::xml_find_all(candidate, "//*[local-name()='Column']")) > 0) {
+          doc <- candidate; break
+        }
+      }
+      validate(need(!is.null(doc), "Could not parse Minitab file. Please export to .xlsx in Minitab."))
+
+      cols <- xml2::xml_find_all(doc, "//*[local-name()='Column']")
+      col_data <- lapply(seq_along(cols), function(i) {
+        col <- cols[[i]]
+        nm  <- xml2::xml_attr(col, "Name")
+        if (is.na(nm)) nm <- xml2::xml_attr(col, "name")
+        if (is.na(nm)) nm <- paste0("C", i)
+        cells <- xml2::xml_find_all(col, ".//*[local-name()='Cell' or local-name()='Value' or local-name()='R']")
+        vals  <- xml2::xml_text(cells)
+        list(name = nm, values = vals)
+      })
+
+      max_len <- max(vapply(col_data, function(x) length(x$values), integer(1)))
+      df_cols <- lapply(col_data, function(x) {
+        v <- x$values; length(v) <- max_len
+        nv <- suppressWarnings(as.numeric(v))
+        if (sum(is.na(nv)) <= sum(is.na(v))) nv else v
+      })
+      names(df_cols) <- vapply(col_data, function(x) x$name, character(1))
+      as.data.frame(df_cols, stringsAsFactors = FALSE)
+    }
+
     #  -------------------------------------------------------------------- #
     ## ------------------- Descriptive Stats functions --------------------
     #  -------------------------------------------------------------------- #
@@ -547,20 +618,51 @@ descStatsServer <- function(id) {
       return(dat)
     })
     
+    # Silence noisy but harmless readxl warnings (boolean-to-numeric coercions).
+    quietExcelRead <- function(reader, path, sheet) {
+      withCallingHandlers(
+        reader(path, sheet = sheet),
+        warning = function(w) {
+          if (grepl("Coercing boolean to numeric", conditionMessage(w))) {
+            invokeRestart("muffleWarning")
+          }
+        }
+      )
+    }
+
     # Function to read the uploaded data file
-    dsUploadData <- eventReactive(input$dsUserData,{
-      ext <- tolower(tools::file_ext(input$dsUserData$name))
+    dsUploadData <- eventReactive(list(input$dsUserData, input$dsSheet), {
+      req(input$dsUserData)
+      ext  <- tolower(tools::file_ext(input$dsUserData$name))
       path <- input$dsUserData$datapath
 
       switch(ext,
-            csv = read_csv(path, show_col_types = FALSE),
-            xls = read_xls(path),
-            xlsx = read_xlsx(path),
-            txt = read_tsv(path, show_col_types = FALSE),
+            csv      = read_csv(path, show_col_types = FALSE),
+            xls      = {
+              req(input$dsSheet)
+              # Block on stale sheet name (transient between file upload and selectize update)
+              req(input$dsSheet %in% readxl::excel_sheets(path))
+              quietExcelRead(read_xls, path, input$dsSheet)
+            },
+            xlsx     = {
+              req(input$dsSheet)
+              req(input$dsSheet %in% readxl::excel_sheets(path))
+              quietExcelRead(read_xlsx, path, input$dsSheet)
+            },
+            txt      = read_tsv(path, show_col_types = FALSE),
             sas7bdat = read_sas(path),
-            sav = read_sav(path),
-            
-            validate ("Improper file format"))
+            sav      = read_sav(path),
+            dta      = haven::read_dta(path),
+            rds      = {
+              obj <- readRDS(path)
+              validate(need(is.data.frame(obj), ".rds file must contain a data frame."))
+              obj
+            },
+            mtp      = read_mtp_helper(path),
+            mwx      = read_minitab_xml(path),
+            mpx      = read_minitab_xml(path),
+
+            validate("Improper file format"))
     })
     
     getDsDataframe <- reactive({
@@ -654,22 +756,59 @@ descStatsServer <- function(id) {
     # --------------------------------------------------------------------- #
     ### Observers ----
     # --------------------------------------------------------------------- #
-    
-    # Fills the variable selection options based on data file columns
+
+    # Tells the UI whether to show the sheet picker (only for xls/xlsx)
+    output$dsShowSheetPicker <- reactive({
+      if (is.null(input$dsUserData)) return(FALSE)
+      tolower(tools::file_ext(input$dsUserData$name)) %in% c("xls", "xlsx")
+    })
+    outputOptions(output, "dsShowSheetPicker", suspendWhenHidden = FALSE)
+
+    # Populate sheet choices when an Excel file is uploaded
     observeEvent(input$dsUserData, {
+      req(input$dsUserData)
+      ext <- tolower(tools::file_ext(input$dsUserData$name))
+      if (ext %in% c("xls", "xlsx")) {
+        sheets <- tryCatch(readxl::excel_sheets(input$dsUserData$datapath),
+                           error = function(e) character(0))
+        freezeReactiveValue(input, "dsSheet")
+        updateSelectizeInput(session, "dsSheet",
+                             choices  = sheets,
+                             selected = if (length(sheets)) sheets[1] else "")
+      } else {
+        updateSelectizeInput(session, "dsSheet", choices = character(0), selected = "")
+      }
+    }, priority = 50)
+
+    # Fills the variable selection options based on data file columns.
+    # Depends on BOTH dsUserData and dsSheet so that for Excel files we wait
+    # until the sheet has been selected before trying to read columns.
+    observeEvent({
+      input$dsUserData
+      input$dsSheet
+    }, {
       shinyjs::hide(id = "descriptiveStatsMP")
-      shinyjs::hide(id = "dsUploadVars")
+
+      req(input$dsUserData)
       fileInputs$dsStatus <- 'uploaded'
-      
-      if(dsupload_iv$is_valid())
-      {
+
+      ext <- tolower(tools::file_ext(input$dsUserData$name))
+
+      # For Excel files, defer until a sheet is selected
+      if (ext %in% c("xls", "xlsx") && (is.null(input$dsSheet) || input$dsSheet == "")) {
+        shinyjs::hide(id = "dsUploadVars")
+        return()
+      }
+
+      if (dsupload_iv$is_valid()) {
         freezeReactiveValue(input, "dsUploadVars")
         updateSelectInput(session = getDefaultReactiveDomain(),
                           "dsUploadVars",
                           choices = c(colnames(dsUploadData()))
         )
-        
         shinyjs::show(id = "dsUploadVars")
+      } else {
+        shinyjs::hide(id = "dsUploadVars")
       }
     })
     
@@ -677,7 +816,7 @@ descStatsServer <- function(id) {
     observeEvent(input$goDescpStats, {
       output$renderDSData <- renderUI({
         tagList(
-          div(DTOutput(session$ns("dsUploadTable")), style = "width: 75%")
+          div(reactableOutput(session$ns("dsUploadTable")), style = "width: 95%")
         )
       })
     })
@@ -729,14 +868,22 @@ descStatsServer <- function(id) {
       })
       
 #### ------------ Uploaded Data Table --------------------------------------------
-      output$dsUploadTable <- renderDT({
+      output$dsUploadTable <- renderReactable({
         req(dsupload_iv$is_valid())
-        datatable(dsUploadData(),
-                  options = list(pageLength = -1,
-                                 lengthMenu = list(c(25, 50, 100, -1),
-                                                   c("25", "50", "100", "all")),
-                                 columnDefs = list(list(className = 'dt-center',
-                                                        targets = 0:ncol(dsUploadData())))),
+        reactable(
+          dsUploadData(),
+          sortable            = TRUE,
+          resizable           = TRUE,
+          bordered            = TRUE,
+          striped             = TRUE,
+          highlight           = TRUE,
+          pagination          = TRUE,
+          defaultPageSize     = 25,
+          pageSizeOptions     = c(25, 50, 100),
+          showPageSizeOptions = TRUE,
+          searchable          = TRUE,
+          fullWidth           = TRUE,
+          defaultColDef       = colDef(align = "center")
         )
       })
       
@@ -795,27 +942,40 @@ descStatsServer <- function(id) {
         dfTotaled <- bind_rows(sample_df, summarise(sample_df, across(where(is.numeric), sum)))
         rownames(dfTotaled)[nrow(dfTotaled)] <- "Totals"
         
-        output$sampleDataTable <- renderDT({
-          datatable(round(dfTotaled, digits = 3),
-                    options = list(dom = 't',
-                                   pageLength = -1, 
-                                   lengthMenu = list(c(-1, 10, 25, 50, 100), c("All", "10", "25", "50", "100")),
-                                   autoWidth = TRUE,
-                                   scrollX = TRUE
-                    ),
-                    rownames = FALSE,
-                    escape = FALSE
-          ) %>% formatStyle(
-            names(dfTotaled),
-            target = 'row',
-            fontWeight = styleRow(dim(dfTotaled)[1], "bold")
+        output$sampleDataTable <- renderReactable({
+          dataRows  <- dfTotaled[1:(nrow(dfTotaled) - 1), , drop = FALSE]
+          totalsRow <- dfTotaled[nrow(dfTotaled), , drop = FALSE]
+
+          reactable(
+            dataRows,
+            sortable      = TRUE,
+            resizable     = TRUE,
+            bordered      = TRUE,
+            striped       = TRUE,
+            highlight     = TRUE,
+            pagination    = FALSE,
+            fullWidth     = TRUE,
+            defaultColDef = colDef(align = "center"),
+            columns = setNames(
+              lapply(names(dataRows), function(col) {
+                colDef(
+                  html   = TRUE,
+                  name   = col,
+                  footer = tags$b(format(round(totalsRow[[col]], 3), nsmall = 0, scientific = FALSE)),
+                  cell   = function(value) {
+                    if (!is.numeric(value)) return(value)
+                    if (value == floor(value)) formatC(value, format = "f", digits = 0)
+                    else                       formatC(value, format = "f", digits = 3)
+                  }
+                )
+              }),
+              names(dataRows)
+            )
           )
-          
         })
         
         output$dsMeanCalc <- renderUI({
-          tagList(
-            withMathJax(),
+          withMathJax(
             sprintf("\\( \\bar{x} = \\dfrac{\\sum x}{n} = \\dfrac{%s}{%s} = %s \\)",
                     dfTotaled['Totals', 1],
                     df['Observations', 3],
@@ -823,10 +983,9 @@ descStatsServer <- function(id) {
             br()
           )
         })
-        
+
         output$dsSDCalc <- renderUI({
-          tagList(
-            withMathJax(),
+          withMathJax(
             sprintf("\\( s = \\sqrt{ \\dfrac{\\sum x^{2} - \\dfrac{(\\sum x)^{2}}{n} }{n - 1} } \\)"),
             sprintf("\\( = \\sqrt{ \\dfrac{%s - \\dfrac{(%s)^{2}}{%s} }{%s - 1} } = %s \\)",
                     dfTotaled['Totals', 2],
@@ -841,7 +1000,7 @@ descStatsServer <- function(id) {
         {
           for( x in input$dsUploadVars)
           {
-            dat <- as.data.frame(dsUploadData())[, x]
+            dat <- na.omit(as.data.frame(dsUploadData())[, x])
           }
           colnames(df) <- c("Category", "Variable", input$dsUploadVars)
         }
@@ -849,7 +1008,7 @@ descStatsServer <- function(id) {
         {
           dat <- dsRawData()
         }
-        
+
         df_boxplot <- data.frame(x = dat)
         
         if(df['Outlier Values',3] != "There are no outliers.") {
@@ -921,20 +1080,22 @@ descStatsServer <- function(id) {
                                             face = "bold",
                                             hjust = 0.5,
                                             margin = margin(0,0,10,0)),
-                  axis.title.x = element_text(size = 16, 
-                                              face = "bold", 
+                  axis.title.x = element_text(size = 16,
+                                              face = "bold",
                                               vjust = -1.5,
-                                              margin = margin(5,0,0,0)),
-                  axis.title.y = element_text(size = 16, 
-                                              face = "bold", 
+                                              margin = margin(8,0,0,0)),
+                  axis.title.y = element_text(size = 16,
+                                              face = "bold",
                                               vjust = 1.5,
-                                              margin = margin(0,5,0,0)),
+                                              margin = margin(0,8,0,0)),
                   axis.text.x.bottom = element_text(size = 14,
-                                                    margin = margin(5,0,0,0)),
+                                                    face = "bold",
+                                                    margin = margin(8,0,0,0)),
                   axis.text.y.left = element_text(size = 14,
-                                                  margin = margin(0,5,0,0)),
+                                                  face = "bold",
+                                                  margin = margin(0,8,0,0)),
                   plot.margin = unit(c(1, 1, 1, 1),"cm"),
-                  panel.border = element_rect(fill=NA))
+                  panel.border = element_rect(fill = NA))
           
           hist <- hist + scale_x_continuous(n.breaks = 10)
           
@@ -1033,16 +1194,43 @@ descStatsServer <- function(id) {
       } else {
         showTab(inputId = "dsTabset", target = "Uploaded Data")
       }
-      
+
     })
-    
+
+    # ----- Clear boxplot/histogram axis labels when the data set changes -----
+    resetPlotLabels <- function() {
+      updateTextInput(session, "dsBoxplot-Xlab", value = "")
+      updateTextInput(session, "dsBoxplot-Ylab", value = "")
+      updateTextInput(session, "dsHisto-Xlab",   value = "")
+      updateTextInput(session, "dsHisto-Ylab",   value = "")
+    }
+
+    observeEvent(input$dataInput,    resetPlotLabels(), ignoreInit = TRUE)
+    observeEvent(input$dsUserData,   resetPlotLabels(), ignoreInit = TRUE)
+    observeEvent(input$dsUploadVars, resetPlotLabels(), ignoreInit = TRUE)
+    observeEvent(input$dsSheet,      resetPlotLabels(), ignoreInit = TRUE)
+
+    # Clear labels when Calculate is pressed on a different raw dataset
+    lastRawCalc <- reactiveVal(NULL)
+    observeEvent(input$goDescpStats, {
+      if (input$dataInput == "Enter Raw Data") {
+        if (!is.null(lastRawCalc()) && !identical(lastRawCalc(), input$descriptiveStat)) {
+          resetPlotLabels()
+        }
+        lastRawCalc(input$descriptiveStat)
+      }
+    }, priority = 100)
+
     observeEvent(input$resetAll,{
       dsReset(TRUE)
       shinyjs::hide(id = 'outputPanel')
       shinyjs::reset("descriptiveStat")
       shinyjs::reset("dsUserData")
       shinyjs::reset("dsUploadVars")
-      
+
+      resetPlotLabels()
+      lastRawCalc(NULL)
+
       updatePickerInput(session, "dsTableFilters",
                         selected = c("Observations", "Mean", "Mode",
                                      "Minimum", "First Quartile (Q1)",
