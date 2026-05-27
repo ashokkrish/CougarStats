@@ -71,11 +71,12 @@ RFMainPanelUI <- function(id) {
 
   tagList(
     useShinyjs(),
+    suppressWarnings(tippy::use_tippy()),
     navbarPage(
       title = NULL,
 
       tabPanel(
-        title = "Model Summary",
+        title = "Results",
         value = "model_summary_tab",
         uiOutput(ns("modelSummaryContainer"))
       ),
@@ -376,7 +377,15 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
         return()
       }
 
-      # 9. Resolve mtry — NA / blank means auto (NULL → randomForest uses floor(sqrt(p)))
+      # 9. Coerce predictor columns to double — is.numeric() includes integer, which
+      #    data.table coerces internally inside iml, producing "NAs introduced by coercion"
+      for (col in input$predictors) {
+        if (is.integer(analysis_df[[col]])) {
+          analysis_df[[col]] <- as.numeric(analysis_df[[col]])
+        }
+      }
+
+      # 10. Resolve mtry — NA / blank means auto (NULL → randomForest uses floor(sqrt(p)))
       mtry_val <- if (!is.numeric(input$mtry) || is.na(input$mtry)) {
         NULL
       } else {
@@ -391,7 +400,7 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
         return()
       }
 
-      # 9. Train / test split
+      # 11. Train / test split
       n       <- nrow(analysis_df)
       n_train <- floor(n * (input$split / 100))
 
@@ -508,9 +517,14 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
       output$modelSummaryUI <- renderUI({
         r <- calc_results()
         req(r)
+
+        oob_pct  <- round(r$oob_error * 100, 2)
+        acc_pct  <- round(r$accuracy  * 100, 2)
+        accuracy_label <- if (r$oob_error < 0.10) "high" else if (r$oob_error <= 0.25) "moderate" else "low"
+
         tagList(
           tags$h4("Random Forest Model Summary"),
-          tableOutput(session$ns("rfSummaryTable")),
+          uiOutput(session$ns("rfSummaryTable")),
           tags$hr(),
           tags$h4("Class Distribution (Full Dataset)"),
           tableOutput(session$ns("rfClassDistTable")),
@@ -523,38 +537,93 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
           tags$br(),
           tags$p(
             tags$strong("Overall Accuracy: "),
-            paste0(round(r$accuracy * 100, 2), "%")
+            paste0(acc_pct, "%")
+          ),
+          tags$hr(),
+          tags$div(
+            style = paste(
+              "background-color: #f8f9fa;",
+              "border-left: 4px solid #dee2e6;",
+              "border-radius: 4px;",
+              "padding: 16px 20px;",
+              "margin-top: 6px;"
+            ),
+            tags$h5(tags$strong("Interpretation of Results"),
+                    style = "margin-top: 0; margin-bottom: 12px;"),
+            tags$p(
+              style = "margin-bottom: 8px;",
+              paste0(
+                "The OOB (Out-of-Bag) Error Rate is an internal estimate of prediction error ",
+                "computed using observations not used in building individual trees. ",
+                "An OOB error of ", oob_pct, "% indicates ", accuracy_label,
+                " classification accuracy."
+              )
+            ),
+            tags$p(
+              style = "margin-bottom: 0;",
+              paste0(
+                "The model correctly classified ", acc_pct,
+                "% of observations in the test set."
+              )
+            )
           )
         )
       })
 
-      output$rfSummaryTable <- renderTable({
+      output$rfSummaryTable <- renderUI({
         r <- calc_results()
         req(r)
-        data.frame(
-          Item = c(
-            "Type",
-            "Number of Trees",
-            "Variables per Split (mtry)",
-            "Number of Predictors",
-            "Total Observations",
-            "Training Observations",
-            "Test Observations",
-            "OOB Error Rate"
+
+        tip <- function(label, tooltip) {
+          tags$span(
+            `data-tippy-content` = tooltip,
+            style = "cursor: help; border-bottom: 1px dotted #555;",
+            label
+          )
+        }
+
+        rows <- list(
+          list("Type",            "Classification"),
+          list(
+            tip("Number of Trees",
+                "Total trees built in the forest. More trees improve stability but increase computation time."),
+            as.character(r$ntree)
           ),
-          Value = c(
-            "Classification",
-            as.character(r$ntree),
-            as.character(r$mtry_used),
-            as.character(length(r$predictors)),
-            as.character(r$n_total),
-            as.character(r$n_train),
-            as.character(r$n_test),
+          list(
+            tip("Variables per Split (mtry)",
+                "Number of variables randomly considered at each tree split. Controls model diversity."),
+            as.character(r$mtry_used)
+          ),
+          list("Number of Predictors",   as.character(length(r$predictors))),
+          list("Total Observations",     as.character(r$n_total)),
+          list("Training Observations",  as.character(r$n_train)),
+          list("Test Observations",      as.character(r$n_test)),
+          list(
+            tip("OOB Error Rate",
+                "Out-of-Bag error rate. An internal accuracy estimate using data not seen during training. Lower is better."),
             paste0(round(r$oob_error * 100, 2), "%")
-          ),
-          check.names = FALSE
+          )
         )
-      }, rownames = FALSE)
+
+        tagList(
+          tags$table(
+            class = "table table-sm table-bordered",
+            style = "max-width: 480px;",
+            tags$thead(
+              tags$tr(
+                tags$th("Item",  style = "width: 60%;"),
+                tags$th("Value")
+              )
+            ),
+            tags$tbody(
+              lapply(rows, function(row) {
+                tags$tr(tags$td(row[[1]]), tags$td(row[[2]]))
+              })
+            )
+          ),
+          tags$script("if (typeof tippy !== 'undefined') tippy('[data-tippy-content]');")
+        )
+      })
 
       output$rfClassDistTable <- renderTable({
         r <- calc_results()
@@ -592,9 +661,18 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
           )
         }
 
+        perfect_accuracy_note <- NULL
         feat_imp <- tryCatch(
-          iml::FeatureImp$new(r$iml_predictor, loss = "ce",
-                              compare = "ratio", n.repetitions = 5),
+          withCallingHandlers(
+            iml::FeatureImp$new(r$iml_predictor, loss = "ce",
+                                compare = "ratio", n.repetitions = 5),
+            warning = function(w) {
+              if (grepl("Model error is 0", conditionMessage(w))) {
+                perfect_accuracy_note <<- "Model accuracy is perfect — importance calculated using difference method."
+                invokeRestart("muffleWarning")
+              }
+            }
+          ),
           error = function(e) NULL
         )
 
@@ -611,12 +689,19 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
         imp_df <- imp_df[order(imp_df$importance, decreasing = FALSE), ]
         imp_df$feature <- factor(imp_df$feature, levels = imp_df$feature)
 
+        x_label <- if (is.null(perfect_accuracy_note)) {
+          "Importance (Ratio of Permuted to Baseline Loss)"
+        } else {
+          "Importance (Difference of Permuted to Baseline Loss)"
+        }
+
         ggplot(imp_df, aes(x = importance, y = feature)) +
           geom_col(fill = "#18536F") +
           labs(
-            title = "Variable Importance (Permutation-Based, Loss: Cross-Entropy)",
-            x     = "Importance (Ratio of Permuted to Baseline Loss)",
-            y     = "Predictor"
+            title    = "Variable Importance (Permutation-Based, Loss: Cross-Entropy)",
+            subtitle = perfect_accuracy_note,
+            x        = x_label,
+            y        = "Predictor"
           ) +
           theme_bw() +
           theme(
@@ -653,8 +738,8 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
 
         plot_list <- lapply(preds, function(var) {
           tryCatch({
-            fe <- iml::FeatureEffect$new(r$iml_predictor, feature = var, method = "pdp")
-            fe$plot() +
+            fe <- suppressWarnings(iml::FeatureEffect$new(r$iml_predictor, feature = var, method = "pdp"))
+            suppressWarnings(fe$plot()) +
               labs(title = var) +
               theme_bw() +
               theme(
@@ -701,8 +786,8 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
 
         plot_list <- lapply(preds, function(var) {
           tryCatch({
-            fe <- iml::FeatureEffect$new(r$iml_predictor, feature = var, method = "ice")
-            fe$plot() +
+            fe <- suppressWarnings(iml::FeatureEffect$new(r$iml_predictor, feature = var, method = "ice"))
+            suppressWarnings(fe$plot()) +
               labs(title = var) +
               theme_bw() +
               theme(
@@ -749,8 +834,8 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
 
         plot_list <- lapply(preds, function(var) {
           tryCatch({
-            fe <- iml::FeatureEffect$new(r$iml_predictor, feature = var, method = "ale")
-            fe$plot() +
+            fe <- suppressWarnings(iml::FeatureEffect$new(r$iml_predictor, feature = var, method = "ale"))
+            suppressWarnings(fe$plot()) +
               labs(title = var) +
               theme_bw() +
               theme(

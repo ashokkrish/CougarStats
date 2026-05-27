@@ -89,6 +89,7 @@ RUN R -e \
                     'forecast',         \
                     'randomForest',     \
                     'iml',              \
+                    'tippy',            \
                     'treeshap',         \
                     'shapviz'),         \
                   dependencies = TRUE); \
