@@ -377,11 +377,15 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
         return()
       }
 
-      # 9. Coerce predictor columns to double — is.numeric() includes integer, which
-      #    data.table coerces internally inside iml, producing "NAs introduced by coercion"
+      # 9. Coerce all predictor columns to canonical types before model fitting and iml.
+      #    is.numeric() covers both double and integer in R, so every numeric-type column
+      #    is unconditionally cast to double. Character columns become factors.
       for (col in input$predictors) {
-        if (is.integer(analysis_df[[col]])) {
-          analysis_df[[col]] <- as.numeric(analysis_df[[col]])
+        v <- analysis_df[[col]]
+        if (is.numeric(v)) {
+          analysis_df[[col]] <- as.double(v)
+        } else if (is.character(v)) {
+          analysis_df[[col]] <- as.factor(v)
         }
       }
 
@@ -480,7 +484,13 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
       # 16. OOB error rate (final tree)
       oob_error <- rf_fit$err.rate[nrow(rf_fit$err.rate), "OOB"]
 
-      # 17. Build iml Predictor for interpretability plots (probability predictions)
+      # 17. Build iml Predictor for interpretability plots (probability predictions).
+      #     options(warn = -1) is required here: iml's data.table backend triggers
+      #     "NAs introduced by coercion" from deep inside eval(jsub, SDenv, parent.frame())
+      #     which suppressWarnings() cannot intercept. Warnings are restored immediately
+      #     after; on.exit() is the safety net if an error occurs between the two calls.
+      options(warn = -1)
+      on.exit(options(warn = 0), add = TRUE)
       iml_predictor <- tryCatch(
         iml::Predictor$new(
           model = rf_fit,
@@ -490,6 +500,7 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
         ),
         error = function(e) NULL
       )
+      options(warn = 0)
 
       res <- list(
         fit           = rf_fit,
@@ -663,15 +674,17 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
 
         perfect_accuracy_note <- NULL
         feat_imp <- tryCatch(
-          withCallingHandlers(
-            iml::FeatureImp$new(r$iml_predictor, loss = "ce",
-                                compare = "ratio", n.repetitions = 5),
-            warning = function(w) {
-              if (grepl("Model error is 0", conditionMessage(w))) {
-                perfect_accuracy_note <<- "Model accuracy is perfect — importance calculated using difference method."
-                invokeRestart("muffleWarning")
+          suppressWarnings(
+            withCallingHandlers(
+              iml::FeatureImp$new(r$iml_predictor, loss = "ce",
+                                  compare = "ratio", n.repetitions = 5),
+              warning = function(w) {
+                if (grepl("Model error is 0", conditionMessage(w))) {
+                  perfect_accuracy_note <<- "Model accuracy is perfect — importance calculated using difference method."
+                  invokeRestart("muffleWarning")
+                }
               }
-            }
+            )
           ),
           error = function(e) NULL
         )
