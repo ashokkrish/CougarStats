@@ -66,7 +66,10 @@ SLRMainPanelUI <- function(id) {
                 dim         = "in px",
                 includeFlip = FALSE),
               
-              plotOutput(ns("slrScatterplot")),
+              plotlyOutput(ns("slrScatterplot"),
+                           height = "700px",
+                           width  = "100%"),
+              
               br()
             )
           ), # Scatterplot tabpanel
@@ -146,7 +149,12 @@ SLRMainPanelUI <- function(id) {
                   br(),
                   uiOutput(ns("anovaConclusion")),
                   br(),
+                  br(),
+                  plotOutput(ns("anovaFCurve")),
+                  br(),
+                  br(),
                   uiOutput(ns("anovaR2")),
+                  br(),
                   hr()
                 )
               )
@@ -789,35 +797,23 @@ SLRServer <- function(id) {
           )
         })
         
-        output$slrScatterplot <- renderPlot(
-          { # scatterplot ----
-            RenderScatterplot(
-              df,
-              model,
-              input[["slrScatter-Title"]],
-              input[["slrScatter-Xlab"]],
-              input[["slrScatter-Ylab"]],
-              input[["slrScatter-Colour"]],
-              input[["slrScatter-PointsColour"]],
-              input[["slrScatter-LineWidth"]],
-              input[["slrScatter-PointSize"]],
-              input[["slrScatter-Gridlines"]],
-              input[["slrScatter-confidenceInterval"]],
-              input[["slrScatter-predictionInterval"]],
-              input[["slrScatter-showRegressionLine"]]
-            )
-          },
-          height = function() {
-            GetPlotHeight(input[["slrScatter-Height"]],
-                          input[["slrScatter-HeightPx"]],
-                          ui = FALSE)
-          },
-          width = function() {
-            GetPlotWidth(input[["slrScatter-Width"]],
-                         input[["slrScatter-WidthPx"]],
-                         ui = FALSE)
-          }
-        )
+        output$slrScatterplot <- renderPlotly({
+          RenderScatterplot(
+            df,
+            model,
+            input[["slrScatter-Title"]],
+            input[["slrScatter-Xlab"]],
+            input[["slrScatter-Ylab"]],
+            input[["slrScatter-Colour"]],
+            input[["slrScatter-PointsColour"]],
+            input[["slrScatter-LineWidth"]],
+            input[["slrScatter-PointSize"]],
+            input[["slrScatter-Gridlines"]],
+            input[["slrScatter-confidenceInterval"]],
+            input[["slrScatter-predictionInterval"]],
+            input[["slrScatter-showRegressionLine"]]
+          )
+        })
         
         output$slrResidualsPanelPlot1 <- renderPlot({
           plot(model, which = 1, 
@@ -1058,15 +1054,27 @@ SLRServer <- function(id) {
             
             output$pearsonCorFormula <- renderUI({
               withMathJax(
+                p(tags$b("Interpretation:")),
+                sprintf("There is a %s %s linear relationship between \\(x\\) and \\(y\\).",
+                        pearsonStrength,
+                        pearsonSign),
+                br(),
+                br(),
+                br(),
+                
+                # Line 1: General formula
                 sprintf("\\( \\large{\\quad r = \\dfrac
-                                      {\\left(\\sum xy\\right) - \\dfrac{ \\left(\\sum x\\right) \\times \\left(\\sum y\\right) }{ n } }
-                                      {\\sqrt{ \\left(\\sum x^2\\right) - \\dfrac{ \\left(\\sum x\\right)^2 }{ n } } \\times \\sqrt{ \\left(\\sum y^2\\right) - \\dfrac{ \\left(\\sum y\\right) ^2 }{ n } } }} \\)"),
+                          {\\left(\\sum xy\\right) - \\dfrac{ \\left(\\sum x\\right) \\times \\left(\\sum y\\right) }{ n } }
+                          {\\sqrt{ \\left(\\sum x^2\\right) - \\dfrac{ \\left(\\sum x\\right)^2 }{ n } } \\times \\sqrt{ \\left(\\sum y^2\\right) - \\dfrac{ \\left(\\sum y\\right) ^2 }{ n } }} } \\)"),
                 br(),
                 br(),
-                br(),
+                
+                # Line 2: Values substituted = simplified √ form = final result
                 sprintf("\\( \\large{\\quad = \\dfrac
-                                      {%s - \\dfrac{ (%s) \\times (%s) }{ %s } }
-                                      {\\sqrt{ %s - \\dfrac{ (%s)^2 }{ %s } } \\times \\sqrt{ %s - \\dfrac{ (%s) ^2 }{ %s } } }} \\)",
+                          {%s - \\dfrac{ (%s) \\times (%s) }{ %s } }
+                          {\\sqrt{ %s - \\dfrac{ (%s)^2 }{ %s } } \\times \\sqrt{ %s - \\dfrac{ (%s)^2 }{ %s } }}
+                          \\quad = \\dfrac{ %s }{\\sqrt{ %s } \\times \\sqrt{ %s }}
+                          \\quad = %g} \\)",
                         format(round(dfTotaled["Totals", "xy"], 3), nsmall = 0, scientific = FALSE),
                         format(round(dfTotaled["Totals", "x"], 3), nsmall = 0, scientific = FALSE),
                         format(round(dfTotaled["Totals", "y"], 3), nsmall = 0, scientific = FALSE),
@@ -1076,37 +1084,88 @@ SLRServer <- function(id) {
                         format(length(datx), nsmall = 0, scientific = FALSE),
                         format(round(dfTotaled["Totals", "y<sup>2</sup>"], 3), nsmall = 0, scientific = FALSE),
                         format(round(dfTotaled["Totals", "y"], 3), nsmall = 0, scientific = FALSE),
-                        format(length(datx), nsmall = 0, scientific = FALSE)
-                ),
-                br(),
-                br(),
-                br(),
-                
-                sprintf("\\( \\large{\\quad = \\dfrac
-                                      { %s }
-                                      {\\sqrt{ %s } \\times \\sqrt{ %s } }} \\)",
+                        format(length(datx), nsmall = 0, scientific = FALSE),
+                        # simplified √ form
                         format(round(dfTotaled["Totals", "xy"] - sumXSumY / length(datx), 3), nsmall = 0, scientific = FALSE),
                         format(round(dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx), 3), nsmall = 0, scientific = FALSE),
-                        format(round(dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx), 3), nsmall = 0, scientific = FALSE)
+                        format(round(dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx), 3), nsmall = 0, scientific = FALSE),
+                        # final result
+                        round(pearson$estimate, 4)
                 ),
                 
-                sprintf("\\( \\large{\\quad = \\dfrac
-                                      { %s }
-                                      { %s }} \\)",
-                        format(round(dfTotaled["Totals", "xy"] - sumXSumY / length(datx), 3), nsmall = 0, scientific = FALSE),
-                        format(round(sqrt(dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx)) * sqrt(dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx)), 3), nsmall = 0, scientific = FALSE)
-                ),
+                br(),
+                br(),
                 
-                sprintf("\\( \\large{\\quad = %g} \\)",
-                        round(pearson$estimate, 4)),
+                # Population Correlation Coefficent 
+                
+                p(strong("Hypothesis Test for Population Correlation Coefficient")),
+                p(HTML("H<sub>0</sub>: \\(\\rho = 0\\)")),
+                p(HTML("H<sub>a</sub>: \\(\\rho \\neq 0\\)")),
+                p("\\(\\alpha = 0.05\\)"),
+                
+                p(strong("Test Statistic:")),
+                p(sprintf(
+                  "\\( t = \\dfrac{r\\sqrt{n-2}}{\\sqrt{1-r^2}} = \\dfrac{%0.4f\\sqrt{%d-2}}{\\sqrt{1-%0.4f^2}} = %0.4f \\)",
+                  pearson$estimate, n, pearson$estimate, pearson$statistic
+                )),
+                
+                p(strong(sprintf("P-value = %f", pearson$p.value))),
+                p(strong(sprintf("df = %d", pearson$parameter))),
+                
+                p(strong("Conclusion:")),
+                if(pearson$p.value <= 0.05) {
+                  p(sprintf("Since the p-value is less than \\(\\alpha\\) (%.4f < 0.05), we reject the null hypothesis and conclude there is enough statistical evidence of a linear relationship between x and y in the population.",
+                            pearson$p.value))
+                } else {
+                  p(sprintf("Since the p-value is greater than \\(\\alpha\\) (%.4f > 0.05), we fail to reject the null hypothesis and conclude there is not enough statistical evidence of a linear relationship between x and y in the population.",
+                            pearson$p.value))
+                },
+                
+                # Fischer Transform 
+                
+                hr(),
+                p(strong("Confidence Interval for \\(\\rho\\) (Fisher Z-Transformation)")),
+                
+                p("Since the sampling distribution of Pearson's r is not normal, we use the Fisher Z-Transformation to construct a confidence interval."),
+                
+                p(strong("Step 1: Transform r")),
+                p(sprintf(
+                  "\\( z_r = \\dfrac{1}{2} \\ln\\left(\\dfrac{1+r}{1-r}\\right) = \\text{artanh}(r) = \\dfrac{1}{2} \\ln\\left(\\dfrac{1+%0.4f}{1-%0.4f}\\right) = %0.4f \\)",
+                  pearson$estimate, pearson$estimate, atanh(pearson$estimate)
+                )),
+                
+                p(strong("Step 2: Standard Error")),
+                p(sprintf(
+                  "\\( SE_{z_r} = \\dfrac{1}{\\sqrt{n-3}} = \\dfrac{1}{\\sqrt{%d-3}} = %0.4f \\)",
+                  n, 1/sqrt(n-3)
+                )),
+                
+                p(strong("Step 3: Confidence Interval on Transformed Scale")),
+                p(sprintf(
+                  "\\( \\left(z_r - Z_{\\alpha/2} \\cdot SE_{z_r}, \\; z_r + Z_{\\alpha/2} \\cdot SE_{z_r}\\right) = \\left(%0.4f - 1.96 \\times %0.4f, \\; %0.4f + 1.96 \\times %0.4f\\right) = \\left(%0.4f, \\; %0.4f\\right) \\)",
+                  atanh(pearson$estimate), 1/sqrt(n-3),
+                  atanh(pearson$estimate), 1/sqrt(n-3),
+                  atanh(pearson$estimate) - 1.96 * (1/sqrt(n-3)),
+                  atanh(pearson$estimate) + 1.96 * (1/sqrt(n-3))
+                )),
+                
+                p(strong("Step 4: Convert Back to Original Scale")),
+                {
+                  z_lower <- atanh(pearson$estimate) - 1.96 * (1/sqrt(n-3))
+                  z_upper <- atanh(pearson$estimate) + 1.96 * (1/sqrt(n-3))
+                  ci_lower <- (exp(2*z_lower) - 1) / (exp(2*z_lower) + 1)
+                  ci_upper <- (exp(2*z_upper) - 1) / (exp(2*z_upper) + 1)
+                  
+                  p(sprintf(
+                    "\\( \\left(\\dfrac{e^{2Z_{lower}}-1}{e^{2Z_{lower}}+1}, \\; \\dfrac{e^{2Z_{upper}}-1}{e^{2Z_{upper}}+1}\\right) = \\left(%0.4f, \\; %0.4f\\right) \\)",
+                    ci_lower, ci_upper
+                  ))
+                },
+                
                 br(),
-                br(),
-                br(),
-                p(tags$b("Interpretation:")),
-                sprintf("There is a %s %s linear relationship between \\(x\\) and \\(y\\).",
-                        pearsonStrength,
-                        pearsonSign),
                 br()
+                
+                
               )
             })
             
@@ -1177,7 +1236,7 @@ SLRServer <- function(id) {
           
           withMathJax(
             HTML(sprintf(
-              "\\( \\tau_b = \\dfrac{n_c - n_d}{\\sqrt{(n_0 - n_1)(n_0 - n_2)}} = \\dfrac{%d - %d}{\\sqrt{(%g - %g)(%g - %g)}} = %.4f \\)",
+              "\\( \\tau = \\dfrac{n_c - n_d}{\\sqrt{(n_0 - n_1)(n_0 - n_2)}} = \\dfrac{%d - %d}{\\sqrt{(%g - %g)(%g - %g)}} = %.4f \\)",
               nc, nd, n0, n1, n0, n2, kendall$estimate
             ))
           )
@@ -1303,9 +1362,9 @@ SLRServer <- function(id) {
             p(sprintf("\\( \\displaystyle F = \\frac{\\mathrm{MSR}}{\\mathrm{MSE}} = \\frac{%.3f}{%.3f} = %.3f \\)", msr, mse, f_value)),
             p(strong("Conclusion:")),
             if (p_value <= 0.05) {
-              p(sprintf("Since the p-value is less than \\( \\alpha \\) (%.3f < 0.05), we reject the null hypothesis and conclude there is enough statistical evidence to support the alternative hypothesis.", p_value))
+              p(sprintf("Since the p-value is less than \\( \\alpha \\) (%.3f < 0.05), we reject the null hypothesis and conclude there is enough statistical evidence to support the alternative hypothesis. We can conclude the model is statistically significant (There exists a linear relationship between x and y).", p_value))
             } else {
-              p(sprintf("Since the p-value is greater than \\( \\alpha \\) (%.3f >  0.05), we fail to reject the null hypothesis and conclude there isn't enough statistical evidence to support the alternative hypothesis.", p_value))
+              p(sprintf("Since the p-value is greater than \\( \\alpha \\) (%.3f >  0.05), we fail to reject the null hypothesis and conclude there isn't enough statistical evidence to support the alternative hypothesis. We can conclude the model is not statistically significant (There exists no linear relationship between x and y).", p_value))
             }
           )
         })
@@ -1328,6 +1387,108 @@ SLRServer <- function(id) {
               ))
             )
           )
+        })
+        
+        output$anovaFCurve <- renderPlot({
+          anova_results <- anova(model)
+          
+          df1    <- 1
+          df2    <- n - 2
+          f_stat <- anova_results$`F value`[1]
+          p_val  <- anova_results$`Pr(>F)`[1]
+          f_crit <- qf(0.95, df1, df2)
+          x_max  <- x_max  <- f_crit * 3
+          
+          x <- seq(0, x_max, length.out = 1000)
+          y <- df(x, df1, df2)
+          
+          plot_df <- data.frame(x = x, y = y)
+          
+          ggplot(plot_df, aes(x = x, y = y)) +
+            
+            # Main curve
+            geom_line(lwd = 1) +
+            
+            # Rejection region shading (red)
+            geom_area(
+              data = subset(plot_df, x >= f_crit),
+              aes(x = x, y = y),
+              fill  = "red",
+              alpha = 0.3
+            ) +
+            
+            # P-value region shading (blue) - only if f_stat <= x_max
+            {if(f_stat <= x_max)
+              geom_area(
+                data = subset(plot_df, x >= f_stat),
+                aes(x = x, y = y),
+                fill  = "blue",
+                alpha = 0.3
+              )
+            } +
+            
+            # Critical value line
+            geom_vline(
+              xintercept = f_crit,
+              colour     = "red",
+              linewidth  = 0.8,
+              linetype   = "dashed"
+            ) +
+            
+            # F statistic line - only if within plot range
+            {if(f_stat <= x_max)
+              geom_vline(
+                xintercept = f_stat,
+                colour     = "blue",
+                linewidth  = 0.8,
+                linetype   = "dashed"
+              )
+            } +
+            
+            # Labels
+            labs(
+              title = "F Distribution",
+              x     = "F",
+              y     = "Density"
+            ) +
+            
+            # Annotations
+            # Critical value annotation - below the line instead of beside it
+            annotate("text",
+                     x     = f_crit,
+                     y     = max(y) * 0.2,
+                     label = sprintf("F critical\n= %.4f", f_crit),
+                     hjust = -0.1,
+                     color = "red",
+                     size  = 3.5) +
+            
+            # P-value annotation - fixed to top right corner
+            annotate("text",
+                     x     = x_max * 0.6,
+                     y     = max(y) * 0.9,
+                     label = sprintf("p-value = %.4f", p_val),
+                     color = "black",
+                     size  = 4) +
+            
+            # F statistic annotation - only shown if within plot range
+            {if(f_stat <= x_max)
+              annotate("text",
+                       x     = f_stat,
+                       y     = max(y) * 0.4,
+                       label = sprintf("F statistic\n= %.4f", f_stat),
+                       hjust = -0.1,
+                       color = "blue",
+                       size  = 3.5)
+            } +
+            
+            # Theme
+            theme_classic() +
+            theme(
+              plot.title   = element_text(hjust = 0.5, face = "bold"),
+              axis.title   = element_text(size = 12),
+              axis.text    = element_text(size = 10)
+            ) +
+            coord_cartesian(clip = "off")
         })
         
       } #if regcor_iv is valid

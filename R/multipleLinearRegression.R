@@ -1189,16 +1189,6 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
                                lengthMenu = list(c(25, 50, 100, -1), c("25", "50", "100", "All"))))
     })
 
-    # output$ANOVA <- renderUI({
-    #   eval(MLRValidation)
-    #   
-    #   fluidPage(
-    #     fluidRow(uiOutput(ns("anovaHypotheses"))),
-    #     fluidRow(tableOutput(ns("anovaTable"))),
-    #     fluidRow(uiOutput(ns("anovaPValueMethod"))),
-    #     fluidRow(uiOutput(ns("rsquareAdjustedRSquareInterpretation")))
-    #   )
-    # })
     
     output$MulticollinearityDetection <- renderUI({
       eval(MLRValidation)
