@@ -82,12 +82,6 @@ RFMainPanelUI <- function(id) {
       ),
 
       tabPanel(
-        title = "Plots",
-        value = "plots_tab",
-        uiOutput(ns("plotsContainer"))
-      ),
-
-      tabPanel(
         title = "Uploaded Data",
         value = "uploaded_data_tab",
         uiOutput(ns("uploadedDataContainer"))
@@ -108,13 +102,10 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
 
     # ---- Reactive state ----
     summary_ready <- reactiveVal(FALSE)
-    plots_ready   <- reactiveVal(FALSE)
 
     summary_ever_calculated <- reactiveVal(FALSE)
-    plots_ever_calculated   <- reactiveVal(FALSE)
 
     calc_results <- reactiveVal(NULL)
-    plot_results <- reactiveVal(NULL)
     rf_message   <- reactiveVal(NULL)
 
     noFileCalculate <- reactiveVal(FALSE)
@@ -133,7 +124,6 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
     # ---- Hide result tabs until Calculate succeeds ----
     session$onFlushed(function() {
       hideTab(inputId = "rfMainPanel", target = "model_summary_tab")
-      hideTab(inputId = "rfMainPanel", target = "plots_tab")
     }, once = TRUE)
 
     # ---- Uploaded Data tab ----
@@ -208,14 +198,11 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
       list(data(), input$response, input$predictors, input$split, input$ntree, input$mtry),
       {
         if (isTRUE(summary_ready())) summary_ready(FALSE)
-        if (isTRUE(plots_ready()))   plots_ready(FALSE)
 
         calc_results(NULL)
-        plot_results(NULL)
         rf_message(NULL)
 
         hideTab(inputId = "rfMainPanel", target = "model_summary_tab")
-        hideTab(inputId = "rfMainPanel", target = "plots_tab")
         updateNavbarPage(session, "rfMainPanel", selected = "uploaded_data_tab")
       },
       ignoreInit = TRUE
@@ -232,37 +219,6 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
       uiOutput(session$ns("modelSummaryUI"))
     })
 
-    output$plotsContainer <- renderUI({
-      if (!isTRUE(plots_ready())) {
-        if (!isTRUE(plots_ever_calculated())) {
-          return(tagList(helpText("No plots yet. Upload a dataset, choose variables, then click Calculate.")))
-        }
-        return(tagList(helpText("Settings changed. Click Calculate to update plots.")))
-      }
-      tagList(
-        tags$h4("Variable Importance Plot"),
-        plotOutput(session$ns("rfVarImportPlot"), height = "450px"),
-        tags$hr(),
-        tags$h4("Partial Dependence Plots (PDP)"),
-        uiOutput(session$ns("rfPDPContainer")),
-        tags$hr(),
-        tags$h4("Individual Conditional Expectation (ICE)"),
-        uiOutput(session$ns("rfICEContainer")),
-        tags$hr(),
-        tags$h4("Accumulated Local Effects (ALE)"),
-        uiOutput(session$ns("rfALEContainer")),
-        tags$p(
-          style = "color: #6c757d; font-style: italic; font-size: 13px; margin-top: 8px;",
-          tags$strong("Note:"),
-          " ALE plots are preferred over PDPs when predictor variables are correlated, ",
-          "as ALE accounts for the joint distribution of features and avoids extrapolation ",
-          "into unlikely regions of the feature space."
-        ),
-        tags$hr(),
-        tags$h4("SHAP Summary"),
-        uiOutput(session$ns("rfSHAPContainer"))
-      )
-    })
 
     # ---- Inline error outputs ----
     output$fileImportUserMessage <- renderUI({
@@ -484,29 +440,10 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
       # 16. OOB error rate (final tree)
       oob_error <- rf_fit$err.rate[nrow(rf_fit$err.rate), "OOB"]
 
-      # 17. Build iml Predictor for interpretability plots (probability predictions).
-      #     options(warn = -1) is required here: iml's data.table backend triggers
-      #     "NAs introduced by coercion" from deep inside eval(jsub, SDenv, parent.frame())
-      #     which suppressWarnings() cannot intercept. Warnings are restored immediately
-      #     after; on.exit() is the safety net if an error occurs between the two calls.
-      options(warn = -1)
-      on.exit(options(warn = 0), add = TRUE)
-      iml_predictor <- tryCatch(
-        iml::Predictor$new(
-          model = rf_fit,
-          data  = train_df[, input$predictors, drop = FALSE],
-          y     = train_df[[resp_col]],
-          type  = "prob"
-        ),
-        error = function(e) NULL
-      )
-      options(warn = 0)
-
       res <- list(
         fit           = rf_fit,
         train_df      = train_df,
         test_df       = test_df,
-        iml_predictor = iml_predictor,
         response      = resp_col,
         predictors    = input$predictors,
         class_dist    = class_dist_df,
@@ -522,7 +459,6 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
       )
 
       calc_results(res)
-      plot_results(res)
 
       # ---- Model Summary UI ----
       output$modelSummaryUI <- renderUI({
@@ -658,278 +594,11 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
         r$class_metrics
       }, rownames = FALSE)
 
-      # ---- Variable Importance Plot (iml FeatureImp, loss = 'ce') ----
-      output$rfVarImportPlot <- renderPlot({
-        r <- plot_results()
-        req(r)
-
-        if (is.null(r$iml_predictor)) {
-          return(
-            ggplot() +
-              annotate("text", x = 0.5, y = 0.5,
-                       label = "Variable importance could not be initialized.", size = 5) +
-              theme_void()
-          )
-        }
-
-        perfect_accuracy_note <- NULL
-        feat_imp <- tryCatch(
-          suppressWarnings(
-            withCallingHandlers(
-              iml::FeatureImp$new(r$iml_predictor, loss = "ce",
-                                  compare = "ratio", n.repetitions = 5),
-              warning = function(w) {
-                if (grepl("Model error is 0", conditionMessage(w))) {
-                  perfect_accuracy_note <<- "Model accuracy is perfect — importance calculated using difference method."
-                  invokeRestart("muffleWarning")
-                }
-              }
-            )
-          ),
-          error = function(e) NULL
-        )
-
-        if (is.null(feat_imp)) {
-          return(
-            ggplot() +
-              annotate("text", x = 0.5, y = 0.5,
-                       label = "Variable importance could not be computed.", size = 5) +
-              theme_void()
-          )
-        }
-
-        imp_df <- feat_imp$results
-        imp_df <- imp_df[order(imp_df$importance, decreasing = FALSE), ]
-        imp_df$feature <- factor(imp_df$feature, levels = imp_df$feature)
-
-        x_label <- if (is.null(perfect_accuracy_note)) {
-          "Importance (Ratio of Permuted to Baseline Loss)"
-        } else {
-          "Importance (Difference of Permuted to Baseline Loss)"
-        }
-
-        ggplot(imp_df, aes(x = importance, y = feature)) +
-          geom_col(fill = "#18536F") +
-          labs(
-            title    = "Variable Importance (Permutation-Based, Loss: Cross-Entropy)",
-            subtitle = perfect_accuracy_note,
-            x        = x_label,
-            y        = "Predictor"
-          ) +
-          theme_bw() +
-          theme(
-            plot.title   = element_text(hjust = 0.5, face = "bold", size = 16),
-            axis.title.x = element_text(face = "bold", size = 13),
-            axis.title.y = element_text(face = "bold", size = 13),
-            axis.text.x  = element_text(face = "bold", size = 11),
-            axis.text.y  = element_text(face = "bold", size = 11)
-          )
-      }, res = 96)
-
-      # ---- PDP Container ----
-      output$rfPDPContainer <- renderUI({
-        r <- plot_results()
-        req(r)
-        if (is.null(r$iml_predictor)) {
-          return(div(class = "alert alert-warning",
-                     "PDP plots could not be initialized."))
-        }
-        n_preds     <- length(r$predictors)
-        n_cols      <- min(3L, n_preds)
-        n_rows      <- ceiling(n_preds / n_cols)
-        plot_height <- paste0(max(300L, n_rows * 280L), "px")
-        plotOutput(session$ns("rfPDPPlots"), height = plot_height)
-      })
-
-      output$rfPDPPlots <- renderPlot({
-        r <- plot_results()
-        req(r)
-        if (is.null(r$iml_predictor)) return(NULL)
-
-        preds  <- r$predictors
-        n_cols <- min(3L, length(preds))
-
-        plot_list <- lapply(preds, function(var) {
-          tryCatch({
-            fe <- suppressWarnings(iml::FeatureEffect$new(r$iml_predictor, feature = var, method = "pdp"))
-            suppressWarnings(fe$plot()) +
-              labs(title = var) +
-              theme_bw() +
-              theme(
-                plot.title   = element_text(face = "bold", size = 11, hjust = 0.5),
-                axis.title.x = element_text(face = "bold", size = 10),
-                axis.title.y = element_text(face = "bold", size = 10),
-                axis.text    = element_text(size = 9)
-              )
-          }, error = function(e) {
-            ggplot() +
-              annotate("text", x = 0.5, y = 0.5,
-                       label = paste0(var, "\n(unavailable)"), size = 4) +
-              theme_void() +
-              labs(title = var) +
-              theme(plot.title = element_text(face = "bold", size = 11, hjust = 0.5))
-          })
-        })
-
-        gridExtra::grid.arrange(grobs = plot_list, ncol = n_cols)
-      }, res = 96)
-
-      # ---- ICE Container ----
-      output$rfICEContainer <- renderUI({
-        r <- plot_results()
-        req(r)
-        if (is.null(r$iml_predictor)) {
-          return(div(class = "alert alert-warning",
-                     "ICE plots could not be initialized."))
-        }
-        n_preds     <- length(r$predictors)
-        n_cols      <- min(3L, n_preds)
-        n_rows      <- ceiling(n_preds / n_cols)
-        plot_height <- paste0(max(300L, n_rows * 280L), "px")
-        plotOutput(session$ns("rfICEPlots"), height = plot_height)
-      })
-
-      output$rfICEPlots <- renderPlot({
-        r <- plot_results()
-        req(r)
-        if (is.null(r$iml_predictor)) return(NULL)
-
-        preds  <- r$predictors
-        n_cols <- min(3L, length(preds))
-
-        plot_list <- lapply(preds, function(var) {
-          tryCatch({
-            fe <- suppressWarnings(iml::FeatureEffect$new(r$iml_predictor, feature = var, method = "ice"))
-            suppressWarnings(fe$plot()) +
-              labs(title = var) +
-              theme_bw() +
-              theme(
-                plot.title   = element_text(face = "bold", size = 11, hjust = 0.5),
-                axis.title.x = element_text(face = "bold", size = 10),
-                axis.title.y = element_text(face = "bold", size = 10),
-                axis.text    = element_text(size = 9)
-              )
-          }, error = function(e) {
-            ggplot() +
-              annotate("text", x = 0.5, y = 0.5,
-                       label = paste0(var, "\n(unavailable)"), size = 4) +
-              theme_void() +
-              labs(title = var) +
-              theme(plot.title = element_text(face = "bold", size = 11, hjust = 0.5))
-          })
-        })
-
-        gridExtra::grid.arrange(grobs = plot_list, ncol = n_cols)
-      }, res = 96)
-
-      # ---- ALE Container ----
-      output$rfALEContainer <- renderUI({
-        r <- plot_results()
-        req(r)
-        if (is.null(r$iml_predictor)) {
-          return(div(class = "alert alert-warning",
-                     "ALE plots could not be initialized."))
-        }
-        n_preds     <- length(r$predictors)
-        n_cols      <- min(3L, n_preds)
-        n_rows      <- ceiling(n_preds / n_cols)
-        plot_height <- paste0(max(300L, n_rows * 280L), "px")
-        plotOutput(session$ns("rfALEPlots"), height = plot_height)
-      })
-
-      output$rfALEPlots <- renderPlot({
-        r <- plot_results()
-        req(r)
-        if (is.null(r$iml_predictor)) return(NULL)
-
-        preds  <- r$predictors
-        n_cols <- min(3L, length(preds))
-
-        plot_list <- lapply(preds, function(var) {
-          tryCatch({
-            fe <- suppressWarnings(iml::FeatureEffect$new(r$iml_predictor, feature = var, method = "ale"))
-            suppressWarnings(fe$plot()) +
-              labs(title = var) +
-              theme_bw() +
-              theme(
-                plot.title   = element_text(face = "bold", size = 11, hjust = 0.5),
-                axis.title.x = element_text(face = "bold", size = 10),
-                axis.title.y = element_text(face = "bold", size = 10),
-                axis.text    = element_text(size = 9)
-              )
-          }, error = function(e) {
-            ggplot() +
-              annotate("text", x = 0.5, y = 0.5,
-                       label = paste0(var, "\n(unavailable)"), size = 4) +
-              theme_void() +
-              labs(title = var) +
-              theme(plot.title = element_text(face = "bold", size = 11, hjust = 0.5))
-          })
-        })
-
-        gridExtra::grid.arrange(grobs = plot_list, ncol = n_cols)
-      }, res = 96)
-
-      # ---- SHAP Summary Container ----
-      output$rfSHAPContainer <- renderUI({
-        r <- plot_results()
-        req(r)
-        n_preds     <- length(r$predictors)
-        plot_height <- paste0(max(400L, n_preds * 40L + 150L), "px")
-        plotOutput(session$ns("rfSHAPPlot"), height = plot_height)
-      })
-
-      output$rfSHAPPlot <- renderPlot({
-        r <- plot_results()
-        req(r)
-
-        # Cap at 1000 rows so tree-traversal stays fast
-        shap_data <- r$train_df[, r$predictors, drop = FALSE]
-        if (nrow(shap_data) > 1000L) {
-          set.seed(42L)
-          shap_data <- shap_data[sample(nrow(shap_data), 1000L), , drop = FALSE]
-        }
-
-        sv <- tryCatch({
-          unified <- treeshap::randomForest.unify(r$fit, shap_data)
-          ts      <- treeshap::treeshap(unified, x = shap_data,
-                                        interactions = FALSE, verbose = FALSE)
-          shapviz::shapviz(ts)
-        }, error = function(e) NULL)
-
-        if (is.null(sv)) {
-          return(
-            ggplot() +
-              annotate("text", x = 0.5, y = 0.5,
-                       label = "SHAP values could not be computed.", size = 5) +
-              theme_void()
-          )
-        }
-
-        shapviz::sv_importance(sv, kind = "beeswarm") +
-          labs(
-            title = "SHAP Summary: Features Ordered by Mean (Increasing Dominance)",
-            x     = "SHAP value (impact on model output)"
-          ) +
-          theme_bw() +
-          theme(
-            plot.title   = element_text(hjust = 0.5, face = "bold", size = 15),
-            axis.title.x = element_text(face = "bold", size = 13),
-            axis.title.y = element_text(face = "bold", size = 13),
-            axis.text.x  = element_text(face = "bold", size = 11),
-            axis.text.y  = element_text(face = "bold", size = 11)
-          )
-      }, res = 96)
-
       # ---- Show tabs and navigate ----
       summary_ready(TRUE)
-      plots_ready(TRUE)
-
       summary_ever_calculated(TRUE)
-      plots_ever_calculated(TRUE)
 
       showTab(inputId = "rfMainPanel", target = "model_summary_tab")
-      showTab(inputId = "rfMainPanel", target = "plots_tab")
 
       shinyjs::delay(100, {
         updateNavbarPage(session, "rfMainPanel", selected = "model_summary_tab")
@@ -940,20 +609,15 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
     # ---- Reset ----
     observeEvent(input$reset, {
       hideTab(inputId = "rfMainPanel", target = "model_summary_tab")
-      hideTab(inputId = "rfMainPanel", target = "plots_tab")
 
       summary_ready(FALSE)
-      plots_ready(FALSE)
-
       summary_ever_calculated(FALSE)
-      plots_ever_calculated(FALSE)
 
       noFileCalculate(FALSE)
       responseError(FALSE)
       predictorsError(FALSE)
       rf_message(NULL)
       calc_results(NULL)
-      plot_results(NULL)
 
       shinyjs::removeClass(id = "responseWrapper",   class = "has-error")
       shinyjs::removeClass(id = "predictorsWrapper", class = "has-error")
