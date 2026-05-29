@@ -80,6 +80,12 @@ SLRMainPanelUI <- function(id) {
             value = "Calculations",
             
             div(
+              style = "display: flex; gap: 10px; margin-bottom: 8px;",
+              downloadButton(ns("downloadSLRcsv"),  "⬇ Save as CSV"),
+              downloadButton(ns("downloadSLRxlsx"), "⬇ Save as Excel")
+            ),
+            
+            div(
               style = "overflow-x: auto;",
               reactableOutput(ns("slrDataTable"), width = "100%")
             ),
@@ -156,6 +162,13 @@ SLRMainPanelUI <- function(id) {
                   uiOutput(ns("anovaR2")),
                   br(),
                   hr()
+                ),
+                
+                tabPanel(
+                  title = "LINE",
+                  value = "LINE",
+                  br(),
+                  uiOutput(ns("lineAssumptions"))
                 )
               )
             )
@@ -371,6 +384,193 @@ SLRSidebarUI <- function(id) {
 SLRServer <- function(id) {
   moduleServer(id, function(input, output, session) {
     
+    # ============================================================
+    # LINE Assumption Tests Config
+    # Add, remove, or reorder tests here freely
+    # Each entry: assumption, procedure, test function, min_n
+    # ============================================================
+    lineTestConfig <- list(
+      
+      list(
+        assumption = "Linearity",
+        procedure  = "Residuals vs Fitted Plot",
+        min_n      = 3,
+        run        = function(model, datx, daty) {
+          list(
+            statistic = NULL,
+            p_value   = NULL,
+            note      = "See Residuals vs Fitted plot in Diagnostic Plots tab"
+          )
+        }
+      ),
+      
+      list(
+        assumption = "Linearity",
+        procedure  = "Rainbow Test",
+        min_n      = 4,
+        run        = function(model, datx, daty) {
+          rb <- lmtest::raintest(model)
+          list(
+            statistic = round(rb$statistic, 4),
+            p_value   = round(rb$p.value, 4),
+            note      = NULL
+          )
+        }
+      ),
+      
+      list(
+        assumption = "Linearity",
+        procedure  = "Ramsey RESET Test",
+        min_n      = 5,
+        run        = function(model, datx, daty) {
+          rt <- lmtest::resettest(model)
+          list(
+            statistic = round(rt$statistic, 4),
+            p_value   = round(rt$p.value, 4),
+            note      = NULL
+          )
+        }
+      ),
+      
+      list(
+        assumption = "Independence",
+        procedure  = "Durbin-Watson Test",
+        min_n      = 4,
+        run        = function(model, datx, daty) {
+          dw <- lmtest::dwtest(model)
+          list(
+            statistic = round(dw$statistic, 4),
+            p_value   = round(dw$p.value, 4),
+            note      = NULL
+          )
+        }
+      ),
+      
+      list(
+        assumption = "Normality",
+        procedure  = "Shapiro-Wilk Test",
+        min_n      = 3,
+        run        = function(model, datx, daty) {
+          sw <- shapiro.test(residuals(model))
+          list(
+            statistic = round(sw$statistic, 4),
+            p_value   = round(sw$p.value, 4),
+            note      = NULL
+          )
+        }
+      ),
+      
+      list(
+        assumption = "Normality",
+        procedure  = "Anderson-Darling Test",
+        min_n      = 3,
+        run        = function(model, datx, daty) {
+          ad <- nortest::ad.test(residuals(model))
+          list(
+            statistic = round(ad$statistic, 4),
+            p_value   = round(ad$p.value, 4),
+            note      = NULL
+          )
+        }
+      ),
+      
+      list(
+        assumption = "Normality",
+        procedure  = "Kolmogorov-Smirnov Test",
+        min_n      = 3,
+        run        = function(model, datx, daty) {
+          ks <- ks.test(residuals(model), "pnorm",
+                        mean = mean(residuals(model)),
+                        sd   = sd(residuals(model)))
+          list(
+            statistic = round(ks$statistic, 4),
+            p_value   = round(ks$p.value, 4),
+            note      = NULL
+          )
+        }
+      ),
+      
+      list(
+        assumption = "Equal Variance (Homoskedasticity)",
+        procedure  = "Breusch-Pagan Test",
+        min_n      = 4,
+        run        = function(model, datx, daty) {
+          bp <- lmtest::bptest(model)
+          list(
+            statistic = round(bp$statistic, 4),
+            p_value   = round(bp$p.value, 4),
+            note      = NULL
+          )
+        }
+      ),
+      
+      list(
+        assumption = "Equal Variance (Homoskedasticity)",
+        procedure  = "White Test",
+        min_n      = 6,
+        run        = function(model, datx, daty) {
+          # White test via auxiliary regression of squared residuals
+          e2  <- residuals(model)^2
+          x2  <- datx^2
+          aux <- lm(e2 ~ datx + x2)
+          wt  <- summary(aux)
+          f   <- wt$fstatistic
+          p   <- pf(f[1], f[2], f[3], lower.tail = FALSE)
+          list(
+            statistic = round(f[1], 4),
+            p_value   = round(p, 4),
+            note      = NULL
+          )
+        }
+      )
+    )
+    
+    
+    
+    slrExportData <- reactiveVal(NULL)
+    
+    
+    output$downloadSLRcsv <- downloadHandler(
+      filename    = function() paste0("slr_data_", Sys.Date(), ".csv"),
+      contentType = "text/csv",
+      content     = function(file) {
+        tryCatch({
+          data <- as.data.frame(slrExportData())
+          names(data) <- c("x", "y", "xy", "x^2", "y^2", "y_hat",
+                           "e = (y - y_hat)", "e^2",
+                           "95% CI Mean Response (Lower)",
+                           "95% CI Mean Response (Upper)",
+                           "95% PI (Lower)",
+                           "95% PI (Upper)")
+          write.csv(data, file, row.names = TRUE)
+        }, error = function(e) {
+          message("Full error: ", conditionMessage(e))
+        })
+      }
+    )
+    output$downloadSLRxlsx <- downloadHandler(
+      filename    = function() paste0("slr_data_", Sys.Date(), ".xlsx"),
+      contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      content     = function(file) {
+        tryCatch({
+          data <- as.data.frame(slrExportData())
+          names(data) <- c("x", "y", "xy", "x^2", "y^2", "y_hat",
+                           "e = (y - y_hat)", "e^2",
+                           "95% CI Mean Response (Lower)",
+                           "95% CI Mean Response (Upper)",
+                           "95% PI (Lower)",
+                           "95% PI (Upper)")
+          writexl::write_xlsx(data, file)
+        }, error = function(e) {
+          message("Full error: ", conditionMessage(e))
+        })
+      }
+    )
+    
+    
+    
+    
+    
     #  ========================================================================= #
     ## -------- Data Validation ------------------------------------------------
     #  ========================================================================= #
@@ -570,6 +770,96 @@ SLRServer <- function(id) {
           }
         }
         
+        # LINE STUFF ==========  
+        
+        output$lineAssumptions <- renderUI({
+          req(model)
+          
+          alpha <- 0.05
+          n     <- length(datx)
+          
+          # Run each test and collect results
+          results <- lapply(lineTestConfig, function(cfg) {
+            
+            # Skip if not enough observations
+            if (n < cfg$min_n) {
+              return(data.frame(
+                Assumption  = cfg$assumption,
+                Procedure   = cfg$procedure,
+                Statistic   = NA_character_,
+                `P-Value`   = NA_character_,
+                Conclusion  = paste("Requires n \u2265", cfg$min_n),
+                check.names = FALSE
+              ))
+            }
+            
+            # Run test safely
+            result <- tryCatch(cfg$run(model, datx, daty), error = function(e) {
+              list(statistic = NULL, p_value = NULL, note = paste("Error:", e$message))
+            })
+            
+            # Format statistic and p-value
+            stat_str <- if (!is.null(result$statistic)) as.character(result$statistic) else "\u2014"
+            pval_str <- if (!is.null(result$p_value))   as.character(result$p_value)   else "\u2014"
+            
+            # Conclusion
+            conclusion <- if (!is.null(result$note)) {
+              result$note
+            } else if (!is.null(result$p_value)) {
+              if (result$p_value <= alpha) {
+                paste0("Reject H\u2080 (p = ", result$p_value, " \u2264 0.05)")
+              } else {
+                paste0("Fail to reject H\u2080 (p = ", result$p_value, " > 0.05)")
+              }
+            } else {
+              "\u2014"
+            }
+            
+            data.frame(
+              Assumption  = cfg$assumption,
+              Procedure   = cfg$procedure,
+              Statistic   = stat_str,
+              `P-Value`   = pval_str,
+              Conclusion  = conclusion,
+              check.names = FALSE
+            )
+          })
+          
+          # Combine into one data frame
+          tableData <- do.call(rbind, results)
+          
+          tagList(
+            br(),
+            p(strong("LINE Assumption Tests"),
+              style = "font-size: 16px;"),
+            p(paste("Testing at \u03b1 =", alpha, "| n =", n),
+              style = "color: #666; font-size: 13px;"),
+            br(),
+            reactable(
+              tableData,
+              bordered   = TRUE,
+              striped    = FALSE,
+              highlight  = TRUE,
+              pagination = FALSE,
+              fullWidth  = TRUE,
+              columns = list(
+                Assumption = colDef(
+                  name     = "Assumption",
+                  minWidth = 200,
+                  style    = list(fontWeight = "bold")
+                ),
+                Procedure  = colDef(name = "Procedure",      minWidth = 180),
+                Statistic  = colDef(name = "Test Statistic", minWidth = 120, align = "center"),
+                `P-Value`  = colDef(name = "P-Value",        minWidth = 100, align = "center"),
+                Conclusion = colDef(name = "Conclusion",      minWidth = 250)
+              )
+            ),
+            br()
+          )
+          
+        }) # END renderUI — LINE STUFF ==========
+        
+        
         validate(
           need(slrupload_iv$is_valid(), "Please upload a file."),
           need(nrow(slrUploadData()) != 0, "File is empty."),
@@ -701,6 +991,8 @@ SLRServer <- function(id) {
             })
           }
         }
+        slrExportData(dfFormatted)  
+        
         
         # Perfect fit detection
         output$perfectFitWarning <- renderUI({
@@ -763,18 +1055,18 @@ SLRServer <- function(id) {
             columns = c(
               # Row name column — just used to show "Totals" label in footer
               list(".rownames" = colDef(
-                name   = "n",
-                align = "left",
+                name   = "Number of Observations",
+                align = "center",
                 footer = tags$b("Totals"),
-                style  = list(color = "#333"),
-                minWidth = 70
+                style  = list(color = "#333")
+            
               )),
               # Data columns with HTML names and totals footer
               setNames(
                 lapply(names(numericRows), function(col) {
                   colDef(
                     html     = TRUE,
-                    align    = "left",
+                    align    = "center",
                     name     = names(df)[match(col, names(numericRows))],
                     footer   = if (is.na(dfTotaled[nrow(dfTotaled), col])) {
                       ""
@@ -796,6 +1088,10 @@ SLRServer <- function(id) {
             )
           )
         })
+        
+    
+        
+        
         
         output$slrScatterplot <- renderPlotly({
           RenderScatterplot(
