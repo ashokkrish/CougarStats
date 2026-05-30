@@ -381,18 +381,14 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
       }
       
       predictor_df <- analysis_df[, input$predictors, drop = FALSE]
-      
-      zero_var <- names(predictor_df)[sapply(predictor_df, function(x) {
-        length(unique(x[!is.na(x)])) < 2
-      })]
-      
-      if (length(zero_var) > 0) {
-        cart_message(
-          paste(
-            "The following explanatory variable(s) have zero variance and cannot be used:",
-            paste(zero_var, collapse = ", ")
-          )
-        )
+
+      sds <- sapply(predictor_df, sd, na.rm = TRUE)
+      zero_var_cols <- names(sds)[is.na(sds) | sds == 0]
+      if (length(zero_var_cols) > 0) {
+        cart_message(paste0(
+          "These selected variable(s) have zero variance and cannot be used in CART: ",
+          paste(zero_var_cols, collapse = ", "), "."
+        ))
         return()
       }
       
