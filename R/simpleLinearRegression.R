@@ -66,7 +66,10 @@ SLRMainPanelUI <- function(id) {
                 dim         = "in px",
                 includeFlip = FALSE),
               
-              plotOutput(ns("slrScatterplot")),
+              plotlyOutput(ns("slrScatterplot"),
+                           height = "700px",
+                           width  = "100%"),
+              
               br()
             )
           ), # Scatterplot tabpanel
@@ -75,15 +78,24 @@ SLRMainPanelUI <- function(id) {
           tabPanel(
             title = "Calculations",
             value = "Calculations",
-
-            reactableOutput(ns("slrDataTable"), width = "95%"),
+            
+            div(
+              style = "display: flex; gap: 10px; margin-bottom: 8px;",
+              downloadButton(ns("downloadSLRcsv"),  "⬇ Save as CSV"),
+              downloadButton(ns("downloadSLRxlsx"), "⬇ Save as Excel")
+            ),
+            
+            div(
+              style = "overflow-x: auto;",
+              reactableOutput(ns("slrDataTable"), width = "100%")
+            ),
             br()
           ), # Calculations tabpanel
           
-          #### ---------------- Parameter Estimates and ANOVA Tab -------------------
+          #### ---------------- Inference Tab -------------------
           tabPanel(
-            title = "Parameter Estimates and ANOVA",
-            value = "Parameter Estimates and ANOVA",
+            title = "Inference",
+            value = "Inference",
             
             tags$style(HTML("
     .inference-anova-tabs .nav-tabs {
@@ -141,14 +153,26 @@ SLRMainPanelUI <- function(id) {
                   br(),
                   div(tableOutput(ns("anovaTable")), width = "100 px;"),
                   br(),
+                  br(),
+                  plotOutput(ns("anovaFCurve")),
+                  br(),
+                  br(),
                   uiOutput(ns("anovaConclusion")),
                   br(),
                   uiOutput(ns("anovaR2")),
+                  br(),
                   hr()
+                ),
+                
+                tabPanel(
+                  title = "LINE",
+                  value = "LINE",
+                  br(),
+                  uiOutput(ns("lineAssumptions"))
                 )
               )
             )
-          ), # Parameter Estimates and ANOVA tabpanel
+          ), # Inference tabpanel
             
     
           
@@ -360,6 +384,193 @@ SLRSidebarUI <- function(id) {
 SLRServer <- function(id) {
   moduleServer(id, function(input, output, session) {
     
+    # ============================================================
+    # LINE Assumption Tests Config
+    # Add, remove, or reorder tests here freely
+    # Each entry: assumption, procedure, test function, min_n
+    # ============================================================
+    lineTestConfig <- list(
+      
+      list(
+        assumption = "Linearity",
+        procedure  = "Residuals vs Fitted Plot",
+        min_n      = 3,
+        run        = function(model, datx, daty) {
+          list(
+            statistic = NULL,
+            p_value   = NULL,
+            note      = "See Residuals vs Fitted plot in Diagnostic Plots tab"
+          )
+        }
+      ),
+      
+      list(
+        assumption = "Linearity",
+        procedure  = "Rainbow Test",
+        min_n      = 4,
+        run        = function(model, datx, daty) {
+          rb <- lmtest::raintest(model)
+          list(
+            statistic = round(rb$statistic, 4),
+            p_value   = round(rb$p.value, 4),
+            note      = NULL
+          )
+        }
+      ),
+      
+      list(
+        assumption = "Linearity",
+        procedure  = "Ramsey RESET Test",
+        min_n      = 5,
+        run        = function(model, datx, daty) {
+          rt <- lmtest::resettest(model)
+          list(
+            statistic = round(rt$statistic, 4),
+            p_value   = round(rt$p.value, 4),
+            note      = NULL
+          )
+        }
+      ),
+      
+      list(
+        assumption = "Independence",
+        procedure  = "Durbin-Watson Test",
+        min_n      = 4,
+        run        = function(model, datx, daty) {
+          dw <- lmtest::dwtest(model)
+          list(
+            statistic = round(dw$statistic, 4),
+            p_value   = round(dw$p.value, 4),
+            note      = NULL
+          )
+        }
+      ),
+      
+      list(
+        assumption = "Normality",
+        procedure  = "Shapiro-Wilk Test",
+        min_n      = 3,
+        run        = function(model, datx, daty) {
+          sw <- shapiro.test(residuals(model))
+          list(
+            statistic = round(sw$statistic, 4),
+            p_value   = round(sw$p.value, 4),
+            note      = NULL
+          )
+        }
+      ),
+      
+      list(
+        assumption = "Normality",
+        procedure  = "Anderson-Darling Test",
+        min_n      = 3,
+        run        = function(model, datx, daty) {
+          ad <- nortest::ad.test(residuals(model))
+          list(
+            statistic = round(ad$statistic, 4),
+            p_value   = round(ad$p.value, 4),
+            note      = NULL
+          )
+        }
+      ),
+      
+      list(
+        assumption = "Normality",
+        procedure  = "Kolmogorov-Smirnov Test",
+        min_n      = 3,
+        run        = function(model, datx, daty) {
+          ks <- ks.test(residuals(model), "pnorm",
+                        mean = mean(residuals(model)),
+                        sd   = sd(residuals(model)))
+          list(
+            statistic = round(ks$statistic, 4),
+            p_value   = round(ks$p.value, 4),
+            note      = NULL
+          )
+        }
+      ),
+      
+      list(
+        assumption = "Equal Variance (Homoskedasticity)",
+        procedure  = "Breusch-Pagan Test",
+        min_n      = 4,
+        run        = function(model, datx, daty) {
+          bp <- lmtest::bptest(model)
+          list(
+            statistic = round(bp$statistic, 4),
+            p_value   = round(bp$p.value, 4),
+            note      = NULL
+          )
+        }
+      ),
+      
+      list(
+        assumption = "Equal Variance (Homoskedasticity)",
+        procedure  = "White Test",
+        min_n      = 6,
+        run        = function(model, datx, daty) {
+          # White test via auxiliary regression of squared residuals
+          e2  <- residuals(model)^2
+          x2  <- datx^2
+          aux <- lm(e2 ~ datx + x2)
+          wt  <- summary(aux)
+          f   <- wt$fstatistic
+          p   <- pf(f[1], f[2], f[3], lower.tail = FALSE)
+          list(
+            statistic = round(f[1], 4),
+            p_value   = round(p, 4),
+            note      = NULL
+          )
+        }
+      )
+    )
+    
+    
+    
+    slrExportData <- reactiveVal(NULL)
+    
+    
+    output$downloadSLRcsv <- downloadHandler(
+      filename    = function() paste0("slr_data_", Sys.Date(), ".csv"),
+      contentType = "text/csv",
+      content     = function(file) {
+        tryCatch({
+          data <- as.data.frame(slrExportData())
+          names(data) <- c("x", "y", "xy", "x^2", "y^2", "y_hat",
+                           "e = (y - y_hat)", "e^2",
+                           "95% CI Mean Response (Lower)",
+                           "95% CI Mean Response (Upper)",
+                           "95% PI (Lower)",
+                           "95% PI (Upper)")
+          write.csv(data, file, row.names = TRUE)
+        }, error = function(e) {
+          message("Full error: ", conditionMessage(e))
+        })
+      }
+    )
+    output$downloadSLRxlsx <- downloadHandler(
+      filename    = function() paste0("slr_data_", Sys.Date(), ".xlsx"),
+      contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      content     = function(file) {
+        tryCatch({
+          data <- as.data.frame(slrExportData())
+          names(data) <- c("x", "y", "xy", "x^2", "y^2", "y_hat",
+                           "e = (y - y_hat)", "e^2",
+                           "95% CI Mean Response (Lower)",
+                           "95% CI Mean Response (Upper)",
+                           "95% PI (Lower)",
+                           "95% PI (Upper)")
+          writexl::write_xlsx(data, file)
+        }, error = function(e) {
+          message("Full error: ", conditionMessage(e))
+        })
+      }
+    )
+    
+    
+    
+    
+    
     #  ========================================================================= #
     ## -------- Data Validation ------------------------------------------------
     #  ========================================================================= #
@@ -559,6 +770,96 @@ SLRServer <- function(id) {
           }
         }
         
+        # LINE STUFF ==========  
+        
+        output$lineAssumptions <- renderUI({
+          req(model)
+          
+          alpha <- 0.05
+          n     <- length(datx)
+          
+          # Run each test and collect results
+          results <- lapply(lineTestConfig, function(cfg) {
+            
+            # Skip if not enough observations
+            if (n < cfg$min_n) {
+              return(data.frame(
+                Assumption  = cfg$assumption,
+                Procedure   = cfg$procedure,
+                Statistic   = NA_character_,
+                `P-Value`   = NA_character_,
+                Conclusion  = paste("Requires n \u2265", cfg$min_n),
+                check.names = FALSE
+              ))
+            }
+            
+            # Run test safely
+            result <- tryCatch(cfg$run(model, datx, daty), error = function(e) {
+              list(statistic = NULL, p_value = NULL, note = paste("Error:", e$message))
+            })
+            
+            # Format statistic and p-value
+            stat_str <- if (!is.null(result$statistic)) as.character(result$statistic) else "\u2014"
+            pval_str <- if (!is.null(result$p_value))   as.character(result$p_value)   else "\u2014"
+            
+            # Conclusion
+            conclusion <- if (!is.null(result$note)) {
+              result$note
+            } else if (!is.null(result$p_value)) {
+              if (result$p_value <= alpha) {
+                paste0("Reject H\u2080 (p = ", result$p_value, " \u2264 0.05)")
+              } else {
+                paste0("Fail to reject H\u2080 (p = ", result$p_value, " > 0.05)")
+              }
+            } else {
+              "\u2014"
+            }
+            
+            data.frame(
+              Assumption  = cfg$assumption,
+              Procedure   = cfg$procedure,
+              Statistic   = stat_str,
+              `P-Value`   = pval_str,
+              Conclusion  = conclusion,
+              check.names = FALSE
+            )
+          })
+          
+          # Combine into one data frame
+          tableData <- do.call(rbind, results)
+          
+          tagList(
+            br(),
+            p(strong("LINE Assumption Tests"),
+              style = "font-size: 16px;"),
+            p(paste("Testing at \u03b1 =", alpha, "| n =", n),
+              style = "color: #666; font-size: 13px;"),
+            br(),
+            reactable(
+              tableData,
+              bordered   = TRUE,
+              striped    = FALSE,
+              highlight  = TRUE,
+              pagination = FALSE,
+              fullWidth  = TRUE,
+              columns = list(
+                Assumption = colDef(
+                  name     = "Assumption",
+                  minWidth = 200,
+                  style    = list(fontWeight = "bold")
+                ),
+                Procedure  = colDef(name = "Procedure",      minWidth = 180),
+                Statistic  = colDef(name = "Test Statistic", minWidth = 120, align = "center"),
+                `P-Value`  = colDef(name = "P-Value",        minWidth = 100, align = "center"),
+                Conclusion = colDef(name = "Conclusion",      minWidth = 250)
+              )
+            ),
+            br()
+          )
+          
+        }) # END renderUI — LINE STUFF ==========
+        
+        
         validate(
           need(slrupload_iv$is_valid(), "Please upload a file."),
           need(nrow(slrUploadData()) != 0, "File is empty."),
@@ -635,10 +936,43 @@ SLRServer <- function(id) {
         residuals <- residuals(model)
         residuals_sq <- residuals^2
         
-        df <- data.frame(datx, daty, datx*daty, datx^2, daty^2, y_hat, residuals, residuals_sq)
-        names(df) <- c("x", "y", "xy", "x<sup>2</sup>", "y<sup>2</sup>", "&ycirc;", "<em>e</em> = (<em>y</em> - <em>&ycirc;</em>)", "e<sup>2</sup>")
+        n       <- length(datx)
+        x_bar   <- mean(datx)
+        mse     <- sum(residuals^2) / (n - 2)
+        ssx     <- sum((datx - x_bar)^2)
+        t_crit  <- qt(0.975, df = n - 2)
         
-        dfTotaled <- bind_rows(df, summarise(df, across(where(is.numeric), sum)))
+        se_mean  <- sqrt(mse * (1/n + (datx - x_bar)^2 / ssx))
+        se_pred  <- sqrt(mse * (1 + 1/n + (datx - x_bar)^2 / ssx))
+        
+        ci_lower <- y_hat - t_crit * se_mean
+        ci_upper <- y_hat + t_crit * se_mean
+        pi_lower <- y_hat - t_crit * se_pred
+        pi_upper <- y_hat + t_crit * se_pred
+        
+        df <- data.frame(datx, daty, datx*daty, datx^2, daty^2, y_hat, residuals, residuals_sq, ci_lower, ci_upper, pi_lower, pi_upper)
+        names(df) <- c("x", "y", "xy", "x<sup>2</sup>", "y<sup>2</sup>", "&ycirc;",
+                       "<em>e</em> = (<em>y</em> - <em>&ycirc;</em>)", "e<sup>2</sup>",
+                       "95% CI<br>for the mean<br>response<br>(Lower)", 
+                       "95% CI<br>for the mean<br>response<br>(Upper)",
+                       "95% prediction<br>interval<br>(Lower)", 
+                       "95% prediction<br>interval<br>(Upper)")
+        
+        dfTotaled <- bind_rows(
+          df,
+          df %>%
+            summarise(
+              across(c(x, y, xy, 
+                       `x<sup>2</sup>`, 
+                       `y<sup>2</sup>`,
+                       `&ycirc;`, 
+                       `<em>e</em> = (<em>y</em> - <em>&ycirc;</em>)`,
+                       `e<sup>2</sup>`), sum),
+              across(c(`95% CI<br>for the mean<br>response<br>(Lower)`,
+                       `95% CI<br>for the mean<br>response<br>(Upper)`,
+                       `95% prediction<br>interval<br>(Lower)`,
+                       `95% prediction<br>interval<br>(Upper)`), ~ NA_real_))
+        )
         
         dfTotaled[nrow(dfTotaled), "<em>e</em> = (<em>y</em> - <em>&ycirc;</em>)"] <- sum(df$`<em>e</em> = (<em>y</em> - <em>&ycirc;</em>)`)
         
@@ -657,13 +991,15 @@ SLRServer <- function(id) {
             })
           }
         }
+        slrExportData(dfFormatted)  
+        
         
         # Perfect fit detection
         output$perfectFitWarning <- renderUI({
           if (isTRUE(all.equal(r_squared, 1))) {
             
             # Hide the tabs
-            hideTab(inputId = "slrNavbarPage", target = "Parameter Estimates and ANOVA")
+            hideTab(inputId = "slrNavbarPage", target = "Inference")
             hideTab(inputId = "slrNavbarPage", target = "Diagnostic Plots")
             
             div(
@@ -678,7 +1014,7 @@ SLRServer <- function(id) {
               tags$b("These tabs are now hidden")
             )
           } else {
-            showTab(inputId = "slrNavbarPage", target = "Parameter Estimates and ANOVA")
+            showTab(inputId = "slrNavbarPage", target = "Inference")
             showTab(inputId = "slrNavbarPage", target = "Diagnostic Plots")
             NULL
           }
@@ -688,10 +1024,10 @@ SLRServer <- function(id) {
           isPerfectFit <- isTRUE(all.equal(r_squared, 1))
           
           if (isPerfectFit) {
-            hideTab(inputId = "slrNavbarPage", target = "Parameter Estimates and ANOVA")
+            hideTab(inputId = "slrNavbarPage", target = "Inference")
             hideTab(inputId = "slrNavbarPage", target = "Diagnostic Plots")
           } else {
-            showTab(inputId = "slrNavbarPage", target = "Parameter Estimates and ANOVA")
+            showTab(inputId = "slrNavbarPage", target = "Inference")
             showTab(inputId = "slrNavbarPage", target = "Diagnostic Plots")
           }
           
@@ -714,28 +1050,35 @@ SLRServer <- function(id) {
             striped    = TRUE,
             highlight  = TRUE,
             pagination = FALSE,
-            fullWidth  = TRUE,
+            fullWidth  = FALSE,
             rownames   = TRUE,
             columns = c(
               # Row name column — just used to show "Totals" label in footer
               list(".rownames" = colDef(
-                name   = "",
+                name   = "Number of Observations",
+                align = "center",
                 footer = tags$b("Totals"),
                 style  = list(color = "#333")
+            
               )),
               # Data columns with HTML names and totals footer
               setNames(
                 lapply(names(numericRows), function(col) {
                   colDef(
-                    html = TRUE,
-                    name = names(df)[match(col, names(numericRows))],
-                    footer = tags$b(totalsRow[[col]]),
+                    html     = TRUE,
+                    align    = "center",
+                    name     = names(df)[match(col, names(numericRows))],
+                    footer   = if (is.na(dfTotaled[nrow(dfTotaled), col])) {
+                      ""
+                    } else {
+                      tags$b(totalsRow[[col]])
+                    },
                     cell = function(value) {
-                      if (!is.numeric(value)) return(value) # checks to display integers or floats
+                      if (!is.numeric(value)) return(value)
                       if (value == floor(value)) {
-                        formatC(value, format = "f", digits = 0)  # integer, no decimals
+                        formatC(value, format = "f", digits = 0)
                       } else {
-                        formatC(value, format = "f", digits = 3)  # decimal, 3 places
+                        formatC(value, format = "f", digits = 3)
                       }
                     }
                   )
@@ -746,35 +1089,27 @@ SLRServer <- function(id) {
           )
         })
         
-        output$slrScatterplot <- renderPlot(
-          { # scatterplot ----
-            RenderScatterplot(
-              df,
-              model,
-              input[["slrScatter-Title"]],
-              input[["slrScatter-Xlab"]],
-              input[["slrScatter-Ylab"]],
-              input[["slrScatter-Colour"]],
-              input[["slrScatter-PointsColour"]],
-              input[["slrScatter-LineWidth"]],
-              input[["slrScatter-PointSize"]],
-              input[["slrScatter-Gridlines"]],
-              input[["slrScatter-confidenceInterval"]],
-              input[["slrScatter-predictionInterval"]],
-              input[["slrScatter-showRegressionLine"]]
-            )
-          },
-          height = function() {
-            GetPlotHeight(input[["slrScatter-Height"]],
-                          input[["slrScatter-HeightPx"]],
-                          ui = FALSE)
-          },
-          width = function() {
-            GetPlotWidth(input[["slrScatter-Width"]],
-                         input[["slrScatter-WidthPx"]],
-                         ui = FALSE)
-          }
-        )
+    
+        
+        
+        
+        output$slrScatterplot <- renderPlotly({
+          RenderScatterplot(
+            df,
+            model,
+            input[["slrScatter-Title"]],
+            input[["slrScatter-Xlab"]],
+            input[["slrScatter-Ylab"]],
+            input[["slrScatter-Colour"]],
+            input[["slrScatter-PointsColour"]],
+            input[["slrScatter-LineWidth"]],
+            input[["slrScatter-PointSize"]],
+            input[["slrScatter-Gridlines"]],
+            input[["slrScatter-confidenceInterval"]],
+            input[["slrScatter-predictionInterval"]],
+            input[["slrScatter-showRegressionLine"]]
+          )
+        })
         
         output$slrResidualsPanelPlot1 <- renderPlot({
           plot(model, which = 1, 
@@ -1015,55 +1350,178 @@ SLRServer <- function(id) {
             
             output$pearsonCorFormula <- renderUI({
               withMathJax(
-                sprintf("\\( \\large{\\quad r = \\dfrac
-                                      {\\left(\\sum xy\\right) - \\dfrac{ \\left(\\sum x\\right) \\times \\left(\\sum y\\right) }{ n } }
-                                      {\\sqrt{ \\left(\\sum x^2\\right) - \\dfrac{ \\left(\\sum x\\right)^2 }{ n } } \\times \\sqrt{ \\left(\\sum y^2\\right) - \\dfrac{ \\left(\\sum y\\right) ^2 }{ n } } }} \\)"),
+                
+                # Line 1: General formula
+                sprintf("\\( \\normalsize{\\quad r = \\dfrac
+              {\\left(\\sum xy\\right) - \\dfrac{ \\left(\\sum x\\right) \\times \\left(\\sum y\\right) }{ n } }
+              {\\sqrt{ \\left(\\sum x^2\\right) - \\dfrac{ \\left(\\sum x\\right)^2 }{ n } } \\times \\sqrt{ \\left(\\sum y^2\\right) - \\dfrac{ \\left(\\sum y\\right) ^2 }{ n } }} } \\)"),
+                
                 br(),
                 br(),
-                br(),
-                sprintf("\\( \\large{\\quad = \\dfrac
-                                      {%s - \\dfrac{ (%s) \\times (%s) }{ %s } }
-                                      {\\sqrt{ %s - \\dfrac{ (%s)^2 }{ %s } } \\times \\sqrt{ %s - \\dfrac{ (%s) ^2 }{ %s } } }} \\)",
+                
+                # Line 2: Values substituted = simplified √ form = final result
+                sprintf("\\( \\normalsize{\\quad = \\dfrac
+              {%s - \\dfrac{ (%s) \\times (%s) }{ %s } }
+              {\\sqrt{ %s - \\dfrac{ (%s)^2 }{ %s } } \\times \\sqrt{ %s - \\dfrac{ (%s)^2 }{ %s } }}
+              \\quad = \\dfrac{ %s }{\\sqrt{ %s } \\times \\sqrt{ %s }}
+              \\quad = %g} \\)",
+                        
                         format(round(dfTotaled["Totals", "xy"], 3), nsmall = 0, scientific = FALSE),
                         format(round(dfTotaled["Totals", "x"], 3), nsmall = 0, scientific = FALSE),
                         format(round(dfTotaled["Totals", "y"], 3), nsmall = 0, scientific = FALSE),
                         format(length(datx), nsmall = 0, scientific = FALSE),
+                        
                         format(round(dfTotaled["Totals", "x<sup>2</sup>"], 3), nsmall = 0, scientific = FALSE),
                         format(round(dfTotaled["Totals", "x"], 2), nsmall = 0, scientific = FALSE),
                         format(length(datx), nsmall = 0, scientific = FALSE),
+                        
                         format(round(dfTotaled["Totals", "y<sup>2</sup>"], 3), nsmall = 0, scientific = FALSE),
                         format(round(dfTotaled["Totals", "y"], 3), nsmall = 0, scientific = FALSE),
-                        format(length(datx), nsmall = 0, scientific = FALSE)
+                        format(length(datx), nsmall = 0, scientific = FALSE),
+                        
+                        # simplified √ form
+                        format(round(dfTotaled["Totals", "xy"] - sumXSumY / length(datx), 3),
+                               nsmall = 0, scientific = FALSE),
+                        
+                        format(round(dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx), 3),
+                               nsmall = 0, scientific = FALSE),
+                        
+                        format(round(dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx), 3),
+                               nsmall = 0, scientific = FALSE),
+                        
+                        # final result
+                        round(pearson$estimate, 4)
                 ),
+                
                 br(),
                 br(),
                 br(),
                 
-                sprintf("\\( \\large{\\quad = \\dfrac
-                                      { %s }
-                                      {\\sqrt{ %s } \\times \\sqrt{ %s } }} \\)",
-                        format(round(dfTotaled["Totals", "xy"] - sumXSumY / length(datx), 3), nsmall = 0, scientific = FALSE),
-                        format(round(dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx), 3), nsmall = 0, scientific = FALSE),
-                        format(round(dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx), 3), nsmall = 0, scientific = FALSE)
-                ),
-                
-                sprintf("\\( \\large{\\quad = \\dfrac
-                                      { %s }
-                                      { %s }} \\)",
-                        format(round(dfTotaled["Totals", "xy"] - sumXSumY / length(datx), 3), nsmall = 0, scientific = FALSE),
-                        format(round(sqrt(dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx)) * sqrt(dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx)), 3), nsmall = 0, scientific = FALSE)
-                ),
-                
-                sprintf("\\( \\large{\\quad = %g} \\)",
-                        round(pearson$estimate, 4)),
-                br(),
-                br(),
-                br(),
+                # Interpretation moved to bottom
                 p(tags$b("Interpretation:")),
-                sprintf("There is a %s %s linear relationship between \\(x\\) and \\(y\\).",
-                        pearsonStrength,
-                        pearsonSign),
+                sprintf(
+                  "There exists a %s %s linear relationship between \\(x\\) and \\(y\\).",
+                  pearsonStrength,
+                  pearsonSign
+                ),
+                
+                br(),
+                br(),
+                
+                # Population Correlation Coefficient
+                hr(),
+                p(strong("Hypothesis Test for Population Correlation Coefficient")),
+                p(HTML("H<sub>0</sub>: \\(\\rho = 0\\)")),
+                p(HTML("H<sub>a</sub>: \\(\\rho \\neq 0\\)")),
+                p("\\(\\alpha = 0.05\\)"),
+                p(sprintf("\\( df = n - 2 = %d \\)", pearson$parameter)),
+                
+                p(strong("Test Statistic:")),
+                p(sprintf(
+                  "\\( t = \\dfrac{r\\sqrt{n-2}}{\\sqrt{1-r^2}} = \\dfrac{%0.4f\\sqrt{%d-2}}{\\sqrt{1-%0.4f^2}} = %0.4f \\)",
+                  pearson$estimate, n, pearson$estimate, pearson$statistic
+                )),
+                
+                # P-value method
+                p(strong("Using P-Value Method:")),
+                p(sprintf(
+                  "\\( P = 2 \\times P(t > |\\, %0.4f \\,|) = %s \\)",
+                  pearson$statistic,
+                  format.pval(pearson$p.value, digits = 4, eps = 0.0001)
+                )),
+                if(pearson$p.value <= 0.05) {
+                  p(sprintf(
+                    "Since \\( P \\leq 0.05 \\), reject \\( H_0 \\)."
+                  ))
+                } else {
+                  p(sprintf(
+                    "Since \\( P > 0.05 \\), fail to reject \\( H_0 \\)."
+                  ))
+                },
+                
+                br(),
+                
+                # Critical value method
+                p(strong("Using Critical Value Method:")),
+                p(sprintf(
+                  "\\( \\text{Critical Value(s)} = \\pm t_{\\alpha/2,\\, n-2} = \\pm t_{0.025,\\, %d} = \\pm %0.4f \\)",
+                  pearson$parameter,
+                  qt(0.975, df = pearson$parameter)
+                )),
+                if(abs(pearson$statistic) > qt(0.975, df = pearson$parameter)) {
+                  p(sprintf(
+                    "Since the test statistic \\( (t = %0.4f) \\) falls within the rejection region, reject \\( H_0 \\).",
+                    pearson$statistic
+                  ))
+                } else {
+                  p(sprintf(
+                    "Since the test statistic \\( (t = %0.4f) \\) does not fall within the rejection region, fail to reject \\( H_0 \\).",
+                    pearson$statistic
+                  ))
+                },
+                
+                # Curve
+                plotOutput(session$ns("pearsonTCurve")),
+                
+                br(),
+                
+                # Conclusion
+                p(strong("Conclusion:")),
+                if(pearson$p.value <= 0.05) {
+                  p(sprintf(
+                    "At \\( \\alpha = 0.05 \\), since the test statistic falls in the rejection region we reject \\( H_0 \\) and conclude that there is enough statistical evidence of a linear relationship between \\( x \\) and \\( y \\) in the population."
+                  ))
+                } else {
+                  p(sprintf(
+                    "At \\( \\alpha = 0.05 \\), since the test statistic does not fall in the rejection region we fail to reject \\( H_0 \\) and conclude that there is not enough statistical evidence of a linear relationship between \\( x \\) and \\( y \\) in the population."
+                  ))
+                },
+                
+                # Fischer Transform 
+                
+                hr(),
+                p(strong("Confidence Interval for \\(\\rho\\) (Fisher Z-Transformation)")),
+                
+                p("Since the sampling distribution of Pearson's r is not normal, we use the Fisher Z-Transformation to construct a confidence interval."),
+                
+                p(strong("Step 1: Transform r")),
+                p(sprintf(
+                  "\\( z_r = \\dfrac{1}{2} \\ln\\left(\\dfrac{1+r}{1-r}\\right) = \\text{artanh}(r) = \\dfrac{1}{2} \\ln\\left(\\dfrac{1+%0.4f}{1-%0.4f}\\right) = %0.4f \\)",
+                  pearson$estimate, pearson$estimate, atanh(pearson$estimate)
+                )),
+                
+                p(strong("Step 2: Standard Error")),
+                p(sprintf(
+                  "\\( SE_{z_r} = \\dfrac{1}{\\sqrt{n-3}} = \\dfrac{1}{\\sqrt{%d-3}} = %0.4f \\)",
+                  n, 1/sqrt(n-3)
+                )),
+                
+                p(strong("Step 3: Confidence Interval on Transformed Scale")),
+                p(sprintf(
+                  "\\( \\left(z_r - Z_{\\alpha/2} \\cdot SE_{z_r}, \\; z_r + Z_{\\alpha/2} \\cdot SE_{z_r}\\right) = \\left(%0.4f - 1.96 \\times %0.4f, \\; %0.4f + 1.96 \\times %0.4f\\right) = \\left(%0.4f, \\; %0.4f\\right) \\)",
+                  atanh(pearson$estimate), 1/sqrt(n-3),
+                  atanh(pearson$estimate), 1/sqrt(n-3),
+                  atanh(pearson$estimate) - 1.96 * (1/sqrt(n-3)),
+                  atanh(pearson$estimate) + 1.96 * (1/sqrt(n-3))
+                )),
+                
+                p(strong("Step 4: Convert Back to Original Scale")),
+                {
+                  z_lower <- atanh(pearson$estimate) - 1.96 * (1/sqrt(n-3))
+                  z_upper <- atanh(pearson$estimate) + 1.96 * (1/sqrt(n-3))
+                  ci_lower <- (exp(2*z_lower) - 1) / (exp(2*z_lower) + 1)
+                  ci_upper <- (exp(2*z_upper) - 1) / (exp(2*z_upper) + 1)
+                  
+                  p(sprintf(
+                    "\\( \\left(\\dfrac{e^{2Z_{lower}}-1}{e^{2Z_{lower}}+1}, \\; \\dfrac{e^{2Z_{upper}}-1}{e^{2Z_{upper}}+1}\\right) = \\left(%0.4f, \\; %0.4f\\right) \\)",
+                    ci_lower, ci_upper
+                  ))
+                },
+                
+                br(),
                 br()
+                
+                
               )
             })
             
@@ -1101,27 +1559,107 @@ SLRServer <- function(id) {
         })
         
         # Kendall's Tau formula
+        # output$kendallFormula <- renderUI({
+        #   n <- length(datx)
+        #   withMathJax(
+        #     sprintf("\\( \\displaystyle \\tau = \\dfrac{n_c - n_d}{\\binom{n}{2}} = \\dfrac{n_c - n_d}{\\dfrac{n(n-1)}{2}} = %0.4f \\)",
+        #             kendall$estimate)#,
+        #     # br(),
+        #     # sprintf("\\( \\tau \\; = \\; %0.4f \\)", kendall$estimate)
+        #   )
+        # })
+        
         output$kendallFormula <- renderUI({
-          n <- length(datx)
+          n  <- length(datx)
+          n0 <- n * (n - 1) / 2
+          n1 <- sum(choose(table(datx), 2))
+          n2 <- sum(choose(table(daty), 2))
+          
+          # Compute nc and nd manually
+          nc <- 0
+          nd <- 0
+          for (i in 1:(n - 1)) {
+            for (j in (i + 1):n) {
+              dx <- datx[i] - datx[j]
+              dy <- daty[i] - daty[j]
+              if (sign(dx) == sign(dy) && dx != 0 && dy != 0) {
+                nc <- nc + 1
+              } else if (sign(dx) != sign(dy) && dx != 0 && dy != 0) {
+                nd <- nd + 1
+              }
+            }
+          }
+          
           withMathJax(
-            sprintf("\\( \\displaystyle \\tau = \\dfrac{n_c - n_d}{\\binom{n}{2}} = \\dfrac{n_c - n_d}{\\dfrac{n(n-1)}{2}} = %0.4f \\)",
-                    kendall$estimate)#,
-            # br(),
-            # sprintf("\\( \\tau \\; = \\; %0.4f \\)", kendall$estimate)
+            HTML(sprintf(
+              "\\( \\tau = \\dfrac{n_c - n_d}{\\sqrt{(n_0 - n_1)(n_0 - n_2)}} = \\dfrac{%d - %d}{\\sqrt{(%g - %g)(%g - %g)}} = %.4f \\)",
+              nc, nd, n0, n1, n0, n2, kendall$estimate
+            ))
           )
         })
         
         # Spearman's rs formula
         output$spearmanEstimate <- renderUI({
-          withMathJax(
-            HTML(
-              sprintf(
-                "\\( \\large{\\quad r_{s} = 1 - \\dfrac{ 6 \\left(\\sum\\limits_{i=1}^n d^2_{i}\\right)}{ n (n^2 - 1)} = %0.4f} \\)",
-                spearman$estimate
-              )
-            )
+          
+          # Calculate ranks and differences
+          rank_x <- rank(datx)
+          rank_y <- rank(daty)
+          d      <- rank_x - rank_y
+          d_sq   <- d^2
+          sum_d_sq <- sum(d_sq)
+          n      <- length(datx)
+          
+          # Build data frame
+          spearman_df <- data.frame(
+            x      = datx,
+            y      = daty,
+            rank_x = rank_x,
+            rank_y = rank_y,
+            d      = d,
+            d_sq   = d_sq
           )
           
+          withMathJax(
+            
+            # Formula FIRST
+            div(
+              style = "text-align: left; font-size: 18px;",
+              HTML(sprintf(
+                "\\( r_s = 1 - \\dfrac{6 \\sum_{i=1}^n d_i^2}{n(n^2 - 1)} = 1 - \\dfrac{6 \\times %g}{%d(%d^2 - 1)} = %.4f \\)",
+                sum_d_sq, n, n, spearman$estimate
+              ))
+            ),
+            
+            br(),
+            
+            # Table SECOND
+            reactable(
+              spearman_df,
+              sortable   = FALSE,
+              bordered   = TRUE,
+              striped    = TRUE,
+              highlight  = TRUE,
+              pagination = FALSE,
+              fullWidth  = FALSE,
+              rownames   = FALSE,
+              columns = list(
+                x      = colDef(name = "x",      align = "center", footer = ""),
+                y      = colDef(name = "y",      align = "center", footer = ""),
+                rank_x = colDef(name = "Rank x", align = "center", footer = ""),
+                rank_y = colDef(name = "Rank y", align = "center", footer = ""),
+                d      = colDef(name = "d",      align = "center", footer = tags$b("Total")),
+                d_sq   = colDef(
+                  name   = HTML("d<sup>2</sup>"),
+                  html   = TRUE,
+                  align  = "center",
+                  footer = tags$b(sum_d_sq),
+                  cell   = function(value) formatC(value, format = "f", digits = 0)
+                )
+              )
+            ),
+            
+            br()
+          )
         })
         
         output$slrViewUpload <- renderDT({
@@ -1178,14 +1716,15 @@ SLRServer <- function(id) {
             p(sprintf("\\( \\displaystyle F = \\frac{\\mathrm{MSR}}{\\mathrm{MSE}} = \\frac{%.3f}{%.3f} = %.3f \\)", msr, mse, f_value)),
             p(strong("Conclusion:")),
             if (p_value <= 0.05) {
-              p(sprintf("Since the p-value is less than \\( \\alpha \\) (%.3f < 0.05), we reject the null hypothesis and conclude there is enough statistical evidence to support the alternative hypothesis.", p_value))
+              p(sprintf("Since the p-value is less than \\( \\alpha \\) (%.3f < 0.05), we reject the null hypothesis and conclude there is enough statistical evidence to support the alternative hypothesis. We can conclude the model is statistically significant (There exists a linear relationship between x and y).", p_value))
             } else {
-              p(sprintf("Since the p-value is greater than \\( \\alpha \\) (%.3f >  0.05), we fail to reject the null hypothesis and conclude there isn't enough statistical evidence to support the alternative hypothesis.", p_value))
+              p(sprintf("Since the p-value is greater than \\( \\alpha \\) (%.3f >  0.05), we fail to reject the null hypothesis and conclude there isn't enough statistical evidence to support the alternative hypothesis. We can conclude the model is not statistically significant (There exists no linear relationship between x and y).", p_value))
             }
           )
         })
         
         output$anovaR2 <- renderUI({
+          
           anova_results <- anova(model)
           
           ssr <- anova_results$`Sum Sq`[1]
@@ -1193,17 +1732,218 @@ SLRServer <- function(id) {
           sst <- ssr + sse
           r2  <- ssr / sst
           
+          # Percentage explained
+          explained_pct <- r2 * 100
+          
           withMathJax(
+            
             p(strong("Coefficient of Determination (\\( R^2 \\))")),
+            
             tags$div(
               style = "text-align: left;",
               HTML(sprintf(
                 "\\( R^2 = \\dfrac{\\mathrm{SSR}}{\\mathrm{SSR} + \\mathrm{SSE}} = \\dfrac{\\mathrm{SSR}}{\\mathrm{SST}} = \\dfrac{%.4f}{%.4f + %.4f} = \\dfrac{%.4f}{%.4f} = %.4f \\)",
                 ssr, ssr, sse, ssr, sst, r2
               ))
-            )
+            ),
+            
+            br(),
+            
+            tags$p(
+              strong("Interpretation:")
+            ),
+            
+            tags$p(sprintf(
+              "%.2f%% of the variation in %s can be explained by its linear relationship with %s.",
+              explained_pct,
+              if (input$dataRegCor == "Upload Data") input$slrResponse else "y",
+              if (input$dataRegCor == "Upload Data") input$slrExplanatory else "x"
+            ))
+            
           )
         })
+        
+        output$anovaFCurve <- renderPlot({
+          anova_results <- anova(model)
+          
+          df1    <- 1
+          df2    <- n - 2
+          f_stat <- anova_results$`F value`[1]
+          p_val  <- anova_results$`Pr(>F)`[1]
+          f_crit <- qf(0.95, df1, df2)
+          x_max  <- x_max  <- f_crit * 3
+          
+          x <- seq(0, x_max, length.out = 1000)
+          y <- df(x, df1, df2)
+          
+          plot_df <- data.frame(x = x, y = y)
+          
+          ggplot(plot_df, aes(x = x, y = y)) +
+            
+            # Main curve
+            geom_line(lwd = 1) +
+            
+            # Rejection region shading (red)
+            geom_area(
+              data = subset(plot_df, x >= f_crit),
+              aes(x = x, y = y),
+              fill  = "red",
+              alpha = 0.3
+            ) +
+            
+            # P-value region shading (blue) - only if f_stat <= x_max
+            {if(f_stat <= x_max)
+              geom_area(
+                data = subset(plot_df, x >= f_stat),
+                aes(x = x, y = y),
+                fill  = "blue",
+                alpha = 0.3
+              )
+            } +
+            
+            # Critical value line
+            geom_vline(
+              xintercept = f_crit,
+              colour     = "red",
+              linewidth  = 0.8,
+              linetype   = "dashed"
+            ) +
+            
+            # F statistic line - only if within plot range
+            {if(f_stat <= x_max)
+              geom_vline(
+                xintercept = f_stat,
+                colour     = "blue",
+                linewidth  = 0.8,
+                linetype   = "dashed"
+              )
+            } +
+            
+            # Labels
+            labs(
+              title = "F Distribution",
+              x     = "F",
+              y     = "Density"
+            ) +
+            
+            # Annotations
+            # Critical value annotation - below the line instead of beside it
+            annotate("text",
+                     x     = f_crit,
+                     y     = max(y) * 0.2,
+                     label = sprintf("F critical\n= %.4f", f_crit),
+                     hjust = -0.1,
+                     color = "red",
+                     size  = 3.5) +
+            
+            # P-value annotation - fixed to top right corner
+            annotate("text",
+                     x     = x_max * 0.6,
+                     y     = max(y) * 0.9,
+                     label = sprintf("p-value = %.4f", p_val),
+                     color = "black",
+                     size  = 4) +
+            
+            # F statistic annotation - only shown if within plot range
+            {if(f_stat <= x_max)
+              annotate("text",
+                       x     = f_stat,
+                       y     = max(y) * 0.4,
+                       label = sprintf("F statistic\n= %.4f", f_stat),
+                       hjust = -0.1,
+                       color = "blue",
+                       size  = 3.5)
+            } +
+            
+            # Theme
+            theme_classic() +
+            theme(
+              plot.title   = element_text(hjust = 0.5, face = "bold"),
+              axis.title   = element_text(size = 12, face = "bold"),
+              axis.text    = element_text(size = 10, face ="bold")
+            ) +
+            coord_cartesian(clip = "off")
+        })
+        
+        output$pearsonTCurve <- renderPlot({
+          
+          t_stat <- pearson$statistic
+          df_val <- pearson$parameter
+          t_crit <- qt(0.975, df = df_val)
+          x_max  <- max(abs(t_stat) * 1.5, t_crit * 2)
+          
+          x <- seq(-x_max, x_max, length.out = 1000)
+          y <- dt(x, df = df_val)
+          
+          plot_df <- data.frame(x = x, y = y)
+          
+          ggplot(plot_df, aes(x = x, y = y)) +
+            
+            # Main curve
+            geom_line(lwd = 1) +
+            
+            # Left rejection region
+            geom_area(
+              data = subset(plot_df, x <= -t_crit),
+              aes(x = x, y = y),
+              fill  = "steelblue",
+              alpha = 0.4
+            ) +
+            
+            # Right rejection region
+            geom_area(
+              data = subset(plot_df, x >= t_crit),
+              aes(x = x, y = y),
+              fill  = "steelblue",
+              alpha = 0.4
+            ) +
+            
+            # Critical value lines (dark blue)
+            geom_vline(xintercept =  t_crit, color = "darkblue", linewidth = 0.8) +
+            geom_vline(xintercept = -t_crit, color = "darkblue", linewidth = 0.8) +
+            
+            # T statistic line (red)
+            geom_vline(xintercept = t_stat, color = "red", linewidth = 0.8) +
+            
+            # Centre dotted line
+            geom_vline(xintercept = 0, color = "black", linewidth = 0.5, linetype = "dotted") +
+            
+            # RR labels
+            annotate("text", x = -t_crit * 1.5, y = max(y) * 0.15,
+                     label = "RR", fontface = "bold", size = 4) +
+            annotate("text", x =  t_crit * 1.5, y = max(y) * 0.15,
+                     label = "RR", fontface = "bold", size = 4) +
+            
+            # AR label
+            annotate("text", x = 0, y = max(y) * 0.5,
+                     label = "AR", fontface = "bold", size = 4) +
+            
+            # Critical value labels
+            annotate("text", x = -t_crit, y = -max(y) * 0.05,
+                     label = sprintf("%0.4f", -t_crit), size = 3.5, color = "darkblue") +
+            annotate("text", x =  t_crit, y = -max(y) * 0.05,
+                     label = sprintf("%0.4f",  t_crit), size = 3.5, color = "darkblue") +
+            
+            # T statistic label
+            annotate("text", x = t_stat, y = max(y) * 0.6,
+                     label = sprintf("%0.4f", t_stat), size = 3.5, color = "red") +
+            
+            # Zero label
+            annotate("text", x = 0, y = -max(y) * 0.05,
+                     label = "0", size = 3.5) +
+            
+            labs(x = "t", y = NULL) +
+            
+            theme_classic() +
+            theme(
+              axis.text.y  = element_blank(),
+              axis.ticks.y = element_blank(),
+              axis.line.y  = element_blank(),
+              plot.margin  = margin(t = 20, r = 20, b = 20, l = 20)
+            ) +
+            coord_cartesian(clip = "off", ylim = c(-max(y) * 0.08, max(y) * 1.1))
+        })
+        
         
       } #if regcor_iv is valid
       
@@ -1266,7 +2006,7 @@ SLRServer <- function(id) {
       hide(id = "regCorrMP")
       shinyjs::reset("inputPanel")
       fileInputs$slrStatus <- 'reset'
-      showTab(inputId = "slrNavbarPage", target = "Parameter Estimates and ANOVA")
+      showTab(inputId = "slrNavbarPage", target = "Inference")
       showTab(inputId = "slrNavbarPage", target = "Diagnostic Plots") 
       if (!is.null(input$slrNavbarPage)) { # Check if navbarPage exists before trying to update
         updateNavbarPage(session, "slrNavbarPage", selected = "Model")
