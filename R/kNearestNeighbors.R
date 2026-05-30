@@ -306,7 +306,8 @@ KNNServer <- function(id, data, shared_explanatory, shared_response) {
     predictorsError <- reactiveVal(FALSE)
     
     fileImportError <- reactiveVal(FALSE)
-    
+    knn_message     <- reactiveVal(NULL)
+
     output$fileImportUserMessage <- renderUI({
       if (isTRUE(fileImportError())) {
         tags$p(
@@ -314,7 +315,12 @@ KNNServer <- function(id, data, shared_explanatory, shared_response) {
           "Required: Cannot calculate without a data file."
         )
       } else {
-        NULL
+        msg <- knn_message()
+        if (is.null(msg)) return(NULL)
+        div(
+          style = "margin-top:10px;",
+          div(class = "alert alert-danger", msg)
+        )
       }
     })
     
@@ -513,7 +519,8 @@ KNNServer <- function(id, data, shared_explanatory, shared_response) {
       responseError(FALSE)
       predictorsError(FALSE)
       fileImportError(FALSE)
-      
+      knn_message(NULL)
+
       shinyjs::removeClass(id = "responseWrapper", class = "has-error")
       shinyjs::removeClass(id = "predictorsWrapper", class = "has-error")
       
@@ -556,7 +563,19 @@ KNNServer <- function(id, data, shared_explanatory, shared_response) {
 
       #split dataset for training & testing
       df <- data()
-      
+
+      # Zero variance check
+      sds <- sapply(df[, input$predictors, drop = FALSE], sd, na.rm = TRUE)
+      zero_var_cols <- names(sds)[is.na(sds) | sds == 0]
+      if (length(zero_var_cols) > 0) {
+        knn_message(paste0(
+          "These selected variable(s) have zero variance and cannot be used in KNN: ",
+          paste(zero_var_cols, collapse = ", "), "."
+        ))
+        return()
+      }
+      knn_message(NULL)
+
       set.seed(123)
       
       n <- nrow(df)

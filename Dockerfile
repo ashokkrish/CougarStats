@@ -78,6 +78,24 @@ RUN R -e \
 		    'tools',            \
                     'waiter',           \
                     'writexl',          \
+                    'xtable',           \
+                    'MASS',             \
+                    'datamods',         \
+                    'ggfortify',        \
+                    'broom',            \
+                    'GGally',           \
+                    'gridExtra',        \
+                    'htmltools',        \
+                    'katex',            \
+                    'knitr',            \
+                    'moments',          \
+                    'psych',            \
+                    'forecast',         \
+                    'randomForest',     \
+                    'iml',              \
+                    'tippy',            \
+                    'treeshap',         \
+                    'shapviz'),         \
                     'xtable'),          \
                   dependencies = TRUE); \
   remotes::install_github('deepanshu88/shinyDarkmode'); \
