@@ -19,59 +19,63 @@ RUN apt-get update && \
 
 ## Install R packages
 RUN R -e \
-"install.packages(c('conflicted',       \
-                    'aplpack',          \
+"install.packages(c('aplpack',          \
+                    'broom',            \
+                    'broom.helpers',    \
                     'bslib',            \
                     'car',              \
                     'caret',            \
-                    'colourpicker',     \
                     'class',            \
-                    'rpart',            \
-                    'rpart.plot',       \
+                    'colourpicker',     \
+                    'conflicted',       \
+                    'datamods',         \
                     'DescTools',        \
                     'dplyr',            \
                     'DT',               \
-                    'generics',         \
-                    'ggplot2',          \
-                    'plotly',           \
-                    'ggpubr',           \
-                    'ggsci',            \
                     'e1071',            \
                     'factoextra',       \
+                    'forecast',         \
+                    'generics',         \
+                    'GGally',           \
+                    'ggfortify',        \
+                    'ggplot2',          \
+                    'ggpubr',           \
+                    'ggsci',            \
+                    'gridExtra',        \
+                    'htmltools',        \
+                    'katex',            \
+                    'knitr',            \
+                    'latex2exp',        \
+                    'lmtest',           \
+                    'magrittr',         \
                     'markdown',         \
+                    'MASS',             \
+                    'moments',          \
                     'nortest',          \
+                    'plotly',           \
+                    'psych',            \
+                    'reactable',        \
                     'readr',            \
                     'readxl',           \
-                    'rstatix',          \
-                    'shiny',            \
-                    'shinythemes',      \
-                    'shinyjs',          \
-                    'shinyMatrix',      \
-                    'shinyvalidate',    \
-                    'shinyWidgets',     \
-                    'tinytex',          \
-                    'writexl',          \
-                    'xtable',           \
-                    'MASS',             \
-                    'latex2exp',        \
-                    'thematic',         \
-                    'datamods',         \
-                    'magrittr',         \
-                    'ggResidpanel',     \
-                    'broom.helpers',    \
                     'remotes',          \
                     'ResourceSelection',\
+                    'rpart',            \
+                    'rpart.plot',       \
+                    'rstatix',          \
+                    'shiny',            \
                     'shinyalert',       \
-                    'shinyDarkmode',    \
                     'shinyjs',          \
                     'shinyMatrix',      \
                     'shinythemes',      \
                     'shinyvalidate',    \
                     'shinyWidgets',     \
+                    'skedastic',        \
+                    'sortable',         \
                     'thematic',         \
                     'tibble',           \
                     'tidyr',            \
                     'tinytex',          \
+		    'tools',            \
                     'waiter',           \
                     'writexl',          \
                     'xtable',           \
@@ -92,8 +96,10 @@ RUN R -e \
                     'tippy',            \
                     'treeshap',         \
                     'shapviz'),         \
+                    'xtable'),          \
                   dependencies = TRUE); \
   remotes::install_github('deepanshu88/shinyDarkmode'); \
+  remotes::install_github('goodekat/ggResidpanel'); \
   remotes::install_github('rsquaredacademy/olsrr');"
 
 # copy our application into the server, where 'R' is the local path to the app

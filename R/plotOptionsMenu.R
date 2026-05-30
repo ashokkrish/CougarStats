@@ -270,6 +270,12 @@ ScatterplotOptions <- function(ns) {
     ),
     
     checkboxInput(
+      inputId = ns("showRegressionLine"),
+      label   = "Show Regression Line",
+      value   = TRUE
+    ),
+    
+    checkboxInput(
       inputId = ns("confidenceInterval"),
       label = "Confidence Interval for the Mean Response",
       value = FALSE
