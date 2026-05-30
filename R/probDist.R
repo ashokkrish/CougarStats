@@ -2448,30 +2448,26 @@ probDistServer <- function(id) {
     })
     
     observe({
-      if (pd_iv$is_valid() &&
-          (
-            (input$calcBinom != "between" &&
-             input$numSuccessesBinom <= input$numTrialsBinom)
-            || (input$calcBinom == "between" &&
-                input$numSuccessesBinomx1 <= input$numSuccessesBinomx2 &&
-                input$numSuccessesBinomx1 <= input$numTrialsBinom &&
-                input$numSuccessesBinomx2 <= input$numTrialsBinom)
-          )
-      ) {
-        
-        runjs(sprintf(
-          "document.getElementById('%s').style.display = 'block';",
-          ns("rcodeBinomBoxWrapper")
-        ))
-        
-      } else {
-        
-        runjs(sprintf(
-          "document.getElementById('%s').style.display = 'none';",
-          ns("rcodeBinomBoxWrapper")
-        ))
-        
+      showBox <- FALSE
+      if (pd_iv$is_valid()) {
+        if (input$calcBinom != "between") {
+          req(input$numSuccessesBinom, input$numTrialsBinom)
+          showBox <- input$numSuccessesBinom <= input$numTrialsBinom
+        } else {
+          req(input$numSuccessesBinomx1,
+              input$numSuccessesBinomx2,
+              input$numTrialsBinom)
+          showBox <-
+            input$numSuccessesBinomx1 <= input$numSuccessesBinomx2 &&
+            input$numSuccessesBinomx1 <= input$numTrialsBinom &&
+            input$numSuccessesBinomx2 <= input$numTrialsBinom
+        }
       }
+      runjs(sprintf(
+        "document.getElementById('%s').style.display = '%s';",
+        ns("rcodeBinomBoxWrapper"),
+        if (isTRUE(showBox)) "block" else "none"
+      ))
     })
 
     observeEvent(input$goPoisson, {
@@ -2677,26 +2673,22 @@ probDistServer <- function(id) {
                   filter = "none"
         ) %>% formatRound(2, digits = 4)
       })
-      
-      observe({
-        req(input$xPoisson, input$x1Poisson, input$x2Poisson)
-        
-        if (pd_iv$is_valid() &&
-            input$xPoisson >= 0 &&
-            input$x1Poisson <= input$x2Poisson
-        ) {
-          runjs(sprintf(
-            "document.getElementById('%s').style.display = 'block';",
-            ns("rcodePoissonBoxWrapper")
-          ))
-        } else {
-          runjs(sprintf(
-            "document.getElementById('%s').style.display = 'none';",
-            ns("rcodePoissonBoxWrapper")
-          ))
-        }
-      })
     }) 
+    
+    observe({
+      showBox <- FALSE
+      if (input$calcPoisson != "between") {
+        showBox <- pd_iv$is_valid()
+      } else {
+        showBox <- pd_iv$is_valid() &&
+          input$x1Poisson <= input$x2Poisson
+      }
+      runjs(sprintf(
+        "document.getElementById('%s').style.display = '%s';",
+        ns("rcodePoissonBoxWrapper"),
+        if (showBox) "block" else "none"
+      ))
+    })
     
     observeEvent(input$goHypGeo, {
       output$renderProbabilityHypGeo <- renderUI({
@@ -2892,7 +2884,7 @@ probDistServer <- function(id) {
     }) 
     
     output$HypGeoDistrBarPlot <- renderPlot({
-      
+      req(pd_iv$is_valid())
       req(input$sampSizeHypGeo < 50)
       
       dfHypGeo <- data.frame(value = seq(max(0, input$sampSizeHypGeo + input$popSuccessesHypGeo - input$popSizeHypGeo), min(input$popSuccessesHypGeo, input$sampSizeHypGeo)), 
