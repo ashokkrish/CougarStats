@@ -93,8 +93,6 @@ library(olsrr)
 
 margin <- ggplot2::margin
 
-source("R/authors.R")
-
 source("R/ChiSquareTest.R")
 source("R/descStats.R")
 
@@ -158,23 +156,25 @@ render <- "
   option: function(data, escape){return '<div class=\"option\">'+data.label+'</div>';},
   item: function(data, escape){return '<div class=\"item\">'+data.label+'</div>';}
 }"
-  
-  ## NOTE: advanced understanding of R is required to interpret these results.
-  ## It's not for the faint of heart.
-  ## warning("What follows is the base R conflicts() report: all MASK-ed or MASK-ing symbols are given.",
-  ##         immediate. = TRUE)
-  ## print(conflicts(detail = TRUE))
-  
-  ## NOTE: see #41.
-  ## warning("Following this is the conflicted::conflict_scout() report.",
-  ##         immediate. = TRUE)
-  ## print(conflicted::conflict_scout())
-  
-  ## TODO: reenable this line before deployment.
-  ## conflicted::conflicts_prefer(shinyjs::show, dplyr::filter, dplyr::select)
-  
-  ## See the theming issue brought up in #33; use thematic to attempt to make base
-  ## R graphics compliant with ggplot theming, and to anticipate the impact of
-  ## dark mode.
-  ggplot2::theme_set(ggplot2::theme_minimal())
-  thematic_shiny()
+
+shiny::addResourcePath("www", "www")
+
+## NOTE: advanced understanding of R is required to interpret these results.
+## It's not for the faint of heart.
+## warning("What follows is the base R conflicts() report: all MASK-ed or MASK-ing symbols are given.",
+##         immediate. = TRUE)
+## print(conflicts(detail = TRUE))
+
+## NOTE: see #41.
+## warning("Following this is the conflicted::conflict_scout() report.",
+##         immediate. = TRUE)
+## print(conflicted::conflict_scout())
+
+## TODO: reenable this line before deployment.
+## conflicted::conflicts_prefer(shinyjs::show, dplyr::filter, dplyr::select)
+
+## See the theming issue brought up in #33; use thematic to attempt to make base
+## R graphics compliant with ggplot theming, and to anticipate the impact of
+## dark mode.
+ggplot2::theme_set(ggplot2::theme_minimal())
+thematic_shiny()

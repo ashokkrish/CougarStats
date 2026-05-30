@@ -161,15 +161,16 @@ table.dataTable {
 #mainBanner .nav-link:hover {
     font-size: 1.5rem;
 }
-.nav-item {
-    width: 200px;
+
+#mainBanner .nav-item {
     text-align: center;
 }
 
-.navbarLogo {
-    width: 325px;
+.navbar-brand img {
+    max-height: 40px;
 }
-.pageTitle {
+
+.navbar-brand span {
     color: var(--off-white);
     font-weight: bold;
     font-style: italic;
@@ -299,5 +300,30 @@ div[data-value="Authors"] {
 
 .has-error .bootstrap-select .dropdown-toggle {
     background-color: #fff8f8 !important;
+}
+
+/* Authors modal:
+   - Use the same 1.75rem (28px) top/bottom margin that Bootstrap 4 applies
+     to .modal-dialog by default.
+   - Allow the dialog to grow until it has exactly 28px clearance from the
+     top and bottom of the viewport.
+   - Internal scrolling only in .modal-body for the tall Tailwind author content.
+*/
+#shiny-modal .modal-dialog {
+    max-height: calc(100vh - 3.5rem); /* 2 * 1.75rem to respect BS4 margins */
+    margin-top: 1.75rem;
+    margin-bottom: 1.75rem;
+}
+#shiny-modal .modal-content {
+    max-height: 100%;
+    background-color: #18181b; /* zinc-950 */
+    color: #f4f4f5;
+    border-color: #3f3f46;
+}
+#shiny-modal .modal-body {
+    max-height: none;
+    overflow-y: auto;
+    padding: 1rem;
+    flex: 1 1 auto; /* reinforce BS4 flex column behavior for tall content */
 }
 
