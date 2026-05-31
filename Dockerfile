@@ -43,6 +43,7 @@ RUN R -e \
                     'ggsci',            \
                     'gridExtra',        \
                     'htmltools',        \
+                    'iml',              \
                     'katex',            \
                     'knitr',            \
                     'latex2exp',        \
@@ -54,6 +55,7 @@ RUN R -e \
                     'nortest',          \
                     'plotly',           \
                     'psych',            \
+                    'randomForest',     \
                     'reactable',        \
                     'readr',            \
                     'readxl',           \
@@ -62,6 +64,7 @@ RUN R -e \
                     'rpart',            \
                     'rpart.plot',       \
                     'rstatix',          \
+                    'shapviz',          \
                     'shiny',            \
                     'shinyalert',       \
                     'shinyjs',          \
@@ -75,27 +78,11 @@ RUN R -e \
                     'tibble',           \
                     'tidyr',            \
                     'tinytex',          \
+                    'tippy',            \
 		    'tools',            \
+                    'treeshap',         \
                     'waiter',           \
                     'writexl',          \
-                    'xtable',           \
-                    'MASS',             \
-                    'datamods',         \
-                    'ggfortify',        \
-                    'broom',            \
-                    'GGally',           \
-                    'gridExtra',        \
-                    'htmltools',        \
-                    'katex',            \
-                    'knitr',            \
-                    'moments',          \
-                    'psych',            \
-                    'forecast',         \
-                    'randomForest',     \
-                    'iml',              \
-                    'tippy',            \
-                    'treeshap',         \
-                    'shapviz'),         \
                     'xtable'),          \
                   dependencies = TRUE); \
   remotes::install_github('deepanshu88/shinyDarkmode'); \
