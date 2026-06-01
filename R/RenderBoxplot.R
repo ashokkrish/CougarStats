@@ -32,15 +32,15 @@ RenderBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, p
          x = plotXlab,
          y = plotYlab) +
     theme_void() +
-    theme(plot.title = element_text(size = 24, face = "bold", hjust = 0.5, margin = margin(0,0,5,0)),
-          axis.title.x = element_text(size = 16, face = "bold", vjust = -1.5, margin = margin(5,0,0,0)),
-          axis.title.y = element_text(size = 16, face = "bold", margin = margin(0,5,0,0)),
+    theme(plot.title  = element_text(size = 24, face = "bold", hjust = 0.5, margin = margin(0,0,10,0)),
+          axis.title.x = element_text(size = 16, face = "bold", vjust = -1.5, margin = margin(8,0,0,0)),
+          axis.title.y = element_text(size = 16, face = "bold", vjust = 1.5,  margin = margin(0,8,0,0)),
           axis.text.x.bottom = element_blank(),
-          axis.text.y.left = element_text(size = 16),
+          axis.text.y.left   = element_text(size = 14, face = "bold", margin = margin(0,8,0,0)),
           plot.margin = unit(c(1,1,1,1), "cm"),
           panel.border = element_rect(fill = NA)) +
     scale_y_continuous(n.breaks = 10)
-  
+
   # whisker "caps"
   bp <- bp +
     geom_vline(xintercept = 0.5, linewidth = 0.5, color = "grey") +
@@ -51,10 +51,10 @@ RenderBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, p
   if("Major" %in% gridlines) bp <- bp + theme(panel.grid.major = element_line(colour = "#D9D9D9"))
   if("Minor" %in% gridlines) bp <- bp + theme(panel.grid.minor = element_line(colour = "#D9D9D9"))
   
-  if(flip == 1){
+   if(flip == 1){
     bp <- bp + coord_flip(clip = "off") +
       theme(
-        axis.text.x.bottom = element_text(size = 16),
+        axis.text.x.bottom = element_text(size = 14, face = "bold", margin = margin(8,0,0,0)),
         axis.text.y.left   = element_blank()
       ) +
       labs(x = plotYlab, y = plotXlab)

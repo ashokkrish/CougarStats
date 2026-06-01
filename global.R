@@ -22,6 +22,7 @@ library(DT)
 library(e1071)
 library(factoextra)
 library(forecast)
+library(foreign)
 library(generics)
 library(GGally)
 library(ggfortify)
@@ -30,6 +31,7 @@ library(ggpubr)
 library(ggResidpanel)
 library(ggsci)
 library(gridExtra)
+library(haven)
 library(htmltools)
 library(katex)
 library(knitr)
@@ -74,6 +76,7 @@ library(tinytex)
 library(tools)
 library(waiter)
 library(writexl)
+library(xml2)
 library(xtable)
 
 # shinyDarkmode, ggResidpanel and olsrr have been removed/archived from CRAN. 
@@ -87,6 +90,8 @@ library(xtable)
 library(shinyDarkmode)
 library(ggResidpanel)
 library(olsrr)
+
+margin <- ggplot2::margin
 
 source("R/authors.R")
 
