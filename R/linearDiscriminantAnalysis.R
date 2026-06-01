@@ -393,6 +393,17 @@ LDAServer <- function(id, data, shared_explanatory, shared_response) {
         return()
       }
 
+      # Zero variance check
+      sds <- sapply(predictor_df, sd, na.rm = TRUE)
+      zero_var_cols <- names(sds)[is.na(sds) | sds == 0]
+      if (length(zero_var_cols) > 0) {
+        lda_message(paste0(
+          "These selected variable(s) have zero variance and cannot be used in LDA: ",
+          paste(zero_var_cols, collapse = ", "), "."
+        ))
+        return()
+      }
+
       response_var <- paste0("`", resp_col, "`")
       predictor_vars <- paste0("`", input$predictors, "`")
       
