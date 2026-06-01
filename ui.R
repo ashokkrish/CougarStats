@@ -1,4 +1,4 @@
-# Old Head - HEAD <- tags$head(tags$link(rel = "stylesheet",
+# Old Head - HEAD <- tags$head(tags$link(rel = "stylesheet",y
 #                            type="text/css",
 #                            href="cougarstats-styles.css"),
 #                 tags$link(rel = "icon",

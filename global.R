@@ -91,6 +91,8 @@ library(shinyDarkmode)
 library(ggResidpanel)
 library(olsrr)
 
+margin <- ggplot2::margin
+
 source("R/authors.R")
 
 source("R/ChiSquareTest.R")
