@@ -182,6 +182,7 @@ table.dataTable {
     padding-right: 0px;
     padding-left: 0px;
 }
+
 .tab-content,
 .navbar {
     padding-right: 15px;
@@ -325,5 +326,21 @@ div[data-value="Authors"] {
     overflow-y: auto;
     padding: 1rem;
     flex: 1 1 auto; /* reinforce BS4 flex column behavior for tall content */
+}
+
+/* Styles for the "Authors" and "Toggle Dark Mode" buttons so that their <li class="nav-item">
+   wrappers (inserted as siblings of the other nav <li>s inside #mainBanner) flow and
+   align the same as the tab navigation items. */
+#mainBanner > .nav-item {
+  list-style: none;
+  display: flex;
+  align-items: center;
+}
+#mainBanner > .nav-item > .btn {
+  font-size: 0.85rem;
+  padding: 0.25rem 0.5rem;
+  line-height: 1.2;
+  margin: 0 0.2rem;
+  vertical-align: middle;
 }
 
