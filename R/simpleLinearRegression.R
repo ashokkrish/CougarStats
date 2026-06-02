@@ -81,8 +81,8 @@ SLRMainPanelUI <- function(id) {
             
             div(
               style = "display: flex; gap: 10px; margin-bottom: 8px;",
-              downloadButton(ns("downloadSLRcsv"),  "⬇ Save as CSV"),
-              downloadButton(ns("downloadSLRxlsx"), "⬇ Save as Excel")
+              #downloadButton(ns("downloadSLRcsv"),  "Save as CSV"),
+              downloadButton(ns("downloadSLRxlsx"), "Save as Excel")
             ),
             
             div(
@@ -530,30 +530,31 @@ SLRServer <- function(id) {
     slrExportData <- reactiveVal(NULL)
     
     
-    output$downloadSLRcsv <- downloadHandler(
-      filename    = function() paste0("slr_data_", Sys.Date(), ".csv"),
-      contentType = "text/csv",
-      content     = function(file) {
-        tryCatch({
-          data <- as.data.frame(slrExportData())
-          names(data) <- c("x", "y", "xy", "x^2", "y^2", "y_hat",
-                           "e = (y - y_hat)", "e^2",
-                           "95% CI Mean Response (Lower)",
-                           "95% CI Mean Response (Upper)",
-                           "95% PI (Lower)",
-                           "95% PI (Upper)")
-          write.csv(data, file, row.names = TRUE)
-        }, error = function(e) {
-          message("Full error: ", conditionMessage(e))
-        })
-      }
-    )
+    # output$downloadSLRcsv <- downloadHandler(
+    #   filename    = function() paste0("SLR_Calculations", Sys.Date(), ".csv"),
+    #   contentType = "text/csv",
+    #   content     = function(file) {
+    #     tryCatch({
+    #       data <- as.data.frame(slrExportData())
+    #       names(data) <- c("x", "y", "xy", "x^2", "y^2", "y_hat",
+    #                        "e = (y - y_hat)", "e^2",
+    #                        "95% CI Mean Response (Lower)",
+    #                        "95% CI Mean Response (Upper)",
+    #                        "95% PI (Lower)",
+    #                        "95% PI (Upper)")
+    #       write.csv(data, file, row.names = TRUE)
+    #     }, error = function(e) {
+    #       message("Full error: ", conditionMessage(e))
+    #     })
+    #   }
+    # )
     output$downloadSLRxlsx <- downloadHandler(
-      filename    = function() paste0("slr_data_", Sys.Date(), ".xlsx"),
+      filename    = function() paste0("SLR_Calculations", Sys.Date(), ".xlsx"),
       contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       content     = function(file) {
         tryCatch({
           data <- as.data.frame(slrExportData())
+          data <- head(data, nrow(data) - 1)  
           names(data) <- c("x", "y", "xy", "x^2", "y^2", "y_hat",
                            "e = (y - y_hat)", "e^2",
                            "95% CI Mean Response (Lower)",
@@ -584,14 +585,14 @@ SLRServer <- function(id) {
     slrraw_iv$add_rule("x", sv_regex("^\\s*-?\\d*\\.?\\d+(\\s*,\\s*-?\\d*\\.?\\d+)*\\s*$",
                                      "Data must be numeric values separated by a comma (ie: 2,3,4 or 2, 30, 400)."))
     
-    slrraw_iv$add_rule("x", ~ if(length(strsplit(input$x, ",")[[1]]) < 3) "Sample Data must include at least 3 numeric observations.")
+    slrraw_iv$add_rule("x", ~ if(length(strsplit(input$x, ",")[[1]]) < 4) "Sample Data must include at least 4 numeric observations.")
     slrraw_iv$add_rule("x", ~ if(sampleInfoRaw()$diff != 0) "x and y must have the same number of observations.")
     slrraw_iv$add_rule("x", ~ if(sampleInfoRaw()$xSD == 0) "Explanatory variable has zero variance (all values are identical). At least two distinct values are required.")
     
     slrraw_iv$add_rule("y", sv_required())
     slrraw_iv$add_rule("y", sv_regex("^\\s*-?\\d*\\.?\\d+(\\s*,\\s*-?\\d*\\.?\\d+)*\\s*$",
                                      "Data must be numeric values separated by a comma (ie: 2,3,4 or 2, 30, 400)."))
-    slrraw_iv$add_rule("y", ~ if(length(strsplit(input$x, ",")[[1]]) < 3) "Sample Data must include at least 3 numeric observations.")
+    slrraw_iv$add_rule("y", ~ if(length(strsplit(input$x, ",")[[1]]) < 4) "Sample Data must include at least 4 numeric observations.")
     slrraw_iv$add_rule("y", ~ if(sampleInfoRaw()$diff != 0) "x and y must have the same number of observations.")
     slrraw_iv$add_rule("y", ~ if(sampleInfoRaw()$ySD == 0) "Response variable is constant. Correlation is undefined when a variable has zero variance.")
     
@@ -786,7 +787,7 @@ SLRServer <- function(id) {
               return(data.frame(
                 Assumption  = cfg$assumption,
                 Procedure   = cfg$procedure,
-                Statistic   = NA_character_,
+                #Statistic   = NA_character_,
                 `P-Value`   = NA_character_,
                 Conclusion  = paste("Requires n \u2265", cfg$min_n),
                 check.names = FALSE
@@ -799,7 +800,7 @@ SLRServer <- function(id) {
             })
             
             # Format statistic and p-value
-            stat_str <- if (!is.null(result$statistic)) as.character(result$statistic) else "\u2014"
+           # stat_str <- if (!is.null(result$statistic)) as.character(result$statistic) else "\u2014"
             pval_str <- if (!is.null(result$p_value))   as.character(result$p_value)   else "\u2014"
             
             # Conclusion
@@ -818,7 +819,7 @@ SLRServer <- function(id) {
             data.frame(
               Assumption  = cfg$assumption,
               Procedure   = cfg$procedure,
-              Statistic   = stat_str,
+              #Statistic   = stat_str,
               `P-Value`   = pval_str,
               Conclusion  = conclusion,
               check.names = FALSE
@@ -829,8 +830,7 @@ SLRServer <- function(id) {
           tableData <- do.call(rbind, results)
           
           tagList(
-            br(),
-            p(strong("LINE Assumption Tests"),
+            p(strong("Linearity, Independence, Normality and Equal Variance (L.I.N.E) Assumptions"),
               style = "font-size: 16px;"),
             p(paste("Testing at \u03b1 =", alpha, "| n =", n),
               style = "color: #666; font-size: 13px;"),
@@ -849,7 +849,7 @@ SLRServer <- function(id) {
                   style    = list(fontWeight = "bold")
                 ),
                 Procedure  = colDef(name = "Procedure",      minWidth = 180),
-                Statistic  = colDef(name = "Test Statistic", minWidth = 120, align = "center"),
+                #Statistic  = colDef(name = "Test Statistic", minWidth = 120, align = "center"),
                 `P-Value`  = colDef(name = "P-Value",        minWidth = 100, align = "center"),
                 Conclusion = colDef(name = "Conclusion",      minWidth = 250)
               )
@@ -1055,7 +1055,7 @@ SLRServer <- function(id) {
             columns = c(
               # Row name column — just used to show "Totals" label in footer
               list(".rownames" = colDef(
-                name   = "Number of Observations",
+                name   = "Observation Number",
                 align = "center",
                 footer = tags$b("Totals"),
                 style  = list(color = "#333")
@@ -1575,7 +1575,6 @@ SLRServer <- function(id) {
           n1 <- sum(choose(table(datx), 2))
           n2 <- sum(choose(table(daty), 2))
           
-          # Compute nc and nd manually
           nc <- 0
           nd <- 0
           for (i in 1:(n - 1)) {
@@ -1590,26 +1589,40 @@ SLRServer <- function(id) {
             }
           }
           
+          tau <- kendall$estimate
+          
+          # Strength
+          tauStrength <- if (abs(tau) > 0.6) "strong"
+          else if (abs(tau) > 0.3) "moderate"
+          else "weak"
+          
+          # Direction
+          tauDirection <- if (tau > 0) "positive" else "negative"
+          
           withMathJax(
             HTML(sprintf(
               "\\( \\tau = \\dfrac{n_c - n_d}{\\sqrt{(n_0 - n_1)(n_0 - n_2)}} = \\dfrac{%d - %d}{\\sqrt{(%g - %g)(%g - %g)}} = %.4f \\)",
-              nc, nd, n0, n1, n0, n2, kendall$estimate
+              nc, nd, n0, n1, n0, n2, tau
+            )),
+            br(),
+            br(),
+            p(tags$b("Interpretation:")),
+            p(sprintf(
+              "There exists a %s %s monotonic relationship between x and y.",
+              tauStrength, tauDirection
             ))
           )
         })
-        
         # Spearman's rs formula
         output$spearmanEstimate <- renderUI({
           
-          # Calculate ranks and differences
-          rank_x <- rank(datx)
-          rank_y <- rank(daty)
-          d      <- rank_x - rank_y
-          d_sq   <- d^2
+          rank_x   <- rank(datx)
+          rank_y   <- rank(daty)
+          d        <- rank_x - rank_y
+          d_sq     <- d^2
           sum_d_sq <- sum(d_sq)
-          n      <- length(datx)
+          n        <- length(datx)
           
-          # Build data frame
           spearman_df <- data.frame(
             x      = datx,
             y      = daty,
@@ -1619,20 +1632,28 @@ SLRServer <- function(id) {
             d_sq   = d_sq
           )
           
+          rs <- spearman$estimate
+          
+          # Strength
+          rsStrength <- if (abs(rs) > 0.6) "strong"
+          else if (abs(rs) > 0.3) "moderate"
+          else "weak"
+          
+          # Direction
+          rsDirection <- if (rs > 0) "positive" else "negative"
+          
           withMathJax(
             
-            # Formula FIRST
             div(
               style = "text-align: left; font-size: 18px;",
               HTML(sprintf(
                 "\\( r_s = 1 - \\dfrac{6 \\sum_{i=1}^n d_i^2}{n(n^2 - 1)} = 1 - \\dfrac{6 \\times %g}{%d(%d^2 - 1)} = %.4f \\)",
-                sum_d_sq, n, n, spearman$estimate
+                sum_d_sq, n, n, rs
               ))
             ),
             
             br(),
             
-            # Table SECOND
             reactable(
               spearman_df,
               sortable   = FALSE,
@@ -1643,11 +1664,11 @@ SLRServer <- function(id) {
               fullWidth  = FALSE,
               rownames   = FALSE,
               columns = list(
-                x      = colDef(name = "x",      align = "center", footer = ""),
-                y      = colDef(name = "y",      align = "center", footer = ""),
-                rank_x = colDef(name = "Rank x", align = "center", footer = ""),
-                rank_y = colDef(name = "Rank y", align = "center", footer = ""),
-                d      = colDef(name = "d",      align = "center", footer = tags$b("Total")),
+                x      = colDef(name = "x",      align = "center"),
+                y      = colDef(name = "y",      align = "center"),
+                rank_x = colDef(name = "Rank x", align = "center"),
+                rank_y = colDef(name = "Rank y", align = "center"),
+                d      = colDef(name   = "d = (Rank x \u2212 Rank y)", align = "center", footer = tags$b("Total")),
                 d_sq   = colDef(
                   name   = HTML("d<sup>2</sup>"),
                   html   = TRUE,
@@ -1658,10 +1679,17 @@ SLRServer <- function(id) {
               )
             ),
             
+            br(),
+            
+            p(tags$b("Interpretation:")),
+            p(sprintf(
+              "There exists a %s %s monotonic relationship between x and y.",
+              rsStrength, rsDirection
+            )),
+            
             br()
           )
         })
-        
         output$slrViewUpload <- renderDT({
           req(slrupload_iv$is_valid())
           datatable(slrUploadData(),

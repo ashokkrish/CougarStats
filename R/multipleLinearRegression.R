@@ -133,6 +133,7 @@ MLRServer <- function(id) {
     observeEvent(TRUE, {
       shinyjs::delay(0, {
         hideTab(inputId = "mainPanel", target = "Model")
+        hideTab(inputId = "mainPanel", target = "Inference")  
         hideTab(inputId = "mainPanel", target = "ANOVA & Parameter Estimates")
         hideTab(inputId = "mainPanel", target = "Multicollinearity Detection")
         hideTab(inputId = "mainPanel", target = "Diagnostic Plots")
