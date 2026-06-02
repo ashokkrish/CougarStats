@@ -7,8 +7,7 @@ ui <- tagList(withTags(html(
     ## ShinyDarkmode
     use_darkmode(),
 
-    ## Authors modal' TailwindCSS
-    script(src = "https://cdn.tailwindcss.com"),# TODO: replace with built CSS.
+    ## Authors modal styles now provided via output.css (linked from authors.html)
     link(rel = "stylesheet", href = "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"),
 
     ## Amplitude Analytics
