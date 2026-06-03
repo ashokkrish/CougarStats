@@ -184,7 +184,8 @@ SLRMainPanelUI <- function(id) {
               plotOutput(ns("slrResidualsPanelPlot1")),
               plotOutput(ns("slrResidualsPanelPlot2")),
               plotOutput(ns("slrResidualsPanelPlot3")),
-              plotOutput(ns("slrResidualsPanelPlot4"))
+              plotOutput(ns("slrResidualsPanelPlot4")),
+              plotOutput(ns("slrResidualsPanelPlot5"))
             )
           ), # Diagnostic Plots tabpanel
           
@@ -1112,33 +1113,42 @@ SLRServer <- function(id) {
         })
         
         output$slrResidualsPanelPlot1 <- renderPlot({
-          plot(model, which = 1, 
-               pch = 20, 
-               main = "", 
-               lwd = 2,
-               #cex = 0.5, 
-               ann  = FALSE, 
-               sub.caption = "",
-               caption     = "")
-          # Setting ann  = FALSE will turn off annotations
-          # Setting sub.caption = "" will remove the subtitle (sub-caption) automatically added by plot.lm()
-          title(main  = "Residuals vs Fitted Values", cex.main = 1.2)
-          title(xlab = expression(Fitted~Values~(hat(italic(y)))))
-          title(ylab = expression(Residuals~plain("(")*italic(e)*plain(")")))
+          par(font.main = 2, font.lab = 2)
+          plot(model, which = 1, pch = 20, main = "", lwd = 2, ann = FALSE, sub.caption = "", caption = "")
+          title(main = "Residuals vs Fitted Values", cex.main = 1.2)
+          title(xlab = expression(bold(Fitted~Values~(hat(italic(y))))))
+          title(ylab = expression(bold(Residuals~plain("(")*italic(e)*plain(")"))))
           abline(h = 0, col = "black", lty = 2, lwd = 1.5)
         })
         
         output$slrResidualsPanelPlot2 <- renderPlot({
-          plot(model, which = 2, pch = 20, main = "", lwd = 2)
+          par(font.main = 2, font.lab = 2)
+          plot(model, which = 2, pch = 20, main = "", lwd = 2, sub.caption = "", caption = "")
+          title(main = "Q-Q Residuals", cex.main = 1.2)
+          title(xlab = "Theoretical Quantiles")
         })
         
         output$slrResidualsPanelPlot3 <- renderPlot({
-          plot(model, which = 3, pch = 20, main = "", lwd = 2)
+          par(font.main = 2, font.lab = 2)
+          plot(model, which = 3, pch = 20, main = "", lwd = 2, sub.caption = "", caption = "")
+          title(main = "Scale-Location", cex.main = 1.2)
+          title(ylab = "Standardized Residuals")
         })
         
         output$slrResidualsPanelPlot4 <- renderPlot({
-          plot(model, which = 5, pch = 20, main = "", lwd = 2)
+          par(font.main = 2, font.lab = 2)
+          plot(model, which = 5, pch = 20, main = "", lwd = 2, sub.caption = "", caption = "")
+          title(main = "Residuals vs Leverage", cex.main = 1.2)
         })
+        
+        output$slrResidualsPanelPlot5 <- renderPlot({
+          par(font.main = 2, font.lab = 2)
+          hist(residuals, main = "", xlab = "",
+               col = "darkgreen", border = "white")
+          title(main = "Histogram of Residuals", cex.main = 1.2)
+          title(xlab = expression(bold(Residuals~plain("(")*italic(e)*plain(")"))))
+        })
+        
         
         if (summary(model)$coefficients["datx", "Estimate"] > 0) {
           slopeDirection <- "increase"
@@ -1149,6 +1159,8 @@ SLRServer <- function(id) {
           yHatOp <- "-"
           b0HatOp <- "+"
         }
+        
+        
         
         interceptEstimate <- round(summary(model)$coefficients["(Intercept)", "Estimate"], 4)
         slopeEstimate <- round(summary(model)$coefficients["datx", "Estimate"], 4)
@@ -1463,7 +1475,6 @@ SLRServer <- function(id) {
                 # Curve
                 plotOutput(session$ns("pearsonTCurve")),
                 
-                br(),
                 
                 # Conclusion
                 p(strong("Conclusion:")),
@@ -1654,6 +1665,15 @@ SLRServer <- function(id) {
             
             br(),
             
+            p(tags$b("Interpretation:")),
+            p(sprintf(
+              "There exists a %s %s monotonic relationship between \\(\\mathit{x}\\) and \\(\\mathit{y}\\).",
+              rsStrength, rsDirection
+            )),
+            
+            
+            br(),
+            
             reactable(
               spearman_df,
               sortable   = FALSE,
@@ -1681,11 +1701,7 @@ SLRServer <- function(id) {
             
             br(),
             
-            p(tags$b("Interpretation:")),
-            p(sprintf(
-              "There exists a %s %s monotonic relationship between x and y.",
-              rsStrength, rsDirection
-            )),
+            
             
             br()
           )
@@ -1894,83 +1910,16 @@ SLRServer <- function(id) {
         })
         
         output$pearsonTCurve <- renderPlot({
-          
-          t_stat <- pearson$statistic
-          df_val <- pearson$parameter
-          t_crit <- qt(0.975, df = df_val)
-          x_max  <- max(abs(t_stat) * 1.5, t_crit * 2)
-          
-          x <- seq(-x_max, x_max, length.out = 1000)
-          y <- dt(x, df = df_val)
-          
-          plot_df <- data.frame(x = x, y = y)
-          
-          ggplot(plot_df, aes(x = x, y = y)) +
-            
-            # Main curve
-            geom_line(lwd = 1) +
-            
-            # Left rejection region
-            geom_area(
-              data = subset(plot_df, x <= -t_crit),
-              aes(x = x, y = y),
-              fill  = "steelblue",
-              alpha = 0.4
-            ) +
-            
-            # Right rejection region
-            geom_area(
-              data = subset(plot_df, x >= t_crit),
-              aes(x = x, y = y),
-              fill  = "steelblue",
-              alpha = 0.4
-            ) +
-            
-            # Critical value lines (dark blue)
-            geom_vline(xintercept =  t_crit, color = "darkblue", linewidth = 0.8) +
-            geom_vline(xintercept = -t_crit, color = "darkblue", linewidth = 0.8) +
-            
-            # T statistic line (red)
-            geom_vline(xintercept = t_stat, color = "red", linewidth = 0.8) +
-            
-            # Centre dotted line
-            geom_vline(xintercept = 0, color = "black", linewidth = 0.5, linetype = "dotted") +
-            
-            # RR labels
-            annotate("text", x = -t_crit * 1.5, y = max(y) * 0.15,
-                     label = "RR", fontface = "bold", size = 4) +
-            annotate("text", x =  t_crit * 1.5, y = max(y) * 0.15,
-                     label = "RR", fontface = "bold", size = 4) +
-            
-            # AR label
-            annotate("text", x = 0, y = max(y) * 0.5,
-                     label = "AR", fontface = "bold", size = 4) +
-            
-            # Critical value labels
-            annotate("text", x = -t_crit, y = -max(y) * 0.05,
-                     label = sprintf("%0.4f", -t_crit), size = 3.5, color = "darkblue") +
-            annotate("text", x =  t_crit, y = -max(y) * 0.05,
-                     label = sprintf("%0.4f",  t_crit), size = 3.5, color = "darkblue") +
-            
-            # T statistic label
-            annotate("text", x = t_stat, y = max(y) * 0.6,
-                     label = sprintf("%0.4f", t_stat), size = 3.5, color = "red") +
-            
-            # Zero label
-            annotate("text", x = 0, y = -max(y) * 0.05,
-                     label = "0", size = 3.5) +
-            
-            labs(x = "t", y = NULL) +
-            
-            theme_classic() +
-            theme(
-              axis.text.y  = element_blank(),
-              axis.ticks.y = element_blank(),
-              axis.line.y  = element_blank(),
-              plot.margin  = margin(t = 20, r = 20, b = 20, l = 20)
-            ) +
-            coord_cartesian(clip = "off", ylim = c(-max(y) * 0.08, max(y) * 1.1))
-        })
+          hypTTestPlot(
+            testStatistic = round(pearson$statistic, 3),
+            degfree       = pearson$parameter,
+            critValue     = round(qt(0.975, df = pearson$parameter), 3),
+            altHypothesis = "two.sided"
+          )
+        }, height = 300, width = 500)
+        
+        
+        
         
         
       } #if regcor_iv is valid
