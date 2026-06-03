@@ -1008,11 +1008,10 @@ SLRServer <- function(id) {
               role  = "alert",
               style = "margin-top: 10px;",
               tags$b("\u26a0\ufe0f Perfect Fit Detected: "),
-              "The model has an R\u00b2 of 1 or -1, meaning the regression line fits the data perfectly. Resulting in an MSE equal to zero and a zero set of residuals.",
-              "This may indicate that ",
+              "This may indicate that",
+              ("This may indicate that"),
               tags$b("x and y are identical or linearly dependent,"),
-              " which can produce unreliable inference results for the Parameters, ANOVA and Diagnostic Plots.",
-              tags$b("These tabs are now hidden")
+              ("which can produce unreliable inference and diagnostic plots. Standard statistical significance tests cannot run on perfect fits. Please check your data.")
             )
           } else {
             showTab(inputId = "slrNavbarPage", target = "Inference")
@@ -1130,7 +1129,7 @@ SLRServer <- function(id) {
         
         output$slrResidualsPanelPlot3 <- renderPlot({
           par(font.main = 2, font.lab = 2)
-          plot(model, which = 3, pch = 20, main = "", lwd = 2, sub.caption = "", caption = "")
+          plot(model, which = 3, pch = 20, main = "", lwd = 2, sub.caption = "", caption = "", ann = FALSE)
           title(main = "Scale-Location", cex.main = 1.2)
           title(ylab = "Standardized Residuals")
         })
@@ -1619,7 +1618,7 @@ SLRServer <- function(id) {
             br(),
             p(tags$b("Interpretation:")),
             p(sprintf(
-              "There exists a %s %s monotonic relationship between x and y.",
+              "There exists a %s %s monotonic relationship between \\(\\mathit{x}\\) and \\(\\mathit{y}\\).",
               tauStrength, tauDirection
             ))
           )
