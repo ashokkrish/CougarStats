@@ -44,7 +44,7 @@ knn_classification_report <- function(actual, predicted) {
     check.names = FALSE
   )
   
-  list(cm = as.data.frame(cm), report = report, accuracy = accuracy)
+  list(cm = cm, report = report, accuracy = accuracy)
 }
 
 
@@ -435,8 +435,10 @@ KNNServer <- function(id, data, shared_explanatory, shared_response) {
       numeric_cols <- cols[sapply(df0, is.numeric)]
 
       pre_predictors <- intersect(shared_explanatory(), numeric_cols)
+      shared_resp    <- shared_response()
+      pre_response   <- if (isTruthy(shared_resp) && shared_resp %in% cols) shared_resp else character(0)
 
-      updatePickerInput(session, "response",   choices = cols,         selected = character(0))
+      updatePickerInput(session, "response",   choices = cols,         selected = pre_response)
       updatePickerInput(session, "predictors", choices = numeric_cols, selected = pre_predictors)
 
       if (isTruthy(input$split)) {
@@ -624,53 +626,83 @@ KNNServer <- function(id, data, shared_explanatory, shared_response) {
         
         #evaluation metrics 
         metrics <- knn_classification_report(actual = y_test, predicted = pred)
-        
+
+        class_dist_df <- as.data.frame(table(as.factor(df[[resp_col]])))
+        colnames(class_dist_df) <- c("Class", "Count")
+
+        # nearest odd integer of sqrt(n_train) — recommended starting k
+        k_round_val   <- round(sqrt(n_train))
+        k_recommended <- if (k_round_val %% 2 == 0) k_round_val + 1L else as.integer(k_round_val)
+
         # to keep train/split static until user clicks calculate
         calc_settings(list(
-          split = input$split,
-          k = k,
-          n_total = n,
-          n_train = n_train
+          split         = input$split,
+          k             = k,
+          n_total       = n,
+          n_train       = n_train,
+          k_recommended = k_recommended
         ))
-        
-        
+
+
         #Results UI layout
         output$resultsUI <- renderUI({
           s <- calc_settings()
           req(s)
-          
-          split_prop <- s$split / 100
-          k_calc <- sqrt(s$n_train)
-          
+
           tagList(
-            shiny::withMathJax(),
-            
-            tags$p(tags$strong("Task: "), input$task),
-            
-            tags$p(tags$strong("n = "), s$n_total),
-            
-            tags$p(tags$strong("n × train split = "),
-                   paste0(s$n_total, " × ", sprintf("%.2f", split_prop), " = ", s$n_train)),
-            
-            tags$p(tags$strong("k calculation: "),
-                   sprintf("\\( k = \\sqrt{n_{train}} = \\sqrt{%s} = %.4f \\Rightarrow %s \\)",
-                           s$n_train, k_calc, s$k)),
-            
-            tags$p(tags$strong("k = "), s$k),
+            tags$h4("Model Summary"),
+            tags$p(HTML("<strong><em>n</em> = </strong>"), s$n_total),
             tags$p(tags$strong("Train split = "), paste0(s$split, "%")),
             tags$p(tags$strong("Accuracy = "), sprintf("%.4f", metrics$accuracy)),
-            
+
+            tags$hr(),
+
+            tags$h5(tags$strong(HTML("Your Selected <em>k</em>"))),
+            tags$p(HTML(paste0(
+              "You selected <em>k</em> = <strong>", s$k, "</strong>"
+            ))),
+
+            tags$h5(tags$strong(HTML("Recommended <em>k</em>"))),
+            tags$p(HTML(paste0(
+              "Based on your training set size, the recommended starting <em>k</em> is calculated as: ",
+              "&radic;<em>n</em><sub>train</sub>",
+              " = &radic;", s$n_train,
+              " = ", sprintf("%.2f", sqrt(s$n_train)),
+              " &asymp; <strong>", s$k_recommended, "</strong>"
+            ))),
+
+            tags$p(
+              style = "color: #6c757d; font-size: 14px; margin-top: 4px;",
+              HTML(paste0(
+                "The recommended <em>k</em> is a starting point. Your chosen <em>k</em> may perform ",
+                "better depending on your dataset. Always validate using the confusion matrix results."
+              ))
+            ),
+
+            tags$hr(),
+
+            tags$h4("Class Distribution (Full Dataset)"),
+            tableOutput(session$ns("classDist")),
+            tags$hr(),
+
             tags$h4("Classification Report"),
             tableOutput(session$ns("classReport")),
-            
+
             tags$h4("Confusion Matrix"),
             tableOutput(session$ns("confMat"))
           )
         })
         
         #send the data into the UI
+        output$classDist    <- renderTable({ class_dist_df }, rownames = FALSE, striped = TRUE, bordered = TRUE)
         output$classReport  <- renderTable({ metrics$report }, striped = TRUE, bordered = TRUE)
-        output$confMat      <- renderTable({ metrics$cm }, striped = TRUE, bordered = TRUE)
+        output$confMat <- renderTable({
+          cm <- as.data.frame.matrix(metrics$cm)
+          cm$Actual <- rownames(cm)
+          cm <- cm[, c("Actual", setdiff(names(cm), "Actual"))]
+          rownames(cm) <- NULL
+          cm
+        }, rownames = FALSE, striped = TRUE, bordered = TRUE)
         
         plot_settings(list(
           response = resp_col,

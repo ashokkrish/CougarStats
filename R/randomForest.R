@@ -82,6 +82,13 @@ RFMainPanelUI <- function(id) {
       ),
 
       tabPanel(
+        title = "Plots",
+        value = "plots_tab",
+        uiOutput(ns("rfVarImpContainer")),
+        uiOutput(ns("rfPDPContainer"))
+      ),
+
+      tabPanel(
         title = "Uploaded Data",
         value = "uploaded_data_tab",
         uiOutput(ns("uploadedDataContainer"))
@@ -124,6 +131,7 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
     # ---- Hide result tabs until Calculate succeeds ----
     session$onFlushed(function() {
       hideTab(inputId = "rfMainPanel", target = "model_summary_tab")
+      hideTab(inputId = "rfMainPanel", target = "plots_tab")
     }, once = TRUE)
 
     # ---- Uploaded Data tab ----
@@ -203,6 +211,7 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
         rf_message(NULL)
 
         hideTab(inputId = "rfMainPanel", target = "model_summary_tab")
+        hideTab(inputId = "rfMainPanel", target = "plots_tab")
         updateNavbarPage(session, "rfMainPanel", selected = "uploaded_data_tab")
       },
       ignoreInit = TRUE
@@ -440,6 +449,29 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
       # 16. OOB error rate (final tree)
       oob_error <- rf_fit$err.rate[nrow(rf_fit$err.rate), "OOB"]
 
+      # 17. Classification report (test set)
+      rf_class_report <- knn_classification_report(test_df[[resp_col]], test_pred)$report
+
+      # 18. Partial dependence plots via iml (computed once, stored in res)
+      pdp_results <- tryCatch({
+        predictor_iml <- suppressWarnings(
+          iml::Predictor$new(
+            model            = rf_fit,
+            data             = train_df[, input$predictors, drop = FALSE],
+            y                = train_df[[resp_col]],
+            predict.function = function(model, newdata) predict(model, newdata, type = "prob")
+          )
+        )
+        pdp_list <- suppressWarnings(lapply(input$predictors, function(pvar) {
+          tryCatch(
+            iml::FeatureEffect$new(predictor_iml, feature = pvar, method = "pdp")$results,
+            error = function(e) NULL
+          )
+        }))
+        names(pdp_list) <- input$predictors
+        pdp_list
+      }, error = function(e) NULL)
+
       res <- list(
         fit           = rf_fit,
         train_df      = train_df,
@@ -455,7 +487,9 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
         oob_error     = oob_error,
         confusion     = confusion_mat,
         accuracy      = accuracy,
-        class_metrics = class_metrics_df
+        class_metrics = class_metrics_df,
+        class_report  = rf_class_report,
+        pdp_results   = pdp_results
       )
 
       calc_results(res)
@@ -470,11 +504,14 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
         accuracy_label <- if (r$oob_error < 0.10) "high" else if (r$oob_error <= 0.25) "moderate" else "low"
 
         tagList(
-          tags$h4("Random Forest Model Summary"),
+          tags$h4("Model Summary"),
           uiOutput(session$ns("rfSummaryTable")),
           tags$hr(),
           tags$h4("Class Distribution (Full Dataset)"),
           tableOutput(session$ns("rfClassDistTable")),
+          tags$hr(),
+          tags$h4("Classification Report (Test Set)"),
+          tableOutput(session$ns("rfClassReport")),
           tags$hr(),
           tags$h4("Confusion Matrix (Test Set)"),
           tableOutput(session$ns("rfConfusionTable")),
@@ -576,7 +613,13 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
         r <- calc_results()
         req(r)
         r$class_dist
-      }, rownames = FALSE)
+      }, rownames = FALSE, striped = TRUE, bordered = TRUE)
+
+      output$rfClassReport <- renderTable({
+        r <- calc_results()
+        req(r)
+        r$class_report
+      }, rownames = FALSE, striped = TRUE, bordered = TRUE)
 
       output$rfConfusionTable <- renderTable({
         r <- calc_results()
@@ -586,19 +629,169 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
         cm <- cm[, c("Actual", setdiff(names(cm), "Actual"))]
         rownames(cm) <- NULL
         cm
-      }, rownames = FALSE)
+      }, rownames = FALSE, striped = TRUE, bordered = TRUE)
 
       output$rfClassMetrics <- renderTable({
         r <- calc_results()
         req(r)
         r$class_metrics
-      }, rownames = FALSE)
+      }, rownames = FALSE, striped = TRUE, bordered = TRUE)
+
+      output$rfVarImpContainer <- renderUI({
+        tagList(
+          tags$h4("Variable Importance Plots", style = "margin-top: 10px;"),
+          plotOutput(session$ns("rfVarImpPlot"), height = "550px")
+        )
+      })
+
+      output$rfVarImpPlot <- renderPlot({
+        r <- calc_results()
+        req(r)
+
+        imp_acc  <- randomForest::importance(r$fit, type = 1)
+        imp_gini <- randomForest::importance(r$fit, type = 2)
+
+        df_acc <- data.frame(
+          Variable = rownames(imp_acc),
+          Value    = imp_acc[, 1],
+          stringsAsFactors = FALSE
+        )
+        df_acc <- df_acc[order(df_acc$Value, decreasing = FALSE), ]
+
+        df_gini <- data.frame(
+          Variable = rownames(imp_gini),
+          Value    = imp_gini[, 1],
+          stringsAsFactors = FALSE
+        )
+        df_gini <- df_gini[order(df_gini$Value, decreasing = FALSE), ]
+
+        max_chars <- max(nchar(c(df_acc$Variable, df_gini$Variable)), na.rm = TRUE)
+        left_mar  <- max(4, ceiling(max_chars * 0.6))
+
+        par(
+          mfrow = c(1, 2),
+          oma   = c(0, 0, 0, 0),
+          mar   = c(5, left_mar, 4, 2)
+        )
+
+        barplot(
+          df_acc$Value,
+          names.arg = df_acc$Variable,
+          horiz     = TRUE,
+          las       = 1,
+          col       = "#4472C4",
+          main      = "Mean Decrease in Accuracy",
+          xlab      = "Mean Decrease in Accuracy",
+          cex.main  = 1.3,
+          font.main = 2,
+          cex.lab   = 1.1,
+          font.lab  = 2,
+          cex.names = 0.95
+        )
+
+        barplot(
+          df_gini$Value,
+          names.arg = df_gini$Variable,
+          horiz     = TRUE,
+          las       = 1,
+          col       = "#ED7D31",
+          main      = "Mean Decrease in Gini Impurity",
+          xlab      = "Mean Decrease in Gini",
+          cex.main  = 1.3,
+          font.main = 2,
+          cex.lab   = 1.1,
+          font.lab  = 2,
+          cex.names = 0.95
+        )
+      })
+
+      # Dynamic container: sets height based on predictor count then renders plotOutput
+      output$rfPDPContainer <- renderUI({
+        r <- calc_results()
+        req(r, !is.null(r$pdp_results))
+
+        n_pred    <- length(r$predictors)
+        n_cols    <- if (n_pred <= 1) 1 else if (n_pred <= 4) 2 else 3
+        n_rows    <- ceiling(n_pred / n_cols)
+        height_px <- max(300, n_rows * 300)
+
+        tagList(
+          tags$hr(),
+          tags$h4("Partial Dependence Plots", style = "margin-top: 10px;"),
+          plotOutput(session$ns("rfPDPPlot"), height = paste0(height_px, "px"))
+        )
+      })
+
+      output$rfPDPPlot <- renderPlot({
+        r <- calc_results()
+        req(r, !is.null(r$pdp_results))
+
+        n_pred  <- length(r$predictors)
+        n_cols  <- if (n_pred <= 1) 1 else if (n_pred <= 4) 2 else 3
+        n_rows  <- ceiling(n_pred / n_cols)
+
+        cls_cols <- c("#4472C4", "#ED7D31", "#70AD47", "#9E480E", "#7030A0")
+
+        par(
+          mfrow = c(n_rows, n_cols),
+          oma   = c(0, 0, 0, 0),
+          mar   = c(4, 4, 5, 2)
+        )
+
+        for (pred_var in r$predictors) {
+          pdp_df <- r$pdp_results[[pred_var]]
+
+          if (is.null(pdp_df)) {
+            plot.new()
+            title(main = pred_var, cex.main = 1.1, font.main = 2)
+            text(0.5, 0.5, "Could not compute PDP", cex = 0.9)
+            next
+          }
+
+          cls_list <- as.character(unique(pdp_df$.class))
+
+          plot(
+            x    = NULL,
+            xlim = range(pdp_df[[pred_var]], na.rm = TRUE),
+            ylim = c(0, 1),
+            main = pred_var,
+            xlab = pred_var,
+            ylab = "Predicted Probability",
+            cex.main = 1.1,
+            font.main = 2,
+            cex.lab  = 0.95,
+            font.lab = 2,
+            cex.axis = 0.9
+          )
+
+          for (j in seq_along(cls_list)) {
+            cls_df <- pdp_df[as.character(pdp_df$.class) == cls_list[j], ]
+            cls_df <- cls_df[order(cls_df[[pred_var]]), ]
+            lines(cls_df[[pred_var]], cls_df$.value,
+                  col = cls_cols[j], lwd = 2)
+          }
+
+          legend("topright", legend = cls_list,
+                 col = cls_cols[seq_along(cls_list)],
+                 lwd = 2, bty = "n", cex = 0.8)
+
+          mtext("Shows the marginal effect of this variable on the predicted outcome,",
+                side = 3, line = 0.9, cex = 0.65, col = "#555555")
+          mtext("holding all other variables constant",
+                side = 3, line = 0.2, cex = 0.65, col = "#555555")
+        }
+
+        # blank out remaining grid cells for odd predictor counts
+        remaining <- n_rows * n_cols - n_pred
+        for (k in seq_len(remaining)) plot.new()
+      })
 
       # ---- Show tabs and navigate ----
       summary_ready(TRUE)
       summary_ever_calculated(TRUE)
 
       showTab(inputId = "rfMainPanel", target = "model_summary_tab")
+      showTab(inputId = "rfMainPanel", target = "plots_tab")
 
       shinyjs::delay(100, {
         updateNavbarPage(session, "rfMainPanel", selected = "model_summary_tab")
@@ -609,6 +802,7 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
     # ---- Reset ----
     observeEvent(input$reset, {
       hideTab(inputId = "rfMainPanel", target = "model_summary_tab")
+      hideTab(inputId = "rfMainPanel", target = "plots_tab")
 
       summary_ready(FALSE)
       summary_ever_calculated(FALSE)
