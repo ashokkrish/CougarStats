@@ -7,14 +7,14 @@ machineLearningUI <- function(id) {
       shinyjs::useShinyjs(),
       HTML(uploadDataDisclaimer),
       fileInput(ns("mlDataFile"),
-                tags$b("Upload Data (.csv, .tsv, .txt, .xls, .xlsx)"),
+                tags$b("Upload Data (.csv, .xls, .xlsx, or .txt)"),
                 accept = c("text/csv", "text/comma-separated-values", "text/plain",
                            ".csv", ".tsv", ".txt", ".xls", ".xlsx")),
       actionButton(
         ns("loadIris"),
         label = tagList(icon("seedling"), "Load Example Dataset (iris)"),
         class = "btn btn-outline-secondary btn-sm w-100",
-        style = "margin-top: -8px; margin-bottom: 6px;"
+        style = "margin-top: -8px; margin-bottom: 6px; border: 2px solid #aaa; border-radius: 4px;"
       ),
       uiOutput(ns("mlDataStatus")),
       radioButtons(ns("method"),

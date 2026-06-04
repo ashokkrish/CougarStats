@@ -446,6 +446,11 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
       
       accuracy <- sum(diag(confusion_mat)) / sum(confusion_mat)
       
+      class_dist_df     <- as.data.frame(table(analysis_df[[resp_col]]))
+      colnames(class_dist_df) <- c("Class", "Count")
+
+      cart_class_report <- knn_classification_report(analysis_df[[resp_col]], cart_pred)$report
+
       importance <- cart_fit$variable.importance
       if (is.null(importance)) {
         importance <- numeric(0)
@@ -469,7 +474,9 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
         response = resp_col,
         predictors = input$predictors,
         n = nrow(analysis_df),
-        importance = importance_df
+        importance = importance_df,
+        class_dist = class_dist_df,
+        class_report = cart_class_report
       )
       
       calc_results(res)
@@ -485,9 +492,17 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
         req(r)
         
         tagList(
-          tags$h4("Model Information"),
+          tags$h4("Model Summary"),
           tableOutput(session$ns("cartModelInfo")),
-          
+
+          tags$h4("Class Distribution (Full Dataset)"),
+          tableOutput(session$ns("cartClassDist")),
+          tags$hr(),
+
+          tags$h4("Classification Report"),
+          tableOutput(session$ns("cartClassReport")),
+          tags$hr(),
+
           tags$h4("Confusion Matrix"),
           tableOutput(session$ns("confusionMatrixResults"))
         )
@@ -496,7 +511,7 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
       output$cartModelInfo <- renderTable({
         r <- calc_results()
         req(r)
-        
+
         data.frame(
           Item = c(
             "Number of Classes",
@@ -518,18 +533,30 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
           ),
           check.names = FALSE
         )
-      }, rownames = FALSE)
-      
+      }, rownames = FALSE, striped = TRUE, bordered = TRUE)
+
+      output$cartClassDist <- renderTable({
+        r <- calc_results()
+        req(r)
+        r$class_dist
+      }, rownames = FALSE, striped = TRUE, bordered = TRUE)
+
+      output$cartClassReport <- renderTable({
+        r <- calc_results()
+        req(r)
+        r$class_report
+      }, rownames = FALSE, striped = TRUE, bordered = TRUE)
+
       output$confusionMatrixResults <- renderTable({
         r <- calc_results()
         req(r)
-        
+
         cm <- as.data.frame.matrix(r$confusion)
         cm$Actual <- rownames(cm)
         cm <- cm[, c("Actual", setdiff(names(cm), "Actual"))]
         rownames(cm) <- NULL
         cm
-      }, rownames = FALSE)
+      }, rownames = FALSE, striped = TRUE, bordered = TRUE)
       
       output$treePlot <- renderPlot({
         r <- plot_results()

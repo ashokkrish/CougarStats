@@ -360,7 +360,9 @@ LDAServer <- function(id, data, shared_explanatory, shared_response) {
       predictor_df <- analysis_df[, input$predictors, drop = FALSE]
       numeric_check <- sapply(predictor_df, is.numeric)
 
-      class_counts <- table(analysis_df[[resp_col]])
+      class_counts    <- table(analysis_df[[resp_col]])
+      class_dist_df   <- as.data.frame(class_counts)
+      colnames(class_dist_df) <- c("Class", "Count")
 
       if (nlevels(analysis_df[[resp_col]]) > floor(nrow(analysis_df) / 2)) {
         showNotification(
@@ -466,6 +468,9 @@ LDAServer <- function(id, data, shared_explanatory, shared_response) {
         cv_accuracy <- sum(diag(cv_confusion)) / sum(cv_confusion)
       }
 
+      class_report_preds <- if (isTRUE(input$useCV)) lda_cv$class else lda_pred$class
+      lda_class_report   <- knn_classification_report(analysis_df[[resp_col]], class_report_preds)$report
+
       res <- list(
         fit = lda_fit,
         confusion = confusion_mat,
@@ -476,7 +481,9 @@ LDAServer <- function(id, data, shared_explanatory, shared_response) {
         cv_accuracy = cv_accuracy,
         response = resp_col,
         predictors = input$predictors,
-        n = nrow(analysis_df)
+        n = nrow(analysis_df),
+        class_dist = class_dist_df,
+        class_report = lda_class_report
       )
 
       calc_results(res)
@@ -493,9 +500,17 @@ LDAServer <- function(id, data, shared_explanatory, shared_response) {
         req(r)
 
         tagList(
-          tags$h4("Model Information"),
+          tags$h4("Model Summary"),
           tableOutput(session$ns("ldaModelInfo")),
-          
+
+          tags$h4("Class Distribution (Full Dataset)"),
+          tableOutput(session$ns("ldaClassDist")),
+          tags$hr(),
+
+          tags$h4("Classification Report"),
+          tableOutput(session$ns("ldaClassReport")),
+          tags$hr(),
+
           tags$h4("Prior Probabilities"),
           tableOutput(session$ns("ldaPriors")),
 
@@ -516,13 +531,13 @@ LDAServer <- function(id, data, shared_explanatory, shared_response) {
       output$ldaModelInfo <- renderTable({
         r <- calc_results()
         req(r)
-        
+
         acc <- if (isTRUE(input$useCV) && !is.null(r$cv_accuracy)) {
           round(r$cv_accuracy, 4)
         } else {
           round(r$accuracy, 4)
         }
-        
+
         data.frame(
           Item = c(
             "Number of Classes",
@@ -540,57 +555,69 @@ LDAServer <- function(id, data, shared_explanatory, shared_response) {
           ),
           check.names = FALSE
         )
-      }, rownames = FALSE)
+      }, rownames = FALSE, striped = TRUE, bordered = TRUE)
       
+      output$ldaClassDist <- renderTable({
+        r <- calc_results()
+        req(r)
+        r$class_dist
+      }, rownames = FALSE, striped = TRUE, bordered = TRUE)
+
+      output$ldaClassReport <- renderTable({
+        r <- calc_results()
+        req(r)
+        r$class_report
+      }, rownames = FALSE, striped = TRUE, bordered = TRUE)
+
       output$ldaPriors <- renderTable({
         r <- calc_results()
         req(r)
-        
+
         data.frame(
           Class = names(r$fit$prior),
           Prior_Probability = round(as.numeric(r$fit$prior), 4),
           check.names = FALSE
         )
-      }, rownames = FALSE)
+      }, rownames = FALSE, striped = TRUE, bordered = TRUE)
 
       output$groupMeans <- renderTable({
         r <- calc_results()
         req(r)
         round(r$fit$means, 4)
-      }, rownames = TRUE)
+      }, rownames = TRUE, striped = TRUE, bordered = TRUE)
 
       output$coefficients <- renderTable({
         r <- calc_results()
         req(r)
         round(r$fit$scaling, 4)
-      }, rownames = TRUE)
+      }, rownames = TRUE, striped = TRUE, bordered = TRUE)
 
       output$propTrace <- renderTable({
         r <- calc_results()
         req(r)
-        
+
         data.frame(
           Discriminant = paste0("LD", seq_along(r$prop_trace)),
           Proportion = round(r$prop_trace, 4),
           check.names = FALSE
         )
-      }, rownames = FALSE)
+      }, rownames = FALSE, striped = TRUE, bordered = TRUE)
 
       output$confusionMatrix <- renderTable({
         r <- calc_results()
         req(r)
-        
+
         cm <- if (isTRUE(input$useCV) && !is.null(r$cv_confusion)) {
           as.data.frame.matrix(r$cv_confusion)
         } else {
           as.data.frame.matrix(r$confusion)
         }
-        
+
         cm$Actual <- rownames(cm)
         cm <- cm[, c("Actual", setdiff(names(cm), "Actual"))]
         rownames(cm) <- NULL
         cm
-      }, rownames = FALSE)
+      }, rownames = FALSE, striped = TRUE, bordered = TRUE)
 
       output$ldaPlot <- renderPlot({
         r <- plot_results()
