@@ -235,6 +235,14 @@ SLRMainPanelUI <- function(id) {
                 type = "tabs",
                 id   = ns("correlationTabs"),
                 
+                
+                tabPanel(
+                  title = "Summary",
+                  value = "Summary",
+                  br(),
+                  tableOutput(ns("correlationSummaryTable"))
+                ),
+                
                 tabPanel(
                   title = "Pearson",
                   value = "Pearson",
@@ -242,16 +250,6 @@ SLRMainPanelUI <- function(id) {
                   br(),
                   br(),
                   uiOutput(ns('pearsonCorFormula')),
-                  br(),
-                  hr()
-                ),
-                
-                tabPanel(
-                  title = "Kendall",
-                  value = "Kendall",
-                  titlePanel("Kendall's Rank Correlation Coefficient"),
-                  br(),
-                  uiOutput(ns("kendallFormula")),
                   br(),
                   hr()
                 ),
@@ -265,7 +263,19 @@ SLRMainPanelUI <- function(id) {
                   br(),
                   br(),
                   hr()
+                ),
+                
+                tabPanel(
+                  title = "Kendall",
+                  value = "Kendall",
+                  titlePanel("Kendall's Rank Correlation Coefficient"),
+                  br(),
+                  uiOutput(ns("kendallFormula")),
+                  br(),
+                  hr()
                 )
+                
+                
                 
               ) ## Nested tabsetPanel
             )
@@ -316,14 +326,14 @@ SLRSidebarUI <- function(id) {
       textAreaInput(
         inputId     = ns("y"),
         label       = strong("Response Variable (\\( y\\))"),
-        value       = "4, 14, 15, 18, 21, 26, 38",
+        value       = "2.48, 2.26, 2.47, 2.77, 2.99, 3.05, 3.18, 3.46, 3.03, 3.26, 2.67, 2.53",
         placeholder = "Enter numeric values separated by a comma with decimals as points. (eg: 1,2,3)",
         rows        = 3),
       
       textAreaInput(
         inputId     = ns("x"),
         label       = strong("Explanatory Variable (\\( x\\))"),
-        value       = "61, 111, 125, 134, 169, 173, 244",
+        value       = "4.51, 3.58, 4.31, 5.06, 5.64, 4.99, 5.29, 5.83, 4.70, 5.61, 4.90, 4.20",
         placeholder = "Enter numeric values separated by a comma with decimals as points (eg: 1,2,3).",
         rows        = 3)
     ), #dataRegCor == 'Enter Raw Data'
@@ -605,7 +615,7 @@ SLRServer <- function(id) {
     slrupload_iv$add_rule("slrUserData", ~ if(!(tolower(tools::file_ext(input$slrUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
     slrupload_iv$add_rule("slrUserData", ~ if(nrow(slrUploadData()) == 0) "File is empty.")
     slrupload_iv$add_rule("slrUserData", ~ if(ncol(slrUploadData()) < 2) "Data must include one response and (at least) one explanatory variable.")
-    slrupload_iv$add_rule("slrUserData", ~ if(nrow(slrUploadData()) < 3) "Samples must include at least 2 observations.")
+    slrupload_iv$add_rule("slrUserData", ~ if(nrow(slrUploadData()) < 4) "Samples must include at least 4 numeric observations.")
     # slrupload_iv$add_rule("slrUserData", ~ if(any(!is.numeric(slrUploadData()))) "File contains non-numeric data.")
     
     slruploadvars_iv$add_rule("slrExplanatory", sv_required())
@@ -1131,7 +1141,7 @@ SLRServer <- function(id) {
           par(font.main = 2, font.lab = 2)
           plot(model, which = 3, pch = 20, main = "", lwd = 2, sub.caption = "", caption = "", ann = FALSE)
           title(main = "Scale-Location", cex.main = 1.2)
-          title(ylab = "Standardized Residuals")
+          title(ylab = "sqrt(Standardized Residuals|)")
         })
         
         output$slrResidualsPanelPlot4 <- renderPlot({
@@ -1419,119 +1429,106 @@ SLRServer <- function(id) {
                 br(),
                 br(),
                 
-                # Population Correlation Coefficient
-                hr(),
-                p(strong("Hypothesis Test for Population Correlation Coefficient")),
-                p(HTML("H<sub>0</sub>: \\(\\rho = 0\\)")),
-                p(HTML("H<sub>a</sub>: \\(\\rho \\neq 0\\)")),
-                p("\\(\\alpha = 0.05\\)"),
-                p(sprintf("\\( df = n - 2 = %d \\)", pearson$parameter)),
-                
-                p(strong("Test Statistic:")),
-                p(sprintf(
-                  "\\( t = \\dfrac{r\\sqrt{n-2}}{\\sqrt{1-r^2}} = \\dfrac{%0.4f\\sqrt{%d-2}}{\\sqrt{1-%0.4f^2}} = %0.4f \\)",
-                  pearson$estimate, n, pearson$estimate, pearson$statistic
-                )),
-                
-                # P-value method
-                p(strong("Using P-Value Method:")),
-                p(sprintf(
-                  "\\( P = 2 \\times P(t > |\\, %0.4f \\,|) = %s \\)",
-                  pearson$statistic,
-                  format.pval(pearson$p.value, digits = 4, eps = 0.0001)
-                )),
-                if(pearson$p.value <= 0.05) {
-                  p(sprintf(
-                    "Since \\( P \\leq 0.05 \\), reject \\( H_0 \\)."
-                  ))
-                } else {
-                  p(sprintf(
-                    "Since \\( P > 0.05 \\), fail to reject \\( H_0 \\)."
-                  ))
-                },
-                
-                br(),
-                
-                # Critical value method
-                p(strong("Using Critical Value Method:")),
-                p(sprintf(
-                  "\\( \\text{Critical Value(s)} = \\pm t_{\\alpha/2,\\, n-2} = \\pm t_{0.025,\\, %d} = \\pm %0.4f \\)",
-                  pearson$parameter,
-                  qt(0.975, df = pearson$parameter)
-                )),
-                if(abs(pearson$statistic) > qt(0.975, df = pearson$parameter)) {
-                  p(sprintf(
-                    "Since the test statistic \\( (t = %0.4f) \\) falls within the rejection region, reject \\( H_0 \\).",
-                    pearson$statistic
-                  ))
-                } else {
-                  p(sprintf(
-                    "Since the test statistic \\( (t = %0.4f) \\) does not fall within the rejection region, fail to reject \\( H_0 \\).",
-                    pearson$statistic
-                  ))
-                },
-                
-                # Curve
-                plotOutput(session$ns("pearsonTCurve")),
-                
-                
-                # Conclusion
-                p(strong("Conclusion:")),
-                if(pearson$p.value <= 0.05) {
-                  p(sprintf(
-                    "At \\( \\alpha = 0.05 \\), since the test statistic falls in the rejection region we reject \\( H_0 \\) and conclude that there is enough statistical evidence of a linear relationship between \\( x \\) and \\( y \\) in the population."
-                  ))
-                } else {
-                  p(sprintf(
-                    "At \\( \\alpha = 0.05 \\), since the test statistic does not fall in the rejection region we fail to reject \\( H_0 \\) and conclude that there is not enough statistical evidence of a linear relationship between \\( x \\) and \\( y \\) in the population."
-                  ))
-                },
-                
-                # Fischer Transform 
-                
-                hr(),
-                p(strong("Confidence Interval for \\(\\rho\\) (Fisher Z-Transformation)")),
-                
-                p("Since the sampling distribution of Pearson's r is not normal, we use the Fisher Z-Transformation to construct a confidence interval."),
-                
-                p(strong("Step 1: Transform r")),
-                p(sprintf(
-                  "\\( z_r = \\dfrac{1}{2} \\ln\\left(\\dfrac{1+r}{1-r}\\right) = \\text{artanh}(r) = \\dfrac{1}{2} \\ln\\left(\\dfrac{1+%0.4f}{1-%0.4f}\\right) = %0.4f \\)",
-                  pearson$estimate, pearson$estimate, atanh(pearson$estimate)
-                )),
-                
-                p(strong("Step 2: Standard Error")),
-                p(sprintf(
-                  "\\( SE_{z_r} = \\dfrac{1}{\\sqrt{n-3}} = \\dfrac{1}{\\sqrt{%d-3}} = %0.4f \\)",
-                  n, 1/sqrt(n-3)
-                )),
-                
-                p(strong("Step 3: Confidence Interval on Transformed Scale")),
-                p(sprintf(
-                  "\\( \\left(z_r - Z_{\\alpha/2} \\cdot SE_{z_r}, \\; z_r + Z_{\\alpha/2} \\cdot SE_{z_r}\\right) = \\left(%0.4f - 1.96 \\times %0.4f, \\; %0.4f + 1.96 \\times %0.4f\\right) = \\left(%0.4f, \\; %0.4f\\right) \\)",
-                  atanh(pearson$estimate), 1/sqrt(n-3),
-                  atanh(pearson$estimate), 1/sqrt(n-3),
-                  atanh(pearson$estimate) - 1.96 * (1/sqrt(n-3)),
-                  atanh(pearson$estimate) + 1.96 * (1/sqrt(n-3))
-                )),
-                
-                p(strong("Step 4: Convert Back to Original Scale")),
-                {
-                  z_lower <- atanh(pearson$estimate) - 1.96 * (1/sqrt(n-3))
-                  z_upper <- atanh(pearson$estimate) + 1.96 * (1/sqrt(n-3))
-                  ci_lower <- (exp(2*z_lower) - 1) / (exp(2*z_lower) + 1)
-                  ci_upper <- (exp(2*z_upper) - 1) / (exp(2*z_upper) + 1)
+                if (!isTRUE(all.equal(r_squared, 1))) tagList(
                   
+                  # Population Correlation Coefficient
+                  hr(),
+                  p(HTML(paste0(strong("Hypothesis Test for the Population Correlation Coefficient"), " \\((\\rho)\\)"))),
+                  p(HTML("H<sub>0</sub>: \\(\\rho = 0\\)")),
+                  p(HTML("H<sub>a</sub>: \\(\\rho \\neq 0\\)")),
+                  p("\\(\\alpha = 0.05\\)"),
+                  p(sprintf("\\( df = n - 2 = %d \\)", pearson$parameter)),
+                  
+                  p(strong("Test Statistic:")),
                   p(sprintf(
-                    "\\( \\left(\\dfrac{e^{2Z_{lower}}-1}{e^{2Z_{lower}}+1}, \\; \\dfrac{e^{2Z_{upper}}-1}{e^{2Z_{upper}}+1}\\right) = \\left(%0.4f, \\; %0.4f\\right) \\)",
-                    ci_lower, ci_upper
-                  ))
-                },
-                
-                br(),
-                br()
-                
-                
+                    "\\( t = \\dfrac{r\\sqrt{n-2}}{\\sqrt{1-r^2}} = \\dfrac{%0.4f\\sqrt{%d-2}}{\\sqrt{1-%0.4f^2}} = %0.4f \\)",
+                    pearson$estimate, n, pearson$estimate, pearson$statistic
+                  )),
+                  
+                  p(strong("Using P-Value Method:")),
+                  p(sprintf(
+                    "\\( P = 2 \\times P(t > |\\, %0.4f \\,|) = %s \\)",
+                    pearson$statistic,
+                    format.pval(pearson$p.value, digits = 4, eps = 0.0001)
+                  )),
+                  if(pearson$p.value <= 0.05) {
+                    p(sprintf("Since \\( P \\leq 0.05 \\), reject \\( H_0 \\)."))
+                  } else {
+                    p(sprintf("Since \\( P > 0.05 \\), fail to reject \\( H_0 \\)."))
+                  },
+                  
+                  br(),
+                  
+                  p(strong("Using Critical Value Method:")),
+                  p(sprintf(
+                    "\\( \\text{Critical Value(s)} = \\pm t_{\\alpha/2,\\, n-2} = \\pm t_{0.025,\\, %d} = \\pm %0.4f \\)",
+                    pearson$parameter,
+                    qt(0.975, df = pearson$parameter)
+                  )),
+                  if(abs(pearson$statistic) > qt(0.975, df = pearson$parameter)) {
+                    p(sprintf(
+                      "Since the test statistic \\( (t = %0.4f) \\) falls within the rejection region, reject \\( H_0 \\).",
+                      pearson$statistic
+                    ))
+                  } else {
+                    p(sprintf(
+                      "Since the test statistic \\( (t = %0.4f) \\) does not fall within the rejection region, fail to reject \\( H_0 \\).",
+                      pearson$statistic
+                    ))
+                  },
+                  
+                  plotOutput(session$ns("pearsonTCurve")),
+                  
+                  p(strong("Conclusion:")),
+                  if(pearson$p.value <= 0.05) {
+                    p("At \\( \\alpha = 0.05 \\), since the test statistic falls in the rejection region we reject \\( H_0 \\) and conclude that there is enough statistical evidence of a linear relationship between \\( x \\) and \\( y \\) in the population.")
+                  } else {
+                    p("At \\( \\alpha = 0.05 \\), since the test statistic does not fall in the rejection region we fail to reject \\( H_0 \\) and conclude that there is not enough statistical evidence of a linear relationship between \\( x \\) and \\( y \\) in the population.")
+                  },
+                  
+                  # Fischer Transform
+                  hr(),
+                  p(HTML(paste0(strong("Confidence Interval for the Population Correlation Coefficient \\((\\rho)\\) using Fisher z-Transformation")))),
+                  
+                  p("Since the sampling distribution of Pearson's r is not normal, we use the Fisher Z-Transformation to construct a confidence interval."),
+                  
+                  p(strong("Step 1: Transform r")),
+                  p(sprintf(
+                    "\\( z_r = \\dfrac{1}{2} \\ln\\left(\\dfrac{1+r}{1-r}\\right) = \\text{artanh}(r) = \\dfrac{1}{2} \\ln\\left(\\dfrac{1+%0.4f}{1-%0.4f}\\right) = %0.4f \\)",
+                    pearson$estimate, pearson$estimate, atanh(pearson$estimate)
+                  )),
+                  
+                  p(strong("Step 2: Standard Error")),
+                  p(sprintf(
+                    "\\( SE_{z_r} = \\dfrac{1}{\\sqrt{n-3}} = \\dfrac{1}{\\sqrt{%d-3}} = %0.4f \\)",
+                    n, 1/sqrt(n-3)
+                  )),
+                  
+                  p(strong("Step 3: Confidence Interval on Transformed Scale")),
+                  p(sprintf(
+                    "\\( \\left(z_r - Z_{\\alpha/2} \\cdot SE_{z_r}, \\; z_r + Z_{\\alpha/2} \\cdot SE_{z_r}\\right) = \\left(%0.4f - 1.96 \\times %0.4f, \\; %0.4f + 1.96 \\times %0.4f\\right) = \\left(%0.4f, \\; %0.4f\\right) \\)",
+                    atanh(pearson$estimate), 1/sqrt(n-3),
+                    atanh(pearson$estimate), 1/sqrt(n-3),
+                    atanh(pearson$estimate) - 1.96 * (1/sqrt(n-3)),
+                    atanh(pearson$estimate) + 1.96 * (1/sqrt(n-3))
+                  )),
+                  
+                  p(strong("Step 4: Convert Back to Original Scale")),
+                  {
+                    z_lower <- atanh(pearson$estimate) - 1.96 * (1/sqrt(n-3))
+                    z_upper <- atanh(pearson$estimate) + 1.96 * (1/sqrt(n-3))
+                    ci_lower <- (exp(2*z_lower) - 1) / (exp(2*z_lower) + 1)
+                    ci_upper <- (exp(2*z_upper) - 1) / (exp(2*z_upper) + 1)
+                    p(sprintf(
+                      "\\( \\left(\\dfrac{e^{2Z_{lower}}-1}{e^{2Z_{lower}}+1}, \\; \\dfrac{e^{2Z_{upper}}-1}{e^{2Z_{upper}}+1}\\right) = \\left(%0.4f, \\; %0.4f\\right) \\)",
+                      ci_lower, ci_upper
+                    ))
+                  },
+                  
+                  br(),
+                  br()
+                  
+                ) # end if (!isPerfectFit)
               )
             })
             
@@ -1712,6 +1709,28 @@ SLRServer <- function(id) {
                                    lengthMenu = list(c(25, 50, 100, -1),
                                                      c("25", "50", "100", "all"))))
         })
+        
+        
+        output$correlationSummaryTable <- renderTable({
+          data.frame(
+            `Correlation Coefficient` = c(
+              "Pearson's (<em>r</em>)",
+              "Spearman's (<em>r</em><sub>s</sub>)",
+              "Kendall's (<em>&tau;</em>)"
+            ),
+            Estimate = c(
+              sprintf("%.4f", round(pearson$estimate, 4)),
+              sprintf("%.4f", round(spearman$estimate, 4)),
+              sprintf("%.4f", round(kendall$estimate, 4))
+            ),
+            check.names = FALSE
+          )
+        },
+        bordered  = TRUE,
+        hover     = TRUE,
+        align     = "c",
+        sanitize.text.function = function(x) x
+        )
         
         # ANOVA Output
         output$anovaHypotheses <- renderUI({
