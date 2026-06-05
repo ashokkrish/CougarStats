@@ -1,144 +1,137 @@
-<link rel="stylesheet" href="authors.css">
-<div class="text-zinc-100 font-sans">
-  <div class="max-w-5xl mx-auto px-6 py-8">
-    <!-- Current Members -->
-    <h2 class="text-3xl font-semibold mb-6 flex items-center justify-between">
-      <span>Current Project Members</span>
-      <button id="authors-hide" class="text-4xl leading-none text-zinc-400 hover:text-white" data-dismiss="modal" aria-label="Close">&times;</button>
-    </h2>
-    <!-- Ashok Krishnamurthy -->
-    <div class="grid md:grid-cols-1 gap-6 mb-16 centered">
-      <a href="https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/ScienceTechnology/Departments/MathematicsComputing/Faculty/akrishnamurthy.htm" class="bg-zinc-800 p-6 rounded-2xl flex items-center gap-x-4 border border-zinc-700 hover:bg-zinc-700 transition-colors duration-150">
-        <div class="text-2xl font-medium">Ashok Krishnamurthy, Ph.D.<br/>MRU Assoc. Professor</div>
-        <div class="ml-auto text-emerald-400 text-sm font-medium">Supervisor</div>
-      </a>
-    </div>
-    <!-- Other current members (use unified .current card template) -->
-    <div class="grid md:grid-cols-2 gap-6 mb-16">
-      <a href="https://github.com/magoto12" class="current project-member bg-zinc-800 hover:bg-zinc-700 p-6 rounded-2xl flex items-center gap-x-4 border border-zinc-700">
-        <span class="name text-2xl font-medium">Kai Agoto</span>
-        <span class="role ml-auto text-emerald-400 text-sm font-medium">Senior Developer</span>
-        <span class="date-range text-xs text-zinc-400"></span>
-        <span class="funding"></span>
-      </a>
-      <a href="https://github.com/murad256" class="current project-member bg-zinc-800 hover:bg-zinc-700 p-6 rounded-2xl flex items-center gap-x-4 border border-zinc-700">
-        <span class="name text-2xl font-medium">Murad Ahmed</span>
-        <span class="role ml-auto text-emerald-400 text-sm font-medium">Senior Developer</span>
-        <span class="date-range text-xs text-zinc-400"></span>
-        <span class="funding"></span>
-      </a>
-      <a href="https://github.com/jacie-b" class="current project-member bg-zinc-800 hover:bg-zinc-700 p-6 rounded-2xl flex items-center gap-x-4 border border-zinc-700">
-        <span class="name text-2xl font-medium">Jacie Bennett</span>
-        <span class="role ml-auto text-emerald-400 text-sm font-medium">Senior Developer</span>
-        <span class="date-range text-xs text-zinc-400"></span>
-        <span class="funding"></span>
-      </a>
-      <a href="https://github.com/bryce-carson" class="current project-member bg-zinc-800 hover:bg-zinc-700 p-6 rounded-2xl flex items-center gap-x-4 border border-zinc-700">
-        <span class="name text-2xl font-medium">Bryce Carson</span>
-        <span class="role ml-auto text-emerald-400 text-sm font-medium">Senior Developer</span>
-        <span class="date-range text-xs text-zinc-400"></span>
-        <span class="funding"></span>
-      </a>
-      <a href="https://github.com/darrenlyl" class="current project-member bg-zinc-800 hover:bg-zinc-700 p-6 rounded-2xl flex items-center gap-x-4 border border-zinc-700">
-        <span class="name text-2xl font-medium">Darren Law Yan Lun</span>
-        <span class="role ml-auto text-emerald-400 text-sm font-medium">Senior Developer</span>
-        <span class="date-range text-xs text-zinc-400"></span>
-        <span class="funding"></span>
-      </a>
-    </div>
-
-    <!-- Acknowledgements / Funding (cards) -->
-    <h2 class="text-3xl font-semibold mb-6">Past Project Members &amp; Funding Acknowledgement</h2>
-    <div class="grid md:grid-cols-2 gap-4 text-sm">
-      <!-- unified .past cards using same template as current members: NAME; ROLE; DATE RANGE; FUNDING; a[href to github or empty] -->
-      <a href="https://github.com/Maryaen" class="past project-member bg-zinc-800 hover:bg-zinc-700 p-6 rounded-2xl border border-zinc-700">
-        <span class="name font-semibold">Maryam Abou El Nasr</span>
-        <span class="role text-emerald-400 text-sm font-medium"></span>
-        <span class="date-range text-xs text-zinc-400">January – April 2026</span>
-        <span class="funding">MATH 4199: Directed Readings</span>
-      </a>
-      <a href="https://github.com/murad256" class="past project-member bg-zinc-800 hover:bg-zinc-700 p-6 rounded-2xl border border-zinc-700">
-        <span class="name font-semibold">Murad Ahmed</span>
-        <span class="role text-emerald-400 text-sm font-medium"></span>
-        <span class="date-range text-xs text-zinc-400">May 2026 – August 2026</span>
-        <span class="funding">Alberta Innovates Summer Research Studentships</span>
-      </a>
-      <a href="https://github.com/magoto12" class="past project-member bg-zinc-800 hover:bg-zinc-700 p-6 rounded-2xl border border-zinc-700">
-        <span class="name font-semibold">Kai Agoto</span>
-        <span class="role text-emerald-400 text-sm font-medium"></span>
-        <span class="date-range text-xs text-zinc-400">May 2026 – August 2026</span>
-        <span class="funding">Faculty of Science and Technology (FST) Student Research Award</span>
-      </a>
-      <a href="https://github.com/darrenlyl" class="past project-member bg-zinc-800 hover:bg-zinc-700 p-6 rounded-2xl border border-zinc-700">
-        <span class="name font-semibold">Darren Law Yan Lun</span>
-        <span class="role text-emerald-400 text-sm font-medium"></span>
-        <span class="date-range text-xs text-zinc-400">May 2025 – August 2025</span>
-        <span class="funding">Alberta Innovates Summer Research Studentships</span>
-      </a>
-      <a href="https://github.com/jacie-b" class="past project-member bg-zinc-800 hover:bg-zinc-700 p-6 rounded-2xl border border-zinc-700">
-        <span class="name font-semibold">Jacie Bennett</span>
-        <span class="role text-emerald-400 text-sm font-medium"></span>
-        <span class="date-range text-xs text-zinc-400">May 2025 – August 2025</span>
-        <span class="funding">Faculty of Science and Technology (FST) Student Research Award</span>
-      </a>
-      <a href="" class="past project-member bg-zinc-800 hover:bg-zinc-700 p-6 rounded-2xl border border-zinc-700">
-        <span class="name font-semibold">Diana Vi</span>
-        <span class="role text-emerald-400 text-sm font-medium"></span>
-        <span class="date-range text-xs text-zinc-400">May 2025 – August 2025</span>
-        <span class="funding">Faculty of Science and Technology (FST) Student Research Award</span>
-      </a>
-      <a href="" class="past project-member bg-zinc-800 hover:bg-zinc-700 p-6 rounded-2xl border border-zinc-700">
-        <span class="name font-semibold">Samantha Brian</span>
-        <span class="role text-emerald-400 text-sm font-medium"></span>
-        <span class="date-range text-xs text-zinc-400">January 2025 – May 2025</span>
-        <span class="funding">Provost's Teaching and Learning Enhancement Grant (TLEG)</span>
-      </a>
-      <a href="https://github.com/bryce-carson" class="past project-member bg-zinc-800 hover:bg-zinc-700 p-6 rounded-2xl border border-zinc-700">
-        <span class="name font-semibold">Bryce Carson</span>
-        <span class="role text-emerald-400 text-sm font-medium"></span>
-        <span class="date-range text-xs text-zinc-400">November 2024 – January 2025</span>
-        <span class="funding">Provost's Teaching and Learning Enhancement Grant (TLEG)</span>
-      </a>
-      <a href="" class="past project-member bg-zinc-800 hover:bg-zinc-700 p-6 rounded-2xl border border-zinc-700">
-        <span class="name font-semibold">Michael Myer</span>
-        <span class="role text-emerald-400 text-sm font-medium"></span>
-        <span class="date-range text-xs text-zinc-400">September 2023 – April 2024</span>
-        <span class="funding">Provost's Teaching and Learning Enhancement Grant (TLEG)</span>
-      </a>
-      <a href="" class="past project-member bg-zinc-800 hover:bg-zinc-700 p-6 rounded-2xl border border-zinc-700">
-        <span class="name font-semibold">Michael Myer</span>
-        <span class="role text-emerald-400 text-sm font-medium"></span>
-        <span class="date-range text-xs text-zinc-400">June – August 2023</span>
-        <span class="funding">Faculty of Science and Technology (FST) Student Research Award</span>
-      </a>
-      <a href="" class="past project-member bg-zinc-800 hover:bg-zinc-700 p-6 rounded-2xl border border-zinc-700">
-        <span class="name font-semibold">Crystal Wai</span>
-        <span class="role text-emerald-400 text-sm font-medium"></span>
-        <span class="date-range text-xs text-zinc-400">September – December 2022</span>
-        <span class="funding">COMP 5690: Senior Computer Science Project</span>
-      </a>
-    </div>
-
-    <!-- Citation -->
-    <p class="mt-20 text-xs text-zinc-400">Citation</p>
-    <div class="text-sm opacity-75">
-      Krishnamurthy, A., et al. (2026). <em>CougarStats</em>: An R Shiny app for statistical data analysis [Web application]. https://www.cougarstats.ca/
-    </div>
-
-    <!-- Etymology -->
-    <p class="mt-8 text-xs text-zinc-400">Etymology</p>
-    <div class="text-sm opacity-75">
-      The name <em>CougarStats</em> is inspired by Mount Royal University's athletics mascot, the cougar, symbolizing strength and agility, and by the app's focus on statistics.
-    </div>
-
-    <!-- iOS App -->
-    <div class="mt-12 border-t border-zinc-700 pt-8 flex flex-col items-center">
-      <p class="text-sm opacity-75 text-center mb-6 max-w-md">An iOS application with similar functionality, maintained separately from this R Shiny web application, is available from the Apple App Store under the name CougarStats. Ashok Krishnamurthy provides statistical supervision and design requirements for the application.</p>
-      <a href="https://apps.apple.com/us/app/cougarstats/id6476070179" target="_blank"
-         class="flex items-center gap-x-3 bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-4 rounded-3xl font-semibold text-lg">
-        <i class="fab fa-apple text-3xl"></i>
-        Download from Apple App Store
-      </a>
-    </div>
-  </div>
-</div>
+<h2>
+  Developers
+</h2>
+<h3>
+  Project Supervisor
+</h3>
+<p>
+  <a href="https://github.com/ashokkrish" target="_blank">Ashok
+    Krishnamurthy Ph.D., MRU Associate Professor</a>: Template and model
+  designer, copyright holder.<br/>See the
+  <a href="https://www.mtroyal.ca/ProgramsCourses/FacultiesSchoolsCentres/ScienceTechnology/Departments/MathematicsComputing/Faculty/akrishnamurthy.htm" target="_blank">faculty
+    biography page of Prof. Krishnamurthy</a>.
+</p>
+<h3>
+  Current project members
+</h3>
+<ul>
+  <li>
+    <a href="https://github.com/jacie-b" target="_blank">Jacie Bennet</a>:
+    Senior Developer
+  </li>
+  <li>
+    <a href="https://github.com/bryce-carson" target="_blank">Bryce
+      Carson</a>: Senior Developer
+  </li>
+  <li>
+    <a href="https://github.com/darrenlyl" target="_blank">Darren Law</a>:
+    Senior Developer
+  </li>
+  <li>
+    <a href="https://github.com/murad256" target="_blank">Murad Ahmed</a>:
+    Senior Developer
+  </li>
+  <li>
+    <a href="https://github.com/magoto12" target="_blank">Kai Agoto</a>:
+    Senior Developer
+  </li>
+</ul>
+<!-- Financial support of the development of CougarStats  -->
+<h2 id="acknowledgements">Acknowledgements</h2>
+<style>table, th, td { border: 1px solid black; }</style>
+<table>
+  <colgroup>
+    <col style="width: 52%" />
+    <col style="width: 17%" />
+    <col style="width: 29%" />
+  </colgroup>
+  <thead>
+    <tr>
+      <th>Funding Agency / Coursework</th>
+      <th>Recipient</th>
+      <th>Date(s)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>MRU Internal Research Grant Fund</td>
+      <td>Jacie Bennet</td>
+      <td>May 2026 through August 2026</td>
+    </tr>
+    <tr>
+      <td>MRU Open Educational Resources Grant (OEG) program</td>
+      <td>Bryce Carson</td>
+      <td>May 2026 through June 2026</td>
+    </tr>
+    <tr>
+      <td>MRU Internal Research Grant Fund</td>
+      <td>Darren Law Yan Lun</td>
+      <td>May 2026 through August 2026</td>
+    </tr>
+    <tr>
+      <td>Alberta Innovates Summer Research Studentships</td>
+      <td>Murad Ahmed</td>
+      <td>May 2026 through August 2026</td>
+    </tr>
+    <tr>
+      <td>Faculty of Science and Technology (FST) Student Research Award</td>
+      <td>Kai Agoto</td>
+      <td>May 2026 through August 2026</td>
+    </tr>
+    <tr>
+      <td>MATH 4199: Directed Readings</td>
+      <td>Maryam Abou El Nasr</td>
+      <td>January through April 2026</td>
+    </tr>
+    <tr>
+      <td>Alberta Innovates Summer Research Studentships</td>
+      <td>Darren Law Yan Lun</td>
+      <td>May 2025 through August 2025</td>
+    </tr>
+    <tr>
+      <td>Faculty of Science and Technology (FST) Student Research Award</td>
+      <td>Jacie Bennett</td>
+      <td>May 2025 through August 2025</td>
+    </tr>
+    <tr>
+      <td>Faculty of Science and Technology (FST) Student Research Award</td>
+      <td>Diana Vi</td>
+      <td>May 2025 through August 2025</td>
+    </tr>
+    <tr>
+      <td>Provost’s Teaching and Learning Enhancement Grant (TLEG)</td>
+      <td>Samantha Brian</td>
+      <td>January 2025 through May 2025</td>
+    </tr>
+    <tr>
+      <td>Provost’s Teaching and Learning Enhancement Grant (TLEG)</td>
+      <td>Bryce Carson</td>
+      <td>November 2024 through January 2025</td>
+    </tr>
+    <tr>
+      <td>Provost’s Teaching and Learning Enhancement Grant (TLEG)</td>
+      <td>Michael Myer</td>
+      <td>September 2023 through April 2024</td>
+    </tr>
+    <tr>
+      <td>Faculty of Science and Technology (FST) Student Research Award</td>
+      <td>Michael Myer</td>
+      <td>June through August 2023</td>
+    </tr>
+    <tr>
+      <td>COMP 5690: Senior Computer Science Project</td>
+      <td>Crystal Wai</td>
+      <td>September through December 2022</td>
+    </tr>
+  </tbody>
+</table>
+<h2 id="citation">Citation</h2>
+<p>
+  Krishnamurthy, A., et al. (2026). <em>CougarStats</em>: An R Shiny app
+  for statistical data analysis [Web application].
+  <a href="https://www.cougarstats.ca/" target="_blank">https://www.cougarstats.ca/</a>
+</p>
+<h2 id="etymology">Etymology</h2>
+<p>The name <em>CougarStats</em> is inspired by Mount Royal University’s
+  athletics mascot, the cougar, symbolizing strength and agility, and by
+  the app’s focus on statistics.</p>
