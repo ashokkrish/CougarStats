@@ -4131,18 +4131,7 @@ statInfrServer <- function(id) {
                   fill = "#023B70",
                   color = NA,
                   alpha = 0.4)
-        
-        # } else if (altHypothesis == 'two.sided') {
-        #   geom_area(data = subset(df, x <= critValueLeft),
-        #             aes(y=y),
-        #             fill = "#023B70",
-        #             color = NA,
-        #             alpha = 0.4) +
-        #   geom_area(data = subset(df, x >= critValue),
-        #             aes(y=y),
-        #             fill = "#023B70",
-        #             color = NA,
-        #             alpha = 0.4)
+     
         
       } else if (altHypothesis == 'greater') {
         geom_area(data = subset(df, x >= critValue),
