@@ -15,22 +15,40 @@ SLRMainPanelUI <- function(id) {
   
   tagList(withMathJax(
     useShinyjs(),
-    tags$style(HTML("         # Message for disabling when perfect fit occurs
+    tags$style(HTML("
       .disabled-tab {
         pointer-events: none !important;
         opacity: 0.4 !important;
         cursor: not-allowed !important;
       }
     ")),
+    
+    # DATA PREVIEW — shown immediately on upload, independent of results
     hidden(div(
-      id = ns("regCorrMP"), # This div is hidden/shown
-      uiOutput(ns("perfectFitWarning")), # added to trap perfect fit
+      id = ns("uploadPreviewPanel"),
+      tags$h4(
+        "Uploaded Data Preview",
+        style = "
+      color: #18536F;
+      font-weight: bold;
+      margin-bottom: 15px;
+      margin-top: 10px;
+    "
+      ),
+      DTOutput(ns("slrUploadPreview")),
+      br()
+    )),
+    
+    hidden(div(
+      id = ns("regCorrMP"),
+      uiOutput(ns("perfectFitWarning")),
       uiOutput(ns("slrValidation")),
       
       div(
-        id = ns("SLRData"), # This div will now contain the navbarPage
+        id = ns("SLRData"),
+        
         navbarPage(
-          title = NULL, # Title for the navbarPage
+          title = NULL,
           id = ns("slrNavbarPage"),
           theme = bs_theme(version = 4),
 
@@ -176,11 +194,14 @@ SLRMainPanelUI <- function(id) {
             
     
           
+          
           #### ---------------- Diagnostic Plots Tab ---------------------------------
+          
           tabPanel(
             title = "Diagnostic Plots",
             value = "Diagnostic Plots",
             fluidPage(
+              uiOutput(ns("diagnosticPlotsWarning")),
               plotOutput(ns("slrResidualsPanelPlot1")),
               plotOutput(ns("slrResidualsPanelPlot2")),
               plotOutput(ns("slrResidualsPanelPlot3")),
@@ -395,6 +416,8 @@ SLRSidebarUI <- function(id) {
 SLRServer <- function(id) {
   moduleServer(id, function(input, output, session) {
     
+    
+    
     # ============================================================
     # LINE Assumption Tests Config
     # Add, remove, or reorder tests here freely
@@ -418,7 +441,7 @@ SLRServer <- function(id) {
       list(
         assumption = "Linearity",
         procedure  = "Rainbow Test",
-        min_n      = 4,
+        min_n      = 6,
         run        = function(model, datx, daty) {
           rb <- lmtest::raintest(model)
           list(
@@ -432,7 +455,7 @@ SLRServer <- function(id) {
       list(
         assumption = "Linearity",
         procedure  = "Ramsey RESET Test",
-        min_n      = 5,
+        min_n      = 6,
         run        = function(model, datx, daty) {
           rt <- lmtest::resettest(model)
           list(
@@ -446,7 +469,7 @@ SLRServer <- function(id) {
       list(
         assumption = "Independence",
         procedure  = "Durbin-Watson Test",
-        min_n      = 4,
+        min_n      = 5,
         run        = function(model, datx, daty) {
           dw <- lmtest::dwtest(model)
           list(
@@ -474,7 +497,7 @@ SLRServer <- function(id) {
       list(
         assumption = "Normality",
         procedure  = "Anderson-Darling Test",
-        min_n      = 3,
+        min_n      = 7,
         run        = function(model, datx, daty) {
           ad <- nortest::ad.test(residuals(model))
           list(
@@ -504,7 +527,7 @@ SLRServer <- function(id) {
       list(
         assumption = "Equal Variance (Homoskedasticity)",
         procedure  = "Breusch-Pagan Test",
-        min_n      = 4,
+        min_n      = 5,
         run        = function(model, datx, daty) {
           bp <- lmtest::bptest(model)
           list(
@@ -518,7 +541,7 @@ SLRServer <- function(id) {
       list(
         assumption = "Equal Variance (Homoskedasticity)",
         procedure  = "White Test",
-        min_n      = 6,
+        min_n      = 4,
         run        = function(model, datx, daty) {
           # White test via auxiliary regression of squared residuals
           e2  <- residuals(model)^2
@@ -539,6 +562,23 @@ SLRServer <- function(id) {
     
     
     slrExportData <- reactiveVal(NULL)
+    
+    hasHighLeverage <- reactiveVal(FALSE)
+    
+    hasLeveragePlotIssue <- reactiveVal(FALSE)
+    
+    output$diagnosticPlotsWarning <- renderUI({
+      
+      if (hasLeveragePlotIssue()) {
+        div(
+          class = "alert alert-warning",
+          tags$b("⚠ Diagnostic Plot Warning: "),
+          "Residuals vs Leverage could not be produced because all leverage values are 0.5."
+        )
+      }
+    })
+    
+    outputOptions(output, "diagnosticPlotsWarning", suspendWhenHidden = FALSE)
     
     
     # output$downloadSLRcsv <- downloadHandler(
@@ -579,7 +619,19 @@ SLRServer <- function(id) {
       }
     )
     
-    
+    output$slrUploadPreview <- renderDT({
+      req(input$slrUserData)
+      
+      dat <- slrUploadData()
+      
+      datatable(
+        dat,
+        options = list(
+          pageLength = 10,
+          scrollX = TRUE
+        )
+      )
+    })
     
     
     
@@ -595,38 +647,81 @@ SLRServer <- function(id) {
     slrraw_iv$add_rule("x", sv_required())
     slrraw_iv$add_rule("x", sv_regex("^\\s*-?\\d*\\.?\\d+(\\s*,\\s*-?\\d*\\.?\\d+)*\\s*$",
                                      "Data must be numeric values separated by a comma (ie: 2,3,4 or 2, 30, 400)."))
-    
-    slrraw_iv$add_rule("x", ~ if(length(strsplit(input$x, ",")[[1]]) < 4) "Sample Data must include at least 4 numeric observations.")
-    slrraw_iv$add_rule("x", ~ if(sampleInfoRaw()$diff != 0) "x and y must have the same number of observations.")
-    slrraw_iv$add_rule("x", ~ if(sampleInfoRaw()$xSD == 0) "Explanatory variable has zero variance (all values are identical). At least two distinct values are required.")
+    slrraw_iv$add_rule("x", ~ if (length(strsplit(input$x, ",")[[1]]) < 4) "Sample Data must include at least 4 numeric observations.")
+    slrraw_iv$add_rule("x", ~ tryCatch(
+      if (isTRUE(sampleInfoRaw()$diff != 0)) "x and y must have the same number of observations.",
+      error = function(e) NULL
+    ))
+    slrraw_iv$add_rule("x", ~ tryCatch(
+      if (isTRUE(sampleInfoRaw()$xSD == 0)) "Explanatory variable has zero variance (all values are identical). At least two distinct values are required.",
+      error = function(e) NULL
+    ))
     
     slrraw_iv$add_rule("y", sv_required())
     slrraw_iv$add_rule("y", sv_regex("^\\s*-?\\d*\\.?\\d+(\\s*,\\s*-?\\d*\\.?\\d+)*\\s*$",
                                      "Data must be numeric values separated by a comma (ie: 2,3,4 or 2, 30, 400)."))
-    slrraw_iv$add_rule("y", ~ if(length(strsplit(input$x, ",")[[1]]) < 4) "Sample Data must include at least 4 numeric observations.")
-    slrraw_iv$add_rule("y", ~ if(sampleInfoRaw()$diff != 0) "x and y must have the same number of observations.")
-    slrraw_iv$add_rule("y", ~ if(sampleInfoRaw()$ySD == 0) "Response variable is constant. Correlation is undefined when a variable has zero variance.")
-    
-    
-    
+    slrraw_iv$add_rule("y", ~ if (length(strsplit(input$x, ",")[[1]]) < 4) "Sample Data must include at least 4 numeric observations.")
+    slrraw_iv$add_rule("y", ~ tryCatch(
+      if (isTRUE(sampleInfoRaw()$diff != 0)) "x and y must have the same number of observations.",
+      error = function(e) NULL
+    ))
+    slrraw_iv$add_rule("y", ~ tryCatch(
+      if (isTRUE(sampleInfoRaw()$ySD == 0)) "Response variable is constant. Correlation is undefined when a variable has zero variance.",
+      error = function(e) NULL
+    ))
     
     slrupload_iv$add_rule("slrUserData", sv_required())
-    slrupload_iv$add_rule("slrUserData", ~ if(is.null(fileInputs$slrStatus) || fileInputs$slrStatus == 'reset') "Required")
-    slrupload_iv$add_rule("slrUserData", ~ if(!(tolower(tools::file_ext(input$slrUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
-    slrupload_iv$add_rule("slrUserData", ~ if(nrow(slrUploadData()) == 0) "File is empty.")
-    slrupload_iv$add_rule("slrUserData", ~ if(ncol(slrUploadData()) < 2) "Data must include one response and (at least) one explanatory variable.")
-    slrupload_iv$add_rule("slrUserData", ~ if(nrow(slrUploadData()) < 4) "Samples must include at least 4 numeric observations.")
-    # slrupload_iv$add_rule("slrUserData", ~ if(any(!is.numeric(slrUploadData()))) "File contains non-numeric data.")
+    slrupload_iv$add_rule("slrUserData", ~ if (is.null(fileInputs$slrStatus) || fileInputs$slrStatus == 'reset') "Required")
+    slrupload_iv$add_rule("slrUserData", ~ if (!(tolower(tools::file_ext(input$slrUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+    slrupload_iv$add_rule("slrUserData", ~ tryCatch(
+      if (isTRUE(nrow(slrUploadData()) == 0)) "File is empty.",
+      error = function(e) NULL
+    ))
+    slrupload_iv$add_rule("slrUserData", ~ tryCatch(
+      if (isTRUE(ncol(slrUploadData()) < 2)) "Data must include one response and (at least) one explanatory variable.",
+      error = function(e) NULL
+    ))
+    slrupload_iv$add_rule("slrUserData", ~ tryCatch(
+      if (isTRUE(nrow(slrUploadData()) < 4)) "Samples must include at least 4 numeric observations.",
+      error = function(e) NULL
+    ))
     
     slruploadvars_iv$add_rule("slrExplanatory", sv_required())
-    slruploadvars_iv$add_rule("slrExplanatory", ~ if(explanatoryInfoUploadSLR()$invalid) "Explanatory variable contains non-numeric data.")
-    slruploadvars_iv$add_rule("slrExplanatory", ~ if(explanatoryInfoUploadSLR()$sd == 0) "Explanatory variable has zero variance (all values are identical). At least two distinct values are required.")
+    slruploadvars_iv$add_rule("slrExplanatory", ~ tryCatch(
+      if (isTRUE(explanatoryInfoUploadSLR()$invalid)) "Explanatory variable contains non-numeric data.",
+      error = function(e) NULL
+    ))
+    slruploadvars_iv$add_rule("slrExplanatory", ~ tryCatch(
+      if (isTRUE(explanatoryInfoUploadSLR()$sd == 0)) "Explanatory variable has zero variance (all values are identical). At least two distinct values are required.",
+      error = function(e) NULL
+    ))
+    slruploadvars_iv$add_rule("slrExplanatory", ~ tryCatch({
+      raw  <- suppressWarnings(as.numeric(as.data.frame(slrUploadData())[, input$slrExplanatory]))
+      datx <- na.omit(raw)
+      if (length(datx) < 4) "Explanatory variable has fewer than 4 non-missing numeric values."
+    }, error = function(e) NULL))
     
     slruploadvars_iv$add_rule("slrResponse", sv_required())
-    slruploadvars_iv$add_rule("slrResponse", ~ if(sampleDiffUpload() != 0) "Missing values detected, x and y must have the same number of observations.")
-    slruploadvars_iv$add_rule("slrResponse", ~ if(responseInfoUploadSLR()$invalid) "Response variable contains non-numeric data.")
-    slruploadvars_iv$add_rule("slrResponse", ~ if(responseInfoUploadSLR()$sd == 0) "Response variable is constant. Correlation is undefined when a variable has zero variance.")
+    slruploadvars_iv$add_rule("slrResponse", ~ tryCatch(
+      if (isTRUE(sampleDiffUpload() != 0)) "Missing values detected — x and y must have the same number of non-missing observations.",
+      error = function(e) NULL
+    ))
+    slruploadvars_iv$add_rule("slrResponse", ~ tryCatch(
+      if (isTRUE(responseInfoUploadSLR()$invalid)) "Response variable contains non-numeric data.",
+      error = function(e) NULL
+    ))
+    slruploadvars_iv$add_rule("slrResponse", ~ tryCatch(
+      if (isTRUE(responseInfoUploadSLR()$sd == 0)) "Response variable is constant. Correlation is undefined when a variable has zero variance.",
+      error = function(e) NULL
+    ))
+    slruploadvars_iv$add_rule("slrResponse", ~ tryCatch({
+      raw  <- suppressWarnings(as.numeric(as.data.frame(slrUploadData())[, input$slrResponse]))
+      daty <- na.omit(raw)
+      if (length(daty) < 4) "Response variable has fewer than 4 non-missing numeric values."
+    }, error = function(e) NULL))
     
+    
+     
     ### ------------ Conditions --------------------------------------------------
     slrraw_iv$condition(~ isTRUE(input$dataRegCor == 'Enter Raw Data'))
     slrupload_iv$condition(~ isTRUE(input$dataRegCor == 'Upload Data'))
@@ -683,16 +778,23 @@ SLRServer <- function(id) {
     )
     
     slrUploadData <- eventReactive(input$slrUserData, {
-      ext <- tools::file_ext(input$slrUserData$name)
-      ext <- tolower(ext)
+      ext <- tolower(tools::file_ext(input$slrUserData$name))
       
-      switch(ext,
-             csv = read_csv(input$slrUserData$datapath, show_col_types = FALSE),
-             xls = read_xls(input$slrUserData$datapath),
-             xlsx = read_xlsx(input$slrUserData$datapath),
-             txt = read_tsv(input$slrUserData$datapath, show_col_types = FALSE),
-             
-             validate("Improper file format."))
+      dat <- switch(ext,
+                    csv  = read_csv(input$slrUserData$datapath, show_col_types = FALSE),
+                    xls  = read_xls(input$slrUserData$datapath),
+                    xlsx = read_xlsx(input$slrUserData$datapath),
+                    txt  = read_tsv(input$slrUserData$datapath, show_col_types = FALSE),
+                    validate("Improper file format.")
+      )
+      
+      # Drop columns that are entirely NA (empty phantom columns from Excel)
+      dat <- dat[, colSums(!is.na(dat)) > 0, drop = FALSE]
+      
+      # Drop rows where ALL columns are NA (empty phantom rows from Excel)
+      dat <- dat[rowSums(!is.na(dat)) > 0, , drop = FALSE]
+      
+      dat
     })
     
     sampleInfoRaw <- eventReactive({input$x
@@ -707,59 +809,87 @@ SLRServer <- function(id) {
       })
     
     explanatoryInfoUploadSLR <- eventReactive(input$slrExplanatory, {
+      req(input$slrExplanatory != "")
       dat <- list()
-      datx <- as.data.frame(slrUploadData())[, input$slrExplanatory]
-      dat$invalid <- any(!is.numeric(datx))
-      if (!dat$invalid){
-        dat$sd <- sd(datx, na.rm = TRUE)
-      }
-      else{
-        dat$sd <- 0
-      }
+      tryCatch({
+        raw  <- as.data.frame(slrUploadData())[, input$slrExplanatory]
+        datx <- suppressWarnings(as.numeric(raw))
+        datx <- na.omit(datx)
+        dat$invalid <- length(datx) == 0 || any(is.na(suppressWarnings(as.numeric(raw[!is.na(raw)]))))
+        dat$sd <- if (!dat$invalid) sd(datx) else 0
+      }, error = function(e) {
+        dat$invalid <<- TRUE
+        dat$sd      <<- 0
+      })
       return(dat)
     })
     
     responseInfoUploadSLR <- eventReactive(input$slrResponse, {
+      req(input$slrResponse != "")
       dat <- list()
-      daty <- as.data.frame(slrUploadData())[, input$slrResponse]
-      dat$invalid <- any(!is.numeric(daty))
-      # Only calculate SD if numeric
-      if (!dat$invalid) {
-        dat$sd <- sd(daty, na.rm = TRUE)
-      } 
-      else {
-        dat$sd <- 0
-      }
+      tryCatch({
+        raw  <- as.data.frame(slrUploadData())[, input$slrResponse]
+        daty <- suppressWarnings(as.numeric(raw))
+        daty <- na.omit(daty)
+        dat$invalid <- length(daty) == 0 || any(is.na(suppressWarnings(as.numeric(raw[!is.na(raw)]))))
+        dat$sd <- if (!dat$invalid) sd(daty) else 0
+      }, error = function(e) {
+        dat$invalid <<- TRUE
+        dat$sd      <<- 0
+      })
       return(dat)
     })
     
-    sampleDiffUpload <- eventReactive (c(input$slrExplanatory,
-                                         input$slrResponse), {
-                                           if(input$slrResponse == "" | input$slrExplanatory == "") {
-                                             return(0)
-                                           } else {
-                                             datx <- na.omit(as.data.frame(slrUploadData())[, input$slrExplanatory])
-                                             daty <- na.omit(as.data.frame(slrUploadData())[, input$slrResponse])
-                                             diff <- length(datx) - length(daty)
-                                             return(diff)
-                                           }
-                                         })
+    sampleDiffUpload <- eventReactive(c(input$slrExplanatory, input$slrResponse), {
+      if (input$slrResponse == "" | input$slrExplanatory == "") {
+        return(0)
+      } else {
+        tryCatch({
+          datx <- na.omit(as.numeric(as.data.frame(slrUploadData())[, input$slrExplanatory]))
+          daty <- na.omit(as.numeric(as.data.frame(slrUploadData())[, input$slrResponse]))
+          if (length(datx) == 0 || length(daty) == 0) return(-1)  # signals invalid
+          return(length(datx) - length(daty))
+        }, error = function(e) return(-1))
+      }
+    })
     
     #  ========================================================================= #
     ## -------- Observers ------------------------------------------------------
     #  ========================================================================= #
-    observeEvent(input$slrUserData, {
-      fileInputs$slrStatus <- 'uploaded'
-      toggle(id = "regCorrMP", condition = slrupload_iv$is_valid())
+    
+    output$slrViewUpload <- renderDT({
+      req(input$slrUserData)   # only this — no validator gate
       
-      if (slrupload_iv$is_valid()) {
-        updateSelectInput(inputId = "slrExplanatory",
-                          choices = colnames(slrUploadData()))
-        updateSelectInput(inputId = "slrResponse",
-                          choices = colnames(slrUploadData()))
-        show("slrExplanatory")
-        show("slrResponse")
-      }
+      dat <- slrUploadData()
+      
+      datatable(
+        dat,
+        options = list(
+          pageLength = 10,
+          scrollX = TRUE
+        )
+      )
+    })
+    
+    
+    observeEvent(input$slrUserData, {
+      
+      fileInputs$slrStatus <- "uploaded"
+      
+      # Show the preview panel immediately — no validation needed
+      show("uploadPreviewPanel")
+      
+      req(slrUploadData())
+      updateSelectInput(
+        inputId = "slrExplanatory",
+        choices = colnames(slrUploadData())
+      )
+      updateSelectInput(
+        inputId = "slrResponse",
+        choices = colnames(slrUploadData())
+      )
+      show("slrExplanatory")
+      show("slrResponse")
     })
     
     ## NOTE: related to the old plot options UI.
@@ -868,7 +998,14 @@ SLRServer <- function(id) {
             br()
           )
           
+          # 
+          
+          
+          
+          
         }) # END renderUI — LINE STUFF ==========
+        
+        
         
         
         validate(
@@ -897,19 +1034,18 @@ SLRServer <- function(id) {
         }
         
         if(input$dataRegCor == 'Upload Data') {
-          req(slruploadvars_iv$is_valid())
-          show("slrExplanatory")
-          show("slrResponse")
           req(input$slrExplanatory %in% colnames(slrUploadData()))
           req(input$slrResponse %in% colnames(slrUploadData()))
-          datx <- as.data.frame(slrUploadData())[, input$slrExplanatory]
-          daty <- as.data.frame(slrUploadData())[, input$slrResponse]
+          raw_x <- suppressWarnings(as.numeric(as.data.frame(slrUploadData())[, input$slrExplanatory]))
+          raw_y <- suppressWarnings(as.numeric(as.data.frame(slrUploadData())[, input$slrResponse]))
+          complete_idx <- !is.na(raw_x) & !is.na(raw_y)
+          datx <- raw_x[complete_idx]
+          daty <- raw_y[complete_idx]
+          if(length(datx) < 4) {
+            showNotification("After removing missing values, fewer than 4 complete observations remain. Please choose different variables.", type = "error", duration = 8)
+            return()
+          }
         } else {
-          validate(
-            need(input$x, "Input required for the Explanatory variable (x)."),
-            need(input$y, "Input required for the Response variable (y)."),
-            errorClass = "myClass")
-          
           datx <- createNumLst(input$x)
           daty <- createNumLst(input$y)
         }
@@ -942,6 +1078,14 @@ SLRServer <- function(id) {
         }
         
         model <- lm(daty ~ datx)
+        
+        h <- hatvalues(model)
+        hasLeveragePlotIssue(
+          all(abs(h - 0.5) < .Machine$double.eps^0.5)
+        )
+        
+        hasHighLeverage(any(hatvalues(model) >= 1))
+        
         r_squared <- summary(model)$r.squared
         y_hat <- fitted(model)
         residuals <- residuals(model)
@@ -1121,6 +1265,9 @@ SLRServer <- function(id) {
           )
         })
         
+        
+        
+        
         output$slrResidualsPanelPlot1 <- renderPlot({
           par(font.main = 2, font.lab = 2)
           plot(model, which = 1, pch = 20, main = "", lwd = 2, ann = FALSE, sub.caption = "", caption = "")
@@ -1141,7 +1288,7 @@ SLRServer <- function(id) {
           par(font.main = 2, font.lab = 2)
           plot(model, which = 3, pch = 20, main = "", lwd = 2, sub.caption = "", caption = "", ann = FALSE)
           title(main = "Scale-Location", cex.main = 1.2)
-          title(ylab = "sqrt(Standardized Residuals|)")
+          title(ylab = "sqrt(|Standardized Residuals|)")
         })
         
         output$slrResidualsPanelPlot4 <- renderPlot({
@@ -1494,7 +1641,7 @@ SLRServer <- function(id) {
                   
                   p(strong("Step 1: Transform r")),
                   p(sprintf(
-                    "\\( z_r = \\dfrac{1}{2} \\ln\\left(\\dfrac{1+r}{1-r}\\right) = \\text{artanh}(r) = \\dfrac{1}{2} \\ln\\left(\\dfrac{1+%0.4f}{1-%0.4f}\\right) = %0.4f \\)",
+                    "\\( z_r = \\dfrac{1}{2} \\ln\\left(\\dfrac{1+r}{1-r}\\right) = \\text{artanh}(r) = \\dfrac{1}{2} \\ln\\left(\\dfrac{1+(%0.4f)}{1-(%0.4f)}\\right) = %0.4f \\)",
                     pearson$estimate, pearson$estimate, atanh(pearson$estimate)
                   )),
                   
@@ -1504,9 +1651,8 @@ SLRServer <- function(id) {
                     n, 1/sqrt(n-3)
                   )),
                   
-                  p(strong("Step 3: Confidence Interval on Transformed Scale")),
                   p(sprintf(
-                    "\\( \\left(z_r - Z_{\\alpha/2} \\cdot SE_{z_r}, \\; z_r + Z_{\\alpha/2} \\cdot SE_{z_r}\\right) = \\left(%0.4f - 1.96 \\times %0.4f, \\; %0.4f + 1.96 \\times %0.4f\\right) = \\left(%0.4f, \\; %0.4f\\right) \\)",
+                    "\\( \\left(z_r - Z_{\\alpha/2} \\cdot SE_{z_r}, \\; z_r + Z_{\\alpha/2} \\cdot SE_{z_r}\\right) = \\left((%0.4f) - 1.96 \\times %0.4f, \\; (%0.4f) + 1.96 \\times %0.4f\\right) = \\left(%0.4f, \\; %0.4f\\right) \\)",
                     atanh(pearson$estimate), 1/sqrt(n-3),
                     atanh(pearson$estimate), 1/sqrt(n-3),
                     atanh(pearson$estimate) - 1.96 * (1/sqrt(n-3)),
@@ -1702,13 +1848,7 @@ SLRServer <- function(id) {
             br()
           )
         })
-        output$slrViewUpload <- renderDT({
-          req(slrupload_iv$is_valid())
-          datatable(slrUploadData(),
-                    options = list(pageLength = -1,
-                                   lengthMenu = list(c(25, 50, 100, -1),
-                                                     c("25", "50", "100", "all"))))
-        })
+    
         
         
         output$correlationSummaryTable <- renderTable({
@@ -1948,9 +2088,11 @@ SLRServer <- function(id) {
 
     
     ### ------------ Component Display -------------------------------------------
-    observeEvent(!regcor_iv$is_valid(), {
-      hide(id = "regCorrMP")
-      hide(id = "SLRData")
+    observeEvent(regcor_iv$is_valid(), {
+      if (!isTRUE(regcor_iv$is_valid())) {
+        hide(id = "regCorrMP")
+        hide(id = "SLRData")
+      }
     })
     
     observeEvent(input$dataRegCor, {
@@ -1992,12 +2134,14 @@ SLRServer <- function(id) {
         showTab(inputId = "slrNavbarPage", target = "Uploaded Data")
       }
     })
-    
+     
     observeEvent(input$resetRegCor, {
+      hasHighLeverage(FALSE)
       output$perfectFitWarning <- renderUI({ NULL })
       # hideTab(inputId = 'tabSet', target = 'Simple Linear Regression')
       # hideTab(inputId = 'tabSet', target = 'Normality of Residuals')
       # hideTab(inputId = 'tabSet', target = 'Residual Plots')
+      hide(id = "uploadPreviewPanel")
       hide(id = "regCorrMP")
       shinyjs::reset("inputPanel")
       fileInputs$slrStatus <- 'reset'
