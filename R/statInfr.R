@@ -1101,6 +1101,7 @@ statInfrUI <- function(id) {
                 label    = strong("Alternate Hypothesis (\\( H_{a}\\))"),
                 choices  = lessThanInequalGreaterThanChoices123,
                 selected = 2,
+                ## NOTE: this uses the global "render" object; see global.R.
                 options  = list(render = I(render))),
             ), # Hypothesis Testing
             conditionalPanel(
