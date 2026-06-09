@@ -23,22 +23,6 @@ SLRMainPanelUI <- function(id) {
       }
     ")),
     
-    # DATA PREVIEW — shown immediately on upload, independent of results
-    hidden(div(
-      id = ns("uploadPreviewPanel"),
-      tags$h4(
-        "Uploaded Data Preview",
-        style = "
-      color: #18536F;
-      font-weight: bold;
-      margin-bottom: 15px;
-      margin-top: 10px;
-    "
-      ),
-      DTOutput(ns("slrUploadPreview")),
-      br()
-    )),
-    
     hidden(div(
       id = ns("regCorrMP"),
       uiOutput(ns("perfectFitWarning")),
@@ -51,7 +35,7 @@ SLRMainPanelUI <- function(id) {
           title = NULL,
           id = ns("slrNavbarPage"),
           theme = bs_theme(version = 4),
-
+          
           #### ---------------- SLR Tab ------------------------------------------------
           tabPanel(
             title = "Model",
@@ -280,8 +264,12 @@ SLRMainPanelUI <- function(id) {
                   value = "Spearman",
                   titlePanel("Spearman's Rank Correlation Coefficient"),
                   br(),
-                  uiOutput(ns("spearmanEstimate")),
+                  uiOutput(ns("spearmanFormula")),
                   br(),
+                  downloadButton(ns("downloadSpearmanXlsx"), "Save as Excel"),
+                  br(),
+                  br(),
+                  uiOutput(ns("spearmanTable")),
                   br(),
                   hr()
                 ),
@@ -302,24 +290,34 @@ SLRMainPanelUI <- function(id) {
             )
             
           ), ## Correlation Analysis tabPanel
-          #### ---------------- Data File Tab ------------------------------------------
+
+          #### ---------------- Uploaded Data Tab ------------------------------------------
           tabPanel(
             title = "Uploaded Data",
             value = "Uploaded Data",
-            
-            # titlePanel("Data File"),
-            # br(),
-            # br(),
             div(
-              DTOutput(ns("slrViewUpload")),
+              DTOutput(ns("slrViewUploadTab")),
               style = "width: 75%"
             ),
             br(),
-            br(),
-          ) #slrDataFile tabpanel
+            br()
+          ) #slrViewUploadTab tabpanel
+
         ) #slrNavbarPage navbarPage
       ) # SLRData div
-    )) # regCorrMP div (hidden)
+    )), # regCorrMP div (hidden)
+    
+    # Uploaded Data — always visible, outside the results panel
+    div(
+      id = ns("uploadedDataPanel"),
+      tags$h4(
+        "Uploaded Data",
+        style = "color: #18536F; font-weight: bold; margin-bottom: 15px; margin-top: 10px;"
+      ),
+      uiOutput(ns("uploadedDataContent")),
+      br()
+    )
+    
   )) # tagList withMathJax
 }
 
@@ -619,7 +617,7 @@ SLRServer <- function(id) {
       }
     )
     
-    output$slrUploadPreview <- renderDT({
+    output$slrViewUpload <- renderDT({
       req(input$slrUserData)
       
       dat <- slrUploadData()
@@ -631,6 +629,14 @@ SLRServer <- function(id) {
           scrollX = TRUE
         )
       )
+    })
+    
+    outputOptions(output, "slrViewUpload", suspendWhenHidden = FALSE)
+
+    output$slrViewUploadTab <- renderDT({
+      req(input$slrUserData)
+      dat <- slrUploadData()
+      datatable(dat, options = list(pageLength = 10, scrollX = TRUE))
     })
     
     
@@ -857,27 +863,26 @@ SLRServer <- function(id) {
     ## -------- Observers ------------------------------------------------------
     #  ========================================================================= #
     
-    output$slrViewUpload <- renderDT({
-      req(input$slrUserData)   # only this — no validator gate
-      
-      dat <- slrUploadData()
-      
-      datatable(
-        dat,
-        options = list(
-          pageLength = 10,
-          scrollX = TRUE
+    output$uploadedDataContent <- renderUI({
+      if (is.null(input$slrUserData) || 
+          is.null(fileInputs$slrStatus) || 
+          fileInputs$slrStatus == "reset") {
+        div(
+          class = "alert alert-info",
+          style = "margin-top: 15px;",
+          tags$b("No data uploaded. "),
+          "Please upload a file using the sidebar to view your data here."
         )
-      )
+      } else {
+        tagList(
+          DTOutput(session$ns("slrViewUpload"))
+        )
+      }
     })
     
     
     observeEvent(input$slrUserData, {
-      
       fileInputs$slrStatus <- "uploaded"
-      
-      # Show the preview panel immediately — no validation needed
-      show("uploadPreviewPanel")
       
       req(slrUploadData())
       updateSelectInput(
@@ -1067,6 +1072,13 @@ SLRServer <- function(id) {
       }) #output$slrValidation
       
       if(regcor_iv$is_valid()) {
+        if (input$dataRegCor == 'Upload Data') {
+          hide("uploadedDataPanel")
+          showTab(inputId = "slrNavbarPage", target = "Uploaded Data")
+        } else {
+          hideTab(inputId = "slrNavbarPage", target = "Uploaded Data")
+        }
+
         if(input$dataRegCor == 'Upload Data') {
           req(input$slrExplanatory %in% colnames(slrUploadData()))
           req(input$slrResponse %in% colnames(slrUploadData()))
@@ -1637,9 +1649,9 @@ SLRServer <- function(id) {
                   hr(),
                   p(HTML(paste0(strong("Confidence Interval for the Population Correlation Coefficient \\((\\rho)\\) using Fisher z-Transformation")))),
                   
-                  p("Since the sampling distribution of Pearson's r is not normal, we use the Fisher Z-Transformation to construct a confidence interval."),
-                  
-                  p(strong("Step 1: Transform r")),
+                  p("Since the sampling distribution of Pearson's \\(r\\) is not normal, we use the Fisher z-Transformation to construct a confidence interval."),
+
+                  p(strong(withMathJax("Step 1: Transform \\(r\\)"))),
                   p(sprintf(
                     "\\( z_r = \\dfrac{1}{2} \\ln\\left(\\dfrac{1+r}{1-r}\\right) = \\text{artanh}(r) = \\dfrac{1}{2} \\ln\\left(\\dfrac{1+(%0.4f)}{1-(%0.4f)}\\right) = %0.4f \\)",
                     pearson$estimate, pearson$estimate, atanh(pearson$estimate)
@@ -1766,37 +1778,46 @@ SLRServer <- function(id) {
             ))
           )
         })
-        # Spearman's rs formula
-        output$spearmanEstimate <- renderUI({
-          
-          rank_x   <- rank(datx)
-          rank_y   <- rank(daty)
-          d        <- rank_x - rank_y
-          d_sq     <- d^2
-          sum_d_sq <- sum(d_sq)
-          n        <- length(datx)
-          
-          spearman_df <- data.frame(
+        spearmanData <- reactive({
+          rank_x <- rank(datx)
+          rank_y <- rank(daty)
+          d      <- rank_x - rank_y
+          data.frame(
             x      = datx,
             y      = daty,
             rank_x = rank_x,
             rank_y = rank_y,
             d      = d,
-            d_sq   = d_sq
+            d_sq   = d^2
           )
-          
-          rs <- spearman$estimate
-          
-          # Strength
-          rsStrength <- if (abs(rs) > 0.6) "strong"
-          else if (abs(rs) > 0.3) "moderate"
-          else "weak"
-          
-          # Direction
+        })
+
+        output$downloadSpearmanXlsx <- downloadHandler(
+          filename    = function() paste0("Spearman_Rank_Correlation_", Sys.Date(), ".xlsx"),
+          contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          content     = function(file) {
+            tryCatch({
+              data <- spearmanData()
+              names(data) <- c("x", "y", "Rank x", "Rank y", "d = (Rank x - Rank y)", "d^2")
+              writexl::write_xlsx(data, file)
+            }, error = function(e) {
+              message("Full error: ", conditionMessage(e))
+            })
+          }
+        )
+
+        # Spearman's rs formula and interpretation
+        output$spearmanFormula <- renderUI({
+
+          d_sq     <- spearmanData()$d_sq
+          sum_d_sq <- sum(d_sq)
+          n        <- length(datx)
+          rs       <- spearman$estimate
+
+          rsStrength  <- if (abs(rs) > 0.6) "strong" else if (abs(rs) > 0.3) "moderate" else "weak"
           rsDirection <- if (rs > 0) "positive" else "negative"
-          
+
           withMathJax(
-            
             div(
               style = "text-align: left; font-size: 18px;",
               HTML(sprintf(
@@ -1804,48 +1825,44 @@ SLRServer <- function(id) {
                 sum_d_sq, n, n, rs
               ))
             ),
-            
             br(),
-            
             p(tags$b("Interpretation:")),
             p(sprintf(
               "There exists a %s %s monotonic relationship between \\(\\mathit{x}\\) and \\(\\mathit{y}\\).",
               rsStrength, rsDirection
-            )),
-            
-            
-            br(),
-            
-            reactable(
-              spearman_df,
-              sortable   = FALSE,
-              bordered   = TRUE,
-              striped    = TRUE,
-              highlight  = TRUE,
-              pagination = FALSE,
-              fullWidth  = FALSE,
-              rownames   = FALSE,
-              columns = list(
-                x      = colDef(name = "x",      align = "center"),
-                y      = colDef(name = "y",      align = "center"),
-                rank_x = colDef(name = "Rank x", align = "center"),
-                rank_y = colDef(name = "Rank y", align = "center"),
-                d      = colDef(name   = "d = (Rank x \u2212 Rank y)", align = "center", footer = tags$b("Total")),
-                d_sq   = colDef(
-                  name   = HTML("d<sup>2</sup>"),
-                  html   = TRUE,
-                  align  = "center",
-                  footer = tags$b(sum_d_sq),
-                  cell   = function(value) formatC(value, format = "f", digits = 0)
-                )
+            ))
+          )
+        })
+
+        # Spearman's rank table
+        output$spearmanTable <- renderUI({
+
+          spearman_df <- spearmanData()
+          sum_d_sq    <- sum(spearman_df$d_sq)
+
+          reactable(
+            spearman_df,
+            sortable   = FALSE,
+            bordered   = TRUE,
+            striped    = TRUE,
+            highlight  = TRUE,
+            pagination = FALSE,
+            fullWidth  = FALSE,
+            rownames   = FALSE,
+            columns = list(
+              x      = colDef(name = "x",      align = "center"),
+              y      = colDef(name = "y",      align = "center"),
+              rank_x = colDef(name = "Rank x", align = "center"),
+              rank_y = colDef(name = "Rank y", align = "center"),
+              d      = colDef(name = "d = (Rank x \u2212 Rank y)", align = "center", footer = tags$b("Total")),
+              d_sq   = colDef(
+                name   = HTML("d<sup>2</sup>"),
+                html   = TRUE,
+                align  = "center",
+                footer = tags$b(sum_d_sq),
+                cell   = function(value) formatC(value, format = "f", digits = 0)
               )
-            ),
-            
-            br(),
-            
-            
-            
-            br()
+            )
           )
         })
     
@@ -1918,9 +1935,9 @@ SLRServer <- function(id) {
             p(sprintf("\\( \\displaystyle F = \\frac{\\mathrm{MSR}}{\\mathrm{MSE}} = \\frac{%.3f}{%.3f} = %.3f \\)", msr, mse, f_value)),
             p(strong("Conclusion:")),
             if (p_value <= 0.05) {
-              p(sprintf("Since the p-value is less than \\( \\alpha \\) (%.3f < 0.05), we reject the null hypothesis and conclude there is enough statistical evidence to support the alternative hypothesis. We can conclude the model is statistically significant (There exists a linear relationship between x and y).", p_value))
+              p(sprintf("Since the p-value is less than \\( \\alpha \\) (%.3f < 0.05), we reject the null hypothesis and conclude there is enough statistical evidence to support the alternative hypothesis. We can conclude the model is statistically significant.", p_value))
             } else {
-              p(sprintf("Since the p-value is greater than \\( \\alpha \\) (%.3f >  0.05), we fail to reject the null hypothesis and conclude there isn't enough statistical evidence to support the alternative hypothesis. We can conclude the model is not statistically significant (There exists no linear relationship between x and y).", p_value))
+              p(sprintf("Since the p-value is greater than \\( \\alpha \\) (%.3f >  0.05), we fail to reject the null hypothesis and conclude there isn't enough statistical evidence to support the alternative hypothesis. We can conclude the model is not statistically significant.", p_value))
             }
           )
         })
@@ -1955,12 +1972,13 @@ SLRServer <- function(id) {
               strong("Interpretation:")
             ),
             
-            tags$p(sprintf(
-              "%.2f%% of the variation in %s can be explained by its linear relationship with %s.",
-              explained_pct,
-              if (input$dataRegCor == "Upload Data") input$slrResponse else "y",
-              if (input$dataRegCor == "Upload Data") input$slrExplanatory else "x"
-            ))
+            tags$p(
+              sprintf("%.2f%% of the variation in ", explained_pct),
+              if (input$dataRegCor == "Upload Data") tags$i(input$slrResponse) else withMathJax("\\(y\\)"),
+              " can be explained by its linear relationship with ",
+              if (input$dataRegCor == "Upload Data") tags$i(input$slrExplanatory) else withMathJax("\\(x\\)"),
+              "."
+            )
             
           )
         })
@@ -2097,8 +2115,14 @@ SLRServer <- function(id) {
     
     observeEvent(input$dataRegCor, {
       hide(id = "regCorrMP")
+      if (input$dataRegCor == "Upload Data") {
+        show("uploadedDataPanel")
+      } else {
+        hide("uploadedDataPanel")
+      }
+      hideTab(inputId = "slrNavbarPage", target = "Uploaded Data")
       output$perfectFitWarning <- renderUI({ NULL })
-      
+
       if (is.null(fileInputs$slrStatus) || fileInputs$slrStatus != "uploaded"){
         hide(id = "slrResponse")
         hide(id = "slrExplanatory")
@@ -2123,31 +2147,29 @@ SLRServer <- function(id) {
       }
     })
     
-    observe({
-      req(isTruthy(input$dataRegCor))
-      if(input$dataRegCor == 'Enter Raw Data') {
-        if (!is.null(input$slrNavbarPage) && input$slrNavbarPage == "Uploaded Data") { # Check if navbarPage exists and selected
-          updateNavbarPage(session, "slrNavbarPage", selected = "Model")
-        }
-        hideTab(inputId = "slrNavbarPage", target = "Uploaded Data")
-      } else {
-        showTab(inputId = "slrNavbarPage", target = "Uploaded Data")
-      }
-    })
+    # observe({
+    #   req(isTruthy(input$dataRegCor))
+    #   if(input$dataRegCor == 'Enter Raw Data') {
+    #     if (!is.null(input$slrNavbarPage) && input$slrNavbarPage == "Uploaded Data") { # Check if navbarPage exists and selected
+    #       updateNavbarPage(session, "slrNavbarPage", selected = "Model")
+    #     }
+    #     hideTab(inputId = "slrNavbarPage", target = "Uploaded Data")
+    #   } else {
+    #     showTab(inputId = "slrNavbarPage", target = "Uploaded Data")
+    #   }
+    # })
      
     observeEvent(input$resetRegCor, {
       hasHighLeverage(FALSE)
       output$perfectFitWarning <- renderUI({ NULL })
-      # hideTab(inputId = 'tabSet', target = 'Simple Linear Regression')
-      # hideTab(inputId = 'tabSet', target = 'Normality of Residuals')
-      # hideTab(inputId = 'tabSet', target = 'Residual Plots')
-      hide(id = "uploadPreviewPanel")
       hide(id = "regCorrMP")
+      show("uploadedDataPanel")
+      hideTab(inputId = "slrNavbarPage", target = "Uploaded Data")
       shinyjs::reset("inputPanel")
       fileInputs$slrStatus <- 'reset'
       showTab(inputId = "slrNavbarPage", target = "Inference")
-      showTab(inputId = "slrNavbarPage", target = "Diagnostic Plots") 
-      if (!is.null(input$slrNavbarPage)) { # Check if navbarPage exists before trying to update
+      showTab(inputId = "slrNavbarPage", target = "Diagnostic Plots")
+      if (!is.null(input$slrNavbarPage)) {
         updateNavbarPage(session, "slrNavbarPage", selected = "Model")
       }
     })
