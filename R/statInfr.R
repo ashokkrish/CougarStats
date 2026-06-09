@@ -1101,6 +1101,7 @@ statInfrUI <- function(id) {
                 label    = strong("Alternate Hypothesis (\\( H_{a}\\))"),
                 choices  = lessThanInequalGreaterThanChoices123,
                 selected = 2,
+                ## NOTE: this uses the global "render" object; see global.R.
                 options  = list(render = I(render))),
             ), # Hypothesis Testing
             conditionalPanel(
@@ -4131,18 +4132,7 @@ statInfrServer <- function(id) {
                   fill = "#023B70",
                   color = NA,
                   alpha = 0.4)
-        
-        # } else if (altHypothesis == 'two.sided') {
-        #   geom_area(data = subset(df, x <= critValueLeft),
-        #             aes(y=y),
-        #             fill = "#023B70",
-        #             color = NA,
-        #             alpha = 0.4) +
-        #   geom_area(data = subset(df, x >= critValue),
-        #             aes(y=y),
-        #             fill = "#023B70",
-        #             color = NA,
-        #             alpha = 0.4)
+     
         
       } else if (altHypothesis == 'greater') {
         geom_area(data = subset(df, x >= critValue),

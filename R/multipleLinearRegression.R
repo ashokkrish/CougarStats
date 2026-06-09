@@ -90,7 +90,7 @@ MLRMainPanelUI <- function(id) {
                  uiOutput(ns("encodingUI"))
                ),
                tabPanel(title = "Model", uiOutput(ns("Equations")) ),
-               tabPanel(title = "ANOVA & Parameter Estimates", uiOutput(ns("ANOVAAndInference"))),
+               tabPanel(title = "Inference", uiOutput(ns("ANOVAAndInference"))),
                tabPanel(title = "Multicollinearity Detection", uiOutput(ns("MulticollinearityDetection"))),
                tabPanel(title = "Diagnostic Plots", uiOutput(ns("DiagnosticPlots"))),
                tabPanel(title = "Uploaded Data", DTOutput(ns("uploadedDataTable"))),
@@ -133,6 +133,7 @@ MLRServer <- function(id) {
     observeEvent(TRUE, {
       shinyjs::delay(0, {
         hideTab(inputId = "mainPanel", target = "Model")
+        hideTab(inputId = "mainPanel", target = "Inference")  
         hideTab(inputId = "mainPanel", target = "ANOVA & Parameter Estimates")
         hideTab(inputId = "mainPanel", target = "Multicollinearity Detection")
         hideTab(inputId = "mainPanel", target = "Diagnostic Plots")
@@ -745,7 +746,124 @@ MLRServer <- function(id) {
       })
     })
     
-    
+    output$anovaFDistributionPlot <- renderPlot({
+      req(encodedData())
+      req(isTruthy(input$responseVariable))
+      req(isTruthy(input$explanatoryVariables))
+      req(length(as.character(input$explanatoryVariables)) >= 2)
+      
+      model <- lm(reformulate(
+        as.character(lapply(input$explanatoryVariables, as.name)),
+        as.name(input$responseVariable)
+      ), data = encodedData())
+      
+      anovaModel <- anova(model)
+      ss_vals <- anovaModel[["Sum Sq"]]
+      
+      SSR    <- sum(ss_vals[-length(ss_vals)])
+      SSE    <- ss_vals[length(ss_vals)]
+      k      <- model$rank - 1
+      n      <- nrow(encodedData())
+      MSR    <- SSR / k
+      MSE    <- SSE / (n - k - 1)
+      
+      df1    <- k
+      df2    <- n - k - 1
+      f_stat <- MSR / MSE
+      p_val  <- pf(f_stat, df1, df2, lower.tail = FALSE)
+      f_crit <- qf(0.95, df1, df2)
+      x_max  <- f_crit * 3
+      
+      x <- seq(0, x_max, length.out = 1000)
+      y <- df(x, df1, df2)
+      
+      plot_df <- data.frame(x = x, y = y)
+      
+      ggplot(plot_df, aes(x = x, y = y)) +
+        
+        # Main curve
+        geom_line(lwd = 1) +
+        
+        # Rejection region shading (red)
+        geom_area(
+          data = subset(plot_df, x >= f_crit),
+          aes(x = x, y = y),
+          fill  = "red",
+          alpha = 0.3
+        ) +
+        
+        # P-value region shading (blue) - only if f_stat <= x_max
+        {if(f_stat <= x_max)
+          geom_area(
+            data = subset(plot_df, x >= f_stat),
+            aes(x = x, y = y),
+            fill  = "blue",
+            alpha = 0.3
+          )
+        } +
+        
+        # Critical value line
+        geom_vline(
+          xintercept = f_crit,
+          colour     = "red",
+          linewidth  = 0.8,
+          linetype   = "dashed"
+        ) +
+        
+        # F statistic line - only if within plot range
+        {if(f_stat <= x_max)
+          geom_vline(
+            xintercept = f_stat,
+            colour     = "blue",
+            linewidth  = 0.8,
+            linetype   = "dashed"
+          )
+        } +
+        
+        # Labels
+        labs(
+          title = "F Distribution",
+          x     = "F",
+          y     = "Density"
+        ) +
+        
+        # Critical value annotation
+        annotate("text",
+                 x     = f_crit,
+                 y     = max(y) * 0.2,
+                 label = sprintf("F critical\n= %.4f", f_crit),
+                 hjust = -0.1,
+                 color = "red",
+                 size  = 3.5) +
+        
+        # P-value annotation
+        annotate("text",
+                 x     = x_max * 0.6,
+                 y     = max(y) * 0.9,
+                 label = sprintf("p-value = %.4f", p_val),
+                 color = "black",
+                 size  = 4) +
+        
+        # F statistic annotation - only if within plot range
+        {if(f_stat <= x_max)
+          annotate("text",
+                   x     = f_stat,
+                   y     = max(y) * 0.4,
+                   label = sprintf("F statistic\n= %.4f", f_stat),
+                   hjust = -0.1,
+                   color = "blue",
+                   size  = 3.5)
+        } +
+        
+        # Theme
+        theme_classic() +
+        theme(
+          plot.title   = element_text(hjust = 0.5, face = "bold"),
+          axis.title   = element_text(size = 12, face = "bold"),
+          axis.text    = element_text(size = 10, face = "bold")
+        ) +
+        coord_cartesian(clip = "off")
+    })
     
     
     
@@ -1189,16 +1307,6 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
                                lengthMenu = list(c(25, 50, 100, -1), c("25", "50", "100", "All"))))
     })
 
-    # output$ANOVA <- renderUI({
-    #   eval(MLRValidation)
-    #   
-    #   fluidPage(
-    #     fluidRow(uiOutput(ns("anovaHypotheses"))),
-    #     fluidRow(tableOutput(ns("anovaTable"))),
-    #     fluidRow(uiOutput(ns("anovaPValueMethod"))),
-    #     fluidRow(uiOutput(ns("rsquareAdjustedRSquareInterpretation")))
-    #   )
-    # })
     
     output$MulticollinearityDetection <- renderUI({
       eval(MLRValidation)
@@ -1265,10 +1373,18 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
           br(),
           fluidRow(tableOutput(ns("anovaTable"))),
           br(),
+          fluidRow(
+            column(12,
+                   p(strong("F Distribution")),
+                   p("The shaded region represents the rejection region at \u03b1 = 0.05. The dashed red line is the observed F statistic and the dashed blue line is the critical value."),
+                   plotOutput(ns("anovaFDistributionPlot"), height = "350px")
+            )
+          ),
+          br(),
           fluidRow(uiOutput(ns("anovaPValueMethod"))),
           br(),
           fluidRow(uiOutput(ns("rsquareAdjustedRSquareInterpretation"))),
-          br(),
+          br()
         )
       )
     )

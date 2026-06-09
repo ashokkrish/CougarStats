@@ -15,25 +15,27 @@ SLRMainPanelUI <- function(id) {
   
   tagList(withMathJax(
     useShinyjs(),
-    tags$style(HTML("         # Message for disabling when perfect fit occurs
+    tags$style(HTML("
       .disabled-tab {
         pointer-events: none !important;
         opacity: 0.4 !important;
         cursor: not-allowed !important;
       }
     ")),
+    
     hidden(div(
-      id = ns("regCorrMP"), # This div is hidden/shown
-      uiOutput(ns("perfectFitWarning")), # added to trap perfect fit
+      id = ns("regCorrMP"),
+      uiOutput(ns("perfectFitWarning")),
       uiOutput(ns("slrValidation")),
       
       div(
-        id = ns("SLRData"), # This div will now contain the navbarPage
+        id = ns("SLRData"),
+        
         navbarPage(
-          title = NULL, # Title for the navbarPage
+          title = NULL,
           id = ns("slrNavbarPage"),
           theme = bs_theme(version = 4),
-
+          
           #### ---------------- SLR Tab ------------------------------------------------
           tabPanel(
             title = "Model",
@@ -66,7 +68,10 @@ SLRMainPanelUI <- function(id) {
                 dim         = "in px",
                 includeFlip = FALSE),
               
-              plotOutput(ns("slrScatterplot")),
+              plotlyOutput(ns("slrScatterplot"),
+                           height = "700px",
+                           width  = "100%"),
+              
               br()
             )
           ), # Scatterplot tabpanel
@@ -75,15 +80,24 @@ SLRMainPanelUI <- function(id) {
           tabPanel(
             title = "Calculations",
             value = "Calculations",
-
-            reactableOutput(ns("slrDataTable"), width = "95%"),
+            
+            div(
+              style = "display: flex; gap: 10px; margin-bottom: 8px;",
+              #downloadButton(ns("downloadSLRcsv"),  "Save as CSV"),
+              downloadButton(ns("downloadSLRxlsx"), "Save as Excel")
+            ),
+            
+            div(
+              style = "overflow-x: auto;",
+              reactableOutput(ns("slrDataTable"), width = "100%")
+            ),
             br()
           ), # Calculations tabpanel
           
-          #### ---------------- Parameter Estimates and ANOVA Tab -------------------
+          #### ---------------- Inference Tab -------------------
           tabPanel(
-            title = "Parameter Estimates and ANOVA",
-            value = "Parameter Estimates and ANOVA",
+            title = "Inference",
+            value = "Inference",
             
             tags$style(HTML("
     .inference-anova-tabs .nav-tabs {
@@ -141,26 +155,42 @@ SLRMainPanelUI <- function(id) {
                   br(),
                   div(tableOutput(ns("anovaTable")), width = "100 px;"),
                   br(),
+                  br(),
+                  plotOutput(ns("anovaFCurve")),
+                  br(),
+                  br(),
                   uiOutput(ns("anovaConclusion")),
                   br(),
                   uiOutput(ns("anovaR2")),
+                  br(),
                   hr()
+                ),
+                
+                tabPanel(
+                  title = "LINE",
+                  value = "LINE",
+                  br(),
+                  uiOutput(ns("lineAssumptions"))
                 )
               )
             )
-          ), # Parameter Estimates and ANOVA tabpanel
+          ), # Inference tabpanel
             
     
           
+          
           #### ---------------- Diagnostic Plots Tab ---------------------------------
+          
           tabPanel(
             title = "Diagnostic Plots",
             value = "Diagnostic Plots",
             fluidPage(
+              uiOutput(ns("diagnosticPlotsWarning")),
               plotOutput(ns("slrResidualsPanelPlot1")),
               plotOutput(ns("slrResidualsPanelPlot2")),
               plotOutput(ns("slrResidualsPanelPlot3")),
-              plotOutput(ns("slrResidualsPanelPlot4"))
+              plotOutput(ns("slrResidualsPanelPlot4")),
+              plotOutput(ns("slrResidualsPanelPlot5"))
             )
           ), # Diagnostic Plots tabpanel
           
@@ -210,6 +240,14 @@ SLRMainPanelUI <- function(id) {
                 type = "tabs",
                 id   = ns("correlationTabs"),
                 
+                
+                tabPanel(
+                  title = "Summary",
+                  value = "Summary",
+                  br(),
+                  tableOutput(ns("correlationSummaryTable"))
+                ),
+                
                 tabPanel(
                   title = "Pearson",
                   value = "Pearson",
@@ -222,6 +260,21 @@ SLRMainPanelUI <- function(id) {
                 ),
                 
                 tabPanel(
+                  title = "Spearman",
+                  value = "Spearman",
+                  titlePanel("Spearman's Rank Correlation Coefficient"),
+                  br(),
+                  uiOutput(ns("spearmanFormula")),
+                  br(),
+                  downloadButton(ns("downloadSpearmanXlsx"), "Save as Excel"),
+                  br(),
+                  br(),
+                  uiOutput(ns("spearmanTable")),
+                  br(),
+                  hr()
+                ),
+                
+                tabPanel(
                   title = "Kendall",
                   value = "Kendall",
                   titlePanel("Kendall's Rank Correlation Coefficient"),
@@ -229,41 +282,42 @@ SLRMainPanelUI <- function(id) {
                   uiOutput(ns("kendallFormula")),
                   br(),
                   hr()
-                ),
-                
-                tabPanel(
-                  title = "Spearman",
-                  value = "Spearman",
-                  titlePanel("Spearman's Rank Correlation Coefficient"),
-                  br(),
-                  uiOutput(ns("spearmanEstimate")),
-                  br(),
-                  br(),
-                  hr()
                 )
+                
+                
                 
               ) ## Nested tabsetPanel
             )
             
           ), ## Correlation Analysis tabPanel
-          #### ---------------- Data File Tab ------------------------------------------
+
+          #### ---------------- Uploaded Data Tab ------------------------------------------
           tabPanel(
             title = "Uploaded Data",
             value = "Uploaded Data",
-            
-            # titlePanel("Data File"),
-            # br(),
-            # br(),
             div(
-              DTOutput(ns("slrViewUpload")),
+              DTOutput(ns("slrViewUploadTab")),
               style = "width: 75%"
             ),
             br(),
-            br(),
-          ) #slrDataFile tabpanel
+            br()
+          ) #slrViewUploadTab tabpanel
+
         ) #slrNavbarPage navbarPage
       ) # SLRData div
-    )) # regCorrMP div (hidden)
+    )), # regCorrMP div (hidden)
+    
+    # Uploaded Data — always visible, outside the results panel
+    div(
+      id = ns("uploadedDataPanel"),
+      tags$h4(
+        "Uploaded Data",
+        style = "color: #18536F; font-weight: bold; margin-bottom: 15px; margin-top: 10px;"
+      ),
+      uiOutput(ns("uploadedDataContent")),
+      br()
+    )
+    
   )) # tagList withMathJax
 }
 
@@ -291,14 +345,14 @@ SLRSidebarUI <- function(id) {
       textAreaInput(
         inputId     = ns("y"),
         label       = strong("Response Variable (\\( y\\))"),
-        value       = "4, 14, 15, 18, 21, 26, 38",
+        value       = "2.48, 2.26, 2.47, 2.77, 2.99, 3.05, 3.18, 3.46, 3.03, 3.26, 2.67, 2.53",
         placeholder = "Enter numeric values separated by a comma with decimals as points. (eg: 1,2,3)",
         rows        = 3),
       
       textAreaInput(
         inputId     = ns("x"),
         label       = strong("Explanatory Variable (\\( x\\))"),
-        value       = "61, 111, 125, 134, 169, 173, 244",
+        value       = "4.51, 3.58, 4.31, 5.06, 5.64, 4.99, 5.29, 5.83, 4.70, 5.61, 4.90, 4.20",
         placeholder = "Enter numeric values separated by a comma with decimals as points (eg: 1,2,3).",
         rows        = 3)
     ), #dataRegCor == 'Enter Raw Data'
@@ -360,6 +414,233 @@ SLRSidebarUI <- function(id) {
 SLRServer <- function(id) {
   moduleServer(id, function(input, output, session) {
     
+    
+    
+    # ============================================================
+    # LINE Assumption Tests Config
+    # Add, remove, or reorder tests here freely
+    # Each entry: assumption, procedure, test function, min_n
+    # ============================================================
+    lineTestConfig <- list(
+      
+      list(
+        assumption = "Linearity",
+        procedure  = "Residuals vs Fitted Plot",
+        min_n      = 3,
+        run        = function(model, datx, daty) {
+          list(
+            statistic = NULL,
+            p_value   = NULL,
+            note      = "See Residuals vs Fitted plot in Diagnostic Plots tab"
+          )
+        }
+      ),
+      
+      list(
+        assumption = "Linearity",
+        procedure  = "Rainbow Test",
+        min_n      = 6,
+        run        = function(model, datx, daty) {
+          rb <- lmtest::raintest(model)
+          list(
+            statistic = round(rb$statistic, 4),
+            p_value   = round(rb$p.value, 4),
+            note      = NULL
+          )
+        }
+      ),
+      
+      list(
+        assumption = "Linearity",
+        procedure  = "Ramsey RESET Test",
+        min_n      = 6,
+        run        = function(model, datx, daty) {
+          rt <- lmtest::resettest(model)
+          list(
+            statistic = round(rt$statistic, 4),
+            p_value   = round(rt$p.value, 4),
+            note      = NULL
+          )
+        }
+      ),
+      
+      list(
+        assumption = "Independence",
+        procedure  = "Durbin-Watson Test",
+        min_n      = 5,
+        run        = function(model, datx, daty) {
+          dw <- lmtest::dwtest(model)
+          list(
+            statistic = round(dw$statistic, 4),
+            p_value   = round(dw$p.value, 4),
+            note      = NULL
+          )
+        }
+      ),
+      
+      list(
+        assumption = "Normality",
+        procedure  = "Shapiro-Wilk Test",
+        min_n      = 3,
+        run        = function(model, datx, daty) {
+          sw <- shapiro.test(residuals(model))
+          list(
+            statistic = round(sw$statistic, 4),
+            p_value   = round(sw$p.value, 4),
+            note      = NULL
+          )
+        }
+      ),
+      
+      list(
+        assumption = "Normality",
+        procedure  = "Anderson-Darling Test",
+        min_n      = 7,
+        run        = function(model, datx, daty) {
+          ad <- nortest::ad.test(residuals(model))
+          list(
+            statistic = round(ad$statistic, 4),
+            p_value   = round(ad$p.value, 4),
+            note      = NULL
+          )
+        }
+      ),
+      
+      list(
+        assumption = "Normality",
+        procedure  = "Kolmogorov-Smirnov Test",
+        min_n      = 3,
+        run        = function(model, datx, daty) {
+          ks <- ks.test(residuals(model), "pnorm",
+                        mean = mean(residuals(model)),
+                        sd   = sd(residuals(model)))
+          list(
+            statistic = round(ks$statistic, 4),
+            p_value   = round(ks$p.value, 4),
+            note      = NULL
+          )
+        }
+      ),
+      
+      list(
+        assumption = "Equal Variance (Homoskedasticity)",
+        procedure  = "Breusch-Pagan Test",
+        min_n      = 5,
+        run        = function(model, datx, daty) {
+          bp <- lmtest::bptest(model)
+          list(
+            statistic = round(bp$statistic, 4),
+            p_value   = round(bp$p.value, 4),
+            note      = NULL
+          )
+        }
+      ),
+      
+      list(
+        assumption = "Equal Variance (Homoskedasticity)",
+        procedure  = "White Test",
+        min_n      = 4,
+        run        = function(model, datx, daty) {
+          # White test via auxiliary regression of squared residuals
+          e2  <- residuals(model)^2
+          x2  <- datx^2
+          aux <- lm(e2 ~ datx + x2)
+          wt  <- summary(aux)
+          f   <- wt$fstatistic
+          p   <- pf(f[1], f[2], f[3], lower.tail = FALSE)
+          list(
+            statistic = round(f[1], 4),
+            p_value   = round(p, 4),
+            note      = NULL
+          )
+        }
+      )
+    )
+    
+    
+    
+    slrExportData <- reactiveVal(NULL)
+    
+    hasHighLeverage <- reactiveVal(FALSE)
+    
+    hasLeveragePlotIssue <- reactiveVal(FALSE)
+    
+    output$diagnosticPlotsWarning <- renderUI({
+      
+      if (hasLeveragePlotIssue()) {
+        div(
+          class = "alert alert-warning",
+          tags$b("⚠ Diagnostic Plot Warning: "),
+          "Residuals vs Leverage could not be produced because all leverage values are 0.5."
+        )
+      }
+    })
+    
+    outputOptions(output, "diagnosticPlotsWarning", suspendWhenHidden = FALSE)
+    
+    
+    # output$downloadSLRcsv <- downloadHandler(
+    #   filename    = function() paste0("SLR_Calculations", Sys.Date(), ".csv"),
+    #   contentType = "text/csv",
+    #   content     = function(file) {
+    #     tryCatch({
+    #       data <- as.data.frame(slrExportData())
+    #       names(data) <- c("x", "y", "xy", "x^2", "y^2", "y_hat",
+    #                        "e = (y - y_hat)", "e^2",
+    #                        "95% CI Mean Response (Lower)",
+    #                        "95% CI Mean Response (Upper)",
+    #                        "95% PI (Lower)",
+    #                        "95% PI (Upper)")
+    #       write.csv(data, file, row.names = TRUE)
+    #     }, error = function(e) {
+    #       message("Full error: ", conditionMessage(e))
+    #     })
+    #   }
+    # )
+    output$downloadSLRxlsx <- downloadHandler(
+      filename    = function() paste0("SLR_Calculations", Sys.Date(), ".xlsx"),
+      contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      content     = function(file) {
+        tryCatch({
+          data <- as.data.frame(slrExportData())
+          data <- head(data, nrow(data) - 1)  
+          names(data) <- c("x", "y", "xy", "x^2", "y^2", "y_hat",
+                           "e = (y - y_hat)", "e^2",
+                           "95% CI Mean Response (Lower)",
+                           "95% CI Mean Response (Upper)",
+                           "95% PI (Lower)",
+                           "95% PI (Upper)")
+          writexl::write_xlsx(data, file)
+        }, error = function(e) {
+          message("Full error: ", conditionMessage(e))
+        })
+      }
+    )
+    
+    output$slrViewUpload <- renderDT({
+      req(input$slrUserData)
+      
+      dat <- slrUploadData()
+      
+      datatable(
+        dat,
+        options = list(
+          pageLength = 10,
+          scrollX = TRUE
+        )
+      )
+    })
+    
+    outputOptions(output, "slrViewUpload", suspendWhenHidden = FALSE)
+
+    output$slrViewUploadTab <- renderDT({
+      req(input$slrUserData)
+      dat <- slrUploadData()
+      datatable(dat, options = list(pageLength = 10, scrollX = TRUE))
+    })
+    
+    
+    
     #  ========================================================================= #
     ## -------- Data Validation ------------------------------------------------
     #  ========================================================================= #
@@ -372,38 +653,81 @@ SLRServer <- function(id) {
     slrraw_iv$add_rule("x", sv_required())
     slrraw_iv$add_rule("x", sv_regex("^\\s*-?\\d*\\.?\\d+(\\s*,\\s*-?\\d*\\.?\\d+)*\\s*$",
                                      "Data must be numeric values separated by a comma (ie: 2,3,4 or 2, 30, 400)."))
-    
-    slrraw_iv$add_rule("x", ~ if(length(strsplit(input$x, ",")[[1]]) < 3) "Sample Data must include at least 3 numeric observations.")
-    slrraw_iv$add_rule("x", ~ if(sampleInfoRaw()$diff != 0) "x and y must have the same number of observations.")
-    slrraw_iv$add_rule("x", ~ if(sampleInfoRaw()$xSD == 0) "Explanatory variable has zero variance (all values are identical). At least two distinct values are required.")
+    slrraw_iv$add_rule("x", ~ if (length(strsplit(input$x, ",")[[1]]) < 4) "Sample Data must include at least 4 numeric observations.")
+    slrraw_iv$add_rule("x", ~ tryCatch(
+      if (isTRUE(sampleInfoRaw()$diff != 0)) "x and y must have the same number of observations.",
+      error = function(e) NULL
+    ))
+    slrraw_iv$add_rule("x", ~ tryCatch(
+      if (isTRUE(sampleInfoRaw()$xSD == 0)) "Explanatory variable has zero variance (all values are identical). At least two distinct values are required.",
+      error = function(e) NULL
+    ))
     
     slrraw_iv$add_rule("y", sv_required())
     slrraw_iv$add_rule("y", sv_regex("^\\s*-?\\d*\\.?\\d+(\\s*,\\s*-?\\d*\\.?\\d+)*\\s*$",
                                      "Data must be numeric values separated by a comma (ie: 2,3,4 or 2, 30, 400)."))
-    slrraw_iv$add_rule("y", ~ if(length(strsplit(input$x, ",")[[1]]) < 3) "Sample Data must include at least 3 numeric observations.")
-    slrraw_iv$add_rule("y", ~ if(sampleInfoRaw()$diff != 0) "x and y must have the same number of observations.")
-    slrraw_iv$add_rule("y", ~ if(sampleInfoRaw()$ySD == 0) "Response variable is constant. Correlation is undefined when a variable has zero variance.")
-    
-    
-    
+    slrraw_iv$add_rule("y", ~ if (length(strsplit(input$x, ",")[[1]]) < 4) "Sample Data must include at least 4 numeric observations.")
+    slrraw_iv$add_rule("y", ~ tryCatch(
+      if (isTRUE(sampleInfoRaw()$diff != 0)) "x and y must have the same number of observations.",
+      error = function(e) NULL
+    ))
+    slrraw_iv$add_rule("y", ~ tryCatch(
+      if (isTRUE(sampleInfoRaw()$ySD == 0)) "Response variable is constant. Correlation is undefined when a variable has zero variance.",
+      error = function(e) NULL
+    ))
     
     slrupload_iv$add_rule("slrUserData", sv_required())
-    slrupload_iv$add_rule("slrUserData", ~ if(is.null(fileInputs$slrStatus) || fileInputs$slrStatus == 'reset') "Required")
-    slrupload_iv$add_rule("slrUserData", ~ if(!(tolower(tools::file_ext(input$slrUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
-    slrupload_iv$add_rule("slrUserData", ~ if(nrow(slrUploadData()) == 0) "File is empty.")
-    slrupload_iv$add_rule("slrUserData", ~ if(ncol(slrUploadData()) < 2) "Data must include one response and (at least) one explanatory variable.")
-    slrupload_iv$add_rule("slrUserData", ~ if(nrow(slrUploadData()) < 3) "Samples must include at least 2 observations.")
-    # slrupload_iv$add_rule("slrUserData", ~ if(any(!is.numeric(slrUploadData()))) "File contains non-numeric data.")
+    slrupload_iv$add_rule("slrUserData", ~ if (is.null(fileInputs$slrStatus) || fileInputs$slrStatus == 'reset') "Required")
+    slrupload_iv$add_rule("slrUserData", ~ if (!(tolower(tools::file_ext(input$slrUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+    slrupload_iv$add_rule("slrUserData", ~ tryCatch(
+      if (isTRUE(nrow(slrUploadData()) == 0)) "File is empty.",
+      error = function(e) NULL
+    ))
+    slrupload_iv$add_rule("slrUserData", ~ tryCatch(
+      if (isTRUE(ncol(slrUploadData()) < 2)) "Data must include one response and (at least) one explanatory variable.",
+      error = function(e) NULL
+    ))
+    slrupload_iv$add_rule("slrUserData", ~ tryCatch(
+      if (isTRUE(nrow(slrUploadData()) < 4)) "Samples must include at least 4 numeric observations.",
+      error = function(e) NULL
+    ))
     
     slruploadvars_iv$add_rule("slrExplanatory", sv_required())
-    slruploadvars_iv$add_rule("slrExplanatory", ~ if(explanatoryInfoUploadSLR()$invalid) "Explanatory variable contains non-numeric data.")
-    slruploadvars_iv$add_rule("slrExplanatory", ~ if(explanatoryInfoUploadSLR()$sd == 0) "Explanatory variable has zero variance (all values are identical). At least two distinct values are required.")
+    slruploadvars_iv$add_rule("slrExplanatory", ~ tryCatch(
+      if (isTRUE(explanatoryInfoUploadSLR()$invalid)) "Explanatory variable contains non-numeric data.",
+      error = function(e) NULL
+    ))
+    slruploadvars_iv$add_rule("slrExplanatory", ~ tryCatch(
+      if (isTRUE(explanatoryInfoUploadSLR()$sd == 0)) "Explanatory variable has zero variance (all values are identical). At least two distinct values are required.",
+      error = function(e) NULL
+    ))
+    slruploadvars_iv$add_rule("slrExplanatory", ~ tryCatch({
+      raw  <- suppressWarnings(as.numeric(as.data.frame(slrUploadData())[, input$slrExplanatory]))
+      datx <- na.omit(raw)
+      if (length(datx) < 4) "Explanatory variable has fewer than 4 non-missing numeric values."
+    }, error = function(e) NULL))
     
     slruploadvars_iv$add_rule("slrResponse", sv_required())
-    slruploadvars_iv$add_rule("slrResponse", ~ if(sampleDiffUpload() != 0) "Missing values detected, x and y must have the same number of observations.")
-    slruploadvars_iv$add_rule("slrResponse", ~ if(responseInfoUploadSLR()$invalid) "Response variable contains non-numeric data.")
-    slruploadvars_iv$add_rule("slrResponse", ~ if(responseInfoUploadSLR()$sd == 0) "Response variable is constant. Correlation is undefined when a variable has zero variance.")
+    slruploadvars_iv$add_rule("slrResponse", ~ tryCatch(
+      if (isTRUE(sampleDiffUpload() != 0)) "Missing values detected — x and y must have the same number of non-missing observations.",
+      error = function(e) NULL
+    ))
+    slruploadvars_iv$add_rule("slrResponse", ~ tryCatch(
+      if (isTRUE(responseInfoUploadSLR()$invalid)) "Response variable contains non-numeric data.",
+      error = function(e) NULL
+    ))
+    slruploadvars_iv$add_rule("slrResponse", ~ tryCatch(
+      if (isTRUE(responseInfoUploadSLR()$sd == 0)) "Response variable is constant. Correlation is undefined when a variable has zero variance.",
+      error = function(e) NULL
+    ))
+    slruploadvars_iv$add_rule("slrResponse", ~ tryCatch({
+      raw  <- suppressWarnings(as.numeric(as.data.frame(slrUploadData())[, input$slrResponse]))
+      daty <- na.omit(raw)
+      if (length(daty) < 4) "Response variable has fewer than 4 non-missing numeric values."
+    }, error = function(e) NULL))
     
+    
+     
     ### ------------ Conditions --------------------------------------------------
     slrraw_iv$condition(~ isTRUE(input$dataRegCor == 'Enter Raw Data'))
     slrupload_iv$condition(~ isTRUE(input$dataRegCor == 'Upload Data'))
@@ -460,16 +784,23 @@ SLRServer <- function(id) {
     )
     
     slrUploadData <- eventReactive(input$slrUserData, {
-      ext <- tools::file_ext(input$slrUserData$name)
-      ext <- tolower(ext)
+      ext <- tolower(tools::file_ext(input$slrUserData$name))
       
-      switch(ext,
-             csv = read_csv(input$slrUserData$datapath, show_col_types = FALSE),
-             xls = read_xls(input$slrUserData$datapath),
-             xlsx = read_xlsx(input$slrUserData$datapath),
-             txt = read_tsv(input$slrUserData$datapath, show_col_types = FALSE),
-             
-             validate("Improper file format."))
+      dat <- switch(ext,
+                    csv  = read_csv(input$slrUserData$datapath, show_col_types = FALSE),
+                    xls  = read_xls(input$slrUserData$datapath),
+                    xlsx = read_xlsx(input$slrUserData$datapath),
+                    txt  = read_tsv(input$slrUserData$datapath, show_col_types = FALSE),
+                    validate("Improper file format.")
+      )
+      
+      # Drop columns that are entirely NA (empty phantom columns from Excel)
+      dat <- dat[, colSums(!is.na(dat)) > 0, drop = FALSE]
+      
+      # Drop rows where ALL columns are NA (empty phantom rows from Excel)
+      dat <- dat[rowSums(!is.na(dat)) > 0, , drop = FALSE]
+      
+      dat
     })
     
     sampleInfoRaw <- eventReactive({input$x
@@ -484,59 +815,86 @@ SLRServer <- function(id) {
       })
     
     explanatoryInfoUploadSLR <- eventReactive(input$slrExplanatory, {
+      req(input$slrExplanatory != "")
       dat <- list()
-      datx <- as.data.frame(slrUploadData())[, input$slrExplanatory]
-      dat$invalid <- any(!is.numeric(datx))
-      if (!dat$invalid){
-        dat$sd <- sd(datx, na.rm = TRUE)
-      }
-      else{
-        dat$sd <- 0
-      }
+      tryCatch({
+        raw  <- as.data.frame(slrUploadData())[, input$slrExplanatory]
+        datx <- suppressWarnings(as.numeric(raw))
+        datx <- na.omit(datx)
+        dat$invalid <- length(datx) == 0 || any(is.na(suppressWarnings(as.numeric(raw[!is.na(raw)]))))
+        dat$sd <- if (!dat$invalid) sd(datx) else 0
+      }, error = function(e) {
+        dat$invalid <<- TRUE
+        dat$sd      <<- 0
+      })
       return(dat)
     })
     
     responseInfoUploadSLR <- eventReactive(input$slrResponse, {
+      req(input$slrResponse != "")
       dat <- list()
-      daty <- as.data.frame(slrUploadData())[, input$slrResponse]
-      dat$invalid <- any(!is.numeric(daty))
-      # Only calculate SD if numeric
-      if (!dat$invalid) {
-        dat$sd <- sd(daty, na.rm = TRUE)
-      } 
-      else {
-        dat$sd <- 0
-      }
+      tryCatch({
+        raw  <- as.data.frame(slrUploadData())[, input$slrResponse]
+        daty <- suppressWarnings(as.numeric(raw))
+        daty <- na.omit(daty)
+        dat$invalid <- length(daty) == 0 || any(is.na(suppressWarnings(as.numeric(raw[!is.na(raw)]))))
+        dat$sd <- if (!dat$invalid) sd(daty) else 0
+      }, error = function(e) {
+        dat$invalid <<- TRUE
+        dat$sd      <<- 0
+      })
       return(dat)
     })
     
-    sampleDiffUpload <- eventReactive (c(input$slrExplanatory,
-                                         input$slrResponse), {
-                                           if(input$slrResponse == "" | input$slrExplanatory == "") {
-                                             return(0)
-                                           } else {
-                                             datx <- na.omit(as.data.frame(slrUploadData())[, input$slrExplanatory])
-                                             daty <- na.omit(as.data.frame(slrUploadData())[, input$slrResponse])
-                                             diff <- length(datx) - length(daty)
-                                             return(diff)
-                                           }
-                                         })
+    sampleDiffUpload <- eventReactive(c(input$slrExplanatory, input$slrResponse), {
+      if (input$slrResponse == "" | input$slrExplanatory == "") {
+        return(0)
+      } else {
+        tryCatch({
+          datx <- na.omit(as.numeric(as.data.frame(slrUploadData())[, input$slrExplanatory]))
+          daty <- na.omit(as.numeric(as.data.frame(slrUploadData())[, input$slrResponse]))
+          if (length(datx) == 0 || length(daty) == 0) return(-1)  # signals invalid
+          return(length(datx) - length(daty))
+        }, error = function(e) return(-1))
+      }
+    })
     
     #  ========================================================================= #
     ## -------- Observers ------------------------------------------------------
     #  ========================================================================= #
-    observeEvent(input$slrUserData, {
-      fileInputs$slrStatus <- 'uploaded'
-      toggle(id = "regCorrMP", condition = slrupload_iv$is_valid())
-      
-      if (slrupload_iv$is_valid()) {
-        updateSelectInput(inputId = "slrExplanatory",
-                          choices = colnames(slrUploadData()))
-        updateSelectInput(inputId = "slrResponse",
-                          choices = colnames(slrUploadData()))
-        show("slrExplanatory")
-        show("slrResponse")
+    
+    output$uploadedDataContent <- renderUI({
+      if (is.null(input$slrUserData) || 
+          is.null(fileInputs$slrStatus) || 
+          fileInputs$slrStatus == "reset") {
+        div(
+          class = "alert alert-info",
+          style = "margin-top: 15px;",
+          tags$b("No data uploaded. "),
+          "Please upload a file using the sidebar to view your data here."
+        )
+      } else {
+        tagList(
+          DTOutput(session$ns("slrViewUpload"))
+        )
       }
+    })
+    
+    
+    observeEvent(input$slrUserData, {
+      fileInputs$slrStatus <- "uploaded"
+      
+      req(slrUploadData())
+      updateSelectInput(
+        inputId = "slrExplanatory",
+        choices = colnames(slrUploadData())
+      )
+      updateSelectInput(
+        inputId = "slrResponse",
+        choices = colnames(slrUploadData())
+      )
+      show("slrExplanatory")
+      show("slrResponse")
     })
     
     ## NOTE: related to the old plot options UI.
@@ -558,6 +916,102 @@ SLRServer <- function(id) {
             validate("Please upload a file.")
           }
         }
+        
+        # LINE STUFF ==========  
+        
+        output$lineAssumptions <- renderUI({
+          req(model)
+          
+          alpha <- 0.05
+          n     <- length(datx)
+          
+          # Run each test and collect results
+          results <- lapply(lineTestConfig, function(cfg) {
+            
+            # Skip if not enough observations
+            if (n < cfg$min_n) {
+              return(data.frame(
+                Assumption  = cfg$assumption,
+                Procedure   = cfg$procedure,
+                #Statistic   = NA_character_,
+                `P-Value`   = NA_character_,
+                Conclusion  = paste("Requires n \u2265", cfg$min_n),
+                check.names = FALSE
+              ))
+            }
+            
+            # Run test safely
+            result <- tryCatch(cfg$run(model, datx, daty), error = function(e) {
+              list(statistic = NULL, p_value = NULL, note = paste("Error:", e$message))
+            })
+            
+            # Format statistic and p-value
+           # stat_str <- if (!is.null(result$statistic)) as.character(result$statistic) else "\u2014"
+            pval_str <- if (!is.null(result$p_value))   as.character(result$p_value)   else "\u2014"
+            
+            # Conclusion
+            conclusion <- if (!is.null(result$note)) {
+              result$note
+            } else if (!is.null(result$p_value)) {
+              if (result$p_value <= alpha) {
+                paste0("Reject H\u2080 (p = ", result$p_value, " \u2264 0.05)")
+              } else {
+                paste0("Fail to reject H\u2080 (p = ", result$p_value, " > 0.05)")
+              }
+            } else {
+              "\u2014"
+            }
+            
+            data.frame(
+              Assumption  = cfg$assumption,
+              Procedure   = cfg$procedure,
+              #Statistic   = stat_str,
+              `P-Value`   = pval_str,
+              Conclusion  = conclusion,
+              check.names = FALSE
+            )
+          })
+          
+          # Combine into one data frame
+          tableData <- do.call(rbind, results)
+          
+          tagList(
+            p(strong("Linearity, Independence, Normality and Equal Variance (L.I.N.E) Assumptions"),
+              style = "font-size: 16px;"),
+            p(paste("Testing at \u03b1 =", alpha, "| n =", n),
+              style = "color: #666; font-size: 13px;"),
+            br(),
+            reactable(
+              tableData,
+              bordered   = TRUE,
+              striped    = FALSE,
+              highlight  = TRUE,
+              pagination = FALSE,
+              fullWidth  = TRUE,
+              columns = list(
+                Assumption = colDef(
+                  name     = "Assumption",
+                  minWidth = 200,
+                  style    = list(fontWeight = "bold")
+                ),
+                Procedure  = colDef(name = "Procedure",      minWidth = 180),
+                #Statistic  = colDef(name = "Test Statistic", minWidth = 120, align = "center"),
+                `P-Value`  = colDef(name = "P-Value",        minWidth = 100, align = "center"),
+                Conclusion = colDef(name = "Conclusion",      minWidth = 250)
+              )
+            ),
+            br()
+          )
+          
+          # 
+          
+          
+          
+          
+        }) # END renderUI — LINE STUFF ==========
+        
+        
+        
         
         validate(
           need(slrupload_iv$is_valid(), "Please upload a file."),
@@ -585,19 +1039,18 @@ SLRServer <- function(id) {
         }
         
         if(input$dataRegCor == 'Upload Data') {
-          req(slruploadvars_iv$is_valid())
-          show("slrExplanatory")
-          show("slrResponse")
           req(input$slrExplanatory %in% colnames(slrUploadData()))
           req(input$slrResponse %in% colnames(slrUploadData()))
-          datx <- as.data.frame(slrUploadData())[, input$slrExplanatory]
-          daty <- as.data.frame(slrUploadData())[, input$slrResponse]
+          raw_x <- suppressWarnings(as.numeric(as.data.frame(slrUploadData())[, input$slrExplanatory]))
+          raw_y <- suppressWarnings(as.numeric(as.data.frame(slrUploadData())[, input$slrResponse]))
+          complete_idx <- !is.na(raw_x) & !is.na(raw_y)
+          datx <- raw_x[complete_idx]
+          daty <- raw_y[complete_idx]
+          if(length(datx) < 4) {
+            showNotification("After removing missing values, fewer than 4 complete observations remain. Please choose different variables.", type = "error", duration = 8)
+            return()
+          }
         } else {
-          validate(
-            need(input$x, "Input required for the Explanatory variable (x)."),
-            need(input$y, "Input required for the Response variable (y)."),
-            errorClass = "myClass")
-          
           datx <- createNumLst(input$x)
           daty <- createNumLst(input$y)
         }
@@ -619,6 +1072,13 @@ SLRServer <- function(id) {
       }) #output$slrValidation
       
       if(regcor_iv$is_valid()) {
+        if (input$dataRegCor == 'Upload Data') {
+          hide("uploadedDataPanel")
+          showTab(inputId = "slrNavbarPage", target = "Uploaded Data")
+        } else {
+          hideTab(inputId = "slrNavbarPage", target = "Uploaded Data")
+        }
+
         if(input$dataRegCor == 'Upload Data') {
           req(input$slrExplanatory %in% colnames(slrUploadData()))
           req(input$slrResponse %in% colnames(slrUploadData()))
@@ -630,15 +1090,56 @@ SLRServer <- function(id) {
         }
         
         model <- lm(daty ~ datx)
+        
+        h <- hatvalues(model)
+        hasLeveragePlotIssue(
+          all(abs(h - 0.5) < .Machine$double.eps^0.5)
+        )
+        
+        hasHighLeverage(any(hatvalues(model) >= 1))
+        
         r_squared <- summary(model)$r.squared
         y_hat <- fitted(model)
         residuals <- residuals(model)
         residuals_sq <- residuals^2
         
-        df <- data.frame(datx, daty, datx*daty, datx^2, daty^2, y_hat, residuals, residuals_sq)
-        names(df) <- c("x", "y", "xy", "x<sup>2</sup>", "y<sup>2</sup>", "&ycirc;", "<em>e</em> = (<em>y</em> - <em>&ycirc;</em>)", "e<sup>2</sup>")
+        n       <- length(datx)
+        x_bar   <- mean(datx)
+        mse     <- sum(residuals^2) / (n - 2)
+        ssx     <- sum((datx - x_bar)^2)
+        t_crit  <- qt(0.975, df = n - 2)
         
-        dfTotaled <- bind_rows(df, summarise(df, across(where(is.numeric), sum)))
+        se_mean  <- sqrt(mse * (1/n + (datx - x_bar)^2 / ssx))
+        se_pred  <- sqrt(mse * (1 + 1/n + (datx - x_bar)^2 / ssx))
+        
+        ci_lower <- y_hat - t_crit * se_mean
+        ci_upper <- y_hat + t_crit * se_mean
+        pi_lower <- y_hat - t_crit * se_pred
+        pi_upper <- y_hat + t_crit * se_pred
+        
+        df <- data.frame(datx, daty, datx*daty, datx^2, daty^2, y_hat, residuals, residuals_sq, ci_lower, ci_upper, pi_lower, pi_upper)
+        names(df) <- c("x", "y", "xy", "x<sup>2</sup>", "y<sup>2</sup>", "&ycirc;",
+                       "<em>e</em> = (<em>y</em> - <em>&ycirc;</em>)", "e<sup>2</sup>",
+                       "95% CI<br>for the mean<br>response<br>(Lower)", 
+                       "95% CI<br>for the mean<br>response<br>(Upper)",
+                       "95% prediction<br>interval<br>(Lower)", 
+                       "95% prediction<br>interval<br>(Upper)")
+        
+        dfTotaled <- bind_rows(
+          df,
+          df %>%
+            summarise(
+              across(c(x, y, xy, 
+                       `x<sup>2</sup>`, 
+                       `y<sup>2</sup>`,
+                       `&ycirc;`, 
+                       `<em>e</em> = (<em>y</em> - <em>&ycirc;</em>)`,
+                       `e<sup>2</sup>`), sum),
+              across(c(`95% CI<br>for the mean<br>response<br>(Lower)`,
+                       `95% CI<br>for the mean<br>response<br>(Upper)`,
+                       `95% prediction<br>interval<br>(Lower)`,
+                       `95% prediction<br>interval<br>(Upper)`), ~ NA_real_))
+        )
         
         dfTotaled[nrow(dfTotaled), "<em>e</em> = (<em>y</em> - <em>&ycirc;</em>)"] <- sum(df$`<em>e</em> = (<em>y</em> - <em>&ycirc;</em>)`)
         
@@ -657,13 +1158,15 @@ SLRServer <- function(id) {
             })
           }
         }
+        slrExportData(dfFormatted)  
+        
         
         # Perfect fit detection
         output$perfectFitWarning <- renderUI({
           if (isTRUE(all.equal(r_squared, 1))) {
             
             # Hide the tabs
-            hideTab(inputId = "slrNavbarPage", target = "Parameter Estimates and ANOVA")
+            hideTab(inputId = "slrNavbarPage", target = "Inference")
             hideTab(inputId = "slrNavbarPage", target = "Diagnostic Plots")
             
             div(
@@ -671,14 +1174,13 @@ SLRServer <- function(id) {
               role  = "alert",
               style = "margin-top: 10px;",
               tags$b("\u26a0\ufe0f Perfect Fit Detected: "),
-              "The model has an R\u00b2 of 1 or -1, meaning the regression line fits the data perfectly. Resulting in an MSE equal to zero and a zero set of residuals.",
-              "This may indicate that ",
+              "This may indicate that",
+              ("This may indicate that"),
               tags$b("x and y are identical or linearly dependent,"),
-              " which can produce unreliable inference results for the Parameters, ANOVA and Diagnostic Plots.",
-              tags$b("These tabs are now hidden")
+              ("which can produce unreliable inference and diagnostic plots. Standard statistical significance tests cannot run on perfect fits. Please check your data.")
             )
           } else {
-            showTab(inputId = "slrNavbarPage", target = "Parameter Estimates and ANOVA")
+            showTab(inputId = "slrNavbarPage", target = "Inference")
             showTab(inputId = "slrNavbarPage", target = "Diagnostic Plots")
             NULL
           }
@@ -688,10 +1190,10 @@ SLRServer <- function(id) {
           isPerfectFit <- isTRUE(all.equal(r_squared, 1))
           
           if (isPerfectFit) {
-            hideTab(inputId = "slrNavbarPage", target = "Parameter Estimates and ANOVA")
+            hideTab(inputId = "slrNavbarPage", target = "Inference")
             hideTab(inputId = "slrNavbarPage", target = "Diagnostic Plots")
           } else {
-            showTab(inputId = "slrNavbarPage", target = "Parameter Estimates and ANOVA")
+            showTab(inputId = "slrNavbarPage", target = "Inference")
             showTab(inputId = "slrNavbarPage", target = "Diagnostic Plots")
           }
           
@@ -714,28 +1216,35 @@ SLRServer <- function(id) {
             striped    = TRUE,
             highlight  = TRUE,
             pagination = FALSE,
-            fullWidth  = TRUE,
+            fullWidth  = FALSE,
             rownames   = TRUE,
             columns = c(
               # Row name column — just used to show "Totals" label in footer
               list(".rownames" = colDef(
-                name   = "",
+                name   = "Observation Number",
+                align = "center",
                 footer = tags$b("Totals"),
                 style  = list(color = "#333")
+            
               )),
               # Data columns with HTML names and totals footer
               setNames(
                 lapply(names(numericRows), function(col) {
                   colDef(
-                    html = TRUE,
-                    name = names(df)[match(col, names(numericRows))],
-                    footer = tags$b(totalsRow[[col]]),
+                    html     = TRUE,
+                    align    = "center",
+                    name     = names(df)[match(col, names(numericRows))],
+                    footer   = if (is.na(dfTotaled[nrow(dfTotaled), col])) {
+                      ""
+                    } else {
+                      tags$b(totalsRow[[col]])
+                    },
                     cell = function(value) {
-                      if (!is.numeric(value)) return(value) # checks to display integers or floats
+                      if (!is.numeric(value)) return(value)
                       if (value == floor(value)) {
-                        formatC(value, format = "f", digits = 0)  # integer, no decimals
+                        formatC(value, format = "f", digits = 0)
                       } else {
-                        formatC(value, format = "f", digits = 3)  # decimal, 3 places
+                        formatC(value, format = "f", digits = 3)
                       }
                     }
                   )
@@ -746,64 +1255,68 @@ SLRServer <- function(id) {
           )
         })
         
-        output$slrScatterplot <- renderPlot(
-          { # scatterplot ----
-            RenderScatterplot(
-              df,
-              model,
-              input[["slrScatter-Title"]],
-              input[["slrScatter-Xlab"]],
-              input[["slrScatter-Ylab"]],
-              input[["slrScatter-Colour"]],
-              input[["slrScatter-PointsColour"]],
-              input[["slrScatter-LineWidth"]],
-              input[["slrScatter-PointSize"]],
-              input[["slrScatter-Gridlines"]],
-              input[["slrScatter-confidenceInterval"]],
-              input[["slrScatter-predictionInterval"]],
-              input[["slrScatter-showRegressionLine"]]
-            )
-          },
-          height = function() {
-            GetPlotHeight(input[["slrScatter-Height"]],
-                          input[["slrScatter-HeightPx"]],
-                          ui = FALSE)
-          },
-          width = function() {
-            GetPlotWidth(input[["slrScatter-Width"]],
-                         input[["slrScatter-WidthPx"]],
-                         ui = FALSE)
-          }
-        )
+    
+        
+        
+        
+        output$slrScatterplot <- renderPlotly({
+          RenderScatterplot(
+            df,
+            model,
+            input[["slrScatter-Title"]],
+            input[["slrScatter-Xlab"]],
+            input[["slrScatter-Ylab"]],
+            input[["slrScatter-Colour"]],
+            input[["slrScatter-PointsColour"]],
+            input[["slrScatter-LineWidth"]],
+            input[["slrScatter-PointSize"]],
+            input[["slrScatter-Gridlines"]],
+            input[["slrScatter-confidenceInterval"]],
+            input[["slrScatter-predictionInterval"]],
+            input[["slrScatter-showRegressionLine"]]
+          )
+        })
+        
+        
+        
         
         output$slrResidualsPanelPlot1 <- renderPlot({
-          plot(model, which = 1, 
-               pch = 20, 
-               main = "", 
-               lwd = 2,
-               #cex = 0.5, 
-               ann  = FALSE, 
-               sub.caption = "",
-               caption     = "")
-          # Setting ann  = FALSE will turn off annotations
-          # Setting sub.caption = "" will remove the subtitle (sub-caption) automatically added by plot.lm()
-          title(main  = "Residuals vs Fitted Values", cex.main = 1.2)
-          title(xlab = expression(Fitted~Values~(hat(italic(y)))))
-          title(ylab = expression(Residuals~plain("(")*italic(e)*plain(")")))
+          par(font.main = 2, font.lab = 2)
+          plot(model, which = 1, pch = 20, main = "", lwd = 2, ann = FALSE, sub.caption = "", caption = "")
+          title(main = "Residuals vs Fitted Values", cex.main = 1.2)
+          title(xlab = expression(bold(Fitted~Values~(hat(italic(y))))))
+          title(ylab = expression(bold(Residuals~plain("(")*italic(e)*plain(")"))))
           abline(h = 0, col = "black", lty = 2, lwd = 1.5)
         })
         
         output$slrResidualsPanelPlot2 <- renderPlot({
-          plot(model, which = 2, pch = 20, main = "", lwd = 2)
+          par(font.main = 2, font.lab = 2)
+          plot(model, which = 2, pch = 20, main = "", lwd = 2, sub.caption = "", caption = "")
+          title(main = "Q-Q Residuals", cex.main = 1.2)
+          title(xlab = "Theoretical Quantiles")
         })
         
         output$slrResidualsPanelPlot3 <- renderPlot({
-          plot(model, which = 3, pch = 20, main = "", lwd = 2)
+          par(font.main = 2, font.lab = 2)
+          plot(model, which = 3, pch = 20, main = "", lwd = 2, sub.caption = "", caption = "", ann = FALSE)
+          title(main = "Scale-Location", cex.main = 1.2)
+          title(ylab = "sqrt(|Standardized Residuals|)")
         })
         
         output$slrResidualsPanelPlot4 <- renderPlot({
-          plot(model, which = 5, pch = 20, main = "", lwd = 2)
+          par(font.main = 2, font.lab = 2)
+          plot(model, which = 5, pch = 20, main = "", lwd = 2, sub.caption = "", caption = "")
+          title(main = "Residuals vs Leverage", cex.main = 1.2)
         })
+        
+        output$slrResidualsPanelPlot5 <- renderPlot({
+          par(font.main = 2, font.lab = 2)
+          hist(residuals, main = "", xlab = "",
+               col = "darkgreen", border = "white")
+          title(main = "Histogram of Residuals", cex.main = 1.2)
+          title(xlab = expression(bold(Residuals~plain("(")*italic(e)*plain(")"))))
+        })
+        
         
         if (summary(model)$coefficients["datx", "Estimate"] > 0) {
           slopeDirection <- "increase"
@@ -814,6 +1327,8 @@ SLRServer <- function(id) {
           yHatOp <- "-"
           b0HatOp <- "+"
         }
+        
+        
         
         interceptEstimate <- round(summary(model)$coefficients["(Intercept)", "Estimate"], 4)
         slopeEstimate <- round(summary(model)$coefficients["datx", "Estimate"], 4)
@@ -1015,55 +1530,163 @@ SLRServer <- function(id) {
             
             output$pearsonCorFormula <- renderUI({
               withMathJax(
-                sprintf("\\( \\large{\\quad r = \\dfrac
-                                      {\\left(\\sum xy\\right) - \\dfrac{ \\left(\\sum x\\right) \\times \\left(\\sum y\\right) }{ n } }
-                                      {\\sqrt{ \\left(\\sum x^2\\right) - \\dfrac{ \\left(\\sum x\\right)^2 }{ n } } \\times \\sqrt{ \\left(\\sum y^2\\right) - \\dfrac{ \\left(\\sum y\\right) ^2 }{ n } } }} \\)"),
+                
+                # Line 1: General formula
+                sprintf("\\( \\normalsize{\\quad r = \\dfrac
+              {\\left(\\sum xy\\right) - \\dfrac{ \\left(\\sum x\\right) \\times \\left(\\sum y\\right) }{ n } }
+              {\\sqrt{ \\left(\\sum x^2\\right) - \\dfrac{ \\left(\\sum x\\right)^2 }{ n } } \\times \\sqrt{ \\left(\\sum y^2\\right) - \\dfrac{ \\left(\\sum y\\right) ^2 }{ n } }} } \\)"),
+                
                 br(),
                 br(),
-                br(),
-                sprintf("\\( \\large{\\quad = \\dfrac
-                                      {%s - \\dfrac{ (%s) \\times (%s) }{ %s } }
-                                      {\\sqrt{ %s - \\dfrac{ (%s)^2 }{ %s } } \\times \\sqrt{ %s - \\dfrac{ (%s) ^2 }{ %s } } }} \\)",
+                
+                # Line 2: Values substituted = simplified √ form = final result
+                sprintf("\\( \\normalsize{\\quad = \\dfrac
+              {%s - \\dfrac{ (%s) \\times (%s) }{ %s } }
+              {\\sqrt{ %s - \\dfrac{ (%s)^2 }{ %s } } \\times \\sqrt{ %s - \\dfrac{ (%s)^2 }{ %s } }}
+              \\quad = \\dfrac{ %s }{\\sqrt{ %s } \\times \\sqrt{ %s }}
+              \\quad = %g} \\)",
+                        
                         format(round(dfTotaled["Totals", "xy"], 3), nsmall = 0, scientific = FALSE),
                         format(round(dfTotaled["Totals", "x"], 3), nsmall = 0, scientific = FALSE),
                         format(round(dfTotaled["Totals", "y"], 3), nsmall = 0, scientific = FALSE),
                         format(length(datx), nsmall = 0, scientific = FALSE),
+                        
                         format(round(dfTotaled["Totals", "x<sup>2</sup>"], 3), nsmall = 0, scientific = FALSE),
                         format(round(dfTotaled["Totals", "x"], 2), nsmall = 0, scientific = FALSE),
                         format(length(datx), nsmall = 0, scientific = FALSE),
+                        
                         format(round(dfTotaled["Totals", "y<sup>2</sup>"], 3), nsmall = 0, scientific = FALSE),
                         format(round(dfTotaled["Totals", "y"], 3), nsmall = 0, scientific = FALSE),
-                        format(length(datx), nsmall = 0, scientific = FALSE)
+                        format(length(datx), nsmall = 0, scientific = FALSE),
+                        
+                        # simplified √ form
+                        format(round(dfTotaled["Totals", "xy"] - sumXSumY / length(datx), 3),
+                               nsmall = 0, scientific = FALSE),
+                        
+                        format(round(dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx), 3),
+                               nsmall = 0, scientific = FALSE),
+                        
+                        format(round(dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx), 3),
+                               nsmall = 0, scientific = FALSE),
+                        
+                        # final result
+                        round(pearson$estimate, 4)
                 ),
+                
                 br(),
                 br(),
                 br(),
                 
-                sprintf("\\( \\large{\\quad = \\dfrac
-                                      { %s }
-                                      {\\sqrt{ %s } \\times \\sqrt{ %s } }} \\)",
-                        format(round(dfTotaled["Totals", "xy"] - sumXSumY / length(datx), 3), nsmall = 0, scientific = FALSE),
-                        format(round(dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx), 3), nsmall = 0, scientific = FALSE),
-                        format(round(dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx), 3), nsmall = 0, scientific = FALSE)
-                ),
-                
-                sprintf("\\( \\large{\\quad = \\dfrac
-                                      { %s }
-                                      { %s }} \\)",
-                        format(round(dfTotaled["Totals", "xy"] - sumXSumY / length(datx), 3), nsmall = 0, scientific = FALSE),
-                        format(round(sqrt(dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx)) * sqrt(dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx)), 3), nsmall = 0, scientific = FALSE)
-                ),
-                
-                sprintf("\\( \\large{\\quad = %g} \\)",
-                        round(pearson$estimate, 4)),
-                br(),
-                br(),
-                br(),
+                # Interpretation moved to bottom
                 p(tags$b("Interpretation:")),
-                sprintf("There is a %s %s linear relationship between \\(x\\) and \\(y\\).",
-                        pearsonStrength,
-                        pearsonSign),
-                br()
+                sprintf(
+                  "There exists a %s %s linear relationship between \\(x\\) and \\(y\\).",
+                  pearsonStrength,
+                  pearsonSign
+                ),
+                
+                br(),
+                br(),
+                
+                if (!isTRUE(all.equal(r_squared, 1))) tagList(
+                  
+                  # Population Correlation Coefficient
+                  hr(),
+                  p(HTML(paste0(strong("Hypothesis Test for the Population Correlation Coefficient"), " \\((\\rho)\\)"))),
+                  p(HTML("H<sub>0</sub>: \\(\\rho = 0\\)")),
+                  p(HTML("H<sub>a</sub>: \\(\\rho \\neq 0\\)")),
+                  p("\\(\\alpha = 0.05\\)"),
+                  p(sprintf("\\( df = n - 2 = %d \\)", pearson$parameter)),
+                  
+                  p(strong("Test Statistic:")),
+                  p(sprintf(
+                    "\\( t = \\dfrac{r\\sqrt{n-2}}{\\sqrt{1-r^2}} = \\dfrac{%0.4f\\sqrt{%d-2}}{\\sqrt{1-%0.4f^2}} = %0.4f \\)",
+                    pearson$estimate, n, pearson$estimate, pearson$statistic
+                  )),
+                  
+                  p(strong("Using P-Value Method:")),
+                  p(sprintf(
+                    "\\( P = 2 \\times P(t > |\\, %0.4f \\,|) = %s \\)",
+                    pearson$statistic,
+                    format.pval(pearson$p.value, digits = 4, eps = 0.0001)
+                  )),
+                  if(pearson$p.value <= 0.05) {
+                    p(sprintf("Since \\( P \\leq 0.05 \\), reject \\( H_0 \\)."))
+                  } else {
+                    p(sprintf("Since \\( P > 0.05 \\), fail to reject \\( H_0 \\)."))
+                  },
+                  
+                  br(),
+                  
+                  p(strong("Using Critical Value Method:")),
+                  p(sprintf(
+                    "\\( \\text{Critical Value(s)} = \\pm t_{\\alpha/2,\\, n-2} = \\pm t_{0.025,\\, %d} = \\pm %0.4f \\)",
+                    pearson$parameter,
+                    qt(0.975, df = pearson$parameter)
+                  )),
+                  if(abs(pearson$statistic) > qt(0.975, df = pearson$parameter)) {
+                    p(sprintf(
+                      "Since the test statistic \\( (t = %0.4f) \\) falls within the rejection region, reject \\( H_0 \\).",
+                      pearson$statistic
+                    ))
+                  } else {
+                    p(sprintf(
+                      "Since the test statistic \\( (t = %0.4f) \\) does not fall within the rejection region, fail to reject \\( H_0 \\).",
+                      pearson$statistic
+                    ))
+                  },
+                  
+                  plotOutput(session$ns("pearsonTCurve")),
+                  
+                  p(strong("Conclusion:")),
+                  if(pearson$p.value <= 0.05) {
+                    p("At \\( \\alpha = 0.05 \\), since the test statistic falls in the rejection region we reject \\( H_0 \\) and conclude that there is enough statistical evidence of a linear relationship between \\( x \\) and \\( y \\) in the population.")
+                  } else {
+                    p("At \\( \\alpha = 0.05 \\), since the test statistic does not fall in the rejection region we fail to reject \\( H_0 \\) and conclude that there is not enough statistical evidence of a linear relationship between \\( x \\) and \\( y \\) in the population.")
+                  },
+                  
+                  # Fischer Transform
+                  hr(),
+                  p(HTML(paste0(strong("Confidence Interval for the Population Correlation Coefficient \\((\\rho)\\) using Fisher z-Transformation")))),
+                  
+                  p("Since the sampling distribution of Pearson's \\(r\\) is not normal, we use the Fisher z-Transformation to construct a confidence interval."),
+
+                  p(strong(withMathJax("Step 1: Transform \\(r\\)"))),
+                  p(sprintf(
+                    "\\( z_r = \\dfrac{1}{2} \\ln\\left(\\dfrac{1+r}{1-r}\\right) = \\text{artanh}(r) = \\dfrac{1}{2} \\ln\\left(\\dfrac{1+(%0.4f)}{1-(%0.4f)}\\right) = %0.4f \\)",
+                    pearson$estimate, pearson$estimate, atanh(pearson$estimate)
+                  )),
+                  
+                  p(strong("Step 2: Standard Error")),
+                  p(sprintf(
+                    "\\( SE_{z_r} = \\dfrac{1}{\\sqrt{n-3}} = \\dfrac{1}{\\sqrt{%d-3}} = %0.4f \\)",
+                    n, 1/sqrt(n-3)
+                  )),
+                  
+                  p(sprintf(
+                    "\\( \\left(z_r - Z_{\\alpha/2} \\cdot SE_{z_r}, \\; z_r + Z_{\\alpha/2} \\cdot SE_{z_r}\\right) = \\left((%0.4f) - 1.96 \\times %0.4f, \\; (%0.4f) + 1.96 \\times %0.4f\\right) = \\left(%0.4f, \\; %0.4f\\right) \\)",
+                    atanh(pearson$estimate), 1/sqrt(n-3),
+                    atanh(pearson$estimate), 1/sqrt(n-3),
+                    atanh(pearson$estimate) - 1.96 * (1/sqrt(n-3)),
+                    atanh(pearson$estimate) + 1.96 * (1/sqrt(n-3))
+                  )),
+                  
+                  p(strong("Step 4: Convert Back to Original Scale")),
+                  {
+                    z_lower <- atanh(pearson$estimate) - 1.96 * (1/sqrt(n-3))
+                    z_upper <- atanh(pearson$estimate) + 1.96 * (1/sqrt(n-3))
+                    ci_lower <- (exp(2*z_lower) - 1) / (exp(2*z_lower) + 1)
+                    ci_upper <- (exp(2*z_upper) - 1) / (exp(2*z_upper) + 1)
+                    p(sprintf(
+                      "\\( \\left(\\dfrac{e^{2Z_{lower}}-1}{e^{2Z_{lower}}+1}, \\; \\dfrac{e^{2Z_{upper}}-1}{e^{2Z_{upper}}+1}\\right) = \\left(%0.4f, \\; %0.4f\\right) \\)",
+                      ci_lower, ci_upper
+                    ))
+                  },
+                  
+                  br(),
+                  br()
+                  
+                ) # end if (!isPerfectFit)
               )
             })
             
@@ -1101,36 +1724,170 @@ SLRServer <- function(id) {
         })
         
         # Kendall's Tau formula
+        # output$kendallFormula <- renderUI({
+        #   n <- length(datx)
+        #   withMathJax(
+        #     sprintf("\\( \\displaystyle \\tau = \\dfrac{n_c - n_d}{\\binom{n}{2}} = \\dfrac{n_c - n_d}{\\dfrac{n(n-1)}{2}} = %0.4f \\)",
+        #             kendall$estimate)#,
+        #     # br(),
+        #     # sprintf("\\( \\tau \\; = \\; %0.4f \\)", kendall$estimate)
+        #   )
+        # })
+        
         output$kendallFormula <- renderUI({
-          n <- length(datx)
+          n  <- length(datx)
+          n0 <- n * (n - 1) / 2
+          n1 <- sum(choose(table(datx), 2))
+          n2 <- sum(choose(table(daty), 2))
+          
+          nc <- 0
+          nd <- 0
+          for (i in 1:(n - 1)) {
+            for (j in (i + 1):n) {
+              dx <- datx[i] - datx[j]
+              dy <- daty[i] - daty[j]
+              if (sign(dx) == sign(dy) && dx != 0 && dy != 0) {
+                nc <- nc + 1
+              } else if (sign(dx) != sign(dy) && dx != 0 && dy != 0) {
+                nd <- nd + 1
+              }
+            }
+          }
+          
+          tau <- kendall$estimate
+          
+          # Strength
+          tauStrength <- if (abs(tau) > 0.6) "strong"
+          else if (abs(tau) > 0.3) "moderate"
+          else "weak"
+          
+          # Direction
+          tauDirection <- if (tau > 0) "positive" else "negative"
+          
           withMathJax(
-            sprintf("\\( \\displaystyle \\tau = \\dfrac{n_c - n_d}{\\binom{n}{2}} = \\dfrac{n_c - n_d}{\\dfrac{n(n-1)}{2}} = %0.4f \\)",
-                    kendall$estimate)#,
-            # br(),
-            # sprintf("\\( \\tau \\; = \\; %0.4f \\)", kendall$estimate)
+            HTML(sprintf(
+              "\\( \\tau = \\dfrac{n_c - n_d}{\\sqrt{(n_0 - n_1)(n_0 - n_2)}} = \\dfrac{%d - %d}{\\sqrt{(%g - %g)(%g - %g)}} = %.4f \\)",
+              nc, nd, n0, n1, n0, n2, tau
+            )),
+            br(),
+            br(),
+            p(tags$b("Interpretation:")),
+            p(sprintf(
+              "There exists a %s %s monotonic relationship between \\(\\mathit{x}\\) and \\(\\mathit{y}\\).",
+              tauStrength, tauDirection
+            ))
           )
         })
-        
-        # Spearman's rs formula
-        output$spearmanEstimate <- renderUI({
+        spearmanData <- reactive({
+          rank_x <- rank(datx)
+          rank_y <- rank(daty)
+          d      <- rank_x - rank_y
+          data.frame(
+            x      = datx,
+            y      = daty,
+            rank_x = rank_x,
+            rank_y = rank_y,
+            d      = d,
+            d_sq   = d^2
+          )
+        })
+
+        output$downloadSpearmanXlsx <- downloadHandler(
+          filename    = function() paste0("Spearman_Rank_Correlation_", Sys.Date(), ".xlsx"),
+          contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          content     = function(file) {
+            tryCatch({
+              data <- spearmanData()
+              names(data) <- c("x", "y", "Rank x", "Rank y", "d = (Rank x - Rank y)", "d^2")
+              writexl::write_xlsx(data, file)
+            }, error = function(e) {
+              message("Full error: ", conditionMessage(e))
+            })
+          }
+        )
+
+        # Spearman's rs formula and interpretation
+        output$spearmanFormula <- renderUI({
+
+          d_sq     <- spearmanData()$d_sq
+          sum_d_sq <- sum(d_sq)
+          n        <- length(datx)
+          rs       <- spearman$estimate
+
+          rsStrength  <- if (abs(rs) > 0.6) "strong" else if (abs(rs) > 0.3) "moderate" else "weak"
+          rsDirection <- if (rs > 0) "positive" else "negative"
+
           withMathJax(
-            HTML(
-              sprintf(
-                "\\( \\large{\\quad r_{s} = 1 - \\dfrac{ 6 \\left(\\sum\\limits_{i=1}^n d^2_{i}\\right)}{ n (n^2 - 1)} = %0.4f} \\)",
-                spearman$estimate
+            div(
+              style = "text-align: left; font-size: 18px;",
+              HTML(sprintf(
+                "\\( r_s = 1 - \\dfrac{6 \\sum_{i=1}^n d_i^2}{n(n^2 - 1)} = 1 - \\dfrac{6 \\times %g}{%d(%d^2 - 1)} = %.4f \\)",
+                sum_d_sq, n, n, rs
+              ))
+            ),
+            br(),
+            p(tags$b("Interpretation:")),
+            p(sprintf(
+              "There exists a %s %s monotonic relationship between \\(\\mathit{x}\\) and \\(\\mathit{y}\\).",
+              rsStrength, rsDirection
+            ))
+          )
+        })
+
+        # Spearman's rank table
+        output$spearmanTable <- renderUI({
+
+          spearman_df <- spearmanData()
+          sum_d_sq    <- sum(spearman_df$d_sq)
+
+          reactable(
+            spearman_df,
+            sortable   = FALSE,
+            bordered   = TRUE,
+            striped    = TRUE,
+            highlight  = TRUE,
+            pagination = FALSE,
+            fullWidth  = FALSE,
+            rownames   = FALSE,
+            columns = list(
+              x      = colDef(name = "x",      align = "center"),
+              y      = colDef(name = "y",      align = "center"),
+              rank_x = colDef(name = "Rank x", align = "center"),
+              rank_y = colDef(name = "Rank y", align = "center"),
+              d      = colDef(name = "d = (Rank x \u2212 Rank y)", align = "center", footer = tags$b("Total")),
+              d_sq   = colDef(
+                name   = HTML("d<sup>2</sup>"),
+                html   = TRUE,
+                align  = "center",
+                footer = tags$b(sum_d_sq),
+                cell   = function(value) formatC(value, format = "f", digits = 0)
               )
             )
           )
-          
         })
+    
         
-        output$slrViewUpload <- renderDT({
-          req(slrupload_iv$is_valid())
-          datatable(slrUploadData(),
-                    options = list(pageLength = -1,
-                                   lengthMenu = list(c(25, 50, 100, -1),
-                                                     c("25", "50", "100", "all"))))
-        })
+        
+        output$correlationSummaryTable <- renderTable({
+          data.frame(
+            `Correlation Coefficient` = c(
+              "Pearson's (<em>r</em>)",
+              "Spearman's (<em>r</em><sub>s</sub>)",
+              "Kendall's (<em>&tau;</em>)"
+            ),
+            Estimate = c(
+              sprintf("%.4f", round(pearson$estimate, 4)),
+              sprintf("%.4f", round(spearman$estimate, 4)),
+              sprintf("%.4f", round(kendall$estimate, 4))
+            ),
+            check.names = FALSE
+          )
+        },
+        bordered  = TRUE,
+        hover     = TRUE,
+        align     = "c",
+        sanitize.text.function = function(x) x
+        )
         
         # ANOVA Output
         output$anovaHypotheses <- renderUI({
@@ -1178,14 +1935,15 @@ SLRServer <- function(id) {
             p(sprintf("\\( \\displaystyle F = \\frac{\\mathrm{MSR}}{\\mathrm{MSE}} = \\frac{%.3f}{%.3f} = %.3f \\)", msr, mse, f_value)),
             p(strong("Conclusion:")),
             if (p_value <= 0.05) {
-              p(sprintf("Since the p-value is less than \\( \\alpha \\) (%.3f < 0.05), we reject the null hypothesis and conclude there is enough statistical evidence to support the alternative hypothesis.", p_value))
+              p(sprintf("Since the p-value is less than \\( \\alpha \\) (%.3f < 0.05), we reject the null hypothesis and conclude there is enough statistical evidence to support the alternative hypothesis. We can conclude the model is statistically significant.", p_value))
             } else {
-              p(sprintf("Since the p-value is greater than \\( \\alpha \\) (%.3f >  0.05), we fail to reject the null hypothesis and conclude there isn't enough statistical evidence to support the alternative hypothesis.", p_value))
+              p(sprintf("Since the p-value is greater than \\( \\alpha \\) (%.3f >  0.05), we fail to reject the null hypothesis and conclude there isn't enough statistical evidence to support the alternative hypothesis. We can conclude the model is not statistically significant.", p_value))
             }
           )
         })
         
         output$anovaR2 <- renderUI({
+          
           anova_results <- anova(model)
           
           ssr <- anova_results$`Sum Sq`[1]
@@ -1193,17 +1951,152 @@ SLRServer <- function(id) {
           sst <- ssr + sse
           r2  <- ssr / sst
           
+          # Percentage explained
+          explained_pct <- r2 * 100
+          
           withMathJax(
+            
             p(strong("Coefficient of Determination (\\( R^2 \\))")),
+            
             tags$div(
               style = "text-align: left;",
               HTML(sprintf(
                 "\\( R^2 = \\dfrac{\\mathrm{SSR}}{\\mathrm{SSR} + \\mathrm{SSE}} = \\dfrac{\\mathrm{SSR}}{\\mathrm{SST}} = \\dfrac{%.4f}{%.4f + %.4f} = \\dfrac{%.4f}{%.4f} = %.4f \\)",
                 ssr, ssr, sse, ssr, sst, r2
               ))
+            ),
+            
+            br(),
+            
+            tags$p(
+              strong("Interpretation:")
+            ),
+            
+            tags$p(
+              sprintf("%.2f%% of the variation in ", explained_pct),
+              if (input$dataRegCor == "Upload Data") tags$i(input$slrResponse) else withMathJax("\\(y\\)"),
+              " can be explained by its linear relationship with ",
+              if (input$dataRegCor == "Upload Data") tags$i(input$slrExplanatory) else withMathJax("\\(x\\)"),
+              "."
             )
+            
           )
         })
+        
+        output$anovaFCurve <- renderPlot({
+          anova_results <- anova(model)
+          
+          df1    <- 1
+          df2    <- n - 2
+          f_stat <- anova_results$`F value`[1]
+          p_val  <- anova_results$`Pr(>F)`[1]
+          f_crit <- qf(0.95, df1, df2)
+          x_max  <- x_max  <- f_crit * 3
+          
+          x <- seq(0, x_max, length.out = 1000)
+          y <- df(x, df1, df2)
+          
+          plot_df <- data.frame(x = x, y = y)
+          
+          ggplot(plot_df, aes(x = x, y = y)) +
+            
+            # Main curve
+            geom_line(lwd = 1) +
+            
+            # Rejection region shading (red)
+            geom_area(
+              data = subset(plot_df, x >= f_crit),
+              aes(x = x, y = y),
+              fill  = "red",
+              alpha = 0.3
+            ) +
+            
+            # P-value region shading (blue) - only if f_stat <= x_max
+            {if(f_stat <= x_max)
+              geom_area(
+                data = subset(plot_df, x >= f_stat),
+                aes(x = x, y = y),
+                fill  = "blue",
+                alpha = 0.3
+              )
+            } +
+            
+            # Critical value line
+            geom_vline(
+              xintercept = f_crit,
+              colour     = "red",
+              linewidth  = 0.8,
+              linetype   = "dashed"
+            ) +
+            
+            # F statistic line - only if within plot range
+            {if(f_stat <= x_max)
+              geom_vline(
+                xintercept = f_stat,
+                colour     = "blue",
+                linewidth  = 0.8,
+                linetype   = "dashed"
+              )
+            } +
+            
+            # Labels
+            labs(
+              title = "F Distribution",
+              x     = "F",
+              y     = "Density"
+            ) +
+            
+            # Annotations
+            # Critical value annotation - below the line instead of beside it
+            annotate("text",
+                     x     = f_crit,
+                     y     = max(y) * 0.2,
+                     label = sprintf("F critical\n= %.4f", f_crit),
+                     hjust = -0.1,
+                     color = "red",
+                     size  = 3.5) +
+            
+            # P-value annotation - fixed to top right corner
+            annotate("text",
+                     x     = x_max * 0.6,
+                     y     = max(y) * 0.9,
+                     label = sprintf("p-value = %.4f", p_val),
+                     color = "black",
+                     size  = 4) +
+            
+            # F statistic annotation - only shown if within plot range
+            {if(f_stat <= x_max)
+              annotate("text",
+                       x     = f_stat,
+                       y     = max(y) * 0.4,
+                       label = sprintf("F statistic\n= %.4f", f_stat),
+                       hjust = -0.1,
+                       color = "blue",
+                       size  = 3.5)
+            } +
+            
+            # Theme
+            theme_classic() +
+            theme(
+              plot.title   = element_text(hjust = 0.5, face = "bold"),
+              axis.title   = element_text(size = 12, face = "bold"),
+              axis.text    = element_text(size = 10, face ="bold")
+            ) +
+            coord_cartesian(clip = "off")
+        })
+        
+        output$pearsonTCurve <- renderPlot({
+          hypTTestPlot(
+            testStatistic = round(pearson$statistic, 3),
+            degfree       = pearson$parameter,
+            critValue     = round(qt(0.975, df = pearson$parameter), 3),
+            altHypothesis = "two.sided"
+          )
+        }, height = 300, width = 500)
+        
+        
+        
+        
         
       } #if regcor_iv is valid
       
@@ -1213,15 +2106,23 @@ SLRServer <- function(id) {
 
     
     ### ------------ Component Display -------------------------------------------
-    observeEvent(!regcor_iv$is_valid(), {
-      hide(id = "regCorrMP")
-      hide(id = "SLRData")
+    observeEvent(regcor_iv$is_valid(), {
+      if (!isTRUE(regcor_iv$is_valid())) {
+        hide(id = "regCorrMP")
+        hide(id = "SLRData")
+      }
     })
     
     observeEvent(input$dataRegCor, {
       hide(id = "regCorrMP")
+      if (input$dataRegCor == "Upload Data") {
+        show("uploadedDataPanel")
+      } else {
+        hide("uploadedDataPanel")
+      }
+      hideTab(inputId = "slrNavbarPage", target = "Uploaded Data")
       output$perfectFitWarning <- renderUI({ NULL })
-      
+
       if (is.null(fileInputs$slrStatus) || fileInputs$slrStatus != "uploaded"){
         hide(id = "slrResponse")
         hide(id = "slrExplanatory")
@@ -1246,29 +2147,29 @@ SLRServer <- function(id) {
       }
     })
     
-    observe({
-      req(isTruthy(input$dataRegCor))
-      if(input$dataRegCor == 'Enter Raw Data') {
-        if (!is.null(input$slrNavbarPage) && input$slrNavbarPage == "Uploaded Data") { # Check if navbarPage exists and selected
-          updateNavbarPage(session, "slrNavbarPage", selected = "Model")
-        }
-        hideTab(inputId = "slrNavbarPage", target = "Uploaded Data")
-      } else {
-        showTab(inputId = "slrNavbarPage", target = "Uploaded Data")
-      }
-    })
-    
+    # observe({
+    #   req(isTruthy(input$dataRegCor))
+    #   if(input$dataRegCor == 'Enter Raw Data') {
+    #     if (!is.null(input$slrNavbarPage) && input$slrNavbarPage == "Uploaded Data") { # Check if navbarPage exists and selected
+    #       updateNavbarPage(session, "slrNavbarPage", selected = "Model")
+    #     }
+    #     hideTab(inputId = "slrNavbarPage", target = "Uploaded Data")
+    #   } else {
+    #     showTab(inputId = "slrNavbarPage", target = "Uploaded Data")
+    #   }
+    # })
+     
     observeEvent(input$resetRegCor, {
+      hasHighLeverage(FALSE)
       output$perfectFitWarning <- renderUI({ NULL })
-      # hideTab(inputId = 'tabSet', target = 'Simple Linear Regression')
-      # hideTab(inputId = 'tabSet', target = 'Normality of Residuals')
-      # hideTab(inputId = 'tabSet', target = 'Residual Plots')
       hide(id = "regCorrMP")
+      show("uploadedDataPanel")
+      hideTab(inputId = "slrNavbarPage", target = "Uploaded Data")
       shinyjs::reset("inputPanel")
       fileInputs$slrStatus <- 'reset'
-      showTab(inputId = "slrNavbarPage", target = "Parameter Estimates and ANOVA")
-      showTab(inputId = "slrNavbarPage", target = "Diagnostic Plots") 
-      if (!is.null(input$slrNavbarPage)) { # Check if navbarPage exists before trying to update
+      showTab(inputId = "slrNavbarPage", target = "Inference")
+      showTab(inputId = "slrNavbarPage", target = "Diagnostic Plots")
+      if (!is.null(input$slrNavbarPage)) {
         updateNavbarPage(session, "slrNavbarPage", selected = "Model")
       }
     })
