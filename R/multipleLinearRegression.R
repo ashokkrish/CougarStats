@@ -166,7 +166,7 @@ MLRServer <- function(id) {
     observeEvent(input$reset, {
       hideTab(inputId = "mainPanel", target = "Model")
       hideTab(inputId = "mainPanel", target = "Inference")
-      hideTab(inputId = "mainPanel", target = "ANOVA")
+      hideTab(inputId = "mainPanel", target = "ANOVA & Parameter Estimates")
       hideTab(inputId = "mainPanel", target = "Multicollinearity Detection")
       hideTab(inputId = "mainPanel", target = "Diagnostic Plots")
       hideTab(inputId = "mainPanel", target = "Uploaded Data")
@@ -546,6 +546,7 @@ MLRServer <- function(id) {
       }
       
       showTab(inputId = "mainPanel", target = "Model")
+      showTab(inputId = "mainPanel", target = "Inference")
       showTab(inputId = "mainPanel", target = "ANOVA & Parameter Estimates")
       showTab(inputId = "mainPanel", target = "Multicollinearity Detection")
       showTab(inputId = "mainPanel", target = "Diagnostic Plots")
