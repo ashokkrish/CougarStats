@@ -883,7 +883,7 @@ SLRServer <- function(id) {
     
     observeEvent(input$slrUserData, {
       fileInputs$slrStatus <- "uploaded"
-      
+
       req(slrUploadData())
       updateSelectInput(
         inputId = "slrExplanatory",
@@ -895,6 +895,7 @@ SLRServer <- function(id) {
       )
       show("slrExplanatory")
       show("slrResponse")
+      show("uploadedDataPanel")
     })
     
     ## NOTE: related to the old plot options UI.
@@ -2140,7 +2141,9 @@ SLRServer <- function(id) {
     
     observeEvent(input$dataRegCor, {
       hide(id = "regCorrMP")
-      if (input$dataRegCor == "Upload Data") {
+      if (input$dataRegCor == "Upload Data" &&
+          !is.null(fileInputs$slrStatus) &&
+          fileInputs$slrStatus == "uploaded") {
         show("uploadedDataPanel")
       } else {
         hide("uploadedDataPanel")
