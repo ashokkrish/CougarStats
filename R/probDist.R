@@ -2199,6 +2199,7 @@ probDistServer <- function(id) {
           }
           else
           {
+            req(pd_iv$is_valid())
             binom_n <- input$numTrialsBinom
             binom_p <- input$successProbBinom
             binom_mu <- round(binom_n * binom_p, 4)
@@ -2364,6 +2365,7 @@ probDistServer <- function(id) {
         } else if (input$calcBinom == "between") {
           
           HTML(paste0(
+            "<span style='color:#888;'># Method 1 (CDF difference):</span>\n",
             "pbinom(",
             codeValue(input$numSuccessesBinomx2),
             ", size = ",
@@ -2376,7 +2378,16 @@ probDistServer <- function(id) {
             codeValue(input$numTrialsBinom),
             ", prob = ",
             codeValue(input$successProbBinom),
-            ")"
+            ")\n\n",
+            
+            "<span style='color:#888;'># Method 2 (sum of exact probabilities):</span>\n",
+            "sum(dbinom(",
+            codeValue(paste0(input$numSuccessesBinomx1, ":", input$numSuccessesBinomx2)),
+            ", size = ",
+            codeValue(input$numTrialsBinom),
+            ", prob = ",
+            codeValue(input$successProbBinom),
+            "))"
           ))
         }
       })
@@ -2423,7 +2434,7 @@ probDistServer <- function(id) {
     })
     
     output$binomDistrBarPlot <- renderPlot({
-      
+      req(pd_iv$is_valid())
       req(input$numTrialsBinom < 50)
       
       dfBinom <- data.frame(X = seq(0, input$numTrialsBinom), 
@@ -2507,6 +2518,7 @@ probDistServer <- function(id) {
           }
           else
           {
+            req(pd_iv$is_valid())
             poisson_mu <- input$muPoisson
             poisson_sd <- round(sqrt(input$muPoisson), 4)
             
@@ -2649,6 +2661,7 @@ probDistServer <- function(id) {
         } else if (input$calcPoisson == "between") {
           
           HTML(paste0(
+            "<span style='color:#888;'># Method 1 (CDF difference):</span>\n",
             "ppois(",
             codeValue(input$x2Poisson),
             ", lambda = ",
@@ -2657,7 +2670,14 @@ probDistServer <- function(id) {
             codeValue(input$x1Poisson - 1),
             ", lambda = ",
             codeValue(input$muPoisson),
-            ")"
+            ")",
+            
+            "\n\n<span style='color:#888;'># Method 2 (sum of exact probabilities):</span>\n",
+            "sum(dpois(",
+            codeValue(paste0(input$x1Poisson, ":", input$x2Poisson)),
+            ", lambda = ",
+            codeValue(input$muPoisson),
+            "))"
           ))
         }
       })
@@ -3107,7 +3127,7 @@ probDistServer <- function(id) {
           norm_x2 <- input$x2Value
           
           validate(
-            need((norm_x1 != norm_x2) && (norm_x1 <= norm_x2), "Normally Distributed Variable (x1) must be less than or equal to Normally Distributed Variable (x2)"),
+            need((norm_x1 != norm_x2) && (norm_x1 <= norm_x2), "Normally Distributed Variable (x1) must be less than Normally Distributed Variable (x2)"),
             errorClass = "myClass")
           
           normProb <- paste("P(", norm_x1, " ",  " \\leq X \\leq"," ", norm_x2,")") 
@@ -3268,13 +3288,13 @@ probDistServer <- function(id) {
               codeValue(input$popMean),
               ", sd = ",
               codeValue(input$popSD),
-              ")\n",
+              ")\n\n",
               
               "qnorm(0.5, mean = ",
               codeValue(input$popMean),
               ", sd = ",
               codeValue(input$popSD),
-              ")\n",
+              ")\n\n",
               
               "qnorm(0.75, mean = ",
               codeValue(input$popMean),

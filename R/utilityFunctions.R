@@ -101,8 +101,6 @@ shadeHtArea <- function(df, critValue, altHypothesis) {
   }
 }
 
-
-
 # TTest Plot FUNCTION for SLR outputs
 
 hypTTestPlot <- function(testStatistic, degfree, critValue, altHypothesis){
