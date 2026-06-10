@@ -600,8 +600,8 @@ MLRServer <- function(id) {
         
           
           model <- lm(reformulate(
-            as.character(lapply(input$explanatoryVariables, as.name)),
-            as.name(input$responseVariable)
+            sprintf("`%s`", input$explanatoryVariables),
+            sprintf("`%s`", input$responseVariable)
           ))
           
           modelCoefficients <-
@@ -641,8 +641,8 @@ MLRServer <- function(id) {
       
       with(encodedData(), {
         model <- lm(reformulate(
-          as.character(lapply(input$explanatoryVariables, as.name)),
-          as.name(input$responseVariable)
+          sprintf("`%s`", input$explanatoryVariables),
+          sprintf("`%s`", input$responseVariable)
         ))
         
         modelConfidenceIntervals <- as.data.frame(confint(model))
@@ -675,8 +675,8 @@ MLRServer <- function(id) {
       
       with(encodedData(), {
         model <- lm(reformulate(
-          as.character(lapply(input$explanatoryVariables, as.name)),
-          as.name(input$responseVariable)
+          sprintf("`%s`", input$explanatoryVariables),
+          sprintf("`%s`", input$responseVariable)
         ))
         
         bp    <- lmtest::bptest(model)
@@ -716,8 +716,8 @@ MLRServer <- function(id) {
       
       with(encodedData(), {
         model <- lm(reformulate(
-          as.character(lapply(input$explanatoryVariables, as.name)),
-          as.name(input$responseVariable)
+          sprintf("`%s`", input$explanatoryVariables),
+          sprintf("`%s`", input$responseVariable)
         ))
         
         white_test  <- skedastic::white(model)
@@ -754,8 +754,8 @@ MLRServer <- function(id) {
       req(length(as.character(input$explanatoryVariables)) >= 2)
       
       model <- lm(reformulate(
-        as.character(lapply(input$explanatoryVariables, as.name)),
-        as.name(input$responseVariable)
+        sprintf("`%s`", input$explanatoryVariables),
+        sprintf("`%s`", input$responseVariable)
       ), data = encodedData())
       
       anovaModel <- anova(model)
@@ -881,8 +881,8 @@ MLRServer <- function(id) {
           with(encodedData(), {
             
             model <- lm(reformulate(
-              as.character(lapply(input$explanatoryVariables, as.name)),
-              as.name(input$responseVariable)
+              sprintf("`%s`", input$explanatoryVariables),
+              sprintf("`%s`", input$responseVariable)
             ))
             
             all_coefs <- coef(model)
@@ -993,8 +993,8 @@ MLRServer <- function(id) {
       
       with(encodedData(), {
         model <- lm(reformulate(
-          as.character(lapply(input$explanatoryVariables, as.name)),
-          as.name(input$responseVariable)
+          sprintf("`%s`", input$explanatoryVariables),
+          sprintf("`%s`", input$responseVariable)
         ))
         
         # Use model rank for k to match ANOVA table
@@ -1032,8 +1032,8 @@ MLRServer <- function(id) {
         
         with(encodedData(), {
           model <- lm(reformulate(
-            as.character(lapply(input$explanatoryVariables, as.name)),
-            as.name(input$responseVariable)
+            sprintf("`%s`", input$explanatoryVariables),
+            sprintf("`%s`", input$responseVariable)
           ))
           
           modelANOVA <- anova(model)
@@ -1071,8 +1071,8 @@ MLRServer <- function(id) {
       
       with(encodedData(), {
         model <- lm(reformulate(
-          as.character(lapply(input$explanatoryVariables, as.name)),
-          as.name(input$responseVariable)
+          sprintf("`%s`", input$explanatoryVariables),
+          sprintf("`%s`", input$responseVariable)
         ))
         anovaModel <- anova(model)
         
@@ -1119,8 +1119,8 @@ MLRServer <- function(id) {
       
       with(encodedData(), {
         model <- lm(reformulate(
-          as.character(lapply(input$explanatoryVariables, as.name)),
-          as.name(input$responseVariable)
+          sprintf("`%s`", input$explanatoryVariables),
+          sprintf("`%s`", input$responseVariable)
         ))
         
         modelANOVA <- anova(model)
@@ -1217,8 +1217,8 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
       
       model <- lm(
         reformulate(
-          colnames(mlrPredictors()),
-          input$responseVariable
+          sprintf("`%s`", colnames(mlrPredictors())),
+          sprintf("`%s`", input$responseVariable)
         ),
         data = clean_df
       )
@@ -1248,8 +1248,8 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
       
       with(encodedData(), {
         model <- lm(reformulate(
-          as.character(lapply(input$explanatoryVariables, as.name)),
-          as.name(input$responseVariable)
+          sprintf("`%s`", input$explanatoryVariables),
+          sprintf("`%s`", input$responseVariable)
         ))
         plot(model, which = 1, pch = 20, main = "", lwd = 2, sub.caption = "")
       })
@@ -1263,8 +1263,8 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
       
       with(encodedData(), {
         model <- lm(reformulate(
-          as.character(lapply(input$explanatoryVariables, as.name)),
-          as.name(input$responseVariable)
+          sprintf("`%s`", input$explanatoryVariables),
+          sprintf("`%s`", input$responseVariable)
         ))
         plot(model, which = 2, pch = 20, main = "", lwd = 2, sub.caption = "")
       })
@@ -1278,8 +1278,8 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
       
       with(encodedData(), {
         model <- lm(reformulate(
-          as.character(lapply(input$explanatoryVariables, as.name)),
-          as.name(input$responseVariable)
+          sprintf("`%s`", input$explanatoryVariables),
+          sprintf("`%s`", input$responseVariable)
         ))
         plot(model, which = 3, pch = 20, main = "", lwd = 2, sub.caption = "")
       })
@@ -1293,8 +1293,8 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
       
       with(encodedData(), {
         model <- lm(reformulate(
-          as.character(lapply(input$explanatoryVariables, as.name)),
-          as.name(input$responseVariable)
+          sprintf("`%s`", input$explanatoryVariables),
+          sprintf("`%s`", input$responseVariable)
         ))
         plot(model, which = 5, pch = 20, main = "", lwd = 2, sub.caption = "")
       })
