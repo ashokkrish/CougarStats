@@ -787,7 +787,13 @@ probDistUI <- function(id) {
                                     id = ns("hypgeoNavbar"),
                                     theme = bs_theme(version = 4),
                                     tabPanel(title = "Calculations",
-                                             uiOutput(ns("renderProbabilityHypGeo"))
+                                             uiOutput(ns("renderProbabilityHypGeo")),
+                                             br(),
+                                             codeBox(
+                                               boxId = "rcodeHypGeoBox",
+                                               outputId = "rcodeHypGeo",
+                                               ns = ns
+                                             )
                                     ),
                                     tabPanel(title = "Probability Distribution Table",
                                              DTOutput(ns("HypGeoDistrTable"), width = "25%")
@@ -806,7 +812,12 @@ probDistUI <- function(id) {
               hidden(div(id=ns("negBinResults"),
                          br(),
                          uiOutput(ns("renderProbabilityNegBin")),
-                         br()
+                         br(),
+                         codeBox(
+                           boxId = "rcodeNegBinBox",
+                           outputId = "rcodeNegBin",
+                           ns = ns
+                         )
               ))
             ), 
             
@@ -2468,7 +2479,6 @@ probDistServer <- function(id) {
       showBox <- FALSE
       if (pd_iv$is_valid()) {
         if (input$calcBinom != "between") {
-          req(input$numSuccessesBinom, input$numTrialsBinom)
           showBox <- input$numSuccessesBinom <= input$numTrialsBinom
         } else {
           req(input$numSuccessesBinomx1,
@@ -2488,6 +2498,22 @@ probDistServer <- function(id) {
     })
 
     observeEvent(input$goPoisson, {
+      
+      observe({
+        showBox <- FALSE
+        if (input$calcPoisson != "between") {
+          showBox <- pd_iv$is_valid()
+        } else {
+          showBox <- pd_iv$is_valid() &&
+            input$x1Poisson <= input$x2Poisson
+        }
+        runjs(sprintf(
+          "document.getElementById('%s').style.display = '%s';",
+          ns("rcodePoissonBoxWrapper"),
+          if (showBox) "block" else "none"
+        ))
+      })
+      
       output$renderProbabilityPoisson <- renderUI({
         withMathJax(
           if(!pd_iv$is_valid())
@@ -2701,22 +2727,28 @@ probDistServer <- function(id) {
       })
     }) 
     
-    observe({
-      showBox <- FALSE
-      if (input$calcPoisson != "between") {
-        showBox <- pd_iv$is_valid()
-      } else {
-        showBox <- pd_iv$is_valid() &&
-          input$x1Poisson <= input$x2Poisson
-      }
-      runjs(sprintf(
-        "document.getElementById('%s').style.display = '%s';",
-        ns("rcodePoissonBoxWrapper"),
-        if (showBox) "block" else "none"
-      ))
-    })
+
     
     observeEvent(input$goHypGeo, {
+      observe({
+        showBox <- FALSE
+        
+        if (input$calcHypGeo != "between") {
+          showBox <- pd_iv$is_valid()
+        } else {
+          showBox <- pd_iv$is_valid() &&
+            input$x1HypGeo <= input$x2HypGeo &&
+            input$x1HypGeo <= input$sampSizeHypGeo &&
+            input$x1HypGeo <= input$popSuccessesHypGeo
+        }
+        
+        runjs(sprintf(
+          "document.getElementById('%s').style.display = '%s';",
+          ns("rcodeHypGeoBoxWrapper"),
+          if (showBox) "block" else "none"
+        ))
+      })
+      
       output$renderProbabilityHypGeo <- renderUI({
         withMathJax(
           if(!pd_iv$is_valid())
@@ -2868,7 +2900,117 @@ probDistServer <- function(id) {
               ) 
             ) 
           }) 
+        
       }) 
+      
+      output$rcodeHypGeo <- renderUI({
+        req(pd_iv$is_valid())
+        
+        if (input$calcHypGeo == "exact") {
+          HTML(paste0(
+            "dhyper(x = ",
+            codeValue(input$xHypGeo),
+            ", m = ",
+            codeValue(input$popSuccessesHypGeo),
+            ", n = ",
+            codeValue(input$popSizeHypGeo - input$popSuccessesHypGeo),
+            ", k = ",
+            codeValue(input$sampSizeHypGeo),
+            ")"
+          ))
+          
+        } else if (input$calcHypGeo == "cumulative") {
+          
+          HTML(paste0(
+            "phyper(",
+            codeValue(input$xHypGeo),
+            ", m = ",
+            codeValue(input$popSuccessesHypGeo),
+            ", n = ",
+            codeValue(input$popSizeHypGeo - input$popSuccessesHypGeo),
+            ", k = ",
+            codeValue(input$sampSizeHypGeo),
+            ")"
+          ))
+          
+        } else if (input$calcHypGeo == "upperTail") {
+          
+          HTML(paste0(
+            "phyper(",
+            codeValue(input$xHypGeo - 1),
+            ", m = ",
+            codeValue(input$popSuccessesHypGeo),
+            ", n = ",
+            codeValue(input$popSizeHypGeo - input$popSuccessesHypGeo),
+            ", k = ",
+            codeValue(input$sampSizeHypGeo),
+            ", lower.tail = FALSE)"
+          ))
+          
+        } else if (input$calcHypGeo == "greaterThan") {
+          
+          HTML(paste0(
+            "phyper(",
+            codeValue(input$xHypGeo),
+            ", m = ",
+            codeValue(input$popSuccessesHypGeo),
+            ", n = ",
+            codeValue(input$popSizeHypGeo - input$popSuccessesHypGeo),
+            ", k = ",
+            codeValue(input$sampSizeHypGeo),
+            ", lower.tail = FALSE)"
+          ))
+          
+        } else if (input$calcHypGeo == "lessThan") {
+          
+          HTML(paste0(
+            "phyper(",
+            codeValue(input$xHypGeo - 1),
+            ", m = ",
+            codeValue(input$popSuccessesHypGeo),
+            ", n = ",
+            codeValue(input$popSizeHypGeo - input$popSuccessesHypGeo),
+            ", k = ",
+            codeValue(input$sampSizeHypGeo),
+            ")"
+          ))
+          
+        } else if (input$calcHypGeo == "between") {
+          
+          HTML(paste0(
+            
+            "<span style='color:#888;'># Method 1 (CDF difference):</span>\n",
+            "phyper(",
+            codeValue(input$x2HypGeo),
+            ", m = ",
+            codeValue(input$popSuccessesHypGeo),
+            ", n = ",
+            codeValue(input$popSizeHypGeo - input$popSuccessesHypGeo),
+            ", k = ",
+            codeValue(input$sampSizeHypGeo),
+            ") - phyper(",
+            codeValue(input$x1HypGeo - 1),
+            ", m = ",
+            codeValue(input$popSuccessesHypGeo),
+            ", n = ",
+            codeValue(input$popSizeHypGeo - input$popSuccessesHypGeo),
+            ", k = ",
+            codeValue(input$sampSizeHypGeo),
+            ")",
+            
+            "\n\n<span style='color:#888;'># Method 2 (sum of exact probabilities):</span><br>",
+            "sum(dhyper(",
+            codeValue(paste0(input$x1HypGeo, ":", input$x2HypGeo)),
+            ", m = ",
+            codeValue(input$popSuccessesHypGeo),
+            ", n = ",
+            codeValue(input$popSizeHypGeo - input$popSuccessesHypGeo),
+            ", k = ",
+            codeValue(input$sampSizeHypGeo),
+            "))"
+          ))
+        }
+      })
       
       output$HypGeoDistrTable <- DT::renderDT({
         req(pd_iv$is_valid())
@@ -2937,6 +3079,21 @@ probDistServer <- function(id) {
     }) 
     
     observeEvent(input$goNegBin, {
+      
+      observe({
+        if (pd_iv$is_valid()) {
+          runjs(sprintf(
+            "document.getElementById('%s').style.display = 'block';",
+            ns("rcodeNegBinBoxWrapper")
+          ))
+        } else {
+          runjs(sprintf(
+            "document.getElementById('%s').style.display = 'none';",
+            ns("rcodeNegBinBoxWrapper")
+          ))
+        }
+      })
+      
       output$renderProbabilityNegBin <- renderUI({
         withMathJax(
           if(!pd_iv$is_valid())
@@ -3046,29 +3203,43 @@ probDistServer <- function(id) {
             ) 
           }) 
       }) 
+      
+      output$rcodeNegBin <- renderUI({
+        req(pd_iv$is_valid())
+        
+        HTML(paste0(
+          "dnbinom(x = ",
+          codeValue(input$xNegBin),
+          ", size = ",
+          codeValue(input$successNegBin),
+          ", prob = ",
+          codeValue(input$successProbNegBin),
+          ")"
+        ))
+      })
     }) 
     
-    observe({
-      showBox <- FALSE
-      
-      if(pd_iv$is_valid()){
-        if(input$calcQuantiles=="Probability" && input$calcNormal=="between"){
-          showBox <- input$x1Value < input$x2Value
-        } else if(input$calcQuantiles=="Probability" && input$calcNormSampDistr=="between"){
-          showBox <- input$sampDistrx1Value < input$sampDistrx2Value
-        } else {
-          showBox <- TRUE
-        }
-      }
-      
-      runjs(sprintf(
-        "document.getElementById('%s').style.display='%s';",
-        ns("rcodeNormalBoxWrapper"),
-        if(showBox)"block"else"none"
-      ))
-    })
-    
     observeEvent(input$goNormalProb, {
+      
+      observe({
+        showBox <- FALSE
+        
+        if(pd_iv$is_valid()){
+          if(input$calcQuantiles=="Probability" && input$calcNormal=="between"){
+            showBox <- input$x1Value < input$x2Value
+          } else if(input$calcQuantiles=="Probability" && input$calcNormSampDistr=="between"){
+            showBox <- input$sampDistrx1Value < input$sampDistrx2Value
+          } else {
+            showBox <- TRUE
+          }
+        }
+        
+        runjs(sprintf(
+          "document.getElementById('%s').style.display='%s';",
+          ns("rcodeNormalBoxWrapper"),
+          if(showBox)"block"else"none"
+        ))
+      })
       
       output$renderProbabilityNorm <- renderUI({
         if(!pd_iv$is_valid())
