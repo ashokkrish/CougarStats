@@ -883,7 +883,7 @@ SLRServer <- function(id) {
     
     observeEvent(input$slrUserData, {
       fileInputs$slrStatus <- "uploaded"
-      
+
       req(slrUploadData())
       updateSelectInput(
         inputId = "slrExplanatory",
@@ -895,6 +895,7 @@ SLRServer <- function(id) {
       )
       show("slrExplanatory")
       show("slrResponse")
+      show("uploadedDataPanel")
     })
     
     ## NOTE: related to the old plot options UI.
@@ -1778,6 +1779,13 @@ SLRServer <- function(id) {
             ))
           )
         })
+        spearman_cf <- function(x) {
+          tbl   <- table(x)
+          ties  <- as.numeric(tbl[tbl > 1])
+          if (length(ties) == 0) return(0)
+          sum((ties^3 - ties) / 12)
+        }
+
         spearmanData <- reactive({
           rank_x <- rank(datx)
           rank_y <- rank(daty)
@@ -1812,18 +1820,30 @@ SLRServer <- function(id) {
           d_sq     <- spearmanData()$d_sq
           sum_d_sq <- sum(d_sq)
           n        <- length(datx)
-          rs       <- spearman$estimate
+          cf_x     <- spearman_cf(datx)
+          cf_y     <- spearman_cf(daty)
+          rs       <- 1 - (6 * (sum_d_sq + cf_x + cf_y)) / (n * (n^2 - 1))
 
+          has_ties    <- cf_x > 0 || cf_y > 0
           rsStrength  <- if (abs(rs) > 0.6) "strong" else if (abs(rs) > 0.3) "moderate" else "weak"
           rsDirection <- if (rs > 0) "positive" else "negative"
+
+          formula_latex <- if (has_ties) {
+            sprintf(
+              "\\( r_s = 1 - \\dfrac{6\\left(\\sum_{i=1}^n d_i^2 + CF_x + CF_y\\right)}{n(n^2 - 1)} = 1 - \\dfrac{6\\left(%g + %g + %g\\right)}{%d(%d^2 - 1)} = %.4f \\)",
+              sum_d_sq, cf_x, cf_y, n, n, rs
+            )
+          } else {
+            sprintf(
+              "\\( r_s = 1 - \\dfrac{6 \\sum_{i=1}^n d_i^2}{n(n^2 - 1)} = 1 - \\dfrac{6 \\times %g}{%d(%d^2 - 1)} = %.4f \\)",
+              sum_d_sq, n, n, rs
+            )
+          }
 
           withMathJax(
             div(
               style = "text-align: left; font-size: 18px;",
-              HTML(sprintf(
-                "\\( r_s = 1 - \\dfrac{6 \\sum_{i=1}^n d_i^2}{n(n^2 - 1)} = 1 - \\dfrac{6 \\times %g}{%d(%d^2 - 1)} = %.4f \\)",
-                sum_d_sq, n, n, rs
-              ))
+              HTML(formula_latex)
             ),
             br(),
             p(tags$b("Interpretation:")),
@@ -1860,7 +1880,13 @@ SLRServer <- function(id) {
                 html   = TRUE,
                 align  = "center",
                 footer = tags$b(sum_d_sq),
-                cell   = function(value) formatC(value, format = "f", digits = 0)
+                cell = function(value) {
+                  if (value == floor(value)) {
+                    formatC(value, format = "d", big.mark = ",")
+                  } else {
+                    formatC(value, format = "f", digits = 2)
+                  }
+                }
               )
             )
           )
@@ -1973,7 +1999,7 @@ SLRServer <- function(id) {
             ),
             
             tags$p(
-              sprintf("%.2f%% of the variation in ", explained_pct),
+              sprintf("Approximately %.2f%% of the variation in ", explained_pct),
               if (input$dataRegCor == "Upload Data") tags$i(input$slrResponse) else withMathJax("\\(y\\)"),
               " can be explained by its linear relationship with ",
               if (input$dataRegCor == "Upload Data") tags$i(input$slrExplanatory) else withMathJax("\\(x\\)"),
@@ -2115,7 +2141,9 @@ SLRServer <- function(id) {
     
     observeEvent(input$dataRegCor, {
       hide(id = "regCorrMP")
-      if (input$dataRegCor == "Upload Data") {
+      if (input$dataRegCor == "Upload Data" &&
+          !is.null(fileInputs$slrStatus) &&
+          fileInputs$slrStatus == "uploaded") {
         show("uploadedDataPanel")
       } else {
         hide("uploadedDataPanel")

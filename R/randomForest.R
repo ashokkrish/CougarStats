@@ -10,8 +10,8 @@ RFSidebarUI <- function(id) {
 
     sliderInput(
       ns("split"),
-      label = strong("Train/Test Split (%)"),
-      min = 50, max = 95, value = 80, step = 1
+      label = strong("Train/Test split (%)"),
+      min = 50, max = 90, value = 80, step = 1
     ),
 
     numericInput(
@@ -85,7 +85,9 @@ RFMainPanelUI <- function(id) {
         title = "Plots",
         value = "plots_tab",
         uiOutput(ns("rfVarImpContainer")),
-        uiOutput(ns("rfPDPContainer"))
+        uiOutput(ns("rfPDPContainer")),
+        uiOutput(ns("rfICEContainer")),
+        uiOutput(ns("rfALEContainer"))
       ),
 
       tabPanel(
@@ -452,8 +454,8 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
       # 17. Classification report (test set)
       rf_class_report <- knn_classification_report(test_df[[resp_col]], test_pred)$report
 
-      # 18. Partial dependence plots via iml (computed once, stored in res)
-      pdp_results <- tryCatch({
+      # 18. PDP and ICE via iml — predictor built once, both methods computed in one pass
+      iml_results <- tryCatch({
         predictor_iml <- suppressWarnings(
           iml::Predictor$new(
             model            = rf_fit,
@@ -462,6 +464,7 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
             predict.function = function(model, newdata) predict(model, newdata, type = "prob")
           )
         )
+
         pdp_list <- suppressWarnings(lapply(input$predictors, function(pvar) {
           tryCatch(
             iml::FeatureEffect$new(predictor_iml, feature = pvar, method = "pdp")$results,
@@ -469,8 +472,29 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
           )
         }))
         names(pdp_list) <- input$predictors
-        pdp_list
+
+        ice_list <- suppressWarnings(lapply(input$predictors, function(pvar) {
+          tryCatch(
+            iml::FeatureEffect$new(predictor_iml, feature = pvar, method = "ice")$results,
+            error = function(e) NULL
+          )
+        }))
+        names(ice_list) <- input$predictors
+
+        ale_list <- suppressWarnings(lapply(input$predictors, function(pvar) {
+          tryCatch(
+            iml::FeatureEffect$new(predictor_iml, feature = pvar, method = "ale")$results,
+            error = function(e) NULL
+          )
+        }))
+        names(ale_list) <- input$predictors
+
+        list(pdp = pdp_list, ice = ice_list, ale = ale_list)
       }, error = function(e) NULL)
+
+      pdp_results <- if (!is.null(iml_results)) iml_results$pdp else NULL
+      ice_results <- if (!is.null(iml_results)) iml_results$ice else NULL
+      ale_results <- if (!is.null(iml_results)) iml_results$ale else NULL
 
       res <- list(
         fit           = rf_fit,
@@ -489,7 +513,9 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
         accuracy      = accuracy,
         class_metrics = class_metrics_df,
         class_report  = rf_class_report,
-        pdp_results   = pdp_results
+        pdp_results   = pdp_results,
+        ice_results   = ice_results,
+        ale_results   = ale_results
       )
 
       calc_results(res)
@@ -499,9 +525,11 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
         r <- calc_results()
         req(r)
 
-        oob_pct  <- round(r$oob_error * 100, 2)
-        acc_pct  <- round(r$accuracy  * 100, 2)
+        oob_pct        <- round(r$oob_error * 100, 2)
+        acc_pct        <- round(r$accuracy  * 100, 2)
         accuracy_label <- if (r$oob_error < 0.10) "high" else if (r$oob_error <= 0.25) "moderate" else "low"
+        rf_correct     <- sum(diag(r$confusion))
+        rf_total       <- sum(r$confusion)
 
         tagList(
           tags$h4("Model Summary"),
@@ -512,17 +540,21 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
           tags$hr(),
           tags$h4("Classification Report (Test Set)"),
           tableOutput(session$ns("rfClassReport")),
+          tags$script(HTML("setTimeout(function(){ if(typeof tippy!=='undefined') tippy('[data-tippy-content]'); }, 200);")),
           tags$hr(),
           tags$h4("Confusion Matrix (Test Set)"),
           tableOutput(session$ns("rfConfusionTable")),
+          tags$h5(tags$strong("Accuracy Calculation"),
+                  style = "margin-top: 14px; margin-bottom: 2px;"),
+          withMathJax(
+            tags$p(sprintf(
+              "\\[ \\text{Accuracy} = \\frac{\\text{Correct Predictions}}{\\text{Total Observations}} = \\frac{%d}{%d} = %.2f\\%% \\]",
+              rf_correct, rf_total, r$accuracy * 100
+            ))
+          ),
           tags$hr(),
           tags$h4("Per-Class Metrics"),
           tableOutput(session$ns("rfClassMetrics")),
-          tags$br(),
-          tags$p(
-            tags$strong("Overall Accuracy: "),
-            paste0(acc_pct, "%")
-          ),
           tags$hr(),
           tags$div(
             style = paste(
@@ -591,7 +623,7 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
 
         tagList(
           tags$table(
-            class = "table table-sm table-bordered",
+            class = "table table-sm table-bordered table-striped",
             style = "max-width: 480px;",
             tags$thead(
               tags$tr(
@@ -619,17 +651,39 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
         r <- calc_results()
         req(r)
         r$class_report
-      }, rownames = FALSE, striped = TRUE, bordered = TRUE)
+      }, rownames = FALSE, striped = TRUE, bordered = TRUE,
+         sanitize.colnames.function = function(x) {
+           tips <- c(
+             Precision = "Of all instances predicted as this class, the fraction that are truly this class. High precision means few false positives.",
+             Recall    = "Of all actual instances of this class, the fraction correctly predicted. High recall means few false negatives.",
+             F1        = "Harmonic mean of Precision and Recall — balances both into a single score.",
+             Support   = "Number of actual instances of this class in the dataset."
+           )
+           sapply(x, function(col) {
+             if (col %in% names(tips)) {
+               paste0('<b><span data-tippy-content="', tips[[col]],
+                      '" style="cursor:help;border-bottom:1px dotted #555;">', col, '</span></b>')
+             } else {
+               paste0("<b>", col, "</b>")
+             }
+           }, USE.NAMES = FALSE)
+         })
 
       output$rfConfusionTable <- renderTable({
         r <- calc_results()
         req(r)
         cm <- as.data.frame.matrix(r$confusion)
-        cm$Actual <- rownames(cm)
+        cm$Actual <- paste0("<b>", rownames(cm), "</b>")
         cm <- cm[, c("Actual", setdiff(names(cm), "Actual"))]
         rownames(cm) <- NULL
         cm
-      }, rownames = FALSE, striped = TRUE, bordered = TRUE)
+      }, rownames = FALSE, striped = TRUE, bordered = TRUE,
+         sanitize.text.function = identity,
+         sanitize.colnames.function = function(x) {
+           sapply(x, function(col) {
+             if (col == "Actual") "<b>Actual \\ Predicted</b>" else paste0("<b>", col, "</b>")
+           }, USE.NAMES = FALSE)
+         })
 
       output$rfClassMetrics <- renderTable({
         r <- calc_results()
@@ -640,7 +694,20 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
       output$rfVarImpContainer <- renderUI({
         tagList(
           tags$h4("Variable Importance Plots", style = "margin-top: 10px;"),
-          plotOutput(session$ns("rfVarImpPlot"), height = "550px")
+          plotOutput(session$ns("rfVarImpPlot"), height = "550px"),
+          tags$div(
+            style = "margin-top: 12px; font-size: 14px; color: #444;",
+            tags$p(
+              tags$strong("Mean Decrease in Accuracy: "),
+              "Measures how much the model's accuracy drops when the values of a variable are randomly shuffled. ",
+              "A large drop means the model relied heavily on that variable — it is highly important."
+            ),
+            tags$p(
+              tags$strong("Mean Decrease in Gini: "),
+              "Measures how much each variable contributes to reducing impurity (disorder) across all splits in all trees. ",
+              "A higher value means the variable is consistently useful for separating the classes."
+            )
+          )
         )
       })
 
@@ -757,11 +824,12 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
             main = pred_var,
             xlab = pred_var,
             ylab = "Predicted Probability",
-            cex.main = 1.1,
+            cex.main  = 1.3,
             font.main = 2,
-            cex.lab  = 0.95,
-            font.lab = 2,
-            cex.axis = 0.9
+            cex.lab   = 1.1,
+            font.lab  = 2,
+            cex.axis  = 1.0,
+            bty       = "l"
           )
 
           for (j in seq_along(cls_list)) {
@@ -782,6 +850,179 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
         }
 
         # blank out remaining grid cells for odd predictor counts
+        remaining <- n_rows * n_cols - n_pred
+        for (k in seq_len(remaining)) plot.new()
+      })
+
+      output$rfICEContainer <- renderUI({
+        r <- calc_results()
+        req(r, !is.null(r$ice_results))
+
+        n_pred    <- length(r$predictors)
+        n_cols    <- if (n_pred <= 1) 1 else if (n_pred <= 4) 2 else 3
+        n_rows    <- ceiling(n_pred / n_cols)
+        height_px <- max(300, n_rows * 300)
+
+        tagList(
+          tags$hr(),
+          tags$h4("Individual Conditional Expectation Plots", style = "margin-top: 10px;"),
+          plotOutput(session$ns("rfICEPlot"), height = paste0(height_px, "px"))
+        )
+      })
+
+      output$rfICEPlot <- renderPlot({
+        r <- calc_results()
+        req(r, !is.null(r$ice_results))
+
+        n_pred  <- length(r$predictors)
+        n_cols  <- if (n_pred <= 1) 1 else if (n_pred <= 4) 2 else 3
+        n_rows  <- ceiling(n_pred / n_cols)
+
+        cls_cols <- c("#4472C4", "#ED7D31", "#70AD47", "#9E480E", "#7030A0")
+
+        par(
+          mfrow = c(n_rows, n_cols),
+          oma   = c(0, 0, 0, 0),
+          mar   = c(4, 4, 5, 2)
+        )
+
+        for (pred_var in r$predictors) {
+          ice_df <- r$ice_results[[pred_var]]
+
+          if (is.null(ice_df)) {
+            plot.new()
+            title(main = pred_var, cex.main = 1.1, font.main = 2)
+            text(0.5, 0.5, "Could not compute ICE", cex = 0.9)
+            next
+          }
+
+          cls_list <- as.character(unique(ice_df$.class))
+
+          plot(
+            x    = NULL,
+            xlim = range(ice_df[[pred_var]], na.rm = TRUE),
+            ylim = c(0, 1),
+            main = pred_var,
+            xlab = pred_var,
+            ylab = "Predicted Probability",
+            cex.main  = 1.3,
+            font.main = 2,
+            cex.lab   = 1.1,
+            font.lab  = 2,
+            cex.axis  = 1.0,
+            bty       = "l"
+          )
+
+          for (j in seq_along(cls_list)) {
+            cls_ice <- ice_df[as.character(ice_df$.class) == cls_list[j], ]
+            x_vals  <- sort(unique(cls_ice[[pred_var]]))
+            obs_ids <- sort(unique(cls_ice$.id))
+
+            y_mat <- matrix(NA_real_, nrow = length(x_vals), ncol = length(obs_ids))
+            for (i in seq_along(obs_ids)) {
+              obs_df      <- cls_ice[cls_ice$.id == obs_ids[i], ]
+              obs_df      <- obs_df[order(obs_df[[pred_var]]), ]
+              y_mat[, i]  <- obs_df$.value
+            }
+
+            matlines(x_vals, y_mat,
+                     col = adjustcolor(cls_cols[j], alpha.f = 0.2),
+                     lty = 1, lwd = 0.7)
+          }
+
+          legend("topright", legend = cls_list,
+                 col = cls_cols[seq_along(cls_list)],
+                 lwd = 2, bty = "n", cex = 0.8)
+
+          mtext("Shows how the prediction changes for each individual observation as this variable changes.",
+                side = 3, line = 0.9, cex = 0.65, col = "#555555")
+          mtext("Each line represents one observation.",
+                side = 3, line = 0.2, cex = 0.65, col = "#555555")
+        }
+
+        remaining <- n_rows * n_cols - n_pred
+        for (k in seq_len(remaining)) plot.new()
+      })
+
+      output$rfALEContainer <- renderUI({
+        r <- calc_results()
+        req(r, !is.null(r$ale_results))
+
+        n_pred    <- length(r$predictors)
+        n_cols    <- if (n_pred <= 1) 1 else if (n_pred <= 4) 2 else 3
+        n_rows    <- ceiling(n_pred / n_cols)
+        height_px <- max(300, n_rows * 300)
+
+        tagList(
+          tags$hr(),
+          tags$h4("Accumulated Local Effects Plots", style = "margin-top: 10px;"),
+          plotOutput(session$ns("rfALEPlot"), height = paste0(height_px, "px"))
+        )
+      })
+
+      output$rfALEPlot <- renderPlot({
+        r <- calc_results()
+        req(r, !is.null(r$ale_results))
+
+        n_pred  <- length(r$predictors)
+        n_cols  <- if (n_pred <= 1) 1 else if (n_pred <= 4) 2 else 3
+        n_rows  <- ceiling(n_pred / n_cols)
+
+        cls_cols <- c("#4472C4", "#ED7D31", "#70AD47", "#9E480E", "#7030A0")
+
+        par(
+          mfrow = c(n_rows, n_cols),
+          oma   = c(0, 0, 0, 0),
+          mar   = c(4, 4, 5, 2)
+        )
+
+        for (pred_var in r$predictors) {
+          ale_df <- r$ale_results[[pred_var]]
+
+          if (is.null(ale_df)) {
+            plot.new()
+            title(main = pred_var, cex.main = 1.1, font.main = 2)
+            text(0.5, 0.5, "Could not compute ALE", cex = 0.9)
+            next
+          }
+
+          cls_list <- as.character(unique(ale_df$.class))
+          y_range  <- range(ale_df$.value, na.rm = TRUE)
+
+          plot(
+            x    = NULL,
+            xlim = range(ale_df[[pred_var]], na.rm = TRUE),
+            ylim = y_range,
+            main = pred_var,
+            xlab = pred_var,
+            ylab = "ALE",
+            cex.main  = 1.3,
+            font.main = 2,
+            cex.lab   = 1.1,
+            font.lab  = 2,
+            cex.axis  = 1.0,
+            bty       = "l"
+          )
+
+          abline(h = 0, col = "grey70", lty = 2, lwd = 1)
+
+          for (j in seq_along(cls_list)) {
+            cls_df <- ale_df[as.character(ale_df$.class) == cls_list[j], ]
+            cls_df <- cls_df[order(cls_df[[pred_var]]), ]
+            lines(cls_df[[pred_var]], cls_df$.value,
+                  col = cls_cols[j], lwd = 2)
+          }
+
+          legend("topright", legend = cls_list,
+                 col = cls_cols[seq_along(cls_list)],
+                 lwd = 2, bty = "n", cex = 0.8)
+
+          mtext("Shows the accumulated local effect of this variable on the predicted outcome.",
+                side = 3, line = 0.9, cex = 0.65, col = "#555555")
+          mtext("More reliable than PDP when predictors are correlated.",
+                side = 3, line = 0.2, cex = 0.65, col = "#555555")
+        }
+
         remaining <- n_rows * n_cols - n_pred
         for (k in seq_len(remaining)) plot.new()
       })

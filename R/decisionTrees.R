@@ -65,9 +65,10 @@ CARTSidebarUI <- function(id) {
 
 CARTMainPanelUI <- function(id) {
   ns <- NS(id)
-  
+
   tagList(
     useShinyjs(),
+    suppressWarnings(tippy::use_tippy()),
     navbarPage(
       title = NULL,
       
@@ -491,9 +492,13 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
         r <- calc_results()
         req(r)
         
+        correct <- sum(diag(r$confusion))
+        total   <- sum(r$confusion)
+
         tagList(
           tags$h4("Model Summary"),
           tableOutput(session$ns("cartModelInfo")),
+          tags$hr(),
 
           tags$h4("Class Distribution (Full Dataset)"),
           tableOutput(session$ns("cartClassDist")),
@@ -501,10 +506,19 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
 
           tags$h4("Classification Report"),
           tableOutput(session$ns("cartClassReport")),
+          tags$script(HTML("setTimeout(function(){ if(typeof tippy!=='undefined') tippy('[data-tippy-content]'); }, 200);")),
           tags$hr(),
 
           tags$h4("Confusion Matrix"),
-          tableOutput(session$ns("confusionMatrixResults"))
+          tableOutput(session$ns("confusionMatrixResults")),
+          tags$h5(tags$strong("Accuracy Calculation"),
+                  style = "margin-top: 14px; margin-bottom: 2px;"),
+          withMathJax(
+            tags$p(sprintf(
+              "\\[ \\text{Accuracy} = \\frac{\\text{Correct Predictions}}{\\text{Total Observations}} = \\frac{%d}{%d} = %.2f\\%% \\]",
+              correct, total, r$accuracy * 100
+            ))
+          )
         )
       })
       
@@ -545,18 +559,40 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
         r <- calc_results()
         req(r)
         r$class_report
-      }, rownames = FALSE, striped = TRUE, bordered = TRUE)
+      }, rownames = FALSE, striped = TRUE, bordered = TRUE,
+         sanitize.colnames.function = function(x) {
+           tips <- c(
+             Precision = "Of all instances predicted as this class, the fraction that are truly this class. High precision means few false positives.",
+             Recall    = "Of all actual instances of this class, the fraction correctly predicted. High recall means few false negatives.",
+             F1        = "Harmonic mean of Precision and Recall — balances both into a single score.",
+             Support   = "Number of actual instances of this class in the dataset."
+           )
+           sapply(x, function(col) {
+             if (col %in% names(tips)) {
+               paste0('<b><span data-tippy-content="', tips[[col]],
+                      '" style="cursor:help;border-bottom:1px dotted #555;">', col, '</span></b>')
+             } else {
+               paste0("<b>", col, "</b>")
+             }
+           }, USE.NAMES = FALSE)
+         })
 
       output$confusionMatrixResults <- renderTable({
         r <- calc_results()
         req(r)
 
         cm <- as.data.frame.matrix(r$confusion)
-        cm$Actual <- rownames(cm)
+        cm$Actual <- paste0("<b>", rownames(cm), "</b>")
         cm <- cm[, c("Actual", setdiff(names(cm), "Actual"))]
         rownames(cm) <- NULL
         cm
-      }, rownames = FALSE, striped = TRUE, bordered = TRUE)
+      }, rownames = FALSE, striped = TRUE, bordered = TRUE,
+         sanitize.text.function = identity,
+         sanitize.colnames.function = function(x) {
+           sapply(x, function(col) {
+             if (col == "Actual") "<b>Actual \\ Predicted</b>" else paste0("<b>", col, "</b>")
+           }, USE.NAMES = FALSE)
+         })
       
       output$treePlot <- renderPlot({
         r <- plot_results()
@@ -581,32 +617,34 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
       output$varImportancePlot <- renderPlot({
         r <- plot_results()
         req(r)
-        
+
         if (nrow(r$importance) == 0) {
           plot.new()
-          text(0.5, 0.5, "No variable importance available for this model.")
+          text(0.5, 0.5, "No variable importance available for this model.",
+               cex = 0.9, col = "#555555")
           return()
         }
-        
-        imp_df <- r$importance
-        imp_df$Variable <- factor(imp_df$Variable, levels = rev(imp_df$Variable))
-        
-        ggplot(imp_df, aes(x = ImportancePct, y = Variable)) +
-          geom_col(fill = "#18536F") +
-          labs(
-            title = "Variable Importance",
-            x = "Importance (%)",
-            y = "Predictor"
-          ) +
-          scale_x_continuous(labels = function(x) paste0(round(x, 1), "%")) +
-          theme_bw() +
-          theme(
-            plot.title = element_text(hjust = 0.5, face = "bold", size = 18),
-            axis.title.x = element_text(face = "bold", size = 14),
-            axis.title.y = element_text(face = "bold", size = 14),
-            axis.text.x = element_text(face = "bold", size = 12),
-            axis.text.y = element_text(face = "bold", size = 12)
-          )
+
+        imp_df    <- r$importance[order(r$importance$ImportancePct, decreasing = FALSE), ]
+        max_chars <- max(nchar(imp_df$Variable), na.rm = TRUE)
+        left_mar  <- max(4, ceiling(max_chars * 0.6))
+
+        par(mar = c(5, left_mar, 4, 2))
+
+        barplot(
+          imp_df$ImportancePct,
+          names.arg = imp_df$Variable,
+          horiz     = TRUE,
+          las       = 1,
+          col       = "#18536F",
+          main      = "Variable Importance",
+          xlab      = "Importance (%)",
+          cex.main  = 1.3,
+          font.main = 2,
+          cex.lab   = 1.1,
+          font.lab  = 2,
+          cex.names = 0.95
+        )
       })
       
       showTab(inputId = "cartMainPanel", target = "results_tab")
