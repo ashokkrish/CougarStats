@@ -509,13 +509,13 @@ PCAServer <- function(id, data, shared_explanatory, shared_response) {
       req(pca_results())
       summary_df <- as.data.frame(summary(pca_results())$importance)[, 1:input$numFactors, drop = FALSE]
       round(summary_df, 3)
-    }, rownames = TRUE)
+    }, rownames = TRUE, striped = TRUE, bordered = TRUE)
 
     output$pcaLoadings <- renderTable({
       req(pca_results())
       loadings_df <- as.data.frame(pca_results()$rotation)[, 1:input$numFactors, drop = FALSE]
       round(loadings_df, 3)
-    }, rownames = TRUE)
+    }, rownames = TRUE, striped = TRUE, bordered = TRUE)
     
     output$pcaInterpretation <- renderUI({
       req(pca_results())
@@ -583,12 +583,12 @@ PCAServer <- function(id, data, shared_explanatory, shared_response) {
     output$correlationMatrix <- renderTable({
       req(analysis_data())
       round(cor(analysis_data()), 4)
-    }, rownames = TRUE)
+    }, rownames = TRUE, striped = TRUE, bordered = TRUE)
 
     output$covarianceMatrix <- renderTable({
       req(analysis_data())
       round(cov(analysis_data()), 4)
-    }, rownames = TRUE)
+    }, rownames = TRUE, striped = TRUE, bordered = TRUE)
     
     output$screePlot <- renderPlot({
       req(pca_results())
@@ -637,7 +637,7 @@ PCAServer <- function(id, data, shared_explanatory, shared_response) {
 
       rotated_loadings_df <- as.data.frame(unclass(rotated_pca$loadings))
       round(rotated_loadings_df, 3)
-    }, rownames = TRUE)
+    }, rownames = TRUE, striped = TRUE, bordered = TRUE)
     
     observeEvent(input$reset, {
       hideTab(inputId = "mainPanel", target = "pca_results_tab")
