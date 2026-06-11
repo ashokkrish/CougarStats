@@ -52,6 +52,7 @@ LDAMainPanelUI <- function(id) {
 
   tagList(
     useShinyjs(),
+    suppressWarnings(tippy::use_tippy()),
     navbarPage(
       title = NULL,
 
@@ -499,9 +500,15 @@ LDAServer <- function(id, data, shared_explanatory, shared_response) {
         r <- calc_results()
         req(r)
 
+        conf_used <- if (isTRUE(input$useCV) && !is.null(r$cv_confusion)) r$cv_confusion else r$confusion
+        acc_used  <- if (isTRUE(input$useCV) && !is.null(r$cv_accuracy))  r$cv_accuracy  else r$accuracy
+        correct   <- sum(diag(conf_used))
+        total     <- sum(conf_used)
+
         tagList(
           tags$h4("Model Summary"),
           tableOutput(session$ns("ldaModelInfo")),
+          tags$hr(),
 
           tags$h4("Class Distribution (Full Dataset)"),
           tableOutput(session$ns("ldaClassDist")),
@@ -509,6 +516,19 @@ LDAServer <- function(id, data, shared_explanatory, shared_response) {
 
           tags$h4("Classification Report"),
           tableOutput(session$ns("ldaClassReport")),
+          tags$script(HTML("setTimeout(function(){ if(typeof tippy!=='undefined') tippy('[data-tippy-content]'); }, 200);")),
+          tags$hr(),
+
+          tags$h4("Confusion Matrix"),
+          tableOutput(session$ns("confusionMatrix")),
+          tags$h5(tags$strong("Accuracy Calculation"),
+                  style = "margin-top: 14px; margin-bottom: 2px;"),
+          withMathJax(
+            tags$p(sprintf(
+              "\\[ \\text{Accuracy} = \\frac{\\text{Correct Predictions}}{\\text{Total Observations}} = \\frac{%d}{%d} = %.2f\\%% \\]",
+              correct, total, acc_used * 100
+            ))
+          ),
           tags$hr(),
 
           tags$h4("Prior Probabilities"),
@@ -521,10 +541,7 @@ LDAServer <- function(id, data, shared_explanatory, shared_response) {
           tableOutput(session$ns("coefficients")),
 
           tags$h4("Proportion of Trace"),
-          tableOutput(session$ns("propTrace")),
-
-          tags$h4("Confusion Matrix"),
-          tableOutput(session$ns("confusionMatrix"))
+          tableOutput(session$ns("propTrace"))
         )
       })
 
@@ -567,7 +584,23 @@ LDAServer <- function(id, data, shared_explanatory, shared_response) {
         r <- calc_results()
         req(r)
         r$class_report
-      }, rownames = FALSE, striped = TRUE, bordered = TRUE)
+      }, rownames = FALSE, striped = TRUE, bordered = TRUE,
+         sanitize.colnames.function = function(x) {
+           tips <- c(
+             Precision = "Of all instances predicted as this class, the fraction that are truly this class. High precision means few false positives.",
+             Recall    = "Of all actual instances of this class, the fraction correctly predicted. High recall means few false negatives.",
+             F1        = "Harmonic mean of Precision and Recall — balances both into a single score.",
+             Support   = "Number of actual instances of this class in the dataset."
+           )
+           sapply(x, function(col) {
+             if (col %in% names(tips)) {
+               paste0('<b><span data-tippy-content="', tips[[col]],
+                      '" style="cursor:help;border-bottom:1px dotted #555;">', col, '</span></b>')
+             } else {
+               paste0("<b>", col, "</b>")
+             }
+           }, USE.NAMES = FALSE)
+         })
 
       output$ldaPriors <- renderTable({
         r <- calc_results()
@@ -613,38 +646,57 @@ LDAServer <- function(id, data, shared_explanatory, shared_response) {
           as.data.frame.matrix(r$confusion)
         }
 
-        cm$Actual <- rownames(cm)
+        cm$Actual <- paste0("<b>", rownames(cm), "</b>")
         cm <- cm[, c("Actual", setdiff(names(cm), "Actual"))]
         rownames(cm) <- NULL
         cm
-      }, rownames = FALSE, striped = TRUE, bordered = TRUE)
+      }, rownames = FALSE, striped = TRUE, bordered = TRUE,
+         sanitize.text.function = identity,
+         sanitize.colnames.function = function(x) {
+           sapply(x, function(col) {
+             if (col == "Actual") "<b>Actual \\ Predicted</b>" else paste0("<b>", col, "</b>")
+           }, USE.NAMES = FALSE)
+         })
 
       output$ldaPlot <- renderPlot({
         r <- plot_results()
         req(r)
 
-        ggplot(r$scores, aes(x = LD1, y = LD2, color = Class)) +
-          geom_point(size = 3, alpha = 0.8) +
-          labs(
-            title = "LDA Plot",
-            x = "LD1",
-            y = "LD2",
-            color = "Class"
-          ) +
-          theme_bw() +
-          theme(
-            plot.title = element_text(hjust = 0.5, face = "bold", size = 18),
+        scores   <- r$scores
+        classes  <- as.character(levels(scores$Class))
+        n_cls    <- length(classes)
+        cls_cols <- c("#4472C4", "#ED7D31", "#70AD47", "#9E480E", "#7030A0")[seq_len(min(n_cls, 5))]
+        col_vec  <- cls_cols[match(as.character(scores$Class), classes)]
 
-            axis.title.x = element_text(face = "bold", size = 14),
-            axis.title.y = element_text(face = "bold", size = 14),
-  
-            axis.text.x = element_text(face = "bold", size = 14),
-            axis.text.y = element_text(face = "bold", size = 14),
+        par(mar = c(5, 4, 4, 2))
 
-            legend.title = element_text(size = 14, face = "bold"),
-            
-            legend.text = element_text(size = 12)
-          )
+        plot(
+          scores$LD1,
+          scores$LD2,
+          col       = col_vec,
+          pch       = 19,
+          cex       = 1.1,
+          main      = "LDA Plot",
+          xlab      = "LD1",
+          ylab      = "LD2",
+          cex.main  = 1.3,
+          font.main = 2,
+          cex.lab   = 1.1,
+          font.lab  = 2,
+          cex.axis  = 1.0,
+          bty       = "l"
+        )
+
+        legend(
+          "topright",
+          legend = classes,
+          col    = cls_cols[seq_along(classes)],
+          pch    = 19,
+          pt.cex = 1.1,
+          bty    = "n",
+          cex    = 0.95,
+          title  = "Class"
+        )
       })
 
       showTab(inputId = "ldaMainPanel", target = "results_tab")
