@@ -973,6 +973,7 @@ MLRServer <- function(id) {
               p("The variables in the model are"),
               HTML(vars_definition_latex),
               
+              br(),
               p("The estimated multiple linear regression equation is"),
               
               HTML(sym_eq),

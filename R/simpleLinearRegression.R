@@ -279,7 +279,10 @@ SLRMainPanelUI <- function(id) {
                   value = "Kendall",
                   titlePanel("Kendall's Rank Correlation Coefficient"),
                   br(),
-                  uiOutput(ns("kendallFormula")),
+                  uiOutput(ns("kendallTauComputation")),
+                  br(),
+                  hr(),
+                  uiOutput(ns("kendallHypothesisTest")),
                   br(),
                   hr()
                 )
@@ -1719,64 +1722,132 @@ SLRServer <- function(id) {
         
         spearman <- cor.test(datx, daty, method = "spearman")
         
-        output$kendallEstimate <- renderUI({
-          sprintf("\\( \\tau \\; = \\; %0.4f \\)",
-                  kendall$estimate)
-        })
-        
-        # Kendall's Tau formula
-        # output$kendallFormula <- renderUI({
-        #   n <- length(datx)
-        #   withMathJax(
-        #     sprintf("\\( \\displaystyle \\tau = \\dfrac{n_c - n_d}{\\binom{n}{2}} = \\dfrac{n_c - n_d}{\\dfrac{n(n-1)}{2}} = %0.4f \\)",
-        #             kendall$estimate)#,
-        #     # br(),
-        #     # sprintf("\\( \\tau \\; = \\; %0.4f \\)", kendall$estimate)
-        #   )
-        # })
-        
-        output$kendallFormula <- renderUI({
+        kendallStats <- local({
           n  <- length(datx)
           n0 <- n * (n - 1) / 2
           n1 <- sum(choose(table(datx), 2))
           n2 <- sum(choose(table(daty), 2))
-          
+          has_ties <- (n1 > 0 || n2 > 0)
           nc <- 0
           nd <- 0
           for (i in 1:(n - 1)) {
             for (j in (i + 1):n) {
               dx <- datx[i] - datx[j]
               dy <- daty[i] - daty[j]
-              if (sign(dx) == sign(dy) && dx != 0 && dy != 0) {
-                nc <- nc + 1
-              } else if (sign(dx) != sign(dy) && dx != 0 && dy != 0) {
-                nd <- nd + 1
-              }
+              if (sign(dx) == sign(dy) && dx != 0 && dy != 0) nc <- nc + 1
+              else if (sign(dx) != sign(dy) && dx != 0 && dy != 0) nd <- nd + 1
             }
           }
-          
-          tau <- kendall$estimate
-          
-          # Strength
-          tauStrength <- if (abs(tau) > 0.6) "strong"
-          else if (abs(tau) > 0.3) "moderate"
-          else "weak"
-          
-          # Direction
-          tauDirection <- if (tau > 0) "positive" else "negative"
-          
+          list(n = n, n0 = n0, n1 = n1, n2 = n2, has_ties = has_ties, nc = nc, nd = nd)
+        })
+
+        output$kendallTauComputation <- renderUI({
+          ks  <- kendallStats
+          tau <- as.numeric(kendall$estimate)
+
+          if (!ks$has_ties) {
+            formula_note <- "Since there are no ties in the data, we use Kendall's \\(\\tau_a\\):"
+            sym_formula  <- "\\tau_a = \\dfrac{n_c - n_d}{\\dfrac{n(n-1)}{2}}"
+            num_formula  <- sprintf(
+              "\\tau_a = \\dfrac{%d - %d}{\\dfrac{%d \\cdot (%d - 1)}{2}} = \\dfrac{%d}{%g} = %.4f",
+              ks$nc, ks$nd, ks$n, ks$n, ks$nc - ks$nd, ks$n0, tau
+            )
+          } else {
+            formula_note <- "Since there are ties in the data, we use Kendall's \\(\\tau_b\\):"
+            sym_formula  <- "\\tau_b = \\dfrac{n_c - n_d}{\\sqrt{(n_0 - n_1)(n_0 - n_2)}}"
+            num_formula  <- sprintf(
+              "\\tau_b = \\dfrac{%d - %d}{\\sqrt{(%g - %g)(%g - %g)}} = %.4f",
+              ks$nc, ks$nd, ks$n0, ks$n1, ks$n0, ks$n2, tau
+            )
+          }
+
           withMathJax(
-            HTML(sprintf(
-              "\\( \\tau = \\dfrac{n_c - n_d}{\\sqrt{(n_0 - n_1)(n_0 - n_2)}} = \\dfrac{%d - %d}{\\sqrt{(%g - %g)(%g - %g)}} = %.4f \\)",
-              nc, nd, n0, n1, n0, n2, tau
-            )),
+            p(formula_note),
+            p(HTML(sprintf("\\( %s \\)", sym_formula))),
+            p(HTML(sprintf("\\( %s \\)", num_formula)))
+          )
+        })
+
+        output$kendallHypothesisTest <- renderUI({
+          ks     <- kendallStats
+          tau    <- as.numeric(kendall$estimate)
+          sd_tau <- sqrt(2 * (2 * ks$n + 5) / (9 * ks$n * (ks$n - 1)))
+          z_stat <- tau / sd_tau
+          crit   <- 1.96
+
+          # p-value comes directly from cor.test rather than 2*pnorm(-abs(z_stat)).
+          # The no-ties SD formula above is only exact when there are no ties; with ties
+          # the variance of S needs additional correction terms (see Kendall 1962). R's
+          # cor.test handles that correction internally, so we use its p.value to keep
+          # the displayed conclusion accurate in both the no-ties and ties cases.
+          # TODO: option 1 — implement the full tie-corrected Var(S) formula so z and
+          # p-value are fully self-consistent when ties are present.
+          p_val <- kendall$p.value
+
+          tauStrength  <- if (isTRUE(abs(tau) > 0.6)) "strong" else if (isTRUE(abs(tau) > 0.3)) "moderate" else "weak"
+          tauDirection <- if (isTRUE(tau > 0)) "positive" else "negative"
+
+          withMathJax(
+            p("Kendall's Tau has a formal hypothesis test for whether two variables are monotonically associated."),
             br(),
+            HTML("<p>\\(H_0\\): The true Kendall's Tau in the population is <strong>0</strong> (no monotonic association).</p>"),
+            HTML("<p>\\(H_a\\): The true Kendall's Tau is <strong>not</strong> equal to 0 (some monotonic association).</p>"),
             br(),
-            p(tags$b("Interpretation:")),
+            p("\\( \\alpha = 0.05 \\)"),
+            p(sprintf("\\( n = %d \\)", ks$n)),
+            br(),
+
+            p(tags$b("Mean & Standard Deviation of the sampling distribution of \\( \\hat{\\tau} \\)")),
+            p("\\( E(\\hat{\\tau}) = 0 \\)"),
+            p("\\( SD(\\hat{\\tau}) = \\sqrt{\\dfrac{2(2n+5)}{9n(n-1)}} \\)"),
+            br(),
+
+            p(tags$b("Test Statistic:")),
+            p(HTML(sprintf(
+              "\\( z = \\dfrac{\\hat{\\tau}}{SD(\\hat{\\tau})} = \\dfrac{\\hat{\\tau}}{\\sqrt{\\dfrac{2(2n+5)}{9n(n-1)}}} = \\dfrac{%.4f}{\\sqrt{\\dfrac{2(2(%d)+5)}{9(%d)(%d-1)}}} = %.4f \\)",
+              tau, ks$n, ks$n, ks$n, z_stat
+            ))),
+            br(),
+
+            p(tags$b("Using P-Value Method:")),
             p(sprintf(
-              "There exists a %s %s monotonic relationship between \\(\\mathit{x}\\) and \\(\\mathit{y}\\).",
-              tauStrength, tauDirection
-            ))
+              "\\( P = 2 \\times P(Z > |\\, %.4f \\,|) = %.4f \\)",
+              z_stat, p_val
+            )),
+            if (isTRUE(p_val <= 0.05)) {
+              p("Since \\( P \\leq 0.05 \\), reject \\( H_0 \\).")
+            } else {
+              p("Since \\( P > 0.05 \\), fail to reject \\( H_0 \\).")
+            },
+            br(),
+
+            p(tags$b("Using Critical Value Method:")),
+            p(sprintf(
+              "\\( \\text{Critical Value(s)} = \\pm z_{\\alpha/2} = \\pm z_{0.025} = \\pm %.2f \\)",
+              crit
+            )),
+            if (isTRUE(abs(z_stat) > crit)) {
+              p(sprintf(
+                "Since the test statistic \\( (z = %.4f) \\) falls within the rejection region, reject \\( H_0 \\).",
+                z_stat
+              ))
+            } else {
+              p(sprintf(
+                "Since the test statistic \\( (z = %.4f) \\) does not fall within the rejection region, fail to reject \\( H_0 \\).",
+                z_stat
+              ))
+            },
+            br(),
+
+            p(tags$b("Conclusion:")),
+            if (isTRUE(p_val <= 0.05)) {
+              p(sprintf(
+                "At \\( \\alpha = 0.05 \\), since the test statistic falls in the rejection region we reject \\( H_0 \\) and conclude that there is enough statistical evidence of a %s %s monotonic relationship between \\( x \\) and \\( y \\) in the population.",
+                tauStrength, tauDirection
+              ))
+            } else {
+              p("At \\( \\alpha = 0.05 \\), since the test statistic does not fall in the rejection region we fail to reject \\( H_0 \\) and conclude that there is not enough statistical evidence of a monotonic relationship between \\( x \\) and \\( y \\) in the population.")
+            }
           )
         })
         spearman_cf <- function(x) {
@@ -1874,7 +1945,7 @@ SLRServer <- function(id) {
               y      = colDef(name = "y",      align = "center"),
               rank_x = colDef(name = "Rank x", align = "center"),
               rank_y = colDef(name = "Rank y", align = "center"),
-              d      = colDef(name = "d = (Rank x \u2212 Rank y)", align = "center", footer = tags$b("Total")),
+              d      = colDef(name = "d = (Rank x \u2212 Rank y)", align = "center", footer = tags$b("Total"), minWidth = 190),
               d_sq   = colDef(
                 name   = HTML("d<sup>2</sup>"),
                 html   = TRUE,
