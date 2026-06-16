@@ -281,6 +281,9 @@ SLRMainPanelUI <- function(id) {
                   br(),
                   uiOutput(ns("kendallTauComputation")),
                   br(),
+                  hr(),
+                  uiOutput(ns("kendallHypothesisTest")),
+                  br(),
                   hr()
                 )
                 
@@ -1083,13 +1086,16 @@ SLRServer <- function(id) {
         if(input$dataRegCor == 'Upload Data') {
           req(input$slrExplanatory %in% colnames(slrUploadData()))
           req(input$slrResponse %in% colnames(slrUploadData()))
-          datx <- as.data.frame(slrUploadData())[, input$slrExplanatory]
-          daty <- as.data.frame(slrUploadData())[, input$slrResponse]
+          raw_x <- suppressWarnings(as.numeric(as.data.frame(slrUploadData())[, input$slrExplanatory]))
+          raw_y <- suppressWarnings(as.numeric(as.data.frame(slrUploadData())[, input$slrResponse]))
+          complete_idx <- !is.na(raw_x) & !is.na(raw_y)
+          datx <- raw_x[complete_idx]
+          daty <- raw_y[complete_idx]
         } else {
           datx <- createNumLst(input$x)
           daty <- createNumLst(input$y)
         }
-        
+
         model <- lm(daty ~ datx)
         
         h <- hatvalues(model)
@@ -1607,9 +1613,9 @@ SLRServer <- function(id) {
                   
                   p(strong("Using P-Value Method:")),
                   p(sprintf(
-                    "\\( P = 2 \\times P(t > |\\, %0.4f \\,|) = %s \\)",
+                    "\\( P = 2 \\times P(t > |\\, %0.4f \\,|) %s \\)",
                     pearson$statistic,
-                    format.pval(pearson$p.value, digits = 4, eps = 0.0001)
+                    pval_tex(pearson$p.value)
                   )),
                   if(pearson$p.value <= 0.05) {
                     p(sprintf("Since \\( P \\leq 0.05 \\), reject \\( H_0 \\)."))
@@ -1772,6 +1778,102 @@ SLRServer <- function(id) {
             ))
           )
         })
+
+        output$kendallHypothesisTest <- renderUI({
+          ks  <- kendallStats
+          tau <- as.numeric(kendall$estimate)
+
+          tauStrength  <- if (isTRUE(abs(tau) > 0.6)) "strong" else if (isTRUE(abs(tau) > 0.3)) "moderate" else "weak"
+          tauDirection <- if (isTRUE(tau > 0)) "positive" else "negative"
+
+          header <- tagList(
+            p("Kendall's Tau has a formal hypothesis test for whether two variables are monotonically associated."),
+            br(),
+            HTML("<p>\\(H_0\\): The true Kendall's Tau in the population is <strong>0</strong> (no monotonic association).</p>"),
+            HTML("<p>\\(H_a\\): The true Kendall's Tau is <strong>not</strong> equal to 0 (some monotonic association).</p>"),
+            br(),
+            p("\\( \\alpha = 0.05 \\)"),
+            p(sprintf("\\( n = %d \\)", ks$n)),
+            br()
+          )
+
+          if (!ks$has_ties) {
+            sd_tau <- sqrt(2 * (2 * ks$n + 5) / (9 * ks$n * (ks$n - 1)))
+            z_stat <- tau / sd_tau
+            p_val  <- 2 * pnorm(-abs(z_stat))
+
+            withMathJax(
+              header,
+              p(tags$b("Mean & Standard Deviation of the sampling distribution of \\( \\hat{\\tau} \\)")),
+              p("\\( E(\\hat{\\tau}) = 0 \\)"),
+              p("\\( SD(\\hat{\\tau}) = \\sqrt{\\dfrac{2(2n+5)}{9n(n-1)}} \\)"),
+              br(),
+              p(tags$b("Test Statistic:")),
+              p(HTML(sprintf(
+                "\\( z = \\dfrac{\\hat{\\tau}}{SD(\\hat{\\tau})} = \\dfrac{\\hat{\\tau}}{\\sqrt{\\dfrac{2(2n+5)}{9n(n-1)}}} = \\dfrac{%.4f}{\\sqrt{\\dfrac{2(2(%d)+5)}{9(%d)(%d-1)}}} = %.4f \\)",
+                tau, ks$n, ks$n, ks$n, z_stat
+              ))),
+              br(),
+              plotOutput(session$ns("kendallZCurve")),
+              br(),
+              p(tags$b("P-Value:")),
+              p(sprintf("\\( P = 2 \\times P(Z > |\\, %.4f \\,|) %s \\)", z_stat, pval_tex(p_val))),
+              if (isTRUE(p_val <= 0.05)) {
+                p("Since \\( P \\leq 0.05 \\), reject \\( H_0 \\).")
+              } else {
+                p("Since \\( P > 0.05 \\), fail to reject \\( H_0 \\).")
+              },
+              br(),
+              p(tags$b("Conclusion:")),
+              if (isTRUE(p_val <= 0.05)) {
+                p(sprintf(
+                  "At \\( \\alpha = 0.05 \\), we reject \\( H_0 \\) and conclude that there is enough statistical evidence of a %s %s monotonic relationship between \\( x \\) and \\( y \\) in the population.",
+                  tauStrength, tauDirection
+                ))
+              } else {
+                p("At \\( \\alpha = 0.05 \\), we fail to reject \\( H_0 \\) and conclude that there is not enough statistical evidence of a monotonic relationship between \\( x \\) and \\( y \\) in the population.")
+              }
+            )
+          } else {
+            # Ties: exact z formula doesn't apply; use cor.test's tie-corrected p-value
+            p_val <- kendall$p.value
+
+            withMathJax(
+              header,
+              p(em("Note: Ties are present in the data. The p-value is computed using R's tie-corrected normal approximation.")),
+              br(),
+              p(tags$b("P-Value:")),
+              p(sprintf("\\( p\\text{-value} %s \\)", pval_tex(p_val))),
+              if (isTRUE(p_val <= 0.05)) {
+                p("Since \\( P \\leq 0.05 \\), reject \\( H_0 \\).")
+              } else {
+                p("Since \\( P > 0.05 \\), fail to reject \\( H_0 \\).")
+              },
+              br(),
+              p(tags$b("Conclusion:")),
+              if (isTRUE(p_val <= 0.05)) {
+                p(sprintf(
+                  "At \\( \\alpha = 0.05 \\), we reject \\( H_0 \\) and conclude that there is enough statistical evidence of a %s %s monotonic relationship between \\( x \\) and \\( y \\) in the population.",
+                  tauStrength, tauDirection
+                ))
+              } else {
+                p("At \\( \\alpha = 0.05 \\), we fail to reject \\( H_0 \\) and conclude that there is not enough statistical evidence of a monotonic relationship between \\( x \\) and \\( y \\) in the population.")
+              }
+            )
+          }
+        })
+
+        output$kendallZCurve <- renderPlot({
+          req(!kendallStats$has_ties)
+          tau    <- as.numeric(kendall$estimate)
+          sd_tau <- sqrt(2 * (2 * kendallStats$n + 5) / (9 * kendallStats$n * (kendallStats$n - 1)))
+          z_stat <- round(tau / sd_tau, 3)
+          hypZTestPlot(
+            testStatistic = z_stat,
+            critValue     = 1.96,
+            altHypothesis = "two.sided"
+          )
+        }, height = 300, width = 500)
 
         spearman_cf <- function(x) {
           tbl   <- table(x)

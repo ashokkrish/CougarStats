@@ -1288,6 +1288,7 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
             plotOutput(ns("ggscatmat"), width = "550px", height = "550px")
           )
         )), 
+        br(),
         fluidRow(column(
           12, p(strong("Variance Inflation Factors (VIFs)")),
           p("A VIF greater than 10 suggests strong multicollinearity caused by the respective variable with that variance inflation factor. VIFs between 5 and 10 hint at moderate multicollinearity. Values less than 5 are acceptable, with only a low degree of multicollinearity detected."),
@@ -1390,13 +1391,32 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
       req(isTruthy(input$responseVariable))
       req(isTruthy(input$explanatoryVariables))
       req(length(as.character(input$explanatoryVariables)) >= 2)
-      
+
       with(encodedData(), {
         model <- lm(reformulate(
           sprintf("`%s`", input$explanatoryVariables),
           sprintf("`%s`", input$responseVariable)
         ))
         plot(model, which = 5, pch = 20, main = "", lwd = 2, sub.caption = "")
+      })
+    })
+
+    output$mlrResidualsPanelPlot5 <- renderPlot({
+      req(encodedData())
+      req(isTruthy(input$responseVariable))
+      req(isTruthy(input$explanatoryVariables))
+      req(length(as.character(input$explanatoryVariables)) >= 2)
+
+      with(encodedData(), {
+        model <- lm(reformulate(
+          sprintf("`%s`", input$explanatoryVariables),
+          sprintf("`%s`", input$responseVariable)
+        ))
+        par(font.main = 2, font.lab = 2)
+        hist(residuals(model), main = "", xlab = "",
+             col = "darkgreen", border = "white")
+        title(main = "Histogram of Residuals", cex.main = 1.2)
+        title(xlab = expression(bold(Residuals~plain("(")*italic(e)*plain(")"))))
       })
     })
     
@@ -1507,6 +1527,8 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
                  plotOutput(ns("mlrResidualsPanelPlot3")),
                  br(),
                  plotOutput(ns("mlrResidualsPanelPlot4")),
+                 br(),
+                 plotOutput(ns("mlrResidualsPanelPlot5")),
                  br()
           )
         )
