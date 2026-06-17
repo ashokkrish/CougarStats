@@ -1189,8 +1189,8 @@ MLRServer <- function(id) {
         withMathJax(
           p(strong("Test Statistic:")),
           p(sprintf(
-            r"{\(\displaystyle F = \frac{\text{MSR}}{\text{MSE}} = \frac{%0.2f}{%0.2f} = %0.2f \)}",
-            MSR, MSE, F_stat
+            r"{\(\displaystyle F = \frac{\text{MSR}}{\text{MSE}} = \frac{%s}{%s} = %0.2f \)}",
+            fmt_sci_latex(MSR, 2), fmt_sci_latex(MSE, 2), F_stat
           )),
           p(strong("Conclusion:")),
           {
@@ -1236,9 +1236,8 @@ MLRServer <- function(id) {
           p(strong(r"{ \(R^2\) and Adjusted \(R^2\) :}")),
           br(),
           p(sprintf(
-            r"[\( \displaystyle R^2 = \frac{\text{SSR}}{\text{SST}} = \frac{%0.4f}{%0.4f} = %0.4f\)]",
-            SSR,
-            SST,
+            r"[\( \displaystyle R^2 = \frac{\text{SSR}}{\text{SST}} = \frac{%s}{%s} = %0.4f\)]",
+            fmt_sci_latex(SSR, 4), fmt_sci_latex(SST, 4),
             SSR / SST
           )),
           p(sprintf(

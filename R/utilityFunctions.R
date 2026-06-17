@@ -1,3 +1,16 @@
+## Format a number for LaTeX: uses value^{exp} notation when the value would
+## round to zero at 'digits' decimal places, so fractions never display 0/0.
+fmt_sci_latex <- function(x, digits = 3) {
+  if (!is.finite(x) || x == 0) return(sprintf("%.*f", digits, x))
+  if (abs(x) < 0.5 * 10^(-digits)) {
+    exp  <- floor(log10(abs(x)))
+    mant <- x / 10^exp
+    sprintf("%.3f^{%d}", mant, exp)
+  } else {
+    format(round(x, digits), nsmall = 0, scientific = FALSE)
+  }
+}
+
 ## Format a p-value as a LaTeX relational string for use inside \( ... \)
 ## Returns "= 0.0234" for ordinary values or "< 0.0001" when below eps.
 pval_tex <- function(p, eps = 0.0001) {

@@ -1,5 +1,6 @@
 options(scipen=999)
 source("R/RenderBoxplot.R")
+
 source("R/RenderMeanPlot.R")
 source("R/RenderQQPlot.R")
 source("R/RenderScatterplot.R")
@@ -351,7 +352,7 @@ SLRSidebarUI <- function(id) {
         value       = "2.48, 2.26, 2.47, 2.77, 2.99, 3.05, 3.18, 3.46, 3.03, 3.26, 2.67, 2.53",
         placeholder = "Enter numeric values separated by a comma with decimals as points. (eg: 1,2,3)",
         rows        = 3),
-      
+
       textAreaInput(
         inputId     = ns("x"),
         label       = strong("Explanatory Variable (\\( x\\))"),
@@ -1566,15 +1567,12 @@ SLRServer <- function(id) {
                         format(round(dfTotaled["Totals", "y"], 3), nsmall = 0, scientific = FALSE),
                         format(length(datx), nsmall = 0, scientific = FALSE),
                         
-                        # simplified √ form
-                        format(round(dfTotaled["Totals", "xy"] - sumXSumY / length(datx), 3),
-                               nsmall = 0, scientific = FALSE),
-                        
-                        format(round(dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx), 3),
-                               nsmall = 0, scientific = FALSE),
-                        
-                        format(round(dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx), 3),
-                               nsmall = 0, scientific = FALSE),
+                        # simplified √ form — use scientific notation when values would round to 0
+                        fmt_sci_latex(dfTotaled["Totals", "xy"] - sumXSumY / length(datx)),
+
+                        fmt_sci_latex(dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx)),
+
+                        fmt_sci_latex(dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx)),
                         
                         # final result
                         round(pearson$estimate, 4)
@@ -2054,7 +2052,7 @@ SLRServer <- function(id) {
           
           withMathJax(
             p(strong("Test Statistic:")),
-            p(sprintf("\\( \\displaystyle F = \\frac{\\mathrm{MSR}}{\\mathrm{MSE}} = \\frac{%.3f}{%.3f} = %.3f \\)", msr, mse, f_value)),
+            p(sprintf("\\( \\displaystyle F = \\frac{\\mathrm{MSR}}{\\mathrm{MSE}} = \\frac{%s}{%s} = %.3f \\)", fmt_sci_latex(msr), fmt_sci_latex(mse), f_value)),
             p(strong("Conclusion:")),
             if (p_value <= 0.05) {
               p(sprintf("Since the p-value is less than \\( \\alpha \\) (%.3f < 0.05), we reject the null hypothesis and conclude there is enough statistical evidence to support the alternative hypothesis. We can conclude the model is statistically significant.", p_value))
@@ -2083,8 +2081,9 @@ SLRServer <- function(id) {
             tags$div(
               style = "text-align: left;",
               HTML(sprintf(
-                "\\( R^2 = \\dfrac{\\mathrm{SSR}}{\\mathrm{SSR} + \\mathrm{SSE}} = \\dfrac{\\mathrm{SSR}}{\\mathrm{SST}} = \\dfrac{%.4f}{%.4f + %.4f} = \\dfrac{%.4f}{%.4f} = %.4f \\)",
-                ssr, ssr, sse, ssr, sst, r2
+                "\\( R^2 = \\dfrac{\\mathrm{SSR}}{\\mathrm{SSR} + \\mathrm{SSE}} = \\dfrac{\\mathrm{SSR}}{\\mathrm{SST}} = \\dfrac{%s}{%s + %s} = \\dfrac{%s}{%s} = %.4f \\)",
+                fmt_sci_latex(ssr, 4), fmt_sci_latex(ssr, 4), fmt_sci_latex(sse, 4),
+                fmt_sci_latex(ssr, 4), fmt_sci_latex(sst, 4), r2
               ))
             ),
             
