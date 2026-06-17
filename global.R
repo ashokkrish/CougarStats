@@ -1,0 +1,182 @@
+## install.packages("remotes")
+## remotes::install_github("deepanshu88/shinyDarkmode")
+## remotes::install_github('goodekat/ggResidpanel')
+## remotes::install_github("rsquaredacademy/olsrr")
+
+## options(conflicts.policy = TRUE)
+## library(conflicted)
+
+library(aplpack)
+library(base)
+library(bslib)
+library(broom)
+library(broom.helpers)
+library(car)
+library(caret)
+library(class)
+library(colourpicker)
+library(datamods)
+library(DescTools)
+library(dplyr)
+library(DT)
+library(e1071)
+library(factoextra)
+library(forecast)
+library(foreign)
+library(generics)
+library(GGally)
+library(ggfortify)
+library(ggplot2)
+library(ggpubr)
+library(ggResidpanel)
+library(ggsci)
+library(gridExtra)
+library(haven)
+library(htmltools)
+library(katex)
+library(knitr)
+library(latex2exp)
+library(lmtest)
+library(magrittr)
+library(markdown)
+library(MASS)
+library(moments)
+library(nortest)
+library(plotly)
+library(psych)
+#library(iml)
+library(randomForest)
+library(xgboost)
+library(tippy)
+library(treeshap)
+library(shapviz)
+library(rpart)
+library(rpart.plot)
+library(reactable)
+library(readr)
+library(readxl)
+library(remotes)
+library(ResourceSelection)
+library(rpart)
+library(rpart.plot)
+library(rstatix)
+library(shiny)
+library(shinyalert)
+library(shinyjs)
+library(shinyMatrix)
+library(shinythemes)
+library(shinyvalidate)
+library(shinyWidgets)
+library(skedastic)
+library(sortable)
+sortable::enable_modules()
+library(thematic)
+library(tibble)
+library(tidyr)
+library(tinytex)
+library(tools)
+library(waiter)
+library(writexl)
+library(xml2)
+library(xtable)
+
+# shinyDarkmode, ggResidpanel and olsrr have been removed/archived from CRAN. 
+# So install.packages() silently skips it (no error during the Docker build), 
+# but then it fails at runtime when your app tries to library() it.
+
+# As a consequence in our Dockerfile, I have removed 'ggResidpanel', from the 
+# install.packages(c(...)) # block and added a one line to the GitHub installs
+# section at the bottom of the RUN step
+
+library(shinyDarkmode)
+library(ggResidpanel)
+library(olsrr)
+
+margin <- ggplot2::margin
+
+source("R/ChiSquareTest.R")
+source("R/descStats.R")
+
+source('R/OneSampZInt.R')
+source('R/OneSampTInt.R')
+source("R/OneSampZTest.R")
+source("R/OneSampTTest.R")
+
+source('R/OnePropZInt.R')
+source('R/OnePropZTest.R')
+
+source('R/plotOptionsMenu.R')
+
+source("R/probDist.R")
+
+source("R/RenderBoxplot.R")
+source("R/RenderMeanPlot.R")
+source("R/RenderQQPlot.R")
+source("R/RenderScatterplot.R")
+source("R/RenderSideBySideBoxplot.R")
+
+source("R/sampSizeEst.R")
+
+source("R/statInfr.R")
+
+source('R/TwoSampZInt.R')
+source('R/TwoSampTInt.R')
+source('R/TwoSampZTest.R')
+source('R/TwoSampTTest.R')
+
+source('R/TwoPropZInt.R')
+source('R/TwoPropZTest.R')
+
+source("R/simpleLinearRegression.R")
+source("R/multipleLinearRegression.R")
+source("R/regressionAndCorrelation.R")
+source("R/logisticRegression.R")
+
+source("R/decisionTrees.R")
+source("R/kNearestNeighbors.R")
+source("R/linearDiscriminantAnalysis.R")
+source("R/principalComponentAnalysis.R")
+source("R/randomForest.R")
+source("R/xgboost.R")
+source("R/machineLearning.R")
+
+options(scipen = 999) # options(scipen = 0)
+## options(shiny.reactlog = TRUE)
+
+## How many digits to round Critical Values
+cvDigits <- 3
+
+# wrap this in HTML() function to output the message
+# i.e HTML(uploadDataDisclaimer)
+uploadDataDisclaimer <- "<small style='color:#999; display:block; margin-bottom:4px;'>
+              <em><b>Note:</b> CougarStats does not store, log, or share any data you upload. 
+              All uploaded files exist only for the duration of your session and are permanently deleted when the session ends.
+              </em></small>"
+
+render <- "
+{
+  option: function(data, escape){return '<div class=\"option\">'+data.label+'</div>';},
+  item: function(data, escape){return '<div class=\"item\">'+data.label+'</div>';}
+}"
+
+shiny::addResourcePath("www", "www")
+
+## NOTE: advanced understanding of R is required to interpret these results.
+## It's not for the faint of heart.
+## warning("What follows is the base R conflicts() report: all MASK-ed or MASK-ing symbols are given.",
+##         immediate. = TRUE)
+## print(conflicts(detail = TRUE))
+
+## NOTE: see #41.
+## warning("Following this is the conflicted::conflict_scout() report.",
+##         immediate. = TRUE)
+## print(conflicted::conflict_scout())
+
+## TODO: reenable this line before deployment.
+## conflicted::conflicts_prefer(shinyjs::show, dplyr::filter, dplyr::select)
+
+## See the theming issue brought up in #33; use thematic to attempt to make base
+## R graphics compliant with ggplot theming, and to anticipate the impact of
+## dark mode.
+ggplot2::theme_set(ggplot2::theme_minimal())
+thematic_shiny()
