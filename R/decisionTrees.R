@@ -42,7 +42,8 @@ CARTSidebarUI <- function(id) {
         multiple = TRUE,
         options = list(`live-search` = TRUE, title = "Nothing selected", `max-options` = 1)
       ),
-      uiOutput(ns("responseError"))
+      uiOutput(ns("responseError")),
+      uiOutput(ns("responseContinuousWarning"))
     ),
 
     div(
@@ -113,6 +114,7 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
     noFileCalculate <- reactiveVal(FALSE)
     responseError <- reactiveVal(FALSE)
     predictorsError <- reactiveVal(FALSE)
+    responseContinuous <- reactiveVal(FALSE)
 
     cart_iv <- shinyvalidate::InputValidator$new()
     cart_iv$add_rule("max_depth", shinyvalidate::sv_required())
@@ -162,10 +164,16 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
       
       pre_predictors <- intersect(shared_explanatory(), cols)
       shared_resp    <- shared_response()
-      pre_response   <- if (isTruthy(shared_resp) && shared_resp %in% cols) shared_resp else character(0)
 
-      updatePickerInput(session, "response",   choices = cols, selected = pre_response)
-      updatePickerInput(session, "predictors", choices = cols, selected = pre_predictors)
+      n_rows         <- nrow(df)
+      valid_response <- cols[sapply(cols, function(col) {
+        n_uniq <- length(unique(na.omit(df[[col]])))
+        n_uniq >= 2 && n_uniq <= floor(n_rows / 2)
+      })]
+      pre_response   <- if (isTruthy(shared_resp) && shared_resp %in% valid_response) shared_resp else character(0)
+
+      updatePickerInput(session, "response",   choices = valid_response, selected = pre_response)
+      updatePickerInput(session, "predictors", choices = cols,           selected = pre_predictors)
 
       results_ready(FALSE)
       plots_ready(FALSE)
@@ -311,6 +319,23 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
         responseError(FALSE)
         shinyjs::removeClass(id = "responseWrapper", class = "has-error")
       }
+
+      if (isTruthy(data()) && isTruthy(input$response)) {
+        responseContinuous(ml_is_continuous_response(data()[[input$response[1]]]))
+      } else {
+        responseContinuous(FALSE)
+      }
+    })
+
+    output$responseContinuousWarning <- renderUI({
+      if (responseContinuous()) {
+        div(
+          class = "alert alert-warning",
+          style = "font-size: 12px; margin-top: 4px; margin-bottom: 10px;",
+          icon("triangle-exclamation"),
+          ml_continuous_response_message
+        )
+      }
     })
 
     observeEvent(input$predictors, {
@@ -320,7 +345,7 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
         shinyjs::removeClass(id = "predictorsWrapper", class = "has-error")
       }
     })
-    
+
     observeEvent(input$calculate, {
       if (!isTruthy(data())) {
         noFileCalculate(TRUE)
@@ -357,7 +382,24 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
       resp_col <- input$response[1]
       df <- data()
 
+      # Continuous response guard — block classification on a continuous variable
+      if (ml_is_continuous_response(df[[resp_col]])) {
+        responseContinuous(TRUE)
+        return()
+      }
+
       analysis_df <- df[, c(input$predictors, resp_col), drop = FALSE]
+
+      na_cols <- names(which(sapply(analysis_df, function(x) any(is.na(x)))))
+      if (length(na_cols) > 0) {
+        cart_message(paste0(
+          "The following column(s) contain missing values (NA): ",
+          paste(na_cols, collapse = ", "),
+          ". Please remove or impute missing values before calculating."
+        ))
+        return()
+      }
+
       analysis_df <- na.omit(analysis_df)
 
       if (nrow(analysis_df) == 0) {
@@ -381,16 +423,19 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
         return()
       }
       
-      predictor_df <- analysis_df[, input$predictors, drop = FALSE]
+      predictor_df      <- analysis_df[, input$predictors, drop = FALSE]
+      numeric_predictors <- names(predictor_df)[sapply(predictor_df, is.numeric)]
 
-      sds <- sapply(predictor_df, sd, na.rm = TRUE)
-      zero_var_cols <- names(sds)[is.na(sds) | sds == 0]
-      if (length(zero_var_cols) > 0) {
-        cart_message(paste0(
-          "These selected variable(s) have zero variance and cannot be used in CART: ",
-          paste(zero_var_cols, collapse = ", "), "."
-        ))
-        return()
+      if (length(numeric_predictors) > 0) {
+        sds <- sapply(predictor_df[, numeric_predictors, drop = FALSE], sd, na.rm = TRUE)
+        zero_var_cols <- names(sds)[is.na(sds) | sds == 0]
+        if (length(zero_var_cols) > 0) {
+          cart_message(paste0(
+            "These selected variable(s) have zero variance and cannot be used in CART: ",
+            paste(zero_var_cols, collapse = ", "), "."
+          ))
+          return()
+        }
       }
       
       cart_formula <- as.formula(
@@ -513,12 +558,12 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
           tableOutput(session$ns("confusionMatrixResults")),
           tags$h5(tags$strong("Accuracy Calculation"),
                   style = "margin-top: 14px; margin-bottom: 2px;"),
-          withMathJax(
-            tags$p(sprintf(
-              "\\[ \\text{Accuracy} = \\frac{\\text{Correct Predictions}}{\\text{Total Observations}} = \\frac{%d}{%d} = %.2f\\%% \\]",
-              correct, total, r$accuracy * 100
-            ))
-          )
+          withMathJax(),
+          tags$p(HTML(sprintf(
+            "\\( \\text{Accuracy} = \\dfrac{\\text{Correct Predictions}}{\\text{Total Observations}} = \\dfrac{%d}{%d} = %.2f\\%% \\)",
+            correct, total, r$accuracy * 100
+          ))),
+          tags$script(HTML("if(window.MathJax){ MathJax.Hub ? MathJax.Hub.Queue(['Typeset',MathJax.Hub]) : MathJax.typesetPromise(); }"))
         )
       })
       
@@ -668,6 +713,7 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
       noFileCalculate(FALSE)
       responseError(FALSE)
       predictorsError(FALSE)
+      responseContinuous(FALSE)
       cart_message(NULL)
 
       shinyjs::removeClass(id = "responseWrapper", class = "has-error")

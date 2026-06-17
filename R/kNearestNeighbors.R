@@ -92,7 +92,8 @@ KNNSidebarUI <- function(id) {
         multiple = TRUE,
         options = list(`live-search` = TRUE, title = "Nothing selected", `max-options` = 1)
       ),
-      uiOutput(ns("responseError"))
+      uiOutput(ns("responseError")),
+      uiOutput(ns("responseContinuousWarning"))
     ),
 
     div(
@@ -265,7 +266,8 @@ KNNServer <- function(id, data, shared_explanatory, shared_response) {
     
     responseError <- reactiveVal(FALSE)
     predictorsError <- reactiveVal(FALSE)
-    
+    responseContinuous <- reactiveVal(FALSE)
+
     fileImportError <- reactiveVal(FALSE)
     knn_message     <- reactiveVal(NULL)
 
@@ -416,8 +418,19 @@ KNNServer <- function(id, data, shared_explanatory, shared_response) {
         )
       }
     })
-    
-    
+
+    output$responseContinuousWarning <- renderUI({
+      if (responseContinuous()) {
+        div(
+          class = "alert alert-warning",
+          style = "font-size: 12px; margin-top: 4px; margin-bottom: 10px;",
+          icon("triangle-exclamation"),
+          ml_continuous_response_message
+        )
+      }
+    })
+
+
     observeEvent(data(), {
       req(data())
 
@@ -429,10 +442,16 @@ KNNServer <- function(id, data, shared_explanatory, shared_response) {
 
       pre_predictors <- intersect(shared_explanatory(), numeric_cols)
       shared_resp    <- shared_response()
-      pre_response   <- if (isTruthy(shared_resp) && shared_resp %in% cols) shared_resp else character(0)
 
-      updatePickerInput(session, "response",   choices = cols,         selected = pre_response)
-      updatePickerInput(session, "predictors", choices = numeric_cols, selected = pre_predictors)
+      n_rows         <- nrow(df0)
+      valid_response <- cols[sapply(cols, function(col) {
+        n_uniq <- length(unique(na.omit(df0[[col]])))
+        n_uniq >= 2 && n_uniq <= floor(n_rows / 2)
+      })]
+      pre_response   <- if (isTruthy(shared_resp) && shared_resp %in% valid_response) shared_resp else character(0)
+
+      updatePickerInput(session, "response",   choices = valid_response, selected = pre_response)
+      updatePickerInput(session, "predictors", choices = numeric_cols,   selected = pre_predictors)
 
       if (isTruthy(input$split)) {
         n <- nrow(df0)
@@ -450,12 +469,18 @@ KNNServer <- function(id, data, shared_explanatory, shared_response) {
 
       shared_resp <- shared_response()
 
+      n_rows         <- nrow(df0)
+      valid_response <- cols[sapply(cols, function(col) {
+        n_uniq <- length(unique(na.omit(df0[[col]])))
+        n_uniq >= 2 && n_uniq <= floor(n_rows / 2)
+      })]
+
       if (input$task == "Regression") {
         pre_response <- if (isTruthy(shared_resp) && shared_resp %in% numeric_cols) shared_resp else character(0)
-        updatePickerInput(session, "response", choices = numeric_cols, selected = pre_response)
+        updatePickerInput(session, "response", choices = numeric_cols,   selected = pre_response)
       } else {
-        pre_response <- if (isTruthy(shared_resp) && shared_resp %in% cols) shared_resp else character(0)
-        updatePickerInput(session, "response", choices = cols, selected = pre_response)
+        pre_response <- if (isTruthy(shared_resp) && shared_resp %in% valid_response) shared_resp else character(0)
+        updatePickerInput(session, "response", choices = valid_response, selected = pre_response)
       }
     })
     
@@ -484,6 +509,12 @@ KNNServer <- function(id, data, shared_explanatory, shared_response) {
         available_predictors <- setdiff(numeric_cols, input$response)
         selected_predictors  <- intersect(input$predictors, available_predictors)
         updatePickerInput(session, "predictors", choices = available_predictors, selected = selected_predictors)
+
+        responseContinuous(
+          isTruthy(input$response) && ml_is_continuous_response(df[[input$response[1]]])
+        )
+      } else {
+        responseContinuous(FALSE)
       }
     })
 
@@ -513,6 +544,7 @@ KNNServer <- function(id, data, shared_explanatory, shared_response) {
       
       responseError(FALSE)
       predictorsError(FALSE)
+      responseContinuous(FALSE)
       fileImportError(FALSE)
       knn_message(NULL)
 
@@ -552,16 +584,33 @@ KNNServer <- function(id, data, shared_explanatory, shared_response) {
       if (!isTruthy(input$response) || !isTruthy(input$predictors) || length(input$predictors) < 1) {
         return()
       }
-      
+
       req(knn_iv$is_valid())
       resp_col <- input$response[1]
 
       #split dataset for training & testing
       df <- data()
 
+      # Continuous response guard — block classification on a continuous variable
+      if (ml_is_continuous_response(df[[resp_col]])) {
+        responseContinuous(TRUE)
+        return()
+      }
+
+      # NA check — class::knn cannot handle missing values
+      na_cols <- names(which(sapply(df[, input$predictors, drop = FALSE], function(x) any(is.na(x)))))
+      if (length(na_cols) > 0) {
+        knn_message(paste0(
+          "The following predictor column(s) contain missing values (NA): ",
+          paste(na_cols, collapse = ", "),
+          ". Please remove or impute missing values before calculating."
+        ))
+        return()
+      }
+
       # Zero variance check
-      sds <- sapply(df[, input$predictors, drop = FALSE], sd, na.rm = TRUE)
-      zero_var_cols <- names(sds)[is.na(sds) | sds == 0]
+      vars <- sapply(df[, input$predictors, drop = FALSE], var, na.rm = TRUE)
+      zero_var_cols <- names(vars)[is.na(vars) | vars < .Machine$double.eps]
       if (length(zero_var_cols) > 0) {
         knn_message(paste0(
           "These selected variable(s) have zero variance and cannot be used in KNN: ",
@@ -686,12 +735,12 @@ KNNServer <- function(id, data, shared_explanatory, shared_response) {
             tableOutput(session$ns("confMat")),
             tags$h5(tags$strong("Accuracy Calculation"),
                     style = "margin-top: 14px; margin-bottom: 2px;"),
-            withMathJax(
-              tags$p(sprintf(
-                "\\[ \\text{Accuracy} = \\frac{\\text{Correct Predictions}}{\\text{Total Observations}} = \\frac{%d}{%d} = %.2f\\%% \\]",
-                correct, total, metrics$accuracy * 100
-              ))
-            )
+            withMathJax(),
+            tags$p(HTML(sprintf(
+              "\\( \\text{Accuracy} = \\dfrac{\\text{Correct Predictions}}{\\text{Total Observations}} = \\dfrac{%d}{%d} = %.2f\\%% \\)",
+              correct, total, metrics$accuracy * 100
+            ))),
+            tags$script(HTML("if(window.MathJax){ MathJax.Hub ? MathJax.Hub.Queue(['Typeset',MathJax.Hub]) : MathJax.typesetPromise(); }"))
           )
         })
         
@@ -835,7 +884,7 @@ KNNServer <- function(id, data, shared_explanatory, shared_response) {
           points(all_X2[, 1], all_X2[, 2], col = all_col, pch = 19, cex = 0.9)
 
           legend(
-            "topright",
+            "right",
             legend = classes,
             col    = cls_cols[seq_along(classes)],
             pch    = 19,
@@ -887,7 +936,7 @@ KNNServer <- function(id, data, shared_explanatory, shared_response) {
           }
 
           legend(
-            "topright",
+            "right",
             legend = c("Accuracy", paste0("Selected k = ", s$k)),
             col    = c("#4472C4", "#ED7D31"),
             lty    = c(1, 2),
