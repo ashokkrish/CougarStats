@@ -91,12 +91,13 @@ RenderScatterplot <- function(
   # -------------------------------------------------------------------------
   
   if(showConfidenceInterval) {
-    
+
+    x_seq_ci <- seq(min(df$x), max(df$x), length.out = 200)
     conf_int <- suppressWarnings(
-      predict(model, interval = "confidence")
+      predict(model, newdata = data.frame(datx = x_seq_ci), interval = "confidence")
     )
-    
-    df_conf <- cbind(df, conf_int)
+
+    df_conf <- data.frame(x = x_seq_ci, conf_int)
     
     # Upper bound
     p <- p %>%
@@ -143,12 +144,13 @@ RenderScatterplot <- function(
   # -------------------------------------------------------------------------
   
   if(showPredictionInterval) {
-    
+
+    x_seq_pi <- seq(min(df$x), max(df$x), length.out = 200)
     pred_int <- suppressWarnings(
-      predict(model, interval = "prediction")
+      predict(model, newdata = data.frame(datx = x_seq_pi), interval = "prediction")
     )
-    
-    df_pred <- cbind(df, pred_int)
+
+    df_pred <- data.frame(x = x_seq_pi, pred_int)
     
     # Upper bound
     p <- p %>%
