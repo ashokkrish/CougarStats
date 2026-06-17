@@ -1,5 +1,21 @@
 # R/machineLearning.R
 
+# A column with a small number of unique values can still be a continuous
+# measurement (e.g. 4, 40, 42.5, 168) rather than a true categorical class
+# label. Non-integer values are a strong signal that it's continuous, which
+# the unique-value-count heuristic alone misses on small datasets.
+ml_is_continuous_response <- function(x) {
+  x <- x[!is.na(x)]
+  if (length(x) == 0) return(FALSE)
+  is.numeric(x) && any(x != floor(x))
+}
+
+ml_continuous_response_message <- paste(
+  "Invalid response variable: kNN classification requires the response variable:", 
+  "to be a categorical factor representing class labels. A continuous numeric",
+  "response was detected. Consider using Linear Regression instead."
+)
+
 machineLearningUI <- function(id) {
   ns <- NS(id)
   sidebarLayout(
@@ -24,7 +40,8 @@ machineLearningUI <- function(id) {
                      "k-Nearest Neighbors"          = "KNN",
                      "Linear Discriminant Analysis" = "LDA",
                      "Decision Trees (CART)"        = "CART",
-                     "Random Forest"                = "RF"
+                     "Random Forest"                = "RF",
+                     "Gradient Boosting (XGBoost)"  = "XGB"
                    ),
                    selected = "PCA"
       ),
@@ -107,12 +124,14 @@ machineLearningServer <- function(id) {
     lda_instance_counter  <- reactiveVal(0)
     cart_instance_counter <- reactiveVal(0)
     rf_instance_counter   <- reactiveVal(0)
+    xgb_instance_counter  <- reactiveVal(0)
 
     current_pca_module_id  <- reactive({ paste0("ml_pca_",  pca_instance_counter()) })
     current_knn_module_id  <- reactive({ paste0("ml_knn_",  knn_instance_counter()) })
     current_lda_module_id  <- reactive({ paste0("ml_lda_",  lda_instance_counter()) })
     current_cart_module_id <- reactive({ paste0("ml_cart_", cart_instance_counter()) })
     current_rf_module_id   <- reactive({ paste0("ml_rf_",   rf_instance_counter()) })
+    current_xgb_module_id  <- reactive({ paste0("ml_xgb_",  xgb_instance_counter()) })
 
     observeEvent(input$method, {
       if (input$method == "PCA") {
@@ -165,6 +184,16 @@ machineLearningServer <- function(id) {
           req(current_rf_module_id())
           RFMainPanelUI(session$ns(current_rf_module_id()))
         })
+      } else if (input$method == "XGB") {
+        xgb_instance_counter(xgb_instance_counter() + 1)
+        output$mlSidebarUI  <- renderUI({
+          req(current_xgb_module_id())
+          XGBSidebarUI(session$ns(current_xgb_module_id()))
+        })
+        output$mlMainPanelUI <- renderUI({
+          req(current_xgb_module_id())
+          XGBMainPanelUI(session$ns(current_xgb_module_id()))
+        })
       }
     }, ignoreNULL = FALSE, ignoreInit = FALSE)
 
@@ -191,6 +220,11 @@ machineLearningServer <- function(id) {
     observeEvent(current_rf_module_id(), {
       req(input$method == "RF")
       RFServer(current_rf_module_id(), ml_data, shared_explanatory, shared_response)
+    }, ignoreNULL = TRUE)
+
+    observeEvent(current_xgb_module_id(), {
+      req(input$method == "XGB")
+      XGBServer(current_xgb_module_id(), ml_data, shared_explanatory, shared_response)
     }, ignoreNULL = TRUE)
 
   })

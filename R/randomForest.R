@@ -45,7 +45,8 @@ RFSidebarUI <- function(id) {
         multiple = TRUE,
         options = list(`live-search` = TRUE, title = "Nothing selected", `max-options` = 1)
       ),
-      uiOutput(ns("responseError"))
+      uiOutput(ns("responseError")),
+      uiOutput(ns("responseContinuousWarning"))
     ),
 
     div(
@@ -120,6 +121,7 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
     noFileCalculate <- reactiveVal(FALSE)
     responseError   <- reactiveVal(FALSE)
     predictorsError <- reactiveVal(FALSE)
+    responseContinuous <- reactiveVal(FALSE)
 
     # ---- Input validation (ntree) ----
     rf_iv <- shinyvalidate::InputValidator$new()
@@ -168,10 +170,16 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
 
       pre_predictors <- intersect(shared_explanatory(), numeric_cols)
       shared_resp    <- shared_response()
-      pre_response   <- if (isTruthy(shared_resp) && shared_resp %in% cols) shared_resp else character(0)
 
-      updatePickerInput(session, "response",   choices = cols,         selected = pre_response)
-      updatePickerInput(session, "predictors", choices = numeric_cols, selected = pre_predictors)
+      n_rows         <- nrow(df)
+      valid_response <- cols[sapply(cols, function(col) {
+        n_uniq <- length(unique(na.omit(df[[col]])))
+        n_uniq >= 2 && n_uniq <= floor(n_rows / 2)
+      })]
+      pre_response   <- if (isTruthy(shared_resp) && shared_resp %in% valid_response) shared_resp else character(0)
+
+      updatePickerInput(session, "response",   choices = valid_response, selected = pre_response)
+      updatePickerInput(session, "predictors", choices = numeric_cols,   selected = pre_predictors)
     }, ignoreNULL = TRUE)
 
     # ---- Keep response out of predictors list ----
@@ -193,7 +201,20 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
         responseError(FALSE)
         shinyjs::removeClass(id = "responseWrapper", class = "has-error")
       }
+
+      responseContinuous(isTruthy(input$response) && ml_is_continuous_response(df[[input$response[1]]]))
     }, ignoreInit = TRUE)
+
+    output$responseContinuousWarning <- renderUI({
+      if (responseContinuous()) {
+        div(
+          class = "alert alert-warning",
+          style = "font-size: 12px; margin-top: 4px; margin-bottom: 10px;",
+          icon("triangle-exclamation"),
+          ml_continuous_response_message
+        )
+      }
+    })
 
     observeEvent(input$predictors, {
       shared_explanatory(input$predictors)
@@ -309,8 +330,25 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
       resp_col <- input$response[1]
       df       <- data()
 
-      # 5. Drop incomplete rows
+      # Continuous response guard — block classification on a continuous variable
+      if (ml_is_continuous_response(df[[resp_col]])) {
+        responseContinuous(TRUE)
+        return()
+      }
+
+      # 5. Check for missing values before fitting
       analysis_df <- df[, c(input$predictors, resp_col), drop = FALSE]
+
+      na_cols <- names(which(sapply(analysis_df, function(x) any(is.na(x)))))
+      if (length(na_cols) > 0) {
+        rf_message(paste0(
+          "The following column(s) contain missing values (NA): ",
+          paste(na_cols, collapse = ", "),
+          ". Please remove or impute missing values before calculating."
+        ))
+        return()
+      }
+
       analysis_df <- na.omit(analysis_df)
 
       if (nrow(analysis_df) == 0) {
@@ -334,8 +372,8 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
       }
 
       # 8. Zero variance check
-      sds <- sapply(analysis_df[, input$predictors, drop = FALSE], sd, na.rm = TRUE)
-      zero_var_cols <- names(sds)[is.na(sds) | sds == 0]
+      vars <- sapply(analysis_df[, input$predictors, drop = FALSE], var, na.rm = TRUE)
+      zero_var_cols <- names(vars)[is.na(vars) | vars < .Machine$double.eps]
       if (length(zero_var_cols) > 0) {
         rf_message(paste0(
           "These selected variable(s) have zero variance and cannot be used in Random Forest: ",
@@ -546,12 +584,12 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
           tableOutput(session$ns("rfConfusionTable")),
           tags$h5(tags$strong("Accuracy Calculation"),
                   style = "margin-top: 14px; margin-bottom: 2px;"),
-          withMathJax(
-            tags$p(sprintf(
-              "\\[ \\text{Accuracy} = \\frac{\\text{Correct Predictions}}{\\text{Total Observations}} = \\frac{%d}{%d} = %.2f\\%% \\]",
-              rf_correct, rf_total, r$accuracy * 100
-            ))
-          ),
+          withMathJax(),
+          tags$p(HTML(sprintf(
+            "\\( \\text{Accuracy} = \\dfrac{\\text{Correct Predictions}}{\\text{Total Observations}} = \\dfrac{%d}{%d} = %.2f\\%% \\)",
+            rf_correct, rf_total, r$accuracy * 100
+          ))),
+          tags$script(HTML("if(window.MathJax){ MathJax.Hub ? MathJax.Hub.Queue(['Typeset',MathJax.Hub]) : MathJax.typesetPromise(); }")),
           tags$hr(),
           tags$h4("Per-Class Metrics"),
           tableOutput(session$ns("rfClassMetrics")),
@@ -839,7 +877,7 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
                   col = cls_cols[j], lwd = 2)
           }
 
-          legend("topright", legend = cls_list,
+          legend("right", legend = cls_list,
                  col = cls_cols[seq_along(cls_list)],
                  lwd = 2, bty = "n", cex = 0.8)
 
@@ -930,7 +968,7 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
                      lty = 1, lwd = 0.7)
           }
 
-          legend("topright", legend = cls_list,
+          legend("right", legend = cls_list,
                  col = cls_cols[seq_along(cls_list)],
                  lwd = 2, bty = "n", cex = 0.8)
 
@@ -1013,7 +1051,7 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
                   col = cls_cols[j], lwd = 2)
           }
 
-          legend("topright", legend = cls_list,
+          legend("right", legend = cls_list,
                  col = cls_cols[seq_along(cls_list)],
                  lwd = 2, bty = "n", cex = 0.8)
 
@@ -1051,6 +1089,7 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
       noFileCalculate(FALSE)
       responseError(FALSE)
       predictorsError(FALSE)
+      responseContinuous(FALSE)
       rf_message(NULL)
       calc_results(NULL)
 
