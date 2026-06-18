@@ -222,8 +222,8 @@ probDistUI <- function(id) {
             condition = "input.probability == 'Poisson'",
             
             numericInput(
-              inputId = ns("muPoisson"), 
-              label   = strong("Average (\\( \\mu\\))"),
+              inputId = ns("lambdaPoisson"), 
+              label   = strong("Lambda (\\( \\lambda\\))"),
               value   = 4.5),
             
             HTML("<label class='si-label'><b>Probability</b></label>"),                                                            
@@ -1026,8 +1026,8 @@ probDistServer <- function(id) {
     binombetween_iv$add_rule("numSuccessesBinomx2", sv_integer())
     binombetween_iv$add_rule("numSuccessesBinomx2", sv_gte(0))
     
-    poiss_iv$add_rule("muPoisson", sv_required())
-    poiss_iv$add_rule("muPoisson", sv_gt(0))
+    poiss_iv$add_rule("lambdaPoisson", sv_required())
+    poiss_iv$add_rule("lambdaPoisson", sv_gt(0))
     
     poissprob_iv$add_rule("xPoisson", sv_required())
     poissprob_iv$add_rule("xPoisson", sv_integer())
@@ -2171,6 +2171,30 @@ probDistServer <- function(id) {
     })
     
     observeEvent(input$goBinom, {
+      
+      observe({
+        req(input$probability == "Binomial")
+        showBox <- FALSE
+        if (pd_iv$is_valid()) {
+          if (input$calcBinom != "between") {
+            showBox <- input$numSuccessesBinom <= input$numTrialsBinom
+          } else {
+            req(input$numSuccessesBinomx1,
+                input$numSuccessesBinomx2,
+                input$numTrialsBinom)
+            showBox <-
+              input$numSuccessesBinomx1 <= input$numSuccessesBinomx2 &&
+              input$numSuccessesBinomx1 <= input$numTrialsBinom &&
+              input$numSuccessesBinomx2 <= input$numTrialsBinom
+          }
+        }
+        runjs(sprintf(
+          "document.getElementById('%s').style.display = '%s';",
+          ns("rcodeBinomBoxWrapper"),
+          if (isTRUE(showBox)) "block" else "none"
+        ))
+      })
+      
       output$renderProbabilityBinom <- renderUI({
         withMathJax(
           if(!pd_iv$is_valid())
@@ -2474,32 +2498,11 @@ probDistServer <- function(id) {
         )
       
     })
-    
-    observe({
-      showBox <- FALSE
-      if (pd_iv$is_valid()) {
-        if (input$calcBinom != "between") {
-          showBox <- input$numSuccessesBinom <= input$numTrialsBinom
-        } else {
-          req(input$numSuccessesBinomx1,
-              input$numSuccessesBinomx2,
-              input$numTrialsBinom)
-          showBox <-
-            input$numSuccessesBinomx1 <= input$numSuccessesBinomx2 &&
-            input$numSuccessesBinomx1 <= input$numTrialsBinom &&
-            input$numSuccessesBinomx2 <= input$numTrialsBinom
-        }
-      }
-      runjs(sprintf(
-        "document.getElementById('%s').style.display = '%s';",
-        ns("rcodeBinomBoxWrapper"),
-        if (isTRUE(showBox)) "block" else "none"
-      ))
-    })
 
     observeEvent(input$goPoisson, {
       
       observe({
+        req(input$probability == "Poisson")
         showBox <- FALSE
         if (input$calcPoisson != "between") {
           showBox <- pd_iv$is_valid()
@@ -2521,7 +2524,7 @@ probDistServer <- function(id) {
             if(!poissprob_iv$is_valid())
             {
               validate(
-                need(input$muPoisson && input$muPoisson > 0, "Average Number of Successes (mu) must be greater than zero"),
+                need(input$lambdaPoisson && input$lambdaPoisson > 0, "Average Number of Successes (lambda) must be greater than zero"),
                 need(input$xPoisson , "Number of Successes (x) must be a positive integer") %then%
                   need(input$xPoisson >= 0 && input$xPoisson %% 1 == 0, "Number of Successes (x) must be a positive integer"),
                 errorClass = "myClass")
@@ -2530,7 +2533,7 @@ probDistServer <- function(id) {
             if(!poissbetween_iv$is_valid())
             {
               validate(
-                need(input$muPoisson && input$muPoisson > 0, "Average Number of Successes (mu) must be greater than zero"),
+                need(input$lambdaPoisson && input$lambdaPoisson > 0, "Average Number of Successes (lambda) must be greater than zero"),
                 need(input$x1Poisson, "Enter a value for the Number of Successes (x1)") %then%
                   need(input$x1Poisson >= 0 && input$x1Poisson %% 1 == 0, "Number of Successes (x1) must be a positive integer"),
                 need(input$x2Poisson, "Enter a value for the Number of Successes (x2)") %then%
@@ -2539,14 +2542,14 @@ probDistServer <- function(id) {
             }
             
             validate(
-              need(input$muPoisson && input$muPoisson > 0, "Average Number of Successes (mu) must be greater than zero"),
+              need(input$lambdaPoisson && input$lambdaPoisson > 0, "Average Number of Successes (lambda) must be greater than zero"),
               errorClass = "myClass")
           }
           else
           {
             req(pd_iv$is_valid())
-            poisson_mu <- input$muPoisson
-            poisson_sd <- round(sqrt(input$muPoisson), 4)
+            poisson_lambda <- input$lambdaPoisson
+            poisson_sd <- round(sqrt(input$lambdaPoisson), 4)
             
             if(input$calcPoisson != 'between')
             {
@@ -2554,28 +2557,28 @@ probDistServer <- function(id) {
               
               if(input$calcPoisson == 'exact'){
                 poissProb <- paste("P(X = ", poisson_x, ")") 
-                poissForm <- paste("\\dfrac{e^{-", poisson_mu, "}", poisson_mu, "^{", poisson_x, "}}{", poisson_x, "!}")
-                poissVal <- round(dpois(poisson_x,poisson_mu), 4)
+                poissForm <- paste("\\dfrac{e^{-", poisson_lambda, "}", poisson_lambda, "^{", poisson_x, "}}{", poisson_x, "!}")
+                poissVal <- round(dpois(poisson_x,poisson_lambda), 4)
               }
               else if(input$calcPoisson == 'cumulative'){
                 poissProb <- paste("P(X \\leq ", poisson_x, ")") 
-                poissForm <- paste("\\sum_{x = 0}^{", poisson_x, "} \\dfrac{e^{-", poisson_mu, "}", poisson_mu, "^x}{x!}")
-                poissVal <- round(ppois(poisson_x,poisson_mu,lower.tail = TRUE), 4)
+                poissForm <- paste("\\sum_{x = 0}^{", poisson_x, "} \\dfrac{e^{-", poisson_lambda, "}", poisson_lambda, "^x}{x!}")
+                poissVal <- round(ppois(poisson_x,poisson_lambda,lower.tail = TRUE), 4)
               }
               else if(input$calcPoisson == 'upperTail'){
                 poissProb <- paste("P(X \\geq ", poisson_x, ")") 
-                poissForm <- paste("1 - \\sum_{x = 0}^{", poisson_x - 1, "} \\dfrac{e^{-", poisson_mu, "}", poisson_mu, "^x}{x!}")
-                poissVal <- round(ppois(poisson_x - 1,poisson_mu,lower.tail = FALSE), 4)
+                poissForm <- paste("1 - \\sum_{x = 0}^{", poisson_x - 1, "} \\dfrac{e^{-", poisson_lambda, "}", poisson_lambda, "^x}{x!}")
+                poissVal <- round(ppois(poisson_x - 1,poisson_lambda,lower.tail = FALSE), 4)
               }
               else if(input$calcPoisson == 'greaterThan'){
                 poissProb <- paste("P(X \\gt ", poisson_x, ")") 
-                poissForm <- paste("1 - \\sum_{x = 0}^{", poisson_x, "} \\dfrac{e^{-", poisson_mu, "}", poisson_mu, "^x}{x!}")
-                poissVal <- round(ppois(poisson_x,poisson_mu,lower.tail = FALSE), 4)
+                poissForm <- paste("1 - \\sum_{x = 0}^{", poisson_x, "} \\dfrac{e^{-", poisson_lambda, "}", poisson_lambda, "^x}{x!}")
+                poissVal <- round(ppois(poisson_x,poisson_lambda,lower.tail = FALSE), 4)
               }
               else if(input$calcPoisson == 'lessThan'){
                 poissProb <- paste("P(X \\lt ", poisson_x, ")") 
-                poissForm <- paste("\\sum_{x = 0}^{", poisson_x - 1, "} \\dfrac{e^{-", poisson_mu, "}", poisson_mu, "^x}{x!}")
-                poissVal <- round(ppois(poisson_x - 1,poisson_mu,lower.tail = TRUE), 4)
+                poissForm <- paste("\\sum_{x = 0}^{", poisson_x - 1, "} \\dfrac{e^{-", poisson_lambda, "}", poisson_lambda, "^x}{x!}")
+                poissVal <- round(ppois(poisson_x - 1,poisson_lambda,lower.tail = TRUE), 4)
               }
             }
             else if(input$calcPoisson == 'between')
@@ -2588,21 +2591,21 @@ probDistServer <- function(id) {
               poisson_x2 <- input$x2Poisson
               
               poissProb <- paste("P(", poisson_x1, " \\leq X \\leq ", poisson_x2, ")")
-              poissForm <- paste("\\sum_{x = ", poisson_x1, "}^{", poisson_x2, "} \\dfrac{e^{-", poisson_mu, "}", poisson_mu, "^x}{x!}")
-              poissVal <- round(ppois(poisson_x2, poisson_mu, lower.tail = TRUE) - ppois(poisson_x1 - 1, poisson_mu, lower.tail = TRUE), 4)
+              poissForm <- paste("\\sum_{x = ", poisson_x1, "}^{", poisson_x2, "} \\dfrac{e^{-", poisson_lambda, "}", poisson_lambda, "^x}{x!}")
+              poissVal <- round(ppois(poisson_x2, poisson_lambda, lower.tail = TRUE) - ppois(poisson_x1 - 1, poisson_lambda, lower.tail = TRUE), 4)
             }
             
             tagList(
               withMathJax(
                 div(
                   h3(
-                    sprintf("Calculating  \\( %s \\)   when  \\(  X \\sim Pois(\\mu = %g): \\)",
+                    sprintf("Calculating  \\( %s \\)   when  \\(  X \\sim Pois(\\lambda = %g): \\)",
                             poissProb,
-                            poisson_mu)),
+                            poisson_lambda)),
                   hr(),
                   br(),
                   p(tags$b("Using the Probability Mass Function: ")),
-                  sprintf("\\( P(X = x) = \\dfrac{e^{-\\mu} \\mu^x}{x!} \\)"),
+                  sprintf("\\( P(X = x) = \\dfrac{e^{-\\lambda} \\lambda^x}{x!} \\)"),
                   sprintf("\\( \\qquad \\) for \\( x = 0, 1, 2, ... \\)"),
                   br(),
                   br(),
@@ -2618,13 +2621,13 @@ probDistServer <- function(id) {
                   br(),
                   br(),
                   br(),
-                  sprintf("\\( E(X) = \\mu = %g \\)", poisson_mu),
+                  sprintf("\\( E(X) = \\lambda = %g \\)", poisson_lambda),
                   br(), 
                   br(),
-                  sprintf("\\( SD(X) = \\sigma = \\sqrt{\\mu} = %g \\)", poisson_sd),
+                  sprintf("\\( SD(X) = \\sigma = \\sqrt{\\lambda} = %g \\)", poisson_sd),
                   br(), 
                   br(),
-                  sprintf("\\( Var(X) = \\sigma^2 = \\mu = %g \\)", poisson_mu)
+                  sprintf("\\( Var(X) = \\sigma^2 = \\lambda = %g \\)", poisson_lambda)
                 )
               ) 
             ) 
@@ -2640,7 +2643,7 @@ probDistServer <- function(id) {
             "dpois(x = ",
             codeValue(input$xPoisson),
             ", lambda = ",
-            codeValue(input$muPoisson),
+            codeValue(input$lambdaPoisson),
             ")"
           ))
           
@@ -2650,7 +2653,7 @@ probDistServer <- function(id) {
             "ppois(",
             codeValue(input$xPoisson),
             ", lambda = ",
-            codeValue(input$muPoisson),
+            codeValue(input$lambdaPoisson),
             ")"
           ))
           
@@ -2660,7 +2663,7 @@ probDistServer <- function(id) {
             "ppois(",
             codeValue(input$xPoisson - 1),
             ", lambda = ",
-            codeValue(input$muPoisson),
+            codeValue(input$lambdaPoisson),
             ", lower.tail = FALSE)"
           ))
           
@@ -2670,7 +2673,7 @@ probDistServer <- function(id) {
             "ppois(",
             codeValue(input$xPoisson),
             ", lambda = ",
-            codeValue(input$muPoisson),
+            codeValue(input$lambdaPoisson),
             ", lower.tail = FALSE)"
           ))
           
@@ -2680,7 +2683,7 @@ probDistServer <- function(id) {
             "ppois(",
             codeValue(input$xPoisson - 1),
             ", lambda = ",
-            codeValue(input$muPoisson),
+            codeValue(input$lambdaPoisson),
             ")"
           ))
           
@@ -2691,18 +2694,18 @@ probDistServer <- function(id) {
             "ppois(",
             codeValue(input$x2Poisson),
             ", lambda = ",
-            codeValue(input$muPoisson),
+            codeValue(input$lambdaPoisson),
             ") - ppois(",
             codeValue(input$x1Poisson - 1),
             ", lambda = ",
-            codeValue(input$muPoisson),
+            codeValue(input$lambdaPoisson),
             ")",
             
             "\n\n<span style='color:#888;'># Method 2 (sum of exact probabilities):</span>\n",
             "sum(dpois(",
             codeValue(paste0(input$x1Poisson, ":", input$x2Poisson)),
             ", lambda = ",
-            codeValue(input$muPoisson),
+            codeValue(input$lambdaPoisson),
             "))"
           ))
         }
@@ -2711,7 +2714,7 @@ probDistServer <- function(id) {
       output$poissDistrTable <- DT::renderDT({
         req(pd_iv$is_valid())
         
-        dfPoiss <- data.frame(value = seq(qpois(0.0001, input$muPoisson), qpois(0.9999, input$muPoisson)), value = round(dpois(x = qpois(0.0001, input$muPoisson):qpois(0.9999, input$muPoisson), lambda = input$muPoisson), 4))
+        dfPoiss <- data.frame(value = seq(qpois(0.0001, input$lambdaPoisson), qpois(0.9999, input$lambdaPoisson)), value = round(dpois(x = qpois(0.0001, input$lambdaPoisson):qpois(0.9999, input$lambdaPoisson), lambda = input$lambdaPoisson), 4))
         colnames(dfPoiss) <- c("X", "P(X = x)")
         datatable(dfPoiss,
                   options = list(
@@ -2731,6 +2734,7 @@ probDistServer <- function(id) {
     
     observeEvent(input$goHypGeo, {
       observe({
+        req(input$probability == "Hypergeometric")
         showBox <- FALSE
         
         if (input$calcHypGeo != "between") {
@@ -3081,6 +3085,7 @@ probDistServer <- function(id) {
     observeEvent(input$goNegBin, {
       
       observe({
+        req(input$probability == "Negative Binomial")
         if (pd_iv$is_valid()) {
           runjs(sprintf(
             "document.getElementById('%s').style.display = 'block';",
@@ -3222,6 +3227,7 @@ probDistServer <- function(id) {
     observeEvent(input$goNormalProb, {
       
       observe({
+        req(input$probability == "Normal")
         showBox <- FALSE
         
         if(pd_iv$is_valid()){
@@ -4213,7 +4219,7 @@ probDistServer <- function(id) {
       show(id = "poissonResults")
     })
     
-    observeEvent({input$muPoisson
+    observeEvent({input$lambdaPoisson
       input$xPoisson
       input$x1Poisson
       input$x2Poisson}, {
