@@ -4545,7 +4545,11 @@ statInfrServer <- function(id) {
       
       return(hypothesis)
     }
-    
+
+    formatLaTeXBigOrSmallNumbers <- function(string) {
+      gsub("[eE](-?)\\+?0?([0-9]+)", "^{\\1\\2}", string)
+    }
+
     PrintANOVAFormula <- function() {
       tagList(
         br(),
@@ -4555,13 +4559,16 @@ statInfrServer <- function(id) {
         br(),
         p(tags$b("ANOVA Table:")),
         DTOutput(session$ns("oneWayAnovaTable"), width = '900px'),
+        ## uiOutput(session$ns("oneWayAnovaTableHTML"), width = '900px'),
         br(),
         br(),
         p(tags$b("Test Statistic:")),
-        sprintf("\\( F = \\dfrac{MSB}{MSE} = \\dfrac{%0.4f}{%0.4f} = %0.4f \\)",
-                anovaOneWayResults()$test[1,"Mean Sq"],
-                anovaOneWayResults()$test[2,"Mean Sq"],
-                anovaOneWayResults()$test[1,"F value"]),
+        formatLaTeXBigOrSmallNumbers(
+          sprintf("\\( F = \\dfrac{MSB}{MSE} = \\dfrac{%0.4g}{%0.4g} = %0.4g \\)",
+                  anovaOneWayResults()$test[1,"Mean Sq"],
+                  anovaOneWayResults()$test[2,"Mean Sq"],
+                  anovaOneWayResults()$test[1,"F value"])
+        ),
         br(),
         br(),
         br()
@@ -4632,59 +4639,118 @@ statInfrServer <- function(id) {
     
     PrintANOVATable <- function() {
       data <- anovaOneWayResults()$test
-      
-      if(data[1,"Pr(>F)"] < 0.0001 && data[1,"Pr(>F)"] > 0) {
-        data[1,"Pr(>F)"] <- "P < 0.0001"
+
+      if (data[1, "Pr(>F)"] < 0.0001 && data[1, "Pr(>F)"] > 0) {
+        data[1, "Pr(>F)"] <- "P < 0.0001"
       } else {
-        data[1,"Pr(>F)"] <- paste(round(data[1,"Pr(>F)"], 4))
+        data[1, "Pr(>F)"] <- paste(round(data[1, "Pr(>F)"], 4))
       }
-      
-      data <- rbind(data, c(sum(data[,"Df"]), sum(data[,"Sum Sq"]), NA, NA, NA))
+
+      data <- rbind(data, c(sum(data[, "Df"]), sum(data[, "Sum Sq"]), NA, NA, NA))
       rownames(data) <- c("Between Groups (Model)", "Within Groups (Error)", "Total")
       colNames <- c("df", "Sum of Squares (SS)", "Mean Sum of Squares (MS)", "F-ratio", "P-Value")
-      
-      headers = htmltools::withTags(table(
-        class = 'display',
-        thead(
-          tr(
-            th("Sources of Variation",
-               style = "border: 1px solid rgba(0, 0, 0, 0.15);
-                      border-bottom: 1px solid  rgba(0, 0, 0, 0.3);"),
-            lapply(colNames, th,
-                   style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
-                          border-top: 1px solid rgba(0, 0, 0, 0.15);')
-          )
-        )
+
+      style <- function(...) {
+        args <- rlang::list2(...)
+        paste(names(args), args, sep = ": ", collapse = "; ")
+      }
+      rule <- function(p) sprintf("1px solid rgba(0, 0, 0, %0.02f)", p)
+      style_a <- style(border = rule(0.15), `border-bottom` = rule(0.30))
+      style_b <- style(`border-right` = rule(0.15), `border-top` = rule(0.15))
+
+      headers <- withTags(table(
+        class = "display",
+        thead(tr(th("Sources of Variation", style = style_a),
+                 lapply(colNames, th, style = style_b)))
       ))
-      
-      datatable(data[,0:5],
-                class = 'cell-border stripe',
+
+      ## FIXME: data table is heavy handed for what is created. Using standard
+      ## CSS with a standard HTML table is probably a lot easier!
+      datatable(data[, 0:5],
+                class = "cell-border stripe",
                 container = headers,
                 options = list(
-                  dom = 't',
+                  dom = "t",
                   pageLength = -1,
                   ordering = FALSE,
                   searching = FALSE,
                   paging = FALSE,
                   autoWidth = FALSE,
                   scrollX = TRUE,
-                  columnDefs = list(list(className = 'dt-center',
-                                         targets = 0:5),
-                                    list(width = '150px',
-                                         targets = 2:5))
+                  columnDefs = list(
+                    list(className = "dt-center", targets = 0:5),
+                    list(width = "150px", targets = 2:5)
+                  )
                 ),
                 selection = "none",
                 escape = FALSE,
-                filter = "none"
-      ) %>% formatRound(columns = 1,
-                        digits = 0
-      ) %>% formatRound(columns = 2:4,
-                        digits = 4
-      ) %>% formatStyle(columns = c(0,4),
-                        fontWeight = 'bold'
-      ) %>% formatStyle(columns = 1:5,
-                        target = 'row',
-                        fontWeight = styleRow(3, "bold"))
+                filter = "none") |>
+        formatRound(columns = 1, digits = 0) |>
+        ## FIXME: the use of formatRound here is not appropriate to the numbers
+        ## when rare, so we'll instead use character values after formatting
+        ## numbers like in the LaTeX equations.
+        formatRound(columns = 2:4, digits = 4) |>
+        formatStyle(columns = c(0, 4), fontWeight = "bold") %>%
+        formatStyle(columns = 1:5, target = "row", fontWeight = styleRow(3, "bold"))
+    }
+
+    PrintANOVATableHTML <- function() {
+      data <- anovaOneWayResults()$test
+      if (data[1, "Pr(>F)"] < 0.0001 && data[1, "Pr(>F)"] > 0) {
+        data[1, "Pr(>F)"] <- "P < 0.0001"
+      } else {
+        data[1, "Pr(>F)"] <- paste(round(data[1, "Pr(>F)"], 4))
+      }
+      data <- rbind(data, c(sum(data[, "Df"]), sum(data[, "Sum Sq"]), NA, NA, NA))
+
+      d <- sapply(as.data.frame(data), function(x) sprintf("%0.4g", as.numeric(x)))
+      d[which(d == "NA")] <- ""
+      reformat_indices <- which(grepl("e", d))
+      d[reformat_indices] <- formatLaTeXBigOrSmallNumbers(d[reformat_indices])
+      d[seq(d)] <- sprintf("\\(%s\\)", d)
+
+      withMathJax(
+        tags$style("table.plain th, table.plain tr { padding: 10px; }"),
+        tags$table(class = "plain",
+                   tags$thead(
+                          tags$tr(
+                                 tags$th("Sources of Variation"),
+                                 tags$th("df"),
+                                 tags$th("Sum of Squares (SS)"),
+                                 tags$th("Mean Sum of Squares (MS)"),
+                                 tags$th("F-ratio"),
+                                 tags$th("P-Value")
+                               )
+                        ),
+                   tags$tbody(
+                          tags$tr(
+                                 tags$td(style = "font-weight: bold;", "Between Groups (Model)"),
+                                 tags$td(d[1, 1]),
+                                 tags$td(d[1, 2]),
+                                 tags$td(d[1, 3]),
+                                 tags$td(style = "font-weight: bold;", d[1, 4]),
+                                 tags$td(d[1, 5])
+                               ),
+                          tags$tr(
+                                 tags$td(style = "font-weight: bold;", "Within Groups (Error)"),
+                                 tags$td(d[2, 1]),
+                                 tags$td(d[2, 2]),
+                                 tags$td(d[2, 3]),
+                                 tags$td(d[2, 4]),
+                                 tags$td(d[2, 5])
+                               ),
+                          tags$tr(
+                                 style = "font-weight: bold;",
+                                 tags$td("Total"),
+                                 tags$td(d[3, 1]),
+                                 tags$td(d[3, 2]),
+                                 tags$td(d[3, 3]),
+                                 tags$td(d[3, 4]),
+                                 tags$td(d[3, 5])
+                               )
+                        )
+                   )
+      )
     }
     
     PrintANOVAPValue <- function(pValSymbol, sigLvl, reject) {
@@ -6201,7 +6267,7 @@ statInfrServer <- function(id) {
       results$fit <- anovaTest
       results$residuals <- anovaTest$residuals
       results$test <- anova(anovaTest)
-      
+
       return(results)
     })
     
@@ -10309,6 +10375,11 @@ statInfrServer <- function(id) {
       req(si_iv$is_valid())
       PrintANOVATable()
     })
+
+    ## output$oneWayAnovaTableHTML <- renderUI({
+    ##   req(si_iv$is_valid())
+    ##   PrintANOVATableHTML()
+    ## })
     
     #### ---------------- HT Plot ----
     output$oneWayAnovaPlot <- renderPlot({

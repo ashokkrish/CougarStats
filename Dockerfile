@@ -83,6 +83,7 @@ RUN R -e \
                     'treeshap',         \
                     'waiter',           \
                     'writexl',          \
+                    'xgboost',          \
                     'xtable'),          \
                   dependencies = TRUE); \
   remotes::install_github('deepanshu88/shinyDarkmode'); \
