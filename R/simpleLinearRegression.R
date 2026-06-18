@@ -27,6 +27,7 @@ SLRMainPanelUI <- function(id) {
     hidden(div(
       id = ns("regCorrMP"),
       uiOutput(ns("perfectFitWarning")),
+      uiOutput(ns("missingRowsWarning")),
       uiOutput(ns("slrValidation")),
       
       div(
@@ -564,7 +565,9 @@ SLRServer <- function(id) {
     
     
     slrExportData <- reactiveVal(NULL)
-    
+
+    nDroppedRows <- reactiveVal(0)
+
     hasHighLeverage <- reactiveVal(FALSE)
     
     hasLeveragePlotIssue <- reactiveVal(FALSE)
@@ -713,11 +716,11 @@ SLRServer <- function(id) {
     
     slruploadvars_iv$add_rule("slrResponse", sv_required())
     slruploadvars_iv$add_rule("slrResponse", ~ tryCatch(
-      if (isTRUE(sampleDiffUpload() != 0)) "Missing values detected — x and y must have the same number of non-missing observations.",
+      if (isTRUE(responseInfoUploadSLR()$invalid)) "Response variable contains non-numeric data.",
       error = function(e) NULL
     ))
     slruploadvars_iv$add_rule("slrResponse", ~ tryCatch(
-      if (isTRUE(responseInfoUploadSLR()$invalid)) "Response variable contains non-numeric data.",
+      if (isTRUE(sampleDiffUpload() != 0)) "Missing values detected — x and y must have the same number of non-missing observations.",
       error = function(e) NULL
     ))
     slruploadvars_iv$add_rule("slrResponse", ~ tryCatch(
@@ -1031,15 +1034,18 @@ SLRServer <- function(id) {
         if(!slruploadvars_iv$is_valid()) {
           validate(
             need(input$slrExplanatory != "", "Please select an Explanatory Variable (x)."),
-            need(input$slrResponse != "", "Please select a Response Variable (y).") %then%
-              need(sampleDiffUpload() == 0, "The Explanatory (x) and Response (y) variables must have the same number of observations."),
+            need(input$slrResponse != "", "Please select a Response Variable (y)."),
             errorClass = "myClass")
-          
+
           validate(
             need(!explanatoryInfoUploadSLR()$invalid, "The Explanatory Variable (x) contains non-numeric data.") %then%
-              need(explanatoryInfoUploadSLR()$sd != 0, "Explanatory Variable (x) must have a standard deviation greater than 0 to perform regression and correlation analysis."),
+              need(explanatoryInfoUploadSLR()$sd != 0, "Explanatory Variable (x) must have a standard deviation greater than zero to perform regression and correlation analysis."),
             need(!responseInfoUploadSLR()$invalid, "The Response Variable (y) contains non-numeric data.") %then%
-              need(responseInfoUploadSLR()$sd != 0, "Response Variable (y) must have a standard deviation greater than 0 to perform correlation analysis."),
+              need(responseInfoUploadSLR()$sd != 0, "Response Variable (y) must have a standard deviation greater than zero to perform correlation analysis."),
+            errorClass = "myClass")
+
+          validate(
+            need(sampleDiffUpload() == 0, "The Explanatory (x) and Response (y) variables must have the same number of observations."),
             errorClass = "myClass")
         }
         
@@ -1055,6 +1061,7 @@ SLRServer <- function(id) {
             showNotification("After removing missing values, fewer than 4 complete observations remain. Please choose different variables.", type = "error", duration = 8)
             return()
           }
+          nDroppedRows(sum(!complete_idx))
         } else {
           datx <- createNumLst(input$x)
           daty <- createNumLst(input$y)
@@ -1170,6 +1177,21 @@ SLRServer <- function(id) {
         
         
         # Perfect fit detection
+        output$missingRowsWarning <- renderUI({
+          n <- nDroppedRows()
+          if (n > 0) {
+            div(
+              class = "alert alert-warning",
+              role  = "alert",
+              style = "margin-top: 10px;",
+              tags$b("⚠️ Missing Data Detected: "),
+              sprintf("%d row%s with missing values removed before analysis.", n, if (n == 1) "" else "s")
+            )
+          } else {
+            NULL
+          }
+        })
+
         output$perfectFitWarning <- renderUI({
           if (isTRUE(all.equal(r_squared, 1))) {
             
@@ -1770,10 +1792,14 @@ SLRServer <- function(id) {
             p(HTML(sprintf("\\( %s \\)", num_formula))),
             br(),
             p(tags$b("Interpretation:")),
-            p(sprintf(
-              "There exists a %s %s monotonic relationship between \\(\\mathit{x}\\) and \\(\\mathit{y}\\).",
-              tauStrength, tauDirection
-            ))
+            if (tau == 0) {
+              p("There exists no monotonic relationship between \\(\\mathit{x}\\) and \\(\\mathit{y}\\).")
+            } else {
+              p(sprintf(
+                "There exists a %s %s monotonic relationship between \\(\\mathit{x}\\) and \\(\\mathit{y}\\).",
+                tauStrength, tauDirection
+              ))
+            }
           )
         })
 
@@ -1941,10 +1967,14 @@ SLRServer <- function(id) {
             ),
             br(),
             p(tags$b("Interpretation:")),
-            p(sprintf(
-              "There exists a %s %s monotonic relationship between \\(\\mathit{x}\\) and \\(\\mathit{y}\\).",
-              rsStrength, rsDirection
-            ))
+            if (rs == 0) {
+              p("There exists no monotonic relationship between \\(\\mathit{x}\\) and \\(\\mathit{y}\\).")
+            } else {
+              p(sprintf(
+                "There exists a %s %s monotonic relationship between \\(\\mathit{x}\\) and \\(\\mathit{y}\\).",
+                rsStrength, rsDirection
+              ))
+            }
           )
         })
 
@@ -2245,6 +2275,7 @@ SLRServer <- function(id) {
       }
       hideTab(inputId = "slrNavbarPage", target = "Uploaded Data")
       output$perfectFitWarning <- renderUI({ NULL })
+      nDroppedRows(0)
 
       if (is.null(fileInputs$slrStatus) || fileInputs$slrStatus != "uploaded"){
         hide(id = "slrResponse")
@@ -2284,6 +2315,7 @@ SLRServer <- function(id) {
      
     observeEvent(input$resetRegCor, {
       hasHighLeverage(FALSE)
+      nDroppedRows(0)
       output$perfectFitWarning <- renderUI({ NULL })
       hide(id = "regCorrMP")
       show("uploadedDataPanel")
