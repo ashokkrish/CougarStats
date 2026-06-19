@@ -654,9 +654,11 @@ KNNServer <- function(id, data, shared_explanatory, shared_response) {
       #CLASSIFICATION vs REGRESSION
       if (is.null(input$task) || input$task == "Classification") {
         
-        #Pulls the response column that the user selected & turns it into a factor
-        y_train <- as.factor(train[[resp_col]])
-        y_test  <- as.factor(test[[resp_col]])
+        # Shared levels so a class missing from one split doesn't make
+        # y_train/y_test/pred disagree on levels (breaks == comparisons).
+        resp_levels <- sort(unique(as.character(na.omit(df[[resp_col]]))))
+        y_train <- factor(train[[resp_col]], levels = resp_levels)
+        y_test  <- factor(test[[resp_col]],  levels = resp_levels)
         
         #Run kNN classification algorithm
         pred <- class::knn(
