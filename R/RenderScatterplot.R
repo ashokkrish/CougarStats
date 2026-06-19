@@ -212,18 +212,18 @@ RenderScatterplot <- function(
       ),
       margin = list(t = 80, r = 20, b = 80, l = 60),
       xaxis = list(
-        title      = plotXLab,
+        title      = list(text = paste0("<b>", plotXLab, "</b>"), font = list(size = 14, family = "Arial")),
         showgrid   = xgrid,
         gridcolor  = "#D9D9D9",
         zeroline   = FALSE,
-        titlefont  = list(size = 14, family = "Arial")
+        tickfont   = list(size = 12, family = "Arial Black")
       ),
       yaxis = list(
-        title      = plotYLab,
+        title      = list(text = paste0("<b>", plotYLab, "</b>"), font = list(size = 14, family = "Arial")),
         showgrid   = ygrid,
         gridcolor  = "#D9D9D9",
         zeroline   = FALSE,
-        titlefont  = list(size = 14, family = "Arial")
+        tickfont   = list(size = 12, family = "Arial Black")
       ),
       legend = list(
         orientation = "h",

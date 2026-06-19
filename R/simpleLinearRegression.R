@@ -632,8 +632,9 @@ SLRServer <- function(id) {
       datatable(
         dat,
         options = list(
-          pageLength = 10,
-          scrollX = TRUE
+          pageLength  = 25,
+          lengthMenu  = list(c(25, 50, 100, -1), c("25", "50", "100", "All")),
+          scrollX     = TRUE
         )
       )
     })
@@ -643,7 +644,7 @@ SLRServer <- function(id) {
     output$slrViewUploadTab <- renderDT({
       req(input$slrUserData)
       dat <- slrUploadData()
-      datatable(dat, options = list(pageLength = 10, scrollX = TRUE))
+      datatable(dat, options = list(pageLength = 25, lengthMenu = list(c(25, 50, 100, -1), c("25", "50", "100", "All")), scrollX = TRUE))
     })
     
     
@@ -666,7 +667,7 @@ SLRServer <- function(id) {
       error = function(e) NULL
     ))
     slrraw_iv$add_rule("x", ~ tryCatch(
-      if (isTRUE(sampleInfoRaw()$xSD == 0)) "Explanatory variable has zero variance (all values are identical). At least two distinct values are required.",
+      if (isTRUE(sampleInfoRaw()$xSD == 0)) "Explanatory variable has a standard deviation equal to zero (all values are identical). At least two distinct values are required.",
       error = function(e) NULL
     ))
     
@@ -679,7 +680,7 @@ SLRServer <- function(id) {
       error = function(e) NULL
     ))
     slrraw_iv$add_rule("y", ~ tryCatch(
-      if (isTRUE(sampleInfoRaw()$ySD == 0)) "Response variable is constant. Correlation is undefined when a variable has zero variance.",
+      if (isTRUE(sampleInfoRaw()$ySD == 0)) "Response variable is constant. Correlation is undefined when a variable has a standard deviation equal to zero.",
       error = function(e) NULL
     ))
     
@@ -705,7 +706,7 @@ SLRServer <- function(id) {
       error = function(e) NULL
     ))
     slruploadvars_iv$add_rule("slrExplanatory", ~ tryCatch(
-      if (isTRUE(explanatoryInfoUploadSLR()$sd == 0)) "Explanatory variable has zero variance (all values are identical). At least two distinct values are required.",
+      if (isTRUE(explanatoryInfoUploadSLR()$sd == 0)) "Explanatory variable has a standard deviation equal to zero (all values are identical). At least two distinct values are required.",
       error = function(e) NULL
     ))
     slruploadvars_iv$add_rule("slrExplanatory", ~ tryCatch({
@@ -724,7 +725,7 @@ SLRServer <- function(id) {
       error = function(e) NULL
     ))
     slruploadvars_iv$add_rule("slrResponse", ~ tryCatch(
-      if (isTRUE(responseInfoUploadSLR()$sd == 0)) "Response variable is constant. Correlation is undefined when a variable has zero variance.",
+      if (isTRUE(responseInfoUploadSLR()$sd == 0)) "Response variable is constant. Correlation is undefined when a variable has a standard deviation equal to zero.",
       error = function(e) NULL
     ))
     slruploadvars_iv$add_rule("slrResponse", ~ tryCatch({
@@ -908,13 +909,18 @@ SLRServer <- function(id) {
     ## NOTE: related to the old plot options UI.
     observeEvent(input$slrExplanatory, {
       updateTextInput(inputId = "xlab", value = input$slrExplanatory)
+      output$perfectFitWarning <- renderUI({ NULL })
     })
     observeEvent(input$slrResponse, {
       updateTextInput(inputId = "ylab", value = input$slrResponse)
+      output$perfectFitWarning <- renderUI({ NULL })
     })
-    
+
     observeEvent(input$goRegression, {
       ## SLR Validation messages ----
+      output$perfectFitWarning <- renderUI({ NULL })
+      showTab(inputId = "slrNavbarPage", target = "Inference")
+      showTab(inputId = "slrNavbarPage", target = "Diagnostic Plots")
       toggle(id = "SLRData", condition = regcor_iv$is_valid())
       
       output$slrValidation <- renderUI({
@@ -1077,8 +1083,8 @@ SLRServer <- function(id) {
         
         if(!slrraw_iv$is_valid()) {
           validate(
-            need(sampleInfoRaw()$xSD != 0, "Explanatory variable (x) must have a standard deviation greater than 0 to perform regression and correlation analysis."),
-            need(sampleInfoRaw()$ySD != 0, "Response variable (y) must have a standard deviation greater than 0 to perform correlation analysis."),
+            need(sampleInfoRaw()$xSD != 0, "Explanatory variable (x) must have a standard deviation greater than zero to perform regression and correlation analysis."),
+            need(sampleInfoRaw()$ySD != 0, "Response variable (y) must have a standard deviation greater than zero to perform correlation analysis."),
             errorClass = "myClass")
         }
       }) #output$slrValidation
@@ -1088,6 +1094,7 @@ SLRServer <- function(id) {
           hide("uploadedDataPanel")
           showTab(inputId = "slrNavbarPage", target = "Uploaded Data")
         } else {
+          hide("uploadedDataPanel")
           hideTab(inputId = "slrNavbarPage", target = "Uploaded Data")
         }
 
@@ -1205,7 +1212,6 @@ SLRServer <- function(id) {
               style = "margin-top: 10px;",
               tags$b("\u26a0\ufe0f Perfect Fit Detected: "),
               "This may indicate that",
-              ("This may indicate that"),
               tags$b("x and y are identical or linearly dependent,"),
               ("which can produce unreliable inference and diagnostic plots. Standard statistical significance tests cannot run on perfect fits. Please check your data.")
             )
@@ -1368,7 +1374,6 @@ SLRServer <- function(id) {
             p("The estimated equation of the regression line is "),
             sprintf("\\( \\qquad \\hat{y} = \\hat{\\beta}_{0} + \\hat{\\beta}_{1} x \\)"),
             br(),
-            br(),
             p("where"),
             sprintf("\\( \\qquad \\hat{\\beta}_{1} = \\dfrac{ \\sum xy - \\dfrac{ (\\sum x)(\\sum y) }{ n } }{ \\sum x^2 - \\dfrac{ (\\sum x)^2 }{ n } } \\)"),
             sprintf("\\( \\, = \\, \\dfrac{ %s - \\dfrac{ (%s)(%s) }{ %s } }{ %s - \\dfrac{ (%s)^2 }{ %s } } \\)",
@@ -1379,10 +1384,9 @@ SLRServer <- function(id) {
                     format(round(dfTotaled["Totals", "x<sup>2</sup>"], 3), nsmall = 0, scientific = FALSE),
                     format(round(dfTotaled["Totals", "x"], 3), nsmall = 0, scientific = FALSE),
                     format(round(length(datx), 3), nsmall = 0, scientific = FALSE)),
-          
+
             sprintf("\\( \\, = \\, %0.4f \\)",
                     slopeEstimate),
-            br(),
             br(),
             p("and"),
             sprintf("\\( \\qquad \\hat{\\beta}_{0} = \\bar{y} - \\hat{\\beta}_{1} \\bar{x}\\)"),
@@ -1397,13 +1401,10 @@ SLRServer <- function(id) {
             sprintf("\\( \\, = \\, %0.4f \\)",
                     interceptEstimate),
             br(),
-            br(),
-            br(),
             sprintf("\\( \\hat{y} = %0.4f %s %0.4f x \\)",
                     interceptEstimate,
                     yHatOp,
                     abs(slopeEstimate)),
-            br(),
             br(),
             p(tags$b("Interpretation:")),
             p(HTML(paste0("Within the scope of observation, ", interceptEstimate, " is the estimated value of ",
@@ -1573,8 +1574,8 @@ SLRServer <- function(id) {
                 sprintf("\\( \\normalsize{\\quad = \\dfrac
               {%s - \\dfrac{ (%s) \\times (%s) }{ %s } }
               {\\sqrt{ %s - \\dfrac{ (%s)^2 }{ %s } } \\times \\sqrt{ %s - \\dfrac{ (%s)^2 }{ %s } }}
-              \\quad = \\dfrac{ %s }{\\sqrt{ %s } \\times \\sqrt{ %s }}
-              \\quad = %g} \\)",
+              = \\dfrac{ %s }{\\sqrt{ %s } \\times \\sqrt{ %s }}
+              = %.4f} \\)",
                         
                         format(round(dfTotaled["Totals", "xy"], 3), nsmall = 0, scientific = FALSE),
                         format(round(dfTotaled["Totals", "x"], 3), nsmall = 0, scientific = FALSE),
@@ -1942,23 +1943,30 @@ SLRServer <- function(id) {
           n        <- length(datx)
           cf_x     <- spearman_cf(datx)
           cf_y     <- spearman_cf(daty)
-          rs       <- 1 - (6 * (sum_d_sq + cf_x + cf_y)) / (n * (n^2 - 1))
 
-          has_ties    <- cf_x > 0 || cf_y > 0
-          rsStrength  <- if (abs(rs) > 0.6) "strong" else if (abs(rs) > 0.3) "moderate" else "weak"
-          rsDirection <- if (rs > 0) "positive" else "negative"
+          has_ties <- cf_x > 0 || cf_y > 0
 
-          formula_latex <- if (has_ties) {
-            sprintf(
-              "\\( r_s = 1 - \\dfrac{6\\left(\\sum_{i=1}^n d_i^2 + CF_x + CF_y\\right)}{n(n^2 - 1)} = 1 - \\dfrac{6\\left(%g + %g + %g\\right)}{%d(%d^2 - 1)} = %.4f \\)",
-              sum_d_sq, cf_x, cf_y, n, n, rs
+          if (has_ties) {
+            # Correct tie-corrected formula: rs = (Σx² + Σy² - Σd²) / (2√(Σx² · Σy²))
+            # where Σx² = n(n²-1)/12 - CF_x  and  Σy² = n(n²-1)/12 - CF_y
+            A        <- n * (n^2 - 1) / 12
+            sum_x_sq <- A - cf_x
+            sum_y_sq <- A - cf_y
+            rs       <- (sum_x_sq + sum_y_sq - sum_d_sq) / (2 * sqrt(sum_x_sq * sum_y_sq))
+            formula_latex <- sprintf(
+              "\\( r_s = \\dfrac{\\Sigma x^2 + \\Sigma y^2 - \\Sigma d^2}{2\\sqrt{\\Sigma x^2 \\cdot \\Sigma y^2}} = \\dfrac{%g + %g - %g}{2\\sqrt{%g \\times %g}} = %.4f \\)",
+              sum_x_sq, sum_y_sq, sum_d_sq, sum_x_sq, sum_y_sq, rs
             )
           } else {
-            sprintf(
+            rs <- 1 - (6 * sum_d_sq) / (n * (n^2 - 1))
+            formula_latex <- sprintf(
               "\\( r_s = 1 - \\dfrac{6 \\sum_{i=1}^n d_i^2}{n(n^2 - 1)} = 1 - \\dfrac{6 \\times %g}{%d(%d^2 - 1)} = %.4f \\)",
               sum_d_sq, n, n, rs
             )
           }
+
+          rsStrength  <- if (abs(rs) > 0.6) "strong" else if (abs(rs) > 0.3) "moderate" else "weak"
+          rsDirection <- if (rs > 0) "positive" else "negative"
 
           withMathJax(
             div(
@@ -2021,9 +2029,9 @@ SLRServer <- function(id) {
         output$correlationSummaryTable <- renderTable({
           data.frame(
             `Correlation Coefficient` = c(
-              "Pearson's (<em>r</em>)",
-              "Spearman's (<em>r</em><sub>s</sub>)",
-              "Kendall's (<em>&tau;</em>)"
+              "Pearson's <em>r</em>",
+              "Spearman's <em>r</em><sub>s</sub>",
+              "Kendall's <em>&tau;</em>"
             ),
             Estimate = c(
               sprintf("%.4f", round(pearson$estimate, 4)),
@@ -2318,7 +2326,7 @@ SLRServer <- function(id) {
       nDroppedRows(0)
       output$perfectFitWarning <- renderUI({ NULL })
       hide(id = "regCorrMP")
-      show("uploadedDataPanel")
+      hide("uploadedDataPanel")
       hideTab(inputId = "slrNavbarPage", target = "Uploaded Data")
       shinyjs::reset("inputPanel")
       fileInputs$slrStatus <- 'reset'
