@@ -1371,40 +1371,36 @@ SLRServer <- function(id) {
         
         output$regLineEquation <- renderUI({
           withMathJax(
-            p("The estimated equation of the regression line is "),
-            sprintf("\\( \\qquad \\hat{y} = \\hat{\\beta}_{0} + \\hat{\\beta}_{1} x \\)"),
-            br(),
+            p("The estimated equation of the regression line is"),
+            p(sprintf("\\( \\qquad \\hat{y} = \\hat{\\beta}_{0} + \\hat{\\beta}_{1} x \\)")),
             p("where"),
-            sprintf("\\( \\qquad \\hat{\\beta}_{1} = \\dfrac{ \\sum xy - \\dfrac{ (\\sum x)(\\sum y) }{ n } }{ \\sum x^2 - \\dfrac{ (\\sum x)^2 }{ n } } \\)"),
-            sprintf("\\( \\, = \\, \\dfrac{ %s - \\dfrac{ (%s)(%s) }{ %s } }{ %s - \\dfrac{ (%s)^2 }{ %s } } \\)",
-                    format(round(dfTotaled["Totals", "xy"], 3), nsmall = 0, scientific = FALSE),
-                    format(round(dfTotaled["Totals", "x"], 3), nsmall = 0, scientific = FALSE),
-                    format(round(dfTotaled["Totals", "y"], 3), nsmall = 0, scientific = FALSE),
-                    format(round(length(datx), 3), nsmall = 0, scientific = FALSE),
-                    format(round(dfTotaled["Totals", "x<sup>2</sup>"], 3), nsmall = 0, scientific = FALSE),
-                    format(round(dfTotaled["Totals", "x"], 3), nsmall = 0, scientific = FALSE),
-                    format(round(length(datx), 3), nsmall = 0, scientific = FALSE)),
-
-            sprintf("\\( \\, = \\, %0.4f \\)",
-                    slopeEstimate),
-            br(),
+            p(sprintf(
+              "\\( \\qquad \\hat{\\beta}_{1} = \\dfrac{ \\sum xy - \\dfrac{ (\\sum x)(\\sum y) }{ n } }{ \\sum x^2 - \\dfrac{ (\\sum x)^2 }{ n } } = \\dfrac{ %s - \\dfrac{ (%s)(%s) }{ %s } }{ %s - \\dfrac{ (%s)^2 }{ %s } } = %0.4f \\)",
+              format(round(dfTotaled["Totals", "xy"], 3), nsmall = 0, scientific = FALSE),
+              format(round(dfTotaled["Totals", "x"], 3), nsmall = 0, scientific = FALSE),
+              format(round(dfTotaled["Totals", "y"], 3), nsmall = 0, scientific = FALSE),
+              format(round(length(datx), 3), nsmall = 0, scientific = FALSE),
+              format(round(dfTotaled["Totals", "x<sup>2</sup>"], 3), nsmall = 0, scientific = FALSE),
+              format(round(dfTotaled["Totals", "x"], 3), nsmall = 0, scientific = FALSE),
+              format(round(length(datx), 3), nsmall = 0, scientific = FALSE),
+              slopeEstimate
+            )),
             p("and"),
-            sprintf("\\( \\qquad \\hat{\\beta}_{0} = \\bar{y} - \\hat{\\beta}_{1} \\bar{x}\\)"),
-            sprintf("\\( \\, = \\, %s - (%0.4f) (%s) \\)",
-                    format(round(mean(daty), 3), nsmall = 0, scientific = FALSE),
-                    summary(model)$coefficients["datx", "Estimate"],
-                    format(round(mean(datx), 3), nsmall = 0, scientific = FALSE)),
-            sprintf("\\( \\, = \\, %s %s %0.4f\\)",
-                    format(round(mean(daty), 3), nsmall = 0, scientific = FALSE),
-                    b0HatOp,
-                    abs(slopeEstimate) * mean(datx)),
-            sprintf("\\( \\, = \\, %0.4f \\)",
-                    interceptEstimate),
+            p(sprintf(
+              "\\( \\qquad \\hat{\\beta}_{0} = \\bar{y} - \\hat{\\beta}_{1} \\bar{x} = %s - (%0.4f)(%s) = %s %s %0.4f = %0.4f \\)",
+              format(round(mean(daty), 3), nsmall = 0, scientific = FALSE),
+              summary(model)$coefficients["datx", "Estimate"],
+              format(round(mean(datx), 3), nsmall = 0, scientific = FALSE),
+              format(round(mean(daty), 3), nsmall = 0, scientific = FALSE),
+              b0HatOp,
+              abs(slopeEstimate) * mean(datx),
+              interceptEstimate
+            )),
             br(),
-            sprintf("\\( \\hat{y} = %0.4f %s %0.4f x \\)",
+            p(sprintf("\\( \\qquad \\hat{y} = %0.4f %s %0.4f x \\)",
                     interceptEstimate,
                     yHatOp,
-                    abs(slopeEstimate)),
+                    abs(slopeEstimate))),
             br(),
             p(tags$b("Interpretation:")),
             p(HTML(paste0("Within the scope of observation, ", interceptEstimate, " is the estimated value of ",
@@ -1835,13 +1831,12 @@ SLRServer <- function(id) {
               br(),
               p(tags$b("Test Statistic:")),
               p(HTML(sprintf(
-                "\\( z = \\dfrac{\\hat{\\tau}}{SD(\\hat{\\tau})} = \\dfrac{\\hat{\\tau}}{\\sqrt{\\dfrac{2(2n+5)}{9n(n-1)}}} = \\dfrac{%.4f}{\\sqrt{\\dfrac{2(2(%d)+5)}{9(%d)(%d-1)}}} = %.4f \\)",
+                "\\( z = \\dfrac{\\hat{\\tau} - E(\\hat{\\tau})}{SD(\\hat{\\tau})} = \\dfrac{\\hat{\\tau} - 0}{\\sqrt{\\dfrac{2(2n+5)}{9n(n-1)}}} = \\dfrac{%.4f - 0}{\\sqrt{\\dfrac{2(2(%d)+5)}{9(%d)(%d-1)}}} = %.4f \\)",
                 tau, ks$n, ks$n, ks$n, z_stat
               ))),
               br(),
-              plotOutput(session$ns("kendallZCurve")),
-              br(),
-              p(tags$b("P-Value:")),
+
+              p(strong("Using P-Value Method:")),
               p(sprintf("\\( P = 2 \\times P(Z > |\\, %.4f \\,|) %s \\)", z_stat, pval_tex(p_val))),
               if (isTRUE(p_val <= 0.05)) {
                 p("Since \\( P \\leq 0.05 \\), reject \\( H_0 \\).")
@@ -1849,6 +1844,23 @@ SLRServer <- function(id) {
                 p("Since \\( P > 0.05 \\), fail to reject \\( H_0 \\).")
               },
               br(),
+
+              p(strong("Using Critical Value Method:")),
+              p("\\( \\text{Critical Value(s)} = \\pm z_{\\alpha/2} = \\pm z_{0.025} = \\pm 1.96 \\)"),
+              if (isTRUE(abs(z_stat) > 1.96)) {
+                p(sprintf(
+                  "Since the test statistic \\( (z = %.4f) \\) falls within the rejection region, reject \\( H_0 \\).",
+                  z_stat
+                ))
+              } else {
+                p(sprintf(
+                  "Since the test statistic \\( (z = %.4f) \\) does not fall within the rejection region, fail to reject \\( H_0 \\).",
+                  z_stat
+                ))
+              },
+
+              div(style = "margin-bottom: -30px;", plotOutput(session$ns("kendallZCurve"))),
+
               p(tags$b("Conclusion:")),
               if (isTRUE(p_val <= 0.05)) {
                 p(sprintf(
@@ -1860,21 +1872,43 @@ SLRServer <- function(id) {
               }
             )
           } else {
-            # Ties: exact z formula doesn't apply; use cor.test's tie-corrected p-value
-            p_val <- kendall$p.value
+            # Ties: use cor.test's tie-corrected z statistic and p-value
+            z_stat <- as.numeric(kendall$statistic)
+            p_val  <- kendall$p.value
 
             withMathJax(
               header,
-              p(em("Note: Ties are present in the data. The p-value is computed using R's tie-corrected normal approximation.")),
+              p(em("Note: Ties are present in the data. The test statistic and p-value are computed using R's tie-corrected normal approximation.")),
               br(),
-              p(tags$b("P-Value:")),
-              p(sprintf("\\( p\\text{-value} %s \\)", pval_tex(p_val))),
+              p(tags$b("Test Statistic:")),
+              p(sprintf("\\( z = %.4f \\)", z_stat)),
+              br(),
+
+              p(strong("Using P-Value Method:")),
+              p(sprintf("\\( P = 2 \\times P(Z > |\\, %.4f \\,|) %s \\)", z_stat, pval_tex(p_val))),
               if (isTRUE(p_val <= 0.05)) {
                 p("Since \\( P \\leq 0.05 \\), reject \\( H_0 \\).")
               } else {
                 p("Since \\( P > 0.05 \\), fail to reject \\( H_0 \\).")
               },
               br(),
+
+              p(strong("Using Critical Value Method:")),
+              p("\\( \\text{Critical Value(s)} = \\pm z_{\\alpha/2} = \\pm z_{0.025} = \\pm 1.96 \\)"),
+              if (isTRUE(abs(z_stat) > 1.96)) {
+                p(sprintf(
+                  "Since the test statistic \\( (z = %.4f) \\) falls within the rejection region, reject \\( H_0 \\).",
+                  z_stat
+                ))
+              } else {
+                p(sprintf(
+                  "Since the test statistic \\( (z = %.4f) \\) does not fall within the rejection region, fail to reject \\( H_0 \\).",
+                  z_stat
+                ))
+              },
+
+              div(style = "margin-bottom: -30px;", plotOutput(session$ns("kendallZCurve"))),
+
               p(tags$b("Conclusion:")),
               if (isTRUE(p_val <= 0.05)) {
                 p(sprintf(
@@ -1889,10 +1923,14 @@ SLRServer <- function(id) {
         })
 
         output$kendallZCurve <- renderPlot({
-          req(!kendallStats$has_ties)
-          tau    <- as.numeric(kendall$estimate)
-          sd_tau <- sqrt(2 * (2 * kendallStats$n + 5) / (9 * kendallStats$n * (kendallStats$n - 1)))
-          z_stat <- round(tau / sd_tau, 3)
+          ks <- kendallStats
+          if (!ks$has_ties) {
+            tau    <- as.numeric(kendall$estimate)
+            sd_tau <- sqrt(2 * (2 * ks$n + 5) / (9 * ks$n * (ks$n - 1)))
+            z_stat <- round(tau / sd_tau, 3)
+          } else {
+            z_stat <- round(as.numeric(kendall$statistic), 3)
+          }
           hypZTestPlot(
             testStatistic = z_stat,
             critValue     = 1.96,
@@ -1938,7 +1976,8 @@ SLRServer <- function(id) {
         # Spearman's rs formula and interpretation
         output$spearmanFormula <- renderUI({
 
-          d_sq     <- spearmanData()$d_sq
+          sp_data  <- spearmanData()
+          d_sq     <- sp_data$d_sq
           sum_d_sq <- sum(d_sq)
           n        <- length(datx)
           cf_x     <- spearman_cf(datx)
@@ -1947,15 +1986,17 @@ SLRServer <- function(id) {
           has_ties <- cf_x > 0 || cf_y > 0
 
           if (has_ties) {
-            # Correct tie-corrected formula: rs = (Σx² + Σy² - Σd²) / (2√(Σx² · Σy²))
-            # where Σx² = n(n²-1)/12 - CF_x  and  Σy² = n(n²-1)/12 - CF_y
-            A        <- n * (n^2 - 1) / 12
-            sum_x_sq <- A - cf_x
-            sum_y_sq <- A - cf_y
-            rs       <- (sum_x_sq + sum_y_sq - sum_d_sq) / (2 * sqrt(sum_x_sq * sum_y_sq))
+            rank_x   <- sp_data$rank_x
+            rank_y   <- sp_data$rank_y
+            sum_rxry <- sum(rank_x * rank_y)
+            mean_rx  <- mean(rank_x)
+            mean_ry  <- mean(rank_y)
+            sd_rx    <- sd(rank_x)
+            sd_ry    <- sd(rank_y)
+            rs       <- (sum_rxry - n * mean_rx * mean_ry) / ((n - 1) * sd_rx * sd_ry)
             formula_latex <- sprintf(
-              "\\( r_s = \\dfrac{\\Sigma x^2 + \\Sigma y^2 - \\Sigma d^2}{2\\sqrt{\\Sigma x^2 \\cdot \\Sigma y^2}} = \\dfrac{%g + %g - %g}{2\\sqrt{%g \\times %g}} = %.4f \\)",
-              sum_x_sq, sum_y_sq, sum_d_sq, sum_x_sq, sum_y_sq, rs
+              "\\( r_s = \\dfrac{\\sum_{i=1}^n R_{x_i} R_{y_i} - n\\bar{R}_x\\bar{R}_y}{(n-1)\\,s_{R_x}s_{R_y}} = \\dfrac{%g - %d \\times %g \\times %g}{(%d - 1) \\times %g \\times %g} = %.4f \\)",
+              sum_rxry, n, round(mean_rx, 4), round(mean_ry, 4), n, round(sd_rx, 4), round(sd_ry, 4), rs
             )
           } else {
             rs <- 1 - (6 * sum_d_sq) / (n * (n^2 - 1))
