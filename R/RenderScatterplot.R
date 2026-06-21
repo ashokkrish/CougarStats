@@ -91,12 +91,13 @@ RenderScatterplot <- function(
   # -------------------------------------------------------------------------
   
   if(showConfidenceInterval) {
-    
+
+    x_seq_ci <- seq(min(df$x), max(df$x), length.out = 200)
     conf_int <- suppressWarnings(
-      predict(model, interval = "confidence")
+      predict(model, newdata = data.frame(datx = x_seq_ci), interval = "confidence")
     )
-    
-    df_conf <- cbind(df, conf_int)
+
+    df_conf <- data.frame(x = x_seq_ci, conf_int)
     
     # Upper bound
     p <- p %>%
@@ -143,12 +144,13 @@ RenderScatterplot <- function(
   # -------------------------------------------------------------------------
   
   if(showPredictionInterval) {
-    
+
+    x_seq_pi <- seq(min(df$x), max(df$x), length.out = 200)
     pred_int <- suppressWarnings(
-      predict(model, interval = "prediction")
+      predict(model, newdata = data.frame(datx = x_seq_pi), interval = "prediction")
     )
-    
-    df_pred <- cbind(df, pred_int)
+
+    df_pred <- data.frame(x = x_seq_pi, pred_int)
     
     # Upper bound
     p <- p %>%
@@ -210,18 +212,18 @@ RenderScatterplot <- function(
       ),
       margin = list(t = 80, r = 20, b = 80, l = 60),
       xaxis = list(
-        title      = plotXLab,
+        title      = list(text = paste0("<b>", plotXLab, "</b>"), font = list(size = 14, family = "Arial")),
         showgrid   = xgrid,
         gridcolor  = "#D9D9D9",
         zeroline   = FALSE,
-        titlefont  = list(size = 14, family = "Arial")
+        tickfont   = list(size = 12, family = "Arial Black")
       ),
       yaxis = list(
-        title      = plotYLab,
+        title      = list(text = paste0("<b>", plotYLab, "</b>"), font = list(size = 14, family = "Arial")),
         showgrid   = ygrid,
         gridcolor  = "#D9D9D9",
         zeroline   = FALSE,
-        titlefont  = list(size = 14, family = "Arial")
+        tickfont   = list(size = 12, family = "Arial Black")
       ),
       legend = list(
         orientation = "h",

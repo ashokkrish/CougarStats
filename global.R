@@ -94,6 +94,7 @@ library(olsrr)
 
 margin <- ggplot2::margin
 
+source("R/utilityFunctions.R")
 source("R/ChiSquareTest.R")
 source("R/descStats.R")
 
