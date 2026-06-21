@@ -747,7 +747,7 @@ probDistUI <- function(id) {
                     
                     tabPanel(
                       title = "Probability Histogram",
-                      plotOutput(ns("binomDistrBarPlot"), width = "50%")
+                      plotlyOutput(ns("binomDistrBarPlot"), width = "50%")
                     )
                   )
                 )
@@ -2429,7 +2429,7 @@ probDistServer <- function(id) {
       
       output$binomDistrTable <- DT::renderDT({
         req(pd_iv$is_valid())
-        
+        req(input$numSuccessesBinom <= input$numTrialsBinom)
         if(input$numTrialsBinom < 50)
         {
           dfBinom <- data.frame(value = seq(0, input$numTrialsBinom), 
@@ -2468,35 +2468,52 @@ probDistServer <- function(id) {
       }) 
     })
     
-    output$binomDistrBarPlot <- renderPlot({
+    output$binomDistrBarPlot <- renderPlotly({
+      
       req(pd_iv$is_valid())
       req(input$numTrialsBinom < 50)
-      
-      dfBinom <- data.frame(X = seq(0, input$numTrialsBinom), 
-                            P = round(dbinom(x = 0:input$numTrialsBinom, 
-                                             size = input$numTrialsBinom, 
-                                             prob = input$successProbBinom), 4))
+      req(input$numSuccessesBinom <= input$numTrialsBinom)
       
       n <- input$numTrialsBinom
       p <- input$successProbBinom
+      x_vals <- 0:n
       
-      ggplot(dfBinom, aes(x = X, y = P)) +
+      dfBinom <- data.frame(X = x_vals, P = dbinom(x_vals, size = n, prob = p))
+      
+      gg <- ggplot(dfBinom, aes(x = X, y = P, text = paste0("x: ", X, "<br>p: ", round(P, 4))
+      )) +
         geom_bar(stat = "identity", fill = "skyblue") +
-        labs(x = bquote(bold("Number of Successes (" * bolditalic(x) * ")")),
-             y = bquote(bold("P(" * bolditalic(X == x) * ")")),
-             title = bquote(bold("Binomial Distribution: " * bolditalic(X) * " ~ Bin(" * bolditalic(n) * " = " * bold(.(n)) * ", " * bolditalic(p) * " = " * bold(.(p)) * ")"))
+        scale_x_continuous(
+          breaks = if (n <= 25) {
+            x_vals
+          } else {
+            seq(0, n, by = max(1, floor(n / 10)))
+          }
         ) +
-        scale_y_continuous(expand = expansion(mult = c(0, 0.05))) +
-        theme(axis.text = element_text(size = 14),
-              axis.title = element_text(size = 16),
-              panel.grid.major = element_blank(),
-              panel.grid.minor = element_blank(),
-              plot.title = element_text(size = 18, hjust = 0.5),
-              panel.border = element_rect(color = "black", fill = NA, linewidth = 0.5),
-              plot.background = element_rect(color = "black", fill = NA, linewidth = 1),
-              plot.margin = margin(10, 10, 10, 5, unit = "mm")
+        labs(
+          x = "Number of Successes (x)",
+          y = "P(X = x)",
+          title = paste0(
+            "Binomial Distribution: X ~ Bin(n = ",
+            n,
+            ", p = ",
+            p,
+            ")"
+          )
+        ) +
+        theme(
+          axis.text = element_text(size = 14),
+          axis.title = element_text(size = 16),
+          panel.grid.major = element_line(color = "grey85"),
+          panel.grid.minor = element_line(color = "grey92"),
+          axis.line = element_line(color = "black"),
+          plot.title = element_text(size = 18, hjust = 0.5),
+          panel.border = element_rect(color = "black", fill = NA, linewidth = 0.5),
+          plot.background = element_rect(color = "white", fill = NA),
+          plot.margin = margin(10, 10, 10, 5, unit = "mm")
         )
       
+      ggplotly(gg, tooltip = "text")
     })
 
     observeEvent(input$goPoisson, {
@@ -2735,15 +2752,18 @@ probDistServer <- function(id) {
     observeEvent(input$goHypGeo, {
       observe({
         req(input$probability == "Hypergeometric")
-        showBox <- FALSE
         
-        if (input$calcHypGeo != "between") {
-          showBox <- pd_iv$is_valid()
-        } else {
-          showBox <- pd_iv$is_valid() &&
+        showBox <- pd_iv$is_valid() &&
+          input$sampSizeHypGeo <= input$popSizeHypGeo &&
+          input$popSuccessesHypGeo <= input$popSizeHypGeo &&
+          input$xHypGeo <= input$sampSizeHypGeo &&
+          input$xHypGeo <= input$popSuccessesHypGeo
+        
+        if (showBox && input$calcHypGeo == "between") {
+          showBox <-
             input$x1HypGeo <= input$x2HypGeo &&
             input$x1HypGeo <= input$sampSizeHypGeo &&
-            input$x1HypGeo <= input$popSuccessesHypGeo
+            input$x1HypGeo <= input$popSuccessesHypGeo 
         }
         
         runjs(sprintf(
@@ -3018,6 +3038,10 @@ probDistServer <- function(id) {
       
       output$HypGeoDistrTable <- DT::renderDT({
         req(pd_iv$is_valid())
+        req(input$sampSizeHypGeo <= input$popSizeHypGeo)
+        req(input$popSuccessesHypGeo <= input$popSizeHypGeo)
+        req(input$xHypGeo <= input$sampSizeHypGeo)
+        req(input$xHypGeo <= input$popSuccessesHypGeo)
         
         if(input$sampSizeHypGeo < 50)
         {
@@ -3058,6 +3082,10 @@ probDistServer <- function(id) {
     output$HypGeoDistrBarPlot <- renderPlot({
       req(pd_iv$is_valid())
       req(input$sampSizeHypGeo < 50)
+      req(input$sampSizeHypGeo <= input$popSizeHypGeo)
+      req(input$popSuccessesHypGeo <= input$popSizeHypGeo)
+      req(input$xHypGeo <= input$sampSizeHypGeo)
+      req(input$xHypGeo <= input$popSuccessesHypGeo)
       
       dfHypGeo <- data.frame(value = seq(max(0, input$sampSizeHypGeo + input$popSuccessesHypGeo - input$popSizeHypGeo), min(input$popSuccessesHypGeo, input$sampSizeHypGeo)), 
                              prob = round(dhyper(x = max(0, input$sampSizeHypGeo + input$popSuccessesHypGeo - input$popSizeHypGeo):min(input$popSuccessesHypGeo, input$sampSizeHypGeo), input$popSuccessesHypGeo, (input$popSizeHypGeo - input$popSuccessesHypGeo), input$sampSizeHypGeo), 4))
