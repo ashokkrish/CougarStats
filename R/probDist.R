@@ -2527,7 +2527,9 @@ probDistServer <- function(id) {
           breaks = if (n <= 25) x_vals else seq(0, n, by = max(1, floor(n / 10))),
           expand = expansion(mult = c(0.02, 0.02))
         ) +
-        scale_y_continuous(expand = c(0, 0)) +
+        scale_y_continuous(
+          expand = expansion(mult = c(0, 0.1))
+        ) +
         
         theme(
           axis.text = element_text(size = 14),
@@ -2535,7 +2537,7 @@ probDistServer <- function(id) {
           panel.grid.major = element_blank(),
           panel.grid.minor = element_blank(),
           axis.line = element_line(color = "black"),
-          panel.border = element_rect(color = "black", fill = NA, linewidth = 0.5),
+          panel.border = element_blank(),
           plot.background = element_rect(color = "white", fill = NA),
           plot.margin = margin(10, 10, 10, 5, unit = "mm")
         )
@@ -2546,8 +2548,8 @@ probDistServer <- function(id) {
           title = list(
             text = paste0(
               "<b>Binomial Distribution:</b> ",
-              "<b>X ~ Bin(n = ", input$numTrialsBinom,
-              ", p = ", input$successProbBinom, ")</b>"
+              "<b>X ~ Bin(<i>n</i> = ", input$numTrialsBinom,
+              ", <i>p</i> = ", input$successProbBinom, ")</b>"
             ),
             x = 0.5
           ),
