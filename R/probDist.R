@@ -2548,7 +2548,7 @@ probDistServer <- function(id) {
           title = list(
             text = paste0(
               "<b>Binomial Distribution:</b> ",
-              "<b>X ~ Bin(<i>n</i> = ", input$numTrialsBinom,
+              "<b><i>X</i> ~ Bin(<i>n</i> = ", input$numTrialsBinom,
               ", <i>p</i> = ", input$successProbBinom, ")</b>"
             ),
             x = 0.5
