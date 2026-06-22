@@ -223,7 +223,7 @@ probDistUI <- function(id) {
             
             numericInput(
               inputId = ns("lambdaPoisson"), 
-              label   = strong("Lambda (\\( \\lambda\\))"),
+              label   = strong("Average (\\( \\lambda\\))"),
               value   = 4.5),
             
             HTML("<label class='si-label'><b>Probability</b></label>"),                                                            
@@ -742,11 +742,13 @@ probDistUI <- function(id) {
                     
                     tabPanel(
                       title = "Probability Distribution Table",
+                      value = "tableTab",
                       DTOutput(ns("binomDistrTable"), width = "25%")
                     ),
                     
                     tabPanel(
                       title = "Probability Histogram",
+                      value = "plotTab",
                       plotlyOutput(ns("binomDistrBarPlot"), width = "50%")
                     )
                   )
@@ -1786,6 +1788,37 @@ probDistServer <- function(id) {
       })
     }, once = TRUE)
     
+    observeEvent(binom_state(), {
+      if (binom_state()) {
+        showTab(inputId = "binomialNavbar", target = "tableTab")
+        showTab(inputId = "binomialNavbar", target = "plotTab")
+      } else {
+        updateTabsetPanel(
+          session,
+          "binomialNavbar",
+          selected = "Calculations"
+        )
+        hideTab(inputId = "binomialNavbar", target = "tableTab")
+        hideTab(inputId = "binomialNavbar", target = "plotTab")
+      }
+    })
+    
+    binom_state <- reactive({
+      req(input$probability == "Binomial")
+      
+      if (!pd_iv$is_valid()) return(FALSE)
+      
+      if (input$calcBinom != "between") {
+        return(input$numSuccessesBinom <= input$numTrialsBinom)
+      } else {
+        return(
+          input$numSuccessesBinomx1 <= input$numSuccessesBinomx2 &&
+            input$numSuccessesBinomx1 <= input$numTrialsBinom &&
+            input$numSuccessesBinomx2 <= input$numTrialsBinom
+        )
+      }
+    })
+    
     observeEvent(input$gocTable, {
       
       output$render2x2cTable <- renderUI({
@@ -2478,42 +2511,59 @@ probDistServer <- function(id) {
       p <- input$successProbBinom
       x_vals <- 0:n
       
-      dfBinom <- data.frame(X = x_vals, P = dbinom(x_vals, size = n, prob = p))
+      dfBinom <- data.frame(
+        X = x_vals,
+        P = dbinom(x_vals, size = n, prob = p)
+      )
       
-      gg <- ggplot(dfBinom, aes(x = X, y = P, text = paste0("x: ", X, "<br>p: ", round(P, 4))
+      gg <- ggplot(dfBinom, aes(
+        x = X,
+        y = P,
+        text = paste0("x: ", X, "<br>p: ", round(P, 4))
       )) +
         geom_bar(stat = "identity", fill = "skyblue") +
+        
         scale_x_continuous(
-          breaks = if (n <= 25) {
-            x_vals
-          } else {
-            seq(0, n, by = max(1, floor(n / 10)))
-          }
+          breaks = if (n <= 25) x_vals else seq(0, n, by = max(1, floor(n / 10))),
+          expand = expansion(mult = c(0.02, 0.02))
         ) +
-        labs(
-          x = "Number of Successes (x)",
-          y = "P(X = x)",
-          title = paste0(
-            "Binomial Distribution: X ~ Bin(n = ",
-            n,
-            ", p = ",
-            p,
-            ")"
-          )
-        ) +
+        scale_y_continuous(expand = c(0, 0)) +
+        
         theme(
           axis.text = element_text(size = 14),
           axis.title = element_text(size = 16),
-          panel.grid.major = element_line(color = "grey85"),
-          panel.grid.minor = element_line(color = "grey92"),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
           axis.line = element_line(color = "black"),
-          plot.title = element_text(size = 18, hjust = 0.5),
           panel.border = element_rect(color = "black", fill = NA, linewidth = 0.5),
           plot.background = element_rect(color = "white", fill = NA),
           plot.margin = margin(10, 10, 10, 5, unit = "mm")
         )
       
-      ggplotly(gg, tooltip = "text")
+      ggplotly(gg, tooltip = "text", width = 850, height = 520) %>%
+        layout(
+          margin = list(t = 80),
+          title = list(
+            text = paste0(
+              "<b>Binomial Distribution:</b> ",
+              "<b>X ~ Bin(n = ", input$numTrialsBinom,
+              ", p = ", input$successProbBinom, ")</b>"
+            ),
+            x = 0.5
+          ),
+          
+          xaxis = list(
+            title = list(
+              text = "<b>Number of Successes (<i>x</i>)</b>"
+            )
+          ),
+          
+          yaxis = list(
+            title = list(
+              text = "<b>P(<i>X</i> = <i>x</i>)</b>"
+            )
+          )
+        )
     })
 
     observeEvent(input$goPoisson, {
@@ -2828,7 +2878,11 @@ probDistServer <- function(id) {
               errorClass = "myClass")
             
             HypGeo_mu <- round(sampSizeHypGeo*popSuccessesHypGeo/popSizeHypGeo, 4)
-            HypGeo_var <- round(sampSizeHypGeo*(popSuccessesHypGeo/popSizeHypGeo)*((popSizeHypGeo - popSuccessesHypGeo)/popSizeHypGeo)*((popSizeHypGeo - sampSizeHypGeo)/(popSizeHypGeo - 1)), 4)
+            if (popSizeHypGeo <= 1) {
+              HypGeo_var <- 0
+            } else {
+              HypGeo_var <- round(sampSizeHypGeo * (popSuccessesHypGeo / popSizeHypGeo) * ((popSizeHypGeo - popSuccessesHypGeo) / popSizeHypGeo) * ((popSizeHypGeo - sampSizeHypGeo) / (popSizeHypGeo - 1)), 4)
+            }
             HypGeo_sd <- round(sqrt(HypGeo_var), 4)
             
             if(input$calcHypGeo != 'between')
