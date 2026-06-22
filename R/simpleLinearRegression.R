@@ -1757,7 +1757,18 @@ SLRServer <- function(id) {
               else if (sign(dx) != sign(dy) && dx != 0 && dy != 0) nd <- nd + 1
             }
           }
-          list(n = n, n0 = n0, n1 = n1, n2 = n2, has_ties = has_ties, nc = nc, nd = nd)
+          S      <- nc - nd
+          t_vals <- as.numeric(table(datx))
+          u_vals <- as.numeric(table(daty))
+          v0     <- n * (n - 1) * (2 * n + 5)
+          vt     <- sum(t_vals * (t_vals - 1) * (2 * t_vals + 5))
+          vu     <- sum(u_vals * (u_vals - 1) * (2 * u_vals + 5))
+          s1     <- sum(choose(t_vals, 3))
+          s2     <- sum(choose(u_vals, 3))
+          s3     <- sum(choose(t_vals, 2)) * sum(choose(u_vals, 2))
+          term3  <- if (n >= 3) 9 * s1 * s2 / (n * (n - 1) * (n - 2)) else 0
+          varS   <- (v0 - vt - vu) / 18 + term3 + s3 / (2 * n * (n - 1))
+          list(n = n, n0 = n0, n1 = n1, n2 = n2, has_ties = has_ties, nc = nc, nd = nd, S = S, varS = varS)
         })
 
         output$kendallTauComputation <- renderUI({
@@ -1881,7 +1892,10 @@ SLRServer <- function(id) {
               p(em("Note: Ties are present in the data. The test statistic and p-value are computed using R's tie-corrected normal approximation.")),
               br(),
               p(tags$b("Test Statistic:")),
-              p(sprintf("\\( z = %.4f \\)", z_stat)),
+              p(sprintf(
+                "\\( z = \\dfrac{S}{\\sqrt{\\operatorname{Var}(S)}} = %.4f \\)",
+                z_stat
+              )),
               br(),
 
               p(strong("Using P-Value Method:")),
