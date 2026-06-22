@@ -16,7 +16,7 @@ descStatsUI <- function(id) {
                                   "Upload Data"),
               choiceNames  = list("Enter Raw Data", 
                                   "Upload Data"),
-              selected     = "Enter Raw Data", #character(0), #
+              selected     = "Enter Raw Data",
               inline       = TRUE),
             
             conditionalPanel(
@@ -27,7 +27,7 @@ descStatsUI <- function(id) {
                 inputId     = ns("descriptiveStat"), 
                 label       = strong("Sample"), 
                 value       = "2.14,   2.09,   2.65,   3.56,   5.55,   5.00,   5.55,   8.09,   10.79", 
-                placeholder = "Enter values separated by a comma with decimals as points", 
+                placeholder = "Enter values separated by a comma, space, or tab with decimals as points",
                 rows        = 3),
             ),
             
@@ -55,6 +55,8 @@ descStatsUI <- function(id) {
                           '.mwx',
                           '.mpx')),
 
+              uiOutput(ns("dsUploadStatus")),
+
               conditionalPanel(
                 ns = ns,
                 condition = "output.dsShowSheetPicker == true",
@@ -67,13 +69,17 @@ descStatsUI <- function(id) {
                                   onInitialize = I('function() { this.setValue(""); }')))
               ),
 
-              selectizeInput(
-                inputId  = ns("dsUploadVars"),
-                label    = strong("Choose a Variable"),
-                choices  = c(""),
-                multiple = FALSE,
-                options  = list(placeholder = 'Select a variable',
-                                onInitialize = I('function() { this.setValue(""); }'))),
+              shinyjs::hidden(
+                div(id = ns("dsUploadVarsWrap"),
+                  selectizeInput(
+                    inputId  = ns("dsUploadVars"),
+                    label    = strong("Choose a Variable"),
+                    choices  = c(""),
+                    multiple = FALSE,
+                    options  = list(placeholder = 'Select a variable',
+                                    onInitialize = I('function() { this.setValue(""); }')))
+                )
+              ),
             ),
             br(),
             
@@ -146,7 +152,6 @@ descStatsUI <- function(id) {
               label   = "Reset Values",
               class   = "act-btn")
           )
-         #, onclick = "history.go(0)"
       ), #sidebarPanel
       
       mainPanel(
@@ -155,13 +160,12 @@ descStatsUI <- function(id) {
         #   -------------------------------- #
         hidden(div(id = ns("descriptiveStatsMP"),
             uiOutput(ns("renderDescrStats")),
-            
-            div(id = ns("outputPanel"),
+
             navbarPage(
-              title = NULL,        
+              title = NULL,
               id    = ns("dsTabset"),
               theme = bs_theme(version = 4),
-              
+
               tabPanel(
                 id = ns("dsTable"),
                 title = "Descriptive Statistics",
@@ -172,7 +176,6 @@ descStatsUI <- function(id) {
                     ns = ns,
                     condition = "input.dsTableFilters == ''",
                     
-                    #br(),
                     p("Select one or more items from the Statistics menu.")
                   ),
                   
@@ -191,14 +194,7 @@ descStatsUI <- function(id) {
                                  input.dsTableFilters.indexOf('IQR') > -1 | 
                                  input.dsTableFilters.indexOf('Potential Outliers') > -1",
                       
-                    helpText("* Note: Quartiles are calculated by excluding the median on both sides."),
-                  ),
-                  br(),
-
-                  conditionalPanel(
-                    ns = ns,
-                    condition = "input.dsTableFilters.indexOf('Mean') > -1 | 
-                                 input.dsTableFilters.indexOf('Sample Standard Deviation') > -1",
+                    helpText("* Note: Quartiles are calculated by excluding the median on both sides.")
                   )
                 ), # dsTable tabPanel
                   
@@ -260,45 +256,19 @@ descStatsUI <- function(id) {
                         id    = ns("dsHisto"),
                         title = "Histogram"),
                       uiOutput(ns("renderDSHistogram"))
-                    ), # Histogram
-                    
-                    # conditionalPanel(
-                    #   ns = ns,
-                    #   condition = "input.dsGraphOptions.indexOf('Stem and Leaf Plot') > -1",
-                    #   
-                    #   h3("Stem and Leaf Plot"),
-                    #   br(),
-                    #   fluidRow(
-                    #     column(
-                    #       width = 2, 
-                    #       div("")),
-                    #     
-                    #     column(
-                    #       width = 8, 
-                    #       verbatimTextOutput(ns("dsStemLeaf")),
-                    #       br(),
-                    #       p("* Note: Outlier values are listed under the HI/LO lists.")),
-                    #     
-                    #     column(
-                    #       width = 2, 
-                    #       div(""))
-                    #   ), # fluidRow
-                    #   br()
-                    # ), # Stem and Leaf
+                    ) # Histogram
                   ), # Graphs tabPanel
-                  
-                  tabPanel(
-                    id = ns("dsData"),
-                    title = "Uploaded Data",
-                    
-                    uiOutput(ns("renderDSData"))
-                  ), # dsTabset tabsetPanel
-            ), #descrStatsData div
-          )
-        ) #descriptiveStatsMP
-       )
-      )#mainPanel
-    ) #sidebarLayout
+
+              tabPanel(
+                id    = ns("dsData"),
+                title = "Uploaded Data",
+                value = "Uploaded Data",
+                uiOutput(ns("renderDSData"))
+              )
+            ) # navbarPage
+        )) # descriptiveStatsMP
+      ) # mainPanel
+    ) # sidebarLayout
   )
 }
 
@@ -316,8 +286,8 @@ descStatsServer <- function(id) {
     #       Rules        #
     # ------------------ #
     dsraw_iv$add_rule("descriptiveStat", sv_required())
-    dsraw_iv$add_rule("descriptiveStat", sv_regex("^( )*(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$", 
-                                                  "Data must be numeric values separated by a comma (ie: 2,3,4)"))
+    dsraw_iv$add_rule("descriptiveStat", sv_regex("^[[:space:]]*(-)?[0-9]+(\\.[0-9]+)?([,[:space:]]+(-)?[0-9]+(\\.[0-9]+)?)+[[:space:]]*$",
+                                                  "Data must be numeric values separated by a comma, space, or tab (ie: 2,3,4 or 2 3 4)"))
     dsupload_iv$add_rule("dsUserData", sv_required())
     dsupload_iv$add_rule("dsUserData", ~ if(is.null(fileInputs$dsStatus) || fileInputs$dsStatus == 'reset') "Required")
     dsupload_iv$add_rule("dsUserData", ~ if(!(tolower(tools::file_ext(input$dsUserData$name)) %in% c("csv", "txt", "xls", "xlsx", "sas7bdat", "sav", "dta", "rds", "mtp", "mwx", "mpx"))) "File format not accepted.")
@@ -346,7 +316,7 @@ descStatsServer <- function(id) {
     # ------------------ #
     #     Dependency     #
     # ------------------ #
-    ds_iv$add_validator(dsraw_iv)
+    ds_iv$add_validator(dsraw_iv) 
     ds_iv$add_validator(dsupload_iv)
     ds_iv$add_validator(dsuploadvars_iv)
     
@@ -357,6 +327,20 @@ descStatsServer <- function(id) {
     dsraw_iv$enable()
     dsupload_iv$enable()
     dsuploadvars_iv$enable()
+
+    ds_data_source <- reactiveVal(NULL)
+
+    output$dsUploadStatus <- renderUI({
+      src <- ds_data_source()
+      if (is.null(src)) return(NULL)
+      div(
+        class = "alert alert-success",
+        style = "padding: 5px 10px; font-size: 12px; margin-top: 2px; margin-bottom: 10px;",
+        icon("circle-check"),
+        HTML(paste0(" <strong>File loaded:</strong> ", src$name, " (",
+                    src$rows, " rows × ", src$cols, " columns)"))
+      )
+    })
 
     # ----------------------------------------------------------- #
     #     Minitab file readers                                    #
@@ -498,11 +482,6 @@ descStatsServer <- function(id) {
       return(sort(outliers))
     }
     
-    # Function to find the population standard deviation
-    pop.sd <- function(x) {
-      sqrt(sum((x-mean(x))^2)/length(x))
-    }
-    
     # Function for populating the value column of the datatable
     createDSColumn <- function(dat) ({
       sampSize <- length(dat)
@@ -518,7 +497,6 @@ descStatsServer <- function(id) {
       }
       
       sampMin <- min(dat)
-      #popuStdDev <- round(pop.sd(dat),4) # round(sqrt((n-1)/n) * sampStdDev(dat), 4)
       quartiles <- GetQuartiles(dat)
       quartile1 <-  quartiles$q1
       sampMedian <- median(dat)
@@ -614,7 +592,8 @@ descStatsServer <- function(id) {
     
     # Function to convert the raw data input into a numeric list
     dsRawData <- reactive ({
-      dat <- createNumLst(input$descriptiveStat)
+      cleaned <- gsub("[[:space:]]+", ",", trimws(input$descriptiveStat))
+      dat <- createNumLst(cleaned)
       return(dat)
     })
     
@@ -664,7 +643,15 @@ descStatsServer <- function(id) {
 
             validate("Improper file format"))
     })
-    
+
+    getSampleVector <- function() {
+      if (input$dataInput == 'Upload Data') {
+        na.omit(as.data.frame(dsUploadData())[, input$dsUploadVars])
+      } else {
+        dsRawData()
+      }
+    }
+
     getDsDataframe <- reactive({
       
       req(ds_iv$is_valid())
@@ -757,6 +744,42 @@ descStatsServer <- function(id) {
     ### Observers ----
     # --------------------------------------------------------------------- #
 
+    buildRowFilter <- function(df) {
+      rowFilter <- input$dsTableFilters
+
+      if ("Mode" %in% input$dsTableFilters && df['Mode', 3] != "No mode exists.") {
+        rowFilter <- c(rowFilter, "Mode Frequency")
+      }
+
+      if ("Potential Outliers" %in% input$dsTableFilters) {
+        rowFilter <- c(rowFilter, "Lower Fence", "Upper Fence", "Outlier Values")
+      }
+
+      filter(df, rownames(df) %in% rowFilter)
+    }
+
+    hideResultTabs <- function() {
+      hideTab(inputId = "dsTabset", target = "Descriptive Statistics")
+      hideTab(inputId = "dsTabset", target = "Calculations")
+      hideTab(inputId = "dsTabset", target = "Graphs")
+    }
+
+    showResultTabs <- function() {
+      showTab(inputId = "dsTabset", target = "Descriptive Statistics")
+      showTab(inputId = "dsTabset", target = "Calculations")
+      if (!is.null(input$dsGraphOptions)) {
+        showTab(inputId = "dsTabset", target = "Graphs")
+      }
+      shinyjs::runjs(sprintf(
+        "setTimeout(function(){var a=$('#%s a[data-value=\"Descriptive Statistics\"]');a.removeClass('active');a.tab('show');$(window).trigger('resize');},50);",
+        session$ns("dsTabset")))
+    }
+
+    goToUploadedDataTab <- function() {
+      showTab(inputId = "dsTabset", target = "Uploaded Data")
+      updateNavbarPage(session, "dsTabset", selected = "Uploaded Data")
+    }
+
     # Tells the UI whether to show the sheet picker (only for xls/xlsx)
     output$dsShowSheetPicker <- reactive({
       if (is.null(input$dsUserData)) return(FALSE)
@@ -787,40 +810,61 @@ descStatsServer <- function(id) {
       input$dsUserData
       input$dsSheet
     }, {
-      shinyjs::hide(id = "descriptiveStatsMP")
-
       req(input$dsUserData)
-      fileInputs$dsStatus <- 'uploaded'
+      fileInputs$dsStatus <- "uploaded"
 
       ext <- tolower(tools::file_ext(input$dsUserData$name))
 
       # For Excel files, defer until a sheet is selected
       if (ext %in% c("xls", "xlsx") && (is.null(input$dsSheet) || input$dsSheet == "")) {
-        shinyjs::hide(id = "dsUploadVars")
+        shinyjs::hide("dsUploadVarsWrap")
+        ds_data_source(NULL)
         return()
       }
 
       if (dsupload_iv$is_valid()) {
+        ds_data_source(list(
+          name = input$dsUserData$name,
+          rows = nrow(dsUploadData()),
+          cols = ncol(dsUploadData())
+        ))
+
         freezeReactiveValue(input, "dsUploadVars")
-        updateSelectInput(session = getDefaultReactiveDomain(),
-                          "dsUploadVars",
-                          choices = c(colnames(dsUploadData()))
-        )
-        shinyjs::show(id = "dsUploadVars")
+        updateSelectizeInput(session, "dsUploadVars",
+                             choices = colnames(dsUploadData()),
+                             selected = "")
+
+        shinyjs::show("dsUploadVarsWrap")
+        shinyjs::show("descriptiveStatsMP")
+        goToUploadedDataTab()
       } else {
-        shinyjs::hide(id = "dsUploadVars")
+        shinyjs::hide("dsUploadVarsWrap")
+        ds_data_source(NULL)
       }
     })
-    
-    #### --------------- Render Uploaded Data Table ------------------------
-    observeEvent(input$goDescpStats, {
-      output$renderDSData <- renderUI({
-        tagList(
-          div(reactableOutput(session$ns("dsUploadTable")), style = "width: 95%")
-        )
-      })
+
+    # ---- Uploaded Data tab: immediate preview (ML-style) ----
+    output$renderDSData <- renderUI({
+      if (input$dataInput != "Upload Data") return(NULL)
+      if (!dsupload_iv$is_valid()) {
+        return(helpText("No data yet. Upload a dataset to view it here."))
+      }
+      DT::DTOutput(session$ns("dsUploadTable"))
     })
-    
+
+    output$dsUploadTable <- DT::renderDT({
+      req(input$dataInput == "Upload Data")
+      req(dsupload_iv$is_valid())
+      DT::datatable(
+        as.data.frame(dsUploadData()),
+        options = list(
+          pageLength  = 25,
+          lengthMenu  = list(c(25, 50, 100, -1), c("25", "50", "100", "all")),
+          scrollX     = TRUE
+        )
+      )
+    })
+
     observeEvent(input$goDescpStats, {
       
       output$renderDescrStats <- renderUI({
@@ -867,43 +911,13 @@ descStatsServer <- function(id) {
         } 
       })
       
-#### ------------ Uploaded Data Table --------------------------------------------
-      output$dsUploadTable <- renderReactable({
-        req(dsupload_iv$is_valid())
-        reactable(
-          dsUploadData(),
-          sortable            = TRUE,
-          resizable           = TRUE,
-          bordered            = TRUE,
-          striped             = TRUE,
-          highlight           = TRUE,
-          pagination          = TRUE,
-          defaultPageSize     = 25,
-          pageSizeOptions     = c(25, 50, 100),
-          showPageSizeOptions = TRUE,
-          searchable          = TRUE,
-          fullWidth           = TRUE,
-          defaultColDef       = colDef(align = "center")
-        )
-      })
-      
       if(ds_iv$is_valid())
       {
         dsReset(FALSE)
         
         df <- getDsDataframe()
         
-        rowFilter <- input$dsTableFilters
-        
-        if("Mode" %in% input$dsTableFilters && df['Mode',3] != "No mode exists."){
-          rowFilter <- c(rowFilter, "Mode Frequency")
-        } 
-        
-        if("Potential Outliers" %in% input$dsTableFilters){
-          rowFilter <- c(rowFilter, "Lower Fence", "Upper Fence", "Outlier Values")
-        }
-        
-        filteredDf <- filter(df, rownames(df) %in% rowFilter)
+        filteredDf <- buildRowFilter(df)
         
         output$dsTableData <- renderDT(datatable(filteredDf,
                                                  extensions = 'RowGroup',
@@ -925,17 +939,7 @@ descStatsServer <- function(id) {
         
         outputOptions(output, "dsTableData", suspendWhenHidden = FALSE)
         
-        if(input$dataInput == 'Upload Data')
-        {
-          for( x in input$dsUploadVars)
-          {
-            sampleData <- na.omit(as.data.frame(dsUploadData())[, x])
-          }
-        }
-        else
-        {
-          sampleData <- dsRawData()
-        }
+        sampleData <- getSampleVector()
         
         sample_df <- data.frame(sampleData, sampleData^2)
         names(sample_df) <- c("x", "x<sup>2</sup>")
@@ -996,18 +1000,7 @@ descStatsServer <- function(id) {
           )
         })
         
-        if(input$dataInput == 'Upload Data')
-        {
-          for( x in input$dsUploadVars)
-          {
-            dat <- na.omit(as.data.frame(dsUploadData())[, x])
-          }
-          colnames(df) <- c("Category", "Variable", input$dsUploadVars)
-        }
-        else
-        {
-          dat <- dsRawData()
-        }
+        dat <- getSampleVector()
 
         df_boxplot <- data.frame(x = dat)
         
@@ -1070,6 +1063,8 @@ descStatsServer <- function(id) {
           hist <- ggplot(data.frame(x = dat)) +
             geom_histogram(aes(x = x),
                            bins = 15,
+                           boundary = min(dat),
+                           closed = "right",
                            fill = input[["dsHisto-Colour"]],
                            color = "black") +
             labs(title = input[["dsHisto-Title"]],
@@ -1118,19 +1113,11 @@ descStatsServer <- function(id) {
         }, height = function() {GetPlotHeight(input[["dsHisto-Height"]], input[["dsHisto-HeightPx"]], ui = FALSE)},
            width = function() {GetPlotWidth(input[["dsHisto-Width"]], input[["dsHisto-WidthPx"]], ui = FALSE)})
         
-        # #---------------------- #
-        # #### Stem and Leaf ----
-        # #---------------------- #
-        # 
-        # output$dsStemLeaf <- renderPrint({
-        #   stem.leaf(dat, unit = 1, m = 1, depths = FALSE)
-        # })
-        
-        shinyjs::show(id = "outputPanel")
+        shinyjs::show("descriptiveStatsMP")
+        showResultTabs()
       } else {
-        shinyjs::hide(id = "outputPanel")
+        hideResultTabs()
       }
-      # show(id = 'descriptiveStatsMP') 
     })
     
     dsTableProxy <- dataTableProxy('dsTableData')
@@ -1140,17 +1127,7 @@ descStatsServer <- function(id) {
       
       df <- getDsDataframe()
       
-      rowFilter <- input$dsTableFilters
-      
-      if("Mode" %in% input$dsTableFilters && df['Mode',3] != "No mode exists."){
-        rowFilter <- c(rowFilter, "Mode Frequency")
-      } 
-      
-      if("Potential Outliers" %in% input$dsTableFilters){
-        rowFilter <- c(rowFilter, "Lower Fence", "Upper Fence", "Outlier Values")
-      }
-      
-      newFilter <- filter(df, rownames(df) %in% rowFilter)
+      newFilter <- buildRowFilter(df)
       
       replaceData(dsTableProxy, newFilter, resetPaging = FALSE, rownames = FALSE)
     })
@@ -1161,40 +1138,48 @@ descStatsServer <- function(id) {
     
     observeEvent({input$descriptiveStat
       input$dsUploadVars}, {
-        shinyjs::hide(id = 'outputPanel')                
+        hideResultTabs()
       })
-    
+
+    session$onFlushed(function() {
+      hideTab(inputId = "dsTabset", target = "Uploaded Data")
+      hideResultTabs()
+      shinyjs::hide("dsUploadVarsWrap")
+    }, once = TRUE)
+
     observeEvent(input$dataInput, {
-      shinyjs::hide(id = 'outputPanel')
-    })
-    
-    observeEvent(fileInputs$dsStatus, {
-      if (fileInputs$dsStatus == "uploaded")
-        show(id = "dsUploadVars")
-      else
-        hide(id = "dsUploadVars")
-    })
-    
-    observe({
-      if(is.null(input$dsGraphOptions)) {
-        hideTab(inputId = 'dsTabset', target = 'Graphs')
-        updateTabsetPanel(inputId = 'dsTabset', selected = 'Descriptive Statistics')
+      hideResultTabs()
+
+      if (input$dataInput == "Upload Data") {
+        shinyjs::show("descriptiveStatsMP")
+        goToUploadedDataTab()
+        shinyjs::hide("dsUploadVarsWrap")
       } else {
-        showTab(inputId = 'dsTabset', target = 'Graphs')
+        hideTab(inputId = "dsTabset", target = "Uploaded Data")
+        updateNavbarPage(session, "dsTabset", selected = "Descriptive Statistics")
+        shinyjs::hide("descriptiveStatsMP")
+        ds_data_source(NULL)
+      }
+    }, ignoreInit = TRUE)
+
+    observe({
+      if (is.null(input$dsGraphOptions)) {
+        hideTab(inputId = "dsTabset", target = "Graphs")
       }
     })
     
     observeEvent(input$goDescpStats, {
-      shinyjs::show(id = "descriptiveStatsMP")
+      if (input$dataInput == "Enter Raw Data") {
+        shinyjs::show(id = "descriptiveStatsMP")
+      }
     })
     
     observeEvent(input$goDescpStats, {
-      if(input$dataInput != "Upload Data"){
+      if (input$dataInput != "Upload Data") {
         hideTab(inputId = "dsTabset", target = "Uploaded Data")
       } else {
         showTab(inputId = "dsTabset", target = "Uploaded Data")
       }
-
     })
 
     # ----- Clear boxplot/histogram axis labels when the data set changes -----
@@ -1223,10 +1208,7 @@ descStatsServer <- function(id) {
 
     observeEvent(input$resetAll,{
       dsReset(TRUE)
-      shinyjs::hide(id = 'outputPanel')
-      shinyjs::reset("descriptiveStat")
-      shinyjs::reset("dsUserData")
-      shinyjs::reset("dsUploadVars")
+      hideResultTabs()
 
       resetPlotLabels()
       lastRawCalc(NULL)
@@ -1241,8 +1223,33 @@ descStatsServer <- function(id) {
                                      "Sample Variance"))
       updatePickerInput(session, "dsGraphOptions", selected = "Boxplot")
 
-      fileInputs$dsStatus <- 'reset'
-      updateTabsetPanel(session, "dsTabset", selected = "Descriptive Statistics")
+      keepUpload <- input$dataInput == "Upload Data" &&
+        !is.null(input$dsUserData) && dsupload_iv$is_valid()
+
+      if (keepUpload) {
+        freezeReactiveValue(input, "dsUploadVars")
+        updateSelectizeInput(session, "dsUploadVars",
+                             choices  = colnames(dsUploadData()),
+                             selected = "")
+        shinyjs::show("dsUploadVarsWrap")
+        shinyjs::show("descriptiveStatsMP")
+        goToUploadedDataTab()
+      } else {
+        shinyjs::reset("descriptiveStat")
+        shinyjs::reset("dsUserData")
+        shinyjs::reset("dsUploadVars")
+        ds_data_source(NULL)
+        shinyjs::hide("dsUploadVarsWrap")
+        fileInputs$dsStatus <- "reset"
+
+        if (input$dataInput == "Upload Data") {
+          shinyjs::show("descriptiveStatsMP")
+          goToUploadedDataTab()
+        } else {
+          shinyjs::hide("descriptiveStatsMP")
+          updateNavbarPage(session, "dsTabset", selected = "Descriptive Statistics")
+        }
+      }
     })
 
     # **************************************************************************** #
