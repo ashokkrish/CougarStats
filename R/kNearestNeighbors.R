@@ -44,7 +44,7 @@ knn_classification_report <- function(actual, predicted) {
     check.names = FALSE
   )
   
-  list(cm = as.data.frame(cm), report = report, accuracy = accuracy)
+  list(cm = cm, report = report, accuracy = accuracy)
 }
 
 
@@ -92,7 +92,8 @@ KNNSidebarUI <- function(id) {
         multiple = TRUE,
         options = list(`live-search` = TRUE, title = "Nothing selected", `max-options` = 1)
       ),
-      uiOutput(ns("responseError"))
+      uiOutput(ns("responseError")),
+      uiOutput(ns("responseContinuousWarning"))
     ),
 
     div(
@@ -107,6 +108,16 @@ KNNSidebarUI <- function(id) {
       uiOutput(ns("predictorsError"))
     ),
     
+    br(),
+    p(strong("Graph Options")),
+    hr(),
+    checkboxInput(
+      ns("showBoundary"),
+      label = "Decision Boundary Plot",
+      value = FALSE
+    ),
+    uiOutput(ns("boundaryVarUI")),
+
     uiOutput(ns("fileImportUserMessage")),
     actionButton(ns("calculate"), "Calculate", class = "act-btn"),
     actionButton(ns("reset"), "Reset Values", class = "act-btn")
@@ -115,9 +126,10 @@ KNNSidebarUI <- function(id) {
 
 KNNMainPanelUI <- function(id) {
   ns <- NS(id)
-  
+
   tagList(
     useShinyjs(),
+    suppressWarnings(tippy::use_tippy()),
     navbarPage(
       title = NULL,
 
@@ -193,92 +205,42 @@ KNNServer <- function(id, data, shared_explanatory, shared_response) {
     # 1) Class distribution
     output$knnPlotClass <- renderPlot({
       pd <- plot_data()
-      y <- pd$y
-      
+      y  <- pd$y
+
       validate(
         need(nlevels(y) >= 2, "Choose a categorical response variable to plot class distribution.")
       )
-      
+
+      n_cls    <- nlevels(y)
+      cls_cols <- c("#4472C4", "#ED7D31", "#70AD47", "#9E480E", "#7030A0")[seq_len(min(n_cls, 5))]
+
       plot(
         y,
-        main = "Class Distribution",
-        xlab = "Class",
-        ylab = "Frequency",
-        cex.main = 1.5,
+        col       = cls_cols,
+        main      = "Class Distribution",
+        xlab      = "Class",
+        ylab      = "Frequency",
+        cex.main  = 1.3,
         font.main = 2,
-        cex.lab = 1.3,
-        font.lab = 2,
-        cex.axis = 1.0,
-        xaxt = "n"
+        cex.lab   = 1.1,
+        font.lab  = 2,
+        cex.axis  = 1.0,
+        xaxt      = "n"
       )
-      
+
       axis(
-        side = 1,
-        at = seq_along(levels(y)),
-        labels = levels(y),
-        cex.axis = 1.2,
-        font = 1,
-        lwd = 1,
+        side      = 1,
+        at        = seq_along(levels(y)),
+        labels    = levels(y),
+        cex.axis  = 1.0,
+        font      = 1,
+        lwd       = 1,
         lwd.ticks = 1
       )
-      
+
       box(bty = "l")
     })
-    # 2) Box plots
-    output$knnPlotBox <- renderPlot({
-      pd <- plot_data()
-      
-      validate(
-        need(nlevels(pd$y) >= 2, "Choose a categorical response variable for classification plots.")
-      )
-      
-      p <- caret::featurePlot(x = pd$x, y = pd$y, plot = "box")
-      
-      grid::grid.newpage()
-      print(p)
-    }, res = 96)
-    
-    # 3) Density plots
-    output$knnPlotDensity <- renderPlot({
-      pd <- plot_data()
-      
-      validate(
-        need(nlevels(pd$y) >= 2, "Choose a categorical response variable for classification plots.")
-      )
-      
-      scales <- list(x = list(relation = "free"), y = list(relation = "free"))
-      
-      p <- caret::featurePlot(
-        x = pd$x,
-        y = pd$y,
-        plot = "density",
-        scales = scales,
-        auto.key = list(
-          columns = length(levels(pd$y)),
-          title = "Class",
-          cex.title = 1,
-          cex = 1,
-          space = "bottom"
-        ),
-      )
-      
-      p <- update(
-        p,
-        main = "Density Plots by Class",
-        xlab = "Feature",
-        ylab = "Density",
-        par.settings = list(
-          axis.text = list(cex = 1.1),
-          par.xlab.text = list(cex = 1.3, font = 2),
-          par.ylab.text = list(cex = 1.3, font = 2),
-          par.main.text = list(cex = 1.5, font = 2)
-        )
-      )
-      
-      grid::grid.newpage()
-      print(p)
-      
-    }, res = 96)
+
     
     # ---- Validation (k required, must be > 0) ----
     knn_iv <- shinyvalidate::InputValidator$new()
@@ -304,7 +266,8 @@ KNNServer <- function(id, data, shared_explanatory, shared_response) {
     
     responseError <- reactiveVal(FALSE)
     predictorsError <- reactiveVal(FALSE)
-    
+    responseContinuous <- reactiveVal(FALSE)
+
     fileImportError <- reactiveVal(FALSE)
     knn_message     <- reactiveVal(NULL)
 
@@ -385,23 +348,55 @@ KNNServer <- function(id, data, shared_explanatory, shared_response) {
         ))
       }
       
-      tagList(
-        tags$h4("Class Distribution"),
-        plotOutput(session$ns("knnPlotClass"), height = "350px"),
-        
-        tags$hr(),
-        
-        tags$h4("Boxplots by Class"),
-        plotOutput(session$ns("knnPlotBox"), height = "600px"),
-        
-        tags$hr(),
-        
-        tags$h4("Density Plots by Class"),
-        plotOutput(session$ns("knnPlotDensity"), height = "600px")
-      )
+      {
+        s <- plot_settings()
+        show_boundary <- !is.null(s) && isTRUE(s$showBoundary) && !is.null(s$boundaryVars)
+
+        tagList(
+          tags$h4("Class Distribution"),
+          plotOutput(session$ns("knnPlotClass"), height = "350px"),
+
+          if (show_boundary) tagList(
+            tags$hr(),
+            tags$h4("Decision Boundary"),
+            plotOutput(session$ns("knnPlotBoundary"), height = "500px")
+          ),
+
+          tags$hr(),
+
+          tags$h4("Accuracy vs k"),
+          plotOutput(session$ns("knnPlotAccVsK"), height = "400px")
+        )
+      }
     })
     
     
+    output$boundaryVarUI <- renderUI({
+      req(isTRUE(input$showBoundary))
+      preds <- input$predictors
+
+      if (length(preds) < 2) {
+        return(tags$p(
+          style = "font-size: 13px; color: #6c757d; margin-top: 4px;",
+          "Select at least 2 explanatory variables to use this plot."
+        ))
+      }
+
+      pickerInput(
+        session$ns("boundaryVars"),
+        label   = strong("Select 2 Variables for Axes"),
+        choices  = preds,
+        selected = head(preds, 2),
+        multiple = TRUE,
+        options  = list(
+          `max-options`      = 2,
+          `max-options-text` = "Select exactly 2 variables",
+          `live-search`      = TRUE,
+          title              = "Select exactly 2 variables"
+        )
+      )
+    })
+
     output$responseError <- renderUI({
       if (responseError()) {
         tags$div(
@@ -423,8 +418,19 @@ KNNServer <- function(id, data, shared_explanatory, shared_response) {
         )
       }
     })
-    
-    
+
+    output$responseContinuousWarning <- renderUI({
+      if (responseContinuous()) {
+        div(
+          class = "alert alert-warning",
+          style = "font-size: 12px; margin-top: 4px; margin-bottom: 10px;",
+          icon("triangle-exclamation"),
+          ml_continuous_response_message
+        )
+      }
+    })
+
+
     observeEvent(data(), {
       req(data())
 
@@ -435,9 +441,17 @@ KNNServer <- function(id, data, shared_explanatory, shared_response) {
       numeric_cols <- cols[sapply(df0, is.numeric)]
 
       pre_predictors <- intersect(shared_explanatory(), numeric_cols)
+      shared_resp    <- shared_response()
 
-      updatePickerInput(session, "response",   choices = cols,         selected = character(0))
-      updatePickerInput(session, "predictors", choices = numeric_cols, selected = pre_predictors)
+      n_rows         <- nrow(df0)
+      valid_response <- cols[sapply(cols, function(col) {
+        n_uniq <- length(unique(na.omit(df0[[col]])))
+        n_uniq >= 2 && n_uniq <= floor(n_rows / 2)
+      })]
+      pre_response   <- if (isTruthy(shared_resp) && shared_resp %in% valid_response) shared_resp else character(0)
+
+      updatePickerInput(session, "response",   choices = valid_response, selected = pre_response)
+      updatePickerInput(session, "predictors", choices = numeric_cols,   selected = pre_predictors)
 
       if (isTruthy(input$split)) {
         n <- nrow(df0)
@@ -455,12 +469,18 @@ KNNServer <- function(id, data, shared_explanatory, shared_response) {
 
       shared_resp <- shared_response()
 
+      n_rows         <- nrow(df0)
+      valid_response <- cols[sapply(cols, function(col) {
+        n_uniq <- length(unique(na.omit(df0[[col]])))
+        n_uniq >= 2 && n_uniq <= floor(n_rows / 2)
+      })]
+
       if (input$task == "Regression") {
         pre_response <- if (isTruthy(shared_resp) && shared_resp %in% numeric_cols) shared_resp else character(0)
-        updatePickerInput(session, "response", choices = numeric_cols, selected = pre_response)
+        updatePickerInput(session, "response", choices = numeric_cols,   selected = pre_response)
       } else {
-        pre_response <- if (isTruthy(shared_resp) && shared_resp %in% cols) shared_resp else character(0)
-        updatePickerInput(session, "response", choices = cols, selected = pre_response)
+        pre_response <- if (isTruthy(shared_resp) && shared_resp %in% valid_response) shared_resp else character(0)
+        updatePickerInput(session, "response", choices = valid_response, selected = pre_response)
       }
     })
     
@@ -489,6 +509,12 @@ KNNServer <- function(id, data, shared_explanatory, shared_response) {
         available_predictors <- setdiff(numeric_cols, input$response)
         selected_predictors  <- intersect(input$predictors, available_predictors)
         updatePickerInput(session, "predictors", choices = available_predictors, selected = selected_predictors)
+
+        responseContinuous(
+          isTruthy(input$response) && ml_is_continuous_response(df[[input$response[1]]])
+        )
+      } else {
+        responseContinuous(FALSE)
       }
     })
 
@@ -518,6 +544,7 @@ KNNServer <- function(id, data, shared_explanatory, shared_response) {
       
       responseError(FALSE)
       predictorsError(FALSE)
+      responseContinuous(FALSE)
       fileImportError(FALSE)
       knn_message(NULL)
 
@@ -557,16 +584,33 @@ KNNServer <- function(id, data, shared_explanatory, shared_response) {
       if (!isTruthy(input$response) || !isTruthy(input$predictors) || length(input$predictors) < 1) {
         return()
       }
-      
+
       req(knn_iv$is_valid())
       resp_col <- input$response[1]
 
       #split dataset for training & testing
       df <- data()
 
+      # Continuous response guard — block classification on a continuous variable
+      if (ml_is_continuous_response(df[[resp_col]])) {
+        responseContinuous(TRUE)
+        return()
+      }
+
+      # NA check — class::knn cannot handle missing values
+      na_cols <- names(which(sapply(df[, input$predictors, drop = FALSE], function(x) any(is.na(x)))))
+      if (length(na_cols) > 0) {
+        knn_message(paste0(
+          "The following predictor column(s) contain missing values (NA): ",
+          paste(na_cols, collapse = ", "),
+          ". Please remove or impute missing values before calculating."
+        ))
+        return()
+      }
+
       # Zero variance check
-      sds <- sapply(df[, input$predictors, drop = FALSE], sd, na.rm = TRUE)
-      zero_var_cols <- names(sds)[is.na(sds) | sds == 0]
+      vars <- sapply(df[, input$predictors, drop = FALSE], var, na.rm = TRUE)
+      zero_var_cols <- names(vars)[is.na(vars) | vars < .Machine$double.eps]
       if (length(zero_var_cols) > 0) {
         knn_message(paste0(
           "These selected variable(s) have zero variance and cannot be used in KNN: ",
@@ -610,9 +654,11 @@ KNNServer <- function(id, data, shared_explanatory, shared_response) {
       #CLASSIFICATION vs REGRESSION
       if (is.null(input$task) || input$task == "Classification") {
         
-        #Pulls the response column that the user selected & turns it into a factor
-        y_train <- as.factor(train[[resp_col]])
-        y_test  <- as.factor(test[[resp_col]])
+        # Shared levels so a class missing from one split doesn't make
+        # y_train/y_test/pred disagree on levels (breaks == comparisons).
+        resp_levels <- sort(unique(as.character(na.omit(df[[resp_col]]))))
+        y_train <- factor(train[[resp_col]], levels = resp_levels)
+        y_test  <- factor(test[[resp_col]],  levels = resp_levels)
         
         #Run kNN classification algorithm
         pred <- class::knn(
@@ -624,64 +670,291 @@ KNNServer <- function(id, data, shared_explanatory, shared_response) {
         
         #evaluation metrics 
         metrics <- knn_classification_report(actual = y_test, predicted = pred)
-        
+
+        class_dist_df <- as.data.frame(table(as.factor(df[[resp_col]])))
+        colnames(class_dist_df) <- c("Class", "Count")
+
+        # nearest odd integer of sqrt(n_train) — recommended starting k
+        k_round_val   <- round(sqrt(n_train))
+        k_recommended <- if (k_round_val %% 2 == 0) k_round_val + 1L else as.integer(k_round_val)
+
         # to keep train/split static until user clicks calculate
         calc_settings(list(
-          split = input$split,
-          k = k,
-          n_total = n,
-          n_train = n_train
+          split         = input$split,
+          k             = k,
+          n_total       = n,
+          n_train       = n_train,
+          k_recommended = k_recommended
         ))
-        
-        
+
+
         #Results UI layout
         output$resultsUI <- renderUI({
-          s <- calc_settings()
+          s       <- calc_settings()
           req(s)
-          
-          split_prop <- s$split / 100
-          k_calc <- sqrt(s$n_train)
-          
+          correct <- sum(diag(metrics$cm))
+          total   <- sum(metrics$cm)
+
           tagList(
-            shiny::withMathJax(),
-            
-            tags$p(tags$strong("Task: "), input$task),
-            
-            tags$p(tags$strong("n = "), s$n_total),
-            
-            tags$p(tags$strong("n × train split = "),
-                   paste0(s$n_total, " × ", sprintf("%.2f", split_prop), " = ", s$n_train)),
-            
-            tags$p(tags$strong("k calculation: "),
-                   sprintf("\\( k = \\sqrt{n_{train}} = \\sqrt{%s} = %.4f \\Rightarrow %s \\)",
-                           s$n_train, k_calc, s$k)),
-            
-            tags$p(tags$strong("k = "), s$k),
-            tags$p(tags$strong("Train split = "), paste0(s$split, "%")),
-            tags$p(tags$strong("Accuracy = "), sprintf("%.4f", metrics$accuracy)),
-            
+            tags$h4("Model Summary"),
+            tableOutput(session$ns("knnModelInfo")),
+
+            tags$hr(),
+
+            tags$h5(tags$strong(HTML("Your Selected <em>k</em>"))),
+            tags$p(HTML(paste0(
+              "You selected <em>k</em> = <strong>", s$k, "</strong>"
+            ))),
+
+            tags$h5(tags$strong(HTML("Recommended <em>k</em>"))),
+            tags$p(HTML(paste0(
+              "Based on your training set size, the recommended starting <em>k</em> is calculated as: ",
+              "&radic;<em>n</em><sub>train</sub>",
+              " = &radic;", s$n_train,
+              " = ", sprintf("%.2f", sqrt(s$n_train)),
+              " &asymp; <strong>", s$k_recommended, "</strong>"
+            ))),
+
+            tags$p(
+              style = "color: #6c757d; font-size: 14px; margin-top: 4px;",
+              HTML(paste0(
+                "The recommended <em>k</em> is a starting point. Your chosen <em>k</em> may perform ",
+                "better depending on your dataset. Always validate using the confusion matrix results."
+              ))
+            ),
+
+            tags$hr(),
+
+            tags$h4("Class Distribution (Full Dataset)"),
+            tableOutput(session$ns("classDist")),
+            tags$hr(),
+
             tags$h4("Classification Report"),
             tableOutput(session$ns("classReport")),
-            
+            tags$script(HTML("setTimeout(function(){ if(typeof tippy!=='undefined') tippy('[data-tippy-content]'); }, 200);")),
+
             tags$h4("Confusion Matrix"),
-            tableOutput(session$ns("confMat"))
+            tableOutput(session$ns("confMat")),
+            tags$h5(tags$strong("Accuracy Calculation"),
+                    style = "margin-top: 14px; margin-bottom: 2px;"),
+            withMathJax(),
+            tags$p(HTML(sprintf(
+              "\\( \\text{Accuracy} = \\dfrac{\\text{Correct Predictions}}{\\text{Total Observations}} = \\dfrac{%d}{%d} = %.2f\\%% \\)",
+              correct, total, metrics$accuracy * 100
+            ))),
+            tags$script(HTML("if(window.MathJax){ MathJax.Hub ? MathJax.Hub.Queue(['Typeset',MathJax.Hub]) : MathJax.typesetPromise(); }"))
           )
         })
         
         #send the data into the UI
-        output$classReport  <- renderTable({ metrics$report }, striped = TRUE, bordered = TRUE)
-        output$confMat      <- renderTable({ metrics$cm }, striped = TRUE, bordered = TRUE)
+        output$knnModelInfo <- renderTable({
+          s <- calc_settings()
+          req(s)
+
+          data.frame(
+            Item = c(
+              "Number of Observations",
+              "Training Observations",
+              "Test Observations",
+              "Train/Test Split",
+              "Selected k",
+              "Recommended k",
+              "Accuracy"
+            ),
+            Value = c(
+              as.character(s$n_total),
+              as.character(s$n_train),
+              as.character(s$n_total - s$n_train),
+              paste0(s$split, "%"),
+              as.character(s$k),
+              as.character(s$k_recommended),
+              sprintf("%.4f", metrics$accuracy)
+            ),
+            check.names = FALSE
+          )
+        }, rownames = FALSE, striped = TRUE, bordered = TRUE)
+
+        output$classDist    <- renderTable({ class_dist_df }, rownames = FALSE, striped = TRUE, bordered = TRUE)
+        output$classReport <- renderTable({
+          metrics$report
+        }, rownames = FALSE, striped = TRUE, bordered = TRUE,
+           sanitize.colnames.function = function(x) {
+             tips <- c(
+               Precision = "Of all instances predicted as this class, the fraction that are truly this class. High precision means few false positives.",
+               Recall    = "Of all actual instances of this class, the fraction correctly predicted. High recall means few false negatives.",
+               F1        = "Harmonic mean of Precision and Recall — balances both into a single score.",
+               Support   = "Number of actual instances of this class in the dataset."
+             )
+             sapply(x, function(col) {
+               if (col %in% names(tips)) {
+                 paste0('<b><span data-tippy-content="', tips[[col]],
+                        '" style="cursor:help;border-bottom:1px dotted #555;">', col, '</span></b>')
+               } else {
+                 paste0("<b>", col, "</b>")
+               }
+             }, USE.NAMES = FALSE)
+           })
+        output$confMat <- renderTable({
+          cm <- as.data.frame.matrix(metrics$cm)
+          cm$Actual <- paste0("<b>", rownames(cm), "</b>")
+          cm <- cm[, c("Actual", setdiff(names(cm), "Actual"))]
+          rownames(cm) <- NULL
+          cm
+        }, rownames = FALSE, striped = TRUE, bordered = TRUE,
+           sanitize.text.function = identity,
+           sanitize.colnames.function = function(x) {
+             sapply(x, function(col) {
+               if (col == "Actual") "<b>Actual \\ Predicted</b>" else paste0("<b>", col, "</b>")
+             }, USE.NAMES = FALSE)
+           })
         
+        boundary_vars <- if (isTRUE(input$showBoundary) &&
+                             length(input$boundaryVars) == 2) input$boundaryVars else NULL
+
         plot_settings(list(
-          response = resp_col,
-          predictors = input$predictors
+          response     = resp_col,
+          predictors   = input$predictors,
+          X_train      = X_train,
+          X_test       = X_test,
+          y_train      = y_train,
+          y_test       = y_test,
+          k            = k,
+          showBoundary = isTRUE(input$showBoundary),
+          boundaryVars = boundary_vars
         ))
         
+        output$knnPlotBoundary <- renderPlot({
+          s <- plot_settings()
+          req(s, !is.null(s$boundaryVars), length(s$boundaryVars) == 2)
+
+          p1 <- s$boundaryVars[1]
+          p2 <- s$boundaryVars[2]
+
+          X_tr <- s$X_train[, c(p1, p2), drop = FALSE]
+          X_te <- s$X_test[,  c(p1, p2), drop = FALSE]
+
+          x1_rng <- range(c(X_tr[, 1], X_te[, 1]), na.rm = TRUE)
+          x2_rng <- range(c(X_tr[, 2], X_te[, 2]), na.rm = TRUE)
+          pad    <- 0.1
+
+          x1_seq <- seq(x1_rng[1] - pad * diff(x1_rng),
+                        x1_rng[2] + pad * diff(x1_rng), length.out = 80)
+          x2_seq <- seq(x2_rng[1] - pad * diff(x2_rng),
+                        x2_rng[2] + pad * diff(x2_rng), length.out = 80)
+
+          grid_mat           <- as.matrix(expand.grid(x1_seq, x2_seq))
+          colnames(grid_mat) <- c(p1, p2)
+
+          grid_pred <- suppressWarnings(class::knn(
+            train = X_tr, test = grid_mat, cl = s$y_train, k = s$k
+          ))
+
+          classes  <- levels(s$y_train)
+          n_cls    <- length(classes)
+          cls_cols <- c("#4472C4", "#ED7D31", "#70AD47", "#9E480E", "#7030A0")[seq_len(min(n_cls, 5))]
+
+          # Lighten region colours toward white so they remain visible on both
+          # light and dark backgrounds without relying on alpha blending
+          lighten <- function(col, f = 0.55) {
+            v <- col2rgb(col) / 255
+            v <- v + (1 - v) * f
+            rgb(v[1, ], v[2, ], v[3, ])
+          }
+          bg_cols <- lighten(cls_cols)
+
+          class_idx <- match(as.character(grid_pred), classes)
+          z_mat     <- matrix(class_idx, nrow = length(x1_seq), ncol = length(x2_seq))
+          breaks    <- seq(0.5, n_cls + 0.5, by = 1)
+
+          par(mar = c(5, 4, 4, 2), cex.main = 1.3, font.main = 2,
+              cex.lab = 1.1, font.lab = 2, cex.axis = 1.0)
+
+          image(
+            x1_seq, x2_seq, z_mat,
+            col    = bg_cols,
+            breaks = breaks,
+            main   = paste0("Decision Boundary (", p1, " vs ", p2, ")"),
+            xlab   = p1,
+            ylab   = p2
+          )
+
+          box(bty = "l")
+
+          all_X2  <- rbind(X_tr, X_te)
+          all_y   <- c(as.character(s$y_train), as.character(s$y_test))
+          all_col <- cls_cols[match(all_y, classes)]
+          points(all_X2[, 1], all_X2[, 2], col = all_col, pch = 19, cex = 0.9)
+
+          legend(
+            "right",
+            legend = classes,
+            col    = cls_cols[seq_along(classes)],
+            pch    = 19,
+            pt.cex = 0.9,
+            bty    = "n",
+            cex    = 0.95,
+            title  = "Class"
+          )
+        })
+
+        output$knnPlotAccVsK <- renderPlot({
+          s <- plot_settings()
+          req(s)
+
+          max_k  <- max(s$k + 5, min(50, nrow(s$X_train) - 1))
+          k_vals <- seq_len(max_k)
+
+          acc_vals <- sapply(k_vals, function(ki) {
+            pred <- suppressWarnings(class::knn(
+              train = s$X_train, test = s$X_test, cl = s$y_train, k = ki
+            ))
+            mean(pred == s$y_test)
+          })
+
+          par(mar = c(5, 4, 4, 2))
+
+          plot(
+            k_vals, acc_vals,
+            type      = "l",
+            col       = "#4472C4",
+            lwd       = 2,
+            main      = "Accuracy vs k",
+            xlab      = "k (Number of Neighbors)",
+            ylab      = "Test Set Accuracy",
+            ylim      = c(max(0, min(acc_vals) - 0.05), min(1, max(acc_vals) + 0.05)),
+            cex.main  = 1.3,
+            font.main = 2,
+            cex.lab   = 1.1,
+            font.lab  = 2,
+            cex.axis  = 1.0,
+            bty       = "l"
+          )
+
+          points(k_vals, acc_vals, pch = 19, col = "#4472C4", cex = 0.6)
+
+          if (s$k <= max_k) {
+            points(s$k, acc_vals[s$k], col = "#ED7D31", pch = 19, cex = 1.8)
+            abline(v = s$k, col = "#ED7D31", lty = 2, lwd = 1.5)
+          }
+
+          legend(
+            "right",
+            legend = c("Accuracy", paste0("Selected k = ", s$k)),
+            col    = c("#4472C4", "#ED7D31"),
+            lty    = c(1, 2),
+            pch    = c(19, 19),
+            pt.cex = c(0.6, 1.5),
+            lwd    = c(2, 1.5),
+            bty    = "n",
+            cex    = 0.95
+          )
+        })
+
         results_ready(TRUE)
         plots_ready(TRUE)
         results_ever_calculated(TRUE)
         plots_ever_calculated(TRUE)
-        
+
         showTab(inputId = "knnMainPanel", target = "results_tab")
         showTab(inputId = "knnMainPanel", target = "plots_tab")
         

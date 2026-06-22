@@ -20,7 +20,8 @@ LDASidebarUI <- function(id) {
         multiple = TRUE,
         options = list(`live-search` = TRUE, title = "Nothing selected", `max-options` = 1)
       ),
-      uiOutput(ns("responseError"))
+      uiOutput(ns("responseError")),
+      uiOutput(ns("responseContinuousWarning"))
     ),
 
     div(
@@ -52,6 +53,7 @@ LDAMainPanelUI <- function(id) {
 
   tagList(
     useShinyjs(),
+    suppressWarnings(tippy::use_tippy()),
     navbarPage(
       title = NULL,
 
@@ -119,7 +121,8 @@ LDAServer <- function(id, data, shared_explanatory, shared_response) {
     noFileCalculate <- reactiveVal(FALSE)
     responseError <- reactiveVal(FALSE)
     predictorsError <- reactiveVal(FALSE)
-    
+    responseContinuous <- reactiveVal(FALSE)
+
     observeEvent(TRUE, {
       shinyjs::delay(0, {
         hideTab(inputId = "ldaMainPanel", target = "results_tab")
@@ -162,10 +165,16 @@ LDAServer <- function(id, data, shared_explanatory, shared_response) {
 
       pre_predictors <- intersect(shared_explanatory(), numeric_cols)
       shared_resp    <- shared_response()
-      pre_response   <- if (isTruthy(shared_resp) && shared_resp %in% cols) shared_resp else character(0)
 
-      updatePickerInput(session, "response",   choices = cols,         selected = pre_response)
-      updatePickerInput(session, "predictors", choices = numeric_cols, selected = pre_predictors)
+      n_rows         <- nrow(df)
+      valid_response <- cols[sapply(cols, function(col) {
+        n_uniq <- length(unique(na.omit(df[[col]])))
+        n_uniq >= 2 && n_uniq <= floor(n_rows / 2)
+      })]
+      pre_response   <- if (isTruthy(shared_resp) && shared_resp %in% valid_response) shared_resp else character(0)
+
+      updatePickerInput(session, "response",   choices = valid_response, selected = pre_response)
+      updatePickerInput(session, "predictors", choices = numeric_cols,   selected = pre_predictors)
 
       results_ready(FALSE)
       plots_ready(FALSE)
@@ -299,11 +308,28 @@ LDAServer <- function(id, data, shared_explanatory, shared_response) {
       }
     })
 
+    output$responseContinuousWarning <- renderUI({
+      if (responseContinuous()) {
+        div(
+          class = "alert alert-warning",
+          style = "font-size: 12px; margin-top: 4px; margin-bottom: 10px;",
+          icon("triangle-exclamation"),
+          ml_continuous_response_message
+        )
+      }
+    })
+
     observeEvent(input$response, {
       shared_response(input$response)
       if (isTruthy(input$response)) {
         responseError(FALSE)
         shinyjs::removeClass(id = "responseWrapper", class = "has-error")
+      }
+
+      if (isTruthy(data()) && isTruthy(input$response)) {
+        responseContinuous(ml_is_continuous_response(data()[[input$response[1]]]))
+      } else {
+        responseContinuous(FALSE)
       }
     })
 
@@ -347,7 +373,24 @@ LDAServer <- function(id, data, shared_explanatory, shared_response) {
     resp_col <- input$response[1]
     df <- data()
 
+      # Continuous response guard — block classification on a continuous variable
+      if (ml_is_continuous_response(df[[resp_col]])) {
+        responseContinuous(TRUE)
+        return()
+      }
+
       analysis_df <- df[, c(input$predictors, resp_col), drop = FALSE]
+
+      na_cols <- names(which(sapply(analysis_df, function(x) any(is.na(x)))))
+      if (length(na_cols) > 0) {
+        lda_message(paste0(
+          "The following column(s) contain missing values (NA): ",
+          paste(na_cols, collapse = ", "),
+          ". Please remove or impute missing values before calculating."
+        ))
+        return()
+      }
+
       analysis_df <- na.omit(analysis_df)
 
       analysis_df[[resp_col]] <- prepare_lda_response(analysis_df[[resp_col]])
@@ -360,7 +403,9 @@ LDAServer <- function(id, data, shared_explanatory, shared_response) {
       predictor_df <- analysis_df[, input$predictors, drop = FALSE]
       numeric_check <- sapply(predictor_df, is.numeric)
 
-      class_counts <- table(analysis_df[[resp_col]])
+      class_counts    <- table(analysis_df[[resp_col]])
+      class_dist_df   <- as.data.frame(class_counts)
+      colnames(class_dist_df) <- c("Class", "Count")
 
       if (nlevels(analysis_df[[resp_col]]) > floor(nrow(analysis_df) / 2)) {
         showNotification(
@@ -394,8 +439,8 @@ LDAServer <- function(id, data, shared_explanatory, shared_response) {
       }
 
       # Zero variance check
-      sds <- sapply(predictor_df, sd, na.rm = TRUE)
-      zero_var_cols <- names(sds)[is.na(sds) | sds == 0]
+      vars <- sapply(predictor_df, var, na.rm = TRUE)
+      zero_var_cols <- names(vars)[is.na(vars) | vars < .Machine$double.eps]
       if (length(zero_var_cols) > 0) {
         lda_message(paste0(
           "These selected variable(s) have zero variance and cannot be used in LDA: ",
@@ -414,16 +459,14 @@ LDAServer <- function(id, data, shared_explanatory, shared_response) {
       lda_fit <- tryCatch(
         MASS::lda(lda_formula, data = analysis_df),
         error = function(e) {
-          showNotification(
-            paste("LDA could not be computed:", e$message),
-            type = "error",
-            duration = 8
-          )
+          lda_message(paste("LDA could not be computed:", e$message))
           return(NULL)
         }
       )
-      
-      req(lda_fit)
+
+      if (is.null(lda_fit)) {
+        return()
+      }
       
       lda_pred <- predict(lda_fit, analysis_df[, input$predictors, drop = FALSE])
 
@@ -466,6 +509,9 @@ LDAServer <- function(id, data, shared_explanatory, shared_response) {
         cv_accuracy <- sum(diag(cv_confusion)) / sum(cv_confusion)
       }
 
+      class_report_preds <- if (isTRUE(input$useCV)) lda_cv$class else lda_pred$class
+      lda_class_report   <- knn_classification_report(analysis_df[[resp_col]], class_report_preds)$report
+
       res <- list(
         fit = lda_fit,
         confusion = confusion_mat,
@@ -476,7 +522,9 @@ LDAServer <- function(id, data, shared_explanatory, shared_response) {
         cv_accuracy = cv_accuracy,
         response = resp_col,
         predictors = input$predictors,
-        n = nrow(analysis_df)
+        n = nrow(analysis_df),
+        class_dist = class_dist_df,
+        class_report = lda_class_report
       )
 
       calc_results(res)
@@ -492,10 +540,37 @@ LDAServer <- function(id, data, shared_explanatory, shared_response) {
         r <- calc_results()
         req(r)
 
+        conf_used <- if (isTRUE(input$useCV) && !is.null(r$cv_confusion)) r$cv_confusion else r$confusion
+        acc_used  <- if (isTRUE(input$useCV) && !is.null(r$cv_accuracy))  r$cv_accuracy  else r$accuracy
+        correct   <- sum(diag(conf_used))
+        total     <- sum(conf_used)
+
         tagList(
-          tags$h4("Model Information"),
+          tags$h4("Model Summary"),
           tableOutput(session$ns("ldaModelInfo")),
-          
+          tags$hr(),
+
+          tags$h4("Class Distribution (Full Dataset)"),
+          tableOutput(session$ns("ldaClassDist")),
+          tags$hr(),
+
+          tags$h4("Classification Report"),
+          tableOutput(session$ns("ldaClassReport")),
+          tags$script(HTML("setTimeout(function(){ if(typeof tippy!=='undefined') tippy('[data-tippy-content]'); }, 200);")),
+          tags$hr(),
+
+          tags$h4("Confusion Matrix"),
+          tableOutput(session$ns("confusionMatrix")),
+          tags$h5(tags$strong("Accuracy Calculation"),
+                  style = "margin-top: 14px; margin-bottom: 2px;"),
+          withMathJax(),
+          tags$p(HTML(sprintf(
+            "\\( \\text{Accuracy} = \\dfrac{\\text{Correct Predictions}}{\\text{Total Observations}} = \\dfrac{%d}{%d} = %.2f\\%% \\)",
+            correct, total, acc_used * 100
+          ))),
+          tags$script(HTML("if(window.MathJax){ MathJax.Hub ? MathJax.Hub.Queue(['Typeset',MathJax.Hub]) : MathJax.typesetPromise(); }")),
+          tags$hr(),
+
           tags$h4("Prior Probabilities"),
           tableOutput(session$ns("ldaPriors")),
 
@@ -506,23 +581,20 @@ LDAServer <- function(id, data, shared_explanatory, shared_response) {
           tableOutput(session$ns("coefficients")),
 
           tags$h4("Proportion of Trace"),
-          tableOutput(session$ns("propTrace")),
-
-          tags$h4("Confusion Matrix"),
-          tableOutput(session$ns("confusionMatrix"))
+          tableOutput(session$ns("propTrace"))
         )
       })
 
       output$ldaModelInfo <- renderTable({
         r <- calc_results()
         req(r)
-        
+
         acc <- if (isTRUE(input$useCV) && !is.null(r$cv_accuracy)) {
           round(r$cv_accuracy, 4)
         } else {
           round(r$accuracy, 4)
         }
-        
+
         data.frame(
           Item = c(
             "Number of Classes",
@@ -540,84 +612,131 @@ LDAServer <- function(id, data, shared_explanatory, shared_response) {
           ),
           check.names = FALSE
         )
-      }, rownames = FALSE)
+      }, rownames = FALSE, striped = TRUE, bordered = TRUE)
       
+      output$ldaClassDist <- renderTable({
+        r <- calc_results()
+        req(r)
+        r$class_dist
+      }, rownames = FALSE, striped = TRUE, bordered = TRUE)
+
+      output$ldaClassReport <- renderTable({
+        r <- calc_results()
+        req(r)
+        r$class_report
+      }, rownames = FALSE, striped = TRUE, bordered = TRUE,
+         sanitize.colnames.function = function(x) {
+           tips <- c(
+             Precision = "Of all instances predicted as this class, the fraction that are truly this class. High precision means few false positives.",
+             Recall    = "Of all actual instances of this class, the fraction correctly predicted. High recall means few false negatives.",
+             F1        = "Harmonic mean of Precision and Recall — balances both into a single score.",
+             Support   = "Number of actual instances of this class in the dataset."
+           )
+           sapply(x, function(col) {
+             if (col %in% names(tips)) {
+               paste0('<b><span data-tippy-content="', tips[[col]],
+                      '" style="cursor:help;border-bottom:1px dotted #555;">', col, '</span></b>')
+             } else {
+               paste0("<b>", col, "</b>")
+             }
+           }, USE.NAMES = FALSE)
+         })
+
       output$ldaPriors <- renderTable({
         r <- calc_results()
         req(r)
-        
+
         data.frame(
           Class = names(r$fit$prior),
           Prior_Probability = round(as.numeric(r$fit$prior), 4),
           check.names = FALSE
         )
-      }, rownames = FALSE)
+      }, rownames = FALSE, striped = TRUE, bordered = TRUE)
 
       output$groupMeans <- renderTable({
         r <- calc_results()
         req(r)
         round(r$fit$means, 4)
-      }, rownames = TRUE)
+      }, rownames = TRUE, striped = TRUE, bordered = TRUE)
 
       output$coefficients <- renderTable({
         r <- calc_results()
         req(r)
         round(r$fit$scaling, 4)
-      }, rownames = TRUE)
+      }, rownames = TRUE, striped = TRUE, bordered = TRUE)
 
       output$propTrace <- renderTable({
         r <- calc_results()
         req(r)
-        
+
         data.frame(
           Discriminant = paste0("LD", seq_along(r$prop_trace)),
           Proportion = round(r$prop_trace, 4),
           check.names = FALSE
         )
-      }, rownames = FALSE)
+      }, rownames = FALSE, striped = TRUE, bordered = TRUE)
 
       output$confusionMatrix <- renderTable({
         r <- calc_results()
         req(r)
-        
+
         cm <- if (isTRUE(input$useCV) && !is.null(r$cv_confusion)) {
           as.data.frame.matrix(r$cv_confusion)
         } else {
           as.data.frame.matrix(r$confusion)
         }
-        
-        cm$Actual <- rownames(cm)
+
+        cm$Actual <- paste0("<b>", rownames(cm), "</b>")
         cm <- cm[, c("Actual", setdiff(names(cm), "Actual"))]
         rownames(cm) <- NULL
         cm
-      }, rownames = FALSE)
+      }, rownames = FALSE, striped = TRUE, bordered = TRUE,
+         sanitize.text.function = identity,
+         sanitize.colnames.function = function(x) {
+           sapply(x, function(col) {
+             if (col == "Actual") "<b>Actual \\ Predicted</b>" else paste0("<b>", col, "</b>")
+           }, USE.NAMES = FALSE)
+         })
 
       output$ldaPlot <- renderPlot({
         r <- plot_results()
         req(r)
 
-        ggplot(r$scores, aes(x = LD1, y = LD2, color = Class)) +
-          geom_point(size = 3, alpha = 0.8) +
-          labs(
-            title = "LDA Plot",
-            x = "LD1",
-            y = "LD2",
-            color = "Class"
-          ) +
-          theme_bw() +
-          theme(
-            plot.title = element_text(hjust = 0.5, face = "bold", size = 18),
+        scores   <- r$scores
+        classes  <- as.character(levels(scores$Class))
+        n_cls    <- length(classes)
+        cls_cols <- c("#4472C4", "#ED7D31", "#70AD47", "#9E480E", "#7030A0")[seq_len(min(n_cls, 5))]
+        col_vec  <- cls_cols[match(as.character(scores$Class), classes)]
 
-            axis.title.x = element_text(face = "bold", size = 14),
-            axis.title.y = element_text(face = "bold", size = 14),
-  
-            axis.text.x = element_text(face = "bold", size = 14),
-            axis.text.y = element_text(face = "bold", size = 14),
+        par(mar = c(5, 4, 4, 2))
 
-            legend.title = element_text(size = 14, face = "bold"),
-            
-            legend.text = element_text(size = 12)
-          )
+        plot(
+          scores$LD1,
+          scores$LD2,
+          col       = col_vec,
+          pch       = 19,
+          cex       = 1.1,
+          main      = "LDA Plot",
+          xlab      = "LD1",
+          ylab      = "LD2",
+          cex.main  = 1.3,
+          font.main = 2,
+          cex.lab   = 1.1,
+          font.lab  = 2,
+          cex.axis  = 1.0,
+          bty       = "l"
+        )
+
+        legend(
+          "right",
+          legend = classes,
+          col    = cls_cols[seq_along(classes)],
+          pch    = 19,
+          pt.cex = 1.1,
+          bty    = "n",
+          cex    = 0.95,
+          title  = "Class"
+        )
       })
 
       showTab(inputId = "ldaMainPanel", target = "results_tab")
@@ -640,6 +759,7 @@ LDAServer <- function(id, data, shared_explanatory, shared_response) {
       noFileCalculate(FALSE)
       responseError(FALSE)
       predictorsError(FALSE)
+      responseContinuous(FALSE)
       lda_message(NULL)
       
       shinyjs::removeClass(id = "responseWrapper", class = "has-error")

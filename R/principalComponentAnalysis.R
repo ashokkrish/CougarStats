@@ -19,6 +19,7 @@ library(psych) # For rotated solution
 PCASidebarUI <- function(id) {
   ns <- NS(id)
   tagList(
+    useShinyjs(),
 
     div(
       style = "font-size: 15px; color: #6c757d; margin-top: 8px; margin-bottom: 6px; ",
@@ -46,13 +47,17 @@ PCASidebarUI <- function(id) {
       ),
       uiOutput(ns("predictorsError"))
     ),
-    radioButtons(ns("transformation"),
-                 label = strong("Data Transformation"),
-                 choices = c("Original scale",
-                             "Logarithmic transformation",
-                             "Box-Cox transformation",
-                             "Standardized Box-Cox transformation"),
-                 selected = "Original scale"),
+    div(
+      id = ns("transformationContainer"),
+      style = "display: none;",
+      radioButtons(ns("transformation"),
+                   label = strong("Data Transformation"),
+                   choices = c("Original scale",
+                               "Logarithmic transformation",
+                               "Box-Cox transformation",
+                               "Standardized Box-Cox transformation"),
+                   selected = "Original scale")
+    ),
     div(
       id = ns("numFactorsContainer"),
       numericInput(ns("numFactors"), "Number of Factors", value = 2, min = 1, step = 1)
@@ -158,6 +163,7 @@ PCAServer <- function(id, data, shared_explanatory, shared_response) {
       shinyjs::hide("numFactorsContainer")
       shinyjs::hide("pcXContainer")
       shinyjs::hide("pcYContainer")
+      shinyjs::hide("transformationContainer")
     }, once = TRUE)
     
     observeEvent(data(), {
@@ -369,7 +375,6 @@ PCAServer <- function(id, data, shared_explanatory, shared_response) {
 
         showTab(inputId = "mainPanel", target = "pca_results_tab")
         showTab(inputId = "mainPanel", target = "plots_tab")
-        showTab(inputId = "mainPanel", target = "transformations_tab")
 
         updateNavbarPage(session, "mainPanel", selected = "pca_results_tab")
 
@@ -509,13 +514,13 @@ PCAServer <- function(id, data, shared_explanatory, shared_response) {
       req(pca_results())
       summary_df <- as.data.frame(summary(pca_results())$importance)[, 1:input$numFactors, drop = FALSE]
       round(summary_df, 3)
-    }, rownames = TRUE)
+    }, rownames = TRUE, striped = TRUE, bordered = TRUE)
 
     output$pcaLoadings <- renderTable({
       req(pca_results())
       loadings_df <- as.data.frame(pca_results()$rotation)[, 1:input$numFactors, drop = FALSE]
       round(loadings_df, 3)
-    }, rownames = TRUE)
+    }, rownames = TRUE, striped = TRUE, bordered = TRUE)
     
     output$pcaInterpretation <- renderUI({
       req(pca_results())
@@ -583,12 +588,12 @@ PCAServer <- function(id, data, shared_explanatory, shared_response) {
     output$correlationMatrix <- renderTable({
       req(analysis_data())
       round(cor(analysis_data()), 4)
-    }, rownames = TRUE)
+    }, rownames = TRUE, striped = TRUE, bordered = TRUE)
 
     output$covarianceMatrix <- renderTable({
       req(analysis_data())
       round(cov(analysis_data()), 4)
-    }, rownames = TRUE)
+    }, rownames = TRUE, striped = TRUE, bordered = TRUE)
     
     output$screePlot <- renderPlot({
       req(pca_results())
@@ -637,7 +642,7 @@ PCAServer <- function(id, data, shared_explanatory, shared_response) {
 
       rotated_loadings_df <- as.data.frame(unclass(rotated_pca$loadings))
       round(rotated_loadings_df, 3)
-    }, rownames = TRUE)
+    }, rownames = TRUE, striped = TRUE, bordered = TRUE)
     
     observeEvent(input$reset, {
       hideTab(inputId = "mainPanel", target = "pca_results_tab")
