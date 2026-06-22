@@ -58,7 +58,47 @@ GetPlotWidth  <- function(plotToggle, pxValue, ui) {
   if (is.null(a)) b else a
 }
 
+copyButton <- function(id, ns) {
+  tags$button(
+    class = "copy-btn",
+    type = "button",
+    onclick = sprintf(
+      "   navigator.clipboard.writeText(document.getElementById('%s').innerText.trim());
+          var btn = this;
+          var old = btn.innerText;
+          btn.innerText = '✓ Copied';
+          setTimeout(function(){
+            btn.innerText = old;
+          }, 1000);",
+      ns(id)
+    ),
+    "Copy"
+  )
+}
 
+codeBox <- function(title = "R Code", boxId, outputId, ns) {
+  
+  div(
+    id = ns(paste0(boxId, "Wrapper")),
+    class = "code-container",
+
+    div(
+      class = "code-header",
+      div(title),
+      copyButton(boxId, ns)
+    ),
+
+    div(
+      id = ns(boxId),
+      class = "code-body",
+      htmlOutput(ns(outputId))
+    )
+  )
+}
+
+codeValue <- function(x) {
+  paste0('<span class="code-value">', as.character(x), '</span>')
+}
 
 # SHADED AREA FUNCTION for SLR outputs
 
@@ -80,8 +120,6 @@ shadeHtArea <- function(df, critValue, altHypothesis) {
               alpha = 0.4)
   }
 }
-
-
 
 # TTest Plot FUNCTION for SLR outputs
 
@@ -233,5 +271,3 @@ hypZTestPlot <- function(testStatistic, critValue, altHypothesis) {
               size = 16 / .pt, fontface = "bold", nudge_y = .03) +
     theme(axis.title.x = element_text(size = 16, face = "bold.italic"))
 }
-
-
