@@ -17,7 +17,7 @@ XGBSidebarUI <- function(id) {
     numericInput(
       ns("nrounds"),
       strong("Number of Boosting Rounds (M)"),
-      value = 100, min = 1, step = 10
+      value = 100, min = 1, step = 1
     ),
 
     numericInput(
@@ -86,6 +86,7 @@ XGBMainPanelUI <- function(id) {
   tagList(
     useShinyjs(),
     suppressWarnings(tippy::use_tippy()),
+    withMathJax(),
     navbarPage(
       title = NULL,
 
@@ -135,6 +136,9 @@ XGBServer <- function(id, data, shared_explanatory, shared_response) {
     xgb_iv <- shinyvalidate::InputValidator$new()
     xgb_iv$add_rule("nrounds",   shinyvalidate::sv_required())
     xgb_iv$add_rule("nrounds",   shinyvalidate::sv_gte(1, message = "Must be at least 1."))
+    xgb_iv$add_rule("nrounds", function(v) {
+      if (!is.na(v) && v != round(v)) "Must be a whole number."
+    })
     xgb_iv$add_rule("max_depth", shinyvalidate::sv_required())
     xgb_iv$add_rule("max_depth", shinyvalidate::sv_gte(1, message = "Must be at least 1."))
     xgb_iv$add_rule("eta", shinyvalidate::sv_required())
@@ -613,6 +617,32 @@ XGBServer <- function(id, data, shared_explanatory, shared_response) {
                 round(r$subsample * 100), round(r$colsample_bytree * 100)
               ))
             ),
+            tags$div(
+              style = "margin: 4px 0 12px 0;",
+              tags$p(tags$strong("Additive Model Formula"), style = "margin-bottom: 6px;"),
+              tags$p(
+                style = "margin-bottom: 4px; text-align: center; font-size: 18px;",
+                HTML("$$ F_M(x) = F_0(x) + \\eta \\sum_{m=1}^{M} T_m(x) $$")
+              ),
+              tags$p(
+                style = "margin-bottom: 6px; text-align: center; font-size: 18px;",
+                HTML(sprintf(
+                  "$$ F_{%s}(x) = F_0(x) + %s \\sum_{m=1}^{%s} T_m(x) $$",
+                  r$nrounds, r$eta, r$nrounds
+                ))
+              ),
+              tags$p(
+                style = "margin-bottom: 0; color: #444;",
+                sprintf(
+                  paste0(
+                    "Starting from an initial prediction F₀(x), your model added %s trees ",
+                    "sequentially, each scaled by a learning rate of %s before being summed into ",
+                    "the final prediction."
+                  ),
+                  r$nrounds, r$eta
+                )
+              )
+            ),
             tags$p(
               style = "margin-bottom: 0;",
               paste0(
@@ -743,7 +773,7 @@ XGBServer <- function(id, data, shared_explanatory, shared_response) {
         iters     <- log_df$iter
         best_iter <- iters[which.min(test_err)]
 
-        par(mar = c(5, 4, 4, 2))
+        par(mar = c(7, 4, 4, 2))
 
         plot(
           iters, train_err,
@@ -765,13 +795,16 @@ XGBServer <- function(id, data, shared_explanatory, shared_response) {
         abline(v = best_iter, col = "#555555", lty = 2, lwd = 1.5)
 
         legend(
-          "topright",
+          "bottom",
           legend = c("Training Error", "Test Error", paste0("Best round = ", best_iter)),
           col    = c("#4472C4", "#ED7D31", "#555555"),
           lty    = c(1, 1, 2),
           lwd    = c(2, 2, 1.5),
           bty    = "n",
-          cex    = 0.95
+          cex    = 0.95,
+          horiz  = TRUE,
+          xpd    = TRUE,
+          inset  = c(0, -0.35)
         )
       })
 

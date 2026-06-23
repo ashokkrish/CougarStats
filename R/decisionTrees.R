@@ -655,7 +655,12 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
           faclen = 0,
           varlen = 0,
           shadow.col = 0,
-          box.palette = "Blues"
+          box.palette = "Blues",
+          col        = "black",
+          split.col  = "black",
+          under.col  = "black",
+          branch.col = "black",
+          border.col = "black"
         )
       }, res = 96)
       
