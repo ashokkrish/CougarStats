@@ -327,3 +327,31 @@ table.dataTable {                                           /**/
   background-color: #fff8f8 !important;
 }
 /*---------------------------------------------*/
+
+/* ------------------------------------------- */
+/* PCA matrix table styles                     */
+/* ------------------------------------------- */
+.pca-matrix-table {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.pca-matrix-table td:first-child,
+.pca-matrix-table th:first-child {
+  font-weight: bold;
+}
+/*---------------------------------------------*/
+
+/* ------------------------------------------- */
+/* Left-align MathJax display formulas         */
+/* (MathJax sets its own text-align: center    */
+/* inline on the rendered container, which     */
+/* overrides the parent element's alignment)   */
+/* ------------------------------------------- */
+.xgb-formula-left mjx-container[display="true"],
+.xgb-formula-left .MathJax_Display,
+.xgb-formula-left .MJXc-display {
+  text-align: left !important;
+  margin-left: 0 !important;
+}
+/*---------------------------------------------*/
