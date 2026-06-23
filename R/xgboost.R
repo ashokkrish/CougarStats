@@ -621,13 +621,11 @@ XGBServer <- function(id, data, shared_explanatory, shared_response) {
               style = "margin: 4px 0 12px 0;",
               tags$p(tags$strong("Additive Model Formula"), style = "margin-bottom: 6px;"),
               tags$p(
-                class = "xgb-formula-left",
-                style = "margin-bottom: 4px; text-align: left; font-size: 18px;",
+                style = "margin-bottom: 4px; text-align: center; font-size: 18px;",
                 HTML("$$ F_M(x) = F_0(x) + \\eta \\sum_{m=1}^{M} T_m(x) $$")
               ),
               tags$p(
-                class = "xgb-formula-left",
-                style = "margin-bottom: 6px; text-align: left; font-size: 18px;",
+                style = "margin-bottom: 6px; text-align: center; font-size: 18px;",
                 HTML(sprintf(
                   "$$ F_{%s}(x) = F_0(x) + %s \\sum_{m=1}^{%s} T_m(x) $$",
                   r$nrounds, r$eta, r$nrounds
