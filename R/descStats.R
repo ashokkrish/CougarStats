@@ -913,7 +913,7 @@ descStatsServer <- function(id) {
           
         } else if(!dsraw_iv$is_valid()) {
           validate(
-            need(length(dsRawData()) >= 2, "Sample Data must include at least 2 numeric observations."),
+            need(length(dsRawData()) >= 2, "Sample data must include two numeric observations."),
             errorClass = "myClass"
           )
           
