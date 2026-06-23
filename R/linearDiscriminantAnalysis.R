@@ -708,7 +708,7 @@ LDAServer <- function(id, data, shared_explanatory, shared_response) {
         cls_cols <- c("#4472C4", "#ED7D31", "#70AD47", "#9E480E", "#7030A0")[seq_len(min(n_cls, 5))]
         col_vec  <- cls_cols[match(as.character(scores$Class), classes)]
 
-        par(mar = c(5, 4, 4, 2))
+        par(mar = c(9, 4, 4, 2))
 
         plot(
           scores$LD1,
@@ -727,15 +727,29 @@ LDAServer <- function(id, data, shared_explanatory, shared_response) {
           bty       = "l"
         )
 
+        # y is anchored via NDC (device-relative, resolution-independent) so the
+        # legend reliably lands just above the bottom edge regardless of the
+        # plot's rendered aspect ratio/resolution — a margin-relative inset was
+        # getting clipped off-device at some sizes. x is centered on the plot
+        # box (not the device) so it lines up with the "LD1" axis label, since
+        # unequal left/right margins shift the plot box off device-center.
+        legend_x <- mean(par("usr")[1:2])
+        legend_y <- grconvertY(0.02, from = "ndc", to = "user")
+
         legend(
-          "right",
+          x      = legend_x,
+          y      = legend_y,
+          xjust  = 0.5,
+          yjust  = 0,
           legend = classes,
           col    = cls_cols[seq_along(classes)],
           pch    = 19,
           pt.cex = 1.1,
           bty    = "n",
           cex    = 0.95,
-          title  = "Class"
+          title  = "Class",
+          horiz  = TRUE,
+          xpd    = NA
         )
       })
 
