@@ -84,6 +84,12 @@ PCAMainPanelUI <- function(id) {
              theme = bs_theme(version = 4),
                tabPanel(title = "Results",
                         value = "pca_results_tab",
+                        tags$style(HTML(
+                          ".pca-matrix-table td:first-child,
+                           .pca-matrix-table th:first-child {
+                             font-weight: bold;
+                           }"
+                        )),
                         h4("Principal Component Analysis Summary"),
                         tableOutput(ns("pcaSummary")),
                         hr(),
@@ -94,19 +100,19 @@ PCAMainPanelUI <- function(id) {
                         tableOutput(ns("rotatedLoadings")),
                         hr(),
                         h4("Correlation Matrix"),
-                        div(style = "display: flex; justify-content: center;",
+                        div(class = "pca-matrix-table", style = "display: flex; justify-content: flex-start;",
                             tableOutput(ns("correlationMatrix"))),
                         hr(),
                         h4("Covariance Matrix"),
-                        div(style = "display: flex; justify-content: center;",
+                        div(class = "pca-matrix-table", style = "display: flex; justify-content: flex-start;",
                             tableOutput(ns("covarianceMatrix"))),
                         hr(),
                         h4("Eigenvalues"),
-                        div(style = "display: flex; justify-content: center;",
+                        div(class = "pca-matrix-table", style = "display: flex; justify-content: flex-start;",
                             tableOutput(ns("eigenvaluesTable"))),
                         hr(),
                         h4("Eigenvectors"),
-                        div(style = "display: flex; justify-content: center;",
+                        div(class = "pca-matrix-table", style = "display: flex; justify-content: flex-start;",
                             tableOutput(ns("eigenvectorsTable"))),
                         hr(),
                         uiOutput(ns("pcaInterpretation"))
