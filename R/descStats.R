@@ -143,7 +143,7 @@ descStatsUI <- function(id) {
             br(),
             
             actionButton(
-              inputId = ns("goDescpStats"), 
+              inputId = ns("goDescpStats"),
               label   = "Calculate",
               class   = "act-btn"),
             
@@ -182,9 +182,9 @@ descStatsUI <- function(id) {
                   conditionalPanel(
                     ns = ns,
                     condition = "input.dsTableFilters != ''",
-                    
-                    DTOutput(ns("dsTableData"))
-                  ),  
+
+                    uiOutput(ns("dsTableWrap"))
+                  ),
                   br(),
                     
                   conditionalPanel(
@@ -586,6 +586,11 @@ descStatsServer <- function(id) {
     # --------------------------------------------------------------------- #
     
     dsReset <- reactiveVal(FALSE)
+
+    # Row-filtered data shown in the Descriptive Statistics table. The table is
+    # rendered once (see below) and reacts to this value, so every Calculate /
+    # filter change refreshes it -- re-assigning renderDT in the observer did not.
+    dsTableDf <- reactiveVal(NULL)
     
     fileInputs <- reactiveValues(
       dsStatus = NULL)
@@ -755,7 +760,12 @@ descStatsServer <- function(id) {
         rowFilter <- c(rowFilter, "Lower Fence", "Upper Fence", "Outlier Values")
       }
 
-      filter(df, rownames(df) %in% rowFilter)
+      out <- filter(df, rownames(df) %in% rowFilter)
+
+      # The 'Value' column is a nested data.frame; flatten any data.frame-columns
+      # to plain vectors so the table can render client-side (renderDT server = FALSE).
+      for (j in seq_along(out)) if (is.data.frame(out[[j]])) out[[j]] <- out[[j]][[1]]
+      out
     }
 
     hideResultTabs <- function() {
@@ -918,27 +928,11 @@ descStatsServer <- function(id) {
         df <- getDsDataframe()
         
         filteredDf <- buildRowFilter(df)
-        
-        output$dsTableData <- renderDT(datatable(filteredDf,
-                                                 extensions = 'RowGroup',
-                                                 options = list(
-                                                   rowGroup = list(dataSrc = 0),
-                                                   columnDefs = list(list(visible=FALSE, targets=c(0))),
-                                                   dom = 't',
-                                                   pageLength = -1,
-                                                   ordering = FALSE,
-                                                   searching = FALSE,
-                                                   paging = FALSE,
-                                                   autoWidth = TRUE,
-                                                   scrollX = TRUE
-                                                 ),
-                                                 escape = FALSE,
-                                                 rownames = FALSE,
-                                                 filter = "none",
-        ))
-        
-        outputOptions(output, "dsTableData", suspendWhenHidden = FALSE)
-        
+
+        # Push the row-filtered (flattened) data to the table. It is rendered
+        # once below and reacts to dsTableDf(), so this refreshes it every time.
+        dsTableDf(filteredDf)
+
         sampleData <- getSampleVector()
         
         sample_df <- data.frame(sampleData, sampleData^2)
@@ -1120,16 +1114,37 @@ descStatsServer <- function(id) {
       }
     })
     
-    dsTableProxy <- dataTableProxy('dsTableData')
-    
+    output$dsTableWrap <- renderUI({
+      req(dsTableDf())
+      DT::DTOutput(session$ns("dsTableData"))
+    })
+    outputOptions(output, "dsTableWrap", suspendWhenHidden = FALSE)
+
+    output$dsTableData <- renderDT({
+      req(dsTableDf())
+      datatable(dsTableDf(),
+                extensions = 'RowGroup',
+                options = list(
+                  rowGroup = list(dataSrc = 0),
+                  columnDefs = list(list(visible = FALSE, targets = c(0))),
+                  dom = 't',
+                  pageLength = -1,
+                  ordering = FALSE,
+                  searching = FALSE,
+                  paging = FALSE,
+                  autoWidth = TRUE,
+                  scrollX = TRUE
+                ),
+                escape = FALSE,
+                rownames = FALSE,
+                filter = "none")
+    }, server = FALSE)
+    outputOptions(output, "dsTableData", suspendWhenHidden = FALSE)
+
     observeEvent(input$dsTableFilters, {
       req(dsReset() == FALSE)
-      
-      df <- getDsDataframe()
-      
-      newFilter <- buildRowFilter(df)
-      
-      replaceData(dsTableProxy, newFilter, resetPaging = FALSE, rownames = FALSE)
+
+      dsTableDf(buildRowFilter(getDsDataframe()))
     })
     
     #  -------------------------------------------------------------------- #
@@ -1208,6 +1223,7 @@ descStatsServer <- function(id) {
 
     observeEvent(input$resetAll,{
       dsReset(TRUE)
+      dsTableDf(NULL)
       hideResultTabs()
 
       resetPlotLabels()
