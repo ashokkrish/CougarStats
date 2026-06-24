@@ -1819,6 +1819,63 @@ probDistServer <- function(id) {
       }
     })
     
+    observeEvent(hypgeo_state(), {
+      if (hypgeo_state()) {
+        showTab(inputId = "hypgeoNavbar", target = "Probability Distribution Table")
+        showTab(inputId = "hypgeoNavbar", target = "Probability Histogram")
+      } else {
+        updateTabsetPanel(session, "hypgeoNavbar", selected = "Calculations")
+        hideTab(inputId = "hypgeoNavbar", target = "Probability Distribution Table")
+        hideTab(inputId = "hypgeoNavbar", target = "Probability Histogram")
+      }
+    })
+    
+    hypgeo_state <- reactive({
+      req(input$probability == "Hypergeometric")
+      
+      if (!pd_iv$is_valid()) return(FALSE)
+      if (
+        input$sampSizeHypGeo > input$popSizeHypGeo ||
+        input$popSuccessesHypGeo > input$popSizeHypGeo
+      ) {
+        return(FALSE)
+      }
+      if (input$calcHypGeo != "between") {
+        return(
+          input$xHypGeo <= input$sampSizeHypGeo &&
+            input$xHypGeo <= input$popSuccessesHypGeo
+        )
+      } else {
+        return(
+          input$x1HypGeo <= input$x2HypGeo &&
+            input$x1HypGeo <= input$sampSizeHypGeo &&
+            input$x1HypGeo <= input$popSuccessesHypGeo &&
+            input$x2HypGeo <= input$sampSizeHypGeo &&
+            input$x2HypGeo <= input$popSuccessesHypGeo
+        )
+      }
+    })
+    
+    observeEvent(poisson_state(), {
+      if (poisson_state()) {
+        showTab(inputId = "poissonNavbar", target = "Probability Distribution Table")
+      } else {
+        updateTabsetPanel(session, "poissonNavbar", selected = "Calculations")
+        hideTab(inputId = "poissonNavbar", target = "Probability Distribution Table")
+      }
+    })
+    
+    poisson_state <- reactive({
+      req(input$probability == "Poisson")
+      
+      if (!pd_iv$is_valid()) return(FALSE)
+      if (input$calcPoisson != "between") {
+        return(TRUE)
+      } else {
+        return(input$x1Poisson <= input$x2Poisson)
+      }
+    })
+    
     observeEvent(input$gocTable, {
       
       output$render2x2cTable <- renderUI({
