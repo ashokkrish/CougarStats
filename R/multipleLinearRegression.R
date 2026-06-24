@@ -1057,12 +1057,14 @@ MLRServer <- function(id) {
             )
             
             num_eq <- paste0(
-              "$$",
+              "<div style='text-align:left;'>",
+              "\\(",
               "\\hat{y} = ",
               round(intercept, 3),
               " + ",
               paste(num_terms, collapse = " + "),
-              "$$"
+              "\\)",
+              "</div>"
             )
             
             sym_eq <- gsub("\\+ -", "- ", sym_eq)
