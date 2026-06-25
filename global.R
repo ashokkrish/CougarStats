@@ -117,6 +117,10 @@ source("R/RenderScatterplot.R")
 source("R/RenderSideBySideBoxplot.R")
 
 source("R/sampSizeEst.R")
+source("R/confidenceCoefficientCp.R")
+source("R/confidenceCoefficient.R")
+source("R/confidenceCoefficientMean.R")
+source("R/confidenceCoefficientProportion.R")
 
 source("R/statInfr.R")
 
