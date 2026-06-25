@@ -661,7 +661,7 @@ SLRServer <- function(id) {
     slrraw_iv$add_rule("x", sv_required())
     slrraw_iv$add_rule("x", sv_regex("^\\s*-?\\d*\\.?\\d+(\\s*,\\s*-?\\d*\\.?\\d+)*\\s*$",
                                      "Data must be numeric values separated by a comma (ie: 2,3,4 or 2, 30, 400)."))
-    slrraw_iv$add_rule("x", ~ if (length(strsplit(input$x, ",")[[1]]) < 4) "Sample Data must include at least 4 numeric observations.")
+    slrraw_iv$add_rule("x", ~ if (length(strsplit(input$x, ",")[[1]]) < 4) "Sample Data must include at least four numeric observations.")
     slrraw_iv$add_rule("x", ~ tryCatch(
       if (isTRUE(sampleInfoRaw()$diff != 0)) "x and y must have the same number of observations.",
       error = function(e) NULL
@@ -674,7 +674,7 @@ SLRServer <- function(id) {
     slrraw_iv$add_rule("y", sv_required())
     slrraw_iv$add_rule("y", sv_regex("^\\s*-?\\d*\\.?\\d+(\\s*,\\s*-?\\d*\\.?\\d+)*\\s*$",
                                      "Data must be numeric values separated by a comma (ie: 2,3,4 or 2, 30, 400)."))
-    slrraw_iv$add_rule("y", ~ if (length(strsplit(input$x, ",")[[1]]) < 4) "Sample Data must include at least 4 numeric observations.")
+    slrraw_iv$add_rule("y", ~ if (length(strsplit(input$x, ",")[[1]]) < 4) "Sample Data must include at least four numeric observations.")
     slrraw_iv$add_rule("y", ~ tryCatch(
       if (isTRUE(sampleInfoRaw()$diff != 0)) "x and y must have the same number of observations.",
       error = function(e) NULL
@@ -696,7 +696,7 @@ SLRServer <- function(id) {
       error = function(e) NULL
     ))
     slrupload_iv$add_rule("slrUserData", ~ tryCatch(
-      if (isTRUE(nrow(slrUploadData()) < 4)) "Samples must include at least 4 numeric observations.",
+      if (isTRUE(nrow(slrUploadData()) < 4)) "Samples must include at least four numeric observations.",
       error = function(e) NULL
     ))
     
@@ -712,7 +712,7 @@ SLRServer <- function(id) {
     slruploadvars_iv$add_rule("slrExplanatory", ~ tryCatch({
       raw  <- suppressWarnings(as.numeric(as.data.frame(slrUploadData())[, input$slrExplanatory]))
       datx <- na.omit(raw)
-      if (length(datx) < 4) "Explanatory variable has fewer than 4 non-missing numeric values."
+      if (length(datx) < 4) "Explanatory variable has fewer than four non-missing numeric values."
     }, error = function(e) NULL))
     
     slruploadvars_iv$add_rule("slrResponse", sv_required())
@@ -731,7 +731,7 @@ SLRServer <- function(id) {
     slruploadvars_iv$add_rule("slrResponse", ~ tryCatch({
       raw  <- suppressWarnings(as.numeric(as.data.frame(slrUploadData())[, input$slrResponse]))
       daty <- na.omit(raw)
-      if (length(daty) < 4) "Response variable has fewer than 4 non-missing numeric values."
+      if (length(daty) < 4) "Response variable has fewer than four non-missing numeric values."
     }, error = function(e) NULL))
     
     
@@ -1064,7 +1064,7 @@ SLRServer <- function(id) {
           datx <- raw_x[complete_idx]
           daty <- raw_y[complete_idx]
           if(length(datx) < 4) {
-            showNotification("After removing missing values, fewer than 4 complete observations remain. Please choose different variables.", type = "error", duration = 8)
+            showNotification("After removing missing values, fewer than four complete observations remain. Please choose different variables.", type = "error", duration = 8)
             return()
           }
           nDroppedRows(sum(!complete_idx))
@@ -1798,6 +1798,10 @@ SLRServer <- function(id) {
             p(formula_note),
             p(HTML(sprintf("\\( %s \\)", sym_formula))),
             p(HTML(sprintf("\\( %s \\)", num_formula))),
+            if (!ks$has_ties)
+              p("where \\( n_c \\) is the number of concordant pairs and \\( n_d \\) is the number of discordant pairs."),
+            if (ks$has_ties)
+              p("where \\( n_c \\) is the number of concordant pairs, \\( n_d \\) is the number of discordant pairs, \\( n_0 \\) is the total number of pairs, \\( n_1 \\) is the number of pairs tied on \\( x \\), and \\( n_2 \\) is the number of pairs tied on \\( y \\)."),
             br(),
             p(tags$b("Interpretation:")),
             if (tau == 0) {
@@ -1870,7 +1874,7 @@ SLRServer <- function(id) {
                 ))
               },
 
-              div(style = "margin-bottom: -30px;", plotOutput(session$ns("kendallZCurve"))),
+              plotOutput(session$ns("kendallZCurve"), height = "300px", width = "500px"),
 
               p(tags$b("Conclusion:")),
               if (isTRUE(p_val <= 0.05)) {
@@ -1896,6 +1900,11 @@ SLRServer <- function(id) {
                 "\\( z = \\dfrac{S}{\\sqrt{\\operatorname{Var}(S)}} = %.4f \\)",
                 z_stat
               )),
+              p("where \\( S \\) is the Kendall score statistic, \\( n_c \\) is the number of concordant pairs, and \\( n_d \\) is the number of discordant pairs."),
+              p(HTML(sprintf(
+                "\\( S = n_c - n_d = %d - %d = %d \\)",
+                ks$nc, ks$nd, ks$nc - ks$nd
+              ))),
               br(),
 
               p(strong("Using P-Value Method:")),
@@ -1921,7 +1930,7 @@ SLRServer <- function(id) {
                 ))
               },
 
-              div(style = "margin-bottom: -30px;", plotOutput(session$ns("kendallZCurve"))),
+              plotOutput(session$ns("kendallZCurve"), height = "300px", width = "500px"),
 
               p(tags$b("Conclusion:")),
               if (isTRUE(p_val <= 0.05)) {
@@ -1968,6 +1977,7 @@ SLRServer <- function(id) {
             y      = daty,
             rank_x = rank_x,
             rank_y = rank_y,
+            rx_ry  = rank_x * rank_y,
             d      = d,
             d_sq   = d^2
           )
@@ -1978,8 +1988,15 @@ SLRServer <- function(id) {
           contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
           content     = function(file) {
             tryCatch({
-              data <- spearmanData()
-              names(data) <- c("x", "y", "Rank x", "Rank y", "d = (Rank x - Rank y)", "d^2")
+              has_ties <- spearman_cf(datx) > 0 || spearman_cf(daty) > 0
+              data     <- spearmanData()
+              if (has_ties) {
+                data <- data[, c("x", "y", "rank_x", "rank_y", "rx_ry")]
+                names(data) <- c("x", "y", "Rank x", "Rank y", "Rank x × Rank y")
+              } else {
+                data <- data[, c("x", "y", "rank_x", "rank_y", "d", "d_sq")]
+                names(data) <- c("x", "y", "Rank x", "Rank y", "d = (Rank x - Rank y)", "d^2")
+              }
               writexl::write_xlsx(data, file)
             }, error = function(e) {
               message("Full error: ", conditionMessage(e))
@@ -2024,9 +2041,18 @@ SLRServer <- function(id) {
           rsDirection <- if (rs > 0) "positive" else "negative"
 
           withMathJax(
+            p(if (has_ties)
+              "Since there are ties in the data, we use the following formula:"
+            else
+              "Since there are no ties in the data, we use the following formula:"
+            ),
             div(
               style = "text-align: left; font-size: 18px;",
               HTML(formula_latex)
+            ),
+            if (has_ties) tagList(
+              br(),
+              p("where \\( R_{x_i} \\) and \\( R_{y_i} \\) are the ranks of the \\( i \\)-th \\( x \\) and \\( y \\) values, \\( \\bar{R}_x \\) and \\( \\bar{R}_y \\) are the mean ranks of \\( x \\) and \\( y \\), and \\( s_{R_x} \\) and \\( s_{R_y} \\) are the standard deviations of the ranks of \\( x \\) and \\( y \\).")
             ),
             br(),
             p(tags$b("Interpretation:")),
@@ -2045,38 +2071,75 @@ SLRServer <- function(id) {
         output$spearmanTable <- renderUI({
 
           spearman_df <- spearmanData()
-          sum_d_sq    <- sum(spearman_df$d_sq)
+          has_ties    <- spearman_cf(datx) > 0 || spearman_cf(daty) > 0
 
-          reactable(
-            spearman_df,
-            sortable   = FALSE,
-            bordered   = TRUE,
-            striped    = TRUE,
-            highlight  = TRUE,
-            pagination = FALSE,
-            fullWidth  = FALSE,
-            rownames   = FALSE,
-            columns = list(
-              x      = colDef(name = "x",      align = "center"),
-              y      = colDef(name = "y",      align = "center"),
-              rank_x = colDef(name = "Rank x", align = "center"),
-              rank_y = colDef(name = "Rank y", align = "center"),
-              d      = colDef(name = "d = (Rank x \u2212 Rank y)", align = "center", footer = tags$b("Total"), minWidth = 190),
-              d_sq   = colDef(
-                name   = HTML("d<sup>2</sup>"),
-                html   = TRUE,
-                align  = "center",
-                footer = tags$b(sum_d_sq),
-                cell = function(value) {
-                  if (value == floor(value)) {
-                    formatC(value, format = "d", big.mark = ",")
-                  } else {
-                    formatC(value, format = "f", digits = 2)
+          if (has_ties) {
+            sum_rxry <- sum(spearman_df$rx_ry)
+
+            reactable(
+              spearman_df[, c("x", "y", "rank_x", "rank_y", "rx_ry")],
+              sortable   = FALSE,
+              bordered   = TRUE,
+              striped    = TRUE,
+              highlight  = TRUE,
+              pagination = FALSE,
+              fullWidth  = FALSE,
+              rownames   = FALSE,
+              columns = list(
+                x      = colDef(name = "x",      align = "center"),
+                y      = colDef(name = "y",      align = "center"),
+                rank_x = colDef(name = "Rank x", align = "center"),
+                rank_y = colDef(name = "Rank y", align = "center"),
+                rx_ry  = colDef(
+                  name     = HTML("(Rank x) &times; (Rank y)"),
+                  html     = TRUE,
+                  align    = "center",
+                  minWidth = 200,
+                  footer   = tags$b(sum_rxry),
+                  cell = function(value) {
+                    if (value == floor(value)) {
+                      formatC(value, format = "f", digits = 0)
+                    } else {
+                      formatC(value, format = "f", digits = 2)
+                    }
                   }
-                }
+                )
               )
             )
-          )
+          } else {
+            sum_d_sq <- sum(spearman_df$d_sq)
+
+            reactable(
+              spearman_df[, c("x", "y", "rank_x", "rank_y", "d", "d_sq")],
+              sortable   = FALSE,
+              bordered   = TRUE,
+              striped    = TRUE,
+              highlight  = TRUE,
+              pagination = FALSE,
+              fullWidth  = FALSE,
+              rownames   = FALSE,
+              columns = list(
+                x      = colDef(name = "x",      align = "center"),
+                y      = colDef(name = "y",      align = "center"),
+                rank_x = colDef(name = "Rank x", align = "center"),
+                rank_y = colDef(name = "Rank y", align = "center"),
+                d      = colDef(name = "d = (Rank x \u2212 Rank y)", align = "center", footer = tags$b("Total"), minWidth = 190),
+                d_sq   = colDef(
+                  name   = HTML("d<sup>2</sup>"),
+                  html   = TRUE,
+                  align  = "center",
+                  footer = tags$b(sum_d_sq),
+                  cell = function(value) {
+                    if (value == floor(value)) {
+                      formatC(value, format = "d", big.mark = ",")
+                    } else {
+                      formatC(value, format = "f", digits = 2)
+                    }
+                  }
+                )
+              )
+            )
+          }
         })
     
         
