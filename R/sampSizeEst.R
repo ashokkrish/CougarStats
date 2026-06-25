@@ -281,18 +281,6 @@ sampSizeEstUI <- function(id) {
               value   = TRUE
             ),
             
-            numericInput(
-              inputId = ns("sseTargetProp"),
-              label   = strong("Target Proportion (\\( \\hat{p} \\))"),
-              value   = "0.5", 
-              min     = 0.00001, 
-              step    = 0.01),
-            
-            checkboxInput(
-              inputId = ns("normalDistribution"),
-              label   = "Assume data follows a normal distribution",
-              value   = TRUE
-            ),
             
             radioButtons(
               inputId      = ns("sseEstimationTypeProp"),
@@ -390,24 +378,29 @@ sampSizeEstUI <- function(id) {
           div(
             id = ns("ccEstimationData"), 
             
+            uiOutput(ns("ccEstimationValidation")),
+            
             conditionalPanel(
-              ns = ns, 
-              condition = "input.estimateParameter == 'Confidence Coefficient' && input.sampSizeEstParameter == 'Population Mean'",
+              ns = ns,
+              #condition = "input.estimateParameter == 'Confidence Coefficient' && input.sampSizeEstParameter == 'Population Mean'",
+              condition = "input.sampSizeEstParameter == 'Population Mean'",
               uiOutput(ns('ccMeanEstimate')),
               br(),
-            ) #confidence coefficient est population mean
-            
+            ), #confidence coefficient est population mean
+
+            conditionalPanel(
+              ns = ns,
+              #condition = "input.estimateParameter == 'Confidence Coefficient' && input.sampSizeEstParameter == 'Population Proportion'",
+              
+              condition = "input.sampSizeEstParameter == 'Population Proportion'",
+              uiOutput(ns('ccPropEstimate')),
+              br(),
+            ) #confidence coefficient est population prop
           ), #ccEstimationData 
           
-          conditionalPanel(
-            ns = ns, 
-            condition = "input.estimateParameter == 'Confidence Coefficient' && input.sampSizeEstParameter == 'Population Proportion'", 
-            uiOutput(ns('ccPropEstimate')), 
-            br(), 
-          ) #confidence coefficient est population prop 
+          
           
         ) #ccEstimationMP
-        
       ) #mainPanel
     ) #sidebarLayout
   ) # UI tagList
@@ -855,13 +848,31 @@ sampSizeEstServer <- function(id) {
     
     output$ccMeanEstimate <- renderUI({
       
-      confCoe <- confidence_coefficient_mean(input$confSampSize, input$confPopSD, input$ccMargErr, input$ccMeanWoI)
-      
       tagList(
         withMathJax(),
         br(),
         
         if(input$ccEstimationType == "Margin of Error"){
+          
+          confCoe <- confidence_coefficient_mean(
+            n = input$confSampSize,
+            sigma = input$confPopSD,
+            margin.error = input$ccMargErr
+          )
+          
+          list(
+            sprintf("\\[\\text{Confidence Coefficient } (1 - \\alpha) = 2 \\cdot \\Phi\\left( \\frac{\\left(\\frac{%s}{2}\\right) \\cdot \\sqrt{%s}}{%s} \\right) - 1\\]"),
+            sprintf("\\[\\text{Confidence Coefficient } (1 - \\alpha) = 2 \\cdot \\Phi\\left( \\frac{\\left(\\frac{%s}{2}\\right) \\cdot \\sqrt{%s}}{%s} \\right) - 1\\]",
+                    input$ccMargErr,
+                    input$confSampSize,
+                    input$confPopSD),
+            sprintf( "\\[\\text{Confidence Coefficient} = %.3f\\%%\\]",
+                     confCoe * 100)
+          )
+          
+          br()
+          br()
+          
           list(
             br(),
             sprintf("Given the sample size of \\(n\\) is %s, an anticipated standard deviation of %s, and the desired margin of error of 
@@ -870,32 +881,53 @@ sampSizeEstServer <- function(id) {
                     input$confSampSize,
                     input$confPopSD,
                     input$ccMargErr, 
-                    confCoe,
-                    confCoe)
+                    confCoe* 100,
+                    confCoe* 100)
             #sprintf("formula",input$confSampSize, input$confSampSize, input$confPopSD, input$ccMargErr) 
           )
         }
         
-        else(
+        else{
+          
+          confCoe <- confidence_coefficient_mean(
+            n = input$confSampSize,
+            sigma = input$confPopSD,
+            width = input$ccMeanWoI
+          )
+          
+          list(
+            sprintf("\\[\\text{Confidence Coefficient } (1 - \\alpha) = 2 \\cdot \\Phi\\left(\\frac{\\left(\\frac{%s}{2}\\right) \\cdot \\sqrt{%s}}{%s}\\right) - 1\\]"),
+            sprintf("\\[\\text{Confidence Coefficient } (1 - \\alpha) = 2 \\cdot \\Phi\\left(\\frac{\\left(\\frac{%s}{2}\\right) \\cdot \\sqrt{%s}}{%s}\\right) - 1\\]",
+                    input$ccMeanWoI,
+                    input$confSampSize,
+                    input$confPopSD),
+            sprintf("\\[\\text{Confidence Coefficient} = %.2f\\%%\\]",
+                    confCoe * 100)
+          )
+          
+          br()
+          br()
+          
           list(
             br(),
             sprintf("Given the sample size of \\(n\\) is %s, an anticipated standard deviation of %s, and the desired width of interval of 
-                    %s, the resulting confidence coefficient is %.2f%%. In other words, a %.2f%% confidence interval constructed using the \\(\\sigma\\)) known 
+                    %s, the resulting confidence coefficient is %.3f%%. In other words, a %.2f%% confidence interval constructed using the \\(\\sigma\\)) known 
                     would achieve the specified precision.",
                     input$confSampSize,
                     input$confPopSD,
                     input$ccMeanWoI, 
                     confCoe,
-                    confCoe)
+                    confCoe),
             #sprintf("formula",input$confSampSize, input$confSampSize, input$confPopSD, input$ccMeanWoI) 
-          ))
-        ,
+          
+        
         
         br(),
         br()
         
         
-        
+          )
+        }
       )
       
     })
@@ -904,19 +936,34 @@ sampSizeEstServer <- function(id) {
     
     output$ccPropEstimate <- renderUI({
       
-      req(cce_iv$is_valid())
-      
       if(isTRUE(input$propNormalDistribution)){
-        confCoe <- confidence_coefficient_proportion(input$ccPropSampSize, input$ccTargetProp, input$ccPropMargErr, input$ccPropWoI)
         
         tagList(
           withMathJax(),
           br(),
           
           if(input$ccPropEstimationType == "Margin of Error"){
+            
+            confCoe <- confidence_coefficient_proportion(
+              n = input$ccPropSampSize,
+              p0 = input$ccTargetProp,
+              margin.error = input$ccPropMargErr
+            )
+            
+            list(
+              sprintf("\\[\\text{Confidence Coefficient } (1 - \\alpha) = 2 \\cdot \\Phi\\left(\\frac{%s \\cdot \\sqrt{%s}}{\\sqrt{%s(1 - %s)}}\\right) - 1\\]"),
+              sprintf("\\[\\text{Confidence Coefficient } (1 - \\alpha) = 2 \\cdot \\Phi\\left(\\frac{%s \\cdot \\sqrt{%s}}{\\sqrt{%s(1 - %s)}}\\right) - 1\\]",
+                      input$ccPropMargErr,
+                      input$ccPropSampSize,
+                      input$ccProp,
+                      input$ccPropr),
+              sprintf("\\[\\text{Confidence Coefficient} = %.2f\\%%\\]",
+                      confCoe * 100)
+            )
+            
             list(
               sprintf("Given a sample size of (\\( n \\)) is %s, an anticipated proportion of %s, and a desired margin of error of %s, the resulting confidence coefficient is
-                      %.2f%%. In other words, a %.2f%% confidence interval constructed using the normal approximation would achieve the specified precision",
+                      %.2f%%. In other words, a %.3f%% confidence interval constructed using the normal approximation would achieve the specified precision",
                       input$ccPropSampSize,
                       input$ccTargetProp,
                       input$ccPropMargErr,
@@ -925,9 +972,27 @@ sampSizeEstServer <- function(id) {
             )
           }
           else{
+            
+            confCoe <- confidence_coefficient_proportion(
+              n = input$ccPropSampSize,
+              p0 = input$ccTargetProp,
+              width = input$ccPropWoI
+            )
+            
+            list(
+              sprintf("\\[\\text{Confidence Coefficient } (1 - \\alpha)=2 \\cdot \\Phi\\left(\\frac{%s \\cdot \\sqrt{%s}}{2 \\cdot \\sqrt{%s(1 - %s)}} \\right) - 1\\]"),
+              sprintf("\\[\\text{Confidence Coefficient } (1 - \\alpha)=2 \\cdot \\Phi\\left(\\frac{%s \\cdot \\sqrt{%s}}{2 \\cdot \\sqrt{%s(1 - %s)}} \\right) - 1\\]",
+                      input$ccPropWoI,
+                      input$ccPropSampSize,
+                      input$ccProp,
+                      input$ccProp),
+              sprintf("\\[\\text{Confidence Coefficient} = %.2f\\%%\\]",
+                      confCoe * 100)
+            )
+            
             list(
               sprintf("Given a sample size of (\\( n \\)) is %s, an anticipated proportion of %s, and a desired width of interval of %s, the resulting confidence coefficient is %.2f%%.
-                      In other words, a %.2f%% confidence interval constructed using the normal approximation would achieve the specified precision.",
+                      In other words, a %.3f%% confidence interval constructed using the normal approximation would achieve the specified precision.",
                       input$ccPropSampSize,
                       input$ccTargetProp,
                       input$ccPropWoI,
@@ -991,28 +1056,45 @@ sampSizeEstServer <- function(id) {
       shinyjs::reset("sampSizeEstPanel")
     })
     
-    observeEvent(input$goConfidCoeEst,{
-      if(cce_iv$is_valid()) {
-        show(id = "ccEstimationData")
-      } else{
-        hide(id = "ccEstimationData")
+    observeEvent(input$goConfidCoeEst, {
+
+      if (cce_iv$is_valid()) {
+
+        shinyjs::show(
+          id = session$ns("ccEstimationMP"),
+          asis = TRUE
+        )
+
+      } else {
+
+        # shinyjs::hide(
+        #   id = session$ns("ccEstimationMP"),
+        #   asis = TRUE
+        # )
+
       }
     })
     
-    observeEvent(!cce_iv$is_valid(), {
-      hide(id = "ccEstimationMP")
-      hide(id = "ccEstimationData")
-    })
-    
-    
     observeEvent(input$goConfidCoeEst, {
-      show(id= "ccEstimationMP")
-    }) 
-    
-    observeEvent(input$resetConfidCoeEst, {
-      hide(id = "ccEstimationMP")
-      shinyjs::reset("inputPanel")
+      
+      print("Calculate clicked")
+      print(cce_iv$is_valid())
+      print(cce_iv$validate())
+      print(list(
+        cceSampSize = cceSampSize_iv$is_valid(),
+        ccePopSD = ccePopSD_iv$is_valid(),
+        cceMeanMargin = cceMeanMargin_iv$is_valid(),
+        cceMeanWidth = cceMeanWidth_iv$is_valid(),
+        ccePropSampSize = ccePropSampSize_iv$is_valid(),
+        cceProp = cceProp_iv$is_valid(),
+        ccePropMargin = ccePropMargin_iv$is_valid(),
+        ccePropWidth = ccePropWidth_iv$is_valid(),
+        overall = cce_iv$is_valid()
+      ))
+      
+      
     })
+    
     
   })
 }
