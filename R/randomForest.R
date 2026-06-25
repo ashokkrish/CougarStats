@@ -818,7 +818,7 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
         n_pred    <- length(r$predictors)
         n_cols    <- if (n_pred <= 1) 1 else if (n_pred <= 4) 2 else 3
         n_rows    <- ceiling(n_pred / n_cols)
-        height_px <- max(300, n_rows * 300)
+        height_px <- max(380, n_rows * 380)
 
         tagList(
           tags$hr(),
@@ -840,7 +840,7 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
         par(
           mfrow = c(n_rows, n_cols),
           oma   = c(0, 0, 0, 0),
-          mar   = c(4, 4, 5, 2)
+          mar   = c(8, 4, 5, 2)
         )
 
         for (pred_var in r$predictors) {
@@ -877,9 +877,11 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
                   col = cls_cols[j], lwd = 2)
           }
 
-          legend("right", legend = cls_list,
+          # Below the x-axis label, not just at the bottom of the plot area
+          legend("bottom", legend = cls_list,
                  col = cls_cols[seq_along(cls_list)],
-                 lwd = 2, bty = "n", cex = 0.8)
+                 lwd = 2, bty = "n", cex = 0.8, horiz = TRUE,
+                 xpd = TRUE, inset = c(0, -0.4))
 
           mtext("Shows the marginal effect of this variable on the predicted outcome,",
                 side = 3, line = 0.9, cex = 0.65, col = "#555555")
@@ -899,7 +901,7 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
         n_pred    <- length(r$predictors)
         n_cols    <- if (n_pred <= 1) 1 else if (n_pred <= 4) 2 else 3
         n_rows    <- ceiling(n_pred / n_cols)
-        height_px <- max(300, n_rows * 300)
+        height_px <- max(380, n_rows * 380)
 
         tagList(
           tags$hr(),
@@ -921,7 +923,7 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
         par(
           mfrow = c(n_rows, n_cols),
           oma   = c(0, 0, 0, 0),
-          mar   = c(4, 4, 5, 2)
+          mar   = c(8, 4, 5, 2)
         )
 
         for (pred_var in r$predictors) {
@@ -968,9 +970,10 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
                      lty = 1, lwd = 0.7)
           }
 
-          legend("right", legend = cls_list,
+          legend("bottom", legend = cls_list,
                  col = cls_cols[seq_along(cls_list)],
-                 lwd = 2, bty = "n", cex = 0.8)
+                 lwd = 2, bty = "n", cex = 0.8, horiz = TRUE,
+                 xpd = TRUE, inset = c(0, -0.4))
 
           mtext("Shows how the prediction changes for each individual observation as this variable changes.",
                 side = 3, line = 0.9, cex = 0.65, col = "#555555")
@@ -989,7 +992,7 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
         n_pred    <- length(r$predictors)
         n_cols    <- if (n_pred <= 1) 1 else if (n_pred <= 4) 2 else 3
         n_rows    <- ceiling(n_pred / n_cols)
-        height_px <- max(300, n_rows * 300)
+        height_px <- max(380, n_rows * 380)
 
         tagList(
           tags$hr(),
@@ -1011,7 +1014,7 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
         par(
           mfrow = c(n_rows, n_cols),
           oma   = c(0, 0, 0, 0),
-          mar   = c(4, 4, 5, 2)
+          mar   = c(8, 4, 5, 2)
         )
 
         for (pred_var in r$predictors) {
@@ -1051,9 +1054,10 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
                   col = cls_cols[j], lwd = 2)
           }
 
-          legend("right", legend = cls_list,
+          legend("bottom", legend = cls_list,
                  col = cls_cols[seq_along(cls_list)],
-                 lwd = 2, bty = "n", cex = 0.8)
+                 lwd = 2, bty = "n", cex = 0.8, horiz = TRUE,
+                 xpd = TRUE, inset = c(0, -0.4))
 
           mtext("Shows the accumulated local effect of this variable on the predicted outcome.",
                 side = 3, line = 0.9, cex = 0.65, col = "#555555")

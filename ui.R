@@ -3,13 +3,14 @@ ui <- tagList(withTags(html(
     ## CougarStats logo and styling
     link(rel = "stylesheet", type = "text/css", href = "cougarstats-styles.css"),
     link(rel = "icon", type = "image/x-icon", href = "favicon.ico"),
-
+    link(rel = "stylesheet", type = "text/css", href = "code-block.css"),
+    
     ## ShinyDarkmode
     use_darkmode(),
-
+    
     ## Font Awesome for icons in modal content.
     link(rel = "stylesheet", href = "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"),
-
+    
     ## Amplitude Analytics
     script(src = "https://cdn.amplitude.com/libs/analytics-browser-2.11.1-min.js.gz"),
     script(src = "https://cdn.amplitude.com/libs/plugin-session-replay-browser-1.25.0-min.js.gz"),
@@ -21,7 +22,7 @@ ui <- tagList(withTags(html(
       '9c16daacc728f3aa3e4fe91129eca5e8',
       { autocapture: { elementInteractions: true } }
     );}")),
-
+    
     ## NOTE: this is important to fix the Title; somehow there are a whack-tonne
     ## of title tags and none of theme are correct, and they all otherwise
     ## override the simple title= argument value.
@@ -61,7 +62,7 @@ ui <- tagList(withTags(html(
                              "font-style: italic",
                              "font-size: 24pt",
                              "vertical-align: middle"))),
-
+      
       div(id = "top-level-action-buttons",
           style = "align-self: center; margin-right: 20px;",
           actionButton("togglemode", "Toggle Dark or Light Mode", icon = icon("sun")),
@@ -69,14 +70,14 @@ ui <- tagList(withTags(html(
     ),
     navbarPage(
       NULL,# NOTE: title is intentionally NULL; see previous div.
-
+      
       tabPanel("Descriptive Statistics", descStatsUI(id = "ds")),
       tabPanel("Probability Distributions", probDistUI(id = "pd")),
       tabPanel("Sample Size Estimation", sampSizeEstUI(id = "sse")),
       tabPanel("Statistical Inference", statInfrUI(id = "si")),
       tabPanel("Regression and Correlation", regressionAndCorrelationUI(id = "rc")),
       tabPanel("Machine Learning", machineLearningUI(id = "ml")),
-
+      
       theme = bs_theme(version = 4, primary = "#18536F"),
       id = "methods-nav"
     )

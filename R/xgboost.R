@@ -16,31 +16,31 @@ XGBSidebarUI <- function(id) {
 
     numericInput(
       ns("nrounds"),
-      strong("Number of Boosting Rounds"),
-      value = 100, min = 1, step = 10
+      strong("Number of Boosting Rounds (M)"),
+      value = 100, min = 1, step = 1
     ),
 
     numericInput(
       ns("max_depth"),
-      strong("Max Tree Depth"),
+      strong("Max Tree Depth (d)"),
       value = 6, min = 1, step = 1
     ),
 
     numericInput(
       ns("eta"),
-      strong(HTML("Learning Rate (&eta;)")),
+      strong("Learning Rate (η)"),
       value = 0.3, min = 0.01, max = 1, step = 0.01
     ),
 
     numericInput(
       ns("subsample"),
-      strong("Subsample Ratio"),
+      strong("Subsample Ratio (s)"),
       value = 1, min = 0.1, max = 1, step = 0.05
     ),
 
     numericInput(
       ns("colsample_bytree"),
-      strong("Column Sample per Tree"),
+      strong("Column Sample per Tree (c)"),
       value = 1, min = 0.1, max = 1, step = 0.05
     ),
 
@@ -86,6 +86,7 @@ XGBMainPanelUI <- function(id) {
   tagList(
     useShinyjs(),
     suppressWarnings(tippy::use_tippy()),
+    withMathJax(),
     navbarPage(
       title = NULL,
 
@@ -98,6 +99,7 @@ XGBMainPanelUI <- function(id) {
       tabPanel(
         title = "Plots",
         value = "plots_tab",
+        uiOutput(ns("xgbTrainingCurveContainer")),
         uiOutput(ns("xgbVarImpContainer"))
       ),
 
@@ -134,6 +136,9 @@ XGBServer <- function(id, data, shared_explanatory, shared_response) {
     xgb_iv <- shinyvalidate::InputValidator$new()
     xgb_iv$add_rule("nrounds",   shinyvalidate::sv_required())
     xgb_iv$add_rule("nrounds",   shinyvalidate::sv_gte(1, message = "Must be at least 1."))
+    xgb_iv$add_rule("nrounds", function(v) {
+      if (!is.na(v) && v != round(v)) "Must be a whole number."
+    })
     xgb_iv$add_rule("max_depth", shinyvalidate::sv_required())
     xgb_iv$add_rule("max_depth", shinyvalidate::sv_gte(1, message = "Must be at least 1."))
     xgb_iv$add_rule("eta", shinyvalidate::sv_required())
@@ -403,7 +408,7 @@ XGBServer <- function(id, data, shared_explanatory, shared_response) {
       X_test  <- as.matrix(test_df[,  input$predictors, drop = FALSE])
 
       dtrain <- xgboost::xgb.DMatrix(data = X_train, label = xgb_label_train)
-      dtest  <- xgboost::xgb.DMatrix(data = X_test)
+      dtest  <- xgboost::xgb.DMatrix(data = X_test, label = xgb_label_test)
 
       # 13. Set objective based on binary vs. multi-class
       if (n_classes == 2) {
@@ -427,12 +432,14 @@ XGBServer <- function(id, data, shared_explanatory, shared_response) {
         )
       }
 
-      # 14. Fit
+      # 14. Fit — evals records train/test error every round so we can
+      # plot the training curve (error vs number of trees) afterwards.
       xgb_fit <- tryCatch(
         xgboost::xgb.train(
           params  = params,
           data    = dtrain,
           nrounds = as.integer(input$nrounds),
+          evals   = list(train = dtrain, test = dtest),
           verbose = 0
         ),
         error = function(e) {
@@ -441,6 +448,14 @@ XGBServer <- function(id, data, shared_explanatory, shared_response) {
         }
       )
       if (is.null(xgb_fit)) return()
+
+      # evaluation_log lives on $evaluation_log in older xgboost releases and
+      # as an attribute in newer ones (model object is just an opaque pointer).
+      eval_log <- xgb_fit$evaluation_log
+      if (is.null(eval_log)) eval_log <- attr(xgb_fit, "evaluation_log")
+      eval_log <- as.data.frame(eval_log)
+      train_err_col <- grep("^train_", names(eval_log), value = TRUE)[1]
+      test_err_col  <- grep("^test_",  names(eval_log), value = TRUE)[1]
 
       # 15. Predict on test set
       raw_pred <- tryCatch(
@@ -524,7 +539,10 @@ XGBServer <- function(id, data, shared_explanatory, shared_response) {
         accuracy         = accuracy,
         class_metrics    = class_metrics_df,
         class_report     = xgb_class_report,
-        importance       = importance_df
+        importance       = importance_df,
+        eval_log         = eval_log,
+        train_err_col    = train_err_col,
+        test_err_col     = test_err_col
       )
 
       calc_results(res)
@@ -586,12 +604,60 @@ XGBServer <- function(id, data, shared_explanatory, shared_response) {
               )
             ),
             tags$p(
+              style = "margin-bottom: 8px;",
+              HTML(sprintf(
+                paste0(
+                  "Your model built \\( M = %s \\) trees sequentially, each of depth \\( d = %s \\). ",
+                  "At each step, the new tree's contribution was scaled by the learning rate ",
+                  "\\( \\eta = %s \\) before being added to the ensemble. Each tree was trained on ",
+                  "\\( s = %s\\%% \\) of the rows and \\( c = %s\\%% \\) of the columns, which ",
+                  "introduces randomness to reduce overfitting."
+                ),
+                r$nrounds, r$max_depth, r$eta,
+                round(r$subsample * 100), round(r$colsample_bytree * 100)
+              ))
+            ),
+            tags$div(
+              style = "margin: 4px 0 12px 0;",
+              tags$style(HTML(
+                ".xgb-formula-left mjx-container[display=\"true\"],
+                 .xgb-formula-left .MathJax_Display,
+                 .xgb-formula-left .MJXc-display {
+                   text-align: left !important;
+                   margin-left: 0 !important;
+                 }"
+              )),
+              tags$p(tags$strong("Additive Model Formula"), style = "margin-bottom: 6px;"),
+              tags$p(
+                class = "xgb-formula-left",
+                style = "margin-bottom: 4px; text-align: left; font-size: 18px;",
+                HTML("$$ F_M(x) = F_0(x) + \\eta \\sum_{m=1}^{M} T_m(x) $$")
+              ),
+              tags$p(
+                class = "xgb-formula-left",
+                style = "margin-bottom: 6px; text-align: left; font-size: 18px;",
+                HTML(sprintf(
+                  "$$ F_{%s}(x) = F_0(x) + %s \\sum_{m=1}^{%s} T_m(x) $$",
+                  r$nrounds, r$eta, r$nrounds
+                ))
+              ),
+              tags$p(
+                style = "margin-bottom: 0; color: #444;",
+                sprintf(
+                  paste0(
+                    "Starting from an initial prediction F₀(x), your model added %s trees ",
+                    "sequentially, each scaled by a learning rate of %s before being summed into ",
+                    "the final prediction."
+                  ),
+                  r$nrounds, r$eta
+                )
+              )
+            ),
+            tags$p(
               style = "margin-bottom: 0;",
               paste0(
                 "The model correctly classified ", round(r$accuracy * 100, 2),
-                "% of observations in the test set. ",
-                "Higher learning rates learn faster but may overfit; ",
-                "lower rates are more robust but require more rounds."
+                "% of observations in the test set."
               )
             )
           )
@@ -605,11 +671,11 @@ XGBServer <- function(id, data, shared_explanatory, shared_response) {
         data.frame(
           Item = c(
             "Type",
-            "Number of Boosting Rounds",
-            "Max Tree Depth",
+            "Number of Boosting Rounds (M)",
+            "Max Tree Depth (d)",
             "Learning Rate (η)",
-            "Subsample Ratio",
-            "Column Sample per Tree",
+            "Subsample Ratio (s)",
+            "Column Sample per Tree (c)",
             "Number of Predictors",
             "Total Observations",
             "Training Observations",
@@ -686,6 +752,72 @@ XGBServer <- function(id, data, shared_explanatory, shared_response) {
       }, rownames = FALSE, striped = TRUE, bordered = TRUE)
 
       # ---- Plots ----
+      output$xgbTrainingCurveContainer <- renderUI({
+        r <- calc_results()
+        req(r)
+        tagList(
+          tags$h4("Training Curve (Error vs Number of Trees)", style = "margin-top: 10px;"),
+          plotOutput(session$ns("xgbTrainingCurvePlot"), height = "450px"),
+          tags$div(
+            style = "margin-top: 12px; font-size: 14px; color: #444;",
+            tags$p(
+              "Training error keeps falling the longer boosting continues, but test error typically ",
+              "bottoms out and then rises again — that turning point is where the model starts ",
+              "overfitting. The dashed vertical line marks the boosting round with the lowest test error; ",
+              "if it falls well short of your chosen ", tags$strong("Number of Boosting Rounds"), ", consider ",
+              "lowering that value."
+            )
+          )
+        )
+      })
+
+      output$xgbTrainingCurvePlot <- renderPlot({
+        r <- calc_results()
+        req(r)
+
+        log_df <- r$eval_log
+        req(nrow(log_df) > 0, !is.null(r$train_err_col), !is.null(r$test_err_col))
+
+        train_err <- log_df[[r$train_err_col]]
+        test_err  <- log_df[[r$test_err_col]]
+        iters     <- log_df$iter
+        best_iter <- iters[which.min(test_err)]
+
+        par(mar = c(7, 4, 4, 2))
+
+        plot(
+          iters, train_err,
+          type      = "l",
+          col       = "#4472C4",
+          lwd       = 2,
+          main      = "Training Error vs Number of Trees",
+          xlab      = "Number of Boosting Iterations (Trees)",
+          ylab      = "Error Rate",
+          ylim      = range(c(train_err, test_err), na.rm = TRUE),
+          cex.main  = 1.3,
+          font.main = 2,
+          cex.lab   = 1.1,
+          font.lab  = 2,
+          cex.axis  = 1.0,
+          bty       = "l"
+        )
+        lines(iters, test_err, col = "#ED7D31", lwd = 2)
+        abline(v = best_iter, col = "#555555", lty = 2, lwd = 1.5)
+
+        legend(
+          "bottom",
+          legend = c("Training Error", "Test Error", paste0("Best round = ", best_iter)),
+          col    = c("#4472C4", "#ED7D31", "#555555"),
+          lty    = c(1, 1, 2),
+          lwd    = c(2, 2, 1.5),
+          bty    = "n",
+          cex    = 0.95,
+          horiz  = TRUE,
+          xpd    = TRUE,
+          inset  = c(0, -0.35)
+        )
+      })
+
       output$xgbVarImpContainer <- renderUI({
         r <- calc_results()
         req(r)

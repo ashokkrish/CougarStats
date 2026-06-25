@@ -119,7 +119,105 @@ MLRServer <- function(id) {
     )
     
     encodedData <- reactiveVal(NULL)
-    
+
+    # ============================================================
+    # LINE Assumption Tests Config
+    # ============================================================
+    mlrLineTestConfig <- list(
+
+      list(
+        assumption = "Linearity",
+        procedure  = "Residuals vs Fitted Plot",
+        min_n      = 3,
+        run        = function(model) {
+          list(statistic = NULL, p_value = NULL,
+               note = "See Residuals vs Fitted plot in Diagnostic Plots tab")
+        }
+      ),
+
+      list(
+        assumption = "Linearity",
+        procedure  = "Rainbow Test",
+        min_n      = 6,
+        run        = function(model) {
+          rb <- lmtest::raintest(model)
+          list(statistic = round(rb$statistic, 4), p_value = round(rb$p.value, 4), note = NULL)
+        }
+      ),
+
+      list(
+        assumption = "Linearity",
+        procedure  = "Ramsey RESET Test",
+        min_n      = 6,
+        run        = function(model) {
+          rt <- lmtest::resettest(model)
+          list(statistic = round(rt$statistic, 4), p_value = round(rt$p.value, 4), note = NULL)
+        }
+      ),
+
+      list(
+        assumption = "Independence",
+        procedure  = "Durbin-Watson Test",
+        min_n      = 5,
+        run        = function(model) {
+          dw <- lmtest::dwtest(model)
+          list(statistic = round(dw$statistic, 4), p_value = round(dw$p.value, 4), note = NULL)
+        }
+      ),
+
+      list(
+        assumption = "Normality",
+        procedure  = "Shapiro-Wilk Test",
+        min_n      = 3,
+        run        = function(model) {
+          sw <- shapiro.test(residuals(model))
+          list(statistic = round(sw$statistic, 4), p_value = round(sw$p.value, 4), note = NULL)
+        }
+      ),
+
+      list(
+        assumption = "Normality",
+        procedure  = "Anderson-Darling Test",
+        min_n      = 7,
+        run        = function(model) {
+          ad <- nortest::ad.test(residuals(model))
+          list(statistic = round(ad$statistic, 4), p_value = round(ad$p.value, 4), note = NULL)
+        }
+      ),
+
+      list(
+        assumption = "Normality",
+        procedure  = "Kolmogorov-Smirnov Test",
+        min_n      = 3,
+        run        = function(model) {
+          ks <- ks.test(residuals(model), "pnorm",
+                        mean = mean(residuals(model)),
+                        sd   = sd(residuals(model)))
+          list(statistic = round(ks$statistic, 4), p_value = round(ks$p.value, 4), note = NULL)
+        }
+      ),
+
+      list(
+        assumption = "Equal Variance (Homoskedasticity)",
+        procedure  = "Breusch-Pagan Test",
+        min_n      = 5,
+        run        = function(model) {
+          bp <- lmtest::bptest(model)
+          list(statistic = round(bp$statistic, 4), p_value = round(bp$p.value, 4), note = NULL)
+        }
+      ),
+
+      list(
+        assumption = "Equal Variance (Homoskedasticity)",
+        procedure  = "White Test",
+        min_n      = 4,
+        run        = function(model) {
+          wt <- skedastic::white(model)
+          list(statistic = round(wt$statistic, 4), p_value = round(wt$p.value, 4), note = NULL)
+        }
+      )
+    )
+
     observeEvent(uploadedTibble$data(), {
       encodedData(uploadedTibble$data())
     })
@@ -666,85 +764,86 @@ MLRServer <- function(id) {
     })
     
     
-    # Breush-Pagan Test
-    output$bpTest <- renderUI({
+    output$mlrLineAssumptions <- renderUI({
       req(encodedData())
       req(isTruthy(input$responseVariable))
       req(isTruthy(input$explanatoryVariables))
       req(length(as.character(input$explanatoryVariables)) >= 2)
-      
-      with(encodedData(), {
-        model <- lm(reformulate(
-          sprintf("`%s`", input$explanatoryVariables),
-          sprintf("`%s`", input$responseVariable)
-        ))
-        
-        bp    <- lmtest::bptest(model)
-        pval  <- bp$p.value
-        bpStat <- bp$statistic
-        df    <- bp$parameter
-        
-        withMathJax(
-          p(strong("Breusch-Pagan Test for Heteroscedasticity")),
-          p("Tests whether the variance of residuals is constant (homoscedasticity)."),
-          p(r"{\( H_0: \) The variance of the residuals is constant / does not depend on the independent variable (Homoscedasticity is present).}"),
-          p(r"{\( H_a: \) The variance of the residuals is not constant / depends on the independent variable (Heteroscedasticity is present).}"),
-          p(r"{\( \alpha = 0.05 \)}"),
-          p(sprintf(
-            r"{\( BP = %.4f, \quad df = %d, \quad p\text{-value} = %.4f \)}",
-            bpStat, df, pval
-          )),
-          p(
-            strong("Conclusion:"),
-            if (pval <= 0.05) {
-              r"(Since the p-value is less than \(\alpha\), we reject \(H_0\) and conclude there is evidence of heteroscedasticity.)"
-            } else {
-              r"(Since the p-value is greater than \(\alpha\), we fail to reject \(H_0\) and conclude there is no significant evidence of heteroscedasticity.)"
-            }
-          )
+
+      model <- lm(reformulate(
+        sprintf("`%s`", input$explanatoryVariables),
+        sprintf("`%s`", input$responseVariable)
+      ), data = encodedData())
+
+      alpha <- 0.05
+      n     <- nrow(model.frame(model))
+
+      results <- lapply(mlrLineTestConfig, function(cfg) {
+        if (n < cfg$min_n) {
+          return(data.frame(
+            Assumption  = cfg$assumption,
+            Procedure   = cfg$procedure,
+            `P-Value`   = NA_character_,
+            Conclusion  = paste("Requires n ≥", cfg$min_n),
+            check.names = FALSE
+          ))
+        }
+
+        result <- tryCatch(cfg$run(model), error = function(e) {
+          list(statistic = NULL, p_value = NULL, note = paste("Error:", e$message))
+        })
+
+        pval_str <- if (!is.null(result$p_value)) as.character(result$p_value) else "—"
+
+        conclusion <- if (!is.null(result$note)) {
+          result$note
+        } else if (!is.null(result$p_value)) {
+          if (result$p_value <= alpha) {
+            paste0("Reject H₀ (p = ", result$p_value, " ≤ 0.05)")
+          } else {
+            paste0("Fail to reject H₀ (p = ", result$p_value, " > 0.05)")
+          }
+        } else {
+          "—"
+        }
+
+        data.frame(
+          Assumption  = cfg$assumption,
+          Procedure   = cfg$procedure,
+          `P-Value`   = pval_str,
+          Conclusion  = conclusion,
+          check.names = FALSE
         )
       })
-    })
-    
-  # White Test
-    
-    output$whiteTest <- renderUI({
-      req(encodedData())
-      req(isTruthy(input$responseVariable))
-      req(isTruthy(input$explanatoryVariables))
-      req(length(as.character(input$explanatoryVariables)) >= 2)
-      
-      with(encodedData(), {
-        model <- lm(reformulate(
-          sprintf("`%s`", input$explanatoryVariables),
-          sprintf("`%s`", input$responseVariable)
-        ))
-        
-        white_test  <- skedastic::white(model)
-        pval  <- white_test$p.value
-        W_stat <- white_test$statistic
-        df    <- white_test$parameter
-        
-        withMathJax(
-          p(strong("White Test for Heteroscedasticity")),
-          p("Tests whether the variance of residuals is constant (homoscedasticity)."),
-          p(r"{\( H_0: \) Homoscedasticity — residual variance is constant.}"),
-          p(r"{\( H_a: \) Heteroscedasticity — residual variance is not constant.}"),
-          p(r"{\( \alpha = 0.05 \)}"),
-          p(sprintf(
-            r"{\( W = %.4f, \quad df = %d, \quad p\text{-value} = %.4f \)}",
-            W_stat, df, pval
-          )),
-          p(
-            strong("Conclusion:"),
-            if (pval <= 0.05) {
-              r"(Since the p-value is less than \(\alpha\), we reject \(H_0\) and conclude there is evidence of heteroscedasticity.)"
-            } else {
-              r"(Since the p-value is greater than \(\alpha\), we fail to reject \(H_0\) and conclude there is no significant evidence of heteroscedasticity.)"
-            }
+
+      tableData <- do.call(rbind, results)
+
+      tagList(
+        p(strong("Linearity, Independence, Normality and Equal Variance (L.I.N.E) Assumptions"),
+          style = "font-size: 16px;"),
+        p(paste("Testing at α =", alpha, "| n =", n),
+          style = "color: #666; font-size: 13px;"),
+        br(),
+        reactable(
+          tableData,
+          bordered   = TRUE,
+          striped    = FALSE,
+          highlight  = TRUE,
+          pagination = FALSE,
+          fullWidth  = TRUE,
+          columns = list(
+            Assumption = colDef(
+              name     = "Assumption",
+              minWidth = 200,
+              style    = list(fontWeight = "bold")
+            ),
+            Procedure  = colDef(name = "Procedure",  minWidth = 180),
+            `P-Value`  = colDef(name = "P-Value",    minWidth = 100, align = "center"),
+            Conclusion = colDef(name = "Conclusion", minWidth = 250)
           )
-        )
-      })
+        ),
+        br()
+      )
     })
     
     output$anovaFDistributionPlot <- renderPlot({
@@ -958,12 +1057,14 @@ MLRServer <- function(id) {
             )
             
             num_eq <- paste0(
-              "$$",
+              "<div style='text-align:left;'>",
+              "\\(",
               "\\hat{y} = ",
               round(intercept, 3),
               " + ",
               paste(num_terms, collapse = " + "),
-              "$$"
+              "\\)",
+              "</div>"
             )
             
             sym_eq <- gsub("\\+ -", "- ", sym_eq)
@@ -973,6 +1074,7 @@ MLRServer <- function(id) {
               p("The variables in the model are"),
               HTML(vars_definition_latex),
               
+              br(),
               p("The estimated multiple linear regression equation is"),
               
               HTML(sym_eq),
@@ -1089,8 +1191,8 @@ MLRServer <- function(id) {
         withMathJax(
           p(strong("Test Statistic:")),
           p(sprintf(
-            r"{\(\displaystyle F = \frac{\text{MSR}}{\text{MSE}} = \frac{%0.2f}{%0.2f} = %0.2f \)}",
-            MSR, MSE, F_stat
+            r"{\(\displaystyle F = \frac{\text{MSR}}{\text{MSE}} = \frac{%s}{%s} = %0.2f \)}",
+            fmt_sci_latex(MSR, 2), fmt_sci_latex(MSE, 2), F_stat
           )),
           p(strong("Conclusion:")),
           {
@@ -1136,9 +1238,8 @@ MLRServer <- function(id) {
           p(strong(r"{ \(R^2\) and Adjusted \(R^2\) :}")),
           br(),
           p(sprintf(
-            r"[\( \displaystyle R^2 = \frac{\text{SSR}}{\text{SST}} = \frac{%0.4f}{%0.4f} = %0.4f\)]",
-            SSR,
-            SST,
+            r"[\( \displaystyle R^2 = \frac{\text{SSR}}{\text{SST}} = \frac{%s}{%s} = %0.4f\)]",
+            fmt_sci_latex(SSR, 4), fmt_sci_latex(SST, 4),
             SSR / SST
           )),
           p(sprintf(
@@ -1153,7 +1254,7 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
           p(
             strong("Interpretation:"),
             sprintf(
-              r"[Roughly \(%.2f\%%\) of the variation in the response variable is explained by the multiple linear regression model when adjusted for the number of explanatory variables and the sample size.]",
+              r"[Approximately \(%.2f\%%\) of the variation in the response variable is explained by the multiple linear regression model when adjusted for the number of explanatory variables and the sample size.]",
               summary(model)$adj.r.squared * 100
             )
           ),
@@ -1188,6 +1289,7 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
             plotOutput(ns("ggscatmat"), width = "550px", height = "550px")
           )
         )), 
+        br(),
         fluidRow(column(
           12, p(strong("Variance Inflation Factors (VIFs)")),
           p("A VIF greater than 10 suggests strong multicollinearity caused by the respective variable with that variance inflation factor. VIFs between 5 and 10 hint at moderate multicollinearity. Values less than 5 are acceptable, with only a low degree of multicollinearity detected."),
@@ -1290,13 +1392,32 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
       req(isTruthy(input$responseVariable))
       req(isTruthy(input$explanatoryVariables))
       req(length(as.character(input$explanatoryVariables)) >= 2)
-      
+
       with(encodedData(), {
         model <- lm(reformulate(
           sprintf("`%s`", input$explanatoryVariables),
           sprintf("`%s`", input$responseVariable)
         ))
         plot(model, which = 5, pch = 20, main = "", lwd = 2, sub.caption = "")
+      })
+    })
+
+    output$mlrResidualsPanelPlot5 <- renderPlot({
+      req(encodedData())
+      req(isTruthy(input$responseVariable))
+      req(isTruthy(input$explanatoryVariables))
+      req(length(as.character(input$explanatoryVariables)) >= 2)
+
+      with(encodedData(), {
+        model <- lm(reformulate(
+          sprintf("`%s`", input$explanatoryVariables),
+          sprintf("`%s`", input$responseVariable)
+        ))
+        par(font.main = 2, font.lab = 2)
+        hist(residuals(model), main = "", xlab = "",
+             col = "darkgreen", border = "white")
+        title(main = "Histogram of Residuals", cex.main = 1.2)
+        title(xlab = expression(bold(Residuals~plain("(")*italic(e)*plain(")"))))
       })
     })
     
@@ -1361,11 +1482,7 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
         tabPanel(
           title = "Parameter Estimates",
           br(),
-          fluidRow(uiOutput(ns("linearModelCoefficientsAndConfidenceIntervals"))),
-          fluidRow(hr()),
-          fluidRow(uiOutput(ns("bpTest"))),
-          fluidRow(hr()),
-          fluidRow(uiOutput(ns("whiteTest")))
+          fluidRow(uiOutput(ns("linearModelCoefficientsAndConfidenceIntervals")))
         ),
         tabPanel(
           title = "ANOVA",
@@ -1386,7 +1503,13 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
           br(),
           fluidRow(uiOutput(ns("rsquareAdjustedRSquareInterpretation"))),
           br()
-        )
+        ),
+        
+        tabPanel(
+          title = "LINE",
+          br(),
+          uiOutput(ns("mlrLineAssumptions"))
+        ),
       )
     )
       )
@@ -1405,6 +1528,8 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
                  plotOutput(ns("mlrResidualsPanelPlot3")),
                  br(),
                  plotOutput(ns("mlrResidualsPanelPlot4")),
+                 br(),
+                 plotOutput(ns("mlrResidualsPanelPlot5")),
                  br()
           )
         )

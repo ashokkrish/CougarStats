@@ -654,9 +654,11 @@ KNNServer <- function(id, data, shared_explanatory, shared_response) {
       #CLASSIFICATION vs REGRESSION
       if (is.null(input$task) || input$task == "Classification") {
         
-        #Pulls the response column that the user selected & turns it into a factor
-        y_train <- as.factor(train[[resp_col]])
-        y_test  <- as.factor(test[[resp_col]])
+        # Shared levels so a class missing from one split doesn't make
+        # y_train/y_test/pred disagree on levels (breaks == comparisons).
+        resp_levels <- sort(unique(as.character(na.omit(df[[resp_col]]))))
+        y_train <- factor(train[[resp_col]], levels = resp_levels)
+        y_test  <- factor(test[[resp_col]],  levels = resp_levels)
         
         #Run kNN classification algorithm
         pred <- class::knn(
@@ -909,7 +911,7 @@ KNNServer <- function(id, data, shared_explanatory, shared_response) {
             mean(pred == s$y_test)
           })
 
-          par(mar = c(5, 4, 4, 2))
+          par(mar = c(7, 4, 4, 2))
 
           plot(
             k_vals, acc_vals,
@@ -936,7 +938,7 @@ KNNServer <- function(id, data, shared_explanatory, shared_response) {
           }
 
           legend(
-            "right",
+            "bottom",
             legend = c("Accuracy", paste0("Selected k = ", s$k)),
             col    = c("#4472C4", "#ED7D31"),
             lty    = c(1, 2),
@@ -944,7 +946,10 @@ KNNServer <- function(id, data, shared_explanatory, shared_response) {
             pt.cex = c(0.6, 1.5),
             lwd    = c(2, 1.5),
             bty    = "n",
-            cex    = 0.95
+            cex    = 0.95,
+            horiz  = TRUE,
+            xpd    = TRUE,
+            inset  = c(0, -0.35)
           )
         })
 

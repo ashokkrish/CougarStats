@@ -94,6 +94,7 @@ library(olsrr)
 
 margin <- ggplot2::margin
 
+source("R/utilityFunctions.R")
 source("R/ChiSquareTest.R")
 source("R/descStats.R")
 
@@ -116,6 +117,10 @@ source("R/RenderScatterplot.R")
 source("R/RenderSideBySideBoxplot.R")
 
 source("R/sampSizeEst.R")
+source("R/confidenceCoefficientCp.R")
+source("R/confidenceCoefficient.R")
+source("R/confidenceCoefficientMean.R")
+source("R/confidenceCoefficientProportion.R")
 
 source("R/statInfr.R")
 

@@ -1,5 +1,6 @@
 options(scipen=999)
 source("R/RenderBoxplot.R")
+
 source("R/RenderMeanPlot.R")
 source("R/RenderQQPlot.R")
 source("R/RenderScatterplot.R")
@@ -26,6 +27,7 @@ SLRMainPanelUI <- function(id) {
     hidden(div(
       id = ns("regCorrMP"),
       uiOutput(ns("perfectFitWarning")),
+      uiOutput(ns("missingRowsWarning")),
       uiOutput(ns("slrValidation")),
       
       div(
@@ -279,7 +281,10 @@ SLRMainPanelUI <- function(id) {
                   value = "Kendall",
                   titlePanel("Kendall's Rank Correlation Coefficient"),
                   br(),
-                  uiOutput(ns("kendallFormula")),
+                  uiOutput(ns("kendallTauComputation")),
+                  br(),
+                  hr(),
+                  uiOutput(ns("kendallHypothesisTest")),
                   br(),
                   hr()
                 )
@@ -348,7 +353,7 @@ SLRSidebarUI <- function(id) {
         value       = "2.48, 2.26, 2.47, 2.77, 2.99, 3.05, 3.18, 3.46, 3.03, 3.26, 2.67, 2.53",
         placeholder = "Enter numeric values separated by a comma with decimals as points. (eg: 1,2,3)",
         rows        = 3),
-      
+
       textAreaInput(
         inputId     = ns("x"),
         label       = strong("Explanatory Variable (\\( x\\))"),
@@ -560,7 +565,9 @@ SLRServer <- function(id) {
     
     
     slrExportData <- reactiveVal(NULL)
-    
+
+    nDroppedRows <- reactiveVal(0)
+
     hasHighLeverage <- reactiveVal(FALSE)
     
     hasLeveragePlotIssue <- reactiveVal(FALSE)
@@ -625,8 +632,9 @@ SLRServer <- function(id) {
       datatable(
         dat,
         options = list(
-          pageLength = 10,
-          scrollX = TRUE
+          pageLength  = 25,
+          lengthMenu  = list(c(25, 50, 100, -1), c("25", "50", "100", "All")),
+          scrollX     = TRUE
         )
       )
     })
@@ -636,7 +644,7 @@ SLRServer <- function(id) {
     output$slrViewUploadTab <- renderDT({
       req(input$slrUserData)
       dat <- slrUploadData()
-      datatable(dat, options = list(pageLength = 10, scrollX = TRUE))
+      datatable(dat, options = list(pageLength = 25, lengthMenu = list(c(25, 50, 100, -1), c("25", "50", "100", "All")), scrollX = TRUE))
     })
     
     
@@ -653,26 +661,26 @@ SLRServer <- function(id) {
     slrraw_iv$add_rule("x", sv_required())
     slrraw_iv$add_rule("x", sv_regex("^\\s*-?\\d*\\.?\\d+(\\s*,\\s*-?\\d*\\.?\\d+)*\\s*$",
                                      "Data must be numeric values separated by a comma (ie: 2,3,4 or 2, 30, 400)."))
-    slrraw_iv$add_rule("x", ~ if (length(strsplit(input$x, ",")[[1]]) < 4) "Sample Data must include at least 4 numeric observations.")
+    slrraw_iv$add_rule("x", ~ if (length(strsplit(input$x, ",")[[1]]) < 4) "Sample Data must include at least four numeric observations.")
     slrraw_iv$add_rule("x", ~ tryCatch(
       if (isTRUE(sampleInfoRaw()$diff != 0)) "x and y must have the same number of observations.",
       error = function(e) NULL
     ))
     slrraw_iv$add_rule("x", ~ tryCatch(
-      if (isTRUE(sampleInfoRaw()$xSD == 0)) "Explanatory variable has zero variance (all values are identical). At least two distinct values are required.",
+      if (isTRUE(sampleInfoRaw()$xSD == 0)) "Explanatory variable has a standard deviation equal to zero (all values are identical). At least two distinct values are required.",
       error = function(e) NULL
     ))
     
     slrraw_iv$add_rule("y", sv_required())
     slrraw_iv$add_rule("y", sv_regex("^\\s*-?\\d*\\.?\\d+(\\s*,\\s*-?\\d*\\.?\\d+)*\\s*$",
                                      "Data must be numeric values separated by a comma (ie: 2,3,4 or 2, 30, 400)."))
-    slrraw_iv$add_rule("y", ~ if (length(strsplit(input$x, ",")[[1]]) < 4) "Sample Data must include at least 4 numeric observations.")
+    slrraw_iv$add_rule("y", ~ if (length(strsplit(input$x, ",")[[1]]) < 4) "Sample Data must include at least four numeric observations.")
     slrraw_iv$add_rule("y", ~ tryCatch(
       if (isTRUE(sampleInfoRaw()$diff != 0)) "x and y must have the same number of observations.",
       error = function(e) NULL
     ))
     slrraw_iv$add_rule("y", ~ tryCatch(
-      if (isTRUE(sampleInfoRaw()$ySD == 0)) "Response variable is constant. Correlation is undefined when a variable has zero variance.",
+      if (isTRUE(sampleInfoRaw()$ySD == 0)) "Response variable is constant. Correlation is undefined when a variable has a standard deviation equal to zero.",
       error = function(e) NULL
     ))
     
@@ -688,7 +696,7 @@ SLRServer <- function(id) {
       error = function(e) NULL
     ))
     slrupload_iv$add_rule("slrUserData", ~ tryCatch(
-      if (isTRUE(nrow(slrUploadData()) < 4)) "Samples must include at least 4 numeric observations.",
+      if (isTRUE(nrow(slrUploadData()) < 4)) "Samples must include at least four numeric observations.",
       error = function(e) NULL
     ))
     
@@ -698,32 +706,32 @@ SLRServer <- function(id) {
       error = function(e) NULL
     ))
     slruploadvars_iv$add_rule("slrExplanatory", ~ tryCatch(
-      if (isTRUE(explanatoryInfoUploadSLR()$sd == 0)) "Explanatory variable has zero variance (all values are identical). At least two distinct values are required.",
+      if (isTRUE(explanatoryInfoUploadSLR()$sd == 0)) "Explanatory variable has a standard deviation equal to zero (all values are identical). At least two distinct values are required.",
       error = function(e) NULL
     ))
     slruploadvars_iv$add_rule("slrExplanatory", ~ tryCatch({
       raw  <- suppressWarnings(as.numeric(as.data.frame(slrUploadData())[, input$slrExplanatory]))
       datx <- na.omit(raw)
-      if (length(datx) < 4) "Explanatory variable has fewer than 4 non-missing numeric values."
+      if (length(datx) < 4) "Explanatory variable has fewer than four non-missing numeric values."
     }, error = function(e) NULL))
     
     slruploadvars_iv$add_rule("slrResponse", sv_required())
-    slruploadvars_iv$add_rule("slrResponse", ~ tryCatch(
-      if (isTRUE(sampleDiffUpload() != 0)) "Missing values detected — x and y must have the same number of non-missing observations.",
-      error = function(e) NULL
-    ))
     slruploadvars_iv$add_rule("slrResponse", ~ tryCatch(
       if (isTRUE(responseInfoUploadSLR()$invalid)) "Response variable contains non-numeric data.",
       error = function(e) NULL
     ))
     slruploadvars_iv$add_rule("slrResponse", ~ tryCatch(
-      if (isTRUE(responseInfoUploadSLR()$sd == 0)) "Response variable is constant. Correlation is undefined when a variable has zero variance.",
+      if (isTRUE(sampleDiffUpload() != 0)) "Missing values detected — x and y must have the same number of non-missing observations.",
+      error = function(e) NULL
+    ))
+    slruploadvars_iv$add_rule("slrResponse", ~ tryCatch(
+      if (isTRUE(responseInfoUploadSLR()$sd == 0)) "Response variable is constant. Correlation is undefined when a variable has a standard deviation equal to zero.",
       error = function(e) NULL
     ))
     slruploadvars_iv$add_rule("slrResponse", ~ tryCatch({
       raw  <- suppressWarnings(as.numeric(as.data.frame(slrUploadData())[, input$slrResponse]))
       daty <- na.omit(raw)
-      if (length(daty) < 4) "Response variable has fewer than 4 non-missing numeric values."
+      if (length(daty) < 4) "Response variable has fewer than four non-missing numeric values."
     }, error = function(e) NULL))
     
     
@@ -901,13 +909,18 @@ SLRServer <- function(id) {
     ## NOTE: related to the old plot options UI.
     observeEvent(input$slrExplanatory, {
       updateTextInput(inputId = "xlab", value = input$slrExplanatory)
+      output$perfectFitWarning <- renderUI({ NULL })
     })
     observeEvent(input$slrResponse, {
       updateTextInput(inputId = "ylab", value = input$slrResponse)
+      output$perfectFitWarning <- renderUI({ NULL })
     })
-    
+
     observeEvent(input$goRegression, {
       ## SLR Validation messages ----
+      output$perfectFitWarning <- renderUI({ NULL })
+      showTab(inputId = "slrNavbarPage", target = "Inference")
+      showTab(inputId = "slrNavbarPage", target = "Diagnostic Plots")
       toggle(id = "SLRData", condition = regcor_iv$is_valid())
       
       output$slrValidation <- renderUI({
@@ -1027,15 +1040,18 @@ SLRServer <- function(id) {
         if(!slruploadvars_iv$is_valid()) {
           validate(
             need(input$slrExplanatory != "", "Please select an Explanatory Variable (x)."),
-            need(input$slrResponse != "", "Please select a Response Variable (y).") %then%
-              need(sampleDiffUpload() == 0, "The Explanatory (x) and Response (y) variables must have the same number of observations."),
+            need(input$slrResponse != "", "Please select a Response Variable (y)."),
             errorClass = "myClass")
-          
+
           validate(
             need(!explanatoryInfoUploadSLR()$invalid, "The Explanatory Variable (x) contains non-numeric data.") %then%
-              need(explanatoryInfoUploadSLR()$sd != 0, "Explanatory Variable (x) must have a standard deviation greater than 0 to perform regression and correlation analysis."),
+              need(explanatoryInfoUploadSLR()$sd != 0, "Explanatory Variable (x) must have a standard deviation greater than zero to perform regression and correlation analysis."),
             need(!responseInfoUploadSLR()$invalid, "The Response Variable (y) contains non-numeric data.") %then%
-              need(responseInfoUploadSLR()$sd != 0, "Response Variable (y) must have a standard deviation greater than 0 to perform correlation analysis."),
+              need(responseInfoUploadSLR()$sd != 0, "Response Variable (y) must have a standard deviation greater than zero to perform correlation analysis."),
+            errorClass = "myClass")
+
+          validate(
+            need(sampleDiffUpload() == 0, "The Explanatory (x) and Response (y) variables must have the same number of observations."),
             errorClass = "myClass")
         }
         
@@ -1048,9 +1064,10 @@ SLRServer <- function(id) {
           datx <- raw_x[complete_idx]
           daty <- raw_y[complete_idx]
           if(length(datx) < 4) {
-            showNotification("After removing missing values, fewer than 4 complete observations remain. Please choose different variables.", type = "error", duration = 8)
+            showNotification("After removing missing values, fewer than four complete observations remain. Please choose different variables.", type = "error", duration = 8)
             return()
           }
+          nDroppedRows(sum(!complete_idx))
         } else {
           datx <- createNumLst(input$x)
           daty <- createNumLst(input$y)
@@ -1066,8 +1083,8 @@ SLRServer <- function(id) {
         
         if(!slrraw_iv$is_valid()) {
           validate(
-            need(sampleInfoRaw()$xSD != 0, "Explanatory variable (x) must have a standard deviation greater than 0 to perform regression and correlation analysis."),
-            need(sampleInfoRaw()$ySD != 0, "Response variable (y) must have a standard deviation greater than 0 to perform correlation analysis."),
+            need(sampleInfoRaw()$xSD != 0, "Explanatory variable (x) must have a standard deviation greater than zero to perform regression and correlation analysis."),
+            need(sampleInfoRaw()$ySD != 0, "Response variable (y) must have a standard deviation greater than zero to perform correlation analysis."),
             errorClass = "myClass")
         }
       }) #output$slrValidation
@@ -1077,19 +1094,23 @@ SLRServer <- function(id) {
           hide("uploadedDataPanel")
           showTab(inputId = "slrNavbarPage", target = "Uploaded Data")
         } else {
+          hide("uploadedDataPanel")
           hideTab(inputId = "slrNavbarPage", target = "Uploaded Data")
         }
 
         if(input$dataRegCor == 'Upload Data') {
           req(input$slrExplanatory %in% colnames(slrUploadData()))
           req(input$slrResponse %in% colnames(slrUploadData()))
-          datx <- as.data.frame(slrUploadData())[, input$slrExplanatory]
-          daty <- as.data.frame(slrUploadData())[, input$slrResponse]
+          raw_x <- suppressWarnings(as.numeric(as.data.frame(slrUploadData())[, input$slrExplanatory]))
+          raw_y <- suppressWarnings(as.numeric(as.data.frame(slrUploadData())[, input$slrResponse]))
+          complete_idx <- !is.na(raw_x) & !is.na(raw_y)
+          datx <- raw_x[complete_idx]
+          daty <- raw_y[complete_idx]
         } else {
           datx <- createNumLst(input$x)
           daty <- createNumLst(input$y)
         }
-        
+
         model <- lm(daty ~ datx)
         
         h <- hatvalues(model)
@@ -1163,6 +1184,21 @@ SLRServer <- function(id) {
         
         
         # Perfect fit detection
+        output$missingRowsWarning <- renderUI({
+          n <- nDroppedRows()
+          if (n > 0) {
+            div(
+              class = "alert alert-warning",
+              role  = "alert",
+              style = "margin-top: 10px;",
+              tags$b("⚠️ Missing Data Detected: "),
+              sprintf("%d row%s with missing values removed before analysis.", n, if (n == 1) "" else "s")
+            )
+          } else {
+            NULL
+          }
+        })
+
         output$perfectFitWarning <- renderUI({
           if (isTRUE(all.equal(r_squared, 1))) {
             
@@ -1176,7 +1212,6 @@ SLRServer <- function(id) {
               style = "margin-top: 10px;",
               tags$b("\u26a0\ufe0f Perfect Fit Detected: "),
               "This may indicate that",
-              ("This may indicate that"),
               tags$b("x and y are identical or linearly dependent,"),
               ("which can produce unreliable inference and diagnostic plots. Standard statistical significance tests cannot run on perfect fits. Please check your data.")
             )
@@ -1336,45 +1371,36 @@ SLRServer <- function(id) {
         
         output$regLineEquation <- renderUI({
           withMathJax(
-            p("The estimated equation of the regression line is "),
-            sprintf("\\( \\qquad \\hat{y} = \\hat{\\beta}_{0} + \\hat{\\beta}_{1} x \\)"),
-            br(),
-            br(),
+            p("The estimated equation of the regression line is"),
+            p(sprintf("\\( \\qquad \\hat{y} = \\hat{\\beta}_{0} + \\hat{\\beta}_{1} x \\)")),
             p("where"),
-            sprintf("\\( \\qquad \\hat{\\beta}_{1} = \\dfrac{ \\sum xy - \\dfrac{ (\\sum x)(\\sum y) }{ n } }{ \\sum x^2 - \\dfrac{ (\\sum x)^2 }{ n } } \\)"),
-            sprintf("\\( \\, = \\, \\dfrac{ %s - \\dfrac{ (%s)(%s) }{ %s } }{ %s - \\dfrac{ (%s)^2 }{ %s } } \\)",
-                    format(round(dfTotaled["Totals", "xy"], 3), nsmall = 0, scientific = FALSE),
-                    format(round(dfTotaled["Totals", "x"], 3), nsmall = 0, scientific = FALSE),
-                    format(round(dfTotaled["Totals", "y"], 3), nsmall = 0, scientific = FALSE),
-                    format(round(length(datx), 3), nsmall = 0, scientific = FALSE),
-                    format(round(dfTotaled["Totals", "x<sup>2</sup>"], 3), nsmall = 0, scientific = FALSE),
-                    format(round(dfTotaled["Totals", "x"], 3), nsmall = 0, scientific = FALSE),
-                    format(round(length(datx), 3), nsmall = 0, scientific = FALSE)),
-          
-            sprintf("\\( \\, = \\, %0.4f \\)",
-                    slopeEstimate),
-            br(),
-            br(),
+            p(sprintf(
+              "\\( \\qquad \\hat{\\beta}_{1} = \\dfrac{ \\sum xy - \\dfrac{ (\\sum x)(\\sum y) }{ n } }{ \\sum x^2 - \\dfrac{ (\\sum x)^2 }{ n } } = \\dfrac{ %s - \\dfrac{ (%s)(%s) }{ %s } }{ %s - \\dfrac{ (%s)^2 }{ %s } } = %0.4f \\)",
+              format(round(dfTotaled["Totals", "xy"], 3), nsmall = 0, scientific = FALSE),
+              format(round(dfTotaled["Totals", "x"], 3), nsmall = 0, scientific = FALSE),
+              format(round(dfTotaled["Totals", "y"], 3), nsmall = 0, scientific = FALSE),
+              format(round(length(datx), 3), nsmall = 0, scientific = FALSE),
+              format(round(dfTotaled["Totals", "x<sup>2</sup>"], 3), nsmall = 0, scientific = FALSE),
+              format(round(dfTotaled["Totals", "x"], 3), nsmall = 0, scientific = FALSE),
+              format(round(length(datx), 3), nsmall = 0, scientific = FALSE),
+              slopeEstimate
+            )),
             p("and"),
-            sprintf("\\( \\qquad \\hat{\\beta}_{0} = \\bar{y} - \\hat{\\beta}_{1} \\bar{x}\\)"),
-            sprintf("\\( \\, = \\, %s - (%0.4f) (%s) \\)",
-                    format(round(mean(daty), 3), nsmall = 0, scientific = FALSE),
-                    summary(model)$coefficients["datx", "Estimate"],
-                    format(round(mean(datx), 3), nsmall = 0, scientific = FALSE)),
-            sprintf("\\( \\, = \\, %s %s %0.4f\\)",
-                    format(round(mean(daty), 3), nsmall = 0, scientific = FALSE),
-                    b0HatOp,
-                    abs(slopeEstimate) * mean(datx)),
-            sprintf("\\( \\, = \\, %0.4f \\)",
-                    interceptEstimate),
+            p(sprintf(
+              "\\( \\qquad \\hat{\\beta}_{0} = \\bar{y} - \\hat{\\beta}_{1} \\bar{x} = %s - (%0.4f)(%s) = %s %s %0.4f = %0.4f \\)",
+              format(round(mean(daty), 3), nsmall = 0, scientific = FALSE),
+              summary(model)$coefficients["datx", "Estimate"],
+              format(round(mean(datx), 3), nsmall = 0, scientific = FALSE),
+              format(round(mean(daty), 3), nsmall = 0, scientific = FALSE),
+              b0HatOp,
+              abs(slopeEstimate) * mean(datx),
+              interceptEstimate
+            )),
             br(),
-            br(),
-            br(),
-            sprintf("\\( \\hat{y} = %0.4f %s %0.4f x \\)",
+            p(sprintf("\\( \\qquad \\hat{y} = %0.4f %s %0.4f x \\)",
                     interceptEstimate,
                     yHatOp,
-                    abs(slopeEstimate)),
-            br(),
+                    abs(slopeEstimate))),
             br(),
             p(tags$b("Interpretation:")),
             p(HTML(paste0("Within the scope of observation, ", interceptEstimate, " is the estimated value of ",
@@ -1544,8 +1570,8 @@ SLRServer <- function(id) {
                 sprintf("\\( \\normalsize{\\quad = \\dfrac
               {%s - \\dfrac{ (%s) \\times (%s) }{ %s } }
               {\\sqrt{ %s - \\dfrac{ (%s)^2 }{ %s } } \\times \\sqrt{ %s - \\dfrac{ (%s)^2 }{ %s } }}
-              \\quad = \\dfrac{ %s }{\\sqrt{ %s } \\times \\sqrt{ %s }}
-              \\quad = %g} \\)",
+              = \\dfrac{ %s }{\\sqrt{ %s } \\times \\sqrt{ %s }}
+              = %.4f} \\)",
                         
                         format(round(dfTotaled["Totals", "xy"], 3), nsmall = 0, scientific = FALSE),
                         format(round(dfTotaled["Totals", "x"], 3), nsmall = 0, scientific = FALSE),
@@ -1560,15 +1586,12 @@ SLRServer <- function(id) {
                         format(round(dfTotaled["Totals", "y"], 3), nsmall = 0, scientific = FALSE),
                         format(length(datx), nsmall = 0, scientific = FALSE),
                         
-                        # simplified √ form
-                        format(round(dfTotaled["Totals", "xy"] - sumXSumY / length(datx), 3),
-                               nsmall = 0, scientific = FALSE),
-                        
-                        format(round(dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx), 3),
-                               nsmall = 0, scientific = FALSE),
-                        
-                        format(round(dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx), 3),
-                               nsmall = 0, scientific = FALSE),
+                        # simplified √ form — use scientific notation when values would round to 0
+                        fmt_sci_latex(dfTotaled["Totals", "xy"] - sumXSumY / length(datx)),
+
+                        fmt_sci_latex(dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx)),
+
+                        fmt_sci_latex(dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx)),
                         
                         # final result
                         round(pearson$estimate, 4)
@@ -1607,9 +1630,9 @@ SLRServer <- function(id) {
                   
                   p(strong("Using P-Value Method:")),
                   p(sprintf(
-                    "\\( P = 2 \\times P(t > |\\, %0.4f \\,|) = %s \\)",
+                    "\\( P = 2 \\times P(t > |\\, %0.4f \\,|) %s \\)",
                     pearson$statistic,
-                    format.pval(pearson$p.value, digits = 4, eps = 0.0001)
+                    pval_tex(pearson$p.value)
                   )),
                   if(pearson$p.value <= 0.05) {
                     p(sprintf("Since \\( P \\leq 0.05 \\), reject \\( H_0 \\)."))
@@ -1715,70 +1738,229 @@ SLRServer <- function(id) {
           })
         }
         
-        kendall <- cor.test(datx, daty, method = "kendall")
+        kendall  <- suppressWarnings(cor.test(datx, daty, method = "kendall"))
+        spearman <- suppressWarnings(cor.test(datx, daty, method = "spearman"))
         
-        spearman <- cor.test(datx, daty, method = "spearman")
-        
-        output$kendallEstimate <- renderUI({
-          sprintf("\\( \\tau \\; = \\; %0.4f \\)",
-                  kendall$estimate)
-        })
-        
-        # Kendall's Tau formula
-        # output$kendallFormula <- renderUI({
-        #   n <- length(datx)
-        #   withMathJax(
-        #     sprintf("\\( \\displaystyle \\tau = \\dfrac{n_c - n_d}{\\binom{n}{2}} = \\dfrac{n_c - n_d}{\\dfrac{n(n-1)}{2}} = %0.4f \\)",
-        #             kendall$estimate)#,
-        #     # br(),
-        #     # sprintf("\\( \\tau \\; = \\; %0.4f \\)", kendall$estimate)
-        #   )
-        # })
-        
-        output$kendallFormula <- renderUI({
+        kendallStats <- local({
           n  <- length(datx)
           n0 <- n * (n - 1) / 2
           n1 <- sum(choose(table(datx), 2))
           n2 <- sum(choose(table(daty), 2))
-          
+          has_ties <- (n1 > 0 || n2 > 0)
           nc <- 0
           nd <- 0
           for (i in 1:(n - 1)) {
             for (j in (i + 1):n) {
               dx <- datx[i] - datx[j]
               dy <- daty[i] - daty[j]
-              if (sign(dx) == sign(dy) && dx != 0 && dy != 0) {
-                nc <- nc + 1
-              } else if (sign(dx) != sign(dy) && dx != 0 && dy != 0) {
-                nd <- nd + 1
-              }
+              if (sign(dx) == sign(dy) && dx != 0 && dy != 0) nc <- nc + 1
+              else if (sign(dx) != sign(dy) && dx != 0 && dy != 0) nd <- nd + 1
             }
           }
-          
-          tau <- kendall$estimate
-          
-          # Strength
-          tauStrength <- if (abs(tau) > 0.6) "strong"
-          else if (abs(tau) > 0.3) "moderate"
-          else "weak"
-          
-          # Direction
+          S      <- nc - nd
+          t_vals <- as.numeric(table(datx))
+          u_vals <- as.numeric(table(daty))
+          v0     <- n * (n - 1) * (2 * n + 5)
+          vt     <- sum(t_vals * (t_vals - 1) * (2 * t_vals + 5))
+          vu     <- sum(u_vals * (u_vals - 1) * (2 * u_vals + 5))
+          s1     <- sum(choose(t_vals, 3))
+          s2     <- sum(choose(u_vals, 3))
+          s3     <- sum(choose(t_vals, 2)) * sum(choose(u_vals, 2))
+          term3  <- if (n >= 3) 9 * s1 * s2 / (n * (n - 1) * (n - 2)) else 0
+          varS   <- (v0 - vt - vu) / 18 + term3 + s3 / (2 * n * (n - 1))
+          list(n = n, n0 = n0, n1 = n1, n2 = n2, has_ties = has_ties, nc = nc, nd = nd, S = S, varS = varS)
+        })
+
+        output$kendallTauComputation <- renderUI({
+          ks  <- kendallStats
+          tau <- as.numeric(kendall$estimate)
+
+          if (!ks$has_ties) {
+            formula_note <- "Since there are no ties in the data, we use Kendall's \\(\\tau_a\\):"
+            sym_formula  <- "\\tau_a = \\dfrac{n_c - n_d}{\\dfrac{n(n-1)}{2}}"
+            num_formula  <- sprintf(
+              "\\tau_a = \\dfrac{%d - %d}{\\dfrac{%d \\cdot (%d - 1)}{2}} = \\dfrac{%d}{%g} = %.4f",
+              ks$nc, ks$nd, ks$n, ks$n, ks$nc - ks$nd, ks$n0, tau
+            )
+          } else {
+            formula_note <- "Since there are ties in the data, we use Kendall's \\(\\tau_b\\):"
+            sym_formula  <- "\\tau_b = \\dfrac{n_c - n_d}{\\sqrt{(n_0 - n_1)(n_0 - n_2)}}"
+            num_formula  <- sprintf(
+              "\\tau_b = \\dfrac{%d - %d}{\\sqrt{(%g - %g)(%g - %g)}} = %.4f",
+              ks$nc, ks$nd, ks$n0, ks$n1, ks$n0, ks$n2, tau
+            )
+          }
+
+          tauStrength  <- if (abs(tau) > 0.6) "strong" else if (abs(tau) > 0.3) "moderate" else "weak"
           tauDirection <- if (tau > 0) "positive" else "negative"
-          
+
           withMathJax(
-            HTML(sprintf(
-              "\\( \\tau = \\dfrac{n_c - n_d}{\\sqrt{(n_0 - n_1)(n_0 - n_2)}} = \\dfrac{%d - %d}{\\sqrt{(%g - %g)(%g - %g)}} = %.4f \\)",
-              nc, nd, n0, n1, n0, n2, tau
-            )),
-            br(),
+            p(formula_note),
+            p(HTML(sprintf("\\( %s \\)", sym_formula))),
+            p(HTML(sprintf("\\( %s \\)", num_formula))),
+            if (!ks$has_ties)
+              p("where \\( n_c \\) is the number of concordant pairs and \\( n_d \\) is the number of discordant pairs."),
+            if (ks$has_ties)
+              p("where \\( n_c \\) is the number of concordant pairs, \\( n_d \\) is the number of discordant pairs, \\( n_0 \\) is the total number of pairs, \\( n_1 \\) is the number of pairs tied on \\( x \\), and \\( n_2 \\) is the number of pairs tied on \\( y \\)."),
             br(),
             p(tags$b("Interpretation:")),
-            p(sprintf(
-              "There exists a %s %s monotonic relationship between \\(\\mathit{x}\\) and \\(\\mathit{y}\\).",
-              tauStrength, tauDirection
-            ))
+            if (tau == 0) {
+              p("There exists no monotonic relationship between \\(\\mathit{x}\\) and \\(\\mathit{y}\\).")
+            } else {
+              p(sprintf(
+                "There exists a %s %s monotonic relationship between \\(\\mathit{x}\\) and \\(\\mathit{y}\\).",
+                tauStrength, tauDirection
+              ))
+            }
           )
         })
+
+        output$kendallHypothesisTest <- renderUI({
+          ks  <- kendallStats
+          tau <- as.numeric(kendall$estimate)
+
+          tauStrength  <- if (isTRUE(abs(tau) > 0.6)) "strong" else if (isTRUE(abs(tau) > 0.3)) "moderate" else "weak"
+          tauDirection <- if (isTRUE(tau > 0)) "positive" else "negative"
+
+          header <- tagList(
+            p("Kendall's Tau has a formal hypothesis test for whether two variables are monotonically associated."),
+            br(),
+            HTML("<p>\\(H_0\\): The true Kendall's Tau in the population is <strong>0</strong> (no monotonic association).</p>"),
+            HTML("<p>\\(H_a\\): The true Kendall's Tau is <strong>not</strong> equal to 0 (some monotonic association).</p>"),
+            br(),
+            p("\\( \\alpha = 0.05 \\)"),
+            p(sprintf("\\( n = %d \\)", ks$n)),
+            br()
+          )
+
+          if (!ks$has_ties) {
+            sd_tau <- sqrt(2 * (2 * ks$n + 5) / (9 * ks$n * (ks$n - 1)))
+            z_stat <- tau / sd_tau
+            p_val  <- 2 * pnorm(-abs(z_stat))
+
+            withMathJax(
+              header,
+              p(tags$b("Mean & Standard Deviation of the sampling distribution of \\( \\hat{\\tau} \\)")),
+              p("\\( E(\\hat{\\tau}) = 0 \\)"),
+              p("\\( SD(\\hat{\\tau}) = \\sqrt{\\dfrac{2(2n+5)}{9n(n-1)}} \\)"),
+              br(),
+              p(tags$b("Test Statistic:")),
+              p(HTML(sprintf(
+                "\\( z = \\dfrac{\\hat{\\tau} - E(\\hat{\\tau})}{SD(\\hat{\\tau})} = \\dfrac{\\hat{\\tau} - 0}{\\sqrt{\\dfrac{2(2n+5)}{9n(n-1)}}} = \\dfrac{%.4f - 0}{\\sqrt{\\dfrac{2(2(%d)+5)}{9(%d)(%d-1)}}} = %.4f \\)",
+                tau, ks$n, ks$n, ks$n, z_stat
+              ))),
+              br(),
+
+              p(strong("Using P-Value Method:")),
+              p(sprintf("\\( P = 2 \\times P(Z > |\\, %.4f \\,|) %s \\)", z_stat, pval_tex(p_val))),
+              if (isTRUE(p_val <= 0.05)) {
+                p("Since \\( P \\leq 0.05 \\), reject \\( H_0 \\).")
+              } else {
+                p("Since \\( P > 0.05 \\), fail to reject \\( H_0 \\).")
+              },
+              br(),
+
+              p(strong("Using Critical Value Method:")),
+              p("\\( \\text{Critical Value(s)} = \\pm z_{\\alpha/2} = \\pm z_{0.025} = \\pm 1.96 \\)"),
+              if (isTRUE(abs(z_stat) > 1.96)) {
+                p(sprintf(
+                  "Since the test statistic \\( (z = %.4f) \\) falls within the rejection region, reject \\( H_0 \\).",
+                  z_stat
+                ))
+              } else {
+                p(sprintf(
+                  "Since the test statistic \\( (z = %.4f) \\) does not fall within the rejection region, fail to reject \\( H_0 \\).",
+                  z_stat
+                ))
+              },
+
+              plotOutput(session$ns("kendallZCurve"), height = "300px", width = "500px"),
+
+              p(tags$b("Conclusion:")),
+              if (isTRUE(p_val <= 0.05)) {
+                p(sprintf(
+                  "At \\( \\alpha = 0.05 \\), we reject \\( H_0 \\) and conclude that there is enough statistical evidence of a %s %s monotonic relationship between \\( x \\) and \\( y \\) in the population.",
+                  tauStrength, tauDirection
+                ))
+              } else {
+                p("At \\( \\alpha = 0.05 \\), we fail to reject \\( H_0 \\) and conclude that there is not enough statistical evidence of a monotonic relationship between \\( x \\) and \\( y \\) in the population.")
+              }
+            )
+          } else {
+            # Ties: use cor.test's tie-corrected z statistic and p-value
+            z_stat <- as.numeric(kendall$statistic)
+            p_val  <- kendall$p.value
+
+            withMathJax(
+              header,
+              p(em("Note: Ties are present in the data. The test statistic and p-value are computed using R's tie-corrected normal approximation.")),
+              br(),
+              p(tags$b("Test Statistic:")),
+              p(sprintf(
+                "\\( z = \\dfrac{S}{\\sqrt{\\operatorname{Var}(S)}} = %.4f \\)",
+                z_stat
+              )),
+              p("where \\( S \\) is the Kendall score statistic, \\( n_c \\) is the number of concordant pairs, and \\( n_d \\) is the number of discordant pairs."),
+              p(HTML(sprintf(
+                "\\( S = n_c - n_d = %d - %d = %d \\)",
+                ks$nc, ks$nd, ks$nc - ks$nd
+              ))),
+              br(),
+
+              p(strong("Using P-Value Method:")),
+              p(sprintf("\\( P = 2 \\times P(Z > |\\, %.4f \\,|) %s \\)", z_stat, pval_tex(p_val))),
+              if (isTRUE(p_val <= 0.05)) {
+                p("Since \\( P \\leq 0.05 \\), reject \\( H_0 \\).")
+              } else {
+                p("Since \\( P > 0.05 \\), fail to reject \\( H_0 \\).")
+              },
+              br(),
+
+              p(strong("Using Critical Value Method:")),
+              p("\\( \\text{Critical Value(s)} = \\pm z_{\\alpha/2} = \\pm z_{0.025} = \\pm 1.96 \\)"),
+              if (isTRUE(abs(z_stat) > 1.96)) {
+                p(sprintf(
+                  "Since the test statistic \\( (z = %.4f) \\) falls within the rejection region, reject \\( H_0 \\).",
+                  z_stat
+                ))
+              } else {
+                p(sprintf(
+                  "Since the test statistic \\( (z = %.4f) \\) does not fall within the rejection region, fail to reject \\( H_0 \\).",
+                  z_stat
+                ))
+              },
+
+              plotOutput(session$ns("kendallZCurve"), height = "300px", width = "500px"),
+
+              p(tags$b("Conclusion:")),
+              if (isTRUE(p_val <= 0.05)) {
+                p(sprintf(
+                  "At \\( \\alpha = 0.05 \\), we reject \\( H_0 \\) and conclude that there is enough statistical evidence of a %s %s monotonic relationship between \\( x \\) and \\( y \\) in the population.",
+                  tauStrength, tauDirection
+                ))
+              } else {
+                p("At \\( \\alpha = 0.05 \\), we fail to reject \\( H_0 \\) and conclude that there is not enough statistical evidence of a monotonic relationship between \\( x \\) and \\( y \\) in the population.")
+              }
+            )
+          }
+        })
+
+        output$kendallZCurve <- renderPlot({
+          ks <- kendallStats
+          if (!ks$has_ties) {
+            tau    <- as.numeric(kendall$estimate)
+            sd_tau <- sqrt(2 * (2 * ks$n + 5) / (9 * ks$n * (ks$n - 1)))
+            z_stat <- round(tau / sd_tau, 3)
+          } else {
+            z_stat <- round(as.numeric(kendall$statistic), 3)
+          }
+          hypZTestPlot(
+            testStatistic = z_stat,
+            critValue     = 1.96,
+            altHypothesis = "two.sided"
+          )
+        }, height = 300, width = 500)
+
         spearman_cf <- function(x) {
           tbl   <- table(x)
           ties  <- as.numeric(tbl[tbl > 1])
@@ -1795,6 +1977,7 @@ SLRServer <- function(id) {
             y      = daty,
             rank_x = rank_x,
             rank_y = rank_y,
+            rx_ry  = rank_x * rank_y,
             d      = d,
             d_sq   = d^2
           )
@@ -1805,8 +1988,15 @@ SLRServer <- function(id) {
           contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
           content     = function(file) {
             tryCatch({
-              data <- spearmanData()
-              names(data) <- c("x", "y", "Rank x", "Rank y", "d = (Rank x - Rank y)", "d^2")
+              has_ties <- spearman_cf(datx) > 0 || spearman_cf(daty) > 0
+              data     <- spearmanData()
+              if (has_ties) {
+                data <- data[, c("x", "y", "rank_x", "rank_y", "rx_ry")]
+                names(data) <- c("x", "y", "Rank x", "Rank y", "Rank x × Rank y")
+              } else {
+                data <- data[, c("x", "y", "rank_x", "rank_y", "d", "d_sq")]
+                names(data) <- c("x", "y", "Rank x", "Rank y", "d = (Rank x - Rank y)", "d^2")
+              }
               writexl::write_xlsx(data, file)
             }, error = function(e) {
               message("Full error: ", conditionMessage(e))
@@ -1817,40 +2007,63 @@ SLRServer <- function(id) {
         # Spearman's rs formula and interpretation
         output$spearmanFormula <- renderUI({
 
-          d_sq     <- spearmanData()$d_sq
+          sp_data  <- spearmanData()
+          d_sq     <- sp_data$d_sq
           sum_d_sq <- sum(d_sq)
           n        <- length(datx)
           cf_x     <- spearman_cf(datx)
           cf_y     <- spearman_cf(daty)
-          rs       <- 1 - (6 * (sum_d_sq + cf_x + cf_y)) / (n * (n^2 - 1))
 
-          has_ties    <- cf_x > 0 || cf_y > 0
-          rsStrength  <- if (abs(rs) > 0.6) "strong" else if (abs(rs) > 0.3) "moderate" else "weak"
-          rsDirection <- if (rs > 0) "positive" else "negative"
+          has_ties <- cf_x > 0 || cf_y > 0
 
-          formula_latex <- if (has_ties) {
-            sprintf(
-              "\\( r_s = 1 - \\dfrac{6\\left(\\sum_{i=1}^n d_i^2 + CF_x + CF_y\\right)}{n(n^2 - 1)} = 1 - \\dfrac{6\\left(%g + %g + %g\\right)}{%d(%d^2 - 1)} = %.4f \\)",
-              sum_d_sq, cf_x, cf_y, n, n, rs
+          if (has_ties) {
+            rank_x   <- sp_data$rank_x
+            rank_y   <- sp_data$rank_y
+            sum_rxry <- sum(rank_x * rank_y)
+            mean_rx  <- mean(rank_x)
+            mean_ry  <- mean(rank_y)
+            sd_rx    <- sd(rank_x)
+            sd_ry    <- sd(rank_y)
+            rs       <- (sum_rxry - n * mean_rx * mean_ry) / ((n - 1) * sd_rx * sd_ry)
+            formula_latex <- sprintf(
+              "\\( r_s = \\dfrac{\\sum_{i=1}^n R_{x_i} R_{y_i} - n\\bar{R}_x\\bar{R}_y}{(n-1)\\,s_{R_x}s_{R_y}} = \\dfrac{%g - %d \\times %g \\times %g}{(%d - 1) \\times %g \\times %g} = %.4f \\)",
+              sum_rxry, n, round(mean_rx, 4), round(mean_ry, 4), n, round(sd_rx, 4), round(sd_ry, 4), rs
             )
           } else {
-            sprintf(
+            rs <- 1 - (6 * sum_d_sq) / (n * (n^2 - 1))
+            formula_latex <- sprintf(
               "\\( r_s = 1 - \\dfrac{6 \\sum_{i=1}^n d_i^2}{n(n^2 - 1)} = 1 - \\dfrac{6 \\times %g}{%d(%d^2 - 1)} = %.4f \\)",
               sum_d_sq, n, n, rs
             )
           }
 
+          rsStrength  <- if (abs(rs) > 0.6) "strong" else if (abs(rs) > 0.3) "moderate" else "weak"
+          rsDirection <- if (rs > 0) "positive" else "negative"
+
           withMathJax(
+            p(if (has_ties)
+              "Since there are ties in the data, we use the following formula:"
+            else
+              "Since there are no ties in the data, we use the following formula:"
+            ),
             div(
               style = "text-align: left; font-size: 18px;",
               HTML(formula_latex)
             ),
+            if (has_ties) tagList(
+              br(),
+              p("where \\( R_{x_i} \\) and \\( R_{y_i} \\) are the ranks of the \\( i \\)-th \\( x \\) and \\( y \\) values, \\( \\bar{R}_x \\) and \\( \\bar{R}_y \\) are the mean ranks of \\( x \\) and \\( y \\), and \\( s_{R_x} \\) and \\( s_{R_y} \\) are the standard deviations of the ranks of \\( x \\) and \\( y \\).")
+            ),
             br(),
             p(tags$b("Interpretation:")),
-            p(sprintf(
-              "There exists a %s %s monotonic relationship between \\(\\mathit{x}\\) and \\(\\mathit{y}\\).",
-              rsStrength, rsDirection
-            ))
+            if (rs == 0) {
+              p("There exists no monotonic relationship between \\(\\mathit{x}\\) and \\(\\mathit{y}\\).")
+            } else {
+              p(sprintf(
+                "There exists a %s %s monotonic relationship between \\(\\mathit{x}\\) and \\(\\mathit{y}\\).",
+                rsStrength, rsDirection
+              ))
+            }
           )
         })
 
@@ -1858,38 +2071,75 @@ SLRServer <- function(id) {
         output$spearmanTable <- renderUI({
 
           spearman_df <- spearmanData()
-          sum_d_sq    <- sum(spearman_df$d_sq)
+          has_ties    <- spearman_cf(datx) > 0 || spearman_cf(daty) > 0
 
-          reactable(
-            spearman_df,
-            sortable   = FALSE,
-            bordered   = TRUE,
-            striped    = TRUE,
-            highlight  = TRUE,
-            pagination = FALSE,
-            fullWidth  = FALSE,
-            rownames   = FALSE,
-            columns = list(
-              x      = colDef(name = "x",      align = "center"),
-              y      = colDef(name = "y",      align = "center"),
-              rank_x = colDef(name = "Rank x", align = "center"),
-              rank_y = colDef(name = "Rank y", align = "center"),
-              d      = colDef(name = "d = (Rank x \u2212 Rank y)", align = "center", footer = tags$b("Total")),
-              d_sq   = colDef(
-                name   = HTML("d<sup>2</sup>"),
-                html   = TRUE,
-                align  = "center",
-                footer = tags$b(sum_d_sq),
-                cell = function(value) {
-                  if (value == floor(value)) {
-                    formatC(value, format = "d", big.mark = ",")
-                  } else {
-                    formatC(value, format = "f", digits = 2)
+          if (has_ties) {
+            sum_rxry <- sum(spearman_df$rx_ry)
+
+            reactable(
+              spearman_df[, c("x", "y", "rank_x", "rank_y", "rx_ry")],
+              sortable   = FALSE,
+              bordered   = TRUE,
+              striped    = TRUE,
+              highlight  = TRUE,
+              pagination = FALSE,
+              fullWidth  = FALSE,
+              rownames   = FALSE,
+              columns = list(
+                x      = colDef(name = "x",      align = "center"),
+                y      = colDef(name = "y",      align = "center"),
+                rank_x = colDef(name = "Rank x", align = "center"),
+                rank_y = colDef(name = "Rank y", align = "center"),
+                rx_ry  = colDef(
+                  name     = HTML("(Rank x) &times; (Rank y)"),
+                  html     = TRUE,
+                  align    = "center",
+                  minWidth = 200,
+                  footer   = tags$b(sum_rxry),
+                  cell = function(value) {
+                    if (value == floor(value)) {
+                      formatC(value, format = "f", digits = 0)
+                    } else {
+                      formatC(value, format = "f", digits = 2)
+                    }
                   }
-                }
+                )
               )
             )
-          )
+          } else {
+            sum_d_sq <- sum(spearman_df$d_sq)
+
+            reactable(
+              spearman_df[, c("x", "y", "rank_x", "rank_y", "d", "d_sq")],
+              sortable   = FALSE,
+              bordered   = TRUE,
+              striped    = TRUE,
+              highlight  = TRUE,
+              pagination = FALSE,
+              fullWidth  = FALSE,
+              rownames   = FALSE,
+              columns = list(
+                x      = colDef(name = "x",      align = "center"),
+                y      = colDef(name = "y",      align = "center"),
+                rank_x = colDef(name = "Rank x", align = "center"),
+                rank_y = colDef(name = "Rank y", align = "center"),
+                d      = colDef(name = "d = (Rank x \u2212 Rank y)", align = "center", footer = tags$b("Total"), minWidth = 190),
+                d_sq   = colDef(
+                  name   = HTML("d<sup>2</sup>"),
+                  html   = TRUE,
+                  align  = "center",
+                  footer = tags$b(sum_d_sq),
+                  cell = function(value) {
+                    if (value == floor(value)) {
+                      formatC(value, format = "d", big.mark = ",")
+                    } else {
+                      formatC(value, format = "f", digits = 2)
+                    }
+                  }
+                )
+              )
+            )
+          }
         })
     
         
@@ -1897,9 +2147,9 @@ SLRServer <- function(id) {
         output$correlationSummaryTable <- renderTable({
           data.frame(
             `Correlation Coefficient` = c(
-              "Pearson's (<em>r</em>)",
-              "Spearman's (<em>r</em><sub>s</sub>)",
-              "Kendall's (<em>&tau;</em>)"
+              "Pearson's <em>r</em>",
+              "Spearman's <em>r</em><sub>s</sub>",
+              "Kendall's <em>&tau;</em>"
             ),
             Estimate = c(
               sprintf("%.4f", round(pearson$estimate, 4)),
@@ -1958,7 +2208,7 @@ SLRServer <- function(id) {
           
           withMathJax(
             p(strong("Test Statistic:")),
-            p(sprintf("\\( \\displaystyle F = \\frac{\\mathrm{MSR}}{\\mathrm{MSE}} = \\frac{%.3f}{%.3f} = %.3f \\)", msr, mse, f_value)),
+            p(sprintf("\\( \\displaystyle F = \\frac{\\mathrm{MSR}}{\\mathrm{MSE}} = \\frac{%s}{%s} = %.3f \\)", fmt_sci_latex(msr), fmt_sci_latex(mse), f_value)),
             p(strong("Conclusion:")),
             if (p_value <= 0.05) {
               p(sprintf("Since the p-value is less than \\( \\alpha \\) (%.3f < 0.05), we reject the null hypothesis and conclude there is enough statistical evidence to support the alternative hypothesis. We can conclude the model is statistically significant.", p_value))
@@ -1987,8 +2237,9 @@ SLRServer <- function(id) {
             tags$div(
               style = "text-align: left;",
               HTML(sprintf(
-                "\\( R^2 = \\dfrac{\\mathrm{SSR}}{\\mathrm{SSR} + \\mathrm{SSE}} = \\dfrac{\\mathrm{SSR}}{\\mathrm{SST}} = \\dfrac{%.4f}{%.4f + %.4f} = \\dfrac{%.4f}{%.4f} = %.4f \\)",
-                ssr, ssr, sse, ssr, sst, r2
+                "\\( R^2 = \\dfrac{\\mathrm{SSR}}{\\mathrm{SSR} + \\mathrm{SSE}} = \\dfrac{\\mathrm{SSR}}{\\mathrm{SST}} = \\dfrac{%s}{%s + %s} = \\dfrac{%s}{%s} = %.4f \\)",
+                fmt_sci_latex(ssr, 4), fmt_sci_latex(ssr, 4), fmt_sci_latex(sse, 4),
+                fmt_sci_latex(ssr, 4), fmt_sci_latex(sst, 4), r2
               ))
             ),
             
@@ -2150,6 +2401,7 @@ SLRServer <- function(id) {
       }
       hideTab(inputId = "slrNavbarPage", target = "Uploaded Data")
       output$perfectFitWarning <- renderUI({ NULL })
+      nDroppedRows(0)
 
       if (is.null(fileInputs$slrStatus) || fileInputs$slrStatus != "uploaded"){
         hide(id = "slrResponse")
@@ -2189,9 +2441,10 @@ SLRServer <- function(id) {
      
     observeEvent(input$resetRegCor, {
       hasHighLeverage(FALSE)
+      nDroppedRows(0)
       output$perfectFitWarning <- renderUI({ NULL })
       hide(id = "regCorrMP")
-      show("uploadedDataPanel")
+      hide("uploadedDataPanel")
       hideTab(inputId = "slrNavbarPage", target = "Uploaded Data")
       shinyjs::reset("inputPanel")
       fileInputs$slrStatus <- 'reset'

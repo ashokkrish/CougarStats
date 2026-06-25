@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "cougarstats",
+      "runtimeExecutable": "Rscript",
+      "runtimeArgs": ["-e", "shiny::runApp('.', port=7866, host='127.0.0.1', launch.browser=FALSE)"],
+      "port": 7866
+    }
+  ]
+}

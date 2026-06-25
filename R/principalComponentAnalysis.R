@@ -19,6 +19,7 @@ library(psych) # For rotated solution
 PCASidebarUI <- function(id) {
   ns <- NS(id)
   tagList(
+    useShinyjs(),
 
     div(
       style = "font-size: 15px; color: #6c757d; margin-top: 8px; margin-bottom: 6px; ",
@@ -46,13 +47,17 @@ PCASidebarUI <- function(id) {
       ),
       uiOutput(ns("predictorsError"))
     ),
-    radioButtons(ns("transformation"),
-                 label = strong("Data Transformation"),
-                 choices = c("Original scale",
-                             "Logarithmic transformation",
-                             "Box-Cox transformation",
-                             "Standardized Box-Cox transformation"),
-                 selected = "Original scale"),
+    div(
+      id = ns("transformationContainer"),
+      style = "display: none;",
+      radioButtons(ns("transformation"),
+                   label = strong("Data Transformation"),
+                   choices = c("Original scale",
+                               "Logarithmic transformation",
+                               "Box-Cox transformation",
+                               "Standardized Box-Cox transformation"),
+                   selected = "Original scale")
+    ),
     div(
       id = ns("numFactorsContainer"),
       numericInput(ns("numFactors"), "Number of Factors", value = 2, min = 1, step = 1)
@@ -79,25 +84,37 @@ PCAMainPanelUI <- function(id) {
              theme = bs_theme(version = 4),
                tabPanel(title = "Results",
                         value = "pca_results_tab",
-                        h3("Principal Component Analysis Summary"),
+                        tags$style(HTML(
+                          ".pca-matrix-table td:first-child,
+                           .pca-matrix-table th:first-child {
+                             font-weight: bold;
+                           }"
+                        )),
+                        h4("Principal Component Analysis Summary"),
                         tableOutput(ns("pcaSummary")),
                         hr(),
-                        h3("Component Loadings (Unrotated)"),
+                        h4("Component Loadings (Unrotated)"),
                         tableOutput(ns("pcaLoadings")),
                         hr(),
-                        h3("Component Loadings (Varimax Rotation)"),
+                        h4("Component Loadings (Varimax Rotation)"),
                         tableOutput(ns("rotatedLoadings")),
                         hr(),
-                        h3("Correlation Matrix"),
-                        tableOutput(ns("correlationMatrix")),
+                        h4("Correlation Matrix"),
+                        div(class = "pca-matrix-table", style = "display: flex; justify-content: flex-start;",
+                            tableOutput(ns("correlationMatrix"))),
                         hr(),
-                        h3("Covariance Matrix"),
-                        tableOutput(ns("covarianceMatrix")),
-                        #hr(),
-                        #h3("Scree Plot"),
-                        #plotOutput(ns("screePlot")),
+                        h4("Covariance Matrix"),
+                        div(class = "pca-matrix-table", style = "display: flex; justify-content: flex-start;",
+                            tableOutput(ns("covarianceMatrix"))),
                         hr(),
-                        h3("Interpretation of Results"),
+                        h4("Eigenvalues"),
+                        div(class = "pca-matrix-table", style = "display: flex; justify-content: flex-start;",
+                            tableOutput(ns("eigenvaluesTable"))),
+                        hr(),
+                        h4("Eigenvectors"),
+                        div(class = "pca-matrix-table", style = "display: flex; justify-content: flex-start;",
+                            tableOutput(ns("eigenvectorsTable"))),
+                        hr(),
                         uiOutput(ns("pcaInterpretation"))
                ),
                tabPanel(
@@ -158,6 +175,7 @@ PCAServer <- function(id, data, shared_explanatory, shared_response) {
       shinyjs::hide("numFactorsContainer")
       shinyjs::hide("pcXContainer")
       shinyjs::hide("pcYContainer")
+      shinyjs::hide("transformationContainer")
     }, once = TRUE)
     
     observeEvent(data(), {
@@ -369,7 +387,6 @@ PCAServer <- function(id, data, shared_explanatory, shared_response) {
 
         showTab(inputId = "mainPanel", target = "pca_results_tab")
         showTab(inputId = "mainPanel", target = "plots_tab")
-        showTab(inputId = "mainPanel", target = "transformations_tab")
 
         updateNavbarPage(session, "mainPanel", selected = "pca_results_tab")
 
@@ -454,14 +471,15 @@ PCAServer <- function(id, data, shared_explanatory, shared_response) {
         ) +
         theme_minimal() +
         theme(
-          plot.title   = element_text(face = "bold", size = 14, hjust = 0.5),
-          axis.title.x = element_text(face = "bold", size = 14),
-          axis.title.y = element_text(face = "bold", size = 14),
-          axis.text.x  = element_text(face = "bold", size = 12),
-          axis.text.y  = element_text(face = "bold", size = 12)
+          plot.title      = element_text(face = "bold", size = 14, hjust = 0.5),
+          axis.title.x    = element_text(face = "bold", size = 14),
+          axis.title.y    = element_text(face = "bold", size = 14),
+          axis.text.x     = element_text(face = "bold", size = 12),
+          axis.text.y     = element_text(face = "bold", size = 12),
+          legend.position = "bottom"
         )
     }, res = 96)
-    
+
     output$loadingsHeatmap <- renderPlot({
       req(pca_results(), input$numFactors)
       
@@ -497,10 +515,11 @@ PCAServer <- function(id, data, shared_explanatory, shared_response) {
         ) +
         theme_minimal() +
         theme(
-          plot.title   = element_text(face = "bold", size = 14, hjust = 0.5),
-          axis.title.x = element_text(face = "bold", size = 14),
-          axis.title.y = element_text(face = "bold", size = 14),
-          axis.text    = element_text(face = "bold", size = 12, colour = "black")
+          plot.title      = element_text(face = "bold", size = 14, hjust = 0.5),
+          axis.title.x    = element_text(face = "bold", size = 14),
+          axis.title.y    = element_text(face = "bold", size = 14),
+          axis.text       = element_text(face = "bold", size = 12, colour = "black"),
+          legend.position = "bottom"
         )
     }, res = 96)
     
@@ -519,43 +538,92 @@ PCAServer <- function(id, data, shared_explanatory, shared_response) {
     
     output$pcaInterpretation <- renderUI({
       req(pca_results())
-      
-      summary_data <- summary(pca_results())$importance
+
+      summary_data  <- summary(pca_results())$importance
       loadings_data <- pca_results()$rotation
-      
-      # Interpretation of Summary
-      interpretation_summary <- tagList(
-        h4("Importance of Components"),
-        p(strong("Standard deviation:"), " This measures the amount of variance in the data explained by each principal component. Higher values mean more variance is captured."),
-        p(strong("Proportion of Variance:"), " This shows the percentage of the total variance that is accounted for by each principal component."),
-        p(strong("Cumulative Proportion:"), " This is the cumulative sum of the proportion of variance. It helps in deciding how many components to retain. A common rule of thumb is to select enough components to explain 70-80% of the total variance.")
-      )
-      
-      # Interpretation of Loadings
-      interpretation_loadings <- tagList(
-        h4("Component Loadings"),
-        p("Loadings are the correlations between the original variables and the principal components. They indicate how much each original variable contributes to each component.")
-      )
-      
-      loading_details <- lapply(1:input$numFactors, function(i) {
-        component_name <- colnames(loadings_data)[i]
+
+      cum_var_pct <- round(summary_data["Cumulative Proportion", input$numFactors] * 100, 2)
+      variance_label <- if (cum_var_pct >= 80) "excellent"
+                         else if (cum_var_pct >= 70) "good"
+                         else if (cum_var_pct >= 50) "moderate"
+                         else "limited"
+
+      # Per-component loading detail, characterizing each retained component
+      # by the variable that influences it most strongly.
+      loading_details <- lapply(seq_len(input$numFactors), function(i) {
+        component_name     <- colnames(loadings_data)[i]
         component_loadings <- loadings_data[, i]
-        
-        # Find the variable with the highest absolute loading
+
         top_variable_index <- which.max(abs(component_loadings))
-        top_variable_name <- rownames(loadings_data)[top_variable_index]
-        top_loading_value <- round(component_loadings[top_variable_index], 3)
-        
-        # Characterize the component
-        p(strong(component_name, ":"), 
-          " This component is most strongly influenced by ", 
-          strong(top_variable_name), 
-          " with a loading of ", 
-          strong(top_loading_value), 
-          ". Variables with high absolute loadings (close to 1 or -1) are important for interpreting this component.")
+        top_variable_name  <- rownames(loadings_data)[top_variable_index]
+        top_loading_value  <- round(component_loadings[top_variable_index], 3)
+
+        tags$p(
+          style = "margin-bottom: 6px;",
+          tags$strong(component_name, ": "),
+          "Most strongly influenced by ", tags$strong(top_variable_name),
+          " with a loading of ", tags$strong(top_loading_value),
+          ". Variables with high absolute loadings (close to 1 or -1) are important for ",
+          "interpreting this component."
+        )
       })
-      
-      tagList(interpretation_summary, interpretation_loadings, loading_details)
+
+      tags$div(
+        style = paste(
+          "background-color: #f8f9fa;",
+          "border-left: 4px solid #dee2e6;",
+          "border-radius: 4px;",
+          "padding: 16px 20px;",
+          "margin-top: 6px;"
+        ),
+        tags$h5(tags$strong("Interpretation of Results"),
+                style = "margin-top: 0; margin-bottom: 12px;"),
+
+        tags$p(
+          style = "margin-bottom: 8px;",
+          paste0(
+            "Principal Component Analysis reduces ", nrow(loadings_data), " variables down to ",
+            ncol(loadings_data), " uncorrelated components, ranked by how much variance each ",
+            "one captures."
+          )
+        ),
+
+        tags$p(tags$strong("Variance Explained"), style = "margin-bottom: 6px;"),
+        tags$p(
+          style = "margin-bottom: 4px;",
+          tags$strong("Standard deviation: "),
+          "The amount of variance in the data captured by each component. Higher values mean ",
+          "more variance is captured."
+        ),
+        tags$p(
+          style = "margin-bottom: 4px;",
+          tags$strong("Proportion of Variance: "),
+          "The percentage of total variance accounted for by each individual component."
+        ),
+        tags$p(
+          style = "margin-bottom: 8px;",
+          tags$strong("Cumulative Proportion: "),
+          "The running total of variance explained as components are added. A common rule of ",
+          "thumb is to retain enough components to explain 70-80% of total variance — the Scree ",
+          "Plot's \"elbow\" point is a visual way to confirm this cutoff."
+        ),
+        tags$p(
+          style = "margin-bottom: 12px;",
+          paste0(
+            "Your selected ", input$numFactors, " component", if (input$numFactors != 1) "s" else "",
+            " together explain ", cum_var_pct, "% of the total variance, which is ", variance_label,
+            " coverage."
+          )
+        ),
+
+        tags$p(tags$strong("Component Loadings"), style = "margin-bottom: 6px;"),
+        tags$p(
+          style = "margin-bottom: 8px;",
+          "Loadings are the correlations between the original variables and the principal ",
+          "components. They indicate how much each original variable contributes to each component."
+        ),
+        loading_details
+      )
     })
     
     output$transformationHistograms <- renderPlot({
@@ -583,13 +651,39 @@ PCAServer <- function(id, data, shared_explanatory, shared_response) {
     output$correlationMatrix <- renderTable({
       req(analysis_data())
       round(cor(analysis_data()), 4)
-    }, rownames = TRUE, striped = TRUE, bordered = TRUE)
+    }, rownames = TRUE, striped = TRUE, bordered = TRUE, align = "c")
 
     output$covarianceMatrix <- renderTable({
       req(analysis_data())
       round(cov(analysis_data()), 4)
-    }, rownames = TRUE, striped = TRUE, bordered = TRUE)
-    
+    }, rownames = TRUE, striped = TRUE, bordered = TRUE, align = "c")
+
+    output$eigenvaluesTable <- renderTable({
+      req(pca_results())
+
+      eigenvalues <- pca_results()$sdev^2
+      prop_var    <- eigenvalues / sum(eigenvalues)
+      cum_var     <- cumsum(prop_var)
+
+      data.frame(
+        Component = paste0("PC", seq_along(eigenvalues)),
+        Eigenvalue = round(eigenvalues, 4),
+        `Proportion of Variance` = round(prop_var, 4),
+        `Cumulative Proportion` = round(cum_var, 4),
+        check.names = FALSE
+      )
+    }, rownames = FALSE, striped = TRUE, bordered = TRUE, align = "c")
+
+    output$eigenvectorsTable <- renderTable({
+      req(pca_results())
+
+      loadings <- pca_results()$rotation
+      df <- as.data.frame(round(loadings, 4))
+      df <- cbind(Variable = rownames(loadings), df)
+      rownames(df) <- NULL
+      df
+    }, rownames = FALSE, striped = TRUE, bordered = TRUE, align = "c")
+
     output$screePlot <- renderPlot({
       req(pca_results())
       
@@ -610,7 +704,11 @@ PCAServer <- function(id, data, shared_explanatory, shared_response) {
             plot.title   = element_text(face = "bold", size = 18, hjust = 0.5),
             axis.title.x = element_text(face = "bold", size = 14),
             axis.title.y = element_text(face = "bold", size = 14),
-            axis.text    = element_text(size = 12)
+            axis.text.x  = element_text(size = 12),
+            axis.text.y  = element_text(face = "bold", size = 12),
+            panel.border = element_blank(),
+            axis.line.x  = element_line(colour = "black", linewidth = 1),
+            axis.line.y  = element_line(colour = "black", linewidth = 1)
           )
       )
     }, res = 96)
