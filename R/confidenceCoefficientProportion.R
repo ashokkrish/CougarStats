@@ -23,13 +23,13 @@ confidence_coefficient_proportion <- function(n,
   return(conf.level)
 } 
 # Example 1:
-confidence_coefficient_proportion(
-  n = 400,
-  margin.error = 0.05
-)
-# Example 2:
-confidence_coefficient_proportion(
-  n = 500,
-  p0 = 0.30,
-  width = 0.08
-)
+# confidence_coefficient_proportion(
+#   n = 400,
+#   margin.error = 0.05
+# )
+# # Example 2:
+# confidence_coefficient_proportion(
+#   n = 500,
+#   p0 = 0.30,
+#   width = 0.08
+# )
