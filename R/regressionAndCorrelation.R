@@ -1,0 +1,96 @@
+# R/regressionAndCorrelation.R
+
+regressionAndCorrelationUI <- function(id) {
+  ns <- NS(id)
+  sidebarLayout(
+    sidebarPanel(
+      shinyjs::useShinyjs(),
+      radioButtons(ns("multiple"),
+                   tags$b("Methodology"),
+                   choices = list("Simple Linear Regression and Correlation Analysis" = "SLR",
+                                  "Multiple Linear Regression" = "MLR",
+                                  "Binary Logistic Regression" = "LOGR"
+                                  ),
+                   selected = "SLR"
+      ),
+      uiOutput(ns("regressionSidebarUI"))
+    ),
+    mainPanel(
+      uiOutput(ns("regressionMainPanelUI"))
+    )
+  )
+}
+
+regressionAndCorrelationServer <- function(id) {
+  moduleServer(id, function(input, output, session) {
+    
+    # --- Dynamic ID Generation for SLR ---
+    slr_instance_counter <- reactiveVal(0)
+    current_slr_module_id <- reactive({
+      paste0("slr_dynamic_instance_", slr_instance_counter())
+    })
+
+    # --- Dynamic ID Generation for MLR ---
+    mlr_instance_counter <- reactiveVal(0)
+    current_mlr_module_id <- reactive({
+      paste0("mlr_dynamic_instance_", mlr_instance_counter())
+    })
+
+    # --- Dynamic ID Generation for Logistic Regression (LOGR) ---
+    logr_instance_counter <- reactiveVal(0)
+    current_logr_module_id <- reactive({
+      paste0("logr_dynamic_instance_", logr_instance_counter())
+    })
+
+    # Observer for the main radio button (input$multiple)
+    observeEvent(input$multiple, {
+      if (input$multiple == "SLR") {
+        slr_instance_counter(slr_instance_counter() + 1)
+        output$regressionSidebarUI <- renderUI({
+          req(current_slr_module_id())
+          SLRSidebarUI(session$ns(current_slr_module_id()))
+        })
+        output$regressionMainPanelUI <- renderUI({
+          req(current_slr_module_id())
+          SLRMainPanelUI(session$ns(current_slr_module_id()))
+        })
+      } else if (input$multiple == "MLR") {
+        mlr_instance_counter(mlr_instance_counter() + 1)
+        output$regressionSidebarUI <- renderUI({
+          req(current_mlr_module_id())
+          MLRSidebarUI(session$ns(current_mlr_module_id()))
+        })
+        output$regressionMainPanelUI <- renderUI({
+          req(current_mlr_module_id())
+          MLRMainPanelUI(session$ns(current_mlr_module_id()))
+        })
+      } else if (input$multiple == "LOGR") {
+        logr_instance_counter(logr_instance_counter() + 1)
+        output$regressionSidebarUI <- renderUI({
+          req(current_logr_module_id())
+          LogisticRegressionSidebarUI(session$ns(current_logr_module_id()))
+        })
+        output$regressionMainPanelUI <- renderUI({
+          req(current_logr_module_id())
+          LogisticRegressionMainPanelUI(session$ns(current_logr_module_id()))
+        })
+      }
+    }, ignoreNULL = FALSE, ignoreInit = FALSE)
+
+    observeEvent(current_slr_module_id(), {
+      req(input$multiple == "SLR")
+      SLRServer(current_slr_module_id())
+    }, ignoreNULL = TRUE)
+
+    observeEvent(current_mlr_module_id(), {
+      req(input$multiple == "MLR")
+      MLRServer(current_mlr_module_id())
+    }, ignoreNULL = TRUE)
+
+    observeEvent(current_logr_module_id(), {
+      req(input$multiple == "LOGR")
+      LogisticRegressionServer(current_logr_module_id())
+    }, ignoreNULL = TRUE)
+    
+  })
+}

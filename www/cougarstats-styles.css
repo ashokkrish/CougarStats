@@ -1,0 +1,372 @@
+:root {
+    --main-color: #18536F;
+    --main-color-shadow: rgba(14,52,68,0.6);
+    --off-white: #F5F5F5;
+    --dt-row-selected: 24, 83, 111!important;
+}
+
+html {
+    min-height: 100%;
+    position: relative;
+}
+
+body {
+    height: 100%;
+    margin-bottom: 80px;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+    accent-color: var(--main-color)!important;
+}
+
+
+
+
+
+/* Datatable Styles (DT) */
+.dataTables_scrollBody { border-bottom: none!important; }
+/* Adds a bottom border only the width of auto-width table */
+.dataTables_scrollBody .dataTable {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.3)!important;
+}
+table.dataTable.display > tbody > tr.selected + tr.selected > td {
+    border-top-color: var(--off-white)!important;
+}
+/* Remove default centering behaviour for auto-width tables */
+.dataTable thead,
+.dataTable tbody { vertical-align: bottom!important; }
+table.dataTable { margin: 0!important; }
+
+
+
+
+
+/*.accordion-title {
+    font-weight: bold;
+}*/
+
+/* 'Calculate' and 'Reset' button styles */
+.act-btn,
+.act-btn:focus {
+    color: var(--off-white);
+    font-weight: bold;
+    background-color: var(--main-color);
+    border-color: var(--main-color);
+}
+
+.act-btn:hover {
+    color: var(--off-white);
+    font-weight: bold;
+    background-color: var(--main-color-shadow);
+    border-color: var(--main-color);
+}
+
+/* graph options dropdown menu icon styles */
+.bttn-jelly.bttn-primary {
+    background-color: var(--main-color);
+}
+
+.btn-primary {
+    background-color: var(--main-color);
+    border-color: var(--main-color);
+}
+
+/* contingency table inputs (matrixInput) styles */
+.cMatrix th {
+    text-align: center;
+    background-color: #D6D6D6;
+}
+
+.cMatrix td {
+    background-color: var(--off-white);
+    box-shadow: inset 0 0 0 9999px var(--off-white);
+    text-align: center;
+}
+
+#cTable2x2 {
+    border-style: hidden;
+}
+
+.irs-bar {
+    background: var(--main-color)!important;
+}
+
+/* pickerInput options menu styles */
+.dropdown-item:hover,
+.dropdown-menu > li > a:hover,
+.dropdown-item:focus,
+.dropdown-menu > li > a:focus {
+    color: var(--off-white);
+    text-decoration: none;
+    background-color: var(--main-color);
+}
+
+
+/* Special note: this very specifically is used only for prettyRadioButtons with options
+   that contain latex. Latex for some reason misaligns the option labels with
+   its matching input button, so a margin must be forced onto the buttons */
+.latexRadio .shiny-options-group .pretty.p-round .state label:after,
+.latexRadio .shiny-options-group .pretty.p-round .state label:before,
+.latexRadio .shiny-options-group .pretty input:checked ~ .state.p-primary-o label:before,
+.latexRadio .shiny-options-group .pretty.p-toggle .state.p-primary-o label:before,
+.latexRadio .shiny-options-group .pretty.p-default:not(.p-fill) input:checked ~ .state.p-primary-o label:before,
+.latexRadio .shiny-options-group .pretty.p-default:not(.p-fill) input:checked ~ .state.p-primary-o label:after {
+    margin-top: 0.5rem;
+}
+
+
+.si-label {
+    padding-bottom: 10px;
+}
+
+
+
+
+
+
+/* Header menu styles */
+.navbar-nav {
+    align-items: center;
+}
+.navbar,
+.navbar-brand,
+.navbar-light .navbar-brand,
+.navbar.navbar-default .navbar-brand {
+    background-color: var(--off-white);
+    font-weight: bold;
+
+    /* FIXME: is this a valid property? */
+    --bslib-navbar-default-bg: var(--off-white);
+}
+.navbar-nav .nav-link.active {
+    color: var(--off-white)!important;
+}
+/* correcting conflict with shinyDarkmode - causing white banner background in light mode */
+.navbar.navbar-default {
+    background-color: var(--bslib-navbar-default-bg) !important;
+}
+
+/* Main Navigation Bar */
+.nav-link.active {
+    font-size: 1.5rem;
+}
+
+.nav-link {
+    color: rgba(245,245,245,0.75);
+    font-size: 1.35rem;
+    transition: font-size 0.1s;
+}
+
+.nav-link:hover {
+    font-size: 1.5rem;
+}
+
+.nav-item {
+    text-align: center;
+}
+
+.container-fluid {
+    padding-right: 0px;
+    padding-left: 0px;
+}
+
+.tab-pane,
+.tab-content {
+    padding-right: 0px;
+    padding-left: 0px;
+    margin-top: 0px!important;
+}
+
+/* Sidebar of all tab panes. */
+div.tab-pane form.well {
+    margin-top: 18px;
+}
+
+/* All navbars */
+.navbar {
+    background-color: #F7F7F7!important;
+    padding: 0px 15px;
+    border-style: solid;
+    border-bottom-color: #D8D8D8;
+    border-width: 0px 0px 2px 0px;
+    broder-radius: 0px 15px;
+    min-height: 100%;
+}
+
+/* All navbars except the #methods-nav navbar. */
+.navbar:not(:has(> div > ul#methods-nav)) {
+    border-bottom-left-radius: 15px;
+    border-bottom-right-radius: 15px;
+}
+
+.navbar-nav .nav-link {
+    padding: 15px!important;
+    color: var(--main-color)!important;
+    font-size: 1.25rem;
+    border-width: 0px;
+    border-radius: 0px 0px 10px 10px;
+    transition: color 0.115s, background-color 0.115s, border-style 0.115s, border-color 0.115s;
+    transition-timing-function: linear;
+}
+
+/* SELECTED (Active), hovered or not. */
+.navbar-nav .nav-link.active,
+.navbar-nav .nav-link.active:hover {
+    border-style: solid;
+    border-color: var(--main-color);
+    background-color: var(--main-color);
+    color: #F7F7F7!important;
+}
+
+/* NOT-SELECTED (not Active), hovered. */
+.navbar-nav .nav-link:hover {
+    border-style: solid;
+    /* LCH lightness change */
+    border-color: lch(from var(--main-color) calc(l + 8) c h);
+    background-color: lch(from var(--main-color) calc(l + 8) c h);
+
+    color: #F7F7F7!important;
+}
+
+.navbar-nav {
+    justify-content: space-around;
+    padding-top: 0;
+}
+
+.navbar-nav .nav-item {
+    width: auto;
+}
+
+
+
+
+
+
+
+
+
+
+/* prettyRadioButton styles */
+.pretty input:checked ~ .state.p-primary-o label:before,
+.pretty.p-toggle .state.p-primary-o label:before {
+    border-color: var(--main-color);
+}
+
+.pretty.p-default:not(.p-fill) input:checked ~ .state.p-primary-o label:after {
+    border-color: var(--main-color);
+    background-color: var(--main-color)!important;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* selectInput/selectizeInput styles */
+.selectize-input.focus {
+    border-color: var(--main-color);
+    box-shadow: inset 0 1px 1px rgba(0,0,0,0.075),
+                0 0 8px var(--main-color-shadow);
+}
+
+.selectize-dropdown-content .option:hover,
+.selectize-dropdown-content .option:focus,
+.selectize-dropdown-content .option:active {
+    background: linear-gradient(var(--main-color), var(--main-color));
+    background-color: var(--main-color)!important;
+    color: var(--off-white)!important;
+}
+.selectize-dropdown-content .option:checked,
+.selectize-dropdown-content .active,
+.selectize-dropdown-content .selected {
+    background: linear-gradient(var(--main-color), var(--main-color));
+    background-color: var(--main-color)!important;
+    color: var(--off-white)!important;
+}
+
+
+
+
+
+
+
+/* adds a margin to prettyRadioButton inline inputs to match the spacing of other input elements */
+.state.p-default.p-round {
+    margin-bottom: 0.5rem;
+}
+
+.row {
+    margin-right: 0px;
+}
+
+.footer {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 80px;
+}
+
+.appStoreButton {
+    width: 100%;
+    height: 80px;
+    margin-top: 1rem;
+    padding: 1rem;
+    background-color: var(--main-color);
+}
+
+
+
+
+/* Validation error highlighting styles */
+.has-error .bootstrap-select .dropdown-toggle,
+.has-error .bootstrap-select .dropdown-toggle:hover,
+.has-error .bootstrap-select .dropdown-toggle:focus {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+}
+
+.has-error .bootstrap-select .dropdown-toggle {
+    background-color: #fff8f8 !important;
+}
+
+.shiny-output-error-validation {
+    color: red;
+    font-weight: bold;
+}
+
+
+
+
+
+/* Authors modal:
+   - Use the same 1.75rem (28px) top/bottom margin that Bootstrap 4 applies
+     to .modal-dialog by default.
+   - Allow the dialog to grow until it has exactly 28px clearance from the
+     top and bottom of the viewport.
+   - Internal scrolling only in .modal-body for the tall Tailwind author content.
+*/
+/* #shiny-modal .modal-dialog { */
+/*     max-height: calc(100vh - 3.5rem); /\* 2 * 1.75rem to respect BS4 margins *\/ */
+/*     margin-top: 1.75rem; */
+/*     margin-bottom: 1.75rem; */
+/* } */
+/* #shiny-modal .modal-content { */
+/*     max-height: 100%; */
+/*     background-color: #18181b; /\* zinc-950 *\/ */
+/*     color: #f4f4f5; */
+/*     border-color: #3f3f46; */
+/* } */
+/* #shiny-modal .modal-body { */
+/*     max-height: none; */
+/*     overflow-y: auto; */
+/*     padding: 1rem; */
+/*     flex: 1 1 auto; /\* reinforce BS4 flex column behavior for tall content *\/ */
+/* } */
