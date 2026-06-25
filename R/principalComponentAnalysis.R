@@ -91,7 +91,8 @@ PCAMainPanelUI <- function(id) {
                            }"
                         )),
                         h4("Principal Component Analysis Summary"),
-                        tableOutput(ns("pcaSummary")),
+                        div(class = "pca-matrix-table", style = "display: flex; justify-content: flex-start;",
+                            tableOutput(ns("pcaSummary"))),
                         hr(),
                         h4("Component Loadings (Unrotated)"),
                         tableOutput(ns("pcaLoadings")),
@@ -106,10 +107,6 @@ PCAMainPanelUI <- function(id) {
                         h4("Covariance Matrix"),
                         div(class = "pca-matrix-table", style = "display: flex; justify-content: flex-start;",
                             tableOutput(ns("covarianceMatrix"))),
-                        hr(),
-                        h4("Eigenvalues"),
-                        div(class = "pca-matrix-table", style = "display: flex; justify-content: flex-start;",
-                            tableOutput(ns("eigenvaluesTable"))),
                         hr(),
                         h4("Eigenvectors"),
                         div(class = "pca-matrix-table", style = "display: flex; justify-content: flex-start;",
@@ -526,9 +523,21 @@ PCAServer <- function(id, data, shared_explanatory, shared_response) {
     
     output$pcaSummary <- renderTable({
       req(pca_results())
-      summary_df <- as.data.frame(summary(pca_results())$importance)[, 1:input$numFactors, drop = FALSE]
-      round(summary_df, 3)
-    }, rownames = TRUE, striped = TRUE, bordered = TRUE)
+
+      eigenvalues <- pca_results()$sdev^2
+      std_dev     <- pca_results()$sdev
+      prop_var    <- eigenvalues / sum(eigenvalues)
+      cum_var     <- cumsum(prop_var)
+
+      data.frame(
+        Component = paste0("PC", seq_along(eigenvalues)),
+        Eigenvalue = round(eigenvalues, 4),
+        `Standard Deviation` = round(std_dev, 4),
+        `Proportion of Variance` = round(prop_var, 4),
+        `Cumulative Proportion` = round(cum_var, 4),
+        check.names = FALSE
+      )
+    }, rownames = FALSE, striped = TRUE, bordered = TRUE, align = "c")
 
     output$pcaLoadings <- renderTable({
       req(pca_results())
@@ -556,7 +565,7 @@ PCAServer <- function(id, data, shared_explanatory, shared_response) {
 
         top_variable_index <- which.max(abs(component_loadings))
         top_variable_name  <- rownames(loadings_data)[top_variable_index]
-        top_loading_value  <- round(component_loadings[top_variable_index], 3)
+        top_loading_value  <- round(component_loadings[top_variable_index], 2)
 
         tags$p(
           style = "margin-bottom: 6px;",
@@ -657,22 +666,6 @@ PCAServer <- function(id, data, shared_explanatory, shared_response) {
       req(analysis_data())
       round(cov(analysis_data()), 4)
     }, rownames = TRUE, striped = TRUE, bordered = TRUE, align = "c")
-
-    output$eigenvaluesTable <- renderTable({
-      req(pca_results())
-
-      eigenvalues <- pca_results()$sdev^2
-      prop_var    <- eigenvalues / sum(eigenvalues)
-      cum_var     <- cumsum(prop_var)
-
-      data.frame(
-        Component = paste0("PC", seq_along(eigenvalues)),
-        Eigenvalue = round(eigenvalues, 4),
-        `Proportion of Variance` = round(prop_var, 4),
-        `Cumulative Proportion` = round(cum_var, 4),
-        check.names = FALSE
-      )
-    }, rownames = FALSE, striped = TRUE, bordered = TRUE, align = "c")
 
     output$eigenvectorsTable <- renderTable({
       req(pca_results())

@@ -836,7 +836,9 @@ statInfrUI <- function(id) {
               conditionalPanel(
                 ns = ns,
                 condition = "input.signedRankTest == 'Upload Data'",
-                
+
+                HTML(uploadDataDisclaimer),
+
                 fileInput(
                   inputId = ns("signedRankUpl"),
                   label   = strong("Upload your Data (.csv or .xls or .xlsx or .txt)"),
@@ -1108,14 +1110,14 @@ statInfrUI <- function(id) {
               ns = ns,
               condition  = "input.popuParameters == 'Wilcoxon rank sum test'", 
               radioButtons(
-                inputId  = ns("normaprowrs"),
+                inputId  = ns("normaprowrsRankSum"),
                 label    = strong("Method"), # A more descriptive label
                 choices  = c("Exact", "Normal approximation (for large samples)"),
                 selected = "Exact",
                 inline   = TRUE),
               conditionalPanel(
                 ns = ns,
-                condition  = "input.normaprowrs == 'Normal approximation (for large samples)'", # This is the inner condition, checking the checkbox
+                condition  = "input.normaprowrsRankSum == 'Normal approximation (for large samples)'", # This is the inner condition, checking the checkbox
                 radioButtons(
                   inputId  = ns("continuityCorrectionOption"),
                   label    = strong("Continuity correction"),
@@ -6660,10 +6662,10 @@ statInfrServer <- function(id) {
       ### ---------------- Wilcoxon Rank Sum Validation
       if(!wilcoxonraw_iv$is_valid()) {
         validate(
-          need(input$rankSumRaw1, "Sample 1 data requires a minimum of 3 data points.") %then%
-          need(length(createNumLst(input$rankSumRaw1)) > 2, "Sample 1 data requires a minimum of 3 data points."),
-          need(input$rankSumRaw2, "Sample 2 data requires a minimum of 3 data points.") %then%
-          need(length(createNumLst(input$rankSumRaw2)) > 2, "Sample 2 data requires a minimum of 3 data points."),
+          need(input$rankSumRaw1, "Sample 1 data requires a minimum of three data points.") %then%
+          need(length(createNumLst(input$rankSumRaw1)) > 2, "Sample 1 data requires a minimum of three data points."),
+          need(input$rankSumRaw2, "Sample 2 data requires a minimum of three data points.") %then%
+          need(length(createNumLst(input$rankSumRaw2)) > 2, "Sample 2 data requires a minimum of three data points."),
           errorClass = "myClass")
         
         validate(
@@ -6700,10 +6702,10 @@ statInfrServer <- function(id) {
       
       if(!signedRankRaw_iv$is_valid()) {
         validate(
-          need(input$signedRankRaw1, "Sample 1 data requires a minimum of 3 data points.") %then%
-          need(length(createNumLst(input$signedRankRaw1)) > 2, "Sample 1 data requires a minimum of 3 data points."),
-          need(input$signedRankRaw2, "Sample 2 data requires a minimum of 3 data points.") %then%
-          need(length(createNumLst(input$signedRankRaw2)) > 2, "Sample 2 data requires a minimum of 3 data points."),
+          need(input$signedRankRaw1, "Sample 1 data requires a minimum of three data points.") %then%
+          need(length(createNumLst(input$signedRankRaw1)) > 2, "Sample 1 data requires a minimum of three data points."),
+          need(input$signedRankRaw2, "Sample 2 data requires a minimum of three data points.") %then%
+          need(length(createNumLst(input$signedRankRaw2)) > 2, "Sample 2 data requires a minimum of three data points."),
           errorClass = "myClass")
         
         validate(
@@ -6713,7 +6715,7 @@ statInfrServer <- function(id) {
         if(length(createNumLst(input$signedRankRaw1)) == length(createNumLst(input$signedRankRaw2))) {
           differences <- createNumLst(input$signedRankRaw1) - createNumLst(input$signedRankRaw2)
           validate(
-            need(!all(differences == 0) && var(differences) != 0, "'Sample 1’' and 'Sample 2' data are the same. Standard deviation of the difference is zero. In the Wilcoxon Signed Rank Test the pairs with a difference of 0 are dropped.  The effective sample size is now zero. Please check your data."),
+            need(!all(differences == 0) && var(differences) != 0, "'Sample 1' and 'Sample 2' data are the same. In the Wilcoxon Signed Rank Test the pairs with a difference of zero are dropped.  The effective sample size is now zero. Please check your data."),
             errorClass = "myClass")
         }
       }
@@ -6750,7 +6752,7 @@ statInfrServer <- function(id) {
           if(min_length > 0) {
             differences <- sample1[1:min_length] - sample2[1:min_length]
             validate(
-              need(!all(differences == 0) && var(differences) != 0, "'Sample 1’' and 'Sample 2' data are the same. Standard deviation of the difference is zero. In the Wilcoxon Signed Rank Test the pairs with a difference of 0 are dropped.  The effective sample size is now zero. Please check your data."),
+              need(!all(differences == 0) && var(differences) != 0, "'Sample 1' and 'Sample 2' data are the same. In the Wilcoxon Signed Rank Test the pairs with a difference of zero are dropped.  The effective sample size is now zero. Please check your data."),
               errorClass = "myClass")
           }
         }
@@ -6773,10 +6775,10 @@ statInfrServer <- function(id) {
       }
       if(!depmeansraw_iv$is_valid()) {
         validate(
-          need(input$before, "Sample 1 data requires a minimum of 3 data points.") %then%
-            need(length(createNumLst(input$before)) > 2, "Sample 1 data requires a minimum of 3 data points."),
-          need(input$after, "Sample 2 data requires a minimum of 3 data points.") %then%
-            need(length(createNumLst(input$after)) > 2, "Sample 2 data requires a minimum of 3 data points."),
+          need(input$before, "Sample 1 data requires a minimum of three data points.") %then%
+            need(length(createNumLst(input$before)) > 2, "Sample 1 data requires a minimum of three data points."),
+          need(input$after, "Sample 2 data requires a minimum of three data points.") %then%
+            need(length(createNumLst(input$after)) > 2, "Sample 2 data requires a minimum of three data points."),
           errorClass = "myClass")
         
         validate(
@@ -6870,7 +6872,7 @@ statInfrServer <- function(id) {
       #### ---------------- Two Population Proportion Validation
       if (!twopropht_iv$is_valid()) {
         validate(
-          need(checkTwoProp() > 0, "The test statistic (t) will be undefined when the Number of Successes 1 (x1) and Number of Successes 2 (x2) are both 0."),
+          need(checkTwoProp() > 0, "The Z test statistic is undefined when the Number of Successes 1 (x1) and Number of Successes 2 (x2) are both 0."),
           need(!(input$numSuccesses1 == input$numTrials1 && input$numSuccesses2 == input$numTrials2),
                "The pooled proportion equals 1, which results in an undefined test statistic (z). This happens when the number of successes equals the number of trials for both samples."),
           errorClass = "myClass"
@@ -8753,7 +8755,14 @@ statInfrServer <- function(id) {
         }}
       return(tie_correction)
     }
-    
+
+    safe_wilcox_test <- function(...) {
+      tryCatch(
+        wilcox.test(...),
+        error = function(e) NULL
+      )
+    }
+
     output$wilcoxonRankSum <- renderUI({
       
       req(!is.null(wilcoxonRankedData()))
@@ -8772,16 +8781,43 @@ statInfrServer <- function(id) {
       n2 <- nrow(wilcoxonRankedData() %>% dplyr::filter(Group == name2))
       nAll <- nrow(wilcoxonRankedData())
       mu_w <- (sum(wilcoxonRankedData()$Group == name1) * (nrow(wilcoxonRankedData()) + 1)) / 2
-      
+
       sigma_w <- sqrt((sum(wilcoxonRankedData()$Group == name1) * sum(wilcoxonRankedData()$Group == name2) * (nrow(wilcoxonRankedData()) + 1)) / 12)
       observed_W <- sum(wilcoxonRankedData() %>% dplyr::filter(Group == name1) %>% dplyr::pull(Rank))
       observed_W2 <- sum(wilcoxonRankedData() %>% dplyr::filter(Group == name2) %>% dplyr::pull(Rank))
       significance <- 1 - SigLvl()
-      
+
+      group1_data <- data_ranked %>%
+        dplyr::filter(Group == name1) %>%
+        dplyr::pull(Value)
+
+      group2_data <- data_ranked %>%
+        dplyr::filter(Group == name2) %>%
+        dplyr::pull(Value)
+      combined_values <- c(group1_data, group2_data)
+      has_ties <- length(unique(combined_values)) < length(combined_values)
+
+      ### ---------------- Guards 1 & 2: no rank variation ----------------
+      validate(
+        need(length(unique(combined_values)) > 1,
+             "'Sample 1' and 'Sample 2' contain only one repeated value and are identical. The Wilcoxon rank sum test cannot be computed because there is no rank variation. Please check your data."),
+        errorClass = "myClass")
+
+      ### ---------------- Guard 3: tie-corrected SE is zero under Normal Approximation ----------------
+      if (!is.null(input$normaprowrsRankSum) && input$normaprowrsRankSum == "Normal approximation (for large samples)") {
+        tie_correction_check <- calculate_tie_correction(combined_values)
+        u_std_dev_check <- sqrt((n1 * n2 / 12) * ((nAll + 1) - (tie_correction_check / (nAll * (nAll - 1)))))
+
+        validate(
+          need(!is.na(u_std_dev_check) && u_std_dev_check > 0,
+               "Under the Normal Approximation method, the tie-corrected standard error of the rank sum is zero. The Z test statistic is undefined. This typically occurs when the combined sample has insufficient rank variation due to heavy ties. Consider using the Exact method instead, or check your data."),
+          errorClass = "myClass")
+      }
+
       u1_statistic <- observed_W-(n1*(n1+1)/2)
       u2_statistic <- observed_W2-(n2*(n2+1)/2)
       u_mean <- (n1*n2)/2
-      
+
       if(input$altHypothesis2 == "2") {
         z_critical <- qnorm(1 - SigLvl()/2)
         critVal <- paste("\\pm", round(qnorm(1 - SigLvl()/2), 3))
@@ -8790,8 +8826,8 @@ statInfrServer <- function(id) {
         altern <- "two.sided"
         u_test <- u1_statistic
         correction_factor <- 0
-        if (!is.null(input$continuityCorrectionOption) && !is.null(input$normaprowrs) &&
-            input$continuityCorrectionOption == "True" && input$normaprowrs == "Normal approximation (for large samples)") {
+        if (!is.null(input$continuityCorrectionOption) && !is.null(input$normaprowrsRankSum) &&
+            input$continuityCorrectionOption == "True" && input$normaprowrsRankSum == "Normal approximation (for large samples)") {
           if (observed_W > mu_w) {
             correction_factor <- -0.5 # Subtract 0.5 if observed_W is in the upper tail
           } else if (observed_W < mu_w) {
@@ -8808,8 +8844,8 @@ statInfrServer <- function(id) {
         altern <- "less"
         u_test <- u1_statistic
         correction_factor <- 0
-        if (!is.null(input$continuityCorrectionOption) && !is.null(input$normaprowrs) &&
-            input$continuityCorrectionOption == "True" && input$normaprowrs == "Normal approximation (for large samples)") {
+        if (!is.null(input$continuityCorrectionOption) && !is.null(input$normaprowrsRankSum) &&
+            input$continuityCorrectionOption == "True" && input$normaprowrsRankSum == "Normal approximation (for large samples)") {
           correction_factor <- 0.5
         } 
         z_stat <- ((observed_W - mu_w + correction_factor) / sigma_w)
@@ -8823,15 +8859,15 @@ statInfrServer <- function(id) {
         u_test <- u1_statistic
         correction_factor <- 0
         
-        if (!is.null(input$continuityCorrectionOption) && !is.null(input$normaprowrs) &&
-            input$continuityCorrectionOption == "True" && input$normaprowrs == "Normal approximation (for large samples)") {
+        if (!is.null(input$continuityCorrectionOption) && !is.null(input$normaprowrsRankSum) &&
+            input$continuityCorrectionOption == "True" && input$normaprowrsRankSum == "Normal approximation (for large samples)") {
           correction_factor <- -0.5
         }
         z_stat <- ((observed_W - mu_w + correction_factor) / sigma_w)
         in_rejection_region <- z_stat > z_critical
       }
       
-      if(in_rejection_region) {
+      if(isTRUE(in_rejection_region)) {
         pvalSymbol <- "\\leq"
         suffEvidence <- "is"
         reject <- "reject"
@@ -8842,18 +8878,9 @@ statInfrServer <- function(id) {
         reject <- "do not reject"
         region <- "acceptance"
       }
-      group1_data <- data_ranked %>%
-        dplyr::filter(Group == name1) %>%
-        dplyr::pull(Value)
-      
-      group2_data <- data_ranked %>%
-        dplyr::filter(Group == name2) %>%
-        dplyr::pull(Value)
-      combined_values <- c(group1_data, group2_data)
-      has_ties <- length(unique(combined_values)) < length(combined_values)      
-      
+
       #no ties in data for p value
-      if(has_ties){
+      if(isTRUE(has_ties)){
         if(input$altHypothesis2 == "2") {
           p_value <- 2 * pnorm(abs(z_stat), lower.tail = FALSE)
         } else if(input$altHypothesis2 == "1") {
@@ -8864,66 +8891,81 @@ statInfrServer <- function(id) {
       }
       else if(!has_ties){
         test_result <- suppressWarnings(
-          wilcox.test(group1_data, group2_data, paired = FALSE, alternative = altern, 
+          safe_wilcox_test(group1_data, group2_data, paired = FALSE, alternative = altern,
                       conf.level = significance, exact = TRUE, conf.int = TRUE)
         )
+        validate(
+          need(!is.null(test_result), "The Wilcoxon rank sum test could not be computed for this data. Please check your data for sufficient variation in both samples."),
+          errorClass = "myClass")
         p_value <- test_result$p.value
       }
-      
+
       # Confidence Interval for Two sided, Left and Right sided
-      if (input$normaprowrs == "Exact"){
+      if (isTRUE(input$normaprowrsRankSum == "Exact")){
         if(input$altHypothesis2 == "2") {
           lower <- qwilcox(SigLvl() / 2, m = n1, n = n2, lower.tail = TRUE)
           upper <- qwilcox(SigLvl() / 2, m = n1, n = n2, lower.tail = FALSE)
         } else if(input$altHypothesis2 == "1") { # alternative = Less than
-          lower <- qwilcox(SigLvl(), m = n1, n = n2, lower.tail = TRUE) 
-          upper <- Inf 
+          lower <- qwilcox(SigLvl(), m = n1, n = n2, lower.tail = TRUE)
+          upper <- Inf
         } else { # alternative = greater than
-          lower <- -Inf 
+          lower <- -Inf
           upper <- qwilcox(SigLvl(), m = n1, n = n2, lower.tail = FALSE)
         }
       }
-      
-      if (!is.null(input$continuityCorrectionOption) && !is.null(input$normaprowrs) &&
-          input$continuityCorrectionOption == "True" && input$normaprowrs == "Normal approximation (for large samples)"){
-        if(has_ties){
+
+      if (isTRUE(!is.null(input$continuityCorrectionOption) && !is.null(input$normaprowrsRankSum) &&
+          input$continuityCorrectionOption == "True" && input$normaprowrsRankSum == "Normal approximation (for large samples)")){
+        if(isTRUE(has_ties)){
           test_result <- suppressWarnings(
-            wilcox.test(group1_data, group2_data, paired = FALSE, alternative = altern, 
+            safe_wilcox_test(group1_data, group2_data, paired = FALSE, alternative = altern,
                         conf.level = significance, exact = TRUE, correct = TRUE)
           )
+          validate(
+            need(!is.null(test_result), "The Wilcoxon rank sum test could not be computed for this data. Please check your data for sufficient variation in both samples."),
+            errorClass = "myClass")
           p_value <- test_result$p.value
         }
         else{
           test_result <- suppressWarnings(
-            wilcox.test(group1_data, group2_data, paired = FALSE, alternative = altern, 
+            safe_wilcox_test(group1_data, group2_data, paired = FALSE, alternative = altern,
                         conf.level = significance, exact = FALSE, correct = TRUE)
           )
-          p_value <- test_result$p.value
-        }
-      } 
-      else if (!is.null(input$continuityCorrectionOption) && !is.null(input$normaprowrs) &&
-               input$continuityCorrectionOption == "False" && input$normaprowrs == "Normal approximation (for large samples)"){
-        if(has_ties){
-          test_result <- suppressWarnings(
-            wilcox.test(group1_data, group2_data, paired = FALSE, alternative = altern, 
-                        conf.level = significance, exact = TRUE, correct = FALSE)
-          )
-          p_value <- test_result$p.value
-        }
-        else{
-          test_result <- suppressWarnings(
-            wilcox.test(group1_data, group2_data, paired = FALSE, alternative = altern, 
-                        conf.level = significance, exact = FALSE, correct = FALSE)
-          )
+          validate(
+            need(!is.null(test_result), "The Wilcoxon rank sum test could not be computed for this data. Please check your data for sufficient variation in both samples."),
+            errorClass = "myClass")
           p_value <- test_result$p.value
         }
       }
-      
+      else if (isTRUE(!is.null(input$continuityCorrectionOption) && !is.null(input$normaprowrsRankSum) &&
+               input$continuityCorrectionOption == "False" && input$normaprowrsRankSum == "Normal approximation (for large samples)")){
+        if(isTRUE(has_ties)){
+          test_result <- suppressWarnings(
+            safe_wilcox_test(group1_data, group2_data, paired = FALSE, alternative = altern,
+                        conf.level = significance, exact = TRUE, correct = FALSE)
+          )
+          validate(
+            need(!is.null(test_result), "The Wilcoxon rank sum test could not be computed for this data. Please check your data for sufficient variation in both samples."),
+            errorClass = "myClass")
+          p_value <- test_result$p.value
+        }
+        else{
+          test_result <- suppressWarnings(
+            safe_wilcox_test(group1_data, group2_data, paired = FALSE, alternative = altern,
+                        conf.level = significance, exact = FALSE, correct = FALSE)
+          )
+          validate(
+            need(!is.null(test_result), "The Wilcoxon rank sum test could not be computed for this data. Please check your data for sufficient variation in both samples."),
+            errorClass = "myClass")
+          p_value <- test_result$p.value
+        }
+      }
+
       tie_correction <- calculate_tie_correction(combined_values)
       u_std_dev <- sqrt((n1 * n2 / 12) * ((nAll + 1) - (tie_correction / (nAll * (nAll - 1)))))
       mw_z_stat <- ((u_test - u_mean) / u_std_dev)
-      
-      if (input$normaprowrs == "Exact"){
+
+      if (isTRUE(input$normaprowrsRankSum == "Exact")){
         z_stat <- mw_z_stat
       }
       rankSumHTHead <- tagList(
@@ -8949,7 +8991,7 @@ statInfrServer <- function(id) {
           sprintf("\\(  W_{2} = %s \\)", observed_W2),
           br(),br(),
           
-          if (input$normaprowrs == "Exact") {
+          if (input$normaprowrsRankSum == "Exact") {
             tagList(
               p(tags$b("Mann-Whitney ", tags$i("U"), " Statistic:")),
               sprintf("\\(  U_{1} = W_{1} - \\frac{n_{1}(n_{1} + 1)}{2} = %s - \\frac{%s (%s + 1)}{2} = %s \\)", observed_W, n1, n1, u1_statistic),
@@ -8974,7 +9016,7 @@ statInfrServer <- function(id) {
               
             )}
           else{
-          if (input$normaprowrs == "Normal approximation (for large samples)") {
+          if (input$normaprowrsRankSum == "Normal approximation (for large samples)") {
             tagList(
               p(tags$b("Mean:")),
               sprintf("\\(  \\mu_{W} = \\frac{n_{1}(n + 1)}{2} = \\frac{%s(%s + 1)}{2} = %s \\)",
@@ -8988,8 +9030,8 @@ statInfrServer <- function(id) {
               
               p(tags$b("Test Statistic:")),
               
-              if (!is.null(input$continuityCorrectionOption) && !is.null(input$normaprowrs) &&
-                  input$continuityCorrectionOption == "True" && input$normaprowrs == "Normal approximation (for large samples)") {
+              if (!is.null(input$continuityCorrectionOption) && !is.null(input$normaprowrsRankSum) &&
+                  input$continuityCorrectionOption == "True" && input$normaprowrsRankSum == "Normal approximation (for large samples)") {
                 
                 if(input$altHypothesis2 == "1") { # Less than alternative
                   sprintf("\\( z = \\frac{W - \\mu_W + 0.5}{\\sigma_W} = \\frac{%s - %s + %s}{%s} = %s \\)",
@@ -9032,7 +9074,7 @@ statInfrServer <- function(id) {
           
           p(tags$b("Using P-value Method:")),
           sprintf("\\( P = %s \\)", ifelse(is.na(p_value), "NA", round(p_value, 4))),
-          if (has_ties && input$normaprowrs == "Exact"){
+          if (has_ties && input$normaprowrsRankSum == "Exact"){
             helpText("*Note: Exact p-values cannot be computed in the presence of ties. Normal approximation was used.")
           },
           
@@ -9047,7 +9089,7 @@ statInfrServer <- function(id) {
             br(), br())
           },
           
-          if (input$normaprowrs == "Exact"){
+          if (input$normaprowrsRankSum == "Exact"){
             tagList(
               p(tags$b("Using Critical Value Method:")),
 
@@ -9095,7 +9137,7 @@ statInfrServer <- function(id) {
       )
       
       rankSumHTTail <- 
-        if (input$normaprowrs == "Normal approximation (for large samples)") {
+        if (input$normaprowrsRankSum == "Normal approximation (for large samples)") {
         tagList(
         p(
           withMathJax(),
@@ -9130,7 +9172,7 @@ statInfrServer <- function(id) {
       
       u_test_val <- u1_statistic 
       
-      if (input$normaprowrs == "Exact") {
+      if (input$normaprowrsRankSum == "Exact") {
         z_stat_val <- ((u_test_val - u_mean) / u_std_dev)
       } else { 
         if (!is.null(input$continuityCorrectionOption) && input$continuityCorrectionOption == "True") {
@@ -11499,6 +11541,7 @@ statInfrServer <- function(id) {
       input$inferenceType
       input$inferenceType2
       input$normaprowrs
+      input$normaprowrsRankSum
       input$input$continuityCorrectionOption
     }, {
       hide(id = "inferenceData")
