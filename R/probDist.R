@@ -7,45 +7,6 @@ probDistUI <- function(id) {
   ns <- NS(id)
   
   tagList(
-    tags$style(HTML("
-      .code-container {
-        border: 1px solid #ddd;
-        border-radius: 3px;
-        overflow: hidden;
-        margin-top: 5px;
-        max-height: none;
-        width: 65%;
-      }
-      
-      .code-header {
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-        background: #eaf3ff;
-        padding: 4px 10px;
-        font-size: 14px;
-        font-weight: bold;
-        border-bottom: 1px solid #ddd;
-      }
-      
-      .copy-btn {
-        cursor: pointer;
-        font-size: 14px;
-        user-select: none;
-      }
-      
-      .code-body > div {
-        padding: 4px 8px;
-      
-        font-family: 'Courier New', monospace;
-        font-size: 14px;
-        line-height: 1.3;
-      
-        background: #f7f9fc;
-      
-        white-space: pre;
-      }
-      ")),
     sidebarLayout(
       #  ========================================================================== #  
       ## -------- Sidebar Panel --------------------------------------------------- 
@@ -261,8 +222,8 @@ probDistUI <- function(id) {
             condition = "input.probability == 'Poisson'",
             
             numericInput(
-              inputId = ns("muPoisson"), 
-              label   = strong("Average (\\( \\mu\\))"),
+              inputId = ns("lambdaPoisson"), 
+              label   = strong("Average (\\( \\lambda\\))"),
               value   = 4.5),
             
             HTML("<label class='si-label'><b>Probability</b></label>"),                                                            
@@ -771,44 +732,24 @@ probDistUI <- function(id) {
                       title = "Calculations",
                       
                       uiOutput(ns("renderProbabilityBinom")),
-                      
                       br(),
-                      h3("R Code"),
-                      hr(),
-                      
-                      div(
-                        class = "code-container",
-                        
-                        div(
-                          class = "code-header",
-                          
-                          tags$button(
-                            class = "copy-btn",
-                            type = "button",
-                            onclick = sprintf(
-                              "navigator.clipboard.writeText(document.getElementById('%s').innerText.trim())",
-                              ns("rcodeBinomBox")
-                            ),
-                            "Copy"
-                          )
-                        ),
-                        
-                        div(
-                          id = ns("rcodeBinomBox"),
-                          class = "code-body",
-                          textOutput(ns("rcodeBinom"))
-                        )
+                      codeBox(
+                        boxId = "rcodeBinomBox",
+                        outputId = "rcodeBinom",
+                        ns = ns
                       )
                     ),
                     
                     tabPanel(
                       title = "Probability Distribution Table",
+                      value = "tableTab",
                       DTOutput(ns("binomDistrTable"), width = "25%")
                     ),
                     
                     tabPanel(
                       title = "Probability Histogram",
-                      plotOutput(ns("binomDistrBarPlot"), width = "50%")
+                      value = "plotTab",
+                      plotlyOutput(ns("binomDistrBarPlot"), width = "50%")
                     )
                   )
                 )
@@ -824,7 +765,13 @@ probDistUI <- function(id) {
                                     id = ns("poissonNavbar"),
                                     theme = bs_theme(version = 4),
                                     tabPanel(title = "Calculations",
-                                             uiOutput(ns("renderProbabilityPoisson"))
+                                             uiOutput(ns("renderProbabilityPoisson")),
+                                             br(),
+                                             codeBox(
+                                               boxId = "rcodePoissonBox",
+                                               outputId = "rcodePoisson",
+                                               ns = ns
+                                             )
                                     ),
                                     tabPanel(title = "Probability Distribution Table",
                                              DTOutput(ns("poissDistrTable"), width = "25%")
@@ -842,7 +789,13 @@ probDistUI <- function(id) {
                                     id = ns("hypgeoNavbar"),
                                     theme = bs_theme(version = 4),
                                     tabPanel(title = "Calculations",
-                                             uiOutput(ns("renderProbabilityHypGeo"))
+                                             uiOutput(ns("renderProbabilityHypGeo")),
+                                             br(),
+                                             codeBox(
+                                               boxId = "rcodeHypGeoBox",
+                                               outputId = "rcodeHypGeo",
+                                               ns = ns
+                                             )
                                     ),
                                     tabPanel(title = "Probability Distribution Table",
                                              DTOutput(ns("HypGeoDistrTable"), width = "25%")
@@ -861,7 +814,12 @@ probDistUI <- function(id) {
               hidden(div(id=ns("negBinResults"),
                          br(),
                          uiOutput(ns("renderProbabilityNegBin")),
-                         br()
+                         br(),
+                         codeBox(
+                           boxId = "rcodeNegBinBox",
+                           outputId = "rcodeNegBin",
+                           ns = ns
+                         )
               ))
             ), 
             
@@ -903,8 +861,14 @@ probDistUI <- function(id) {
                              ns = ns,
                              condition = "input.calcQuartiles == 'Percentile'",
                              
-                             uiOutput(ns("renderNormPercentile"))) 
+                             uiOutput(ns("renderNormPercentile"))), 
                          ), 
+                         
+                         codeBox(
+                           boxId = "rcodeNormalBox",
+                           outputId = "rcodeNormal",
+                           ns = ns
+                         ),
                          br()
               ))
             ) 
@@ -920,6 +884,7 @@ probDistUI <- function(id) {
 
 probDistServer <- function(id) {
   moduleServer(id, function(input, output, session) {
+    ns <- session$ns
     
     # ========================================================================== #
     ## -------- Data Validation ------------------------------------------------
@@ -1063,8 +1028,8 @@ probDistServer <- function(id) {
     binombetween_iv$add_rule("numSuccessesBinomx2", sv_integer())
     binombetween_iv$add_rule("numSuccessesBinomx2", sv_gte(0))
     
-    poiss_iv$add_rule("muPoisson", sv_required())
-    poiss_iv$add_rule("muPoisson", sv_gt(0))
+    poiss_iv$add_rule("lambdaPoisson", sv_required())
+    poiss_iv$add_rule("lambdaPoisson", sv_gt(0))
     
     poissprob_iv$add_rule("xPoisson", sv_required())
     poissprob_iv$add_rule("xPoisson", sv_integer())
@@ -1823,6 +1788,94 @@ probDistServer <- function(id) {
       })
     }, once = TRUE)
     
+    observeEvent(binom_state(), {
+      if (binom_state()) {
+        showTab(inputId = "binomialNavbar", target = "tableTab")
+        showTab(inputId = "binomialNavbar", target = "plotTab")
+      } else {
+        updateTabsetPanel(
+          session,
+          "binomialNavbar",
+          selected = "Calculations"
+        )
+        hideTab(inputId = "binomialNavbar", target = "tableTab")
+        hideTab(inputId = "binomialNavbar", target = "plotTab")
+      }
+    })
+    
+    binom_state <- reactive({
+      req(input$probability == "Binomial")
+      
+      if (!pd_iv$is_valid()) return(FALSE)
+      
+      if (input$calcBinom != "between") {
+        return(input$numSuccessesBinom <= input$numTrialsBinom)
+      } else {
+        return(
+          input$numSuccessesBinomx1 <= input$numSuccessesBinomx2 &&
+            input$numSuccessesBinomx1 <= input$numTrialsBinom &&
+            input$numSuccessesBinomx2 <= input$numTrialsBinom
+        )
+      }
+    })
+    
+    observeEvent(hypgeo_state(), {
+      if (hypgeo_state()) {
+        showTab(inputId = "hypgeoNavbar", target = "Probability Distribution Table")
+        showTab(inputId = "hypgeoNavbar", target = "Probability Histogram")
+      } else {
+        updateTabsetPanel(session, "hypgeoNavbar", selected = "Calculations")
+        hideTab(inputId = "hypgeoNavbar", target = "Probability Distribution Table")
+        hideTab(inputId = "hypgeoNavbar", target = "Probability Histogram")
+      }
+    })
+    
+    hypgeo_state <- reactive({
+      req(input$probability == "Hypergeometric")
+      
+      if (!pd_iv$is_valid()) return(FALSE)
+      if (
+        input$sampSizeHypGeo > input$popSizeHypGeo ||
+        input$popSuccessesHypGeo > input$popSizeHypGeo
+      ) {
+        return(FALSE)
+      }
+      if (input$calcHypGeo != "between") {
+        return(
+          input$xHypGeo <= input$sampSizeHypGeo &&
+            input$xHypGeo <= input$popSuccessesHypGeo
+        )
+      } else {
+        return(
+          input$x1HypGeo <= input$x2HypGeo &&
+            input$x1HypGeo <= input$sampSizeHypGeo &&
+            input$x1HypGeo <= input$popSuccessesHypGeo &&
+            input$x2HypGeo <= input$sampSizeHypGeo &&
+            input$x2HypGeo <= input$popSuccessesHypGeo
+        )
+      }
+    })
+    
+    observeEvent(poisson_state(), {
+      if (poisson_state()) {
+        showTab(inputId = "poissonNavbar", target = "Probability Distribution Table")
+      } else {
+        updateTabsetPanel(session, "poissonNavbar", selected = "Calculations")
+        hideTab(inputId = "poissonNavbar", target = "Probability Distribution Table")
+      }
+    })
+    
+    poisson_state <- reactive({
+      req(input$probability == "Poisson")
+      
+      if (!pd_iv$is_valid()) return(FALSE)
+      if (input$calcPoisson != "between") {
+        return(TRUE)
+      } else {
+        return(input$x1Poisson <= input$x2Poisson)
+      }
+    })
+    
     observeEvent(input$gocTable, {
       
       output$render2x2cTable <- renderUI({
@@ -2208,6 +2261,30 @@ probDistServer <- function(id) {
     })
     
     observeEvent(input$goBinom, {
+      
+      observe({
+        req(input$probability == "Binomial")
+        showBox <- FALSE
+        if (pd_iv$is_valid()) {
+          if (input$calcBinom != "between") {
+            showBox <- input$numSuccessesBinom <= input$numTrialsBinom
+          } else {
+            req(input$numSuccessesBinomx1,
+                input$numSuccessesBinomx2,
+                input$numTrialsBinom)
+            showBox <-
+              input$numSuccessesBinomx1 <= input$numSuccessesBinomx2 &&
+              input$numSuccessesBinomx1 <= input$numTrialsBinom &&
+              input$numSuccessesBinomx2 <= input$numTrialsBinom
+          }
+        }
+        runjs(sprintf(
+          "document.getElementById('%s').style.display = '%s';",
+          ns("rcodeBinomBoxWrapper"),
+          if (isTRUE(showBox)) "block" else "none"
+        ))
+      })
+      
       output$renderProbabilityBinom <- renderUI({
         withMathJax(
           if(!pd_iv$is_valid())
@@ -2247,6 +2324,7 @@ probDistServer <- function(id) {
           }
           else
           {
+            req(pd_iv$is_valid())
             binom_n <- input$numTrialsBinom
             binom_p <- input$successProbBinom
             binom_mu <- round(binom_n * binom_p, 4)
@@ -2343,92 +2421,105 @@ probDistServer <- function(id) {
           })
       })
       
-      output$rcodeBinom <- renderText({
-        
+      output$rcodeBinom <- renderUI({
+        req(pd_iv$is_valid())
         if (input$calcBinom == "exact") {
           
-          paste0(
+          HTML(paste0(
             "dbinom(x = ",
-            input$numSuccessesBinom,
+            codeValue(input$numSuccessesBinom),
             ", size = ",
-            input$numTrialsBinom,
+            codeValue(input$numTrialsBinom),
             ", prob = ",
-            input$successProbBinom,
+            codeValue(input$successProbBinom),
             ")"
-          )
+          ))
           
         } else if (input$calcBinom == "cumulative") {
           
-          paste0(
+          HTML(paste0(
             "pbinom(",
-            input$numSuccessesBinom,
+            codeValue(input$numSuccessesBinom),
             ", size = ",
-            input$numTrialsBinom,
+            codeValue(input$numTrialsBinom),
             ", prob = ",
-            input$successProbBinom,
+            codeValue(input$successProbBinom),
             ")"
-          )
+          ))
           
         } else if (input$calcBinom == "upperTail") {
           
-          paste0(
+          HTML(paste0(
             "pbinom(",
-            input$numSuccessesBinom - 1,
+            codeValue(input$numSuccessesBinom - 1),
             ", size = ",
-            input$numTrialsBinom,
+            codeValue(input$numTrialsBinom),
             ", prob = ",
-            input$successProbBinom,
-            ", lower.tail = FALSE)"
-          )
+            codeValue(input$successProbBinom),
+            ", lower.tail = ",
+            codeValue("FALSE"),
+            ")"
+          ))
           
         } else if (input$calcBinom == "greaterThan") {
           
-          paste0(
+          HTML(paste0(
             "pbinom(",
-            input$numSuccessesBinom,
+            codeValue(input$numSuccessesBinom),
             ", size = ",
-            input$numTrialsBinom,
+            codeValue(input$numTrialsBinom),
             ", prob = ",
-            input$successProbBinom,
-            ", lower.tail = FALSE)"
-          )
+            codeValue(input$successProbBinom),
+            ", lower.tail = ",
+            codeValue("FALSE"),
+            ")"
+          ))
           
         } else if (input$calcBinom == "lessThan") {
           
-          paste0(
+          HTML(paste0(
             "pbinom(",
-            input$numSuccessesBinom - 1,
+            codeValue(input$numSuccessesBinom - 1),
             ", size = ",
-            input$numTrialsBinom,
+            codeValue(input$numTrialsBinom),
             ", prob = ",
-            input$successProbBinom,
+            codeValue(input$successProbBinom),
             ")"
-          )
+          ))
           
         } else if (input$calcBinom == "between") {
           
-          paste0(
+          HTML(paste0(
+            "<span style='color:#888;'># Method 1 (CDF difference):</span>\n",
             "pbinom(",
-            input$numSuccessesBinomx2,
+            codeValue(input$numSuccessesBinomx2),
             ", size = ",
-            input$numTrialsBinom,
+            codeValue(input$numTrialsBinom),
             ", prob = ",
-            input$successProbBinom,
-            ") - ",
-            "pbinom(",
-            input$numSuccessesBinomx1 - 1,
+            codeValue(input$successProbBinom),
+            ") - pbinom(",
+            codeValue(input$numSuccessesBinomx1 - 1),
             ", size = ",
-            input$numTrialsBinom,
+            codeValue(input$numTrialsBinom),
             ", prob = ",
-            input$successProbBinom,
-            ")"
-          )
+            codeValue(input$successProbBinom),
+            ")\n\n",
+            
+            "<span style='color:#888;'># Method 2 (sum of exact probabilities):</span>\n",
+            "sum(dbinom(",
+            codeValue(paste0(input$numSuccessesBinomx1, ":", input$numSuccessesBinomx2)),
+            ", size = ",
+            codeValue(input$numTrialsBinom),
+            ", prob = ",
+            codeValue(input$successProbBinom),
+            "))"
+          ))
         }
       })
       
       output$binomDistrTable <- DT::renderDT({
         req(pd_iv$is_valid())
-        
+        req(input$numSuccessesBinom <= input$numTrialsBinom)
         if(input$numTrialsBinom < 50)
         {
           dfBinom <- data.frame(value = seq(0, input$numTrialsBinom), 
@@ -2467,38 +2558,91 @@ probDistServer <- function(id) {
       }) 
     })
     
-    output$binomDistrBarPlot <- renderPlot({
+    output$binomDistrBarPlot <- renderPlotly({
       
+      req(pd_iv$is_valid())
       req(input$numTrialsBinom < 50)
-      
-      dfBinom <- data.frame(X = seq(0, input$numTrialsBinom), 
-                            P = round(dbinom(x = 0:input$numTrialsBinom, 
-                                             size = input$numTrialsBinom, 
-                                             prob = input$successProbBinom), 4))
+      req(input$numSuccessesBinom <= input$numTrialsBinom)
       
       n <- input$numTrialsBinom
       p <- input$successProbBinom
+      x_vals <- 0:n
       
-      ggplot(dfBinom, aes(x = X, y = P)) +
+      dfBinom <- data.frame(
+        X = x_vals,
+        P = dbinom(x_vals, size = n, prob = p)
+      )
+      
+      gg <- ggplot(dfBinom, aes(
+        x = X,
+        y = P,
+        text = paste0("x: ", X, "<br>p: ", round(P, 4))
+      )) +
         geom_bar(stat = "identity", fill = "skyblue") +
-        labs(x = bquote(bold("Number of Successes (" * bolditalic(x) * ")")),
-             y = bquote(bold("P(" * bolditalic(X == x) * ")")),
-             title = bquote(bold("Binomial Distribution: " * bolditalic(X) * " ~ Bin(" * bolditalic(n) * " = " * bold(.(n)) * ", " * bolditalic(p) * " = " * bold(.(p)) * ")"))
+        
+        scale_x_continuous(
+          breaks = if (n <= 25) x_vals else seq(0, n, by = max(1, floor(n / 10))),
+          expand = expansion(mult = c(0.02, 0.02))
         ) +
-        scale_y_continuous(expand = expansion(mult = c(0, 0.05))) +
-        theme(axis.text = element_text(size = 14),
-              axis.title = element_text(size = 16),
-              panel.grid.major = element_blank(),
-              panel.grid.minor = element_blank(),
-              plot.title = element_text(size = 18, hjust = 0.5),
-              panel.border = element_rect(color = "black", fill = NA, linewidth = 0.5),
-              plot.background = element_rect(color = "black", fill = NA, linewidth = 1),
-              plot.margin = margin(10, 10, 10, 5, unit = "mm")
+        scale_y_continuous(
+          expand = expansion(mult = c(0, 0.1))
+        ) +
+        
+        theme(
+          axis.text = element_text(size = 14),
+          axis.title = element_text(size = 16),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          axis.line = element_line(color = "black"),
+          panel.border = element_blank(),
+          plot.background = element_rect(color = "white", fill = NA),
+          plot.margin = margin(10, 10, 10, 5, unit = "mm")
         )
       
+      ggplotly(gg, tooltip = "text", width = 850, height = 520) %>%
+        layout(
+          margin = list(t = 80),
+          title = list(
+            text = paste0(
+              "<b>Binomial Distribution:</b> ",
+              "<b><i>X</i> ~ Bin(<i>n</i> = ", input$numTrialsBinom,
+              ", <i>p</i> = ", input$successProbBinom, ")</b>"
+            ),
+            x = 0.5
+          ),
+          
+          xaxis = list(
+            title = list(
+              text = "<b>Number of Successes (<i>x</i>)</b>"
+            )
+          ),
+          
+          yaxis = list(
+            title = list(
+              text = "<b>P(<i>X</i> = <i>x</i>)</b>"
+            )
+          )
+        )
     })
-    
+
     observeEvent(input$goPoisson, {
+      
+      observe({
+        req(input$probability == "Poisson")
+        showBox <- FALSE
+        if (input$calcPoisson != "between") {
+          showBox <- pd_iv$is_valid()
+        } else {
+          showBox <- pd_iv$is_valid() &&
+            input$x1Poisson <= input$x2Poisson
+        }
+        runjs(sprintf(
+          "document.getElementById('%s').style.display = '%s';",
+          ns("rcodePoissonBoxWrapper"),
+          if (showBox) "block" else "none"
+        ))
+      })
+      
       output$renderProbabilityPoisson <- renderUI({
         withMathJax(
           if(!pd_iv$is_valid())
@@ -2506,7 +2650,7 @@ probDistServer <- function(id) {
             if(!poissprob_iv$is_valid())
             {
               validate(
-                need(input$muPoisson && input$muPoisson > 0, "Average Number of Successes (mu) must be greater than zero"),
+                need(input$lambdaPoisson && input$lambdaPoisson > 0, "Average Number of Successes (lambda) must be greater than zero"),
                 need(input$xPoisson , "Number of Successes (x) must be a positive integer") %then%
                   need(input$xPoisson >= 0 && input$xPoisson %% 1 == 0, "Number of Successes (x) must be a positive integer"),
                 errorClass = "myClass")
@@ -2515,7 +2659,7 @@ probDistServer <- function(id) {
             if(!poissbetween_iv$is_valid())
             {
               validate(
-                need(input$muPoisson && input$muPoisson > 0, "Average Number of Successes (mu) must be greater than zero"),
+                need(input$lambdaPoisson && input$lambdaPoisson > 0, "Average Number of Successes (lambda) must be greater than zero"),
                 need(input$x1Poisson, "Enter a value for the Number of Successes (x1)") %then%
                   need(input$x1Poisson >= 0 && input$x1Poisson %% 1 == 0, "Number of Successes (x1) must be a positive integer"),
                 need(input$x2Poisson, "Enter a value for the Number of Successes (x2)") %then%
@@ -2524,13 +2668,14 @@ probDistServer <- function(id) {
             }
             
             validate(
-              need(input$muPoisson && input$muPoisson > 0, "Average Number of Successes (mu) must be greater than zero"),
+              need(input$lambdaPoisson && input$lambdaPoisson > 0, "Average Number of Successes (lambda) must be greater than zero"),
               errorClass = "myClass")
           }
           else
           {
-            poisson_mu <- input$muPoisson
-            poisson_sd <- round(sqrt(input$muPoisson), 4)
+            req(pd_iv$is_valid())
+            poisson_lambda <- input$lambdaPoisson
+            poisson_sd <- round(sqrt(input$lambdaPoisson), 4)
             
             if(input$calcPoisson != 'between')
             {
@@ -2538,28 +2683,28 @@ probDistServer <- function(id) {
               
               if(input$calcPoisson == 'exact'){
                 poissProb <- paste("P(X = ", poisson_x, ")") 
-                poissForm <- paste("\\dfrac{e^{-", poisson_mu, "}", poisson_mu, "^{", poisson_x, "}}{", poisson_x, "!}")
-                poissVal <- round(dpois(poisson_x,poisson_mu), 4)
+                poissForm <- paste("\\dfrac{e^{-", poisson_lambda, "}", poisson_lambda, "^{", poisson_x, "}}{", poisson_x, "!}")
+                poissVal <- round(dpois(poisson_x,poisson_lambda), 4)
               }
               else if(input$calcPoisson == 'cumulative'){
                 poissProb <- paste("P(X \\leq ", poisson_x, ")") 
-                poissForm <- paste("\\sum_{x = 0}^{", poisson_x, "} \\dfrac{e^{-", poisson_mu, "}", poisson_mu, "^x}{x!}")
-                poissVal <- round(ppois(poisson_x,poisson_mu,lower.tail = TRUE), 4)
+                poissForm <- paste("\\sum_{x = 0}^{", poisson_x, "} \\dfrac{e^{-", poisson_lambda, "}", poisson_lambda, "^x}{x!}")
+                poissVal <- round(ppois(poisson_x,poisson_lambda,lower.tail = TRUE), 4)
               }
               else if(input$calcPoisson == 'upperTail'){
                 poissProb <- paste("P(X \\geq ", poisson_x, ")") 
-                poissForm <- paste("1 - \\sum_{x = 0}^{", poisson_x - 1, "} \\dfrac{e^{-", poisson_mu, "}", poisson_mu, "^x}{x!}")
-                poissVal <- round(ppois(poisson_x - 1,poisson_mu,lower.tail = FALSE), 4)
+                poissForm <- paste("1 - \\sum_{x = 0}^{", poisson_x - 1, "} \\dfrac{e^{-", poisson_lambda, "}", poisson_lambda, "^x}{x!}")
+                poissVal <- round(ppois(poisson_x - 1,poisson_lambda,lower.tail = FALSE), 4)
               }
               else if(input$calcPoisson == 'greaterThan'){
                 poissProb <- paste("P(X \\gt ", poisson_x, ")") 
-                poissForm <- paste("1 - \\sum_{x = 0}^{", poisson_x, "} \\dfrac{e^{-", poisson_mu, "}", poisson_mu, "^x}{x!}")
-                poissVal <- round(ppois(poisson_x,poisson_mu,lower.tail = FALSE), 4)
+                poissForm <- paste("1 - \\sum_{x = 0}^{", poisson_x, "} \\dfrac{e^{-", poisson_lambda, "}", poisson_lambda, "^x}{x!}")
+                poissVal <- round(ppois(poisson_x,poisson_lambda,lower.tail = FALSE), 4)
               }
               else if(input$calcPoisson == 'lessThan'){
                 poissProb <- paste("P(X \\lt ", poisson_x, ")") 
-                poissForm <- paste("\\sum_{x = 0}^{", poisson_x - 1, "} \\dfrac{e^{-", poisson_mu, "}", poisson_mu, "^x}{x!}")
-                poissVal <- round(ppois(poisson_x - 1,poisson_mu,lower.tail = TRUE), 4)
+                poissForm <- paste("\\sum_{x = 0}^{", poisson_x - 1, "} \\dfrac{e^{-", poisson_lambda, "}", poisson_lambda, "^x}{x!}")
+                poissVal <- round(ppois(poisson_x - 1,poisson_lambda,lower.tail = TRUE), 4)
               }
             }
             else if(input$calcPoisson == 'between')
@@ -2572,21 +2717,21 @@ probDistServer <- function(id) {
               poisson_x2 <- input$x2Poisson
               
               poissProb <- paste("P(", poisson_x1, " \\leq X \\leq ", poisson_x2, ")")
-              poissForm <- paste("\\sum_{x = ", poisson_x1, "}^{", poisson_x2, "} \\dfrac{e^{-", poisson_mu, "}", poisson_mu, "^x}{x!}")
-              poissVal <- round(ppois(poisson_x2, poisson_mu, lower.tail = TRUE) - ppois(poisson_x1 - 1, poisson_mu, lower.tail = TRUE), 4)
+              poissForm <- paste("\\sum_{x = ", poisson_x1, "}^{", poisson_x2, "} \\dfrac{e^{-", poisson_lambda, "}", poisson_lambda, "^x}{x!}")
+              poissVal <- round(ppois(poisson_x2, poisson_lambda, lower.tail = TRUE) - ppois(poisson_x1 - 1, poisson_lambda, lower.tail = TRUE), 4)
             }
             
             tagList(
               withMathJax(
                 div(
                   h3(
-                    sprintf("Calculating  \\( %s \\)   when  \\(  X \\sim Pois(\\mu = %g): \\)",
+                    sprintf("Calculating  \\( %s \\)   when  \\(  X \\sim Pois(\\lambda = %g): \\)",
                             poissProb,
-                            poisson_mu)),
+                            poisson_lambda)),
                   hr(),
                   br(),
                   p(tags$b("Using the Probability Mass Function: ")),
-                  sprintf("\\( P(X = x) = \\dfrac{e^{-\\mu} \\mu^x}{x!} \\)"),
+                  sprintf("\\( P(X = x) = \\dfrac{e^{-\\lambda} \\lambda^x}{x!} \\)"),
                   sprintf("\\( \\qquad \\) for \\( x = 0, 1, 2, ... \\)"),
                   br(),
                   br(),
@@ -2602,23 +2747,100 @@ probDistServer <- function(id) {
                   br(),
                   br(),
                   br(),
-                  sprintf("\\( E(X) = \\mu = %g \\)", poisson_mu),
+                  sprintf("\\( E(X) = \\lambda = %g \\)", poisson_lambda),
                   br(), 
                   br(),
-                  sprintf("\\( SD(X) = \\sigma = \\sqrt{\\mu} = %g \\)", poisson_sd),
+                  sprintf("\\( SD(X) = \\sigma = \\sqrt{\\lambda} = %g \\)", poisson_sd),
                   br(), 
                   br(),
-                  sprintf("\\( Var(X) = \\sigma^2 = \\mu = %g \\)", poisson_mu)
+                  sprintf("\\( Var(X) = \\sigma^2 = \\lambda = %g \\)", poisson_lambda)
                 )
               ) 
             ) 
           }) 
       }) 
       
+      output$rcodePoisson <- renderUI({
+        req(pd_iv$is_valid())
+        
+        if (input$calcPoisson == "exact") {
+          
+          HTML(paste0(
+            "dpois(x = ",
+            codeValue(input$xPoisson),
+            ", lambda = ",
+            codeValue(input$lambdaPoisson),
+            ")"
+          ))
+          
+        } else if (input$calcPoisson == "cumulative") {
+          
+          HTML(paste0(
+            "ppois(",
+            codeValue(input$xPoisson),
+            ", lambda = ",
+            codeValue(input$lambdaPoisson),
+            ")"
+          ))
+          
+        } else if (input$calcPoisson == "upperTail") {
+          
+          HTML(paste0(
+            "ppois(",
+            codeValue(input$xPoisson - 1),
+            ", lambda = ",
+            codeValue(input$lambdaPoisson),
+            ", lower.tail = FALSE)"
+          ))
+          
+        } else if (input$calcPoisson == "greaterThan") {
+          
+          HTML(paste0(
+            "ppois(",
+            codeValue(input$xPoisson),
+            ", lambda = ",
+            codeValue(input$lambdaPoisson),
+            ", lower.tail = FALSE)"
+          ))
+          
+        } else if (input$calcPoisson == "lessThan") {
+          
+          HTML(paste0(
+            "ppois(",
+            codeValue(input$xPoisson - 1),
+            ", lambda = ",
+            codeValue(input$lambdaPoisson),
+            ")"
+          ))
+          
+        } else if (input$calcPoisson == "between") {
+          
+          HTML(paste0(
+            "<span style='color:#888;'># Method 1 (CDF difference):</span>\n",
+            "ppois(",
+            codeValue(input$x2Poisson),
+            ", lambda = ",
+            codeValue(input$lambdaPoisson),
+            ") - ppois(",
+            codeValue(input$x1Poisson - 1),
+            ", lambda = ",
+            codeValue(input$lambdaPoisson),
+            ")",
+            
+            "\n\n<span style='color:#888;'># Method 2 (sum of exact probabilities):</span>\n",
+            "sum(dpois(",
+            codeValue(paste0(input$x1Poisson, ":", input$x2Poisson)),
+            ", lambda = ",
+            codeValue(input$lambdaPoisson),
+            "))"
+          ))
+        }
+      })
+      
       output$poissDistrTable <- DT::renderDT({
         req(pd_iv$is_valid())
         
-        dfPoiss <- data.frame(value = seq(qpois(0.0001, input$muPoisson), qpois(0.9999, input$muPoisson)), value = round(dpois(x = qpois(0.0001, input$muPoisson):qpois(0.9999, input$muPoisson), lambda = input$muPoisson), 4))
+        dfPoiss <- data.frame(value = seq(qpois(0.0001, input$lambdaPoisson), qpois(0.9999, input$lambdaPoisson)), value = round(dpois(x = qpois(0.0001, input$lambdaPoisson):qpois(0.9999, input$lambdaPoisson), lambda = input$lambdaPoisson), 4))
         colnames(dfPoiss) <- c("X", "P(X = x)")
         datatable(dfPoiss,
                   options = list(
@@ -2631,10 +2853,35 @@ probDistServer <- function(id) {
                   rownames = FALSE,
                   filter = "none"
         ) %>% formatRound(2, digits = 4)
-      }) 
+      })
     }) 
     
+
+    
     observeEvent(input$goHypGeo, {
+      observe({
+        req(input$probability == "Hypergeometric")
+        
+        showBox <- pd_iv$is_valid() &&
+          input$sampSizeHypGeo <= input$popSizeHypGeo &&
+          input$popSuccessesHypGeo <= input$popSizeHypGeo &&
+          input$xHypGeo <= input$sampSizeHypGeo &&
+          input$xHypGeo <= input$popSuccessesHypGeo
+        
+        if (showBox && input$calcHypGeo == "between") {
+          showBox <-
+            input$x1HypGeo <= input$x2HypGeo &&
+            input$x1HypGeo <= input$sampSizeHypGeo &&
+            input$x1HypGeo <= input$popSuccessesHypGeo 
+        }
+        
+        runjs(sprintf(
+          "document.getElementById('%s').style.display = '%s';",
+          ns("rcodeHypGeoBoxWrapper"),
+          if (showBox) "block" else "none"
+        ))
+      })
+      
       output$renderProbabilityHypGeo <- renderUI({
         withMathJax(
           if(!pd_iv$is_valid())
@@ -2690,7 +2937,11 @@ probDistServer <- function(id) {
               errorClass = "myClass")
             
             HypGeo_mu <- round(sampSizeHypGeo*popSuccessesHypGeo/popSizeHypGeo, 4)
-            HypGeo_var <- round(sampSizeHypGeo*(popSuccessesHypGeo/popSizeHypGeo)*((popSizeHypGeo - popSuccessesHypGeo)/popSizeHypGeo)*((popSizeHypGeo - sampSizeHypGeo)/(popSizeHypGeo - 1)), 4)
+            if (popSizeHypGeo <= 1) {
+              HypGeo_var <- 0
+            } else {
+              HypGeo_var <- round(sampSizeHypGeo * (popSuccessesHypGeo / popSizeHypGeo) * ((popSizeHypGeo - popSuccessesHypGeo) / popSizeHypGeo) * ((popSizeHypGeo - sampSizeHypGeo) / (popSizeHypGeo - 1)), 4)
+            }
             HypGeo_sd <- round(sqrt(HypGeo_var), 4)
             
             if(input$calcHypGeo != 'between')
@@ -2786,10 +3037,124 @@ probDistServer <- function(id) {
               ) 
             ) 
           }) 
+        
       }) 
+      
+      output$rcodeHypGeo <- renderUI({
+        req(pd_iv$is_valid())
+        
+        if (input$calcHypGeo == "exact") {
+          HTML(paste0(
+            "dhyper(x = ",
+            codeValue(input$xHypGeo),
+            ", m = ",
+            codeValue(input$popSuccessesHypGeo),
+            ", n = ",
+            codeValue(input$popSizeHypGeo - input$popSuccessesHypGeo),
+            ", k = ",
+            codeValue(input$sampSizeHypGeo),
+            ")"
+          ))
+          
+        } else if (input$calcHypGeo == "cumulative") {
+          
+          HTML(paste0(
+            "phyper(",
+            codeValue(input$xHypGeo),
+            ", m = ",
+            codeValue(input$popSuccessesHypGeo),
+            ", n = ",
+            codeValue(input$popSizeHypGeo - input$popSuccessesHypGeo),
+            ", k = ",
+            codeValue(input$sampSizeHypGeo),
+            ")"
+          ))
+          
+        } else if (input$calcHypGeo == "upperTail") {
+          
+          HTML(paste0(
+            "phyper(",
+            codeValue(input$xHypGeo - 1),
+            ", m = ",
+            codeValue(input$popSuccessesHypGeo),
+            ", n = ",
+            codeValue(input$popSizeHypGeo - input$popSuccessesHypGeo),
+            ", k = ",
+            codeValue(input$sampSizeHypGeo),
+            ", lower.tail = FALSE)"
+          ))
+          
+        } else if (input$calcHypGeo == "greaterThan") {
+          
+          HTML(paste0(
+            "phyper(",
+            codeValue(input$xHypGeo),
+            ", m = ",
+            codeValue(input$popSuccessesHypGeo),
+            ", n = ",
+            codeValue(input$popSizeHypGeo - input$popSuccessesHypGeo),
+            ", k = ",
+            codeValue(input$sampSizeHypGeo),
+            ", lower.tail = FALSE)"
+          ))
+          
+        } else if (input$calcHypGeo == "lessThan") {
+          
+          HTML(paste0(
+            "phyper(",
+            codeValue(input$xHypGeo - 1),
+            ", m = ",
+            codeValue(input$popSuccessesHypGeo),
+            ", n = ",
+            codeValue(input$popSizeHypGeo - input$popSuccessesHypGeo),
+            ", k = ",
+            codeValue(input$sampSizeHypGeo),
+            ")"
+          ))
+          
+        } else if (input$calcHypGeo == "between") {
+          
+          HTML(paste0(
+            
+            "<span style='color:#888;'># Method 1 (CDF difference):</span>\n",
+            "phyper(",
+            codeValue(input$x2HypGeo),
+            ", m = ",
+            codeValue(input$popSuccessesHypGeo),
+            ", n = ",
+            codeValue(input$popSizeHypGeo - input$popSuccessesHypGeo),
+            ", k = ",
+            codeValue(input$sampSizeHypGeo),
+            ") - phyper(",
+            codeValue(input$x1HypGeo - 1),
+            ", m = ",
+            codeValue(input$popSuccessesHypGeo),
+            ", n = ",
+            codeValue(input$popSizeHypGeo - input$popSuccessesHypGeo),
+            ", k = ",
+            codeValue(input$sampSizeHypGeo),
+            ")",
+            
+            "\n\n<span style='color:#888;'># Method 2 (sum of exact probabilities):</span><br>",
+            "sum(dhyper(",
+            codeValue(paste0(input$x1HypGeo, ":", input$x2HypGeo)),
+            ", m = ",
+            codeValue(input$popSuccessesHypGeo),
+            ", n = ",
+            codeValue(input$popSizeHypGeo - input$popSuccessesHypGeo),
+            ", k = ",
+            codeValue(input$sampSizeHypGeo),
+            "))"
+          ))
+        }
+      })
       
       output$HypGeoDistrTable <- DT::renderDT({
         req(pd_iv$is_valid())
+        req(input$sampSizeHypGeo <= input$popSizeHypGeo)
+        req(input$popSuccessesHypGeo <= input$popSizeHypGeo)
+        req(input$xHypGeo <= input$sampSizeHypGeo)
+        req(input$xHypGeo <= input$popSuccessesHypGeo)
         
         if(input$sampSizeHypGeo < 50)
         {
@@ -2828,8 +3193,12 @@ probDistServer <- function(id) {
     }) 
     
     output$HypGeoDistrBarPlot <- renderPlot({
-      
+      req(pd_iv$is_valid())
       req(input$sampSizeHypGeo < 50)
+      req(input$sampSizeHypGeo <= input$popSizeHypGeo)
+      req(input$popSuccessesHypGeo <= input$popSizeHypGeo)
+      req(input$xHypGeo <= input$sampSizeHypGeo)
+      req(input$xHypGeo <= input$popSuccessesHypGeo)
       
       dfHypGeo <- data.frame(value = seq(max(0, input$sampSizeHypGeo + input$popSuccessesHypGeo - input$popSizeHypGeo), min(input$popSuccessesHypGeo, input$sampSizeHypGeo)), 
                              prob = round(dhyper(x = max(0, input$sampSizeHypGeo + input$popSuccessesHypGeo - input$popSizeHypGeo):min(input$popSuccessesHypGeo, input$sampSizeHypGeo), input$popSuccessesHypGeo, (input$popSizeHypGeo - input$popSuccessesHypGeo), input$sampSizeHypGeo), 4))
@@ -2855,6 +3224,22 @@ probDistServer <- function(id) {
     }) 
     
     observeEvent(input$goNegBin, {
+      
+      observe({
+        req(input$probability == "Negative Binomial")
+        if (pd_iv$is_valid()) {
+          runjs(sprintf(
+            "document.getElementById('%s').style.display = 'block';",
+            ns("rcodeNegBinBoxWrapper")
+          ))
+        } else {
+          runjs(sprintf(
+            "document.getElementById('%s').style.display = 'none';",
+            ns("rcodeNegBinBoxWrapper")
+          ))
+        }
+      })
+      
       output$renderProbabilityNegBin <- renderUI({
         withMathJax(
           if(!pd_iv$is_valid())
@@ -2964,9 +3349,44 @@ probDistServer <- function(id) {
             ) 
           }) 
       }) 
+      
+      output$rcodeNegBin <- renderUI({
+        req(pd_iv$is_valid())
+        
+        HTML(paste0(
+          "dnbinom(x = ",
+          codeValue(input$xNegBin),
+          ", size = ",
+          codeValue(input$successNegBin),
+          ", prob = ",
+          codeValue(input$successProbNegBin),
+          ")"
+        ))
+      })
     }) 
     
     observeEvent(input$goNormalProb, {
+      
+      observe({
+        req(input$probability == "Normal")
+        showBox <- FALSE
+        
+        if(pd_iv$is_valid()){
+          if(input$calcQuantiles=="Probability" && input$calcNormal=="between"){
+            showBox <- input$x1Value < input$x2Value
+          } else if(input$calcQuantiles=="Probability" && input$calcNormSampDistr=="between"){
+            showBox <- input$sampDistrx1Value < input$sampDistrx2Value
+          } else {
+            showBox <- TRUE
+          }
+        }
+        
+        runjs(sprintf(
+          "document.getElementById('%s').style.display='%s';",
+          ns("rcodeNormalBoxWrapper"),
+          if(showBox)"block"else"none"
+        ))
+      })
       
       output$renderProbabilityNorm <- renderUI({
         if(!pd_iv$is_valid())
@@ -3025,7 +3445,7 @@ probDistServer <- function(id) {
           norm_x2 <- input$x2Value
           
           validate(
-            need((norm_x1 != norm_x2) && (norm_x1 <= norm_x2), "Normally Distributed Variable (x1) must be less than or equal to Normally Distributed Variable (x2)"),
+            need((norm_x1 != norm_x2) && (norm_x1 <= norm_x2), "Normally Distributed Variable (x1) must be less than Normally Distributed Variable (x2)"),
             errorClass = "myClass")
           
           normProb <- paste("P(", norm_x1, " ",  " \\leq X \\leq"," ", norm_x2,")") 
@@ -3084,6 +3504,124 @@ probDistServer <- function(id) {
             br()
           )
         )
+      })
+      
+      output$rcodeNormal <- renderUI({
+        req(pd_iv$is_valid())
+        if (input$calcQuantiles == "Probability") {
+          if (input$sampMeanDistr == 0) {
+            if (input$calcNormal == "cumulative") {
+              HTML(paste0(
+                "pnorm(",
+                codeValue(input$xValue),
+                ", mean = ",
+                codeValue(input$popMean),
+                ", sd = ",
+                codeValue(input$popSD),
+                ")"
+              ))
+            } else if (input$calcNormal == "upperTail") {
+              HTML(paste0(
+                "pnorm(",
+                codeValue(input$xValue),
+                ", mean = ",
+                codeValue(input$popMean),
+                ", sd = ",
+                codeValue(input$popSD),
+                ", lower.tail = FALSE)"
+              ))
+            } else if (input$calcNormal == "between") {
+              
+              HTML(paste0(
+                "pnorm(",
+                codeValue(input$x2Value),
+                ", mean = ",
+                codeValue(input$popMean),
+                ", sd = ",
+                codeValue(input$popSD),
+                ") - pnorm(",
+                codeValue(input$x1Value),
+                ", mean = ",
+                codeValue(input$popMean),
+                ", sd = ",
+                codeValue(input$popSD),
+                ")"
+              ))
+            }
+          } else {
+            sd_samp <- paste0(codeValue(input$popSD), " / sqrt(", codeValue(input$sampDistrSize), ")")
+            
+            if (input$calcNormSampDistr == "cumulative") {
+              HTML(paste0(
+                "pnorm(",
+                codeValue(input$sampDistrxValue),
+                ", mean = ",
+                codeValue(input$popMean),
+                ", sd = ",
+                sd_samp,
+                ")"
+              ))
+            } else if (input$calcNormSampDistr == "upperTail") {
+              HTML(paste0(
+                "pnorm(",
+                codeValue(input$sampDistrxValue),
+                ", mean = ",
+                codeValue(input$popMean),
+                ", sd = ",
+                sd_samp,
+                ", lower.tail = FALSE)"
+              ))
+            } else if (input$calcNormSampDistr == "between") {
+              HTML(paste0(
+                "pnorm(",
+                codeValue(input$sampDistrx2Value),
+                ", mean = ",
+                codeValue(input$popMean),
+                ", sd = ",
+                sd_samp,
+                ") - pnorm(",
+                codeValue(input$sampDistrx1Value),
+                ", mean = ",
+                codeValue(input$popMean),
+                ", sd = ",
+                sd_samp,
+                ")"
+              ))
+            }
+          }
+        } else if (input$calcQuantiles == "Inverse Cumulative Distribution Function") {
+          if (input$calcQuartiles == "Percentile") {
+            HTML(paste0(
+              "qnorm(",
+              codeValue(input$percentileValue / 100),
+              ", mean = ",
+              codeValue(input$popMean),
+              ", sd = ",
+              codeValue(input$popSD),
+              ")"
+            ))
+          } else {
+            HTML(paste0(
+              "qnorm(0.25, mean = ",
+              codeValue(input$popMean),
+              ", sd = ",
+              codeValue(input$popSD),
+              ")\n\n",
+              
+              "qnorm(0.5, mean = ",
+              codeValue(input$popMean),
+              ", sd = ",
+              codeValue(input$popSD),
+              ")\n\n",
+              
+              "qnorm(0.75, mean = ",
+              codeValue(input$popMean),
+              ", sd = ",
+              codeValue(input$popSD),
+              ")"
+            ))
+          }
+        }
       })
       
       output$normDistrPlot <- renderPlot({
@@ -3252,7 +3790,9 @@ probDistServer <- function(id) {
         }
         normZPlot(getMeanNormValue(), normLines, input$calcNormSampDistr)
       })
+      
     })
+  
     
     observeEvent(input$goNormalQuan, {
       
@@ -3820,7 +4360,7 @@ probDistServer <- function(id) {
       show(id = "poissonResults")
     })
     
-    observeEvent({input$muPoisson
+    observeEvent({input$lambdaPoisson
       input$xPoisson
       input$x1Poisson
       input$x2Poisson}, {

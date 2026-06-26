@@ -16,21 +16,25 @@ TwoSampTInt <- function(xbar1, s1, n1, xbar2, s2, n2, var.equal = TRUE, c_level 
     df <- n1 + n2 - 2
   } else
   {
+    validate(
+      need(!(s1 == 0 && s2 == 0), "When the sample standard deviation for both Sample 1 and Sample 2 are zero and when you are not able to assume the Population Variances to be equal the Welch-Satterthwaite df is undefined. This makes the confidence interval undefined."),
+      errorClass = "myClass")
+
     se <- sqrt((s1^2/n1) + (s2^2/n2))
-    
+
     # Welch-Satterthwaite df
     df <- ((s1^2/n1 + s2^2/n2)^2)/((s1^2/n1)^2/(n1-1) + (s2^2/n2)^2/(n2-1))
-  }  
-  
+  }
+
   t.crit <- qt((1 - c_level)/2, df = df, lower.tail = FALSE)
-  
+
   margin_of_error <- t.crit*se
-  
+
   LCL <- (xbar1 - xbar2) - margin_of_error
-  
+
   UCL <- (xbar1 - xbar2) + margin_of_error
-  
-  dat <- sapply(c((xbar1 - xbar2), t.crit, df, se, margin_of_error, LCL, UCL), function(x){ if(x < 0.0001 && x > 0) {signif(x,1)} else {round(x, 4)}})
+
+  dat <- sapply(c((xbar1 - xbar2), t.crit, df, se, margin_of_error, LCL, UCL), function(x){ if(!is.na(x) && x < 0.0001 && x > 0) {signif(x,1)} else {round(x, 4)}})
   
   names(dat) <- c("Difference of means", "T Critical", "df", "Std Error", "ME", "LCL", "UCL")
   

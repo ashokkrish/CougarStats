@@ -22,6 +22,7 @@ library(DT)
 library(e1071)
 library(factoextra)
 library(forecast)
+library(foreign)
 library(generics)
 library(GGally)
 library(ggfortify)
@@ -30,6 +31,7 @@ library(ggpubr)
 library(ggResidpanel)
 library(ggsci)
 library(gridExtra)
+library(haven)
 library(htmltools)
 library(katex)
 library(knitr)
@@ -42,7 +44,7 @@ library(moments)
 library(nortest)
 library(plotly)
 library(psych)
-library(iml)
+#library(iml)
 library(randomForest)
 library(xgboost)
 library(tippy)
@@ -67,6 +69,7 @@ library(shinyvalidate)
 library(shinyWidgets)
 library(skedastic)
 library(sortable)
+sortable::enable_modules()
 library(thematic)
 library(tibble)
 library(tidyr)
@@ -74,6 +77,7 @@ library(tinytex)
 library(tools)
 library(waiter)
 library(writexl)
+library(xml2)
 library(xtable)
 
 # shinyDarkmode, ggResidpanel and olsrr have been removed/archived from CRAN. 
@@ -88,8 +92,9 @@ library(shinyDarkmode)
 library(ggResidpanel)
 library(olsrr)
 
-source("R/authors.R")
+margin <- ggplot2::margin
 
+source("R/utilityFunctions.R")
 source("R/ChiSquareTest.R")
 source("R/descStats.R")
 
@@ -112,6 +117,9 @@ source("R/RenderScatterplot.R")
 source("R/RenderSideBySideBoxplot.R")
 
 source("R/sampSizeEst.R")
+source("R/confidenceCoefficientCp.R")
+source("R/confidenceCoefficientMean.R")
+source("R/confidenceCoefficientProportion.R")
 
 source("R/statInfr.R")
 
@@ -154,23 +162,25 @@ render <- "
   option: function(data, escape){return '<div class=\"option\">'+data.label+'</div>';},
   item: function(data, escape){return '<div class=\"item\">'+data.label+'</div>';}
 }"
-  
-  ## NOTE: advanced understanding of R is required to interpret these results.
-  ## It's not for the faint of heart.
-  ## warning("What follows is the base R conflicts() report: all MASK-ed or MASK-ing symbols are given.",
-  ##         immediate. = TRUE)
-  ## print(conflicts(detail = TRUE))
-  
-  ## NOTE: see #41.
-  ## warning("Following this is the conflicted::conflict_scout() report.",
-  ##         immediate. = TRUE)
-  ## print(conflicted::conflict_scout())
-  
-  ## TODO: reenable this line before deployment.
-  ## conflicted::conflicts_prefer(shinyjs::show, dplyr::filter, dplyr::select)
-  
-  ## See the theming issue brought up in #33; use thematic to attempt to make base
-  ## R graphics compliant with ggplot theming, and to anticipate the impact of
-  ## dark mode.
-  ggplot2::theme_set(ggplot2::theme_minimal())
-  thematic_shiny()
+
+shiny::addResourcePath("www", "www")
+
+## NOTE: advanced understanding of R is required to interpret these results.
+## It's not for the faint of heart.
+## warning("What follows is the base R conflicts() report: all MASK-ed or MASK-ing symbols are given.",
+##         immediate. = TRUE)
+## print(conflicts(detail = TRUE))
+
+## NOTE: see #41.
+## warning("Following this is the conflicted::conflict_scout() report.",
+##         immediate. = TRUE)
+## print(conflicted::conflict_scout())
+
+## TODO: reenable this line before deployment.
+## conflicted::conflicts_prefer(shinyjs::show, dplyr::filter, dplyr::select)
+
+## See the theming issue brought up in #33; use thematic to attempt to make base
+## R graphics compliant with ggplot theming, and to anticipate the impact of
+## dark mode.
+ggplot2::theme_set(ggplot2::theme_minimal())
+thematic_shiny()
