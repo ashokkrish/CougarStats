@@ -870,7 +870,7 @@ sampSizeEstServer <- function(id) {
                     input$confSampSize,
                     input$confPopSD),
             br(),
-            sprintf( "\\(\\text{Confidence Coefficient} = %.2f\\%%\\)",
+            sprintf( "\\(\\text{Confidence Coefficient} = %.0f\\%%\\)",
                      confCoe * 100),
             
             
@@ -879,7 +879,7 @@ sampSizeEstServer <- function(id) {
             
             
             sprintf("Given the sample size of \\(n\\) is %s, an anticipated standard deviation of %s, and the desired margin of error of
-                  %s, the resulting confidence coefficient is %.2f%%. In other words, a %.2f%% confidence interval constructed using the \\(\\sigma\\) known
+                  %s, the resulting confidence coefficient is %.0f%%. In other words, a %.0f%% confidence interval constructed using the \\(\\sigma\\) known
                   would achieve the specified precision.",
                     input$confSampSize,
                     input$confPopSD,
@@ -908,7 +908,7 @@ sampSizeEstServer <- function(id) {
                     input$confSampSize,
                     input$confPopSD),
             br(),
-            sprintf("\\(\\text{Confidence Coefficient} = %.2f\\%%\\)",
+            sprintf("\\(\\text{Confidence Coefficient} = %.0f\\%%\\)",
                     confCoe * 100),
             
             br(),
@@ -916,7 +916,7 @@ sampSizeEstServer <- function(id) {
             
             
             sprintf("Given the sample size of \\(n\\) is %s, an anticipated standard deviation of %s, and the desired width of interval of
-                  %s, the resulting confidence coefficient is %.3f%%. In other words, a %.2f%% confidence interval constructed using the \\(\\sigma\\)) known
+                  %s, the resulting confidence coefficient is %.0f%%. In other words, a %.0f%% confidence interval constructed using the \\(\\sigma\\)) known
                   would achieve the specified precision.",
                     input$confSampSize,
                     input$confPopSD,
@@ -958,7 +958,7 @@ sampSizeEstServer <- function(id) {
                       input$ccTargetProp,
                       input$ccTargetProp),
               br(),
-              sprintf("\\(\\text{Confidence Coefficient} = %.2f\\%%\\)",
+              sprintf("\\(\\text{Confidence Coefficient} = %.0f\\%%\\)",
                       confCoe * 100),
               
               br(),
@@ -966,7 +966,7 @@ sampSizeEstServer <- function(id) {
               
               
               sprintf("Given a sample size of \\(n\\) is %s, an anticipated proportion of %s, and a desired margin of error of %s, the resulting confidence coefficient is
-                    %.2f%%. In other words, a %.2f%% confidence interval constructed using the normal approximation would achieve the specified precision",
+                    %.0f%%. In other words, a %.0f%% confidence interval constructed using the normal approximation would achieve the specified precision",
                       input$ccPropSampSize,
                       input$ccTargetProp,
                       input$ccPropMargErr,
@@ -994,15 +994,15 @@ sampSizeEstServer <- function(id) {
                       input$ccTargetProp,
                       input$ccTargetProp),
               br(),
-              sprintf("\\(\\text{Confidence Coefficient} = %.2f\\%%\\)",
+              sprintf("\\(\\text{Confidence Coefficient} = %.0f\\%%\\)",
                       confCoe * 100),
               
               br(),
               br(),
               
               
-              sprintf("Given a sample size of \\(n\\) is %s, an anticipated proportion of %s, and a desired width of interval of %s, the resulting confidence coefficient is %.2f%%.
-                    In other words, a %.2f%% confidence interval constructed using the normal approximation would achieve the specified precision.",
+              sprintf("Given a sample size of \\(n\\) is %s, an anticipated proportion of %s, and a desired width of interval of %s, the resulting confidence coefficient is %.0f%%.
+                    In other words, a %.0f%% confidence interval constructed using the normal approximation would achieve the specified precision.",
                       input$ccPropSampSize,
                       input$ccTargetProp,
                       input$ccPropWoI,
@@ -1029,7 +1029,7 @@ sampSizeEstServer <- function(id) {
         tagList(
           withMathJax(),
           br(),
-          sprintf("\\(\\text{Confidence Coefficient} = %.2f\\%%\\)", confCoe*100),
+          sprintf("\\(\\text{Confidence Coefficient} = %.0f\\%%\\)", confCoe*100),
           br(),
           br(),
           tags$em("Note: When the data cannot be assumed to follow a normal distribution, there isn’t a simple formula to calculate the required sample size. Instead, the confidence interval is found by testing different values until the exact interval width is narrow enough and meets the target width. This approach is based on the Clopper–Pearson exact method for binomial proportions.")
