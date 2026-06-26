@@ -550,6 +550,9 @@ PCAServer <- function(id, data, shared_explanatory, shared_response) {
 
       summary_data  <- summary(pca_results())$importance
       loadings_data <- pca_results()$rotation
+      sdev_vals     <- round(pca_results()$sdev, 2)
+      sd_pc1        <- sdev_vals[1]
+      sd_pc2        <- if (length(sdev_vals) >= 2) sdev_vals[2] else NA
 
       cum_var_pct <- round(summary_data["Cumulative Proportion", input$numFactors] * 100, 2)
       variance_label <- if (cum_var_pct >= 80) "excellent"
@@ -600,9 +603,12 @@ PCAServer <- function(id, data, shared_explanatory, shared_response) {
         tags$p(tags$strong("Variance Explained"), style = "margin-bottom: 6px;"),
         tags$p(
           style = "margin-bottom: 4px;",
-          tags$strong("Standard deviation: "),
-          "The amount of variance in the data captured by each component. Higher values mean ",
-          "more variance is captured."
+          tags$strong("Standard Deviation: "),
+          paste0(
+            "This indicates the spread of the data along each principal component. A larger ",
+            "standard deviation means the component captures more of the important patterns and ",
+            "variability in the dataset. Here, PC1 (", sd_pc1, ") captures more variation than PC2 (", sd_pc2, ")."
+          )
         ),
         tags$p(
           style = "margin-bottom: 4px;",
