@@ -36,9 +36,9 @@ statInfrUI <- function(id) {
                                 "2",
                                 "Multiple",
                                 "Categorical"),
-            choiceNames  = list("Inference about 1 sample\\(\\)",
-                                "Inference about 2 samples\\(\\)",
-                                "Inference about more than 2 samples (e.g. ANOVA or Kruskal-Wallis)\\(\\)",
+            choiceNames  = list("Inference about one sample\\(\\)",
+                                "Inference about two samples\\(\\)",
+                                "Inference about more than two samples (e.g. ANOVA or Kruskal-Wallis)\\(\\)",
                                 "Inference for Categorical Data (e.g \\( \\chi^2 \\) test)"),
             selected     = "1"),
           
@@ -1105,16 +1105,16 @@ statInfrUI <- function(id) {
             ), # Hypothesis Testing
             conditionalPanel(
               ns = ns,
-              condition  = "input.popuParameters == 'Wilcoxon rank sum test'", 
+              condition  = "input.popuParameters == 'Wilcoxon rank sum test'",
               radioButtons(
-                inputId  = ns("normaprowrs"),
+                inputId  = ns("normaprowrsRankSum"),
                 label    = strong("Method"), # A more descriptive label
                 choices  = c("Exact", "Normal approximation (for large samples)"),
                 selected = "Exact",
                 inline   = TRUE),
               conditionalPanel(
                 ns = ns,
-                condition  = "input.normaprowrs == 'Normal approximation (for large samples)'", # This is the inner condition, checking the checkbox
+                condition  = "input.normaprowrsRankSum == 'Normal approximation (for large samples)'", # This is the inner condition, checking the checkbox
                 radioButtons(
                   inputId  = ns("continuityCorrectionOption"),
                   label    = strong("Continuity correction"),
@@ -4359,7 +4359,8 @@ statInfrServer <- function(id) {
     }
     
     wilcoxonZTestPlot <- function(testStatistic, critValue, altHypothesis){
-      x <- round(seq(from = -3.5, to = 3.5, by = 0.1), 2)
+      x_bound <- max(4, abs(testStatistic) * 1.15)
+      x <- round(seq(from = -x_bound, to = x_bound, by = 0.1), 2)
       
       if(altHypothesis == "two.sided") {
         CVs <- c(-critValue, critValue)
@@ -9074,9 +9075,9 @@ statInfrServer <- function(id) {
       
       u_test_val <- u1_statistic 
       
-      if (input$normaprowrs == "Exact") {
+      if (isTRUE(input$normaprowrsRankSum == "Exact")) {
         z_stat_val <- ((u_test_val - u_mean) / u_std_dev)
-      } else { 
+      } else {
         if (!is.null(input$continuityCorrectionOption) && input$continuityCorrectionOption == "True") {
           if (input$altHypothesis2 == "2") {
             if (observed_W > mu_w) {
@@ -9096,73 +9097,79 @@ statInfrServer <- function(id) {
     }
     
     output$wilcoxonRankSumPlot <- renderPlot({
-      
-      dat <- GetwRankSumMeansData()
-      if(length(unique(dat$samp1)) > 1 || length(unique(dat$samp2)) > 1) {
-        
-        wilcoxonData <- wilcoxonRankedData()
-        
-        if (input$wilcoxonRankSumTestData == 'Upload Data') {
-          name1 <- input$wilcoxonUpl1
-          name2 <- input$wilcoxonUpl2
-        } else {
-          name1 <- "Sample 1"
-          name2 <- "Sample 2"
-        }
-        
-        n1 <- sum(wilcoxonData$Group == name1)
-        n2 <- sum(wilcoxonData$Group == name2)
-        N <- nrow(wilcoxonData)
-        
-        mu_w <- (n1 * (N + 1)) / 2
-        sigma_w <- sqrt((n1 * n2 * (N + 1)) / 12)
-        observed_W <- sum(wilcoxonData %>% dplyr::filter(Group == name1) %>% dplyr::pull(Rank))
-        observed_W2 <- sum(wilcoxonData %>% dplyr::filter(Group == name2) %>% dplyr::pull(Rank))
-        
-        u1_statistic <- observed_W - (n1 * (n1 + 1) / 2)
-        u2_statistic <- observed_W2 - (n2 * (n2 + 1) / 2)
-        u_mean <- (n1 * n2) / 2
-        
-        group1_data_values <- wilcoxonData %>% dplyr::filter(Group == name1) %>% dplyr::pull(Value)
-        group2_data_values <- wilcoxonData %>% dplyr::filter(Group == name2) %>% dplyr::pull(Value)
-        combined_values <- c(group1_data_values, group2_data_values)
-        has_ties <- length(unique(combined_values)) < length(combined_values)
-        
-        calculate_tie_correction <- function(x) {
-          if (!is.numeric(x) || length(x) == 0) {
-            return(0)
-          }
-          tie_counts <- table(x[duplicated(x) | duplicated(x, fromLast = TRUE)])
-          sum(tie_counts^3 - tie_counts)
-        }
-        
-        tie_correction <- calculate_tie_correction(combined_values)
-        u_std_dev <- sqrt((n1 * n2 / 12) * ((N + 1) - (tie_correction / (N * (N - 1)))))
-        z_stat <- calculate_z_stat(input, observed_W, mu_w, sigma_w, observed_W2, n1, n2, N,
-                                   u1_statistic, u2_statistic, u_mean, u_std_dev,
-                                   has_ties, tie_correction)
-        alternative <- ""
-        z_critical <- NA
-        if(input$altHypothesis2 == "2") {
-          z_critical <- qnorm(1 - SigLvl()/2)
-          alternative <- "two.sided"
-        } else if(input$altHypothesis2 == "1") {
-          z_critical <- qnorm(SigLvl())
-          alternative <- "less"
-        } else {
-          z_critical <- qnorm(1 - SigLvl())
-          alternative <- "greater"
-        }
-        wilcoxonPlot <- wilcoxonZTestPlot(z_stat, z_critical, alternative)
-        wilcoxonPlot
+      req(wilcoxonRankedData())
+
+      wilcoxonData <- wilcoxonRankedData()
+
+      if (input$wilcoxonRankSumTestData == 'Upload Data') {
+        name1 <- input$wilcoxonUpl1
+        name2 <- input$wilcoxonUpl2
+      } else {
+        name1 <- "Sample 1"
+        name2 <- "Sample 2"
       }
+
+      n1 <- sum(wilcoxonData$Group == name1)
+      n2 <- sum(wilcoxonData$Group == name2)
+      N <- nrow(wilcoxonData)
+
+      mu_w    <- (n1 * (N + 1)) / 2
+      sigma_w <- sqrt((n1 * n2 * (N + 1)) / 12)
+      observed_W  <- sum(wilcoxonData %>% dplyr::filter(Group == name1) %>% dplyr::pull(Rank))
+      observed_W2 <- sum(wilcoxonData %>% dplyr::filter(Group == name2) %>% dplyr::pull(Rank))
+
+      u1_statistic <- observed_W  - (n1 * (n1 + 1) / 2)
+      u2_statistic <- observed_W2 - (n2 * (n2 + 1) / 2)
+      u_mean <- (n1 * n2) / 2
+
+      group1_data_values <- wilcoxonData %>% dplyr::filter(Group == name1) %>% dplyr::pull(Value)
+      group2_data_values <- wilcoxonData %>% dplyr::filter(Group == name2) %>% dplyr::pull(Value)
+      combined_values <- c(group1_data_values, group2_data_values)
+      has_ties <- length(unique(combined_values)) < length(combined_values)
+
+      calculate_tie_correction <- function(x) {
+        if (!is.numeric(x) || length(x) == 0) return(0)
+        tie_counts <- table(x[duplicated(x) | duplicated(x, fromLast = TRUE)])
+        sum(tie_counts^3 - tie_counts)
+      }
+
+      tie_correction <- calculate_tie_correction(combined_values)
+      u_std_dev <- sqrt((n1 * n2 / 12) * ((N + 1) - (tie_correction / (N * (N - 1)))))
+
+      validate(
+        need(!is.na(u_std_dev) && u_std_dev > 0,
+             "The Z test statistic is undefined or infinite for this data, so the Z distribution plot cannot be displayed. This typically occurs when both samples have zero within-sample variance and are perfectly separated. Consider using the Exact method instead."),
+        errorClass = "myClass")
+
+      z_stat <- calculate_z_stat(input, observed_W, mu_w, sigma_w, observed_W2, n1, n2, N,
+                                 u1_statistic, u2_statistic, u_mean, u_std_dev,
+                                 has_ties, tie_correction)
+
+      validate(
+        need(is.finite(z_stat),
+             "The Z test statistic is undefined or infinite for this data, so the Z distribution plot cannot be displayed. This typically occurs when both samples have zero within-sample variance and are perfectly separated. Consider using the Exact method instead."),
+        errorClass = "myClass")
+
+      alternative <- ""
+      z_critical  <- NA
+      if (input$altHypothesis2 == "2") {
+        z_critical  <- qnorm(1 - SigLvl() / 2)
+        alternative <- "two.sided"
+      } else if (input$altHypothesis2 == "1") {
+        z_critical  <- qnorm(SigLvl())
+        alternative <- "less"
+      } else {
+        z_critical  <- qnorm(1 - SigLvl())
+        alternative <- "greater"
+      }
+      wilcoxonZTestPlot(z_stat, z_critical, alternative)
     })
     
     ###---- Boxplot Side by Side
     output$sidebysidewRankSum <- renderPlot({
-      
+
       req(input$sidebysidewRankSum)
-      
+
       if(input$wilcoxonRankSumTestData == 'Enter Raw Data') {
         rankSumRaw1 <- createNumLst(input$rankSumRaw1)
         rankSumRaw2 <- createNumLst(input$rankSumRaw2)
@@ -9170,7 +9177,12 @@ statInfrServer <- function(id) {
         rankSumRaw1 <- na.omit(unlist(WilcoxonUploadData()[,input$wilcoxonUpl1]))
         rankSumRaw2 <- na.omit(unlist(WilcoxonUploadData()[,input$wilcoxonUpl2]))
       }
-      
+
+      validate(
+        need(sd(rankSumRaw1) > 0 || sd(rankSumRaw2) > 0,
+             "The side-by-side boxplot cannot be displayed when both samples contain only one repeated value."),
+        errorClass = "myClass")
+
       dat <- c(rankSumRaw1, rankSumRaw2)
       df_boxplot <- data.frame(sample = c(rep("Sample 1",length(rankSumRaw1)), rep("Sample 2",length(rankSumRaw2))),
                                data = c(dat))
@@ -9192,9 +9204,9 @@ statInfrServer <- function(id) {
     
     ###----- QQ Plot
     output$sidebysidewRankQQ <- renderPlot({
-      
+
       req(input$sidebysidewRankQQ)
-      
+
       if(input$wilcoxonRankSumTestData == 'Enter Raw Data') {
         rankSumRaw1 <- createNumLst(input$rankSumRaw1)
         rankSumRaw2 <- createNumLst(input$rankSumRaw2)
@@ -9202,7 +9214,12 @@ statInfrServer <- function(id) {
         rankSumRaw1 <- na.omit(unlist(WilcoxonUploadData()[,input$wilcoxonUpl1]))
         rankSumRaw2 <- na.omit(unlist(WilcoxonUploadData()[,input$wilcoxonUpl2]))
       }
-      
+
+      validate(
+        need(sd(rankSumRaw1) > 0 || sd(rankSumRaw2) > 0,
+             "The Q-Q plots cannot be displayed when both samples contain only one repeated value."),
+        errorClass = "myClass")
+
       RenderWilcoxQQPlots(rankSumRaw1,
                           rankSumRaw2,
                           input[["sidebysidewRankQQ-Colour"]],
@@ -11326,6 +11343,34 @@ statInfrServer <- function(id) {
                        width = GetPlotWidth(input[["indMeansQQPlot-Width"]], input[["indMeansQQPlot-WidthPx"]], ui = TRUE))
           })
         } else if(input$popuParameters == "Wilcoxon rank sum test") {
+
+          # Hide tabs if deeper validation fails (not caught by si_iv)
+          rank_data <- tryCatch(wilcoxonRankedData(), error = function(e) NULL)
+          hide_due_to_invalid <- FALSE
+
+          if (!is.null(rank_data)) {
+            combined_vals <- rank_data$Value
+            if (length(unique(combined_vals)) <= 1) {
+              hide_due_to_invalid <- TRUE
+            } else if (!is.null(input$normaprowrsRankSum) &&
+                       input$normaprowrsRankSum == "Normal approximation (for large samples)") {
+              n1_chk  <- sum(rank_data$Group == "Sample 1")
+              n2_chk  <- sum(rank_data$Group == "Sample 2")
+              nAll_chk <- nrow(rank_data)
+              tie_counts_chk <- table(combined_vals)
+              tie_corr_chk <- sum(sapply(tie_counts_chk, function(t) if (t > 1) t^3 - t else 0))
+              u_std_dev_chk <- sqrt((n1_chk * n2_chk / 12) *
+                                      ((nAll_chk + 1) - (tie_corr_chk / (nAll_chk * (nAll_chk - 1)))))
+              if (is.na(u_std_dev_chk) || u_std_dev_chk <= 0) {
+                hide_due_to_invalid <- TRUE
+              }
+            }
+          }
+
+          if (hide_due_to_invalid) {
+            hide(id = "inferenceData")
+          }
+
           output$renderSidebysidewRankSum <- renderUI({
             plotOutput(session$ns("sidebysidewRankSum"),
                        height = GetPlotHeight(input[["sidebysidewRankSum-Height"]], input[["sidebysidewRankSum-HeightPx"]], ui = TRUE),

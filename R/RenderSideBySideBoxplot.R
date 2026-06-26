@@ -47,9 +47,9 @@ RenderSideBySideBoxplot <- function(dat, df_boxplot, plotColour, plotTitle, plot
     labs(title = plotTitle, x = plotXlab, y = plotYlab) +
     theme_void() +
     theme(
-      plot.title = element_text(size = 24, face = "bold", hjust = 0.5, margin = margin(0,0,5,0)),
-      axis.title.x = element_text(size = 16, face = "bold", vjust = -1.5, margin = margin(5,0,0,0)),
-      axis.title.y = element_text(size = 16, face = "bold", margin = margin(0,5,0,0)),
+      plot.title = element_text(size = 24, face = "bold", hjust = 0.5, margin = ggplot2::margin(0,0,5,0)),
+      axis.title.x = element_text(size = 16, face = "bold", vjust = -1.5, margin = ggplot2::margin(5,0,0,0)),
+      axis.title.y = element_text(size = 16, face = "bold", margin = ggplot2::margin(0,5,0,0)),
       axis.text.x.bottom = element_text(size = 16),
       axis.text.y.left = element_text(size = 16),
       plot.margin = unit(c(1,1,1,1), "cm"),
