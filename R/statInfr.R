@@ -18,6 +18,7 @@ accepted_formats <- c(
 
   "text/plain",
   "text/tab-separated-values",
+  ".tsv",
 
   ## R (native)
   ".rds",
@@ -49,27 +50,15 @@ newFileInput <- function(fileInputId, namespace) {
                     accept  = accepted_formats))
 }
 add_rule_accepted_file_formats <- function(validator, fileInputId) {
-  accepted_formats <- (
-    accepted_formats[-(1:3)] |>
-    stringr::str_match("[^.]+")
-  )[, 1]
   do.call(validator$add_rule,
           list(fileInputId,
-               ~ if (!tolower(tools::file_ext(.$name)) %in% accepted_formats) {
+               ~ if (!tolower(tools::file_ext(.$name)) %in% (
+                 accepted_formats[-(1:3)] |>
+                 stringr::str_match("[^.]+")
+               )[, 1]) {
                    sprintf("File format (%s) not accepted.", tools::file_ext(.$name))
                  }),
           envir = parent.frame())
-}
-## NOTE: copied from descStats.R (original author is Darren Law).
-read_mtp_helper <- function(path) {
-  raw <- foreign::read.mtp(path)
-  keep <- raw[vapply(raw, is.numeric, logical(1))]
-  validate(need(length(keep) > 0, "No numeric columns found in .mtp file."))
-  max_len <- max(vapply(keep, length, integer(1)))
-  keep <- lapply(keep, function(v) { length(v) <- max_len; v })
-  if (is.null(names(keep)) || any(names(keep) == ""))
-    names(keep) <- paste0("V", seq_along(keep))
-  as.data.frame(keep, stringsAsFactors = FALSE)
 }
 
 
@@ -226,7 +215,8 @@ statInfrUI <- function(id) {
                   label       = strong("Sample"),
                   value       = "202, 210, 215, 220, 220, 224, 225, 228, 228, 228",
                   placeholder = "Enter values separated by a comma with decimals as points",
-                  rows        = 3),
+                  rows        = 3
+                ),
 
                 radioButtons(
                   inputId      = ns("sigmaKnownRaw"),
@@ -236,7 +226,8 @@ statInfrUI <- function(id) {
                   choiceNames  = list("Known",
                                       "Unknown"),
                   selected     = "rawUnknown",
-                  inline       = TRUE),
+                  inline       = TRUE
+                ),
 
 ###### ------------------------ Sigma Known ----------------------------------
                 conditionalPanel(
@@ -248,7 +239,8 @@ statInfrUI <- function(id) {
                     label   = strong("Population Standard Deviation (\\( \\sigma\\)) Value"),
                     value   = 8.25,
                     min     = 0.00001,
-                    step    = 0.00001)
+                    step    = 0.00001
+                  )
                 ), # Sigma Known
 
 ###### ------------------------ Sigma Unknown --------------------------------
@@ -306,14 +298,16 @@ statInfrUI <- function(id) {
                 label   = strong("Number of Successes (\\( x\\))"),
                 value   = 1087,
                 min     = 0,
-                step    = 1),
+                step    = 1
+              ),
 
               numericInput(
                 inputId = ns("numTrials"),
                 label   = strong("Number of Trials (\\( n\\))"),
                 value   = 1430,
                 min     = 1,
-                step    = 1),
+                step    = 1
+              )
             ), #One Population Proportion
 
             #### ---------------- Standard Deviation -------------------------------------
@@ -345,7 +339,8 @@ statInfrUI <- function(id) {
               choiceNames  = list("Confidence Interval",
                                   "Hypothesis Testing"),
               selected     = "Confidence Interval",
-              inline       = TRUE),
+              inline       = TRUE
+            ),
 
             #### ---------------- Confidence Interval ------------------------------------
             conditionalPanel(
@@ -1668,8 +1663,8 @@ statInfrUI <- function(id) {
 
                     titlePanel(tags$u("Confidence Interval")),
                     br(),
-                    uiOutput(ns('oneSDCI')),
-                    br(),
+                    uiOutput(ns('oneMeanCI')),
+                    br()
                   ), # Confidence Interval
 
                   conditionalPanel(
