@@ -1,14 +1,14 @@
 source("R/KruskalWallisUI.R")
 source("R/RankedDataTable.R")
-                                        # render <- "
-                                        # {
-                                        #   option: function(data, escape){return '<div class=\"option\">'+data.label+'</div>';},
-                                        #   item: function(data, escape){return '<div class=\"item\">'+data.label+'</div>';}
-                                        # }"
+## render <- "
+## {
+##   option: function(data, escape){return '<div class=\"option\">'+data.label+'</div>';},
+##   item: function(data, escape){return '<div class=\"item\">'+data.label+'</div>';}
+## }"
 
-                                        # =========================================================================== #
-                                        # ---- UI Components --------------------------------------------------------
-                                        # =========================================================================== #
+## =========================================================================== #
+## ---- UI Components --------------------------------------------------------
+## =========================================================================== #
 ## Extended fileInput widgetry; use the add_rule_accepted_file_formats
 ## function to easily add a rule to each validator
 accepted_formats <- c(
@@ -1539,7 +1539,7 @@ statInfrUI <- function(id) {
         conditionalPanel(
           ns = ns,
           condition = "input.popuParameter == 'Population Mean'",
-          navbarPage(
+          navbarPage(# targets: Analysis; Graphs; Uploaded Data.
             id = ns("onePopMeanTabset"),
             title = NULL,
             tabPanel(
@@ -1583,7 +1583,8 @@ statInfrUI <- function(id) {
               id = ns("onePopMeanData"),
               title = "Uploaded Data",
 
-              uiOutput(ns("renderOnePopMeanData"))
+              ## uiOutput(ns("renderOnePopMeanData"))
+              DTOutput(ns("onePopMeanUploadTable"), width = "75%")
             )
           )
         ),
@@ -1630,7 +1631,9 @@ statInfrUI <- function(id) {
                 style = "display: flex; justify-content: flex-start;",
                 plotOutput(ns("onePropPieChart"), width = "400px")
               )
-            ))), # One Population Proportion
+            )
+          )
+        ), # One Population Proportion
 
 #### ---------------- 1 Pop Standard deviation -------------------------------
         conditionalPanel(
@@ -1654,10 +1657,10 @@ statInfrUI <- function(id) {
             titlePanel(tags$u("Hypothesis Test")),
             br(),
             uiOutput(ns('onePopulationSDHT')),
-            br(),
-            ), # Hypothesis Testing
-          ), # One Population Proportion
-        ), # "input.siMethod == '1'"
+            br()
+          ) # Hypothesis Testing
+        ) # One Population Proportion
+      ), # "input.siMethod == '1'"
 
 ### ------------ 2 Samples ---------------------------------------------------
       conditionalPanel( #### Two Samp ----
@@ -1685,8 +1688,8 @@ statInfrUI <- function(id) {
                 titlePanel(tags$u("Confidence Interval")),
                 br(),
                 uiOutput(ns('indMeansCI')),
-                br(),
-                ), # Confidence interval
+                br()
+              ), # Confidence interval
 
               conditionalPanel(
                 ns = ns,
@@ -1712,7 +1715,8 @@ statInfrUI <- function(id) {
                 plotOptionsMenuUI(
                   id = ns("indMeansBoxplot"),
                   plotType = "Boxplot",
-                  title = "Boxplot"),
+                  title = "Boxplot"
+                ),
                 uiOutput(ns("renderIndMeansBoxplot")),
                 br(),
                 br()
@@ -1730,7 +1734,8 @@ statInfrUI <- function(id) {
                 plotOptionsMenuUI(
                   id = ns("indMeansQQPlot"),
                   plotType = "QQ Plot",
-                  title = "Q-Q Plots"),
+                  title = "Q-Q Plots"
+                ),
                 uiOutput(ns("renderIndMeansQQPlot")),
                 br(),
                 br()
@@ -1742,9 +1747,9 @@ statInfrUI <- function(id) {
               title = "Uploaded Data",
 
               uiOutput(ns("renderIndPopMeansData"))
-            ), # indPopMeansData Uploaded Data tabPanel
-            ), # indPopMeansTabset
-          ), # Two Independent Samples
+            ) # indPopMeansData Uploaded Data tabPanel
+          ) # indPopMeansTabset
+        ), # Two Independent Samples
 
 
 #### ---------------- Signed Rank Test --------------------------------------
@@ -1768,9 +1773,9 @@ statInfrUI <- function(id) {
                 titlePanel(tags$u("Hypothesis Test")),
                 br(),
                 uiOutput(ns('signedRankHypothesisTest')),
-                br(),
-                ), # Hypothesis Testing
-              ), # Analysis Tab
+                br()
+              ) # Hypothesis Testing
+            ), # Analysis Tab
             tabPanel(
               id = ns("signedRankDataRanks"),
               title = "Data with Ranks",
@@ -1782,9 +1787,9 @@ statInfrUI <- function(id) {
                                         #titlePanel("Results"),
                 br(),
                 uiOutput(ns('signedRankDataRanks')),
-                br(),
-                ), # Ranked Results by Group
-              ), # Tabset
+                br()
+              ) # Ranked Results by Group
+            ), # Tabset
             tabPanel(
               id = ns("signedRankGraphs"),
               title = "Graphs",
@@ -1792,7 +1797,7 @@ statInfrUI <- function(id) {
                 ns = ns,
                 condition = "input.popuParameters == 'Wilcoxon Signed Rank Test' && input.signedRankQQPlot == 1",
 
-                                        # Q-Q Plot of the Difference
+                ## Q-Q Plot of the Difference
                 conditionalPanel(
                   ns = ns,
                   condition = "input.popuParameters == 'Wilcoxon Signed Rank Test' && input.signedRankQQPlot == 1",
@@ -1803,7 +1808,8 @@ statInfrUI <- function(id) {
                     plotType = "QQ Plot",
                     title = "Q-Q Plot of the Difference"),
                   plotOutput(ns("signedRankQQ")),
-                  br(), br()
+                  br(),
+                  br()
                 )
               )
             ),
@@ -1813,8 +1819,8 @@ statInfrUI <- function(id) {
 
               uiOutput(ns("renderSignedRankUploadData"))
             ),
-            ), # Uploaded Data
-          ), # Signed Rank Tabs Whole
+            ) # Uploaded Data
+        ), # Signed Rank Tabs Whole
 
 #### ---------------- Dependent Pop Means ----------------------------------
         conditionalPanel(
@@ -1837,8 +1843,8 @@ statInfrUI <- function(id) {
                 titlePanel(tags$u("Confidence Interval")),
                 br(),
                 uiOutput(ns('depMeansCI')),
-                br(),
-                ), # CI
+                br()
+              ), # CI
 
               conditionalPanel(
                 ns = ns,
@@ -1848,32 +1854,33 @@ statInfrUI <- function(id) {
                 br(),
                 uiOutput(ns('depMeansHT')),
                 br()
-              ), # HT
-              ), #depPopMeans Analysis tabPanel
+              ) # HT
+            ), #depPopMeans Analysis tabPanel
 
             tabPanel(
               id = ns("depPopMeansData"),
               title = "Uploaded Data",
 
-              uiOutput(ns("renderDepPopMeansData")),
-              ), #depPopMeansData Uploaded Data tabPanel
+              uiOutput(ns("renderDepPopMeansData"))
+            ), #depPopMeansData Uploaded Data tabPanel
 
             tabPanel(
               id = ns("depMeansDataCalcs"),
               title = "Data with Calculations",
               br(),
               fluidRow(
-                column(width = 8,
-                       uiOutput(ns('depMeansTable')),
-                       ),
-
-                column(width = 4,
-                       br(),
-                       )
+                column(
+                  width = 8,
+                  uiOutput(ns('depMeansTable'))
+                ),
+                column(
+                  width = 4,
+                  br()
+                )
               ),
               br(),
-              br(),
-              ), # Dep means table with calcs
+              br()
+            ), # Dep means table with calcs
 
             tabPanel(
               id = ns("depMeansGraphs"),
@@ -1887,14 +1894,15 @@ statInfrUI <- function(id) {
                 plotOptionsMenuUI(
                   id = ns("depMeansQQPlot"),
                   plotType = "QQ Plot",
-                  title = "Q-Q Plot of the Difference (d)"),
+                  title = "Q-Q Plot of the Difference (d)"
+                ),
                 uiOutput(ns("renderDepMeansQQPlot")),
                 br(),
                 br()
               )
-            ), # Dep means graphs tab panel
-            ), # depPopMeansTabset
-          ), # Two Dependent Samples
+            ) # Dep means graphs tab panel
+          ) # depPopMeansTabset
+        ), # Two Dependent Samples
 
 #### ---------------- 2 Pop Proportions --------------------------------------
         conditionalPanel(
@@ -1917,8 +1925,8 @@ statInfrUI <- function(id) {
                 titlePanel(tags$u("Confidence Interval")),
                 br(),
                 uiOutput(ns('twoPropCI')),
-                br(),
-                ), # Confidence Interval
+                br()
+              ), # Confidence Interval
 
               conditionalPanel(
                 ns = ns,
@@ -1927,22 +1935,20 @@ statInfrUI <- function(id) {
                 titlePanel(tags$u("Hypothesis Test")),
                 br(),
                 uiOutput(ns('twoPropHT')),
-                br(),
-                ), # Hypothesis Testing
-              ), # Analysis Panel
+                br()
+              ) # Hypothesis Testing
+            ), # Analysis Panel
             tabPanel(
               id = ns("twoPropGraphs"),
               title = "Graphs",
               br(),
-              div(
-                style = "width: 600px; text-align: left;",
-                plotOutput(ns("twoPropBarPlot"), height = "400px")),
-              div(
-                style = "display: flex; justify-content: flex-start;",
-                plotOutput(ns("twoPropPieChart"),
-                           width = "600px", height = "500px"))
-            ), # Graph Panel
-            )
+              div(style = "width: 600px; text-align: left;",
+                  plotOutput(ns("twoPropBarPlot"), height = "400px")),
+              div(style = "display: flex; justify-content: flex-start;",
+                  plotOutput(ns("twoPropPieChart"),
+                             width = "600px", height = "500px"))
+            ) # Graph Panel
+          )
         ), # Two Population Proportions
 
 #### ---------------- Wilcoxon Rank Sum --------------------------------------
@@ -1966,9 +1972,9 @@ statInfrUI <- function(id) {
                 titlePanel(tags$u("Hypothesis Test")),
                 br(),
                 uiOutput(ns('wilcoxonRankSum')),
-                br(),
-                ), # Hypothesis Testing
-              ), # Analysis Tab
+                br()
+              ) # Hypothesis Testing
+            ), # Analysis Tab
             tabPanel(
               id = ns("wilcoxonRankSumDataRanks"),
               title = "Data with Ranks",
@@ -1980,9 +1986,9 @@ statInfrUI <- function(id) {
                 titlePanel("Ranked Results by Group"),
                 br(),
                 uiOutput(ns('wilcoxonRankSumDataRanks')),
-                br(),
-                ), # Ranked Results by Group
-              ), # Data with Ranks Tab
+                br()
+              ) # Ranked Results by Group
+            ), # Data with Ranks Tab
             tabPanel(
               id = ns("wilcoxonRankSumGraphs"),
               title = "Graphs",
@@ -1990,7 +1996,7 @@ statInfrUI <- function(id) {
                 ns = ns,
                 condition = "input.popuParameters == 'Wilcoxon rank sum test' && (input.sidebysidewRankSum == 1 || input.sidebysidewRankQQ == 1)",
 
-                                        # Side-by-side Boxplot
+                ## Side-by-side Boxplot
                 conditionalPanel(
                   ns = ns,
                   condition = "input.popuParameters == 'Wilcoxon rank sum test' && input.sidebysidewRankSum == 1",
@@ -2003,10 +2009,11 @@ statInfrUI <- function(id) {
                     title = "Boxplot"
                   ),
                   plotOutput(ns("sidebysidewRankSum")),
-                  br(),br()
+                  br(),
+                  br()
                 ),
 
-                                        # Q-Q Plots
+                ## Q-Q Plots
                 conditionalPanel(
                   ns = ns,
                   condition = "input.popuParameters == 'Wilcoxon rank sum test' && input.sidebysidewRankQQ == 1",
@@ -2016,19 +2023,22 @@ statInfrUI <- function(id) {
                   plotOptionsMenuUI(
                     id = ns("sidebysidewRankQQ"),
                     plotType = "QQ Plot",
-                    title = "Q-Q Plots"),
+                    title = "Q-Q Plots"
+                  ),
                   plotOutput(ns("sidebysidewRankQQ")),
-                  br(), br()
-                ))
+                  br(),
+                  br()
+                )
+              )
             ),
             tabPanel(
               id    = ns("wRankSumData"),
               title = "Uploaded Data",
 
               uiOutput(ns("renderWRankSumMeansData"))
-            ),
-            ), # Uploaded Data
-          ), # Wilcoxon rank sum Tabs whole
+            )
+          ) # Uploaded Data
+        ), # Wilcoxon rank sum Tabs whole
 
 ### ------------ Two Pop Var ------------------------------------------
 
@@ -2052,9 +2062,9 @@ statInfrUI <- function(id) {
                 titlePanel(tags$u("Confidence Interval")),
                 br(),
                 uiOutput(ns('twoPopVarCI')),
-                br(),
+                br()
 
-                ), # CI
+              ), # CI
 
               conditionalPanel(
                 ns = ns,
@@ -2063,11 +2073,13 @@ statInfrUI <- function(id) {
                 titlePanel(tags$u("Hypothesis Test")),
                 br(),
                 uiOutput(ns('twoPopVarHT')),
-                br(),
+                br()
 
-                ) # HT
-            ))), # Two Pop Var
-        ), # "input.siMethod == '2'"
+              ) # HT
+            )
+          )
+        ) # Two Pop Var
+      ), # "input.siMethod == '2'"
 
 ### ------------ Multiple Samples ------------------------------------
 #### ----------- ANOVA -----------------------------------------------
@@ -2112,7 +2124,8 @@ statInfrUI <- function(id) {
               plotOptionsMenuUI(
                 id       = ns("anovaBoxplot"),
                 plotType = "Boxplot",
-                title    = "Side-by-Side Boxplot"),
+                title    = "Side-by-Side Boxplot"
+              ),
               uiOutput(ns("renderAnovaBoxplot"))
             ),
 
@@ -2127,7 +2140,8 @@ statInfrUI <- function(id) {
                 id    = ns("anovaHistogram"),
                 title = "Histogram of Residuals",
                 xlab  = "Residuals",
-                ylab  = "Frequency"),
+                ylab  = "Frequency"
+              ),
               uiOutput(ns("renderAnovaHistogram"))
             ),
 
@@ -2143,7 +2157,8 @@ statInfrUI <- function(id) {
                 title  = "QQ Plot of Residuals",
                 xlab   = "Normal Quantiles",
                 ylab   = "Residuals",
-                colour = "#0F3345"),
+                colour = "#0F3345"
+              ),
               uiOutput(ns("renderAnovaQQplot"))
             ),
 
@@ -2159,7 +2174,8 @@ statInfrUI <- function(id) {
                 title  = "Group Means",
                 xlab   = "Group",
                 ylab   = "Mean",
-                colour = "#0F3345"),
+                colour = "#0F3345"
+              ),
               uiOutput(ns("renderAnovaMeanPlot"))
             )
           ),
@@ -2198,7 +2214,7 @@ statInfrUI <- function(id) {
 
           tabPanel(
             id    = ns("kwRM"),
-            title = "Data table with Ranks",
+            title = "Data with Ranks",
 
             DTOutput("renderrankedmean"),
 
@@ -2212,8 +2228,8 @@ statInfrUI <- function(id) {
             uiOutput(ns("renderKWData"))
           )
 
-        ), #tabsetPanel
-        ),
+        ) #tabsetPanel
+      ),
 
 ### ------------ Categorical Samples (Chi-Square) ----------------------------
       conditionalPanel(
@@ -2246,8 +2262,8 @@ statInfrUI <- function(id) {
           br(),
           uiOutput(ns("chiSqTest")),
           br(),
-          br(),
-          ),
+          br()
+        ),
 
 #### ---------------- Fisher's Exact Test ------------------------------------
         conditionalPanel(
@@ -2266,8 +2282,8 @@ statInfrUI <- function(id) {
           h4("Hypothesis Test"),
           uiOutput(ns("fishersTest")),
           br(),
-          br(),
-          ) #Fisher
+          br()
+        ) #Fisher
       ), # input.siMethod == 'Categorical'
 
       uiOutput(ns("kwRawContainer"))
@@ -2295,22 +2311,70 @@ statInfrServer <- function(id) {
     ##   }
     ## }) |> bindEvent(input$siMethod, input$popuParameter)
 
+
+
+
+
+    ## TODO: hack on these so they work for the varied tabsets in StatInfr.
+    validateResultTabsArgs <- quote({
+      if (missing(tabs)) {
+        stop("What tabs do you want to hide? Tabs must be specified for use with hideResultTabs.")
+      } else if (missing(tabset)) {
+        stop("A tabset must be specified for use with hideResultTabs.")
+      }
+      stopifnot(is.character(tabset) && is.character(tabs))
+    })
+    hideResultTabs <- function(tabset, tabs) {
+      eval(validateResultTabsArgs)
+      if (length(tabs)) for (t in tabs) shiny::hideTab(inputId = tabset, target = t)
+    }
+    showResultTabs <- function(tabset, tabs) {
+      eval(validateResultTabsArgs)
+      if (length(tabs)) for (t in tabs) shiny::showTab(inputId = tabset, target = t)
+      ## FIXME: this is a best guess at desired behaviour right now; fix after testing.
+      updateTabsetPanel(session, tabset, selected = 1)
+      ## shinyjs::runjs(sprintf(r"---[
+      ##     setTimeout(function() {
+      ##       var a = $('#%s a[data-value="Descriptive Statistics"]');
+      ##       a.removeClass('active');
+      ##       a.tab('show');
+      ##       $(window).trigger('resize');
+      ##     }, 50);
+      ##   ]---",
+      ##   session$ns("dsTabset")))
+    }
+    goToUploadedDataTab <- function(tabsetId, tab = "Uploaded Data") {
+      showTab(inputId = tabsetId, target = tab, session = session)
+      updateTabsetPanel(session, tabsetId, selected = tab)
+    }
+
+
+
+
+
     createFileInputEventReactive <- function(inputId) {
+      quietExcelRead <- function(reader, path, sheet) {
+        withCallingHandlers(
+          reader(path, sheet = sheet),
+          warning = function(w) {
+            if (grepl("Coercing boolean to numeric", conditionMessage(w))) {
+              invokeRestart("muffleWarning")
+            }
+          }
+        )
+      }
+
       eventReactive(input[[inputId]], {
         input_value <- input[[inputId]]
         ext <- tolower(tools::file_ext(input_value$name))
+        path <- input_value$datapath
         ext |>
           switch(
             csv      = read_csv(path, show_col_types = FALSE),
             xls      = {
-              req(input$dsSheet)
-                                        # Block on stale sheet name (transient between file upload and selectize update)
-              req(input$dsSheet %in% readxl::excel_sheets(path))
               quietExcelRead(read_xls, path, input$dsSheet)
             },
             xlsx     = {
-              req(input$dsSheet)
-              req(input$dsSheet %in% readxl::excel_sheets(path))
               quietExcelRead(read_xlsx, path, input$dsSheet)
             },
             txt      = read_tsv(path, show_col_types = FALSE),
@@ -2331,10 +2395,10 @@ statInfrServer <- function(id) {
       })
     }
 
-                                        # ----------------------------------------------------------- #
-                                        #     Minitab file readers (authored by Darren Law)           #
-                                        # ----------------------------------------------------------- #
-                                        # Older Minitab Portable Worksheet (.mtp) – text-based.
+    ## ----------------------------------------------------------- #
+    ##     Minitab file readers (authored by Darren Law)           #
+    ## ----------------------------------------------------------- #
+    ## Older Minitab Portable Worksheet (.mtp) – text-based.
     read_mtp_helper <- function(path) {
       raw <- foreign::read.mtp(path)
       keep <- raw[vapply(raw, is.numeric, logical(1))]
@@ -2346,7 +2410,7 @@ statInfrServer <- function(id) {
       as.data.frame(keep, stringsAsFactors = FALSE)
     }
 
-                                        # Newer Minitab XML formats (.mwx / .mpx) – best-effort, schema varies.
+    ## Newer Minitab XML formats (.mwx / .mpx) – best-effort, schema varies.
     read_minitab_xml <- function(path) {
       tmp <- tempfile()
       on.exit(unlink(tmp, recursive = TRUE), add = TRUE)
@@ -10911,6 +10975,7 @@ statInfrServer <- function(id) {
                                         # }
     })
 
+    ## Whenever the boxplot changes, in any way.
     observeEvent(input$oneMeanBoxplot, {
       if (input$oneMeanBoxplot && input$dataAvailability != 'Summarized Data') {
         showTab(inputId = "onePopMeanTabset", target = "Graphs")
@@ -10920,14 +10985,6 @@ statInfrServer <- function(id) {
         }
         hideTab(inputId = "onePopMeanTabset", target = "Graphs")
       }
-    })
-
-    observeEvent(input$goInference, {
-      output$renderOnePopMeanData <- renderUI({
-        tagList(
-          div(DTOutput(session$ns("onePopMeanUploadTable")), style = "width: 75%")
-        )
-      })
     })
 
     observeEvent(input$indMeansUserData, priority = 5, {
@@ -11636,72 +11693,109 @@ statInfrServer <- function(id) {
       shinyjs::show(id = "inferenceMP")
     })
 
+    ## TODO: the new pattern shall be to show the analysis, or the most
+    ## important graphs, whatever is appropriate to the method, when Calculate
+    ## is pressed; the uploaded data is already shewn immediately (to be
+    ## implemented), so there is no point in ensuring that is the selected tab
+    ## as it should already be selected and shown.
     observeEvent(input$goInference, {
-                                        # Hide/show tabs for 1 sample
-      if (input$dataAvailability != "Upload Data"){
-        updateTabsetPanel(session, "onePopMeanTabset", selected = "Analysis")
-        hideTab(inputId = "onePopMeanTabset", target = "Uploaded Data")
-      } else {
-        showTab(inputId = "onePopMeanTabset", target = "Uploaded Data")
+      if (input$siMethod == "1" && input$popuParameter == "Population Mean") {
+        active_methodology <- "one population mean"
+      } else if (input$siMethod == "2" && input$popuParameters == "Independent Population Means") {
+        active_methodology <- "independent population means"
+      } else if (input$siMethod == "2" && input$popuParameters == "Wilcoxon Signed Rank Test") {
+        active_methodology <- "signed rank"
+      } else if (input$siMethod == "2" && input$popuParameters == "Dependent Population Means") {
+        active_methodology <- "dependent population means"
+      } else if (input$siMethod == "2" && input$popuParamters == "Wilcoxon rank sum test") {
+        active_methodology <- "Wilcoxon rank sum"
+      } else if (input$siMethod == "Multiple" && input$multipleMethodChoice == "anova") {
+        active_methodology <- "anova"
+      } else if (input$siMethod == "Multiple" && input$multipleMethodChoice == "kw") {
+        active_methodology <- "Kruskal-Wallis"
       }
+      do.call(
+        showResultTabs,
+        switch(
+          active_methodology,
+          "one population mean" = list(tabset = "onePopMeanTabset", tabs = c("Analysis", "Graphs")),
+          "independent population means" = list(tabset = "indPopMeansTabset", tabs = c("Analysis", "Graphs")),
+          "signed rank" = list(tabset = "signedRankTabset", tabs = c("Analysis", "Data with Ranks", "Graphs")),
+          "dependent population means" = list(tabset = "depPopMeansTabset", tabs = c("Analysis", "Data with Calculations", "Graphs")),
+          "Wilcoxon rank sum" = list(tabset = "wilcoxonRankSumTabset", tabs = c("Analysis", "Data with Ranks", "Graphs")),
+          "anova" = list(tabset = "anovaTabset", tabs = c("Analysis", "Graphs")),
+          "Kruskal-Wallis" = list(tabset = "kwTabset", tabs = c("Analysis", "Data with Ranks"))
+        )
+      )
 
-      if(input$oneMeanBoxplot && input$dataAvailability != "Summarized Data") {
-        showTab(inputId = "onePopMeanTabset", target = "Graphs")
-      } else {
-        hideTab(inputId = "onePopMeanTabset", target = "Graphs")
-      }
 
-                                        # Hide/show tabs for 2 sample independent populations
-      if (input$dataAvailability2 != "Upload Data"){
-        updateTabsetPanel(session, "indPopMeansTabset", selected = "Analysis")
-        hideTab(inputId = "indPopMeansTabset", target = "Uploaded Data")
-      } else {
-        showTab(inputId = "indPopMeansTabset", target = "Uploaded Data")
-      }
 
-      if(input$dataAvailability2 != "Summarized Data" && (input$indMeansBoxplot || input$indMeansQQPlot)) {
-        showTab(inputId = "indPopMeansTabset", target = "Graphs")
-      } else {
-        hideTab(inputId = "indPopMeansTabset", target = "Graphs")
-      }
 
-                                        # Hide/show tabs for 2 sample dependent populations
-      if (input$dataTypeDependent != "Upload Data"){
-        updateTabsetPanel(session, "depPopMeansTabset", selected = "Analysis")
-        hideTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
-      } else {
-        showTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
-      }
 
-      if(input$depMeansQQPlot) {
-        showTab(inputId = "depPopMeansTabset", target = "Graphs")
-      } else {
-        hideTab(inputId = "depPopMeansTabset", target = "Graphs")
-      }
+      ## ## Hide/show tabs for 1 sample
+      ## if (input$dataAvailability != "Upload Data") {
+      ##   updateTabsetPanel(session, "onePopMeanTabset", selected = "Analysis")
+      ##   hideTab(inputId = "onePopMeanTabset", target = "Uploaded Data")
+      ## } else {
+      ##   showTab(inputId = "onePopMeanTabset", target = "Uploaded Data")
+      ## }
 
-                                        # Hide/show tabs for Wilcoxon Rank Sum Upload
-      if (input$wilcoxonRankSumTestData != "Upload Data"){
-        updateTabsetPanel(session, "wilcoxonRankSumTabset", selected = "Analysis")
-        hideTab(inputId = "wilcoxonRankSumTabset", target = "Uploaded Data")
-      } else {
-        showTab(inputId = "wilcoxonRankSumTabset", target = "Uploaded Data")
-      }
+      ## if (input$oneMeanBoxplot && input$dataAvailability != "Summarized Data") {
+      ##   showTab(inputId = "onePopMeanTabset", target = "Graphs")
+      ## } else {
+      ##   hideTab(inputId = "onePopMeanTabset", target = "Graphs")
+      ## }
 
-                                        # Hide/show tabs for Wilcoxon Rank Sum Graph
-      if (input$sidebysidewRankSum == 1 || input$sidebysidewRankQQ == 1){
-        showTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
-      } else {
-        hideTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
-      }
+      ## ## Hide/show tabs for 2 sample independent populations
+      ## if (input$dataAvailability2 != "Upload Data") {
+      ##   updateTabsetPanel(session, "indPopMeansTabset", selected = "Analysis")
+      ##   hideTab(inputId = "indPopMeansTabset", target = "Uploaded Data")
+      ## } else {
+      ##   showTab(inputId = "indPopMeansTabset", target = "Uploaded Data")
+      ## }
 
-                                        # Hide/show tabs for Wilcoxon Signed Rank Upload
-      if (input$signedRankTest != "Upload Data"){
-        updateTabsetPanel(session, "signedRankTabset", selected = "Analysis")
-        hideTab(inputId = "signedRankTabset", target = "Uploaded Data")
-      } else {
-        showTab(inputId = "signedRankTabset", target = "Uploaded Data")
-      }
+      ## if (input$dataAvailability2 != "Summarized Data" && (input$indMeansBoxplot || input$indMeansQQPlot)) {
+      ##   showTab(inputId = "indPopMeansTabset", target = "Graphs")
+      ## } else {
+      ##   hideTab(inputId = "indPopMeansTabset", target = "Graphs")
+      ## }
 
+      ## ## Hide/show tabs for 2 sample dependent populations
+      ## if (input$dataTypeDependent != "Upload Data") {
+      ##   updateTabsetPanel(session, "depPopMeansTabset", selected = "Analysis")
+      ##   hideTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
+      ## } else {
+      ##   showTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
+      ## }
+
+      ## if (input$depMeansQQPlot) {
+      ##   showTab(inputId = "depPopMeansTabset", target = "Graphs")
+      ## } else {
+      ##   hideTab(inputId = "depPopMeansTabset", target = "Graphs")
+      ## }
+
+      ## ## Hide/show tabs for Wilcoxon Rank Sum Upload
+      ## if (input$wilcoxonRankSumTestData != "Upload Data") {
+      ##   updateTabsetPanel(session, "wilcoxonRankSumTabset", selected = "Analysis")
+      ##   hideTab(inputId = "wilcoxonRankSumTabset", target = "Uploaded Data")
+      ## } else {
+      ##   showTab(inputId = "wilcoxonRankSumTabset", target = "Uploaded Data")
+      ## }
+
+      ## ## Hide/show tabs for Wilcoxon Rank Sum Graph
+      ## if (input$sidebysidewRankSum == 1 || input$sidebysidewRankQQ == 1) {
+      ##   showTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
+      ## } else {
+      ##   hideTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
+      ## }
+
+      ## ## Hide/show tabs for Wilcoxon Signed Rank Upload
+      ## if (input$signedRankTest != "Upload Data") {
+      ##   updateTabsetPanel(session, "signedRankTabset", selected = "Analysis")
+      ##   hideTab(inputId = "signedRankTabset", target = "Uploaded Data")
+      ## } else {
+      ##   showTab(inputId = "signedRankTabset", target = "Uploaded Data")
+      ## }
     })
 
     observeEvent(input$resetInference, {
@@ -11709,13 +11803,13 @@ statInfrServer <- function(id) {
       hide(id = "anovaUploadInputs")
       hide(id = "kwUploadInputs")
       shinyjs::reset("inputPanel")
-      fileInputs$oneMeanStatus <- 'reset'
-      fileInputs$indMeansStatus <- 'reset'
-      fileInputs$rankSumStatus <-'reset'
-      fileInputs$depMeansStatus <- 'reset'
-      fileInputs$anovaStatus <- 'reset'
-      fileInputs$kwStatus <- 'reset'
-      fileInputs$signedRankStatus <- 'reset'
+      fileInputs$oneMeanStatus <- "reset"
+      fileInputs$indMeansStatus <- "reset"
+      fileInputs$rankSumStatus <-"reset"
+      fileInputs$depMeansStatus <- "reset"
+      fileInputs$anovaStatus <- "reset"
+      fileInputs$kwStatus <- "reset"
+      fileInputs$signedRankStatus <- "reset"
 
       updateSelectizeInput(session, "kwMultiColumns",
                            selected = "",
@@ -11736,30 +11830,26 @@ statInfrServer <- function(id) {
     })
 
     observe({
-
-      if (input$chisquareMethod == "Fisher"){
+      if (input$chisquareMethod == "Fisher") {
         updateRadioButtons(session, "chisquareDimension", selected = "2 x 2")
-
-                                        # hide radio buttons
-        runjs("$('input[value=\"2 x 3\"]').parent().hide();
-               $('input[value=\"3 x 2\"]').parent().hide();
-               $('input[value=\"3 x 3\"]').parent().hide();
-              ")
-
-                                        # hide matrices
+        ## hide radio buttons
+        runjs(r"--[
+          $('input[value="2 x 3"]').parent().hide();
+          $('input[value="3 x 2"]').parent().hide();
+          $('input[value="3 x 3"]').parent().hide();
+        ]--")
+        ## hide matrices
         hide(id = "chiSqInput2x3")
         hide(id = "chiSqInput3x2")
         hide(id = "chiSqInput3x3")
-      }
-      else {
-
-                                        # show radio buttons
-        runjs("$('input[value=\"2 x 3\"]').parent().show();
-               $('input[value=\"3 x 2\"]').parent().show();
-               $('input[value=\"3 x 3\"]').parent().show();
-              ")
-
-                                        # show matrices
+      } else {
+        ## show radio buttons
+        runjs(r"--[
+          $('input[value="2 x 3"]').parent().show();
+          $('input[value="3 x 2"]').parent().show();
+          $('input[value="3 x 3"]').parent().show();
+        ]--")
+        ## show matrices
         show(id = "chiSqInput2x3")
         show(id = "chiSqInput3x2")
         show(id = "chiSqInput3x3")
