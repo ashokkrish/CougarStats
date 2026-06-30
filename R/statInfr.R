@@ -9,6 +9,72 @@ source("R/RankedDataTable.R")
 # =========================================================================== #
 # ---- UI Components --------------------------------------------------------
 # =========================================================================== #
+## Extended fileInput widgetry; use the add_rule_accepted_file_formats
+## function to easily add a rule to each validator
+accepted_formats <- c(
+  "text/csv",
+  "text/comma-separated-values",
+  ".csv",
+
+  "text/plain",
+  "text/tab-separated-values",
+
+  ## R (native)
+  ".rds",
+
+  ## SPSS
+  ".sav",
+
+  ## Stata
+  ".dta",
+
+  ## SAS
+  ".sas7bdat",
+
+  ## Excel
+  ".xls",
+  ".xlsx",
+
+  ## Minitab
+  ".mpt",
+  ".mpx",
+  ".mwx"
+)
+newFileInput <- function(fileInputId, namespace) {
+  stopifnot(is.character(fileInputId) && length(fileInputId) == 1)
+  accepted_formats_listing <- "CSV, TSV, RDS, Excel®, Minitab®, SAS®, SPSS®, or Stata® formats are supported"
+  tagList(uploadDataDisclaimer,
+          fileInput(inputId = NS(namespace, fileInputId),
+                    label   = strong(sprintf("Upload your data (%s)", accepted_formats_listing)),
+                    accept  = accepted_formats))
+}
+add_rule_accepted_file_formats <- function(validator, fileInputId) {
+  accepted_formats <- (
+    accepted_formats[-(1:3)] |>
+    stringr::str_match("[^.]+")
+  )[, 1]
+  do.call(validator$add_rule,
+          list(fileInputId,
+               ~ if (!tolower(tools::file_ext(.$name)) %in% accepted_formats) {
+                   sprintf("File format (%s) not accepted.", tools::file_ext(.$name))
+                 }),
+          envir = parent.frame())
+}
+## NOTE: copied from descStats.R (original author is Darren Law).
+read_mtp_helper <- function(path) {
+  raw <- foreign::read.mtp(path)
+  keep <- raw[vapply(raw, is.numeric, logical(1))]
+  validate(need(length(keep) > 0, "No numeric columns found in .mtp file."))
+  max_len <- max(vapply(keep, length, integer(1)))
+  keep <- lapply(keep, function(v) { length(v) <- max_len; v })
+  if (is.null(names(keep)) || any(names(keep) == ""))
+    names(keep) <- paste0("V", seq_along(keep))
+  as.data.frame(keep, stringsAsFactors = FALSE)
+}
+
+
+
+
 
 lessThanInequalGreaterThanChoices123 <-
   c("<" = 1, "≠" = 2, ">" = 3)
@@ -28,19 +94,22 @@ statInfrUI <- function(id) {
           id = ns("inputPanel"),
           
           HTML("<label class='si-label'><b>Methodology</b></label>"),
-          
           radioButtons(
             inputId      = ns("siMethod"),
             label        = NULL,
-            choiceValues = list("1",
-                                "2",
-                                "Multiple",
-                                "Categorical"),
-            choiceNames  = list("Inference about one sample\\(\\)",
-                                "Inference about two samples\\(\\)",
-                                "Inference about more than two samples (e.g. ANOVA or Kruskal-Wallis)\\(\\)",
-                                "Inference for Categorical Data (e.g \\( \\chi^2 \\) test)"),
-            selected     = "1"),
+            choiceValues = list(
+              "1",
+              "2",
+              "Multiple",
+              "Categorical"
+            ),
+            choiceNames  = list(
+              "Inference about 1 sample\\(\\)",
+              "Inference about 2 samples\\(\\)",
+              "Inference about more than 2 samples (e.g. ANOVA or Kruskal-Wallis)\\(\\)",
+              "Inference for Categorical Data (e.g \\( \\chi^2 \\) test)"
+            )
+          ),
           
           # radioButtons(inputId = ns("popuDistribution"),
           #              label = strong("Analysis Type"),
@@ -76,7 +145,8 @@ statInfrUI <- function(id) {
                                   "Population Standard Deviation (\\( \\sigma\\)) ",
                                   "Population Proportion (\\( p\\))"),
               selected     = "Population Mean",
-              inline       = FALSE),
+              inline       = FALSE
+            ),
             
             #### ---------------- Mean ---------------------------------------------------
             conditionalPanel(
@@ -84,18 +154,13 @@ statInfrUI <- function(id) {
               condition = "input.popuParameter == 'Population Mean'",
               
               radioButtons(
-                inputId      = ns("dataAvailability"),
-                label        = strong("Data Availability"),
-                choiceValues = list("Summarized Data",
-                                    "Enter Raw Data",
-                                    "Upload Data"),
-                choiceNames  = list("Summarized Data",
-                                    "Enter Raw Data",
-                                    "Upload Data"),
-                selected     = "Summarized Data",
-                inline       = TRUE),
+                inputId = ns("dataAvailability"),
+                label = strong("Data Availability"),
+                choices = list("Summarized Data", "Enter Raw Data", "Upload Data"),
+                inline = TRUE
+              ),
               
-              ##### -------------------- Summarized Data -----------------------------------
+##### -------------------- Summarized Data -----------------------------------
               conditionalPanel(
                 ns = ns,
                 condition = "input.dataAvailability == 'Summarized Data'",
@@ -105,25 +170,24 @@ statInfrUI <- function(id) {
                   label   = strong("Sample Size (\\( n\\))"),
                   value   = 18,
                   min     = 1,
-                  step    = 1),
+                  step    = 1
+                ),
                 
                 numericInput(
                   inputId = ns("sampleMean"),
                   label   = strong("Sample Mean (\\( \\bar{x}\\))"),
                   value   = 103.5375,
-                  step    = 0.00001),
+                  step    = 0.00001
+                ),
                 
                 radioButtons(
-                  inputId      = ns("sigmaKnown"),
-                  label        = strong("Is Population Standard Deviation (\\( \\sigma\\)) known?"),
-                  choiceValues = list("Known",
-                                      "Unknown"),
-                  choiceNames  = list("Known",
-                                      "Unknown"),
-                  selected     = "Known",
-                  inline       = TRUE),
+                  inputId = ns("sigmaKnown"),
+                  label = strong("Is Population Standard Deviation (\\( \\sigma\\)) known?"),
+                  choices = list("Known", "Unknown"),
+                  inline = TRUE
+                ),
                 
-                ###### ------------------------ Sigma Known ----------------------------------
+###### ------------------------ Sigma Known ----------------------------------
                 conditionalPanel(
                   ns = ns,
                   condition = "input.sigmaKnown == 'Known'",
@@ -133,10 +197,11 @@ statInfrUI <- function(id) {
                     label   = strong("Population Standard Deviation (\\( \\sigma\\)) Value"),
                     value   = 8.25,
                     min     = 0.00001,
-                    step    = 0.00001)
+                    step    = 0.00001
+                  )
                 ), #Sigma Known
                 
-                ###### ------------------------ Sigma Unknown --------------------------------
+###### ------------------------ Sigma Unknown --------------------------------
                 conditionalPanel(
                   ns = ns,
                   condition = "input.sigmaKnown == 'Unknown'",
@@ -146,11 +211,12 @@ statInfrUI <- function(id) {
                     label   = strong("Sample Standard Deviation (\\( s\\)) Value"),
                     value   = 4.78,
                     min     = 0.00001,
-                    step    = 0.00001)
-                ), # Sigma Unknown
+                    step    = 0.00001
+                  )
+                ) # Sigma Unknown
               ), # One Sample Summarized Data
               
-              ##### -------------------- Raw Data ------------------------------------------
+##### -------------------- Raw Data ------------------------------------------
               conditionalPanel(
                 ns = ns,
                 condition = "input.dataAvailability == 'Enter Raw Data'",
@@ -172,7 +238,7 @@ statInfrUI <- function(id) {
                   selected     = "rawUnknown",
                   inline       = TRUE),
                 
-                ###### ------------------------ Sigma Known ----------------------------------
+###### ------------------------ Sigma Known ----------------------------------
                 conditionalPanel(
                   ns = ns,
                   condition = "input.sigmaKnownRaw == 'rawKnown'",
@@ -185,48 +251,36 @@ statInfrUI <- function(id) {
                     step    = 0.00001)
                 ), # Sigma Known
                 
-                ###### ------------------------ Sigma Unknown --------------------------------
+###### ------------------------ Sigma Unknown --------------------------------
                 conditionalPanel(
                   ns = ns,
                   condition = "input.sigmaKnownRaw == 'rawUnknown'"
                 ) # Sigma Unknown
               ), # One Sample Raw Data
               
-              ##### -------------------- Uploaded Data -------------------------------------
+##### -------------------- Uploaded Data -------------------------------------
               conditionalPanel(
                 ns = ns,
                 condition = "input.dataAvailability == 'Upload Data'",
                 
-                HTML(uploadDataDisclaimer),
-                
-                fileInput(
-                  inputId = ns("oneMeanUserData"),
-                  label   = strong("Upload your data (.csv or .xls or .xlsx or .txt)"),
-                  accept  = c("text/csv",
-                              "text/comma-separated-values",
-                              "text/plain",
-                              ".csv",
-                              ".xls",
-                              ".xlsx")),
+                newFileInput("oneMeanUserData", id),
                 
                 selectizeInput(
                   inputId = ns("oneMeanVariable"),
                   label   = strong("Choose a Column for Analysis"),
                   choices = c(""),
                   options = list(placeholder = 'Select a column',
-                                 onInitialize = I('function() { this.setValue(""); }'))),
+                                 onInitialize = I('function() { this.setValue(""); }'))
+                ),
                 
                 radioButtons(
-                  inputId      = ns("sigmaKnownUpload"),
-                  label        = strong("Population Standard Deviation (\\( \\sigma\\))"),
-                  choiceValues = list("Known",
-                                      "Unknown"),
-                  choiceNames  = list("Known",
-                                      "Unknown"),
-                  selected     = "Unknown",
-                  inline       = TRUE),
+                  inputId = ns("sigmaKnownUpload"),
+                  label = strong("Population Standard Deviation (\\( \\sigma\\))"),
+                  choices = list("Unknown", "Known"),
+                  inline = TRUE
+                ),
                 
-                ###### ------------------------ Sigma Known ----------------------------------
+###### ------------------------ Sigma Known ----------------------------------
                 conditionalPanel(
                   ns = ns,
                   condition = "input.sigmaKnownUpload == 'Known'",
@@ -236,9 +290,10 @@ statInfrUI <- function(id) {
                     label   = strong("Population Standard Deviation (\\( \\sigma\\)) Value"),
                     value   = 5,
                     min     = 0.00001,
-                    step    = 0.00001)
-                ), # Sigma Known
-              ), # One Sample upload data
+                    step    = 0.00001
+                  )
+                ) # Sigma Known
+              ) # One Sample upload data
             ), # One Population Mean
             
             #### ---------------- Proportion ---------------------------------------------
@@ -585,17 +640,7 @@ statInfrUI <- function(id) {
                 ns = ns,
                 condition = "input.dataAvailability2 == 'Upload Data'",
                 
-                HTML(uploadDataDisclaimer),
-                
-                fileInput(
-                  inputId = ns("indMeansUserData"),
-                  label   = strong("Upload your data (.csv or .xls or .xlsx or .txt)"),
-                  accept  = c("text/csv",
-                              "text/comma-separated-values",
-                              "text/plain",
-                              ".csv",
-                              ".xls",
-                              ".xlsx")),
+                newFileInput("indMeansUserData", id),
                 
                 selectizeInput(
                   inputId = ns("indMeansUplSample1"),
@@ -699,17 +744,7 @@ statInfrUI <- function(id) {
                 ns = ns,
                 condition = "input.wilcoxonRankSumTestData == 'Upload Data'",
                 
-                HTML(uploadDataDisclaimer),
-                
-                fileInput(
-                  inputId = ns("wilcoxonUpl"),
-                  label   = strong("Upload your data (.csv or .xls or .xlsx or .txt)"),
-                  accept  = c("text/csv",
-                              "text/comma-separated-values",
-                              "text/plain",
-                              ".csv",
-                              ".xls",
-                              ".xlsx")),
+                newFileInput("wilcoxonUpl", id),
                 
                 selectizeInput(
                   inputId = ns("wilcoxonUpl1"),
@@ -768,17 +803,7 @@ statInfrUI <- function(id) {
                 ns = ns,
                 condition = "input.dataTypeDependent == 'Upload Data'",
                 
-                HTML(uploadDataDisclaimer),
-                
-                fileInput(
-                  inputId = ns("depMeansUserData"),
-                  label   = strong("Upload your data (.csv or .xls or .xlsx or .txt)"),
-                  accept  = c("text/csv",
-                              "text/comma-separated-values",
-                              "text/plain",
-                              ".csv",
-                              ".xls",
-                              ".xlsx")),
+                newFileInput("depMeansUserData", id),
                 
                 selectizeInput(
                   inputId = ns("depMeansUplSample1"),
@@ -836,18 +861,8 @@ statInfrUI <- function(id) {
               conditionalPanel(
                 ns = ns,
                 condition = "input.signedRankTest == 'Upload Data'",
-
-                HTML(uploadDataDisclaimer),
-
-                fileInput(
-                  inputId = ns("signedRankUpl"),
-                  label   = strong("Upload your Data (.csv or .xls or .xlsx or .txt)"),
-                  accept  = c("text/csv",
-                              "text/comma-separated-values",
-                              "text/plain",
-                              ".csv",
-                              ".xls",
-                              ".xlsx")),
+                
+                newFileInput("signedRankUpl", id),
                 
                 selectizeInput(
                   inputId = ns("signedRankUpl1"),
@@ -1215,17 +1230,7 @@ statInfrUI <- function(id) {
               ns = ns,
               condition = 'input.multipleMethodChoice == "anova"',
               
-              HTML(uploadDataDisclaimer),
-              
-              fileInput(
-                inputId = ns("anovaUserData"),
-                label   = strong("Upload your data (.csv or .xls or .xlsx or .txt)"),
-                accept  = c("text/csv",
-                            "text/comma-separated-values",
-                            "text/plain",
-                            ".csv",
-                            ".xls",
-                            ".xlsx")),
+              newFileInput("anovaUserData", id),
               
               hidden(tagList(
                 div(
@@ -1314,17 +1319,7 @@ statInfrUI <- function(id) {
               ns = ns,
               condition = 'input.multipleMethodChoice == "kw"',
               
-              HTML(uploadDataDisclaimer),
-              
-              fileInput(
-                inputId = ns("kwUserData"),
-                label   = strong("Upload your data (.csv or .xls or .xlsx or .txt)"),
-                accept  = c("text/csv",
-                            "text/comma-separated-values",
-                            "text/plain",
-                            ".csv",
-                            ".xls",
-                            ".xlsx")),
+              newFileInput("kwUserData", id),
               
               hidden(tagList(
                 div(
@@ -2326,8 +2321,98 @@ statInfrServer <- function(id) {
     ##     enable(selector = hypothesisTestingRadioButtonCssSelector)
     ##   }
     ## }) |> bindEvent(input$siMethod, input$popuParameter)
-    
-    
+
+    createFileInputEventReactive <- function(inputId) {
+      eventReactive(input[[inputId]], {
+        input_value <- input[[inputId]]
+        ext <- tolower(tools::file_ext(input_value$name))
+        ext |>
+          switch(
+            csv      = read_csv(path, show_col_types = FALSE),
+            xls      = {
+              req(input$dsSheet)
+                                        # Block on stale sheet name (transient between file upload and selectize update)
+              req(input$dsSheet %in% readxl::excel_sheets(path))
+              quietExcelRead(read_xls, path, input$dsSheet)
+            },
+            xlsx     = {
+              req(input$dsSheet)
+              req(input$dsSheet %in% readxl::excel_sheets(path))
+              quietExcelRead(read_xlsx, path, input$dsSheet)
+            },
+            txt      = read_tsv(path, show_col_types = FALSE),
+            sas7bdat = read_sas(path),
+            sav      = read_sav(path),
+            dta      = haven::read_dta(path),
+            rds      = {
+              obj <- readRDS(path)
+              validate(need(is.data.frame(obj), ".rds file must contain a data frame."))
+              obj
+            },
+            mtp      = read_mtp_helper(path),
+            mwx      = tryCatch(read_minitab_xml(path), error = validate(sprintf("Unable to read uploaded file; %s support is partial.", ext))),
+            mpx      = tryCatch(read_minitab_xml(path), error = validate(sprintf("Unable to read uploaded file; %s support is partial.", ext))),
+
+            validate(sprintf("Uploaded data file format (%s) is unsupported.", ext))
+          )
+      })
+    }
+
+    # ----------------------------------------------------------- #
+    #     Minitab file readers (authored by Darren Law)           #
+    # ----------------------------------------------------------- #
+    # Older Minitab Portable Worksheet (.mtp) – text-based.
+    read_mtp_helper <- function(path) {
+      raw <- foreign::read.mtp(path)
+      keep <- raw[vapply(raw, is.numeric, logical(1))]
+      validate(need(length(keep) > 0, "No numeric columns found in .mtp file."))
+      max_len <- max(vapply(keep, length, integer(1)))
+      keep <- lapply(keep, function(v) { length(v) <- max_len; v })
+      if (is.null(names(keep)) || any(names(keep) == ""))
+        names(keep) <- paste0("V", seq_along(keep))
+      as.data.frame(keep, stringsAsFactors = FALSE)
+    }
+
+    # Newer Minitab XML formats (.mwx / .mpx) – best-effort, schema varies.
+    read_minitab_xml <- function(path) {
+      tmp <- tempfile()
+      on.exit(unlink(tmp, recursive = TRUE), add = TRUE)
+      utils::unzip(path, exdir = tmp)
+      xml_files <- list.files(tmp, pattern = "\\.xml$", recursive = TRUE, full.names = TRUE)
+      validate(need(length(xml_files) > 0, "Could not find data inside Minitab file. Try exporting to .xlsx."))
+
+      doc <- NULL
+      for (f in xml_files) {
+        candidate <- try(xml2::read_xml(f), silent = TRUE)
+        if (inherits(candidate, "xml_document") &&
+            length(xml2::xml_find_all(candidate, "//*[local-name()='Column']")) > 0) {
+          doc <- candidate; break
+        }
+      }
+      validate(need(!is.null(doc), "Could not parse Minitab file. Please export to .xlsx in Minitab."))
+
+      cols <- xml2::xml_find_all(doc, "//*[local-name()='Column']")
+      col_data <- lapply(seq_along(cols), function(i) {
+        col <- cols[[i]]
+        nm  <- xml2::xml_attr(col, "Name")
+        if (is.na(nm)) nm <- xml2::xml_attr(col, "name")
+        if (is.na(nm)) nm <- paste0("C", i)
+        cells <- xml2::xml_find_all(col, ".//*[local-name()='Cell' or local-name()='Value' or local-name()='R']")
+        vals  <- xml2::xml_text(cells)
+        list(name = nm, values = vals)
+      })
+
+      max_len <- max(vapply(col_data, function(x) length(x$values), integer(1)))
+      df_cols <- lapply(col_data, function(x) {
+        v <- x$values; length(v) <- max_len
+        nv <- suppressWarnings(as.numeric(v))
+        if (sum(is.na(nv)) <= sum(is.na(v))) nv else v
+      })
+      names(df_cols) <- vapply(col_data, function(x) x$name, character(1))
+      as.data.frame(df_cols, stringsAsFactors = FALSE)
+    }
+    ## NOTE: end of code copied from DescStats.R written by Darren Law.
+
     #  ========================================================================= #
     ## -------- Data Validation ------------------------------------------------
     #  ========================================================================= #
@@ -2408,7 +2493,8 @@ statInfrServer <- function(id) {
     # One Mean Upload Data
     onemeanupload_iv$add_rule("oneMeanUserData", sv_required())
     onemeanupload_iv$add_rule("oneMeanUserData", ~ if(is.null(fileInputs$oneMeanStatus) || fileInputs$oneMeanStatus == 'reset') "Required")
-    onemeanupload_iv$add_rule("oneMeanUserData", ~ if(!(tolower(tools::file_ext(input$oneMeanUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+    ## onemeanupload_iv$add_rule("oneMeanUserData", ~ if(!(tolower(tools::file_ext(input$oneMeanUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+    onemeanupload_iv |> add_rule_accepted_file_formats("oneMeanUserData")
     onemeanupload_iv$add_rule("oneMeanUserData", ~ if(nrow(OneMeanUploadData()) == 0) "File is empty")
     onemeanupload_iv$add_rule("oneMeanUserData", ~ if(nrow(OneMeanUploadData()) < 3) "Samples must include at least 2 observations")
 
@@ -2512,7 +2598,8 @@ statInfrServer <- function(id) {
     #indMeansUserData
     indmeansupload_iv$add_rule("indMeansUserData", sv_required())
     indmeansupload_iv$add_rule("indMeansUserData", ~ if(is.null(fileInputs$indMeansStatus) || fileInputs$indMeansStatus == 'reset') "Required")
-    indmeansupload_iv$add_rule("indMeansUserData", ~ if(!(tolower(tools::file_ext(input$indMeansUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+    ## indmeansupload_iv$add_rule("indMeansUserData", ~ if(!(tolower(tools::file_ext(input$indMeansUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+    indmeansupload_iv |> add_rule_accepted_file_formats("indMeansUserData")
     indmeansupload_iv$add_rule("indMeansUserData", ~ if(nrow(IndMeansUploadData()) == 0) "File is empty.")
     indmeansupload_iv$add_rule("indMeansUserData", ~ if(ncol(IndMeansUploadData()) < 2) "File must contain at least 2 distinct samples to choose from for analysis.")
     indmeansupload_iv$add_rule("indMeansUserData", ~ if(nrow(IndMeansUploadData()) < 3) "Samples must include at least 2 observations.")
@@ -2574,7 +2661,8 @@ statInfrServer <- function(id) {
     
     wilcoxonUpload_iv$add_rule("wilcoxonUpl", sv_required())
     wilcoxonUpload_iv$add_rule("wilcoxonUpl", ~ if(is.null(fileInputs$rankSumStatus) || fileInputs$rankSumStatus == 'reset') "Required")
-    wilcoxonUpload_iv$add_rule("wilcoxonUpl", ~ if(!(tolower(tools::file_ext(input$wilcoxonUpl$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+    ## wilcoxonUpload_iv$add_rule("wilcoxonUpl", ~ if(!(tolower(tools::file_ext(input$wilcoxonUpl$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+    wilcoxonUpload_iv |> add_rule_accepted_file_formats("wilcoxonUpl")
     wilcoxonUpload_iv$add_rule("wilcoxonUpl", ~ if(nrow(WilcoxonUploadData()) == 0) "File is empty.")
     wilcoxonUpload_iv$add_rule("wilcoxonUpl", ~ if(ncol(WilcoxonUploadData()) < 2) "File must contain at least 2 distinct samples to choose from for analysis.")
     wilcoxonUpload_iv$add_rule("wilcoxonUpl", ~ if(nrow(WilcoxonUploadData()) < 3) "Samples must include at least 2 observations.")
@@ -2621,7 +2709,8 @@ statInfrServer <- function(id) {
     
     depmeansupload_iv$add_rule("depMeansUserData", sv_required())
     depmeansupload_iv$add_rule("depMeansUserData", ~ if(is.null(fileInputs$depMeansStatus) || fileInputs$depMeansStatus == 'reset') "Required")
-    depmeansupload_iv$add_rule("depMeansUserData", ~ if(!(tolower(tools::file_ext(input$depMeansUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+    ## depmeansupload_iv$add_rule("depMeansUserData", ~ if(!(tolower(tools::file_ext(input$depMeansUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+    depmeansupload_iv |> add_rule_accepted_file_formats("depMeansUserData")
     depmeansupload_iv$add_rule("depMeansUserData", ~ if(nrow(DepMeansUploadData()) == 0) "File is empty.")
     depmeansupload_iv$add_rule("depMeansUserData", ~ if(ncol(DepMeansUploadData()) < 2) "File must contain at least 2 distinct 'Before' and 'After' sets of data to choose from for analysis.")
     depmeansupload_iv$add_rule("depMeansUserData", ~ if(nrow(DepMeansUploadData()) < 4) "Samples must include at least 3 observations.")
@@ -2693,7 +2782,8 @@ statInfrServer <- function(id) {
     # signed Rank Test
     signedRankUpload_iv$add_rule("signedRankUpl", sv_required())
     signedRankUpload_iv$add_rule("signedRankUpl", ~ if(is.null(fileInputs$signedRankStatus) || fileInputs$signedRankStatus == 'reset') "Required")
-    signedRankUpload_iv$add_rule("signedRankUpl", ~ if(!(tolower(tools::file_ext(input$signedRankUpl$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+    ## signedRankUpload_iv$add_rule("signedRankUpl", ~ if(!(tolower(tools::file_ext(input$signedRankUpl$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+    signedRankUpload_iv |> add_rule_accepted_file_formats("signedRankUpl")
     signedRankUpload_iv$add_rule("signedRankUpl", ~ if(nrow(signedRankUploadData()) == 0) "File is empty.")
     signedRankUpload_iv$add_rule("signedRankUpl", ~ if(ncol(signedRankUploadData()) < 2) "File must contain at least 2 distinct samples to choose from for analysis.")
     signedRankUpload_iv$add_rule("signedRankUpl", ~ if(nrow(signedRankUploadData()) < 3) "Samples must include at least 2 observations.")
@@ -2910,7 +3000,8 @@ statInfrServer <- function(id) {
     # Anova
     anovaupload_iv$add_rule("anovaUserData", sv_required())
     anovaupload_iv$add_rule("anovaUserData", ~ if(is.null(fileInputs$anovaStatus) || fileInputs$anovaStatus == 'reset') "Required")
-    anovaupload_iv$add_rule("anovaUserData", ~ if(!(tolower(tools::file_ext(input$anovaUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+    ## anovaupload_iv$add_rule("anovaUserData", ~ if(!(tolower(tools::file_ext(input$anovaUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+    anovaupload_iv |> add_rule_accepted_file_formats("anovaUserData")
     anovaupload_iv$add_rule("anovaUserData", ~ if(ncol(anovaUploadData()) < 2) "Data must include at least two columns")
     # anovaupload_iv$add_rule("anovaUserData", ~ if(nrow(anovaUploadData()) < 2) "")
     
@@ -2935,7 +3026,8 @@ statInfrServer <- function(id) {
     # Kruskal-Wallis
     kwupload_iv$add_rule("kwUserData", sv_required())
     kwupload_iv$add_rule("kwUserData", ~ if(is.null(fileInputs$kwStatus) || fileInputs$kwStatus == 'reset') "Required")
-    kwupload_iv$add_rule("kwUserData", ~ if(!(tolower(tools::file_ext(input$kwUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+    ## kwupload_iv$add_rule("kwUserData", ~ if(!(tolower(tools::file_ext(input$kwUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+    kwupload_iv |> add_rule_accepted_file_formats("kwUserData")
     kwupload_iv$add_rule("kwUserData", ~ if(ncol(kwUploadData()) < 2) "Data must include at least two columns")
     kwmulti_iv$add_rule("kwMultiColumns", ~ if(length(input$kwMultiColumns) < 2) "Select at least two columns")
     kwmulti_iv$add_rule("kwMultiColumns", ~ {
@@ -5359,21 +5451,7 @@ statInfrServer <- function(id) {
     })
     
     ### ------------ One Mean reactives ------------------------------------------
-    
-    OneMeanUploadData <- eventReactive(input$oneMeanUserData, {
-      
-      ext <- tools::file_ext(input$oneMeanUserData$name)
-      ext <- tolower(ext)
-      
-      data <- switch(ext,
-                     csv = read_csv(input$oneMeanUserData$datapath, show_col_types = FALSE),
-                     xls = read_xls(input$oneMeanUserData$datapath),
-                     xlsx = read_xlsx(input$oneMeanUserData$datapath),
-                     txt = read_tsv(input$oneMeanUserData$datapath, show_col_types = FALSE),
-                     
-                     validate("Improper file format.")
-      )
-    })
+    OneMeanUploadData <- createFileInputEventReactive("oneMeanUserData")
     
     OneMeanUploadStatus <- reactive({
       if (is.null(fileInputs$oneMeanStatus)) {
@@ -5686,20 +5764,7 @@ statInfrServer <- function(id) {
       return(rawData)
     })
     
-    IndMeansUploadData <- eventReactive(input$indMeansUserData, {
-      
-      ext <- tools::file_ext(input$indMeansUserData$name)
-      ext <- tolower(ext)
-      
-      switch(ext,
-             csv = read_csv(input$indMeansUserData$datapath, show_col_types = FALSE),
-             xls = read_xls(input$indMeansUserData$datapath),
-             xlsx = read_xlsx(input$indMeansUserData$datapath),
-             txt = read_tsv(input$indMeansUserData$datapath, show_col_types = FALSE),
-             
-             validate("Improper file format")
-      )
-    })
+    IndMeansUploadData <- createFileInputEventReactive("indMeansUserData")
     
     GetMeansUploadData <- reactive({
       req(input$indMeansUplSample1, input$indMeansUplSample2)
@@ -5844,20 +5909,7 @@ statInfrServer <- function(id) {
     
     ### ------------ Wilcoxon Rank Sum Reactives -----------------------------------
     
-    WilcoxonUploadData <- eventReactive(input$wilcoxonUpl, {
-      
-      ext <- tools::file_ext(input$wilcoxonUpl$name)
-      ext <- tolower(ext)
-      
-      switch(ext,
-             csv = read_csv(input$wilcoxonUpl$datapath, show_col_types = FALSE),
-             xls = read_xls(input$wilcoxonUpl$datapath),
-             xlsx = read_xlsx(input$wilcoxonUpl$datapath),
-             txt = read_tsv(input$wilcoxonUpl$datapath, show_col_types = FALSE),
-             
-             validate("Improper file format")
-      )
-    })
+    WilcoxonUploadData <- createFileInputEventReactive("wilcoxonUpl")
     
     CheckRankSumUploadSamples <- eventReactive (c(input$wilcoxonUpl1,input$wilcoxonUpl2), {
       if(input$wilcoxonUpl1 == "" | input$wilcoxonUpl2 == "") {
@@ -5942,21 +5994,9 @@ statInfrServer <- function(id) {
     
     ### ------------ Dependent Means Reactives -----------------------------------
     
-    DepMeansUploadData <- eventReactive(input$depMeansUserData, {
-      
-      ext <- tools::file_ext(input$depMeansUserData$name)
-      ext <- tolower(ext)
-      
-      switch(ext,
-             csv = read_csv(input$depMeansUserData$datapath, show_col_types = FALSE),
-             xls = read_xls(input$depMeansUserData$datapath),
-             xlsx = read_xlsx(input$depMeansUserData$datapath),
-             txt = read_tsv(input$depMeansUserData$datapath, show_col_types = FALSE),
-             
-             validate("Improper file format")
-      )
-    })
     
+    DepMeansUploadData <- createFileInputEventReactive("depMeansUserData")
+
     CheckDepUploadSamples <- eventReactive (c(input$depMeansUplSample1,
                                               input$depMeansUplSample2), {
                                                 
@@ -5999,22 +6039,9 @@ statInfrServer <- function(id) {
       calculatePressed = FALSE,
       allowColumnValidation = TRUE
     )
-    
-    signedRankUploadData <- eventReactive(input$signedRankUpl, {
-      
-      ext <- tools::file_ext(input$signedRankUpl$name)
-      ext <- tolower(ext)
-      
-      switch(ext,
-             csv = read_csv(input$signedRankUpl$datapath, show_col_types = FALSE),
-             xls = read_xls(input$signedRankUpl$datapath),
-             xlsx = read_xlsx(input$signedRankUpl$datapath),
-             txt = read_tsv(input$signedRankUpl$datapath, show_col_types = FALSE),
-             
-             validate("Improper file format")
-      )
-    })
-    
+
+    signedRankUploadData <- createFileInputEventReactive("signedRankUpl")
+
     CheckSignedRankUploadSamples <- eventReactive (c(input$signedRankUpl1,input$signedRankUpl2), {
       if(input$signedRankUpl1 == "" | input$signedRankUpl2 == "") {
         return(0)
@@ -6212,20 +6239,8 @@ statInfrServer <- function(id) {
     })
     
     ### ------------ ANOVA Reactives ---------------------------------------------
-    anovaUploadData <- eventReactive(input$anovaUserData, {
-      ext <- tools::file_ext(input$anovaUserData$name)
-      ext <- tolower(ext)
-      
-      switch(ext,
-             csv = read_csv(input$anovaUserData$datapath, show_col_types = FALSE),
-             xls = read_xls(input$anovaUserData$datapath),
-             xlsx = read_xlsx(input$anovaUserData$datapath),
-             txt = read_tsv(input$anovaUserData$datapath, show_col_types = FALSE),
-             
-             validate("Improper file format.")
-      )
-    })
-    
+    anovaUploadData <- createFileInputEventReactive("anovaUserData")
+
     anovaStackedIsValid <- eventReactive({input$anovaResponse
       input$anovaFactors}, {
         valid <- TRUE

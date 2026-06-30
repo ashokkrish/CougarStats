@@ -368,7 +368,7 @@ SLRSidebarUI <- function(id) {
         ns = ns,
         condition = "input.dataRegCor == 'Upload Data'",
         
-        HTML(uploadDataDisclaimer),
+        uploadDataDisclaimer,
         
         fileInput(
           inputId = ns("slrUserData"),

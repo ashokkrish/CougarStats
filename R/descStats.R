@@ -35,7 +35,7 @@ descStatsUI <- function(id) {
               ns = ns,
               condition = "input.dataInput == 'Upload Data'",
               
-              HTML(uploadDataDisclaimer),
+              uploadDataDisclaimer,
               
               fileInput(
                 inputId = ns('dsUserData'),

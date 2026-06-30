@@ -20,7 +20,7 @@ MLRSidebarUI <- function(id) {
       id = "MLRSidebar",
       useShinyjs(),
       withMathJax(
-        HTML(uploadDataDisclaimer),
+        uploadDataDisclaimer,
         helpText("Only numeric variables are selectable."),
         div(
           id = ns("responseVariableWrapper"),

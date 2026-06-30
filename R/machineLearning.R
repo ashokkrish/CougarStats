@@ -21,7 +21,7 @@ machineLearningUI <- function(id) {
   sidebarLayout(
     sidebarPanel(
       shinyjs::useShinyjs(),
-      HTML(uploadDataDisclaimer),
+      uploadDataDisclaimer,
       fileInput(ns("mlDataFile"),
                 tags$b("Upload Data (.csv, .xls, .xlsx, or .txt)"),
                 accept = c("text/csv", "text/comma-separated-values", "text/plain",

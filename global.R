@@ -152,10 +152,10 @@ cvDigits <- 3
 
 # wrap this in HTML() function to output the message
 # i.e HTML(uploadDataDisclaimer)
-uploadDataDisclaimer <- "<small style='color:#999; display:block; margin-bottom:4px;'>
-              <em><b>Note:</b> CougarStats does not store, log, or share any data you upload. 
-              All uploaded files exist only for the duration of your session and are permanently deleted when the session ends.
-              </em></small>"
+uploadDataDisclaimer <- withTags(small(
+  style = "color: #999; display: block; margin-bottom: 4px;",
+  em(b("Note:"), "CougarStats does not store, log, or share any data you upload. All uploaded files exist only for the duration of your session and are permanently deleted when the session ends.")
+))
 
 render <- "
 {
