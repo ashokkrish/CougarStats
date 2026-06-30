@@ -1,14 +1,14 @@
 source("R/KruskalWallisUI.R")
 source("R/RankedDataTable.R")
-# render <- "
-# {
-#   option: function(data, escape){return '<div class=\"option\">'+data.label+'</div>';},
-#   item: function(data, escape){return '<div class=\"item\">'+data.label+'</div>';}
-# }"
+                                        # render <- "
+                                        # {
+                                        #   option: function(data, escape){return '<div class=\"option\">'+data.label+'</div>';},
+                                        #   item: function(data, escape){return '<div class=\"item\">'+data.label+'</div>';}
+                                        # }"
 
-# =========================================================================== #
-# ---- UI Components --------------------------------------------------------
-# =========================================================================== #
+                                        # =========================================================================== #
+                                        # ---- UI Components --------------------------------------------------------
+                                        # =========================================================================== #
 ## Extended fileInput widgetry; use the add_rule_accepted_file_formats
 ## function to easily add a rule to each validator
 accepted_formats <- c(
@@ -70,2238 +70,2214 @@ lessThanInequalGreaterThanChoices123 <-
 
 statInfrUI <- function(id) {
   ns <- NS(id)
+  sidebarLayout(
+    sidebarPanel(
+      withMathJax(),
+      shinyjs::useShinyjs(),
+      div(
+        id = ns("inputPanel"),
 
-  tagList(
-    sidebarLayout(
-      #  ========================================================================= #
-      ## -------- Sidebar Panel --------------------------------------------------
-      #  ========================================================================= #
-      sidebarPanel(
-        withMathJax(),
-        shinyjs::useShinyjs(),
-        div(
-          id = ns("inputPanel"),
+        HTML("<label class='si-label'><b>Methodology</b></label>"),
+        radioButtons(
+          inputId      = ns("siMethod"),
+          label        = NULL,
+          choiceValues = list(
+            "1",
+            "2",
+            "Multiple",
+            "Categorical"
+          ),
+          choiceNames  = list(
+            "Inference about 1 sample\\(\\)",
+            "Inference about 2 samples\\(\\)",
+            "Inference about more than 2 samples (e.g. ANOVA or Kruskal-Wallis)\\(\\)",
+            "Inference for Categorical Data (e.g \\( \\chi^2 \\) test)"
+          )
+        ),
 
-          HTML("<label class='si-label'><b>Methodology</b></label>"),
+                                        # radioButtons(inputId = ns("popuDistribution"),
+                                        #              label = strong("Analysis Type"),
+                                        #              choiceValues = list("Parametric analysis", "Non-parametric analysis"),
+                                        #              choiceNames = list("Parametric analysis", "Non-parametric analysis"),
+                                        #              selected = "Parametric analysis", #character(0),
+                                        #              inline = TRUE), #,width = '1000px'),
+                                        #
+                                        # conditionalPanel(
+                                        #   ns = ns,
+                                        #   condition = "input.popuDistribution == 'Non-parametric analysis'",
+                                        #
+                                        # ),
+                                        #
+                                        # conditionalPanel(
+                                        #   ns = ns,
+                                        #   condition = "input.popuDistribution == 'Parametric analysis'",
+                                        #
+                                        # ),
+
+### ------------ 1 Sample ----------------------------------------------------
+        conditionalPanel(
+          ns = ns,
+          condition = "input.siMethod == '1'",
+
           radioButtons(
-            inputId      = ns("siMethod"),
-            label        = NULL,
-            choiceValues = list(
-              "1",
-              "2",
-              "Multiple",
-              "Categorical"
-            ),
-            choiceNames  = list(
-              "Inference about 1 sample\\(\\)",
-              "Inference about 2 samples\\(\\)",
-              "Inference about more than 2 samples (e.g. ANOVA or Kruskal-Wallis)\\(\\)",
-              "Inference for Categorical Data (e.g \\( \\chi^2 \\) test)"
-            )
+            inputId      = ns("popuParameter"),
+            label        = strong("Parameter of Interest"),
+            choiceValues = list("Population Mean",
+                                "Population Standard Deviation",
+                                "Population Proportion"),
+            choiceNames  = list("Population Mean (\\( \\mu \\)) ",
+                                "Population Standard Deviation (\\( \\sigma\\)) ",
+                                "Population Proportion (\\( p\\))"),
+            selected     = "Population Mean",
+            inline       = FALSE
           ),
 
-          # radioButtons(inputId = ns("popuDistribution"),
-          #              label = strong("Analysis Type"),
-          #              choiceValues = list("Parametric analysis", "Non-parametric analysis"),
-          #              choiceNames = list("Parametric analysis", "Non-parametric analysis"),
-          #              selected = "Parametric analysis", #character(0),
-          #              inline = TRUE), #,width = '1000px'),
-          #
-          # conditionalPanel(
-          #   ns = ns,
-          #   condition = "input.popuDistribution == 'Non-parametric analysis'",
-          #
-          # ),
-          #
-          # conditionalPanel(
-          #   ns = ns,
-          #   condition = "input.popuDistribution == 'Parametric analysis'",
-          #
-          # ),
-
-          ### ------------ 1 Sample ----------------------------------------------------
+#### ---------------- Mean ---------------------------------------------------
           conditionalPanel(
             ns = ns,
-            condition = "input.siMethod == '1'",
+            condition = "input.popuParameter == 'Population Mean'",
 
             radioButtons(
-              inputId      = ns("popuParameter"),
-              label        = strong("Parameter of Interest"),
-              choiceValues = list("Population Mean",
-                                  "Population Standard Deviation",
-                                  "Population Proportion"),
-              choiceNames  = list("Population Mean (\\( \\mu \\)) ",
-                                  "Population Standard Deviation (\\( \\sigma\\)) ",
-                                  "Population Proportion (\\( p\\))"),
-              selected     = "Population Mean",
-              inline       = FALSE
+              inputId = ns("dataAvailability"),
+              label = strong("Data Availability"),
+              choices = list("Summarized Data", "Enter Raw Data", "Upload Data"),
+              inline = TRUE
             ),
 
-            #### ---------------- Mean ---------------------------------------------------
+##### -------------------- Summarized Data -----------------------------------
             conditionalPanel(
               ns = ns,
-              condition = "input.popuParameter == 'Population Mean'",
+              condition = "input.dataAvailability == 'Summarized Data'",
+
+              numericInput(
+                inputId = ns("sampleSize"),
+                label   = strong("Sample Size (\\( n\\))"),
+                value   = 18,
+                min     = 1,
+                step    = 1
+              ),
+
+              numericInput(
+                inputId = ns("sampleMean"),
+                label   = strong("Sample Mean (\\( \\bar{x}\\))"),
+                value   = 103.5375,
+                step    = 0.00001
+              ),
 
               radioButtons(
-                inputId = ns("dataAvailability"),
-                label = strong("Data Availability"),
-                choices = list("Summarized Data", "Enter Raw Data", "Upload Data"),
+                inputId = ns("sigmaKnown"),
+                label = strong("Is Population Standard Deviation (\\( \\sigma\\)) known?"),
+                choices = list("Known", "Unknown"),
                 inline = TRUE
               ),
 
-##### -------------------- Summarized Data -----------------------------------
+###### ------------------------ Sigma Known ----------------------------------
               conditionalPanel(
                 ns = ns,
-                condition = "input.dataAvailability == 'Summarized Data'",
+                condition = "input.sigmaKnown == 'Known'",
 
                 numericInput(
-                  inputId = ns("sampleSize"),
-                  label   = strong("Sample Size (\\( n\\))"),
-                  value   = 18,
-                  min     = 1,
-                  step    = 1
-                ),
-
-                numericInput(
-                  inputId = ns("sampleMean"),
-                  label   = strong("Sample Mean (\\( \\bar{x}\\))"),
-                  value   = 103.5375,
+                  inputId = ns("popuSD"),
+                  label   = strong("Population Standard Deviation (\\( \\sigma\\)) Value"),
+                  value   = 8.25,
+                  min     = 0.00001,
                   step    = 0.00001
-                ),
-
-                radioButtons(
-                  inputId = ns("sigmaKnown"),
-                  label = strong("Is Population Standard Deviation (\\( \\sigma\\)) known?"),
-                  choices = list("Known", "Unknown"),
-                  inline = TRUE
-                ),
-
-###### ------------------------ Sigma Known ----------------------------------
-                conditionalPanel(
-                  ns = ns,
-                  condition = "input.sigmaKnown == 'Known'",
-
-                  numericInput(
-                    inputId = ns("popuSD"),
-                    label   = strong("Population Standard Deviation (\\( \\sigma\\)) Value"),
-                    value   = 8.25,
-                    min     = 0.00001,
-                    step    = 0.00001
-                  )
-                ), #Sigma Known
+                )
+              ), #Sigma Known
 
 ###### ------------------------ Sigma Unknown --------------------------------
-                conditionalPanel(
-                  ns = ns,
-                  condition = "input.sigmaKnown == 'Unknown'",
+              conditionalPanel(
+                ns = ns,
+                condition = "input.sigmaKnown == 'Unknown'",
 
-                  numericInput(
-                    inputId = ns("sampSD"),
-                    label   = strong("Sample Standard Deviation (\\( s\\)) Value"),
-                    value   = 4.78,
-                    min     = 0.00001,
-                    step    = 0.00001
-                  )
-                ) # Sigma Unknown
-              ), # One Sample Summarized Data
+                numericInput(
+                  inputId = ns("sampSD"),
+                  label   = strong("Sample Standard Deviation (\\( s\\)) Value"),
+                  value   = 4.78,
+                  min     = 0.00001,
+                  step    = 0.00001
+                )
+              ) # Sigma Unknown
+            ), # One Sample Summarized Data
 
 ##### -------------------- Raw Data ------------------------------------------
-              conditionalPanel(
-                ns = ns,
-                condition = "input.dataAvailability == 'Enter Raw Data'",
+            conditionalPanel(
+              ns = ns,
+              condition = "input.dataAvailability == 'Enter Raw Data'",
 
-                textAreaInput(
-                  inputId     = ns("sample1"),
-                  label       = strong("Sample"),
-                  value       = "202, 210, 215, 220, 220, 224, 225, 228, 228, 228",
-                  placeholder = "Enter values separated by a comma with decimals as points",
-                  rows        = 3
-                ),
+              textAreaInput(
+                inputId     = ns("sample1"),
+                label       = strong("Sample"),
+                value       = "202, 210, 215, 220, 220, 224, 225, 228, 228, 228",
+                placeholder = "Enter values separated by a comma with decimals as points",
+                rows        = 3
+              ),
 
-                radioButtons(
-                  inputId      = ns("sigmaKnownRaw"),
-                  label        = strong("Population Standard Deviation (\\( \\sigma\\))"),
-                  choiceValues = list("rawKnown",
-                                      "rawUnknown"),
-                  choiceNames  = list("Known",
-                                      "Unknown"),
-                  selected     = "rawUnknown",
-                  inline       = TRUE
-                ),
+              radioButtons(
+                inputId      = ns("sigmaKnownRaw"),
+                label        = strong("Population Standard Deviation (\\( \\sigma\\))"),
+                choiceValues = list("rawKnown",
+                                    "rawUnknown"),
+                choiceNames  = list("Known",
+                                    "Unknown"),
+                selected     = "rawUnknown",
+                inline       = TRUE
+              ),
 
 ###### ------------------------ Sigma Known ----------------------------------
-                conditionalPanel(
-                  ns = ns,
-                  condition = "input.sigmaKnownRaw == 'rawKnown'",
+              conditionalPanel(
+                ns = ns,
+                condition = "input.sigmaKnownRaw == 'rawKnown'",
 
-                  numericInput(
-                    inputId = ns("popuSDRaw"),
-                    label   = strong("Population Standard Deviation (\\( \\sigma\\)) Value"),
-                    value   = 8.25,
-                    min     = 0.00001,
-                    step    = 0.00001
-                  )
-                ), # Sigma Known
+                numericInput(
+                  inputId = ns("popuSDRaw"),
+                  label   = strong("Population Standard Deviation (\\( \\sigma\\)) Value"),
+                  value   = 8.25,
+                  min     = 0.00001,
+                  step    = 0.00001
+                )
+              ), # Sigma Known
 
 ###### ------------------------ Sigma Unknown --------------------------------
-                conditionalPanel(
-                  ns = ns,
-                  condition = "input.sigmaKnownRaw == 'rawUnknown'"
-                ) # Sigma Unknown
-              ), # One Sample Raw Data
+              conditionalPanel(
+                ns = ns,
+                condition = "input.sigmaKnownRaw == 'rawUnknown'"
+              ) # Sigma Unknown
+            ), # One Sample Raw Data
 
 ##### -------------------- Uploaded Data -------------------------------------
-              conditionalPanel(
-                ns = ns,
-                condition = "input.dataAvailability == 'Upload Data'",
+            conditionalPanel(
+              ns = ns,
+              condition = "input.dataAvailability == 'Upload Data'",
 
-                newFileInput("oneMeanUserData", id),
+              newFileInput("oneMeanUserData", id),
 
-                selectizeInput(
-                  inputId = ns("oneMeanVariable"),
-                  label   = strong("Choose a Column for Analysis"),
-                  choices = c(""),
-                  options = list(placeholder = 'Select a column',
-                                 onInitialize = I('function() { this.setValue(""); }'))
-                ),
+              selectizeInput(
+                inputId = ns("oneMeanVariable"),
+                label   = strong("Choose a Column for Analysis"),
+                choices = c(""),
+                options = list(placeholder = 'Select a column',
+                               onInitialize = I('function() { this.setValue(""); }'))
+              ),
 
-                radioButtons(
-                  inputId = ns("sigmaKnownUpload"),
-                  label = strong("Population Standard Deviation (\\( \\sigma\\))"),
-                  choices = list("Unknown", "Known"),
-                  inline = TRUE
-                ),
+              radioButtons(
+                inputId = ns("sigmaKnownUpload"),
+                label = strong("Population Standard Deviation (\\( \\sigma\\))"),
+                choices = list("Unknown", "Known"),
+                inline = TRUE
+              ),
 
 ###### ------------------------ Sigma Known ----------------------------------
-                conditionalPanel(
-                  ns = ns,
-                  condition = "input.sigmaKnownUpload == 'Known'",
+              conditionalPanel(
+                ns = ns,
+                condition = "input.sigmaKnownUpload == 'Known'",
 
-                  numericInput(
-                    inputId = ns("popuSDUpload"),
-                    label   = strong("Population Standard Deviation (\\( \\sigma\\)) Value"),
-                    value   = 5,
-                    min     = 0.00001,
-                    step    = 0.00001
-                  )
-                ) # Sigma Known
-              ) # One Sample upload data
-            ), # One Population Mean
+                numericInput(
+                  inputId = ns("popuSDUpload"),
+                  label   = strong("Population Standard Deviation (\\( \\sigma\\)) Value"),
+                  value   = 5,
+                  min     = 0.00001,
+                  step    = 0.00001
+                )
+              ) # Sigma Known
+            ) # One Sample upload data
+          ), # One Population Mean
 
-            #### ---------------- Proportion ---------------------------------------------
-            conditionalPanel(
-              ns = ns,
-              condition = "input.popuParameter == 'Population Proportion'",
+#### ---------------- Proportion ---------------------------------------------
+          conditionalPanel(
+            ns = ns,
+            condition = "input.popuParameter == 'Population Proportion'",
 
-              numericInput(
-                inputId = ns("numSuccesses"),
-                label   = strong("Number of Successes (\\( x\\))"),
-                value   = 1087,
-                min     = 0,
-                step    = 1
-              ),
+            numericInput(
+              inputId = ns("numSuccesses"),
+              label   = strong("Number of Successes (\\( x\\))"),
+              value   = 1087,
+              min     = 0,
+              step    = 1
+            ),
 
-              numericInput(
-                inputId = ns("numTrials"),
-                label   = strong("Number of Trials (\\( n\\))"),
-                value   = 1430,
-                min     = 1,
-                step    = 1
-              )
-            ), #One Population Proportion
+            numericInput(
+              inputId = ns("numTrials"),
+              label   = strong("Number of Trials (\\( n\\))"),
+              value   = 1430,
+              min     = 1,
+              step    = 1
+            )
+          ), #One Population Proportion
 
-            #### ---------------- Standard Deviation -------------------------------------
-            conditionalPanel(
-              ns = ns,
-              condition = "input.popuParameter == 'Population Standard Deviation'",
+#### ---------------- Standard Deviation -------------------------------------
+          conditionalPanel(
+            ns = ns,
+            condition = "input.popuParameter == 'Population Standard Deviation'",
 
-              numericInput(
-                inputId = ns("SSDSampleSize"),
-                label   = strong("Sample Size (\\( n\\))"),
-                value   = 30,
-                min     = 2,
-                step    = 1
-              ),
+            numericInput(
+              inputId = ns("SSDSampleSize"),
+              label   = strong("Sample Size (\\( n\\))"),
+              value   = 30,
+              min     = 2,
+              step    = 1
+            ),
 
-              numericInput(
-                inputId = ns("SSDStdDev"),
-                label   = strong("Sample Standard Deviation (\\( s\\))"),
-                value   = 12.23,
-                min     = 0.00001,
-                step    = 0.00001),
+            numericInput(
+              inputId = ns("SSDStdDev"),
+              label   = strong("Sample Standard Deviation (\\( s\\))"),
+              value   = 12.23,
+              min     = 0.00001,
+              step    = 0.00001),
             ), #One Population Standard Deviation
 
-            radioButtons(
-              inputId      = ns("inferenceType"),
-              label        = strong("Inference Type"),
-              choiceValues = list("Confidence Interval",
-                                  "Hypothesis Testing"),
-              choiceNames  = list("Confidence Interval",
-                                  "Hypothesis Testing"),
-              selected     = "Confidence Interval",
-              inline       = TRUE
-            ),
+          radioButtons(
+            inputId      = ns("inferenceType"),
+            label        = strong("Inference Type"),
+            choiceValues = list("Confidence Interval",
+                                "Hypothesis Testing"),
+            choiceNames  = list("Confidence Interval",
+                                "Hypothesis Testing"),
+            selected     = "Confidence Interval",
+            inline       = TRUE
+          ),
 
-            #### ---------------- Confidence Interval ------------------------------------
-            conditionalPanel(
-              ns = ns,
-              condition = "input.inferenceType == 'Confidence Interval'",
-
-              radioButtons(
-                inputId  = ns("confidenceLevel"),
-                label    = strong("Confidence Level (\\( 1- \\alpha\\))"),
-                choices  = c("90%",
-                             "95%",
-                             "99%"),
-                selected = c("95%"),
-                inline   = TRUE)
-            ), # Confidence Interval
-
-            #### ---------------- Hypothesis Testing -------------------------------------
-            conditionalPanel(
-              ns = ns,
-              condition = "input.inferenceType == 'Hypothesis Testing'",
-
-              radioButtons(
-                inputId  = ns("significanceLevel"),
-                label    = strong("Significance Level (\\( \\alpha\\))"),
-                choices  = c("10%",
-                             "5%",
-                             "1%"),
-                selected = c("5%"),
-                inline   = TRUE),
-
-              conditionalPanel(
-                ns = ns,
-                condition = "input.popuParameter == 'Population Mean'",
-
-                numericInput(
-                  inputId = ns("hypMean"),
-                  label   = strong("Hypothesized Population Mean (\\( \\mu_{0}\\)) Value"),
-                  value   = 99,
-                  step    = 0.00001),
-              ), # Population Mean
-
-              conditionalPanel(
-                ns = ns,
-                condition = "input.popuParameter == 'Population Proportion'",
-
-                numericInput(
-                  inputId = ns("hypProportion"),
-                  label   = strong("Hypothesized Population Proportion (\\( p_{0}\\)) Value"),
-                  value   = 0.73,
-                  min     = 0,
-                  max     = 1,
-                  step    = 0.00001),
-              ), # Population Proportion
-
-              conditionalPanel(
-                ns = ns,
-                condition = "input.popuParameter == 'Population Standard Deviation'",
-
-                numericInput(
-                  inputId = ns("hypStdDeviation"),
-                  label   = strong(r"--{Hypothesized Population Standard Deviation (\( \sigma_{0}\)) Value}--"),
-                  value   = 16.00,
-                  min     = 0.001,
-                  step    = 0.001)
-              ), # Population standard deviation
-
-              selectInput(
-                inputId  = ns("altHypothesis"),
-                label    = strong("Alternate Hypothesis (\\( H_{a}\\))"),
-                choices  = lessThanInequalGreaterThanChoices123,
-                selected = 2
-                # options  = list(render = I(render))
-              ),
-            ), # Hypothesis Testing
-
-            #### ---------------- Graph Options ------------------------------------------
-            conditionalPanel(
-              ns = ns,
-              condition = "input.popuParameter == 'Population Mean' && input.dataAvailability != 'Summarized Data'",
-
-              p(strong("Graph Options")),
-
-              checkboxInput(
-                inputId = ns("oneMeanBoxplot"),
-                label   = "Boxplot for Sample Data",
-                value   = TRUE),
-            ) # Pop Mean ! Summarized
-          ), #"input.siMethod == '1'"
-
-          ### ------------ 2 Samples ---------------------------------------------------
+#### ---------------- Confidence Interval ------------------------------------
           conditionalPanel(
             ns = ns,
-            condition = "input.siMethod == '2'",
-
-            HTML("<label class='si-label'><b>Parameter of Interest</b></label>"),
+            condition = "input.inferenceType == 'Confidence Interval'",
 
             radioButtons(
-              inputId      = ns("popuParameters"),
-              label        = NULL,
-              choiceValues = list("Independent Population Means",
-                                  "Wilcoxon rank sum test",
-                                  "Dependent Population Means",
-                                  "Wilcoxon Signed Rank Test",
-                                  "Population Proportions",
-                                  "Two Population Variances"),
-              choiceNames  = list("Two Independent Populations (\\( \\mu_{1} - \\mu_{2} \\))",
-                                  "Wilcoxon Rank Sum Test (or the Mann-Whitney U Test)",
-                                  "Dependent (Paired) Populations (\\( \\mu_{d} \\))",
-                                  "Wilcoxon Signed Rank Test (Paired)",
-                                  "Two Population Proportions (\\( p_{1} - p_{2}\\))",
-                                  "Two Population Variances (\\( \\sigma_{1}^2/\\sigma_{2}^2 \\))"),
-              selected     = "Independent Population Means", #character(0), #
-              inline       = FALSE), #,width = '1000px'),
-
-            #### ---------------- Ind Pop Means ------------------------------------------
-            conditionalPanel(
-              ns = ns,
-              condition = "input.popuParameters == 'Independent Population Means'",
-
-              radioButtons(
-                inputId      = ns("dataAvailability2"),
-                label        = strong("Data Availability"),
-                choiceValues = list("Summarized Data",
-                                    "Enter Raw Data",
-                                    "Upload Data"),
-                choiceNames  = list("Summarized Data",
-                                    "Enter Raw Data",
-                                    "Upload Data"),
-                selected     = "Summarized Data", #character(0), #
-                inline       = TRUE), #,width = '1000px'),
-
-              ##### -------------------- Summarized Data -----------------------------------
-              conditionalPanel(
-                ns = ns,
-                condition = "input.dataAvailability2 == 'Summarized Data'",
-
-                numericInput(
-                  inputId = ns("sampleSize1"),
-                  label   = strong("Sample Size 1 (\\( n_{1}\\))"),
-                  value   = 21,
-                  min     = 2,
-                  step    = 1),
-
-                numericInput(
-                  inputId = ns("sampleMean1"),
-                  label   = strong("Sample Mean 1 (\\( \\bar{x}_{1}\\))"),
-                  value   = 29.6,
-                  step    = 0.00001),
-
-                numericInput(
-                  inputId = ns("sampleSize2"),
-                  label   = strong("Sample Size 2 (\\( n_{2}\\))"),
-                  value   = 21,
-                  min     = 2,
-                  step    = 1),
-
-                numericInput(
-                  inputId = ns("sampleMean2"),
-                  label   = strong("Sample Mean 2 (\\( \\bar{x}_{2}\\))"),
-                  value   = 33.9,
-                  step    = 0.00001),
-
-                radioButtons(
-                  inputId      = ns("bothsigmaKnown"),
-                  label        = strong("Are Population Standard Deviations (\\( \\sigma_{1}\\) and \\( \\sigma_{2}\\)) known?"),
-                  choiceValues = list("bothKnown",
-                                      "bothUnknown"),
-                  choiceNames  = list("Both Known",
-                                      "Both Unknown"),
-                  selected     = "bothKnown",
-                  inline       = TRUE),
-
-                ###### ------------------------ Sigma Both Known -----------------------------
-                conditionalPanel(
-                  ns = ns,
-                  condition = "input.bothsigmaKnown == 'bothKnown'",
-
-                  numericInput(
-                    inputId = ns("popuSD1"),
-                    label   = strong("Population Standard Deviation 1 (\\( \\sigma_{1}\\)) Value"),
-                    value   = 5.36,
-                    min     = 0.00001,
-                    step    = 0.00001),
-
-                  numericInput(
-                    inputId = ns("popuSD2"),
-                    label   = strong("Population Standard Deviation 2 (\\( \\sigma_{2}\\)) Value"),
-                    value   = 5.97,
-                    min     = 0.00001,
-                    step    = 0.00001),
-                ), # Sigma Both Known
-
-                ###### -------------------- Sigma Both Unknown -------------------------------
-                conditionalPanel(
-                  ns = ns,
-                  condition = "input.bothsigmaKnown == 'bothUnknown'",
-
-                  radioButtons(
-                    inputId      = ns("bothsigmaEqual"),
-                    label        = strong("Assume Population Variances are equal (\\( \\sigma_{1}^2\\) = \\( \\sigma_{2}^2\\))?"),
-                    choiceValues = list("TRUE",
-                                        "FALSE"),
-                    choiceNames  = list("Yes (Pooled)",
-                                        "No (Welch-Satterthwaite df)"),
-                    selected     = "TRUE",
-                    inline       = TRUE), #,width = '1000px'),
-
-                  numericInput(
-                    inputId = ns("sampSD1"),
-                    label   = strong("Sample Standard Deviation 1 (\\( s_{1}\\)) Value"),
-                    value   = 5.24,
-                    min     = 0.00001,
-                    step    = 0.00001),
-
-                  numericInput(
-                    inputId = ns("sampSD2"),
-                    label   = strong("Sample Standard Deviation 2 (\\( s_{2}\\)) Value"),
-                    value   = 5.85,
-                    min     = 0.00001,
-                    step    = 0.00001),
-                ), # Sigma Both Unknown
-              ), # Summarized Data
-
-              ##### -------------------- Raw Data ------------------------------------------
-              conditionalPanel(
-                ns = ns,
-                condition = "input.dataAvailability2 == 'Enter Raw Data'",
-
-                textAreaInput(
-                  inputId     = ns("raw_sample1"),
-                  label       = strong("Sample 1"),
-                  value       = "101.1,  111.1,  107.6,  98.1,  99.5,  98.7,  103.3,  108.9,  109.1,  103.3",
-                  placeholder = "Enter values separated by a comma with decimals as points",
-                  rows        = 3),
-
-                textAreaInput(
-                  inputId     = ns("raw_sample2"),
-                  label       = strong("Sample 2"),
-                  value       = "107.1,  105.0,  98.0,  97.9,  103.3,  104.6,  100.1,  98.2,  97.9",
-                  placeholder = "Enter values separated by a comma with decimals as points",
-                  rows        = 3),
-
-                radioButtons(
-                  inputId      = ns("bothsigmaKnownRaw"),
-                  label        = strong("Are Population Standard Deviations (\\( \\sigma_{1}\\) and \\( \\sigma_{2}\\)) known?"),
-                  choiceValues = list("bothKnown",
-                                      "bothUnknown"),
-                  choiceNames  = list("Both Known",
-                                      "Both Unknown"),
-                  selected     = "bothUnknown",
-                  inline       = TRUE), #,width = '1000px'),
-
-                ###### ------------------------ Sigma Both Unknown ---------------------------
-                conditionalPanel(
-                  ns = ns,
-                  condition = "input.bothsigmaKnownRaw == 'bothUnknown'",
-
-                  radioButtons(
-                    inputId      = ns("bothsigmaEqualRaw"),
-                    label        = strong("Assume Population Variances are equal (\\( \\sigma_{1}^2\\) = \\( \\sigma_{2}^2\\))?"),
-                    choiceValues = list("TRUE",
-                                        "FALSE"),
-                    choiceNames  = list("Yes (Pooled)",
-                                        "No (Welch-Satterthwaite df)"),
-                    selected     = "TRUE",
-                    inline       = TRUE)
-                ), # Sigma Both Unknown
-
-                ###### ------------------------ Sigma Both Known -----------------------------
-                conditionalPanel(
-                  ns = ns,
-                  condition = "input.bothsigmaKnownRaw == 'bothKnown'",
-
-                  numericInput(
-                    inputId = ns("popuSDRaw1"),
-                    label   = strong("Population Standard Deviation 1 (\\( \\sigma_{1}\\)) Value"),
-                    value   = 4.54,
-                    min     = 0.00001,
-                    step    = 0.00001),
-
-                  numericInput(
-                    inputId = ns("popuSDRaw2"),
-                    label   = strong("Population Standard Deviation 2 (\\( \\sigma_{2}\\)) Value"),
-                    value   = 3.47,
-                    min     = 0.00001,
-                    step    = 0.00001),
-                ), #Sigma Both Known
-              ), # Raw Data
-
-              ##### -------------------- Uploaded Data -------------------------------------
-              conditionalPanel(
-                ns = ns,
-                condition = "input.dataAvailability2 == 'Upload Data'",
-
-                newFileInput("indMeansUserData", id),
-
-                selectizeInput(
-                  inputId = ns("indMeansUplSample1"),
-                  label   = strong("Column for Sample 1"),
-                  choices = c(""),
-                  options = list(placeholder = 'Select a column',
-                                 onInitialize = I('function() { this.setValue(""); }'))),
-
-                selectizeInput(
-                  inputId = ns("indMeansUplSample2"),
-                  label   = strong("Column for Sample 2"),
-                  choices = c(""),
-                  options = list(placeholder = 'Select a column',
-                                 onInitialize = I('function() { this.setValue(""); }'))),
-
-                radioButtons(
-                  inputId      = ns("bothsigmaKnownUpload"),
-                  label        = strong("Are Population Standard Deviations (\\( \\sigma_{1}\\) and \\( \\sigma_{2}\\)) known?"),
-                  choiceValues = list("bothKnown",
-                                      "bothUnknown"),
-                  choiceNames  = list("Both Known",
-                                      "Both Unknown"),
-                  selected     = "bothUnknown",
-                  inline       = TRUE),
-
-                ###### ------------------------ Sigma Both Unknown ---------------------------
-                conditionalPanel(
-                  ns = ns,
-                  condition = "input.bothsigmaKnownUpload == 'bothUnknown'",
-
-                  radioButtons(
-                    inputId      = ns("bothsigmaEqualUpload"),
-                    label        = strong("Assume Population Variances are equal (\\( \\sigma_{1}^2\\) = \\( \\sigma_{2}^2\\))?"),
-                    choiceValues = list("TRUE",
-                                        "FALSE"),
-                    choiceNames  = list("Yes (Pooled)",
-                                        "No (Welch-Satterthwaite df)"),
-                    selected     = "TRUE",
-                    inline       = TRUE)
-                ), # Sigma Both Unknown
-
-                ###### ------------------------ Sigma Both Known ---------------------------
-                conditionalPanel(
-                  ns = ns,
-                  condition = "input.bothsigmaKnownUpload == 'bothKnown'",
-
-                  numericInput(
-                    inputId = ns("popuSDUpload1"),
-                    label   = strong("Population Standard Deviation 1 (\\( \\sigma_{1}\\)) Value"),
-                    value   = "",
-                    min     = 0.00001,
-                    step    = 0.00001),
-
-                  numericInput(
-                    inputId = ns("popuSDUpload2"),
-                    label   = strong("Population Standard Deviation 2 (\\( \\sigma_{2}\\)) Value"),
-                    value   = "",
-                    min     = 0.00001,
-                    step    = 0.00001)
-                ), # Sigma Both Known
-              ), # Upload Data
-            ), # Two Independent Samples
-
-            #### ---------------- Wilcoxon Rank Sum Test ------------------------------------------
-            conditionalPanel(
-              ns = ns,
-              condition = "input.popuParameters == 'Wilcoxon rank sum test'",
-
-              radioButtons(
-                inputId      = ns("wilcoxonRankSumTestData"),
-                label        = strong("Data Availability"),
-                choiceValues = list("Enter Raw Data",
-                                    "Upload Data"),
-                choiceNames  = list("Enter Raw Data",
-                                    "Upload Data"),
-                selected     = "Enter Raw Data", #character(0), #
-                inline       = TRUE), #,width = '1000px'),
-
-              ##### -------------------- Raw Data ------------------------------------------
-              conditionalPanel(
-                ns = ns,
-                condition = "input.wilcoxonRankSumTestData == 'Enter Raw Data'",
-
-                textAreaInput(
-                  inputId     = ns("rankSumRaw1"),
-                  label       = strong("Sample 1"),
-                  value       = "2,  1.25,  8.5,  1.1,  1.25,  3.75,  5.5",
-                  placeholder = "Enter values separated by a comma with decimals as points",
-                  rows        = 3),
-
-                textAreaInput(
-                  inputId     = ns("rankSumRaw2"),
-                  label       = strong("Sample 2"),
-                  value       = "1,  1,  0,  3.25,  1,  0.25",
-                  placeholder = "Enter values separated by a comma with decimals as points",
-                  rows        = 3),
-              ), # Wilcoxon Raw Data
-
-              ##### -------------------- Uploaded Data -------------------------------------
-              conditionalPanel(
-                ns = ns,
-                condition = "input.wilcoxonRankSumTestData == 'Upload Data'",
-
-                newFileInput("wilcoxonUpl", id),
-
-                selectizeInput(
-                  inputId = ns("wilcoxonUpl1"),
-                  label   = strong("Column for Sample 1"),
-                  choices = c(""),
-                  options = list(placeholder = 'Select a column',
-                                 onInitialize = I('function() { this.setValue(""); }'))),
-
-                selectizeInput(
-                  inputId = ns("wilcoxonUpl2"),
-                  label   = strong("Column for Sample 2"),
-                  choices = c(""),
-                  options = list(placeholder = 'Select a column',
-                                 onInitialize = I('function() { this.setValue(""); }'))),
-              ), # Upload Data
-            ), # Wilcoxon Rank Sum Test
-
-
-            #### ---------------- Dep Pop Means ------------------------------------------
-            conditionalPanel(
-              ns = ns,
-              condition = "input.popuParameters == 'Dependent Population Means'",
-
-              radioButtons(
-                inputId      = ns("dataTypeDependent"),
-                label        = strong("Data Availability"),
-                choiceValues = list("Enter Raw Data",
-                                    "Upload Data"),
-                choiceNames  = list("Enter Raw Data",
-                                    "Upload Data"),
-                selected     = "Enter Raw Data",
-                inline       = TRUE),
-
-              ##### -------------------- Raw Data ------------------------------------------
-              conditionalPanel(
-                ns = ns,
-                condition = "input.dataTypeDependent == 'Enter Raw Data'",
-
-                textAreaInput(
-                  inputId     = ns("before"),
-                  label       = strong("Sample 1 (e.g. Before, Pre-Treatment, Baseline)"),
-                  value       = "484, 478, 492, 444, 436, 398, 464, 476",
-                  placeholder = "Enter values separated by a comma with decimals as points",
-                  rows        = 3),
-
-                textAreaInput(
-                  inputId     = ns("after"),
-                  label       = strong("Sample 2 (e.g. After, Post-Treatment, Follow-Up)"),
-                  value       = "488, 478, 480, 426, 440, 410, 458, 460",
-                  placeholder = "Enter values separated by a comma with decimals as points",
-                  rows        = 3)
-              ), # Raw Data
-
-              ##### -------------------- Uploaded Data -------------------------------------
-              conditionalPanel(
-                ns = ns,
-                condition = "input.dataTypeDependent == 'Upload Data'",
-
-                newFileInput("depMeansUserData", id),
-
-                selectizeInput(
-                  inputId = ns("depMeansUplSample1"),
-                  label   = strong("Column for Sample 1 (e.g. Before, Pre-Treatment, Baseline)"),
-                  choices = c(""),
-                  options = list(placeholder = 'Select a column',
-                                 onInitialize = I('function() { this.setValue(""); }'))),
-
-                selectizeInput(
-                  inputId = ns("depMeansUplSample2"),
-                  label   = strong("Column for Sample 2 (e.g. After, Post-Treatment, Follow-Up)"),
-                  choices = c(""),
-                  options = list(placeholder = 'Select a column',
-                                 onInitialize = I('function() { this.setValue(""); }'))),
-              ) # Upload Data
-            ), # Two Dependent Samples
-
-
-            #### ---------------- Wilcoxon Signed Rank Test ------------------------------------------
-            conditionalPanel(
-              ns = ns,
-              condition = "input.popuParameters == 'Wilcoxon Signed Rank Test'",
-
-              radioButtons(
-                inputId      = ns("signedRankTest"),
-                label        = strong("Data Availability"),
-                choiceValues = list("Enter Raw Data",
-                                    "Upload Data"),
-                choiceNames  = list("Enter Raw Data",
-                                    "Upload Data"),
-                selected     = "Enter Raw Data",
-                inline       = TRUE),
-
-              ##### -------------------- Raw Data ------------------------------------------
-              conditionalPanel(
-                ns = ns,
-                condition = "input.signedRankTest == 'Enter Raw Data'",
-
-                textAreaInput(
-                  inputId     = ns("signedRankRaw1"),
-                  label       = strong("Sample 1 (e.g. Before, Pre-Treatment, Baseline)"),
-                  value       = "484, 478, 492, 444, 436, 398, 464, 476",
-                  placeholder = "Enter values separated by a comma with decimals as points",
-                  rows        = 3),
-
-                textAreaInput(
-                  inputId     = ns("signedRankRaw2"),
-                  label       = strong("Sample 2 (e.g. After, Post-Treatment, Follow-Up)"),
-                  value       = "488, 478, 480, 426, 440, 410, 458, 460",
-                  placeholder = "Enter values separated by a comma with decimals as points",
-                  rows        = 3),
-              ), # Signed Rank Raw Data
-
-              ##### -------------------- Uploaded Data -------------------------------------
-              conditionalPanel(
-                ns = ns,
-                condition = "input.signedRankTest == 'Upload Data'",
-
-                newFileInput("signedRankUpl", id),
-
-                selectizeInput(
-                  inputId = ns("signedRankUpl1"),
-                  label   = strong("Column for Sample 1 (e.g. Before, Pre-Treatment, Baseline)"),
-                  choices = c(""),
-                  options = list(placeholder = 'Select a column',
-                                 onInitialize = I('function() { this.setValue(""); }'))
-                ),
-
-                selectizeInput(
-                  inputId = ns("signedRankUpl2"),
-                  label   = strong("Column for Sample 2 (e.g. After, Post-Treatment, Follow-Up)"),
-                  choices = c(""),
-                  options = list(placeholder = 'Select a column',
-                                 onInitialize = I('function() { this.setValue(""); }'))
-                )
-              ) # Upload Data
-            ), # Wilcoxon Signed Rank Test
-
-            #### ---------------- 2 Pop Proportions --------------------------------------
-            conditionalPanel(
-              ns = ns,
-              condition = "input.popuParameters == 'Population Proportions'",
-
-              numericInput(
-                inputId = ns("numSuccesses1"),
-                label   = strong("Number of Successes 1 (\\( x_{1}\\))"),
-                value   = 174,
-                min     = 0,
-                step    = 1),
-
-              numericInput(
-                inputId = ns("numTrials1"),
-                label   = strong("Number of Trials 1 (\\( n_{1}\\))"),
-                value   = 300,
-                min     = 1,
-                step    = 1),
-
-              numericInput(
-                inputId = ns("numSuccesses2"),
-                label   = strong("Number of Successes 2 (\\( x_{2}\\))"),
-                value   = 111,
-                min     = 0,
-                step    = 1),
-
-              numericInput(
-                inputId = ns("numTrials2"),
-                label   = strong("Number of Trials 2 (\\( n_{2}\\))"),
-                value   = 300,
-                min     = 1,
-                step    = 1),
-            ), # Two Population Proportions
-
-            ### ------------ 2 Pop Standard Deviations ------------------------------------
-
-            conditionalPanel(
-              ns = ns,
-              condition = "input.popuParameters == 'Two Population Variances'",
-
-              radioButtons(
-                inputId      = ns("dataAvailability3"),
-                label        = strong("Data Availability"),
-                choiceValues = list("Summary",
-                                    "Variance",
-                                    "Enter Raw Data"),
-                choiceNames  = list(
-                  "\\( n_1,\\ n_2,\\ s_1,\\ s_2 \\)",
-                  "\\( n_1,\\ n_2,\\ s_1^2,\\ s_2^2 \\)",
-                  "Enter Raw Data"
-                ),
-                selected     = "Summary",
-                inline       = TRUE),
-
-
-              ### ------------ Summary (n1, n2, s1, s2) ------------------------------------
-
-              conditionalPanel(
-                ns = ns,
-                condition = "input.dataAvailability3 == 'Summary'",
-
-                withMathJax(
-                  tagList(
-                    numericInput(
-                      inputId = ns("SDSampleSize1"),
-                      label   = HTML("<strong>Sample Size 1</strong> \\( (n_1) \\)"),
-                      value   = 12,
-                      min     = 1,
-                      step    = 1
-                    ),
-
-
-                    numericInput(
-                      inputId = ns("stdDev1"),
-                      label   = HTML("<strong>Sample Standard Deviation 1</strong> \\( (s_1) \\)"),
-                      value   = 3,
-                      min     = 1,
-                      step    = 0.01
-                    ),
-
-                    numericInput(
-                      inputId = ns("SDSampleSize2"),
-                      label   = HTML("<strong>Sample Size 2</strong> \\( (n_2) \\)"),
-                      value   = 18,
-                      min     = 1,
-                      step    = 1
-                    ),
-
-
-                    numericInput(
-                      inputId = ns("stdDev2"),
-                      label   = HTML("<strong>Sample Standard Deviation 2</strong> \\( (s_2) \\)"),
-                      value   = 4.8,
-                      min     = 1,
-                      step    = 0.01
-                    )
-                  ))), #summary,
-
-              ### ------------ Variance (n1, s1^2, n2, s2^2) ------------------------------------
-
-              conditionalPanel(
-                ns = ns,
-                condition = "input.dataAvailability3 == 'Variance'",
-                withMathJax(
-                  tagList(
-                    numericInput(
-                      inputId = ns("n1"),
-                      label   = HTML("<strong>Sample Size 1</strong> \\( (n_1) \\)"),
-                      value   = 12,
-                      min     = 1,
-                      step    = 1),
-
-                    numericInput(
-                      inputId = ns("s1sq"),
-                      label   = HTML("<strong>Sample Variance 1 </strong>\\( (s_1^2) \\)"),
-                      value   = 9,
-                      min     = 1,
-                      step    = 0.01),
-
-                    numericInput(
-                      inputId = ns("n2"),
-                      label   = HTML("<strong>Sample Size 2</strong> \\( (n_2) \\)"),
-                      value   = 18,
-                      min     = 1,
-                      step    = 1),
-
-                    numericInput(
-                      inputId = ns("s2sq"),
-                      label   = HTML("<strong>Sample Variance 2</strong> \\( (s_2^2) \\)"),
-                      value   = 23.04,
-                      min     = 1,
-                      step    = 0.01)
-                  ))), # variance
-
-              ### ------------- Raw Data ---------------------------------------------------------
-
-              conditionalPanel(
-                ns = ns,
-                condition = "input.dataAvailability3 == 'Enter Raw Data'",
-
-                textAreaInput(
-                  inputId     = ns("rawSamp1SD"),
-                  label       = strong("Sample 1 (e.g Class A test scores)"),
-                  value       = "80, 54, 97, 76, 66, 87, 83, 91",
-                  placeholder = "Enter values separated by a comma with decimals as points",
-                  rows        = 3),
-
-                textAreaInput(
-                  inputId     = ns("rawSamp2SD"),
-                  label       = strong("Sample 2 (e.g Class B test scores)"),
-                  value       = "45, 54, 67, 95, 100, 82, 83, 74",
-                  placeholder = "Enter values separated by a comma with decimals as points",
-                  rows        = 3)
-              ), # Raw Data
-            ), # Two Pop Var
-
-            ### ------------ Confidence Level, Inference Type ---------------------------------
-
-            conditionalPanel(
-              ns = ns,
-              condition = "input.popuParameters != 'Wilcoxon rank sum test' && input.popuParameters != 'Wilcoxon Signed Rank Test'",
-
-              radioButtons(
-                inputId      = ns("inferenceType2"),
-                label        = strong("Inference Type"),
-                choiceValues = list("Confidence Interval",
-                                    "Hypothesis Testing"),
-                choiceNames  = list("Confidence Interval",
-                                    "Hypothesis Testing"),
-                selected     = "Confidence Interval",
-                inline       = TRUE)
-            ),
-
-            conditionalPanel(
-              ns = ns,
-              condition = "input.inferenceType2 == 'Confidence Interval' && input.popuParameters != 'Wilcoxon rank sum test' && input.popuParameters != 'Wilcoxon Signed Rank Test'",
-
-              radioButtons(
-                inputId  = ns("confidenceLevel2"),
-                label    = strong("Confidence Level (\\( 1- \\alpha\\))"),
-                choices  = c("90%",
-                             "95%",
-                             "99%"),
-                selected = c("95%"),
-                inline   = TRUE)
-            ), # Confidence Interval
-
-            conditionalPanel(
-              ns = ns,
-              condition = "input.inferenceType2 == 'Hypothesis Testing' || input.popuParameters == 'Wilcoxon rank sum test' || input.popuParameters == 'Wilcoxon Signed Rank Test'",
-
-              radioButtons(
-                inputId  = ns("significanceLevel2"),
-                label    = strong("Significance Level (\\( \\alpha\\))"),
-                choices  = c("10%",
-                             "5%",
-                             "1%"),
-                selected = c("5%"),
-                inline   = TRUE),
-
-              conditionalPanel(
-                ns = ns,
-                condition = "input.popuParameters == 'Independent Population Means'",
-
-                numericInput(
-                  inputId = ns("indMeansMuNaught"),
-                  label   = strong(HTML("Hypothesized Population Mean Difference \\( (\\mu_{1} - \\mu_{2})_{0} \\) Value")),
-                  value   = 0,
-                  step    = 0.00001)
-              ), # indMeansMuNaught
-
-              conditionalPanel(
-                ns = ns,
-                condition = "input.popuParameters == 'Dependent Population Means'",
-
-                numericInput(
-                  inputId = ns("depMeansMuNaught"),
-                  label   = strong(HTML("Hypothesized Population Mean Difference \\( (\\mu_{d})_{0} \\) Value")),
-                  value   = 0,
-                  step    = 0.00001)
-              ), # depMeansMuNaught
-
-              conditionalPanel(
-                ns = ns,
-                condition = "input.popuParameters == 'Population Proportions'",
-
-                numericInput(
-                  inputId = ns("propDiffNaught"),
-                  label   = strong(HTML("Hypothesized Population Proportion Difference \\( (p_{1} - p_{2})_{0} \\) Value")),
-                  value   = 0,
-                  step    = 0.00001)
-              ), # propDiffNaught
-
-              selectizeInput(
-                inputId  = ns("altHypothesis2"),
-                label    = strong("Alternate Hypothesis (\\( H_{a}\\))"),
-                choices  = lessThanInequalGreaterThanChoices123,
-                selected = 2,
-                ## NOTE: this uses the global "render" object; see global.R.
-                options  = list(render = I(render))),
-            ), # Hypothesis Testing
-            conditionalPanel(
-              ns = ns,
-              condition  = "input.popuParameters == 'Wilcoxon rank sum test'",
-              radioButtons(
-                inputId  = ns("normaprowrsRankSum"),
-                label    = strong("Method"), # A more descriptive label
-                choices  = c("Exact", "Normal approximation (for large samples)"),
-                selected = "Exact",
-                inline   = TRUE),
-              conditionalPanel(
-                ns = ns,
-                condition  = "input.normaprowrsRankSum == 'Normal approximation (for large samples)'", # This is the inner condition, checking the checkbox
-                radioButtons(
-                  inputId  = ns("continuityCorrectionOption"),
-                  label    = strong("Continuity correction"),
-                  choices  = c("True", "False"),
-                  selected = "True", # 'selected' argument takes a single value, not a vector
-                  inline   = TRUE ))
-            ),
-            conditionalPanel(
-              ns = ns,
-              condition = "(input.popuParameters == 'Independent Population Means' && input.dataAvailability2 != 'Summarized Data')",
-
-              p(strong("Graph Options")),
-
-              checkboxInput(
-                inputId = ns("indMeansBoxplot"),
-                label   = "Side-by-side Boxplot for Sample Data",
-                value   = TRUE),
-
-              checkboxInput(
-                inputId = ns("indMeansQQPlot"),
-                label   = "Q-Q Plots for Sample 1 and Sample 2",
-                value   = TRUE)
-            ), # Ind Means !Summarized
-
-            conditionalPanel(
-              ns = ns,
-              condition = "(input.popuParameters == 'Dependent Population Means')",
-
-              p(strong("Graph Options")),
-
-              checkboxInput(
-                inputId = ns("depMeansQQPlot"),
-                label   = "Q-Q Plot of the Difference (d)",
-                value   = TRUE)
-            ), # Dep Means Graphs
-
-            conditionalPanel(
-              ns = ns,
-              condition = "input.popuParameters == 'Wilcoxon rank sum test'",
-
-              p(strong("Graph Options")),
-
-              checkboxInput(
-                inputId = ns("sidebysidewRankSum"),
-                label   = "Side-by-side Boxplot",
-                value   = TRUE),
-
-              checkboxInput(
-                inputId = ns("sidebysidewRankQQ"),
-                label   = "Q-Q plots for Sample 1 and Sample 2",
-                value   = TRUE)
-            ), # Wilcoxon Rank Sum Graphs
-            #Wilcoxon Signed Rank Test
-            conditionalPanel(
-              ns = ns,
-              condition  = "input.popuParameters == 'Wilcoxon Signed Rank Test'",
-              radioButtons(
-                inputId  = ns("normaprowrs"),
-                label    = strong("Method"), # A more descriptive label
-                choices  = c("Exact", "Normal approximation (for large samples)"),
-                selected = "Exact",
-                inline   = TRUE),
-            ),
-            conditionalPanel(
-              ns = ns,
-              condition = "(input.popuParameters == 'Wilcoxon Signed Rank Test')",
-
-              p(strong("Graph Options")),
-
-              checkboxInput(
-                inputId = ns("signedRankQQPlot"),
-                label   = "Q-Q Plot of the Difference",
-                value   = TRUE)
-            ),
-
-
-          ), # "input.siMethod == '2'",
-
-          ### ------------ Multiple Samples (ANOVA or Kruskal-Wallis) ------------------------------------
+              inputId  = ns("confidenceLevel"),
+              label    = strong("Confidence Level (\\( 1- \\alpha\\))"),
+              choices  = c("90%",
+                           "95%",
+                           "99%"),
+              selected = c("95%"),
+              inline   = TRUE)
+          ), # Confidence Interval
+
+#### ---------------- Hypothesis Testing -------------------------------------
           conditionalPanel(
             ns = ns,
-            condition = 'input.siMethod == "Multiple"',
-
-            HTML("<label class='si-label'><b>Hypothesis Test</b></label>"),
+            condition = "input.inferenceType == 'Hypothesis Testing'",
 
             radioButtons(
-              inputId = ns("multipleMethodChoice"),
-              label   = NULL,
-              choiceNames = c("One-way Analysis of Variance (ANOVA)", "Kruskal-Wallis"),
-              choiceValues = c("anova", "kw")
-            ),
-
-            #### ------------ ANOVA ------------------------------------
-            conditionalPanel(
-              ns = ns,
-              condition = 'input.multipleMethodChoice == "anova"',
-
-              newFileInput("anovaUserData", id),
-
-              hidden(tagList(
-                div(
-                  id = ns("anovaUploadInputs"),
-
-                  radioButtons(
-                    inputId = ns("anovaFormat"),
-                    label   = strong("Data Format"),
-                    choiceNames = c("Values in multiple columns",
-                                    "Responses and factors stacked in two columns"),
-                    choiceValues = c("Multiple",
-                                     "Stacked")),
-
-                  conditionalPanel(
-                    ns = ns,
-                    condition = "input.anovaFormat == 'Multiple'",
-
-                    selectizeInput(
-                      inputId = ns("anovaMultiColumns"),
-                      label = strong("Choose columns to conduct analysis"),
-                      choices = c(""),
-                      multiple = TRUE,
-                      selected = NULL,
-                      options = list(hideSelected = FALSE,
-                                     placeholder = 'Select two or more columns',
-                                     onInitialize = I('function() { this.setValue(""); }')))
-                  ), #multiple column anova
-
-                  conditionalPanel(
-                    ns = ns,
-                    condition = "input.anovaFormat == 'Stacked'",
-
-                    selectizeInput(
-                      inputId = ns("anovaResponse"),
-                      label = strong("Response Variable"),
-                      choices = c(""),
-                      selected = NULL,
-                      options = list(placeholder = 'Select a variable',
-                                     onInitialize = I('function() { this.setValue(""); }'))),
-
-                    selectizeInput(
-                      inputId = ns("anovaFactors"),
-                      label = strong("Factors"),
-                      choices = c(""),
-                      selected = NULL,
-                      options = list(placeholder = 'Select a factor',
-                                     onInitialize = I('function() { this.setValue(""); }')))
-                  ) #stacked column anova
-
-                ), #anovaUploadInputs div
-              )), #hidden tagList
-
-              radioButtons(
-                inputId  = ns("anovaSigLvl"),
-                label    = strong("Significance Level (\\( \\alpha\\))"),
-                choices  = c("10%",
-                             "5%",
-                             "1%"),
-                selected = "5%",
-                inline   = TRUE),
-
-              checkboxGroupInput(
-                inputId = ns("anovaOptions"),
-                label = p(strong("Options")),
-                choiceNames = c("Include post hoc tests"),
-                choiceValues = c("posthoc"),
-                selected = NULL),
-
-              selectizeInput(
-                inputId = ns("anovaGraphs"),
-                label = strong("Graph Options"),
-                choices = c("Side-by-side Boxplot",
-                            "Histogram of Residuals",
-                            "QQ Plot of Residuals",
-                            "Plot Group Means"),
-                multiple = TRUE,
-                selected = c("Side-by-side Boxplot",
-                             "Plot Group Means"),
-                options = list(hideSelected = FALSE,
-                               placeholder = 'Select graph(s) to display')),
-
-            ), #anova conditionalPanel
-
-            #### ------------ Kruskal-Wallis ------------------------------------
-            conditionalPanel(
-              ns = ns,
-              condition = 'input.multipleMethodChoice == "kw"',
-
-              newFileInput("kwUserData", id),
-
-              hidden(tagList(
-                div(
-                  id = ns("kwUploadInputs"),
-
-                  radioButtons(
-                    inputId = ns("kwFormat"),
-                    label   = strong("Data Format"),
-                    choiceNames = c("Values in multiple columns",
-                                    "Responses and factors stacked in two columns"),
-                    choiceValues = c("Multiple",
-                                     "Stacked")),
-
-                  conditionalPanel(
-                    ns = ns,
-                    condition = "input.kwFormat == 'Multiple'",
-
-                    selectizeInput(
-                      inputId = ns("kwMultiColumns"),
-                      label = strong("Choose columns to conduct analysis"),
-                      choices = c(""),
-                      multiple = TRUE,
-                      selected = NULL,
-                      options = list(hideSelected = FALSE,
-                                     placeholder = 'Select two or more columns',
-                                     onInitialize = I('function() { this.setValue(""); }')))
-                  ), #multiple column kw
-
-                  conditionalPanel(
-                    ns = ns,
-                    condition = "input.kwFormat == 'Stacked'",
-
-                    selectizeInput(
-                      inputId = ns("kwResponse"),
-                      label = strong("Response Variable"),
-                      choices = c(""),
-                      selected = NULL,
-                      options = list(placeholder = 'Select a variable',
-                                     onInitialize = I('function() { this.setValue(""); }'))),
-
-                    selectizeInput(
-                      inputId = ns("kwFactors"),
-                      label = strong("Factors"),
-                      choices = c(""),
-                      selected = NULL,
-                      options = list(placeholder = 'Select a factor',
-                                     onInitialize = I('function() { this.setValue(""); }')))
-                  ) #stacked column kw
-
-                ), #kwUploadInputs div
-              )), #hidden tagList
-
-              radioButtons(
-                inputId = ns("kwSigLvl"),
-                label = strong("Significance Level (\\( \\alpha\\))"),
-                choices  = c("10%",
-                             "5%",
-                             "1%"),
-                selected = "5%",
-                inline   = TRUE),
-            ) #Kruskal-Wallis conditionalPanel
-          ), #Multiple Samples conditionalPanel
-
-          ### ------------ Categorical Samples (Chi-Square) ----------------------------
-          conditionalPanel(
-            ns = ns,
-            condition = 'input.siMethod == "Categorical"',
-
-            radioButtons(
-              inputId = ns("chisquareDimension"),
-              label   = strong("Dimension"),
-              choices = c("2 x 2",
-                          "2 x 3",
-                          "3 x 2",
-                          "3 x 3"),
-              inline  = TRUE),
-
-            conditionalPanel(
-              ns = ns,
-              condition = "input.chisquareDimension == '2 x 2'",
-
-              matrixInput(
-                inputId = ns("chiSqInput2x2"),
-                inputClass = "cMatrix",
-                value = matrix(c(173,599, 160,851),
-                               nrow = 2,
-                               ncol = 2,
-                               dimnames = list(c("R1", "R2"),
-                                               c("C1", "C2"))),
-                rows = list(editableNames = TRUE),
-                cols = list(editableNames = TRUE),
-                class = "numeric"),
-            ), #2 x 2
-
-            conditionalPanel(
-              ns = ns,
-              condition = "input.chisquareDimension == '2 x 3'",
-
-              matrixInput(
-                inputId = ns("chiSqInput2x3"),
-                inputClass = "cMatrix",
-                value = matrix(c(160,40, 140,60, 40,60),
-                               nrow = 2,
-                               ncol = 3,
-                               dimnames = list(c("R1", "R2"),
-                                               c("C1", "C2", "C3"))),
-                rows = list(editableNames = TRUE),
-                cols = list(editableNames = TRUE),
-                class = "numeric"),
-            ), #2 x 3
-
-            conditionalPanel(
-              ns = ns,
-              condition = "input.chisquareDimension == '3 x 2'",
-
-              matrixInput(
-                inputId = ns("chiSqInput3x2"),
-                inputClass = "cMatrix",
-                value = matrix(c(162,106,201, 353,259,332),
-                               nrow = 3,
-                               ncol = 2,
-                               dimnames = list(c("R1", "R2", "R3"),
-                                               c("C1", "C2"))),
-                rows = list(editableNames = TRUE),
-                cols = list(editableNames = TRUE),
-                class = "numeric"),
-            ), #3 x 2
-
-            conditionalPanel(
-              ns = ns,
-              condition = "input.chisquareDimension == '3 x 3'",
-
-              matrixInput(
-                inputId = ns("chiSqInput3x3"),
-                inputClass = "cMatrix",
-                value = matrix(c(6,14,50, 38,31,50, 31,4,5),
-                               nrow = 3,
-                               ncol = 3,
-                               dimnames = list(c("R1", "R2", "R3"),
-                                               c("C1", "C2", "C3"))),
-                rows = list(editableNames = TRUE),
-                cols = list(editableNames = TRUE),
-                class = "numeric"),
-            ), #3 x 3
-
-            textInput(
-              inputId = ns("chiSquareRowHeader"),
-              label = "Name for Row Variable (optional):",
-              value = ""),
-
-            textInput(
-              inputId = ns("chiSquareColHeader"),
-              label = "Name for Column Variable (optional):",
-              value = ""),
-
-            # tableHTML(mtcars,
-            #           rownames = TRUE,
-            #           widths = c(150, 100, rep(50, 11)),
-            #           row_groups = list(c(10, 10, 12), c('Group 1', 'Group 2', 'Group 3'))) %>%
-            #   add_css_column(css = list('background-color', 'lightgray'), columns = 'row_groups') %>%
-            #   add_css_column(css = list('text-align', 'right'), columns = 'row_groups') %>%
-            #   add_css_header(css = list('background-color', 'lightgray'), headers = 1) %>%
-            #   add_editable_column(columns = -1:3),
-            # br(),
-
-            radioButtons(
-              inputId  = ns("chisquareMethod"),
-              label    = strong("Hypothesis Test"),
-              choiceNames  = c("Chi-Square test for independence",
-                               "Fisher's Exact test"),
-              choiceValues = c("Chi-Square",
-                               "Fisher"),
-              selected = c("Chi-Square"),
-              inline   = TRUE),
-
-            conditionalPanel(
-              ns = ns,
-              condition = 'input.chisquareMethod == "Chi-Square" && input.chisquareDimension == "2 x 2"',
-
-              checkboxInput(
-                inputId = ns("chiSquareYates"),
-                label   = "with Yates continuity correction",
-                value   = FALSE),
-
-              # tooltip(
-              #   span("Card title ", bsicons::bs_icon("question-circle-fill")),
-              #   "Additional info",
-              #   placement = "right"
-              # ),
-            ),
-
-            radioButtons(
-              inputId  = ns("chisquareSigLvl"),
+              inputId  = ns("significanceLevel"),
               label    = strong("Significance Level (\\( \\alpha\\))"),
               choices  = c("10%",
                            "5%",
                            "1%"),
               selected = c("5%"),
               inline   = TRUE),
-          ), #Categorical (Chi-Square)
 
-          actionButton(
-            inputId = ns("goInference"),
-            label   = "Calculate",
-            class = "act-btn"),
+            conditionalPanel(
+              ns = ns,
+              condition = "input.popuParameter == 'Population Mean'",
 
-          actionButton(
-            inputId = ns("resetInference"),
-            label   = "Reset Values",
-            class = "act-btn")
+              numericInput(
+                inputId = ns("hypMean"),
+                label   = strong("Hypothesized Population Mean (\\( \\mu_{0}\\)) Value"),
+                value   = 99,
+                step    = 0.00001),
+              ), # Population Mean
 
-        ) #inputPanel
-      ), #sidebarPanel
+            conditionalPanel(
+              ns = ns,
+              condition = "input.popuParameter == 'Population Proportion'",
 
-      #  ========================================================================= #
-      ## -------- Main Panel -----------------------------------------------------
-      #  ========================================================================= #
-      mainPanel(
-        div(
-          id = ns("inferenceMP"),
+              numericInput(
+                inputId = ns("hypProportion"),
+                label   = strong("Hypothesized Population Proportion (\\( p_{0}\\)) Value"),
+                value   = 0.73,
+                min     = 0,
+                max     = 1,
+                step    = 0.00001),
+              ), # Population Proportion
 
-          uiOutput(ns("inferenceValidation")),
+            conditionalPanel(
+              ns = ns,
+              condition = "input.popuParameter == 'Population Standard Deviation'",
 
-          div(id = ns("inferenceData"),
+              numericInput(
+                inputId = ns("hypStdDeviation"),
+                label   = strong(r"--{Hypothesized Population Standard Deviation (\( \sigma_{0}\)) Value}--"),
+                value   = 16.00,
+                min     = 0.001,
+                step    = 0.001)
+            ), # Population standard deviation
 
-              ### ------------ 1 Sample ----------------------------------------------------
+            selectInput(
+              inputId  = ns("altHypothesis"),
+              label    = strong("Alternate Hypothesis (\\( H_{a}\\))"),
+              choices  = lessThanInequalGreaterThanChoices123,
+              selected = 2
+                                        # options  = list(render = I(render))
+            ),
+            ), # Hypothesis Testing
+
+#### ---------------- Graph Options ------------------------------------------
+          conditionalPanel(
+            ns = ns,
+            condition = "input.popuParameter == 'Population Mean' && input.dataAvailability != 'Summarized Data'",
+
+            p(strong("Graph Options")),
+
+            checkboxInput(
+              inputId = ns("oneMeanBoxplot"),
+              label   = "Boxplot for Sample Data",
+              value   = TRUE),
+            ) # Pop Mean ! Summarized
+        ), #"input.siMethod == '1'"
+
+### ------------ 2 Samples ---------------------------------------------------
+        conditionalPanel(
+          ns = ns,
+          condition = "input.siMethod == '2'",
+
+          HTML("<label class='si-label'><b>Parameter of Interest</b></label>"),
+
+          radioButtons(
+            inputId      = ns("popuParameters"),
+            label        = NULL,
+            choiceValues = list("Independent Population Means",
+                                "Wilcoxon rank sum test",
+                                "Dependent Population Means",
+                                "Wilcoxon Signed Rank Test",
+                                "Population Proportions",
+                                "Two Population Variances"),
+            choiceNames  = list("Two Independent Populations (\\( \\mu_{1} - \\mu_{2} \\))",
+                                "Wilcoxon Rank Sum Test (or the Mann-Whitney U Test)",
+                                "Dependent (Paired) Populations (\\( \\mu_{d} \\))",
+                                "Wilcoxon Signed Rank Test (Paired)",
+                                "Two Population Proportions (\\( p_{1} - p_{2}\\))",
+                                "Two Population Variances (\\( \\sigma_{1}^2/\\sigma_{2}^2 \\))"),
+            selected     = "Independent Population Means", #character(0), #
+            inline       = FALSE), #,width = '1000px'),
+
+#### ---------------- Ind Pop Means ------------------------------------------
+          conditionalPanel(
+            ns = ns,
+            condition = "input.popuParameters == 'Independent Population Means'",
+
+            radioButtons(
+              inputId      = ns("dataAvailability2"),
+              label        = strong("Data Availability"),
+              choiceValues = list("Summarized Data",
+                                  "Enter Raw Data",
+                                  "Upload Data"),
+              choiceNames  = list("Summarized Data",
+                                  "Enter Raw Data",
+                                  "Upload Data"),
+              selected     = "Summarized Data", #character(0), #
+              inline       = TRUE), #,width = '1000px'),
+
+##### -------------------- Summarized Data -----------------------------------
+            conditionalPanel(
+              ns = ns,
+              condition = "input.dataAvailability2 == 'Summarized Data'",
+
+              numericInput(
+                inputId = ns("sampleSize1"),
+                label   = strong("Sample Size 1 (\\( n_{1}\\))"),
+                value   = 21,
+                min     = 2,
+                step    = 1),
+
+              numericInput(
+                inputId = ns("sampleMean1"),
+                label   = strong("Sample Mean 1 (\\( \\bar{x}_{1}\\))"),
+                value   = 29.6,
+                step    = 0.00001),
+
+              numericInput(
+                inputId = ns("sampleSize2"),
+                label   = strong("Sample Size 2 (\\( n_{2}\\))"),
+                value   = 21,
+                min     = 2,
+                step    = 1),
+
+              numericInput(
+                inputId = ns("sampleMean2"),
+                label   = strong("Sample Mean 2 (\\( \\bar{x}_{2}\\))"),
+                value   = 33.9,
+                step    = 0.00001),
+
+              radioButtons(
+                inputId      = ns("bothsigmaKnown"),
+                label        = strong("Are Population Standard Deviations (\\( \\sigma_{1}\\) and \\( \\sigma_{2}\\)) known?"),
+                choiceValues = list("bothKnown",
+                                    "bothUnknown"),
+                choiceNames  = list("Both Known",
+                                    "Both Unknown"),
+                selected     = "bothKnown",
+                inline       = TRUE),
+
+###### ------------------------ Sigma Both Known -----------------------------
               conditionalPanel(
                 ns = ns,
-                condition = "input.siMethod == '1'",
-
-                #### ---------------- 1 Pop Mean ---------------------------------------------
-                conditionalPanel(
-                  ns = ns,
-                  condition = "input.popuParameter == 'Population Mean'",
-
-                  navbarPage(
-                    id = ns("onePopMeanTabset"),
-                    title = NULL,
-
-                    tabPanel(
-                      id = ns("onePopMean"),
-                      title = "Analysis",
-
-                      conditionalPanel(
-                        ns = ns,
-                        condition = "input.inferenceType == 'Confidence Interval'",
-
-                        titlePanel(tags$u("Confidence Interval")),
-                        br(),
-                        uiOutput(ns('oneMeanCI')),
-                        br()
-                      ), # Confidence Interval
-
-                      conditionalPanel(
-                        ns = ns,
-                        condition = "input.inferenceType == 'Hypothesis Testing'",
-
-                        titlePanel(tags$u("Hypothesis Test")),
-                        br(),
-                        uiOutput(ns('oneMeanHT')),
-                        br(),
-                      ) # Hypothesis Testing
-                    ), # One Population Mean
-
-                    tabPanel(
-                      id = ns("onePopMeanData"),
-                      title = "Graphs",
-                      conditionalPanel(
-                        ns = ns,
-                        condition = "input.dataAvailability != 'Summarized Data' && input.oneMeanBoxplot == 1",
-                        br(),
-                        titlePanel(tags$u("Boxplot")),
-                        br(),
-                        plotOptionsMenuUI(
-                          id = ns("oneMeanBoxplot"),
-                          plotType = "Boxplot",
-                          title = "Boxplot"),
-                        uiOutput(ns("renderOneMeanBoxplot")),
-                        br(),
-                      ),
-                    ),
-
-                    tabPanel(
-                      id = ns("onePopMeanData"),
-                      title = "Uploaded Data",
-
-                      uiOutput(ns("renderOnePopMeanData")),
-                    ), #onePopMeanData Uploaded Data tabPanel
-                    #onePopMean Graphs tabPanel
-                  )), #onePopMean tabsetPanel
-
-                #### ---------------- 1 Pop Prop ---------------------------------------------
-                conditionalPanel(
-                  ns = ns,
-                  condition = "input.popuParameter == 'Population Proportion'",
-
-                  navbarPage(
-                              id = ns("onePropTabset"),
-                              title = NULL,
-                              tabPanel(title = "Analysis",
-                                       conditionalPanel(
-                                         ns = ns,
-                                         condition = "input.inferenceType == 'Confidence Interval'",
-
-                                         titlePanel(tags$u("Confidence Interval")),
-                                         br(),
-                                         uiOutput(ns('onePropCI')),
-                                         br()
-                                       ),
-
-                                       conditionalPanel(
-                                         ns = ns,
-                                         condition = "input.inferenceType == 'Hypothesis Testing'",
-
-                                         titlePanel(tags$u("Hypothesis Test")),
-                                         br(),
-                                         uiOutput(ns('onePropHT')),
-                                         br()
-                                       )
-                              ),
-
-                              tabPanel(
-                                title = "Graphs",
-                                br(),
-                                div(
-                                  style = "display: flex; justify-content: flex-start;",
-                                  plotOutput(ns("onePropBarGraph"), width = "400px")
-                                ),
-                                br(),
-                                div(
-                                  style = "display: flex; justify-content: flex-start;",
-                                  plotOutput(ns("onePropPieChart"), width = "400px")
-                                )
-                              ))), # One Population Proportion
-
-                #### ---------------- 1 Pop Standard deviation -------------------------------
-                conditionalPanel(
-                  ns = ns,
-                  condition = "input.popuParameter == 'Population Standard Deviation'",
-
-                  conditionalPanel(
-                    ns = ns,
-                    condition = "input.inferenceType == 'Confidence Interval'",
-
-                    titlePanel(tags$u("Confidence Interval")),
-                    br(),
-                    uiOutput(ns('oneMeanCI')),
-                    br()
-                  ), # Confidence Interval
-
-                  conditionalPanel(
-                    ns = ns,
-                    condition = "input.inferenceType == 'Hypothesis Testing'",
-
-                    titlePanel(tags$u("Hypothesis Test")),
-                    br(),
-                    uiOutput(ns('onePopulationSDHT')),
-                    br(),
-                  ), # Hypothesis Testing
-                ), # One Population Proportion
-              ), # "input.siMethod == '1'"
-
-              ### ------------ 2 Samples ---------------------------------------------------
-              conditionalPanel( #### Two Samp ----
-                                ns = ns,
-                                condition = "input.siMethod == '2'",
-
-                                #### ---------------- Independent Pop Means ----------------------------------
-                                conditionalPanel(
-                                  ns = ns,
-                                  condition = "input.popuParameters == 'Independent Population Means'",
-
-                                  navbarPage(
-                                    id = ns("indPopMeansTabset"),
-                                    selected = "Analysis",
-                                    title = NULL,
-
-                                    tabPanel(
-                                      id = ns("indPopMeans"),
-                                      title = "Analysis",
-
-                                      conditionalPanel(
-                                        ns = ns,
-                                        condition = "input.inferenceType2 == 'Confidence Interval'",
-
-                                        titlePanel(tags$u("Confidence Interval")),
-                                        br(),
-                                        uiOutput(ns('indMeansCI')),
-                                        br(),
-                                      ), # Confidence interval
-
-                                      conditionalPanel(
-                                        ns = ns,
-                                        condition = "input.inferenceType2 == 'Hypothesis Testing'",
-
-                                        titlePanel(tags$u("Hypothesis Test")),
-                                        br(),
-                                        uiOutput(ns('indMeansHT')),
-                                        br()
-                                      ) # Hypothesis Testing
-                                    ), # indPopMeans Analysis tabPanel
-
-                                    tabPanel(
-                                      id = ns("indPopMeansGraphs"),
-                                      title = "Graphs",
-
-                                      conditionalPanel(
-                                        ns = ns,
-                                        condition = "input.dataAvailability2 != 'Summarized Data' && input.indMeansBoxplot == 1",
-                                        br(),
-                                        titlePanel(tags$u("Boxplot")),
-                                        br(),
-                                        plotOptionsMenuUI(
-                                          id = ns("indMeansBoxplot"),
-                                          plotType = "Boxplot",
-                                          title = "Boxplot"),
-                                        uiOutput(ns("renderIndMeansBoxplot")),
-                                        br(),
-                                        br()
-                                      ),
-
-                                      conditionalPanel(
-                                        ns = ns,
-                                        condition = "input.dataAvailability2 != 'Summarized Data' && input.indMeansQQPlot == 1",
-
-                                        br(),
-                                        hr(),
-                                        br(),
-                                        titlePanel(tags$u("Q-Q Plots for Sample 1 and Sample 2")),
-                                        br(),
-                                        plotOptionsMenuUI(
-                                          id = ns("indMeansQQPlot"),
-                                          plotType = "QQ Plot",
-                                          title = "Q-Q Plots"),
-                                        uiOutput(ns("renderIndMeansQQPlot")),
-                                        br(),
-                                        br()
-                                      )
-                                    ), # indPopMeans Graphs tabPanel
-
-                                    tabPanel(
-                                      id = ns("indPopMeansData"),
-                                      title = "Uploaded Data",
-
-                                      uiOutput(ns("renderIndPopMeansData"))
-                                    ), # indPopMeansData Uploaded Data tabPanel
-                                  ), # indPopMeansTabset
-                                ), # Two Independent Samples
-
-
-                                #### ---------------- Signed Rank Test --------------------------------------
-                                conditionalPanel(
-                                  ns = ns,
-                                  condition = "input.popuParameters == 'Wilcoxon Signed Rank Test'",
-
-                                  navbarPage(
-                                    id = ns("signedRankTabset"),
-                                    selected = "Analysis",
-                                    title = NULL,
-
-                                    tabPanel(
-                                      id = ns("signedRankTab"),
-                                      title = "Analysis",
-
-                                      conditionalPanel(
-                                        ns = ns,
-                                        condition = "input.inferenceType2 == 'Hypothesis Testing' || input.inferenceType2 == 'Confidence Interval'",
-
-                                        titlePanel(tags$u("Hypothesis Test")),
-                                        br(),
-                                        uiOutput(ns('signedRankHypothesisTest')),
-                                        br(),
-                                      ), # Hypothesis Testing
-                                    ), # Analysis Tab
-                                    tabPanel(
-                                      id = ns("signedRankDataRanks"),
-                                      title = "Data with Ranks",
-
-                                      conditionalPanel(
-                                        ns = ns,
-                                        condition = "input.inferenceType2 == 'Hypothesis Testing' || input.inferenceType2 == 'Confidence Interval'",
-
-                                        #titlePanel("Results"),
-                                        br(),
-                                        uiOutput(ns('signedRankDataRanks')),
-                                        br(),
-                                      ), # Ranked Results by Group
-                                    ), # Tabset
-                                    tabPanel(
-                                      id = ns("signedRankGraphs"),
-                                      title = "Graphs",
-                                      conditionalPanel(
-                                        ns = ns,
-                                        condition = "input.popuParameters == 'Wilcoxon Signed Rank Test' && input.signedRankQQPlot == 1",
-
-                                        # Q-Q Plot of the Difference
-                                        conditionalPanel(
-                                          ns = ns,
-                                          condition = "input.popuParameters == 'Wilcoxon Signed Rank Test' && input.signedRankQQPlot == 1",
-                                          titlePanel("Q-Q Plot of the Difference"),
-                                          br(),
-                                          plotOptionsMenuUI(
-                                            id = ns("signedRankQQ"),
-                                            plotType = "QQ Plot",
-                                            title = "Q-Q Plot of the Difference"),
-                                          plotOutput(ns("signedRankQQ")),
-                                          br(), br()
-                                        )
-                                      )
-                                    ),
-                                    tabPanel(
-                                      id    = ns("signedRankUploadData"),
-                                      title = "Uploaded Data",
-
-                                      uiOutput(ns("renderSignedRankUploadData"))
-                                    ),
-                                  ), # Uploaded Data
-                                ), # Signed Rank Tabs Whole
-
-                                #### ---------------- Dependent Pop Means ----------------------------------
-                                conditionalPanel(
-                                  ns = ns,
-                                  condition = "input.popuParameters == 'Dependent Population Means'",
-
-                                  navbarPage(
-                                    id = ns("depPopMeansTabset"),
-                                    selected = "Analysis",
-                                    title = NULL,
-
-                                    tabPanel(
-                                      id = ns("depPopMeans"),
-                                      title = "Analysis",
-
-                                      conditionalPanel(
-                                        ns = ns,
-                                        condition = "input.inferenceType2 == 'Confidence Interval'",
-
-                                        titlePanel(tags$u("Confidence Interval")),
-                                        br(),
-                                        uiOutput(ns('depMeansCI')),
-                                        br(),
-                                      ), # CI
-
-                                      conditionalPanel(
-                                        ns = ns,
-                                        condition = "input.inferenceType2 == 'Hypothesis Testing'",
-
-                                        titlePanel(tags$u("Hypothesis Test")),
-                                        br(),
-                                        uiOutput(ns('depMeansHT')),
-                                        br()
-                                      ), # HT
-                                    ), #depPopMeans Analysis tabPanel
-
-                                    tabPanel(
-                                      id = ns("depPopMeansData"),
-                                      title = "Uploaded Data",
-
-                                      uiOutput(ns("renderDepPopMeansData")),
-                                    ), #depPopMeansData Uploaded Data tabPanel
-
-                                    tabPanel(
-                                      id = ns("depMeansDataCalcs"),
-                                      title = "Data with Calculations",
-                                      br(),
-                                      fluidRow(
-                                        column(width = 8,
-                                               uiOutput(ns('depMeansTable')),
-                                        ),
-
-                                        column(width = 4,
-                                               br(),
-                                        )
-                                      ),
-                                      br(),
-                                      br(),
-                                    ), # Dep means table with calcs
-
-                                    tabPanel(
-                                      id = ns("depMeansGraphs"),
-                                      title = "Graphs",
-
-                                      conditionalPanel(
-                                        ns = ns,
-                                        condition = "input.depMeansQQPlot == 1",
-                                        titlePanel(tags$u("Q-Q Plot of the Difference (d)")),
-                                        br(),
-                                        plotOptionsMenuUI(
-                                          id = ns("depMeansQQPlot"),
-                                          plotType = "QQ Plot",
-                                          title = "Q-Q Plot of the Difference (d)"),
-                                        uiOutput(ns("renderDepMeansQQPlot")),
-                                        br(),
-                                        br()
-                                      )
-                                    ), # Dep means graphs tab panel
-                                  ), # depPopMeansTabset
-                                ), # Two Dependent Samples
-
-                                #### ---------------- 2 Pop Proportions --------------------------------------
-                                conditionalPanel(
-                                  ns = ns,
-                                  condition = "input.popuParameters == 'Population Proportions'",
-
-                                  navbarPage(
-                                    id = ns("twoPropTabset"),
-                                    selected = "Analysis",
-                                    title = NULL,
-
-                                    tabPanel(
-                                      id = ns("twoProp"),
-                                      title = "Analysis",
-
-                                      conditionalPanel(
-                                        ns = ns,
-                                        condition = "input.inferenceType2 == 'Confidence Interval'",
-
-                                        titlePanel(tags$u("Confidence Interval")),
-                                        br(),
-                                        uiOutput(ns('twoPropCI')),
-                                        br(),
-                                      ), # Confidence Interval
-
-                                      conditionalPanel(
-                                        ns = ns,
-                                        condition = "input.inferenceType2 == 'Hypothesis Testing'",
-
-                                        titlePanel(tags$u("Hypothesis Test")),
-                                        br(),
-                                        uiOutput(ns('twoPropHT')),
-                                        br(),
-                                      ), # Hypothesis Testing
-                                    ), # Analysis Panel
-                                    tabPanel(
-                                      id = ns("twoPropGraphs"),
-                                      title = "Graphs",
-                                      br(),
-                                      div(
-                                        style = "width: 600px; text-align: left;",
-                                        plotOutput(ns("twoPropBarPlot"), height = "400px")),
-                                      div(
-                                        style = "display: flex; justify-content: flex-start;",
-                                        plotOutput(ns("twoPropPieChart"),
-                                                   width = "600px", height = "500px"))
-                                    ), # Graph Panel
-                                  )
-                                ), # Two Population Proportions
-
-                                #### ---------------- Wilcoxon Rank Sum --------------------------------------
-                                conditionalPanel(
-                                  ns = ns,
-                                  condition = "input.popuParameters == 'Wilcoxon rank sum test'",
-
-                                  navbarPage(
-                                    id = ns("wilcoxonRankSumTabset"),
-                                    selected = "Analysis",
-                                    title = NULL,
-
-                                    tabPanel(
-                                      id = ns("wilcoxonRankSumTab"),
-                                      title = "Analysis",
-
-                                      conditionalPanel(
-                                        ns = ns,
-                                        condition = "input.inferenceType2 == 'Hypothesis Testing' || input.inferenceType2 == 'Confidence Interval'",
-
-                                        titlePanel(tags$u("Hypothesis Test")),
-                                        br(),
-                                        uiOutput(ns('wilcoxonRankSum')),
-                                        br(),
-                                      ), # Hypothesis Testing
-                                    ), # Analysis Tab
-                                    tabPanel(
-                                      id = ns("wilcoxonRankSumDataRanks"),
-                                      title = "Data with Ranks",
-
-                                      conditionalPanel(
-                                        ns = ns,
-                                        condition = "input.inferenceType2 == 'Hypothesis Testing' || input.inferenceType2 == 'Confidence Interval'",
-
-                                        titlePanel("Ranked Results by Group"),
-                                        br(),
-                                        uiOutput(ns('wilcoxonRankSumDataRanks')),
-                                        br(),
-                                      ), # Ranked Results by Group
-                                    ), # Data with Ranks Tab
-                                    tabPanel(
-                                      id = ns("wilcoxonRankSumGraphs"),
-                                      title = "Graphs",
-                                      conditionalPanel(
-                                        ns = ns,
-                                        condition = "input.popuParameters == 'Wilcoxon rank sum test' && (input.sidebysidewRankSum == 1 || input.sidebysidewRankQQ == 1)",
-
-                                        # Side-by-side Boxplot
-                                        conditionalPanel(
-                                          ns = ns,
-                                          condition = "input.popuParameters == 'Wilcoxon rank sum test' && input.sidebysidewRankSum == 1",
-
-                                          titlePanel("Side-by-side Boxplot"),
-                                          br(),
-                                          plotOptionsMenuUI(
-                                            id = ns("sidebysidewRankSum"),
-                                            plotType = "Boxplot",
-                                            title = "Boxplot"
-                                          ),
-                                          plotOutput(ns("sidebysidewRankSum")),
-                                          br(),br()
-                                        ),
-
-                                        # Q-Q Plots
-                                        conditionalPanel(
-                                          ns = ns,
-                                          condition = "input.popuParameters == 'Wilcoxon rank sum test' && input.sidebysidewRankQQ == 1",
-
-                                          titlePanel("Q-Q Plots for Sample 1 and Sample 2"),
-                                          br(),
-                                          plotOptionsMenuUI(
-                                            id = ns("sidebysidewRankQQ"),
-                                            plotType = "QQ Plot",
-                                            title = "Q-Q Plots"),
-                                          plotOutput(ns("sidebysidewRankQQ")),
-                                          br(), br()
-                                        ))
-                                    ),
-                                    tabPanel(
-                                      id    = ns("wRankSumData"),
-                                      title = "Uploaded Data",
-
-                                      uiOutput(ns("renderWRankSumMeansData"))
-                                    ),
-                                  ), # Uploaded Data
-                                ), # Wilcoxon rank sum Tabs whole
-
-                                ### ------------ Two Pop Var ------------------------------------------
-
-                                conditionalPanel(
-                                  ns = ns,
-                                  condition = "input.popuParameters == 'Two Population Variances'",
-
-                                  navbarPage(
-                                    id = ns("twoPopVarTabset"),
-                                    selected = "Analysis",
-                                    title = NULL,
-
-                                    tabPanel(
-                                      id = ns("twoPopVar"),
-                                      title = "Analysis",
-
-                                      conditionalPanel(
-                                        ns = ns,
-                                        condition = "input.inferenceType2 == 'Confidence Interval'",
-
-                                        titlePanel(tags$u("Confidence Interval")),
-                                        br(),
-                                        uiOutput(ns('twoPopVarCI')),
-                                        br(),
-
-                                      ), # CI
-
-                                      conditionalPanel(
-                                        ns = ns,
-                                        condition = "input.inferenceType2 == 'Hypothesis Testing'",
-
-                                        titlePanel(tags$u("Hypothesis Test")),
-                                        br(),
-                                        uiOutput(ns('twoPopVarHT')),
-                                        br(),
-
-                                      ) # HT
-                                    ))), # Two Pop Var
-              ), # "input.siMethod == '2'"
-
-              ### ------------ Multiple Samples ------------------------------------
-              #### ----------- ANOVA -----------------------------------------------
+                condition = "input.bothsigmaKnown == 'bothKnown'",
+
+                numericInput(
+                  inputId = ns("popuSD1"),
+                  label   = strong("Population Standard Deviation 1 (\\( \\sigma_{1}\\)) Value"),
+                  value   = 5.36,
+                  min     = 0.00001,
+                  step    = 0.00001),
+
+                numericInput(
+                  inputId = ns("popuSD2"),
+                  label   = strong("Population Standard Deviation 2 (\\( \\sigma_{2}\\)) Value"),
+                  value   = 5.97,
+                  min     = 0.00001,
+                  step    = 0.00001),
+                ), # Sigma Both Known
+
+###### -------------------- Sigma Both Unknown -------------------------------
               conditionalPanel(
                 ns = ns,
-                condition = "input.siMethod == 'Multiple' && input.multipleMethodChoice == 'anova'",
+                condition = "input.bothsigmaKnown == 'bothUnknown'",
 
-                navbarPage(
-                  id       = ns("anovaTabset"),
-                  selected = "Analysis",
-                  title = NULL,
+                radioButtons(
+                  inputId      = ns("bothsigmaEqual"),
+                  label        = strong("Assume Population Variances are equal (\\( \\sigma_{1}^2\\) = \\( \\sigma_{2}^2\\))?"),
+                  choiceValues = list("TRUE",
+                                      "FALSE"),
+                  choiceNames  = list("Yes (Pooled)",
+                                      "No (Welch-Satterthwaite df)"),
+                  selected     = "TRUE",
+                  inline       = TRUE), #,width = '1000px'),
 
-                  tabPanel(
-                    id    = ns("anova"),
-                    title = "Analysis",
+                numericInput(
+                  inputId = ns("sampSD1"),
+                  label   = strong("Sample Standard Deviation 1 (\\( s_{1}\\)) Value"),
+                  value   = 5.24,
+                  min     = 0.00001,
+                  step    = 0.00001),
 
-                    titlePanel("One-way Analysis of Variance (ANOVA)"),
-                    hr(),
-                    br(),
-                    uiOutput(ns("anovaOutput")),
-                    br(),
-                    br(),
+                numericInput(
+                  inputId = ns("sampSD2"),
+                  label   = strong("Sample Standard Deviation 2 (\\( s_{2}\\)) Value"),
+                  value   = 5.85,
+                  min     = 0.00001,
+                  step    = 0.00001),
+                ), # Sigma Both Unknown
+              ), # Summarized Data
 
-                    conditionalPanel(
-                      ns = ns,
-                      condition = "input.anovaOptions.indexOf('posthoc') > -1",
+##### -------------------- Raw Data ------------------------------------------
+            conditionalPanel(
+              ns = ns,
+              condition = "input.dataAvailability2 == 'Enter Raw Data'",
 
-                      uiOutput(ns('anovaPosthocAnalysis'))
-                    )
-                  ),
+              textAreaInput(
+                inputId     = ns("raw_sample1"),
+                label       = strong("Sample 1"),
+                value       = "101.1,  111.1,  107.6,  98.1,  99.5,  98.7,  103.3,  108.9,  109.1,  103.3",
+                placeholder = "Enter values separated by a comma with decimals as points",
+                rows        = 3),
 
-                  tabPanel(
-                    title = "Graphs",
+              textAreaInput(
+                inputId     = ns("raw_sample2"),
+                label       = strong("Sample 2"),
+                value       = "107.1,  105.0,  98.0,  97.9,  103.3,  104.6,  100.1,  98.2,  97.9",
+                placeholder = "Enter values separated by a comma with decimals as points",
+                rows        = 3),
 
-                    conditionalPanel(
-                      ns = ns,
-                      condition = "input.anovaGraphs.indexOf('Side-by-side Boxplot') > -1",
+              radioButtons(
+                inputId      = ns("bothsigmaKnownRaw"),
+                label        = strong("Are Population Standard Deviations (\\( \\sigma_{1}\\) and \\( \\sigma_{2}\\)) known?"),
+                choiceValues = list("bothKnown",
+                                    "bothUnknown"),
+                choiceNames  = list("Both Known",
+                                    "Both Unknown"),
+                selected     = "bothUnknown",
+                inline       = TRUE), #,width = '1000px'),
 
-                      titlePanel("Side-by-side Boxplot"),
-                      br(),
-                      br(),
-                      plotOptionsMenuUI(
-                        id       = ns("anovaBoxplot"),
-                        plotType = "Boxplot",
-                        title    = "Side-by-Side Boxplot"),
-                      uiOutput(ns("renderAnovaBoxplot"))
-                    ),
-
-                    conditionalPanel(
-                      ns = ns,
-                      condition = "input.anovaGraphs.indexOf('Histogram of Residuals') > -1",
-
-                      titlePanel("Histogram of Residuals"),
-                      br(),
-                      br(),
-                      plotOptionsMenuUI(
-                        id    = ns("anovaHistogram"),
-                        title = "Histogram of Residuals",
-                        xlab  = "Residuals",
-                        ylab  = "Frequency"),
-                      uiOutput(ns("renderAnovaHistogram"))
-                    ),
-
-                    conditionalPanel(
-                      ns = ns,
-                      condition = "input.anovaGraphs.indexOf('QQ Plot of Residuals') > -1",
-
-                      titlePanel("QQ Plot of Residuals"),
-                      br(),
-                      br(),
-                      plotOptionsMenuUI(
-                        id     = ns("anovaQQplot"),
-                        title  = "QQ Plot of Residuals",
-                        xlab   = "Normal Quantiles",
-                        ylab   = "Residuals",
-                        colour = "#0F3345"),
-                      uiOutput(ns("renderAnovaQQplot"))
-                    ),
-
-                    conditionalPanel(
-                      ns = ns,
-                      condition = "input.anovaGraphs.indexOf('Plot Group Means') > -1",
-
-                      titlePanel("Group Means"),
-                      br(),
-                      br(),
-                      plotOptionsMenuUI(
-                        id     = ns("anovaMeanPlot"),
-                        title  = "Group Means",
-                        xlab   = "Group",
-                        ylab   = "Mean",
-                        colour = "#0F3345"),
-                      uiOutput(ns("renderAnovaMeanPlot"))
-                    )
-                  ),
-
-                  tabPanel(
-                    id    = ns("anovaData"),
-                    title = "Uploaded Data",
-
-                    uiOutput(ns("renderAnovaDataView"))
-                  )
-                ) #anovaTabset tabsetPanel
-              ), #Multiple Samples (ANOVA)
-
-              #### ------------ Kruskal-Wallis ------------------------------------
+###### ------------------------ Sigma Both Unknown ---------------------------
               conditionalPanel(
                 ns = ns,
-                condition = "input.siMethod == 'Multiple' && input.multipleMethodChoice == 'kw'",
+                condition = "input.bothsigmaKnownRaw == 'bothUnknown'",
 
-                navbarPage(
-                  id = ns("kwTabset"),
-                  selected = "Analysis",
-                  title = NULL,
+                radioButtons(
+                  inputId      = ns("bothsigmaEqualRaw"),
+                  label        = strong("Assume Population Variances are equal (\\( \\sigma_{1}^2\\) = \\( \\sigma_{2}^2\\))?"),
+                  choiceValues = list("TRUE",
+                                      "FALSE"),
+                  choiceNames  = list("Yes (Pooled)",
+                                      "No (Welch-Satterthwaite df)"),
+                  selected     = "TRUE",
+                  inline       = TRUE)
+              ), # Sigma Both Unknown
 
-                  tabPanel(
-                    id    = ns("kw"),
-                    title = "Analysis",
+###### ------------------------ Sigma Both Known -----------------------------
+              conditionalPanel(
+                ns = ns,
+                condition = "input.bothsigmaKnownRaw == 'bothKnown'",
 
-                    titlePanel("Hypothesis Test"),
-                    br(),
-                    uiOutput(ns('kwHT')),
-                    br(),
-                    plotOutput(ns('kruskalWallisPlot'), width = "50%", height = "400px"),
-                    br(),
-                    uiOutput(ns('kwConclusionOutput'))
-                  ),
+                numericInput(
+                  inputId = ns("popuSDRaw1"),
+                  label   = strong("Population Standard Deviation 1 (\\( \\sigma_{1}\\)) Value"),
+                  value   = 4.54,
+                  min     = 0.00001,
+                  step    = 0.00001),
 
-                  tabPanel(
-                    id    = ns("kwRM"),
-                    title = "Data table with Ranks",
+                numericInput(
+                  inputId = ns("popuSDRaw2"),
+                  label   = strong("Population Standard Deviation 2 (\\( \\sigma_{2}\\)) Value"),
+                  value   = 3.47,
+                  min     = 0.00001,
+                  step    = 0.00001),
+                ), #Sigma Both Known
+              ), # Raw Data
 
-                    DTOutput("renderrankedmean"),
+##### -------------------- Uploaded Data -------------------------------------
+            conditionalPanel(
+              ns = ns,
+              condition = "input.dataAvailability2 == 'Upload Data'",
 
-                    uiOutput(ns("renderKWRM"))
-                  ),
+              newFileInput("indMeansUserData", id),
 
-                  tabPanel(
-                    id    = ns("kwData"),
-                    title = "Uploaded Data",
+              selectizeInput(
+                inputId = ns("indMeansUplSample1"),
+                label   = strong("Column for Sample 1"),
+                choices = c(""),
+                options = list(placeholder = 'Select a column',
+                               onInitialize = I('function() { this.setValue(""); }'))),
 
-                    uiOutput(ns("renderKWData"))
-                  )
+              selectizeInput(
+                inputId = ns("indMeansUplSample2"),
+                label   = strong("Column for Sample 2"),
+                choices = c(""),
+                options = list(placeholder = 'Select a column',
+                               onInitialize = I('function() { this.setValue(""); }'))),
 
-                ), #tabsetPanel
+              radioButtons(
+                inputId      = ns("bothsigmaKnownUpload"),
+                label        = strong("Are Population Standard Deviations (\\( \\sigma_{1}\\) and \\( \\sigma_{2}\\)) known?"),
+                choiceValues = list("bothKnown",
+                                    "bothUnknown"),
+                choiceNames  = list("Both Known",
+                                    "Both Unknown"),
+                selected     = "bothUnknown",
+                inline       = TRUE),
+
+###### ------------------------ Sigma Both Unknown ---------------------------
+              conditionalPanel(
+                ns = ns,
+                condition = "input.bothsigmaKnownUpload == 'bothUnknown'",
+
+                radioButtons(
+                  inputId      = ns("bothsigmaEqualUpload"),
+                  label        = strong("Assume Population Variances are equal (\\( \\sigma_{1}^2\\) = \\( \\sigma_{2}^2\\))?"),
+                  choiceValues = list("TRUE",
+                                      "FALSE"),
+                  choiceNames  = list("Yes (Pooled)",
+                                      "No (Welch-Satterthwaite df)"),
+                  selected     = "TRUE",
+                  inline       = TRUE)
+              ), # Sigma Both Unknown
+
+###### ------------------------ Sigma Both Known ---------------------------
+              conditionalPanel(
+                ns = ns,
+                condition = "input.bothsigmaKnownUpload == 'bothKnown'",
+
+                numericInput(
+                  inputId = ns("popuSDUpload1"),
+                  label   = strong("Population Standard Deviation 1 (\\( \\sigma_{1}\\)) Value"),
+                  value   = "",
+                  min     = 0.00001,
+                  step    = 0.00001),
+
+                numericInput(
+                  inputId = ns("popuSDUpload2"),
+                  label   = strong("Population Standard Deviation 2 (\\( \\sigma_{2}\\)) Value"),
+                  value   = "",
+                  min     = 0.00001,
+                  step    = 0.00001)
+              ), # Sigma Both Known
+              ), # Upload Data
+            ), # Two Independent Samples
+
+#### ---------------- Wilcoxon Rank Sum Test ------------------------------------------
+          conditionalPanel(
+            ns = ns,
+            condition = "input.popuParameters == 'Wilcoxon rank sum test'",
+
+            radioButtons(
+              inputId      = ns("wilcoxonRankSumTestData"),
+              label        = strong("Data Availability"),
+              choiceValues = list("Enter Raw Data",
+                                  "Upload Data"),
+              choiceNames  = list("Enter Raw Data",
+                                  "Upload Data"),
+              selected     = "Enter Raw Data", #character(0), #
+              inline       = TRUE), #,width = '1000px'),
+
+##### -------------------- Raw Data ------------------------------------------
+            conditionalPanel(
+              ns = ns,
+              condition = "input.wilcoxonRankSumTestData == 'Enter Raw Data'",
+
+              textAreaInput(
+                inputId     = ns("rankSumRaw1"),
+                label       = strong("Sample 1"),
+                value       = "2,  1.25,  8.5,  1.1,  1.25,  3.75,  5.5",
+                placeholder = "Enter values separated by a comma with decimals as points",
+                rows        = 3),
+
+              textAreaInput(
+                inputId     = ns("rankSumRaw2"),
+                label       = strong("Sample 2"),
+                value       = "1,  1,  0,  3.25,  1,  0.25",
+                placeholder = "Enter values separated by a comma with decimals as points",
+                rows        = 3),
+              ), # Wilcoxon Raw Data
+
+##### -------------------- Uploaded Data -------------------------------------
+            conditionalPanel(
+              ns = ns,
+              condition = "input.wilcoxonRankSumTestData == 'Upload Data'",
+
+              newFileInput("wilcoxonUpl", id),
+
+              selectizeInput(
+                inputId = ns("wilcoxonUpl1"),
+                label   = strong("Column for Sample 1"),
+                choices = c(""),
+                options = list(placeholder = 'Select a column',
+                               onInitialize = I('function() { this.setValue(""); }'))),
+
+              selectizeInput(
+                inputId = ns("wilcoxonUpl2"),
+                label   = strong("Column for Sample 2"),
+                choices = c(""),
+                options = list(placeholder = 'Select a column',
+                               onInitialize = I('function() { this.setValue(""); }'))),
+              ), # Upload Data
+            ), # Wilcoxon Rank Sum Test
+
+
+#### ---------------- Dep Pop Means ------------------------------------------
+          conditionalPanel(
+            ns = ns,
+            condition = "input.popuParameters == 'Dependent Population Means'",
+
+            radioButtons(
+              inputId      = ns("dataTypeDependent"),
+              label        = strong("Data Availability"),
+              choiceValues = list("Enter Raw Data",
+                                  "Upload Data"),
+              choiceNames  = list("Enter Raw Data",
+                                  "Upload Data"),
+              selected     = "Enter Raw Data",
+              inline       = TRUE),
+
+##### -------------------- Raw Data ------------------------------------------
+            conditionalPanel(
+              ns = ns,
+              condition = "input.dataTypeDependent == 'Enter Raw Data'",
+
+              textAreaInput(
+                inputId     = ns("before"),
+                label       = strong("Sample 1 (e.g. Before, Pre-Treatment, Baseline)"),
+                value       = "484, 478, 492, 444, 436, 398, 464, 476",
+                placeholder = "Enter values separated by a comma with decimals as points",
+                rows        = 3),
+
+              textAreaInput(
+                inputId     = ns("after"),
+                label       = strong("Sample 2 (e.g. After, Post-Treatment, Follow-Up)"),
+                value       = "488, 478, 480, 426, 440, 410, 458, 460",
+                placeholder = "Enter values separated by a comma with decimals as points",
+                rows        = 3)
+            ), # Raw Data
+
+##### -------------------- Uploaded Data -------------------------------------
+            conditionalPanel(
+              ns = ns,
+              condition = "input.dataTypeDependent == 'Upload Data'",
+
+              newFileInput("depMeansUserData", id),
+
+              selectizeInput(
+                inputId = ns("depMeansUplSample1"),
+                label   = strong("Column for Sample 1 (e.g. Before, Pre-Treatment, Baseline)"),
+                choices = c(""),
+                options = list(placeholder = 'Select a column',
+                               onInitialize = I('function() { this.setValue(""); }'))),
+
+              selectizeInput(
+                inputId = ns("depMeansUplSample2"),
+                label   = strong("Column for Sample 2 (e.g. After, Post-Treatment, Follow-Up)"),
+                choices = c(""),
+                options = list(placeholder = 'Select a column',
+                               onInitialize = I('function() { this.setValue(""); }'))),
+              ) # Upload Data
+          ), # Two Dependent Samples
+
+
+#### ---------------- Wilcoxon Signed Rank Test ------------------------------------------
+          conditionalPanel(
+            ns = ns,
+            condition = "input.popuParameters == 'Wilcoxon Signed Rank Test'",
+
+            radioButtons(
+              inputId      = ns("signedRankTest"),
+              label        = strong("Data Availability"),
+              choiceValues = list("Enter Raw Data",
+                                  "Upload Data"),
+              choiceNames  = list("Enter Raw Data",
+                                  "Upload Data"),
+              selected     = "Enter Raw Data",
+              inline       = TRUE),
+
+##### -------------------- Raw Data ------------------------------------------
+            conditionalPanel(
+              ns = ns,
+              condition = "input.signedRankTest == 'Enter Raw Data'",
+
+              textAreaInput(
+                inputId     = ns("signedRankRaw1"),
+                label       = strong("Sample 1 (e.g. Before, Pre-Treatment, Baseline)"),
+                value       = "484, 478, 492, 444, 436, 398, 464, 476",
+                placeholder = "Enter values separated by a comma with decimals as points",
+                rows        = 3),
+
+              textAreaInput(
+                inputId     = ns("signedRankRaw2"),
+                label       = strong("Sample 2 (e.g. After, Post-Treatment, Follow-Up)"),
+                value       = "488, 478, 480, 426, 440, 410, 458, 460",
+                placeholder = "Enter values separated by a comma with decimals as points",
+                rows        = 3),
+              ), # Signed Rank Raw Data
+
+##### -------------------- Uploaded Data -------------------------------------
+            conditionalPanel(
+              ns = ns,
+              condition = "input.signedRankTest == 'Upload Data'",
+
+              newFileInput("signedRankUpl", id),
+
+              selectizeInput(
+                inputId = ns("signedRankUpl1"),
+                label   = strong("Column for Sample 1 (e.g. Before, Pre-Treatment, Baseline)"),
+                choices = c(""),
+                options = list(placeholder = 'Select a column',
+                               onInitialize = I('function() { this.setValue(""); }'))
               ),
 
-              ### ------------ Categorical Samples (Chi-Square) ----------------------------
+              selectizeInput(
+                inputId = ns("signedRankUpl2"),
+                label   = strong("Column for Sample 2 (e.g. After, Post-Treatment, Follow-Up)"),
+                choices = c(""),
+                options = list(placeholder = 'Select a column',
+                               onInitialize = I('function() { this.setValue(""); }'))
+              )
+            ) # Upload Data
+          ), # Wilcoxon Signed Rank Test
+
+#### ---------------- 2 Pop Proportions --------------------------------------
+          conditionalPanel(
+            ns = ns,
+            condition = "input.popuParameters == 'Population Proportions'",
+
+            numericInput(
+              inputId = ns("numSuccesses1"),
+              label   = strong("Number of Successes 1 (\\( x_{1}\\))"),
+              value   = 174,
+              min     = 0,
+              step    = 1),
+
+            numericInput(
+              inputId = ns("numTrials1"),
+              label   = strong("Number of Trials 1 (\\( n_{1}\\))"),
+              value   = 300,
+              min     = 1,
+              step    = 1),
+
+            numericInput(
+              inputId = ns("numSuccesses2"),
+              label   = strong("Number of Successes 2 (\\( x_{2}\\))"),
+              value   = 111,
+              min     = 0,
+              step    = 1),
+
+            numericInput(
+              inputId = ns("numTrials2"),
+              label   = strong("Number of Trials 2 (\\( n_{2}\\))"),
+              value   = 300,
+              min     = 1,
+              step    = 1),
+            ), # Two Population Proportions
+
+### ------------ 2 Pop Standard Deviations ------------------------------------
+
+          conditionalPanel(
+            ns = ns,
+            condition = "input.popuParameters == 'Two Population Variances'",
+
+            radioButtons(
+              inputId      = ns("dataAvailability3"),
+              label        = strong("Data Availability"),
+              choiceValues = list("Summary",
+                                  "Variance",
+                                  "Enter Raw Data"),
+              choiceNames  = list(
+                "\\( n_1,\\ n_2,\\ s_1,\\ s_2 \\)",
+                "\\( n_1,\\ n_2,\\ s_1^2,\\ s_2^2 \\)",
+                "Enter Raw Data"
+              ),
+              selected     = "Summary",
+              inline       = TRUE),
+
+
+### ------------ Summary (n1, n2, s1, s2) ------------------------------------
+
+            conditionalPanel(
+              ns = ns,
+              condition = "input.dataAvailability3 == 'Summary'",
+
+              withMathJax(
+                tagList(
+                  numericInput(
+                    inputId = ns("SDSampleSize1"),
+                    label   = HTML("<strong>Sample Size 1</strong> \\( (n_1) \\)"),
+                    value   = 12,
+                    min     = 1,
+                    step    = 1
+                  ),
+
+
+                  numericInput(
+                    inputId = ns("stdDev1"),
+                    label   = HTML("<strong>Sample Standard Deviation 1</strong> \\( (s_1) \\)"),
+                    value   = 3,
+                    min     = 1,
+                    step    = 0.01
+                  ),
+
+                  numericInput(
+                    inputId = ns("SDSampleSize2"),
+                    label   = HTML("<strong>Sample Size 2</strong> \\( (n_2) \\)"),
+                    value   = 18,
+                    min     = 1,
+                    step    = 1
+                  ),
+
+
+                  numericInput(
+                    inputId = ns("stdDev2"),
+                    label   = HTML("<strong>Sample Standard Deviation 2</strong> \\( (s_2) \\)"),
+                    value   = 4.8,
+                    min     = 1,
+                    step    = 0.01
+                  )
+                ))), #summary,
+
+### ------------ Variance (n1, s1^2, n2, s2^2) ------------------------------------
+
+            conditionalPanel(
+              ns = ns,
+              condition = "input.dataAvailability3 == 'Variance'",
+              withMathJax(
+                tagList(
+                  numericInput(
+                    inputId = ns("n1"),
+                    label   = HTML("<strong>Sample Size 1</strong> \\( (n_1) \\)"),
+                    value   = 12,
+                    min     = 1,
+                    step    = 1),
+
+                  numericInput(
+                    inputId = ns("s1sq"),
+                    label   = HTML("<strong>Sample Variance 1 </strong>\\( (s_1^2) \\)"),
+                    value   = 9,
+                    min     = 1,
+                    step    = 0.01),
+
+                  numericInput(
+                    inputId = ns("n2"),
+                    label   = HTML("<strong>Sample Size 2</strong> \\( (n_2) \\)"),
+                    value   = 18,
+                    min     = 1,
+                    step    = 1),
+
+                  numericInput(
+                    inputId = ns("s2sq"),
+                    label   = HTML("<strong>Sample Variance 2</strong> \\( (s_2^2) \\)"),
+                    value   = 23.04,
+                    min     = 1,
+                    step    = 0.01)
+                ))), # variance
+
+### ------------- Raw Data ---------------------------------------------------------
+
+            conditionalPanel(
+              ns = ns,
+              condition = "input.dataAvailability3 == 'Enter Raw Data'",
+
+              textAreaInput(
+                inputId     = ns("rawSamp1SD"),
+                label       = strong("Sample 1 (e.g Class A test scores)"),
+                value       = "80, 54, 97, 76, 66, 87, 83, 91",
+                placeholder = "Enter values separated by a comma with decimals as points",
+                rows        = 3),
+
+              textAreaInput(
+                inputId     = ns("rawSamp2SD"),
+                label       = strong("Sample 2 (e.g Class B test scores)"),
+                value       = "45, 54, 67, 95, 100, 82, 83, 74",
+                placeholder = "Enter values separated by a comma with decimals as points",
+                rows        = 3)
+            ), # Raw Data
+            ), # Two Pop Var
+
+### ------------ Confidence Level, Inference Type ---------------------------------
+
+          conditionalPanel(
+            ns = ns,
+            condition = "input.popuParameters != 'Wilcoxon rank sum test' && input.popuParameters != 'Wilcoxon Signed Rank Test'",
+
+            radioButtons(
+              inputId      = ns("inferenceType2"),
+              label        = strong("Inference Type"),
+              choiceValues = list("Confidence Interval",
+                                  "Hypothesis Testing"),
+              choiceNames  = list("Confidence Interval",
+                                  "Hypothesis Testing"),
+              selected     = "Confidence Interval",
+              inline       = TRUE)
+          ),
+
+          conditionalPanel(
+            ns = ns,
+            condition = "input.inferenceType2 == 'Confidence Interval' && input.popuParameters != 'Wilcoxon rank sum test' && input.popuParameters != 'Wilcoxon Signed Rank Test'",
+
+            radioButtons(
+              inputId  = ns("confidenceLevel2"),
+              label    = strong("Confidence Level (\\( 1- \\alpha\\))"),
+              choices  = c("90%",
+                           "95%",
+                           "99%"),
+              selected = c("95%"),
+              inline   = TRUE)
+          ), # Confidence Interval
+
+          conditionalPanel(
+            ns = ns,
+            condition = "input.inferenceType2 == 'Hypothesis Testing' || input.popuParameters == 'Wilcoxon rank sum test' || input.popuParameters == 'Wilcoxon Signed Rank Test'",
+
+            radioButtons(
+              inputId  = ns("significanceLevel2"),
+              label    = strong("Significance Level (\\( \\alpha\\))"),
+              choices  = c("10%",
+                           "5%",
+                           "1%"),
+              selected = c("5%"),
+              inline   = TRUE),
+
+            conditionalPanel(
+              ns = ns,
+              condition = "input.popuParameters == 'Independent Population Means'",
+
+              numericInput(
+                inputId = ns("indMeansMuNaught"),
+                label   = strong(HTML("Hypothesized Population Mean Difference \\( (\\mu_{1} - \\mu_{2})_{0} \\) Value")),
+                value   = 0,
+                step    = 0.00001)
+            ), # indMeansMuNaught
+
+            conditionalPanel(
+              ns = ns,
+              condition = "input.popuParameters == 'Dependent Population Means'",
+
+              numericInput(
+                inputId = ns("depMeansMuNaught"),
+                label   = strong(HTML("Hypothesized Population Mean Difference \\( (\\mu_{d})_{0} \\) Value")),
+                value   = 0,
+                step    = 0.00001)
+            ), # depMeansMuNaught
+
+            conditionalPanel(
+              ns = ns,
+              condition = "input.popuParameters == 'Population Proportions'",
+
+              numericInput(
+                inputId = ns("propDiffNaught"),
+                label   = strong(HTML("Hypothesized Population Proportion Difference \\( (p_{1} - p_{2})_{0} \\) Value")),
+                value   = 0,
+                step    = 0.00001)
+            ), # propDiffNaught
+
+            selectizeInput(
+              inputId  = ns("altHypothesis2"),
+              label    = strong("Alternate Hypothesis (\\( H_{a}\\))"),
+              choices  = lessThanInequalGreaterThanChoices123,
+              selected = 2,
+              ## NOTE: this uses the global "render" object; see global.R.
+              options  = list(render = I(render))),
+            ), # Hypothesis Testing
+          conditionalPanel(
+            ns = ns,
+            condition  = "input.popuParameters == 'Wilcoxon rank sum test'",
+            radioButtons(
+              inputId  = ns("normaprowrsRankSum"),
+              label    = strong("Method"), # A more descriptive label
+              choices  = c("Exact", "Normal approximation (for large samples)"),
+              selected = "Exact",
+              inline   = TRUE),
+            conditionalPanel(
+              ns = ns,
+              condition  = "input.normaprowrsRankSum == 'Normal approximation (for large samples)'", # This is the inner condition, checking the checkbox
+              radioButtons(
+                inputId  = ns("continuityCorrectionOption"),
+                label    = strong("Continuity correction"),
+                choices  = c("True", "False"),
+                selected = "True", # 'selected' argument takes a single value, not a vector
+                inline   = TRUE ))
+          ),
+          conditionalPanel(
+            ns = ns,
+            condition = "(input.popuParameters == 'Independent Population Means' && input.dataAvailability2 != 'Summarized Data')",
+
+            p(strong("Graph Options")),
+
+            checkboxInput(
+              inputId = ns("indMeansBoxplot"),
+              label   = "Side-by-side Boxplot for Sample Data",
+              value   = TRUE),
+
+            checkboxInput(
+              inputId = ns("indMeansQQPlot"),
+              label   = "Q-Q Plots for Sample 1 and Sample 2",
+              value   = TRUE)
+          ), # Ind Means !Summarized
+
+          conditionalPanel(
+            ns = ns,
+            condition = "(input.popuParameters == 'Dependent Population Means')",
+
+            p(strong("Graph Options")),
+
+            checkboxInput(
+              inputId = ns("depMeansQQPlot"),
+              label   = "Q-Q Plot of the Difference (d)",
+              value   = TRUE)
+          ), # Dep Means Graphs
+
+          conditionalPanel(
+            ns = ns,
+            condition = "input.popuParameters == 'Wilcoxon rank sum test'",
+
+            p(strong("Graph Options")),
+
+            checkboxInput(
+              inputId = ns("sidebysidewRankSum"),
+              label   = "Side-by-side Boxplot",
+              value   = TRUE),
+
+            checkboxInput(
+              inputId = ns("sidebysidewRankQQ"),
+              label   = "Q-Q plots for Sample 1 and Sample 2",
+              value   = TRUE)
+          ), # Wilcoxon Rank Sum Graphs
+                                        #Wilcoxon Signed Rank Test
+          conditionalPanel(
+            ns = ns,
+            condition  = "input.popuParameters == 'Wilcoxon Signed Rank Test'",
+            radioButtons(
+              inputId  = ns("normaprowrs"),
+              label    = strong("Method"), # A more descriptive label
+              choices  = c("Exact", "Normal approximation (for large samples)"),
+              selected = "Exact",
+              inline   = TRUE),
+            ),
+          conditionalPanel(
+            ns = ns,
+            condition = "(input.popuParameters == 'Wilcoxon Signed Rank Test')",
+
+            p(strong("Graph Options")),
+
+            checkboxInput(
+              inputId = ns("signedRankQQPlot"),
+              label   = "Q-Q Plot of the Difference",
+              value   = TRUE)
+          ),
+
+
+          ), # "input.siMethod == '2'",
+
+### ------------ Multiple Samples (ANOVA or Kruskal-Wallis) ------------------------------------
+        conditionalPanel(
+          ns = ns,
+          condition = 'input.siMethod == "Multiple"',
+
+          HTML("<label class='si-label'><b>Hypothesis Test</b></label>"),
+
+          radioButtons(
+            inputId = ns("multipleMethodChoice"),
+            label   = NULL,
+            choiceNames = c("One-way Analysis of Variance (ANOVA)", "Kruskal-Wallis"),
+            choiceValues = c("anova", "kw")
+          ),
+
+#### ------------ ANOVA ------------------------------------
+          conditionalPanel(
+            ns = ns,
+            condition = 'input.multipleMethodChoice == "anova"',
+
+            newFileInput("anovaUserData", id),
+
+            hidden(tagList(
+              div(
+                id = ns("anovaUploadInputs"),
+
+                radioButtons(
+                  inputId = ns("anovaFormat"),
+                  label   = strong("Data Format"),
+                  choiceNames = c("Values in multiple columns",
+                                  "Responses and factors stacked in two columns"),
+                  choiceValues = c("Multiple",
+                                   "Stacked")),
+
+                conditionalPanel(
+                  ns = ns,
+                  condition = "input.anovaFormat == 'Multiple'",
+
+                  selectizeInput(
+                    inputId = ns("anovaMultiColumns"),
+                    label = strong("Choose columns to conduct analysis"),
+                    choices = c(""),
+                    multiple = TRUE,
+                    selected = NULL,
+                    options = list(hideSelected = FALSE,
+                                   placeholder = 'Select two or more columns',
+                                   onInitialize = I('function() { this.setValue(""); }')))
+                ), #multiple column anova
+
+                conditionalPanel(
+                  ns = ns,
+                  condition = "input.anovaFormat == 'Stacked'",
+
+                  selectizeInput(
+                    inputId = ns("anovaResponse"),
+                    label = strong("Response Variable"),
+                    choices = c(""),
+                    selected = NULL,
+                    options = list(placeholder = 'Select a variable',
+                                   onInitialize = I('function() { this.setValue(""); }'))),
+
+                  selectizeInput(
+                    inputId = ns("anovaFactors"),
+                    label = strong("Factors"),
+                    choices = c(""),
+                    selected = NULL,
+                    options = list(placeholder = 'Select a factor',
+                                   onInitialize = I('function() { this.setValue(""); }')))
+                ) #stacked column anova
+
+              ), #anovaUploadInputs div
+              )), #hidden tagList
+
+            radioButtons(
+              inputId  = ns("anovaSigLvl"),
+              label    = strong("Significance Level (\\( \\alpha\\))"),
+              choices  = c("10%",
+                           "5%",
+                           "1%"),
+              selected = "5%",
+              inline   = TRUE),
+
+            checkboxGroupInput(
+              inputId = ns("anovaOptions"),
+              label = p(strong("Options")),
+              choiceNames = c("Include post hoc tests"),
+              choiceValues = c("posthoc"),
+              selected = NULL),
+
+            selectizeInput(
+              inputId = ns("anovaGraphs"),
+              label = strong("Graph Options"),
+              choices = c("Side-by-side Boxplot",
+                          "Histogram of Residuals",
+                          "QQ Plot of Residuals",
+                          "Plot Group Means"),
+              multiple = TRUE,
+              selected = c("Side-by-side Boxplot",
+                           "Plot Group Means"),
+              options = list(hideSelected = FALSE,
+                             placeholder = 'Select graph(s) to display')),
+
+            ), #anova conditionalPanel
+
+#### ------------ Kruskal-Wallis ------------------------------------
+          conditionalPanel(
+            ns = ns,
+            condition = 'input.multipleMethodChoice == "kw"',
+
+            newFileInput("kwUserData", id),
+
+            hidden(tagList(
+              div(
+                id = ns("kwUploadInputs"),
+
+                radioButtons(
+                  inputId = ns("kwFormat"),
+                  label   = strong("Data Format"),
+                  choiceNames = c("Values in multiple columns",
+                                  "Responses and factors stacked in two columns"),
+                  choiceValues = c("Multiple",
+                                   "Stacked")),
+
+                conditionalPanel(
+                  ns = ns,
+                  condition = "input.kwFormat == 'Multiple'",
+
+                  selectizeInput(
+                    inputId = ns("kwMultiColumns"),
+                    label = strong("Choose columns to conduct analysis"),
+                    choices = c(""),
+                    multiple = TRUE,
+                    selected = NULL,
+                    options = list(hideSelected = FALSE,
+                                   placeholder = 'Select two or more columns',
+                                   onInitialize = I('function() { this.setValue(""); }')))
+                ), #multiple column kw
+
+                conditionalPanel(
+                  ns = ns,
+                  condition = "input.kwFormat == 'Stacked'",
+
+                  selectizeInput(
+                    inputId = ns("kwResponse"),
+                    label = strong("Response Variable"),
+                    choices = c(""),
+                    selected = NULL,
+                    options = list(placeholder = 'Select a variable',
+                                   onInitialize = I('function() { this.setValue(""); }'))),
+
+                  selectizeInput(
+                    inputId = ns("kwFactors"),
+                    label = strong("Factors"),
+                    choices = c(""),
+                    selected = NULL,
+                    options = list(placeholder = 'Select a factor',
+                                   onInitialize = I('function() { this.setValue(""); }')))
+                ) #stacked column kw
+
+              ), #kwUploadInputs div
+              )), #hidden tagList
+
+            radioButtons(
+              inputId = ns("kwSigLvl"),
+              label = strong("Significance Level (\\( \\alpha\\))"),
+              choices  = c("10%",
+                           "5%",
+                           "1%"),
+              selected = "5%",
+              inline   = TRUE),
+            ) #Kruskal-Wallis conditionalPanel
+        ), #Multiple Samples conditionalPanel
+
+### ------------ Categorical Samples (Chi-Square) ----------------------------
+        conditionalPanel(
+          ns = ns,
+          condition = 'input.siMethod == "Categorical"',
+
+          radioButtons(
+            inputId = ns("chisquareDimension"),
+            label   = strong("Dimension"),
+            choices = c("2 x 2",
+                        "2 x 3",
+                        "3 x 2",
+                        "3 x 3"),
+            inline  = TRUE),
+
+          conditionalPanel(
+            ns = ns,
+            condition = "input.chisquareDimension == '2 x 2'",
+
+            matrixInput(
+              inputId = ns("chiSqInput2x2"),
+              inputClass = "cMatrix",
+              value = matrix(c(173,599, 160,851),
+                             nrow = 2,
+                             ncol = 2,
+                             dimnames = list(c("R1", "R2"),
+                                             c("C1", "C2"))),
+              rows = list(editableNames = TRUE),
+              cols = list(editableNames = TRUE),
+              class = "numeric"),
+            ), #2 x 2
+
+          conditionalPanel(
+            ns = ns,
+            condition = "input.chisquareDimension == '2 x 3'",
+
+            matrixInput(
+              inputId = ns("chiSqInput2x3"),
+              inputClass = "cMatrix",
+              value = matrix(c(160,40, 140,60, 40,60),
+                             nrow = 2,
+                             ncol = 3,
+                             dimnames = list(c("R1", "R2"),
+                                             c("C1", "C2", "C3"))),
+              rows = list(editableNames = TRUE),
+              cols = list(editableNames = TRUE),
+              class = "numeric"),
+            ), #2 x 3
+
+          conditionalPanel(
+            ns = ns,
+            condition = "input.chisquareDimension == '3 x 2'",
+
+            matrixInput(
+              inputId = ns("chiSqInput3x2"),
+              inputClass = "cMatrix",
+              value = matrix(c(162,106,201, 353,259,332),
+                             nrow = 3,
+                             ncol = 2,
+                             dimnames = list(c("R1", "R2", "R3"),
+                                             c("C1", "C2"))),
+              rows = list(editableNames = TRUE),
+              cols = list(editableNames = TRUE),
+              class = "numeric"),
+            ), #3 x 2
+
+          conditionalPanel(
+            ns = ns,
+            condition = "input.chisquareDimension == '3 x 3'",
+
+            matrixInput(
+              inputId = ns("chiSqInput3x3"),
+              inputClass = "cMatrix",
+              value = matrix(c(6,14,50, 38,31,50, 31,4,5),
+                             nrow = 3,
+                             ncol = 3,
+                             dimnames = list(c("R1", "R2", "R3"),
+                                             c("C1", "C2", "C3"))),
+              rows = list(editableNames = TRUE),
+              cols = list(editableNames = TRUE),
+              class = "numeric"),
+            ), #3 x 3
+
+          textInput(
+            inputId = ns("chiSquareRowHeader"),
+            label = "Name for Row Variable (optional):",
+            value = ""),
+
+          textInput(
+            inputId = ns("chiSquareColHeader"),
+            label = "Name for Column Variable (optional):",
+            value = ""),
+
+                                        # tableHTML(mtcars,
+                                        #           rownames = TRUE,
+                                        #           widths = c(150, 100, rep(50, 11)),
+                                        #           row_groups = list(c(10, 10, 12), c('Group 1', 'Group 2', 'Group 3'))) %>%
+                                        #   add_css_column(css = list('background-color', 'lightgray'), columns = 'row_groups') %>%
+                                        #   add_css_column(css = list('text-align', 'right'), columns = 'row_groups') %>%
+                                        #   add_css_header(css = list('background-color', 'lightgray'), headers = 1) %>%
+                                        #   add_editable_column(columns = -1:3),
+                                        # br(),
+
+          radioButtons(
+            inputId  = ns("chisquareMethod"),
+            label    = strong("Hypothesis Test"),
+            choiceNames  = c("Chi-Square test for independence",
+                             "Fisher's Exact test"),
+            choiceValues = c("Chi-Square",
+                             "Fisher"),
+            selected = c("Chi-Square"),
+            inline   = TRUE),
+
+          conditionalPanel(
+            ns = ns,
+            condition = 'input.chisquareMethod == "Chi-Square" && input.chisquareDimension == "2 x 2"',
+
+            checkboxInput(
+              inputId = ns("chiSquareYates"),
+              label   = "with Yates continuity correction",
+              value   = FALSE),
+
+                                        # tooltip(
+                                        #   span("Card title ", bsicons::bs_icon("question-circle-fill")),
+                                        #   "Additional info",
+                                        #   placement = "right"
+                                        # ),
+            ),
+
+          radioButtons(
+            inputId  = ns("chisquareSigLvl"),
+            label    = strong("Significance Level (\\( \\alpha\\))"),
+            choices  = c("10%",
+                         "5%",
+                         "1%"),
+            selected = c("5%"),
+            inline   = TRUE),
+          ), #Categorical (Chi-Square)
+
+        actionButton(
+          inputId = ns("goInference"),
+          label   = "Calculate",
+          class = "act-btn"
+        ),
+
+        actionButton(
+          inputId = ns("resetInference"),
+          label   = "Reset Values",
+          class = "act-btn"
+        )
+      )
+    ),
+
+    mainPanel(
+      uiOutput(ns("inferenceValidation")),
+
+### ------------ 1 Sample ----------------------------------------------------
+      conditionalPanel(
+        ns = ns,
+        condition = "input.siMethod == '1'",
+
+#### ---------------- 1 Pop Mean ---------------------------------------------
+        conditionalPanel(
+          ns = ns,
+          condition = "input.popuParameter == 'Population Mean'",
+          navbarPage(
+            id = ns("onePopMeanTabset"),
+            title = NULL,
+            tabPanel(
+              id = ns("onePopMean"),
+              title = "Analysis",
               conditionalPanel(
                 ns = ns,
-                condition = "input.siMethod == 'Categorical'",
+                condition = "input.inferenceType == 'Confidence Interval'",
+                titlePanel(tags$u("Confidence Interval")),
+                br(),
+                uiOutput(ns('oneMeanCI')),
+                br()
+              ), # Confidence Interval
+              conditionalPanel(
+                ns = ns,
+                condition = "input.inferenceType == 'Hypothesis Testing'",
+                titlePanel(tags$u("Hypothesis Test")),
+                br(),
+                uiOutput(ns('oneMeanHT')),
+                br()
+              ) # Hypothesis Testing
+            ),
+            tabPanel(
+              id = ns("onePopMeanData"),
+              title = "Graphs",
+              conditionalPanel(
+                ns = ns,
+                condition = "input.dataAvailability != 'Summarized Data' && input.oneMeanBoxplot == 1",
+                br(),
+                titlePanel(tags$u("Boxplot")),
+                br(),
+                plotOptionsMenuUI(
+                  id = ns("oneMeanBoxplot"),
+                  plotType = "Boxplot",
+                  title = "Boxplot"),
+                uiOutput(ns("renderOneMeanBoxplot")),
+                br()
+              )
+            ),
+            tabPanel(
+              id = ns("onePopMeanData"),
+              title = "Uploaded Data",
 
-                #### ---------------- Chi-Square Test for Independence -----------------------
+              uiOutput(ns("renderOnePopMeanData"))
+            )
+          )
+        ),
+
+#### ---------------- 1 Pop Prop ---------------------------------------------
+        conditionalPanel(
+          ns = ns,
+          condition = "input.popuParameter == 'Population Proportion'",
+
+          navbarPage(
+            id = ns("onePropTabset"),
+            title = NULL,
+            tabPanel(title = "Analysis",
+                     conditionalPanel(
+                       ns = ns,
+                       condition = "input.inferenceType == 'Confidence Interval'",
+
+                       titlePanel(tags$u("Confidence Interval")),
+                       br(),
+                       uiOutput(ns('onePropCI')),
+                       br()
+                     ),
+
+                     conditionalPanel(
+                       ns = ns,
+                       condition = "input.inferenceType == 'Hypothesis Testing'",
+
+                       titlePanel(tags$u("Hypothesis Test")),
+                       br(),
+                       uiOutput(ns('onePropHT')),
+                       br()
+                     )
+                     ),
+
+            tabPanel(
+              title = "Graphs",
+              br(),
+              div(
+                style = "display: flex; justify-content: flex-start;",
+                plotOutput(ns("onePropBarGraph"), width = "400px")
+              ),
+              br(),
+              div(
+                style = "display: flex; justify-content: flex-start;",
+                plotOutput(ns("onePropPieChart"), width = "400px")
+              )
+            ))), # One Population Proportion
+
+#### ---------------- 1 Pop Standard deviation -------------------------------
+        conditionalPanel(
+          ns = ns,
+          condition = "input.popuParameter == 'Population Standard Deviation'",
+
+          conditionalPanel(
+            ns = ns,
+            condition = "input.inferenceType == 'Confidence Interval'",
+
+            titlePanel(tags$u("Confidence Interval")),
+            br(),
+            uiOutput(ns('oneMeanCI')),
+            br()
+          ), # Confidence Interval
+
+          conditionalPanel(
+            ns = ns,
+            condition = "input.inferenceType == 'Hypothesis Testing'",
+
+            titlePanel(tags$u("Hypothesis Test")),
+            br(),
+            uiOutput(ns('onePopulationSDHT')),
+            br(),
+            ), # Hypothesis Testing
+          ), # One Population Proportion
+        ), # "input.siMethod == '1'"
+
+### ------------ 2 Samples ---------------------------------------------------
+      conditionalPanel( #### Two Samp ----
+        ns = ns,
+        condition = "input.siMethod == '2'",
+
+#### ---------------- Independent Pop Means ----------------------------------
+        conditionalPanel(
+          ns = ns,
+          condition = "input.popuParameters == 'Independent Population Means'",
+
+          navbarPage(
+            id = ns("indPopMeansTabset"),
+            selected = "Analysis",
+            title = NULL,
+
+            tabPanel(
+              id = ns("indPopMeans"),
+              title = "Analysis",
+
+              conditionalPanel(
+                ns = ns,
+                condition = "input.inferenceType2 == 'Confidence Interval'",
+
+                titlePanel(tags$u("Confidence Interval")),
+                br(),
+                uiOutput(ns('indMeansCI')),
+                br(),
+                ), # Confidence interval
+
+              conditionalPanel(
+                ns = ns,
+                condition = "input.inferenceType2 == 'Hypothesis Testing'",
+
+                titlePanel(tags$u("Hypothesis Test")),
+                br(),
+                uiOutput(ns('indMeansHT')),
+                br()
+              ) # Hypothesis Testing
+            ), # indPopMeans Analysis tabPanel
+
+            tabPanel(
+              id = ns("indPopMeansGraphs"),
+              title = "Graphs",
+
+              conditionalPanel(
+                ns = ns,
+                condition = "input.dataAvailability2 != 'Summarized Data' && input.indMeansBoxplot == 1",
+                br(),
+                titlePanel(tags$u("Boxplot")),
+                br(),
+                plotOptionsMenuUI(
+                  id = ns("indMeansBoxplot"),
+                  plotType = "Boxplot",
+                  title = "Boxplot"),
+                uiOutput(ns("renderIndMeansBoxplot")),
+                br(),
+                br()
+              ),
+
+              conditionalPanel(
+                ns = ns,
+                condition = "input.dataAvailability2 != 'Summarized Data' && input.indMeansQQPlot == 1",
+
+                br(),
+                hr(),
+                br(),
+                titlePanel(tags$u("Q-Q Plots for Sample 1 and Sample 2")),
+                br(),
+                plotOptionsMenuUI(
+                  id = ns("indMeansQQPlot"),
+                  plotType = "QQ Plot",
+                  title = "Q-Q Plots"),
+                uiOutput(ns("renderIndMeansQQPlot")),
+                br(),
+                br()
+              )
+            ), # indPopMeans Graphs tabPanel
+
+            tabPanel(
+              id = ns("indPopMeansData"),
+              title = "Uploaded Data",
+
+              uiOutput(ns("renderIndPopMeansData"))
+            ), # indPopMeansData Uploaded Data tabPanel
+            ), # indPopMeansTabset
+          ), # Two Independent Samples
+
+
+#### ---------------- Signed Rank Test --------------------------------------
+        conditionalPanel(
+          ns = ns,
+          condition = "input.popuParameters == 'Wilcoxon Signed Rank Test'",
+
+          navbarPage(
+            id = ns("signedRankTabset"),
+            selected = "Analysis",
+            title = NULL,
+
+            tabPanel(
+              id = ns("signedRankTab"),
+              title = "Analysis",
+
+              conditionalPanel(
+                ns = ns,
+                condition = "input.inferenceType2 == 'Hypothesis Testing' || input.inferenceType2 == 'Confidence Interval'",
+
+                titlePanel(tags$u("Hypothesis Test")),
+                br(),
+                uiOutput(ns('signedRankHypothesisTest')),
+                br(),
+                ), # Hypothesis Testing
+              ), # Analysis Tab
+            tabPanel(
+              id = ns("signedRankDataRanks"),
+              title = "Data with Ranks",
+
+              conditionalPanel(
+                ns = ns,
+                condition = "input.inferenceType2 == 'Hypothesis Testing' || input.inferenceType2 == 'Confidence Interval'",
+
+                                        #titlePanel("Results"),
+                br(),
+                uiOutput(ns('signedRankDataRanks')),
+                br(),
+                ), # Ranked Results by Group
+              ), # Tabset
+            tabPanel(
+              id = ns("signedRankGraphs"),
+              title = "Graphs",
+              conditionalPanel(
+                ns = ns,
+                condition = "input.popuParameters == 'Wilcoxon Signed Rank Test' && input.signedRankQQPlot == 1",
+
+                                        # Q-Q Plot of the Difference
                 conditionalPanel(
                   ns = ns,
-                  condition = "input.chisquareMethod == 'Chi-Square'",
+                  condition = "input.popuParameters == 'Wilcoxon Signed Rank Test' && input.signedRankQQPlot == 1",
+                  titlePanel("Q-Q Plot of the Difference"),
+                  br(),
+                  plotOptionsMenuUI(
+                    id = ns("signedRankQQ"),
+                    plotType = "QQ Plot",
+                    title = "Q-Q Plot of the Difference"),
+                  plotOutput(ns("signedRankQQ")),
+                  br(), br()
+                )
+              )
+            ),
+            tabPanel(
+              id    = ns("signedRankUploadData"),
+              title = "Uploaded Data",
 
-                  titlePanel("Chi-Square Test for Independence"),
-                  hr(),
+              uiOutput(ns("renderSignedRankUploadData"))
+            ),
+            ), # Uploaded Data
+          ), # Signed Rank Tabs Whole
+
+#### ---------------- Dependent Pop Means ----------------------------------
+        conditionalPanel(
+          ns = ns,
+          condition = "input.popuParameters == 'Dependent Population Means'",
+
+          navbarPage(
+            id = ns("depPopMeansTabset"),
+            selected = "Analysis",
+            title = NULL,
+
+            tabPanel(
+              id = ns("depPopMeans"),
+              title = "Analysis",
+
+              conditionalPanel(
+                ns = ns,
+                condition = "input.inferenceType2 == 'Confidence Interval'",
+
+                titlePanel(tags$u("Confidence Interval")),
+                br(),
+                uiOutput(ns('depMeansCI')),
+                br(),
+                ), # CI
+
+              conditionalPanel(
+                ns = ns,
+                condition = "input.inferenceType2 == 'Hypothesis Testing'",
+
+                titlePanel(tags$u("Hypothesis Test")),
+                br(),
+                uiOutput(ns('depMeansHT')),
+                br()
+              ), # HT
+              ), #depPopMeans Analysis tabPanel
+
+            tabPanel(
+              id = ns("depPopMeansData"),
+              title = "Uploaded Data",
+
+              uiOutput(ns("renderDepPopMeansData")),
+              ), #depPopMeansData Uploaded Data tabPanel
+
+            tabPanel(
+              id = ns("depMeansDataCalcs"),
+              title = "Data with Calculations",
+              br(),
+              fluidRow(
+                column(width = 8,
+                       uiOutput(ns('depMeansTable')),
+                       ),
+
+                column(width = 4,
+                       br(),
+                       )
+              ),
+              br(),
+              br(),
+              ), # Dep means table with calcs
+
+            tabPanel(
+              id = ns("depMeansGraphs"),
+              title = "Graphs",
+
+              conditionalPanel(
+                ns = ns,
+                condition = "input.depMeansQQPlot == 1",
+                titlePanel(tags$u("Q-Q Plot of the Difference (d)")),
+                br(),
+                plotOptionsMenuUI(
+                  id = ns("depMeansQQPlot"),
+                  plotType = "QQ Plot",
+                  title = "Q-Q Plot of the Difference (d)"),
+                uiOutput(ns("renderDepMeansQQPlot")),
+                br(),
+                br()
+              )
+            ), # Dep means graphs tab panel
+            ), # depPopMeansTabset
+          ), # Two Dependent Samples
+
+#### ---------------- 2 Pop Proportions --------------------------------------
+        conditionalPanel(
+          ns = ns,
+          condition = "input.popuParameters == 'Population Proportions'",
+
+          navbarPage(
+            id = ns("twoPropTabset"),
+            selected = "Analysis",
+            title = NULL,
+
+            tabPanel(
+              id = ns("twoProp"),
+              title = "Analysis",
+
+              conditionalPanel(
+                ns = ns,
+                condition = "input.inferenceType2 == 'Confidence Interval'",
+
+                titlePanel(tags$u("Confidence Interval")),
+                br(),
+                uiOutput(ns('twoPropCI')),
+                br(),
+                ), # Confidence Interval
+
+              conditionalPanel(
+                ns = ns,
+                condition = "input.inferenceType2 == 'Hypothesis Testing'",
+
+                titlePanel(tags$u("Hypothesis Test")),
+                br(),
+                uiOutput(ns('twoPropHT')),
+                br(),
+                ), # Hypothesis Testing
+              ), # Analysis Panel
+            tabPanel(
+              id = ns("twoPropGraphs"),
+              title = "Graphs",
+              br(),
+              div(
+                style = "width: 600px; text-align: left;",
+                plotOutput(ns("twoPropBarPlot"), height = "400px")),
+              div(
+                style = "display: flex; justify-content: flex-start;",
+                plotOutput(ns("twoPropPieChart"),
+                           width = "600px", height = "500px"))
+            ), # Graph Panel
+            )
+        ), # Two Population Proportions
+
+#### ---------------- Wilcoxon Rank Sum --------------------------------------
+        conditionalPanel(
+          ns = ns,
+          condition = "input.popuParameters == 'Wilcoxon rank sum test'",
+
+          navbarPage(
+            id = ns("wilcoxonRankSumTabset"),
+            selected = "Analysis",
+            title = NULL,
+
+            tabPanel(
+              id = ns("wilcoxonRankSumTab"),
+              title = "Analysis",
+
+              conditionalPanel(
+                ns = ns,
+                condition = "input.inferenceType2 == 'Hypothesis Testing' || input.inferenceType2 == 'Confidence Interval'",
+
+                titlePanel(tags$u("Hypothesis Test")),
+                br(),
+                uiOutput(ns('wilcoxonRankSum')),
+                br(),
+                ), # Hypothesis Testing
+              ), # Analysis Tab
+            tabPanel(
+              id = ns("wilcoxonRankSumDataRanks"),
+              title = "Data with Ranks",
+
+              conditionalPanel(
+                ns = ns,
+                condition = "input.inferenceType2 == 'Hypothesis Testing' || input.inferenceType2 == 'Confidence Interval'",
+
+                titlePanel("Ranked Results by Group"),
+                br(),
+                uiOutput(ns('wilcoxonRankSumDataRanks')),
+                br(),
+                ), # Ranked Results by Group
+              ), # Data with Ranks Tab
+            tabPanel(
+              id = ns("wilcoxonRankSumGraphs"),
+              title = "Graphs",
+              conditionalPanel(
+                ns = ns,
+                condition = "input.popuParameters == 'Wilcoxon rank sum test' && (input.sidebysidewRankSum == 1 || input.sidebysidewRankQQ == 1)",
+
+                                        # Side-by-side Boxplot
+                conditionalPanel(
+                  ns = ns,
+                  condition = "input.popuParameters == 'Wilcoxon rank sum test' && input.sidebysidewRankSum == 1",
+
+                  titlePanel("Side-by-side Boxplot"),
                   br(),
-                  h4("Observed Frequencies"),
-                  br(),
-                  uiOutput(ns("renderChiSqObs")),
-                  br(),
-                  br(),
-                  h4("Expected Frequencies"),
-                  br(),
-                  uiOutput(ns("renderChiSqExp")),
-                  br(),
-                  br(),
-                  h4("Calculation of the \\( \\chi^2 \\) statistic value"),
-                  br(),
-                  uiOutput(ns("renderChiSqResults")),
-                  br(),
-                  hr(),
-                  br(),
-                  uiOutput(ns("chiSqTest")),
-                  br(),
-                  br(),
+                  plotOptionsMenuUI(
+                    id = ns("sidebysidewRankSum"),
+                    plotType = "Boxplot",
+                    title = "Boxplot"
+                  ),
+                  plotOutput(ns("sidebysidewRankSum")),
+                  br(),br()
                 ),
 
-                #### ---------------- Fisher's Exact Test ------------------------------------
+                                        # Q-Q Plots
                 conditionalPanel(
                   ns = ns,
-                  condition = "input.chisquareMethod == 'Fisher'",
+                  condition = "input.popuParameters == 'Wilcoxon rank sum test' && input.sidebysidewRankQQ == 1",
 
-                  titlePanel("Fisher's Exact Test"),
-                  hr(),
+                  titlePanel("Q-Q Plots for Sample 1 and Sample 2"),
                   br(),
-                  h4("Observed Frequencies"),
-                  uiOutput(ns("renderFishersObs")),
-                  br(),
-                  br(),
-                  hr(),
-                  br(),
-                  h4("Hypothesis Test"),
-                  uiOutput(ns("fishersTest")),
-                  br(),
-                  br(),
-                ) #Fisher
-              ) # input.siMethod == 'Categorical'
-          ) #inferenceData
-        ), #inferenceMP
+                  plotOptionsMenuUI(
+                    id = ns("sidebysidewRankQQ"),
+                    plotType = "QQ Plot",
+                    title = "Q-Q Plots"),
+                  plotOutput(ns("sidebysidewRankQQ")),
+                  br(), br()
+                ))
+            ),
+            tabPanel(
+              id    = ns("wRankSumData"),
+              title = "Uploaded Data",
 
-        uiOutput(ns("kwRawContainer"))
+              uiOutput(ns("renderWRankSumMeansData"))
+            ),
+            ), # Uploaded Data
+          ), # Wilcoxon rank sum Tabs whole
 
-      ), #mainPanel
-    ) #sidebarLayout
-  ) # UI tagList
+### ------------ Two Pop Var ------------------------------------------
+
+        conditionalPanel(
+          ns = ns,
+          condition = "input.popuParameters == 'Two Population Variances'",
+
+          navbarPage(
+            id = ns("twoPopVarTabset"),
+            selected = "Analysis",
+            title = NULL,
+
+            tabPanel(
+              id = ns("twoPopVar"),
+              title = "Analysis",
+
+              conditionalPanel(
+                ns = ns,
+                condition = "input.inferenceType2 == 'Confidence Interval'",
+
+                titlePanel(tags$u("Confidence Interval")),
+                br(),
+                uiOutput(ns('twoPopVarCI')),
+                br(),
+
+                ), # CI
+
+              conditionalPanel(
+                ns = ns,
+                condition = "input.inferenceType2 == 'Hypothesis Testing'",
+
+                titlePanel(tags$u("Hypothesis Test")),
+                br(),
+                uiOutput(ns('twoPopVarHT')),
+                br(),
+
+                ) # HT
+            ))), # Two Pop Var
+        ), # "input.siMethod == '2'"
+
+### ------------ Multiple Samples ------------------------------------
+#### ----------- ANOVA -----------------------------------------------
+      conditionalPanel(
+        ns = ns,
+        condition = "input.siMethod == 'Multiple' && input.multipleMethodChoice == 'anova'",
+
+        navbarPage(
+          id       = ns("anovaTabset"),
+          selected = "Analysis",
+          title = NULL,
+
+          tabPanel(
+            id    = ns("anova"),
+            title = "Analysis",
+
+            titlePanel("One-way Analysis of Variance (ANOVA)"),
+            hr(),
+            br(),
+            uiOutput(ns("anovaOutput")),
+            br(),
+            br(),
+
+            conditionalPanel(
+              ns = ns,
+              condition = "input.anovaOptions.indexOf('posthoc') > -1",
+
+              uiOutput(ns('anovaPosthocAnalysis'))
+            )
+          ),
+
+          tabPanel(
+            title = "Graphs",
+
+            conditionalPanel(
+              ns = ns,
+              condition = "input.anovaGraphs.indexOf('Side-by-side Boxplot') > -1",
+
+              titlePanel("Side-by-side Boxplot"),
+              br(),
+              br(),
+              plotOptionsMenuUI(
+                id       = ns("anovaBoxplot"),
+                plotType = "Boxplot",
+                title    = "Side-by-Side Boxplot"),
+              uiOutput(ns("renderAnovaBoxplot"))
+            ),
+
+            conditionalPanel(
+              ns = ns,
+              condition = "input.anovaGraphs.indexOf('Histogram of Residuals') > -1",
+
+              titlePanel("Histogram of Residuals"),
+              br(),
+              br(),
+              plotOptionsMenuUI(
+                id    = ns("anovaHistogram"),
+                title = "Histogram of Residuals",
+                xlab  = "Residuals",
+                ylab  = "Frequency"),
+              uiOutput(ns("renderAnovaHistogram"))
+            ),
+
+            conditionalPanel(
+              ns = ns,
+              condition = "input.anovaGraphs.indexOf('QQ Plot of Residuals') > -1",
+
+              titlePanel("QQ Plot of Residuals"),
+              br(),
+              br(),
+              plotOptionsMenuUI(
+                id     = ns("anovaQQplot"),
+                title  = "QQ Plot of Residuals",
+                xlab   = "Normal Quantiles",
+                ylab   = "Residuals",
+                colour = "#0F3345"),
+              uiOutput(ns("renderAnovaQQplot"))
+            ),
+
+            conditionalPanel(
+              ns = ns,
+              condition = "input.anovaGraphs.indexOf('Plot Group Means') > -1",
+
+              titlePanel("Group Means"),
+              br(),
+              br(),
+              plotOptionsMenuUI(
+                id     = ns("anovaMeanPlot"),
+                title  = "Group Means",
+                xlab   = "Group",
+                ylab   = "Mean",
+                colour = "#0F3345"),
+              uiOutput(ns("renderAnovaMeanPlot"))
+            )
+          ),
+
+          tabPanel(
+            id    = ns("anovaData"),
+            title = "Uploaded Data",
+
+            uiOutput(ns("renderAnovaDataView"))
+          )
+        ) #anovaTabset tabsetPanel
+      ), #Multiple Samples (ANOVA)
+
+#### ------------ Kruskal-Wallis ------------------------------------
+      conditionalPanel(
+        ns = ns,
+        condition = "input.siMethod == 'Multiple' && input.multipleMethodChoice == 'kw'",
+
+        navbarPage(
+          id = ns("kwTabset"),
+          selected = "Analysis",
+          title = NULL,
+
+          tabPanel(
+            id    = ns("kw"),
+            title = "Analysis",
+
+            titlePanel("Hypothesis Test"),
+            br(),
+            uiOutput(ns('kwHT')),
+            br(),
+            plotOutput(ns('kruskalWallisPlot'), width = "50%", height = "400px"),
+            br(),
+            uiOutput(ns('kwConclusionOutput'))
+          ),
+
+          tabPanel(
+            id    = ns("kwRM"),
+            title = "Data table with Ranks",
+
+            DTOutput("renderrankedmean"),
+
+            uiOutput(ns("renderKWRM"))
+          ),
+
+          tabPanel(
+            id    = ns("kwData"),
+            title = "Uploaded Data",
+
+            uiOutput(ns("renderKWData"))
+          )
+
+        ), #tabsetPanel
+        ),
+
+### ------------ Categorical Samples (Chi-Square) ----------------------------
+      conditionalPanel(
+        ns = ns,
+        condition = "input.siMethod == 'Categorical'",
+
+#### ---------------- Chi-Square Test for Independence -----------------------
+        conditionalPanel(
+          ns = ns,
+          condition = "input.chisquareMethod == 'Chi-Square'",
+
+          titlePanel("Chi-Square Test for Independence"),
+          hr(),
+          br(),
+          h4("Observed Frequencies"),
+          br(),
+          uiOutput(ns("renderChiSqObs")),
+          br(),
+          br(),
+          h4("Expected Frequencies"),
+          br(),
+          uiOutput(ns("renderChiSqExp")),
+          br(),
+          br(),
+          h4("Calculation of the \\( \\chi^2 \\) statistic value"),
+          br(),
+          uiOutput(ns("renderChiSqResults")),
+          br(),
+          hr(),
+          br(),
+          uiOutput(ns("chiSqTest")),
+          br(),
+          br(),
+          ),
+
+#### ---------------- Fisher's Exact Test ------------------------------------
+        conditionalPanel(
+          ns = ns,
+          condition = "input.chisquareMethod == 'Fisher'",
+
+          titlePanel("Fisher's Exact Test"),
+          hr(),
+          br(),
+          h4("Observed Frequencies"),
+          uiOutput(ns("renderFishersObs")),
+          br(),
+          br(),
+          hr(),
+          br(),
+          h4("Hypothesis Test"),
+          uiOutput(ns("fishersTest")),
+          br(),
+          br(),
+          ) #Fisher
+      ), # input.siMethod == 'Categorical'
+
+      uiOutput(ns("kwRawContainer"))
+    )
+  )
 }
 
-# =========================================================================== #
-# ---- Server Components ----------------------------------------------------
-# =========================================================================== #
+                                        # =========================================================================== #
+                                        # ---- Server Components ----------------------------------------------------
+                                        # =========================================================================== #
 
 statInfrServer <- function(id) {
   moduleServer(id, function(input, output, session) {
@@ -2355,10 +2331,10 @@ statInfrServer <- function(id) {
       })
     }
 
-    # ----------------------------------------------------------- #
-    #     Minitab file readers (authored by Darren Law)           #
-    # ----------------------------------------------------------- #
-    # Older Minitab Portable Worksheet (.mtp) – text-based.
+                                        # ----------------------------------------------------------- #
+                                        #     Minitab file readers (authored by Darren Law)           #
+                                        # ----------------------------------------------------------- #
+                                        # Older Minitab Portable Worksheet (.mtp) – text-based.
     read_mtp_helper <- function(path) {
       raw <- foreign::read.mtp(path)
       keep <- raw[vapply(raw, is.numeric, logical(1))]
@@ -2370,7 +2346,7 @@ statInfrServer <- function(id) {
       as.data.frame(keep, stringsAsFactors = FALSE)
     }
 
-    # Newer Minitab XML formats (.mwx / .mpx) – best-effort, schema varies.
+                                        # Newer Minitab XML formats (.mwx / .mpx) – best-effort, schema varies.
     read_minitab_xml <- function(path) {
       tmp <- tempfile()
       on.exit(unlink(tmp, recursive = TRUE), add = TRUE)
@@ -2410,9 +2386,9 @@ statInfrServer <- function(id) {
     }
     ## NOTE: end of code copied from DescStats.R written by Darren Law.
 
-    #  ========================================================================= #
+                                        #  ========================================================================= #
     ## -------- Data Validation ------------------------------------------------
-    #  ========================================================================= #
+                                        #  ========================================================================= #
     si_iv <- InputValidator$new()
     onemean_iv <- InputValidator$new()
     onemeansdknown_iv <- InputValidator$new()
@@ -2466,28 +2442,28 @@ statInfrServer <- function(id) {
     chiSq3x2_iv <- InputValidator$new()
     chiSq3x3_iv <- InputValidator$new()
 
-    ### ------------ Rules -------------------------------------------------------
+### ------------ Rules -------------------------------------------------------
 
-    # sampleSize
+                                        # sampleSize
     onemean_iv$add_rule("sampleSize", sv_required())
     onemean_iv$add_rule("sampleSize", sv_integer())
     onemean_iv$add_rule("sampleSize", sv_gt(1))
 
-    # sampleMean
+                                        # sampleMean
     onemean_iv$add_rule("sampleMean", sv_required())
 
-    # sample1
+                                        # sample1
     onemeanraw_iv$add_rule("sample1", sv_required())
     onemeanraw_iv$add_rule("sample1", sv_regex("^( )*(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
                                                "Data must be numeric values separated by a comma (ie: 2,3,4)"))
-    # raw data, SD unknown
+                                        # raw data, SD unknown
     onemeanraw_iv$add_rule("sample1", ~ {
       if (input$sigmaKnownRaw == "rawUnknown" && input$inferenceType == 'Hypothesis Testing' && (sd(createNumLst(input$sample1)) == 0)) {
         "No variance in sample data"
       }
     })
 
-    # One Mean Upload Data
+                                        # One Mean Upload Data
     onemeanupload_iv$add_rule("oneMeanUserData", sv_required())
     onemeanupload_iv$add_rule("oneMeanUserData", ~ if(is.null(fileInputs$oneMeanStatus) || fileInputs$oneMeanStatus == 'reset') "Required")
     ## onemeanupload_iv$add_rule("oneMeanUserData", ~ if(!(tolower(tools::file_ext(input$oneMeanUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
@@ -2496,11 +2472,11 @@ statInfrServer <- function(id) {
     onemeanupload_iv$add_rule("oneMeanUserData", ~ if(nrow(OneMeanUploadData()) < 3) "Samples must include at least 2 observations")
 
 
-    # popuSD
+                                        # popuSD
     onemeansdknown_iv$add_rule("popuSD", sv_required())
     onemeansdknown_iv$add_rule("popuSD", sv_gt(0))
 
-    # popuSDRaw
+                                        # popuSDRaw
     onemeanraw_iv$add_rule("popuSDRaw", ~ {
       if (input$sigmaKnownRaw == "rawKnown" && is.na(input$popuSDRaw)) {
         "Required"
@@ -2509,11 +2485,11 @@ statInfrServer <- function(id) {
       }
     })
 
-    # popuSDUpload
+                                        # popuSDUpload
     onemeanuploadsd_iv$add_rule("popuSDUpload", sv_required())
     onemeanuploadsd_iv$add_rule("popuSDUpload", sv_gt(0))
 
-    # oneMeanVariable
+                                        # oneMeanVariable
     onemeanuploadvar_iv$add_rule("oneMeanVariable", sv_required())
     onemeanuploadvar_iv$add_rule("oneMeanVariable", ~ {
       if (checkNumeric(OneMeanUploadData(), input$oneMeanVariable)) {
@@ -2533,48 +2509,48 @@ statInfrServer <- function(id) {
     })
 
 
-    # sampSD
+                                        # sampSD
     onemeansdunk_iv$add_rule("sampSD", sv_required())
     onemeansdunk_iv$add_rule("sampSD", sv_gt(0))
 
-    # sampleSize1
+                                        # sampleSize1
     indmeanssumm_iv$add_rule("sampleSize1", sv_required())
     indmeanssumm_iv$add_rule("sampleSize1", sv_integer())
     indmeanssumm_iv$add_rule("sampleSize1", sv_gt(1))
 
-    # sampleMean1
+                                        # sampleMean1
     indmeanssumm_iv$add_rule("sampleMean1", sv_required())
 
-    # sampleSize2
+                                        # sampleSize2
     indmeanssumm_iv$add_rule("sampleSize2", sv_required())
     indmeanssumm_iv$add_rule("sampleSize2", sv_integer())
     indmeanssumm_iv$add_rule("sampleSize2", sv_gt(1))
 
-    # sampleMean2
+                                        # sampleMean2
     indmeanssumm_iv$add_rule("sampleMean2", sv_required())
 
-    # popuSD1
+                                        # popuSD1
     indmeanssdknown_iv$add_rule("popuSD1", sv_required())
     indmeanssdknown_iv$add_rule("popuSD1", sv_gt(0))
 
-    # popuSD2
+                                        # popuSD2
     indmeanssdknown_iv$add_rule("popuSD2", sv_required())
     indmeanssdknown_iv$add_rule("popuSD2", sv_gt(0))
 
-    # sampSD1
+                                        # sampSD1
     indmeanssdunk_iv$add_rule("sampSD1", sv_required())
     indmeanssdunk_iv$add_rule("sampSD1", sv_gt(0))
 
-    # sampSD2
+                                        # sampSD2
     indmeanssdunk_iv$add_rule("sampSD2", sv_required())
     indmeanssdunk_iv$add_rule("sampSD2", sv_gt(0))
 
-    # raw_sample1
+                                        # raw_sample1
     indmeansraw_iv$add_rule("raw_sample1", sv_required())
     indmeansraw_iv$add_rule("raw_sample1", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
                                                     "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)"))
 
-    # raw_sample2
+                                        # raw_sample2
     indmeansraw_iv$add_rule("raw_sample2", sv_required())
     indmeansraw_iv$add_rule("raw_sample2", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
                                                     "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)."))
@@ -2592,7 +2568,7 @@ statInfrServer <- function(id) {
                                                      && sd(createNumLst(input$raw_sample2)) == 0
                                                      && input$inferenceType2 == 'Hypothesis Testing') "Sample standard deviation cannot be 0 for both Sample 1 and Sample 2.")
 
-    #indMeansUserData
+                                        #indMeansUserData
     indmeansupload_iv$add_rule("indMeansUserData", sv_required())
     indmeansupload_iv$add_rule("indMeansUserData", ~ if(is.null(fileInputs$indMeansStatus) || fileInputs$indMeansStatus == 'reset') "Required")
     ## indmeansupload_iv$add_rule("indMeansUserData", ~ if(!(tolower(tools::file_ext(input$indMeansUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
@@ -2687,15 +2663,15 @@ statInfrServer <- function(id) {
         }
       }
     })
-    # ind means Mu Naught
+                                        # ind means Mu Naught
     indmeansmunaught_iv$add_rule("indMeansMuNaught", sv_required())
 
-    # before
+                                        # before
     depmeansraw_iv$add_rule("before", sv_required())
     depmeansraw_iv$add_rule("before", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
                                                "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)"))
 
-    # after
+                                        # after
     depmeansraw_iv$add_rule("after", sv_required())
     depmeansraw_iv$add_rule("after", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
                                               "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)."))
@@ -2776,7 +2752,7 @@ statInfrServer <- function(id) {
     depmeansraw_iv$add_rule("after", ~ if(GetDepMeansData()$sd == 0) "Standard deviation of the difference (sd) is zero.")
 
     depmeansmunaught_iv$add_rule("depMeansMuNaught", sv_required())
-    # signed Rank Test
+                                        # signed Rank Test
     signedRankUpload_iv$add_rule("signedRankUpl", sv_required())
     signedRankUpload_iv$add_rule("signedRankUpl", ~ if(is.null(fileInputs$signedRankStatus) || fileInputs$signedRankStatus == 'reset') "Required")
     ## signedRankUpload_iv$add_rule("signedRankUpl", ~ if(!(tolower(tools::file_ext(input$signedRankUpl$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
@@ -2879,7 +2855,7 @@ statInfrServer <- function(id) {
       }
     })
 
-    # sample standard deviation
+                                        # sample standard deviation
     oneSD_iv$add_rule("SSDSampleSize", sv_required())
     oneSD_iv$add_rule("SSDSampleSize", sv_integer())
     oneSD_iv$add_rule("SSDSampleSize", sv_gt(1))
@@ -2888,18 +2864,18 @@ statInfrServer <- function(id) {
     oneSDht_iv$add_rule("hypStdDeviation", sv_required())
     oneSDht_iv$add_rule("hypStdDeviation", sv_gt(0))
 
-    # numSuccessesProportion
+                                        # numSuccessesProportion
     oneprop_iv$add_rule("numSuccesses", sv_required(message = "Numeric value required."))
     oneprop_iv$add_rule("numSuccesses", sv_integer())
     oneprop_iv$add_rule("numSuccesses", sv_gte(0))
 
-    # x1
+                                        # x1
     twoprop_iv$add_rule("numSuccesses1", sv_required())
     twoprop_iv$add_rule("numSuccesses1", sv_integer())
     twoprop_iv$add_rule("numSuccesses1", sv_gte(0))
     twopropht_iv$add_rule("numSuccesses1", ~ if(checkTwoProp() == 0) "At least one of (x1) and (x2) must be greater than 0.")
 
-    # x2
+                                        # x2
     twoprop_iv$add_rule("numSuccesses2", sv_required())
     twoprop_iv$add_rule("numSuccesses2", sv_integer())
     twoprop_iv$add_rule("numSuccesses2", sv_gte(0))
@@ -2917,92 +2893,92 @@ statInfrServer <- function(id) {
       }
     })
 
-    # diff naught
+                                        # diff naught
     twopropdiffnaught_iv$add_rule("propDiffNaught", sv_required())
     twopropdiffnaught_iv$add_rule("propDiffNaught", sv_gte(-1, message = "Value must be between -1 and 1 (inclusive)."))
     twopropdiffnaught_iv$add_rule("propDiffNaught", sv_lte(1, message = "Value must be between -1 and 1 (inclusive)."))
 
-    # SDSampleSize1
+                                        # SDSampleSize1
     twopopvarsum_iv$add_rule("SDSampleSize1", sv_required())
     twopopvarsum_iv$add_rule("SDSampleSize1", sv_integer())
     twopopvarsum_iv$add_rule("SDSampleSize1", sv_gt(1))
 
-    # SDSampleSize2
+                                        # SDSampleSize2
     twopopvarsum_iv$add_rule("SDSampleSize2", sv_required())
     twopopvarsum_iv$add_rule("SDSampleSize2", sv_integer())
     twopopvarsum_iv$add_rule("SDSampleSize2", sv_gt(1))
 
-    # stdDev1
+                                        # stdDev1
     twopopvarsum_iv$add_rule("stdDev1", sv_required())
     twopopvarsum_iv$add_rule("stdDev1", sv_gt(0))
 
-    # stdDev2
+                                        # stdDev2
     twopopvarsum_iv$add_rule("stdDev2", sv_required())
     twopopvarsum_iv$add_rule("stdDev2", sv_gt(0))
 
-    # Two Std Dev n1
+                                        # Two Std Dev n1
     twopopvar_iv$add_rule("n1", sv_required())
     twopopvar_iv$add_rule("n1", sv_integer())
     twopopvar_iv$add_rule("n1", sv_gt(1))
 
-    # Two Std Dev n2
+                                        # Two Std Dev n2
     twopopvar_iv$add_rule("n2", sv_required())
     twopopvar_iv$add_rule("n2", sv_integer())
     twopopvar_iv$add_rule("n2", sv_gt(1))
 
-    # Two Std Dev s1^2
+                                        # Two Std Dev s1^2
     twopopvar_iv$add_rule("s1sq", sv_required())
     twopopvar_iv$add_rule("s1sq", sv_gt(0))
 
-    # Two Std Dev s2^2
+                                        # Two Std Dev s2^2
     twopopvar_iv$add_rule("s2sq", sv_required())
     twopopvar_iv$add_rule("s2sq", sv_gt(0))
 
-    # raw group 1
+                                        # raw group 1
     twopopvarraw_iv$add_rule("rawSamp1SD", sv_required())
     twopopvarraw_iv$add_rule("rawSamp1SD", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
                                                     "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)."))
     twopopvarraw_iv$add_rule("rawSamp1SD", ~ if (sd(createNumLst(input$rawSamp1SD)) == 0) "No variance in sample data")
 
-    # raw group 2
+                                        # raw group 2
     twopopvarraw_iv$add_rule("rawSamp2SD", sv_required())
     twopopvarraw_iv$add_rule("rawSamp2SD", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
                                                     "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)."))
     twopopvarraw_iv$add_rule("rawSamp2SD", ~ if (sd(createNumLst(input$rawSamp2SD)) == 0) "No variance in sample data")
 
 
-    # numTrialsProportion
+                                        # numTrialsProportion
     oneprop_iv$add_rule("numTrials", sv_required(message = "Numeric value required."))
     oneprop_iv$add_rule("numTrials", sv_integer())
     oneprop_iv$add_rule("numTrials", sv_gt(0))
 
-    # n1
+                                        # n1
     twoprop_iv$add_rule("numTrials1", sv_required())
     twoprop_iv$add_rule("numTrials1", sv_integer())
     twoprop_iv$add_rule("numTrials1", sv_gt(0))
 
-    # n2
+                                        # n2
     twoprop_iv$add_rule("numTrials2", sv_required())
     twoprop_iv$add_rule("numTrials2", sv_integer())
     twoprop_iv$add_rule("numTrials2", sv_gt(0))
 
-    # hypMean
+                                        # hypMean
     onemeanht_iv$add_rule("hypMean", sv_required())
 
-    # hypProportion
+                                        # hypProportion
     onepropht_iv$add_rule("hypProportion", sv_required())
     onepropht_iv$add_rule("hypProportion", sv_gt(0))
     onepropht_iv$add_rule("hypProportion", sv_lt(1))
 
-    # Anova
+                                        # Anova
     anovaupload_iv$add_rule("anovaUserData", sv_required())
     anovaupload_iv$add_rule("anovaUserData", ~ if(is.null(fileInputs$anovaStatus) || fileInputs$anovaStatus == 'reset') "Required")
     ## anovaupload_iv$add_rule("anovaUserData", ~ if(!(tolower(tools::file_ext(input$anovaUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
     anovaupload_iv |> add_rule_accepted_file_formats("anovaUserData")
     anovaupload_iv$add_rule("anovaUserData", ~ if(ncol(anovaUploadData()) < 2) "Data must include at least two columns")
-    # anovaupload_iv$add_rule("anovaUserData", ~ if(nrow(anovaUploadData()) < 2) "")
+                                        # anovaupload_iv$add_rule("anovaUserData", ~ if(nrow(anovaUploadData()) < 2) "")
 
-    # anovamulti_iv$add_rule("anovaMultiColumns", sv_required())
+                                        # anovamulti_iv$add_rule("anovaMultiColumns", sv_required())
     anovamulti_iv$add_rule("anovaMultiColumns", ~ if(length(input$anovaMultiColumns) < 2) "Select at least two columns")
     anovamulti_iv$add_rule("anovaMultiColumns", ~ {
       if (checkNumeric(anovaUploadData(), input$anovaMultiColumns)) {
@@ -3020,7 +2996,7 @@ statInfrServer <- function(id) {
       }
     })
 
-    # Kruskal-Wallis
+                                        # Kruskal-Wallis
     kwupload_iv$add_rule("kwUserData", sv_required())
     kwupload_iv$add_rule("kwUserData", ~ if(is.null(fileInputs$kwStatus) || fileInputs$kwStatus == 'reset') "Required")
     ## kwupload_iv$add_rule("kwUserData", ~ if(!(tolower(tools::file_ext(input$kwUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
@@ -3042,7 +3018,7 @@ statInfrServer <- function(id) {
         "Response variable must be numeric."
       }
     })
-    # Chi-Square
+                                        # Chi-Square
     ChiSqInputRules <- function(iv, inputID) {
       iv$add_rule(inputID, sv_required())
       iv$add_rule(inputID, ~ if(any(is.na(chiSqActiveData()$numeric))) "Fields must be positive integers.")
@@ -3053,165 +3029,165 @@ statInfrServer <- function(id) {
       iv$add_rule(inputID, ~ if(any(chiSqTotaled()["Total",] == 0)) "Column Totals must be greater than zero.")
     }
 
-    # 2 x 2
+                                        # 2 x 2
     ChiSqInputRules(chiSq2x2_iv, "chiSqInput2x2")
 
-    # 2 x 3
+                                        # 2 x 3
     ChiSqInputRules(chiSq2x3_iv, "chiSqInput2x3")
 
-    # 3 x 2
+                                        # 3 x 2
     ChiSqInputRules(chiSq3x2_iv, "chiSqInput3x2")
 
-    # 3 x 3
+                                        # 3 x 3
     ChiSqInputRules(chiSq3x3_iv, "chiSqInput3x3")
 
-    ### ------------ Conditions --------------------------------------------------
+### ------------ Conditions --------------------------------------------------
     onemean_iv$condition(~ isTRUE(input$siMethod == '1' &&
-                                    input$popuParameter == 'Population Mean' &&
-                                    input$dataAvailability == 'Summarized Data'))
+                                  input$popuParameter == 'Population Mean' &&
+                                  input$dataAvailability == 'Summarized Data'))
 
     onemeansdknown_iv$condition(~ isTRUE(input$siMethod == '1' &&
-                                           input$popuParameter == 'Population Mean' &&
-                                           input$dataAvailability == 'Summarized Data' &&
-                                           input$sigmaKnown == 'Known'))
-
-    onemeansdunk_iv$condition(~ isTRUE(input$siMethod == '1' &&
                                          input$popuParameter == 'Population Mean' &&
                                          input$dataAvailability == 'Summarized Data' &&
-                                         input$sigmaKnown == 'Unknown'))
+                                         input$sigmaKnown == 'Known'))
+
+    onemeansdunk_iv$condition(~ isTRUE(input$siMethod == '1' &&
+                                       input$popuParameter == 'Population Mean' &&
+                                       input$dataAvailability == 'Summarized Data' &&
+                                       input$sigmaKnown == 'Unknown'))
 
     onemeanraw_iv$condition(~ isTRUE(input$siMethod == '1' &&
-                                       input$popuParameter == 'Population Mean' &&
-                                       input$dataAvailability == 'Enter Raw Data'))
+                                     input$popuParameter == 'Population Mean' &&
+                                     input$dataAvailability == 'Enter Raw Data'))
 
     onemeanupload_iv$condition(~ isTRUE(input$siMethod == '1' &&
-                                          input$popuParameter == 'Population Mean' &&
-                                          input$dataAvailability == 'Upload Data'))
+                                        input$popuParameter == 'Population Mean' &&
+                                        input$dataAvailability == 'Upload Data'))
 
     onemeanuploadvar_iv$condition(function() {isTRUE(input$siMethod == '1' &&
-                                                       input$popuParameter == 'Population Mean' &&
-                                                       input$dataAvailability == 'Upload Data' &&
-                                                       onemeanupload_iv$is_valid()) })
+                                                     input$popuParameter == 'Population Mean' &&
+                                                     input$dataAvailability == 'Upload Data' &&
+                                                     onemeanupload_iv$is_valid()) })
 
     onemeanuploadsd_iv$condition(function() {isTRUE(input$siMethod == '1' &&
-                                                      input$popuParameter == 'Population Mean' &&
-                                                      input$dataAvailability == 'Upload Data' &&
-                                                      input$sigmaKnownUpload == 'Known') })
+                                                    input$popuParameter == 'Population Mean' &&
+                                                    input$dataAvailability == 'Upload Data' &&
+                                                    input$sigmaKnownUpload == 'Known') })
 
     onemeanht_iv$condition(~ isTRUE(input$siMethod == '1' &&
-                                      input$popuParameter == 'Population Mean' &&
-                                      input$inferenceType == 'Hypothesis Testing'))
+                                    input$popuParameter == 'Population Mean' &&
+                                    input$inferenceType == 'Hypothesis Testing'))
 
     indmeanssumm_iv$condition(~ isTRUE(input$siMethod == '2' &&
-                                         input$popuParameters == 'Independent Population Means' &&
-                                         input$dataAvailability2 == 'Summarized Data'))
+                                       input$popuParameters == 'Independent Population Means' &&
+                                       input$dataAvailability2 == 'Summarized Data'))
 
     indmeansraw_iv$condition(~ isTRUE(input$siMethod == '2' &&
-                                        input$popuParameters == 'Independent Population Means' &&
-                                        input$dataAvailability2 == 'Enter Raw Data'))
+                                      input$popuParameters == 'Independent Population Means' &&
+                                      input$dataAvailability2 == 'Enter Raw Data'))
 
     indmeanssdknown_iv$condition(~ isTRUE(input$siMethod == '2' &&
-                                            input$popuParameters == 'Independent Population Means' &&
-                                            input$dataAvailability2 == 'Summarized Data' &&
-                                            input$bothsigmaKnown == 'bothKnown'))
-
-    indmeanssdunk_iv$condition(~ isTRUE(input$siMethod == '2' &&
                                           input$popuParameters == 'Independent Population Means' &&
                                           input$dataAvailability2 == 'Summarized Data' &&
-                                          input$bothsigmaKnown == 'bothUnknown'))
+                                          input$bothsigmaKnown == 'bothKnown'))
+
+    indmeanssdunk_iv$condition(~ isTRUE(input$siMethod == '2' &&
+                                        input$popuParameters == 'Independent Population Means' &&
+                                        input$dataAvailability2 == 'Summarized Data' &&
+                                        input$bothsigmaKnown == 'bothUnknown'))
 
     indmeansrawsd_iv$condition(~ isTRUE(input$siMethod == '2' &&
-                                          input$popuParameters == 'Independent Population Means' &&
-                                          input$dataAvailability2 == 'Enter Raw Data' &&
-                                          input$bothsigmaKnownRaw == 'bothKnown'))
+                                        input$popuParameters == 'Independent Population Means' &&
+                                        input$dataAvailability2 == 'Enter Raw Data' &&
+                                        input$bothsigmaKnownRaw == 'bothKnown'))
 
     indmeansrawsdunk_iv$condition(~ isTRUE(input$siMethod == '2' &&
-                                             input$popuParameters == 'Independent Population Means' &&
-                                             input$dataAvailability2 == 'Enter Raw Data' &&
-                                             input$bothsigmaKnownRaw == 'bothUnknown' &&
-                                             input$inferenceType2 == 'Hypothesis Testing' &&
-                                             indmeansraw_iv$is_valid()))
+                                           input$popuParameters == 'Independent Population Means' &&
+                                           input$dataAvailability2 == 'Enter Raw Data' &&
+                                           input$bothsigmaKnownRaw == 'bothUnknown' &&
+                                           input$inferenceType2 == 'Hypothesis Testing' &&
+                                           indmeansraw_iv$is_valid()))
 
     indmeansupload_iv$condition(~ isTRUE(input$siMethod == '2' &&
-                                           input$popuParameters == 'Independent Population Means' &&
-                                           input$dataAvailability2 == 'Upload Data'))
+                                         input$popuParameters == 'Independent Population Means' &&
+                                         input$dataAvailability2 == 'Upload Data'))
 
     indmeansuploadvar_iv$condition(function() {isTRUE(input$siMethod == '2' &&
-                                                        input$popuParameters == 'Independent Population Means' &&
-                                                        input$dataAvailability2 == 'Upload Data' &&
-                                                        indmeansupload_iv$is_valid()) })
+                                                      input$popuParameters == 'Independent Population Means' &&
+                                                      input$dataAvailability2 == 'Upload Data' &&
+                                                      indmeansupload_iv$is_valid()) })
 
     indmeansuploadsd_iv$condition(function() {isTRUE(input$siMethod == '2' &&
-                                                       input$popuParameters == 'Independent Population Means' &&
-                                                       input$dataAvailability2 == 'Upload Data' &&
-                                                       input$bothsigmaKnownUpload == 'bothKnown') })
+                                                     input$popuParameters == 'Independent Population Means' &&
+                                                     input$dataAvailability2 == 'Upload Data' &&
+                                                     input$bothsigmaKnownUpload == 'bothKnown') })
 
 
     wilcoxonraw_iv$condition(~ isTRUE(input$siMethod == '2' &&
-                                        input$popuParameters == 'Wilcoxon rank sum test' &&
-                                        input$wilcoxonRankSumTestData == 'Enter Raw Data'))
+                                      input$popuParameters == 'Wilcoxon rank sum test' &&
+                                      input$wilcoxonRankSumTestData == 'Enter Raw Data'))
 
     wilcoxonUpload_iv$condition(~ isTRUE(input$siMethod == '2' &&
-                                           input$popuParameters == 'Wilcoxon rank sum test' &&
-                                           input$wilcoxonRankSumTestData == 'Upload Data'))
+                                         input$popuParameters == 'Wilcoxon rank sum test' &&
+                                         input$wilcoxonRankSumTestData == 'Upload Data'))
 
     wilcoxonRanksuploadvars_iv$condition(~ isTRUE(input$siMethod == '2' &&
-                                                    input$popuParameters == 'Wilcoxon rank sum test' &&
-                                                    input$wilcoxonRankSumTestData == 'Upload Data' &&
-                                                    wilcoxonUpload_iv$is_valid()))
+                                                  input$popuParameters == 'Wilcoxon rank sum test' &&
+                                                  input$wilcoxonRankSumTestData == 'Upload Data' &&
+                                                  wilcoxonUpload_iv$is_valid()))
 
     wRankSumrawsd_iv$condition(~ isTRUE(input$siMethod == '2' &&
-                                          input$popuParameters == 'Wilcoxon rank sum test' &&
-                                          input$wilcoxonRankSumTestData == 'Enter Raw Data' &&
-                                          wilcoxonraw_iv$is_valid()))
+                                        input$popuParameters == 'Wilcoxon rank sum test' &&
+                                        input$wilcoxonRankSumTestData == 'Enter Raw Data' &&
+                                        wilcoxonraw_iv$is_valid()))
 
     signedRankRaw_iv$condition(~ isTRUE(input$siMethod == '2' &&
-                                          input$popuParameters == 'Wilcoxon Signed Rank Test' &&
-                                          input$signedRankTest == 'Enter Raw Data'))
+                                        input$popuParameters == 'Wilcoxon Signed Rank Test' &&
+                                        input$signedRankTest == 'Enter Raw Data'))
 
     signedRankUpload_iv$condition(~ isTRUE(input$siMethod == '2' &&
-                                             input$popuParameters == 'Wilcoxon Signed Rank Test' &&
-                                             input$signedRankTest == 'Upload Data'))
+                                           input$popuParameters == 'Wilcoxon Signed Rank Test' &&
+                                           input$signedRankTest == 'Upload Data'))
 
     signedRankUploadvars_iv$condition(~ isTRUE(input$siMethod == '2' &&
-                                                 input$popuParameters == 'Wilcoxon Signed Rank Test' &&
-                                                 input$signedRankTest == 'Upload Data' &&
-                                                 signedRankUpload_iv$is_valid()))
+                                               input$popuParameters == 'Wilcoxon Signed Rank Test' &&
+                                               input$signedRankTest == 'Upload Data' &&
+                                               signedRankUpload_iv$is_valid()))
 
     signedRankrawsd_iv$condition(~ isTRUE(input$siMethod == '2' &&
-                                            input$popuParameters == 'Wilcoxon Signed Rank Test' &&
-                                            input$signedRankTest == 'Enter Raw Data' &&
-                                            signedRankRaw_iv$is_valid()))
+                                          input$popuParameters == 'Wilcoxon Signed Rank Test' &&
+                                          input$signedRankTest == 'Enter Raw Data' &&
+                                          signedRankRaw_iv$is_valid()))
 
 
     indmeansmunaught_iv$condition(~ isTRUE(input$siMethod == '2' &&
-                                             input$popuParameters == 'Independent Population Means' &&
-                                             input$inferenceType2 == 'Hypothesis Testing'))
+                                           input$popuParameters == 'Independent Population Means' &&
+                                           input$inferenceType2 == 'Hypothesis Testing'))
 
     depmeansraw_iv$condition(~ isTRUE(input$siMethod == '2' &&
-                                        input$popuParameters == 'Dependent Population Means' &&
-                                        input$dataTypeDependent == 'Enter Raw Data'))
+                                      input$popuParameters == 'Dependent Population Means' &&
+                                      input$dataTypeDependent == 'Enter Raw Data'))
 
     depmeansupload_iv$condition(~ isTRUE(input$siMethod == '2' &&
-                                           input$popuParameters == 'Dependent Population Means' &&
-                                           input$dataTypeDependent == 'Upload Data'))
+                                         input$popuParameters == 'Dependent Population Means' &&
+                                         input$dataTypeDependent == 'Upload Data'))
 
     depmeansuploadvars_iv$condition(~ isTRUE(input$siMethod == '2' &&
-                                               input$popuParameters == 'Dependent Population Means' &&
-                                               input$dataTypeDependent == 'Upload Data' &&
-                                               depmeansupload_iv$is_valid()))
+                                             input$popuParameters == 'Dependent Population Means' &&
+                                             input$dataTypeDependent == 'Upload Data' &&
+                                             depmeansupload_iv$is_valid()))
 
     depmeansrawsd_iv$condition(~ isTRUE(input$siMethod == '2' &&
-                                          input$popuParameters == 'Dependent Population Means' &&
-                                          input$dataTypeDependent == 'Enter Raw Data' &&
-                                          depmeansraw_iv$is_valid()))
+                                        input$popuParameters == 'Dependent Population Means' &&
+                                        input$dataTypeDependent == 'Enter Raw Data' &&
+                                        depmeansraw_iv$is_valid()))
 
     depmeansmunaught_iv$condition(~ isTRUE(input$siMethod == '2' &&
-                                             input$popuParameters == 'Dependent Population Means' &&
-                                             input$inferenceType2 == 'Hypothesis Testing'))
+                                           input$popuParameters == 'Dependent Population Means' &&
+                                           input$inferenceType2 == 'Hypothesis Testing'))
 
     oneSD_iv$condition(~ isTRUE(input$siMethod == '1' &&
-                                  input$popuParameter == 'Population Standard Deviation'))
+                                input$popuParameter == 'Population Standard Deviation'))
 
     ## See: https://rstudio.github.io/shinyvalidate/reference/InputValidator.html#method-InputValidator-condition.
     oneSDht_iv$condition(function() {
@@ -3221,74 +3197,74 @@ statInfrServer <- function(id) {
     })
 
     oneprop_iv$condition(~ isTRUE(input$siMethod == '1' &&
-                                    input$popuParameter == 'Population Proportion'))
+                                  input$popuParameter == 'Population Proportion'))
 
     onepropht_iv$condition(~ isTRUE(input$siMethod == '1' &&
-                                      input$popuParameter == 'Population Proportion' &&
-                                      input$inferenceType == 'Hypothesis Testing'))
+                                    input$popuParameter == 'Population Proportion' &&
+                                    input$inferenceType == 'Hypothesis Testing'))
 
     twoprop_iv$condition(~ isTRUE(input$siMethod == '2' &&
-                                    input$popuParameters == 'Population Proportions'))
+                                  input$popuParameters == 'Population Proportions'))
 
     twopropht_iv$condition(~ isTRUE(input$siMethod == '2' &&
-                                      input$popuParameters == 'Population Proportions' &&
-                                      input$inferenceType2 == 'Hypothesis Testing'))
+                                    input$popuParameters == 'Population Proportions' &&
+                                    input$inferenceType2 == 'Hypothesis Testing'))
 
     twopopvarsum_iv$condition(~ isTRUE(input$siMethod == '2' &&
-                                         input$popuParameters == 'Two Population Variances' &&
-                                         input$dataAvailability3 == 'Summary'))
+                                       input$popuParameters == 'Two Population Variances' &&
+                                       input$dataAvailability3 == 'Summary'))
 
     twopopvar_iv$condition(~ isTRUE(input$siMethod == '2' &&
-                                      input$popuParameters == 'Two Population Variances' &&
-                                      input$dataAvailability3 == 'Variance'))
+                                    input$popuParameters == 'Two Population Variances' &&
+                                    input$dataAvailability3 == 'Variance'))
 
     twopopvarraw_iv$condition(~ isTRUE(input$siMethod == '2' &&
-                                         input$popuParameters == 'Two Population Variances' &&
-                                         input$dataAvailability3 == 'Enter Raw Data'))
+                                       input$popuParameters == 'Two Population Variances' &&
+                                       input$dataAvailability3 == 'Enter Raw Data'))
 
     twopropdiffnaught_iv$condition(~ isTRUE(input$siMethod == '2' &&
-                                              input$popuParameters == 'Population Proportions' &&
-                                              input$inferenceType2 == 'Hypothesis Testing'))
+                                            input$popuParameters == 'Population Proportions' &&
+                                            input$inferenceType2 == 'Hypothesis Testing'))
 
     kwupload_iv$condition(~ isTRUE(input$siMethod == 'Multiple' &&
-                                     input$multipleMethodChoice == 'kw'))
+                                   input$multipleMethodChoice == 'kw'))
 
     kwmulti_iv$condition(~ isTRUE(input$siMethod == 'Multiple' &&
-                                    input$kwFormat == 'Multiple' &&
+                                  input$kwFormat == 'Multiple' &&
+                                  input$multipleMethodChoice == 'kw' &&
+                                  kwupload_iv$is_valid()))
+
+    kwstacked_iv$condition(~ isTRUE(input$siMethod == 'Multiple' &&
+                                    input$kwFormat == 'Stacked' &&
                                     input$multipleMethodChoice == 'kw' &&
                                     kwupload_iv$is_valid()))
 
-    kwstacked_iv$condition(~ isTRUE(input$siMethod == 'Multiple' &&
-                                      input$kwFormat == 'Stacked' &&
-                                      input$multipleMethodChoice == 'kw' &&
-                                      kwupload_iv$is_valid()))
-
     anovaupload_iv$condition(~ isTRUE(input$siMethod == 'Multiple' &&
-                                        input$multipleMethodChoice == 'anova'))
+                                      input$multipleMethodChoice == 'anova'))
 
     anovamulti_iv$condition(~ isTRUE(input$siMethod == 'Multiple' &&
-                                       input$anovaFormat == 'Multiple' &&
+                                     input$anovaFormat == 'Multiple' &&
+                                     input$multipleMethodChoice == 'anova' &&
+                                     anovaupload_iv$is_valid()))
+
+    anovastacked_iv$condition(~ isTRUE(input$siMethod == 'Multiple' &&
+                                       input$anovaFormat == 'Stacked' &&
                                        input$multipleMethodChoice == 'anova' &&
                                        anovaupload_iv$is_valid()))
 
-    anovastacked_iv$condition(~ isTRUE(input$siMethod == 'Multiple' &&
-                                         input$anovaFormat == 'Stacked' &&
-                                         input$multipleMethodChoice == 'anova' &&
-                                         anovaupload_iv$is_valid()))
-
     chiSq2x2_iv$condition(~ isTRUE(input$siMethod == 'Categorical' &&
-                                     input$chisquareDimension == '2 x 2'))
+                                   input$chisquareDimension == '2 x 2'))
 
     chiSq2x3_iv$condition(~ isTRUE(input$siMethod == 'Categorical' &&
-                                     input$chisquareDimension == '2 x 3'))
+                                   input$chisquareDimension == '2 x 3'))
 
     chiSq3x2_iv$condition(~ isTRUE(input$siMethod == 'Categorical' &&
-                                     input$chisquareDimension == '3 x 2'))
+                                   input$chisquareDimension == '3 x 2'))
 
     chiSq3x3_iv$condition(~ isTRUE(input$siMethod == 'Categorical' &&
-                                     input$chisquareDimension == '3 x 3'))
+                                   input$chisquareDimension == '3 x 3'))
 
-    ### ------------ Dependencies ------------------------------------------------
+### ------------ Dependencies ------------------------------------------------
     si_iv$add_validator(onemean_iv)
     si_iv$add_validator(onemeansdknown_iv)
     si_iv$add_validator(onemeansdunk_iv)
@@ -3339,7 +3315,7 @@ statInfrServer <- function(id) {
     si_iv$add_validator(chiSq3x2_iv)
     si_iv$add_validator(chiSq3x3_iv)
 
-    ### ------------ Activation --------------------------------------------------
+### ------------ Activation --------------------------------------------------
 
     ## FIXME: If this validator object has been added to another validator
     ## object using InputValidator$add_validator, calls to enable() on this
@@ -3375,7 +3351,7 @@ statInfrServer <- function(id) {
     depmeansmunaught_iv$enable()
     signedRankRaw_iv$enable()
     signedRankUpload_iv$enable()
-#    signedRankUploadvars_iv$enable()
+                                        #    signedRankUploadvars_iv$enable()
     oneSD_iv$enable()
     oneSDht_iv$enable()
     oneprop_iv$enable()
@@ -3397,9 +3373,9 @@ statInfrServer <- function(id) {
     chiSq3x2_iv$enable()
     chiSq3x3_iv$enable()
 
-    #  ========================================================================= #
+                                        #  ========================================================================= #
     ## -------- Module Server Elements -----------------------------------------
-    #  ========================================================================= #
+                                        #  ========================================================================= #
     plotOptionsMenuServer("oneMeanBoxplot")
     plotOptionsMenuServer("indMeansBoxplot")
     plotOptionsMenuServer("indMeansQQPlot")
@@ -3410,9 +3386,9 @@ statInfrServer <- function(id) {
     plotOptionsMenuServer("anovaQQplot")
     plotOptionsMenuServer("anovaMeanPlot")
 
-    #  ========================================================================= #
+                                        #  ========================================================================= #
     ## -------- Functions ------------------------------------------------------
-    #  ========================================================================= #
+                                        #  ========================================================================= #
 
     checkNumeric <- function(data, cols) {
       if (is.null(cols) || length(cols) == 0 || !all(cols %in% colnames(data))) {
@@ -3522,7 +3498,7 @@ statInfrServer <- function(id) {
           br(),
           br(),
           br(),
-        )
+          )
       } else {
         df <- oneMeanData["Sample Size"] - 1
 
@@ -3840,7 +3816,7 @@ statInfrServer <- function(id) {
                   critVal),
           br(),
           br(),
-        )
+          )
 
       } else {
 
@@ -3906,7 +3882,7 @@ statInfrServer <- function(id) {
         br(),
         br(),
         br(),
-      )
+        )
 
       return(pvalOutput)
     }
@@ -3924,19 +3900,19 @@ statInfrServer <- function(id) {
       colNames <- c("Sample Size", "Sample Mean", "Sample Standard Deviation", "Sample Variance")
 
       headers <- htmltools::withTags(table(
-        class = 'display',
-        style = 'max-width: 600px; table-layout: fixed; width: 100%;',
-        thead(
-          tr(
-            th("",
-               style = "border: 1px solid rgba(0, 0, 0, 0.15);
+                              class = 'display',
+                              style = 'max-width: 600px; table-layout: fixed; width: 100%;',
+                              thead(
+                                tr(
+                                  th("",
+                                     style = "border: 1px solid rgba(0, 0, 0, 0.15);
                     border-bottom: 1px solid rgba(0, 0, 0, 0.3);"),
-            lapply(colNames, th,
-                   style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
+                    lapply(colNames, th,
+                           style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
                         border-top: 1px solid rgba(0, 0, 0, 0.15);')
-          )
-        )
-      ))
+                    )
+                    )
+                    ))
 
       datatable(df,
                 class = 'cell-border stripe',
@@ -3957,7 +3933,7 @@ statInfrServer <- function(id) {
                 selection = "none",
                 escape = FALSE,
                 filter = "none"
-      ) %>%
+                ) %>%
         formatRound(columns = 1, digits = 0) %>%
         formatRound(columns = 2:4, digits = 4) %>%
         formatStyle(columns = 0, fontWeight = 'bold')
@@ -3971,9 +3947,9 @@ statInfrServer <- function(id) {
     }
 
     GetDepMeansData <- function() {
-      ### JB note: this req caused a bunch of errors for input validation on Mu Naught in Dep Means hypothesis testing
-      ### leaving it commented out for now
-      # req(si_iv$is_valid())
+### JB note: this req caused a bunch of errors for input validation on Mu Naught in Dep Means hypothesis testing
+### leaving it commented out for now
+                                        # req(si_iv$is_valid())
 
       dat <- list()
 
@@ -4135,7 +4111,7 @@ statInfrServer <- function(id) {
           sprintf("\\(s_2^2 = %.4f\\)", data$sd2),
           br(),
           br(),
-        )
+          )
       } else {
         tagList(
           sprintf("\\(n_1 = %d\\)", data$n1),
@@ -4147,7 +4123,7 @@ statInfrServer <- function(id) {
           sprintf("\\(s_2 = %.4f\\)", data$sd2),
           br(),
           br(),
-        )
+          )
       }
     }
 
@@ -4185,7 +4161,7 @@ statInfrServer <- function(id) {
                 SigLvl(),
                 rejectWord),
         br(), br(), br(),
-      )
+        )
     }
 
     twoPopVarOutputText <- function(HT, sig_lvl) {
@@ -4234,25 +4210,25 @@ statInfrServer <- function(id) {
       }
     }
 
-    #   if(altHypothesis == "less") #less
-    #   {
-    #     area[x > critValues] <- NA
-    #   }
-    #   else if(altHypothesis == "two.sided") #twosided
-    #   {
-    #     area[x > critValues[1] & x < critValues[2]] <- NA
-    #   }
-    #   else if(altHypothesis == "greater") #greater
-    #   {
-    #     area[x < critValues] <- NA
-    #   }
-    #   return(area)
-    # }
+                                        #   if(altHypothesis == "less") #less
+                                        #   {
+                                        #     area[x > critValues] <- NA
+                                        #   }
+                                        #   else if(altHypothesis == "two.sided") #twosided
+                                        #   {
+                                        #     area[x > critValues[1] & x < critValues[2]] <- NA
+                                        #   }
+                                        #   else if(altHypothesis == "greater") #greater
+                                        #   {
+                                        #     area[x < critValues] <- NA
+                                        #   }
+                                        #   return(area)
+                                        # }
 
     hypZTestPlot <- function(testStatistic, critValue, altHypothesis){
-      # normTail = qnorm(0.999, mean = 0, sd = 1, lower.tail = FALSE)
-      # normHead = qnorm(0.999, mean = 0, sd = 1, lower.tail = TRUE)
-      # xSeq = sort(c(normTail, normHead, testStatistic, critValues, 0))
+                                        # normTail = qnorm(0.999, mean = 0, sd = 1, lower.tail = FALSE)
+                                        # normHead = qnorm(0.999, mean = 0, sd = 1, lower.tail = TRUE)
+                                        # xSeq = sort(c(normTail, normHead, testStatistic, critValues, 0))
 
       x <- round(seq(from = -3, to = 3, by = 0.1), 2)
 
@@ -4270,14 +4246,14 @@ statInfrServer <- function(id) {
 
       xSeq <- unique(sort(c(x, testStatistic, CVs, RRLabels, 0)))
 
-      # if(testStatistic < normTail)
-      # {
-      #   normTail = testStatistic
-      #
-      # } else if(testStatistic > normHead)
-      # {
-      #   normHead = testStatistic
-      # }
+                                        # if(testStatistic < normTail)
+                                        # {
+                                        #   normTail = testStatistic
+                                        #
+                                        # } else if(testStatistic > normHead)
+                                        # {
+                                        #   normHead = testStatistic
+                                        # }
 
       df <- distinct(data.frame(x = xSeq, y = dnorm(xSeq, mean = 0, sd = 1)))
       cvDF <- filter(df, x %in% CVs)
@@ -4503,56 +4479,56 @@ statInfrServer <- function(id) {
         ylab("") +
         xlab("Z") +
 
-        geom_segment(data = centerDF,
-                     aes(x = x, xend = x, y = 0, yend = y),
-                     linetype = "dotted",
-                     linewidth = 0.75,
-                     color='black') +
+  geom_segment(data = centerDF,
+               aes(x = x, xend = x, y = 0, yend = y),
+               linetype = "dotted",
+               linewidth = 0.75,
+               color='black') +
 
-        geom_text(data = centerDF,
-                  aes(x = x, y = y/2, label = "AR"),
-                  size = 16 / .pt,
-                  fontface = "bold") +
+  geom_text(data = centerDF,
+            aes(x = x, y = y/2, label = "AR"),
+            size = 16 / .pt,
+            fontface = "bold") +
 
-        geom_text(data = centerDF,
-                  aes(x = x, y = 0, label = "0"),
-                  size = 14 / .pt,
-                  fontface = "bold",
-                  nudge_y = -.03) +
+  geom_text(data = centerDF,
+            aes(x = x, y = 0, label = "0"),
+            size = 14 / .pt,
+            fontface = "bold",
+            nudge_y = -.03) +
 
-        geom_segment(data = tsDF,
-                     aes(x = x, xend = x, y = 0, yend = y + .055),
-                     linetype = "solid",
-                     linewidth = 1.25,
-                     color='#BD130B') +
+  geom_segment(data = tsDF,
+               aes(x = x, xend = x, y = 0, yend = y + .055),
+               linetype = "solid",
+               linewidth = 1.25,
+               color='#BD130B') +
 
-        geom_text(data = tsDF,
-                  aes(x = x, y = y, label = round(x, 3)),
-                  size = 14 / .pt,
-                  fontface = "bold",
-                  nudge_y = .075) +
+  geom_text(data = tsDF,
+            aes(x = x, y = y, label = round(x, 3)),
+            size = 14 / .pt,
+            fontface = "bold",
+            nudge_y = .075) +
 
-        geom_segment(data = cvDF,
-                     aes(x = x, xend = x, y = 0, yend = y),
-                     linetype = "solid",
-                     lineend = 'butt',
-                     linewidth = 1.5,
-                     color='#023B70') +
+  geom_segment(data = cvDF,
+               aes(x = x, xend = x, y = 0, yend = y),
+               linetype = "solid",
+               lineend = 'butt',
+               linewidth = 1.5,
+               color='#023B70') +
 
-        geom_text(data = cvDF,
-                  aes(x = x, y = 0, label = round(x, 3)),
-                  size = 14 / .pt,
-                  fontface = "bold",
-                  nudge_y = -.03) +
+  geom_text(data = cvDF,
+            aes(x = x, y = 0, label = round(x, 3)),
+            size = 14 / .pt,
+            fontface = "bold",
+            nudge_y = -.03) +
 
-        geom_text(data = RRLabelsDF,
-                  aes(x = x, y = y, label = "RR"),
-                  size = 16 / .pt,
-                  fontface = "bold",
-                  nudge_y = .025) +
+  geom_text(data = RRLabelsDF,
+            aes(x = x, y = y, label = "RR"),
+            size = 16 / .pt,
+            fontface = "bold",
+            nudge_y = .025) +
 
-        theme(axis.title.x = element_text(size = 16, face = "bold.italic")) +
-        coord_cartesian(clip="off")
+  theme(axis.title.x = element_text(size = 16, face = "bold.italic")) +
+  coord_cartesian(clip="off")
 
       return(htPlot)
     }
@@ -4633,7 +4609,7 @@ statInfrServer <- function(id) {
                 numGroups),
         br(),
         br(),
-      )
+        )
 
       return(hypothesis)
     }
@@ -4675,18 +4651,18 @@ statInfrServer <- function(id) {
       colNames <- c("Factor", "Sample Size", "Sample Mean", "Sample Standard Deviation")
 
       headers = htmltools::withTags(table(
-        class = 'display',
-        thead(
-          tr(
-            th(colNames[1],
-               style = "border: 1px solid rgba(0, 0, 0, 0.15);
+                             class = 'display',
+                             thead(
+                               tr(
+                                 th(colNames[1],
+                                    style = "border: 1px solid rgba(0, 0, 0, 0.15);
                       border-bottom: 1px solid  rgba(0, 0, 0, 0.3);"),
-            lapply(colNames[2:4], th,
-                   style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
+                      lapply(colNames[2:4], th,
+                             style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
                           border-top: 1px solid rgba(0, 0, 0, 0.15);')
-          )
-        )
-      ))
+                      )
+                      )
+                      ))
 
       factor_df <- data.frame()
 
@@ -4718,13 +4694,13 @@ statInfrServer <- function(id) {
                           selection = "none",
                           escape = FALSE,
                           filter = "none"
-      ) %>% formatRound(columns = 1,
-                        digits = 0
-      ) %>% formatRound(columns = 2:3,
-                        digits = 4
-      ) %>% formatStyle(columns = c(0),
-                        fontWeight = 'bold'
-      )
+                          ) %>% formatRound(columns = 1,
+                                            digits = 0
+                                            ) %>% formatRound(columns = 2:3,
+                                                              digits = 4
+                                                              ) %>% formatStyle(columns = c(0),
+                                                                                fontWeight = 'bold'
+                                                                                )
 
       return(ftable)
     }
@@ -4913,7 +4889,7 @@ statInfrServer <- function(id) {
                   sigLvl*100,
                   result),
           br(),
-        )
+          )
       )
     }
 
@@ -4939,7 +4915,7 @@ statInfrServer <- function(id) {
                                  selection = "none",
                                  escape = FALSE,
                                  filter = "none"
-      )
+                                 )
 
       observedTable <- FormatChiSqTable(observedTable, ncol(chiSqData), nrow(chiSqData))
 
@@ -4969,7 +4945,7 @@ statInfrServer <- function(id) {
                                  selection = "none",
                                  escape = FALSE,
                                  filter = "none"
-      )
+                                 )
 
       expectedTable <- FormatChiSqTable(expectedTable, ncol(totaledData), nrow(totaledData))
 
@@ -4982,38 +4958,38 @@ statInfrServer <- function(id) {
 
       if(rowTitle == "" && colTitle == "") {
         headers = htmltools::withTags(table(
-          class = 'display',
-          thead(
-            tr(
-              th("",
-                 style = "border: 1px solid rgba(0, 0, 0, 0.15);
+                               class = 'display',
+                               thead(
+                                 tr(
+                                   th("",
+                                      style = "border: 1px solid rgba(0, 0, 0, 0.15);
                         border-bottom: 1px solid  rgba(0, 0, 0, 0.3);"),
-              lapply(colnames(chiSqData), th,
-                     style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
+                        lapply(colnames(chiSqData), th,
+                               style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
                           border-top: 1px solid rgba(0, 0, 0, 0.15);')
-            )
-          )
-        ))
+                        )
+                        )
+                        ))
       } else {
         headers = htmltools::withTags(table(
-          class = 'display',
-          thead(
-            tr(
-              th(rowspan = 2, colspan = 1, rowTitle,
-                 class = 'dt-center',
-                 style = 'border: 1px solid rgba(0, 0, 0, 0.15);'),
-              th(colspan = ncol(chiSqData), colTitle,
-                 class = 'dt-center',
-                 style = 'border: 1px solid rgba(0, 0, 0, 0.15);
+                               class = 'display',
+                               thead(
+                                 tr(
+                                   th(rowspan = 2, colspan = 1, rowTitle,
+                                      class = 'dt-center',
+                                      style = 'border: 1px solid rgba(0, 0, 0, 0.15);'),
+                                   th(colspan = ncol(chiSqData), colTitle,
+                                      class = 'dt-center',
+                                      style = 'border: 1px solid rgba(0, 0, 0, 0.15);
                       border-left: none;')
-            ),
-            tr(
-              lapply(colnames(chiSqData), th,
-                     style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);')
-            )
-           )
-          )
-        )
+                      ),
+                      tr(
+                        lapply(colnames(chiSqData), th,
+                               style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);')
+                      )
+                      )
+                      )
+                      )
       }
 
       return(headers)
@@ -5080,7 +5056,7 @@ statInfrServer <- function(id) {
       )
 
       if(input$chisquareDimension == '2 x 2' && input$chiSquareYates) {
-        #Yates correction is only applied when O - E is > 0.5
+                                        #Yates correction is only applied when O - E is > 0.5
         chiSqFormula <- PrintChiSqYatesFormula(chiSqStat)
       } else {
         chiSqFormula <- PrintChiSqFormula(chiSqStat)
@@ -5178,7 +5154,7 @@ statInfrServer <- function(id) {
           p(tags$i("*Note: Yates’ continuity correction is not applied in this
                  case because the correction factor is greater than |O - E| for
                  one or more of the differences.*")
-          ),
+            ),
           br(),
           br()
         )
@@ -5254,7 +5230,7 @@ statInfrServer <- function(id) {
                 sigLvl*100,
                 suffEvidence),
           br(),
-        )
+          )
       )
 
       return(conclusion)
@@ -5362,9 +5338,9 @@ statInfrServer <- function(id) {
       }
     }
 
-    #  ========================================================================= #
+                                        #  ========================================================================= #
     ## -------- Reactives ------------------------------------------------------
-    #  ========================================================================= #
+                                        #  ========================================================================= #
     fileInputs <- reactiveValues(
       oneMeanStatus = NULL,
       indMeansStatus = NULL,
@@ -5447,7 +5423,7 @@ statInfrServer <- function(id) {
       return(sigLvl)
     })
 
-    ### ------------ One Mean reactives ------------------------------------------
+### ------------ One Mean reactives ------------------------------------------
     OneMeanUploadData <- createFileInputEventReactive("oneMeanUserData")
 
     OneMeanUploadStatus <- reactive({
@@ -5712,7 +5688,7 @@ statInfrServer <- function(id) {
       return(oneMeanHT)
     })
 
-    ### ------------ Independent Sample Means reactives --------------------------
+### ------------ Independent Sample Means reactives --------------------------
 
     IndMeansSummData <- reactive({
       req(si_iv$is_valid())
@@ -5904,7 +5880,7 @@ statInfrServer <- function(id) {
       return(twoSampTTest)
     })
 
-    ### ------------ Wilcoxon Rank Sum Reactives -----------------------------------
+### ------------ Wilcoxon Rank Sum Reactives -----------------------------------
 
     WilcoxonUploadData <- createFileInputEventReactive("wilcoxonUpl")
 
@@ -5989,7 +5965,7 @@ statInfrServer <- function(id) {
       RankedTableOutput(wilcoxonRankedData())
     })
 
-    ### ------------ Dependent Means Reactives -----------------------------------
+### ------------ Dependent Means Reactives -----------------------------------
 
 
     DepMeansUploadData <- createFileInputEventReactive("depMeansUserData")
@@ -6031,7 +6007,7 @@ statInfrServer <- function(id) {
 
     })
 
-    ### ------------ Signed Rank Test Reactives ------------------------------------------
+### ------------ Signed Rank Test Reactives ------------------------------------------
     rv <- reactiveValues(
       calculatePressed = FALSE,
       allowColumnValidation = TRUE
@@ -6115,22 +6091,22 @@ statInfrServer <- function(id) {
 
       signed_rank_data <- paired_data %>%
         dplyr::mutate(
-          Difference = Sample1 - Sample2,
-          AbsDifference = abs(Difference)
-        ) %>%
+                 Difference = Sample1 - Sample2,
+                 AbsDifference = abs(Difference)
+               ) %>%
         dplyr::filter(Difference != 0) %>%
         dplyr::mutate(
-          Rank = rank(AbsDifference, ties.method = "average"),
-          SignedRank = ifelse(Difference > 0, Rank, -Rank)
-        ) %>%
+                 Rank = rank(AbsDifference, ties.method = "average"),
+                 SignedRank = ifelse(Difference > 0, Rank, -Rank)
+               ) %>%
         dplyr::select(
-          Group = PairID,  # Using PairID as a placeholder for Group
-          Sample1,
-          Sample2,
-          Value = Difference,  # Using Difference as Value for compatibility
-          Rank,
-          SignedRank
-        ) %>%
+                 Group = PairID,  # Using PairID as a placeholder for Group
+                 Sample1,
+                 Sample2,
+                 Value = Difference,  # Using Difference as Value for compatibility
+                 Rank,
+                 SignedRank
+               ) %>%
         dplyr::arrange(Rank)
 
       return(signed_rank_data)
@@ -6141,7 +6117,7 @@ statInfrServer <- function(id) {
       SignedRankTableOutput(signedRankedData())
     })
 
-    ### ------------ Two Prop Reactives ------------------------------------------
+### ------------ Two Prop Reactives ------------------------------------------
     checkTwoProp <- reactive({
 
       if(is.na(input$numSuccesses1) || is.na(input$numSuccesses2)) {
@@ -6152,7 +6128,7 @@ statInfrServer <- function(id) {
 
     })
 
-    ### ------------ Two Pop Var Reactives --------------------------------------
+### ------------ Two Pop Var Reactives --------------------------------------
     GetTwoPopVarData <- reactive({
       req(si_iv$is_valid())
 
@@ -6182,7 +6158,7 @@ statInfrServer <- function(id) {
         samp1 <- createNumLst(input$rawSamp1SD)
         samp2 <- createNumLst(input$rawSamp2SD)
       } else if(input$dataAvailability3 == 'Upload'){
-        # future work, uploading files not implemented currently
+                                        # future work, uploading files not implemented currently
       }
 
       dat$sample1 <- samp1
@@ -6228,14 +6204,14 @@ statInfrServer <- function(id) {
       if(input$dataAvailability3 == 'Enter Raw Data') {
         data <- GetTwoPopVarRawData()
       } else if(input$dataAvailability3 == 'Upload Data') {
-        # future work, upload not currently implemented
+                                        # future work, upload not currently implemented
       } else { # Summary or Variance
         data <- GetTwoPopVarData()
       }
       return(data)
     })
 
-    ### ------------ ANOVA Reactives ---------------------------------------------
+### ------------ ANOVA Reactives ---------------------------------------------
     anovaUploadData <- createFileInputEventReactive("anovaUserData")
 
     anovaStackedIsValid <- eventReactive({input$anovaResponse
@@ -6286,7 +6262,7 @@ statInfrServer <- function(id) {
       return(results)
     })
 
-    ### ------------ Kruskal-Wallis Reactives ------------------------------------
+### ------------ Kruskal-Wallis Reactives ------------------------------------
     kwUploadData <- eventReactive(input$kwUserData, {
       kwUploadData_func(input$kwUserData)
     })
@@ -6313,22 +6289,22 @@ statInfrServer <- function(id) {
       )
     })
 
-    ### Chi-Square Reactives ----
-    # chiSqData2x2 <- reactive({
-    #   suppressWarnings(as.numeric(input$chiSqInput2x2))
-    # })
-    #
-    # chiSqData2x3 <- reactive({
-    #   suppressWarnings(as.numeric(input$chiSqInput2x3))
-    # })
-    #
-    # chiSqData3x2 <- reactive({
-    #   suppressWarnings(as.numeric(input$chiSqInput3x2))
-    # })
-    #
-    # chiSqData3x3 <- reactive({
-    #   suppressWarnings(as.numeric(input$chiSqInput3x3))
-    # })
+### Chi-Square Reactives ----
+                                        # chiSqData2x2 <- reactive({
+                                        #   suppressWarnings(as.numeric(input$chiSqInput2x2))
+                                        # })
+                                        #
+                                        # chiSqData2x3 <- reactive({
+                                        #   suppressWarnings(as.numeric(input$chiSqInput2x3))
+                                        # })
+                                        #
+                                        # chiSqData3x2 <- reactive({
+                                        #   suppressWarnings(as.numeric(input$chiSqInput3x2))
+                                        # })
+                                        #
+                                        # chiSqData3x3 <- reactive({
+                                        #   suppressWarnings(as.numeric(input$chiSqInput3x3))
+                                        # })
 
     chiSqActiveData <- reactive({
       if(input$chisquareDimension == "2 x 2") {
@@ -6390,19 +6366,19 @@ statInfrServer <- function(id) {
       return(critVal)
     })
 
-    #  ========================================================================= #
+                                        #  ========================================================================= #
     ## -------- Outputs --------------------------------------------------------
-    #  ========================================================================= #
+                                        #  ========================================================================= #
 
-    ### ------------ Validation --------------------------------------------------
+### ------------ Validation --------------------------------------------------
 
-    #### ---------------- One Mean Validation
+#### ---------------- One Mean Validation
     output$inferenceValidation <- renderUI({
 
       if(!onemean_iv$is_valid()) {
         validate(
           need(input$sampleSize, "Sample size (n) must be an integer greater than 1.") %then%
-            need(input$sampleSize > 1 & input$sampleSize %% 1 == 0, "Sample size (n) must be an integer greater than 1."),
+          need(input$sampleSize > 1 & input$sampleSize %% 1 == 0, "Sample size (n) must be an integer greater than 1."),
           need(input$sampleMean, "Sample mean required."),
           errorClass = "myClass")
       }
@@ -6410,7 +6386,7 @@ statInfrServer <- function(id) {
       if (!onemeanraw_iv$is_valid()) {
         validate(
           need(input$sample1, "Sample Data required.") %then%
-            need(length(createNumLst(input$sample1)) > 1, "Sample Data requires a minimum of 2 data points."),
+          need(length(createNumLst(input$sample1)) > 1, "Sample Data requires a minimum of 2 data points."),
           if (input$sigmaKnownRaw == "rawKnown") {
             need(input$popuSDRaw,"Population Standard Deviation is required.") %then%
               need(input$popuSDRaw > 0, "Population Standard Deviation must be positive.")
@@ -6421,11 +6397,11 @@ statInfrServer <- function(id) {
         if (input$sigmaKnownRaw == "rawUnknown") {
           sampleData <- createNumLst(input$sample1)
           validate(
-          need(
-            sd(sampleData, na.rm = TRUE) != 0,
-               "When the sample standard deviation is 0, the test statistic (t) is undefined."
-          ),
-          errorClass = "myClass"
+            need(
+              sd(sampleData, na.rm = TRUE) != 0,
+              "When the sample standard deviation is 0, the test statistic (t) is undefined."
+            ),
+            errorClass = "myClass"
           )
         }
       }
@@ -6433,7 +6409,7 @@ statInfrServer <- function(id) {
       if(!onemeansdknown_iv$is_valid()) {
         validate(
           need(input$popuSD & input$popuSD > 0, "Population Standard Deviation must be positive."),
-          #need(input$popuSD > 0, "Population Standard Deviation must be greater than 0"),
+                                        #need(input$popuSD > 0, "Population Standard Deviation must be greater than 0"),
           errorClass = "myClass")
       }
 
@@ -6495,18 +6471,18 @@ statInfrServer <- function(id) {
           errorClass = "myClass")
       }
 
-      #### ---------------- One Standard Deviation Validation
+#### ---------------- One Standard Deviation Validation
       if(!oneSD_iv$is_valid()) {
         validate(
           need(input$SSDSampleSize, "Sample size (n) is required.") %then%
-            need(input$SSDSampleSize > 1 & input$SSDSampleSize %% 1 == 0, "Sample size (n) must be an integer greater than 1."),
+          need(input$SSDSampleSize > 1 & input$SSDSampleSize %% 1 == 0, "Sample size (n) must be an integer greater than 1."),
           errorClass = "myClass")
       }
 
       if(!oneSD_iv$is_valid()) {
         validate(
           need(input$SSDStdDev, "Sample Standard Deviation (s) is required.") %then%
-            need(input$SSDStdDev > 0, "Sample Standard Deviation (s) must be positive."),
+          need(input$SSDStdDev > 0, "Sample Standard Deviation (s) must be positive."),
           errorClass = "myClass")
       }
 
@@ -6516,11 +6492,11 @@ statInfrServer <- function(id) {
         ## message("The one sample standard deviation hypothesis test InputValidator object is invalid!")
         validate(
           need(input$hypStdDeviation, "Hypothesized Population Standard Deviation (\u03C3\u2080) is required.") %then%
-            need(input$hypStdDeviation > 0 && input$hypStdDeviation < 1, "Hypothesized Population Standard Deviation (\u03C3\u2080) must be positive. (\u03C3\u2080 > 0)."),
+          need(input$hypStdDeviation > 0 && input$hypStdDeviation < 1, "Hypothesized Population Standard Deviation (\u03C3\u2080) must be positive. (\u03C3\u2080 > 0)."),
           errorClass = "myClass")
       }
 
-      #### ---------------- One Prop Validation
+#### ---------------- One Prop Validation
       if(!oneprop_iv$is_valid()) {
         validate(
           need(input$numSuccesses, "Numeric value for Number of Successes (x) required"),
@@ -6532,7 +6508,7 @@ statInfrServer <- function(id) {
           need(input$numSuccesses >= 0, "Number of Successes (x) cannot be negative"),
           need(input$numTrials %% 1 == 0, "Number of Trials (n) must be an integer"),
           need(input$numTrials > 0, "Number of Trials (n) must be greater than 0") %then%
-            need(input$numSuccesses <= input$numTrials, "Number of Successes (x) cannot be greater than Number of Trials (n)"),
+          need(input$numSuccesses <= input$numTrials, "Number of Successes (x) cannot be greater than Number of Trials (n)"),
           errorClass = "myClass")
       } else if(input$siMethod == '1' && input$popuParameter == 'Population Proportion') {
         req(input$numSuccesses >= 0 && input$numTrials)
@@ -6544,18 +6520,18 @@ statInfrServer <- function(id) {
       if(!onepropht_iv$is_valid()) {
         validate(
           need(input$hypProportion, "Hypothesized value of the Population Proportion must be between 0 and 1") %then%
-            need(input$hypProportion > 0 && input$hypProportion < 1, "Hypothesized value of the Population Proportion must be between 0 and 1"),
+          need(input$hypProportion > 0 && input$hypProportion < 1, "Hypothesized value of the Population Proportion must be between 0 and 1"),
           errorClass = "myClass")
       }
 
-      #### ---------------- Independent Population Means Validation
+#### ---------------- Independent Population Means Validation
       if(!indmeanssumm_iv$is_valid()) {
         validate(
           need(input$sampleSize1, "Sample Size 1 (n1) must be an integer greater than 1.") %then%
-            need(input$sampleSize1 > 1 & input$sampleSize1 %% 1 == 0, "Sample Size 1 (n1) must be an integer greater than 1."),
+          need(input$sampleSize1 > 1 & input$sampleSize1 %% 1 == 0, "Sample Size 1 (n1) must be an integer greater than 1."),
           need(input$sampleMean1, "Sample Mean 1 required."),
           need(input$sampleSize2, "Sample Size 2 (n2) must be an integer greater than 1.") %then%
-            need(input$sampleSize2 > 1 & input$sampleSize2 %% 1 == 0, "Sample Size 2 (n2) must be an integer greater than 1."),
+          need(input$sampleSize2 > 1 & input$sampleSize2 %% 1 == 0, "Sample Size 2 (n2) must be an integer greater than 1."),
           need(input$sampleMean2, "Sample Mean 2 required."),
           errorClass = "myClass")
       }
@@ -6579,9 +6555,9 @@ statInfrServer <- function(id) {
       if(!indmeansraw_iv$is_valid()) {
         validate(
           need(input$raw_sample1, "Sample 1 requires a minimum of 3 data points.") %then%
-            need(length(createNumLst(input$raw_sample1)) > 2, "Sample Data requires a minimum of 3 data points."),
+          need(length(createNumLst(input$raw_sample1)) > 2, "Sample Data requires a minimum of 3 data points."),
           need(input$raw_sample2, "Sample 2 requires a minimum of 3 data points.") %then%
-            need(length(createNumLst(input$raw_sample2)) > 2, "Sample Data requires a minimum of 3 data points."),
+          need(length(createNumLst(input$raw_sample2)) > 2, "Sample Data requires a minimum of 3 data points."),
           errorClass = "myClass")
 
         validate("Samples require a minimum of 3 data points.")
@@ -6672,7 +6648,7 @@ statInfrServer <- function(id) {
           errorClass = "myClass")
       }
 
-      ### ---------------- Wilcoxon Rank Sum Validation
+### ---------------- Wilcoxon Rank Sum Validation
       if(!wilcoxonraw_iv$is_valid()) {
         validate(
           need(input$rankSumRaw1, "Sample 1 data requires a minimum of three data points.") %then%
@@ -6711,7 +6687,7 @@ statInfrServer <- function(id) {
           errorClass = "myClass")
       }
 
-      ### ---------------- Wilcoxon Signed Rank Test Validation
+### ---------------- Wilcoxon Signed Rank Test Validation
 
       if(!signedRankRaw_iv$is_valid()) {
         validate(
@@ -6771,7 +6747,7 @@ statInfrServer <- function(id) {
         }
       }
 
-      #### ---------------- Dependent Population Means Validation
+#### ---------------- Dependent Population Means Validation
       if(!depmeansrawsd_iv$is_valid()) {
 
         if(input$inferenceType2 == 'Hypothesis Testing'){
@@ -6789,9 +6765,9 @@ statInfrServer <- function(id) {
       if(!depmeansraw_iv$is_valid()) {
         validate(
           need(input$before, "Sample 1 data requires a minimum of three data points.") %then%
-            need(length(createNumLst(input$before)) > 2, "Sample 1 data requires a minimum of three data points."),
+          need(length(createNumLst(input$before)) > 2, "Sample 1 data requires a minimum of three data points."),
           need(input$after, "Sample 2 data requires a minimum of three data points.") %then%
-            need(length(createNumLst(input$after)) > 2, "Sample 2 data requires a minimum of three data points."),
+          need(length(createNumLst(input$after)) > 2, "Sample 2 data requires a minimum of three data points."),
           errorClass = "myClass")
 
         validate(
@@ -6823,7 +6799,7 @@ statInfrServer <- function(id) {
           need(CheckDepUploadSamples() == 0, "Same number of data points required for Sample 1 and Sample 2."),
           errorClass = "myClass")
 
-         validate(
+        validate(
           need(!checkNumeric(DepMeansUploadData(), input$depMeansUplSample1),
                "Sample 1 must be numeric."),
           errorClass = "myClass"
@@ -6846,9 +6822,9 @@ statInfrServer <- function(id) {
         validate(
           need(
             !(input$depMeansUplSample1 != "" &&
-                input$depMeansUplSample2 != "" &&
-                (input$depMeansUplSample1 == input$depMeansUplSample2 ||
-                   GetDepMeansData()$sd == 0)),
+              input$depMeansUplSample2 != "" &&
+              (input$depMeansUplSample1 == input$depMeansUplSample2 ||
+               GetDepMeansData()$sd == 0)),
             if (input$inferenceType2 == "Hypothesis Testing") {
               "The test statistic (t) will be undefined for sample data with a sample standard deviation of difference (sd) = 0."
             } else {
@@ -6882,7 +6858,7 @@ statInfrServer <- function(id) {
           errorClass = "myClass")
       }
 
-      #### ---------------- Two Population Proportion Validation
+#### ---------------- Two Population Proportion Validation
       if (!twopropht_iv$is_valid()) {
         validate(
           need(checkTwoProp() > 0, "The Z test statistic is undefined when the Number of Successes 1 (x1) and Number of Successes 2 (x2) are both 0."),
@@ -6923,27 +6899,27 @@ statInfrServer <- function(id) {
       if(!twopropdiffnaught_iv$is_valid()) {
         validate(
           need(input$propDiffNaught != "", "Hypothesized value of the Population Proportion Difference is required.") %then%
-            need(input$propDiffNaught >= -1, "Hypothesized value of the Population Proportion Difference must be between -1 and +1, inclusive.") %then%
-            need(input$propDiffNaught <= 1, "Hypothesized value of the Population Proportion Difference must be between -1 and +1, inclusive."),
+          need(input$propDiffNaught >= -1, "Hypothesized value of the Population Proportion Difference must be between -1 and +1, inclusive.") %then%
+          need(input$propDiffNaught <= 1, "Hypothesized value of the Population Proportion Difference must be between -1 and +1, inclusive."),
           errorClass = "myClass"
         )
       }
 
-      #### ---------------- Two Pop Variance Validation
+#### ---------------- Two Pop Variance Validation
 
       if(!twopopvarsum_iv$is_valid()) {
         validate(
           need(input$SDSampleSize1, "Sample size 1 is required.") %then%
-            need(input$SDSampleSize1 %% 1 == 0 && input$SDSampleSize1 > 1, "Sample size 1 must be an integer greater than 1."),
+          need(input$SDSampleSize1 %% 1 == 0 && input$SDSampleSize1 > 1, "Sample size 1 must be an integer greater than 1."),
 
           need(input$SDSampleSize2, "Sample size 2 is required.") %then%
-            need(input$SDSampleSize2 %% 1 == 0 && input$SDSampleSize2 > 1, "Sample size 2 must be an integer greater than 1."),
+          need(input$SDSampleSize2 %% 1 == 0 && input$SDSampleSize2 > 1, "Sample size 2 must be an integer greater than 1."),
 
           need(input$stdDev1, "Sample standard deviation 1 is required.") %then%
-            need(input$stdDev1 > 0, "Sample standard deviation 1 must be greater than 0."),
+          need(input$stdDev1 > 0, "Sample standard deviation 1 must be greater than 0."),
 
           need(input$stdDev2, "Sample standard deviation 2 is required.") %then%
-            need(input$stdDev2 > 0, "Sample standard deviation 2 must be greater than 0."),
+          need(input$stdDev2 > 0, "Sample standard deviation 2 must be greater than 0."),
 
           errorClass = "myClass")
       }
@@ -6951,20 +6927,20 @@ statInfrServer <- function(id) {
       if (!twopopvar_iv$is_valid()) {
         validate(
           need(input$n1, "n1 is required.") %then%
-            need(input$n1 %% 1 == 0 && input$n1 > 1,
-                 "n1 must be an integer greater than 1."),
+          need(input$n1 %% 1 == 0 && input$n1 > 1,
+               "n1 must be an integer greater than 1."),
 
           need(input$s1sq, "s1^2 is required.") %then%
-            need(input$s1sq > 0,
-                 "s1^2 must be greater than 0."),
+          need(input$s1sq > 0,
+               "s1^2 must be greater than 0."),
 
           need(input$n2, "n2 is required.") %then%
-            need(input$n2 %% 1 == 0 && input$n2 > 1,
-                 "n2 must be an integer greater than 1."),
+          need(input$n2 %% 1 == 0 && input$n2 > 1,
+               "n2 must be an integer greater than 1."),
 
           need(input$s2sq, "s2^2 is required.") %then%
-            need(input$s2sq > 0,
-                 "s2^2 must be greater than 0."),
+          need(input$s2sq > 0,
+               "s2^2 must be greater than 0."),
 
           errorClass = "myClass"
         )
@@ -6973,18 +6949,18 @@ statInfrServer <- function(id) {
       if (!twopopvarraw_iv$is_valid()) {
         validate(
           need(input$rawSamp1SD, "Group 1 data requires a minimum of 3 numeric values.") %then%
-            need(length(createNumLst(input$rawSamp1SD)) >= 3, "Group 1 data requires a minimum of 3 numeric values.") %then%
-            need(sd(createNumLst(input$rawSamp1SD)) > 0, "Group 1 must have variance."),
+          need(length(createNumLst(input$rawSamp1SD)) >= 3, "Group 1 data requires a minimum of 3 numeric values.") %then%
+          need(sd(createNumLst(input$rawSamp1SD)) > 0, "Group 1 must have variance."),
 
           need(input$rawSamp2SD, "Group 2 data requires a minimum of 3 numeric values.") %then%
-            need(length(createNumLst(input$rawSamp2SD)) >= 3, "Group 2 data requires a minimum of 3 numeric values.") %then%
-            need(sd(createNumLst(input$rawSamp2SD)) > 0, "Group 2 must have variance."),
+          need(length(createNumLst(input$rawSamp2SD)) >= 3, "Group 2 data requires a minimum of 3 numeric values.") %then%
+          need(sd(createNumLst(input$rawSamp2SD)) > 0, "Group 2 must have variance."),
 
           errorClass = "myClass"
         )
       }
 
-      #### ---------------- ANOVA Validation
+#### ---------------- ANOVA Validation
       if(!anovaupload_iv$is_valid()) {
         if(is.null(input$anovaUserData)) {
           validate("Please upload a file.")
@@ -7029,7 +7005,7 @@ statInfrServer <- function(id) {
         )
       }
 
-      #### ---------------- Kruskal-Wallis Validation
+#### ---------------- Kruskal-Wallis Validation
       if(!kwupload_iv$is_valid()) {
         if(is.null(input$kwUserData)) {
           validate("Please upload a file.")
@@ -7078,7 +7054,7 @@ statInfrServer <- function(id) {
         )
       }
 
-      #### ---------------- Chi-Square Validation
+#### ---------------- Chi-Square Validation
       if(!chiSq2x2_iv$is_valid()) {
         validate(
           need(input$chiSqInput2x2, "Fields must be positive integers."),
@@ -7086,7 +7062,7 @@ statInfrServer <- function(id) {
 
         validate(
           need(all(!is.na(chiSqActiveData()$numeric)), "Fields must be positive integers.") %then%
-            need(all(chiSqActiveData()$numeric %% 1 == 0), "Fields must be positive integers."),
+          need(all(chiSqActiveData()$numeric %% 1 == 0), "Fields must be positive integers."),
           errorClass = "myClass")
 
         validate(
@@ -7109,7 +7085,7 @@ statInfrServer <- function(id) {
 
         validate(
           need(all(!is.na(chiSqActiveData()$numeric)), "Fields must be positive integers.") %then%
-            need(all(chiSqActiveData()$numeric %% 1 == 0), "Fields must be positive integers."),
+          need(all(chiSqActiveData()$numeric %% 1 == 0), "Fields must be positive integers."),
           errorClass = "myClass")
 
         validate(
@@ -7132,7 +7108,7 @@ statInfrServer <- function(id) {
 
         validate(
           need(all(!is.na(chiSqActiveData()$numeric)), "Fields must be positive integers.") %then%
-            need(all(chiSqActiveData()$numeric %% 1 == 0), "Fields must be positive integers."),
+          need(all(chiSqActiveData()$numeric %% 1 == 0), "Fields must be positive integers."),
           errorClass = "myClass")
 
         validate(
@@ -7155,7 +7131,7 @@ statInfrServer <- function(id) {
 
         validate(
           need(all(!is.na(chiSqActiveData()$numeric)), "Fields must be positive integers.") %then%
-            need(all(chiSqActiveData()$numeric %% 1 == 0), "Fields must be positive integers."),
+          need(all(chiSqActiveData()$numeric %% 1 == 0), "Fields must be positive integers."),
           errorClass = "myClass")
 
         validate(
@@ -7172,9 +7148,9 @@ statInfrServer <- function(id) {
       }
     })
 
-    ### ------------ One Mean Outputs --------------------------------------------
+### ------------ One Mean Outputs --------------------------------------------
 
-    #### ------------- Uploaded Data Table --------------------------
+#### ------------- Uploaded Data Table --------------------------
     output$onePopMeanUploadTable <- renderDT({
       req(onemeanupload_iv$is_valid())
       datatable(OneMeanUploadData(),
@@ -7183,20 +7159,20 @@ statInfrServer <- function(id) {
                                                  c("25", "50", "100", "all")),
                                columnDefs = list(list(className = 'dt-center',
                                                       targets = 0:ncol(OneMeanUploadData())))),
-      )
+                )
     })
 
-    #### ---------------- CI ----
+#### ---------------- CI ----
     output$oneMeanCI <- renderUI({
       printOneMeanCI()
     })
 
-    #### ------------------ HT ----
+#### ------------------ HT ----
     output$oneMeanHT <- renderUI({
       printOneMeanHT()
     })
 
-    #### ---------------- HT Plot ----
+#### ---------------- HT Plot ----
     output$oneMeanHTPlot <- renderPlot({
 
       if(input$dataAvailability == 'Summarized Data') {
@@ -7244,7 +7220,7 @@ statInfrServer <- function(id) {
       oneMeanPlot
     })
 
-    #### ---------------- Boxplot ----
+#### ---------------- Boxplot ----
     output$oneMeanBoxplot <- renderPlot({
       req(si_iv$is_valid())
 
@@ -7277,8 +7253,8 @@ statInfrServer <- function(id) {
     width = function() {GetPlotWidth(input[["oneMeanBoxplot-Width"]], input[["oneMeanBoxplot-WidthPx"]], ui = FALSE)}
     )
 
-    ### ------------ One Sample Standard Deviation Outputs -----------------------
-    #### ---- One population standard deviation confidence interval CI ----
+### ------------ One Sample Standard Deviation Outputs -----------------------
+#### ---- One population standard deviation confidence interval CI ----
     output$oneSDCI <- renderUI({
       ## Input validation
       req(oneSD_iv$is_valid())
@@ -7372,7 +7348,7 @@ statInfrServer <- function(id) {
       )
     })
 
-    #### ---- One population standard deviation hypothesis testing HT ----
+#### ---- One population standard deviation hypothesis testing HT ----
     ## See #33.
     chiSqTestData <- function(envir) {
       evalq(expr = {
@@ -7690,7 +7666,7 @@ statInfrServer <- function(id) {
                       criticalValue,
                       if (accept) "do not " else "",
                       if (accept) "in" else ""
-              )
+                      )
             }
 
           if (input$altHypothesis != 2) {
@@ -7745,8 +7721,8 @@ statInfrServer <- function(id) {
 
         br(),
 
-        ### FUTURE WORK: Revisit chi-square plots as they are currently bugged
-        #plotOutput(session$ns("onePopulationSDHTChiSqPlot"), width = "50%", height = "400px"),
+### FUTURE WORK: Revisit chi-square plots as they are currently bugged
+                                        #plotOutput(session$ns("onePopulationSDHTChiSqPlot"), width = "50%", height = "400px"),
 
         ## Overall conclusion
         br(),
@@ -7769,9 +7745,9 @@ statInfrServer <- function(id) {
         br()) # withMathJax
     }) # renderUI
 
-    ### ------------ One Prop Outputs --------------------------------------------
+### ------------ One Prop Outputs --------------------------------------------
 
-    #### ----------------- #3 Graphs! ---------
+#### ----------------- #3 Graphs! ---------
     output$onePropBarGraph <- renderPlot({
       req(si_iv$is_valid() && input$numTrials >= input$numSuccesses)
 
@@ -7822,7 +7798,7 @@ statInfrServer <- function(id) {
         )
     })
 
-    #### ---------------- CI ----
+#### ---------------- CI ----
     output$onePropCI <- renderUI({
       req(si_iv$is_valid() && input$numTrials >= input$numSuccesses);
 
@@ -7899,7 +7875,7 @@ statInfrServer <- function(id) {
       )
     })
 
-    #### ---------------- HT ----
+#### ---------------- HT ----
     output$onePropHT <- renderUI({
       req(si_iv$is_valid() && input$numTrials >= input$numSuccesses)
 
@@ -7946,7 +7922,7 @@ statInfrServer <- function(id) {
           br(),
           sprintf("\\( \\alpha = %g \\)",
                   SigLvl()), br(),
-          #br(),
+                                        #br(),
           br(),
           p(tags$b("Test Statistic:")),
           sprintf("Given:"),
@@ -7994,17 +7970,17 @@ statInfrServer <- function(id) {
                                  onePropData["Test Statistic"],
                                  pvalSymbol,
                                  reject)
-      # p(tags$b("Using P-Value Method:")),
-      # sprintf("\\( %s \\)",
-      #         pValue),
-      # br(),
-      # sprintf("Since \\( P\\) %s %0.2f, %s \\( H_{0}\\).",
-      #         pvalSymbol,
-      #         SigLvl(),
-      #         reject),
-      # br(),
-      # br(),
-      # br(),
+                                        # p(tags$b("Using P-Value Method:")),
+                                        # sprintf("\\( %s \\)",
+                                        #         pValue),
+                                        # br(),
+                                        # sprintf("Since \\( P\\) %s %0.2f, %s \\( H_{0}\\).",
+                                        #         pvalSymbol,
+                                        #         SigLvl(),
+                                        #         reject),
+                                        # br(),
+                                        # br(),
+                                        # br(),
 
       onePropHTTail <- tagList(
         withMathJax(
@@ -8032,7 +8008,7 @@ statInfrServer <- function(id) {
       tagAppendChildren(onePropHTHead, onePropPVal, onePropHTTail, onePropHTConclusion)
     })
 
-    #### ---------------- HT Plot ----
+#### ---------------- HT Plot ----
     output$onePropHTPlot <- renderPlot({
 
       oneSampPropZTest <- OnePropZTest(input$numSuccesses, input$numTrials, input$hypProportion, OneMeanHypInfo()$alternative, SigLvl())
@@ -8042,9 +8018,9 @@ statInfrServer <- function(id) {
       htPlot
     })
 
-    ### ------------- Ind Means Outputs ------------------------------------------
+### ------------- Ind Means Outputs ------------------------------------------
 
-    #### ------------- Uploaded Data Table --------------------------
+#### ------------- Uploaded Data Table --------------------------
     output$indPopMeansUploadTable <- renderDT({
       req(indmeansupload_iv$is_valid())
       datatable(IndMeansUploadData(),
@@ -8053,13 +8029,13 @@ statInfrServer <- function(id) {
                                                  c("25", "50", "100", "all")),
                                columnDefs = list(list(className = 'dt-center',
                                                       targets = 0:ncol(IndMeansUploadData())))),
-      )
+                )
     })
 
-    #### ------------- Q-Q Plots --------------------------
+#### ------------- Q-Q Plots --------------------------
 
     output$indMeansQQPlot <- renderPlot({
-      # ind means qq plot
+                                        # ind means qq plot
       req(input$indMeansQQPlot)
 
       if (input$dataAvailability2 == "Enter Raw Data") {
@@ -8074,7 +8050,7 @@ statInfrServer <- function(id) {
       df1 <- tibble(values = dat1)
       df2 <- tibble(values = dat2)
 
-      # QQ plot for sample 1
+                                        # QQ plot for sample 1
       qq1 <- RenderQQPlot(
         dat = df1,
         plotColour = input[["indMeansQQPlot-Colour"]],
@@ -8085,7 +8061,7 @@ statInfrServer <- function(id) {
         flip = input[["indMeansQQPlot-Flip"]]
       )
 
-      # QQ plot for sample 2
+                                        # QQ plot for sample 2
       qq2 <- RenderQQPlot(
         dat = df2,
         plotColour = input[["indMeansQQPlot-Colour"]],
@@ -8096,25 +8072,25 @@ statInfrServer <- function(id) {
         flip = input[["indMeansQQPlot-Flip"]]
       )
 
-      # pairs the graphs side by side
+                                        # pairs the graphs side by side
       plot_pair <- ggpubr::ggarrange(qq1, qq2, ncol = 2)
 
-      # title above the 2 graphs
+                                        # title above the 2 graphs
       ggpubr::annotate_figure(
-        plot_pair,
-        top = ggpubr::text_grob(
-          input[["indMeansQQPlot-Title"]],
-          face = "bold",
-          size = 24
-        )
-      )
+                plot_pair,
+                top = ggpubr::text_grob(
+                                input[["indMeansQQPlot-Title"]],
+                                face = "bold",
+                                size = 24
+                              )
+              )
     }, height = function() {
       GetPlotHeight(input[["indMeansQQPlot-Height"]], input[["indMeansQQPlot-HeightPx"]], ui = FALSE)
     }, width = function() {
       GetPlotWidth(input[["indMeansQQPlot-Width"]], input[["indMeansQQPlot-WidthPx"]], ui = FALSE)
     })
 
-    #### ---------------- CI ----
+#### ---------------- CI ----
     output$indMeansCI <- renderUI({
 
       if(IndMeansSigmaKnown() == 'bothKnown'){
@@ -8165,7 +8141,7 @@ statInfrServer <- function(id) {
       )
     })
 
-    #### ---------------- Boxplot ----
+#### ---------------- Boxplot ----
     output$indMeansBoxplot <- renderPlot({
 
       if(input$dataAvailability2 == 'Enter Raw Data') {
@@ -8273,9 +8249,9 @@ statInfrServer <- function(id) {
             sprintf("\\( \\qquad df = n_{1} + n_{2} - 2 = %g, \\)",
                     tInt['df']),
             sprintf("\\( \\qquad t_{\\alpha/2, \\, df} = t_{%g, \\, %g} = %g \\)",
-                    (1 - ConfLvl()) / 2,
-                    tInt['df'],
-                    tInt['T Critical']),
+            (1 - ConfLvl()) / 2,
+            tInt['df'],
+            tInt['T Critical']),
             br(),
             p("and"),
             sprintf("\\( \\displaystyle \\qquad s_{p} = \\sqrt{\\dfrac{(n_{1} - 1)s_{1}^2 + (n_{2} - 1)s_{2}^2}{n_{1} + n_{2} - 2}} \\)"),
@@ -8342,20 +8318,20 @@ statInfrServer <- function(id) {
                     data$n2),
             sprintf("\\( \\displaystyle \\: = \\: \\dfrac{ \\left( %g + %g \\right)^2 }
                     { \\dfrac{ %g^2 }{%g} + \\dfrac{ %g^2 }{%g} } \\)",
-                    (data$sd1^2) / data$n1,
-                    (data$sd2^2) / data$n2,
-                    (data$sd1^2) / data$n1,
-                    data$n1 - 1,
-                    (data$sd2^2) / data$n2,
-                    data$n2 - 1),
+            (data$sd1^2) / data$n1,
+            (data$sd2^2) / data$n2,
+            (data$sd1^2) / data$n1,
+            data$n1 - 1,
+            (data$sd2^2) / data$n2,
+            data$n2 - 1),
             sprintf("\\( \\: = \\: %g \\)",
                     tInt['df']),
             br(),
             p("and"),
             sprintf("\\( \\qquad t_{\\alpha/2, \\, \\nu} = t_{%g, \\, %g} = %g \\)",
-                    (1- ConfLvl()) / 2,
-                    tInt['df'],
-                    tInt['T Critical']),
+            (1- ConfLvl()) / 2,
+            tInt['df'],
+            tInt['T Critical']),
             br(),
             br(),
             br(),
@@ -8384,7 +8360,7 @@ statInfrServer <- function(id) {
       }
     })
 
-    #### ----------------- HT ----
+#### ----------------- HT ----
     output$indMeansHT <- renderUI({
 
       withMathJax()
@@ -8400,7 +8376,7 @@ statInfrServer <- function(id) {
         data <- GetMeansUploadData()
       }
 
-      # get test type and results based on sigma known/unknown
+                                        # get test type and results based on sigma known/unknown
       if(IndMeansSigmaKnown() == 'bothKnown'){
         hTest <- IndMeansZTest()
         testStat <- "z"
@@ -8539,13 +8515,13 @@ statInfrServer <- function(id) {
                   data$n2),
             sprintf("\\( \\displaystyle \\: = \\: \\dfrac{ \\left( %0.4f + %0.4f \\right)^2 }
                   { \\dfrac{ %0.4f^2 }{%g} + \\dfrac{ %0.4f^2 }{%g} } = %s\\)",
-                  (data$sd1^2) / data$n1,
-                  (data$sd2^2) / data$n2,
-                  (data$sd1^2) / data$n1,
-                  data$n1 - 1,
-                  (data$sd2^2) / data$n2,
-                  data$n2 - 1,
-                  hTest['df']),
+            (data$sd1^2) / data$n1,
+            (data$sd2^2) / data$n2,
+            (data$sd1^2) / data$n1,
+            data$n1 - 1,
+            (data$sd2^2) / data$n2,
+            data$n2 - 1,
+            hTest['df']),
             br(),
             br()
           ),
@@ -8560,7 +8536,7 @@ statInfrServer <- function(id) {
         ),
         plotOutput(session$ns('indMeansHTPlot'), width = "75%", height = "300px"),
         br(),
-      )
+        )
 
       if (!muNaught) {
         altHypExpr  <- paste0("\\mu_{1} ", intrpInfo$altHyp)
@@ -8640,10 +8616,10 @@ statInfrServer <- function(id) {
 
         sp <- sqrt(((data$n1 - 1) * data$sd1^2 + (data$n2 - 1) * data$sd2^2) / (data$n1 + data$n2 - 2))
         sp <- if (sp < 0.0001 && sp > -1e-2) {
-          signif(sp, 1)
-        } else {
-          sp
-        }
+                signif(sp, 1)
+              } else {
+                sp
+              }
 
         tagList(
           withMathJax(
@@ -8701,7 +8677,7 @@ statInfrServer <- function(id) {
       }
     })
 
-    #### ---------------- HT Plot ----
+#### ---------------- HT Plot ----
     output$indMeansHTPlot <- renderPlot({
 
       if(IndMeansSigmaKnown() == 'bothKnown'){
@@ -8723,7 +8699,7 @@ statInfrServer <- function(id) {
 
       indMeansPlot
     })
-    ### ------------ Wilcoxon Rank Sum Outputs -------------------------------------------
+### ------------ Wilcoxon Rank Sum Outputs -------------------------------------------
     output$wRankSumUploadTable <- renderDT({
       req(wilcoxonUpload_iv$is_valid())
       datatable(WilcoxonUploadData(),
@@ -8732,9 +8708,9 @@ statInfrServer <- function(id) {
                                                  c("25", "50", "100", "all")),
                                columnDefs = list(list(className = 'dt-center',
                                                       targets = 0:ncol(WilcoxonUploadData())))),
-      )
+                )
     })
-    #### ---------------- Data Table ----
+#### ---------------- Data Table ----
     output$wRankSumMeansData <- renderDT({
       rankSumData <- GetwRankSumMeansData()
 
@@ -8748,16 +8724,16 @@ statInfrServer <- function(id) {
                                pageLength = -1,
                                lengthMenu = list(c(-1, 10, 25, 50), c("All", "10", "25", "50")),
                                ordering = FALSE
-                ),
+                               ),
                 escape = FALSE
-      ) %>% formatStyle(
-        names(df_rankSumData),
-        target = 'row',
-        fontWeight = styleRow(dim(df_rankSumData)[1], "bold")
-      )
+                ) %>% formatStyle(
+                        names(df_rankSumData),
+                        target = 'row',
+                        fontWeight = styleRow(dim(df_rankSumData)[1], "bold")
+                      )
     })
 
-    #### ---------------- HT ----
+#### ---------------- HT ----
     calculate_tie_correction <- function(combined_values) {
       tie_counts <- table(combined_values)
 
@@ -8810,13 +8786,13 @@ statInfrServer <- function(id) {
       combined_values <- c(group1_data, group2_data)
       has_ties <- length(unique(combined_values)) < length(combined_values)
 
-      ### ---------------- Guards 1 & 2: no rank variation ----------------
+### ---------------- Guards 1 & 2: no rank variation ----------------
       validate(
         need(length(unique(combined_values)) > 1,
              "'Sample 1' and 'Sample 2' contain only one repeated value and are identical. The Wilcoxon rank sum test cannot be computed because there is no rank variation. Please check your data."),
         errorClass = "myClass")
 
-      ### ---------------- Guard 3: tie-corrected SE is zero under Normal Approximation ----------------
+### ---------------- Guard 3: tie-corrected SE is zero under Normal Approximation ----------------
       if (!is.null(input$normaprowrsRankSum) && input$normaprowrsRankSum == "Normal approximation (for large samples)") {
         tie_correction_check <- calculate_tie_correction(combined_values)
         u_std_dev_check <- sqrt((n1 * n2 / 12) * ((nAll + 1) - (tie_correction_check / (nAll * (nAll - 1)))))
@@ -8892,7 +8868,7 @@ statInfrServer <- function(id) {
         region <- "acceptance"
       }
 
-      #no ties in data for p value
+                                        #no ties in data for p value
       if(isTRUE(has_ties)){
         if(input$altHypothesis2 == "2") {
           p_value <- 2 * pnorm(abs(z_stat), lower.tail = FALSE)
@@ -8905,7 +8881,7 @@ statInfrServer <- function(id) {
       else if(!has_ties){
         test_result <- suppressWarnings(
           safe_wilcox_test(group1_data, group2_data, paired = FALSE, alternative = altern,
-                      conf.level = significance, exact = TRUE, conf.int = TRUE)
+                           conf.level = significance, exact = TRUE, conf.int = TRUE)
         )
         validate(
           need(!is.null(test_result), "The Wilcoxon rank sum test could not be computed for this data. Please check your data for sufficient variation in both samples."),
@@ -8913,7 +8889,7 @@ statInfrServer <- function(id) {
         p_value <- test_result$p.value
       }
 
-      # Confidence Interval for Two sided, Left and Right sided
+                                        # Confidence Interval for Two sided, Left and Right sided
       if (isTRUE(input$normaprowrsRankSum == "Exact")){
         if(input$altHypothesis2 == "2") {
           lower <- qwilcox(SigLvl() / 2, m = n1, n = n2, lower.tail = TRUE)
@@ -8928,11 +8904,11 @@ statInfrServer <- function(id) {
       }
 
       if (isTRUE(!is.null(input$continuityCorrectionOption) && !is.null(input$normaprowrsRankSum) &&
-          input$continuityCorrectionOption == "True" && input$normaprowrsRankSum == "Normal approximation (for large samples)")){
+                 input$continuityCorrectionOption == "True" && input$normaprowrsRankSum == "Normal approximation (for large samples)")){
         if(isTRUE(has_ties)){
           test_result <- suppressWarnings(
             safe_wilcox_test(group1_data, group2_data, paired = FALSE, alternative = altern,
-                        conf.level = significance, exact = TRUE, correct = TRUE)
+                             conf.level = significance, exact = TRUE, correct = TRUE)
           )
           validate(
             need(!is.null(test_result), "The Wilcoxon rank sum test could not be computed for this data. Please check your data for sufficient variation in both samples."),
@@ -8942,7 +8918,7 @@ statInfrServer <- function(id) {
         else{
           test_result <- suppressWarnings(
             safe_wilcox_test(group1_data, group2_data, paired = FALSE, alternative = altern,
-                        conf.level = significance, exact = FALSE, correct = TRUE)
+                             conf.level = significance, exact = FALSE, correct = TRUE)
           )
           validate(
             need(!is.null(test_result), "The Wilcoxon rank sum test could not be computed for this data. Please check your data for sufficient variation in both samples."),
@@ -8951,11 +8927,11 @@ statInfrServer <- function(id) {
         }
       }
       else if (isTRUE(!is.null(input$continuityCorrectionOption) && !is.null(input$normaprowrsRankSum) &&
-               input$continuityCorrectionOption == "False" && input$normaprowrsRankSum == "Normal approximation (for large samples)")){
+                      input$continuityCorrectionOption == "False" && input$normaprowrsRankSum == "Normal approximation (for large samples)")){
         if(isTRUE(has_ties)){
           test_result <- suppressWarnings(
             safe_wilcox_test(group1_data, group2_data, paired = FALSE, alternative = altern,
-                        conf.level = significance, exact = TRUE, correct = FALSE)
+                             conf.level = significance, exact = TRUE, correct = FALSE)
           )
           validate(
             need(!is.null(test_result), "The Wilcoxon rank sum test could not be computed for this data. Please check your data for sufficient variation in both samples."),
@@ -8965,7 +8941,7 @@ statInfrServer <- function(id) {
         else{
           test_result <- suppressWarnings(
             safe_wilcox_test(group1_data, group2_data, paired = FALSE, alternative = altern,
-                        conf.level = significance, exact = FALSE, correct = FALSE)
+                             conf.level = significance, exact = FALSE, correct = FALSE)
           )
           validate(
             need(!is.null(test_result), "The Wilcoxon rank sum test could not be computed for this data. Please check your data for sufficient variation in both samples."),
@@ -9013,77 +8989,77 @@ statInfrServer <- function(id) {
               helpText("*Note: By default, U1 is always chosen as a test statistic."),
               br(),
 
-          #    p(tags$b("Mann-Whitney U Expected Mean:")),
-          #    sprintf("\\( \\qquad \\mu_{U} = \\frac{n_{1}n_{2}}{2} = \\frac{%s(%s)}{2} = %s \\)", n1, n2, u_mean),
-          #    br(),br(),
-          #
-          #    p(tags$b("Mann-Whitney U Standard Deviation:")),
-          #    sprintf("\\( \\qquad \\sigma_U = \\sqrt{\\frac{n_1 n_2}{12}\\left( (n+1) - \\frac{\\sum_{j=1}^{g} (t_j^3 - t_j)}{n(n-1)}\\right)} =
-          #            \\sqrt{\\frac{%s \\times %s}{12}\\left( (%s+1) - \\frac{%s}{%s \\times (%s-1)}\\right)} = %s \\)",
-          #            n1, n2, nAll, ifelse(has_ties, tie_correction, 0), nAll, nAll, round(u_std_dev, 4)),
-          #    br(), br(),
-          #
-          #    p(tags$b("Mann-Whitney U Test Statistic:")),
-          #    sprintf("\\( \\qquad z = \\frac{U - \\mu_{U}}{\\sigma_{U}} = \\frac{%s - %s}{%s} = %s \\)",
-          #            round(u_test, 4), round(u_mean, 4), round(u_std_dev, 4), round(mw_z_stat, 3)),
+                                        #    p(tags$b("Mann-Whitney U Expected Mean:")),
+                                        #    sprintf("\\( \\qquad \\mu_{U} = \\frac{n_{1}n_{2}}{2} = \\frac{%s(%s)}{2} = %s \\)", n1, n2, u_mean),
+                                        #    br(),br(),
+                                        #
+                                        #    p(tags$b("Mann-Whitney U Standard Deviation:")),
+                                        #    sprintf("\\( \\qquad \\sigma_U = \\sqrt{\\frac{n_1 n_2}{12}\\left( (n+1) - \\frac{\\sum_{j=1}^{g} (t_j^3 - t_j)}{n(n-1)}\\right)} =
+                                        #            \\sqrt{\\frac{%s \\times %s}{12}\\left( (%s+1) - \\frac{%s}{%s \\times (%s-1)}\\right)} = %s \\)",
+                                        #            n1, n2, nAll, ifelse(has_ties, tie_correction, 0), nAll, nAll, round(u_std_dev, 4)),
+                                        #    br(), br(),
+                                        #
+                                        #    p(tags$b("Mann-Whitney U Test Statistic:")),
+                                        #    sprintf("\\( \\qquad z = \\frac{U - \\mu_{U}}{\\sigma_{U}} = \\frac{%s - %s}{%s} = %s \\)",
+                                        #            round(u_test, 4), round(u_mean, 4), round(u_std_dev, 4), round(mw_z_stat, 3)),
 
-            )}
+              )}
           else{
-          if (input$normaprowrsRankSum == "Normal approximation (for large samples)") {
-            tagList(
-              p(tags$b("Mean:")),
-              sprintf("\\(  \\mu_{W} = \\frac{n_{1}(n + 1)}{2} = \\frac{%s(%s + 1)}{2} = %s \\)",
-                      n1, nAll, (sum(wilcoxonRankedData()$Group == name1) * (nrow(wilcoxonRankedData()) + 1)) / 2
-              ),
-              br(), br(),
-              p(tags$b("Standard Deviation:")),
-              sprintf("\\( \\sigma_W = \\sqrt{\\frac{n_{1}n_{2}(n + 1)}{12}} = \\sqrt{\\frac{%s \\times %s (%s + 1)}{12}} = %s \\)",
-                      n1, n2, nAll, round(sigma_w, 4)),
-              br(),br(),
+            if (input$normaprowrsRankSum == "Normal approximation (for large samples)") {
+              tagList(
+                p(tags$b("Mean:")),
+                sprintf("\\(  \\mu_{W} = \\frac{n_{1}(n + 1)}{2} = \\frac{%s(%s + 1)}{2} = %s \\)",
+                        n1, nAll, (sum(wilcoxonRankedData()$Group == name1) * (nrow(wilcoxonRankedData()) + 1)) / 2
+                        ),
+                br(), br(),
+                p(tags$b("Standard Deviation:")),
+                sprintf("\\( \\sigma_W = \\sqrt{\\frac{n_{1}n_{2}(n + 1)}{12}} = \\sqrt{\\frac{%s \\times %s (%s + 1)}{12}} = %s \\)",
+                        n1, n2, nAll, round(sigma_w, 4)),
+                br(),br(),
 
-              p(tags$b("Test Statistic:")),
+                p(tags$b("Test Statistic:")),
 
-              if (!is.null(input$continuityCorrectionOption) && !is.null(input$normaprowrsRankSum) &&
-                  input$continuityCorrectionOption == "True" && input$normaprowrsRankSum == "Normal approximation (for large samples)") {
+                if (!is.null(input$continuityCorrectionOption) && !is.null(input$normaprowrsRankSum) &&
+                    input$continuityCorrectionOption == "True" && input$normaprowrsRankSum == "Normal approximation (for large samples)") {
 
-                if(input$altHypothesis2 == "1") { # Less than alternative
-                  sprintf("\\( z = \\frac{W - \\mu_W + 0.5}{\\sigma_W} = \\frac{%s - %s + %s}{%s} = %s \\)",
-                          round(observed_W, 4), round(mu_w, 4), abs(correction_factor), round(sigma_w, 4), round(z_stat, 3))
-                }
-                else if(input$altHypothesis2 == "2") { # Two-sided alternative
-                  if (observed_W > mu_w) {
-                    sprintf("\\( z = \\frac{W - \\mu_W - 0.5}{\\sigma_W} = \\frac{%s - %s - %s}{%s} = %s \\)",
-                            round(observed_W, 4), round(mu_w, 4), abs(correction_factor), round(sigma_w, 4), round(z_stat, 3))
-                  } else if (observed_W < mu_w) {
+                  if(input$altHypothesis2 == "1") { # Less than alternative
                     sprintf("\\( z = \\frac{W - \\mu_W + 0.5}{\\sigma_W} = \\frac{%s - %s + %s}{%s} = %s \\)",
                             round(observed_W, 4), round(mu_w, 4), abs(correction_factor), round(sigma_w, 4), round(z_stat, 3))
-                  } else { # observed_W == mu_w, no continuity correction applied in formula
+                  }
+                  else if(input$altHypothesis2 == "2") { # Two-sided alternative
+                    if (observed_W > mu_w) {
+                      sprintf("\\( z = \\frac{W - \\mu_W - 0.5}{\\sigma_W} = \\frac{%s - %s - %s}{%s} = %s \\)",
+                              round(observed_W, 4), round(mu_w, 4), abs(correction_factor), round(sigma_w, 4), round(z_stat, 3))
+                    } else if (observed_W < mu_w) {
+                      sprintf("\\( z = \\frac{W - \\mu_W + 0.5}{\\sigma_W} = \\frac{%s - %s + %s}{%s} = %s \\)",
+                              round(observed_W, 4), round(mu_w, 4), abs(correction_factor), round(sigma_w, 4), round(z_stat, 3))
+                    } else { # observed_W == mu_w, no continuity correction applied in formula
+                      sprintf("\\( z = \\frac{W - \\mu_W}{\\sigma_W} = \\frac{%s - %s}{%s} = %s \\)",
+                              round(observed_W, 4), round(mu_w, 4), round(sigma_w, 4), round(z_stat, 3))
+                    }
+                  }
+                  else { # Greater than alternative (assuming input$altHypothesis2 corresponds to "greater")
+                    sprintf("\\( z = \\frac{W - \\mu_W - 0.5}{\\sigma_W} = \\frac{%s - %s - %s}{%s} = %s \\)",
+                            round(observed_W, 4), round(mu_w, 4), abs(correction_factor), round(sigma_w, 4), round(z_stat, 3))
+                  }
+
+                } else { # No continuity correction
+                  if(input$altHypothesis2 == "1") { # Less than alternative
                     sprintf("\\( z = \\frac{W - \\mu_W}{\\sigma_W} = \\frac{%s - %s}{%s} = %s \\)",
                             round(observed_W, 4), round(mu_w, 4), round(sigma_w, 4), round(z_stat, 3))
                   }
-                }
-                else { # Greater than alternative (assuming input$altHypothesis2 corresponds to "greater")
-                  sprintf("\\( z = \\frac{W - \\mu_W - 0.5}{\\sigma_W} = \\frac{%s - %s - %s}{%s} = %s \\)",
-                          round(observed_W, 4), round(mu_w, 4), abs(correction_factor), round(sigma_w, 4), round(z_stat, 3))
-                }
-
-              } else { # No continuity correction
-                if(input$altHypothesis2 == "1") { # Less than alternative
-                  sprintf("\\( z = \\frac{W - \\mu_W}{\\sigma_W} = \\frac{%s - %s}{%s} = %s \\)",
-                          round(observed_W, 4), round(mu_w, 4), round(sigma_w, 4), round(z_stat, 3))
-                }
-                else if(input$altHypothesis2 == "2") { # Two-sided alternative
-                  sprintf("\\( z = \\frac{W - \\mu_W}{\\sigma_W} = \\frac{%s - %s}{%s} = %s \\)",
-                          round(observed_W, 4), round(mu_w, 4), round(sigma_w, 4), round(z_stat, 3))
-                }
-                else { # Greater than alternative
-                  sprintf("\\( z = \\frac{W - \\mu_W}{\\sigma_W} = \\frac{%s - %s}{%s} = %s \\)",
-                          round(observed_W, 4), round(mu_w, 4), round(sigma_w, 4), round(z_stat, 3))
-                }
+                  else if(input$altHypothesis2 == "2") { # Two-sided alternative
+                    sprintf("\\( z = \\frac{W - \\mu_W}{\\sigma_W} = \\frac{%s - %s}{%s} = %s \\)",
+                            round(observed_W, 4), round(mu_w, 4), round(sigma_w, 4), round(z_stat, 3))
+                  }
+                  else { # Greater than alternative
+                    sprintf("\\( z = \\frac{W - \\mu_W}{\\sigma_W} = \\frac{%s - %s}{%s} = %s \\)",
+                            round(observed_W, 4), round(mu_w, 4), round(sigma_w, 4), round(z_stat, 3))
+                  }
+                },
+                br(), br(),
+                )}#,
               },
-              br(), br(),
-            )}#,
-          },
 
           p(tags$b("Using P-value Method:")),
           sprintf("\\( P = %s \\)", ifelse(is.na(p_value), "NA", round(p_value, 4))),
@@ -9094,12 +9070,12 @@ statInfrServer <- function(id) {
           br(),
           if (p_value <= SigLvl()) {
             tagList(
-            sprintf("\\( \\text{Since } P \\leq %s, \\text{reject } H_0. \\)", SigLvl()),
-            br(), br())
+              sprintf("\\( \\text{Since } P \\leq %s, \\text{reject } H_0. \\)", SigLvl()),
+              br(), br())
           } else {
             tagList(
-            sprintf("\\( \\text{Since } P > %s, \\text{do not reject } H_0. \\)", SigLvl()),
-            br(), br())
+              sprintf("\\( \\text{Since } P > %s, \\text{do not reject } H_0. \\)", SigLvl()),
+              br(), br())
           },
 
           if (input$normaprowrsRankSum == "Exact"){
@@ -9126,12 +9102,12 @@ statInfrServer <- function(id) {
                           round(lower, 3), round(upper, 3))
                 } else {
                   sprintf("\\( \\text{Since the test statistic } U_{1} \\text{ does not fall in the rejection region } (%s < U < %s), \\text{do not reject } H_0. \\)",
-                           round(lower, 3), round(upper, 3))
+                          round(lower, 3), round(upper, 3))
                 }
               } else if (input$altHypothesis2 == "1") { # Left-sided decision
                 if (u1_statistic <= lower) {
                   sprintf("\\( \\text{Since the test statistic } U_{1} \\text{ falls in the rejection region } (U \\leq %s), \\text{reject } H_0. \\)",
-                           round(lower, 3))
+                          round(lower, 3))
                 } else {
                   sprintf("\\( \\text{Since the test statistic } U_{1} \\text{ does not fall in the rejection region } (U > %s), \\text{do not reject } H_0. \\)",
                           round(lower, 3))
@@ -9139,45 +9115,45 @@ statInfrServer <- function(id) {
               } else { # Right-sided decision
                 if (u1_statistic >= upper) {
                   sprintf("\\( \\text{Since the test statistic } U_{1} \\text{ falls in the rejection region } (U \\geq %s), \\text{reject } H_0. \\)",
-                           round(upper, 3))
+                          round(upper, 3))
                 } else {
                   sprintf("\\( \\text{Since the test statistic } U_{1} \\text{ does not fall in the rejection region } (U < %s), \\text{do not reject } H_0. \\)",
                           round(upper, 3))
                 }
               }
-          )}
+            )}
         )
       )
 
       rankSumHTTail <-
         if (input$normaprowrsRankSum == "Normal approximation (for large samples)") {
-        tagList(
-        p(
-          withMathJax(),
-          p(tags$b("Using Critical Value Method:")),
-          sprintf("Critical Value(s) \\( = %s z_{%s} = %s \\)",
-                  if(input$altHypothesis2 == "2") "\\pm" else if(input$altHypothesis2 == "1") "-" else "",
-                  if(input$altHypothesis2 == "2") SigLvl()/2 else SigLvl(),
-                  critVal),
-          br(),
-          br(),
-          sprintf("Since the test statistic \\( (z = %s)\\) falls within the %s region, %s \\( H_{0}\\).",
-                  round(z_stat, 3),
-                  region,
-                  reject),
-          br(),
-        ),
+          tagList(
+            p(
+              withMathJax(),
+              p(tags$b("Using Critical Value Method:")),
+              sprintf("Critical Value(s) \\( = %s z_{%s} = %s \\)",
+                      if(input$altHypothesis2 == "2") "\\pm" else if(input$altHypothesis2 == "1") "-" else "",
+                      if(input$altHypothesis2 == "2") SigLvl()/2 else SigLvl(),
+                      critVal),
+              br(),
+              br(),
+              sprintf("Since the test statistic \\( (z = %s)\\) falls within the %s region, %s \\( H_{0}\\).",
+                      round(z_stat, 3),
+                      region,
+                      reject),
+              br(),
+              ),
 
-        plotOutput(session$ns('wilcoxonRankSumPlot'), width = "75%", height = "300px"),
-        br()
-      )}
+            plotOutput(session$ns('wilcoxonRankSumPlot'), width = "75%", height = "300px"),
+            br()
+          )}
 
       depHTConclusion <- printHTConclusion(region, reject, suffEvidence, altHyp, "")
 
       tagAppendChildren(rankSumHTHead, rankSumHTTail, depHTConclusion)
     })
 
-    #### ---------------- HT Plot ----
+#### ---------------- HT Plot ----
     calculate_z_stat <- function(input, observed_W, mu_w, sigma_w, observed_W2, n1, n2, N, u1_statistic, u2_statistic, u_mean, u_std_dev,
                                  has_ties, tie_correction) {
       z_stat_val <- NA
@@ -9275,7 +9251,7 @@ statInfrServer <- function(id) {
       wilcoxonZTestPlot(z_stat, z_critical, alternative)
     })
 
-    ###---- Boxplot Side by Side
+###---- Boxplot Side by Side
     output$sidebysidewRankSum <- renderPlot({
 
       req(input$sidebysidewRankSum)
@@ -9312,7 +9288,7 @@ statInfrServer <- function(id) {
     width = function() {GetPlotWidth(input[["sidebysidewRankSum-Width"]], input[["sidebysidewRankSum-WidthPx"]], ui = FALSE)}
     )
 
-    ###----- QQ Plot
+###----- QQ Plot
     output$sidebysidewRankQQ <- renderPlot({
 
       req(input$sidebysidewRankQQ)
@@ -9343,9 +9319,9 @@ statInfrServer <- function(id) {
     width = function() {GetPlotWidth(input[["sidebysidewRankQQ-Width"]], input[["sidebysidewRankQQ-WidthPx"]], ui = FALSE)}
     )
 
-    ### ------------ Dep Means Outputs -------------------------------------------
+### ------------ Dep Means Outputs -------------------------------------------
 
-    #### ------------ Uploaded Data Table (no totals) ----------------------------------
+#### ------------ Uploaded Data Table (no totals) ----------------------------------
     output$depPopMeansUploadTable <- renderDT({
       req(depmeansupload_iv$is_valid())
       datatable(DepMeansUploadData(),
@@ -9354,17 +9330,17 @@ statInfrServer <- function(id) {
                                                  c("25", "50", "100", "all")),
                                columnDefs = list(list(className = 'dt-center',
                                                       targets = 0:ncol(DepMeansUploadData())))),
-      )
+                )
     })
 
-    #### ----------- Q-Q Plots ----------------------------------------------------------
+#### ----------- Q-Q Plots ----------------------------------------------------------
     output$depMeansQQPlot <- renderPlot({
-      # dep means qq plot
+                                        # dep means qq plot
       req(input$depMeansQQPlot)
 
       dat <- GetDepMeansData()
 
-      # dat$d is the difference between the samples (i.e before - after)
+                                        # dat$d is the difference between the samples (i.e before - after)
       df <- tibble(values = dat$d)
 
       RenderQQPlot(
@@ -9382,7 +9358,7 @@ statInfrServer <- function(id) {
       GetPlotWidth(input[["depMeansQQPlot-Width"]], input[["depMeansQQPlot-WidthPx"]], ui = FALSE)
     })
 
-    #### ---------------- Data Table ----
+#### ---------------- Data Table ----
     output$depMeansData <- renderDT({
       depData <- GetDepMeansData()
 
@@ -9396,16 +9372,16 @@ statInfrServer <- function(id) {
                                pageLength = -1,
                                lengthMenu = list(c(-1, 10, 25, 50), c("All", "10", "25", "50")),
                                ordering = FALSE
-                ),
+                               ),
                 escape = FALSE
-      ) %>% formatStyle(
-        names(df_depData),
-        target = 'row',
-        fontWeight = styleRow(dim(df_depData)[1], "bold")
-      )
+                ) %>% formatStyle(
+                        names(df_depData),
+                        target = 'row',
+                        fontWeight = styleRow(dim(df_depData)[1], "bold")
+                      )
     })
 
-    #### ---------------- CI ----
+#### ---------------- CI ----
     output$depMeansCI <- renderUI({
       tInt <- DepMeansTInt()
       dSum <- round(sum(GetDepMeansData()$d), 4)
@@ -9478,7 +9454,7 @@ statInfrServer <- function(id) {
       )
     })
 
-    #### ---------------- HT ----
+#### ---------------- HT ----
     output$depMeansHT <- renderUI({
       req(GetDepMeansData()$sd != 0)
 
@@ -9540,7 +9516,7 @@ statInfrServer <- function(id) {
           br(),
           br(),
           p("where"),
-          #HERE
+                                        #HERE
           sprintf("\\( \\qquad \\bar{d} = \\dfrac{ \\sum d }{ n } = \\dfrac{%s}{%s} = %s \\; , \\)",
                   dSum,
                   tTest["Sample Size"],
@@ -9560,12 +9536,12 @@ statInfrServer <- function(id) {
                   if (muNaught < 0) sprintf("(%g)", muNaught) else sprintf("%g", muNaught),
                   tTest["Sample SD"],
                   tTest["Sample Size"]),
-  #       sprintf("\\( \\displaystyle \\; = \\; \\dfrac{%g}{ \\left( \\dfrac{ %g }{ %g } \\right) } \\)",
-  #               tTest["Sample Mean"] - muNaught,
-  #               tTest["Sample SD"],
-  #               sqrt(tTest["Sample Size"])),
-  #       br(),
-  #       br(),
+                                        #       sprintf("\\( \\displaystyle \\; = \\; \\dfrac{%g}{ \\left( \\dfrac{ %g }{ %g } \\right) } \\)",
+                                        #               tTest["Sample Mean"] - muNaught,
+                                        #               tTest["Sample SD"],
+                                        #               sqrt(tTest["Sample Size"])),
+                                        #       br(),
+                                        #       br(),
           sprintf("\\( \\displaystyle \\phantom{t} = \\; \\dfrac{ %g }{ %g } \\)",
                   tTest["Sample Mean"] - muNaught,
                   tTest["Std Error"]),
@@ -9606,7 +9582,7 @@ statInfrServer <- function(id) {
                   region,
                   reject),
           br(),
-        ),
+          ),
 
         plotOutput(session$ns('depMeansHTPlot'), width = "75%", height = "300px"),
         br()
@@ -9617,7 +9593,7 @@ statInfrServer <- function(id) {
       tagAppendChildren(depHTHead, depHTPVal, depHTTail, depHTConclusion)
     })
 
-    #### ---------------- HT Plot ----
+#### ---------------- HT Plot ----
     output$depMeansHTPlot <- renderPlot({
 
       if(GetDepMeansData()$sd != 0) {
@@ -9632,7 +9608,7 @@ statInfrServer <- function(id) {
 
     })
 
-    ### ------------ Signed Rank Test Outputs --------------------------------------------
+### ------------ Signed Rank Test Outputs --------------------------------------------
     output$signedRankHypothesisTest <- renderUI({
 
       req(!is.null(signedRankedData()))
@@ -9725,7 +9701,7 @@ statInfrServer <- function(id) {
       } else {
         p_value <- pnorm(z_stat, lower.tail = FALSE)
       }
-      # Jacie: show for exact approximation
+                                        # Jacie: show for exact approximation
       if (input$normaprowrs == "Exact") {
         signedRankHTHead <- tagList(
           p(
@@ -9745,10 +9721,10 @@ statInfrServer <- function(id) {
             sprintf("\\(  W^{-} = %s \\) (sum of negative ranks)", W_minus),
             br(),br(),
 
-          )
+            )
         )
       }
-      # Jacie: show for normal approximation for large samples
+                                        # Jacie: show for normal approximation for large samples
       else {
         signedRankHTHead <- tagList(
           p(
@@ -9803,31 +9779,31 @@ statInfrServer <- function(id) {
         )
 
 
-      signedRankHTTail <- tagList(
-        p(
-          withMathJax(),
-          p(tags$b("Using Critical Value Method:")),
-          sprintf("Critical Value(s) \\( = %s z_{%s} = %s \\)",
-                  if(input$altHypothesis2 == "2") "\\pm" else if(input$altHypothesis2 == "1") "-" else "",
-                  if(input$altHypothesis2 == "2") SigLvl()/2 else SigLvl(),
-                  critVal),
-          br(),
-          br(),
-          sprintf("Since the test statistic \\( (z = %s)\\) falls within the %s region, %s \\( H_{0}\\).",
-                  round(z_stat, 3),
-                  region,
-                  reject),
-          br(),
-        ),
+        signedRankHTTail <- tagList(
+          p(
+            withMathJax(),
+            p(tags$b("Using Critical Value Method:")),
+            sprintf("Critical Value(s) \\( = %s z_{%s} = %s \\)",
+                    if(input$altHypothesis2 == "2") "\\pm" else if(input$altHypothesis2 == "1") "-" else "",
+                    if(input$altHypothesis2 == "2") SigLvl()/2 else SigLvl(),
+                    critVal),
+            br(),
+            br(),
+            sprintf("Since the test statistic \\( (z = %s)\\) falls within the %s region, %s \\( H_{0}\\).",
+                    round(z_stat, 3),
+                    region,
+                    reject),
+            br(),
+            ),
 
-        plotOutput(session$ns('signedRankPlot'), width = "75%", height = "300px"),
-        br()
-      )
+          plotOutput(session$ns('signedRankPlot'), width = "75%", height = "300px"),
+          br()
+        )
 
-      depHTConclusion <- printHTConclusion(region, reject, suffEvidence, altHyp, "")
+        depHTConclusion <- printHTConclusion(region, reject, suffEvidence, altHyp, "")
 
-      tagAppendChildren(signedRankHTHead, signedRankHTTail, depHTConclusion)
-    }})
+        tagAppendChildren(signedRankHTHead, signedRankHTTail, depHTConclusion)
+      }})
 
     output$signedRankPlot <- renderPlot({
 
@@ -9890,7 +9866,7 @@ statInfrServer <- function(id) {
                                                  c("25", "50", "100", "all")),
                                columnDefs = list(list(className = 'dt-center',
                                                       targets = 0:ncol(signedRankUploadData())))),
-      )
+                )
     })
 
     output$signedRankQQ <- renderPlot({
@@ -9951,9 +9927,9 @@ statInfrServer <- function(id) {
       GetPlotWidth(width_val, width_px_val, ui = FALSE)
     })
 
-    ### ------------ Two Prop Outputs --------------------------------------------
+### ------------ Two Prop Outputs --------------------------------------------
 
-    #### ---------------- CI ----
+#### ---------------- CI ----
     output$twoPropCI <- renderUI({
       req(si_iv$is_valid())
 
@@ -10046,7 +10022,7 @@ statInfrServer <- function(id) {
       )
     })
 
-    #### ---------------- HT ----
+#### ---------------- HT ----
     output$twoPropHT <- renderUI({
       req(si_iv$is_valid())
 
@@ -10103,7 +10079,7 @@ statInfrServer <- function(id) {
           br(),
           sprintf("\\( \\alpha = %g \\)",
                   SigLvl()),
-          #br(),
+                                        #br(),
           br(),
           p(tags$b("Test Statistic:")),
           sprintf("Given:"),
@@ -10203,7 +10179,7 @@ statInfrServer <- function(id) {
       tagAppendChildren(twoPropHTHead, twoPropHTPVal, twoPropHTTail, twoPropHTConclusion)
     })
 
-    #### ---------------- HT Plot ----
+#### ---------------- HT Plot ----
     output$twoPropHTPlot <- renderPlot({
       req(si_iv$is_valid())
 
@@ -10214,7 +10190,7 @@ statInfrServer <- function(id) {
       htPlot
     })
 
-    #### --------------- Stacked Bar Plot and Pie Chart ----
+#### --------------- Stacked Bar Plot and Pie Chart ----
     output$twoPropBarPlot <- renderPlot({
       req(input$numTrials1 >= input$numSuccesses1,
           input$numTrials2 >= input$numSuccesses2)
@@ -10255,7 +10231,7 @@ statInfrServer <- function(id) {
                   input$numSuccesses2, input$numTrials2 - input$numSuccesses2)
       )
 
-      # Calculate percentage for labels
+                                        # Calculate percentage for labels
       df <- df %>%
         group_by(Group) %>%
         mutate(Percent = Count / sum(Count),
@@ -10276,8 +10252,8 @@ statInfrServer <- function(id) {
         )
     })
 
-    ### ------------ Two Pop Var Outputs ----------------------------------------------
-    #### ----------- CI
+### ------------ Two Pop Var Outputs ----------------------------------------------
+#### ----------- CI
     output$twoPopVarCI <- renderUI ({
       req(si_iv$is_valid())
 
@@ -10304,33 +10280,33 @@ statInfrServer <- function(id) {
           p(sprintf("\\(\\alpha = 1 - %.2f = %.2f\\)", ConfLvl(), alpha)),
           br(),
 
-          # df
+                                        # df
           printDegreesFreedom(df1, df2),
 
-          # critical values
+                                        # critical values
           p(sprintf("\\(F_{\\alpha/2,\\ df_2,\\ df_1} = F_{%.3f,\\ %d,\\ %d} = %.4f\\)",
                     alpha / 2, df2, df1, CI$F_lower)),
           p(sprintf("\\(F_{1 - \\alpha/2,\\ df_2,\\ df_1} = F_{%.3f,\\ %d,\\ %d} = %.4f\\)",
                     1 - (alpha / 2), df2, df1, CI$F_upper)),
           br(),
 
-          # F stat calculation
+                                        # F stat calculation
           printFStat(data$sd1, data$sd2, CI$F_statistic, is_variance),
 
-          # formula for CI
+                                        # formula for CI
           p("\\( \\displaystyle CI = \\left( F_{\\alpha/2,\\ df_2\\,,\\ df_1} \\cdot \\dfrac{s_1^2}{s_2^2},\\ F_{1 - \\alpha/2,\\ df_2\\,,\\ df_1} \\cdot \\dfrac{s_1^2}{s_2^2} \\right) \\)"),
           br(),
 
-          # formula with subbed in values
+                                        # formula with subbed in values
           p(sprintf("\\( \\displaystyle CI = \\left( %.4f \\cdot %.4f,\\ %.4f \\cdot %.4f \\right) \\)",
                     CI$F_lower, CI$F_statistic, CI$F_upper, CI$F_statistic)),
           br(),
 
-          # CI result
+                                        # CI result
           p(sprintf("\\( \\displaystyle CI = (%.4f, %.4f) \\)", CI$CI_lower, CI$CI_upper)),
           br(),
 
-          # interpretation
+                                        # interpretation
           HTML(sprintf("<strong>Interpretation:</strong>")),
           br(),
           br(),
@@ -10339,7 +10315,7 @@ statInfrServer <- function(id) {
         ))
     })
 
-    #### ------------ HT
+#### ------------ HT
     output$twoPopVarHT <- renderUI({
       req(si_iv$is_valid())
 
@@ -10358,7 +10334,7 @@ statInfrServer <- function(id) {
 
       tagList(
         withMathJax(
-          # hypotheses
+                                        # hypotheses
           p(sprintf("\\(H_0: %s\\)", hyp_labels$nullHyp)),
           p(sprintf("\\(H_a: %s\\)", hyp_labels$altHyp)),
           p(sprintf("\\( \\alpha = %.2f \\)", sig_lvl)),
@@ -10371,14 +10347,14 @@ statInfrServer <- function(id) {
             p("From the Data")
           },
 
-          # print givens
+                                        # print givens
           printTwoPopVarGivens(data, is_variance),
 
-          # print F stat calc
+                                        # print F stat calc
           printFStat(data$sd1, data$sd2, HT$F_statistic, is_variance, is_HT = TRUE),
           br(),
 
-          # print P value method
+                                        # print P value method
           printFTestPVal(
             pValue = HT$p_value,
             testStatVal = HT$F_statistic,
@@ -10387,9 +10363,9 @@ statInfrServer <- function(id) {
             rejectWord = text$rejectWord
           ),
 
-          # print crit value method
+                                        # print crit value method
           p(tags$b("Using Critical Value Method:")),
-          # two sided
+                                        # two sided
           if(alt_hyp == "two.sided") {
             list(
               p(sprintf("Critical Values:")),
@@ -10399,19 +10375,19 @@ statInfrServer <- function(id) {
                       1-sig_lvl/2, df1, df2, HT$crit_upper)
             )
 
-          # greater than
+                                        # greater than
           } else if (alt_hyp == "greater") {
             sprintf("Critical Value = \\(F_{1-\\alpha,\\ df_1,\\ df_2} = F_{%.2f,\\ %d,\\ %d} = %.4f\\)",
                     1-sig_lvl, df1, df2, HT$crit_val)
 
-          # less than
+                                        # less than
           } else {
             sprintf("Critical Value = \\(F_{\\alpha,\\ df_2,\\ df_1} = F_{%.2f,\\ %d,\\ %d} = %.4f\\)",
                     sig_lvl, df2, df1, HT$crit_val)
           },
           br(), br(),
 
-          # print degrees freedom for crit val method
+                                        # print degrees freedom for crit val method
           p(sprintf("where")),
           div(style = "margin-left: 20px;",
               printDegreesFreedom(df1, df2)),
@@ -10420,7 +10396,7 @@ statInfrServer <- function(id) {
                   text$region, text$rejectWord),
           br(), br(), br(),
 
-          # conclusion
+                                        # conclusion
           p(strong("Conclusion:")),
           sprintf("At \\(\\alpha = %.2f\\), since the test statistic falls within the %s region, we %s \\(H_0\\)
                   and conclude that there %s enough statistical evidence to support that \\(%s\\).",
@@ -10429,19 +10405,19 @@ statInfrServer <- function(id) {
       )
     })
 
-    ### ------------ ANOVA Outputs -----------------------------------------------
+### ------------ ANOVA Outputs -----------------------------------------------
     output$anovaOutput <- renderUI({
       req(si_iv$is_valid())
       PrintANOVA()
     })
 
-    #### ---------------- Factor Table ----
+#### ---------------- Factor Table ----
     output$oneWayFactorTable <- renderDT({
       req(si_iv$is_valid())
       PrintANOVAFactorTable()
     })
 
-    #### ---------------- ANOVA Table ----
+#### ---------------- ANOVA Table ----
     output$oneWayAnovaTable <- renderDT({
       req(si_iv$is_valid())
       PrintANOVATable()
@@ -10452,7 +10428,7 @@ statInfrServer <- function(id) {
     ##   PrintANOVATableHTML()
     ## })
 
-    #### ---------------- HT Plot ----
+#### ---------------- HT Plot ----
     output$oneWayAnovaPlot <- renderPlot({
       req(si_iv$is_valid())
 
@@ -10543,7 +10519,7 @@ statInfrServer <- function(id) {
                                           face = "bold.italic"))
     })
 
-    #### ---------------- Post hoc analysis ----
+#### ---------------- Post hoc analysis ----
     output$anovaPosthocAnalysis <- renderUI({
 
       if(input$anovaSigLvl == "10%") {
@@ -10583,7 +10559,7 @@ statInfrServer <- function(id) {
       )
     })
 
-    #### ---------------- Bonf Table ----
+#### ---------------- Bonf Table ----
     output$anovaBonfTable <- renderDT({
       data <- anovaOneWayResults()$data
 
@@ -10592,18 +10568,18 @@ statInfrServer <- function(id) {
       bonf_df[bonf_df == 0] <- "< 0.0001"
 
       headers = htmltools::withTags(table(
-        class = 'display',
-        thead(
-          tr(
-            th("",
-               style = "border: 1px solid rgba(0, 0, 0, 0.15);
+                             class = 'display',
+                             thead(
+                               tr(
+                                 th("",
+                                    style = "border: 1px solid rgba(0, 0, 0, 0.15);
                         border-bottom: 1px solid  rgba(0, 0, 0, 0.3);"),
-            lapply(colnames(bonf_df), th,
-                   style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
+                        lapply(colnames(bonf_df), th,
+                               style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
                           border-top: 1px solid rgba(0, 0, 0, 0.15);')
-          )
-        )
-      ))
+                        )
+                        )
+                        ))
 
       datatable(bonf_df,
                 class = 'cell-border stripe',
@@ -10624,7 +10600,7 @@ statInfrServer <- function(id) {
 
     })
 
-    #### ----------------- Boxplot ----
+#### ----------------- Boxplot ----
     output$anovaBoxplot <- renderPlot({
       req(si_iv$is_valid())
       data <- anovaOneWayResults()$data
@@ -10648,7 +10624,7 @@ statInfrServer <- function(id) {
     width = function() {GetPlotWidth(input[["anovaBoxplot-Width"]], input[["anovaBoxplot-WidthPx"]], ui = FALSE)}
     )
 
-    #### ---------------- Histogram of Residuals ----
+#### ---------------- Histogram of Residuals ----
     output$anovaHistogram <- renderPlot({
       req(si_iv$is_valid())
       data <- anovaOneWayResults()$residuals
@@ -10665,7 +10641,7 @@ statInfrServer <- function(id) {
     width = function() {GetPlotWidth(input[["anovaHistogram-Width"]], input[["anovaHistogram-WidthPx"]], ui = FALSE)}
     )
 
-    #### ---------------- QQ Plot of Residuals ----
+#### ---------------- QQ Plot of Residuals ----
     output$anovaQQplot <- renderPlot({
       req(si_iv$is_valid())
       data <- anovaOneWayResults()$residuals
@@ -10684,7 +10660,7 @@ statInfrServer <- function(id) {
     width = function() {GetPlotWidth(input[["anovaQQplot-Width"]], input[["anovaQQplot-WidthPx"]], ui = FALSE)}
     )
 
-    #### ---------------- Group Means Plot ----
+#### ---------------- Group Means Plot ----
     output$anovaMeanPlot<- renderPlot({
       req(si_iv$is_valid())
       data <- as.data.frame(anovaOneWayResults()$data)
@@ -10703,7 +10679,7 @@ statInfrServer <- function(id) {
     width = function() {GetPlotWidth(input[["anovaMeanPlot-Width"]], input[["anovaMeanPlot-WidthPx"]], ui = FALSE)}
     )
 
-    #### ---------------- Uploaded Data Table ----
+#### ---------------- Uploaded Data Table ----
     output$anovaUploadTable <- renderDT({
       req(anovaupload_iv$is_valid())
       datatable(anovaUploadData(),
@@ -10712,10 +10688,10 @@ statInfrServer <- function(id) {
                                                  c("25", "50", "100", "all")),
                                columnDefs = list(list(className = 'dt-center',
                                                       targets = 0:ncol(anovaUploadData())))),
-      )
+                )
     })
 
-    ### ------------ Kruskal-Wallis Outputs ------------------------------------------
+### ------------ Kruskal-Wallis Outputs ------------------------------------------
     output$kwHT <- kruskalWallisHT(kwResults, reactive({input$kwSigLvl}))
     output$kwUploadTable <- kruskalWallisUpload(kwUploadData, reactive({kwupload_iv$is_valid()}))
     output$kwInitialUploadTable <- kruskalWallisUploadInitial(kwUploadData)
@@ -10745,7 +10721,7 @@ statInfrServer <- function(id) {
       )
     })
 
-    ### ------------ Chi-Square Outputs ------------------------------------------
+### ------------ Chi-Square Outputs ------------------------------------------
 
     output$chiSqObs <- renderDT({
       chiSqData <- chiSqTotaled()
@@ -10762,7 +10738,7 @@ statInfrServer <- function(id) {
 
       chiSqTest <- suppressWarnings(ChiSquareTest(chiSqActiveMatrix(), input$chiSquareYates))
 
-      # choose columns based on whether Yates' correction applied or not
+                                        # choose columns based on whether Yates' correction applied or not
       yates_applied <- input$chiSquareYates
       dimension <- input$chisquareDimension
       if (yates_applied && dimension == '2 x 2'){
@@ -10774,16 +10750,16 @@ statInfrServer <- function(id) {
       display_matrix <- chiSqTest$Matrix[, selected_cols, drop = FALSE]
 
       headers <- htmltools::withTags(table(
-        class = 'display',
-        thead(
-          tr(lapply(selected_cols, function(colname) {
-            th(HTML(colname),
-               class = 'dt-center',
-               style = 'border-right: 1px solid rgba(0, 0, 0, 0.15); border-top: 1px solid rgba(0, 0, 0, 0.15);')
-          })
-          )
-        )
-      ))
+                              class = 'display',
+                              thead(
+                                tr(lapply(selected_cols, function(colname) {
+                                  th(HTML(colname),
+                                     class = 'dt-center',
+                                     style = 'border-right: 1px solid rgba(0, 0, 0, 0.15); border-top: 1px solid rgba(0, 0, 0, 0.15);')
+                                })
+                                )
+                              )
+                            ))
 
       datatable(display_matrix,
                 class = 'cell-border stripe',
@@ -10830,8 +10806,8 @@ statInfrServer <- function(id) {
       }
 
       cv <- round(qchisq(1 - sigLvl, df = chisq_df), 4)
-      # lower95 <- qchisq(.025, chisq_df)
-      # upper95 <- qchisq(.975, chisq_df)
+                                        # lower95 <- qchisq(.025, chisq_df)
+                                        # upper95 <- qchisq(.975, chisq_df)
 
       xSeq <- c(seq(0, 15, length.out = 75), cv, chisq_ts)
       rrLabel <- c((cv + max(xSeq))/2)
@@ -10903,7 +10879,7 @@ statInfrServer <- function(id) {
         xlab(expression(bold(chi^2))) +
         scale_y_continuous(breaks = NULL) +
         theme(axis.title.x = element_text(size = 20))
-      # coord_cartesian(clip="off")
+                                        # coord_cartesian(clip="off")
     })
 
     output$fishersObs <- renderDT({
@@ -10916,23 +10892,23 @@ statInfrServer <- function(id) {
       PrintFishersTest()
     })
 
-    #  ========================================================================= #
+                                        #  ========================================================================= #
     ## -------- Observers ------------------------------------------------------
-    #  ========================================================================= #
+                                        #  ========================================================================= #
     observeEvent(input$oneMeanUserData, priority = 5, {
       hide(id = "inferenceData")
       hide(id = "oneMeanVariable")
       fileInputs$oneMeanStatus <- 'uploaded'
-      # if(onemeanupload_iv$is_valid())
-      # {
+                                        # if(onemeanupload_iv$is_valid())
+                                        # {
       freezeReactiveValue(input, "oneMeanVariable")
       updateSelectInput(session = getDefaultReactiveDomain(),
                         "oneMeanVariable",
                         choices = c(colnames(OneMeanUploadData()))
-      )
+                        )
 
       shinyjs::show(id = "oneMeanVariable")
-      # }
+                                        # }
     })
 
     observeEvent(input$oneMeanBoxplot, {
@@ -10959,22 +10935,22 @@ statInfrServer <- function(id) {
       hide(id = "indMeansUplSample1")
       hide(id = "indMeansUplSample2")
       fileInputs$indMeansStatus <- 'uploaded'
-      # if(onemeanupload_iv$is_valid())
-      # {
+                                        # if(onemeanupload_iv$is_valid())
+                                        # {
       freezeReactiveValue(input, "indMeansUplSample1")
       updateSelectInput(session = getDefaultReactiveDomain(),
                         "indMeansUplSample1",
                         choices = c(colnames(IndMeansUploadData()))
-      )
+                        )
 
       freezeReactiveValue(input, "indMeansUplSample2")
       updateSelectInput(session = getDefaultReactiveDomain(),
                         "indMeansUplSample2",
                         choices = c(colnames(IndMeansUploadData()))
-      )
+                        )
       shinyjs::show(id = "indMeansUplSample1")
       shinyjs::show(id = "indMeansUplSample2")
-      # }
+                                        # }
     })
 
     observeEvent(input$goInference, {
@@ -11018,13 +10994,13 @@ statInfrServer <- function(id) {
         updateSelectInput(session = getDefaultReactiveDomain(),
                           "depMeansUplSample1",
                           choices = c(colnames(DepMeansUploadData()))
-        )
+                          )
 
         freezeReactiveValue(input, "depMeansUplSample2")
         updateSelectInput(session = getDefaultReactiveDomain(),
                           "depMeansUplSample2",
                           choices = c(colnames(DepMeansUploadData()))
-        )
+                          )
         shinyjs::show(id = "depMeansUplSample1")
         shinyjs::show(id = "depMeansUplSample2")
       }
@@ -11038,7 +11014,7 @@ statInfrServer <- function(id) {
       })
     })
 
-    ### ---------- Wilcoxon Rank Sum Observers --------------------
+### ---------- Wilcoxon Rank Sum Observers --------------------
     observeEvent(input$wilcoxonUpl, priority = 5, {
       hide(id = "inferenceData")
       hide(id = "wilcoxonUpl1")
@@ -11052,13 +11028,13 @@ statInfrServer <- function(id) {
         updateSelectInput(session = getDefaultReactiveDomain(),
                           "wilcoxonUpl1",
                           choices = c(colnames(WilcoxonUploadData()))
-        )
+                          )
 
         freezeReactiveValue(input, "wilcoxonUpl2")
         updateSelectInput(session = getDefaultReactiveDomain(),
                           "wilcoxonUpl2",
                           choices = c(colnames(WilcoxonUploadData()))
-        )
+                          )
         shinyjs::show(id = "wilcoxonUpl1")
         shinyjs::show(id = "wilcoxonUpl2")
       }
@@ -11084,7 +11060,7 @@ statInfrServer <- function(id) {
       })
     })
 
-    ### ---------- Wilcoxon Signed Rank Test Observers --------------------
+### ---------- Wilcoxon Signed Rank Test Observers --------------------
 
     observeEvent(input$signedRankUpl, priority = 5, {
       rv$calculatePressed <- FALSE
@@ -11170,19 +11146,19 @@ statInfrServer <- function(id) {
         updateSelectizeInput(session = getDefaultReactiveDomain(),
                              "anovaMultiColumns",
                              choices = c(colnames(anovaUploadData()))
-        )
+                             )
 
         freezeReactiveValue(input, "anovaResponse")
         updateSelectizeInput(session = getDefaultReactiveDomain(),
                              "anovaResponse",
                              choices = c(colnames(anovaUploadData()))
-        )
+                             )
 
         freezeReactiveValue(input, "anovaFactors")
         updateSelectizeInput(session = getDefaultReactiveDomain(),
                              "anovaFactors",
                              choices = c(colnames(anovaUploadData()))
-        )
+                             )
 
         shinyjs::show(id = "anovaUploadInputs")
       }
@@ -11201,7 +11177,7 @@ statInfrServer <- function(id) {
 
       kwDisplayState("raw")
 
-      #hide(id = "inferenceData")
+                                        #hide(id = "inferenceData")
       hide(id = "kwUploadInputs")
 
       fileInputs$kwStatus <- 'uploaded'
@@ -11216,20 +11192,20 @@ statInfrServer <- function(id) {
                              "kwMultiColumns",
                              choices = c(colnames(kwUploadData())),
                              selected = character(0)
-        )
+                             )
 
         freezeReactiveValue(input, "kwResponse")
         updateSelectizeInput(session = getDefaultReactiveDomain(),
                              "kwResponse",
                              choices = c(colnames(kwUploadData())),
                              selected = character(0)
-        )
+                             )
         freezeReactiveValue(input, "kwFactors")
         updateSelectizeInput(session = getDefaultReactiveDomain(),
                              "kwFactors",
                              choices = c(colnames(kwUploadData())),
                              selected = character(0)
-        )
+                             )
 
         shinyjs::show(id = "kwUploadInputs")
       }
@@ -11409,7 +11385,7 @@ statInfrServer <- function(id) {
     })
 
     observeEvent(input$goInference, {
-      #output$renderInference <- renderDataTable(
+                                        #output$renderInference <- renderDataTable(
 
       if(si_iv$is_valid() && depmeansrawsd_iv$is_valid()) {
         shinyjs::show(id = "inferenceData")
@@ -11459,7 +11435,7 @@ statInfrServer <- function(id) {
           })
         } else if(input$popuParameters == "Wilcoxon rank sum test") {
 
-          # Hide tabs if deeper validation fails (not caught by si_iv)
+                                        # Hide tabs if deeper validation fails (not caught by si_iv)
           rank_data <- tryCatch(wilcoxonRankedData(), error = function(e) NULL)
           hide_due_to_invalid <- FALSE
 
@@ -11475,7 +11451,7 @@ statInfrServer <- function(id) {
               tie_counts_chk <- table(combined_vals)
               tie_corr_chk <- sum(sapply(tie_counts_chk, function(t) if (t > 1) t^3 - t else 0))
               u_std_dev_chk <- sqrt((n1_chk * n2_chk / 12) *
-                                      ((nAll_chk + 1) - (tie_corr_chk / (nAll_chk * (nAll_chk - 1)))))
+                                    ((nAll_chk + 1) - (tie_corr_chk / (nAll_chk * (nAll_chk - 1)))))
               if (is.na(u_std_dev_chk) || u_std_dev_chk <= 0) {
                 hide_due_to_invalid <- TRUE
               }
@@ -11506,65 +11482,65 @@ statInfrServer <- function(id) {
         }
       } else if(input$siMethod == 'Categorical') {
 
-        # output$render2x2ChiSq <- renderUI({
-        #   tagList(
-        #
-        #     titlePanel("Chi-Square Test for Independence"),
-        #     hr(),
-        #     br(),
-        #     h3("Observed Frequencies"),
-        #     DTOutput("chiSq2x2Obs", width = '500px'),
-        #     br(),
-        #     br(),
-        #     h3("Expected Frequencies"),
-        #     DTOutput("chiSq2x2", width = '500px'),
-        #     br(),
-        #   )
-        # })
-        #
-        # output$render2x3ChiSq <- renderUI({
-        #   tagList(
-        #
-        #     titlePanel("Chi-Square Test for Independence"),
-        #     hr(),
-        #     br(),
-        #     DTOutput("chiSq2x3", width = '500px'),
-        #     br(),
-        #     br(),
-        #     br(),
-        #   )
-        # })
-        #
-        # output$render3x2ChiSq <- renderUI({
-        #   tagList(
-        #
-        #     titlePanel("Chi-Square Test for Independence"),
-        #     hr(),
-        #     br(),
-        #     DTOutput("chiSq3x2", width = '500px'),
-        #     br(),
-        #     br(),
-        #     br(),
-        #   )
-        # })
-        #
-        # output$render3x3ChiSq <- renderUI({
-        #   tagList(
-        #
-        #     titlePanel("Chi-Square Test for Independence"),
-        #     hr(),
-        #     br(),
-        #     DTOutput("chiSq3x3", width = '500px'),
-        #     br(),
-        #     br(),
-        #     br(),
-        #   )
-        # })
+                                        # output$render2x2ChiSq <- renderUI({
+                                        #   tagList(
+                                        #
+                                        #     titlePanel("Chi-Square Test for Independence"),
+                                        #     hr(),
+                                        #     br(),
+                                        #     h3("Observed Frequencies"),
+                                        #     DTOutput("chiSq2x2Obs", width = '500px'),
+                                        #     br(),
+                                        #     br(),
+                                        #     h3("Expected Frequencies"),
+                                        #     DTOutput("chiSq2x2", width = '500px'),
+                                        #     br(),
+                                        #   )
+                                        # })
+                                        #
+                                        # output$render2x3ChiSq <- renderUI({
+                                        #   tagList(
+                                        #
+                                        #     titlePanel("Chi-Square Test for Independence"),
+                                        #     hr(),
+                                        #     br(),
+                                        #     DTOutput("chiSq2x3", width = '500px'),
+                                        #     br(),
+                                        #     br(),
+                                        #     br(),
+                                        #   )
+                                        # })
+                                        #
+                                        # output$render3x2ChiSq <- renderUI({
+                                        #   tagList(
+                                        #
+                                        #     titlePanel("Chi-Square Test for Independence"),
+                                        #     hr(),
+                                        #     br(),
+                                        #     DTOutput("chiSq3x2", width = '500px'),
+                                        #     br(),
+                                        #     br(),
+                                        #     br(),
+                                        #   )
+                                        # })
+                                        #
+                                        # output$render3x3ChiSq <- renderUI({
+                                        #   tagList(
+                                        #
+                                        #     titlePanel("Chi-Square Test for Independence"),
+                                        #     hr(),
+                                        #     br(),
+                                        #     DTOutput("chiSq3x3", width = '500px'),
+                                        #     br(),
+                                        #     br(),
+                                        #     br(),
+                                        #   )
+                                        # })
       }
-       #) # renderInference
+                                        #) # renderInference
     }) # input$goInference
 
-    ### ------------ Component Display -------------------------------------------
+### ------------ Component Display -------------------------------------------
     observeEvent(!si_iv$is_valid(), {
       hide(id = "inferenceMP")
       hide(id = "inferenceData")
@@ -11661,7 +11637,7 @@ statInfrServer <- function(id) {
     })
 
     observeEvent(input$goInference, {
-      # Hide/show tabs for 1 sample
+                                        # Hide/show tabs for 1 sample
       if (input$dataAvailability != "Upload Data"){
         updateTabsetPanel(session, "onePopMeanTabset", selected = "Analysis")
         hideTab(inputId = "onePopMeanTabset", target = "Uploaded Data")
@@ -11675,7 +11651,7 @@ statInfrServer <- function(id) {
         hideTab(inputId = "onePopMeanTabset", target = "Graphs")
       }
 
-      # Hide/show tabs for 2 sample independent populations
+                                        # Hide/show tabs for 2 sample independent populations
       if (input$dataAvailability2 != "Upload Data"){
         updateTabsetPanel(session, "indPopMeansTabset", selected = "Analysis")
         hideTab(inputId = "indPopMeansTabset", target = "Uploaded Data")
@@ -11689,7 +11665,7 @@ statInfrServer <- function(id) {
         hideTab(inputId = "indPopMeansTabset", target = "Graphs")
       }
 
-      # Hide/show tabs for 2 sample dependent populations
+                                        # Hide/show tabs for 2 sample dependent populations
       if (input$dataTypeDependent != "Upload Data"){
         updateTabsetPanel(session, "depPopMeansTabset", selected = "Analysis")
         hideTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
@@ -11703,7 +11679,7 @@ statInfrServer <- function(id) {
         hideTab(inputId = "depPopMeansTabset", target = "Graphs")
       }
 
-      # Hide/show tabs for Wilcoxon Rank Sum Upload
+                                        # Hide/show tabs for Wilcoxon Rank Sum Upload
       if (input$wilcoxonRankSumTestData != "Upload Data"){
         updateTabsetPanel(session, "wilcoxonRankSumTabset", selected = "Analysis")
         hideTab(inputId = "wilcoxonRankSumTabset", target = "Uploaded Data")
@@ -11711,14 +11687,14 @@ statInfrServer <- function(id) {
         showTab(inputId = "wilcoxonRankSumTabset", target = "Uploaded Data")
       }
 
-      # Hide/show tabs for Wilcoxon Rank Sum Graph
+                                        # Hide/show tabs for Wilcoxon Rank Sum Graph
       if (input$sidebysidewRankSum == 1 || input$sidebysidewRankQQ == 1){
         showTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
       } else {
         hideTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
       }
 
-      # Hide/show tabs for Wilcoxon Signed Rank Upload
+                                        # Hide/show tabs for Wilcoxon Signed Rank Upload
       if (input$signedRankTest != "Upload Data"){
         updateTabsetPanel(session, "signedRankTabset", selected = "Analysis")
         hideTab(inputId = "signedRankTabset", target = "Uploaded Data")
@@ -11764,26 +11740,26 @@ statInfrServer <- function(id) {
       if (input$chisquareMethod == "Fisher"){
         updateRadioButtons(session, "chisquareDimension", selected = "2 x 2")
 
-        # hide radio buttons
+                                        # hide radio buttons
         runjs("$('input[value=\"2 x 3\"]').parent().hide();
                $('input[value=\"3 x 2\"]').parent().hide();
                $('input[value=\"3 x 3\"]').parent().hide();
               ")
 
-        # hide matrices
+                                        # hide matrices
         hide(id = "chiSqInput2x3")
         hide(id = "chiSqInput3x2")
         hide(id = "chiSqInput3x3")
       }
       else {
 
-        # show radio buttons
+                                        # show radio buttons
         runjs("$('input[value=\"2 x 3\"]').parent().show();
                $('input[value=\"3 x 2\"]').parent().show();
                $('input[value=\"3 x 3\"]').parent().show();
               ")
 
-        # show matrices
+                                        # show matrices
         show(id = "chiSqInput2x3")
         show(id = "chiSqInput3x2")
         show(id = "chiSqInput3x3")
