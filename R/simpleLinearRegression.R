@@ -22,6 +22,40 @@ SLRMainPanelUI <- function(id) {
         opacity: 0.4 !important;
         cursor: not-allowed !important;
       }
+      .copy-plot-btn {
+        margin-top: 10px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+    ")),
+    tags$script(HTML("
+      function copyPlotToClipboard(plotId) {
+        var plotDiv = document.getElementById(plotId);
+        if (!plotDiv) return;
+        var btn = document.querySelector('[data-copy-plot=\"' + plotId + '\"]');
+
+        Plotly.toImage(plotDiv, {format: 'png', width: plotDiv.offsetWidth, height: plotDiv.offsetHeight})
+          .then(function(dataUrl) { return fetch(dataUrl); })
+          .then(function(res) { return res.blob(); })
+          .then(function(blob) {
+            return navigator.clipboard.write([new ClipboardItem({'image/png': blob})]);
+          })
+          .then(function() {
+            if (btn) {
+              var orig = btn.innerHTML;
+              btn.innerHTML = '<i class=\"fa fa-check\"></i> Copied!';
+              btn.disabled = true;
+              setTimeout(function() {
+                btn.innerHTML = orig;
+                btn.disabled = false;
+              }, 2000);
+            }
+          })
+          .catch(function(err) {
+            alert('Could not copy to clipboard. Your browser may not support this feature, or the page must be served over HTTPS.');
+          });
+      }
     ")),
     
     hidden(div(
@@ -73,7 +107,15 @@ SLRMainPanelUI <- function(id) {
               plotlyOutput(ns("slrScatterplot"),
                            height = "700px",
                            width  = "100%"),
-              
+
+              tags$button(
+                class             = "btn btn-default copy-plot-btn",
+                `data-copy-plot`  = ns("slrScatterplot"),
+                onclick           = paste0("copyPlotToClipboard('", ns("slrScatterplot"), "')"),
+                tags$i(class = "fa fa-clipboard"),
+                "Copy to Clipboard"
+              ),
+
               br()
             )
           ), # Scatterplot tabpanel
@@ -1367,15 +1409,17 @@ SLRServer <- function(id) {
         
         
         interceptEstimate <- round(summary(model)$coefficients["(Intercept)", "Estimate"], 4)
-        slopeEstimate <- round(summary(model)$coefficients["datx", "Estimate"], 4)
-        
+        slopeEstimate     <- round(summary(model)$coefficients["datx", "Estimate"], 4)
+        b0_raw            <- summary(model)$coefficients["(Intercept)", "Estimate"]
+        b1_raw            <- summary(model)$coefficients["datx", "Estimate"]
+
         output$regLineEquation <- renderUI({
           withMathJax(
             p("The estimated equation of the regression line is"),
             p(sprintf("\\( \\qquad \\hat{y} = \\hat{\\beta}_{0} + \\hat{\\beta}_{1} x \\)")),
             p("where"),
             p(sprintf(
-              "\\( \\qquad \\hat{\\beta}_{1} = \\dfrac{ \\sum xy - \\dfrac{ (\\sum x)(\\sum y) }{ n } }{ \\sum x^2 - \\dfrac{ (\\sum x)^2 }{ n } } = \\dfrac{ %s - \\dfrac{ (%s)(%s) }{ %s } }{ %s - \\dfrac{ (%s)^2 }{ %s } } = %0.4f \\)",
+              "\\( \\qquad \\hat{\\beta}_{1} = \\dfrac{ \\sum xy - \\dfrac{ (\\sum x)(\\sum y) }{ n } }{ \\sum x^2 - \\dfrac{ (\\sum x)^2 }{ n } } = \\dfrac{ %s - \\dfrac{ (%s)(%s) }{ %s } }{ %s - \\dfrac{ (%s)^2 }{ %s } } = %s \\)",
               format(round(dfTotaled["Totals", "xy"], 3), nsmall = 0, scientific = FALSE),
               format(round(dfTotaled["Totals", "x"], 3), nsmall = 0, scientific = FALSE),
               format(round(dfTotaled["Totals", "y"], 3), nsmall = 0, scientific = FALSE),
@@ -1383,28 +1427,28 @@ SLRServer <- function(id) {
               format(round(dfTotaled["Totals", "x<sup>2</sup>"], 3), nsmall = 0, scientific = FALSE),
               format(round(dfTotaled["Totals", "x"], 3), nsmall = 0, scientific = FALSE),
               format(round(length(datx), 3), nsmall = 0, scientific = FALSE),
-              slopeEstimate
+              fmt_sci_latex(b1_raw, 4)
             )),
             p("and"),
             p(sprintf(
-              "\\( \\qquad \\hat{\\beta}_{0} = \\bar{y} - \\hat{\\beta}_{1} \\bar{x} = %s - (%0.4f)(%s) = %s %s %0.4f = %0.4f \\)",
+              "\\( \\qquad \\hat{\\beta}_{0} = \\bar{y} - \\hat{\\beta}_{1} \\bar{x} = %s - (%s)(%s) = %s %s %s = %s \\)",
               format(round(mean(daty), 3), nsmall = 0, scientific = FALSE),
-              summary(model)$coefficients["datx", "Estimate"],
+              fmt_sci_latex(b1_raw, 4),
               format(round(mean(datx), 3), nsmall = 0, scientific = FALSE),
               format(round(mean(daty), 3), nsmall = 0, scientific = FALSE),
               b0HatOp,
-              abs(slopeEstimate) * mean(datx),
-              interceptEstimate
+              fmt_sci_latex(abs(b1_raw) * mean(datx), 4),
+              fmt_sci_latex(b0_raw, 4)
             )),
             br(),
-            p(sprintf("\\( \\qquad \\hat{y} = %0.4f %s %0.4f x \\)",
-                    interceptEstimate,
+            p(sprintf("\\( \\qquad \\hat{y} = %s %s %s x \\)",
+                    fmt_sci_latex(b0_raw, 4),
                     yHatOp,
-                    abs(slopeEstimate))),
+                    fmt_sci_latex(abs(b1_raw), 4))),
             br(),
             p(tags$b("Interpretation:")),
-            p(HTML(paste0("Within the scope of observation, ", interceptEstimate, " is the estimated value of ",
-                          "\\(y\\) when \\(x\\) = 0. A slope of ", slopeEstimate,
+            p(HTML(paste0("Within the scope of observation, \\(", fmt_sci_latex(b0_raw, 4), "\\) is the estimated value of ",
+                          "\\(y\\) when \\(x\\) = 0. A slope of \\(", fmt_sci_latex(b1_raw, 4), "\\)",
                           " represents the estimated ", slopeDirection, " in  \\(y\\)",
                           " for a unit increase of \\(x\\).")))
           )
@@ -2074,7 +2118,9 @@ SLRServer <- function(id) {
           has_ties    <- spearman_cf(datx) > 0 || spearman_cf(daty) > 0
 
           if (has_ties) {
-            sum_rxry <- sum(spearman_df$rx_ry)
+            sum_rank_x <- sum(spearman_df$rank_x)
+            sum_rank_y <- sum(spearman_df$rank_y)
+            sum_rxry   <- sum(spearman_df$rx_ry)
 
             reactable(
               spearman_df[, c("x", "y", "rank_x", "rank_y", "rx_ry")],
@@ -2088,8 +2134,8 @@ SLRServer <- function(id) {
               columns = list(
                 x      = colDef(name = "x",      align = "center"),
                 y      = colDef(name = "y",      align = "center"),
-                rank_x = colDef(name = "Rank x", align = "center"),
-                rank_y = colDef(name = "Rank y", align = "center"),
+                rank_x = colDef(name = "Rank x", align = "center", footer = tags$b(sum_rank_x)),
+                rank_y = colDef(name = "Rank y", align = "center", footer = tags$b(sum_rank_y)),
                 rx_ry  = colDef(
                   name     = HTML("(Rank x) &times; (Rank y)"),
                   html     = TRUE,
@@ -2107,7 +2153,9 @@ SLRServer <- function(id) {
               )
             )
           } else {
-            sum_d_sq <- sum(spearman_df$d_sq)
+            sum_rank_x <- sum(spearman_df$rank_x)
+            sum_rank_y <- sum(spearman_df$rank_y)
+            sum_d_sq   <- sum(spearman_df$d_sq)
 
             reactable(
               spearman_df[, c("x", "y", "rank_x", "rank_y", "d", "d_sq")],
@@ -2121,8 +2169,8 @@ SLRServer <- function(id) {
               columns = list(
                 x      = colDef(name = "x",      align = "center"),
                 y      = colDef(name = "y",      align = "center"),
-                rank_x = colDef(name = "Rank x", align = "center"),
-                rank_y = colDef(name = "Rank y", align = "center"),
+                rank_x = colDef(name = "Rank x", align = "center", footer = tags$b(sum_rank_x)),
+                rank_y = colDef(name = "Rank y", align = "center", footer = tags$b(sum_rank_y)),
                 d      = colDef(name = "d = (Rank x \u2212 Rank y)", align = "center", footer = tags$b("Total"), minWidth = 190),
                 d_sq   = colDef(
                   name   = HTML("d<sup>2</sup>"),

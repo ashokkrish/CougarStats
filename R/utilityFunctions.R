@@ -1,13 +1,18 @@
 ## Format a number for LaTeX: uses value^{exp} notation when the value would
 ## round to zero at 'digits' decimal places, so fractions never display 0/0.
+## Passes literal 0 (not x) for the x==0 case to prevent IEEE 754 negative-zero
+## (-0.0) from producing "-0.0000" via sprintf.
 fmt_sci_latex <- function(x, digits = 3) {
-  if (!is.finite(x) || x == 0) return(sprintf("%.*f", digits, x))
-  if (abs(x) < 0.5 * 10^(-digits)) {
+  if (!is.finite(x)) return(sprintf("%.*f", digits, x))
+  if (x == 0)        return(sprintf("%.*f", digits, 0))   # literal 0 avoids -0.0 → "-0.0000"
+  rounded <- round(x, digits)
+  if (rounded == 0) {
+    # x is non-zero but rounds to 0 — show scientific notation instead of "0.0000"
     exp  <- floor(log10(abs(x)))
     mant <- x / 10^exp
     sprintf("%.3f^{%d}", mant, exp)
   } else {
-    format(round(x, digits), nsmall = 0, scientific = FALSE)
+    format(rounded, nsmall = 0, scientific = FALSE)
   }
 }
 
