@@ -411,17 +411,38 @@ SLRSidebarUI <- function(id) {
         condition = "input.dataRegCor == 'Upload Data'",
         
         HTML(uploadDataDisclaimer),
-        
+
         fileInput(
           inputId = ns("slrUserData"),
-          label   = strong("Upload your data (.csv or .xls or .xlsx or .txt)"),
+          label   = strong("Upload your data (.csv, .xls, .xlsx, .txt, .sas7bdat, .sav, .dta, .rds, .mtp, .mwx, .mpx)"),
           accept  = c("text/csv",
                       "text/comma-separated-values",
+                      "text/tab-separated-values",
                       "text/plain",
                       ".csv",
+                      ".txt",
                       ".xls",
-                      ".xlsx")),
-        
+                      ".xlsx",
+                      ".sas7bdat",
+                      ".sav",
+                      ".dta",
+                      ".rds",
+                      ".mtp",
+                      ".mwx",
+                      ".mpx")),
+
+        conditionalPanel(
+          ns = ns,
+          condition = "output.slrShowSheetPicker == true",
+          selectizeInput(
+            inputId  = ns("slrSheet"),
+            label    = strong("Choose a Sheet"),
+            choices  = c(""),
+            multiple = FALSE,
+            options  = list(placeholder = 'Select a sheet',
+                            onInitialize = I('function() { this.setValue(""); }')))
+        ),
+
         selectizeInput(
           inputId = ns("slrResponse"),
           label   = strong("Choose the Response Variable (\\(y\\))"),
@@ -728,7 +749,7 @@ SLRServer <- function(id) {
     
     slrupload_iv$add_rule("slrUserData", sv_required())
     slrupload_iv$add_rule("slrUserData", ~ if (is.null(fileInputs$slrStatus) || fileInputs$slrStatus == 'reset') "Required")
-    slrupload_iv$add_rule("slrUserData", ~ if (!(tolower(tools::file_ext(input$slrUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+    slrupload_iv$add_rule("slrUserData", ~ if (!(tolower(tools::file_ext(input$slrUserData$name)) %in% UPLOAD_ACCEPTED_EXTENSIONS)) "File format not accepted.")
     slrupload_iv$add_rule("slrUserData", ~ tryCatch(
       if (isTRUE(nrow(slrUploadData()) == 0)) "File is empty.",
       error = function(e) NULL
@@ -833,23 +854,25 @@ SLRServer <- function(id) {
       slrStatus = NULL,
     )
     
-    slrUploadData <- eventReactive(input$slrUserData, {
-      ext <- tolower(tools::file_ext(input$slrUserData$name))
-      
-      dat <- switch(ext,
-                    csv  = read_csv(input$slrUserData$datapath, show_col_types = FALSE),
-                    xls  = read_xls(input$slrUserData$datapath),
-                    xlsx = read_xlsx(input$slrUserData$datapath),
-                    txt  = read_tsv(input$slrUserData$datapath, show_col_types = FALSE),
-                    validate("Improper file format.")
-      )
-      
+    slrUploadData <- eventReactive(list(input$slrUserData, input$slrSheet), {
+      req(input$slrUserData)
+      ext  <- tolower(tools::file_ext(input$slrUserData$name))
+      path <- input$slrUserData$datapath
+
+      if (ext %in% c("xls", "xlsx")) {
+        req(input$slrSheet)
+        # Block on stale sheet name (transient between file upload and selectize update)
+        req(input$slrSheet %in% readxl::excel_sheets(path))
+      }
+
+      dat <- readUploadedDataFile(ext, path, input$slrSheet)
+
       # Drop columns that are entirely NA (empty phantom columns from Excel)
       dat <- dat[, colSums(!is.na(dat)) > 0, drop = FALSE]
-      
+
       # Drop rows where ALL columns are NA (empty phantom rows from Excel)
       dat <- dat[rowSums(!is.na(dat)) > 0, , drop = FALSE]
-      
+
       dat
     })
     
@@ -931,8 +954,48 @@ SLRServer <- function(id) {
     })
     
     
+    # Tells the UI whether to show the sheet picker (only for xls/xlsx)
+    output$slrShowSheetPicker <- reactive({
+      if (is.null(input$slrUserData)) return(FALSE)
+      tolower(tools::file_ext(input$slrUserData$name)) %in% c("xls", "xlsx")
+    })
+    outputOptions(output, "slrShowSheetPicker", suspendWhenHidden = FALSE)
+
+    # Populate sheet choices when an Excel file is uploaded
     observeEvent(input$slrUserData, {
+      req(input$slrUserData)
+      ext <- tolower(tools::file_ext(input$slrUserData$name))
+      if (ext %in% c("xls", "xlsx")) {
+        sheets <- tryCatch(readxl::excel_sheets(input$slrUserData$datapath),
+                           error = function(e) character(0))
+        freezeReactiveValue(input, "slrSheet")
+        updateSelectizeInput(session, "slrSheet",
+                             choices  = sheets,
+                             selected = if (length(sheets)) sheets[1] else "")
+      } else {
+        updateSelectizeInput(session, "slrSheet", choices = character(0), selected = "")
+      }
+    }, priority = 50)
+
+    # Fills the variable selection options based on data file columns.
+    # Depends on BOTH slrUserData and slrSheet so that for Excel files we wait
+    # until the sheet has been selected before trying to read columns.
+    observeEvent({
+      input$slrUserData
+      input$slrSheet
+    }, {
+      req(input$slrUserData)
       fileInputs$slrStatus <- "uploaded"
+
+      ext <- tolower(tools::file_ext(input$slrUserData$name))
+
+      # For Excel files, defer until a sheet is selected
+      if (ext %in% c("xls", "xlsx") && (is.null(input$slrSheet) || input$slrSheet == "")) {
+        hide("slrExplanatory")
+        hide("slrResponse")
+        hide("uploadedDataPanel")
+        return()
+      }
 
       req(slrUploadData())
       updateSelectInput(
