@@ -27,7 +27,7 @@ descStatsUI <- function(id) {
                 inputId     = ns("descriptiveStat"), 
                 label       = strong("Sample"), 
                 value       = "2.14,   2.09,   2.65,   3.56,   5.55,   5.00,   5.55,   8.09,   10.79", 
-                placeholder = "Enter values separated by a comma with decimals as points", 
+                placeholder = "Enter values separated by a comma, space, or tab, with decimals as points",
                 rows        = 3),
             ),
             
@@ -316,8 +316,8 @@ descStatsServer <- function(id) {
     #       Rules        #
     # ------------------ #
     dsraw_iv$add_rule("descriptiveStat", sv_required())
-    dsraw_iv$add_rule("descriptiveStat", sv_regex("^( )*(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$", 
-                                                  "Data must be numeric values separated by a comma (ie: 2,3,4)"))
+    dsraw_iv$add_rule("descriptiveStat", sv_regex("^[ \t\r\n]*(-)?([0-9]+(\\.[0-9]+)?)([ \t\r\n,]+(-)?[0-9]+(\\.[0-9]+)?)+[ \t\r\n]*$",
+                                                  "Data must be numeric values separated by a comma, space, or tab (ie: 2,3,4 or 2 3 4)"))
     dsupload_iv$add_rule("dsUserData", sv_required())
     dsupload_iv$add_rule("dsUserData", ~ if(is.null(fileInputs$dsStatus) || fileInputs$dsStatus == 'reset') "Required")
     dsupload_iv$add_rule("dsUserData", ~ if(!(tolower(tools::file_ext(input$dsUserData$name)) %in% c("csv", "txt", "xls", "xlsx", "sas7bdat", "sav", "dta", "rds", "mtp", "mwx", "mpx"))) "File format not accepted.")

@@ -24,12 +24,14 @@ pval_tex <- function(p, eps = 0.0001) {
 }
 
 ## String List to Numeric List
+## Accepts values separated by commas, spaces, tabs, and/or newlines (e.g.
+## pasted directly from a spreadsheet column), normalizing any run of those
+## delimiters into a single comma before splitting.
 createNumLst <- function(text) {
-  text <- gsub("[^0-9.,-]","", text) #purge non-numeric characters
-  text <- gsub("^,", "", text)      #purge any leading commas
-  text <- gsub(",(,)+", ",", text)  #transform multiple consecutive commas into a single comma
-  text <- gsub(",$", "", text)      #purge any trailing commas
-  split <- strsplit(text, ",", fixed = FALSE)[[1]]
+  text <- gsub("[^0-9.,\t\r\n -]", "", text, perl = TRUE) #purge non-numeric, non-delimiter characters
+  text <- gsub("[,\t\r\n ]+", ",", text, perl = TRUE)     #collapse delimiter runs into a single comma
+  text <- gsub("^,|,$", "", text)                         #purge leading/trailing commas
+  split <- strsplit(text, ",", fixed = TRUE)[[1]]
   suppressWarnings(na.omit(as.numeric(split)))
 }
 
@@ -61,6 +63,103 @@ GetPlotWidth  <- function(plotToggle, pxValue, ui) {
 
 `%then%` <- function(a, b) {
   if (is.null(a)) b else a
+}
+
+
+
+## ------------------------------------------------------------------------ #
+## Shared data-upload file readers
+## Used by any module with an "Upload Data" option (Descriptive Stats, SLR,
+## MLR, etc.) so format support only needs to be maintained in one place.
+## ------------------------------------------------------------------------ #
+
+UPLOAD_ACCEPTED_EXTENSIONS <- c("csv", "txt", "xls", "xlsx", "sas7bdat",
+                                "sav", "dta", "rds", "mtp", "mwx", "mpx")
+
+# Silence noisy but harmless readxl warnings (boolean-to-numeric coercions).
+quietExcelRead <- function(reader, path, sheet) {
+  withCallingHandlers(
+    reader(path, sheet = sheet),
+    warning = function(w) {
+      if (grepl("Coercing boolean to numeric", conditionMessage(w))) {
+        invokeRestart("muffleWarning")
+      }
+    }
+  )
+}
+
+# Older Minitab Portable Worksheet (.mtp) - text-based.
+read_mtp_helper <- function(path) {
+  raw <- foreign::read.mtp(path)
+  keep <- raw[vapply(raw, is.numeric, logical(1))]
+  validate(need(length(keep) > 0, "No numeric columns found in .mtp file."))
+  max_len <- max(vapply(keep, length, integer(1)))
+  keep <- lapply(keep, function(v) { length(v) <- max_len; v })
+  if (is.null(names(keep)) || any(names(keep) == ""))
+    names(keep) <- paste0("V", seq_along(keep))
+  as.data.frame(keep, stringsAsFactors = FALSE)
+}
+
+# Newer Minitab XML formats (.mwx / .mpx) - best-effort, schema varies.
+read_minitab_xml <- function(path) {
+  tmp <- tempfile()
+  on.exit(unlink(tmp, recursive = TRUE), add = TRUE)
+  utils::unzip(path, exdir = tmp)
+  xml_files <- list.files(tmp, pattern = "\\.xml$", recursive = TRUE, full.names = TRUE)
+  validate(need(length(xml_files) > 0, "Could not find data inside Minitab file. Try exporting to .xlsx."))
+
+  doc <- NULL
+  for (f in xml_files) {
+    candidate <- try(xml2::read_xml(f), silent = TRUE)
+    if (inherits(candidate, "xml_document") &&
+        length(xml2::xml_find_all(candidate, "//*[local-name()='Column']")) > 0) {
+      doc <- candidate; break
+    }
+  }
+  validate(need(!is.null(doc), "Could not parse Minitab file. Please export to .xlsx in Minitab."))
+
+  cols <- xml2::xml_find_all(doc, "//*[local-name()='Column']")
+  col_data <- lapply(seq_along(cols), function(i) {
+    col <- cols[[i]]
+    nm  <- xml2::xml_attr(col, "Name")
+    if (is.na(nm)) nm <- xml2::xml_attr(col, "name")
+    if (is.na(nm)) nm <- paste0("C", i)
+    cells <- xml2::xml_find_all(col, ".//*[local-name()='Cell' or local-name()='Value' or local-name()='R']")
+    vals  <- xml2::xml_text(cells)
+    list(name = nm, values = vals)
+  })
+
+  max_len <- max(vapply(col_data, function(x) length(x$values), integer(1)))
+  df_cols <- lapply(col_data, function(x) {
+    v <- x$values; length(v) <- max_len
+    nv <- suppressWarnings(as.numeric(v))
+    if (sum(is.na(nv)) <= sum(is.na(v))) nv else v
+  })
+  names(df_cols) <- vapply(col_data, function(x) x$name, character(1))
+  as.data.frame(df_cols, stringsAsFactors = FALSE)
+}
+
+# Reads an uploaded data file of any format in UPLOAD_ACCEPTED_EXTENSIONS into
+# a data frame. 'sheet' is only used for xls/xlsx; callers must validate it
+# (e.g. req(sheet %in% readxl::excel_sheets(path))) before invoking this.
+readUploadedDataFile <- function(ext, path, sheet = NULL) {
+  switch(tolower(ext),
+        csv      = read_csv(path, show_col_types = FALSE),
+        xls      = quietExcelRead(read_xls, path, sheet),
+        xlsx     = quietExcelRead(read_xlsx, path, sheet),
+        txt      = read_tsv(path, show_col_types = FALSE),
+        sas7bdat = read_sas(path),
+        sav      = read_sav(path),
+        dta      = haven::read_dta(path),
+        rds      = {
+          obj <- readRDS(path)
+          validate(need(is.data.frame(obj), ".rds file must contain a data frame."))
+          obj
+        },
+        mtp      = read_mtp_helper(path),
+        mwx      = read_minitab_xml(path),
+        mpx      = read_minitab_xml(path),
+        validate("Improper file format"))
 }
 
 
