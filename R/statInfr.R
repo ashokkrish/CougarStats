@@ -371,12 +371,20 @@ statInfrUI <- function(id) {
               ns = ns,
               condition = "input.popuParameter == 'Population Mean' && input.dataAvailability != 'Summarized Data'",
               
-              p(strong("Graph Options")),
-              
-              checkboxInput(
-                inputId = ns("oneMeanBoxplot"),
-                label   = "Boxplot for Sample Data",
-                value   = TRUE),
+              shinyWidgets::pickerInput(
+                inputId = ns("oneMeanGraphOptions"),
+                label   = strong("Graph Options"),
+                choices  = c("Boxplot", "Histogram"),
+                selected = "Boxplot",
+                multiple = TRUE,
+                options  = list(
+                  `actions-box`        = TRUE,
+                  `live-search`        = TRUE,
+                  selectedTextFormat   = "values",
+                  multipleSeperator    = ", ",
+                  title                = "Select graph(s) to display",
+                  container            = "body"
+                )),
             ) # Pop Mean ! Summarized
           ), #"input.siMethod == '1'"
           
@@ -841,7 +849,7 @@ statInfrUI <- function(id) {
 
                 fileInput(
                   inputId = ns("signedRankUpl"),
-                  label   = strong("Upload your Data (.csv or .xls or .xlsx or .txt)"),
+                  label   = strong("Upload your data (.csv or .xls or .xlsx or .txt)"),
                   accept  = c("text/csv",
                               "text/comma-separated-values",
                               "text/plain",
@@ -1594,7 +1602,7 @@ statInfrUI <- function(id) {
                       title = "Graphs",
                       conditionalPanel(
                         ns = ns,
-                        condition = "input.dataAvailability != 'Summarized Data' && input.oneMeanBoxplot == 1",
+                        condition = "input.dataAvailability != 'Summarized Data' && input.oneMeanGraphOptions.indexOf('Boxplot') > -1",
                         br(),
                         titlePanel(tags$u("Boxplot")),
                         br(),
@@ -1603,6 +1611,18 @@ statInfrUI <- function(id) {
                           plotType = "Boxplot",
                           title = "Boxplot"),
                         uiOutput(ns("renderOneMeanBoxplot")),
+                        br(),
+                      ),
+                      conditionalPanel(
+                        ns = ns,
+                        condition = "input.dataAvailability != 'Summarized Data' && input.oneMeanGraphOptions.indexOf('Histogram') > -1",
+                        br(),
+                        titlePanel(tags$u("Histogram")),
+                        br(),
+                        plotOptionsMenuUI(
+                          id    = ns("oneMeanHistogram"),
+                          title = "Histogram"),
+                        uiOutput(ns("renderOneMeanHistogram")),
                         br(),
                       ),
                     ), 
@@ -2489,12 +2509,12 @@ statInfrServer <- function(id) {
     # raw_sample1
     indmeansraw_iv$add_rule("raw_sample1", sv_required())
     indmeansraw_iv$add_rule("raw_sample1", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                                    "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)"))
+                                                    "Data must be at least three numeric values separated by a comma (ie: 2,3,4)"))
     
     # raw_sample2
     indmeansraw_iv$add_rule("raw_sample2", sv_required())
     indmeansraw_iv$add_rule("raw_sample2", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                                    "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)."))
+                                                    "Data must be at least three numeric values separated by a comma (ie: 2,3,4)."))
     
     indmeansrawsd_iv$add_rule("popuSDRaw1", sv_required())
     indmeansrawsd_iv$add_rule("popuSDRaw1", sv_gt(0))
@@ -2502,12 +2522,20 @@ statInfrServer <- function(id) {
     indmeansrawsd_iv$add_rule("popuSDRaw2", sv_required())
     indmeansrawsd_iv$add_rule("popuSDRaw2", sv_gt(0))
     
-    indmeansrawsdunk_iv$add_rule("raw_sample1", ~ if(sd(createNumLst(input$raw_sample1)) == 0 
-                                                     && sd(createNumLst(input$raw_sample2)) == 0 
+    indmeansrawsdunk_iv$add_rule("raw_sample1", ~ if(sd(createNumLst(input$raw_sample1)) == 0
+                                                     && sd(createNumLst(input$raw_sample2)) == 0
                                                      && input$inferenceType2 == 'Hypothesis Testing') "Sample standard deviation cannot be 0 for both Sample 1 and Sample 2.")
-    indmeansrawsdunk_iv$add_rule("raw_sample2", ~ if(sd(createNumLst(input$raw_sample1)) == 0 
-                                                     && sd(createNumLst(input$raw_sample2)) == 0 
+    indmeansrawsdunk_iv$add_rule("raw_sample2", ~ if(sd(createNumLst(input$raw_sample1)) == 0
+                                                     && sd(createNumLst(input$raw_sample2)) == 0
                                                      && input$inferenceType2 == 'Hypothesis Testing') "Sample standard deviation cannot be 0 for both Sample 1 and Sample 2.")
+    indmeansrawsdunk_iv$add_rule("raw_sample1", ~ if(sd(createNumLst(input$raw_sample1)) == 0
+                                                     && sd(createNumLst(input$raw_sample2)) == 0
+                                                     && input$inferenceType2 == 'Confidence Interval'
+                                                     && input$bothsigmaEqualRaw == 'FALSE') "Welch-Satterthwaite df is undefined when both sample standard deviations are zero.")
+    indmeansrawsdunk_iv$add_rule("raw_sample2", ~ if(sd(createNumLst(input$raw_sample1)) == 0
+                                                     && sd(createNumLst(input$raw_sample2)) == 0
+                                                     && input$inferenceType2 == 'Confidence Interval'
+                                                     && input$bothsigmaEqualRaw == 'FALSE') "Welch-Satterthwaite df is undefined when both sample standard deviations are zero.")
     
     #indMeansUserData
     indmeansupload_iv$add_rule("indMeansUserData", sv_required())
@@ -2580,12 +2608,18 @@ statInfrServer <- function(id) {
     wilcoxonUpload_iv$add_rule("wilcoxonUpl", ~ if(nrow(WilcoxonUploadData()) < 3) "Samples must include at least 2 observations.")
     wilcoxonraw_iv$add_rule("rankSumRaw1", sv_required())
     wilcoxonraw_iv$add_rule("rankSumRaw1", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                                    "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)"))
+                                                    "Data must be at least three numeric values separated by a comma (ie: 2,3,4)"))
     wilcoxonraw_iv$add_rule("rankSumRaw2", sv_required())
     wilcoxonraw_iv$add_rule("rankSumRaw2", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                                    "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)."))
+                                                    "Data must be at least three numeric values separated by a comma (ie: 2,3,4)."))
     wilcoxonRanksuploadvars_iv$add_rule("wilcoxonUpl1", sv_required())
     wilcoxonRanksuploadvars_iv$add_rule("wilcoxonUpl2", sv_required())
+    wilcoxonRanksuploadvars_iv$add_rule("wilcoxonUpl2", ~ {
+      if (isTruthy(input$wilcoxonUpl1) && isTruthy(input$wilcoxonUpl2) &&
+          input$wilcoxonUpl1 == input$wilcoxonUpl2) {
+        "Sample 1 and Sample 2 must be different columns. Please select two distinct columns."
+      }
+    })
     wRankSumrawsd_iv$add_rule("rankSumRaw2", ~ {
       data <- GetwRankSumMeansData()
       if(is.null(data) || 
@@ -2595,10 +2629,13 @@ statInfrServer <- function(id) {
       }
     })
     wilcoxonUpload_iv$add_rule("wilcoxonUpl", ~ {
+      col1 <- input$wilcoxonUpl1
+      col2 <- input$wilcoxonUpl2
+      if (!isTruthy(col1) || !isTruthy(col2)) return(NULL)
       data <- WilcoxonUploadData()
       if (!is.null(data) && nrow(data) > 0) {
-        if (!all(sapply(data, is.numeric))) {
-          "Uploaded data contains non-numeric values. Please ensure all columns are numeric."
+        if (!is.numeric(data[[col1]]) || !is.numeric(data[[col2]])) {
+          "The selected Sample 1 and Sample 2 columns must both be numeric."
         }
       }
     })
@@ -2608,12 +2645,12 @@ statInfrServer <- function(id) {
     # before
     depmeansraw_iv$add_rule("before", sv_required())
     depmeansraw_iv$add_rule("before", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                               "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)"))
+                                               "Data must be at least three numeric values separated by a comma (ie: 2,3,4)"))
     
     # after
     depmeansraw_iv$add_rule("after", sv_required())
     depmeansraw_iv$add_rule("after", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                              "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)."))
+                                              "Data must be at least three numeric values separated by a comma (ie: 2,3,4)."))
     
     
     depmeansraw_iv$add_rule("before", ~ if(length(createNumLst(input$before)) != length(createNumLst(input$after))) "Sample 1 and Sample 2 must have the same number of observations.")
@@ -2699,10 +2736,10 @@ statInfrServer <- function(id) {
     signedRankUpload_iv$add_rule("signedRankUpl", ~ if(nrow(signedRankUploadData()) < 3) "Samples must include at least 2 observations.")
     signedRankRaw_iv$add_rule("signedRankRaw1", sv_required())
     signedRankRaw_iv$add_rule("signedRankRaw1", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                                         "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)"))
+                                                         "Data must be at least three numeric values separated by a comma (ie: 2,3,4)"))
     signedRankRaw_iv$add_rule("signedRankRaw2", sv_required())
     signedRankRaw_iv$add_rule("signedRankRaw2", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                                         "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)."))
+                                                         "Data must be at least three numeric values separated by a comma (ie: 2,3,4)."))
     signedRankRaw_iv$add_rule("signedRankRaw1", ~ if(length(createNumLst(input$signedRankRaw1)) != length(createNumLst(input$signedRankRaw2))) "Sample 1 and Sample 2 must have the same number of observations.")
     signedRankRaw_iv$add_rule("signedRankRaw2", ~ if(length(createNumLst(input$signedRankRaw1)) != length(createNumLst(input$signedRankRaw2))) "Sample 1 and Sample 2 must have the same number of observations.")
     
@@ -2874,13 +2911,13 @@ statInfrServer <- function(id) {
     # raw group 1
     twopopvarraw_iv$add_rule("rawSamp1SD", sv_required())
     twopopvarraw_iv$add_rule("rawSamp1SD", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                                    "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)."))
+                                                    "Data must be at least three numeric values separated by a comma (ie: 2,3,4)."))
     twopopvarraw_iv$add_rule("rawSamp1SD", ~ if (sd(createNumLst(input$rawSamp1SD)) == 0) "No variance in sample data")
     
     # raw group 2
     twopopvarraw_iv$add_rule("rawSamp2SD", sv_required())
     twopopvarraw_iv$add_rule("rawSamp2SD", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                                    "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)."))
+                                                    "Data must be at least three numeric values separated by a comma (ie: 2,3,4)."))
     twopopvarraw_iv$add_rule("rawSamp2SD", ~ if (sd(createNumLst(input$rawSamp2SD)) == 0) "No variance in sample data")
     
     
@@ -3040,8 +3077,10 @@ statInfrServer <- function(id) {
                                              input$popuParameters == 'Independent Population Means' &&
                                              input$dataAvailability2 == 'Enter Raw Data' &&
                                              input$bothsigmaKnownRaw == 'bothUnknown' &&
-                                             input$inferenceType2 == 'Hypothesis Testing' &&
-                                             indmeansraw_iv$is_valid()))
+                                             indmeansraw_iv$is_valid() &&
+                                             (input$inferenceType2 == 'Hypothesis Testing' ||
+                                              (input$inferenceType2 == 'Confidence Interval' &&
+                                               input$bothsigmaEqualRaw == 'FALSE'))))
     
     indmeansupload_iv$condition(~ isTRUE(input$siMethod == '2' &&
                                            input$popuParameters == 'Independent Population Means' &&
@@ -3312,6 +3351,7 @@ statInfrServer <- function(id) {
     ## -------- Module Server Elements -----------------------------------------
     #  ========================================================================= #
     plotOptionsMenuServer("oneMeanBoxplot")
+    plotOptionsMenuServer("oneMeanHistogram")
     plotOptionsMenuServer("indMeansBoxplot")
     plotOptionsMenuServer("indMeansQQPlot")
     plotOptionsMenuServer("depMeansQQPlot")
@@ -6583,9 +6623,15 @@ statInfrServer <- function(id) {
       }
       
       if(!indmeansrawsdunk_iv$is_valid()) {
-        validate(
-          need(sd(createNumLst(input$raw_sample1)) != 0 && sd(createNumLst(input$raw_sample2)) != 0, "The test statistic (t) will be undefined when the sample standard deviation of Sample 1 and Sample 2 are both 0."),
-          errorClass = "myClass")
+        if (isTRUE(input$inferenceType2 == 'Confidence Interval' && input$bothsigmaEqualRaw == 'FALSE')) {
+          validate(
+            need(FALSE, "When the sample standard deviation for both Sample 1 and Sample 2 are zero and when you are not able to assume the Population Variances to be equal the Welch-Satterthwaite df is undefined. This makes the confidence interval undefined."),
+            errorClass = "myClass")
+        } else {
+          validate(
+            need(sd(createNumLst(input$raw_sample1)) != 0 && sd(createNumLst(input$raw_sample2)) != 0, "The test statistic (t) will be undefined when the sample standard deviation of Sample 1 and Sample 2 are both 0."),
+            errorClass = "myClass")
+        }
       }
       
       if(!indmeansupload_iv$is_valid()) {
@@ -6873,7 +6919,7 @@ statInfrServer <- function(id) {
       #### ---------------- Two Population Proportion Validation
       if (!twopropht_iv$is_valid()) {
         validate(
-          need(checkTwoProp() > 0, "The Z test statistic is undefined when the Number of Successes 1 (x1) and Number of Successes 2 (x2) are both 0."),
+          need(checkTwoProp() > 0, "The Z test statistic is undefined when the Number of Successes 1 (x1) and Number of Successes 2 (x2) are both zero."),
           need(!(input$numSuccesses1 == input$numTrials1 && input$numSuccesses2 == input$numTrials2),
                "The pooled proportion equals 1, which results in an undefined test statistic (z). This happens when the number of successes equals the number of trials for both samples."),
           errorClass = "myClass"
@@ -7264,7 +7310,31 @@ statInfrServer <- function(id) {
     }, height = function() {GetPlotHeight(input[["oneMeanBoxplot-Height"]], input[["oneMeanBoxplot-HeightPx"]], ui = FALSE)},
     width = function() {GetPlotWidth(input[["oneMeanBoxplot-Width"]], input[["oneMeanBoxplot-WidthPx"]], ui = FALSE)}
     )
-    
+
+    #### ---------------- Histogram ----
+    output$oneMeanHistogram <- renderPlot({
+      req(si_iv$is_valid())
+
+      if(input$dataAvailability == 'Enter Raw Data') {
+        dat <- createNumLst(input$sample1)
+      } else if(input$dataAvailability == 'Upload Data') {
+        dat <- na.omit(unlist(OneMeanUploadData()[,input$oneMeanVariable]))
+      } else {
+        return(NA)
+      }
+
+      RenderHistogram(dat,
+                      input[["oneMeanHistogram-Colour"]],
+                      input[["oneMeanHistogram-Title"]],
+                      input[["oneMeanHistogram-Xlab"]],
+                      input[["oneMeanHistogram-Ylab"]],
+                      input[["oneMeanHistogram-Gridlines"]],
+                      input[["oneMeanHistogram-Flip"]])
+
+    }, height = function() {GetPlotHeight(input[["oneMeanHistogram-Height"]], input[["oneMeanHistogram-HeightPx"]], ui = FALSE)},
+    width = function() {GetPlotWidth(input[["oneMeanHistogram-Width"]], input[["oneMeanHistogram-WidthPx"]], ui = FALSE)}
+    )
+
     ### ------------ One Sample Standard Deviation Outputs -----------------------
     #### ---- One population standard deviation confidence interval CI ----
     output$oneSDCI <- renderUI({
@@ -10923,8 +10993,8 @@ statInfrServer <- function(id) {
       # }
     })
     
-    observeEvent(input$oneMeanBoxplot, {
-      if (input$oneMeanBoxplot && input$dataAvailability != 'Summarized Data') {
+    observeEvent(input$oneMeanGraphOptions, {
+      if (length(input$oneMeanGraphOptions) > 0 && input$dataAvailability != 'Summarized Data') {
         showTab(inputId = "onePopMeanTabset", target = "Graphs")
       } else {
         if (input$onePopMeanTabset == "Graphs") {
@@ -11415,6 +11485,11 @@ statInfrServer <- function(id) {
                        height = GetPlotHeight(input[["oneMeanBoxplot-Height"]], input[["oneMeanBoxplot-HeightPx"]], ui = TRUE),
                        width = GetPlotWidth(input[["oneMeanBoxplot-Width"]], input[["oneMeanBoxplot-WidthPx"]], ui = TRUE))
           })
+          output$renderOneMeanHistogram <- renderUI({
+            plotOutput(session$ns("oneMeanHistogram"),
+                       height = GetPlotHeight(input[["oneMeanHistogram-Height"]], input[["oneMeanHistogram-HeightPx"]], ui = TRUE),
+                       width = GetPlotWidth(input[["oneMeanHistogram-Width"]], input[["oneMeanHistogram-WidthPx"]], ui = TRUE))
+          })
         } else if(input$popuParameter == 'Population Proportion') {
           req(input$numTrials && input$numSuccesses)
           if(input$numTrials < input$numSuccesses) {
@@ -11446,33 +11521,6 @@ statInfrServer <- function(id) {
                        width = GetPlotWidth(input[["indMeansQQPlot-Width"]], input[["indMeansQQPlot-WidthPx"]], ui = TRUE))
           })
         } else if(input$popuParameters == "Wilcoxon rank sum test") {
-
-          # Hide tabs if deeper validation fails (not caught by si_iv)
-          rank_data <- tryCatch(wilcoxonRankedData(), error = function(e) NULL)
-          hide_due_to_invalid <- FALSE
-
-          if (!is.null(rank_data)) {
-            combined_vals <- rank_data$Value
-            if (length(unique(combined_vals)) <= 1) {
-              hide_due_to_invalid <- TRUE
-            } else if (!is.null(input$normaprowrsRankSum) &&
-                       input$normaprowrsRankSum == "Normal approximation (for large samples)") {
-              n1_chk  <- sum(rank_data$Group == "Sample 1")
-              n2_chk  <- sum(rank_data$Group == "Sample 2")
-              nAll_chk <- nrow(rank_data)
-              tie_counts_chk <- table(combined_vals)
-              tie_corr_chk <- sum(sapply(tie_counts_chk, function(t) if (t > 1) t^3 - t else 0))
-              u_std_dev_chk <- sqrt((n1_chk * n2_chk / 12) *
-                                      ((nAll_chk + 1) - (tie_corr_chk / (nAll_chk * (nAll_chk - 1)))))
-              if (is.na(u_std_dev_chk) || u_std_dev_chk <= 0) {
-                hide_due_to_invalid <- TRUE
-              }
-            }
-          }
-
-          if (hide_due_to_invalid) {
-            hide(id = "inferenceData")
-          }
 
           output$renderSidebysidewRankSum <- renderUI({
             plotOutput(session$ns("sidebysidewRankSum"),
@@ -11657,7 +11705,7 @@ statInfrServer <- function(id) {
         showTab(inputId = "onePopMeanTabset", target = "Uploaded Data")
       }
       
-      if(input$oneMeanBoxplot && input$dataAvailability != "Summarized Data") {
+      if(length(input$oneMeanGraphOptions) > 0 && input$dataAvailability != "Summarized Data") {
         showTab(inputId = "onePopMeanTabset", target = "Graphs")
       } else {
         hideTab(inputId = "onePopMeanTabset", target = "Graphs")
