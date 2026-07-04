@@ -265,21 +265,74 @@ statInfrUI <- function(id) {
             conditionalPanel(
               ns = ns,
               condition = "input.popuParameter == 'Population Standard Deviation'",
-              
-              numericInput(
-                inputId = ns("SSDSampleSize"),
-                label   = strong("Sample Size (\\( n\\))"),
-                value   = 30,
-                min     = 2,
-                step    = 1
-              ),
-              
-              numericInput(
-                inputId = ns("SSDStdDev"),
-                label   = strong("Sample Standard Deviation (\\( s\\))"),
-                value   = 12.23,
-                min     = 0.00001,
-                step    = 0.00001),
+
+              radioButtons(
+                inputId      = ns("sdDataAvailability"),
+                label        = strong("Data Availability"),
+                choiceValues = list("Summarized Data", "Enter Raw Data", "Upload Data"),
+                choiceNames  = list("Summarized Data", "Enter Raw Data", "Upload Data"),
+                selected     = "Summarized Data",
+                inline       = TRUE),
+
+              ##### -------------------- Summarized Data -----------------------------------
+              conditionalPanel(
+                ns = ns,
+                condition = "input.sdDataAvailability == 'Summarized Data'",
+
+                numericInput(
+                  inputId = ns("SSDSampleSize"),
+                  label   = strong("Sample Size (\\( n\\))"),
+                  value   = 30,
+                  min     = 2,
+                  step    = 1
+                ),
+
+                numericInput(
+                  inputId = ns("SSDStdDev"),
+                  label   = strong("Sample Standard Deviation (\\( s\\))"),
+                  value   = 12.23,
+                  min     = 0.00001,
+                  step    = 0.00001),
+              ), # Summarized Data
+
+              ##### -------------------- Enter Raw Data -----------------------------------
+              conditionalPanel(
+                ns = ns,
+                condition = "input.sdDataAvailability == 'Enter Raw Data'",
+
+                textAreaInput(
+                  inputId     = ns("sdRawData"),
+                  label       = strong("Sample"),
+                  value       = "202, 210, 215, 220, 220, 224, 225, 228, 228, 228",
+                  placeholder = "Enter values separated by a comma with decimals as points",
+                  rows        = 3),
+              ), # Enter Raw Data
+
+              ##### -------------------- Upload Data -----------------------------------
+              conditionalPanel(
+                ns = ns,
+                condition = "input.sdDataAvailability == 'Upload Data'",
+
+                HTML(uploadDataDisclaimer),
+
+                fileInput(
+                  inputId = ns("sdUserData"),
+                  label   = strong("Upload your data (.csv or .xls or .xlsx or .txt)"),
+                  accept  = c("text/csv",
+                              "text/comma-separated-values",
+                              "text/plain",
+                              ".csv",
+                              ".xls",
+                              ".xlsx")),
+
+                selectizeInput(
+                  inputId = ns("sdVariable"),
+                  label   = strong("Choose a Column for Analysis"),
+                  choices = c(""),
+                  options = list(placeholder = 'Select a column',
+                                 onInitialize = I('function() { this.setValue(""); }'))),
+              ), # Upload Data
+
             ), #One Population Standard Deviation
             
             radioButtons(
@@ -372,18 +425,18 @@ statInfrUI <- function(id) {
               condition = "input.popuParameter == 'Population Mean' && input.dataAvailability != 'Summarized Data'",
               
               shinyWidgets::pickerInput(
-                inputId = ns("oneMeanGraphOptions"),
-                label   = strong("Graph Options"),
+                inputId  = ns("oneMeanGraphOptions"),
+                label    = strong("Graph Options"),
                 choices  = c("Boxplot", "Histogram"),
                 selected = "Boxplot",
                 multiple = TRUE,
                 options  = list(
-                  `actions-box`        = TRUE,
-                  `live-search`        = TRUE,
-                  selectedTextFormat   = "values",
-                  multipleSeperator    = ", ",
-                  title                = "Select graph(s) to display",
-                  container            = "body"
+                  `actions-box`      = TRUE,
+                  `live-search`      = TRUE,
+                  selectedTextFormat = "values",
+                  multipleSeperator  = ", ",
+                  title              = "Select graph(s) to display",
+                  container          = "body"
                 )),
             ) # Pop Mean ! Summarized
           ), #"input.siMethod == '1'"
@@ -1534,11 +1587,13 @@ statInfrUI <- function(id) {
               inline   = TRUE),
           ), #Categorical (Chi-Square)
           
+          br(),
+          br(),
           actionButton(
             inputId = ns("goInference"),
             label   = "Calculate",
             class = "act-btn"),
-          
+
           actionButton(
             inputId = ns("resetInference"),
             label   = "Reset Values",
@@ -2384,6 +2439,9 @@ statInfrServer <- function(id) {
     signedRankUploadvars_iv <- InputValidator$new()
     signedRankrawsd_iv <- InputValidator$new()
     oneSD_iv <- InputValidator$new()
+    oneSDRaw_iv <- InputValidator$new()
+    onesdupload_iv <- InputValidator$new()
+    onesduploadvar_iv <- InputValidator$new()
     oneSDht_iv <- InputValidator$new()
     oneprop_iv <- InputValidator$new()
     onepropht_iv <- InputValidator$new()
@@ -2829,12 +2887,38 @@ statInfrServer <- function(id) {
       }
     })
     
-    # sample standard deviation
+    # sample standard deviation — summarized mode
     oneSD_iv$add_rule("SSDSampleSize", sv_required())
     oneSD_iv$add_rule("SSDSampleSize", sv_integer())
     oneSD_iv$add_rule("SSDSampleSize", sv_gt(1))
     oneSD_iv$add_rule("SSDStdDev", sv_required())
     oneSD_iv$add_rule("SSDStdDev", sv_gt(0))
+
+    # sample standard deviation — raw data mode
+    oneSDRaw_iv$add_rule("sdRawData", ~ {
+      if (!isTruthy(input$sdRawData)) return("Sample data is required.")
+      vals <- createNumLst(input$sdRawData)
+      if (length(vals) < 3) "Sample data must contain at least 3 numeric values."
+    })
+
+    # sample standard deviation — upload mode
+    onesdupload_iv$add_rule("sdUserData", sv_required())
+    onesdupload_iv$add_rule("sdUserData", ~ if(is.null(fileInputs$sdStatus) || fileInputs$sdStatus == 'reset') "Required")
+    onesdupload_iv$add_rule("sdUserData", ~ if(!(tolower(tools::file_ext(input$sdUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+    onesdupload_iv$add_rule("sdUserData", ~ if(nrow(SDUploadData()) == 0) "File is empty.")
+    onesdupload_iv$add_rule("sdUserData", ~ if(nrow(SDUploadData()) < 3) "Samples must include at least 3 observations.")
+
+    onesduploadvar_iv$add_rule("sdVariable", sv_required())
+    onesduploadvar_iv$add_rule("sdVariable", ~ {
+      if (!isTruthy(input$sdVariable) || !(input$sdVariable %in% names(SDUploadData()))) return(NULL)
+      if (checkNumeric(SDUploadData(), input$sdVariable)) "Selected column contains non-numeric data."
+    })
+    onesduploadvar_iv$add_rule("sdVariable", ~ {
+      if (!isTruthy(input$sdVariable) || !(input$sdVariable %in% names(SDUploadData()))) return(NULL)
+      dat <- na.omit(unlist(SDUploadData()[, input$sdVariable]))
+      if (length(dat) < 3) "Selected column must include at least 3 observations."
+    })
+
     oneSDht_iv$add_rule("hypStdDeviation", sv_required())
     oneSDht_iv$add_rule("hypStdDeviation", sv_gt(0))
     
@@ -3161,8 +3245,22 @@ statInfrServer <- function(id) {
                                              input$inferenceType2 == 'Hypothesis Testing'))
     
     oneSD_iv$condition(~ isTRUE(input$siMethod == '1' &&
-                                  input$popuParameter == 'Population Standard Deviation'))
-    
+                                  input$popuParameter == 'Population Standard Deviation' &&
+                                  !isTRUE(input$sdDataAvailability == 'Enter Raw Data')))
+
+    oneSDRaw_iv$condition(~ isTRUE(input$siMethod == '1' &&
+                                     input$popuParameter == 'Population Standard Deviation' &&
+                                     isTRUE(input$sdDataAvailability == 'Enter Raw Data')))
+
+    onesdupload_iv$condition(~ isTRUE(input$siMethod == '1' &&
+                                       input$popuParameter == 'Population Standard Deviation' &&
+                                       input$sdDataAvailability == 'Upload Data'))
+
+    onesduploadvar_iv$condition(~ isTRUE(input$siMethod == '1' &&
+                                          input$popuParameter == 'Population Standard Deviation' &&
+                                          input$sdDataAvailability == 'Upload Data' &&
+                                          onesdupload_iv$is_valid()))
+
     ## See: https://rstudio.github.io/shinyvalidate/reference/InputValidator.html#method-InputValidator-condition.
     oneSDht_iv$condition(function() {
       return(all(input$siMethod == '1',
@@ -3268,6 +3366,9 @@ statInfrServer <- function(id) {
     si_iv$add_validator(depmeansuploadvars_iv)
     si_iv$add_validator(depmeansmunaught_iv)
     si_iv$add_validator(oneSD_iv)
+    si_iv$add_validator(oneSDRaw_iv)
+    si_iv$add_validator(onesdupload_iv)
+    si_iv$add_validator(onesduploadvar_iv)
     si_iv$add_validator(oneSDht_iv)
     si_iv$add_validator(oneprop_iv)
     si_iv$add_validator(onepropht_iv)
@@ -3327,6 +3428,9 @@ statInfrServer <- function(id) {
     signedRankUpload_iv$enable()
 #    signedRankUploadvars_iv$enable()
     oneSD_iv$enable()
+    oneSDRaw_iv$enable()
+    onesdupload_iv$enable()
+    onesduploadvar_iv$enable()
     oneSDht_iv$enable()
     oneprop_iv$enable()
     onepropht_iv$enable()
@@ -5318,8 +5422,9 @@ statInfrServer <- function(id) {
     #  ========================================================================= #
     fileInputs <- reactiveValues(
       oneMeanStatus = NULL,
+      sdStatus = NULL,
       indMeansStatus = NULL,
-      rankSumStatus = NULL, 
+      rankSumStatus = NULL,
       depMeansStatus = NULL,
       anovaStatus = NULL,
       kwStatus = NULL,
@@ -5398,8 +5503,34 @@ statInfrServer <- function(id) {
       return(sigLvl)
     })
     
+    ### ------------ One SD reactives --------------------------------------------
+
+    SDUploadData <- eventReactive(input$sdUserData, {
+      ext <- tolower(tools::file_ext(input$sdUserData$name))
+      switch(ext,
+             csv  = read_csv(input$sdUserData$datapath, show_col_types = FALSE),
+             xls  = read_xls(input$sdUserData$datapath),
+             xlsx = read_xlsx(input$sdUserData$datapath),
+             txt  = read_tsv(input$sdUserData$datapath, show_col_types = FALSE),
+             validate("Improper file format.")
+      )
+    })
+
+    oneSDData <- reactive({
+      if (isTRUE(input$sdDataAvailability == 'Enter Raw Data')) {
+        vals <- createNumLst(input$sdRawData)
+        list(n = length(vals), s = sd(vals))
+      } else if (isTRUE(input$sdDataAvailability == 'Upload Data')) {
+        req(isTruthy(input$sdVariable))
+        dat <- na.omit(unlist(SDUploadData()[, input$sdVariable]))
+        list(n = length(dat), s = sd(dat))
+      } else {
+        list(n = input$SSDSampleSize, s = input$SSDStdDev)
+      }
+    })
+
     ### ------------ One Mean reactives ------------------------------------------
-    
+
     OneMeanUploadData <- eventReactive(input$oneMeanUserData, {
       
       ext <- tools::file_ext(input$oneMeanUserData$name)
@@ -6530,12 +6661,44 @@ statInfrServer <- function(id) {
             need(input$SSDSampleSize > 1 & input$SSDSampleSize %% 1 == 0, "Sample size (n) must be an integer greater than 1."),
           errorClass = "myClass")
       }
-      
+
       if(!oneSD_iv$is_valid()) {
         validate(
           need(input$SSDStdDev, "Sample Standard Deviation (s) is required.") %then%
             need(input$SSDStdDev > 0, "Sample Standard Deviation (s) must be positive."),
           errorClass = "myClass")
+      }
+
+      if(!oneSDRaw_iv$is_valid()) {
+        validate(
+          need(isTruthy(input$sdRawData), "Sample data is required.") %then%
+            need(length(createNumLst(input$sdRawData)) >= 3, "Sample data must contain at least 3 numeric values."),
+          errorClass = "myClass")
+      }
+
+      if(!onesdupload_iv$is_valid()) {
+        if (is.null(input$sdUserData)) validate("Please upload a file.")
+        validate(
+          need(!is.null(fileInputs$sdStatus) && fileInputs$sdStatus == 'uploaded', "Please upload a file."),
+          errorClass = "myClass")
+        validate(
+          need(nrow(SDUploadData()) > 0, "File is empty."),
+          need(nrow(SDUploadData()) >= 3, "Samples must include at least 3 observations."),
+          errorClass = "myClass")
+      }
+
+      if(!onesduploadvar_iv$is_valid()) {
+        validate(
+          need(isTruthy(input$sdVariable), "Please select a column for analysis."),
+          errorClass = "myClass")
+        if (isTruthy(input$sdVariable) && input$sdVariable %in% names(SDUploadData())) {
+          validate(
+            need(!checkNumeric(SDUploadData(), input$sdVariable), "Selected column contains non-numeric data."),
+            errorClass = "myClass")
+          validate(
+            need(length(na.omit(unlist(SDUploadData()[, input$sdVariable]))) >= 3, "Selected column must include at least 3 observations."),
+            errorClass = "myClass")
+        }
       }
       
       ## DONE: these messages are for debugging purposes only.
@@ -7339,8 +7502,18 @@ statInfrServer <- function(id) {
     #### ---- One population standard deviation confidence interval CI ----
     output$oneSDCI <- renderUI({
       ## Input validation
-      req(oneSD_iv$is_valid())
-      
+      if (isTRUE(input$sdDataAvailability == 'Upload Data')) {
+        req(onesdupload_iv$is_valid())
+        validate(need(isTruthy(input$sdVariable), "Please select a column for analysis."), errorClass = "myClass")
+        sampleDataSD <- na.omit(unlist(SDUploadData()[, input$sdVariable]))
+        validate(need(is.numeric(sampleDataSD), "Selected column must be numeric."), errorClass = "myClass")
+        validate(need(length(sampleDataSD) >= 3, "Selected column must include at least three values."), errorClass = "myClass")
+      } else if (isTRUE(input$sdDataAvailability == 'Enter Raw Data')) {
+        req(oneSDRaw_iv$is_valid())
+      } else {
+        req(oneSD_iv$is_valid())
+      }
+
       ## Required data
       ## n (sample size), s (sample standard deviation), Confidence Level (1 - α)
       ## ns("SSDSampleSize")
@@ -7348,17 +7521,17 @@ statInfrServer <- function(id) {
       ## ns("confidenceLevel")
       ## df = n - 1
       oneSDCIalpha <- 1 - ConfLvl() # e.g.: 0.05
-      oneSDCIdf <- input[["SSDSampleSize"]] - 1
+      oneSDCIdf <- oneSDData()$n - 1
       
       ## UI
       withMathJax(
         ## Preface
         sprintf("Given:"), br(),
         sprintf("\\( n = %d \\)",
-                input$SSDSampleSize),
+                oneSDData()$n),
         br(),
         sprintf("\\( s = %0.2f \\)",
-                input$SSDStdDev),
+                oneSDData()$s),
         br(),
         br(),
         br(),
@@ -7368,8 +7541,8 @@ statInfrServer <- function(id) {
         sprintf("\\( \\alpha = 1 - %0.2f = %0.2f \\)", 1 - oneSDCIalpha, oneSDCIalpha),
         br(),
         sprintf("\\(  df = n - 1 = %d - 1 = %d \\)",
-                input$SSDSampleSize,
-                input$SSDSampleSize - 1),
+                oneSDData()$n,
+                oneSDData()$n - 1),
         br(),
         sprintf("\\( \\chi^2_{  \\alpha/2, df} = \\chi^2_{    %0.2f / 2 , %d} = \\chi^2_{ %0.3f, %d } = %0.3f \\).",
                 oneSDCIalpha,
@@ -7411,14 +7584,14 @@ statInfrServer <- function(id) {
           ## Left/lower
           oneSDCIdf, # df
           oneSSDLeft,
-          input$SSDStdDev, # s
+          oneSDData()$s, # s
           
           ## Right/upper
           oneSDCIdf, # df
           oneSSDRight,
-          input$SSDStdDev, #s
-          (oneSSDLowerPopStdDev <- sqrt(oneSDCIdf / oneSSDLeft) * input$SSDStdDev),
-          (oneSSDUpperPopStdDev <- sqrt(oneSDCIdf / oneSSDRight) * input$SSDStdDev)),
+          oneSDData()$s, #s
+          (oneSSDLowerPopStdDev <- sqrt(oneSDCIdf / oneSSDLeft) * oneSDData()$s),
+          (oneSSDUpperPopStdDev <- sqrt(oneSDCIdf / oneSSDRight) * oneSDData()$s)),
         br(),
         br(),
         br(),
@@ -7436,8 +7609,8 @@ statInfrServer <- function(id) {
       evalq(expr = {
         ## This paragraph is related to the final interpretation, as used in the
         ## P-value method.
-        degreesOfFreedom <- input$SSDSampleSize - 1;
-        chiSqTestStatistic <- (degreesOfFreedom * input$SSDStdDev^2) /  input$hypStdDeviation^2;
+        degreesOfFreedom <- oneSDData()$n - 1;
+        chiSqTestStatistic <- (degreesOfFreedom * oneSDData()$s^2) /  input$hypStdDeviation^2;
         ## lower.tail will be false when the alternative hypothesis is >.
         isLeftTailed = input$altHypothesis %in% c(1, 2);
         
@@ -7472,8 +7645,16 @@ statInfrServer <- function(id) {
     }
     
     output$onePopulationSDHTChiSqPlot <- renderPlot({
+      if (isTRUE(input$sdDataAvailability == 'Upload Data')) {
+        req(onesdupload_iv$is_valid(), onesduploadvar_iv$is_valid())
+      } else if (isTRUE(input$sdDataAvailability == 'Enter Raw Data')) {
+        req(oneSDRaw_iv$is_valid())
+      } else {
+        req(oneSD_iv$is_valid())
+      }
+
       chiSqTestData(envir = environment())
-      
+
       ## Clamp the minimum to zero.
       minimumChiSqValue <- min(chiSqTestStatistic, chiSqCValue) - 1
       if (minimumChiSqValue < 0) minimumChiSqValue <- 0
@@ -7603,7 +7784,19 @@ statInfrServer <- function(id) {
       ## altHypothesis (e.g. "<").
       ##
       ## Useful data: SigLvl() [numeric];
-      
+
+      if (isTRUE(input$sdDataAvailability == 'Upload Data')) {
+        req(onesdupload_iv$is_valid())
+        validate(need(isTruthy(input$sdVariable), "Please select a column for analysis."), errorClass = "myClass")
+        sampleDataSD <- na.omit(unlist(SDUploadData()[, input$sdVariable]))
+        validate(need(is.numeric(sampleDataSD), "Selected column must be numeric."), errorClass = "myClass")
+        validate(need(length(sampleDataSD) >= 3, "Selected column must include at least three values."), errorClass = "myClass")
+      } else if (isTRUE(input$sdDataAvailability == 'Enter Raw Data')) {
+        req(oneSDRaw_iv$is_valid())
+      } else {
+        req(oneSD_iv$is_valid())
+      }
+
       chiSqTestData(envir = environment())
       
       ## "if P <= alpha, reject H0"
@@ -7630,8 +7823,8 @@ statInfrServer <- function(id) {
         br(),
         p(tags$b("Test Statistic:")),
         sprintf("Given:"), br(),
-        sprintf(r"--[\( n = %d \)]--", input$SSDSampleSize), br(),
-        sprintf(r"--[\( s = %0.4f \)]--", input$SSDStdDev), br(),
+        sprintf(r"--[\( n = %d \)]--", oneSDData()$n), br(),
+        sprintf(r"--[\( s = %0.4f \)]--", oneSDData()$s), br(),
         sprintf(r"--[\( \sigma_0 = %.4f \)]--", input$hypStdDeviation), br(),
         
         br(),
@@ -7649,7 +7842,7 @@ statInfrServer <- function(id) {
            \chi^2 = \frac{(%d - 1)  %0.4f ^2}{%0.4f^2} = %0.4f\\
            \)
            )--",
-          input$SSDSampleSize,  input$SSDStdDev,  input$hypStdDeviation, chiSqTestStatistic
+          oneSDData()$n,  oneSDData()$s,  input$hypStdDeviation, chiSqTestStatistic
         ),
         
         br(),
@@ -7673,7 +7866,7 @@ statInfrServer <- function(id) {
         br(),
         br(),
         p(tags$b("Using Critical Value Method:")),
-        sprintf("\\(df = n - 1 = %d - 1 = %d\\)", input$SSDSampleSize, degreesOfFreedom), 
+        sprintf("\\(df = n - 1 = %d - 1 = %d\\)", oneSDData()$n, degreesOfFreedom), 
         br(),
         br(),
         if (input$altHypothesis != 2) {
@@ -10977,6 +11170,17 @@ statInfrServer <- function(id) {
     #  ========================================================================= #
     ## -------- Observers ------------------------------------------------------
     #  ========================================================================= #
+    observeEvent(input$sdUserData, priority = 5, {
+      hide(id = "inferenceData")
+      hide(id = "sdVariable")
+      fileInputs$sdStatus <- 'uploaded'
+      freezeReactiveValue(input, "sdVariable")
+      updateSelectInput(session = getDefaultReactiveDomain(),
+                        "sdVariable",
+                        choices = c(colnames(SDUploadData())))
+      shinyjs::show(id = "sdVariable")
+    })
+
     observeEvent(input$oneMeanUserData, priority = 5, {
       hide(id = "inferenceData")
       hide(id = "oneMeanVariable")
