@@ -432,11 +432,9 @@ statInfrUI <- function(id) {
                 multiple = TRUE,
                 options  = list(
                   `actions-box`      = TRUE,
-                  `live-search`      = TRUE,
                   selectedTextFormat = "values",
                   multipleSeperator  = ", ",
-                  title              = "Select graph(s) to display",
-                  container          = "body"
+                  title              = "Select graph(s) to display"
                 )),
             ) # Pop Mean ! Summarized
           ), #"input.siMethod == '1'"
@@ -1587,8 +1585,14 @@ statInfrUI <- function(id) {
               inline   = TRUE),
           ), #Categorical (Chi-Square)
           
-          br(),
-          br(),
+          conditionalPanel(
+            ns = ns,
+            condition = "input.popuParameter == 'Population Mean' && input.dataAvailability != 'Summarized Data'",
+            br(),
+            br(),
+            br(),
+            br()
+          ),
           actionButton(
             inputId = ns("goInference"),
             label   = "Calculate",
@@ -2931,13 +2935,13 @@ statInfrServer <- function(id) {
     twoprop_iv$add_rule("numSuccesses1", sv_required())
     twoprop_iv$add_rule("numSuccesses1", sv_integer())
     twoprop_iv$add_rule("numSuccesses1", sv_gte(0))
-    twopropht_iv$add_rule("numSuccesses1", ~ if(checkTwoProp() == 0) "At least one of (x1) and (x2) must be greater than 0.")
+    twopropht_iv$add_rule("numSuccesses1", ~ if(checkTwoProp() == 0) "At least one of (x1) and (x2) must be greater than zero.")
     
     # x2
     twoprop_iv$add_rule("numSuccesses2", sv_required())
     twoprop_iv$add_rule("numSuccesses2", sv_integer())
     twoprop_iv$add_rule("numSuccesses2", sv_gte(0))
-    twopropht_iv$add_rule("numSuccesses2", ~ if(checkTwoProp() == 0) "At least one of (x1) and (x2) must be greater than 0.")
+    twopropht_iv$add_rule("numSuccesses2", ~ if(checkTwoProp() == 0) "At least one of (x1) and (x2) must be greater than zero.")
     twopropht_iv$add_rule("numSuccesses1", ~ {
       if (input$numSuccesses1 == input$numTrials1 &&
           input$numSuccesses2 == input$numTrials2) {
@@ -3193,7 +3197,7 @@ statInfrServer <- function(id) {
                                                     input$popuParameters == 'Wilcoxon rank sum test' &&
                                                     input$wilcoxonRankSumTestData == 'Upload Data' &&
                                                     wilcoxonUpload_iv$is_valid()))
-    
+
     wRankSumrawsd_iv$condition(~ isTRUE(input$siMethod == '2' &&
                                           input$popuParameters == 'Wilcoxon rank sum test' &&
                                           input$wilcoxonRankSumTestData == 'Enter Raw Data' &&
@@ -3418,6 +3422,7 @@ statInfrServer <- function(id) {
     indmeansuploadsd_iv$enable()
     wilcoxonraw_iv$enable()
     wilcoxonUpload_iv$enable()
+
     indmeansmunaught_iv$enable()
     depmeansraw_iv$enable
     depmeansupload_iv$enable()
@@ -6907,7 +6912,7 @@ statInfrServer <- function(id) {
           need(CheckRankSumUploadSamples() == 0, "Same number of data points required for Sample 1 and Sample 2."),
           errorClass = "myClass")
       }
-      
+
       ### ---------------- Wilcoxon Signed Rank Test Validation
       
       if(!signedRankRaw_iv$is_valid()) {
@@ -10485,16 +10490,18 @@ statInfrServer <- function(id) {
           y = "Proportion", x = ""
         ) +
         scale_fill_manual(values = c("Successes" = "#4CAF50", "Failures" = "#F44336")) +
+        theme_classic() +
         theme(
           axis.text.x = element_text(size = 14, face = "bold", color = "black"),
-          axis.text = element_text(size = 14, face = "bold"),
+          axis.text.y = element_text(size = 14, face = "bold", color = "black"),
           axis.title = element_text(size = 16, face = "bold"),
           plot.title = element_text(size = 18, face = "bold"),
+          legend.position = "bottom",
           legend.title = element_text(size = 14),
           legend.text = element_text(size = 12)
         )
     })
-    
+
     output$twoPropPieChart <- renderPlot({
       req(input$numTrials1 >= input$numSuccesses1,
           input$numTrials2 >= input$numSuccesses2)
@@ -11916,28 +11923,32 @@ statInfrServer <- function(id) {
       }
       
       # Hide/show tabs for 2 sample independent populations
+      two_sample_valid <- si_iv$is_valid() && depmeansrawsd_iv$is_valid()
+
       if (input$dataAvailability2 != "Upload Data"){
         updateTabsetPanel(session, "indPopMeansTabset", selected = "Analysis")
         hideTab(inputId = "indPopMeansTabset", target = "Uploaded Data")
       } else {
-        showTab(inputId = "indPopMeansTabset", target = "Uploaded Data")
+        if (two_sample_valid) showTab(inputId = "indPopMeansTabset", target = "Uploaded Data")
+        else hideTab(inputId = "indPopMeansTabset", target = "Uploaded Data")
       }
-      
-      if(input$dataAvailability2 != "Summarized Data" && (input$indMeansBoxplot || input$indMeansQQPlot)) {
+
+      if(two_sample_valid && input$dataAvailability2 != "Summarized Data" && (input$indMeansBoxplot || input$indMeansQQPlot)) {
         showTab(inputId = "indPopMeansTabset", target = "Graphs")
       } else {
         hideTab(inputId = "indPopMeansTabset", target = "Graphs")
       }
-      
+
       # Hide/show tabs for 2 sample dependent populations
       if (input$dataTypeDependent != "Upload Data"){
         updateTabsetPanel(session, "depPopMeansTabset", selected = "Analysis")
         hideTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
       } else {
-        showTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
+        if (two_sample_valid) showTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
+        else hideTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
       }
-      
-      if(input$depMeansQQPlot) {
+
+      if(two_sample_valid && input$depMeansQQPlot) {
         showTab(inputId = "depPopMeansTabset", target = "Graphs")
       } else {
         hideTab(inputId = "depPopMeansTabset", target = "Graphs")
@@ -11950,12 +11961,38 @@ statInfrServer <- function(id) {
       } else {
         showTab(inputId = "wilcoxonRankSumTabset", target = "Uploaded Data")
       }
-      
-      # Hide/show tabs for Wilcoxon Rank Sum Graph
-      if (input$sidebysidewRankSum == 1 || input$sidebysidewRankQQ == 1){
-        showTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
-      } else {
+
+      # Detect content-level error conditions for Wilcoxon Rank Sum
+      rank_data_check <- tryCatch(wilcoxonRankedData(), error = function(e) NULL)
+      wrs_error <- FALSE
+      if (!is.null(rank_data_check)) {
+        combined_vals_chk <- rank_data_check$Value
+        all_identical <- length(unique(combined_vals_chk)) <= 1
+        if (all_identical) {
+          wrs_error <- TRUE
+        } else if (isTRUE(input$normaprowrsRankSum == "Normal approximation (for large samples)")) {
+          name1_chk <- if (input$wilcoxonRankSumTestData == 'Upload Data') input$wilcoxonUpl1 else "Sample 1"
+          name2_chk <- if (input$wilcoxonRankSumTestData == 'Upload Data') input$wilcoxonUpl2 else "Sample 2"
+          n1_chk  <- sum(rank_data_check$Group == name1_chk)
+          n2_chk  <- sum(rank_data_check$Group == name2_chk)
+          nAll_chk <- nrow(rank_data_check)
+          tc_chk  <- calculate_tie_correction(combined_vals_chk)
+          se_chk  <- sqrt((n1_chk * n2_chk / 12) *
+                            ((nAll_chk + 1) - (tc_chk / (nAll_chk * (nAll_chk - 1)))))
+          if (is.na(se_chk) || se_chk <= 0) wrs_error <- TRUE
+        }
+      }
+
+      if (wrs_error) {
+        hideTab(inputId = "wilcoxonRankSumTabset", target = "Data with Ranks")
         hideTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
+      } else {
+        showTab(inputId = "wilcoxonRankSumTabset", target = "Data with Ranks")
+        if (input$sidebysidewRankSum == 1 || input$sidebysidewRankQQ == 1){
+          showTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
+        } else {
+          hideTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
+        }
       }
       
       # Hide/show tabs for Wilcoxon Signed Rank Upload
