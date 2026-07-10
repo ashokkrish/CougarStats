@@ -1585,14 +1585,6 @@ statInfrUI <- function(id) {
               inline   = TRUE),
           ), #Categorical (Chi-Square)
           
-          conditionalPanel(
-            ns = ns,
-            condition = "input.popuParameter == 'Population Mean' && input.dataAvailability != 'Summarized Data'",
-            br(),
-            br(),
-            br(),
-            br()
-          ),
           actionButton(
             inputId = ns("goInference"),
             label   = "Calculate",
