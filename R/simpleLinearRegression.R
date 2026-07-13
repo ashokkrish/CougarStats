@@ -393,14 +393,14 @@ SLRSidebarUI <- function(id) {
         inputId     = ns("y"),
         label       = strong("Response Variable (\\( y\\))"),
         value       = "2.48, 2.26, 2.47, 2.77, 2.99, 3.05, 3.18, 3.46, 3.03, 3.26, 2.67, 2.53",
-        placeholder = "Enter numeric values separated by a comma with decimals as points. (eg: 1,2,3)",
+        placeholder = "Enter numeric values separated by commas or spaces with decimals as points. (eg: 1,2,3 or 1 2 3)",
         rows        = 3),
 
       textAreaInput(
         inputId     = ns("x"),
         label       = strong("Explanatory Variable (\\( x\\))"),
         value       = "4.51, 3.58, 4.31, 5.06, 5.64, 4.99, 5.29, 5.83, 4.70, 5.61, 4.90, 4.20",
-        placeholder = "Enter numeric values separated by a comma with decimals as points (eg: 1,2,3).",
+        placeholder = "Enter numeric values separated by commas or spaces with decimals as points (eg: 1,2,3 or 1 2 3).",
         rows        = 3)
     ), #dataRegCor == 'Enter Raw Data'
     
@@ -722,9 +722,9 @@ SLRServer <- function(id) {
     
     ### ------------ Rules -------------------------------------------------------
     slrraw_iv$add_rule("x", sv_required())
-    slrraw_iv$add_rule("x", sv_regex("^\\s*-?\\d*\\.?\\d+(\\s*,\\s*-?\\d*\\.?\\d+)*\\s*$",
-                                     "Data must be numeric values separated by a comma (ie: 2,3,4 or 2, 30, 400)."))
-    slrraw_iv$add_rule("x", ~ if (length(strsplit(input$x, ",")[[1]]) < 4) "Sample Data must include at least four numeric observations.")
+    slrraw_iv$add_rule("x", ~ if (nzchar(trimws(input$x)) && length(createNumLst(input$x)) == 0)
+                                     "Data must be numeric values separated by commas or spaces (ie: 2,3,4 or 2 30 400).")
+    slrraw_iv$add_rule("x", ~ if (length(createNumLst(input$x)) < 4) "Sample Data must include at least four numeric observations.")
     slrraw_iv$add_rule("x", ~ tryCatch(
       if (isTRUE(sampleInfoRaw()$diff != 0)) "x and y must have the same number of observations.",
       error = function(e) NULL
@@ -735,9 +735,9 @@ SLRServer <- function(id) {
     ))
     
     slrraw_iv$add_rule("y", sv_required())
-    slrraw_iv$add_rule("y", sv_regex("^\\s*-?\\d*\\.?\\d+(\\s*,\\s*-?\\d*\\.?\\d+)*\\s*$",
-                                     "Data must be numeric values separated by a comma (ie: 2,3,4 or 2, 30, 400)."))
-    slrraw_iv$add_rule("y", ~ if (length(strsplit(input$x, ",")[[1]]) < 4) "Sample Data must include at least four numeric observations.")
+    slrraw_iv$add_rule("y", ~ if (nzchar(trimws(input$y)) && length(createNumLst(input$y)) == 0)
+                                     "Data must be numeric values separated by commas or spaces (ie: 2,3,4 or 2 30 400).")
+    slrraw_iv$add_rule("y", ~ if (length(createNumLst(input$y)) < 4) "Sample Data must include at least four numeric observations.")
     slrraw_iv$add_rule("y", ~ tryCatch(
       if (isTRUE(sampleInfoRaw()$diff != 0)) "x and y must have the same number of observations.",
       error = function(e) NULL
@@ -2091,7 +2091,14 @@ SLRServer <- function(id) {
         })
 
         output$downloadSpearmanXlsx <- downloadHandler(
-          filename    = function() paste0("Spearman_Rank_Correlation_", Sys.Date(), ".xlsx"),
+          filename    = function() {
+            has_ties <- spearman_cf(datx) > 0 || spearman_cf(daty) > 0
+            if (has_ties) {
+              paste0("Spearman_Rank_Correlation_with_ties_", Sys.Date(), ".xlsx")
+            } else {
+              paste0("Spearman_Rank_Correlation_", Sys.Date(), ".xlsx")
+            }
+          },
           contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
           content     = function(file) {
             tryCatch({
