@@ -2091,7 +2091,14 @@ SLRServer <- function(id) {
         })
 
         output$downloadSpearmanXlsx <- downloadHandler(
-          filename    = function() paste0("Spearman_Rank_Correlation_", Sys.Date(), ".xlsx"),
+          filename    = function() {
+            has_ties <- spearman_cf(datx) > 0 || spearman_cf(daty) > 0
+            if (has_ties) {
+              paste0("Spearman_Rank_Correlation_with_ties_", Sys.Date(), ".xlsx")
+            } else {
+              paste0("Spearman_Rank_Correlation_", Sys.Date(), ".xlsx")
+            }
+          },
           contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
           content     = function(file) {
             tryCatch({
