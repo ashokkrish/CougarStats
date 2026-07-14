@@ -1,0 +1,147 @@
+#    -*- mode: org -*-
+
+
+Archived entries from file /home/bryce/CougarStats/R/statInfr.org
+
+
+* Idea for an observer-declaring statement generating function      :ARCHIVE:
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-07-06 Mon 12:32
+:ARCHIVE_FILE: ~/CougarStats/R/statInfr.org
+:ARCHIVE_CATEGORY: statInfr
+:END:
+I might use a function to create the observers.
+
+#+begin_src R
+  mapply(list(
+    oneSamplePopulationMean =
+      list(userdata = w,
+           userdataReactive = x,
+           dataTableOutput = y,
+           dataTabePanel = z),
+    twoSampleIndependentPopulationMeans =
+      list(userdata = w,
+           userdataReactive = x,
+           dataTableOutput = y,
+           dataTabePanel = z)
+    ...
+  ),
+  function(userdata, userdataReactive, dataTableOutput, dataTabPanel) {
+    observeEvent(input[[userdata]], {
+      output[[dataTableOutput]] <- renderDataTable(userdataReactive())
+      show(dataTabPanel)
+    })
+  })
+#+end_src
+
+
+* Guide for =br()=, the line break tag-creating function            :ARCHIVE:
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-07-06 Mon 12:32
+:ARCHIVE_FILE: ~/CougarStats/R/statInfr.org
+:ARCHIVE_CATEGORY: statInfr
+:END:
+HTML is not a line-oriented markup language like others. Line breaks may be
+freely mixed with content without terminating a line of prose. See the following
+example.
+
+#+begin_src html
+  <body>
+    <p>
+      My first paragraph with some
+      <strong>bold</strong>
+      text!
+    </p>
+  </body>
+#+end_src
+
+In this example the usage of the =strong= tag is emphasized by placing the tag
+and its content on a separate line from other content. The line break and the
+interceding whitespace do not affect the text content of the =p= tag (for
+paragraphing content). The final content is rendered as: "My first paragraph
+with some *bold* text!". The example could have had a source formatting like the
+following, and still been rendered the same way by the browser.
+
+#+begin_src html :tangle /tmp/test.html
+  <div>
+  <p>My first paragraph with some <strong>bold</strong> text!</p>
+  <p>
+    My
+    second
+    paragraph with some <strong>bold</strong> text!
+  </p>
+  <p>
+    My
+    third
+    paragraph
+    with
+    some
+    <strong>     bold     </strong>
+    text!</p>
+  </div>
+#+end_src
+
+The browser concatenates the inner content and renders the text on as few lines
+as required, wrapping according to the default text-breaking and -wrapping rules
+of the browser and web standards. To write verse, rather than prose, you may use
+tags like =pre=, but sometimes =pre= is too much formatting and you want to
+enforce a line break without dictating the line wrapping and text-splitting
+rules for the rest of the tag. That is where you use the =br= tag, the break
+tag.
+
+#+begin_src html :tangle /tmp/test.html
+  <div>
+    <p>
+      My first paragraph with some
+      <br>
+      <strong>bold</strong>
+      text!
+    </p>
+  </div>
+#+end_src
+
+The =br= tag is not used for vertical spacing between lines or other HTML
+content; which can be shown with the following example.
+
+#+begin_src html :tangle /tmp/test.html
+  <div style="line-height: 2.5;">
+    <p>
+      My first paragraph with some
+      <br>
+      <strong>bold</strong>
+      text!
+    </p>
+  </div>
+#+end_src
+
+=br= is *never* to be used to create vertical spacing between elements, as *it
+does not create vertical spacing between elements*, it breaks a line of text
+only.
+
+
+* TODO Extend lintr to identify and correct awful indentation/whitespace/placement of parentheses in =statInfr.R= :ARCHIVE:
+:PROPERTIES:
+:ARCHIVE_TIME: 2026-07-12 Sun 11:58
+:ARCHIVE_FILE: ~/CougarStats/R/statInfr.org
+:ARCHIVE_CATEGORY: statInfr
+:ARCHIVE_TODO: TODO
+:END:
+Automatic correction is the real challenge because there's so many instances of this bad identation.
+
+#+begin_src R
+  c(
+    please_not_like_this(
+      1,
+      2,
+      3,
+      4),
+    instead_like_this(1,
+                      2,
+                      3),
+    or_this(
+      1,
+      2,
+      3
+    )
+  )
+#+end_src

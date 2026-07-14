@@ -1,36 +1,3 @@
-library(shiny)
-library(readr)
-library(readxl)
-library(dplyr)
-library(DT)
-library(ggplot2)
-
-### ------------ Kruskal-Wallis Reactives ------------------------------------   
-kwValidateVariance_func <- function(kwData) {
-  # Check if all values are identical
-  unique_values <- unique(kwData$values)
-  if (length(unique_values) == 1) {
-    return(list(
-      is_valid = FALSE,
-      message = "All values in the dataset are identical. The Kruskal-Wallis test cannot be performed as there is no variance in the data."
-    ))
-  }
-  
-  # Check if there are at least 2 groups with different values
-  group_medians <- kwData %>%
-    group_by(ind) %>%
-    summarise(median_val = median(values, na.rm = TRUE), .groups = 'drop')
-  
-  if (length(unique(group_medians$median_val)) == 1) {
-    return(list(
-      is_valid = FALSE,
-      message = "All groups have identical median values. The Kruskal-Wallis test may not be meaningful."
-    ))
-  }
-  
-  return(list(is_valid = TRUE, message = ""))
-}
-
 kwUploadData_func <- function(kwUserData) {
   ext <- tools::file_ext(kwUserData$name)
   ext <- tolower(ext)
@@ -119,7 +86,29 @@ kwResults_func <- function(kwFormat, kwMultiColumns, kwUploadData_output, kwFact
   results$numFactor <- numFactors
   results$factorNames <- factorNames
   
-  validation_result <- kwValidateVariance_func(kwData)
+  validation_result <- {
+    is_valid <- TRUE
+    message <- ""
+
+    ## Check if there are at least 2 groups with different values
+    unique_group_medians <- kwData |>
+      group_by(ind) |>
+      summarise(median_val = median(values, na.rm = TRUE), .groups = "drop") |>
+      select(median_val) |>
+      unique() |>
+      length()
+
+    if (length(unique(kwData$values)) == 1) {
+      is_valid <- FALSE
+      message <- "All values in the dataset are identical. The Kruskal-Wallis test cannot be performed as there is no variance in the data."
+    } else if (unique_group_medians == 1) {
+      is_valid <- FALSE
+      message <- "All groups have identical median values. The Kruskal-Wallis test may not be meaningful."
+    }
+
+    list(is_valid, message)
+  }
+
   if (!validation_result$is_valid) {
     results$validation_error <- validation_result$message
     results$is_valid <- FALSE
@@ -441,7 +430,7 @@ kruskalWallisUploadInitial <- function(kwUploadData_output) {
               options = list(pageLength = -1,
                              lengthMenu = list(c(25, 50, 100, -1),
                                                c("25", "50", "100", "all")),
-                             columnDefs = list(list(className = 'dt-center',
+                             columnDefs = list(list(className = "dt-center",
                                                     targets = 0:ncol(kwUploadData_output())))))
   })
 }

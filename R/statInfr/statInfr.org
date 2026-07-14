@@ -1,0 +1,78 @@
+* TODO Ashok's Explicit Requests [1/3]
+** DONE Newly-Supported File Formats
+CLOSED: [2026-07-06 Mon 12:35]
+:LOGBOOK:
+CLOCK: [2026-06-29 Mon 18:20]--[2026-06-29 Mon 18:42] =>  0:22
+CLOCK: [2026-06-29 Mon 17:40]--[2026-06-29 Mon 18:09] =>  0:29
+CLOCK: [2026-06-29 Mon 16:59]--[2026-06-29 Mon 17:32] =>  0:33
+CLOCK: [2026-06-29 Mon 14:32]--[2026-06-29 Mon 15:10] =>  0:38
+:END:
+
+- SAV
+- DTA
+- MPX
+- MWX
+- SAS7BDAT
+
+** TODO Uploaded data is visible before pressing 'Calculate'
+:LOGBOOK:
+CLOCK: [2026-07-12 Sun 13:29]--[2026-07-12 Sun 14:25] =>  0:56
+CLOCK: [2026-07-12 Sun 11:58]--[2026-07-12 Sun 13:23] =>  1:25
+CLOCK: [2026-07-08 Wed 12:42]--[2026-07-08 Wed 14:44] =>  2:02
+CLOCK: [2026-07-06 Mon 12:30]--[2026-07-06 Mon 13:09] =>  0:39
+CLOCK: [2026-06-30 Tue 09:22]--[2026-06-30 Tue 11:03] =>  1:41
+CLOCK: [2026-06-30 Tue 09:20]--[2026-06-30 Tue 09:22] =>  0:02
+CLOCK: [2026-06-29 Mon 21:32]--[2026-06-29 Mon 22:38] =>  1:06
+:END:
+This is impossible without breaking current behaviour.
+
+*** Updated of tabsets which have targets =Analysis=, =Graphs=, =Uploaded Data= [0/7]
+- [ ] onePopMeanTabset
+- [ ] indPopMeansTabset
+- [ ] signedRankTabset :: Analysis, Data with Ranks, Graphs, Uploaded Data
+- [ ] depPopMeansTabset :: Analysis, Uploaded Data, Data with Calculations, Graphs
+- [ ] wilcoxonRankSumTabset :: Analysis, Data with Ranks, Graphs, Uploaded Data
+- [ ] anovaTabset
+- [ ] kwTabset :: Analysis, Data table with Ranks, Uploaded Data
+
+Pattern:
+
+1. prehideTabs;
+2. Move 'Uploaded Data' validate into the body content of the tabPanel (it is currently in a renderUI rendered above the body content);
+3. Ensure 'Uploaded Data' tab is shown when its radio button is selected;
+4. When 'Summarized Data' or 'Enter Raw Data' is selected hide the 'Uploaded Data' tab /if no data is available/;
+5. When 'Calculate' is pressed show the 'Analysis' and 'Graphs' tab.
+
+This achieves the "preview" of the tab without contents, and displays it and its contents when possible.
+
+*** Does not have targets =Analysis=, =Graphs=, =Uploaded Data=
+- [X] onePropTabset
+- [X] twoPropTabset
+- [X] twoPopVarTabset
+
+** TODO Categorical Data File Upload
+The Inference for Categorical Data currently only supports using a pre-defined
+table of numeric inputs; Ashok would like to have data upload for this as well.
+
+* TODO Ashok's Implicit Requests [0/2]
+:LOGBOOK:
+CLOCK: [2026-07-14 Tue 15:53]
+:END:
+- [ ] Fix dynamic display of main panel tabs :: required to permit viewing
+  uploaded data prior to Calculate without breaking display of =validate= text
+  in main panel.
+- [ ] Correct dependency tree of validators
+
+
+* Statistical Inference about multiple samples (2+) using Kruskal-Wallis methodology
+- kwUserData ::
+- kwUploadData :: eventReactive, depending on kwUserData, calling ~kwUploadData_func()~ therewith.
+
+** DONE kwDisplayState                                              :ARCHIVE:
+CLOSED: [2026-07-12 Sun 13:46]
+This is entirely unnecessary and is fucking whack.
+
+Values:
+- "none"
+- "raw"
+- "analysis"
