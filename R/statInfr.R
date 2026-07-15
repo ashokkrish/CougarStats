@@ -303,9 +303,10 @@ statInfrUI <- function(id) {
                 textAreaInput(
                   inputId     = ns("sdRawData"),
                   label       = strong("Sample"),
-                  value       = "202, 210, 215, 220, 220, 224, 225, 228, 228, 228",
+                  value       = "5.37, 5.47, 5.38, 4.63, 5.37, 3.74, 3.71, 4.96, 4.64, 5.11, 5.65, 5.55, 4.00, 5.62, 4.57, 4.64, 5.48, 4.60, 4.54, 4.51, 4.86, 4.56, 4.61, 4.32, 3.98, 5.70, 4.15, 3.98, 5.65, 3.11, 5.03, 4.62, 4.50, 4.35, 4.16, 4.64, 5.12, 3.71, 4.64",
                   placeholder = "Enter values separated by a comma with decimals as points",
-                  rows        = 3),
+                  rows        = 6),
+                
               ), # Enter Raw Data
 
               ##### -------------------- Upload Data -----------------------------------
@@ -405,7 +406,7 @@ statInfrUI <- function(id) {
                 numericInput(
                   inputId = ns("hypStdDeviation"),
                   label   = strong(r"--{Hypothesized Population Standard Deviation (\( \sigma_{0}\)) Value}--"),
-                  value   = 16.00,
+                  value   = 0.8047,
                   min     = 0.001,
                   step    = 0.001)
               ), # Population standard deviation
@@ -2894,7 +2895,7 @@ statInfrServer <- function(id) {
     oneSDRaw_iv$add_rule("sdRawData", ~ {
       if (!isTruthy(input$sdRawData)) return("Sample data is required.")
       vals <- createNumLst(input$sdRawData)
-      if (length(vals) < 3) "Sample data must contain at least 3 numeric values."
+      if (length(vals) < 3) "Sample data must contain at least three numeric values."
     })
 
     # sample standard deviation — upload mode
@@ -6569,7 +6570,7 @@ statInfrServer <- function(id) {
             need(length(createNumLst(input$sample1)) > 1, "Sample Data requires a minimum of 2 data points."),
           if (input$sigmaKnownRaw == "rawKnown") {
             need(input$popuSDRaw,"Population Standard Deviation is required.") %then%
-              need(input$popuSDRaw > 0, "Population Standard Deviation must be positive.")
+              need(input$popuSDRaw > 0, "The Population Standard Deviation (σ) must be a positive value greater than zero.")
           },
           errorClass = "myClass"
         )
@@ -6579,7 +6580,7 @@ statInfrServer <- function(id) {
           validate(
           need(
             sd(sampleData, na.rm = TRUE) != 0,
-               "When the sample standard deviation is 0, the test statistic (t) is undefined." 
+               "When the sample standard deviation is zero, the test statistic (t) is undefined." 
           ),
           errorClass = "myClass"
           )
@@ -6588,7 +6589,7 @@ statInfrServer <- function(id) {
       
       if(!onemeansdknown_iv$is_valid()) {
         validate(
-          need(input$popuSD & input$popuSD > 0, "Population Standard Deviation must be positive."),
+          need(input$popuSD & input$popuSD > 0, "The Population Standard Deviation (σ) must be a positive value greater than zero."),
           #need(input$popuSD > 0, "Population Standard Deviation must be greater than 0"),
           errorClass = "myClass")
       }
@@ -6632,7 +6633,7 @@ statInfrServer <- function(id) {
         validate(
           need(
             sd(sampleData, na.rm = TRUE) != 0,
-            "When the sample standard deviation is 0, the test statistic (t) is undefined."
+            "When the sample standard deviation is zero, the test statistic (t) is undefined."
           ),
           errorClass = "myClass"
         )
@@ -6641,7 +6642,7 @@ statInfrServer <- function(id) {
       
       if(!onemeanuploadsd_iv$is_valid()) {
         validate(
-          need(input$popuSDUpload && input$popuSDUpload > 0, "Population Standard Deviation must be positive."),
+          need(input$popuSDUpload && input$popuSDUpload > 0, "The Population Standard Deviation (σ) must be a positive value greater than zero."),
           errorClass = "myClass")
       }
       
@@ -6669,7 +6670,7 @@ statInfrServer <- function(id) {
       if(!oneSDRaw_iv$is_valid()) {
         validate(
           need(isTruthy(input$sdRawData), "Sample data is required.") %then%
-            need(length(createNumLst(input$sdRawData)) >= 3, "Sample data must contain at least 3 numeric values."),
+            need(length(createNumLst(input$sdRawData)) >= 3, "Sample data must contain at least three numeric values."),
           errorClass = "myClass")
       }
 
@@ -7519,7 +7520,13 @@ statInfrServer <- function(id) {
       ## df = n - 1
       oneSDCIalpha <- 1 - ConfLvl() # e.g.: 0.05
       oneSDCIdf <- oneSDData()$n - 1
-      
+
+      sDisplay <- if (isTRUE(input$sdDataAvailability == 'Summarized Data')) {
+        format(oneSDData()$s, digits = 15, scientific = FALSE, trim = TRUE)
+      } else {
+        sprintf('%0.4f', oneSDData()$s)
+      }
+
       ## UI
       withMathJax(
         ## Preface
@@ -7527,8 +7534,8 @@ statInfrServer <- function(id) {
         sprintf("\\( n = %d \\)",
                 oneSDData()$n),
         br(),
-        sprintf("\\( s = %0.2f \\)",
-                oneSDData()$s),
+        sprintf("\\( s = %s \\)",
+                sDisplay),
         br(),
         br(),
         br(),
@@ -7573,20 +7580,20 @@ statInfrServer <- function(id) {
         sprintf(r"---(
           \(
           \begin{align}
-          CI &= \left( \sqrt{\frac{%d}{%0.3f}} \cdot %0.3f, \;\: \sqrt{\frac{%d}{%0.3f}} \cdot %0.3f \right) \\ \\
-             &= \left(%0.2f, %0.2f\right)
+          CI &= \left( \sqrt{\frac{%d}{%0.3f}} \cdot %s, \;\: \sqrt{\frac{%d}{%0.3f}} \cdot %s \right) \\ \\
+             &= \left(%0.4f, %0.4f\right)
           \end{align}
           \)
           )---",
           ## Left/lower
           oneSDCIdf, # df
           oneSSDLeft,
-          oneSDData()$s, # s
-          
+          sDisplay, # s
+
           ## Right/upper
           oneSDCIdf, # df
           oneSSDRight,
-          oneSDData()$s, #s
+          sDisplay, #s
           (oneSSDLowerPopStdDev <- sqrt(oneSDCIdf / oneSSDLeft) * oneSDData()$s),
           (oneSSDUpperPopStdDev <- sqrt(oneSDCIdf / oneSSDRight) * oneSDData()$s)),
         br(),
@@ -7595,7 +7602,7 @@ statInfrServer <- function(id) {
         
         ## Step three
         tags$b("Interpretation:"), br(),
-        sprintf("We are %s confident that the population standard deviation (\\( \\sigma \\)) is between \\( %0.2f \\) and \\( %0.2f \\).",
+        sprintf("We are %s confident that the population standard deviation (\\( \\sigma \\)) is between \\( %0.4f \\) and \\( %0.4f \\).",
                 input$confidenceLevel, oneSSDLowerPopStdDev, oneSSDUpperPopStdDev)
       )
     })
@@ -7795,7 +7802,15 @@ statInfrServer <- function(id) {
       }
 
       chiSqTestData(envir = environment())
-      
+
+      sDisplay <- if (isTRUE(input$sdDataAvailability == 'Summarized Data')) {
+        format(oneSDData()$s, digits = 15, scientific = FALSE, trim = TRUE)
+      } else {
+        sprintf('%0.4f', oneSDData()$s)
+      }
+
+      sigma0Display <- format(input$hypStdDeviation, digits = 15, scientific = FALSE, trim = TRUE)
+
       ## "if P <= alpha, reject H0"
       if (chiSqPValue <= SigLvl()) {
         rejectionOrAcceptanceStatement <-
@@ -7806,8 +7821,8 @@ statInfrServer <- function(id) {
       }
       
       hypothesisFormattedString <- function(hypothesis, nullOrAltHypothesisString) {
-        sprintf(r"--[\( H_%s: \sigma %s %0.3f \)]--", # σ
-                hypothesis, nullOrAltHypothesisString, input$hypStdDeviation);
+        sprintf(r"--[\( H_%s: \sigma %s %s \)]--", # σ
+                hypothesis, nullOrAltHypothesisString, sigma0Display);
       }
       
       ## UI
@@ -7821,8 +7836,8 @@ statInfrServer <- function(id) {
         p(tags$b("Test Statistic:")),
         sprintf("Given:"), br(),
         sprintf(r"--[\( n = %d \)]--", oneSDData()$n), br(),
-        sprintf(r"--[\( s = %0.4f \)]--", oneSDData()$s), br(),
-        sprintf(r"--[\( \sigma_0 = %.4f \)]--", input$hypStdDeviation), br(),
+        sprintf(r"--[\( s = %s \)]--", sDisplay), br(),
+        sprintf(r"--[\( \sigma_0 = %s \)]--", sigma0Display), br(),
         
         br(),
         br(),
@@ -7836,10 +7851,10 @@ statInfrServer <- function(id) {
           r"--(
            \(
            \displaystyle
-           \chi^2 = \frac{(%d - 1)  %0.4f ^2}{%0.4f^2} = %0.4f\\
+           \chi^2 = \frac{(%d - 1)  %s ^2}{%s^2} = %0.4f\\
            \)
            )--",
-          oneSDData()$n,  oneSDData()$s,  input$hypStdDeviation, chiSqTestStatistic
+          oneSDData()$n,  sDisplay,  sigma0Display, chiSqTestStatistic
         ),
         
         br(),
@@ -7962,7 +7977,7 @@ statInfrServer <- function(id) {
               accept <- FALSE
               sprintf(paste0("Since the test statistic \\( \\left( \\chi^2 \\right) \\)",
                              " falls in the rejection region,",
-                             " \\(\\chi^2 = %0.4f\\) which is less than (or equal to) \\(%0.3f\\), we reject \\(H_0\\)",
+                             " \\(\\chi^2 = %0.4f\\) which is less than (or equal to) \\(%0.4f\\), we reject \\(H_0\\)",
                              " as there is sufficient evidence to accept the",
                              " alternative hypothesis."),
                       chiSqTestStatistic,
@@ -7971,7 +7986,7 @@ statInfrServer <- function(id) {
               accept <- FALSE
               sprintf(paste0("Since the test statistic \\( \\left( \\chi^2 \\right) \\)",
                              " falls in the rejection region,",
-                             " \\(\\chi^2 = %0.34\\) which is greater than (or equal to) \\(%0.4f\\), we reject \\(H_0\\)",
+                             " \\(\\chi^2 = %0.4f\\) which is greater than (or equal to) \\(%0.4f\\), we reject \\(H_0\\)",
                              " as there is sufficient evidence to accept the",
                              " alternative hypothesis."),
                       chiSqTestStatistic,
@@ -7980,7 +7995,7 @@ statInfrServer <- function(id) {
               accept <- TRUE
               sprintf(paste0("Since the test statistic \\( \\left( \\chi^2 \\right) \\)",
                              " falls in the acceptance region,",
-                             " \\(\\chi^2 = %0.3f\\) which is between \\(%0.4f\\) and \\(%0.4f\\), we do not reject \\(H_0\\)",
+                             " \\(\\chi^2 = %0.4f\\) which is between \\(%0.4f\\) and \\(%0.4f\\), we do not reject \\(H_0\\)",
                              " as there is insufficient evidence to accept the",
                              " alternative hypothesis."),
                       chiSqTestStatistic,
@@ -11196,7 +11211,7 @@ statInfrServer <- function(id) {
       # }
     })
     
-    observeEvent(input$oneMeanGraphOptions, {
+    observeEvent(input$oneMeanGraphOptions, ignoreNULL = FALSE, {
       if (length(input$oneMeanGraphOptions) > 0 && input$dataAvailability != 'Summarized Data') {
         showTab(inputId = "onePopMeanTabset", target = "Graphs")
       } else {
