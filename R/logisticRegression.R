@@ -11,7 +11,6 @@ LogisticRegressionSidebarUI <- function(id) {
       id = ns("LOGRSidebar"),
       useShinyjs(),
       withMathJax(
-        HTML(uploadDataDisclaimer),
         helpText("Select a binary response variable (must have exactly two unique values: 0 or 1)."),
         div(
           id = ns("responseVariableWrapper"),
@@ -68,6 +67,7 @@ LogisticRegressionMainPanelUI <- function(id) {
                  fileInput(
                    inputId = ns("logrUserData"),
                    label   = strong("Upload your data (.csv, .xls, .xlsx, .txt, .sas7bdat, .sav, .dta, .rds, .mtp, .mwx, .mpx)"),
+                   width   = "100%",
                    accept  = c("text/csv",
                                "text/comma-separated-values",
                                "text/tab-separated-values",
@@ -82,6 +82,7 @@ LogisticRegressionMainPanelUI <- function(id) {
                      inputId = ns("logrSheet"),
                      label   = strong("Choose a Sheet"),
                      choices = c(""),
+                     width   = "100%",
                      multiple = FALSE,
                      options  = list(placeholder  = "Select a sheet",
                                      onInitialize = I('function() { this.setValue(""); }')))
@@ -99,7 +100,7 @@ LogisticRegressionMainPanelUI <- function(id) {
                         plotOutput(ns("logrScatterplot"))
                ),
                tabPanel(title = "Uploaded Data",
-                        DTOutput(ns("uploadedDataTable"))
+                        div(style = "width:100%", DTOutput(ns("uploadedDataTable")))
                ),
                id = ns("mainPanel"),
                theme = bs_theme(version = 4)
