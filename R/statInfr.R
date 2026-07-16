@@ -282,7 +282,7 @@ statInfrUI <- function(id) {
                 numericInput(
                   inputId = ns("SSDSampleSize"),
                   label   = strong("Sample Size (\\( n\\))"),
-                  value   = 30,
+                  value   = 39,
                   min     = 2,
                   step    = 1
                 ),
@@ -290,7 +290,7 @@ statInfrUI <- function(id) {
                 numericInput(
                   inputId = ns("SSDStdDev"),
                   label   = strong("Sample Standard Deviation (\\( s\\))"),
-                  value   = 12.23,
+                  value   = 0.6379,
                   min     = 0.00001,
                   step    = 0.00001),
               ), # Summarized Data
@@ -1736,26 +1736,44 @@ statInfrUI <- function(id) {
                 conditionalPanel(
                   ns = ns,
                   condition = "input.popuParameter == 'Population Standard Deviation'",
-                  
-                  conditionalPanel(
-                    ns = ns,
-                    condition = "input.inferenceType == 'Confidence Interval'",
-                    
-                    titlePanel(tags$u("Confidence Interval")),
-                    br(),
-                    uiOutput(ns('oneSDCI')),
-                    br(),
-                  ), # Confidence Interval
-                  
-                  conditionalPanel(
-                    ns = ns,
-                    condition = "input.inferenceType == 'Hypothesis Testing'",
-                    
-                    titlePanel(tags$u("Hypothesis Test")),
-                    br(),
-                    uiOutput(ns('onePopulationSDHT')),
-                    br(),
-                  ), # Hypothesis Testing
+
+                  navbarPage(
+                    id = ns("oneSDTabset"),
+                    title = NULL,
+                    selected = "Analysis",
+
+                    tabPanel(
+                      title = "Analysis",
+                      value = "Analysis",
+
+                      conditionalPanel(
+                        ns = ns,
+                        condition = "input.inferenceType == 'Confidence Interval'",
+
+                        titlePanel(tags$u("Confidence Interval")),
+                        br(),
+                        uiOutput(ns('oneSDCI')),
+                        br(),
+                      ), # Confidence Interval
+
+                      conditionalPanel(
+                        ns = ns,
+                        condition = "input.inferenceType == 'Hypothesis Testing'",
+
+                        titlePanel(tags$u("Hypothesis Test")),
+                        br(),
+                        uiOutput(ns('onePopulationSDHT')),
+                        br(),
+                      ), # Hypothesis Testing
+                    ), # Analysis tabPanel
+
+                    tabPanel(
+                      title = "Uploaded Data",
+                      value = "Uploaded Data",
+
+                      uiOutput(ns("renderOneSDData")),
+                    ), # Uploaded Data tabPanel
+                  ), # oneSDTabset navbarPage
                 ), # One Population Proportion
               ), # "input.siMethod == '1'"
               
@@ -7497,6 +7515,40 @@ statInfrServer <- function(id) {
     )
 
     ### ------------ One Sample Standard Deviation Outputs -----------------------
+    #### ---- Uploaded Data tab: immediate preview (ML-style) ----
+    output$renderOneSDData <- renderUI({
+      if (input$sdDataAvailability != "Upload Data") return(NULL)
+      if (!onesdupload_iv$is_valid()) {
+        return(helpText("No data yet. Upload a dataset to view it here."))
+      }
+      div(DTOutput(session$ns("oneSDUploadTable")), style = "width: 75%")
+    })
+
+    output$oneSDUploadTable <- renderDT({
+      req(onesdupload_iv$is_valid())
+      datatable(SDUploadData(),
+                options = list(pageLength = -1,
+                               lengthMenu = list(c(25, 50, 100, -1),
+                                                 c("25", "50", "100", "all")),
+                               columnDefs = list(list(className = 'dt-center',
+                                                      targets = 0:ncol(SDUploadData())))),
+      )
+    })
+
+    session$onFlushed(function() {
+      hideTab(inputId = "oneSDTabset", target = "Uploaded Data")
+    }, once = TRUE)
+
+    observeEvent(input$sdDataAvailability, {
+      if (input$sdDataAvailability == "Upload Data") {
+        showTab(inputId = "oneSDTabset", target = "Uploaded Data")
+        updateTabsetPanel(session, "oneSDTabset", selected = "Uploaded Data")
+      } else {
+        hideTab(inputId = "oneSDTabset", target = "Uploaded Data")
+        updateTabsetPanel(session, "oneSDTabset", selected = "Analysis")
+      }
+    }, ignoreInit = TRUE)
+
     #### ---- One population standard deviation confidence interval CI ----
     output$oneSDCI <- renderUI({
       ## Input validation
@@ -7538,8 +7590,7 @@ statInfrServer <- function(id) {
                 sDisplay),
         br(),
         br(),
-        br(),
-        
+
         sprintf("For a %s Confidence Interval:", input$confidenceLevel),
         br(),
         sprintf("\\( \\alpha = 1 - %0.2f = %0.2f \\)", 1 - oneSDCIalpha, oneSDCIalpha),
@@ -7598,8 +7649,7 @@ statInfrServer <- function(id) {
           (oneSSDUpperPopStdDev <- sqrt(oneSDCIdf / oneSSDRight) * oneSDData()$s)),
         br(),
         br(),
-        br(),
-        
+
         ## Step three
         tags$b("Interpretation:"), br(),
         sprintf("We are %s confident that the population standard deviation (\\( \\sigma \\)) is between \\( %0.4f \\) and \\( %0.4f \\).",
@@ -7882,14 +7932,14 @@ statInfrServer <- function(id) {
         br(),
         br(),
         if (input$altHypothesis != 2) {
-          HTML(sprintf("Critical value(s): \\( \\chi^2_{%0.2f,%d} = %0.4f \\) <br/>",
+          HTML(sprintf("Critical value(s): \\( \\chi^2_{%0.2f,\\,%d} = %0.4f \\) <br/>",
                        SigLvl(),
                        degreesOfFreedom,
                        chiSqCValue))
         } else {
           HTML(sprintf("Critical value(s): <br/>
-                  \\( \\chi^2_{\\alpha/2,df} = \\chi^2_{%0.4f,%d} = %0.4f \\) <br/>
-                  \\( \\chi^2_{1 - \\alpha/2,df} = \\chi^2_{%0.4f,%d} = %0.4f \\) <br/>",
+                  \\( \\chi^2_{\\alpha/2,\\,df} = \\chi^2_{%0.4f,\\,%d} = %0.4f \\) <br/>
+                  \\( \\chi^2_{1 - \\alpha/2,\\,df} = \\chi^2_{%0.4f,\\,%d} = %0.4f \\) <br/>",
                   SigLvl() / 2,
                   degreesOfFreedom,
                   chiSqCValue[[1]],
@@ -7903,7 +7953,7 @@ statInfrServer <- function(id) {
         ## Example from mu: "Since the test statistic (z) falls within the rejection region, reject H0."
         if (input$altHypothesis != 2) {
           HTML(sprintf(
-            r"--(\(\begin{align} \displaystyle \chi^2 &%s \chi^2_{%0.2f,%d} \\ %0.4f &%s %0.4f  \\ \end{align} \)<br/>)--",
+            r"--(\(\begin{align} \displaystyle \chi^2 &%s \chi^2_{%0.2f,\,%d} \\ %0.4f &%s %0.4f  \\ \end{align} \)<br/>)--",
             ## Both of these are alternative hypothesis-dependent
             {
               if (chiSqTestStatistic < chiSqCValue) { relation("\\leq"); "\\leq" }
@@ -7924,11 +7974,11 @@ statInfrServer <- function(id) {
           
           if (!between) {
             HTML(sprintf(
-              r"--(\(\begin{align} \displaystyle \chi^2 &%s \chi^2_{%0.4f,%d} \\ %0.4f &%s %0.4f \\ \end{align} \)<br/>)--",
+              r"--(\(\begin{align} \displaystyle \chi^2 &%s \chi^2_{%0.4f,\,%d} \\ %0.4f &%s %0.4f \\ \end{align} \)<br/>)--",
               relation(), {if (lessThan) SigLvl()/2 else 1-SigLvl()/2}, degreesOfFreedom,
               chiSqTestStatistic, relation(), if (lessThan) chiSqCValue[[1]]))
           } else {
-            HTML(sprintf(r"--(\(\begin{align} \displaystyle \chi^2_{%0.4f,%d} &< \chi^2 &< \chi^2_{%0.4f,%d} \\ %0.4f &< %0.4f &< %0.4f \\ \end{align} \)<br/>)--",
+            HTML(sprintf(r"--(\(\begin{align} \displaystyle \chi^2_{%0.4f,\,%d} &< \chi^2 &< \chi^2_{%0.4f,\,%d} \\ %0.4f &< %0.4f &< %0.4f \\ \end{align} \)<br/>)--",
                          SigLvl()/2, degreesOfFreedom, 1-SigLvl()/2, degreesOfFreedom,
                          chiSqCValue[[1]], chiSqTestStatistic, chiSqCValue[[2]]))
           }
@@ -12016,7 +12066,30 @@ statInfrServer <- function(id) {
       hide(id = "inferenceMP")
       hide(id = "anovaUploadInputs")
       hide(id = "kwUploadInputs")
+
+      radioIDs <- c(
+        "anovaFormat", "anovaSigLvl", "bothsigmaEqual", "bothsigmaEqualRaw",
+        "bothsigmaEqualUpload", "bothsigmaKnown", "bothsigmaKnownRaw",
+        "bothsigmaKnownUpload", "chisquareDimension", "chisquareMethod",
+        "chisquareSigLvl", "confidenceLevel", "confidenceLevel2",
+        "continuityCorrectionOption", "dataAvailability", "dataAvailability2",
+        "dataAvailability3", "dataTypeDependent", "inferenceType", "inferenceType2",
+        "kwFormat", "kwSigLvl", "multipleMethodChoice", "normaprowrs",
+        "normaprowrsRankSum", "popuDistribution", "popuParameter", "popuParameters",
+        "sdDataAvailability", "siMethod", "sigmaKnown", "sigmaKnownRaw",
+        "sigmaKnownUpload", "signedRankTest", "significanceLevel",
+        "significanceLevel2", "wilcoxonRankSumTestData"
+      )
+      savedRadios <- setNames(lapply(radioIDs, function(id) input[[id]]), radioIDs)
+
       shinyjs::reset("inputPanel")
+
+      for (id in radioIDs) {
+        if (!is.null(savedRadios[[id]])) {
+          updateRadioButtons(session, id, selected = savedRadios[[id]])
+        }
+      }
+
       fileInputs$oneMeanStatus <- 'reset'
       fileInputs$indMeansStatus <- 'reset'
       fileInputs$rankSumStatus <-'reset'
