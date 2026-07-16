@@ -1943,7 +1943,8 @@ SLRServer <- function(id) {
           if (!ks$has_ties) {
             sd_tau <- sqrt(2 * (2 * ks$n + 5) / (9 * ks$n * (ks$n - 1)))
             z_stat <- tau / sd_tau
-            p_val  <- 2 * pnorm(-abs(z_stat))
+            # Use cor.test's p-value: exact permutation for n < 50, normal approx for n >= 50
+            p_val  <- kendall$p.value
 
             withMathJax(
               header,

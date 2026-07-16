@@ -133,6 +133,7 @@ source('R/TwoPropZTest.R')
 
 source("R/simpleLinearRegression.R")
 source("R/multipleLinearRegression.R")
+source("R/polynomialRegression.R")
 source("R/regressionAndCorrelation.R")
 source("R/logisticRegression.R")
 
