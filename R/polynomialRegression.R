@@ -227,8 +227,8 @@ PolynomialRegressionMainPanelUI <- function(id) {
       ) # navbarPage
     )), # polyResultsPanel
 
-    # Uploaded data preview panel
-    div(
+    # Uploaded data preview panel — only visible in Upload Data mode
+    hidden(div(
       id = ns("polyUploadedDataPanel"),
       tags$h4(
         "Uploaded Data",
@@ -236,7 +236,7 @@ PolynomialRegressionMainPanelUI <- function(id) {
       ),
       uiOutput(ns("polyUploadedDataContent")),
       br()
-    )
+    ))
   ))
 }
 
@@ -360,6 +360,30 @@ PolynomialRegressionServer <- function(id) {
     polyraw_iv$enable()
     polyupload_iv$enable()
     polyupvars_iv$enable()
+
+    # ---- Reset results when data input mode changes -----------------------
+    observeEvent(input$polyDataInput, {
+      hide("polyResultsPanel")
+      storedDatx(NULL)
+      storedDaty(NULL)
+      nDroppedRows(0)
+
+      if (input$polyDataInput == "Upload Data" &&
+          !is.null(fileState$status) &&
+          fileState$status == "uploaded") {
+        show("polyUploadedDataPanel")
+      } else {
+        hide("polyUploadedDataPanel")
+      }
+    }, ignoreInit = TRUE)
+
+    # ---- Reset results when raw inputs change -----------------------------
+    observeEvent(list(input$polyX, input$polyY, input$polyDegree), {
+      req(input$polyDataInput == "Enter Raw Data")
+      hide("polyResultsPanel")
+      storedDatx(NULL)
+      storedDaty(NULL)
+    }, ignoreInit = TRUE)
 
     # ---- Plot options module ----------------------------------------------
     plotOptionsMenuServer("polyScatter")
