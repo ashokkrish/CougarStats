@@ -2224,10 +2224,6 @@ SLRServer <- function(id) {
               )
             )
           } else {
-            sum_rank_x <- sum(spearman_df$rank_x)
-            sum_rank_y <- sum(spearman_df$rank_y)
-            sum_d_sq   <- sum(spearman_df$d_sq)
-
             reactable(
               spearman_df[, c("x", "y", "rank_x", "rank_y", "d", "d_sq")],
               sortable   = FALSE,
@@ -2240,15 +2236,14 @@ SLRServer <- function(id) {
               columns = list(
                 x      = colDef(name = "x",      align = "center"),
                 y      = colDef(name = "y",      align = "center"),
-                rank_x = colDef(name = "Rank x", align = "center", footer = tags$b(sum_rank_x)),
-                rank_y = colDef(name = "Rank y", align = "center", footer = tags$b(sum_rank_y)),
-                d      = colDef(name = "d = (Rank x \u2212 Rank y)", align = "center", footer = tags$b("Total"), minWidth = 190),
+                rank_x = colDef(name = "Rank x", align = "center"),
+                rank_y = colDef(name = "Rank y", align = "center"),
+                d      = colDef(name = "d = (Rank x \u2212 Rank y)", align = "center", minWidth = 190),
                 d_sq   = colDef(
-                  name   = HTML("d<sup>2</sup>"),
-                  html   = TRUE,
-                  align  = "center",
-                  footer = tags$b(sum_d_sq),
-                  cell = function(value) {
+                  name  = HTML("d<sup>2</sup>"),
+                  html  = TRUE,
+                  align = "center",
+                  cell  = function(value) {
                     if (value == floor(value)) {
                       formatC(value, format = "d", big.mark = ",")
                     } else {
