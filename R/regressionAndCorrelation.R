@@ -9,8 +9,8 @@ regressionAndCorrelationUI <- function(id) {
                    tags$b("Methodology"),
                    choices = list("Simple Linear Regression and Correlation Analysis" = "SLR",
                                   "Multiple Linear Regression" = "MLR",
-                                  "Binary Logistic Regression" = "LOGR",
-                                  "Polynomial Regression" = "POLYR"
+                                  "Polynomial Regression" = "POLYR",
+                                  "Binary Logistic Regression" = "LOGR"
                                   ),
                    selected = "SLR"
       ),
