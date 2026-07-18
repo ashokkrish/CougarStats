@@ -7908,6 +7908,9 @@ statInfrServer <- function(id) {
 
       chiSqTestData(envir = environment())
 
+      req(input$hypStdDeviation, input$altHypothesis)
+      req(!is.na(chiSqTestStatistic), !is.na(chiSqPValue))
+
       sDisplay <- if (isTRUE(input$sdDataAvailability == 'Summarized Data')) {
         format(oneSDData()$s, digits = 15, scientific = FALSE, trim = TRUE)
       } else {
@@ -12074,8 +12077,19 @@ statInfrServer <- function(id) {
     
     ### ------------ Component Display -------------------------------------------
     observeEvent(!si_iv$is_valid(), {
-      hide(id = "inferenceMP")
-      hide(id = "inferenceData")
+      ## si_iv also requires a column to be picked for uploaded one-sample
+      ## data, which is legitimately unmet right after a successful upload
+      ## (before the user has chosen a column). Don't blank the main panel
+      ## in that case -- the Uploaded Data preview is still valid and should
+      ## stay visible.
+      oneSampleUploadPreviewActive <-
+        (isTRUE(input$dataAvailability == "Upload Data") && onemeanupload_iv$is_valid()) ||
+        (isTRUE(input$sdDataAvailability == "Upload Data") && onesdupload_iv$is_valid())
+
+      if (!oneSampleUploadPreviewActive) {
+        hide(id = "inferenceMP")
+        hide(id = "inferenceData")
+      }
     })
     
     observeEvent(!depmeansrawsd_iv$is_valid(), {
