@@ -222,6 +222,18 @@ PolynomialRegressionMainPanelUI <- function(id) {
           ),
 
           br()
+        ),
+
+        # ---- Uploaded Data Tab --------------------------------------------
+        tabPanel(
+          title = "Uploaded Data",
+          value = "Uploaded Data",
+          div(
+            DTOutput(ns("polyViewUploadTab")),
+            style = "width: 75%"
+          ),
+          br(),
+          br()
         )
 
       ) # navbarPage
@@ -364,6 +376,7 @@ PolynomialRegressionServer <- function(id) {
     # ---- Reset results when data input mode changes -----------------------
     observeEvent(input$polyDataInput, {
       hide("polyResultsPanel")
+      hideTab(inputId = "polyNavbarPage", target = "Uploaded Data")
       storedDatx(NULL)
       storedDaty(NULL)
       nDroppedRows(0)
@@ -451,6 +464,16 @@ PolynomialRegressionServer <- function(id) {
     })
     outputOptions(output, "polyViewUpload", suspendWhenHidden = FALSE)
 
+    output$polyViewUploadTab <- renderDT({
+      req(input$polyUserData)
+      dat <- polyUploadData()
+      datatable(dat, options = list(
+        pageLength = 25,
+        lengthMenu = list(c(25, 50, 100, -1), c("25", "50", "100", "All")),
+        scrollX    = TRUE
+      ))
+    })
+
     # ---- Scatterplot (reactive to local degree) ---------------------------
     # Fits a fresh model whenever the scatter degree input changes, using
     # the stored datx/daty from the last Calculate press.
@@ -486,24 +509,12 @@ PolynomialRegressionServer <- function(id) {
             "Maximum degree for this data is ", n - 1, "."
           )
         )
-      } else if (df.residual(scatterModel()) == 0) {
-        div(
-          class = "alert alert-warning",
-          style = "margin-top: 10px;",
-          tags$b("⚠️ Perfect Fit Detected: "),
-          paste0(
-            "A degree-", d, " polynomial with ", n,
-            " observations has 0 residual degrees of freedom. ",
-            "Confidence and prediction intervals cannot be computed."
-          )
-        )
       }
     })
 
     output$polyScatterplot <- renderPlotly({
       req(scatterModel(), storedDatx(), storedDaty())
-      df         <- data.frame(x = storedDatx(), y = storedDaty())
-      has_resid_df <- df.residual(scatterModel()) > 0
+      df <- data.frame(x = storedDatx(), y = storedDaty())
       RenderScatterplot(
         df,
         scatterModel(),
@@ -515,10 +526,11 @@ PolynomialRegressionServer <- function(id) {
         input[["polyScatter-LineWidth"]],
         input[["polyScatter-PointSize"]],
         input[["polyScatter-Gridlines"]],
-        input[["polyScatter-confidenceInterval"]] && has_resid_df,
-        input[["polyScatter-predictionInterval"]] && has_resid_df,
+        FALSE, # input[["polyScatter-confidenceInterval"]] && df.residual(scatterModel()) > 0
+        FALSE, # input[["polyScatter-predictionInterval"]] && df.residual(scatterModel()) > 0
         input[["polyScatter-showRegressionLine"]]
-      )
+      ) %>%
+        style(name = "Data Points — Polynomial Regression Curve", traces = 2)
     })
 
     # ---- Calculate button -------------------------------------------------
@@ -527,6 +539,12 @@ PolynomialRegressionServer <- function(id) {
       if (!poly_iv$is_valid()) return()
 
       hide("polyUploadedDataPanel")
+
+      if (input$polyDataInput == "Upload Data") {
+        showTab(inputId = "polyNavbarPage", target = "Uploaded Data")
+      } else {
+        hideTab(inputId = "polyNavbarPage", target = "Uploaded Data")
+      }
 
       # -- Extract data ------------------------------------------------------
       degree <- as.integer(input$polyDegree)
@@ -607,29 +625,6 @@ PolynomialRegressionServer <- function(id) {
           p("The fitted model with estimated coefficients is"),
           p(sprintf("\\( \\qquad \\hat{y} = %s \\)", num_terms)),
           br(),
-          tags$table(
-            class = "table table-bordered table-sm",
-            style = "width: auto; min-width: 220px;",
-            tags$thead(
-              tags$tr(
-                tags$th("Parameter"),
-                tags$th("Estimate")
-              )
-            ),
-            tags$tbody(
-              tags$tr(
-                tags$td(withMathJax("\\( \\hat{\\beta}_{0} \\)")),
-                tags$td(fmt_coef(b0))
-              ),
-              lapply(seq_len(degree), function(k) {
-                tags$tr(
-                  tags$td(withMathJax(sprintf("\\( \\hat{\\beta}_{%d} \\)", k))),
-                  tags$td(fmt_coef(coefs[k + 1]))
-                )
-              })
-            )
-          ),
-          br(),
           p(tags$b("Interpretation:")),
           p(HTML(paste0(
             "The degree-", degree, " polynomial model was fitted to the data. ",
@@ -649,11 +644,20 @@ PolynomialRegressionServer <- function(id) {
         value = "0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10")
       updateNumericInput(session, "polyDegree",        value = 2)
       updateNumericInput(session, "polyScatterDegree", value = 2)
+
+      # Clear file input and dependent dropdowns
+      shinyjs::reset("polyUserData")
+      updateSelectizeInput(session, "polySheet",       choices = character(0), selected = "")
+      updateSelectizeInput(session, "polyResponse",    choices = character(0), selected = "")
+      updateSelectizeInput(session, "polyExplanatory", choices = character(0), selected = "")
+
       storedDatx(NULL)
       storedDaty(NULL)
+      nDroppedRows(0)
       fileState$status <- "reset"
       hide("polyResultsPanel")
-      show("polyUploadedDataPanel")
+      hide("polyUploadedDataPanel")
+      hideTab(inputId = "polyNavbarPage", target = "Uploaded Data")
     })
 
   })
