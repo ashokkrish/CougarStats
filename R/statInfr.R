@@ -3731,8 +3731,8 @@ statInfrServer <- function(id) {
           br(),
           sprintf("and"),
           br(),
-          sprintf("\\( \\phantom{CII} s  = \\sqrt{ \\dfrac{\\sum x^{2} - \\dfrac{(\\sum x)^{2}}{n} }{n - 1} } \\)"),
-          sprintf("\\( = \\sqrt{ \\dfrac{%s - \\dfrac{(%s)^{2}}{%g} }{%g - 1} } = %g \\)",
+          sprintf("\\( \\phantom{CII} s  = \\sqrt{ \\frac{\\sum x^{2} - \\frac{(\\sum x)^{2}}{n} }{n - 1} } \\)"),
+          sprintf("\\( = \\sqrt{ \\frac{%s - \\frac{(%s)^{2}}{%g} }{%g - 1} } = %g \\)",
                   OneMeanTotaledData()[2],
                   OneMeanTotaledData()[1],
                   oneMeanData["Sample Size"],
@@ -7435,6 +7435,7 @@ statInfrServer <- function(id) {
         updateTabsetPanel(session, "onePopMeanTabset", selected = "Uploaded Data")
       } else {
         hideTab(inputId = "onePopMeanTabset", target = "Uploaded Data")
+        showTab(inputId = "onePopMeanTabset", target = "Analysis")
         updateTabsetPanel(session, "onePopMeanTabset", selected = "Analysis")
       }
     }, ignoreInit = TRUE)
@@ -7599,6 +7600,7 @@ statInfrServer <- function(id) {
         updateTabsetPanel(session, "oneSDTabset", selected = "Uploaded Data")
       } else {
         hideTab(inputId = "oneSDTabset", target = "Uploaded Data")
+        showTab(inputId = "oneSDTabset", target = "Analysis")
         updateTabsetPanel(session, "oneSDTabset", selected = "Analysis")
       }
     }, ignoreInit = TRUE)
@@ -8451,6 +8453,7 @@ statInfrServer <- function(id) {
         updateTabsetPanel(session, "indPopMeansTabset", selected = "Uploaded Data")
       } else {
         hideTab(inputId = "indPopMeansTabset", target = "Uploaded Data")
+        showTab(inputId = "indPopMeansTabset", target = "Analysis")
         updateTabsetPanel(session, "indPopMeansTabset", selected = "Analysis")
       }
     }, ignoreInit = TRUE)
@@ -9158,6 +9161,7 @@ statInfrServer <- function(id) {
         updateTabsetPanel(session, "wilcoxonRankSumTabset", selected = "Uploaded Data")
       } else {
         hideTab(inputId = "wilcoxonRankSumTabset", target = "Uploaded Data")
+        showTab(inputId = "wilcoxonRankSumTabset", target = "Analysis")
         updateTabsetPanel(session, "wilcoxonRankSumTabset", selected = "Analysis")
       }
     }, ignoreInit = TRUE)
@@ -9809,6 +9813,7 @@ statInfrServer <- function(id) {
         updateTabsetPanel(session, "depPopMeansTabset", selected = "Uploaded Data")
       } else {
         hideTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
+        showTab(inputId = "depPopMeansTabset", target = "Analysis")
         updateTabsetPanel(session, "depPopMeansTabset", selected = "Analysis")
       }
     }, ignoreInit = TRUE)
@@ -10373,6 +10378,7 @@ statInfrServer <- function(id) {
         updateTabsetPanel(session, "signedRankTabset", selected = "Uploaded Data")
       } else {
         hideTab(inputId = "signedRankTabset", target = "Uploaded Data")
+        showTab(inputId = "signedRankTabset", target = "Analysis")
         updateTabsetPanel(session, "signedRankTabset", selected = "Analysis")
       }
     }, ignoreInit = TRUE)
@@ -11428,6 +11434,7 @@ statInfrServer <- function(id) {
       if (onesdupload_iv$is_valid()) {
         shinyjs::show(id = "inferenceMP")
         shinyjs::show(id = "inferenceData")
+        hideTab(inputId = "oneSDTabset", target = "Analysis")
         goToUploadedDataTab("oneSDTabset")
       }
     })
@@ -11450,6 +11457,7 @@ statInfrServer <- function(id) {
       if (onemeanupload_iv$is_valid()) {
         shinyjs::show(id = "inferenceMP")
         shinyjs::show(id = "inferenceData")
+        hideTab(inputId = "onePopMeanTabset", target = "Analysis")
         goToUploadedDataTab("onePopMeanTabset")
       }
     })
@@ -11496,6 +11504,9 @@ statInfrServer <- function(id) {
       # }
 
       if (indmeansupload_iv$is_valid()) {
+        shinyjs::show(id = "inferenceMP")
+        shinyjs::show(id = "inferenceData")
+        hideTab(inputId = "indPopMeansTabset", target = "Analysis")
         goToUploadedDataTab("indPopMeansTabset")
       }
     })
@@ -11551,6 +11562,9 @@ statInfrServer <- function(id) {
         shinyjs::show(id = "depMeansUplSample1")
         shinyjs::show(id = "depMeansUplSample2")
 
+        shinyjs::show(id = "inferenceMP")
+        shinyjs::show(id = "inferenceData")
+        hideTab(inputId = "depPopMeansTabset", target = "Analysis")
         goToUploadedDataTab("depPopMeansTabset")
       }
     })
@@ -11587,6 +11601,9 @@ statInfrServer <- function(id) {
         shinyjs::show(id = "wilcoxonUpl1")
         shinyjs::show(id = "wilcoxonUpl2")
 
+        shinyjs::show(id = "inferenceMP")
+        shinyjs::show(id = "inferenceData")
+        hideTab(inputId = "wilcoxonRankSumTabset", target = "Analysis")
         goToUploadedDataTab("wilcoxonRankSumTabset")
       }
     })
@@ -11651,6 +11668,9 @@ statInfrServer <- function(id) {
         shinyjs::show(id = "signedRankUpl1")
         shinyjs::show(id = "signedRankUpl2")
 
+        shinyjs::show(id = "inferenceMP")
+        shinyjs::show(id = "inferenceData")
+        hideTab(inputId = "signedRankTabset", target = "Analysis")
         goToUploadedDataTab("signedRankTabset")
       }
 
@@ -12077,16 +12097,19 @@ statInfrServer <- function(id) {
     
     ### ------------ Component Display -------------------------------------------
     observeEvent(!si_iv$is_valid(), {
-      ## si_iv also requires a column to be picked for uploaded one-sample
-      ## data, which is legitimately unmet right after a successful upload
-      ## (before the user has chosen a column). Don't blank the main panel
-      ## in that case -- the Uploaded Data preview is still valid and should
-      ## stay visible.
-      oneSampleUploadPreviewActive <-
+      ## si_iv also requires a column to be picked for uploaded data, which
+      ## is legitimately unmet right after a successful upload (before the
+      ## user has chosen a column). Don't blank the main panel in that case
+      ## -- the Uploaded Data preview is still valid and should stay visible.
+      uploadPreviewActive <-
         (isTRUE(input$dataAvailability == "Upload Data") && onemeanupload_iv$is_valid()) ||
-        (isTRUE(input$sdDataAvailability == "Upload Data") && onesdupload_iv$is_valid())
+        (isTRUE(input$sdDataAvailability == "Upload Data") && onesdupload_iv$is_valid()) ||
+        (isTRUE(input$dataAvailability2 == "Upload Data") && indmeansupload_iv$is_valid()) ||
+        (isTRUE(input$dataTypeDependent == "Upload Data") && depmeansupload_iv$is_valid()) ||
+        (isTRUE(input$wilcoxonRankSumTestData == "Upload Data") && wilcoxonUpload_iv$is_valid()) ||
+        (isTRUE(input$signedRankTest == "Upload Data") && signedRankUpload_iv$is_valid())
 
-      if (!oneSampleUploadPreviewActive) {
+      if (!uploadPreviewActive) {
         hide(id = "inferenceMP")
         hide(id = "inferenceData")
       }
@@ -12185,19 +12208,23 @@ statInfrServer <- function(id) {
     observeEvent(input$goInference, {
       # Hide/show tabs for 1 sample
       if (input$dataAvailability != "Upload Data"){
+        showTab(inputId = "onePopMeanTabset", target = "Analysis")
         updateTabsetPanel(session, "onePopMeanTabset", selected = "Analysis")
         hideTab(inputId = "onePopMeanTabset", target = "Uploaded Data")
       } else {
         showTab(inputId = "onePopMeanTabset", target = "Uploaded Data")
+        showTab(inputId = "onePopMeanTabset", target = "Analysis")
         updateTabsetPanel(session, "onePopMeanTabset", selected = "Analysis")
       }
 
       # Hide/show tabs for 1 sample population standard deviation
       if (input$sdDataAvailability != "Upload Data"){
+        showTab(inputId = "oneSDTabset", target = "Analysis")
         updateTabsetPanel(session, "oneSDTabset", selected = "Analysis")
         hideTab(inputId = "oneSDTabset", target = "Uploaded Data")
       } else {
         showTab(inputId = "oneSDTabset", target = "Uploaded Data")
+        showTab(inputId = "oneSDTabset", target = "Analysis")
         updateTabsetPanel(session, "oneSDTabset", selected = "Analysis")
       }
 
@@ -12211,11 +12238,14 @@ statInfrServer <- function(id) {
       two_sample_valid <- si_iv$is_valid() && depmeansrawsd_iv$is_valid()
 
       if (input$dataAvailability2 != "Upload Data"){
+        showTab(inputId = "indPopMeansTabset", target = "Analysis")
         updateTabsetPanel(session, "indPopMeansTabset", selected = "Analysis")
         hideTab(inputId = "indPopMeansTabset", target = "Uploaded Data")
       } else {
         if (two_sample_valid) showTab(inputId = "indPopMeansTabset", target = "Uploaded Data")
         else hideTab(inputId = "indPopMeansTabset", target = "Uploaded Data")
+        showTab(inputId = "indPopMeansTabset", target = "Analysis")
+        updateTabsetPanel(session, "indPopMeansTabset", selected = "Analysis")
       }
 
       if(two_sample_valid && input$dataAvailability2 != "Summarized Data" && (input$indMeansBoxplot || input$indMeansQQPlot)) {
@@ -12226,11 +12256,14 @@ statInfrServer <- function(id) {
 
       # Hide/show tabs for 2 sample dependent populations
       if (input$dataTypeDependent != "Upload Data"){
+        showTab(inputId = "depPopMeansTabset", target = "Analysis")
         updateTabsetPanel(session, "depPopMeansTabset", selected = "Analysis")
         hideTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
       } else {
         if (two_sample_valid) showTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
         else hideTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
+        showTab(inputId = "depPopMeansTabset", target = "Analysis")
+        updateTabsetPanel(session, "depPopMeansTabset", selected = "Analysis")
       }
 
       if(two_sample_valid && input$depMeansQQPlot) {
@@ -12241,10 +12274,13 @@ statInfrServer <- function(id) {
       
       # Hide/show tabs for Wilcoxon Rank Sum Upload
       if (input$wilcoxonRankSumTestData != "Upload Data"){
+        showTab(inputId = "wilcoxonRankSumTabset", target = "Analysis")
         updateTabsetPanel(session, "wilcoxonRankSumTabset", selected = "Analysis")
         hideTab(inputId = "wilcoxonRankSumTabset", target = "Uploaded Data")
       } else {
         showTab(inputId = "wilcoxonRankSumTabset", target = "Uploaded Data")
+        showTab(inputId = "wilcoxonRankSumTabset", target = "Analysis")
+        updateTabsetPanel(session, "wilcoxonRankSumTabset", selected = "Analysis")
       }
 
       # Detect content-level error conditions for Wilcoxon Rank Sum
@@ -12282,10 +12318,13 @@ statInfrServer <- function(id) {
       
       # Hide/show tabs for Wilcoxon Signed Rank Upload
       if (input$signedRankTest != "Upload Data"){
+        showTab(inputId = "signedRankTabset", target = "Analysis")
         updateTabsetPanel(session, "signedRankTabset", selected = "Analysis")
         hideTab(inputId = "signedRankTabset", target = "Uploaded Data")
       } else {
         showTab(inputId = "signedRankTabset", target = "Uploaded Data")
+        showTab(inputId = "signedRankTabset", target = "Analysis")
+        updateTabsetPanel(session, "signedRankTabset", selected = "Analysis")
       }
       
     })
