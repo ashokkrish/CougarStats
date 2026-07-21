@@ -277,13 +277,13 @@ ScatterplotOptions <- function(ns) {
     
     checkboxInput(
       inputId = ns("confidenceInterval"),
-      label = "Confidence Interval for the Mean Response",
+      label = "Confidence Band for the Mean Response",
       value = FALSE
     ),
-    
+
     checkboxInput(
       inputId = ns("predictionInterval"),
-      label = "Prediction Interval",
+      label = "Prediction Band",
       value = FALSE
     )
   )

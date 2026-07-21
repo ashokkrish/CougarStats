@@ -526,8 +526,8 @@ PolynomialRegressionServer <- function(id) {
         input[["polyScatter-LineWidth"]],
         input[["polyScatter-PointSize"]],
         input[["polyScatter-Gridlines"]],
-        FALSE, # input[["polyScatter-confidenceInterval"]] && df.residual(scatterModel()) > 0
-        FALSE, # input[["polyScatter-predictionInterval"]] && df.residual(scatterModel()) > 0
+        isTRUE(input[["polyScatter-confidenceInterval"]]) && df.residual(scatterModel()) > 0,
+        isTRUE(input[["polyScatter-predictionInterval"]]) && df.residual(scatterModel()) > 0,
         input[["polyScatter-showRegressionLine"]]
       ) %>%
         style(name = "Data Points — Polynomial Regression Curve", traces = 2)
