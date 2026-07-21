@@ -2550,6 +2550,7 @@ statInfrServer <- function(id) {
     onemeanuploadvar_iv$add_rule("oneMeanVariable", ~ {
       if (!(input$oneMeanVariable %in% names(OneMeanUploadData()))) return(NULL)
       dat <- na.omit(unlist(OneMeanUploadData()[, input$oneMeanVariable]))
+      if (!is.numeric(dat)) return(NULL)   # non-numeric handled by the numeric rule at ~2541; don't run sd() on character data
       if (input$sigmaKnownUpload == "Unknown" && input$inferenceType == 'Hypothesis Testing' && length(dat) > 1 && sd(dat) == 0)
         "No variance in selected column"
     })
@@ -5559,6 +5560,12 @@ statInfrServer <- function(id) {
 
     ### ------------ One Mean reactives ------------------------------------------
 
+    oneMeanCalcPressed <- reactiveVal(FALSE)
+
+    observeEvent(list(input$popuParameter, input$siMethod, input$dataAvailability, input$inferenceType, input$oneMeanVariable), {
+      oneMeanCalcPressed(FALSE)
+    }, ignoreInit = TRUE)
+
     OneMeanUploadData <- eventReactive(input$oneMeanUserData, {
       
       ext <- tools::file_ext(input$oneMeanUserData$name)
@@ -6647,26 +6654,7 @@ statInfrServer <- function(id) {
       }
       
       if(!onemeanuploadvar_iv$is_valid()) {
-        validate(
-          need(input$oneMeanVariable != "", "Please select a column for analysis."),
-          errorClass = "myClass"
-        )
-        sampleData <- na.omit(unlist(OneMeanUploadData()[, input$oneMeanVariable]))
-        validate(
-          need(is.numeric(sampleData), "Selected column must be numeric."),
-          errorClass = "myClass"
-        )
-        validate(
-          need(length(sampleData) > 1, "Samples must include at least 2 observations."),
-          errorClass = "myClass"
-        )
-        validate(
-          need(
-            sd(sampleData, na.rm = TRUE) != 0,
-            "When the sample standard deviation is zero, the test statistic (t) is undefined."
-          ),
-          errorClass = "myClass"
-        )
+        req(FALSE)  # column errors shown in sidebar via onemeanuploadvar_iv; halt main-panel output silently, leaving the uploaded-data preview visible
       }
       
       
@@ -6716,17 +6704,7 @@ statInfrServer <- function(id) {
       }
 
       if(!onesduploadvar_iv$is_valid()) {
-        validate(
-          need(isTruthy(input$sdVariable), "Please select a column for analysis."),
-          errorClass = "myClass")
-        if (isTruthy(input$sdVariable) && input$sdVariable %in% names(SDUploadData())) {
-          validate(
-            need(!checkNumeric(SDUploadData(), input$sdVariable), "Selected column contains non-numeric data."),
-            errorClass = "myClass")
-          validate(
-            need(length(na.omit(unlist(SDUploadData()[, input$sdVariable]))) >= 3, "Selected column must include at least 3 observations."),
-            errorClass = "myClass")
-        }
+        req(FALSE)  # column errors shown in sidebar via onesduploadvar_iv; halt main-panel output silently, leaving the uploaded-data preview visible
       }
       
       ## DONE: these messages are for debugging purposes only.
@@ -7416,9 +7394,10 @@ statInfrServer <- function(id) {
     output$onePopMeanUploadTable <- renderDT({
       req(onemeanupload_iv$is_valid())
       datatable(OneMeanUploadData(),
-                options = list(pageLength = -1,
+                options = list(pageLength = 25,
                                lengthMenu = list(c(25, 50, 100, -1),
                                                  c("25", "50", "100", "all")),
+                               scrollX = TRUE,
                                columnDefs = list(list(className = 'dt-center',
                                                       targets = 0:ncol(OneMeanUploadData())))),
       )
@@ -7442,11 +7421,17 @@ statInfrServer <- function(id) {
 
     #### ---------------- CI ----
     output$oneMeanCI <- renderUI({
+      req(input$popuParameter == "Population Mean")
+      req(input$siMethod == "1")
+      req(oneMeanCalcPressed())
       printOneMeanCI()
     })
-    
+
     #### ------------------ HT ----
     output$oneMeanHT <- renderUI({
+      req(input$popuParameter == "Population Mean")
+      req(input$siMethod == "1")
+      req(oneMeanCalcPressed())
       printOneMeanHT()
     })
     
@@ -7562,8 +7547,16 @@ statInfrServer <- function(id) {
       if (!onesdupload_iv$is_valid()) {
         return(helpText("No data yet. Upload a dataset to view it here."))
       }
-      div(DTOutput(session$ns("oneSDUploadTable")), style = "width: 75%")
+      DTOutput(session$ns("oneSDUploadTable"))
     })
+
+    observeEvent(input$sdVariable, {
+      if (isTRUE(input$sdDataAvailability == "Upload Data") &&
+          onesdupload_iv$is_valid() &&
+          !onesduploadvar_iv$is_valid()) {
+        updateTabsetPanel(session, "oneSDTabset", selected = "Uploaded Data")
+      }
+    }, ignoreInit = TRUE)
 
     output$sdUploadStatus <- renderUI({
       req(input$sdUserData)
@@ -7581,9 +7574,10 @@ statInfrServer <- function(id) {
     output$oneSDUploadTable <- renderDT({
       req(onesdupload_iv$is_valid())
       datatable(SDUploadData(),
-                options = list(pageLength = -1,
+                options = list(pageLength = 25,
                                lengthMenu = list(c(25, 50, 100, -1),
                                                  c("25", "50", "100", "all")),
+                               scrollX = TRUE,
                                columnDefs = list(list(className = 'dt-center',
                                                       targets = 0:ncol(SDUploadData())))),
       )
@@ -7612,7 +7606,6 @@ statInfrServer <- function(id) {
         req(onesdupload_iv$is_valid())
         validate(need(isTruthy(input$sdVariable), "Please select a column for analysis."), errorClass = "myClass")
         sampleDataSD <- na.omit(unlist(SDUploadData()[, input$sdVariable]))
-        validate(need(is.numeric(sampleDataSD), "Selected column must be numeric."), errorClass = "myClass")
         validate(need(length(sampleDataSD) >= 3, "Selected column must include at least three values."), errorClass = "myClass")
       } else if (isTRUE(input$sdDataAvailability == 'Enter Raw Data')) {
         req(oneSDRaw_iv$is_valid())
@@ -7900,7 +7893,6 @@ statInfrServer <- function(id) {
         req(onesdupload_iv$is_valid())
         validate(need(isTruthy(input$sdVariable), "Please select a column for analysis."), errorClass = "myClass")
         sampleDataSD <- na.omit(unlist(SDUploadData()[, input$sdVariable]))
-        validate(need(is.numeric(sampleDataSD), "Selected column must be numeric."), errorClass = "myClass")
         validate(need(length(sampleDataSD) >= 3, "Selected column must include at least three values."), errorClass = "myClass")
       } else if (isTRUE(input$sdDataAvailability == 'Enter Raw Data')) {
         req(oneSDRaw_iv$is_valid())
@@ -11478,8 +11470,16 @@ statInfrServer <- function(id) {
       if (!onemeanupload_iv$is_valid()) {
         return(helpText("No data yet. Upload a dataset to view it here."))
       }
-      div(DTOutput(session$ns("onePopMeanUploadTable")), style = "width: 75%")
+      DTOutput(session$ns("onePopMeanUploadTable"))
     })
+
+    observeEvent(input$oneMeanVariable, {
+      if (isTRUE(input$dataAvailability == "Upload Data") &&
+          onemeanupload_iv$is_valid() &&
+          !onemeanuploadvar_iv$is_valid()) {
+        updateTabsetPanel(session, "onePopMeanTabset", selected = "Uploaded Data")
+      }
+    }, ignoreInit = TRUE)
 
     observeEvent(input$indMeansUserData, priority = 5, {
       hide(id = "inferenceData")
@@ -11975,6 +11975,7 @@ statInfrServer <- function(id) {
         
         if(input$popuParameter == 'Population Mean') {
           req(si_iv$is_valid())
+          oneMeanCalcPressed(TRUE)
           output$renderOneMeanBoxplot <- renderUI({
             plotOutput(session$ns("oneMeanBoxplot"),
                        height = GetPlotHeight(input[["oneMeanBoxplot-Height"]], input[["oneMeanBoxplot-HeightPx"]], ui = TRUE),
