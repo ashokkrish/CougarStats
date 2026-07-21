@@ -56,13 +56,28 @@ table of numeric inputs; Ashok would like to have data upload for this as well.
 
 * TODO Ashok's Implicit Requests [0/2]
 :LOGBOOK:
-CLOCK: [2026-07-14 Tue 15:53]
+CLOCK: [2026-07-21 Tue 00:40]--[2026-07-21 Tue 03:10] =>  2:30
+CLOCK: [2026-07-20 Mon 12:00]--[2026-07-20 Mon 12:58] =>  0:58
+CLOCK: [2026-07-19 Sun 23:15]--[2026-07-20 Mon 00:22] =>  1:07
+CLOCK: [2026-07-18 Sat 22:15]--[2026-07-19 Sun 01:00] =>  2:45
+CLOCK: [2026-07-18 Sat 01:43]--[2026-07-18 Sat 01:58] =>  0:15
+CLOCK: [2026-07-17 Fri 13:18]--[2026-07-17 Fri 15:55] =>  2:37
+CLOCK: [2026-07-16 Thu 20:24]--[2026-07-16 Thu 22:30] =>  2:06
+CLOCK: [2026-07-16 Thu 14:19]--[2026-07-16 Thu 15:00] =>  0:41
+CLOCK: [2026-07-15 Wed 22:59]--[2026-07-16 Thu 00:48] =>  1:49
+CLOCK: [2026-07-15 Wed 19:47]--[2026-07-15 Wed 19:48] =>  0:01
+CLOCK: [2026-07-14 Tue 15:53]--[2026-07-14 Tue 18:00] => 2:07
 :END:
 - [ ] Fix dynamic display of main panel tabs :: required to permit viewing
   uploaded data prior to Calculate without breaking display of =validate= text
   in main panel.
 - [ ] Correct dependency tree of validators
 
+
+
+
+  1. Test the modules independently using the template app written in the Method1 folder.
+  2. Review the shinyvalidate library documentation and learn the necessaries to hack together a better validation tree and reduce the amount of code.
 
 * Statistical Inference about multiple samples (2+) using Kruskal-Wallis methodology
 - kwUserData ::

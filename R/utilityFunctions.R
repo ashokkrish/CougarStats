@@ -40,22 +40,16 @@ GetPlotHeight  <- function(plotToggle, pxValue, ui) {
 }
 
 GetPlotWidth  <- function(plotToggle, pxValue, ui) {
-
-  if(plotToggle == 'in px' && !is.na(pxValue)) {
+  if (plotToggle == 'in px' && !is.na(pxValue)) {
     width <- pxValue
-
-    if(ui) {
+    if (ui) {
       width <- paste0(width, "px")
     }
   } else {
     width <- "auto"
   }
 
-  return(width)
-}
-
-`%then%` <- function(a, b) {
-  if (is.null(a)) b else a
+  width
 }
 
 copyButton <- function(id, ns) {

@@ -170,8 +170,8 @@ function(id) {
             )
           )
         ) # stacked column kw
-      ), # kwUploadInputs div
-      )), # hidden tagList
+      ) # kwUploadInputs div
+    )), # hidden tagList
 
     radioButtons(
       inputId = ns("kwSigLvl"),
