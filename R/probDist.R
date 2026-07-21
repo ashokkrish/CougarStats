@@ -27,7 +27,8 @@ probDistUI <- function(id) {
                          "Poisson",
                          "Hypergeometric",
                          "Negative Binomial",
-                         "Normal"), 
+                         "Normal"),
+                      #   "Student's t"), 
             selected =  NULL,
             inline   = FALSE),
           
@@ -576,13 +577,13 @@ probDistUI <- function(id) {
                   numericInput(
                     inputId = ns("sampDistrx1Value"),
                     label   = strong("Normally Distributed Variable (\\( \\bar{x}_{1}\\))"),
-                    value   = -1, 
+                    value   = 120, 
                     step    = 0.00001),
                   
                   numericInput(
                     inputId = ns("sampDistrx2Value"),
                     label   = strong("Normally Distributed Variable (\\( \\bar{x}_{2}\\))"),
-                    value   = 1, 
+                    value   = 135, 
                     step    = 0.00001)
                 ), 
                 
@@ -645,7 +646,21 @@ probDistUI <- function(id) {
                 label   = "Reset Values",
                 class   = "act-btn") 
             ), 
-          ) 
+          ),
+          ### ------------ Student's t -------------------------------------------------------
+          
+   #       conditionalPanel(
+  #          ns = ns,
+  #          id = ns("tPanel"),
+  #          condition = "input.probability == Student's t",
+          
+  #          numericInput(
+  #            inputId = ns("studentsTdf"),
+  #            label   = strong("Degrees of freedom (df)"),
+  #            value   = 1,
+  #            step    = 1
+  #          )
+  #        )
         ), 
       ), 
       
@@ -654,7 +669,34 @@ probDistUI <- function(id) {
       #  ========================================================================== #
       mainPanel(
         div(id = ns("probabilityMP"),
-            
+            tags$script(HTML("
+              function copyPlotToClipboard(plotId) {
+                var plotDiv = document.getElementById(plotId);
+                if (!plotDiv) return;
+                var btn = document.querySelector('[data-copy-plot=\"' + plotId + '\"]');
+        
+                Plotly.toImage(plotDiv, {format: 'png', width: plotDiv.offsetWidth, height: plotDiv.offsetHeight})
+                  .then(function(dataUrl) { return fetch(dataUrl); })
+                  .then(function(res) { return res.blob(); })
+                  .then(function(blob) {
+                    return navigator.clipboard.write([new ClipboardItem({'image/png': blob})]);
+                  })
+                  .then(function() {
+                    if (btn) {
+                      var orig = btn.innerHTML;
+                      btn.innerHTML = '<i class=\"fa fa-check\"></i> Copied!';
+                      btn.disabled = true;
+                      setTimeout(function() {
+                        btn.innerHTML = orig;
+                        btn.disabled = false;
+                      }, 2000);
+                    }
+                  })
+                  .catch(function(err) {
+                    alert('Could not copy to clipboard. Your browser may not support this feature, or the page must be served over HTTPS.');
+                  });
+              }
+            ")),
             ### ------------ Contingency Tables -------------------------------------------
             conditionalPanel(
               ns = ns,
@@ -715,7 +757,6 @@ probDistUI <- function(id) {
             ), 
             
             ### ------------ Binomial -----------------------------------------------------
-            
             conditionalPanel(
               ns = ns,
               condition = "input.probability == 'Binomial'",
@@ -749,8 +790,23 @@ probDistUI <- function(id) {
                     tabPanel(
                       title = "Probability Histogram",
                       value = "plotTab",
-                      plotlyOutput(ns("binomDistrBarPlot"), width = "50%")
-                    )
+                      plotlyOutput(ns("binomDistrBarPlot"), width = "50%"),
+                      br(), br(), br(), br(), br(),
+                      tags$button(
+                        class = "btn btn-default copy-plot-btn",
+                        `data-copy-plot` = ns("binomDistrBarPlot"),
+                        onclick = paste0(
+                          "copyPlotToClipboard('",
+                          ns("binomDistrBarPlot"),
+                          "')"
+                        ),
+                        tags$i(class = "fa fa-clipboard"),
+                        "Copy to Clipboard"
+                      )
+                     
+                    ),
+                    
+
                   )
                 )
               )
@@ -801,7 +857,19 @@ probDistUI <- function(id) {
                                              DTOutput(ns("HypGeoDistrTable"), width = "25%")
                                     ),
                                     tabPanel(title = "Probability Histogram",
-                                             plotlyOutput(ns("HypGeoDistrBarPlot"), width = "60%")
+                                             plotlyOutput(ns("HypGeoDistrBarPlot"), width = "60%"),
+                                             br(), br(), br(), br(), br(),
+                                             tags$button(
+                                               class = "btn btn-default copy-plot-btn",
+                                               `data-copy-plot` = ns("HypGeoDistrBarPlot"),
+                                               onclick = paste0(
+                                                 "copyPlotToClipboard('",
+                                                 ns("HypGeoDistrBarPlot"),
+                                                 "')"
+                                               ),
+                                               tags$i(class = "fa fa-clipboard"),
+                                               "Copy to Clipboard"
+                                             ),
                                     )
                          )
               ))
@@ -1332,13 +1400,44 @@ probDistServer <- function(id) {
     sampdistrsize_iv$enable()
     percentile_iv$enable()
     
-    ResetCTable <- function(tableID, numRows, numCols, rowNames, colNames){
-      newMatrix <- matrix("", numRows, numCols)
-      colnames(newMatrix) <- colNames
-      rownames(newMatrix) <- rowNames
-      updateMatrixInput(session, tableID, newMatrix)
-    }
+    default2x2 <- matrix(
+      c(18, 22,
+        21, 152),
+      2, 2,
+      dimnames = list(
+        c("R1", "R2"),
+        c("C1", "C2")))
     
+    default2x3 <- matrix(
+      c(30, 210,
+        26, 121,
+        0, 20),
+      2, 3,
+      dimnames = list(
+        c("R1", "R2"),
+        c("C1", "C2", "C3")))
+    
+    default3x2 <- matrix(
+      c(115, 75,
+        142, 250,
+        183, 235),
+      3, 2,
+      dimnames = list(
+        c("R1", "R2", "R3"),
+        c("C1", "C2")))
+    
+    default3x3 <- matrix(
+      c(6, 14, 50,
+        38, 31, 50,
+        31, 4, 5),
+      3, 3,
+      dimnames = list(
+        c("R1", "R2", "R3"),
+        c("C1", "C2", "C3")))
+    
+    ResetCTable <- function(tableID, defaultMatrix) {
+      updateMatrixInput(session, tableID, defaultMatrix)
+    }
     
     getProbabilities <- function(x, t){
       return(round((x/t), 4))
@@ -2260,10 +2359,10 @@ probDistServer <- function(id) {
     
     observeEvent(input$resetcTable, {
       hide(id = "contingencyResults")
-      ResetCTable("cMatrix2x2", 2, 2, c("R1", "R2"), c("C1", "C2"))
-      ResetCTable("cMatrix2x3", 2, 3, c("R1", "R2"), c("C1", "C2", "C3"))
-      ResetCTable("cMatrix3x2", 3, 2, c("R1", "R2", "R3"), c("C1", "C2"))
-      ResetCTable("cMatrix3x3", 3, 3, c("R1", "R2", "R3"), c("C1", "C2", "C3"))
+      ResetCTable("cMatrix2x2", default2x2)
+      ResetCTable("cMatrix2x3", default2x3)
+      ResetCTable("cMatrix3x2", default3x2)
+      ResetCTable("cMatrix3x3", default3x3)
       shinyjs::reset("contingencyPanel")
     })
     
