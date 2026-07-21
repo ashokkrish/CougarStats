@@ -5534,6 +5534,12 @@ statInfrServer <- function(id) {
     
     ### ------------ One SD reactives --------------------------------------------
 
+    oneSDCalcPressed <- reactiveVal(FALSE)
+
+    observeEvent(list(input$popuParameter, input$siMethod, input$sdDataAvailability, input$inferenceType, input$sdVariable), {
+      oneSDCalcPressed(FALSE)
+    }, ignoreInit = TRUE)
+
     SDUploadData <- eventReactive(input$sdUserData, {
       ext <- tolower(tools::file_ext(input$sdUserData$name))
       switch(ext,
@@ -7601,6 +7607,10 @@ statInfrServer <- function(id) {
 
     #### ---- One population standard deviation confidence interval CI ----
     output$oneSDCI <- renderUI({
+      req(input$popuParameter == "Population Standard Deviation")
+      req(input$siMethod == "1")
+      req(oneSDCalcPressed())
+
       ## Input validation
       if (isTRUE(input$sdDataAvailability == 'Upload Data')) {
         req(onesdupload_iv$is_valid())
@@ -7881,6 +7891,10 @@ statInfrServer <- function(id) {
     relation <- reactiveVal()
     
     output$onePopulationSDHT <- renderUI({
+      req(input$popuParameter == "Population Standard Deviation")
+      req(input$siMethod == "1")
+      req(oneSDCalcPressed())
+
       ## Required data: n, s, alpha, sigma_naught, hypothesis_alternative; ns(x)
       ## doesn't seem to be required here. Review why that might be.
       ##
@@ -11986,6 +12000,9 @@ statInfrServer <- function(id) {
                        height = GetPlotHeight(input[["oneMeanHistogram-Height"]], input[["oneMeanHistogram-HeightPx"]], ui = TRUE),
                        width = GetPlotWidth(input[["oneMeanHistogram-Width"]], input[["oneMeanHistogram-WidthPx"]], ui = TRUE))
           })
+        } else if(input$popuParameter == 'Population Standard Deviation') {
+          req(si_iv$is_valid())
+          oneSDCalcPressed(TRUE)
         } else if(input$popuParameter == 'Population Proportion') {
           req(input$numTrials && input$numSuccesses)
           if(input$numTrials < input$numSuccesses) {
