@@ -224,6 +224,28 @@ PolynomialRegressionMainPanelUI <- function(id) {
           br()
         ),
 
+        # ---- Inference Tab ------------------------------------------------
+        tabPanel(
+          title = "Inference",
+          value = "Inference",
+
+          uiOutput(ns("polyInference"))
+        ),
+
+        # ---- Diagnostic Plots Tab -----------------------------------------
+        tabPanel(
+          title = "Diagnostic Plots",
+          value = "Diagnostic Plots",
+          fluidPage(
+            uiOutput(ns("polyDiagnosticPlotsWarning")),
+            plotOutput(ns("polyDiagPlot1")),
+            plotOutput(ns("polyDiagPlot2")),
+            plotOutput(ns("polyDiagPlot3")),
+            plotOutput(ns("polyDiagPlot4")),
+            plotOutput(ns("polyDiagPlot5"))
+          )
+        ),
+
         # ---- Uploaded Data Tab --------------------------------------------
         tabPanel(
           title = "Uploaded Data",
@@ -259,6 +281,8 @@ PolynomialRegressionMainPanelUI <- function(id) {
 
 PolynomialRegressionServer <- function(id) {
   moduleServer(id, function(input, output, session) {
+
+    ns <- session$ns
 
     # ---- Reactive values --------------------------------------------------
     fileState    <- reactiveValues(status = NULL)
@@ -377,6 +401,8 @@ PolynomialRegressionServer <- function(id) {
     observeEvent(input$polyDataInput, {
       hide("polyResultsPanel")
       hideTab(inputId = "polyNavbarPage", target = "Uploaded Data")
+      hideTab(inputId = "polyNavbarPage", target = "Inference")
+      hideTab(inputId = "polyNavbarPage", target = "Diagnostic Plots")
       storedDatx(NULL)
       storedDaty(NULL)
       nDroppedRows(0)
@@ -394,6 +420,8 @@ PolynomialRegressionServer <- function(id) {
     observeEvent(list(input$polyX, input$polyY, input$polyDegree), {
       req(input$polyDataInput == "Enter Raw Data")
       hide("polyResultsPanel")
+      hideTab(inputId = "polyNavbarPage", target = "Inference")
+      hideTab(inputId = "polyNavbarPage", target = "Diagnostic Plots")
       storedDatx(NULL)
       storedDaty(NULL)
     }, ignoreInit = TRUE)
@@ -540,6 +568,9 @@ PolynomialRegressionServer <- function(id) {
 
       hide("polyUploadedDataPanel")
 
+      showTab(inputId = "polyNavbarPage", target = "Inference")
+      showTab(inputId = "polyNavbarPage", target = "Diagnostic Plots")
+
       if (input$polyDataInput == "Upload Data") {
         showTab(inputId = "polyNavbarPage", target = "Uploaded Data")
       } else {
@@ -636,6 +667,468 @@ PolynomialRegressionServer <- function(id) {
 
     }) # goPolynomial
 
+    # ---- Inference tab ----------------------------------------------------
+
+    # Helper: rebuild the poly model from stored data + current degree
+    polyModel <- reactive({
+      req(storedDatx(), storedDaty())
+      degree <- as.integer(input$polyDegree)
+      lm(storedDaty() ~ poly(storedDatx(), degree, raw = TRUE))
+    })
+
+    output$polyInference <- renderUI({
+      req(storedDatx(), storedDaty())
+
+      fluidPage(
+        tags$style(HTML("
+          .poly-inference-tabs .nav-tabs {
+            border-bottom: none;
+            background-color: #f8f9fa;
+            display: flex;
+            padding: 0;
+            margin-bottom: 16px;
+          }
+          .poly-inference-tabs .nav-tabs > li > a {
+            color: #18536F;
+            font-weight: bold;
+            font-size: 15px;
+            border: none !important;
+            border-radius: 0 !important;
+            padding: 10px 24px;
+            background-color: #f8f9fa !important;
+          }
+          .poly-inference-tabs .nav-tabs > li.active > a,
+          .poly-inference-tabs .nav-tabs > li.active > a:focus,
+          .poly-inference-tabs .nav-tabs > li.active > a:hover,
+          .poly-inference-tabs .nav-tabs > li > a.active,
+          .poly-inference-tabs .nav-tabs > li > a.active:focus,
+          .poly-inference-tabs .nav-tabs > li > a.active:hover {
+            background-color: #18536F !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 0 !important;
+            font-weight: bold !important;
+          }
+          .poly-inference-tabs .nav-tabs > li > a:hover {
+            background-color: #d0dce8 !important;
+            color: #1a3a5c !important;
+          }
+        ")),
+        div(
+          class = "poly-inference-tabs",
+          tabsetPanel(
+            tabPanel(
+              title = "Parameter Estimates",
+              br(),
+              fluidRow(uiOutput(ns("polyParamEstimates")))
+            ),
+            tabPanel(
+              title = "ANOVA",
+              br(),
+              fluidRow(uiOutput(ns("polyAnovaHypotheses"))),
+              br(),
+              fluidRow(tableOutput(ns("polyAnovaTable"))),
+              br(),
+              fluidRow(
+                column(12,
+                  p(strong("F Distribution")),
+                  p("The shaded region represents the rejection region at α = 0.05. The dashed red line is the observed F statistic and the dashed blue line is the critical value."),
+                  plotOutput(ns("polyAnovaFPlot"), height = "350px")
+                )
+              ),
+              br(),
+              fluidRow(uiOutput(ns("polyAnovaPValue"))),
+              br(),
+              fluidRow(uiOutput(ns("polyRSquared"))),
+              br()
+            ),
+            tabPanel(
+              title = "INE",
+              br(),
+              uiOutput(ns("polyIneAssumptions"))
+            )
+          )
+        )
+      )
+    })
+
+    # Parameter Estimates
+    output$polyParamCoefTable <- renderTable({
+      model  <- polyModel()
+      degree <- as.integer(input$polyDegree)
+
+      coefs <- as.data.frame(summary(model)$coefficients)
+      coefs <- tibble::rownames_to_column(coefs, "Term")
+      term_labels <- c("Intercept", paste0("x^", seq_len(degree)))
+      if (nrow(coefs) == length(term_labels)) coefs$Term <- term_labels
+      names(coefs)[names(coefs) == "Pr(>|t|)"] <- "P-value"
+
+      ci <- as.data.frame(confint(model))
+      colnames(ci) <- c("Lower 95% CI", "Upper 95% CI")
+      ci <- tibble::rownames_to_column(ci, "Term")
+      if (nrow(ci) == length(term_labels)) ci$Term <- term_labels
+
+      tbl <- dplyr::left_join(coefs, ci, by = "Term")
+      tibble::column_to_rownames(tbl, var = "Term")
+    }, rownames = TRUE, na = "", striped = TRUE, align = "c", digits = 3)
+
+    output$polyParamEstimates <- renderUI({
+      req(storedDatx(), storedDaty())
+      column(12,
+        p(strong("Coefficients and Confidence Intervals")),
+        tableOutput(ns("polyParamCoefTable"))
+      )
+    })
+
+    # ANOVA hypotheses
+    output$polyAnovaHypotheses <- renderUI({
+      model  <- polyModel()
+      k      <- model$rank - 1
+      n      <- length(storedDatx())
+      withMathJax(
+        p(strong("Analysis of Variance (ANOVA)")),
+        p(
+          r"{\( H_0: \beta_1 = \beta_2 = \cdots = \beta_k = 0\)}",
+          br(),
+          r"{\( H_a: \) At least one \(\beta_j\ne 0\), where \(j = 1, \cdots, k\).}"
+        ),
+        p(r"{\( \alpha = 0.05\ \)}"),
+        p(
+          sprintf(r"{\( n = %i \)}", n),
+          br(),
+          sprintf(r"{\( k = %i \)}", k)
+        ),
+        p(r"[where \(n\) is the sample size and \(k\) is the degree of the polynomial model.]")
+      )
+    })
+
+    # ANOVA table
+    output$polyAnovaTable <- renderTable({
+      model <- polyModel()
+      k     <- model$rank - 1
+      n     <- length(storedDatx())
+      av    <- anova(model)
+
+      SSR <- sum(av[["Sum Sq"]][-nrow(av)])
+      SSE <- av[["Sum Sq"]][nrow(av)]
+      SST <- SSR + SSE
+      MSR <- SSR / k
+      MSE <- SSE / (n - k - 1)
+      F_stat <- MSR / MSE
+      p_val  <- pf(F_stat, k, n - k - 1, lower.tail = FALSE)
+
+      tibble::tribble(
+        ~"Source", ~"df", ~"SS", ~"MS", ~"F", ~"P-value",
+        "<strong>Regression (Model)</strong>", as.integer(k),       SSR, MSR,    F_stat, p_val,
+        "<strong>Error (Residual)</strong>",   as.integer(n-k-1),   SSE, MSE,    NA,     NA,
+        "<strong>Total</strong>",              as.integer(n-1),      SST, NA,     NA,     NA
+      )
+    }, na = "", striped = TRUE, align = "c",
+       sanitize.text.function = function(x) x)
+
+    # F distribution plot
+    output$polyAnovaFPlot <- renderPlot({
+      model  <- polyModel()
+      k      <- model$rank - 1
+      n      <- length(storedDatx())
+      av     <- anova(model)
+      SSR    <- sum(av[["Sum Sq"]][-nrow(av)])
+      SSE    <- av[["Sum Sq"]][nrow(av)]
+      MSR    <- SSR / k
+      MSE    <- SSE / (n - k - 1)
+      f_stat <- MSR / MSE
+      f_crit <- qf(0.95, k, n - k - 1)
+      x_max  <- f_crit * 3
+      x      <- seq(0, x_max, length.out = 1000)
+      y      <- df(x, k, n - k - 1)
+      plot_df <- data.frame(x = x, y = y)
+
+      ggplot(plot_df, aes(x = x, y = y)) +
+        geom_line(lwd = 1) +
+        geom_area(data = subset(plot_df, x >= f_crit),
+                  aes(x = x, y = y), fill = "red", alpha = 0.3) +
+        {if (f_stat <= x_max)
+          geom_area(data = subset(plot_df, x >= f_stat),
+                    aes(x = x, y = y), fill = "blue", alpha = 0.3)} +
+        geom_vline(xintercept = f_crit, colour = "red",  linewidth = 0.8, linetype = "dashed") +
+        {if (f_stat <= x_max)
+          geom_vline(xintercept = f_stat, colour = "blue", linewidth = 0.8, linetype = "dashed")} +
+        labs(title = "F Distribution", x = "F", y = "Density") +
+        annotate("text", x = f_crit, y = max(y) * 0.2,
+                 label = sprintf("F critical\n= %.4f", f_crit),
+                 hjust = -0.1, color = "red", size = 3.5) +
+        annotate("text", x = x_max * 0.6, y = max(y) * 0.9,
+                 label = sprintf("p-value = %.4f", pf(f_stat, k, n-k-1, lower.tail = FALSE)),
+                 color = "black", size = 4) +
+        {if (f_stat <= x_max)
+          annotate("text", x = f_stat, y = max(y) * 0.4,
+                   label = sprintf("F statistic\n= %.4f", f_stat),
+                   hjust = -0.1, color = "blue", size = 3.5)} +
+        theme_classic() +
+        theme(plot.title  = element_text(hjust = 0.5, face = "bold"),
+              axis.title  = element_text(size = 12, face = "bold"),
+              axis.text   = element_text(size = 10, face = "bold")) +
+        coord_cartesian(clip = "off")
+    })
+
+    # ANOVA p-value / conclusion
+    output$polyAnovaPValue <- renderUI({
+      model  <- polyModel()
+      k      <- model$rank - 1
+      n      <- length(storedDatx())
+      av     <- anova(model)
+      SSR    <- sum(av[["Sum Sq"]][-nrow(av)])
+      SSE    <- av[["Sum Sq"]][nrow(av)]
+      MSR    <- SSR / k
+      MSE    <- SSE / (n - k - 1)
+      F_stat <- MSR / MSE
+      p_val  <- pf(F_stat, k, n - k - 1, lower.tail = FALSE)
+
+      withMathJax(
+        p(strong("Test Statistic:")),
+        p(sprintf(
+          r"{\(\displaystyle F = \frac{\text{MSR}}{\text{MSE}} = \frac{%s}{%s} = %0.2f \)}",
+          fmt_sci_latex(MSR, 2), fmt_sci_latex(MSE, 2), F_stat
+        )),
+        p(strong("Conclusion:")),
+        p(sprintf(
+          r"[Since the p-value is %s than \(\alpha\) (\(%0.3f %s 0.05\)), %s.]",
+          if (p_val <= 0.05) "less" else "greater",
+          p_val,
+          if (p_val <= 0.05) r"[\le]" else r"[>]",
+          if (p_val <= 0.05)
+            r"[we reject the null hypothesis (\(H_0\)) and conclude there is enough statistical evidence to support the alternative hypothesis (\(H_a\))]"
+          else
+            r"[we do not reject the null hypothesis (\(H_0\)) and conclude there isn't enough statistical evidence to support the alternative hypothesis (\(H_a\)).]"
+        ))
+      )
+    })
+
+    # R-squared
+    output$polyRSquared <- renderUI({
+      model  <- polyModel()
+      k      <- model$rank - 1
+      n      <- length(storedDatx())
+      av     <- anova(model)
+      SSR    <- sum(av[["Sum Sq"]][-nrow(av)])
+      SSE    <- av[["Sum Sq"]][nrow(av)]
+      SST    <- SSR + SSE
+
+      withMathJax(
+        p(strong(r"{ \(R^2\) and Adjusted \(R^2\) :}")),
+        br(),
+        p(sprintf(
+          r"[\( \displaystyle R^2 = \frac{\text{SSR}}{\text{SST}} = \frac{%s}{%s} = %0.4f\)]",
+          fmt_sci_latex(SSR, 4), fmt_sci_latex(SST, 4), SSR / SST
+        )),
+        p(sprintf(
+          r"{\( \displaystyle R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %0.4f \)}",
+          summary(model)$adj.r.squared
+        )),
+        p(
+          strong("Interpretation:"),
+          sprintf(
+            r"[Approximately \(%.2f\%%\) of the variation in the response variable is explained by the polynomial regression model when adjusted for the degree and the sample size.]",
+            summary(model)$adj.r.squared * 100
+          )
+        ),
+        br(),
+        p(strong("Akaike Information Criteria (AIC):")),
+        p(sprintf(r"[AIC = \(%0.4f\)]", AIC(model))),
+        br(),
+        p(strong("Bayesian Information Criteria (BIC):")),
+        p(sprintf(r"[BIC = \(%0.4f\)]", BIC(model))),
+        br()
+      )
+    })
+
+    # INE assumption tests (Independence, Normality, Equal Variance)
+    polyIneTestConfig <- list(
+      list(
+        assumption = "Independence",
+        procedure  = "Durbin-Watson Test",
+        min_n      = 5,
+        run        = function(model) {
+          dw <- lmtest::dwtest(model)
+          list(statistic = round(dw$statistic, 4), p_value = round(dw$p.value, 4), note = NULL)
+        }
+      ),
+      list(
+        assumption = "Normality",
+        procedure  = "Shapiro-Wilk Test",
+        min_n      = 3,
+        run        = function(model) {
+          sw <- shapiro.test(residuals(model))
+          list(statistic = round(sw$statistic, 4), p_value = round(sw$p.value, 4), note = NULL)
+        }
+      ),
+      list(
+        assumption = "Normality",
+        procedure  = "Anderson-Darling Test",
+        min_n      = 7,
+        run        = function(model) {
+          ad <- nortest::ad.test(residuals(model))
+          list(statistic = round(ad$statistic, 4), p_value = round(ad$p.value, 4), note = NULL)
+        }
+      ),
+      list(
+        assumption = "Normality",
+        procedure  = "Kolmogorov-Smirnov Test",
+        min_n      = 3,
+        run        = function(model) {
+          ks <- ks.test(residuals(model), "pnorm",
+                        mean = mean(residuals(model)),
+                        sd   = sd(residuals(model)))
+          list(statistic = round(ks$statistic, 4), p_value = round(ks$p.value, 4), note = NULL)
+        }
+      ),
+      list(
+        assumption = "Equal Variance (Homoskedasticity)",
+        procedure  = "Breusch-Pagan Test",
+        min_n      = 5,
+        run        = function(model) {
+          bp <- lmtest::bptest(model)
+          list(statistic = round(bp$statistic, 4), p_value = round(bp$p.value, 4), note = NULL)
+        }
+      ),
+      list(
+        assumption = "Equal Variance (Homoskedasticity)",
+        procedure  = "White Test",
+        min_n      = 4,
+        run        = function(model) {
+          wt <- skedastic::white(model)
+          list(statistic = round(wt$statistic, 4), p_value = round(wt$p.value, 4), note = NULL)
+        }
+      )
+    )
+
+    output$polyIneAssumptions <- renderUI({
+      req(storedDatx(), storedDaty())
+      model <- polyModel()
+      alpha <- 0.05
+      n     <- length(storedDatx())
+
+      results <- lapply(polyIneTestConfig, function(cfg) {
+        if (n < cfg$min_n) {
+          return(data.frame(
+            Assumption  = cfg$assumption,
+            Procedure   = cfg$procedure,
+            `P-Value`   = NA_character_,
+            Conclusion  = paste("Requires n ≥", cfg$min_n),
+            check.names = FALSE
+          ))
+        }
+        result <- tryCatch(cfg$run(model), error = function(e) {
+          list(statistic = NULL, p_value = NULL, note = paste("Error:", e$message))
+        })
+        pval_str <- if (!is.null(result$p_value)) as.character(result$p_value) else "—"
+        conclusion <- if (!is.null(result$note)) {
+          result$note
+        } else if (!is.null(result$p_value)) {
+          if (result$p_value <= alpha)
+            paste0("Reject H₀ (p = ", result$p_value, " ≤ 0.05)")
+          else
+            paste0("Fail to reject H₀ (p = ", result$p_value, " > 0.05)")
+        } else {
+          "—"
+        }
+        data.frame(
+          Assumption  = cfg$assumption,
+          Procedure   = cfg$procedure,
+          `P-Value`   = pval_str,
+          Conclusion  = conclusion,
+          check.names = FALSE
+        )
+      })
+
+      tableData <- do.call(rbind, results)
+
+      tagList(
+        p(strong("Independence, Normality and Equal Variance (I.N.E) Assumptions"),
+          style = "font-size: 16px;"),
+        p(paste("Testing at α =", alpha, "| n =", n),
+          style = "color: #666; font-size: 13px;"),
+        br(),
+        reactable(
+          tableData,
+          bordered   = TRUE,
+          striped    = FALSE,
+          highlight  = TRUE,
+          pagination = FALSE,
+          fullWidth  = TRUE,
+          columns = list(
+            Assumption = colDef(name = "Assumption", minWidth = 220, style = list(fontWeight = "bold")),
+            Procedure  = colDef(name = "Procedure",  minWidth = 180),
+            `P-Value`  = colDef(name = "P-Value",    minWidth = 100, align = "center"),
+            Conclusion = colDef(name = "Conclusion", minWidth = 250)
+          )
+        ),
+        br()
+      )
+    })
+
+    # ---- Diagnostic Plots -------------------------------------------------
+
+    hasPolyLeveragePlotIssue <- reactiveVal(FALSE)
+
+    observe({
+      req(storedDatx(), storedDaty())
+      h <- hatvalues(polyModel())
+      hasPolyLeveragePlotIssue(all(abs(h - 0.5) < .Machine$double.eps^0.5))
+    })
+
+    output$polyDiagnosticPlotsWarning <- renderUI({
+      if (hasPolyLeveragePlotIssue()) {
+        div(
+          class = "alert alert-warning",
+          tags$b("⚠ Diagnostic Plot Warning: "),
+          "Residuals vs Leverage could not be produced because all leverage values are 0.5."
+        )
+      }
+    })
+    outputOptions(output, "polyDiagnosticPlotsWarning", suspendWhenHidden = FALSE)
+
+    output$polyDiagPlot1 <- renderPlot({
+      model <- polyModel()
+      par(font.main = 2, font.lab = 2)
+      plot(model, which = 1, pch = 20, main = "", lwd = 2, ann = FALSE, sub.caption = "", caption = "")
+      title(main = "Residuals vs Fitted Values", cex.main = 1.2)
+      title(xlab = expression(bold(Fitted~Values~(hat(italic(y))))))
+      title(ylab = expression(bold(Residuals~plain("(")*italic(e)*plain(")"))))
+      abline(h = 0, col = "black", lty = 2, lwd = 1.5)
+    })
+
+    output$polyDiagPlot2 <- renderPlot({
+      model <- polyModel()
+      par(font.main = 2, font.lab = 2)
+      plot(model, which = 2, pch = 20, main = "", lwd = 2, sub.caption = "", caption = "")
+      title(main = "Q-Q Residuals", cex.main = 1.2)
+      title(xlab = "Theoretical Quantiles")
+    })
+
+    output$polyDiagPlot3 <- renderPlot({
+      model <- polyModel()
+      par(font.main = 2, font.lab = 2)
+      plot(model, which = 3, pch = 20, main = "", lwd = 2, sub.caption = "", caption = "", ann = FALSE)
+      title(main = "Scale-Location", cex.main = 1.2)
+      title(ylab = "sqrt(|Standardized Residuals|)")
+    })
+
+    output$polyDiagPlot4 <- renderPlot({
+      model <- polyModel()
+      par(font.main = 2, font.lab = 2)
+      plot(model, which = 5, pch = 20, main = "", lwd = 2, sub.caption = "", caption = "")
+      title(main = "Residuals vs Leverage", cex.main = 1.2)
+    })
+
+    output$polyDiagPlot5 <- renderPlot({
+      model <- polyModel()
+      par(font.main = 2, font.lab = 2)
+      hist(residuals(model), main = "", xlab = "", col = "darkgreen", border = "white")
+      title(main = "Histogram of Residuals", cex.main = 1.2)
+      title(xlab = expression(bold(Residuals~plain("(")*italic(e)*plain(")"))))
+    })
+
     # ---- Reset button -----------------------------------------------------
     observeEvent(input$resetPolynomial, {
       updateTextAreaInput(session, "polyY",
@@ -658,6 +1151,9 @@ PolynomialRegressionServer <- function(id) {
       hide("polyResultsPanel")
       hide("polyUploadedDataPanel")
       hideTab(inputId = "polyNavbarPage", target = "Uploaded Data")
+      hideTab(inputId = "polyNavbarPage", target = "Inference")
+      hideTab(inputId = "polyNavbarPage", target = "Diagnostic Plots")
+      hasPolyLeveragePlotIssue(FALSE)
     })
 
   })

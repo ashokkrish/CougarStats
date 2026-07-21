@@ -27,7 +27,8 @@ probDistUI <- function(id) {
                          "Poisson",
                          "Hypergeometric",
                          "Negative Binomial",
-                         "Normal"), 
+                         "Normal"),
+                      #   "Student's t"), 
             selected =  NULL,
             inline   = FALSE),
           
@@ -470,13 +471,13 @@ probDistUI <- function(id) {
             numericInput(
               inputId = ns("popMean"), 
               label   = strong("Population Mean (\\( \\mu\\))"), 
-              value   = 0, 
+              value   = 125, 
               step    = 0.00001),
             
             numericInput(
               inputId = ns("popSD"),
               label   = strong("Population Standard Deviation (\\( \\sigma\\))"),
-              value   = 1, 
+              value   = 15, 
               min     = 0, 
               step    = 0.00001),
             
@@ -520,7 +521,7 @@ probDistUI <- function(id) {
                   numericInput(
                     inputId = ns("xValue"),
                     label   = strong("Normally Distributed Variable (\\( x\\))"),
-                    value   = 0, 
+                    value   = 135, 
                     step    = 0.00001),
                 ), 
                 
@@ -565,7 +566,7 @@ probDistUI <- function(id) {
                   numericInput(
                     inputId = ns("sampDistrxValue"),
                     label   = strong("Normally Distributed Variable (\\( \\bar{x}\\))"),
-                    value   = 0, 
+                    value   = 130, 
                     step    = 0.00001)
                 ), 
                 
@@ -576,13 +577,13 @@ probDistUI <- function(id) {
                   numericInput(
                     inputId = ns("sampDistrx1Value"),
                     label   = strong("Normally Distributed Variable (\\( \\bar{x}_{1}\\))"),
-                    value   = -1, 
+                    value   = 120, 
                     step    = 0.00001),
                   
                   numericInput(
                     inputId = ns("sampDistrx2Value"),
                     label   = strong("Normally Distributed Variable (\\( \\bar{x}_{2}\\))"),
-                    value   = 1, 
+                    value   = 135, 
                     step    = 0.00001)
                 ), 
                 
@@ -645,7 +646,21 @@ probDistUI <- function(id) {
                 label   = "Reset Values",
                 class   = "act-btn") 
             ), 
-          ) 
+          ),
+          ### ------------ Student's t -------------------------------------------------------
+          
+   #       conditionalPanel(
+  #          ns = ns,
+  #          id = ns("tPanel"),
+  #          condition = "input.probability == Student's t",
+          
+  #          numericInput(
+  #            inputId = ns("studentsTdf"),
+  #            label   = strong("Degrees of freedom (df)"),
+  #            value   = 1,
+  #            step    = 1
+  #          )
+  #        )
         ), 
       ), 
       
@@ -654,7 +669,34 @@ probDistUI <- function(id) {
       #  ========================================================================== #
       mainPanel(
         div(id = ns("probabilityMP"),
-            
+            tags$script(HTML("
+              function copyPlotToClipboard(plotId) {
+                var plotDiv = document.getElementById(plotId);
+                if (!plotDiv) return;
+                var btn = document.querySelector('[data-copy-plot=\"' + plotId + '\"]');
+        
+                Plotly.toImage(plotDiv, {format: 'png', width: plotDiv.offsetWidth, height: plotDiv.offsetHeight})
+                  .then(function(dataUrl) { return fetch(dataUrl); })
+                  .then(function(res) { return res.blob(); })
+                  .then(function(blob) {
+                    return navigator.clipboard.write([new ClipboardItem({'image/png': blob})]);
+                  })
+                  .then(function() {
+                    if (btn) {
+                      var orig = btn.innerHTML;
+                      btn.innerHTML = '<i class=\"fa fa-check\"></i> Copied!';
+                      btn.disabled = true;
+                      setTimeout(function() {
+                        btn.innerHTML = orig;
+                        btn.disabled = false;
+                      }, 2000);
+                    }
+                  })
+                  .catch(function(err) {
+                    alert('Could not copy to clipboard. Your browser may not support this feature, or the page must be served over HTTPS.');
+                  });
+              }
+            ")),
             ### ------------ Contingency Tables -------------------------------------------
             conditionalPanel(
               ns = ns,
@@ -715,7 +757,6 @@ probDistUI <- function(id) {
             ), 
             
             ### ------------ Binomial -----------------------------------------------------
-            
             conditionalPanel(
               ns = ns,
               condition = "input.probability == 'Binomial'",
@@ -749,8 +790,23 @@ probDistUI <- function(id) {
                     tabPanel(
                       title = "Probability Histogram",
                       value = "plotTab",
-                      plotlyOutput(ns("binomDistrBarPlot"), width = "50%")
-                    )
+                      plotlyOutput(ns("binomDistrBarPlot"), width = "50%"),
+                      br(), br(), br(), br(), br(),
+                      tags$button(
+                        class = "btn btn-default copy-plot-btn",
+                        `data-copy-plot` = ns("binomDistrBarPlot"),
+                        onclick = paste0(
+                          "copyPlotToClipboard('",
+                          ns("binomDistrBarPlot"),
+                          "')"
+                        ),
+                        tags$i(class = "fa fa-clipboard"),
+                        "Copy to Clipboard"
+                      )
+                     
+                    ),
+                    
+
                   )
                 )
               )
@@ -801,7 +857,19 @@ probDistUI <- function(id) {
                                              DTOutput(ns("HypGeoDistrTable"), width = "25%")
                                     ),
                                     tabPanel(title = "Probability Histogram",
-                                             plotOutput(ns("HypGeoDistrBarPlot"), width = "60%")
+                                             plotlyOutput(ns("HypGeoDistrBarPlot"), width = "60%"),
+                                             br(), br(), br(), br(), br(),
+                                             tags$button(
+                                               class = "btn btn-default copy-plot-btn",
+                                               `data-copy-plot` = ns("HypGeoDistrBarPlot"),
+                                               onclick = paste0(
+                                                 "copyPlotToClipboard('",
+                                                 ns("HypGeoDistrBarPlot"),
+                                                 "')"
+                                               ),
+                                               tags$i(class = "fa fa-clipboard"),
+                                               "Copy to Clipboard"
+                                             ),
                                     )
                          )
               ))
@@ -1332,13 +1400,44 @@ probDistServer <- function(id) {
     sampdistrsize_iv$enable()
     percentile_iv$enable()
     
-    ResetCTable <- function(tableID, numRows, numCols, rowNames, colNames){
-      newMatrix <- matrix("", numRows, numCols)
-      colnames(newMatrix) <- colNames
-      rownames(newMatrix) <- rowNames
-      updateMatrixInput(session, tableID, newMatrix)
-    }
+    default2x2 <- matrix(
+      c(18, 22,
+        21, 152),
+      2, 2,
+      dimnames = list(
+        c("R1", "R2"),
+        c("C1", "C2")))
     
+    default2x3 <- matrix(
+      c(30, 210,
+        26, 121,
+        0, 20),
+      2, 3,
+      dimnames = list(
+        c("R1", "R2"),
+        c("C1", "C2", "C3")))
+    
+    default3x2 <- matrix(
+      c(115, 75,
+        142, 250,
+        183, 235),
+      3, 2,
+      dimnames = list(
+        c("R1", "R2", "R3"),
+        c("C1", "C2")))
+    
+    default3x3 <- matrix(
+      c(6, 14, 50,
+        38, 31, 50,
+        31, 4, 5),
+      3, 3,
+      dimnames = list(
+        c("R1", "R2", "R3"),
+        c("C1", "C2", "C3")))
+    
+    ResetCTable <- function(tableID, defaultMatrix) {
+      updateMatrixInput(session, tableID, defaultMatrix)
+    }
     
     getProbabilities <- function(x, t){
       return(round((x/t), 4))
@@ -1691,6 +1790,13 @@ probDistServer <- function(id) {
       return(nPlot)
     }
     
+    invalidContingencyTableMsg <- paste(
+  "Invalid input. Each cell of the contingency table",
+  "must contain a non-negative integer count (0, 1, 2, ...).",
+  "Empty cells, decimal values, negative numbers,",
+  "and non-numeric entries are not permitted."
+)
+    
     cMatrixData2x2 <- reactive({
       suppressWarnings(as.numeric(input$cMatrix2x2))
     })
@@ -1881,16 +1987,16 @@ probDistServer <- function(id) {
       output$render2x2cTable <- renderUI({
         
         validate(
-          need(input$cMatrix2x2, "Fields must be positive integers."),
+          need(input$cMatrix2x2, invalidContingencyTableMsg),
           errorClass = "myClass")
         
         validate(
-          need(all(!is.na(cMatrixData2x2())), "Fields must be positive integers.") %then%
-            need(all(cMatrixData2x2() %% 1 == 0), "Fields must be positive integers."),
+          need(all(!is.na(cMatrixData2x2())), invalidContingencyTableMsg) %then%
+            need(all(cMatrixData2x2() %% 1 == 0), invalidContingencyTableMsg),
           errorClass = "myClass")
         
         validate(
-          need(all(cMatrixData2x2() >= 0), "Fields must be positive integers."),
+          need(all(cMatrixData2x2() >= 0), invalidContingencyTableMsg),
           errorClass = "myClass")
         
         validate(
@@ -1911,16 +2017,16 @@ probDistServer <- function(id) {
       output$render2x3cTable <- renderUI({
         
         validate(
-          need(input$cMatrix2x3, "Fields must be positive integers."),
+          need(input$cMatrix2x3, invalidContingencyTableMsg),
           errorClass = "myClass")
         
         validate(
-          need(all(!is.na(cMatrixData2x3())), "Fields must be positive integers.") %then%
-            need(all(cMatrixData2x3() %% 1 == 0), "Fields must be positive integers."),
+          need(all(!is.na(cMatrixData2x3())), invalidContingencyTableMsg) %then%
+            need(all(cMatrixData2x3() %% 1 == 0), invalidContingencyTableMsg),
           errorClass = "myClass")
         
         validate(
-          need(all(cMatrixData2x3() >= 0), "Fields must be positive integers."),
+          need(all(cMatrixData2x3() >= 0), invalidContingencyTableMsg),
           errorClass = "myClass")
         
         validate(
@@ -1941,16 +2047,16 @@ probDistServer <- function(id) {
       output$render3x2cTable <- renderUI({
         
         validate(
-          need(input$cMatrix3x2, "Fields must be positive integers."),
+          need(input$cMatrix3x2, invalidContingencyTableMsg),
           errorClass = "myClass")
         
         validate(
-          need(all(!is.na(cMatrixData3x2())), "Fields must be positive integers.") %then%
-            need(all(cMatrixData3x2() %% 1 == 0), "Fields must be positive integers."),
+          need(all(!is.na(cMatrixData3x2())), invalidContingencyTableMsg) %then%
+            need(all(cMatrixData3x2() %% 1 == 0), invalidContingencyTableMsg),
           errorClass = "myClass")
         
         validate(
-          need(all(cMatrixData3x2() >= 0), "Fields must be positive integers."),
+          need(all(cMatrixData3x2() >= 0), invalidContingencyTableMsg),
           errorClass = "myClass")
         
         validate(
@@ -1971,16 +2077,16 @@ probDistServer <- function(id) {
       output$render3x3cTable <- renderUI({
         
         validate(
-          need(input$cMatrix3x3, "Fields must be positive integers."),
+          need(input$cMatrix3x3, invalidContingencyTableMsg),
           errorClass = "myClass")
         
         validate(
-          need(all(!is.na(cMatrixData3x3())), "Fields must be positive integers.") %then%
-            need(all(cMatrixData3x3() %% 1 == 0), "Fields must be positive integers."),
+          need(all(!is.na(cMatrixData3x3())), invalidContingencyTableMsg) %then%
+            need(all(cMatrixData3x3() %% 1 == 0), invalidContingencyTableMsg),
           errorClass = "myClass")
         
         validate(
-          need(all(cMatrixData3x3() >= 0), "Fields must be positive integers."),
+          need(all(cMatrixData3x3() >= 0), invalidContingencyTableMsg),
           errorClass = "myClass")
         
         validate(
@@ -2253,10 +2359,10 @@ probDistServer <- function(id) {
     
     observeEvent(input$resetcTable, {
       hide(id = "contingencyResults")
-      ResetCTable("cMatrix2x2", 2, 2, c("R1", "R2"), c("C1", "C2"))
-      ResetCTable("cMatrix2x3", 2, 3, c("R1", "R2"), c("C1", "C2", "C3"))
-      ResetCTable("cMatrix3x2", 3, 2, c("R1", "R2", "R3"), c("C1", "C2"))
-      ResetCTable("cMatrix3x3", 3, 3, c("R1", "R2", "R3"), c("C1", "C2", "C3"))
+      ResetCTable("cMatrix2x2", default2x2)
+      ResetCTable("cMatrix2x3", default2x3)
+      ResetCTable("cMatrix3x2", default3x2)
+      ResetCTable("cMatrix3x3", default3x3)
       shinyjs::reset("contingencyPanel")
     })
     
@@ -2570,23 +2676,18 @@ probDistServer <- function(id) {
       
       dfBinom <- data.frame(
         X = x_vals,
-        P = dbinom(x_vals, size = n, prob = p)
-      )
+        P = dbinom(x_vals, size = n, prob = p))
       
       gg <- ggplot(dfBinom, aes(
         x = X,
         y = P,
-        text = paste0("x: ", X, "<br>p: ", round(P, 4))
-      )) +
+        text = paste0("x: ", X, "<br>p: ", round(P, 4)))) +
         geom_bar(stat = "identity", fill = "skyblue") +
-        
         scale_x_continuous(
           breaks = if (n <= 25) x_vals else seq(0, n, by = max(1, floor(n / 10))),
-          expand = expansion(mult = c(0.02, 0.02))
-        ) +
+          expand = expansion(mult = c(0.02, 0.02))) +
         scale_y_continuous(
-          expand = expansion(mult = c(0, 0.1))
-        ) +
+          expand = expansion(mult = c(0, 0.1))) +
         
         theme(
           axis.text = element_text(size = 14),
@@ -2596,8 +2697,7 @@ probDistServer <- function(id) {
           axis.line = element_line(color = "black"),
           panel.border = element_blank(),
           plot.background = element_rect(color = "white", fill = NA),
-          plot.margin = margin(10, 10, 10, 5, unit = "mm")
-        )
+          plot.margin = margin(10, 10, 10, 5, unit = "mm"))
       
       ggplotly(gg, tooltip = "text", width = 850, height = 520) %>%
         layout(
@@ -2606,23 +2706,16 @@ probDistServer <- function(id) {
             text = paste0(
               "<b>Binomial Distribution:</b> ",
               "<b><i>X</i> ~ Bin(<i>n</i> = ", input$numTrialsBinom,
-              ", <i>p</i> = ", input$successProbBinom, ")</b>"
-            ),
-            x = 0.5
-          ),
+              ", <i>p</i> = ", input$successProbBinom, ")</b>"),
+            x = 0.5),
           
           xaxis = list(
             title = list(
-              text = "<b>Number of Successes (<i>x</i>)</b>"
-            )
-          ),
+              text = "<b>Number of Successes (<i>x</i>)</b>")),
           
           yaxis = list(
             title = list(
-              text = "<b>P(<i>X</i> = <i>x</i>)</b>"
-            )
-          )
-        )
+              text = "<b>P(<i>X</i> = <i>x</i>)</b>")))
     })
 
     observeEvent(input$goPoisson, {
@@ -3192,7 +3285,8 @@ probDistServer <- function(id) {
       }) 
     }) 
     
-    output$HypGeoDistrBarPlot <- renderPlot({
+    output$HypGeoDistrBarPlot <- renderPlotly({
+      
       req(pd_iv$is_valid())
       req(input$sampSizeHypGeo < 50)
       req(input$sampSizeHypGeo <= input$popSizeHypGeo)
@@ -3200,28 +3294,58 @@ probDistServer <- function(id) {
       req(input$xHypGeo <= input$sampSizeHypGeo)
       req(input$xHypGeo <= input$popSuccessesHypGeo)
       
-      dfHypGeo <- data.frame(value = seq(max(0, input$sampSizeHypGeo + input$popSuccessesHypGeo - input$popSizeHypGeo), min(input$popSuccessesHypGeo, input$sampSizeHypGeo)), 
-                             prob = round(dhyper(x = max(0, input$sampSizeHypGeo + input$popSuccessesHypGeo - input$popSizeHypGeo):min(input$popSuccessesHypGeo, input$sampSizeHypGeo), input$popSuccessesHypGeo, (input$popSizeHypGeo - input$popSuccessesHypGeo), input$sampSizeHypGeo), 4))
+      N <- input$popSizeHypGeo
+      M <- input$popSuccessesHypGeo
+      n <- input$sampSizeHypGeo
       
-      ggplot(dfHypGeo, aes(x = value, y = prob)) +
-        geom_bar(stat = "identity", fill = "skyblue", color = "black") +
-        labs(x = bquote(bold("Number of Successes (" * bolditalic(x) * ")")),
-             y = bquote(bold("P(" * bolditalic(X == x) * ")")),
-             title = bquote(bold("Hypergeometric Distribution: " * bolditalic(X) * " ~ HypGeo(" * bolditalic(N) * " = " * .(input$popSizeHypGeo) * ", " * bolditalic(M) * " = " * .(input$popSuccessesHypGeo) * ", " * bolditalic(n) * " = " * .(input$sampSizeHypGeo) * ")"))
-        ) +
-        scale_y_continuous(expand = expansion(mult = c(0, 0.05))) +
-        scale_x_continuous(breaks = seq(min(dfHypGeo$value), max(dfHypGeo$value), by = 1)) +
-        theme(axis.text = element_text(size = 14),
-              axis.title = element_text(size = 16),
-              panel.grid.major = element_blank(),
-              panel.grid.minor = element_blank(),
-              plot.title = element_text(size = 18, hjust = 0.5),
-              panel.border = element_rect(color = "black", fill = NA, linewidth = 0.5),
-              plot.background = element_rect(color = "black", fill = NA, linewidth = 1),
-              plot.margin = margin(10, 10, 10, 5, unit = "mm")
-        )
+      x_vals <- max(0, n + M - N):min(M, n)
       
-    }) 
+      dfHypGeo <- data.frame(
+        X = x_vals,
+        P = dhyper(x_vals, M, N - M, n))
+      
+      gg <- ggplot(dfHypGeo, aes(
+        x = X,
+        y = P,
+        text = paste0("x: ", X, "<br>p: ", round(P, 4)))) +
+        geom_bar(stat = "identity", fill = "skyblue") +
+        scale_x_continuous(
+          breaks = if (length(x_vals) <= 25) x_vals else seq(
+            min(x_vals),
+            max(x_vals),
+            by = max(1, floor(length(x_vals) / 10))),
+          expand = expansion(mult = c(0.02, 0.02))) +
+        scale_y_continuous(
+          expand = expansion(mult = c(0, 0.1))) +
+        
+        theme(
+          axis.text = element_text(size = 14),
+          axis.title = element_text(size = 16),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          axis.line = element_line(color = "black"),
+          panel.border = element_blank(),
+          plot.background = element_rect(color = "white", fill = NA),
+          plot.margin = margin(10, 10, 10, 5, unit = "mm"))
+      
+      ggplotly(gg, tooltip = "text", width = 850, height = 520) %>%
+        layout(
+          margin = list(t = 80),
+          title = list(
+            text = paste0(
+              "<b>Hypergeometric Distribution:</b> ",
+              "<b><i>X</i> ~ HypGeo(<i>N</i> = ", N,
+              ", <i>M</i> = ", M,
+              ", <i>n</i> = ", n,
+              ")</b>" ),
+            x = 0.5),
+          xaxis = list(
+            title = list(
+              text = "<b>Number of Successes (<i>x</i>)</b>")),
+          yaxis = list(
+            title = list(
+              text = "<b>P(<i>X</i> = <i>x</i>)</b>")))
+    })
     
     observeEvent(input$goNegBin, {
       
