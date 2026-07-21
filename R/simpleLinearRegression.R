@@ -1044,9 +1044,9 @@ SLRServer <- function(id) {
             errorClass = "myClass")
 
           validate(
-            need(!explanatoryInfoUploadSLR()$invalid, "The Explanatory Variable (x) contains non-numeric data.") %then%
+            need(!explanatoryInfoUploadSLR()$invalid, "The Explanatory Variable (x) contains non-numeric data.") %||%
               need(explanatoryInfoUploadSLR()$sd != 0, "Explanatory Variable (x) must have a standard deviation greater than zero to perform regression and correlation analysis."),
-            need(!responseInfoUploadSLR()$invalid, "The Response Variable (y) contains non-numeric data.") %then%
+            need(!responseInfoUploadSLR()$invalid, "The Response Variable (y) contains non-numeric data.") %||%
               need(responseInfoUploadSLR()$sd != 0, "Response Variable (y) must have a standard deviation greater than zero to perform correlation analysis."),
             errorClass = "myClass")
 

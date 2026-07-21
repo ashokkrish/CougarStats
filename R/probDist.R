@@ -1885,7 +1885,7 @@ probDistServer <- function(id) {
           errorClass = "myClass")
         
         validate(
-          need(all(!is.na(cMatrixData2x2())), "Fields must be positive integers.") %then%
+          need(all(!is.na(cMatrixData2x2())), "Fields must be positive integers.") %||%
             need(all(cMatrixData2x2() %% 1 == 0), "Fields must be positive integers."),
           errorClass = "myClass")
         
@@ -1915,7 +1915,7 @@ probDistServer <- function(id) {
           errorClass = "myClass")
         
         validate(
-          need(all(!is.na(cMatrixData2x3())), "Fields must be positive integers.") %then%
+          need(all(!is.na(cMatrixData2x3())), "Fields must be positive integers.") %||%
             need(all(cMatrixData2x3() %% 1 == 0), "Fields must be positive integers."),
           errorClass = "myClass")
         
@@ -1945,7 +1945,7 @@ probDistServer <- function(id) {
           errorClass = "myClass")
         
         validate(
-          need(all(!is.na(cMatrixData3x2())), "Fields must be positive integers.") %then%
+          need(all(!is.na(cMatrixData3x2())), "Fields must be positive integers.") %||%
             need(all(cMatrixData3x2() %% 1 == 0), "Fields must be positive integers."),
           errorClass = "myClass")
         
@@ -1975,7 +1975,7 @@ probDistServer <- function(id) {
           errorClass = "myClass")
         
         validate(
-          need(all(!is.na(cMatrixData3x3())), "Fields must be positive integers.") %then%
+          need(all(!is.na(cMatrixData3x3())), "Fields must be positive integers.") %||%
             need(all(cMatrixData3x3() %% 1 == 0), "Fields must be positive integers."),
           errorClass = "myClass")
         
@@ -2292,11 +2292,11 @@ probDistServer <- function(id) {
             if(!binomprob_iv$is_valid())
             {
               validate(
-                need(input$numTrialsBinom, "Number of Trials (n) must be a positive integer") %then%
+                need(input$numTrialsBinom, "Number of Trials (n) must be a positive integer") %||%
                   need(input$numTrialsBinom > 0 && input$numTrialsBinom %% 1 == 0, "Number of Trials (n) must be a positive integer"),
-                need(input$successProbBinom, "Probability of Success (p) must be between 0 and 1") %then%
+                need(input$successProbBinom, "Probability of Success (p) must be between 0 and 1") %||%
                   need(input$successProbBinom >= 0 && input$successProbBinom <= 1, "Probability of Success (p) must be between 0 and 1"),
-                need(input$numSuccessesBinom != "", "Enter a value for the Number of Successes (x)") %then%
+                need(input$numSuccessesBinom != "", "Enter a value for the Number of Successes (x)") %||%
                   need(input$numSuccessesBinom >= 0 && input$numSuccessesBinom %% 1 == 0, "Number of Successes (x) must be a positive integer"),
                 errorClass = "myClass")
             }
@@ -2304,21 +2304,21 @@ probDistServer <- function(id) {
             if(!binombetween_iv$is_valid())
             {
               validate(
-                need(input$numTrialsBinom, "Number of Trials (n) must be a positive integer") %then%
+                need(input$numTrialsBinom, "Number of Trials (n) must be a positive integer") %||%
                   need(input$numTrialsBinom > 0 && input$numTrialsBinom %% 1 == 0, "Number of Trials (n) must be a positive integer"),
-                need(input$successProbBinom, "Probability of Success (p) must be between 0 and 1") %then%
+                need(input$successProbBinom, "Probability of Success (p) must be between 0 and 1") %||%
                   need(input$successProbBinom >= 0 && input$successProbBinom <= 1, "Probability of Success (p) must be between 0 and 1"),
-                need(input$numSuccessesBinomx1, "Number of Successes (x1) must be a positive integer") %then%
+                need(input$numSuccessesBinomx1, "Number of Successes (x1) must be a positive integer") %||%
                   need(input$numSuccessesBinomx1 >= 0 && input$numSuccessesBinomx1 %% 1 == 0, "Number of Successes (x1) must be a positive integer"),
-                need(input$numSuccessesBinomx2, "Enter a value for the Number of Successes (x2)") %then%
+                need(input$numSuccessesBinomx2, "Enter a value for the Number of Successes (x2)") %||%
                   need(input$numSuccessesBinomx2 >= 0 && input$numSuccessesBinomx2 %% 1 == 0, "Number of Successes (x2) must be a positive integer"),
                 errorClass = "myClass")
             }
             
             validate(
-              need(input$numTrialsBinom, "Number of Trials (n) must be a positive integer") %then%
+              need(input$numTrialsBinom, "Number of Trials (n) must be a positive integer") %||%
                 need(input$numTrialsBinom > 0 && input$numTrialsBinom %% 1 == 0, "Number of Trials (n) must be a positive integer"),
-              need(input$successProbBinom, "Probability of Success (p) must be between 0 and 1") %then%
+              need(input$successProbBinom, "Probability of Success (p) must be between 0 and 1") %||%
                 need(input$successProbBinom >= 0 && input$successProbBinom <= 1, "Probability of Success (p) must be between 0 and 1"),
               errorClass = "myClass")
           }
@@ -2651,7 +2651,7 @@ probDistServer <- function(id) {
             {
               validate(
                 need(input$lambdaPoisson && input$lambdaPoisson > 0, "Average Number of Successes (lambda) must be greater than zero"),
-                need(input$xPoisson , "Number of Successes (x) must be a positive integer") %then%
+                need(input$xPoisson , "Number of Successes (x) must be a positive integer") %||%
                   need(input$xPoisson >= 0 && input$xPoisson %% 1 == 0, "Number of Successes (x) must be a positive integer"),
                 errorClass = "myClass")
             }
@@ -2660,9 +2660,9 @@ probDistServer <- function(id) {
             {
               validate(
                 need(input$lambdaPoisson && input$lambdaPoisson > 0, "Average Number of Successes (lambda) must be greater than zero"),
-                need(input$x1Poisson, "Enter a value for the Number of Successes (x1)") %then%
+                need(input$x1Poisson, "Enter a value for the Number of Successes (x1)") %||%
                   need(input$x1Poisson >= 0 && input$x1Poisson %% 1 == 0, "Number of Successes (x1) must be a positive integer"),
-                need(input$x2Poisson, "Enter a value for the Number of Successes (x2)") %then%
+                need(input$x2Poisson, "Enter a value for the Number of Successes (x2)") %||%
                   need(input$x2Poisson >= 0 && input$x2Poisson %% 1 == 0, "Number of Successes (x2) must be a positive integer"),
                 errorClass = "myClass")
             }
@@ -2889,13 +2889,13 @@ probDistServer <- function(id) {
             if(!HypGeoprob_iv$is_valid())
             {
               validate(
-                need(input$popSizeHypGeo , "Population Size (N) must be a positive integer")%then%
+                need(input$popSizeHypGeo , "Population Size (N) must be a positive integer")%||%
                   need(input$popSizeHypGeo > 0 && input$popSizeHypGeo %% 1 == 0, "Population Size (N) must be a positive integer"),
-                need(input$popSuccessesHypGeo && input$popSuccessesHypGeo > 0, "Number of Successes in the Population (M) must be a positive integer")%then%
+                need(input$popSuccessesHypGeo && input$popSuccessesHypGeo > 0, "Number of Successes in the Population (M) must be a positive integer")%||%
                   need(input$popSuccessesHypGeo %% 1 == 0, "Number of Successes in the Population (M) must be a positive integer"),
-                need(input$sampSizeHypGeo && input$sampSizeHypGeo > 0, "Sample Size (n) must be a positive integer")%then%
+                need(input$sampSizeHypGeo && input$sampSizeHypGeo > 0, "Sample Size (n) must be a positive integer")%||%
                   need(input$sampSizeHypGeo %% 1 == 0, "Sample Size (n) must be a positive integer"),
-                need(input$xHypGeo , "Number of Successes in the Sample (x) must be a positive integer") %then%
+                need(input$xHypGeo , "Number of Successes in the Sample (x) must be a positive integer") %||%
                   need(input$xHypGeo >= 0 && input$xHypGeo %% 1 == 0, "Number of Successes in the Sample (x) must be a positive integer"),
                 errorClass = "myClass")
             }
@@ -2903,25 +2903,25 @@ probDistServer <- function(id) {
             if(!HypGeobetween_iv$is_valid())
             {
               validate(
-                need(input$popSizeHypGeo , "Population Size (N) must be a positive integer")%then%
+                need(input$popSizeHypGeo , "Population Size (N) must be a positive integer")%||%
                   need(input$popSizeHypGeo > 0 && input$popSizeHypGeo %% 1 == 0, "Population Size (N) must be a positive integer"),
-                need(input$popSuccessesHypGeo && input$popSuccessesHypGeo > 0, "Number of Successes in the Population (M) must be a positive integer")%then%
+                need(input$popSuccessesHypGeo && input$popSuccessesHypGeo > 0, "Number of Successes in the Population (M) must be a positive integer")%||%
                   need(input$popSuccessesHypGeo %% 1 == 0, "Number of Successes in the Population (M) must be a positive integer"),
-                need(input$sampSizeHypGeo && input$sampSizeHypGeo > 0, "Sample Size (n) must be a positive integer")%then%
+                need(input$sampSizeHypGeo && input$sampSizeHypGeo > 0, "Sample Size (n) must be a positive integer")%||%
                   need(input$sampSizeHypGeo %% 1 == 0, "Sample Size (n) must be a positive integer"),
-                need(input$x1HypGeo , "Number of Successes in the Sample (x1) must be a positive integer") %then%
+                need(input$x1HypGeo , "Number of Successes in the Sample (x1) must be a positive integer") %||%
                   need(input$x1HypGeo >= 0 && input$x1HypGeo %% 1 == 0, "Number of Successes in the Sample (x1) must be a positive integer"),
-                need(input$x2HypGeo , "Number of Successes in the Sample (x2) must be a positive integer") %then%
+                need(input$x2HypGeo , "Number of Successes in the Sample (x2) must be a positive integer") %||%
                   need(input$x2HypGeo >= 0 && input$x2HypGeo %% 1 == 0, "Number of Successes in the Sample (x2) must be a positive integer"),
                 errorClass = "myClass")
             }
             
             validate(
-              need(input$popSizeHypGeo , "Population Size (N) must be a positive integer")%then%
+              need(input$popSizeHypGeo , "Population Size (N) must be a positive integer")%||%
                 need(input$popSizeHypGeo > 0 && input$popSizeHypGeo %% 1 == 0, "Population Size (N) must be a positive integer"),
-              need(input$popSuccessesHypGeo && input$popSuccessesHypGeo > 0, "Number of Successes in the Population (M) must be a positive integer")%then%
+              need(input$popSuccessesHypGeo && input$popSuccessesHypGeo > 0, "Number of Successes in the Population (M) must be a positive integer")%||%
                 need(input$popSuccessesHypGeo %% 1 == 0, "Number of Successes in the Population (M) must be a positive integer"),
-              need(input$sampSizeHypGeo && input$sampSizeHypGeo > 0, "Sample Size (n) must be a positive integer")%then%
+              need(input$sampSizeHypGeo && input$sampSizeHypGeo > 0, "Sample Size (n) must be a positive integer")%||%
                 need(input$sampSizeHypGeo %% 1 == 0, "Sample Size (n) must be a positive integer"),
               errorClass = "myClass")
           }
@@ -3247,11 +3247,11 @@ probDistServer <- function(id) {
             if(!NegBinprob_iv$is_valid())
             {
               validate(
-                need(input$successNegBin , "Required Number of Successes (r) must be greater than zero.")%then%
+                need(input$successNegBin , "Required Number of Successes (r) must be greater than zero.")%||%
                   need(input$successNegBin >= 0 && input$successNegBin %% 1 == 0, "Required Number of Successes (r) must be greater than zero."),
-                need(input$successProbNegBin, "Probability of Success (p) must be between 0 and 1") %then%
+                need(input$successProbNegBin, "Probability of Success (p) must be between 0 and 1") %||%
                   need(input$successProbNegBin > 0 && input$successProbNegBin <= 1, "Probability of Success (p) must be 0 < p  ≤ 1"),
-                need(input$xNegBin , "Number of Failures (x) prior to the rth success must be a positive integer.") %then%
+                need(input$xNegBin , "Number of Failures (x) prior to the rth success must be a positive integer.") %||%
                   need(input$xNegBin >= 0 && input$xNegBin %% 1 == 0, "Number of Failures (x) prior to the rth success must be a positive integer."),
                 errorClass = "myClass")
             }
@@ -3259,21 +3259,21 @@ probDistServer <- function(id) {
             if(!NegBinbetween_iv$is_valid())
             {
               validate(
-                need(input$successNegBin , "Required Number of Successes (r) must be greater than zero.")%then%
+                need(input$successNegBin , "Required Number of Successes (r) must be greater than zero.")%||%
                   need(input$successNegBin >= 0 && input$successNegBin %% 1 == 0, "Required Number of Successes (r) must be greater than zero."),
-                need(input$successProbNegBin, "Probability of Success (p) must be between 0 and 1") %then%
+                need(input$successProbNegBin, "Probability of Success (p) must be between 0 and 1") %||%
                   need(input$successProbNegBin > 0 && input$successProbNegBin <= 1, "Probability of Success (p) must be 0 < p  ≤ 1"),
-                need(input$x1NegBin , "Number of Failures (x1) must be a positive integer") %then%
+                need(input$x1NegBin , "Number of Failures (x1) must be a positive integer") %||%
                   need(input$x1NegBin >= 0 && input$x1NegBin %% 1 == 0, "Number of Failures (x1) must be a positive integer"),
-                need(input$x2NegBin , "Number of Failures (x2) must be a positive integer") %then%
+                need(input$x2NegBin , "Number of Failures (x2) must be a positive integer") %||%
                   need(input$x2NegBin >= 0 && input$x2NegBin %% 1 == 0, "Number of Failures (x2) must be a positive integer"),
                 errorClass = "myClass")
             }
             
             validate(
-              need(input$successNegBin , "Required Number of Successes (r) must be greater than zero.")%then%
+              need(input$successNegBin , "Required Number of Successes (r) must be greater than zero.")%||%
                 need(input$successNegBin > 0 && input$successNegBin %% 1 == 0, "Required Number of Successes (r) must be greater than zero."),
-              need(input$successProbNegBin, "Probability of Success (p) must be between 0 and 1") %then%
+              need(input$successProbNegBin, "Probability of Success (p) must be between 0 and 1") %||%
                 need(input$successProbNegBin >= 0 && input$successProbNegBin <= 1, "Probability of Success (p) must be between 0 and 1"),
               errorClass = "myClass")
           }

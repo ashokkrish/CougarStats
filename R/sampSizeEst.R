@@ -597,15 +597,15 @@ sampSizeEstServer <- function(id) {
         # Population Mean
         if (input$sampSizeEstParameter == 'Population Mean') {
           validate(
-            need(input$ssePopuSD, "Population Standard Deviation is required.") %then%
+            need(input$ssePopuSD, "Population Standard Deviation is required.") %||%
               need(input$ssePopuSD > 0, "Population Standard Deviation must be positive."),
             
             if (input$sseEstimationType == 'Margin of Error') {
-              need(input$sseMeanMargErr, "Margin of Error is required.") %then%
+              need(input$sseMeanMargErr, "Margin of Error is required.") %||%
                 need(input$sseMeanMargErr > 0, "Margin of Error must be positive.")
             },
             if (input$sseEstimationType == 'Width of Interval') {
-              need(input$sseMeanWoI, "Width of Interval is required.") %then%
+              need(input$sseMeanWoI, "Width of Interval is required.") %||%
                 need(input$sseMeanWoI > 0, "Width of Interval must be positive.")
             },
             errorClass = "myClass"
@@ -615,17 +615,17 @@ sampSizeEstServer <- function(id) {
         # Population Proportion
         else if (input$sampSizeEstParameter == 'Population Proportion') {
           validate(
-            need(input$sseTargetProp, "Target Proportion is required.") %then%
+            need(input$sseTargetProp, "Target Proportion is required.") %||%
               need(input$sseTargetProp > 0 && input$sseTargetProp < 1,
                    "Target Proportion must be greater than 0 and less than 1."),
             
             if (input$sseEstimationTypeProp == 'Margin of Error') { 
-              need(input$ssePropMargErr, "Margin of Error is required.") %then%
+              need(input$ssePropMargErr, "Margin of Error is required.") %||%
                 need(input$ssePropMargErr > 0 && input$ssePropMargErr <= 1,
                      "Margin of Error must be greater than 0 and less than or equal to 1.")
             },
             if (input$sseEstimationTypeProp == 'Width of Interval') {
-              need(input$ssePropWoI, "Width of Interval is required.") %then%
+              need(input$ssePropWoI, "Width of Interval is required.") %||%
                 need(input$ssePropWoI > 0 && input$ssePropWoI <= 1,
                      "Width of Interval must be greater than 0 and less than or equal to 1.")
             },
@@ -641,19 +641,19 @@ sampSizeEstServer <- function(id) {
         #Population Mean
         if(input$estimateParameter == 'Confidence Coefficient' && input$sampSizeEstParameter == 'Population Mean'){
           validate(
-            need(input$confSampSize, "Sample Size is required") %then% 
+            need(input$confSampSize, "Sample Size is required") %||% 
               need(input$confSampSize, "Sample Size must be positive"), 
             
-            need(input$confPopSD, "Population Standard Deviation is required" ) %then%
+            need(input$confPopSD, "Population Standard Deviation is required" ) %||%
               need(input$confPopSD, "Population Standard Deviation must be positive"),
             
             
             if(input$ccEstimationType == "Margin of Error"){
-              need(input$ccMargErr, "Margin of Error is required.") %then%
+              need(input$ccMargErr, "Margin of Error is required.") %||%
                 need(input$ccMargErr, "Margin of Error must be positive.")
             },
             if(input$ccEstimationType == "Width of Interval"){
-              need(input$ccMeanWoI, "Width of Interval is required") %then% 
+              need(input$ccMeanWoI, "Width of Interval is required") %||% 
                 need(input$ccMeanWoI, "Width of Interval must be positive.")
             },
             errorClass = "myClass"
@@ -663,19 +663,19 @@ sampSizeEstServer <- function(id) {
         #Population Proportion
         else if(input$estimateParameter == 'Confidence Coefficient' && input$sampSizeEstParameter == 'Population Proportion'){
           validate(
-            need(input$ccPropSampSize ,"Sample Size is required") %then% 
+            need(input$ccPropSampSize ,"Sample Size is required") %||% 
               need(input$ccPropSampSize, "Sample Size must be positive"),
             
-            need(input$ccTargetProp, "Target Proportion is required.") %then% 
+            need(input$ccTargetProp, "Target Proportion is required.") %||% 
               need(input$ccTargetProp, "Target Proportion must be greater than 0 and less than 1."), 
             
             if(input$ccPropEstimationType == "Margin of Error"){
-              need(input$ccPropMargErr, "Margin of Error is required.") %then% 
+              need(input$ccPropMargErr, "Margin of Error is required.") %||% 
                 need(input$ccPropMargErr, "Margin of Error must be greater than 0 and less than or equal to 1.") 
               
             },
             if(input$ccPropEstimationType == "Width of Interval"){
-              need(input$ccPropMeanWoI,"Width of Interval is required.") %then%
+              need(input$ccPropMeanWoI,"Width of Interval is required.") %||%
                 need(input$ccPropMeanWoI, "Width of Interval must be greater than 0 and less than or equal to 1.")
             }
             
