@@ -658,6 +658,7 @@ probDistUI <- function(id) {
               inputId = ns("dfStudentT"),
               label   = strong("Degrees of freedom (\\( df\\))"),
               value   = 30,
+              min     = 1,
               step    = 1),
             
             radioButtons(
@@ -722,6 +723,8 @@ probDistUI <- function(id) {
                inputId = ns("probStudentT"),
                label   = strong("Probability (\\( p\\))"),
                value   = 0.975,
+               min     = 0,
+               max     = 1,
                step    = 0.00001)
              
             ), # Critical Value panel
@@ -1028,18 +1031,13 @@ probDistUI <- function(id) {
                     
                     uiOutput(ns("renderProbabilityStudentT"))
                   ),
+                  
                   # Critical value calculation results
                   conditionalPanel(
                     ns = ns,
                     condition = "input.calcTypeStudentT == 'Critical Value'",
                     
                     uiOutput(ns("renderCriticalValueStudentT"))
-                  ),
-                  
-                  codeBox(
-                    boxId = "rcodeStudentTBox",
-                    outputId = "rcodeStudentT",
-                    ns = ns
                   ),
                   br())))), 
       ) 
@@ -1297,13 +1295,20 @@ probDistServer <- function(id) {
     studenttbetween_iv$add_rule("t2StudentT", sv_required())
     studenttbetween_iv$add_rule("t2StudentT", sv_numeric())
     
+    studenttbetween_iv$add_rule("t1StudentT", function(value) {
+      if (!is.null(value) && !is.null(input$t2StudentT) && value >= input$t2StudentT)
+        "t Distributed Variable (x1) must be less than t Distributed Variable (x2)."
+    })
+    
     studenttbetween_iv$add_rule("t2StudentT", function(value) {
-        if (!is.null(value) && !is.null(input$t1StudentT) && value <= input$t1StudentT)
-          {"x1 must be less than x2"}})
+      if (!is.null(value) && !is.null(input$t1StudentT) && value <= input$t1StudentT)
+        "t Distributed Variable (x1) must be less than t Distributed Variable (x2)."
+    })
     
     studenttcritical_iv$add_rule("probStudentT", sv_required())
     studenttcritical_iv$add_rule("probStudentT", sv_numeric())
-    studenttcritical_iv$add_rule("probStudentT", sv_between(0, 1))
+    studenttcritical_iv$add_rule("probStudentT", sv_gt(0))
+    studenttcritical_iv$add_rule("probStudentT", sv_lt(1))
     
     ctable2x2_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
                                       input$cTableDimension == '2 x 2'))
@@ -4592,6 +4597,229 @@ probDistServer <- function(id) {
       })
     })
     
+    observeEvent(input$goStudentT, {
+      
+      observe({
+        req(input$probability == "Student's t")
+        
+        showBox <- FALSE
+        if(studentt_iv$is_valid()) {
+          
+          if(input$calcTypeStudentT == "Probability" &&
+             input$calcStudentT == "between") {
+            showBox <- input$t1StudentT < input$t2StudentT
+          } else {
+            showBox <- TRUE
+          }
+        }
+        runjs(sprintf(
+          "document.getElementById('%s').style.display='%s';",
+          ns("rcodeStudentTBoxWrapper"),
+          if(showBox) "block" else "none"
+        ))
+      })
+      
+      output$renderProbabilityStudentT <- renderUI({
+        if(!studentt_iv$is_valid())
+        {
+          if(!studenttprob_iv$is_valid())
+          {
+            validate(
+              need(input$dfStudentT && input$dfStudentT > 0,
+                   "Degrees of freedom must be a positive number."),
+              need(input$tStudentT,
+                   "Enter a value for the t Distributed Variable (x)."),
+              errorClass = "myClass"
+            )
+          }
+          
+          if(!studenttbetween_iv$is_valid())
+          {
+            validate(
+              need(input$dfStudentT && input$dfStudentT > 0,
+                   "Degrees of freedom must be a positive number."),
+              need(input$t1StudentT,
+                   "Enter a value for the t Distributed Variable (x1)."),
+              need(input$t2StudentT,
+                   "Enter a value for the t Distributed Variable (x2)."),
+              need(input$t1StudentT < input$t2StudentT,
+                   "t Distributed Variable (x1) must be less than t Distributed Variable (x2)."),
+              errorClass = "myClass"
+            )
+          }
+          
+          validate(
+            need(input$dfStudentT && input$dfStudentT > 0,
+                 "Degrees of freedom must be a positive number."),
+            errorClass = "myClass"
+          )
+        }
+        req(input$probability == "Student's t")
+        
+        if(input$calcTypeStudentT == "Probability") {
+          df <- input$dfStudentT
+          if(input$calcStudentT == "cumulative") {
+            tValue <- input$tStudentT
+            tProb <- pt(tValue, df)
+            studentTProb <- paste("P(t \\leq", tValue, ")")
+          } else if(input$calcStudentT == "upperTail") {
+            tValue <- input$tStudentT
+            tProb <- 1 - pt(tValue, df)
+            studentTProb <- paste("P(t \\geq", tValue, ")")
+          } else if(input$calcStudentT == "between") {
+            t1 <- input$t1StudentT
+            t2 <- input$t2StudentT
+            tProb <- pt(t2, df) - pt(t1, df)
+            studentTProb <- paste("P(", t1, "\\leq t \\leq", t2, ")")
+          }
+          tagList(
+            withMathJax(
+              div(h3(sprintf("Calculating \\(%s\\) when \\(X \\sim t(df = %g)\\):", studentTProb,df)),
+                hr(),
+                br(),
+                sprintf("\\(\\displaystyle %s = %g\\)", studentTProb, round(tProb, 4)),
+                br(), br(),
+                codeBox(
+                  boxId = "rcodeStudentTBox",
+                  outputId = "rcodeStudentT",
+                  ns = ns
+                ),
+                br(), hr(), br(),
+                plotOutput(session$ns("studentTDistrPlot"))
+              )
+            )
+          )
+        }
+      })
+      
+      
+      output$renderCriticalValueStudentT <- renderUI({
+        if(!studentt_iv$is_valid())
+        {
+          if(!studenttcritical_iv$is_valid())
+          {
+            validate(
+              need(input$dfStudentT && input$dfStudentT > 0,
+                   "Degrees of freedom must be a positive number."),
+              need(input$probStudentT > 0 && input$probStudentT < 1,
+                   "Probability must be strictly between 0 and 1."),
+              errorClass = "myClass"
+            )
+          }
+          
+          validate(
+            need(input$dfStudentT && input$dfStudentT > 0,
+                 "Degrees of freedom must be a positive number."),
+            errorClass = "myClass"
+          )
+        }
+        
+        if(input$calcTypeStudentT == "Critical Value") {
+          df <- input$dfStudentT
+          p <- input$probStudentT
+          tCritical <- qt(p, df)
+          
+          tagList(
+            withMathJax(
+              div(h3(sprintf("Calculating the critical value when \\(X \\sim t(df = %g)\\):", df)),
+                hr(),
+                br(),
+                sprintf("\\(\\displaystyle t_{area,df}=t_{%g,%g}=%g\\)", p, df, round(tCritical, 4)),
+              ),
+              br(),
+              codeBox(
+                boxId = "rcodeStudentTBox",
+                outputId = "rcodeStudentT",
+                ns = ns
+              ),
+              br(), hr(), br(),
+              plotOutput(session$ns("studentTCriticalPlot"))
+              )
+          )
+        }
+      })
+      
+      output$studentTDistrPlot <- renderPlot({
+        req(pd_iv$is_valid())
+        req(input$probability == "Student's t")
+        req(input$calcTypeStudentT == "Probability")
+        
+        if(input$calcStudentT == "cumulative") {
+          
+          plot_t_distribution(
+            df = input$dfStudentT,
+            direction = "left",
+            x1 = input$tStudentT
+          )
+          
+        } else if(input$calcStudentT == "upperTail") {
+          
+          plot_t_distribution(
+            df = input$dfStudentT,
+            direction = "right",
+            x1 = input$tStudentT
+          )
+          
+        } else if(input$calcStudentT == "between") {
+          plot_t_distribution(df = input$dfStudentT,direction = "between", x1 = input$t1StudentT, x2 = input$t2StudentT)
+        }
+      })
+      
+      output$studentTCriticalPlot <- renderPlot({
+        req(pd_iv$is_valid())
+        req(input$probability == "Student's t")
+        req(input$calcTypeStudentT == "Critical Value")
+        
+        tCritical <- qt(input$probStudentT, input$dfStudentT)
+        
+        plot_t_distribution(df = input$dfStudentT, direction = "left", x1 = tCritical)
+      })
+      
+      output$rcodeStudentT <- renderUI({
+        
+        req(pd_iv$is_valid())
+        if (input$calcTypeStudentT == "Probability") {
+          if (input$calcStudentT == "cumulative") {
+            HTML(paste0(
+              "pt(",
+              codeValue(input$tStudentT),
+              ", df = ",
+              codeValue(input$dfStudentT),
+              ")"
+            ))
+          } else if (input$calcStudentT == "upperTail") {
+            HTML(paste0(
+              "pt(",
+              codeValue(input$tStudentT),
+              ", df = ",
+              codeValue(input$dfStudentT),
+              ", lower.tail = FALSE)"
+            ))
+          } else if (input$calcStudentT == "between") {
+            HTML(paste0(
+              "pt(",
+              codeValue(input$t2StudentT),
+              ", df = ",
+              codeValue(input$dfStudentT),
+              ") - pt(",
+              codeValue(input$t1StudentT),
+              ", df = ",
+              codeValue(input$dfStudentT),
+              ")"
+            ))
+          }
+        } else if (input$calcTypeStudentT == "Critical Value") {
+          HTML(paste0(
+            "qt(",
+            codeValue(input$probStudentT),
+            ", df = ",
+            codeValue(input$dfStudentT),
+            ")"
+          ))
+        }
+      })
+    })
+    
     observeEvent({
       input$cTableDimension
       input$cTableType
@@ -4765,6 +4993,18 @@ probDistServer <- function(id) {
       if(input$calcStudentT == 'between') {
         hide(id = "studentTResults")
       }
+    })
+    
+    observeEvent({
+      input$dfStudentT
+      input$calcTypeStudentT
+      input$calcStudentT
+      input$tStudentT
+      input$t1StudentT
+      input$t2StudentT
+      input$probStudentT
+    }, {
+      hide(id = "studentTResults")
     })
   })
 }
