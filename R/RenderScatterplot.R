@@ -107,14 +107,14 @@ RenderScatterplot <- function(
         y          = ~upr,
         type       = "scatter",
         mode       = "lines",
-        name       = "Confidence Interval",
+        name       = "Confidence Band",
         line       = list(
           color = "darkblue",
           width = lineWidth * 2,
           dash  = "dash"
         ),
         hovertemplate = paste0(
-          "<b>CI Upper:</b> %{y:.4f}<br>",
+          "<b>CB Upper:</b> %{y:.4f}<br>",
           "<extra></extra>"
         )
       ) %>%
@@ -125,7 +125,7 @@ RenderScatterplot <- function(
         y          = ~lwr,
         type       = "scatter",
         mode       = "lines",
-        name       = "Confidence Interval",
+        name       = "Confidence Band",
         showlegend = FALSE,
         line       = list(
           color = "darkblue",
@@ -133,7 +133,7 @@ RenderScatterplot <- function(
           dash  = "dash"
         ),
         hovertemplate = paste0(
-          "<b>CI Lower:</b> %{y:.4f}<br>",
+          "<b>CB Lower:</b> %{y:.4f}<br>",
           "<extra></extra>"
         )
       )
@@ -160,14 +160,14 @@ RenderScatterplot <- function(
         y          = ~upr,
         type       = "scatter",
         mode       = "lines",
-        name       = "Prediction Interval",
+        name       = "Prediction Band",
         line       = list(
           color = "red",
           width = lineWidth * 2,
           dash  = "dash"
         ),
         hovertemplate = paste0(
-          "<b>PI Upper:</b> %{y:.4f}<br>",
+          "<b>PB Upper:</b> %{y:.4f}<br>",
           "<extra></extra>"
         )
       ) %>%
@@ -178,7 +178,7 @@ RenderScatterplot <- function(
         y          = ~lwr,
         type       = "scatter",
         mode       = "lines",
-        name       = "Prediction Interval",
+        name       = "Prediction Band",
         showlegend = FALSE,
         line       = list(
           color = "red",
@@ -186,7 +186,7 @@ RenderScatterplot <- function(
           dash  = "dash"
         ),
         hovertemplate = paste0(
-          "<b>PI Lower:</b> %{y:.4f}<br>",
+          "<b>PB Lower:</b> %{y:.4f}<br>",
           "<extra></extra>"
         )
       )
