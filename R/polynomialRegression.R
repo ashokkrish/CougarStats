@@ -193,6 +193,11 @@ PolynomialRegressionMainPanelUI <- function(id) {
                 value   = 2,
                 min     = 2,
                 step    = 1
+              ),
+              p(
+                class = "text-muted",
+                style = "font-size: 0.85em; margin-top: -8px;",
+                tags$em("Note: this degree only affects the curve displayed on this scatterplot and does not change the model used in any other tab.")
               )
             )
           ),
@@ -200,13 +205,15 @@ PolynomialRegressionMainPanelUI <- function(id) {
           uiOutput(ns("polyScatterIntervalWarning")),
 
           plotOptionsMenuUI(
-            id          = ns("polyScatter"),
-            plotType    = "Scatterplot",
-            title       = "Scatterplot",
-            xlab        = "x",
-            ylab        = "y",
-            dim         = "in px",
-            includeFlip = FALSE
+            id                  = ns("polyScatter"),
+            plotType            = "Scatterplot",
+            title               = "Scatterplot",
+            xlab                = "x",
+            ylab                = "y",
+            dim                 = "in px",
+            includeFlip         = FALSE,
+            regressionLineLabel = "Polynomial Regression Curve",
+            includeLinearLine   = TRUE
           ),
 
           plotlyOutput(ns("polyScatterplot"),
@@ -542,8 +549,11 @@ PolynomialRegressionServer <- function(id) {
 
     output$polyScatterplot <- renderPlotly({
       req(scatterModel(), storedDatx(), storedDaty())
-      df <- data.frame(x = storedDatx(), y = storedDaty())
-      RenderScatterplot(
+      datx <- storedDatx()
+      daty <- storedDaty()
+      df   <- data.frame(x = datx, y = daty)
+
+      p <- RenderScatterplot(
         df,
         scatterModel(),
         input[["polyScatter-Title"]],
@@ -559,6 +569,25 @@ PolynomialRegressionServer <- function(id) {
         input[["polyScatter-showRegressionLine"]]
       ) %>%
         style(name = "Data Points — Polynomial Regression Curve", traces = 2)
+
+      if (isTRUE(input[["polyScatter-showLinearLine"]])) {
+        linear_model <- lm(daty ~ datx)
+        x_seq        <- seq(min(datx), max(datx), length.out = 200)
+        y_linear     <- predict(linear_model, newdata = data.frame(datx = x_seq))
+        lw           <- as.numeric(input[["polyScatter-LineWidth"]]) * 2
+        p <- p %>% add_trace(
+          x             = x_seq,
+          y             = y_linear,
+          type          = "scatter",
+          mode          = "lines",
+          name          = "Linear Regression Line",
+          inherit       = FALSE,
+          line          = list(color = "#2CA02C", width = lw),
+          hovertemplate = "<b>Linear Fit:</b> %{y:.4f}<br><extra></extra>"
+        )
+      }
+
+      p
     })
 
     # ---- Calculate button -------------------------------------------------
