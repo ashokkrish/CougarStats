@@ -158,6 +158,7 @@ PolynomialRegressionMainPanelUI <- function(id) {
 
     hidden(div(
       id = ns("polyResultsPanel"),
+      uiOutput(ns("polyPerfectFitWarning")),
       uiOutput(ns("polyMissingRowsWarning")),
 
       navbarPage(
@@ -341,6 +342,11 @@ PolynomialRegressionServer <- function(id) {
       if (length(yvals) > 0 && length(xvals) > 0 && length(yvals) != length(xvals))
         "x and y must have the same number of observations."
     })
+    polyraw_iv$add_rule("polyY", ~ {
+      yvals <- createNumLst(input$polyY)
+      if (length(yvals) > 0 && sd(yvals) == 0)
+        "Response variable is constant. At least two distinct values are required."
+    })
 
     polyraw_iv$add_rule("polyX", sv_required())
     polyraw_iv$add_rule("polyX", ~ {
@@ -352,8 +358,8 @@ PolynomialRegressionServer <- function(id) {
       n     <- length(xvals)
       d     <- input$polyDegree
       if (n > 0 && !is.na(d)) {
-        if (d >= n)
-          paste0("Degree must be less than n (", n, "). Maximum degree for this data is ", n - 1, ".")
+        if (d >= n - 1)
+          paste0("A degree-", d, " polynomial requires at least ", d + 2, " observations (currently ", n, ").")
       }
     })
     polyraw_iv$add_rule("polyX", ~ {
@@ -361,6 +367,11 @@ PolynomialRegressionServer <- function(id) {
       xvals <- createNumLst(input$polyX)
       if (length(xvals) > 0 && length(yvals) > 0 && length(xvals) != length(yvals))
         "x and y must have the same number of observations."
+    })
+    polyraw_iv$add_rule("polyX", ~ {
+      xvals <- createNumLst(input$polyX)
+      if (length(xvals) > 0 && sd(xvals) == 0)
+        "Explanatory variable has a standard deviation equal to zero (all values are identical). At least two distinct values are required."
     })
 
     polyupload_iv$add_rule("polyUserData", sv_required())
@@ -384,11 +395,33 @@ PolynomialRegressionServer <- function(id) {
     polyupvars_iv$add_rule("polyResponse",    sv_required())
     polyupvars_iv$add_rule("polyExplanatory", sv_required())
     polyupvars_iv$add_rule("polyExplanatory", ~ tryCatch({
+      raw <- as.data.frame(polyUploadData())[, input$polyExplanatory]
+      if (length(raw) == 0 || any(is.na(suppressWarnings(as.numeric(raw[!is.na(raw)])))))
+        "Explanatory variable contains non-numeric data."
+    }, error = function(e) NULL))
+    polyupvars_iv$add_rule("polyExplanatory", ~ tryCatch({
       raw  <- suppressWarnings(as.numeric(as.data.frame(polyUploadData())[, input$polyExplanatory]))
       n    <- length(na.omit(raw))
       d    <- input$polyDegree
-      if (!is.na(d) && n > 0 && d >= n)
-        paste0("Degree must be less than n (", n, "). Maximum degree for this data is ", n - 1, ".")
+      if (!is.na(d) && n > 0 && d >= n - 1)
+        paste0("A degree-", d, " polynomial requires at least ", d + 2, " observations (currently ", n, ").")
+    }, error = function(e) NULL))
+    polyupvars_iv$add_rule("polyExplanatory", ~ tryCatch({
+      raw  <- suppressWarnings(as.numeric(as.data.frame(polyUploadData())[, input$polyExplanatory]))
+      datx <- na.omit(raw)
+      if (length(datx) > 0 && sd(datx) == 0)
+        "Explanatory variable has a standard deviation equal to zero (all values are identical). At least two distinct values are required."
+    }, error = function(e) NULL))
+    polyupvars_iv$add_rule("polyResponse", ~ tryCatch({
+      raw <- as.data.frame(polyUploadData())[, input$polyResponse]
+      if (length(raw) == 0 || any(is.na(suppressWarnings(as.numeric(raw[!is.na(raw)])))))
+        "Response variable contains non-numeric data."
+    }, error = function(e) NULL))
+    polyupvars_iv$add_rule("polyResponse", ~ tryCatch({
+      raw  <- suppressWarnings(as.numeric(as.data.frame(polyUploadData())[, input$polyResponse]))
+      daty <- na.omit(raw)
+      if (length(daty) > 0 && sd(daty) == 0)
+        "Response variable is constant. At least two distinct values are required."
     }, error = function(e) NULL))
 
     polyraw_iv$condition(~ isTRUE(input$polyDataInput == "Enter Raw Data"))
@@ -406,6 +439,7 @@ PolynomialRegressionServer <- function(id) {
 
     # ---- Reset results when data input mode changes -----------------------
     observeEvent(input$polyDataInput, {
+      output$polyPerfectFitWarning <- renderUI({ NULL })
       hide("polyResultsPanel")
       hideTab(inputId = "polyNavbarPage", target = "Uploaded Data")
       hideTab(inputId = "polyNavbarPage", target = "Inference")
@@ -426,6 +460,7 @@ PolynomialRegressionServer <- function(id) {
     # ---- Reset results when raw inputs change -----------------------------
     observeEvent(list(input$polyX, input$polyY, input$polyDegree), {
       req(input$polyDataInput == "Enter Raw Data")
+      output$polyPerfectFitWarning <- renderUI({ NULL })
       hide("polyResultsPanel")
       hideTab(inputId = "polyNavbarPage", target = "Inference")
       hideTab(inputId = "polyNavbarPage", target = "Diagnostic Plots")
@@ -544,6 +579,16 @@ PolynomialRegressionServer <- function(id) {
             "Maximum degree for this data is ", n - 1, "."
           )
         )
+      } else if (d == n - 1) {
+        div(
+          class = "alert alert-warning",
+          style = "margin-top: 10px;",
+          tags$b("Perfect fit: "),
+          paste0(
+            "A degree-", d, " polynomial through ", n, " points is a perfect fit ",
+            "(residual df = 0). Confidence and prediction intervals are not available."
+          )
+        )
       }
     })
 
@@ -624,6 +669,16 @@ PolynomialRegressionServer <- function(id) {
         nDroppedRows(0)
       }
 
+      if (length(datx) <= degree + 1) {
+        showNotification(
+          paste0("After removing missing values, fewer than ", degree + 2,
+                 " complete observations remain for a degree-", degree,
+                 " polynomial. Please choose different variables or a lower degree."),
+          type = "error", duration = 8
+        )
+        return()
+      }
+
       # Store for scatterplot reactive use
       storedDatx(datx)
       storedDaty(daty)
@@ -649,6 +704,35 @@ PolynomialRegressionServer <- function(id) {
           )
         }
       })
+
+      # -- Perfect fit detection ---------------------------------------------
+      r_squared <- summary(model)$r.squared
+
+      output$polyPerfectFitWarning <- renderUI({
+        if (isTRUE(all.equal(r_squared, 1))) {
+          hideTab(inputId = "polyNavbarPage", target = "Inference")
+          hideTab(inputId = "polyNavbarPage", target = "Diagnostic Plots")
+          div(
+            class = "alert alert-warning",
+            role  = "alert",
+            style = "margin-top: 10px;",
+            tags$b("⚠️ Perfect Fit Detected: "),
+            "This may indicate that ",
+            tags$b("x and y are identical or linearly dependent,"),
+            " which can produce unreliable inference and diagnostic plots. Standard statistical significance tests cannot run on perfect fits. Please check your data."
+          )
+        } else {
+          showTab(inputId = "polyNavbarPage", target = "Inference")
+          showTab(inputId = "polyNavbarPage", target = "Diagnostic Plots")
+          NULL
+        }
+      })
+
+      isPerfectFit <- isTRUE(all.equal(r_squared, 1))
+      if (isPerfectFit) {
+        hideTab(inputId = "polyNavbarPage", target = "Inference")
+        hideTab(inputId = "polyNavbarPage", target = "Diagnostic Plots")
+      }
 
       # -- Model tab ---------------------------------------------------------
       output$polyModelEquation <- renderUI({
@@ -860,6 +944,17 @@ PolynomialRegressionServer <- function(id) {
       model  <- polyModel()
       k      <- model$rank - 1
       n      <- length(storedDatx())
+
+      if (n - k - 1 <= 0) {
+        return(
+          ggplot() +
+            annotate("text", x = 0.5, y = 0.5,
+                     label = "F distribution cannot be computed:\nThe model is a perfect fit (residual df = 0).",
+                     hjust = 0.5, vjust = 0.5, size = 5) +
+            theme_void()
+        )
+      }
+
       av     <- anova(model)
       SSR    <- sum(av[["Sum Sq"]][-nrow(av)])
       SSE    <- av[["Sum Sq"]][nrow(av)]
@@ -912,6 +1007,15 @@ PolynomialRegressionServer <- function(id) {
       MSE    <- SSE / (n - k - 1)
       F_stat <- MSR / MSE
       p_val  <- pf(F_stat, k, n - k - 1, lower.tail = FALSE)
+
+      if (is.nan(p_val) || is.na(p_val)) {
+        return(withMathJax(
+          p(strong("Test Statistic:")),
+          p("F statistic cannot be computed: the model is a perfect fit (residual df = 0)."),
+          p(strong("Conclusion:")),
+          p("With zero residual degrees of freedom, the ANOVA F-test is unreliable.")
+        ))
+      }
 
       withMathJax(
         p(strong("Test Statistic:")),
@@ -1129,6 +1233,11 @@ PolynomialRegressionServer <- function(id) {
 
     output$polyDiagPlot2 <- renderPlot({
       model <- polyModel()
+      if (model$df.residual == 0) {
+        plot.new()
+        text(0.5, 0.5, "Q-Q plot not available:\nModel is a perfect fit (residual df = 0).", cex = 1.2)
+        return(invisible(NULL))
+      }
       par(font.main = 2, font.lab = 2)
       plot(model, which = 2, pch = 20, main = "", lwd = 2, sub.caption = "", caption = "")
       title(main = "Q-Q Residuals", cex.main = 1.2)
@@ -1137,6 +1246,11 @@ PolynomialRegressionServer <- function(id) {
 
     output$polyDiagPlot3 <- renderPlot({
       model <- polyModel()
+      if (model$df.residual == 0) {
+        plot.new()
+        text(0.5, 0.5, "Scale-Location plot not available:\nModel is a perfect fit (residual df = 0).", cex = 1.2)
+        return(invisible(NULL))
+      }
       par(font.main = 2, font.lab = 2)
       plot(model, which = 3, pch = 20, main = "", lwd = 2, sub.caption = "", caption = "", ann = FALSE)
       title(main = "Scale-Location", cex.main = 1.2)
@@ -1176,6 +1290,7 @@ PolynomialRegressionServer <- function(id) {
       storedDatx(NULL)
       storedDaty(NULL)
       nDroppedRows(0)
+      output$polyPerfectFitWarning <- renderUI({ NULL })
       fileState$status <- "reset"
       hide("polyResultsPanel")
       hide("polyUploadedDataPanel")
