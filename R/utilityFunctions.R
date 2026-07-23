@@ -83,6 +83,7 @@ copyButton <- function(id, ns) {
   )
 }
 
+# Creates an empty R code box display
 codeBox <- function(title = "R Code", boxId, outputId, ns) {
   
   div(
@@ -103,6 +104,16 @@ codeBox <- function(title = "R Code", boxId, outputId, ns) {
   )
 }
 
+# Shows/hides code box
+toggleCodeBox <- function(showBox, boxId, ns) {
+  runjs(sprintf(
+    "document.getElementById('%s').style.display='%s';",
+    ns(paste0(boxId, "Wrapper")),
+    if (showBox) "block" else "none"
+  ))
+}
+
+# Adds colour blue to the argument
 codeValue <- function(x) {
   paste0('<span class="code-value">', as.character(x), '</span>')
 }

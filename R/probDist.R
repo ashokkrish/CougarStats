@@ -1008,12 +1008,6 @@ probDistUI <- function(id) {
                              
                              uiOutput(ns("renderNormPercentile"))), 
                          ), 
-                         
-                         codeBox(
-                           boxId = "rcodeNormalBox",
-                           outputId = "rcodeNormal",
-                           ns = ns
-                         ),
                          br()
               ))
             ) ,
@@ -2538,11 +2532,7 @@ probDistServer <- function(id) {
               input$numSuccessesBinomx2 <= input$numTrialsBinom
           }
         }
-        runjs(sprintf(
-          "document.getElementById('%s').style.display = '%s';",
-          ns("rcodeBinomBoxWrapper"),
-          if (isTRUE(showBox)) "block" else "none"
-        ))
+        toggleCodeBox(showBox, "rcodeBinomBox", ns)
       })
       
       output$renderProbabilityBinom <- renderUI({
@@ -2883,11 +2873,7 @@ probDistServer <- function(id) {
           showBox <- pd_iv$is_valid() &&
             input$x1Poisson <= input$x2Poisson
         }
-        runjs(sprintf(
-          "document.getElementById('%s').style.display = '%s';",
-          ns("rcodePoissonBoxWrapper"),
-          if (showBox) "block" else "none"
-        ))
+        toggleCodeBox(showBox, "rcodePoissonBox", ns)
       })
       
       output$renderProbabilityPoisson <- renderUI({
@@ -3122,11 +3108,7 @@ probDistServer <- function(id) {
             input$x1HypGeo <= input$popSuccessesHypGeo 
         }
         
-        runjs(sprintf(
-          "document.getElementById('%s').style.display = '%s';",
-          ns("rcodeHypGeoBoxWrapper"),
-          if (showBox) "block" else "none"
-        ))
+        toggleCodeBox(showBox, "rcodeHypGeoBox", ns)
       })
       
       output$renderProbabilityHypGeo <- renderUI({
@@ -3505,17 +3487,8 @@ probDistServer <- function(id) {
       
       observe({
         req(input$probability == "Negative Binomial")
-        if (pd_iv$is_valid()) {
-          runjs(sprintf(
-            "document.getElementById('%s').style.display = 'block';",
-            ns("rcodeNegBinBoxWrapper")
-          ))
-        } else {
-          runjs(sprintf(
-            "document.getElementById('%s').style.display = 'none';",
-            ns("rcodeNegBinBoxWrapper")
-          ))
-        }
+        
+        toggleCodeBox(pd_iv$is_valid(), "rcodeNegBinBox", ns)
       })
       
       output$renderProbabilityNegBin <- renderUI({
@@ -3659,11 +3632,7 @@ probDistServer <- function(id) {
           }
         }
         
-        runjs(sprintf(
-          "document.getElementById('%s').style.display='%s';",
-          ns("rcodeNormalBoxWrapper"),
-          if(showBox)"block"else"none"
-        ))
+        toggleCodeBox(showBox, "rcodeNormalBox", ns)
       })
       
       output$renderProbabilityNorm <- renderUI({
@@ -3723,7 +3692,7 @@ probDistServer <- function(id) {
           norm_x2 <- input$x2Value
           
           validate(
-            need((norm_x1 != norm_x2) && (norm_x1 <= norm_x2), "Normally Distributed Variable (x1) must be less than Normally Distributed Variable (x2)"),
+            need((norm_x1 != norm_x2) && (norm_x1 < norm_x2), "Normally Distributed Variable (x1) must be less than Normally Distributed Variable (x2)"),
             errorClass = "myClass")
           
           normProb <- paste("P(", norm_x1, " ",  " \\leq X \\leq"," ", norm_x2,")") 
@@ -3764,6 +3733,12 @@ probDistServer <- function(id) {
               br(),
               sprintf("Population Variance \\( (\\sigma^{2}) = %g\\)",
                       norm_sigma^2)
+            ), 
+            br(),
+            codeBox(
+              boxId = "rcodeNormalBox",
+              outputId = "rcodeNormal",
+              ns = ns
             ),
             br(),
             hr(),
@@ -4024,6 +3999,12 @@ probDistServer <- function(id) {
                       input$popSD^2 / input$sampDistrSize)
             ),
             br(),
+            codeBox(
+              boxId = "rcodeNormalBox",
+              outputId = "rcodeNormal",
+              ns = ns
+            ),
+            br(),
             hr(),
             br(),
             fluidRow(
@@ -4188,7 +4169,11 @@ probDistServer <- function(id) {
                   br())
               )
             ),
-            br(),
+            codeBox(
+              boxId = "rcodeNormalBox",
+              outputId = "rcodeNormal",
+              ns = ns
+            ),
             br())
         )
       })
@@ -4512,6 +4497,11 @@ probDistServer <- function(id) {
                        br())
               )
             ),
+            codeBox(
+              boxId = "rcodeNormalBox",
+              outputId = "rcodeNormal",
+              ns = ns
+            ),
             br(),
             br())
         )
@@ -4612,11 +4602,7 @@ probDistServer <- function(id) {
             showBox <- TRUE
           }
         }
-        runjs(sprintf(
-          "document.getElementById('%s').style.display='%s';",
-          ns("rcodeStudentTBoxWrapper"),
-          if(showBox) "block" else "none"
-        ))
+        toggleCodeBox(showBox, "rcodeStudentTBox", ns)
       })
       
       output$renderProbabilityStudentT <- renderUI({
@@ -4998,12 +4984,31 @@ probDistServer <- function(id) {
     observeEvent({
       input$dfStudentT
       input$calcTypeStudentT
-      input$calcStudentT
       input$tStudentT
       input$t1StudentT
       input$t2StudentT
       input$probStudentT
     }, {
+      hide(id = "studentTResults")
+    })
+    
+    observeEvent({
+      input$dfStudentT
+      input$calcTypeStudentT
+      input$tStudentT
+      input$t1StudentT
+      input$t2StudentT
+      input$probStudentT
+    }, {
+      hide(id = "studentTResults")
+    })
+    
+    observeEvent(input$probability, {
+      hide(id = "binomialResults")
+      hide(id = "poissonResults")
+      hide(id = "hypgeoResults")
+      hide(id = "negBinResults")
+      hide(id = "normalResults")
       hide(id = "studentTResults")
     })
   })

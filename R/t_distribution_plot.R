@@ -117,15 +117,21 @@ plot_t_distribution <- function(df,
   
   p +
     labs(
-      x = expression(italic(t)),
+      title = bquote(bolditalic(X) %~% bolditalic(t)(.(df))),
+      x = expression(bolditalic(t)),
       y = NULL
+    ) +
+    scale_x_continuous(
+      breaks = -3:3
     ) +
     coord_cartesian(expand = FALSE) +
     theme_classic(base_size = 18) +
     theme(
+      plot.title = element_text(hjust = 0.5),
       axis.title.x = element_text(face = "bold"),
       axis.title.y = element_blank(),
       axis.text.y = element_blank(),
+      axis.text.x = element_text(size = 18),
       axis.ticks.y = element_blank(),
       axis.line.y = element_blank(),
       panel.grid = element_blank()
