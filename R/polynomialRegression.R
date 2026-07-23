@@ -613,7 +613,7 @@ PolynomialRegressionServer <- function(id) {
         isTRUE(input[["polyScatter-predictionInterval"]]) && df.residual(scatterModel()) > 0,
         input[["polyScatter-showRegressionLine"]]
       ) %>%
-        style(name = "Data Points — Polynomial Regression Curve", traces = 2)
+        style(name = "Polynomial Regression Curve", traces = 2)
 
       if (isTRUE(input[["polyScatter-showLinearLine"]])) {
         linear_model <- lm(daty ~ datx)
