@@ -659,7 +659,7 @@ probDistUI <- function(id) {
               label   = strong("Degrees of freedom (\\( df\\))"),
               value   = 30,
               min     = 1,
-              step    = 1),
+              step    = 0.00001),
             
             radioButtons(
               inputId      = ns("calcTypeStudentT"),
@@ -1277,7 +1277,6 @@ probDistServer <- function(id) {
     percentile_iv$add_rule("percentileValue", sv_lt(100))
     
     studentt_iv$add_rule("dfStudentT", sv_required())
-    studentt_iv$add_rule("dfStudentT", sv_integer())
     studentt_iv$add_rule("dfStudentT", sv_gt(0))
     
     studenttprob_iv$add_rule("tStudentT", sv_required())
@@ -1288,16 +1287,6 @@ probDistServer <- function(id) {
     
     studenttbetween_iv$add_rule("t2StudentT", sv_required())
     studenttbetween_iv$add_rule("t2StudentT", sv_numeric())
-    
-    studenttbetween_iv$add_rule("t1StudentT", function(value) {
-      if (!is.null(value) && !is.null(input$t2StudentT) && value >= input$t2StudentT)
-        "t Distributed Variable (x1) must be less than t Distributed Variable (x2)."
-    })
-    
-    studenttbetween_iv$add_rule("t2StudentT", function(value) {
-      if (!is.null(value) && !is.null(input$t1StudentT) && value <= input$t1StudentT)
-        "t Distributed Variable (x1) must be less than t Distributed Variable (x2)."
-    })
     
     studenttcritical_iv$add_rule("probStudentT", sv_required())
     studenttcritical_iv$add_rule("probStudentT", sv_numeric())
@@ -4628,8 +4617,6 @@ probDistServer <- function(id) {
                    "Enter a value for the t Distributed Variable (x1)."),
               need(input$t2StudentT,
                    "Enter a value for the t Distributed Variable (x2)."),
-              need(input$t1StudentT < input$t2StudentT,
-                   "t Distributed Variable (x1) must be less than t Distributed Variable (x2)."),
               errorClass = "myClass"
             )
           }
@@ -4653,6 +4640,13 @@ probDistServer <- function(id) {
             tProb <- 1 - pt(tValue, df)
             studentTProb <- paste("P(t \\geq", tValue, ")")
           } else if(input$calcStudentT == "between") {
+            validate(
+              need(
+                isTRUE(input$t1StudentT < input$t2StudentT),
+                "t Distributed Variable (x1) must be less than t Distributed Variable (x2)."
+              ),
+              errorClass = "myClass"
+            )
             t1 <- input$t1StudentT
             t2 <- input$t2StudentT
             tProb <- pt(t2, df) - pt(t1, df)
@@ -4663,7 +4657,7 @@ probDistServer <- function(id) {
               div(h3(sprintf("Calculating \\(%s\\) when \\(X \\sim t(df = %g)\\):", studentTProb,df)),
                 hr(),
                 br(),
-                sprintf("\\(\\displaystyle %s = %g\\)", studentTProb, round(tProb, 4)),
+                sprintf("\\(\\displaystyle %s = %s\\)", studentTProb, sprintf("%.4f", tProb)),
                 br(), br(),
                 codeBox(
                   boxId = "rcodeStudentTBox",
@@ -4710,7 +4704,7 @@ probDistServer <- function(id) {
               div(h3(sprintf("Calculating the critical value when \\(X \\sim t(df = %g)\\):", df)),
                 hr(),
                 br(),
-                sprintf("\\(\\displaystyle t_{area,df}=t_{%g,%g}=%g\\)", p, df, round(tCritical, 4)),
+                sprintf("\\(\\displaystyle t_{area,df}=t_{%g,%g}=%s\\)", p, df, sprintf("%.4f", tCritical)),
               ),
               br(),
               codeBox(

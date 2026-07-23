@@ -124,7 +124,10 @@ plot_t_distribution <- function(df,
     scale_x_continuous(
       breaks = -3:3
     ) +
-    coord_cartesian(expand = FALSE) +
+    coord_cartesian(
+      expand = FALSE,
+      ylim = c(0, max(density$y) * 1.05)
+    ) +
     theme_classic(base_size = 18) +
     theme(
       plot.title = element_text(hjust = 0.5),
