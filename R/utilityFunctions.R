@@ -106,6 +106,9 @@ codeBox <- function(title = "R Code", boxId, outputId, ns) {
 
 # Shows/hides code box
 toggleCodeBox <- function(showBox, boxId, ns) {
+  if (is.null(showBox) || is.na(showBox)) {
+    showBox <- FALSE
+  }
   runjs(sprintf(
     "document.getElementById('%s').style.display='%s';",
     ns(paste0(boxId, "Wrapper")),

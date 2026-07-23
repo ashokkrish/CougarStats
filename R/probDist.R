@@ -532,13 +532,13 @@ probDistUI <- function(id) {
                   numericInput(
                     inputId = ns("x1Value"),
                     label   = strong("Normally Distributed Variable (\\( x_{1}\\))"),
-                    value   = -1, 
+                    value   = 115, 
                     step    = 0.00001),
                   
                   numericInput(
                     inputId = ns("x2Value"),
                     label   = strong("Normally Distributed Variable (\\( x_{2}\\))"),
-                    value   = 1, 
+                    value   = 145, 
                     step    = 0.00001),
                 ), 
               ), 
@@ -3169,7 +3169,10 @@ probDistServer <- function(id) {
               validate(
                 need(xHypGeo <= sampSizeHypGeo, "Number of Successes in the Sample (x) must be less than or equal to the Sample Size (n)"),
                 need(xHypGeo <= popSuccessesHypGeo, "Number of Successes in the Sample (x) must be less than or equal to the Number of Successes in the Population (M)"),
-                need((sampSizeHypGeo - xHypGeo) <= (popSizeHypGeo - popSuccessesHypGeo), "Since (n - x) > (N - M) the following are true P(X = x) = 0, P(X < x) = 0, P(X ≤ x) = 0, P(X > x) = 1, P(X ≥ x) = 1"),
+                need(
+                  (sampSizeHypGeo - xHypGeo) <= (popSizeHypGeo - popSuccessesHypGeo),
+                  "Since (n - x) > (N - M) the following are true:\n\nP(X = x) = 0\n\nP(X < x) = P(X ≤ x) = 0\n\nP(X > x) = P(X ≥ x) = 1"
+                ),
                 errorClass = "myClass")
               
               if(input$calcHypGeo == 'exact'){
