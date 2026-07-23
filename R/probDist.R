@@ -4634,11 +4634,11 @@ probDistServer <- function(id) {
           if(input$calcStudentT == "cumulative") {
             tValue <- input$tStudentT
             tProb <- pt(tValue, df)
-            studentTProb <- paste("P(t \\leq", tValue, ")")
+            studentTProb <- paste("P(X \\leq", tValue, ")")
           } else if(input$calcStudentT == "upperTail") {
             tValue <- input$tStudentT
             tProb <- 1 - pt(tValue, df)
-            studentTProb <- paste("P(t \\geq", tValue, ")")
+            studentTProb <- paste("P(X \\geq", tValue, ")")
           } else if(input$calcStudentT == "between") {
             validate(
               need(
@@ -4650,7 +4650,7 @@ probDistServer <- function(id) {
             t1 <- input$t1StudentT
             t2 <- input$t2StudentT
             tProb <- pt(t2, df) - pt(t1, df)
-            studentTProb <- paste("P(", t1, "\\leq t \\leq", t2, ")")
+            studentTProb <- paste("P(", t1, "\\leq X \\leq", t2, ")")
           }
           tagList(
             withMathJax(
