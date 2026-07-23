@@ -2706,15 +2706,7 @@ statInfrServer <- function(id) {
         "Sample 1 and Sample 2 must be different columns. Please select two distinct columns."
       }
     })
-    wRankSumrawsd_iv$add_rule("rankSumRaw2", ~ {
-      data <- GetwRankSumMeansData()
-      if(is.null(data) || 
-         length(unique(data$samp1)) <= 1 || 
-         length(unique(data$samp2)) <= 1) {
-        "Variance required in Sample 1 and Sample 2 data for hypothesis testing."
-      }
-    })
-    wilcoxonUpload_iv$add_rule("wilcoxonUpl", ~ {
+    wilcoxonRanksuploadvars_iv$add_rule("wilcoxonUpl2", ~ {
       col1 <- input$wilcoxonUpl1
       col2 <- input$wilcoxonUpl2
       if (!isTruthy(col1) || !isTruthy(col2)) return(NULL)
@@ -2723,6 +2715,14 @@ statInfrServer <- function(id) {
         if (!is.numeric(data[[col1]]) || !is.numeric(data[[col2]])) {
           "The selected Sample 1 and Sample 2 columns must both be numeric."
         }
+      }
+    })
+    wRankSumrawsd_iv$add_rule("rankSumRaw2", ~ {
+      data <- GetwRankSumMeansData()
+      if(is.null(data) ||
+         length(unique(data$samp1)) <= 1 ||
+         length(unique(data$samp2)) <= 1) {
+        "Variance required in Sample 1 and Sample 2 data for hypothesis testing."
       }
     })
     # ind means Mu Naught
@@ -6916,6 +6916,9 @@ statInfrServer <- function(id) {
         validate(
           need(input$wilcoxonUpl1, "Please select a column for sample 1."),
           need(input$wilcoxonUpl2, "Please select a column for sample 2."),
+          need(!(isTruthy(input$wilcoxonUpl1) && isTruthy(input$wilcoxonUpl2) &&
+                 input$wilcoxonUpl1 == input$wilcoxonUpl2),
+               "Sample 1 and Sample 2 must be different columns. Please select two distinct columns."),
           need(CheckRankSumUploadSamples() == 0, "Same number of data points required for Sample 1 and Sample 2."),
           errorClass = "myClass")
       }
@@ -7558,8 +7561,7 @@ statInfrServer <- function(id) {
 
     observeEvent(input$sdVariable, {
       if (isTRUE(input$sdDataAvailability == "Upload Data") &&
-          onesdupload_iv$is_valid() &&
-          !onesduploadvar_iv$is_valid()) {
+          onesdupload_iv$is_valid()) {
         updateTabsetPanel(session, "oneSDTabset", selected = "Uploaded Data")
       }
     }, ignoreInit = TRUE)
@@ -9148,9 +9150,10 @@ statInfrServer <- function(id) {
     output$wRankSumUploadTable <- renderDT({
       req(wilcoxonUpload_iv$is_valid())
       datatable(WilcoxonUploadData(),
-                options = list(pageLength = -1,
+                options = list(pageLength = 25,
                                lengthMenu = list(c(25, 50, 100, -1),
                                                  c("25", "50", "100", "all")),
+                               scrollX = TRUE,
                                columnDefs = list(list(className = 'dt-center',
                                                       targets = 0:ncol(WilcoxonUploadData())))),
       )
@@ -11489,8 +11492,7 @@ statInfrServer <- function(id) {
 
     observeEvent(input$oneMeanVariable, {
       if (isTRUE(input$dataAvailability == "Upload Data") &&
-          onemeanupload_iv$is_valid() &&
-          !onemeanuploadvar_iv$is_valid()) {
+          onemeanupload_iv$is_valid()) {
         updateTabsetPanel(session, "onePopMeanTabset", selected = "Uploaded Data")
       }
     }, ignoreInit = TRUE)
@@ -11639,7 +11641,7 @@ statInfrServer <- function(id) {
       if (!wilcoxonUpload_iv$is_valid()) {
         return(helpText("No data yet. Upload a dataset to view it here."))
       }
-      div(DTOutput(session$ns("wRankSumUploadTable")), style = "width: 75%")
+      DTOutput(session$ns("wRankSumUploadTable"))
     })
 
     ### ---------- Wilcoxon Signed Rank Test Observers --------------------
@@ -12114,24 +12116,49 @@ statInfrServer <- function(id) {
     }) # input$goInference
     
     ### ------------ Component Display -------------------------------------------
-    observeEvent(!si_iv$is_valid(), {
-      ## si_iv also requires a column to be picked for uploaded data, which
-      ## is legitimately unmet right after a successful upload (before the
-      ## user has chosen a column). Don't blank the main panel in that case
-      ## -- the Uploaded Data preview is still valid and should stay visible.
-      uploadPreviewActive <-
-        (isTRUE(input$dataAvailability == "Upload Data") && onemeanupload_iv$is_valid()) ||
-        (isTRUE(input$sdDataAvailability == "Upload Data") && onesdupload_iv$is_valid()) ||
-        (isTRUE(input$dataAvailability2 == "Upload Data") && indmeansupload_iv$is_valid()) ||
-        (isTRUE(input$dataTypeDependent == "Upload Data") && depmeansupload_iv$is_valid()) ||
-        (isTRUE(input$wilcoxonRankSumTestData == "Upload Data") && wilcoxonUpload_iv$is_valid()) ||
-        (isTRUE(input$signedRankTest == "Upload Data") && signedRankUpload_iv$is_valid())
+    ## si_iv also requires a column to be picked for uploaded data, which is
+    ## legitimately unmet right after a successful upload (before the user
+    ## has chosen a column). Don't blank the main panel in that case -- the
+    ## Uploaded Data preview is still valid and should stay visible.
+    ## Each clause mirrors its validator's own $condition() (section scoping)
+    ## plus that validator's is_valid() -- Shiny retains hidden inputs, so
+    ## without the section check a clause could fire from an unrelated
+    ## section. If a section's $condition() changes, update its clause here
+    ## to match.
+    uploadPreviewActive <- reactive({
+      (isTRUE(input$siMethod == '1' &&
+              input$popuParameter == 'Population Mean' &&
+              input$dataAvailability == 'Upload Data') && onemeanupload_iv$is_valid()) ||
+        (isTRUE(input$siMethod == '1' &&
+                input$popuParameter == 'Population Standard Deviation' &&
+                input$sdDataAvailability == 'Upload Data') && onesdupload_iv$is_valid()) ||
+        (isTRUE(input$siMethod == '2' &&
+                input$popuParameters == 'Independent Population Means' &&
+                input$dataAvailability2 == 'Upload Data') && indmeansupload_iv$is_valid()) ||
+        (isTRUE(input$siMethod == '2' &&
+                input$popuParameters == 'Dependent Population Means' &&
+                input$dataTypeDependent == 'Upload Data') && depmeansupload_iv$is_valid()) ||
+        (isTRUE(input$siMethod == '2' &&
+                input$popuParameters == 'Wilcoxon rank sum test' &&
+                input$wilcoxonRankSumTestData == 'Upload Data') && wilcoxonUpload_iv$is_valid()) ||
+        (isTRUE(input$siMethod == '2' &&
+                input$popuParameters == 'Wilcoxon Signed Rank Test' &&
+                input$signedRankTest == 'Upload Data') && signedRankUpload_iv$is_valid())
+    })
 
-      if (!uploadPreviewActive) {
+    observeEvent(!si_iv$is_valid(), {
+      if (!uploadPreviewActive()) {
         hide(id = "inferenceMP")
         hide(id = "inferenceData")
       }
     })
+
+    observeEvent(list(input$popuParameter, input$siMethod), {
+      if (!uploadPreviewActive()) {
+        hide(id = "inferenceMP")
+        hide(id = "inferenceData")
+      }
+    }, ignoreInit = TRUE)
     
     observeEvent(!depmeansrawsd_iv$is_valid(), {
       hide(id = "inferenceMP")
@@ -12232,7 +12259,11 @@ statInfrServer <- function(id) {
       } else {
         showTab(inputId = "onePopMeanTabset", target = "Uploaded Data")
         showTab(inputId = "onePopMeanTabset", target = "Analysis")
-        updateTabsetPanel(session, "onePopMeanTabset", selected = "Analysis")
+        if (onemeanuploadvar_iv$is_valid()) {
+          updateTabsetPanel(session, "onePopMeanTabset", selected = "Analysis")
+        } else {
+          updateTabsetPanel(session, "onePopMeanTabset", selected = "Uploaded Data")
+        }
       }
 
       # Hide/show tabs for 1 sample population standard deviation
@@ -12243,7 +12274,11 @@ statInfrServer <- function(id) {
       } else {
         showTab(inputId = "oneSDTabset", target = "Uploaded Data")
         showTab(inputId = "oneSDTabset", target = "Analysis")
-        updateTabsetPanel(session, "oneSDTabset", selected = "Analysis")
+        if (onesduploadvar_iv$is_valid()) {
+          updateTabsetPanel(session, "oneSDTabset", selected = "Analysis")
+        } else {
+          updateTabsetPanel(session, "oneSDTabset", selected = "Uploaded Data")
+        }
       }
 
       if(length(input$oneMeanGraphOptions) > 0 && input$dataAvailability != "Summarized Data") {
