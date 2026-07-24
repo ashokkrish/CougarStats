@@ -1,5 +1,0 @@
-dependencies:
-- name: SortableJS
-  version: 1.15.6
-  src: htmlwidgets/lib/sortable
-  script: sortable.js

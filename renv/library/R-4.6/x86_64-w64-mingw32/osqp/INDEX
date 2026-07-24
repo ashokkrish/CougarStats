@@ -1,3 +1,0 @@
-osqp                    OSQP Solver object
-osqpSettings            Settings for OSQP
-solve_osqp              Sparse Quadratic Programming Solver

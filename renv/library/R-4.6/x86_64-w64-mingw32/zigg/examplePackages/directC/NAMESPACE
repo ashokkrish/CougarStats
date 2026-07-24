@@ -1,4 +1,0 @@
-export(ziggrnorm,
-       ziggsetseed)
-import(zigg)
-useDynLib(zigguserDirectC, .registration=TRUE)

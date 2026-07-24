@@ -1,1 +1,0 @@
-/*! name: vanilla-calendar-pro v3.1.0 | url: https://github.com/uvarov-frontend/vanilla-calendar-pro */

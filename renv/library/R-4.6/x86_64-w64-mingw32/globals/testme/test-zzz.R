@@ -1,1 +1,0 @@
-globals:::.onLoad("globals", "globals")

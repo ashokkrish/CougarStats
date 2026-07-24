@@ -1,5 +1,0 @@
-bibentry(bibtype = "Manual",
- title = "{aplpack}: Another Plot Package (version 190512)",
-    author = c(person("Hans Peter", "Wolf")),
-    year = "2019",
-    url = "https://cran.r-project.org/package=aplpack")

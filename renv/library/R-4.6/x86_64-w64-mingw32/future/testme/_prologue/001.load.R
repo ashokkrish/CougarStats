@@ -1,1 +1,0 @@
-loadNamespace("future")

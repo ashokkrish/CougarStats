@@ -1,4 +1,0 @@
-buildQP	solveQPXT
-convertToCompact	convertToCompact
-normalizeConstraints	normalizeConstraints
-solveQPXT	solveQPXT

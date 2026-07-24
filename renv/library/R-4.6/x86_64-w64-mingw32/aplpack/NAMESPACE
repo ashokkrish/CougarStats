@@ -1,9 +1,0 @@
-import(tcltk,stats,graphics,grDevices)
-importFrom(utils, find)
-exportPattern("^slider.[a-z]+")
-export(bagplot,boxplot2D,compute.bagplot,faces,plot.bagplot,
-       plotsummary,plothulls,bagplot.pairs,skyline.hist,
-       hdepth,plot.faces,spin3R,stem.leaf,stem.leaf.backback,
-       slider,gslider,iconplot,puticon,plot.faces)
-S3method(plot, bagplot)
-S3method(plot, faces)
