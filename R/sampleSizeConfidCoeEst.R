@@ -1,9 +1,9 @@
-
 sampleSizeConfidCoeEstUI <- function(id) {
   ns <- NS(id)
   sidebarLayout(
     sidebarPanel(
       shinyjs::useShinyjs(),
+      
       radioButtons(
         inputId = ns("estimateParameter"),
         label = strong("Estimate"), 
@@ -14,25 +14,25 @@ sampleSizeConfidCoeEstUI <- function(id) {
         selected = "Sample Size",
         inline = TRUE
       ),
+      
       uiOutput(ns("sampleSizeConfidCoeEstSidebarUI"))
-    ),#sidebarPanel
+    ), #sidebarPanel
+    
     mainPanel(
       uiOutput(ns("sampleSizeConfidCoeEstMainPanelUI"))
-    )#mainPanel
-  )#sidebarLayout
+    ) #mainPanel
+  ) #sidebarLayout
 }
 
 sampleSizeConfidCoeEstServer <- function(id) {
   moduleServer(id, function(input, output, session) {
-    
   
     sse_instance_counter  <- reactiveVal(0)
     cce_instance_counter  <- reactiveVal(0)
     
     current_sse_module_id  <- reactive({ paste0("sse_ss",  sse_instance_counter()) })
     current_cce_module_id  <- reactive({ paste0("sse_cc",  cce_instance_counter()) })
-    
-    
+
     observeEvent(input$estimateParameter, {
       req(input$estimateParameter)
       
@@ -70,7 +70,6 @@ sampleSizeConfidCoeEstServer <- function(id) {
         
         confidenceCoefficientServer(module_id)
       }  
-    })
-
-    })
+     })
+  })
 }
