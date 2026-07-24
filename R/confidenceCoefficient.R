@@ -548,9 +548,6 @@ confidenceCoefficientServer <- function(id) {
     observeEvent(input$goConfidCoeEst, {
       valid <- cce_iv$is_valid()
       
-      message("Calculate clicked")
-      message("Validation valid: ", valid)
-      
       if (valid) {
         shinyjs::show("ccEstMP")
       } else {
