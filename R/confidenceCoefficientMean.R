@@ -5,6 +5,8 @@ confidence_coefficient_mean <- function(n,
   if (!is.null(width)) {
     margin.error <- width / 2
   }
+  
+  # Input checks
   if (n <= 0)
     stop("'n' must be positive.")
   if (sigma <= 0)
@@ -12,12 +14,12 @@ confidence_coefficient_mean <- function(n,
   if (margin.error <= 0)
     stop("'margin.error' must be positive.")
   z <- margin.error * sqrt(n) / sigma
+  
+  # Confidence coefficient
   conf.level <- 2 * pnorm(z) - 1
+  
   return(conf.level)
 }
 
 # Example: fixed n = 100, sigma = 15, want margin error = 2
 #confidence_coefficient_mean(n = 21, sigma = 11, margin.error = 2)
-
-
-
