@@ -17,9 +17,8 @@ sampSizeEstSidebarUI <- function(id){
                           "Population Proportion"),
       choiceNames  = list("Population Mean (\\( \\mu \\)) ",
                           "Population Proportion (\\( p\\))"),
-      selected     = "Population Mean", #character(0), #
+      selected     = "Population Mean",
       inline       = TRUE),
-    
     
     conditionalPanel(
       ns = ns,
@@ -51,8 +50,6 @@ sampSizeEstSidebarUI <- function(id){
         selected     = "Margin of Error",
         inline       = TRUE),
       
-      
-      
       conditionalPanel(
         ns = ns,
         condition = "input.sseEstimationType == 'Margin of Error'",
@@ -76,18 +73,19 @@ sampSizeEstSidebarUI <- function(id){
           min     = 0.00001, 
           step    = 0.01)
       ), #sseEstimationType == 'Width of Interval'
+      
       actionButton(
         inputId = ns("goSampSizeEst"), 
         label   = "Calculate",
-        class = "act-btn"),
+        class   = "act-btn"),
       
       actionButton(
         inputId = ns("resetSampSizeEst"), 
         label   = "Reset Values",
-        class = "act-btn"),
+        class   = "act-btn")
     ), #sampSizeEstParameter == 'Population Mean'
     
-    # Population Proportion + (MoE or WoI)                                             
+    # Population Proportion                                             
     conditionalPanel(
       ns = ns,
       condition = "input.sampSizeEstParameter == 'Population Proportion'",
@@ -113,7 +111,6 @@ sampSizeEstSidebarUI <- function(id){
         label   = "Assume data follows a normal distribution",
         value   = TRUE
       ),
-      
       
       radioButtons(
         inputId      = ns("sseEstimationTypeProp"),
@@ -157,10 +154,9 @@ sampSizeEstSidebarUI <- function(id){
       actionButton(
         inputId = ns("resetSampSizeEst"), 
         label   = "Reset Values",
-        class = "act-btn"),
-    ), #sampSizeEstParameter == 'Population Proportion'
-    
-  )
+        class = "act-btn")
+    ) #sampSizeEstParameter == 'Population Proportion'
+  ) #tagList
 }
 
 ssEstimationMP <- function(id){
@@ -175,7 +171,7 @@ ssEstimationMP <- function(id){
       div(
         id = ns("ssEstData"), 
         
-        
+        #### ------------ Population Mean -----------------------------------------
         conditionalPanel(
           ns = ns,
           condition = "input.sampSizeEstParameter == 'Population Mean'",
@@ -184,7 +180,7 @@ ssEstimationMP <- function(id){
           br()
         ), #sampSizeEstParameter == Population Mean
         
-        #### ------------ Samp Size Prop Est -----------------------------------------
+        #### ------------ Population Proportion -----------------------------------------
         conditionalPanel(
           ns = ns,
           condition = "input.sampSizeEstParameter == 'Population Proportion'",
@@ -195,9 +191,7 @@ ssEstimationMP <- function(id){
       )
     )
   )
-
 }
-
 
 # =========================================================================== #  
 # ---- Server Components ---------------------------------------------------- 
@@ -229,7 +223,7 @@ sampSizeEstServer <- function(id) {
     sseMeanWidth_iv$add_rule("sseMeanWoI", sv_required())
     sseMeanWidth_iv$add_rule("sseMeanWoI", sv_gt(0))
     
-    #### ---------------- targetProp 
+    #### ---------------- targetProp
     sseProp_iv$add_rule("sseTargetProp", sv_required())
     sseProp_iv$add_rule("sseTargetProp", sv_gt(0))
     sseProp_iv$add_rule("sseTargetProp", sv_lt(1))
@@ -239,7 +233,6 @@ sampSizeEstServer <- function(id) {
     ssePropWidth_iv$add_rule("ssePropWoI", sv_required())
     ssePropWidth_iv$add_rule("ssePropWoI", sv_gt(0))
     ssePropWidth_iv$add_rule("ssePropWoI", sv_lte(1))
-    
 
     ### ------------ Conditions --------------------------------------------------
     
@@ -254,9 +247,7 @@ sampSizeEstServer <- function(id) {
                                            input$sseEstimationTypeProp == 'Margin of Error'))
     ssePropWidth_iv$condition( ~ isTRUE(input$sampSizeEstParameter == 'Population Proportion' &&
                                           input$sseEstimationTypeProp == 'Width of Interval'))
-    
-    
-    
+
     ### ------------ Dependencies ------------------------------------------------
     
     sse_iv$add_validator(sseMean_iv)
@@ -278,11 +269,11 @@ sampSizeEstServer <- function(id) {
     sseProp_iv$enable()
     ssePropMargin_iv$enable()
     ssePropWidth_iv$enable()
-  
-    
+
     #  ========================================================================= #
     ## -------- Functions ------------------------------------------------------
     #  ========================================================================= #
+    
     getSampSizeEstMean <- function(critVal, popuSD, margErr, widthInt) {
       if(input$sseEstimationType == "Width of Interval"){
         n <- ((2 * critVal * popuSD) / widthInt) ^ 2
@@ -293,7 +284,6 @@ sampSizeEstServer <- function(id) {
       return(n)
     }
     
-    
     getSampSizeEstProp <- function(critVal, phat, margErr, widthInt) {
       if(input$sseEstimationTypeProp == "Width of Interval"){
         n <- phat * (1 - phat) * (critVal / (widthInt/2))^2
@@ -303,8 +293,7 @@ sampSizeEstServer <- function(id) {
       }
       return(n)
     }
-    
-    
+
     #  ========================================================================= #
     ## -------- Reactives ------------------------------------------------------
     #  ========================================================================= #
@@ -331,8 +320,7 @@ sampSizeEstServer <- function(id) {
       }
       return(critVal)
     })
-    
-    
+
     #  ========================================================================= #
     ## -------- Observers ------------------------------------------------------
     #  ========================================================================= #
@@ -343,7 +331,7 @@ sampSizeEstServer <- function(id) {
     output$ssEstimationValidation <- renderUI({
       if (!sse_iv$is_valid()) {
         
-        # Population Mean
+        # Parameter of interest is Population Mean
         if (input$sampSizeEstParameter == 'Population Mean') {
           validate(
             need(input$ssePopuSD, "Population Standard Deviation is required.") %then%
@@ -361,7 +349,7 @@ sampSizeEstServer <- function(id) {
           )
         }
         
-        # Population Proportion
+        # Parameter of interest is Population Proportion
         else if (input$sampSizeEstParameter == 'Population Proportion') {
           validate(
             need(input$sseTargetProp, "Target Proportion is required.") %then%
@@ -384,8 +372,7 @@ sampSizeEstServer <- function(id) {
       }
     })
     
-    
-    #### ---------------- Mean Estimate output -----------------------------------
+    #### ---------------- Output when the parameter of interest is Population Mean  -----------------------------------
     output$sampSizeMeanEstimate <- renderUI({
       
       n <- getSampSizeEstMean(criticalValueMean(), input$ssePopuSD, input$sseMeanMargErr, input$sseMeanWoI)
@@ -450,7 +437,7 @@ sampSizeEstServer <- function(id) {
       ) #tagList
     })
     
-    #### ---------------- Proportion Estimate output -----------------------------
+    #### ---------------- Output when the parameter of interest is Population Proportion  -----------------------------
     output$sampSizePropEstimate <- renderUI({
       req(sse_iv$is_valid())
       
@@ -462,7 +449,7 @@ sampSizeEstServer <- function(id) {
           withMathJax(),
           br(),
           
-          # Print Population Proportion formula for SSE using Margin of Error
+          # Print formula for SSE using Margin of Error
           if(input$sseEstimationTypeProp == "Margin of Error"){
             list(
               sprintf("\\( n = \\hat{p} (1 - \\hat{p}) \\left( \\dfrac{Z_{\\alpha / 2}}{E} \\right)^{2} \\)"),
@@ -475,7 +462,7 @@ sampSizeEstServer <- function(id) {
                       n)
             )
           }
-          # Print Population Proportion formula for SSE using Width of Interval
+          # Print formula for SSE using Width of Interval
           else {
             list(
               sprintf("\\( n = \\hat{p} (1 - \\hat{p}) \\left( \\dfrac{(2)Z_{\\alpha / 2}}{W} \\right)^{2} \\)"),
@@ -500,12 +487,15 @@ sampSizeEstServer <- function(id) {
                   nEstimate,
                   input$confLevelnProp,
                   input$sseTargetProp),
+          
+          # Print blurb with Margin of Error
           if(input$sseEstimationTypeProp == "Margin of Error"){
             list(
               sprintf("margin of error \\( (E) = %s \\).", input$ssePropMargErr),
               br()
             )
           }
+          # Print blurb with Width of Interval
           else{
             list(
               sprintf("width of interval \\( (W) = %s \\).", input$ssePropWoI),
@@ -513,8 +503,8 @@ sampSizeEstServer <- function(id) {
             )
           }
         ) #tagList
-      } else {
-        
+      }
+      else {
         conf.level = switch(input$confLevelnProp,
                             "90%" = 0.90,
                             "95%" = 0.95,
@@ -545,42 +535,39 @@ sampSizeEstServer <- function(id) {
         )
       }
     })
-    
-    
 
     ### ------------ Component Display -------------------------------------------
     
     observeEvent(input$goSampSizeEst, {
       if(sse_iv$is_valid()) {
-        show(id = "ssEstMP")
-        #show(id = "ssEstimationMP")
+        shinyjs::show(id = "ssEstMP")
+        #shinyjs::show(id = "ssEstimationMP")
       } else {
-        hide(id = "ssEstMP")
-        #hide(id = "ssEstimationMP")
+        shinyjs::hide(id = "ssEstMP")
+        #shinyjs::hide(id = "ssEstimationMP")
       }
     })
 
     observeEvent(!sse_iv$is_valid(), {
-      hide(id = "ssEstimationMP")
-      hide(id = "ssEstMP")
+      shinyjs::hide(id = "ssEstimationMP") # Should this line be commented???
+      shinyjs::hide(id = "ssEstMP")
     })
 
     observeEvent({input$sampSizeEstParameter
       input$popuSDSampSizeEst
       input$targetPropSampSizeEst
       input$margErrSampSizeEst}, {
-        hide(id = "ssEstMP")
+        shinyjs::hide(id = "ssEstMP")
       })
 
-    observeEvent(input$goSampSizeEst, {
-      show(id = "ssEstMP")
-    })
+    # observeEvent(input$goSampSizeEst, {
+    #   shinyjs::show(id = "ssEstMP")
+    # })
 
     observeEvent(input$resetSampSizeEst, {
-      hide(id = "ssEstMP")
+      shinyjs::hide(id = "ssEstMP")
       #hide(id = "ssEstimationMP")
       shinyjs::reset("sampSizeEstSidebarUI")
     })
-
   })
 }
