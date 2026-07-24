@@ -1948,15 +1948,17 @@ SLRServer <- function(id) {
 
             withMathJax(
               header,
-              p(tags$b("Mean & Standard Deviation of the sampling distribution of \\( \\hat{\\tau} \\)")),
-              p("\\( E(\\hat{\\tau}) = 0 \\)"),
-              p("\\( SD(\\hat{\\tau}) = \\sqrt{\\dfrac{2(2n+5)}{9n(n-1)}} \\)"),
+              p(em("Note: There are no ties in the data. R uses the exact permutation distribution of Kendall's score statistic to calculate the p-value. The Kendall's score statistic is calculated as the difference between the number of concordant pairs and the number of discordant pairs. We present the test statistic and p-value using normal approximation.")),
               br(),
               p(tags$b("Test Statistic:")),
+              p("\\( E(\\hat{\\tau}) = 0 \\)"),
+              p("\\( SD(\\hat{\\tau}) = \\sqrt{\\dfrac{2(2n+5)}{9n(n-1)}} \\)"),
               p(HTML(sprintf(
                 "\\( z = \\dfrac{\\hat{\\tau} - E(\\hat{\\tau})}{SD(\\hat{\\tau})} = \\dfrac{\\hat{\\tau} - 0}{\\sqrt{\\dfrac{2(2n+5)}{9n(n-1)}}} = \\dfrac{%.4f - 0}{\\sqrt{\\dfrac{2(2(%d)+5)}{9(%d)(%d-1)}}} = %.4f \\)",
                 tau, ks$n, ks$n, ks$n, z_stat
               ))),
+              br(),
+              p("where \\( E(\\hat{\\tau}) \\) is the expected value of Kendall's \\( \\hat{\\tau} \\) under \\( H_0 \\), and \\( SD(\\hat{\\tau}) \\) is the standard deviation of the sampling distribution of \\( \\hat{\\tau} \\)."),
               br(),
 
               p(strong("Using P-Value Method:")),
