@@ -26,34 +26,57 @@ observeEvent(input$popuParameter, {
   req(input$mainPanelNavbarPage)
   ## Choose the tab to display next (after the handler finishes executing) based
   ## on the previously selected tab.
-  nextTab <- if (grepl("Graphs", input$mainPanelNavbarPage, fixed = TRUE)) "Graphs" else "Analysis"
+  nextTab <- if (grepl("Graphs", input$mainPanelNavbarPage, fixed = TRUE)) {
+    "Graphs"
+  } else {
+    "Analysis"
+  }
   switch(
     input$popuParameter,
     "Population Mean" = {
       hideTabs("mainPanelNavbarPage", id_helper("Proportion"))
       hideTabs("mainPanelNavbarPage", id_helper("StandardDeviation"))
-      showTabs("mainPanelNavbarPage", id_helper("Mean"), id_helper("Mean", nextTab))
+      showTabs(
+        "mainPanelNavbarPage",
+        id_helper("Mean"),
+        id_helper("Mean", nextTab)
+      )
     },
     "Population Standard Deviation" = {
       hideTabs("mainPanelNavbarPage", id_helper("Mean"))
       hideTabs("mainPanelNavbarPage", id_helper("Proportion"))
-      showTabs("mainPanelNavbarPage", id_helper("StandardDeviation"), id_helper("StandardDeviation", nextTab))
+      showTabs(
+        "mainPanelNavbarPage",
+        id_helper("StandardDeviation"),
+        id_helper("StandardDeviation", nextTab)
+      )
     },
     "Population Proportion" = {
       hideTabs("mainPanelNavbarPage", id_helper("Mean"))
       hideTabs("mainPanelNavbarPage", id_helper("StandardDeviation"))
-      showTabs("mainPanelNavbarPage", id_helper("Proportion"), id_helper("Proportion", nextTab))
+      showTabs(
+        "mainPanelNavbarPage",
+        id_helper("Proportion"),
+        id_helper("Proportion", nextTab)
+      )
     },
     stop("popuParameter has an invalid value!")
   )
 })
 
 sigmaKnownCheckboxInputUI <- function() {
-  checkboxInput(session$ns("sigmaKnown"), strong("Population Standard Deviation (\\(\\sigma\\)) is known"))
+  checkboxInput(
+    session$ns("sigmaKnown"),
+    strong("Population Standard Deviation (\\(\\sigma\\)) is known")
+  )
 }
 observeEvent(input$dataAvailability, {
   if (input$dataAvailability == "Upload Data") {
-    showTabs("mainPanelNavbarPage", id_helper("Mean", "UploadedData"), id_helper("Mean", "UploadedData"))
+    showTabs(
+      "mainPanelNavbarPage",
+      id_helper("Mean", "UploadedData"),
+      id_helper("Mean", "UploadedData")
+    )
     ## updateNavbarPage(inputId = "mainPanelNavbarPage", selected = id_helper("Mean", "UploadedData"))
   } else if (is.null(input$upload$name)) {
     ## NOTE: this branch only makes sense when data has never been uploaded.
@@ -63,13 +86,18 @@ observeEvent(input$dataAvailability, {
     ## server: the server's state with respect to uploaded data is unaffected by
     ## shinyjs::reset(). It makes more sense to leave the data be and to not
     ## reset the input$upload widget.
-    updateNavbarPage(inputId = "mainPanelNavbarPage", selected = id_helper("Mean", "Analysis"))
+    updateNavbarPage(
+      inputId = "mainPanelNavbarPage",
+      selected = id_helper("Mean", "Analysis")
+    )
     hideTabs("mainPanelNavbarPage", id_helper("Mean", "UploadedData"))
   }
 
-
   removeUI(
-    selector = sprintf("div.checkbox:has(label > #%s)", session$ns("sigmaKnown")),
+    selector = sprintf(
+      "div.checkbox:has(label > #%s)",
+      session$ns("sigmaKnown")
+    ),
     multiple = TRUE,
     immediate = TRUE,
     session = session
@@ -77,15 +105,21 @@ observeEvent(input$dataAvailability, {
   sprintf("sigmaKnown%sSibling", gsub(" ", "", input$dataAvailability)) |>
     session$ns() |>
     sub(pattern = "^", replacement = "#", x = _) |>
-    insertUI(where = "afterEnd",
-             ui = withMathJax(sigmaKnownCheckboxInputUI()),
-             immediate = TRUE,
-             session = session)
+    insertUI(
+      where = "afterEnd",
+      ui = withMathJax(sigmaKnownCheckboxInputUI()),
+      immediate = TRUE,
+      session = session
+    )
 })
 
 observeEvent(input$upload, priority = 5, {
   freezeReactiveValue(input, "selectUploadVariable")
-  updateSelectInput("selectUploadVariable", choices = c(colnames(Upload())), session = session)
+  updateSelectInput(
+    "selectUploadVariable",
+    choices = c(colnames(Upload())),
+    session = session
+  )
 })
 
 ## Whenever there are changes in the value of the checkbox regarding the boxplot
@@ -93,12 +127,21 @@ observeEvent(input$upload, priority = 5, {
 ## appropriate.
 observeEvent(input$oneMeanBoxplot, {
   if (input$oneMeanBoxplot && input$dataAvailability != "Summarized Data") {
-    showTab(inputId = "mainPanelNavbarPage", target = id_helper("Mean", "Graphs"))
+    showTab(
+      inputId = "mainPanelNavbarPage",
+      target = id_helper("Mean", "Graphs")
+    )
   } else {
     req(input$mainPanelNavbarPage)
     if (input$mainPanelNavbarPage == id_helper("Mean", "Graphs")) {
-      updateTabsetPanel(inputId = "mainPanelNavbarPage", selected = id_helper("Mean", "Analysis"))
+      updateTabsetPanel(
+        inputId = "mainPanelNavbarPage",
+        selected = id_helper("Mean", "Analysis")
+      )
     }
-    hideTab(inputId = "mainPanelNavbarPage", target = id_helper("Mean", "Graphs"))
+    hideTab(
+      inputId = "mainPanelNavbarPage",
+      target = id_helper("Mean", "Graphs")
+    )
   }
 })

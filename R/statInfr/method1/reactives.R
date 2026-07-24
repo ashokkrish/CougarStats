@@ -268,12 +268,3 @@ criticalValue <- reactive({
 
   return(critVal)
 })
-
-tabs <- reactive({
-  switch(
-    input$popuParameter,
-    "Population Mean" = id_helper("Mean"),
-    "Population Standard Deviation" = id_helper("StandardDeviation"),
-    "Population Proportion" = id_helper("Proportion")
-  )
-})

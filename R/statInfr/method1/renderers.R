@@ -4,10 +4,14 @@ output$onePopulationSDHTChiSqPlot <- renderPlot({
 
   ## Clamp the minimum to zero.
   minimumChiSqValue <- min(chiSqTestStatistic, chiSqCValue) - 1
-  if (minimumChiSqValue < 0) minimumChiSqValue <- 0
+  if (minimumChiSqValue < 0) {
+    minimumChiSqValue <- 0
+  }
 
   maximumChiSqValue <- max(chiSqTestStatistic, chiSqCValue) + 1
-  if (maximumChiSqValue < 20) maximumChiSqValue <- 20
+  if (maximumChiSqValue < 20) {
+    maximumChiSqValue <- 20
+  }
 
   par(font.lab = 2, font.axis = 2)
 
@@ -29,21 +33,27 @@ output$onePopulationSDHTChiSqPlot <- renderPlot({
   if (length(chiSqCValue) == 1) {
     ## applies to lower and upper tailed tests
     lowerRejectionRegion <- sort(seq(0, chiSqCValue, by = 0.00001))
-    upperRejectionRegion <- sort(seq(chiSqCValue, maximumChiSqValue, by = 0.00001))
+    upperRejectionRegion <- sort(seq(
+      chiSqCValue,
+      maximumChiSqValue,
+      by = 0.00001
+    ))
     lowerPVector <- dchisq(lowerRejectionRegion, df = degreesOfFreedom)
     upperPVector <- dchisq(upperRejectionRegion, df = degreesOfFreedom)
     if (input$altHypothesis == 1) {
-      polygon(c(lowerRejectionRegion, rev(lowerRejectionRegion)),
-              c(lowerPVector, rep(0, length(lowerPVector))),
-              col = adjustcolor("red", alpha = 0.3),
-              border = NA
-              )
+      polygon(
+        c(lowerRejectionRegion, rev(lowerRejectionRegion)),
+        c(lowerPVector, rep(0, length(lowerPVector))),
+        col = adjustcolor("red", alpha = 0.3),
+        border = NA
+      )
     } else {
-      polygon(c(upperRejectionRegion, rev(upperRejectionRegion)),
-              c(upperPVector, rep(0, length(upperPVector))),
-              col = adjustcolor("red", alpha = 0.3),
-              border = NA
-              )
+      polygon(
+        c(upperRejectionRegion, rev(upperRejectionRegion)),
+        c(upperPVector, rep(0, length(upperPVector))),
+        col = adjustcolor("red", alpha = 0.3),
+        border = NA
+      )
     }
     segments(
       x0 = chiSqTestStatistic,
@@ -60,13 +70,15 @@ output$onePopulationSDHTChiSqPlot <- renderPlot({
       lwd = 5
     )
     text(
-      x = chiSqCValue, y = dchisq(chiSqCValue, df = degreesOfFreedom),
+      x = chiSqCValue,
+      y = dchisq(chiSqCValue, df = degreesOfFreedom),
       labels = as.character(round(chiSqCValue, 4)),
       pos = 3, ## to the left of the specified (x, y) coordinate.
       offset = 1
     )
     text(
-      x = chiSqTestStatistic, y = dchisq(chiSqTestStatistic, df = degreesOfFreedom),
+      x = chiSqTestStatistic,
+      y = dchisq(chiSqTestStatistic, df = degreesOfFreedom),
       labels = as.character(round(chiSqTestStatistic, 4)),
       pos = 2, ## to the left of the specified (x, y) coordinate.
       offset = 1
@@ -75,19 +87,24 @@ output$onePopulationSDHTChiSqPlot <- renderPlot({
     ## two-tailed hypothesis tests
     lowerRejectionRegion <- seq(0, chiSqCValue[[1]], by = 0.00001)
     lowerPVector <- dchisq(lowerRejectionRegion, df = degreesOfFreedom)
-    polygon(c(lowerRejectionRegion, rev(lowerRejectionRegion)),
-            c(lowerPVector, rep(0, length(lowerPVector))),
-            col = adjustcolor("red", alpha = 0.3),
-            border = NA
-            )
+    polygon(
+      c(lowerRejectionRegion, rev(lowerRejectionRegion)),
+      c(lowerPVector, rep(0, length(lowerPVector))),
+      col = adjustcolor("red", alpha = 0.3),
+      border = NA
+    )
 
-    upperRejectionRegion <- seq(chiSqCValue[[2]], max(chiSqTestStatistic, chiSqCValue) + 1)
+    upperRejectionRegion <- seq(
+      chiSqCValue[[2]],
+      max(chiSqTestStatistic, chiSqCValue) + 1
+    )
     upperPVector <- dchisq(upperRejectionRegion, df = degreesOfFreedom)
-    polygon(c(upperRejectionRegion, rev(upperRejectionRegion)),
-            c(upperPVector, rep(0, length(upperPVector))),
-            col = adjustcolor("red", alpha = 0.3),
-            border = NA
-            )
+    polygon(
+      c(upperRejectionRegion, rev(upperRejectionRegion)),
+      c(upperPVector, rep(0, length(upperPVector))),
+      col = adjustcolor("red", alpha = 0.3),
+      border = NA
+    )
 
     segments(
       x0 = chiSqTestStatistic,
@@ -112,19 +129,22 @@ output$onePopulationSDHTChiSqPlot <- renderPlot({
     )
 
     text(
-      x = chiSqCValue[[1]], y = dchisq(chiSqCValue[[1]], df = degreesOfFreedom),
+      x = chiSqCValue[[1]],
+      y = dchisq(chiSqCValue[[1]], df = degreesOfFreedom),
       labels = as.character(round(chiSqCValue[[1]], 4)),
       pos = 3, ## to the left of the specified (x, y) coordinate.
       offset = 1
     )
     text(
-      x = chiSqCValue[[2]], y = dchisq(chiSqCValue[[2]], df = degreesOfFreedom),
+      x = chiSqCValue[[2]],
+      y = dchisq(chiSqCValue[[2]], df = degreesOfFreedom),
       labels = as.character(round(chiSqCValue[[2]], 4)),
       pos = 3, ## to the left of the specified (x, y) coordinate.
       offset = 1
     )
     text(
-      x = chiSqTestStatistic, y = dchisq(chiSqTestStatistic, df = degreesOfFreedom),
+      x = chiSqTestStatistic,
+      y = dchisq(chiSqTestStatistic, df = degreesOfFreedom),
       labels = as.character(round(chiSqTestStatistic, 4)),
       pos = 2, ## to the left of the specified (x, y) coordinate.
       offset = 1
@@ -132,8 +152,10 @@ output$onePopulationSDHTChiSqPlot <- renderPlot({
   }
 
   segments(
-    x0 = 0, y0 = 0,
-    x1 = maximumChiSqValue, y1 = 0,
+    x0 = 0,
+    y0 = 0,
+    x1 = maximumChiSqValue,
+    y1 = 0,
     col = adjustcolor("black", alpha = 1.0)
   )
 })
@@ -155,13 +177,18 @@ output$onePopulationSDHT <- renderUI({
       sprintf("Since \\( P \\leq %0.2f \\), reject \\( H_{0}\\).", SigLvl())
   } else {
     rejectionOrAcceptanceStatement <-
-      sprintf("Since \\( P \\gt %0.2f \\), do not reject \\( H_{0}\\).", SigLvl())
+      sprintf(
+        "Since \\( P \\gt %0.2f \\), do not reject \\( H_{0}\\).",
+        SigLvl()
+      )
   }
 
   hypothesisFormattedString <- function(hypothesis, nullOrAltHypothesisString) {
     sprintf(
       r"--[\( H_%s: \sigma %s %0.3f \)]--", ## σ
-      hypothesis, nullOrAltHypothesisString, input$hypStdDeviation
+      hypothesis,
+      nullOrAltHypothesisString,
+      input$hypStdDeviation
     )
   }
 
@@ -186,11 +213,13 @@ output$onePopulationSDHT <- renderUI({
     br(),
     br(),
     br(),
-    p(r"--[
+    p(
+      r"--[
             \(
             \displaystyle \chi^2 = \frac{(n-1)s^2}{\sigma^2_0}
             \)
-           ]--"),
+           ]--"
+    ),
     br(),
     sprintf(
       r"--(
@@ -199,7 +228,10 @@ output$onePopulationSDHT <- renderUI({
            \chi^2 = \frac{(%d - 1)  %0.4f ^2}{%0.4f^2} = %0.4f\\
            \)
            )--",
-      input$SSDSampleSize, input$SSDStdDev, input$hypStdDeviation, chiSqTestStatistic
+      input$SSDSampleSize,
+      input$SSDStdDev,
+      input$hypStdDeviation,
+      chiSqTestStatistic
     ),
     br(),
     br(),
@@ -226,7 +258,11 @@ output$onePopulationSDHT <- renderUI({
     br(),
     br(),
     p(tags$b("Using Critical Value Method:")),
-    sprintf("\\(df = n - 1 = %d - 1 = %d\\)", input$SSDSampleSize, degreesOfFreedom),
+    sprintf(
+      "\\(df = n - 1 = %d - 1 = %d\\)",
+      input$SSDSampleSize,
+      degreesOfFreedom
+    ),
     br(),
     br(),
     if (input$altHypothesis != 2) {
@@ -306,19 +342,26 @@ output$onePopulationSDHT <- renderUI({
       } else {
         HTML(sprintf(
           r"--(\(\begin{align} \displaystyle \chi^2_{%0.4f,%d} &< \chi^2 &< \chi^2_{%0.4f,%d} \\ %0.4f &< %0.4f &< %0.4f \\ \end{align} \)<br/>)--",
-          SigLvl() / 2, degreesOfFreedom, 1 - SigLvl() / 2, degreesOfFreedom,
-          chiSqCValue[[1]], chiSqTestStatistic, chiSqCValue[[2]]
+          SigLvl() / 2,
+          degreesOfFreedom,
+          1 - SigLvl() / 2,
+          degreesOfFreedom,
+          chiSqCValue[[1]],
+          chiSqTestStatistic,
+          chiSqCValue[[2]]
         ))
       }
     },
     br(),
     {
       conclusionString <-
-        function(significanceLevel = SigLvl(),
-                 testStatisticValue = chiSqTestStatistic,
-                 criticalValue = chiSqCValue,
-                 accept = TRUE,
-                 lessThan = TRUE) {
+        function(
+          significanceLevel = SigLvl(),
+          testStatisticValue = chiSqTestStatistic,
+          criticalValue = chiSqCValue,
+          accept = TRUE,
+          lessThan = TRUE
+        ) {
           sprintf(
             paste0(
               "Since the test statistic \\( \\left( \\chi^2 \\right) \\)",
@@ -399,7 +442,7 @@ output$onePopulationSDHT <- renderUI({
     br(),
 
     ## FUTURE WORK: Revisit chi-square plots as they are currently bugged
-                                        # plotOutput(session$ns("onePopulationSDHTChiSqPlot"), width = "50%", height = "400px"),
+    # plotOutput(session$ns("onePopulationSDHTChiSqPlot"), width = "50%", height = "400px"),
 
     ## Overall conclusion
     br(),
@@ -429,30 +472,37 @@ output$onePopulationSDHT <- renderUI({
 
 
 ## FIXME: no plotOutput with this id!
-output$onePropBarGraph <- renderPlot({
-  req(iv$is_valid() && input$numTrials >= input$numSuccesses)
+output$onePropBarGraph <- renderPlot(
+  {
+    req(iv$is_valid() && input$numTrials >= input$numSuccesses)
 
-  df <- tibble(
-    Outcome = c("Successes", "Failures"),
-    Count = c(input$numSuccesses, input$numTrials - input$numSuccesses)
-  )
-
-  ggplot(df, aes(x = Outcome, y = Count, fill = Outcome)) +
-    geom_col(width = 0.5) +
-    labs(
-      title = "Bar Chart: Count of Successes vs Failures",
-      y = "Count", x = ""
-    ) +
-    scale_fill_manual(values = c("Successes" = "#4CAF50", "Failures" = "#F44336")) +
-    theme_classic() +
-    theme(
-      axis.text.x = element_text(size = 14, face = "bold", color = "black"),
-      axis.text = element_text(size = 14, face = "bold"),
-      axis.title = element_text(size = 16, face = "bold"),
-      plot.title = element_text(size = 18, face = "bold"),
-      legend.position = "none"
+    df <- tibble(
+      Outcome = c("Successes", "Failures"),
+      Count = c(input$numSuccesses, input$numTrials - input$numSuccesses)
     )
-}, width = 500, height = 400)
+
+    ggplot(df, aes(x = Outcome, y = Count, fill = Outcome)) +
+      geom_col(width = 0.5) +
+      labs(
+        title = "Bar Chart: Count of Successes vs Failures",
+        y = "Count",
+        x = ""
+      ) +
+      scale_fill_manual(
+        values = c("Successes" = "#4CAF50", "Failures" = "#F44336")
+      ) +
+      theme_classic() +
+      theme(
+        axis.text.x = element_text(size = 14, face = "bold", color = "black"),
+        axis.text = element_text(size = 14, face = "bold"),
+        axis.title = element_text(size = 16, face = "bold"),
+        plot.title = element_text(size = 18, face = "bold"),
+        legend.position = "none"
+      )
+  },
+  width = 500,
+  height = 400
+)
 
 output$onePropPieChart <- renderPlot({
   req(iv$is_valid() && input$numTrials >= input$numSuccesses)
@@ -465,7 +515,9 @@ output$onePropPieChart <- renderPlot({
   ggplot(x, aes(x = "", y = Count, fill = Outcome)) +
     geom_col(width = 1, color = "white") +
     coord_polar(theta = "y") +
-    scale_fill_manual(values = c("Successes" = "#4CAF50", "Failures" = "#F44336")) +
+    scale_fill_manual(
+      values = c("Successes" = "#4CAF50", "Failures" = "#F44336")
+    ) +
     labs(title = "Success vs Failure Distribution") +
     theme_void() +
     theme(
@@ -480,7 +532,11 @@ output$onePropPieChart <- renderPlot({
 output$onePropCI <- renderUI({
   req(iv$is_valid() && input$numTrials >= input$numSuccesses)
 
-  onePropData <- OnePropZInterval(input$numSuccesses, input$numTrials, ConfLvl())
+  onePropData <- OnePropZInterval(
+    input$numSuccesses,
+    input$numTrials,
+    ConfLvl()
+  )
   critVal <- round(onePropData["Z Critical"], cvDigits)
 
   p(
@@ -519,7 +575,9 @@ output$onePropCI <- renderUI({
       br(),
       br(),
       br(),
-      sprintf("\\( \\displaystyle CI = \\hat{p} \\pm \\left( z_{\\alpha/2} \\sqrt{\\dfrac{\\hat{p}(1-\\hat{p})}{n}} \\right) \\)"),
+      sprintf(
+        "\\( \\displaystyle CI = \\hat{p} \\pm \\left( z_{\\alpha/2} \\sqrt{\\dfrac{\\hat{p}(1-\\hat{p})}{n}} \\right) \\)"
+      ),
       br(),
       p("where"),
       sprintf(
@@ -578,9 +636,16 @@ output$onePropCI <- renderUI({
 output$onePropHT <- renderUI({
   req(iv$is_valid() && input$numTrials >= input$numSuccesses)
 
-  onePropData <- OnePropZTest(input$numSuccesses, input$numTrials, input$hypProportion, OneMeanHypInfo()$alternative, SigLvl())
+  onePropData <- OnePropZTest(
+    input$numSuccesses,
+    input$numTrials,
+    input$hypProportion,
+    OneMeanHypInfo()$alternative,
+    SigLvl()
+  )
 
-  if (input$altHypothesis == "2") { # two sided test
+  if (input$altHypothesis == "2") {
+    # two sided test
     critZVal <- paste("\\pm", round(onePropData["Z Critical"], cvDigits))
     nullHyp <- "p ="
     altHyp <- "p \\neq"
@@ -626,8 +691,9 @@ output$onePropHT <- renderUI({
       sprintf(
         "\\( \\alpha = %g \\)",
         SigLvl()
-      ), br(),
-                                        # br(),
+      ),
+      br(),
+      # br(),
       br(),
       p(tags$b("Test Statistic:")),
       sprintf("Given:"),
@@ -644,7 +710,9 @@ output$onePropHT <- renderUI({
       br(),
       br(),
       br(),
-      sprintf("\\(z = \\dfrac{\\hat{p} - p_{0}}{ \\sqrt{ \\dfrac{p_{0}(1 - p_{0})}{n} } }\\)"),
+      sprintf(
+        "\\(z = \\dfrac{\\hat{p} - p_{0}}{ \\sqrt{ \\dfrac{p_{0}(1 - p_{0})}{n} } }\\)"
+      ),
       br(),
       p("where"),
       sprintf(
@@ -726,16 +794,37 @@ output$onePropHT <- renderUI({
     )
   )
 
-  onePropHTConclusion <- printHTConclusion(region, reject, suffEvidence, altHyp, input$hypProportion)
+  onePropHTConclusion <- printHTConclusion(
+    region,
+    reject,
+    suffEvidence,
+    altHyp,
+    input$hypProportion
+  )
 
-  tagAppendChildren(onePropHTHead, onePropPVal, onePropHTTail, onePropHTConclusion)
+  tagAppendChildren(
+    onePropHTHead,
+    onePropPVal,
+    onePropHTTail,
+    onePropHTConclusion
+  )
 })
 
 output$onePropHTPlot <- renderPlot({
-  oneSampPropZTest <- OnePropZTest(input$numSuccesses, input$numTrials, input$hypProportion, OneMeanHypInfo()$alternative, SigLvl())
+  oneSampPropZTest <- OnePropZTest(
+    input$numSuccesses,
+    input$numTrials,
+    input$hypProportion,
+    OneMeanHypInfo()$alternative,
+    SigLvl()
+  )
   htPlotCritVal <- oneSampPropZTest["Z Critical"]
 
-  htPlot <- hypZTestPlot(oneSampPropZTest["Test Statistic"], htPlotCritVal, OneMeanHypInfo()$alternative)
+  htPlot <- hypZTestPlot(
+    oneSampPropZTest["Test Statistic"],
+    htPlotCritVal,
+    OneMeanHypInfo()$alternative
+  )
   htPlot
 })
 
@@ -747,7 +836,8 @@ chiSqTestData <- function(envir) {
       ## This paragraph is related to the final interpretation, as used in the
       ## P-value method.
       degreesOfFreedom <- input$SSDSampleSize - 1
-      chiSqTestStatistic <- (degreesOfFreedom * input$SSDStdDev^2) / input$hypStdDeviation^2
+      chiSqTestStatistic <- (degreesOfFreedom * input$SSDStdDev^2) /
+        input$hypStdDeviation^2
       ## lower.tail will be false when the alternative hypothesis is >.
       isLeftTailed <- input$altHypothesis %in% c(1, 2)
 
@@ -757,7 +847,11 @@ chiSqTestData <- function(envir) {
         altHypString <- "\\lt"
         pValueMethodRelationalOperatorString <- "\\lt"
         chiSqCValue <- qchisq(SigLvl(), degreesOfFreedom)
-        chiSqPValue <- pchisq(chiSqTestStatistic, degreesOfFreedom, lower.tail = isLeftTailed)
+        chiSqPValue <- pchisq(
+          chiSqTestStatistic,
+          degreesOfFreedom,
+          lower.tail = isLeftTailed
+        )
       } else if (input$altHypothesis == 2) {
         nullHypString <- "="
         altHypString <- "\\ne"
@@ -768,16 +862,21 @@ chiSqTestData <- function(envir) {
         ## NOTE: The correct p-value is P = 2 × min(P(chisquare ≤ TS), P(chisquare ≥ TS))
         ## lower.tail: logical; if TRUE (default), probabilities are P[X <= x],
         ## otherwise, P[X > x].
-        chiSqPValue <- 2 * min(
-                             pchisq(chiSqTestStatistic, degreesOfFreedom, lower.tail = TRUE),
-                             pchisq(chiSqTestStatistic, degreesOfFreedom, lower.tail = FALSE)
-                           )
+        chiSqPValue <- 2 *
+          min(
+            pchisq(chiSqTestStatistic, degreesOfFreedom, lower.tail = TRUE),
+            pchisq(chiSqTestStatistic, degreesOfFreedom, lower.tail = FALSE)
+          )
       } else {
         nullHypString <- "\\leq"
         altHypString <- "\\gt"
         pValueMethodRelationalOperatorString <- "\\gt"
         chiSqCValue <- qchisq(1 - SigLvl(), degreesOfFreedom)
-        chiSqPValue <- pchisq(chiSqTestStatistic, degreesOfFreedom, lower.tail = isLeftTailed)
+        chiSqPValue <- pchisq(
+          chiSqTestStatistic,
+          degreesOfFreedom,
+          lower.tail = isLeftTailed
+        )
       }
     },
     envir = envir
@@ -802,7 +901,8 @@ output$oneSDCI <- renderUI({
   ## UI
   withMathJax(
     ## Preface
-    sprintf("Given:"), br(),
+    sprintf("Given:"),
+    br(),
     sprintf(
       "\\( n = %d \\)",
       input$SSDSampleSize
@@ -817,7 +917,11 @@ output$oneSDCI <- renderUI({
     br(),
     sprintf("For a %s Confidence Interval:", input$confidenceLevel),
     br(),
-    sprintf("\\( \\alpha = 1 - %0.2f = %0.2f \\)", 1 - oneSDCIalpha, oneSDCIalpha),
+    sprintf(
+      "\\( \\alpha = 1 - %0.2f = %0.2f \\)",
+      1 - oneSDCIalpha,
+      oneSDCIalpha
+    ),
     br(),
     sprintf(
       "\\(  df = n - 1 = %d - 1 = %d \\)",
@@ -846,12 +950,14 @@ output$oneSDCI <- renderUI({
     br(),
     br(),
     br(),
-    sprintf(r"---{\(
+    sprintf(
+      r"---{\(
           CI = \displaystyle
           \left(
           \sqrt{\frac{df}{\chi^2_{\alpha/2, df}}} \cdot s, \;\:
           \sqrt{\frac{df}{\chi^2_{1 - \alpha/2, df}}} \cdot s
-          \right) \)}---"),
+          \right) \)}---"
+    ),
     br(),
     br(),
     br(),
@@ -881,10 +987,13 @@ output$oneSDCI <- renderUI({
     br(),
 
     ## Step three
-    tags$b("Interpretation:"), br(),
+    tags$b("Interpretation:"),
+    br(),
     sprintf(
       "We are %s confident that the population standard deviation (\\( \\sigma \\)) is between \\( %0.2f \\) and \\( %0.2f \\).",
-      input$confidenceLevel, oneSSDLowerPopStdDev, oneSSDUpperPopStdDev
+      input$confidenceLevel,
+      oneSSDLowerPopStdDev,
+      oneSSDUpperPopStdDev
     )
   )
 })
@@ -949,48 +1058,77 @@ output$oneMeanHTPlot <- renderPlot({
   htPlotCritVal <- oneMeanData[4]
 
   if (input$sigmaKnown) {
-    oneMeanPlot <- hypZTestPlot(oneMeanData[6], htPlotCritVal, intrpInfo$alternative)
+    oneMeanPlot <- hypZTestPlot(
+      oneMeanData[6],
+      htPlotCritVal,
+      intrpInfo$alternative
+    )
   } else {
-    oneMeanPlot <- hypTTestPlot(oneMeanData[6], oneMeanData[8], htPlotCritVal, intrpInfo$alternative)
+    oneMeanPlot <- hypTTestPlot(
+      oneMeanData[6],
+      oneMeanData[8],
+      htPlotCritVal,
+      intrpInfo$alternative
+    )
   }
 
   oneMeanPlot
 })
 
 ## ---------------- Boxplot ----
-output$oneMeanBoxplotOutput <- renderPlot({
-  req(iv$is_valid())
+output$oneMeanBoxplotOutput <- renderPlot(
+  {
+    req(input$calculate)
+    #req(iv$is_valid())# Calculate already requires iv validity.
 
-  if (input$dataAvailability == "Enter Raw Data") {
-    dat <- createNumLst(input$sample1)
-  } else if (input$dataAvailability == "Upload Data") {
-    dat <- na.omit(unlist(Upload()[, input$selectUploadVariable]))
-  } else {
-    return(NA)
+    if (input$dataAvailability == "Enter Raw Data") {
+      dat <- createNumLst(input$sample1)
+    } else if (input$dataAvailability == "Upload Data") {
+      dat <- na.omit(unlist(Upload()[, input$selectUploadVariable]))
+    } else {
+      return(NA)
+    }
+
+    df_outliers <- getOutliers(dat, "Sample")
+    outlier_vals <- df_outliers$data
+
+    df_boxplot <- data.frame(x = dat)
+
+    RenderBoxplot(
+      dat,
+      df_boxplot,
+      outlier_vals,
+      input[["oneMeanBoxplot-Colour"]],
+      input[["oneMeanBoxplot-Title"]],
+      input[["oneMeanBoxplot-Xlab"]],
+      input[["oneMeanBoxplot-Ylab"]],
+      input[["oneMeanBoxplot-BoxWidth"]] / 10,
+      input[["oneMeanBoxplot-Gridlines"]],
+      input[["oneMeanBoxplot-Flip"]],
+      input[["oneMeanBoxplot-OutlierLabels"]]
+    )
+  },
+  height = function() {
+    GetPlotHeight(
+      input[["oneMeanBoxplot-Height"]],
+      input[["oneMeanBoxplot-HeightPx"]],
+      ui = FALSE
+    )
+  },
+  width = function() {
+    GetPlotWidth(
+      input[["oneMeanBoxplot-Width"]],
+      input[["oneMeanBoxplot-WidthPx"]],
+      ui = FALSE
+    )
   }
+)
 
-  df_outliers <- getOutliers(dat, "Sample")
-  outlier_vals <- df_outliers$data
-
-  df_boxplot <- data.frame(x = dat)
-
-  RenderBoxplot(
-    dat,
-    df_boxplot,
-    outlier_vals,
-    input[["oneMeanBoxplot-Colour"]],
-    input[["oneMeanBoxplot-Title"]],
-    input[["oneMeanBoxplot-Xlab"]],
-    input[["oneMeanBoxplot-Ylab"]],
-    input[["oneMeanBoxplot-BoxWidth"]] / 10,
-    input[["oneMeanBoxplot-Gridlines"]],
-    input[["oneMeanBoxplot-Flip"]],
-    input[["oneMeanBoxplot-OutlierLabels"]]
+output$oneSamplePopulationMeanAnalysis <- renderUI({
+  req(input$calculate)
+  switch(
+    input$inferenceType,
+    "Confidence Interval" = printOneMeanCI(),
+    "Hypothesis Testing" = printOneMeanHT()
   )
-},
-height = function() {
-  GetPlotHeight(input[["oneMeanBoxplot-Height"]], input[["oneMeanBoxplot-HeightPx"]], ui = FALSE)
-},
-width = function() {
-  GetPlotWidth(input[["oneMeanBoxplot-Width"]], input[["oneMeanBoxplot-WidthPx"]], ui = FALSE)
 })

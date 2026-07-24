@@ -22,7 +22,7 @@ printOneMeanHT <- function() {
     region <- "rejection"
   }
 
-  oneMeanHTOutput <- withMathJax(tagList(
+  oneMeanHTOutput <- tagList(
     tags$h2(tags$u("Hypothesis Testing")),
     sprintf(
       "\\( H_{0}: %s %s\\)",
@@ -44,14 +44,14 @@ printOneMeanHT <- function() {
     br(),
     br(),
     p(tags$b("Test Statistic:"))
-  ))
+  )
 
   formulaOutput <- printOneMeanHTFormula(sdSymbol, testStat)
   pvalOutput <- printHTPVal(oneMeanData["P-Value"], testStat, intrpInfo$alternative, oneMeanData["Test Statistic"], pvalSymbol, reject)
   cvOutput <- printOneMeanHTCV(testStat, reject, region)
   conclusionOutput <- printHTConclusion(region, reject, suffEvidence, OneMeanHypInfo()$altHyp, input$hypMean)
 
-  tagAppendChildren(oneMeanHTOutput, printOneMeanGiven(), formulaOutput, pvalOutput, cvOutput, conclusionOutput)
+  withMathJax(tagAppendChildren(oneMeanHTOutput, printOneMeanGiven(), formulaOutput, pvalOutput, cvOutput, conclusionOutput))
 }
 
 
