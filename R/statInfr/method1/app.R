@@ -3,7 +3,7 @@
 library(shiny)
 library(shinyvalidate)
 
-## tracingState() >= TRUE indicates that a package management function *may* be
+## tracingState(): TRUE indicates that a package management function *may* be
 ## enabled, and you *may* need to temporarily disable it to install from an
 ## arbitrary repository.
 ## install.packages("shinyjs", repos = "https://krishnamurthylab.github.io/drat")
@@ -11,6 +11,7 @@ library(shinyjs)# NOTE: the CRAN version will work, but will unintentionally res
 
 library(DT)
 library(bslib)
+library(readr)
 library(readxl)
 
 ## wrap this in HTML() function to output the message
