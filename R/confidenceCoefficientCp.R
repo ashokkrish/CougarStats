@@ -21,5 +21,5 @@ confidence_coefficient_cp <- function(n,
   return(conf.coef)
 }
 
-# # Example: fixed n = 500, want margin error = 0.05
+# # Example 1:
 # confidence_coefficient_cp(n = 500, margin.error = 0.05)
