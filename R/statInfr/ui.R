@@ -25,15 +25,16 @@ statInfrUI <- function(id) {
   }
 
   makePanel <- function(..., sidebar = TRUE) {
-    assign("f", if (sidebar) sidebarPanel else mainPanel)
-    f(...,
+    (if (sidebar) sidebarPanel else mainPanel)(
+      ...,
       `class<-`(
         lapply(
           getConditionalPanel,
           c("One", "Two", "Multiple", "Categorical")
         ),
         c("shiny.tag.list", "list")
-      ))
+      )
+    )
   }
 
   sidebarLayout(
