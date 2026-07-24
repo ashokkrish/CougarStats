@@ -2706,15 +2706,21 @@ statInfrServer <- function(id) {
         "Sample 1 and Sample 2 must be different columns. Please select two distinct columns."
       }
     })
-    wilcoxonRanksuploadvars_iv$add_rule("wilcoxonUpl2", ~ {
+    wilcoxonRanksuploadvars_iv$add_rule("wilcoxonUpl1", ~ {
       col1 <- input$wilcoxonUpl1
-      col2 <- input$wilcoxonUpl2
-      if (!isTruthy(col1) || !isTruthy(col2)) return(NULL)
+      if (!isTruthy(col1)) return(NULL)
       data <- WilcoxonUploadData()
-      if (!is.null(data) && nrow(data) > 0) {
-        if (!is.numeric(data[[col1]]) || !is.numeric(data[[col2]])) {
-          "The selected Sample 1 and Sample 2 columns must both be numeric."
-        }
+      if (!is.null(data) && nrow(data) > 0 && col1 %in% names(data)) {
+        if (!is.numeric(data[[col1]])) "Selected column contains non-numeric data."
+      }
+    })
+
+    wilcoxonRanksuploadvars_iv$add_rule("wilcoxonUpl2", ~ {
+      col2 <- input$wilcoxonUpl2
+      if (!isTruthy(col2)) return(NULL)
+      data <- WilcoxonUploadData()
+      if (!is.null(data) && nrow(data) > 0 && col2 %in% names(data)) {
+        if (!is.numeric(data[[col2]])) "Selected column contains non-numeric data."
       }
     })
     wRankSumrawsd_iv$add_rule("rankSumRaw2", ~ {
@@ -6147,10 +6153,7 @@ statInfrServer <- function(id) {
       return(ranked_data)
     })
     
-    output$wilcoxonRankSumDataRanks <- renderUI({
-      req(wilcoxonRankedData())
-      RankedTableOutput(wilcoxonRankedData())
-    })
+    output$wilcoxonRankSumDataRanks <- RankedTableOutput(wilcoxonRankedData)
     
     ### ------------ Dependent Means Reactives -----------------------------------
     
@@ -6324,10 +6327,7 @@ statInfrServer <- function(id) {
       return(signed_rank_data)
     })
     
-    output$signedRankDataRanks <- renderUI({
-      req(signedRankedData())
-      SignedRankTableOutput(signedRankedData())
-    })
+    output$signedRankDataRanks <- SignedRankTableOutput(signedRankedData)
     
     ### ------------ Two Prop Reactives ------------------------------------------
     checkTwoProp <- reactive({
@@ -9167,6 +9167,8 @@ statInfrServer <- function(id) {
     observeEvent(input$wilcoxonRankSumTestData, {
       if (input$wilcoxonRankSumTestData == "Upload Data") {
         showTab(inputId = "wilcoxonRankSumTabset", target = "Uploaded Data")
+        hideTab(inputId = "wilcoxonRankSumTabset", target = "Data with Ranks")
+        hideTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
         updateTabsetPanel(session, "wilcoxonRankSumTabset", selected = "Uploaded Data")
       } else {
         hideTab(inputId = "wilcoxonRankSumTabset", target = "Uploaded Data")
@@ -9819,6 +9821,7 @@ statInfrServer <- function(id) {
     observeEvent(input$dataTypeDependent, {
       if (input$dataTypeDependent == "Upload Data") {
         showTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
+        hideTab(inputId = "depPopMeansTabset", target = "Graphs")
         updateTabsetPanel(session, "depPopMeansTabset", selected = "Uploaded Data")
       } else {
         hideTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
@@ -10384,6 +10387,7 @@ statInfrServer <- function(id) {
     observeEvent(input$signedRankTest, {
       if (input$signedRankTest == "Upload Data") {
         showTab(inputId = "signedRankTabset", target = "Uploaded Data")
+        hideTab(inputId = "signedRankTabset", target = "Graphs")
         updateTabsetPanel(session, "signedRankTabset", selected = "Uploaded Data")
       } else {
         hideTab(inputId = "signedRankTabset", target = "Uploaded Data")
@@ -11581,6 +11585,7 @@ statInfrServer <- function(id) {
         shinyjs::show(id = "inferenceMP")
         shinyjs::show(id = "inferenceData")
         hideTab(inputId = "depPopMeansTabset", target = "Analysis")
+        hideTab(inputId = "depPopMeansTabset", target = "Graphs")
         goToUploadedDataTab("depPopMeansTabset")
       }
     })
@@ -11620,6 +11625,8 @@ statInfrServer <- function(id) {
         shinyjs::show(id = "inferenceMP")
         shinyjs::show(id = "inferenceData")
         hideTab(inputId = "wilcoxonRankSumTabset", target = "Analysis")
+        hideTab(inputId = "wilcoxonRankSumTabset", target = "Data with Ranks")
+        hideTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
         goToUploadedDataTab("wilcoxonRankSumTabset")
       }
     })
@@ -11687,6 +11694,7 @@ statInfrServer <- function(id) {
         shinyjs::show(id = "inferenceMP")
         shinyjs::show(id = "inferenceData")
         hideTab(inputId = "signedRankTabset", target = "Analysis")
+        hideTab(inputId = "signedRankTabset", target = "Graphs")
         goToUploadedDataTab("signedRankTabset")
       }
 
@@ -11982,8 +11990,8 @@ statInfrServer <- function(id) {
       
       if(si_iv$is_valid() && depmeansrawsd_iv$is_valid()) {
         shinyjs::show(id = "inferenceData")
-        
-      } else {
+
+      } else if (!uploadPreviewActive()) {
         hide(id = "inferenceData")
       }
       
@@ -12313,10 +12321,13 @@ statInfrServer <- function(id) {
         updateTabsetPanel(session, "depPopMeansTabset", selected = "Analysis")
         hideTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
       } else {
-        if (two_sample_valid) showTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
-        else hideTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
+        showTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
         showTab(inputId = "depPopMeansTabset", target = "Analysis")
-        updateTabsetPanel(session, "depPopMeansTabset", selected = "Analysis")
+        if (depmeansupload_iv$is_valid() && depmeansuploadvars_iv$is_valid()) {
+          updateTabsetPanel(session, "depPopMeansTabset", selected = "Analysis")
+        } else {
+          updateTabsetPanel(session, "depPopMeansTabset", selected = "Uploaded Data")
+        }
       }
 
       if(two_sample_valid && input$depMeansQQPlot) {
@@ -12333,7 +12344,11 @@ statInfrServer <- function(id) {
       } else {
         showTab(inputId = "wilcoxonRankSumTabset", target = "Uploaded Data")
         showTab(inputId = "wilcoxonRankSumTabset", target = "Analysis")
-        updateTabsetPanel(session, "wilcoxonRankSumTabset", selected = "Analysis")
+        if (wilcoxonUpload_iv$is_valid() && wilcoxonRanksuploadvars_iv$is_valid()) {
+          updateTabsetPanel(session, "wilcoxonRankSumTabset", selected = "Analysis")
+        } else {
+          updateTabsetPanel(session, "wilcoxonRankSumTabset", selected = "Uploaded Data")
+        }
       }
 
       # Detect content-level error conditions for Wilcoxon Rank Sum
@@ -12377,7 +12392,11 @@ statInfrServer <- function(id) {
       } else {
         showTab(inputId = "signedRankTabset", target = "Uploaded Data")
         showTab(inputId = "signedRankTabset", target = "Analysis")
-        updateTabsetPanel(session, "signedRankTabset", selected = "Analysis")
+        if (signedRankUpload_iv$is_valid() && signedRankUploadvars_iv$is_valid()) {
+          updateTabsetPanel(session, "signedRankTabset", selected = "Analysis")
+        } else {
+          updateTabsetPanel(session, "signedRankTabset", selected = "Uploaded Data")
+        }
       }
       
     })
