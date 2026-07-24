@@ -651,6 +651,8 @@ PolynomialRegressionServer <- function(id) {
         hideTab(inputId = "polyNavbarPage", target = "Uploaded Data")
       }
 
+      updateNavbarPage(session, "polyNavbarPage", selected = "Model")
+
       # -- Extract data ------------------------------------------------------
       degree <- as.integer(input$polyDegree)
 
@@ -766,7 +768,7 @@ PolynomialRegressionServer <- function(id) {
           )),
           p(sprintf("\\( \\qquad \\hat{y} = %s \\)", sym_terms)),
           br(),
-          p("The fitted model with estimated coefficients is"),
+          p("The estimated polynomial regression model is"),
           p(sprintf("\\( \\qquad \\hat{y} = %s \\)", num_terms)),
           br(),
           p(tags$b("Interpretation:")),
@@ -872,7 +874,7 @@ PolynomialRegressionServer <- function(id) {
 
       coefs <- as.data.frame(summary(model)$coefficients)
       coefs <- tibble::rownames_to_column(coefs, "Term")
-      term_labels <- c("Intercept", paste0("x^", seq_len(degree)))
+      term_labels <- c("Intercept", "x", paste0("x^", seq(2, degree)))
       if (nrow(coefs) == length(term_labels)) coefs$Term <- term_labels
       names(coefs)[names(coefs) == "Pr(>|t|)"] <- "P-value"
 
