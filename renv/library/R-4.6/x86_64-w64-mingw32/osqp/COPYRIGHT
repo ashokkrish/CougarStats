@@ -1,0 +1,13 @@
+OSQP
+Copyright (c) 2017 Bartolomeo Stellato, Goran Banjac, Paul Goulart, Stephen Boyd
+
+This product includes software developed at Stanford University and at the University of Oxford.
+
+This library includes the following external modules.
+
+QDLDL
+Copyright (c) 2018, Paul Goulart, Bartolomeo Stellato, Goran Banjac.
+
+AMD (License BSD 3-clause)
+Copyright (c) 1996-2015, Timothy A. Davis, Patrick R. Amestoy, and Iain S. Duff.
+

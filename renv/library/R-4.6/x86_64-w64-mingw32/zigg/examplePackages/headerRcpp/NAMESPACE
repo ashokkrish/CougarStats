@@ -1,0 +1,4 @@
+export(ziggrnorm,
+       ziggsetseed)
+importFrom(Rcpp, evalCpp)
+useDynLib(zigguserHeaderRcpp, .registration=TRUE)

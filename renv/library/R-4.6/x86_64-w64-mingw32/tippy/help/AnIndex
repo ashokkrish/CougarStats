@@ -1,0 +1,11 @@
+call_tippy	use_tippy_funcs
+renderTippy	tippy-shiny
+tippy	tippy_funcs
+tippy-shiny	tippy-shiny
+tippyOutput	tippy-shiny
+tippy_class	use_tippy_funcs
+tippy_funcs	tippy_funcs
+tippy_this	tippy_funcs
+use_tippy	use_tippy_funcs
+use_tippy_funcs	use_tippy_funcs
+with_tippy	tippy_funcs

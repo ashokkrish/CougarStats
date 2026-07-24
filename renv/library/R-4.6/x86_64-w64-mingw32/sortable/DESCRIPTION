@@ -1,0 +1,49 @@
+Type: Package
+Package: sortable
+Title: Drag-and-Drop in 'shiny' Apps with 'SortableJS'
+Version: 0.6.0
+Authors@R: c(
+    person("Andrie", "de Vries", , "apdevries@gmail.com", role = c("cre", "aut")),
+    person("Barret", "Schloerke", , "barret@posit.co", role = "aut"),
+    person("Kenton", "Russell", , "kent.russell@timelyportfolio.com", role = c("aut", "ccp"),
+           comment = "Original author"),
+    person("Posit", role = c("cph", "fnd")),
+    person("Lebedev", "Konstantin", role = "cph",
+           comment = "'SortableJS', https://sortablejs.github.io/Sortable/")
+  )
+Description: Enables drag-and-drop behaviour in Shiny apps, by exposing
+    the functionality of the 'SortableJS'
+    <https://sortablejs.github.io/Sortable/> JavaScript library as an
+    'htmlwidget'.  You can use this in Shiny apps and widgets, 'learnr'
+    tutorials as well as R Markdown. In addition, provides a custom
+    'learnr' question type - 'question_rank()' - that allows ranking
+    questions with drag-and-drop.
+License: MIT + file LICENSE
+URL: https://rstudio.github.io/sortable/
+BugReports: https://github.com/rstudio/sortable/issues
+Imports: assertthat, cli, htmltools, htmlwidgets, jsonlite, learnr (>=
+        0.10.0), rlang (>= 1.0.0), shiny (>= 1.9.0), utils
+Suggests: base64enc, covr, knitr, magrittr, rmarkdown, shinytest2,
+        spelling, testthat (>= 2.1.0), webshot, withr
+VignetteBuilder: knitr
+Config/testthat/edition: 3
+Encoding: UTF-8
+Language: en-US
+RoxygenNote: 7.3.3
+NeedsCompilation: no
+Packaged: 2025-12-14 08:14:06 UTC; andrie
+Author: Andrie de Vries [cre, aut],
+  Barret Schloerke [aut],
+  Kenton Russell [aut, ccp] (Original author),
+  Posit [cph, fnd],
+  Lebedev Konstantin [cph] ('SortableJS',
+    https://sortablejs.github.io/Sortable/)
+Maintainer: Andrie de Vries <apdevries@gmail.com>
+Repository: CRAN
+Date/Publication: 2025-12-14 10:50:02 UTC
+Built: R 4.6.0; ; 2026-06-09 03:16:55 UTC; windows
+RemoteType: standard
+RemotePkgRef: sortable
+RemoteRef: sortable
+RemoteRepos: https://cran.rstudio.com
+RemoteSha.Version: 0.6.0

@@ -1,0 +1,4 @@
+export(ziggrnorm,
+       ziggsetseed)
+import(zigg)
+useDynLib(zigguserDirectCpp, .registration=TRUE)

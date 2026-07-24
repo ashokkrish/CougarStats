@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head><title>R: SHAP Visualizations</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<link rel="stylesheet" type="text/css" href="R.css">
+</head><body><div class="container">
+<h1> SHAP Visualizations
+<img class="toplogo" src="figures/logo.png" alt="[R logo]">
+</h1>
+<hr>
+<div style="text-align: center;">
+<a href="../../../doc/html/packages.html"><img class="arrow" src="../../../doc/html/left.jpg" alt="[Up]"></a>
+<a href="../../../doc/html/index.html"><img class="arrow" src="../../../doc/html/up.jpg" alt="[Top]"></a>
+</div><h2>Documentation for package &lsquo;shapviz&rsquo; version 0.10.3</h2>
+
+<ul><li><a href="../DESCRIPTION" type="text/plain; charset=utf-8">DESCRIPTION file</a></li>
+<li><a href="../doc/index.html">User guides, package vignettes and other documentation</a></li>
+<li><a href="../NEWS.md">Package NEWS</a></li>
+<li><a href="../README.md">Package README</a></li>
+</ul>
+
+<h2>Help Pages</h2>
+
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="shapviz-package.html">shapviz-package</a></td>
+<td>shapviz: SHAP Visualizations</td></tr>
+<tr><td style="width: 25%;"><a href="plus-.shapviz.html">+.mshapviz</a></td>
+<td>Rowbinds two "shapviz" Objects</td></tr>
+<tr><td style="width: 25%;"><a href="plus-.shapviz.html">+.shapviz</a></td>
+<td>Rowbinds two "shapviz" Objects</td></tr>
+<tr><td style="width: 25%;"><a href="c.shapviz.html">c.shapviz</a></td>
+<td>Concatenates "shapviz" Objects</td></tr>
+<tr><td style="width: 25%;"><a href="collapse_shap.html">collapse_shap</a></td>
+<td>Collapse SHAP values</td></tr>
+<tr><td style="width: 25%;"><a href="dim.shapviz.html">dim.shapviz</a></td>
+<td>Dimensions of "shapviz" Object</td></tr>
+<tr><td style="width: 25%;"><a href="dimnames.shapviz.html">dimnames.shapviz</a></td>
+<td>Dimnames of "shapviz" Object</td></tr>
+<tr><td style="width: 25%;"><a href="dimnames-set-.shapviz.html">dimnames&lt;-.shapviz</a></td>
+<td>Dimnames (Replacement Method) of "shapviz" Object</td></tr>
+<tr><td style="width: 25%;"><a href="extractors.html">extractors</a></td>
+<td>Extractor Functions</td></tr>
+<tr><td style="width: 25%;"><a href="format_max.html">format_max</a></td>
+<td>Number Formatter</td></tr>
+<tr><td style="width: 25%;"><a href="extractors.html">get_baseline</a></td>
+<td>Extractor Functions</td></tr>
+<tr><td style="width: 25%;"><a href="extractors.html">get_baseline.default</a></td>
+<td>Extractor Functions</td></tr>
+<tr><td style="width: 25%;"><a href="extractors.html">get_baseline.mshapviz</a></td>
+<td>Extractor Functions</td></tr>
+<tr><td style="width: 25%;"><a href="extractors.html">get_baseline.shapviz</a></td>
+<td>Extractor Functions</td></tr>
+<tr><td style="width: 25%;"><a href="extractors.html">get_feature_values</a></td>
+<td>Extractor Functions</td></tr>
+<tr><td style="width: 25%;"><a href="extractors.html">get_feature_values.default</a></td>
+<td>Extractor Functions</td></tr>
+<tr><td style="width: 25%;"><a href="extractors.html">get_feature_values.mshapviz</a></td>
+<td>Extractor Functions</td></tr>
+<tr><td style="width: 25%;"><a href="extractors.html">get_feature_values.shapviz</a></td>
+<td>Extractor Functions</td></tr>
+<tr><td style="width: 25%;"><a href="extractors.html">get_shap_interactions</a></td>
+<td>Extractor Functions</td></tr>
+<tr><td style="width: 25%;"><a href="extractors.html">get_shap_interactions.default</a></td>
+<td>Extractor Functions</td></tr>
+<tr><td style="width: 25%;"><a href="extractors.html">get_shap_interactions.mshapviz</a></td>
+<td>Extractor Functions</td></tr>
+<tr><td style="width: 25%;"><a href="extractors.html">get_shap_interactions.shapviz</a></td>
+<td>Extractor Functions</td></tr>
+<tr><td style="width: 25%;"><a href="extractors.html">get_shap_values</a></td>
+<td>Extractor Functions</td></tr>
+<tr><td style="width: 25%;"><a href="extractors.html">get_shap_values.default</a></td>
+<td>Extractor Functions</td></tr>
+<tr><td style="width: 25%;"><a href="extractors.html">get_shap_values.mshapviz</a></td>
+<td>Extractor Functions</td></tr>
+<tr><td style="width: 25%;"><a href="extractors.html">get_shap_values.shapviz</a></td>
+<td>Extractor Functions</td></tr>
+<tr><td style="width: 25%;"><a href="is.mshapviz.html">is.mshapviz</a></td>
+<td>Check for mshapviz</td></tr>
+<tr><td style="width: 25%;"><a href="is.shapviz.html">is.shapviz</a></td>
+<td>Check for shapviz</td></tr>
+<tr><td style="width: 25%;"><a href="miami.html">miami</a></td>
+<td>Miami-Dade County House Prices</td></tr>
+<tr><td style="width: 25%;"><a href="mshapviz.html">mshapviz</a></td>
+<td>Combines compatible "shapviz" Objects</td></tr>
+<tr><td style="width: 25%;"><a href="potential_interactions.html">potential_interactions</a></td>
+<td>Interaction Strength</td></tr>
+<tr><td style="width: 25%;"><a href="print.mshapviz.html">print.mshapviz</a></td>
+<td>Prints "mshapviz" Object</td></tr>
+<tr><td style="width: 25%;"><a href="print.shapviz.html">print.shapviz</a></td>
+<td>Prints "shapviz" Object</td></tr>
+<tr><td style="width: 25%;"><a href="rbind.shapviz.html">rbind.mshapviz</a></td>
+<td>Rowbinds Multiple "shapviz" or "mshapviz" Objects</td></tr>
+<tr><td style="width: 25%;"><a href="rbind.shapviz.html">rbind.shapviz</a></td>
+<td>Rowbinds Multiple "shapviz" or "mshapviz" Objects</td></tr>
+<tr><td style="width: 25%;"><a href="shapviz.html">shapviz</a></td>
+<td>Initialize "shapviz" Object</td></tr>
+<tr><td style="width: 25%;"><a href="shapviz.html">shapviz.default</a></td>
+<td>Initialize "shapviz" Object</td></tr>
+<tr><td style="width: 25%;"><a href="shapviz.html">shapviz.explain</a></td>
+<td>Initialize "shapviz" Object</td></tr>
+<tr><td style="width: 25%;"><a href="shapviz.html">shapviz.H2OModel</a></td>
+<td>Initialize "shapviz" Object</td></tr>
+<tr><td style="width: 25%;"><a href="shapviz.html">shapviz.kernelshap</a></td>
+<td>Initialize "shapviz" Object</td></tr>
+<tr><td style="width: 25%;"><a href="shapviz.html">shapviz.lgb.Booster</a></td>
+<td>Initialize "shapviz" Object</td></tr>
+<tr><td style="width: 25%;"><a href="shapviz.html">shapviz.matrix</a></td>
+<td>Initialize "shapviz" Object</td></tr>
+<tr><td style="width: 25%;"><a href="shapviz.html">shapviz.predict_parts</a></td>
+<td>Initialize "shapviz" Object</td></tr>
+<tr><td style="width: 25%;"><a href="shapviz.html">shapviz.shapr</a></td>
+<td>Initialize "shapviz" Object</td></tr>
+<tr><td style="width: 25%;"><a href="shapviz.html">shapviz.treeshap</a></td>
+<td>Initialize "shapviz" Object</td></tr>
+<tr><td style="width: 25%;"><a href="shapviz.html">shapviz.xgb.Booster</a></td>
+<td>Initialize "shapviz" Object</td></tr>
+<tr><td style="width: 25%;"><a href="split.shapviz.html">split.shapviz</a></td>
+<td>Splits "shapviz" Object</td></tr>
+<tr><td style="width: 25%;"><a href="summary.shapviz.html">summary.shapviz</a></td>
+<td>Summarizes "shapviz" Object</td></tr>
+<tr><td style="width: 25%;"><a href="sv_dependence.html">sv_dependence</a></td>
+<td>SHAP Dependence Plot</td></tr>
+<tr><td style="width: 25%;"><a href="sv_dependence.html">sv_dependence.default</a></td>
+<td>SHAP Dependence Plot</td></tr>
+<tr><td style="width: 25%;"><a href="sv_dependence.html">sv_dependence.mshapviz</a></td>
+<td>SHAP Dependence Plot</td></tr>
+<tr><td style="width: 25%;"><a href="sv_dependence.html">sv_dependence.shapviz</a></td>
+<td>SHAP Dependence Plot</td></tr>
+<tr><td style="width: 25%;"><a href="sv_dependence2D.html">sv_dependence2D</a></td>
+<td>2D SHAP Dependence Plot</td></tr>
+<tr><td style="width: 25%;"><a href="sv_dependence2D.html">sv_dependence2D.default</a></td>
+<td>2D SHAP Dependence Plot</td></tr>
+<tr><td style="width: 25%;"><a href="sv_dependence2D.html">sv_dependence2D.mshapviz</a></td>
+<td>2D SHAP Dependence Plot</td></tr>
+<tr><td style="width: 25%;"><a href="sv_dependence2D.html">sv_dependence2D.shapviz</a></td>
+<td>2D SHAP Dependence Plot</td></tr>
+<tr><td style="width: 25%;"><a href="sv_force.html">sv_force</a></td>
+<td>SHAP Force Plot</td></tr>
+<tr><td style="width: 25%;"><a href="sv_force.html">sv_force.default</a></td>
+<td>SHAP Force Plot</td></tr>
+<tr><td style="width: 25%;"><a href="sv_force.html">sv_force.mshapviz</a></td>
+<td>SHAP Force Plot</td></tr>
+<tr><td style="width: 25%;"><a href="sv_force.html">sv_force.shapviz</a></td>
+<td>SHAP Force Plot</td></tr>
+<tr><td style="width: 25%;"><a href="sv_importance.html">sv_importance</a></td>
+<td>SHAP Importance Plots</td></tr>
+<tr><td style="width: 25%;"><a href="sv_importance.html">sv_importance.default</a></td>
+<td>SHAP Importance Plots</td></tr>
+<tr><td style="width: 25%;"><a href="sv_importance.html">sv_importance.mshapviz</a></td>
+<td>SHAP Importance Plots</td></tr>
+<tr><td style="width: 25%;"><a href="sv_importance.html">sv_importance.shapviz</a></td>
+<td>SHAP Importance Plots</td></tr>
+<tr><td style="width: 25%;"><a href="sv_interaction.html">sv_interaction</a></td>
+<td>SHAP Interaction Plot</td></tr>
+<tr><td style="width: 25%;"><a href="sv_interaction.html">sv_interaction.default</a></td>
+<td>SHAP Interaction Plot</td></tr>
+<tr><td style="width: 25%;"><a href="sv_interaction.html">sv_interaction.mshapviz</a></td>
+<td>SHAP Interaction Plot</td></tr>
+<tr><td style="width: 25%;"><a href="sv_interaction.html">sv_interaction.shapviz</a></td>
+<td>SHAP Interaction Plot</td></tr>
+<tr><td style="width: 25%;"><a href="sv_waterfall.html">sv_waterfall</a></td>
+<td>SHAP Waterfall Plot</td></tr>
+<tr><td style="width: 25%;"><a href="sv_waterfall.html">sv_waterfall.default</a></td>
+<td>SHAP Waterfall Plot</td></tr>
+<tr><td style="width: 25%;"><a href="sv_waterfall.html">sv_waterfall.mshapviz</a></td>
+<td>SHAP Waterfall Plot</td></tr>
+<tr><td style="width: 25%;"><a href="sv_waterfall.html">sv_waterfall.shapviz</a></td>
+<td>SHAP Waterfall Plot</td></tr>
+<tr><td style="width: 25%;"><a href="sub-.shapviz.html">[.shapviz</a></td>
+<td>Subsets "shapviz" Object</td></tr>
+</table>
+</div></body></html>

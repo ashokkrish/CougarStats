@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>progressr: Map-Reduce Calls, e.g. lapply() and map()</title>
+<style>
+body {
+  font-family: sans-serif;
+  line-height: 1.6;
+  padding-left: 3ex;
+  padding-right: 3ex;
+  background-color: white;
+  color: black;
+}
+
+a {
+  color: #4183C4;
+  text-decoration: none;
+}
+
+h1, h2, h3 {
+  margin: 2ex 0 1ex;
+  padding: 0;
+  font-weight: bold;
+  -webkit-font-smoothing: antialiased;
+  cursor: text;
+  position: relative;
+}
+
+h2 {
+  border-bottom: 1px solid #cccccc;
+}
+
+code {
+  margin: 0 2px;
+  padding: 0 5px;
+  white-space: nowrap;
+  border: 1px solid #eaeaea;
+  background-color: #f8f8f8;
+  border-radius: 3px;
+}
+
+pre code {
+  margin: 0;
+  padding: 0;
+  white-space: pre;
+  border: none;
+  background: transparent;
+}
+
+pre {
+  background-color: #f8f8f8;
+  border: 1px solid #cccccc;
+  line-height: 2.5x;
+  overflow: auto;
+  padding: 0.6ex 1ex;
+  border-radius: 3px;
+}
+
+pre code {
+  background-color: transparent;
+  border: none;
+}
+</style>
+</head>
+<body>
+<h1>progressr: Map-Reduce Calls, e.g. lapply() and map()</h1>
+<!--
+%\VignetteIndexEntry{progressr: Map-Reduce Calls, e.g. lapply() and map()}
+%\VignetteAuthor{Henrik Bengtsson}
+%\VignetteKeyword{R}
+%\VignetteKeyword{package}
+%\VignetteKeyword{vignette}
+%\VignetteKeyword{lapply}
+%\VignetteKeyword{foreach}
+%\VignetteKeyword{purrr}
+%\VignetteKeyword{plyr}
+%\VignetteEngine{progressr::selfonly}
+-->
+<p>Progress updates by <strong><a href="https://progressr.futureverse.org">progressr</a></strong> are designed to work out of the box
+for any iterator framework in R, e.g. <code>lapply()</code>, <strong><a href="https://cran.r-project.org/package=foreach">foreach</a></strong>,
+<strong><a href="https://cran.r-project.org/package=purrr">purrr</a></strong>, and <strong><a href="https://cran.r-project.org/package=plyr">plyr</a></strong>. Below you will find a set of examples that
+illustrate how to use <strong>progressr</strong> in common use cases.</p>
+<h2>Base R apply functions</h2>
+<pre><code class="language-r">library(progressr)
+handlers(global = TRUE)
+
+my_fcn &lt;- function(xs) {
+  p &lt;- progressor(along = xs)
+  lapply(xs, function(x) {
+    Sys.sleep(0.1)
+    p(sprintf(&quot;x=%g&quot;, x))
+    sqrt(x)
+  })
+}
+
+y &lt;- my_fcn(1:10)
+#  |====================                               |  40%
+</code></pre>
+<h2>The foreach package</h2>
+<pre><code class="language-r">library(foreach)
+library(progressr)
+handlers(global = TRUE)
+
+my_fcn &lt;- function(xs) {
+  p &lt;- progressor(along = xs)
+  foreach(x = xs) %do% {
+    Sys.sleep(0.1)
+    p(sprintf(&quot;x=%g&quot;, x))
+    sqrt(x)
+  }
+}
+
+y &lt;- my_fcn(1:10)
+#  |====================                               |  40%
+</code></pre>
+<h2>The purrr package</h2>
+<pre><code class="language-r">library(purrr)
+library(progressr)
+handlers(global = TRUE)
+
+my_fcn &lt;- function(xs) {
+  p &lt;- progressor(along = xs)
+  map(xs, function(x) {
+    Sys.sleep(0.1)
+    p(sprintf(&quot;x=%g&quot;, x))
+    sqrt(x)
+  })
+}
+
+y &lt;- my_fcn(1:10)
+#  |====================                               |  40%
+</code></pre>
+<h2>The plyr package</h2>
+<pre><code class="language-r">library(plyr)
+library(progressr)
+handlers(global = TRUE)
+
+my_fcn &lt;- function(xs) {
+  p &lt;- progressor(along = xs)
+  llply(xs, function(x, ...) {
+    Sys.sleep(0.1)
+    p(sprintf(&quot;x=%g&quot;, x))
+    sqrt(x)
+  })
+}
+
+y &lt;- my_fcn(1:10)
+#  |====================                               |  40%
+</code></pre>
+<p>Note how this solution does not make use of <strong>plyr</strong>'s <code>.progress</code>
+argument, because the above solution is more powerful and more
+flexible, e.g. we have more control over progress updates and their
+messages.  However, if you prefer the traditional <strong>plyr</strong> approach,
+you can use <code>.progress = &quot;progressr&quot;</code>, e.g. <code>y &lt;- llply(..., .progress = &quot;progressr&quot;)</code>.</p>
+</body>
+</html>

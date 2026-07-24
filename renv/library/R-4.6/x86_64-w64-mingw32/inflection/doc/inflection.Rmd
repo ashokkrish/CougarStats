@@ -1,0 +1,128 @@
+---
+title: "Introduction to inflection package"
+author: "Demetris T. Christopoulos"
+date: "25/6/2019"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteIndexEntry{Introduction to inflection package}
+  %\VignetteEncoding{UTF-8}
+---
+
+
+```{css, echo=FALSE}
+    body .main-container {
+      max-width: 1024px !important;
+      width: 1024px !important;
+    }
+    body {
+      max-width: 1024px !important;
+    }
+```
+
+```{r setup, include=FALSE}
+library(inflection)
+knitr::opts_chunk$set(echo = TRUE)
+options(max.width = 1000)
+options(max.print = 100000)
+```
+
+## Inflection Point 
+
+When a planar curve is first convex and then concave or vice versa, then there exists an inflection point (ip).
+We could find that if all our points had no error, but that's an exception to reality.
+Since the divided differences of second order are extremely sensitive to the error, it is meaningless to use
+them as an approximation in order to search for inflection point.
+For that task *Extremum Surface Estimator (ESE)*, *Extremeum Distance Estimator (EDE)* and their iterative
+versions *Bisection ESE (BESE)*, *Bisection EDE (BEDE)* have been created, see [1] & [2] for definitions
+and properties.
+
+Lets create a not noisy data set from function $f(x)=5+5\,tanh(x-5)$ with known inflection point $(ip=5)$, equal x-distances and total symmetry, see [2]. Actually it is the data set "TABLE_2_1" of package.
+<!-- Lets create a noisy data set from a function with known inflection point $(=5)$ with equal distances and total symmetry, see [2]. -->
+<!-- Lets create a noisy data set from a function with known inflection point $(=5)$ with *data right asymmetry*, see [2]. -->
+<!-- and wirthout keeping equal distances on x-points: -->
+
+### Now we compute the results of all available methods for non noisy data sets
+
+#### ESE & BESE
+
+
+```{r, tanhESE, echo=TRUE,out.width='75%', fig.align='center',fig.width=10, fig.height=6}
+f=function(x){5+5*tanh(x-5)}
+x=seq(0,10,by=0.05)
+y=f(x)
+plot(x,y,cex=0.3,pch=19)
+grid()
+bb=ese(x,y,0);bb
+pese=bb[,3];pese
+abline(v=pese)
+cc=bese(x,y,0)
+cc$iplast
+abline(v=cc$iplast,col='blue')
+knitr::kable(cc$iters, caption = 'BESE')
+```
+
+<!-- We observe that $ESE=4.8$ while $BESE=4.95$ closer to exact value, as expected from theory. -->
+
+#### EDE & BEDE
+
+
+```{r, tanhEDE, echo=TRUE,out.width='75%', fig.align='center',fig.width=10, fig.height=6}
+x=seq(0,10,by=0.05)
+y=f(x)
+plot(x,y,cex=0.3,pch=19)
+grid()
+dd=ede(x,y,0);dd
+pede=dd[,3];pede
+abline(v=pede)
+ee=bede(x,y,0)
+ee$iplast
+abline(v=cc$iplast,col='red')
+knitr::kable(ee$iters, caption = 'BEDE')
+```
+
+So all methods gave the theoretical expected value.
+Lets create a data set with *data right asymmetry*, see [2] and run again:
+
+
+
+```{r, tanhESEright, echo=TRUE,out.width='75%', fig.align='center',fig.width=10, fig.height=6}
+x=seq(3,10,by=0.05)
+y=f(x)
+plot(x,y,cex=0.5,pch=19)
+abline(v=5,lty=2)
+grid()
+bb=ese(x,y,0);bb
+pese=bb[,3];pese
+abline(v=pese)
+cc=bese(x,y,0)
+cc$iplast
+abline(v=cc$iplast,col='blue')
+knitr::kable(cc$iters, caption = 'BESE')
+```
+
+```{r, tanhEDEright, echo=TRUE,out.width='75%', fig.align='center',fig.width=10, fig.height=6}
+x=seq(3,10,by=0.05)
+y=f(x)
+plot(x,y,cex=0.5,pch=19)
+abline(v=5,lty=2)
+grid()
+dd=ede(x,y,0);dd
+pede=dd[,3];pede
+abline(v=pede)
+ee=bede(x,y,0)
+ee$iplast
+abline(v=cc$iplast,col='red')
+knitr::kable(ee$iters, caption = 'BEDE')
+```
+
+
+## Please send your comments, suggestions or bugs found to dchristop@econ.uoa.gr
+
+
+## References
+
+[1] Demetris T. Christopoulos, On the Efficient Identification of an Inflection Point,
+International Journal of Mathematics and Scientific Computing , Volume 6 (1), June 2016, Pages 13-20, ISSN: 2231-5330. Retrieved from https://demovtu.veltech.edu.in/wp-content/uploads/2016/04/Paper-04-2016.pdf
+
+[2] Demetris T. Christopoulos. Developing methods for identifying the inflection point of a convex/concave curve. arXiv.org, 2012. URL: https://doi.org/10.48550/arXiv.1206.5478

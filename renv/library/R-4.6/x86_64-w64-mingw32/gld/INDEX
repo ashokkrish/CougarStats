@@ -1,0 +1,37 @@
+BetaLambdaLambda        Calculates Beta function for two identical
+                        parameters, allowing non-integer negative
+                        values
+GeneralisedLambdaDistribution
+                        The Generalised Lambda Distribution
+fit.fkml                Estimate parameters of the FKML
+                        parameterisation of the generalised lambda
+                        distribution
+fit.fkml.moments        Method of moments estimation for the FKML type
+                        of the generalised lambda distribution
+fit.gpd                 Estimate parameters of the GPD type generalised
+                        lambda distribution
+gl.check.lambda         Function to check the validity of parameters of
+                        the generalized lambda distribution
+gld-Deprecated          Deprecated functions
+gld.lmoments            Calculate L-Moments of the GPD type generalised
+                        lambda distribution for given parameter values
+gld.moments             Calculate moments of the FKML type of the
+                        generalised lambda distribution for given
+                        parameter values
+plot.starship           Plots to compare a fitted generalised lambda
+                        distribution to data
+plotgl                  Plots of density and distribution function for
+                        the generalised lambda distribution
+print.starship          Print (or summarise) the results of a starship
+                        estimation
+qdgl-deprecated         Deprecated function for density quantile
+                        function of gld. See qdgl instead
+qqgl                    Quantile-Quantile plot against the generalised
+                        lambda distribution
+starship                Carry out the "starship" estimation method for
+                        the generalised lambda distribution
+starship.adaptivegrid   Carry out the "starship" estimation method for
+                        the generalised lambda distribution using a
+                        grid-based search
+starship.obj            Objective function that is minimised in
+                        starship estimation method

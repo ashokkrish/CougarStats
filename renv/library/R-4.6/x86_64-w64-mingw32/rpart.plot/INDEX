@@ -1,0 +1,8 @@
+prp                     Plot an rpart model.
+ptitanic                Titanic data with passenger names and other
+                        details removed.
+rpart.plot              Plot an rpart model. A simplified interface to
+                        the prp function.
+rpart.predict           Extended version of predict.rpart
+rpart.rules             Print an rpart model as a set of rules.
+show.prp.palettes       Show the built-in prp palettes.

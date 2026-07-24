@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head><title>R: Extreme Gradient Boosting</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<link rel="stylesheet" type="text/css" href="R.css">
+</head><body><div class="container">
+<h1> Extreme Gradient Boosting
+<img class="toplogo" src="../../../doc/html/Rlogo.svg" alt="[R logo]">
+</h1>
+<hr>
+<div style="text-align: center;">
+<a href="../../../doc/html/packages.html"><img class="arrow" src="../../../doc/html/left.jpg" alt="[Up]"></a>
+<a href="../../../doc/html/index.html"><img class="arrow" src="../../../doc/html/up.jpg" alt="[Top]"></a>
+</div><h2>Documentation for package &lsquo;xgboost&rsquo; version 3.2.1.1</h2>
+
+<ul><li><a href="../DESCRIPTION" type="text/plain; charset=utf-8">DESCRIPTION file</a></li>
+<li><a href="../doc/index.html">User guides, package vignettes and other documentation</a></li>
+</ul>
+
+<h2>Help Pages</h2>
+
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="a-compatibility-note-for-saveRDS-save.html">a-compatibility-note-for-saveRDS-save</a></td>
+<td>Model Serialization and Compatibility</td></tr>
+<tr><td style="width: 25%;"><a href="agaricus.test.html">agaricus.test</a></td>
+<td>Test part from Mushroom Data Set</td></tr>
+<tr><td style="width: 25%;"><a href="agaricus.train.html">agaricus.train</a></td>
+<td>Training part from Mushroom Data Set</td></tr>
+<tr><td style="width: 25%;"><a href="coef.xgb.Booster.html">coef.xgb.Booster</a></td>
+<td>Extract coefficients from linear booster</td></tr>
+<tr><td style="width: 25%;"><a href="dim.xgb.DMatrix.html">dim.xgb.DMatrix</a></td>
+<td>Dimensions of xgb.DMatrix</td></tr>
+<tr><td style="width: 25%;"><a href="dimnames.xgb.DMatrix.html">dimnames.xgb.DMatrix</a></td>
+<td>Handling of column names of 'xgb.DMatrix'</td></tr>
+<tr><td style="width: 25%;"><a href="dimnames.xgb.DMatrix.html">dimnames&lt;-.xgb.DMatrix</a></td>
+<td>Handling of column names of 'xgb.DMatrix'</td></tr>
+<tr><td style="width: 25%;"><a href="getinfo.html">getinfo</a></td>
+<td>Get or set information of xgb.DMatrix and xgb.Booster objects</td></tr>
+<tr><td style="width: 25%;"><a href="getinfo.html">getinfo.xgb.Booster</a></td>
+<td>Get or set information of xgb.DMatrix and xgb.Booster objects</td></tr>
+<tr><td style="width: 25%;"><a href="getinfo.html">getinfo.xgb.DMatrix</a></td>
+<td>Get or set information of xgb.DMatrix and xgb.Booster objects</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.get.num.boosted.rounds.html">length.xgb.Booster</a></td>
+<td>Get number of boosting in a fitted booster</td></tr>
+<tr><td style="width: 25%;"><a href="predict.xgb.Booster.html">predict.xgb.Booster</a></td>
+<td>Predict method for XGBoost model</td></tr>
+<tr><td style="width: 25%;"><a href="predict.xgboost.html">predict.xgboost</a></td>
+<td>Compute predictions from XGBoost model on new data</td></tr>
+<tr><td style="width: 25%;"><a href="print.xgb.Booster.html">print.xgb.Booster</a></td>
+<td>Print xgb.Booster</td></tr>
+<tr><td style="width: 25%;"><a href="print.xgb.cv.html">print.xgb.cv.synchronous</a></td>
+<td>Print xgb.cv result</td></tr>
+<tr><td style="width: 25%;"><a href="print.xgb.DMatrix.html">print.xgb.DMatrix</a></td>
+<td>Print xgb.DMatrix</td></tr>
+<tr><td style="width: 25%;"><a href="print.xgboost.html">print.xgboost</a></td>
+<td>Print info from XGBoost model</td></tr>
+<tr><td style="width: 25%;"><a href="getinfo.html">setinfo</a></td>
+<td>Get or set information of xgb.DMatrix and xgb.Booster objects</td></tr>
+<tr><td style="width: 25%;"><a href="getinfo.html">setinfo.xgb.Booster</a></td>
+<td>Get or set information of xgb.DMatrix and xgb.Booster objects</td></tr>
+<tr><td style="width: 25%;"><a href="getinfo.html">setinfo.xgb.DMatrix</a></td>
+<td>Get or set information of xgb.DMatrix and xgb.Booster objects</td></tr>
+<tr><td style="width: 25%;"><a href="variable.names.xgb.Booster.html">variable.names.xgb.Booster</a></td>
+<td>Get Features Names from Booster</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.attr.html">xgb.attr</a></td>
+<td>Accessors for serializable attributes of a model</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.attr.html">xgb.attr&lt;-</a></td>
+<td>Accessors for serializable attributes of a model</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.attr.html">xgb.attributes</a></td>
+<td>Accessors for serializable attributes of a model</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.attr.html">xgb.attributes&lt;-</a></td>
+<td>Accessors for serializable attributes of a model</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.Callback.html">xgb.Callback</a></td>
+<td>XGBoost Callback Constructor</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.cb.cv.predict.html">xgb.cb.cv.predict</a></td>
+<td>Callback for returning cross-validation based predictions</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.cb.early.stop.html">xgb.cb.early.stop</a></td>
+<td>Callback to activate early stopping</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.cb.evaluation.log.html">xgb.cb.evaluation.log</a></td>
+<td>Callback for logging the evaluation history</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.cb.gblinear.history.html">xgb.cb.gblinear.history</a></td>
+<td>Callback for collecting coefficients history of a gblinear booster</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.cb.print.evaluation.html">xgb.cb.print.evaluation</a></td>
+<td>Callback for printing the result of evaluation</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.cb.reset.parameters.html">xgb.cb.reset.parameters</a></td>
+<td>Callback for resetting booster parameters at each iteration</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.cb.save.model.html">xgb.cb.save.model</a></td>
+<td>Callback for saving a model file</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.config.html">xgb.config</a></td>
+<td>Accessors for model parameters as JSON string</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.config.html">xgb.config&lt;-</a></td>
+<td>Accessors for model parameters as JSON string</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.copy.Booster.html">xgb.copy.Booster</a></td>
+<td>Deep-copies a Booster Object</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.create.features.html">xgb.create.features</a></td>
+<td>Create new features from a previously learned model</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.cv.html">xgb.cv</a></td>
+<td>Cross Validation</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.DataBatch.html">xgb.DataBatch</a></td>
+<td>Structure for Data Batches</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.DataIter.html">xgb.DataIter</a></td>
+<td>XGBoost Data Iterator</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.DMatrix.html">xgb.DMatrix</a></td>
+<td>Construct xgb.DMatrix object</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.DMatrix.hasinfo.html">xgb.DMatrix.hasinfo</a></td>
+<td>Check whether DMatrix object has a field</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.DMatrix.save.html">xgb.DMatrix.save</a></td>
+<td>Save xgb.DMatrix object to binary file</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.dump.html">xgb.dump</a></td>
+<td>Dump an XGBoost model in text format.</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.ExtMemDMatrix.html">xgb.ExtMemDMatrix</a></td>
+<td>DMatrix from External Data</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.gblinear.history.html">xgb.gblinear.history</a></td>
+<td>Extract gblinear coefficients history</td></tr>
+<tr><td style="width: 25%;"><a href="xgbConfig.html">xgb.get.config</a></td>
+<td>Set and get global configuration</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.get.DMatrix.data.html">xgb.get.DMatrix.data</a></td>
+<td>Get DMatrix Data</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.get.DMatrix.num.non.missing.html">xgb.get.DMatrix.num.non.missing</a></td>
+<td>Get Number of Non-Missing Entries in DMatrix</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.get.DMatrix.qcut.html">xgb.get.DMatrix.qcut</a></td>
+<td>Get Quantile Cuts from DMatrix</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.get.num.boosted.rounds.html">xgb.get.num.boosted.rounds</a></td>
+<td>Get number of boosting in a fitted booster</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.plot.deepness.html">xgb.ggplot.deepness</a></td>
+<td>Plot model tree depth</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.plot.importance.html">xgb.ggplot.importance</a></td>
+<td>Plot feature importance</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.plot.shap.summary.html">xgb.ggplot.shap.summary</a></td>
+<td>SHAP summary plot</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.importance.html">xgb.importance</a></td>
+<td>Feature importance</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.is.same.Booster.html">xgb.is.same.Booster</a></td>
+<td>Check if two boosters share the same C object</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.load.html">xgb.load</a></td>
+<td>Load XGBoost model from binary file</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.load.raw.html">xgb.load.raw</a></td>
+<td>Load serialised XGBoost model from R's raw vector</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.model.dt.tree.html">xgb.model.dt.tree</a></td>
+<td>Parse model text dump</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.model.parameters.html">xgb.model.parameters&lt;-</a></td>
+<td>Accessors for model parameters</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.params.html">xgb.params</a></td>
+<td>XGBoost Parameters</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.plot.deepness.html">xgb.plot.deepness</a></td>
+<td>Plot model tree depth</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.plot.importance.html">xgb.plot.importance</a></td>
+<td>Plot feature importance</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.plot.multi.trees.html">xgb.plot.multi.trees</a></td>
+<td>Project all trees on one tree</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.plot.shap.html">xgb.plot.shap</a></td>
+<td>SHAP dependence plots</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.plot.shap.summary.html">xgb.plot.shap.summary</a></td>
+<td>SHAP summary plot</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.plot.tree.html">xgb.plot.tree</a></td>
+<td>Plot boosted trees</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.DMatrix.html">xgb.QuantileDMatrix</a></td>
+<td>Construct xgb.DMatrix object</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.QuantileDMatrix.from_iterator.html">xgb.QuantileDMatrix.from_iterator</a></td>
+<td>QuantileDMatrix from External Data</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.save.html">xgb.save</a></td>
+<td>Save XGBoost model to binary file</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.save.raw.html">xgb.save.raw</a></td>
+<td>Save XGBoost model to R's raw vector</td></tr>
+<tr><td style="width: 25%;"><a href="xgbConfig.html">xgb.set.config</a></td>
+<td>Set and get global configuration</td></tr>
+<tr><td style="width: 25%;"><a href="xgbConfig.html">xgb.set.config, xgb.get.config</a></td>
+<td>Set and get global configuration</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.slice.Booster.html">xgb.slice.Booster</a></td>
+<td>Slice Booster by Rounds</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.slice.DMatrix.html">xgb.slice.DMatrix</a></td>
+<td>Slice DMatrix</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.train.html">xgb.train</a></td>
+<td>Fit XGBoost Model</td></tr>
+<tr><td style="width: 25%;"><a href="xgboost.html">xgboost</a></td>
+<td>Fit XGBoost Model</td></tr>
+<tr><td style="width: 25%;"><a href="xgboost-options.html">xgboost-options</a></td>
+<td>XGBoost Options</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.slice.Booster.html">[.xgb.Booster</a></td>
+<td>Slice Booster by Rounds</td></tr>
+<tr><td style="width: 25%;"><a href="xgb.slice.DMatrix.html">[.xgb.DMatrix</a></td>
+<td>Slice DMatrix</td></tr>
+</table>
+</div></body></html>

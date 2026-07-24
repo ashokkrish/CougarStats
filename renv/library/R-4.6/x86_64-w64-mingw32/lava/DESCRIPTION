@@ -1,0 +1,49 @@
+Package: lava
+Type: Package
+Title: Latent Variable Models
+Version: 1.9.1
+Authors@R: c(person("Klaus K.", "Holst", email="klaus@holst.it", role=c("aut", "cre")),
+       person("Benedikt", "Sommer", role = "ctb"),
+		   person("Brice", "Ozenne", role = "ctb"),
+		   person("Thomas", "Gerds", role = "ctb"))
+Author: Klaus K. Holst [aut, cre],
+  Benedikt Sommer [ctb],
+  Brice Ozenne [ctb],
+  Thomas Gerds [ctb]
+Maintainer: Klaus K. Holst <klaus@holst.it>
+Description: A general implementation of Structural Equation Models
+	with latent variables (MLE, 2SLS, and composite likelihood
+	estimators) with both continuous, censored, and ordinal
+	outcomes (Holst and Budtz-Joergensen (2013) <doi:10.1007/s00180-012-0344-y>).
+	Mixture latent variable models and non-linear latent variable models
+	(Holst and Budtz-Joergensen (2020) <doi:10.1093/biostatistics/kxy082>).
+	The package also provides methods for graph exploration (d-separation,
+	back-door criterion), simulation of general non-linear latent variable
+	models, and estimation of influence functions for a broad range of
+	statistical models.
+URL: https://kkholst.github.io/lava/, https://github.com/kkholst/lava
+BugReports: https://github.com/kkholst/lava/issues
+License: Apache License (== 2.0)
+LazyLoad: yes
+Depends: R (>= 3.5.0)
+Imports: cli, future.apply, graphics, grDevices, methods, numDeriv,
+        progressr, stats, survival, SQUAREM, utils
+Suggests: KernSmooth, Rgraphviz, data.table, ellipse, fields, future,
+        geepack, graph, knitr, rmarkdown, igraph (>= 0.6), lavaSearch2,
+        lme4 (>= 1.1.35.1), MASS, Matrix (>= 1.6.3), mets (>= 1.1),
+        nlme, optimx, polycor, quantreg, rgl, svglite, targeted (>=
+        0.4), testthat (>= 0.11), vdiffr, visNetwork
+VignetteBuilder: knitr,rmarkdown
+ByteCompile: yes
+Encoding: UTF-8
+Config/roxygen2/version: 8.0.0
+NeedsCompilation: no
+Packaged: 2026-05-14 16:46:12 UTC; kkzh
+Repository: CRAN
+Date/Publication: 2026-05-14 21:40:14 UTC
+Built: R 4.6.0; ; 2026-06-09 02:38:29 UTC; windows
+RemoteType: standard
+RemotePkgRef: lava
+RemoteRef: lava
+RemoteRepos: https://cran.rstudio.com
+RemoteSha.Version: 1.9.1

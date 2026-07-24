@@ -1,0 +1,116 @@
+/*!
+ * Copyright (c) 2020 dreamRs
+ *
+ * datamods, CSS styles
+ * https://github.com/dreamRs/datamods
+ *
+ * @version 0.0.1
+ */
+
+.show {
+  display: block !important;
+}
+.show-inline {
+  display: inline !important;
+}
+.hidden {
+  display: none !important;
+}
+.invisible {
+  visibility: hidden;
+}
+
+.container-rule {
+  position: relative;
+  text-align: center;
+  height: 25px;
+  margin-bottom: 5px;
+}
+
+.horizontal-rule {
+  position: absolute;
+  top: 11px;
+  right: 0;
+  left: 0;
+  background-color: #d0cfcf;
+  height: 1px;
+  z-index: 100;
+  margin: 0;
+  border: none;
+}
+
+.label-rule {
+  background: #FFF;
+  opacity: 1;
+  z-index: 101;
+  background-color: #FFF;
+  position: relative;
+  padding: 0 10px 0 10px;
+}
+
+.datamods-table-container {
+  overflow: auto;
+  word-break: keep-all;
+  white-space: nowrap;
+}
+
+.datamods-table-container > .table {
+  margin-bottom: 0 !important;
+}
+
+.datamods-file-import {
+  display: grid;
+  grid-template-columns: auto 50px;
+  grid-column-gap: 10px;
+}
+
+.datamods-dt-nowrap {
+  word-break: keep-all;
+  white-space: nowrap;
+}
+
+
+
+/* validation */
+.datamods-validation-results {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: 1fr;
+  height: 50px;
+  line-height: 50px;
+  font-size: large;
+}
+
+.datamods-validation-summary {
+  font-weight: bold;
+  text-align: center;
+}
+
+.datamods-validation-item {
+  font-size: larger;
+}
+
+
+
+/* from esquisse */
+.btn-column-discrete {
+  background-color: #EF562D;
+  color: #FFFFFF;
+}
+.btn-column-continuous {
+  background-color: #0C4C8A;
+  color: #FFFFFF;
+}
+.btn-column-datetime {
+  background-color: #97D5E0;
+  color: #FFFFFF;
+}
+.btn-column-id {
+  background-color: #848484;
+  color: #FFFFFF;
+}
+.btn-column-other {
+  background-color: #2E2E2E;
+  color: #FFFFFF;
+}
+

@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>progressr: Appendix</title>
+<style>
+body {
+  font-family: sans-serif;
+  line-height: 1.6;
+  padding-left: 3ex;
+  padding-right: 3ex;
+  background-color: white;
+  color: black;
+}
+
+a {
+  color: #4183C4;
+  text-decoration: none;
+}
+
+h1, h2, h3 {
+  margin: 2ex 0 1ex;
+  padding: 0;
+  font-weight: bold;
+  -webkit-font-smoothing: antialiased;
+  cursor: text;
+  position: relative;
+}
+
+h2 {
+  border-bottom: 1px solid #cccccc;
+}
+
+code {
+  margin: 0 2px;
+  padding: 0 5px;
+  white-space: nowrap;
+  border: 1px solid #eaeaea;
+  background-color: #f8f8f8;
+  border-radius: 3px;
+}
+
+pre code {
+  margin: 0;
+  padding: 0;
+  white-space: pre;
+  border: none;
+  background: transparent;
+}
+
+pre {
+  background-color: #f8f8f8;
+  border: 1px solid #cccccc;
+  line-height: 2.5x;
+  overflow: auto;
+  padding: 0.6ex 1ex;
+  border-radius: 3px;
+}
+
+pre code {
+  background-color: transparent;
+  border: none;
+}
+</style>
+</head>
+<body>
+<h1>progressr: Appendix</h1>
+<!--
+%\VignetteIndexEntry{progressr: Appendix}
+%\VignetteAuthor{Henrik Bengtsson}
+%\VignetteKeyword{R}
+%\VignetteKeyword{package}
+%\VignetteKeyword{vignette}
+%\VignetteKeyword{packages}
+%\VignetteEngine{progressr::selfonly}
+-->
+<h2>How tos</h2>
+<h3>Report on progress in non-interactive mode (&quot;batch mode&quot;)</h3>
+<p>When running R from the command line, R runs in a non-interactive mode
+(<code>interactive()</code> returns <code>FALSE</code>).  The default behavior of
+<strong>progressr</strong> is to <em>not</em> report on progress in non-interactive mode.
+To report on progress also then, set R options <code>progressr.enable</code> or
+environment variable <code>R_PROGRESSR_ENABLE</code> to <code>TRUE</code>.  For example,</p>
+<pre><code class="language-sh">$ Rscript -e &quot;library(progressr)&quot; -e &quot;with_progress(y &lt;- slow_sum(1:10))&quot;
+</code></pre>
+<p>will <em>not</em> report on progress, whereas</p>
+<pre><code class="language-sh">$ export R_PROGRESSR_ENABLE=TRUE
+$ Rscript -e &quot;library(progressr)&quot; -e &quot;with_progress(y &lt;- slow_sum(1:10))&quot;
+</code></pre>
+<p>will.</p>
+<h2>Notes of caution</h2>
+<h3>Avoid sending progress updates too frequently</h3>
+<p>Signaling progress updates comes with some overhead.  In situations
+where we use progress updates, this overhead is typically much smaller
+than the task we are processing in each step.  However, if the task we
+iterate over is quick, then the extra time induced by the progress
+updates might end up dominating the overall processing time.  If that
+is the case, a simple solution is to only signal progress updates
+every nth step.  Here is a version of <code>slow_sum()</code> that signals
+progress every 10th iteration:</p>
+<pre><code>slow_sum &lt;- function(x) {
+  p &lt;- progressr::progressor(length(x) / 10)
+  sum &lt;- 0
+  for (kk in seq_along(x)) {
+    Sys.sleep(0.1)
+    sum &lt;- sum + x[kk]
+    if (kk %% 10 == 0) p(message = sprintf(&quot;Adding %g&quot;, x[kk]))
+  }
+  sum
+}
+</code></pre>
+<p>The overhead of progress signaling may depend on context.  For
+example, in parallel processing with near-live progress updates via
+'multisession' futures, each progress update is communicated via a
+socket connections back to the main R session.  These connections
+might become clogged up if progress updates are too frequent.</p>
+<h2>Known Limitations</h2>
+<h3>The global progress handler cannot be set during package load</h3>
+<p>It is <em>not</em> possible to call <code>handlers(global = TRUE)</code> in all
+circumstances.  For example, it cannot be called within <code>tryCatch()</code>
+and <code>withCallingHandlers()</code>;</p>
+<pre><code class="language-r">&gt; tryCatch(handlers(global = TRUE), error = identity)
+Error in globalCallingHandlers(NULL) :
+  should not be called with handlers on the stack
+</code></pre>
+<p>This is not a bug - neither in <strong>progressr</strong> nor in R itself. It's due
+to a conservative design on how <em>global</em> calling handlers should work
+in R. If it were allowed, there's a risk we might end up getting weird and
+unpredictable behaviors when messages, warnings, errors, and other
+types of conditions are signaled.</p>
+<p>Because <code>tryCatch()</code> and <code>withCallingHandlers()</code> are used in many
+places throughout base R, this means that we also cannot call
+<code>handlers(global = TRUE)</code> as part of a package's startup process,
+e.g. <code>.onLoad()</code> or <code>.onAttach()</code>.</p>
+<p>Another example of this error is if <code>handlers(global = TRUE)</code> is used
+inside package vignettes and dynamic documents such as Rmarkdown.  In
+such cases, the global progress handler has to be enabled <em>prior</em> to
+processing the document, e.g.</p>
+<pre><code class="language-r">&gt; progressr::handlers(global = TRUE)
+&gt; rmarkdown::render(&quot;input.Rmd&quot;)
+</code></pre>
+<h3>A progressor cannot be created in the global environment</h3>
+<p>It is not possible to create a progressor in the global environment,
+e.g. in the top-level of a script. It can only be created inside a
+function, within <code>with_progress({ ... })</code>, <code>local({ ... })</code>, or a
+similar construct.  For example, the following:</p>
+<pre><code class="language-r">library(progressr)
+handlers(global = TRUE)
+
+xs &lt;- 1:5
+p &lt;- progressor(along = xs)
+y &lt;- lapply(xs, function(x) {
+  Sys.sleep(0.1)
+  p(sprintf(&quot;x=%g&quot;, x))
+  sqrt(x)
+})
+</code></pre>
+<p>results in an error if tried:</p>
+<pre><code>Error in progressor(along = xs) :
+  A progressor must not be created in the global environment unless wrapped in a
+  with_progress() or without_progress() call. Alternatively, create it inside a
+  function or in a local() environment to make sure there is a finite lifespan
+  of the progressor
+</code></pre>
+<p>The solution is to wrap it in a <code>local({ ... })</code> call, or more
+explicitly, in a <code>with_progress({ ... })</code> call:</p>
+<pre><code class="language-r">library(progressr)
+handlers(global = TRUE)
+
+xs &lt;- 1:5
+with_progress({
+  p &lt;- progressor(along = xs)
+  y &lt;- lapply(xs, function(x) {
+    Sys.sleep(0.1)
+    p(sprintf(&quot;x=%g&quot;, x))
+    sqrt(x)
+  })
+})
+#  |====================                               |  40%
+</code></pre>
+<p>The main reason for this is to limit the lifespan of each progressor.
+If we created it in the global environment, there is a significant
+risk it would never finish and block all of the following progressors.</p>
+<h3>No coloring by the 'cli' and 'crayon' packages</h3>
+<p>The <strong><a href="https://cran.r-project.org/package=cli">cli</a></strong> package can be used to output colored text and messages
+in the terminal, e.g. <code>message(cli::col_blue(&quot;hey&quot;))</code>. However,
+<strong>cli</strong> disables such coloring by default when there is an active
+progressor. The workaround is to set <strong>cli</strong> option <code>cli.num_colors</code> to:</p>
+<pre><code class="language-r">options(cli.num_colors = cli::num_ansi_colors())
+</code></pre>
+<p>This will force <strong>cli</strong> to use the same number of colors with and
+without an active progressor.</p>
+<p>The same happens when using the superseeded <strong><a href="https://cran.r-project.org/package=crayon">crayon</a></strong> package for
+colorization. To re-enable coloring for <strong>crayon</strong>, set the same
+(sic!)  above R options.</p>
+<p>The technical reason for <strong>cli</strong> and <strong>crayon</strong> disabling coloring, is
+that the <strong>progressr</strong> package buffers standard output using a sink,
+which these packages consider to be mono-color only.</p>
+<h2>Known Issues</h2>
+<h3>RStudio bug #16331: Setting global progressr handlers during startup does not work</h3>
+<p>Setting the global progressr handler in <code>~/.Rprofile</code> does <em>not</em> work
+in RStudio 2025.09:</p>
+<pre><code class="language-r">if (requireNamespace(&quot;progressr&quot;, quietly = TRUE)) {
+  progressr::handlers(global = TRUE)
+}
+</code></pre>
+<p>This is due to a <a href="https://github.com/rstudio/rstudio/issues/16331">bug introduced in RStudio
+2025.09</a>, which has
+been fixed for the next release RStudio 2025.11. If you are using
+RStudio 2025.09, the workaround is to instead use:</p>
+<pre><code class="language-r">if (requireNamespace(&quot;progressr&quot;, quietly = TRUE)) {
+  progressr::handlers(global = TRUE)
+
+  ## Workaround for RStudio 2025.09 console bug #16331
+  if (nzchar(Sys.getenv(&quot;RSTUDIO&quot;)) &amp;&amp; !nzchar(Sys.getenv(&quot;RSTUDIO_TERM&quot;))) {
+    invisible(addTaskCallback(function(...) {
+      ver &lt;- RStudio.Version()$version
+      if (ver &gt;= &quot;2025.09&quot; &amp;&amp; ver &lt; &quot;2025.11&quot;) {
+        message(&quot;Workaround for RStudio 2025.09 bug #16331: Added progressr global handler&quot;)
+        progressr::handlers(global = TRUE)
+      } else {
+        warning(&quot;Workaround for RStudio 2025.09 bug #16331: Not needed in RStudio v&quot;, ver, &quot;. Please remove task callback 'rstudio::progressr::once' in your Rprofile startup file&quot;, call. = FALSE, immediate. = TRUE)
+      }
+      removeTaskCallback(&quot;rstudio::progressr::once&quot;)
+    }, name = &quot;rstudio::progressr::once&quot;))
+  }
+}
+</code></pre>
+<h3>Positron bug #6892: Setting global progressr handlers during startup does not work</h3>
+<p>Positron does not support setting global calling handlers during R's
+startup process, e.g. in <code>~/.Rprofile</code>. Even if such handlers are
+registered, they have no effect. This is a <a href="https://github.com/posit-dev/positron/issues/6892">bug in
+Positron</a>
+(2025-03-20), which was most recently confirmed with Position
+2025.09.0 on Linux. Because of this, having something like in your
+<code>~/.Rprofile</code>:</p>
+<pre><code class="language-r">if (requireNamespace(&quot;progressr&quot;, quietly = TRUE)) {
+  progressr::handlers(global = TRUE)
+}
+</code></pre>
+<p>will have no effect. If used, the workaround is to manually
+re-registering all calling handlers, which can be done as:</p>
+<pre><code class="language-r">if (requireNamespace(&quot;progressr&quot;, quietly = TRUE)) {
+  progressr::handlers(global = TRUE)
+
+  ## Workaround for Positron (&gt;= 2025.09) bug #16331
+  if (nzchar(Sys.getenv(&quot;POSITRON&quot;))) local({
+    ver &lt;- numeric_version(Sys.getenv(&quot;POSITRON_VERSION&quot;))
+    if (ver &gt;= &quot;2025.09&quot;) {
+      message(&quot;Workaround for Positron (&gt;= 2025.09) bug #6892: progressr global handler will be installed *after* the next call has been completed&quot;)
+      invisible(addTaskCallback(function(...) {
+        message(&quot;Workaround for Positron (&gt;= 2025.09) bug #6892: re-installed progressr global handler&quot;)
+        globalCallingHandlers(globalCallingHandlers(NULL))
+        removeTaskCallback(&quot;positron::progressr::once&quot;)
+      }, name = &quot;positron::progressr::once&quot;))
+    }
+  })
+}
+</code></pre>
+<p>Alternatively, call:</p>
+<pre><code class="language-r">globalCallingHandlers(globalCallingHandlers(NULL))
+</code></pre>
+<p>or</p>
+<pre><code class="language-r">progressr::handlers(global = FALSE)  ## important
+progressr::handlers(global = TRUE)
+</code></pre>
+<p>at the prompt.</p>
+<h3>Positron: Messages add extra newline before the final progress step</h3>
+<p>One of the features of <strong>progressr</strong> is that messages are buffered
+during progress reporting and relayed as soon as possible, which
+typically happens just before handlers re-render the progress
+output. This way you can use <code>message()</code> as usual, regardless whether
+progress is reported or not.</p>
+<p>Currently, when using Positron (e.g. Positron 2025.09.0), any
+<code>message()</code> output adds an extra newline before the <em>final</em> progress
+step is reported, e.g.</p>
+<pre><code class="language-r">&gt; progressr::handlers(global = TRUE)
+&gt; progressr::handlers(&quot;cli&quot;)
+&gt; y &lt;- progressr::slow_sum(1:5, message = TRUE)
+M: Added value 1
+M: Added value 2
+M: Added value 3
+M: Added value 4
+
+M: Added value 5
+&gt; 
+</code></pre>
+<p>I do not fully understand the reason for this, but I hope we can get
+to the bottom of it and fix it, either in <strong>progressr</strong> or in
+Positron, e.g. <a href="https://github.com/posit-dev/positron/issues/9486">Bug #9486</a>
+(2025-09-18).</p>
+<h3>Jupyter: Reporting progress to stderr (default) does not work</h3>
+<p>The default for most terminal progress renders, including the ones for
+<strong>progressr</strong>, display the progress on standard error (stderr). Due to
+a limitation in Jupyter, this default does not work there. The reason is
+that <a href="https://github.com/futureverse/progressr/issues/170">Jupyter silently
+drops</a> any output
+sent to stderr, e.g.</p>
+<pre><code class="language-r">&gt; cat(&quot;hello stderr\n&quot;, file = stderr())
+&gt; cat(&quot;hello stdout\n&quot;, file = stdout())
+hello stdout
+&gt;
+</code></pre>
+<p>If we try the following</p>
+<pre><code class="language-r">library(progressr)
+handlers(globals = TRUE)
+handlers(&quot;txtprogressbar&quot;)
+y &lt;- slow_sum(1:20)
+</code></pre>
+<p>there will be no progress being reported. This is not specific to
+<strong>progressr</strong>, we have the same problem with for instance <strong>cli</strong>. Try
+for instance,</p>
+<pre><code class="language-r">void &lt;- cli::cli_progress_demo(delay = 1.0)
+</code></pre>
+<p>The workaround is to direct all progress output to the standard output
+(stdout) when working in Jupyter. For this to work, we also need to
+disable the buffering (&quot;delaying&quot;) of any other output to stdout.</p>
+<pre><code class="language-r">library(progressr)
+handlers(globals = TRUE)
+
+## Workaround for Jupyter
+options(progressr.enable = TRUE, progressr.delay_stdout = FALSE)
+
+## Jupyter requires that progress is rendered to standard output;
+## it does not work with the default standard error
+handlers(handler_txtprogressbar(file = stdout()))
+
+y &lt;- slow_sum(1:20)
+</code></pre>
+<h3>Jupyter bug #732 - handlers(&quot;progress&quot;) output is messy</h3>
+<p>Jupyter has other outputting issues. Specifically, Jupyter <a href="https://github.com/IRkernel/IRkernel/issues/732">injects an
+<em>extra</em> newline at the end of every
+message</a>, e.g.</p>
+<pre><code class="language-r">&gt; message(&quot;abc&quot;, appendLF = FALSE); message(&quot;def&quot;, appendLF = FALSE)
+abc
+def
+&gt; message(&quot;abc&quot;); message(&quot;def&quot;)
+abc
+
+def
+
+&gt;
+</code></pre>
+<p>This causes any progress framework (e.g. the <strong>progress</strong> package)
+that reports via messages to render progress output very poorly or not
+at all.</p>
+<h2>Design and Implementation</h2>
+<h3>Under the hood</h3>
+<p>When using the <strong>progressr</strong> package, progression updates are
+communicated via R's condition framework, which provides methods for
+creating, signaling, capturing, muffling, and relaying conditions.
+Progression updates are of classes <code>progression</code> and
+<code>immediateCondition</code>(*).  The below figure gives an example how
+progression conditions are created, signaled, and rendered.</p>
+<p>(*) The <code>immediateCondition</code> class of conditions are relayed as soon
+as possible by the <strong><a href="https://future.futureverse.org">future</a></strong> framework, which means that
+progression updates produced in parallel workers are reported to the
+end user as soon as the main R session have received them.</p>
+<p><img src="data:image/svg+xml;base64,PHN2ZyBjbGFzcz0iYm9iIiBmb250LWZhbWlseT0ibW9ub3NwYWNlIiBmb250LXNpemU9IjE0IiBoZWlnaHQ9IjYwOCIgd2lkdGg9IjY1NiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGRlZnM+CjxtYXJrZXIgaWQ9InRyaWFuZ2xlIiBtYXJrZXJIZWlnaHQ9IjgiIG1hcmtlcldpZHRoPSI4IiBvcmllbnQ9ImF1dG8iIHJlZlg9IjQiIHJlZlk9IjIiIHZpZXdCb3g9IjAgMCA4IDQiPgo8cG9seWdvbiBmaWxsPSJibGFjayIgcG9pbnRzPSIwLDAgMCw0IDgsMiAwLDAiLz4KPC9tYXJrZXI+CjxtYXJrZXIgaWQ9ImNsZWFyX3RyaWFuZ2xlIiBtYXJrZXJIZWlnaHQ9IjEwIiBtYXJrZXJXaWR0aD0iMTAiIG9yaWVudD0iYXV0byIgcmVmWD0iMSIgcmVmWT0iNyIgdmlld0JveD0iMCAwIDIwIDE0Ij4KPHBvbHlnb24gZmlsbD0ibm9uZSIgcG9pbnRzPSIyLDIgMiwxMiAxOCw3IDIsMiIgc3Ryb2tlPSJibGFjayIgc3Ryb2tlLXdpZHRoPSIyIi8+CjwvbWFya2VyPgo8bWFya2VyIGlkPSJjaXJjbGUiIG1hcmtlckhlaWdodD0iNSIgbWFya2VyV2lkdGg9IjUiIG9yaWVudD0iYXV0byIgcmVmWD0iMTAiIHJlZlk9IjEwIiB2aWV3Qm94PSIwIDAgMjAgMjAiPgo8Y2lyY2xlIGN4PSIxMCIgY3k9IjEwIiBmaWxsPSJibGFjayIgcj0iOCIvPgo8L21hcmtlcj4KPG1hcmtlciBpZD0ic3F1YXJlIiBtYXJrZXJIZWlnaHQ9IjUiIG1hcmtlcldpZHRoPSI1IiBvcmllbnQ9ImF1dG8iIHJlZlg9IjEwIiByZWZZPSIxMCIgdmlld0JveD0iMCAwIDIwIDIwIj4KPHJlY3QgZmlsbD0iYmxhY2siIGhlaWdodD0iMjAiIHdpZHRoPSIyMCIgeD0iMCIgeT0iMCIvPgo8L21hcmtlcj4KPG1hcmtlciBpZD0ib3Blbl9jaXJjbGUiIG1hcmtlckhlaWdodD0iMTAiIG1hcmtlcldpZHRoPSIxMCIgb3JpZW50PSJhdXRvIiByZWZYPSIxMCIgcmVmWT0iMTAiIHZpZXdCb3g9IjAgMCAyMCAyMCI+CjxjaXJjbGUgY3g9IjEwIiBjeT0iMTAiIGZpbGw9IndoaXRlIiByPSI0IiBzdHJva2U9ImJsYWNrIiBzdHJva2Utd2lkdGg9IjIiLz4KPC9tYXJrZXI+CjxtYXJrZXIgaWQ9ImJpZ19vcGVuX2NpcmNsZSIgbWFya2VySGVpZ2h0PSIyMCIgbWFya2VyV2lkdGg9IjIwIiBvcmllbnQ9ImF1dG8iIHJlZlg9IjIwIiByZWZZPSIyMCIgdmlld0JveD0iMCAwIDQwIDQwIj4KPGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgZmlsbD0id2hpdGUiIHI9IjYiIHN0cm9rZT0iYmxhY2siIHN0cm9rZS13aWR0aD0iMiIvPgo8L21hcmtlcj4KPC9kZWZzPgo8c3R5bGUgdHlwZT0idGV4dC9jc3MiPgoKICAgIGxpbmUscGF0aCB7CiAgICAgIHN0cm9rZTogYmxhY2s7CiAgICAgIHN0cm9rZS13aWR0aDogMjsKICAgICAgc3Ryb2tlLW9wYWNpdHk6IDE7CiAgICAgIGZpbGwtb3BhY2l0eTogMTsKICAgICAgc3Ryb2tlLWxpbmVjYXA6IHJvdW5kOwogICAgICBzdHJva2UtbGluZWpvaW46IG1pdGVyOwogICAgfQogICAgbGluZS5kYXNoZWQgewogICAgICAgIHN0cm9rZS1kYXNoYXJyYXk6IDU7CiAgICB9CiAgICBjaXJjbGUuc29saWQgewogICAgICBmaWxsOmJsYWNrOwogICAgICBzdHJva2U6IGJsYWNrOwogICAgICBzdHJva2Utd2lkdGg6IDI7CiAgICAgIHN0cm9rZS1vcGFjaXR5OiAxOwogICAgICBmaWxsLW9wYWNpdHk6IDE7CiAgICAgIHN0cm9rZS1saW5lY2FwOiByb3VuZDsKICAgICAgc3Ryb2tlLWxpbmVqb2luOiBtaXRlcjsKICAgIH0KICAgIGNpcmNsZS5vcGVuIHsKICAgICAgZmlsbDpub25lOwogICAgICBzdHJva2U6IGJsYWNrOwogICAgICBzdHJva2Utd2lkdGg6IDI7CiAgICAgIHN0cm9rZS1vcGFjaXR5OiAxOwogICAgICBmaWxsLW9wYWNpdHk6IDE7CiAgICAgIHN0cm9rZS1saW5lY2FwOiByb3VuZDsKICAgICAgc3Ryb2tlLWxpbmVqb2luOiBtaXRlcjsKICAgIH0KICAgIHRzcGFuLmhlYWR7CiAgICAgICAgZmlsbDogbm9uZTsKICAgICAgICBzdHJva2U6IG5vbmU7CiAgICB9CiAgICAKPC9zdHlsZT4KPHJlY3QgZmlsbD0id2hpdGUiIGhlaWdodD0iNjA4IiB3aWR0aD0iNjU2IiB4PSIwIiB5PSIwIi8+CjxnPgo8bGluZSB4MT0iMTIiIHgyPSIxMiIgeTE9IjEyIiB5Mj0iNTIiLz4KPHBhdGggZD0iTSAxMiA1MiBBIDQgNCAwIDAgMCAxNiA1NiIgZmlsbD0ibm9uZSIvPgo8cGF0aCBkPSJNIDE2IDggQSA0IDQgMCAwIDAgMTIgMTIiIGZpbGw9Im5vbmUiLz4KPC9nPgo8Zz4KPGxpbmUgeDE9IjE2IiB4Mj0iMTIwIiB5MT0iOCIgeTI9IjgiLz4KPHBhdGggZD0iTSAxMjQgMTIgQSA0IDQgMCAwIDAgMTIwIDgiIGZpbGw9Im5vbmUiLz4KPC9nPgo8Zz4KPGxpbmUgeDE9IjE2IiB4Mj0iMTIwIiB5MT0iNTYiIHkyPSI1NiIvPgo8cGF0aCBkPSJNIDEyMCA1NiBBIDQgNCAwIDAgMCAxMjQgNTIiIGZpbGw9Im5vbmUiLz4KPC9nPgo8Zz4KPGxpbmUgeDE9Ijg4IiB4Mj0iMjA4IiB5MT0iNTUwIiB5Mj0iNTUwIi8+CjwvZz4KPGc+CjxsaW5lIG1hcmtlci1lbmQ9InVybCgjdHJpYW5nbGUpIiB4MT0iODgiIHgyPSI4NCIgeTE9IjU1MiIgeTI9IjU1MiIvPgo8L2c+CjxnPgo8bGluZSB4MT0iODgiIHgyPSIyMDgiIHkxPSI1NTQiIHkyPSI1NTQiLz4KPC9nPgo8Zz4KPGxpbmUgeDE9IjEyNCIgeDI9IjEyNCIgeTE9IjEyIiB5Mj0iNTIiLz4KPC9nPgo8Zz4KPGxpbmUgeDE9IjIwNCIgeDI9IjIwNCIgeTE9IjE1NiIgeTI9IjE5NiIvPgo8cGF0aCBkPSJNIDIwNCAxOTYgQSA0IDQgMCAwIDAgMjA4IDIwMCIgZmlsbD0ibm9uZSIvPgo8L2c+CjxnPgo8bGluZSBtYXJrZXItZW5kPSJ1cmwoI2NpcmNsZSkiIHgxPSIyMDQiIHgyPSIyMDQiIHkxPSI0OTIiIHkyPSI1MjAiLz4KPHBhdGggZD0iTSAyMDggNDg4IEEgNCA0IDAgMCAwIDIwNCA0OTIiIGZpbGw9Im5vbmUiLz4KPC9nPgo8Zz4KPGxpbmUgeDE9IjIwOCIgeDI9IjI1NiIgeTE9IjIwMCIgeTI9IjIwMCIvPgo8cGF0aCBkPSJNIDI2MCAyMDQgQSA0IDQgMCAwIDAgMjU2IDIwMCIgZmlsbD0ibm9uZSIvPgo8bGluZSBtYXJrZXItZW5kPSJ1cmwoI29wZW5fY2lyY2xlKSIgeDE9IjI2MCIgeDI9IjI2MCIgeTE9IjIwNCIgeTI9IjI0OCIvPgo8bGluZSBtYXJrZXItZW5kPSJ1cmwoI29wZW5fY2lyY2xlKSIgbWFya2VyLXN0YXJ0PSJ1cmwoI29wZW5fY2lyY2xlKSIgeDE9IjI2MCIgeDI9IjI2MCIgeTE9IjI0OCIgeTI9IjMxMiIvPgo8bGluZSBtYXJrZXItc3RhcnQ9InVybCgjb3Blbl9jaXJjbGUpIiB4MT0iMjYwIiB4Mj0iMjY0IiB5MT0iMjQ4IiB5Mj0iMjQ4Ii8+CjxsaW5lIG1hcmtlci1lbmQ9InVybCgjb3Blbl9jaXJjbGUpIiBtYXJrZXItc3RhcnQ9InVybCgjb3Blbl9jaXJjbGUpIiB4MT0iMjYwIiB4Mj0iMjYwIiB5MT0iMzEyIiB5Mj0iMzYwIi8+CjxsaW5lIG1hcmtlci1zdGFydD0idXJsKCNvcGVuX2NpcmNsZSkiIHgxPSIyNjAiIHgyPSIyNjQiIHkxPSIzMTIiIHkyPSIzMTIiLz4KPGxpbmUgbWFya2VyLXN0YXJ0PSJ1cmwoI29wZW5fY2lyY2xlKSIgeDE9IjI2MCIgeDI9IjI2MCIgeTE9IjM2MCIgeTI9IjM4NCIvPgo8bGluZSBtYXJrZXItc3RhcnQ9InVybCgjb3Blbl9jaXJjbGUpIiB4MT0iMjYwIiB4Mj0iMjY0IiB5MT0iMzYwIiB5Mj0iMzYwIi8+CjwvZz4KPGc+CjxsaW5lIHgxPSIyMDgiIHgyPSIyNTYiIHkxPSI0ODgiIHkyPSI0ODgiLz4KPHBhdGggZD0iTSAyNTYgNDg4IEEgNCA0IDAgMCAwIDI2MCA0ODQiIGZpbGw9Im5vbmUiLz4KPGxpbmUgbWFya2VyLXN0YXJ0PSJ1cmwoI29wZW5fY2lyY2xlKSIgeDE9IjI2MCIgeDI9IjI2MCIgeTE9IjQ0MCIgeTI9IjQ4NCIvPgo8bGluZSBtYXJrZXItc3RhcnQ9InVybCgjb3Blbl9jaXJjbGUpIiB4MT0iMjYwIiB4Mj0iMjY0IiB5MT0iNDQwIiB5Mj0iNDQwIi8+CjwvZz4KPGc+CjxsaW5lIG1hcmtlci1lbmQ9InVybCgjdHJpYW5nbGUpIiB4MT0iMjA4IiB4Mj0iMjEyIiB5MT0iNTUyIiB5Mj0iNTUyIi8+CjwvZz4KPGc+CjxsaW5lIHgxPSIyNzYiIHgyPSIyNjgiIHkxPSIyNDAiIHkyPSIyNDgiLz4KPGxpbmUgeDE9IjI3NiIgeDI9IjI4NCIgeTE9IjI0MCIgeTI9IjI0OCIvPgo8bGluZSB4MT0iMjkyIiB4Mj0iMjg0IiB5MT0iMjQwIiB5Mj0iMjQ4Ii8+CjxsaW5lIHgxPSIyOTIiIHgyPSIzMDAiIHkxPSIyNDAiIHkyPSIyNDgiLz4KPGxpbmUgeDE9IjMwOCIgeDI9IjMwMCIgeTE9IjI0MCIgeTI9IjI0OCIvPgo8bGluZSB4MT0iMzA4IiB4Mj0iMzE2IiB5MT0iMjQwIiB5Mj0iMjQ4Ii8+CjxsaW5lIHgxPSIzMjQiIHgyPSIzMTYiIHkxPSIyNDAiIHkyPSIyNDgiLz4KPGxpbmUgeDE9IjMyNCIgeDI9IjMzMiIgeTE9IjI0MCIgeTI9IjI0OCIvPgo8bGluZSB4MT0iMzQwIiB4Mj0iMzMyIiB5MT0iMjQwIiB5Mj0iMjQ4Ii8+CjxsaW5lIHgxPSIzNDAiIHgyPSIzNDgiIHkxPSIyNDAiIHkyPSIyNDgiLz4KPGxpbmUgeDE9IjM1NiIgeDI9IjM0OCIgeTE9IjI0MCIgeTI9IjI0OCIvPgo8bGluZSB4MT0iMzU2IiB4Mj0iMzY0IiB5MT0iMjQwIiB5Mj0iMjQ4Ii8+CjxsaW5lIHgxPSIzNzIiIHgyPSIzNjQiIHkxPSIyNDAiIHkyPSIyNDgiLz4KPGxpbmUgeDE9IjM3MiIgeDI9IjM4MCIgeTE9IjI0MCIgeTI9IjI0OCIvPgo8L2c+CjxnPgo8bGluZSB4MT0iMjc2IiB4Mj0iMjY4IiB5MT0iMzA0IiB5Mj0iMzEyIi8+CjxsaW5lIHgxPSIyNzYiIHgyPSIyODQiIHkxPSIzMDQiIHkyPSIzMTIiLz4KPGxpbmUgeDE9IjI5MiIgeDI9IjI4NCIgeTE9IjMwNCIgeTI9IjMxMiIvPgo8bGluZSB4MT0iMjkyIiB4Mj0iMzAwIiB5MT0iMzA0IiB5Mj0iMzEyIi8+CjxsaW5lIHgxPSIzMDgiIHgyPSIzMDAiIHkxPSIzMDQiIHkyPSIzMTIiLz4KPGxpbmUgeDE9IjMwOCIgeDI9IjMxNiIgeTE9IjMwNCIgeTI9IjMxMiIvPgo8bGluZSB4MT0iMzI0IiB4Mj0iMzE2IiB5MT0iMzA0IiB5Mj0iMzEyIi8+CjxsaW5lIHgxPSIzMjQiIHgyPSIzMzIiIHkxPSIzMDQiIHkyPSIzMTIiLz4KPGxpbmUgeDE9IjM0MCIgeDI9IjMzMiIgeTE9IjMwNCIgeTI9IjMxMiIvPgo8bGluZSB4MT0iMzQwIiB4Mj0iMzQ4IiB5MT0iMzA0IiB5Mj0iMzEyIi8+CjxsaW5lIHgxPSIzNTYiIHgyPSIzNDgiIHkxPSIzMDQiIHkyPSIzMTIiLz4KPGxpbmUgeDE9IjM1NiIgeDI9IjM2NCIgeTE9IjMwNCIgeTI9IjMxMiIvPgo8bGluZSB4MT0iMzcyIiB4Mj0iMzY0IiB5MT0iMzA0IiB5Mj0iMzEyIi8+CjxsaW5lIHgxPSIzNzIiIHgyPSIzODAiIHkxPSIzMDQiIHkyPSIzMTIiLz4KPC9nPgo8Zz4KPGxpbmUgeDE9IjI3NiIgeDI9IjI2OCIgeTE9IjM1MiIgeTI9IjM2MCIvPgo8bGluZSB4MT0iMjc2IiB4Mj0iMjg0IiB5MT0iMzUyIiB5Mj0iMzYwIi8+CjxsaW5lIHgxPSIyOTIiIHgyPSIyODQiIHkxPSIzNTIiIHkyPSIzNjAiLz4KPGxpbmUgeDE9IjI5MiIgeDI9IjMwMCIgeTE9IjM1MiIgeTI9IjM2MCIvPgo8bGluZSB4MT0iMzA4IiB4Mj0iMzAwIiB5MT0iMzUyIiB5Mj0iMzYwIi8+CjxsaW5lIHgxPSIzMDgiIHgyPSIzMTYiIHkxPSIzNTIiIHkyPSIzNjAiLz4KPGxpbmUgeDE9IjMyNCIgeDI9IjMxNiIgeTE9IjM1MiIgeTI9IjM2MCIvPgo8bGluZSB4MT0iMzI0IiB4Mj0iMzMyIiB5MT0iMzUyIiB5Mj0iMzYwIi8+CjxsaW5lIHgxPSIzNDAiIHgyPSIzMzIiIHkxPSIzNTIiIHkyPSIzNjAiLz4KPGxpbmUgeDE9IjM0MCIgeDI9IjM0OCIgeTE9IjM1MiIgeTI9IjM2MCIvPgo8bGluZSB4MT0iMzU2IiB4Mj0iMzQ4IiB5MT0iMzUyIiB5Mj0iMzYwIi8+CjxsaW5lIHgxPSIzNTYiIHgyPSIzNjQiIHkxPSIzNTIiIHkyPSIzNjAiLz4KPGxpbmUgeDE9IjM3MiIgeDI9IjM2NCIgeTE9IjM1MiIgeTI9IjM2MCIvPgo8bGluZSB4MT0iMzcyIiB4Mj0iMzgwIiB5MT0iMzUyIiB5Mj0iMzYwIi8+CjwvZz4KPGc+CjxsaW5lIHgxPSIyNzYiIHgyPSIyNjgiIHkxPSI0MzIiIHkyPSI0NDAiLz4KPGxpbmUgeDE9IjI3NiIgeDI9IjI4NCIgeTE9IjQzMiIgeTI9IjQ0MCIvPgo8bGluZSB4MT0iMjkyIiB4Mj0iMjg0IiB5MT0iNDMyIiB5Mj0iNDQwIi8+CjxsaW5lIHgxPSIyOTIiIHgyPSIzMDAiIHkxPSI0MzIiIHkyPSI0NDAiLz4KPGxpbmUgeDE9IjMwOCIgeDI9IjMwMCIgeTE9IjQzMiIgeTI9IjQ0MCIvPgo8bGluZSB4MT0iMzA4IiB4Mj0iMzE2IiB5MT0iNDMyIiB5Mj0iNDQwIi8+CjxsaW5lIHgxPSIzMjQiIHgyPSIzMTYiIHkxPSI0MzIiIHkyPSI0NDAiLz4KPGxpbmUgeDE9IjMyNCIgeDI9IjMzMiIgeTE9IjQzMiIgeTI9IjQ0MCIvPgo8bGluZSB4MT0iMzQwIiB4Mj0iMzMyIiB5MT0iNDMyIiB5Mj0iNDQwIi8+CjxsaW5lIHgxPSIzNDAiIHgyPSIzNDgiIHkxPSI0MzIiIHkyPSI0NDAiLz4KPGxpbmUgeDE9IjM1NiIgeDI9IjM0OCIgeTE9IjQzMiIgeTI9IjQ0MCIvPgo8bGluZSB4MT0iMzU2IiB4Mj0iMzY0IiB5MT0iNDMyIiB5Mj0iNDQwIi8+CjxsaW5lIHgxPSIzNzIiIHgyPSIzNjQiIHkxPSI0MzIiIHkyPSI0NDAiLz4KPGxpbmUgeDE9IjM3MiIgeDI9IjM4MCIgeTE9IjQzMiIgeTI9IjQ0MCIvPgo8L2c+CjxnPgo8bGluZSB4MT0iMjg0IiB4Mj0iMjg0IiB5MT0iMTIiIHkyPSI1MiIvPgo8cGF0aCBkPSJNIDI4NCA1MiBBIDQgNCAwIDAgMCAyODggNTYiIGZpbGw9Im5vbmUiLz4KPHBhdGggZD0iTSAyODggOCBBIDQgNCAwIDAgMCAyODQgMTIiIGZpbGw9Im5vbmUiLz4KPC9nPgo8Zz4KPGxpbmUgeDE9IjI4OCIgeDI9IjM4NCIgeTE9IjgiIHkyPSI4Ii8+CjxwYXRoIGQ9Ik0gMzg4IDEyIEEgNCA0IDAgMCAwIDM4NCA4IiBmaWxsPSJub25lIi8+CjwvZz4KPGc+CjxsaW5lIHgxPSIyODgiIHgyPSIzODQiIHkxPSI1NiIgeTI9IjU2Ii8+CjxwYXRoIGQ9Ik0gMzg0IDU2IEEgNCA0IDAgMCAwIDM4OCA1MiIgZmlsbD0ibm9uZSIvPgo8L2c+CjxnPgo8bGluZSBtYXJrZXItZW5kPSJ1cmwoI3RyaWFuZ2xlKSIgeDE9IjM4NCIgeDI9IjM4OCIgeTE9IjI0OCIgeTI9IjI0OCIvPgo8L2c+CjxnPgo8bGluZSBtYXJrZXItZW5kPSJ1cmwoI3RyaWFuZ2xlKSIgeDE9IjM4NCIgeDI9IjM4OCIgeTE9IjMxMiIgeTI9IjMxMiIvPgo8L2c+CjxnPgo8bGluZSBtYXJrZXItZW5kPSJ1cmwoI3RyaWFuZ2xlKSIgeDE9IjM4NCIgeDI9IjM4OCIgeTE9IjM2MCIgeTI9IjM2MCIvPgo8L2c+CjxnPgo8bGluZSBtYXJrZXItZW5kPSJ1cmwoI3RyaWFuZ2xlKSIgeDE9IjM4NCIgeDI9IjM4OCIgeTE9IjQ0MCIgeTI9IjQ0MCIvPgo8L2c+CjxnPgo8bGluZSB4MT0iMzg4IiB4Mj0iMzg4IiB5MT0iMTIiIHkyPSI1MiIvPgo8L2c+CjxnPgo8bGluZSBtYXJrZXItc3RhcnQ9InVybCgjY2lyY2xlKSIgeDE9IjM5NiIgeDI9IjM5MiIgeTE9IjI0OCIgeTI9IjI0OCIvPgo8bGluZSBtYXJrZXItZW5kPSJ1cmwoI29wZW5fY2lyY2xlKSIgbWFya2VyLXN0YXJ0PSJ1cmwoI2NpcmNsZSkiIHgxPSIzOTYiIHgyPSI0MjgiIHkxPSIyNDgiIHkyPSIyNDgiLz4KPC9nPgo8Zz4KPGxpbmUgeDE9IjM5NiIgeDI9IjM5NiIgeTE9IjI2NCIgeTI9IjI1NiIvPgo8bGluZSBtYXJrZXItZW5kPSJ1cmwoI29wZW5fY2lyY2xlKSIgeDE9IjM5NiIgeDI9IjQyOCIgeTE9IjI2NCIgeTI9IjI2NCIvPgo8L2c+CjxnPgo8bGluZSBtYXJrZXItc3RhcnQ9InVybCgjY2lyY2xlKSIgeDE9IjM5NiIgeDI9IjM5MiIgeTE9IjMxMiIgeTI9IjMxMiIvPgo8bGluZSBtYXJrZXItZW5kPSJ1cmwoI29wZW5fY2lyY2xlKSIgbWFya2VyLXN0YXJ0PSJ1cmwoI2NpcmNsZSkiIHgxPSIzOTYiIHgyPSI0MjgiIHkxPSIzMTIiIHkyPSIzMTIiLz4KPC9nPgo8Zz4KPGxpbmUgeDE9IjM5NiIgeDI9IjM5NiIgeTE9IjMyOCIgeTI9IjMyMCIvPgo8bGluZSBtYXJrZXItZW5kPSJ1cmwoI29wZW5fY2lyY2xlKSIgeDE9IjM5NiIgeDI9IjQyOCIgeTE9IjMyOCIgeTI9IjMyOCIvPgo8L2c+CjxnPgo8bGluZSBtYXJrZXItc3RhcnQ9InVybCgjY2lyY2xlKSIgeDE9IjM5NiIgeDI9IjM5MiIgeTE9IjM2MCIgeTI9IjM2MCIvPgo8bGluZSBtYXJrZXItZW5kPSJ1cmwoI29wZW5fY2lyY2xlKSIgbWFya2VyLXN0YXJ0PSJ1cmwoI2NpcmNsZSkiIHgxPSIzOTYiIHgyPSI0MjgiIHkxPSIzNjAiIHkyPSIzNjAiLz4KPC9nPgo8Zz4KPGxpbmUgeDE9IjM5NiIgeDI9IjM5NiIgeTE9IjM3NiIgeTI9IjM2OCIvPgo8bGluZSBtYXJrZXItZW5kPSJ1cmwoI29wZW5fY2lyY2xlKSIgeDE9IjM5NiIgeDI9IjQyOCIgeTE9IjM3NiIgeTI9IjM3NiIvPgo8L2c+CjxnPgo8bGluZSBtYXJrZXItc3RhcnQ9InVybCgjY2lyY2xlKSIgeDE9IjM5NiIgeDI9IjM5MiIgeTE9IjQ0MCIgeTI9IjQ0MCIvPgo8bGluZSBtYXJrZXItZW5kPSJ1cmwoI29wZW5fY2lyY2xlKSIgbWFya2VyLXN0YXJ0PSJ1cmwoI2NpcmNsZSkiIHgxPSIzOTYiIHgyPSI0MjgiIHkxPSI0NDAiIHkyPSI0NDAiLz4KPC9nPgo8Zz4KPGxpbmUgeDE9IjM5NiIgeDI9IjM5NiIgeTE9IjQ1NiIgeTI9IjQ0OCIvPgo8bGluZSBtYXJrZXItZW5kPSJ1cmwoI29wZW5fY2lyY2xlKSIgeDE9IjM5NiIgeDI9IjQyOCIgeTE9IjQ1NiIgeTI9IjQ1NiIvPgo8L2c+CjxnPgo8bGluZSB4MT0iNDQ0IiB4Mj0iNDQ0IiB5MT0iMTIiIHkyPSI1MiIvPgo8cGF0aCBkPSJNIDQ0NCA1MiBBIDQgNCAwIDAgMCA0NDggNTYiIGZpbGw9Im5vbmUiLz4KPHBhdGggZD0iTSA0NDggOCBBIDQgNCAwIDAgMCA0NDQgMTIiIGZpbGw9Im5vbmUiLz4KPC9nPgo8Zz4KPGxpbmUgeDE9IjQ0OCIgeDI9IjU1MiIgeTE9IjgiIHkyPSI4Ii8+CjxwYXRoIGQ9Ik0gNTU2IDEyIEEgNCA0IDAgMCAwIDU1MiA4IiBmaWxsPSJub25lIi8+CjwvZz4KPGc+CjxsaW5lIHgxPSI0NDgiIHgyPSI1NTIiIHkxPSI1NiIgeTI9IjU2Ii8+CjxwYXRoIGQ9Ik0gNTUyIDU2IEEgNCA0IDAgMCAwIDU1NiA1MiIgZmlsbD0ibm9uZSIvPgo8L2c+CjxnPgo8bGluZSB4MT0iNDU2IiB4Mj0iNTc2IiB5MT0iNTUwIiB5Mj0iNTUwIi8+CjwvZz4KPGc+CjxsaW5lIG1hcmtlci1lbmQ9InVybCgjdHJpYW5nbGUpIiB4MT0iNDU2IiB4Mj0iNDUyIiB5MT0iNTUyIiB5Mj0iNTUyIi8+CjwvZz4KPGc+CjxsaW5lIHgxPSI0NTYiIHgyPSI1NzYiIHkxPSI1NTQiIHkyPSI1NTQiLz4KPC9nPgo8Zz4KPGxpbmUgeDE9IjU1NiIgeDI9IjU1NiIgeTE9IjEyIiB5Mj0iNTIiLz4KPC9nPgo8Zz4KPGxpbmUgbWFya2VyLWVuZD0idXJsKCN0cmlhbmdsZSkiIHgxPSI1NzYiIHgyPSI1ODAiIHkxPSI1NTIiIHkyPSI1NTIiLz4KPC9nPgo8Zz4KPGxpbmUgY2xhc3M9ImRhc2hlZCIgZmlsbD0ibm9uZSIgeDE9IjY4IiB4Mj0iNjgiIHkxPSIyNDAiIHkyPSI0ODAiLz4KPC9nPgo8Zz4KPGxpbmUgY2xhc3M9ImRhc2hlZCIgZmlsbD0ibm9uZSIgeDE9IjE2NCIgeDI9IjE2NCIgeTE9IjM4NCIgeTI9IjQwMCIvPgo8L2c+CjxnPgo8bGluZSBjbGFzcz0iZGFzaGVkIiBmaWxsPSJub25lIiB4MT0iMjYwIiB4Mj0iMjYwIiB5MT0iMzg0IiB5Mj0iNDAwIi8+CjxsaW5lIG1hcmtlci1lbmQ9InVybCgjb3Blbl9jaXJjbGUpIiB4MT0iMjYwIiB4Mj0iMjYwIiB5MT0iNDAwIiB5Mj0iNDQwIi8+CjwvZz4KPGc+CjxsaW5lIGNsYXNzPSJkYXNoZWQiIGZpbGw9Im5vbmUiIHgxPSIzMTYiIHgyPSIzMTYiIHkxPSIzODQiIHkyPSI0MDAiLz4KPC9nPgo8Zz4KPGxpbmUgY2xhc3M9ImRhc2hlZCIgZmlsbD0ibm9uZSIgeDE9IjQ4NCIgeDI9IjQ4NCIgeTE9IjM4NCIgeTI9IjQwMCIvPgo8L2c+CjxnPgo8dGV4dCB4PSIxNyIgeT0iMTI0Ij4KbGlicmFyeShwcm9ncmVzc3IpCjwvdGV4dD4KPC9nPgo8Zz4KPHRleHQgeD0iMTciIHk9IjE0MCI+CmhhbmRsZXJzKCYjMzk7cHJvZ3Jlc3MmIzM5OywgJiMzOTtiZWVwciYjMzk7KQo8L3RleHQ+CjwvZz4KPGc+Cjx0ZXh0IHg9IjE3IiB5PSIxNzIiPgp5ICZsdDstIHdpdGhfcHJvZ3Jlc3Moewo8L3RleHQ+CjwvZz4KPGc+Cjx0ZXh0IHg9IjE3IiB5PSIyMDQiPgp9KQo8L3RleHQ+CjwvZz4KPGc+Cjx0ZXh0IHg9IjI1IiB5PSIyOCI+ClIKPC90ZXh0Pgo8L2c+CjxnPgo8dGV4dCB4PSIzMyIgeT0iMTg4Ij4Kc2xvd19zdW0oMToxMCkKPC90ZXh0Pgo8L2c+CjxnPgo8dGV4dCB4PSI0MSIgeT0iMjgiPgpjb2RlCjwvdGV4dD4KPC9nPgo8Zz4KPHRleHQgeD0iODEiIHk9IjI1MiI+CnAgJmx0Oy0gcHJvZ3Jlc3NvcigxMCkKPC90ZXh0Pgo8L2c+CjxnPgo8dGV4dCB4PSI4MSIgeT0iMjY4Ij4Kc3VtICZsdDstIDAKPC90ZXh0Pgo8L2c+CjxnPgo8dGV4dCB4PSI4MSIgeT0iMzAwIj4Kc3VtICZsdDstIHN1bSArIHhbMV0KPC90ZXh0Pgo8L2c+CjxnPgo8dGV4dCB4PSI4MSIgeT0iMzE2Ij4KcCgmIzM5O0FkZGVkIDEmIzM5OykKPC90ZXh0Pgo8L2c+CjxnPgo8dGV4dCB4PSI4MSIgeT0iMzQ4Ij4Kc3VtICZsdDstIHN1bSArIHhbMl0KPC90ZXh0Pgo8L2c+CjxnPgo8dGV4dCB4PSI4MSIgeT0iMzY0Ij4KcCgmIzM5O0FkZGVkIDImIzM5OykKPC90ZXh0Pgo8L2c+CjxnPgo8dGV4dCB4PSI4MSIgeT0iNDI4Ij4Kc3VtICZsdDstIHN1bSArIHhbMTBdCjwvdGV4dD4KPC9nPgo8Zz4KPHRleHQgeD0iODEiIHk9IjQ0NCI+CnAoJiMzOTtBZGRlZCAxMCYjMzk7KQo8L3RleHQ+CjwvZz4KPGc+Cjx0ZXh0IHg9IjgxIiB5PSI0NzYiPgpyZXR1cm4oc3VtKQo8L3RleHQ+CjwvZz4KPGc+Cjx0ZXh0IHg9Ijk3IiB5PSI1NzIiPgpjb250cm9sbGVkCjwvdGV4dD4KPC9nPgo8Zz4KPHRleHQgeD0iOTciIHk9IjU4OCI+CnRoZQo8L3RleHQ+CjwvZz4KPGc+Cjx0ZXh0IHg9IjEyOSIgeT0iNTg4Ij4KREVWRUxPUEVSCjwvdGV4dD4KPC9nPgo8Zz4KPHRleHQgeD0iMTg1IiB5PSI1NzIiPgpieQo8L3RleHQ+CjwvZz4KPGc+Cjx0ZXh0IHg9IjI3MyIgeT0iMjM2Ij4KcHJvZ3Jlc3Npb24KPC90ZXh0Pgo8L2c+CjxnPgo8dGV4dCB4PSIyNzMiIHk9IjMwMCI+CnByb2dyZXNzaW9uCjwvdGV4dD4KPC9nPgo8Zz4KPHRleHQgeD0iMjczIiB5PSIzNDgiPgpwcm9ncmVzc2lvbgo8L3RleHQ+CjwvZz4KPGc+Cjx0ZXh0IHg9IjI3MyIgeT0iNDI4Ij4KcHJvZ3Jlc3Npb24KPC90ZXh0Pgo8L2c+CjxnPgo8dGV4dCB4PSIyOTciIHk9IjI4Ij4Kc2lnbmFsZWQKPC90ZXh0Pgo8L2c+CjxnPgo8dGV4dCB4PSIyOTciIHk9IjQ0Ij4KY29uZGl0aW9ucwo8L3RleHQ+CjwvZz4KPGc+Cjx0ZXh0IHg9IjQ0MSIgeT0iMjUyIj4KWy0tLS0tLS0tLV0KPC90ZXh0Pgo8L2c+CjxnPgo8dGV4dCB4PSI0NDEiIHk9IjI2OCI+CuKZqwo8L3RleHQ+CjwvZz4KPGc+Cjx0ZXh0IHg9IjQ0MSIgeT0iMzE2Ij4KWyZndDstLS0tLS0tLV0KPC90ZXh0Pgo8L2c+CjxnPgo8dGV4dCB4PSI0NDEiIHk9IjMzMiI+CvCdhaEKPC90ZXh0Pgo8L2c+CjxnPgo8dGV4dCB4PSI0NDEiIHk9IjM2NCI+Cls9Jmd0Oy0tLS0tLS1dCjwvdGV4dD4KPC9nPgo8Zz4KPHRleHQgeD0iNDQxIiB5PSIzODAiPgrwnYWhCjwvdGV4dD4KPC9nPgo8Zz4KPHRleHQgeD0iNDQxIiB5PSI0NDQiPgpbPT09PT09PT0mZ3Q7XSAxMDAlIEFkZGVkIDEwCjwvdGV4dD4KPC9nPgo8Zz4KPHRleHQgeD0iNDQxIiB5PSI0NjAiPgrimasKPC90ZXh0Pgo8L2c+CjxnPgo8dGV4dCB4PSI0NTciIHk9IjI4Ij4KcHJvZ3Jlc3Npb24KPC90ZXh0Pgo8L2c+CjxnPgo8dGV4dCB4PSI0NTciIHk9IjQ0Ij4KaGFuZGxlcgo8L3RleHQ+CjwvZz4KPGc+Cjx0ZXh0IHg9IjQ2NSIgeT0iNTcyIj4KY29udHJvbGxlZAo8L3RleHQ+CjwvZz4KPGc+Cjx0ZXh0IHg9IjQ2NSIgeT0iNTg4Ij4KdGhlCjwvdGV4dD4KPC9nPgo8Zz4KPHRleHQgeD0iNDk3IiB5PSI1ODgiPgpFTkQKPC90ZXh0Pgo8L2c+CjxnPgo8dGV4dCB4PSI1MjkiIHk9IjU4OCI+ClVTRVIKPC90ZXh0Pgo8L2c+CjxnPgo8dGV4dCB4PSI1NDUiIHk9IjMxNiI+CjEwJSBBZGRlZCAxCjwvdGV4dD4KPC9nPgo8Zz4KPHRleHQgeD0iNTQ1IiB5PSIzNjQiPgoyMCUgQWRkZWQgMgo8L3RleHQ+CjwvZz4KPGc+Cjx0ZXh0IHg9IjU1MyIgeT0iMjUyIj4KMCUKPC90ZXh0Pgo8L2c+CjxnPgo8dGV4dCB4PSI1NTMiIHk9IjU3MiI+CmJ5CjwvdGV4dD4KPC9nPgo8Zz4KPGxpbmUgbWFya2VyLXN0YXJ0PSJ1cmwoI29wZW5fY2lyY2xlKSIgeDE9IjIwNCIgeDI9IjIwNCIgeTE9Ijg4IiB5Mj0iMTE2Ii8+CjwvZz4KPC9zdmc+" alt="" /></p>
+<p><em>Figure: Sequence diagram illustrating how signaled progression
+conditions are captured by <code>with_progress()</code>, or the global
+progression handler, and relayed to the two progression handlers
+'progress' (a progress bar in the terminal) and 'beepr' (auditory)
+that the end user has chosen.</em></p>
+<h3>Roadmap</h3>
+<p>Because this project is under active development, the progressr API is
+currently kept at a very minimum.  This will allow for the framework
+and the API to evolve while minimizing the risk for breaking code that
+depends on it.  The roadmap for developing the API is roughly:</p>
+<ul>
+<li>
+<p>[x] Provide minimal API for producing progress updates,
+i.e. <code>progressor()</code>, <code>with_progress()</code>, <code>handlers()</code></p>
+</li>
+<li>
+<p>[x] Add support for global progress handlers removing the need for
+the user having to specify <code>with_progress()</code>,
+i.e. <code>handlers(global = TRUE)</code> and <code>handlers(global = FALSE)</code></p>
+</li>
+<li>
+<p>[ ] Make it possible to create a progressor also in the global
+environment (see 'Known Issues' above)</p>
+</li>
+<li>
+<p>[ ] Add support for nested progress updates</p>
+</li>
+<li>
+<p>[ ] Add API to allow users and package developers to design
+additional progression handlers</p>
+</li>
+</ul>
+<p>For a more up-to-date view on what features might be added, see
+<a href="https://github.com/futureverse/progressr/issues">https://github.com/futureverse/progressr/issues</a>.</p>
+</body>
+</html>

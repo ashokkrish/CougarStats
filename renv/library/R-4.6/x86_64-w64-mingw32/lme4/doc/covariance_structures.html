@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>Covariance Structures</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+<style type="text/css">
+
+div.csl-bib-body { }
+div.csl-entry {
+clear: both;
+}
+.hanging div.csl-entry {
+margin-left:2em;
+text-indent:-2em;
+}
+div.csl-left-margin {
+min-width:2em;
+float:left;
+}
+div.csl-right-inline {
+margin-left:2em;
+padding-left:1em;
+}
+div.csl-indent {
+margin-left: 2em;
+}
+</style>
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Covariance Structures</h1>
+
+
+
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p>The current version of <code>lme4</code> offers four covariance
+classes/structures: <code>Covariance.us</code> (unstructured),
+<code>Covariance.diag</code> (diagonal), <code>Covariance.cs</code>
+(compound symmetry), and <code>Covariance.ar1</code> (autoregressive
+order 1). The syntax for use is somewhat similar to the
+<code>glmmTMB</code> package (see <a href="https://glmmtmb.github.io/glmmTMB/articles/covstruct.html">covariance
+structures in glmmTMB</a>), although the results are slightly
+different.</p>
+<p>The first half of this vignette provide a more detailed explanation
+of how the new machinery works, and the second half of the vignette will
+compare <code>lme4</code> and <code>glmmTMB</code> implementations and
+results.</p>
+<div id="background" class="section level3">
+<h3>Background</h3>
+<p>For exact details of this structure, refer to the <code>lmer</code>
+<a href="https://cran.r-project.org/package=lme4/vignettes/lmer.pdf">vignette</a>
+<span class="citation">(Bates et al. 2015)</span>. We provide a quick
+summary in this vignette.</p>
+<p>In matrix notation, a linear mixed model can be represented as: <span class="math display">\[
+\mathbf{y} = \mathbf{X} \boldsymbol \beta + \mathbf Z \mathbf{b} +
+\boldsymbol{\epsilon}
+\]</span> Where <span class="math inline">\(\mathbf{b}\)</span>
+represents an unknown vector of random effects. The class helps define
+the structure of the variance-covariance matrix as specified as <span class="math inline">\(\textrm{Var}(\mathbf{b})\)</span>. Typically, we
+denote the variance-covariance matrix as <span class="math inline">\(\mathbf \Sigma\)</span>.</p>
+<!-- can't use \usepackage{bm}: https://stackoverflow.com/a/33226711/190277 -->
+<p>First, we create the relative co-factor <span class="math inline">\(\mathbf \Lambda_{\mathbf \theta}\)</span> which is
+a <span class="math inline">\(q \times q\)</span> block diagonal matrix
+that depends on the variance-component parameter <span class="math inline">\(\theta\)</span>. Let <span class="math inline">\(\sigma\)</span> be the scale parameter of the
+variance of a linear mixed model. In <code>lme4</code>, the
+variance-covariance matrix is constructed by: <span class="math display">\[
+{\mathbf \Sigma}_{\mathbf{\theta}} =
+\sigma^2 {\mathbf \Lambda}_{\mathbf \theta} {\mathbf \Lambda}_{\mathbf
+\theta}^{\top},
+\]</span></p>
+<p>For generalized linear mixed models, <span class="math inline">\(\mathbf \Lambda\)</span> instead represents the
+<em>unscaled</em> Cholesky factor; that is, the scaling term <span class="math inline">\(\sigma^2\)</span> is omitted from the equation
+above.</p>
+<p>The major difference between the four covariance classes
+(<code>Covariance.us</code> (unstructured), <code>Covariance.diag</code>
+(diagonal), <code>Covariance.cs</code> (compound symmetry), and
+<code>Covariance.ar1</code> (autoregressive order 1)) is the
+construction of the the relative Cholesky factor <span class="math inline">\(\mathbf \Lambda_{\mathbf \theta}\)</span>.</p>
+</div>
+<div id="covariance-structures" class="section level3">
+<h3>Covariance Structures</h3>
+<p>Suppose there are <span class="math inline">\(p\)</span> number of
+random effect terms for a particular grouping variable. The
+<em>unstructured covariance</em>, which is the default in
+<code>lme4</code>, of size <span class="math inline">\(p \times
+p\)</span> has the following form: <span class="math display">\[
+\mathbf{\Sigma}
+= \begin{bmatrix}
+\sigma^{2}_{1} &amp; \sigma_{12} &amp; \dots &amp; \sigma_{1p} \\
+\sigma_{21} &amp; \sigma^{2}_{2} &amp; \dots &amp; \sigma_{2p} \\
+\vdots &amp; \vdots &amp; \ddots &amp; \vdots \\
+\sigma_{p1} &amp; \sigma_{p2} &amp; \dots &amp; \sigma^{2}_{p} \\
+\end{bmatrix}   
+\]</span></p>
+<p>The next three covariance structures can either be heterogeneous or
+homogeneous. If we have a homogeneous covariance structure
+(<code>hom = TRUE</code>), then we assume <span class="math inline">\(\sigma_{1} = \sigma_{2} = \dots =
+\sigma_{p}\)</span>.</p>
+<p>The <em>diagonal covariance</em> has the following form: <span class="math display">\[
+\mathbf{\Sigma}
+= \begin{bmatrix}
+\sigma^{2}_{1} &amp; 0 &amp; \dots &amp; 0 \\
+0 &amp; \sigma^{2}_{2} &amp; \dots &amp; 0 \\
+\vdots &amp; \vdots &amp; \ddots &amp; \vdots \\
+0 &amp; 0 &amp; \dots &amp; \sigma^{2}_{p} \\
+\end{bmatrix}   
+\]</span> By default, we assume a heterogeneous diagonal covariance
+structure.</p>
+<p>The <em>compound symmetric covariance</em> has the following form:
+<span class="math display">\[
+\mathbf{\Sigma}
+= \begin{bmatrix}
+\sigma^{2}_{1}              &amp; \sigma_{1}\sigma_{2}\rho  &amp;
+\sigma_{1}\sigma_{3}\rho  &amp; \dots  &amp; \sigma_{1}\sigma_{p}\rho \\
+\sigma_{2}\sigma_{1} \rho   &amp; \sigma^{2}_{2}             &amp;
+\sigma_{2}\sigma_{3}\rho  &amp; \dots  &amp; \sigma_{2}\sigma_{p}\rho \\
+\sigma_{3}\sigma_{1} \rho   &amp; \sigma_{3}\sigma_{2}\rho   &amp;
+\sigma^{2}_{3}            &amp; \dots  &amp; \sigma_{3}\sigma_{p}\rho \\
+\vdots                      &amp; \vdots                     &amp;
+\vdots                    &amp; \ddots &amp; \vdots \\
+\sigma_{p}\sigma_{1} \rho   &amp; \sigma_{p}\sigma_{2}\rho   &amp;
+\sigma_{p}\sigma_{3}\rho  &amp; \dots  &amp; \sigma^{2}_{p}
+\end{bmatrix}   
+\]</span> By default, we assume a heterogeneous compound symmetric
+covariance structure.</p>
+<p>The <em>AR1 (auto-regressive order 1) covariance</em> has the
+following form: <span class="math display">\[
+\mathbf{\Sigma}
+= \begin{bmatrix}
+\sigma^{2}_{1}                  &amp; \sigma_{1}\sigma_{2}
+\rho      &amp; \sigma_{1}\sigma_{3}\rho^{2}   &amp; \dots  &amp;
+\sigma_{1}\sigma_{p}\rho^{p-1} \\
+\sigma_{2}\sigma_{1} \rho       &amp;
+\sigma^{2}_{2}                 &amp;
+\sigma_{2}\sigma_{3}\rho       &amp; \dots  &amp;
+\sigma_{2}\sigma_{p}\rho^{p-2} \\
+\sigma_{3}\sigma_{1} \rho^{2}   &amp;
+\sigma_{3}\sigma_{2}\rho       &amp;
+\sigma^{2}_{3}                 &amp; \dots  &amp;
+\sigma_{3}\sigma_{p}\rho^{p-3} \\
+\vdots                          &amp;
+\vdots                         &amp;
+\vdots                         &amp; \ddots &amp; \vdots \\
+\sigma_{p}\sigma_{1} \rho^{p-1} &amp; \sigma_{p}\sigma_{2}\rho^{p-2}
+&amp; \sigma_{p}\sigma_{3}\rho^{p-3} &amp; \dots  &amp; \sigma^{2}_{p}
+\end{bmatrix}   
+\]</span> Unlike the diagonal and compound symmetric structures, by
+default we assume a homogeneous ar1 covariance structure.</p>
+</div>
+<div id="construction-of-the-relative-co-factor" class="section level3">
+<h3>Construction of the Relative Co-factor</h3>
+<p>For the unstructured covariance matrix, <code>lme4</code> estimates
+the following parameters in <code>par</code>: <span class="math inline">\(\mathbf{\theta} = (\theta_{1}, \theta_{2}, \dots,
+\theta_{p(p+1)/2})\)</span> to construct the relative co-factor <span class="math inline">\({\mathbf \Lambda}_{\mathbf{\theta}}\)</span> (this
+is the same as in previous versions): <span class="math display">\[
+\Lambda_{\mathbf{\theta}} = \begin{bmatrix}
+\theta_1 &amp; 0 &amp; 0 &amp; \dots &amp; 0 \\
+\theta_2 &amp; \theta_3 &amp; 0 &amp; \dots &amp; 0 \\
+\theta_4 &amp; \theta_5 &amp; \theta_6 &amp; \dots &amp; 0 \\
+\vdots &amp; \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\
+\theta_{...} &amp; \theta_{...} &amp; \theta_{...} &amp; \dots &amp;
+\theta_{p(p+1)/2}
+\end{bmatrix}
+\]</span></p>
+<p>The definition of the parameter vectors differs for the other
+covariance structures. In the diagonal covariance matrix case, <span class="math inline">\(\mathbf{\theta}\)</span> (or <code>par</code>)
+only contains the standard deviations. The relative co-factor <span class="math inline">\({\mathbf \Lambda}_{\mathbf{\theta}}\)</span> is:
+<span class="math display">\[
+{\mathbf Lambda}_{\mathbf{\theta}} = \begin{bmatrix}
+\theta_1 &amp; 0 &amp; 0 &amp; \dots &amp; 0 \\
+0 &amp; \theta_2 &amp; 0 &amp; \dots &amp; 0 \\
+0 &amp; 0 &amp; \theta_3 &amp; \dots &amp; 0 \\
+\vdots &amp; \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\
+0 &amp; 0 &amp; 0 &amp; \dots &amp; \theta_{p}
+\end{bmatrix}
+\]</span></p>
+<p>For the compound symmetry covariance structure, the parameter vector
+<code>par</code> contains the <span class="math inline">\(p\)</span>
+standard deviations <span class="math inline">\((\sigma_1, \sigma_2,
+\ldots, \sigma_p)\)</span> and the common correlation <span class="math inline">\(\rho\)</span>. In contrast to
+<code>glmmTMB</code>, the correlation is estimated on its original scale
+(bounded between -1 and 1), rather than on an unconstrained, transformed
+scale.</p>
+<p>The relative co-factor <span class="math inline">\({\mathbf
+\Lambda}_{\mathbf{\theta}}\)</span> is a lower triangular <span class="math inline">\(p \times p\)</span> matrix. Consider the form:
+<span class="math display">\[
+{\mathbf \Lambda}_{\mathbf{\theta}} = \begin{bmatrix}
+\theta_{11} &amp; 0 &amp; 0 &amp; \cdots &amp; 0 \\
+\theta_{21} &amp; \theta_{22} &amp; 0 &amp; \cdots &amp; 0 \\
+\theta_{31} &amp; \theta_{32} &amp; \theta_{33} &amp; \cdots &amp; 0 \\
+\vdots &amp; \vdots &amp; \vdots &amp; \ddots &amp; \vdots \\
+\theta_{p1} &amp; \theta_{p2} &amp; \theta_{p3} &amp; \cdots &amp;
+\theta_{pp}
+\end{bmatrix}
+\]</span></p>
+<p>Its elements <span class="math inline">\(\theta_{ij}\)</span> are
+constructed as follows. First, define the sequence <span class="math inline">\(\{a_j\}\)</span> recursively: <span class="math display">\[
+a_1 = 0, \quad a_{j+1} = a_j + \frac{(1 - \rho \cdot a_j)^2}{1 - \rho^2
+\cdot a_j} \quad \text{for } j = 1, \ldots, p-1
+\]</span></p>
+<p>Then the elements of <span class="math inline">\({\mathbf
+\Lambda}\)</span> are given by: <span class="math display">\[
+\theta_{ij} = \begin{cases}
+\sqrt{1 - \rho^2 a_j} &amp; \text{if } i = j \text{ (diagonal)}
+\\[0.5em]
+\dfrac{\rho - \rho^2 a_j}{\sqrt{1 - \rho^2 a_j}} &amp; \text{if } i &gt;
+j \text{ (below diagonal)} \\[0.5em]
+0 &amp; \text{if } i &lt; j \text{ (above diagonal)}
+\end{cases}
+\]</span> In the code, one can extract the values <span class="math inline">\(\theta_{ij}\)</span> via the
+<code>getTheta()</code> function of the <code>Covariance.cs</code>
+object, in which <code>theta</code> will be a vector in the column-wise
+elements of <span class="math inline">\({\mathbf \Lambda}\)</span>.</p>
+<p>The setup is similar for the autoregressive order 1 (AR1) covariance
+structure. Again, the parameter vector contains the <span class="math inline">\(p\)</span> standard deviations <span class="math inline">\((\sigma_1, \sigma_2, \ldots, \sigma_p)\)</span>
+and the autocorrelation parameter <span class="math inline">\(\rho\)</span>. The relative co-factor <span class="math inline">\({\mathbf \Lambda}_{\mathbf{\theta}}\)</span> is a
+lower triangular <span class="math inline">\(p \times p\)</span> matrix
+whose form is similar to the compound symmetric case.</p>
+<p>The elements <span class="math inline">\(\theta_{ij}\)</span> are
+given by: <span class="math display">\[
+\theta_{ij} = \begin{cases}
+\rho^{i-1} &amp; \text{if } j = 1 \text{ (first column)} \\[0.5em]
+\rho^{i-j} \sqrt{1 - \rho^2} &amp; \text{if } 1 &lt; j \leq i \text{
+(below diagonal)} \\[0.5em]
+0 &amp; \text{if } i &lt; j \text{ (above diagonal)}
+\end{cases}
+\]</span> Again, these values can be extracted using
+<code>getTheta()</code> function of the <code>Covariance.ar1</code>
+object, in which <code>theta</code> will be still be a vector in the
+column-wise elements of <span class="math inline">\({\mathbf
+\Lambda}\)</span>.</p>
+</div>
+<div id="extracting-model-components" class="section level3">
+<h3>Extracting model components</h3>
+<p>This section illustrates how to extract <code>par</code>,
+<code>theta</code>, <code>Lambda</code>, as described in the previous
+section, as well as the variance covariance matrices of a model, from a
+<code>merMod</code> object.</p>
+<p>We’ll fit the standard <code>sleepstudy</code> example, except that
+we will use a model with a compound symmetric covariance structure.
+Because this model has only two varying effects (intercept and slope
+with respect to day) per subject, and hence the covariance matrix is
+<span class="math inline">\(2 \times 2\)</span>, there is no difference
+in overall model fit between the compound-symmetric and the unstructured
+covariance matrices. Howevever, the models are parameterized
+differently, so this example will highlight the differences between
+<code>par</code> and <code>theta</code>.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(lme4)</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>fm1.cs <span class="ot">&lt;-</span> <span class="fu">lmer</span>(Reaction <span class="sc">~</span> Days <span class="sc">+</span> <span class="fu">cs</span>(<span class="dv">1</span> <span class="sc">+</span> Days <span class="sc">|</span> Subject), sleepstudy)</span></code></pre></div>
+<p>Extracting the covariance structure:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">print</span>(fm1.cs_cov <span class="ot">&lt;-</span> <span class="fu">getReCovs</span>(fm1.cs))</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="co">#&gt; [[1]]</span></span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="co">#&gt; An object of class &quot;Covariance.cs&quot;</span></span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a><span class="co">#&gt; Slot &quot;hom&quot;:</span></span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="co">#&gt; [1] FALSE</span></span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a><span class="co">#&gt; Slot &quot;nc&quot;:</span></span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a><span class="co">#&gt; [1] 2</span></span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a><span class="co">#&gt; Slot &quot;par&quot;:</span></span>
+<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a><span class="co">#&gt; [1] 0.96679232 0.23140420 0.06561148</span></span></code></pre></div>
+<p>The result is a list with only one element as we only have one
+random-effects term (<code>cs(1 + Days | Subject)</code>). To see the
+values of <code>par</code> and <code>theta</code> for this object, we
+can call:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">getME</span>(fm1.cs, <span class="st">&quot;par&quot;</span>)</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="co">#&gt; Subject.(Intercept)        Subject.Days         Subject.rho </span></span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="co">#&gt;          0.96679232          0.23140420          0.06561148</span></span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="fu">getME</span>(fm1.cs, <span class="st">&quot;theta&quot;</span>)</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="co">#&gt;      Subject.(Intercept) Subject.Days.(Intercept)             Subject.Days </span></span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a><span class="co">#&gt;               0.96679232               0.01518277               0.23090558</span></span></code></pre></div>
+<p>The <span class="math inline">\({\mathbf \Lambda}\)</span> matrix is
+large, so we’ll view it instead of printing:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="fu">library</span>(Matrix)</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="fu">image</span>(<span class="fu">getME</span>(fm1.cs, <span class="st">&quot;Lambda&quot;</span>))</span></code></pre></div>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
+<p>To most users, the most crucial information is simply the
+variance-covariance matrices. Extracte these via
+<code>VarCorr.merMod()</code> (the list has one element per
+random-effect term in the model — in this case, only one):</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>vc_mat <span class="ot">&lt;-</span> <span class="fu">VarCorr</span>(fm1.cs)</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>vc_mat<span class="sc">$</span>Subject</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="co">#&gt;             (Intercept)      Days</span></span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="co">#&gt; (Intercept)  612.160273  9.613533</span></span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a><span class="co">#&gt; Days           9.613533 35.070443</span></span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a><span class="co">#&gt; attr(,&quot;class&quot;)</span></span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a><span class="co">#&gt; [1] &quot;vcmat_cs&quot; &quot;matrix&quot;   &quot;array&quot;   </span></span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a><span class="co">#&gt; attr(,&quot;stddev&quot;)</span></span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a><span class="co">#&gt; (Intercept)        Days </span></span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a><span class="co">#&gt;    24.74187     5.92203 </span></span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a><span class="co">#&gt; attr(,&quot;correlation&quot;)</span></span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a><span class="co">#&gt;             (Intercept)       Days</span></span>
+<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a><span class="co">#&gt; (Intercept)  1.00000000 0.06561148</span></span>
+<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a><span class="co">#&gt; Days         0.06561148 1.00000000</span></span></code></pre></div>
+</div>
+</div>
+<div id="comparisons-with-glmmtmb" class="section level2">
+<h2>Comparisons with glmmTMB</h2>
+<div id="reason-for-computational-differences" class="section level3">
+<h3>Reason for Computational Differences</h3>
+<p>When fitting linear mixed models, <code>lme4</code> parameterizes the
+random-effects variance–covariance matrix on an unconstrained scale,
+using box-constrained optimization algorithms to ensure that the
+variance-covariance matrix is positive semidefinite. For unstructured
+covariance matrices, this means that the elements of <span class="math inline">\(\mathbf \theta\)</span> that parameterize the
+diagonal elements of <span class="math inline">\(\mathbf
+\Lambda\)</span> are constrained to be <span class="math inline">\(\ge
+0\)</span> (for diagonal models, all of the elements of <span class="math inline">\(\mathbf \theta\)</span> fill the diagonal of <span class="math inline">\(\mathbf \Lambda\)</span> and hence are <span class="math inline">\(\ge 0\)</span>; for models such as the
+compound-symmetric or AR1 models that use correlation parameters, we
+constrain <span class="math inline">\(|\rho| \le 1\)</span>. As
+discussed in <span class="citation">Bates et al. (2015)</span>, this
+constrained parameterization works well for handling model where the
+estimated covariance matrix is <em>singular</em> (i.e. <span class="math inline">\(\mathbf \Sigma\)</span> is only positive
+semidefinite, not positive definite). In addition, for linear mixed
+models <code>lme4</code> profiles the fixed-effect parameters out of the
+objective function <span class="citation">(Bates et al. 2015)</span>;
+finally, the scale parameter <span class="math inline">\(\sigma\)</span>
+is not estimated directly, but is derived from the residual variance or
+deviance of the fitted model.</p>
+<p>In contrast, <code>glmmTMB</code> uses direct maximum likelihood
+estimation via Template Model Builder (TMB), fitting to the full
+parameter vector <span class="math inline">\(\{\mathbf \theta, \mathbf
+\beta, \sigma^2\}\)</span>. Covariance parameters are fitted on a
+transformed (unconstrained) scale: log scale for standard deviations and
+various scales for correlation parameters (see the <code>glmmTMB</code>
+<a href="https://cran.r-project.org/package=glmmTMB/vignettes/covstruct.html">covariance
+structures vignette</a> for details). This parameterization simplifies
+fitting (a box-constrained algorithm isn’t necessary), but is less
+convenient in singular fits and other cases where the maximum likelihood
+estimate is infinite on the unconstrained scale.</p>
+<p>Despite these differences, we will show examples where
+<code>lme4</code> and <code>glmmTMB</code> provide similar estimates
+when they both use maximum likelihood estimation. By default,
+<code>lme4</code> uses the restricted maximum likelihood; hence in the
+following examples, we use <code>lmer(..., REML = FALSE)</code> to
+compare against <code>glmmTMB</code>.</p>
+</div>
+<div id="comparison-setup" class="section level3">
+<h3>Comparison Setup</h3>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">requireNamespace</span>(<span class="st">&quot;glmmTMB&quot;</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>  knitr<span class="sc">::</span>opts_chunk<span class="sc">$</span><span class="fu">set</span>(<span class="at">eval =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>} <span class="cf">else</span> {</span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>  <span class="fu">library</span>(glmmTMB)</span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>}</span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a><span class="do">## Often want to ignore attributes and class.</span></span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a><span class="do">## Set a fairly large tolerance for convenience.</span></span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a>all.equal.nocheck <span class="ot">&lt;-</span> <span class="cf">function</span>(x, y, <span class="at">tolerance =</span> <span class="fl">3e-5</span>, ..., <span class="at">check.attributes =</span> <span class="cn">FALSE</span>, <span class="at">check.class =</span> <span class="cn">FALSE</span>) {</span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a>  <span class="fu">require</span>(<span class="st">&quot;Matrix&quot;</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a>  <span class="do">## working around mode-matching headaches</span></span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">is</span>(x, <span class="st">&quot;Matrix&quot;</span>)) x <span class="ot">&lt;-</span> <span class="fu">matrix</span>(x)</span>
+<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">is</span>(y, <span class="st">&quot;Matrix&quot;</span>)) y <span class="ot">&lt;-</span> <span class="fu">matrix</span>(y)</span>
+<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a>  <span class="fu">all.equal</span>(x, y, ..., <span class="at">tolerance =</span> tolerance, <span class="at">check.attributes =</span> check.attributes, <span class="at">check.class =</span> check.class)</span>
+<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a>}</span>
+<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a></span>
+<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a>get.cor1 <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
+<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a>  v <span class="ot">&lt;-</span> <span class="fu">VarCorr</span>(x)</span>
+<span id="cb6-19"><a href="#cb6-19" tabindex="-1"></a>  vv <span class="ot">&lt;-</span> <span class="cf">if</span> (<span class="fu">inherits</span>(x, <span class="st">&quot;merMod&quot;</span>)) v<span class="sc">$</span>group <span class="cf">else</span> v<span class="sc">$</span>cond<span class="sc">$</span>group</span>
+<span id="cb6-20"><a href="#cb6-20" tabindex="-1"></a>  <span class="fu">attr</span>(vv, <span class="st">&quot;correlation&quot;</span>)[<span class="dv">1</span>,<span class="dv">2</span>]</span>
+<span id="cb6-21"><a href="#cb6-21" tabindex="-1"></a>}</span></code></pre></div>
+</div>
+<div id="unstructured-general-positive-definite" class="section level3">
+<h3>Unstructured (General Positive Definite)</h3>
+<p>This is the default setting for both <code>lme4</code> and
+<code>glmmTMB</code>. Below we simulate a dataset with known
+<code>beta</code>, <code>theta</code> and <code>sigma</code> values.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>n_groups <span class="ot">&lt;-</span> <span class="dv">20</span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>n_per_group <span class="ot">&lt;-</span> <span class="dv">20</span></span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>n <span class="ot">&lt;-</span> n_groups <span class="sc">*</span> n_per_group</span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a></span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>dat.us <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>  <span class="at">group =</span> <span class="fu">rep</span>(<span class="dv">1</span><span class="sc">:</span>n_groups, <span class="at">each =</span> n_per_group),</span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>  <span class="at">x1 =</span> <span class="fu">rnorm</span>(n),</span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a>  <span class="at">x2 =</span> <span class="fu">rnorm</span>(n)</span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a>)</span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a><span class="do">## Constructing a similar dataset for the other examples</span></span>
+<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a>gdat.us <span class="ot">&lt;-</span> dat.diag <span class="ot">&lt;-</span> gdat.diag <span class="ot">&lt;-</span> dat.us</span>
+<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a></span>
+<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a>form <span class="ot">&lt;-</span> y <span class="sc">~</span> <span class="dv">1</span> <span class="sc">+</span> x1 <span class="sc">*</span> x2 <span class="sc">+</span> <span class="fu">us</span>(<span class="dv">1</span> <span class="sc">+</span> x1<span class="sc">|</span>group)</span>
+<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a>dat.us<span class="sc">$</span>y <span class="ot">&lt;-</span> <span class="fu">simulate</span>(form[<span class="sc">-</span><span class="dv">2</span>], </span>
+<span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a>                    <span class="at">newdata =</span> dat.us,</span>
+<span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a>                    <span class="at">family =</span> gaussian,</span>
+<span id="cb7-18"><a href="#cb7-18" tabindex="-1"></a>                    <span class="at">newparams =</span> <span class="fu">list</span>(<span class="at">beta =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">7</span>, <span class="dv">5</span>, <span class="sc">-</span><span class="dv">100</span>, <span class="dv">20</span>),</span>
+<span id="cb7-19"><a href="#cb7-19" tabindex="-1"></a>                                     <span class="at">theta =</span> <span class="fu">c</span>(<span class="fl">2.5</span>, <span class="fl">1.4</span>, <span class="fl">6.3</span>),</span>
+<span id="cb7-20"><a href="#cb7-20" tabindex="-1"></a>                                     <span class="at">sigma =</span> <span class="dv">2</span>))[[<span class="dv">1</span>]]</span>
+<span id="cb7-21"><a href="#cb7-21" tabindex="-1"></a></span>
+<span id="cb7-22"><a href="#cb7-22" tabindex="-1"></a>form2 <span class="ot">&lt;-</span> y <span class="sc">~</span> <span class="dv">1</span> <span class="sc">+</span> x1 <span class="sc">+</span> <span class="fu">us</span>(<span class="dv">1</span> <span class="sc">+</span> x1<span class="sc">|</span>group)</span>
+<span id="cb7-23"><a href="#cb7-23" tabindex="-1"></a>gdat.us<span class="sc">$</span>y <span class="ot">&lt;-</span> <span class="fu">simulate</span>(</span>
+<span id="cb7-24"><a href="#cb7-24" tabindex="-1"></a>  form2[<span class="sc">-</span><span class="dv">2</span>],</span>
+<span id="cb7-25"><a href="#cb7-25" tabindex="-1"></a>  <span class="at">newdata =</span> gdat.us,</span>
+<span id="cb7-26"><a href="#cb7-26" tabindex="-1"></a>  <span class="at">family =</span> binomial,</span>
+<span id="cb7-27"><a href="#cb7-27" tabindex="-1"></a>  <span class="at">newparams =</span> <span class="fu">list</span>(</span>
+<span id="cb7-28"><a href="#cb7-28" tabindex="-1"></a>    <span class="at">beta  =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">1.5</span>, <span class="fl">0.5</span>),     </span>
+<span id="cb7-29"><a href="#cb7-29" tabindex="-1"></a>    <span class="at">theta =</span> <span class="fu">c</span>(<span class="fl">0.3</span>, <span class="fl">0.1</span>, <span class="fl">0.3</span>)</span>
+<span id="cb7-30"><a href="#cb7-30" tabindex="-1"></a>  ))[[<span class="dv">1</span>]]</span></code></pre></div>
+</div>
+<div id="linear-mixed-model" class="section level3">
+<h3>Linear Mixed Model</h3>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>lme4.us <span class="ot">&lt;-</span> <span class="fu">lmer</span>(form, <span class="at">data =</span> dat.us, <span class="at">REML =</span> <span class="st">&quot;FALSE&quot;</span>)</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>glmmTMB.us <span class="ot">&lt;-</span> <span class="fu">glmmTMB</span>(form, <span class="at">dat =</span> dat.us)</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a><span class="do">## Fixed effects</span></span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a><span class="fu">fixef</span>(lme4.us); <span class="fu">fixef</span>(glmmTMB.us)<span class="sc">$</span>cond</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a><span class="co">#&gt; (Intercept)          x1          x2       x1:x2 </span></span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a><span class="co">#&gt;   -7.280739    5.795443 -100.070859   19.958369</span></span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a><span class="co">#&gt; (Intercept)          x1          x2       x1:x2 </span></span>
+<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a><span class="co">#&gt;   -7.280736    5.795388 -100.070860   19.958369</span></span>
+<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a><span class="fu">all.equal.nocheck</span>(<span class="fu">fixef</span>(lme4.us), <span class="fu">fixef</span>(glmmTMB.us)<span class="sc">$</span>cond)</span>
+<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span>
+<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a></span>
+<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a><span class="do">## Sigma</span></span>
+<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a><span class="fu">sigma</span>(lme4.us); <span class="fu">sigma</span>(glmmTMB.us)</span>
+<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a><span class="co">#&gt; [1] 2.049705</span></span>
+<span id="cb8-16"><a href="#cb8-16" tabindex="-1"></a><span class="co">#&gt; [1] 2.049702</span></span>
+<span id="cb8-17"><a href="#cb8-17" tabindex="-1"></a><span class="fu">all.equal.nocheck</span>(<span class="fu">sigma</span>(lme4.us), <span class="fu">sigma</span>(glmmTMB.us))</span>
+<span id="cb8-18"><a href="#cb8-18" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span>
+<span id="cb8-19"><a href="#cb8-19" tabindex="-1"></a></span>
+<span id="cb8-20"><a href="#cb8-20" tabindex="-1"></a><span class="do">## Log likelihoods</span></span>
+<span id="cb8-21"><a href="#cb8-21" tabindex="-1"></a><span class="fu">logLik</span>(lme4.us); <span class="fu">logLik</span>(glmmTMB.us)</span>
+<span id="cb8-22"><a href="#cb8-22" tabindex="-1"></a><span class="co">#&gt; &#39;log Lik.&#39; -971.3046 (df=8)</span></span>
+<span id="cb8-23"><a href="#cb8-23" tabindex="-1"></a><span class="co">#&gt; &#39;log Lik.&#39; -971.3046 (df=8)</span></span>
+<span id="cb8-24"><a href="#cb8-24" tabindex="-1"></a><span class="fu">all.equal.nocheck</span>(<span class="fu">logLik</span>(lme4.us), <span class="fu">logLik</span>(glmmTMB.us))</span>
+<span id="cb8-25"><a href="#cb8-25" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
+<p>As expected, calculations related to the random-effects term differ
+slightly beyond this point.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="do">## Variance-Covariance Matrix</span></span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="fu">vcov</span>(lme4.us); <span class="fu">vcov</span>(glmmTMB.us)<span class="sc">$</span>cond</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="co">#&gt; 4 x 4 Matrix of class &quot;dpoMatrix&quot;</span></span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="co">#&gt;               (Intercept)            x1            x2         x1:x2</span></span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a><span class="co">#&gt; (Intercept)  1.2014218984 -0.1733456044  0.0008614804 -0.0004201174</span></span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a><span class="co">#&gt; x1          -0.1733456044 12.4138871011 -0.0008710106  0.0026046078</span></span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a><span class="co">#&gt; x2           0.0008614804 -0.0008710106  0.0101254746 -0.0018079198</span></span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a><span class="co">#&gt; x1:x2       -0.0004201174  0.0026046078 -0.0018079198  0.0117364803</span></span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a><span class="co">#&gt;               (Intercept)            x1            x2         x1:x2</span></span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a><span class="co">#&gt; (Intercept)  1.2014959308 -0.1733102259  0.0008614825 -0.0004201922</span></span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a><span class="co">#&gt; x1          -0.1733102259 12.4138803796 -0.0008713988  0.0026042335</span></span>
+<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a><span class="co">#&gt; x2           0.0008614825 -0.0008713988  0.0101257004 -0.0018074214</span></span>
+<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a><span class="co">#&gt; x1:x2       -0.0004201922  0.0026042335 -0.0018074214  0.0117377999</span></span>
+<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a><span class="fu">all.equal.nocheck</span>(<span class="fu">vcov</span>(lme4.us), <span class="fu">vcov</span>(glmmTMB.us)<span class="sc">$</span>cond)</span>
+<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span>
+<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a></span>
+<span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a><span class="do">## Variance and Covariance Components</span></span>
+<span id="cb9-18"><a href="#cb9-18" tabindex="-1"></a><span class="fu">all.equal.nocheck</span>(<span class="fu">VarCorr</span>(lme4.us)<span class="sc">$</span>group,</span>
+<span id="cb9-19"><a href="#cb9-19" tabindex="-1"></a>          <span class="fu">VarCorr</span>(glmmTMB.us)<span class="sc">$</span>cond<span class="sc">$</span>group)</span>
+<span id="cb9-20"><a href="#cb9-20" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span>
+<span id="cb9-21"><a href="#cb9-21" tabindex="-1"></a></span>
+<span id="cb9-22"><a href="#cb9-22" tabindex="-1"></a><span class="do">## Conditional Modes of the Random Effects</span></span>
+<span id="cb9-23"><a href="#cb9-23" tabindex="-1"></a><span class="fu">all.equal.nocheck</span>(<span class="fu">ranef</span>(lme4.us)<span class="sc">$</span>group, <span class="fu">ranef</span>(glmmTMB.us)<span class="sc">$</span>cond<span class="sc">$</span>group)</span>
+<span id="cb9-24"><a href="#cb9-24" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
+</div>
+<div id="generalized-linear-mixed-model" class="section level3">
+<h3>Generalized Linear Mixed Model</h3>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>glme4.us <span class="ot">&lt;-</span> <span class="fu">glmer</span>(form2, <span class="at">data =</span> gdat.us, <span class="at">family =</span> binomial)</span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>gglmmTMB.us <span class="ot">&lt;-</span> <span class="fu">glmmTMB</span>(form2, <span class="at">dat =</span> gdat.us, <span class="at">family =</span> binomial)</span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a></span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a><span class="do">## Fixed effects</span></span>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a><span class="fu">fixef</span>(glme4.us); <span class="fu">fixef</span>(gglmmTMB.us)<span class="sc">$</span>cond</span>
+<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a><span class="co">#&gt; (Intercept)          x1 </span></span>
+<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a><span class="co">#&gt;  -1.5400786   0.4547925</span></span>
+<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a><span class="co">#&gt; (Intercept)          x1 </span></span>
+<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a><span class="co">#&gt;  -1.5403288   0.4545996</span></span>
+<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a><span class="fu">all.equal.nocheck</span>(<span class="fu">fixef</span>(glme4.us), <span class="fu">fixef</span>(gglmmTMB.us)<span class="sc">$</span>cond)</span>
+<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a><span class="co">#&gt; [1] &quot;Mean relative difference: 0.0002221048&quot;</span></span>
+<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a></span>
+<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a><span class="do">## Sigma</span></span>
+<span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a><span class="fu">all.equal.nocheck</span>(<span class="fu">sigma</span>(glme4.us), <span class="fu">sigma</span>(gglmmTMB.us))</span>
+<span id="cb10-15"><a href="#cb10-15" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span>
+<span id="cb10-16"><a href="#cb10-16" tabindex="-1"></a></span>
+<span id="cb10-17"><a href="#cb10-17" tabindex="-1"></a><span class="do">## Log likelihoods</span></span>
+<span id="cb10-18"><a href="#cb10-18" tabindex="-1"></a><span class="fu">logLik</span>(glme4.us); <span class="fu">logLik</span>(gglmmTMB.us)</span>
+<span id="cb10-19"><a href="#cb10-19" tabindex="-1"></a><span class="co">#&gt; &#39;log Lik.&#39; -191.8811 (df=5)</span></span>
+<span id="cb10-20"><a href="#cb10-20" tabindex="-1"></a><span class="co">#&gt; &#39;log Lik.&#39; -191.8809 (df=5)</span></span>
+<span id="cb10-21"><a href="#cb10-21" tabindex="-1"></a><span class="fu">all.equal.nocheck</span>(<span class="fu">logLik</span>(glme4.us), <span class="fu">logLik</span>(gglmmTMB.us))</span>
+<span id="cb10-22"><a href="#cb10-22" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
+<p>As expected, calculations related to the random-effects term differ
+slightly beyond this point.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="do">## Variance-Covariance Matrix</span></span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a><span class="fu">vcov</span>(glme4.us); <span class="fu">vcov</span>(gglmmTMB.us)<span class="sc">$</span>cond</span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a><span class="co">#&gt; 2 x 2 Matrix of class &quot;dpoMatrix&quot;</span></span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a><span class="co">#&gt;              (Intercept)           x1</span></span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a><span class="co">#&gt; (Intercept)  0.028221233 -0.001848413</span></span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a><span class="co">#&gt; x1          -0.001848413  0.038084198</span></span>
+<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a><span class="co">#&gt;              (Intercept)           x1</span></span>
+<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a><span class="co">#&gt; (Intercept)  0.028453808 -0.001749237</span></span>
+<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a><span class="co">#&gt; x1          -0.001749237  0.038270693</span></span>
+<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a><span class="fu">all.equal.nocheck</span>(<span class="fu">vcov</span>(glme4.us), <span class="fu">vcov</span>(gglmmTMB.us)<span class="sc">$</span>cond)</span>
+<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a><span class="co">#&gt; [1] &quot;Mean relative difference: 0.008820021&quot;</span></span>
+<span id="cb11-12"><a href="#cb11-12" tabindex="-1"></a></span>
+<span id="cb11-13"><a href="#cb11-13" tabindex="-1"></a><span class="do">## Variance and Covariance Components</span></span>
+<span id="cb11-14"><a href="#cb11-14" tabindex="-1"></a><span class="fu">all.equal.nocheck</span>(<span class="fu">VarCorr</span>(glme4.us)<span class="sc">$</span>group,</span>
+<span id="cb11-15"><a href="#cb11-15" tabindex="-1"></a>          <span class="fu">VarCorr</span>(gglmmTMB.us)<span class="sc">$</span>cond<span class="sc">$</span>group)</span>
+<span id="cb11-16"><a href="#cb11-16" tabindex="-1"></a><span class="co">#&gt; [1] &quot;Mean relative difference: 0.001268453&quot;</span></span>
+<span id="cb11-17"><a href="#cb11-17" tabindex="-1"></a></span>
+<span id="cb11-18"><a href="#cb11-18" tabindex="-1"></a><span class="do">## Conditional Modes of the Random Effects</span></span>
+<span id="cb11-19"><a href="#cb11-19" tabindex="-1"></a><span class="fu">all.equal.nocheck</span>(<span class="fu">ranef</span>(glme4.us)<span class="sc">$</span>group, <span class="fu">ranef</span>(gglmmTMB.us)<span class="sc">$</span>cond<span class="sc">$</span>group)</span>
+<span id="cb11-20"><a href="#cb11-20" tabindex="-1"></a><span class="co">#&gt; [1] &quot;Component \&quot;(Intercept)\&quot;: Mean relative difference: 0.0009258143&quot;</span></span>
+<span id="cb11-21"><a href="#cb11-21" tabindex="-1"></a><span class="co">#&gt; [2] &quot;Component \&quot;x1\&quot;: Mean relative difference: 0.0007570482&quot;</span></span></code></pre></div>
+</div>
+<div id="diagonal" class="section level3">
+<h3>Diagonal</h3>
+<p>The syntax is the same for fitting a heterogeneous diagonal
+covariance structure for <code>lme4</code> and <code>glmmTMB</code>. It
+changes when we want to fit a <em>homogeneous</em> diagonal covariance
+structure.</p>
+<p>To fit a homogeneous diagonal covariance structure we would
+write:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a>lme4.us <span class="ot">&lt;-</span> <span class="fu">lmer</span>(Reaction <span class="sc">~</span> Days <span class="sc">+</span> <span class="fu">diag</span>(Days <span class="sc">|</span> Subject, <span class="at">hom =</span> <span class="cn">TRUE</span>), sleepstudy)</span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a>glmmTMB.us <span class="ot">&lt;-</span> <span class="fu">glmmTMB</span>(Reaction <span class="sc">~</span> Days <span class="sc">+</span> <span class="fu">homdiag</span>(Days <span class="sc">|</span> Subject), sleepstudy)</span></code></pre></div>
+<p>We will focus on comparisons of an estimated <em>heterogeneous</em>
+diagonal covariance structure.</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a>form <span class="ot">&lt;-</span> y <span class="sc">~</span> <span class="dv">1</span> <span class="sc">+</span> x1 <span class="sc">*</span> x2 <span class="sc">+</span> <span class="fu">diag</span>(<span class="dv">1</span><span class="sc">|</span>group)</span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a>dat.diag<span class="sc">$</span>y <span class="ot">&lt;-</span> <span class="fu">simulate</span>(form[<span class="sc">-</span><span class="dv">2</span>], </span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a>                       <span class="at">newdata =</span> dat.diag,</span>
+<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a>                       <span class="at">family =</span> gaussian,</span>
+<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a>                       <span class="at">newparams =</span> <span class="fu">list</span>(<span class="at">beta =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">7</span>, <span class="dv">5</span>, <span class="sc">-</span><span class="dv">100</span>, <span class="dv">20</span>),</span>
+<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a>                                        <span class="at">theta =</span> <span class="fu">c</span>(<span class="fl">2.5</span>),</span>
+<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a>                                        <span class="at">sigma =</span> <span class="dv">2</span>))[[<span class="dv">1</span>]]</span></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a>lme4.diag <span class="ot">&lt;-</span> <span class="fu">lmer</span>(form, <span class="at">data =</span> dat.diag, <span class="at">REML =</span> <span class="st">&quot;FALSE&quot;</span>)</span>
+<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a>glmmTMB.diag <span class="ot">&lt;-</span> <span class="fu">glmmTMB</span>(form, <span class="at">dat =</span> dat.diag)</span>
+<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a></span>
+<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a><span class="do">## Fixed effects</span></span>
+<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a><span class="fu">fixef</span>(lme4.diag); <span class="fu">fixef</span>(glmmTMB.diag)<span class="sc">$</span>cond</span>
+<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a><span class="co">#&gt; (Intercept)          x1          x2       x1:x2 </span></span>
+<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a><span class="co">#&gt;   -6.484337    5.111952 -100.045319   20.037624</span></span>
+<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a><span class="co">#&gt; (Intercept)          x1          x2       x1:x2 </span></span>
+<span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a><span class="co">#&gt;   -6.484329    5.111952 -100.045319   20.037624</span></span>
+<span id="cb14-10"><a href="#cb14-10" tabindex="-1"></a><span class="fu">all.equal.nocheck</span>(<span class="fu">fixef</span>(lme4.diag), <span class="fu">fixef</span>(glmmTMB.diag)<span class="sc">$</span>cond)</span>
+<span id="cb14-11"><a href="#cb14-11" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span>
+<span id="cb14-12"><a href="#cb14-12" tabindex="-1"></a></span>
+<span id="cb14-13"><a href="#cb14-13" tabindex="-1"></a><span class="do">## Sigma</span></span>
+<span id="cb14-14"><a href="#cb14-14" tabindex="-1"></a><span class="fu">sigma</span>(lme4.diag); <span class="fu">sigma</span>(glmmTMB.diag)</span>
+<span id="cb14-15"><a href="#cb14-15" tabindex="-1"></a><span class="co">#&gt; [1] 2.156913</span></span>
+<span id="cb14-16"><a href="#cb14-16" tabindex="-1"></a><span class="co">#&gt; [1] 2.156913</span></span>
+<span id="cb14-17"><a href="#cb14-17" tabindex="-1"></a><span class="fu">all.equal.nocheck</span>(<span class="fu">sigma</span>(lme4.diag), <span class="fu">sigma</span>(glmmTMB.diag))</span>
+<span id="cb14-18"><a href="#cb14-18" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span>
+<span id="cb14-19"><a href="#cb14-19" tabindex="-1"></a></span>
+<span id="cb14-20"><a href="#cb14-20" tabindex="-1"></a><span class="do">## Log likelihoods</span></span>
+<span id="cb14-21"><a href="#cb14-21" tabindex="-1"></a><span class="fu">logLik</span>(lme4.diag); <span class="fu">logLik</span>(glmmTMB.diag)</span>
+<span id="cb14-22"><a href="#cb14-22" tabindex="-1"></a><span class="co">#&gt; &#39;log Lik.&#39; -915.8749 (df=6)</span></span>
+<span id="cb14-23"><a href="#cb14-23" tabindex="-1"></a><span class="co">#&gt; &#39;log Lik.&#39; -915.8749 (df=6)</span></span>
+<span id="cb14-24"><a href="#cb14-24" tabindex="-1"></a><span class="fu">all.equal.nocheck</span>(<span class="fu">logLik</span>(lme4.diag), <span class="fu">logLik</span>(glmmTMB.diag))</span>
+<span id="cb14-25"><a href="#cb14-25" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span>
+<span id="cb14-26"><a href="#cb14-26" tabindex="-1"></a></span>
+<span id="cb14-27"><a href="#cb14-27" tabindex="-1"></a><span class="do">## Variance-Covariance Matrix</span></span>
+<span id="cb14-28"><a href="#cb14-28" tabindex="-1"></a><span class="fu">vcov</span>(lme4.diag); <span class="fu">vcov</span>(glmmTMB.diag)<span class="sc">$</span>cond</span>
+<span id="cb14-29"><a href="#cb14-29" tabindex="-1"></a><span class="co">#&gt; 4 x 4 Matrix of class &quot;dpoMatrix&quot;</span></span>
+<span id="cb14-30"><a href="#cb14-30" tabindex="-1"></a><span class="co">#&gt;               (Intercept)            x1            x2         x1:x2</span></span>
+<span id="cb14-31"><a href="#cb14-31" tabindex="-1"></a><span class="co">#&gt; (Intercept)  0.6899487512 -0.0006448103  0.0008535087 -0.0005702566</span></span>
+<span id="cb14-32"><a href="#cb14-32" tabindex="-1"></a><span class="co">#&gt; x1          -0.0006448103  0.0135575383 -0.0008171565  0.0025591747</span></span>
+<span id="cb14-33"><a href="#cb14-33" tabindex="-1"></a><span class="co">#&gt; x2           0.0008535087 -0.0008171565  0.0107715407 -0.0021874630</span></span>
+<span id="cb14-34"><a href="#cb14-34" tabindex="-1"></a><span class="co">#&gt; x1:x2       -0.0005702566  0.0025591747 -0.0021874630  0.0115262417</span></span>
+<span id="cb14-35"><a href="#cb14-35" tabindex="-1"></a><span class="co">#&gt;               (Intercept)            x1            x2         x1:x2</span></span>
+<span id="cb14-36"><a href="#cb14-36" tabindex="-1"></a><span class="co">#&gt; (Intercept)  0.6899487512 -0.0006448095  0.0008535098 -0.0005702545</span></span>
+<span id="cb14-37"><a href="#cb14-37" tabindex="-1"></a><span class="co">#&gt; x1          -0.0006448095  0.0135576594 -0.0008169500  0.0025595384</span></span>
+<span id="cb14-38"><a href="#cb14-38" tabindex="-1"></a><span class="co">#&gt; x2           0.0008535098 -0.0008169500  0.0107718878 -0.0021868490</span></span>
+<span id="cb14-39"><a href="#cb14-39" tabindex="-1"></a><span class="co">#&gt; x1:x2       -0.0005702545  0.0025595384 -0.0021868490  0.0115273226</span></span>
+<span id="cb14-40"><a href="#cb14-40" tabindex="-1"></a><span class="fu">all.equal.nocheck</span>(<span class="fu">vcov</span>(lme4.diag), <span class="fu">vcov</span>(glmmTMB.diag)<span class="sc">$</span>cond)</span>
+<span id="cb14-41"><a href="#cb14-41" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span>
+<span id="cb14-42"><a href="#cb14-42" tabindex="-1"></a></span>
+<span id="cb14-43"><a href="#cb14-43" tabindex="-1"></a><span class="do">## Variance and Covariance Components</span></span>
+<span id="cb14-44"><a href="#cb14-44" tabindex="-1"></a><span class="fu">all.equal.nocheck</span>(<span class="fu">VarCorr</span>(lme4.diag)[[<span class="dv">1</span>]], </span>
+<span id="cb14-45"><a href="#cb14-45" tabindex="-1"></a>          <span class="fu">VarCorr</span>(glmmTMB.diag)<span class="sc">$</span>cond<span class="sc">$</span>group)</span>
+<span id="cb14-46"><a href="#cb14-46" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span>
+<span id="cb14-47"><a href="#cb14-47" tabindex="-1"></a></span>
+<span id="cb14-48"><a href="#cb14-48" tabindex="-1"></a><span class="do">## Conditional Modes of the Random Effects</span></span>
+<span id="cb14-49"><a href="#cb14-49" tabindex="-1"></a><span class="fu">all.equal.nocheck</span>(<span class="fu">ranef</span>(lme4.diag)<span class="sc">$</span>group, <span class="fu">ranef</span>(glmmTMB.diag)<span class="sc">$</span>cond<span class="sc">$</span>group)</span>
+<span id="cb14-50"><a href="#cb14-50" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
+</div>
+<div id="compound-symmetry" class="section level3">
+<h3>Compound Symmetry</h3>
+<p>Similar to the diagonal case, the syntax is the same for fitting a
+heterogeneous compound symmetry covariance structure for
+<code>lme4</code> and <code>glmmTMB</code>:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a>lme4.us <span class="ot">&lt;-</span> <span class="fu">lmer</span>(Reaction <span class="sc">~</span> Days <span class="sc">+</span> <span class="fu">cs</span>(Days <span class="sc">|</span> Subject, <span class="at">hom =</span> <span class="cn">TRUE</span>), sleepstudy)</span>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a>glmmTMB.us <span class="ot">&lt;-</span> <span class="fu">glmmTMB</span>(Reaction <span class="sc">~</span> Days <span class="sc">+</span> <span class="fu">cs</span>(Days <span class="sc">|</span> Subject), sleepstudy)</span></code></pre></div>
+<p>Again, it differs when we want to fit a <em>homogeneous</em> compound
+symmetry covariance structure, which we will use for our
+comparisons.</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a>simGroup <span class="ot">&lt;-</span> <span class="cf">function</span>(g, <span class="at">n=</span><span class="dv">6</span>, <span class="at">phi=</span><span class="fl">0.6</span>) {</span>
+<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a>  x <span class="ot">&lt;-</span> MASS<span class="sc">::</span><span class="fu">mvrnorm</span>(<span class="at">mu =</span> <span class="fu">rep</span>(<span class="dv">0</span>,n),</span>
+<span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a>                     <span class="at">Sigma =</span> phi<span class="sc">^</span><span class="fu">as.matrix</span>(<span class="fu">dist</span>(<span class="dv">1</span><span class="sc">:</span>n)) )  </span>
+<span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a>  y <span class="ot">&lt;-</span> x <span class="sc">+</span> <span class="fu">rnorm</span>(n)                              </span>
+<span id="cb16-5"><a href="#cb16-5" tabindex="-1"></a>  times <span class="ot">&lt;-</span> <span class="fu">factor</span>(<span class="dv">1</span><span class="sc">:</span>n)</span>
+<span id="cb16-6"><a href="#cb16-6" tabindex="-1"></a>  group <span class="ot">&lt;-</span> <span class="fu">factor</span>(<span class="fu">rep</span>(g,n))</span>
+<span id="cb16-7"><a href="#cb16-7" tabindex="-1"></a>  <span class="fu">data.frame</span>(y, times, group)</span>
+<span id="cb16-8"><a href="#cb16-8" tabindex="-1"></a>}</span>
+<span id="cb16-9"><a href="#cb16-9" tabindex="-1"></a></span>
+<span id="cb16-10"><a href="#cb16-10" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb16-11"><a href="#cb16-11" tabindex="-1"></a>dat.cs <span class="ot">&lt;-</span> <span class="fu">do.call</span>(<span class="st">&quot;rbind&quot;</span>, <span class="fu">lapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">2000</span>, simGroup))</span></code></pre></div>
+<!-- this is the slow one ... cache? -->
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a>lme4.cs <span class="ot">&lt;-</span> <span class="fu">lmer</span>(y <span class="sc">~</span> times <span class="sc">+</span> <span class="fu">cs</span>(<span class="dv">0</span> <span class="sc">+</span> times <span class="sc">|</span> group, <span class="at">hom =</span> <span class="cn">TRUE</span>), <span class="at">data =</span> dat.cs, <span class="at">REML =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a>glmmTMB.cs <span class="ot">&lt;-</span> <span class="fu">glmmTMB</span>(y <span class="sc">~</span> times <span class="sc">+</span> <span class="fu">homcs</span>(<span class="dv">0</span> <span class="sc">+</span> times <span class="sc">|</span> group), <span class="at">data =</span> dat.cs)</span>
+<span id="cb17-3"><a href="#cb17-3" tabindex="-1"></a><span class="co">#&gt; Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence</span></span>
+<span id="cb17-4"><a href="#cb17-4" tabindex="-1"></a><span class="co">#&gt; problem; non-positive-definite Hessian matrix. See vignette(&#39;troubleshooting&#39;)</span></span>
+<span id="cb17-5"><a href="#cb17-5" tabindex="-1"></a></span>
+<span id="cb17-6"><a href="#cb17-6" tabindex="-1"></a><span class="do">## Fixed effects</span></span>
+<span id="cb17-7"><a href="#cb17-7" tabindex="-1"></a><span class="fu">fixef</span>(lme4.cs); <span class="fu">fixef</span>(glmmTMB.cs)<span class="sc">$</span>cond</span>
+<span id="cb17-8"><a href="#cb17-8" tabindex="-1"></a><span class="co">#&gt;  (Intercept)       times2       times3       times4       times5       times6 </span></span>
+<span id="cb17-9"><a href="#cb17-9" tabindex="-1"></a><span class="co">#&gt; -0.003601028  0.024047964  0.004877225  0.052026751  0.049632430  0.058705282</span></span>
+<span id="cb17-10"><a href="#cb17-10" tabindex="-1"></a><span class="co">#&gt;  (Intercept)       times2       times3       times4       times5       times6 </span></span>
+<span id="cb17-11"><a href="#cb17-11" tabindex="-1"></a><span class="co">#&gt; -0.003623487  0.024074739  0.004896515  0.052053537  0.049659692  0.058730881</span></span>
+<span id="cb17-12"><a href="#cb17-12" tabindex="-1"></a><span class="fu">all.equal.nocheck</span>(<span class="fu">fixef</span>(lme4.cs), <span class="fu">fixef</span>(glmmTMB.cs)<span class="sc">$</span>cond)</span>
+<span id="cb17-13"><a href="#cb17-13" tabindex="-1"></a><span class="co">#&gt; [1] &quot;Mean relative difference: 0.00076817&quot;</span></span>
+<span id="cb17-14"><a href="#cb17-14" tabindex="-1"></a></span>
+<span id="cb17-15"><a href="#cb17-15" tabindex="-1"></a><span class="do">## Sigma</span></span>
+<span id="cb17-16"><a href="#cb17-16" tabindex="-1"></a><span class="fu">sigma</span>(lme4.cs); <span class="fu">sigma</span>(glmmTMB.cs)</span>
+<span id="cb17-17"><a href="#cb17-17" tabindex="-1"></a><span class="co">#&gt; [1] 1.006676</span></span>
+<span id="cb17-18"><a href="#cb17-18" tabindex="-1"></a><span class="co">#&gt; [1] 1.041603</span></span>
+<span id="cb17-19"><a href="#cb17-19" tabindex="-1"></a><span class="fu">all.equal.nocheck</span>(<span class="fu">sigma</span>(lme4.cs), <span class="fu">sigma</span>(glmmTMB.cs))</span>
+<span id="cb17-20"><a href="#cb17-20" tabindex="-1"></a><span class="co">#&gt; [1] &quot;Mean relative difference: 0.03469535&quot;</span></span>
+<span id="cb17-21"><a href="#cb17-21" tabindex="-1"></a></span>
+<span id="cb17-22"><a href="#cb17-22" tabindex="-1"></a><span class="do">## Log likelihoods</span></span>
+<span id="cb17-23"><a href="#cb17-23" tabindex="-1"></a><span class="fu">logLik</span>(lme4.cs); <span class="fu">logLik</span>(glmmTMB.cs)</span>
+<span id="cb17-24"><a href="#cb17-24" tabindex="-1"></a><span class="co">#&gt; &#39;log Lik.&#39; -20850.22 (df=18)</span></span>
+<span id="cb17-25"><a href="#cb17-25" tabindex="-1"></a><span class="co">#&gt; &#39;log Lik.&#39; NA (df=9)</span></span>
+<span id="cb17-26"><a href="#cb17-26" tabindex="-1"></a><span class="fu">all.equal.nocheck</span>(<span class="fu">logLik</span>(lme4.cs), <span class="fu">logLik</span>(glmmTMB.cs))</span>
+<span id="cb17-27"><a href="#cb17-27" tabindex="-1"></a><span class="co">#&gt; [1] &quot;&#39;is.NA&#39; value mismatch: 1 in current 0 in target&quot;</span></span>
+<span id="cb17-28"><a href="#cb17-28" tabindex="-1"></a></span>
+<span id="cb17-29"><a href="#cb17-29" tabindex="-1"></a><span class="do">## Variance-Covariance Matrix</span></span>
+<span id="cb17-30"><a href="#cb17-30" tabindex="-1"></a><span class="fu">all.equal.nocheck</span>(<span class="fu">vcov</span>(lme4.cs), <span class="fu">vcov</span>(glmmTMB.cs)<span class="sc">$</span>cond)</span>
+<span id="cb17-31"><a href="#cb17-31" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span>
+<span id="cb17-32"><a href="#cb17-32" tabindex="-1"></a></span>
+<span id="cb17-33"><a href="#cb17-33" tabindex="-1"></a><span class="do">## Variance and Covariance Components</span></span>
+<span id="cb17-34"><a href="#cb17-34" tabindex="-1"></a><span class="fu">all.equal.nocheck</span>(<span class="fu">VarCorr</span>(lme4.cs)[[<span class="dv">1</span>]], </span>
+<span id="cb17-35"><a href="#cb17-35" tabindex="-1"></a>          <span class="fu">VarCorr</span>(glmmTMB.cs)<span class="sc">$</span>cond<span class="sc">$</span>group)</span>
+<span id="cb17-36"><a href="#cb17-36" tabindex="-1"></a><span class="co">#&gt; [1] &quot;Mean relative difference: 0.0255908&quot;</span></span>
+<span id="cb17-37"><a href="#cb17-37" tabindex="-1"></a></span>
+<span id="cb17-38"><a href="#cb17-38" tabindex="-1"></a><span class="do">## Conditional Modes of the Random Effects</span></span>
+<span id="cb17-39"><a href="#cb17-39" tabindex="-1"></a><span class="fu">all.equal.nocheck</span>(<span class="fu">ranef</span>(lme4.cs)<span class="sc">$</span>group, <span class="fu">ranef</span>(glmmTMB.cs)<span class="sc">$</span>cond<span class="sc">$</span>group)</span>
+<span id="cb17-40"><a href="#cb17-40" tabindex="-1"></a><span class="co">#&gt; Warning in sqrt(as.numeric(object$diag.cov.random)): NaNs produced</span></span>
+<span id="cb17-41"><a href="#cb17-41" tabindex="-1"></a><span class="co">#&gt; [1] &quot;Component \&quot;times1\&quot;: Mean relative difference: 0.07526183&quot;</span></span>
+<span id="cb17-42"><a href="#cb17-42" tabindex="-1"></a><span class="co">#&gt; [2] &quot;Component \&quot;times2\&quot;: Mean relative difference: 0.07067207&quot;</span></span>
+<span id="cb17-43"><a href="#cb17-43" tabindex="-1"></a><span class="co">#&gt; [3] &quot;Component \&quot;times3\&quot;: Mean relative difference: 0.06907347&quot;</span></span>
+<span id="cb17-44"><a href="#cb17-44" tabindex="-1"></a><span class="co">#&gt; [4] &quot;Component \&quot;times4\&quot;: Mean relative difference: 0.06932043&quot;</span></span>
+<span id="cb17-45"><a href="#cb17-45" tabindex="-1"></a><span class="co">#&gt; [5] &quot;Component \&quot;times5\&quot;: Mean relative difference: 0.07089525&quot;</span></span>
+<span id="cb17-46"><a href="#cb17-46" tabindex="-1"></a><span class="co">#&gt; [6] &quot;Component \&quot;times6\&quot;: Mean relative difference: 0.07424953&quot;</span></span>
+<span id="cb17-47"><a href="#cb17-47" tabindex="-1"></a></span>
+<span id="cb17-48"><a href="#cb17-48" tabindex="-1"></a><span class="do">## Comparing against the predicted rho value</span></span>
+<span id="cb17-49"><a href="#cb17-49" tabindex="-1"></a>lme4.rho <span class="ot">&lt;-</span> <span class="fu">get.cor1</span>(lme4.cs)</span>
+<span id="cb17-50"><a href="#cb17-50" tabindex="-1"></a>glmmTMB.rho <span class="ot">&lt;-</span> <span class="fu">get.cor1</span>(glmmTMB.cs)</span>
+<span id="cb17-51"><a href="#cb17-51" tabindex="-1"></a>lme4.rho; glmmTMB.rho</span>
+<span id="cb17-52"><a href="#cb17-52" tabindex="-1"></a><span class="co">#&gt; [1] 0.3642212</span></span>
+<span id="cb17-53"><a href="#cb17-53" tabindex="-1"></a><span class="co">#&gt; [1] 0.3925523</span></span>
+<span id="cb17-54"><a href="#cb17-54" tabindex="-1"></a><span class="fu">all.equal.nocheck</span>(lme4.rho, glmmTMB.rho)</span>
+<span id="cb17-55"><a href="#cb17-55" tabindex="-1"></a><span class="co">#&gt; [1] &quot;Mean relative difference: 0.07778538&quot;</span></span></code></pre></div>
+</div>
+<div id="autoregressive-order-1" class="section level3">
+<h3>Autoregressive Order 1</h3>
+<p>For this comparison, we focus on a simulated data set with <span class="math inline">\(\rho = 0.7\)</span>.</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb18-2"><a href="#cb18-2" tabindex="-1"></a>dat.ar1 <span class="ot">&lt;-</span> <span class="fu">do.call</span>(<span class="st">&quot;rbind&quot;</span>, <span class="fu">lapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">2000</span>, <span class="cf">function</span>(g) <span class="fu">simGroup</span>(g, <span class="at">phi =</span> <span class="fl">0.7</span>)))</span></code></pre></div>
+<p>Unlike the diagonal and compound symmetry case, the syntax differs
+for fitting either a heterogeneous or a homogeneous AR1 model for
+<code>lme4</code> and <code>glmmTMB</code>.</p>
+<p>For a <em>heterogeneous</em> AR1 covariance structure we would write
+the following:</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a>lme4.ar1 <span class="ot">&lt;-</span> <span class="fu">lmer</span>(y <span class="sc">~</span> times <span class="sc">+</span> <span class="fu">ar1</span>(<span class="dv">0</span> <span class="sc">+</span> times <span class="sc">|</span> group), <span class="at">data =</span> dat.ar1, <span class="at">REML =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb19-2"><a href="#cb19-2" tabindex="-1"></a>glmmTMB.ar1 <span class="ot">&lt;-</span> <span class="fu">glmmTMB</span>(y <span class="sc">~</span> times <span class="sc">+</span> <span class="fu">hetar1</span>(<span class="dv">0</span> <span class="sc">+</span> times <span class="sc">|</span> group), <span class="at">data =</span> dat.ar1)</span></code></pre></div>
+<p>We will instead focus on comparisons for a <em>homogeneous</em> AR1
+covariance structure.</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" tabindex="-1"></a>lme4.ar1 <span class="ot">&lt;-</span> <span class="fu">lmer</span>(y <span class="sc">~</span> times <span class="sc">+</span> <span class="fu">ar1</span>(<span class="dv">0</span> <span class="sc">+</span> times <span class="sc">|</span> group, <span class="at">hom =</span> <span class="cn">TRUE</span>), <span class="at">data =</span> dat.ar1, <span class="at">REML =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb20-2"><a href="#cb20-2" tabindex="-1"></a>glmmTMB.ar1 <span class="ot">&lt;-</span> <span class="fu">glmmTMB</span>(y <span class="sc">~</span> times <span class="sc">+</span> <span class="fu">ar1</span>(<span class="dv">0</span> <span class="sc">+</span> times <span class="sc">|</span> group), <span class="at">data =</span> dat.ar1)</span>
+<span id="cb20-3"><a href="#cb20-3" tabindex="-1"></a></span>
+<span id="cb20-4"><a href="#cb20-4" tabindex="-1"></a><span class="do">## Fixed effects</span></span>
+<span id="cb20-5"><a href="#cb20-5" tabindex="-1"></a><span class="fu">fixef</span>(lme4.ar1); <span class="fu">fixef</span>(glmmTMB.ar1)<span class="sc">$</span>cond</span>
+<span id="cb20-6"><a href="#cb20-6" tabindex="-1"></a><span class="co">#&gt; (Intercept)      times2      times3      times4      times5      times6 </span></span>
+<span id="cb20-7"><a href="#cb20-7" tabindex="-1"></a><span class="co">#&gt; -0.01323035  0.03297898  0.02689120  0.07389340  0.05907372  0.05783090</span></span>
+<span id="cb20-8"><a href="#cb20-8" tabindex="-1"></a><span class="co">#&gt; (Intercept)      times2      times3      times4      times5      times6 </span></span>
+<span id="cb20-9"><a href="#cb20-9" tabindex="-1"></a><span class="co">#&gt; -0.01322832  0.03297395  0.02686705  0.07391147  0.05907415  0.05782987</span></span>
+<span id="cb20-10"><a href="#cb20-10" tabindex="-1"></a><span class="fu">all.equal.nocheck</span>(<span class="fu">fixef</span>(lme4.ar1), <span class="fu">fixef</span>(glmmTMB.ar1)<span class="sc">$</span>cond)</span>
+<span id="cb20-11"><a href="#cb20-11" tabindex="-1"></a><span class="co">#&gt; [1] &quot;Mean relative difference: 0.0001922882&quot;</span></span>
+<span id="cb20-12"><a href="#cb20-12" tabindex="-1"></a></span>
+<span id="cb20-13"><a href="#cb20-13" tabindex="-1"></a><span class="do">## Sigma</span></span>
+<span id="cb20-14"><a href="#cb20-14" tabindex="-1"></a><span class="fu">sigma</span>(lme4.ar1); <span class="fu">sigma</span>(glmmTMB.ar1)</span>
+<span id="cb20-15"><a href="#cb20-15" tabindex="-1"></a><span class="co">#&gt; [1] 0.9807867</span></span>
+<span id="cb20-16"><a href="#cb20-16" tabindex="-1"></a><span class="co">#&gt; [1] 0.9807956</span></span>
+<span id="cb20-17"><a href="#cb20-17" tabindex="-1"></a><span class="fu">all.equal.nocheck</span>(<span class="fu">sigma</span>(lme4.ar1), <span class="fu">sigma</span>(glmmTMB.ar1))</span>
+<span id="cb20-18"><a href="#cb20-18" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span>
+<span id="cb20-19"><a href="#cb20-19" tabindex="-1"></a></span>
+<span id="cb20-20"><a href="#cb20-20" tabindex="-1"></a><span class="do">## Log likelihoods</span></span>
+<span id="cb20-21"><a href="#cb20-21" tabindex="-1"></a><span class="fu">logLik</span>(lme4.ar1); <span class="fu">logLik</span>(glmmTMB.ar1)</span>
+<span id="cb20-22"><a href="#cb20-22" tabindex="-1"></a><span class="co">#&gt; &#39;log Lik.&#39; -20427.08 (df=18)</span></span>
+<span id="cb20-23"><a href="#cb20-23" tabindex="-1"></a><span class="co">#&gt; &#39;log Lik.&#39; -20427.08 (df=9)</span></span>
+<span id="cb20-24"><a href="#cb20-24" tabindex="-1"></a><span class="fu">all.equal.nocheck</span>(<span class="fu">logLik</span>(lme4.ar1), <span class="fu">logLik</span>(glmmTMB.ar1))</span>
+<span id="cb20-25"><a href="#cb20-25" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span>
+<span id="cb20-26"><a href="#cb20-26" tabindex="-1"></a></span>
+<span id="cb20-27"><a href="#cb20-27" tabindex="-1"></a><span class="do">## Variance-Covariance Matrix</span></span>
+<span id="cb20-28"><a href="#cb20-28" tabindex="-1"></a><span class="fu">all.equal.nocheck</span>(<span class="fu">vcov</span>(lme4.ar1), <span class="fu">vcov</span>(glmmTMB.ar1)<span class="sc">$</span>cond)</span>
+<span id="cb20-29"><a href="#cb20-29" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span>
+<span id="cb20-30"><a href="#cb20-30" tabindex="-1"></a></span>
+<span id="cb20-31"><a href="#cb20-31" tabindex="-1"></a><span class="do">## Variance and Covariance Components</span></span>
+<span id="cb20-32"><a href="#cb20-32" tabindex="-1"></a><span class="fu">all.equal.nocheck</span>(<span class="fu">VarCorr</span>(lme4.ar1)<span class="sc">$</span>group, </span>
+<span id="cb20-33"><a href="#cb20-33" tabindex="-1"></a>                  <span class="fu">VarCorr</span>(glmmTMB.ar1)<span class="sc">$</span>cond<span class="sc">$</span>group)</span>
+<span id="cb20-34"><a href="#cb20-34" tabindex="-1"></a><span class="co">#&gt; [1] &quot;Mean relative difference: 4.596753e-05&quot;</span></span>
+<span id="cb20-35"><a href="#cb20-35" tabindex="-1"></a></span>
+<span id="cb20-36"><a href="#cb20-36" tabindex="-1"></a><span class="do">## Conditional Modes of the Random Effects</span></span>
+<span id="cb20-37"><a href="#cb20-37" tabindex="-1"></a><span class="fu">all.equal.nocheck</span>(<span class="fu">ranef</span>(lme4.ar1)<span class="sc">$</span>group, <span class="fu">ranef</span>(glmmTMB.ar1)<span class="sc">$</span>cond<span class="sc">$</span>group)</span>
+<span id="cb20-38"><a href="#cb20-38" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span>
+<span id="cb20-39"><a href="#cb20-39" tabindex="-1"></a></span>
+<span id="cb20-40"><a href="#cb20-40" tabindex="-1"></a><span class="do">## Comparing against the predicted rho value</span></span>
+<span id="cb20-41"><a href="#cb20-41" tabindex="-1"></a>lme4.ar1.rho <span class="ot">&lt;-</span> <span class="fu">get.cor1</span>(lme4.ar1)</span>
+<span id="cb20-42"><a href="#cb20-42" tabindex="-1"></a>glmmTMB.ar1.rho <span class="ot">&lt;-</span> <span class="fu">get.cor1</span>(glmmTMB.ar1)</span>
+<span id="cb20-43"><a href="#cb20-43" tabindex="-1"></a>lme4.ar1.rho; glmmTMB.ar1.rho</span>
+<span id="cb20-44"><a href="#cb20-44" tabindex="-1"></a><span class="co">#&gt; [1] 0.6865827</span></span>
+<span id="cb20-45"><a href="#cb20-45" tabindex="-1"></a><span class="co">#&gt; [1] 0.6866054</span></span>
+<span id="cb20-46"><a href="#cb20-46" tabindex="-1"></a><span class="fu">all.equal.nocheck</span>(lme4.ar1.rho, glmmTMB.ar1.rho)</span>
+<span id="cb20-47"><a href="#cb20-47" tabindex="-1"></a><span class="co">#&gt; [1] &quot;Mean relative difference: 3.318898e-05&quot;</span></span></code></pre></div>
+</div>
+</div>
+<div id="references" class="section level2 unnumbered">
+<h2 class="unnumbered">References</h2>
+<div id="refs" class="references csl-bib-body hanging-indent">
+<div id="ref-Bates_JSS" class="csl-entry">
+Bates, Douglas, Martin Mächler, Ben Bolker, and Steve Walker. 2015.
+<span>“Fitting Linear Mixed-Effects Models Using <span class="nocase">lme4</span>.”</span> <em>Journal of Statistical
+Software</em> 67 (1): 1–48. <a href="https://doi.org/10.18637/jss.v067.i01">https://doi.org/10.18637/jss.v067.i01</a>.
+</div>
+</div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

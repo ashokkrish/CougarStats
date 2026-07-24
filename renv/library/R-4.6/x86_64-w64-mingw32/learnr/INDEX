@@ -1,0 +1,37 @@
+answer                  Question answer options
+available_tutorials     List available tutorials
+correct                 Mark submission as correct or incorrect
+disable_all_tags        Disable all html tags
+duplicate_env           Create a duplicate of an environment
+event_register_handler
+                        Register an event handler callback
+external_evaluator      External execution evaluator
+filesystem_storage      Filesystem-based storage for tutor state data
+finalize_question       Finalize a question
+format.tutorial_question_answer
+                        Formatting and printing quizzes, questions, and
+                        answers
+get_tutorial_info       Get information about the current tutorial
+get_tutorial_state      Observe the user's progress in the tutorial
+initialize_tutorial     Initialize tutorial R Markdown extensions
+knit_print.tutorial_question
+                        Knitr quiz print methods
+one_time                Wrap an expression that will be executed one
+                        time in an event handler
+question_checkbox       Checkbox question
+question_numeric        Number question
+question_radio          Radio question
+question_text           Text box question
+question_ui_initialize
+                        Custom question methods
+quiz                    Tutorial quiz questions
+random_phrases_add      Add phrases to the bank of random phrases
+random_praise           Random praise and encouragement
+run_tutorial            Run a tutorial
+safe                    Execute R code in a safe R environment
+tutorial                Tutorial document format
+tutorial_html_dependency
+                        Tutorial HTML dependency
+tutorial_options        Set tutorial options
+tutorial_package_dependencies
+                        List tutorial dependencies

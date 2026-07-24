@@ -1,0 +1,44 @@
+Package: rootSolve
+Version: 1.8.2.4
+Title: Nonlinear Root Finding, Equilibrium and Steady-State Analysis of
+        Ordinary Differential Equations
+Authors@R: c(person("Karline","Soetaert", role = c("aut", "cre"), 
+                     email = "karline.soetaert@nioz.nl"),
+             person("Alan C.","Hindmarsh", role = "ctb", 
+                     comment = "files lsodes.f, sparse.f"),
+             person("S.C.","Eisenstat", role = "ctb", 
+                     comment = "file sparse.f"),
+             person("Cleve","Moler", role = "ctb", 
+                     comment = "file dlinpk.f"),
+             person("Jack","Dongarra", role = "ctb", 
+                     comment = "file dlinpk.f"),
+             person("Youcef", "Saad", role = "ctb", 
+                     comment = "file dsparsk.f"))
+Maintainer: Karline Soetaert <karline.soetaert@nioz.nl>
+Author: Karline Soetaert [aut, cre],
+  Alan C. Hindmarsh [ctb] (files lsodes.f, sparse.f),
+  S.C. Eisenstat [ctb] (file sparse.f),
+  Cleve Moler [ctb] (file dlinpk.f),
+  Jack Dongarra [ctb] (file dlinpk.f),
+  Youcef Saad [ctb] (file dsparsk.f)
+Depends: R (>= 2.01)
+Imports: stats, graphics, grDevices
+Description: Routines to find the root of nonlinear functions, and to perform steady-state and equilibrium analysis of ordinary differential equations (ODE). 
+  Includes routines that: (1) generate gradient and jacobian matrices (full and banded),
+  (2) find roots of non-linear equations by the 'Newton-Raphson' method, 
+  (3) estimate steady-state conditions of a system of (differential) equations in full, banded or sparse form, using the 'Newton-Raphson' method, or by dynamically running,
+  (4) solve the steady-state conditions for uni-and multicomponent 1-D, 2-D, and 3-D partial differential equations, that have been converted to ordinary differential equations
+    by numerical differencing (using the method-of-lines approach).
+  Includes fortran code.
+License: GPL (>= 2)
+NeedsCompilation: yes
+Packaged: 2023-09-21 07:48:18 UTC; karlines
+Repository: CRAN
+Date/Publication: 2023-09-21 12:10:02 UTC
+Built: R 4.6.0; x86_64-w64-mingw32; 2026-04-21 00:41:43 UTC; windows
+Archs: x64
+RemoteType: standard
+RemotePkgRef: rootSolve
+RemoteRef: rootSolve
+RemoteRepos: https://cran.rstudio.com
+RemoteSha.Version: 1.8.2.4

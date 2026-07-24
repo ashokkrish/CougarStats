@@ -1,0 +1,59 @@
+> # test.imports.R: test packages that import or suggest rpart.plot
+> 
+> source("test.prolog.R")
+Loading required package: rpart
+> 
+> library(DStree)
+Loading required package: pec
+Loading required package: prodlim
+Loading required package: Ecdat
+Loading required package: Ecfun
+
+Attaching package: 'Ecfun'
+
+The following object is masked from 'package:base':
+
+    sign
+
+
+Attaching package: 'Ecdat'
+
+The following object is masked from 'package:datasets':
+
+    Orange
+
+> par(mfrow=c(3,3))
+> example(plot.DStree)
+
+plt.DS> data(cost)
+
+plt.DS> # Discretize observed days to years
+plt.DS> d.cost<-dis.cost(cost)
+
+plt.DS> # Grow tree
+plt.DS> fit <- DStree(time~prevStroke+age+sex+alcohol+smoke,status="status",data=d.cost)
+
+plt.DS> #Plot tree and survival probabilities
+plt.DS> plot(fit)
+
+plt.DS> #survival probabilities are in the first plot
+plt.DS> 
+plt.DS> #Plot tree and hazard probabilities for terminal leaves 4 and 15
+plt.DS> plot(fit,prob="haz",select=c("2","7"))
+> plot(fit, prob="surv", box.palette="auto", main="DStree\nbox.palette=\"auto\"")
+> plot(fit, prob="surv", type=1, nn=TRUE, yesno=2, box.palette="Oranges",
++      main="DStree\ntype=1, nn=TRUE, yesno=2\nbox.palette=\"Oranges\"", cex.main=.9)
+> fit$method <- "anova"; class(fit) <- "rpart"  # hacks from DStree.plot.R
+> rpart.plot(fit, trace=1)
+box.palette (not diverging): #F7FBFF (near ghostwhite) to #6BAED6 (near skyblue3)
+fitted[5] is NA
+cex 1   xlim c(0, 1)   ylim c(0, 1)
+> print(rpart.rules(fit))
+ cbind(y, status)                     
+              2.6 when age >=       75
+              4.7 when age is 56 to 75
+               NA when age <  56      
+> 
+> par(old.par)
+> 
+> source("test.epilog.R")

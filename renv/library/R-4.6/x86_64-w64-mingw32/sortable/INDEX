@@ -1,0 +1,18 @@
+add_rank_list           Add a rank list inside bucket list.
+bucket_list             Create a bucket list.
+chain_js_events         Chain multiple JavaScript events
+is_modules_enabled      Check if shiny modules are enabled for
+                        'sortable'.
+is_sortable_options     Check if object is sortable options.
+question_rank           Ranking question for learnr tutorials.
+rank_list               Create a ranking item list.
+render_sortable         Widget render function for use in Shiny.
+sortable_js             Creates an htmlwidget with embedded
+                        'SortableJS' library.
+sortable_js_capture_input
+                        Construct JavaScript method to capture Shiny
+                        inputs on change.
+sortable_options        Define options to pass to a sortable object.
+sortable_output         Widget output function for use in Shiny.
+update_bucket_list      Change the value of a bucket list.
+update_rank_list        Change the text or labels of a rank list.

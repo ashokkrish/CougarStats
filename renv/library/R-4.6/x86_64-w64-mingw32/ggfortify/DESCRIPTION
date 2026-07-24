@@ -1,0 +1,55 @@
+Package: ggfortify
+Type: Package
+Title: Data Visualization Tools for Statistical Analysis Results
+Version: 0.4.19
+Date: 2025-07-26
+Authors@R: c(
+  person("Masaaki", "Horikoshi", role = c("aut"),
+         email = "sinhrks@gmail.com"),
+  person("Yuan", "Tang", role = c("aut", "cre"),
+         email = "terrytangyuan@gmail.com",
+         comment = c(ORCID = "0000-0001-5243-233X")),
+  person("Austin", "Dickey", role = c("ctb")),
+  person("Matthias", "Grenié", role = c("ctb")),
+  person("Ryan", "Thompson", role = c("ctb")),
+  person("Luciano", "Selzer", role = c("ctb")),
+  person("Dario", "Strbenac", role = c("ctb")),
+  person("Kirill", "Voronin", role = c("ctb")),
+  person("Damir", "Pulatov", role = c("ctb"))
+  )
+Maintainer: Yuan Tang <terrytangyuan@gmail.com>
+URL: https://github.com/sinhrks/ggfortify
+BugReports: https://github.com/sinhrks/ggfortify/issues
+Encoding: UTF-8
+Description: Unified plotting tools for statistics commonly used, such as GLM,
+    time series, PCA families, clustering and survival analysis. The package offers
+    a single plotting interface for these analysis results and plots in a unified
+    style using 'ggplot2'.
+License: MIT + file LICENSE
+Depends: methods, ggplot2 (>= 2.0.0)
+Imports: dplyr (>= 0.3), tidyr, gridExtra, grid, scales, stringr,
+        tibble
+Suggests: testthat, cluster, changepoint, fGarch, forecast, ggrepel,
+        glmnet, grDevices, KFAS, knitr, lintr, mapdata, markdown, MASS,
+        MSwM, nlme, raster, ROCR, sp, stats, strucchange, survival,
+        timeSeries, tseries, utils, vars, xts, zoo, lfda
+RoxygenNote: 7.3.2
+NeedsCompilation: no
+Packaged: 2025-07-27 01:13:24 UTC; terrytangyuan
+Author: Masaaki Horikoshi [aut],
+  Yuan Tang [aut, cre] (ORCID: <https://orcid.org/0000-0001-5243-233X>),
+  Austin Dickey [ctb],
+  Matthias Grenié [ctb],
+  Ryan Thompson [ctb],
+  Luciano Selzer [ctb],
+  Dario Strbenac [ctb],
+  Kirill Voronin [ctb],
+  Damir Pulatov [ctb]
+Repository: CRAN
+Date/Publication: 2025-07-27 05:20:02 UTC
+Built: R 4.6.0; ; 2026-06-09 03:36:06 UTC; windows
+RemoteType: standard
+RemotePkgRef: ggfortify
+RemoteRef: ggfortify
+RemoteRepos: https://cran.rstudio.com
+RemoteSha.Version: 0.4.19

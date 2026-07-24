@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>Solving Quadratic Programs with OSQP</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Solving Quadratic Programs with OSQP</h1>
+
+
+
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p>The <code>osqp</code> package provides R bindings to the <a href="https://osqp.org/">OSQP</a> (Operator Splitting Quadratic Program)
+solver. OSQP solves convex quadratic programs of the form <span class="math display">\[
+\begin{array}{ll}
+  \mbox{minimize} &amp; \frac{1}{2} x^T P x + q^T x \\
+  \mbox{subject to} &amp; l \leq A x \leq u
+\end{array}
+\]</span> where <span class="math inline">\(x \in \mathbf{R}^n\)</span>
+is the optimization variable, <span class="math inline">\(P \in
+\mathbf{S}^n_+\)</span> is a positive semidefinite matrix, <span class="math inline">\(q \in
+\mathbf{R}^n\)</span>, <span class="math inline">\(A \in \mathbf{R}^{m
+\times n}\)</span>, and <span class="math inline">\(l, u \in
+\mathbf{R}^m\)</span> (with elements possibly equal to <span class="math inline">\(-\infty\)</span> or <span class="math inline">\(+\infty\)</span>).</p>
+<p>The solver is based on the Alternating Direction Method of
+Multipliers (ADMM). Key features include:</p>
+<ul>
+<li><strong>Efficient</strong>: exploits structure in sparse QPs,
+requires only a single matrix factorization</li>
+<li><strong>Robust</strong>: places no requirements on problem data
+(e.g., P need not be strictly positive definite); detects primal and
+dual infeasibility</li>
+<li><strong>Warm starting</strong>: allows reusing previous solutions to
+speed up parametric solves</li>
+<li><strong>Polishing</strong>: an optional step to obtain high-accuracy
+solutions</li>
+</ul>
+<p>For algorithm details see <a href="https://doi.org/10.1007/s12532-020-00179-2">Stellato et al.
+(2020)</a>.</p>
+</div>
+<div id="migrating-from-osqp-1.0" class="section level2">
+<h2>Migrating from osqp &lt; 1.0</h2>
+<p>Version 1.0.0 brings two major changes:</p>
+<ol style="list-style-type: decimal">
+<li><p><strong>S7 classes replace R6.</strong> The model object returned
+by <code>osqp()</code> is now an S7 object. Methods are accessed with
+<code>@</code> instead of <code>$</code>:</p>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Old (&lt; 1.0)</th>
+<th align="left">New (&gt;= 1.0)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left"><code>model$Solve()</code></td>
+<td align="left"><code>model@Solve()</code></td>
+</tr>
+<tr class="even">
+<td align="left"><code>model$Update(...)</code></td>
+<td align="left"><code>model@Update(...)</code></td>
+</tr>
+<tr class="odd">
+<td align="left"><code>model$WarmStart(...)</code></td>
+<td align="left"><code>model@WarmStart(...)</code></td>
+</tr>
+<tr class="even">
+<td align="left"><code>model$ColdStart()</code></td>
+<td align="left"><code>model@ColdStart()</code></td>
+</tr>
+<tr class="odd">
+<td align="left"><code>model$GetParams()</code></td>
+<td align="left"><code>model@GetParams()</code></td>
+</tr>
+<tr class="even">
+<td align="left"><code>model$GetDims()</code></td>
+<td align="left"><code>model@GetDims()</code></td>
+</tr>
+<tr class="odd">
+<td align="left"><code>model$UpdateSettings(...)</code></td>
+<td align="left"><code>model@UpdateSettings(...)</code></td>
+</tr>
+<tr class="even">
+<td align="left"><code>model$GetData(...)</code></td>
+<td align="left"><code>model@GetData(...)</code></td>
+</tr>
+</tbody>
+</table>
+<p>During the transition, the old <code>$</code> syntax still works but
+emits a deprecation warning. It will be removed in a future
+release.</p></li>
+<li><p><strong>OSQP C library upgraded from 0.6.3 to 1.0.0.</strong>
+Some solver settings have been renamed:</p>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Old (0.6.x)</th>
+<th align="left">New (1.0)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left"><code>warm_start</code></td>
+<td align="left"><code>warm_starting</code></td>
+</tr>
+<tr class="even">
+<td align="left"><code>polish</code></td>
+<td align="left"><code>polishing</code></td>
+</tr>
+</tbody>
+</table>
+<p>The old names still work but emit a deprecation warning. They will be
+removed in a future release.</p></li>
+</ol>
+</div>
+<div id="setup-and-solve" class="section level2">
+<h2>Setup and Solve</h2>
+<p>We demonstrate the basic workflow with a small QP. First, load the
+required packages.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(osqp)</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">library</span>(Matrix)</span></code></pre></div>
+<p>Define the problem data. The objective matrix <code>P</code> and
+constraint matrix <code>A</code> should be sparse (from the
+<code>Matrix</code> package). Only the upper triangular part of
+<code>P</code> is used.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>P <span class="ot">&lt;-</span> <span class="fu">Matrix</span>(<span class="fu">c</span>(<span class="fl">4.</span>, <span class="fl">1.</span>,</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>              <span class="fl">1.</span>, <span class="fl">2.</span>), <span class="dv">2</span>, <span class="dv">2</span>, <span class="at">sparse =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>q <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">1.</span>, <span class="fl">1.</span>)</span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>A <span class="ot">&lt;-</span> <span class="fu">Matrix</span>(<span class="fu">c</span>(<span class="fl">1.</span>, <span class="fl">1.</span>, <span class="fl">0.</span>,</span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>              <span class="fl">1.</span>, <span class="fl">0.</span>, <span class="fl">1.</span>), <span class="dv">3</span>, <span class="dv">2</span>, <span class="at">sparse =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>l <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">1.</span>, <span class="fl">0.</span>, <span class="fl">0.</span>)</span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a>u <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">1.</span>, <span class="fl">0.7</span>, <span class="fl">0.7</span>)</span></code></pre></div>
+<p>This corresponds to: <span class="math display">\[
+\begin{array}{ll}
+  \mbox{minimize} &amp; \frac{1}{2} x^T \begin{bmatrix}4 &amp; 1\\ 1
+&amp; 2 \end{bmatrix} x + \begin{bmatrix}1 \\ 1\end{bmatrix}^T x \\
+  \mbox{subject to} &amp; \begin{bmatrix}1 \\ 0 \\ 0\end{bmatrix} \leq
+\begin{bmatrix} 1 &amp; 1\\ 1 &amp; 0\\ 0 &amp; 1\end{bmatrix} x
+\leq  \begin{bmatrix}1 \\ 0.7 \\ 0.7\end{bmatrix}
+\end{array}
+\]</span></p>
+<p>Create the model and solve.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">osqp</span>(P, q, A, l, u, <span class="at">pars =</span> <span class="fu">osqpSettings</span>(<span class="at">verbose =</span> <span class="cn">FALSE</span>))</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>result <span class="ot">&lt;-</span> model<span class="sc">@</span><span class="fu">Solve</span>()</span></code></pre></div>
+<p>The result is a list containing the primal solution <code>x</code>,
+dual solution <code>y</code>, and solver information in
+<code>info</code>.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>result<span class="sc">$</span>x</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="co">#&gt; [1] 0.3013757 0.6983957</span></span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>result<span class="sc">$</span>y</span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="co">#&gt; [1] -2.904627e+00 -1.385901e-18  2.055120e-01</span></span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>result<span class="sc">$</span>info<span class="sc">$</span>status</span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a><span class="co">#&gt; [1] &quot;solved&quot;</span></span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>result<span class="sc">$</span>info<span class="sc">$</span>obj_val</span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="co">#&gt; [1] 1.879662</span></span></code></pre></div>
+<div id="convenience-function" class="section level3">
+<h3>Convenience Function</h3>
+<p>For one-shot solves where you do not need to update the problem
+afterward, <code>solve_osqp()</code> provides a simpler interface.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>result <span class="ot">&lt;-</span> <span class="fu">solve_osqp</span>(P, q, A, l, u, <span class="at">pars =</span> <span class="fu">osqpSettings</span>(<span class="at">verbose =</span> <span class="cn">FALSE</span>))</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>result<span class="sc">$</span>x</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="co">#&gt; [1] 0.3013757 0.6983957</span></span></code></pre></div>
+</div>
+</div>
+<div id="updating-problem-data" class="section level2">
+<h2>Updating Problem Data</h2>
+<p>A major advantage of OSQP is the ability to update problem vectors
+and matrices <em>without</em> re-running the full setup. This avoids
+re-factorizing the KKT system and is much faster than creating a new
+model from scratch.</p>
+<div id="updating-vectors" class="section level3">
+<h3>Updating Vectors</h3>
+<p>The vectors <span class="math inline">\(q\)</span>, <span class="math inline">\(l\)</span>, and <span class="math inline">\(u\)</span> can be updated freely.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>q_new <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">2.</span>, <span class="fl">3.</span>)</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>l_new <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">2.</span>, <span class="sc">-</span><span class="fl">1.</span>, <span class="sc">-</span><span class="fl">1.</span>)</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>u_new <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">2.</span>, <span class="fl">2.5</span>, <span class="fl">2.5</span>)</span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>model<span class="sc">@</span><span class="fu">Update</span>(<span class="at">q =</span> q_new, <span class="at">l =</span> l_new, <span class="at">u =</span> u_new)</span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>result <span class="ot">&lt;-</span> model<span class="sc">@</span><span class="fu">Solve</span>()</span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>result<span class="sc">$</span>x</span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a><span class="co">#&gt; [1] 0.7499527 1.2499010</span></span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>result<span class="sc">$</span>info<span class="sc">$</span>status</span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a><span class="co">#&gt; [1] &quot;solved&quot;</span></span></code></pre></div>
+</div>
+<div id="updating-matrices" class="section level3">
+<h3>Updating Matrices</h3>
+<p>The nonzero values of <span class="math inline">\(P\)</span> and
+<span class="math inline">\(A\)</span> can be updated as long as the
+<strong>sparsity pattern remains the same</strong>. Pass the new nonzero
+values via <code>Px</code> and <code>Ax</code>.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># Create new matrices with same sparsity pattern</span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>P_new <span class="ot">&lt;-</span> <span class="fu">Matrix</span>(<span class="fu">c</span>(<span class="fl">5.</span>, <span class="fl">1.5</span>,</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>                  <span class="fl">1.5</span>, <span class="fl">1.</span>), <span class="dv">2</span>, <span class="dv">2</span>, <span class="at">sparse =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>A_new <span class="ot">&lt;-</span> <span class="fu">Matrix</span>(<span class="fu">c</span>(<span class="fl">1.2</span>, <span class="fl">1.5</span>, <span class="fl">0.</span>,</span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>                  <span class="fl">1.1</span>, <span class="fl">0.</span>, <span class="fl">0.8</span>), <span class="dv">3</span>, <span class="dv">2</span>, <span class="at">sparse =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a></span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a><span class="co"># Update only the nonzero values</span></span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>model<span class="sc">@</span><span class="fu">Update</span>(<span class="at">Px =</span> <span class="fu">triu</span>(P_new)<span class="sc">@</span>x, <span class="at">Ax =</span> A_new<span class="sc">@</span>x)</span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a>result <span class="ot">&lt;-</span> model<span class="sc">@</span><span class="fu">Solve</span>()</span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a>result<span class="sc">$</span>x</span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a><span class="co">#&gt; [1] 0.1813419 1.6204746</span></span></code></pre></div>
+<p>Note that for <code>P</code> you must pass only the <strong>upper
+triangular</strong> nonzero values (using <code>triu()</code>), since
+OSQP stores <span class="math inline">\(P\)</span> in upper triangular
+form.</p>
+</div>
+</div>
+<div id="warm-starting" class="section level2">
+<h2>Warm Starting</h2>
+<p>When solving a sequence of related problems (e.g., in a parameter
+sweep or iterative algorithm), warm starting can dramatically reduce the
+number of ADMM iterations by initializing the solver with a good
+starting point.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="co"># Solve original problem</span></span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">osqp</span>(P, q, A, l, u, <span class="at">pars =</span> <span class="fu">osqpSettings</span>(<span class="at">verbose =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>                                                   <span class="at">warm_starting =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>res1 <span class="ot">&lt;-</span> model<span class="sc">@</span><span class="fu">Solve</span>()</span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>cold_iters <span class="ot">&lt;-</span> res1<span class="sc">$</span>info<span class="sc">$</span>iter</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a></span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a><span class="co"># Warm start with previous solution</span></span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a>model<span class="sc">@</span><span class="fu">WarmStart</span>(<span class="at">x =</span> res1<span class="sc">$</span>x, <span class="at">y =</span> res1<span class="sc">$</span>y)</span>
+<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a>res2 <span class="ot">&lt;-</span> model<span class="sc">@</span><span class="fu">Solve</span>()</span>
+<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a>warm_iters <span class="ot">&lt;-</span> res2<span class="sc">$</span>info<span class="sc">$</span>iter</span>
+<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a></span>
+<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Cold start iterations:&quot;</span>, cold_iters, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a><span class="co">#&gt; Cold start iterations: 25</span></span>
+<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Warm start iterations:&quot;</span>, warm_iters, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a><span class="co">#&gt; Warm start iterations: 25</span></span></code></pre></div>
+<p>You can warm start with just the primal variables (<code>x</code>),
+just the dual variables (<code>y</code>), or both. To reset the iterate
+and start from scratch, use <code>ColdStart()</code>.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>model<span class="sc">@</span><span class="fu">ColdStart</span>()</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>res3 <span class="ot">&lt;-</span> model<span class="sc">@</span><span class="fu">Solve</span>()</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;After cold start:&quot;</span>, res3<span class="sc">$</span>info<span class="sc">$</span>iter, <span class="st">&quot;iterations</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="co">#&gt; After cold start: 25 iterations</span></span></code></pre></div>
+</div>
+<div id="solver-settings" class="section level2">
+<h2>Solver Settings</h2>
+<p>Solver behavior is controlled through <code>osqpSettings()</code>.
+Settings are passed at model creation time, and a subset can be updated
+afterward.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="co"># Tighter tolerances and solution polishing</span></span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>settings <span class="ot">&lt;-</span> <span class="fu">osqpSettings</span>(</span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>  <span class="at">eps_abs   =</span> <span class="fl">1e-06</span>,</span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a>  <span class="at">eps_rel   =</span> <span class="fl">1e-06</span>,</span>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a>  <span class="at">polishing =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a>  <span class="at">verbose   =</span> <span class="cn">FALSE</span></span>
+<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a>)</span>
+<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">osqp</span>(P, q, A, l, u, <span class="at">pars =</span> settings)</span>
+<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a>result <span class="ot">&lt;-</span> model<span class="sc">@</span><span class="fu">Solve</span>()</span>
+<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a>result<span class="sc">$</span>info<span class="sc">$</span>obj_val</span>
+<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a><span class="co">#&gt; [1] 1.88</span></span></code></pre></div>
+<div id="key-settings" class="section level3">
+<h3>Key Settings</h3>
+<table>
+<colgroup>
+<col width="29%" />
+<col width="29%" />
+<col width="41%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">Setting</th>
+<th align="center">Default</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left"><code>eps_abs</code></td>
+<td align="center">1e-3</td>
+<td align="left">Absolute convergence tolerance</td>
+</tr>
+<tr class="even">
+<td align="left"><code>eps_rel</code></td>
+<td align="center">1e-3</td>
+<td align="left">Relative convergence tolerance</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>max_iter</code></td>
+<td align="center">4000</td>
+<td align="left">Maximum ADMM iterations</td>
+</tr>
+<tr class="even">
+<td align="left"><code>polishing</code></td>
+<td align="center">FALSE</td>
+<td align="left">Polish the ADMM solution for higher accuracy</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>warm_starting</code></td>
+<td align="center">TRUE</td>
+<td align="left">Enable warm starting</td>
+</tr>
+<tr class="even">
+<td align="left"><code>verbose</code></td>
+<td align="center">TRUE</td>
+<td align="left">Print solver output</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>scaling</code></td>
+<td align="center">10</td>
+<td align="left">Data scaling iterations (0 to disable)</td>
+</tr>
+<tr class="even">
+<td align="left"><code>adaptive_rho</code></td>
+<td align="center">1</td>
+<td align="left">Adaptive ADMM step size (0=off, 1=iterations)</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>time_limit</code></td>
+<td align="center">1e10</td>
+<td align="left">Time limit in seconds</td>
+</tr>
+<tr class="even">
+<td align="left"><code>check_termination</code></td>
+<td align="center">25</td>
+<td align="left">Check termination every N iterations (0 to
+disable)</td>
+</tr>
+</tbody>
+</table>
+<p>See <code>?osqpSettings</code> for the full list.</p>
+</div>
+<div id="updating-settings" class="section level3">
+<h3>Updating Settings</h3>
+<p>Some settings can be updated after the model is created.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a>model<span class="sc">@</span><span class="fu">UpdateSettings</span>(<span class="fu">osqpSettings</span>(<span class="at">max_iter =</span> <span class="dv">2000</span><span class="dt">L</span>))</span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>pars <span class="ot">&lt;-</span> model<span class="sc">@</span><span class="fu">GetParams</span>()</span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a>pars<span class="sc">$</span>max_iter</span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a><span class="co">#&gt; [1] 2000</span></span></code></pre></div>
+</div>
+<div id="retrieving-problem-dimensions" class="section level3">
+<h3>Retrieving Problem Dimensions</h3>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a>dims <span class="ot">&lt;-</span> model<span class="sc">@</span><span class="fu">GetDims</span>()</span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Variables:&quot;</span>, dims[[<span class="st">&quot;n&quot;</span>]], <span class="st">&quot; Constraints:&quot;</span>, dims[[<span class="st">&quot;m&quot;</span>]], <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a><span class="co">#&gt; Variables: 2  Constraints: 3</span></span></code></pre></div>
+</div>
+</div>
+<div id="result-object" class="section level2">
+<h2>Result Object</h2>
+<p>The result from <code>Solve()</code> contains:</p>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Field</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left"><code>x</code></td>
+<td align="left">Primal solution (<span class="math inline">\(n\)</span>-vector)</td>
+</tr>
+<tr class="even">
+<td align="left"><code>y</code></td>
+<td align="left">Dual solution (<span class="math inline">\(m\)</span>-vector)</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>prim_inf_cert</code></td>
+<td align="left">Primal infeasibility certificate (if applicable)</td>
+</tr>
+<tr class="even">
+<td align="left"><code>dual_inf_cert</code></td>
+<td align="left">Dual infeasibility certificate (if applicable)</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>info</code></td>
+<td align="left">List of solver information</td>
+</tr>
+</tbody>
+</table>
+<p>The <code>info</code> list includes:</p>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Field</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left"><code>iter</code></td>
+<td align="left">Number of ADMM iterations</td>
+</tr>
+<tr class="even">
+<td align="left"><code>status</code></td>
+<td align="left">Status string (e.g., <code>&quot;solved&quot;</code>)</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>status_val</code></td>
+<td align="left">Status integer code</td>
+</tr>
+<tr class="even">
+<td align="left"><code>obj_val</code></td>
+<td align="left">Optimal objective value</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>prim_res</code></td>
+<td align="left">Primal residual</td>
+</tr>
+<tr class="even">
+<td align="left"><code>dual_res</code></td>
+<td align="left">Dual residual</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>setup_time</code></td>
+<td align="left">Time for setup (seconds)</td>
+</tr>
+<tr class="even">
+<td align="left"><code>solve_time</code></td>
+<td align="left">Time for solve (seconds)</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>run_time</code></td>
+<td align="left">Total time (seconds)</td>
+</tr>
+</tbody>
+</table>
+<div id="status-values" class="section level3">
+<h3>Status Values</h3>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Status</th>
+<th align="left">Constant</th>
+<th align="center">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">solved</td>
+<td align="left"><code>OSQP_SOLVED</code></td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="left">solved inaccurate</td>
+<td align="left"><code>OSQP_SOLVED_INACCURATE</code></td>
+<td align="center">2</td>
+</tr>
+<tr class="odd">
+<td align="left">primal infeasible</td>
+<td align="left"><code>OSQP_PRIMAL_INFEASIBLE</code></td>
+<td align="center">-3</td>
+</tr>
+<tr class="even">
+<td align="left">dual infeasible</td>
+<td align="left"><code>OSQP_DUAL_INFEASIBLE</code></td>
+<td align="center">-4</td>
+</tr>
+<tr class="odd">
+<td align="left">maximum iterations reached</td>
+<td align="left"><code>OSQP_MAX_ITER_REACHED</code></td>
+<td align="center">-2</td>
+</tr>
+<tr class="even">
+<td align="left">run time limit reached</td>
+<td align="left"><code>OSQP_TIME_LIMIT_REACHED</code></td>
+<td align="center">-6</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="example-lasso-regression" class="section level2">
+<h2>Example: Lasso Regression</h2>
+<p><a href="https://en.wikipedia.org/wiki/Lasso_(statistics)">Lasso</a>
+performs sparse linear regression by adding an <span class="math inline">\(\ell_1\)</span> penalty: <span class="math display">\[
+\mbox{minimize} \quad \frac{1}{2} \| A_d x - b \|_2^2 + \gamma \| x \|_1
+\]</span></p>
+<p>This can be reformulated as a QP by introducing auxiliary variables
+<span class="math inline">\(y\)</span> and <span class="math inline">\(t\)</span>: <span class="math display">\[
+\begin{array}{ll}
+  \mbox{minimize}   &amp; \frac{1}{2} y^T y + \gamma \mathbf{1}^T t \\
+  \mbox{subject to} &amp; y = A_d x - b \\
+                     &amp; -t \leq x \leq t
+\end{array}
+\]</span></p>
+<p>Because the regularization parameter <span class="math inline">\(\gamma\)</span> appears only in the linear cost
+<span class="math inline">\(q\)</span>, we can update it without
+re-factorizing the KKT system. Warm starting makes sweeping over <span class="math inline">\(\gamma\)</span> very efficient.</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">10</span>   <span class="co"># number of features</span></span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a>m <span class="ot">&lt;-</span> <span class="dv">100</span>  <span class="co"># number of observations</span></span>
+<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a></span>
+<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a><span class="co"># Generate random data</span></span>
+<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a>Ad <span class="ot">&lt;-</span> <span class="fu">Matrix</span>(<span class="fu">rnorm</span>(m <span class="sc">*</span> n), m, n, <span class="at">sparse =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a>Ad <span class="ot">&lt;-</span> <span class="fu">as</span>(Ad, <span class="st">&quot;CsparseMatrix&quot;</span>)</span>
+<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a>x_true <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(n) <span class="sc">*</span> (<span class="fu">runif</span>(n) <span class="sc">&gt;</span> <span class="fl">0.8</span>) <span class="sc">/</span> <span class="fu">sqrt</span>(n)</span>
+<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a>b <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(Ad <span class="sc">%*%</span> x_true <span class="sc">+</span> <span class="fl">0.5</span> <span class="sc">*</span> <span class="fu">rnorm</span>(m))</span>
+<span id="cb13-10"><a href="#cb13-10" tabindex="-1"></a></span>
+<span id="cb13-11"><a href="#cb13-11" tabindex="-1"></a><span class="co"># Auxiliary matrices</span></span>
+<span id="cb13-12"><a href="#cb13-12" tabindex="-1"></a>In <span class="ot">&lt;-</span> <span class="fu">Diagonal</span>(n)</span>
+<span id="cb13-13"><a href="#cb13-13" tabindex="-1"></a>Im <span class="ot">&lt;-</span> <span class="fu">Diagonal</span>(m)</span>
+<span id="cb13-14"><a href="#cb13-14" tabindex="-1"></a>On <span class="ot">&lt;-</span> <span class="fu">Matrix</span>(<span class="dv">0</span>, n, n, <span class="at">sparse =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb13-15"><a href="#cb13-15" tabindex="-1"></a>Onm <span class="ot">&lt;-</span> <span class="fu">Matrix</span>(<span class="dv">0</span>, n, m, <span class="at">sparse =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb13-16"><a href="#cb13-16" tabindex="-1"></a></span>
+<span id="cb13-17"><a href="#cb13-17" tabindex="-1"></a><span class="co"># QP formulation: variables are (x, y, t)</span></span>
+<span id="cb13-18"><a href="#cb13-18" tabindex="-1"></a>P <span class="ot">&lt;-</span> <span class="fu">bdiag</span>(On, Im, On)</span>
+<span id="cb13-19"><a href="#cb13-19" tabindex="-1"></a>q <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">0</span>, <span class="dv">2</span> <span class="sc">*</span> n <span class="sc">+</span> m)</span>
+<span id="cb13-20"><a href="#cb13-20" tabindex="-1"></a>A <span class="ot">&lt;-</span> <span class="fu">rbind</span>(</span>
+<span id="cb13-21"><a href="#cb13-21" tabindex="-1"></a>  <span class="fu">cbind</span>(Ad, <span class="sc">-</span>Im, <span class="fu">Matrix</span>(<span class="dv">0</span>, m, n, <span class="at">sparse =</span> <span class="cn">TRUE</span>)),</span>
+<span id="cb13-22"><a href="#cb13-22" tabindex="-1"></a>  <span class="fu">cbind</span>(In, Onm, <span class="sc">-</span>In),</span>
+<span id="cb13-23"><a href="#cb13-23" tabindex="-1"></a>  <span class="fu">cbind</span>(In, Onm,  In)</span>
+<span id="cb13-24"><a href="#cb13-24" tabindex="-1"></a>)</span>
+<span id="cb13-25"><a href="#cb13-25" tabindex="-1"></a>l <span class="ot">&lt;-</span> <span class="fu">c</span>(b, <span class="fu">rep</span>(<span class="sc">-</span><span class="cn">Inf</span>, n), <span class="fu">rep</span>(<span class="dv">0</span>, n))</span>
+<span id="cb13-26"><a href="#cb13-26" tabindex="-1"></a>u <span class="ot">&lt;-</span> <span class="fu">c</span>(b, <span class="fu">rep</span>(<span class="dv">0</span>, n), <span class="fu">rep</span>(<span class="cn">Inf</span>, n))</span>
+<span id="cb13-27"><a href="#cb13-27" tabindex="-1"></a></span>
+<span id="cb13-28"><a href="#cb13-28" tabindex="-1"></a><span class="co"># Setup model once</span></span>
+<span id="cb13-29"><a href="#cb13-29" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">osqp</span>(P, q, A, l, u,</span>
+<span id="cb13-30"><a href="#cb13-30" tabindex="-1"></a>              <span class="at">pars =</span> <span class="fu">osqpSettings</span>(<span class="at">warm_starting =</span> <span class="cn">TRUE</span>, <span class="at">verbose =</span> <span class="cn">FALSE</span>))</span>
+<span id="cb13-31"><a href="#cb13-31" tabindex="-1"></a></span>
+<span id="cb13-32"><a href="#cb13-32" tabindex="-1"></a><span class="co"># Solve for a range of gamma values</span></span>
+<span id="cb13-33"><a href="#cb13-33" tabindex="-1"></a>gammas <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="fl">0.1</span>, <span class="fl">2.0</span>, <span class="at">length.out =</span> <span class="dv">10</span>)</span>
+<span id="cb13-34"><a href="#cb13-34" tabindex="-1"></a>results <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">gamma =</span> gammas, <span class="at">nnz =</span> <span class="fu">integer</span>(<span class="dv">10</span>), <span class="at">obj =</span> <span class="fu">numeric</span>(<span class="dv">10</span>))</span>
+<span id="cb13-35"><a href="#cb13-35" tabindex="-1"></a></span>
+<span id="cb13-36"><a href="#cb13-36" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_along</span>(gammas)) {</span>
+<span id="cb13-37"><a href="#cb13-37" tabindex="-1"></a>  gamma <span class="ot">&lt;-</span> gammas[i]</span>
+<span id="cb13-38"><a href="#cb13-38" tabindex="-1"></a>  q_new <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">rep</span>(<span class="dv">0</span>, n <span class="sc">+</span> m), <span class="fu">rep</span>(gamma, n))</span>
+<span id="cb13-39"><a href="#cb13-39" tabindex="-1"></a>  model<span class="sc">@</span><span class="fu">Update</span>(<span class="at">q =</span> q_new)</span>
+<span id="cb13-40"><a href="#cb13-40" tabindex="-1"></a>  res <span class="ot">&lt;-</span> model<span class="sc">@</span><span class="fu">Solve</span>()</span>
+<span id="cb13-41"><a href="#cb13-41" tabindex="-1"></a>  x_hat <span class="ot">&lt;-</span> res<span class="sc">$</span>x[<span class="dv">1</span><span class="sc">:</span>n]</span>
+<span id="cb13-42"><a href="#cb13-42" tabindex="-1"></a>  results<span class="sc">$</span>nnz[i] <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="fu">abs</span>(x_hat) <span class="sc">&gt;</span> <span class="fl">1e-4</span>)</span>
+<span id="cb13-43"><a href="#cb13-43" tabindex="-1"></a>  results<span class="sc">$</span>obj[i] <span class="ot">&lt;-</span> res<span class="sc">$</span>info<span class="sc">$</span>obj_val</span>
+<span id="cb13-44"><a href="#cb13-44" tabindex="-1"></a>}</span>
+<span id="cb13-45"><a href="#cb13-45" tabindex="-1"></a></span>
+<span id="cb13-46"><a href="#cb13-46" tabindex="-1"></a>results</span>
+<span id="cb13-47"><a href="#cb13-47" tabindex="-1"></a><span class="co">#&gt;        gamma nnz      obj</span></span>
+<span id="cb13-48"><a href="#cb13-48" tabindex="-1"></a><span class="co">#&gt; 1  0.1000000  10 11.37229</span></span>
+<span id="cb13-49"><a href="#cb13-49" tabindex="-1"></a><span class="co">#&gt; 2  0.3111111  10 11.50198</span></span>
+<span id="cb13-50"><a href="#cb13-50" tabindex="-1"></a><span class="co">#&gt; 3  0.5222222  10 11.63016</span></span>
+<span id="cb13-51"><a href="#cb13-51" tabindex="-1"></a><span class="co">#&gt; 4  0.7333333  10 11.75222</span></span>
+<span id="cb13-52"><a href="#cb13-52" tabindex="-1"></a><span class="co">#&gt; 5  0.9444444   9 11.86987</span></span>
+<span id="cb13-53"><a href="#cb13-53" tabindex="-1"></a><span class="co">#&gt; 6  1.1555556  10 11.98151</span></span>
+<span id="cb13-54"><a href="#cb13-54" tabindex="-1"></a><span class="co">#&gt; 7  1.3666667  10 12.09577</span></span>
+<span id="cb13-55"><a href="#cb13-55" tabindex="-1"></a><span class="co">#&gt; 8  1.5777778  10 12.19795</span></span>
+<span id="cb13-56"><a href="#cb13-56" tabindex="-1"></a><span class="co">#&gt; 9  1.7888889   9 12.30656</span></span>
+<span id="cb13-57"><a href="#cb13-57" tabindex="-1"></a><span class="co">#&gt; 10 2.0000000   9 12.41062</span></span></code></pre></div>
+</div>
+<div id="example-portfolio-optimization" class="section level2">
+<h2>Example: Portfolio Optimization</h2>
+<p>Mean-variance portfolio optimization allocates assets to maximize
+risk-adjusted return: <span class="math display">\[
+\begin{array}{ll}
+  \mbox{maximize} &amp; \mu^T x - \gamma \, x^T \Sigma x \\
+  \mbox{subject to} &amp; \mathbf{1}^T x = 1 \\
+                     &amp; x \geq 0
+\end{array}
+\]</span> where <span class="math inline">\(x \in \mathbf{R}^n\)</span>
+is the portfolio, <span class="math inline">\(\mu\)</span> the expected
+returns, <span class="math inline">\(\gamma &gt; 0\)</span> the risk
+aversion, and <span class="math inline">\(\Sigma\)</span> the covariance
+matrix. Using a factor model <span class="math inline">\(\Sigma = F F^T
++ D\)</span> (with <span class="math inline">\(F \in \mathbf{R}^{n
+\times k}\)</span>, <span class="math inline">\(D\)</span> diagonal), we
+can reformulate this as: <span class="math display">\[
+\begin{array}{ll}
+  \mbox{minimize} &amp; \frac{1}{2} x^T D x + \frac{1}{2} y^T y -
+\frac{1}{2\gamma}\mu^T x \\
+  \mbox{subject to} &amp; y = F^T x \\
+                     &amp; \mathbf{1}^T x = 1 \\
+                     &amp; x \geq 0
+\end{array}
+\]</span></p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
+<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">20</span>   <span class="co"># assets</span></span>
+<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a>k <span class="ot">&lt;-</span> <span class="dv">5</span>    <span class="co"># factors</span></span>
+<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a>gamma <span class="ot">&lt;-</span> <span class="dv">1</span></span>
+<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a></span>
+<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a><span class="co"># Random factor model</span></span>
+<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a>F_mat <span class="ot">&lt;-</span> <span class="fu">Matrix</span>(<span class="fu">rnorm</span>(n <span class="sc">*</span> k) <span class="sc">*</span> (<span class="fu">runif</span>(n <span class="sc">*</span> k) <span class="sc">&gt;</span> <span class="fl">0.3</span>), n, k, <span class="at">sparse =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a>D <span class="ot">&lt;-</span> <span class="fu">Diagonal</span>(n, <span class="fu">runif</span>(n) <span class="sc">*</span> <span class="fu">sqrt</span>(k))</span>
+<span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a>mu <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(n)</span>
+<span id="cb14-10"><a href="#cb14-10" tabindex="-1"></a></span>
+<span id="cb14-11"><a href="#cb14-11" tabindex="-1"></a><span class="co"># QP data: variables are (x, y)</span></span>
+<span id="cb14-12"><a href="#cb14-12" tabindex="-1"></a>P <span class="ot">&lt;-</span> <span class="fu">bdiag</span>(D, <span class="fu">Diagonal</span>(k))</span>
+<span id="cb14-13"><a href="#cb14-13" tabindex="-1"></a>q <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="sc">-</span>mu <span class="sc">/</span> (<span class="dv">2</span> <span class="sc">*</span> gamma), <span class="fu">rep</span>(<span class="dv">0</span>, k))</span>
+<span id="cb14-14"><a href="#cb14-14" tabindex="-1"></a>A <span class="ot">&lt;-</span> <span class="fu">rbind</span>(</span>
+<span id="cb14-15"><a href="#cb14-15" tabindex="-1"></a>  <span class="fu">cbind</span>(<span class="fu">t</span>(F_mat), <span class="sc">-</span><span class="fu">Diagonal</span>(k)),                          <span class="co"># y = F&#39;x</span></span>
+<span id="cb14-16"><a href="#cb14-16" tabindex="-1"></a>  <span class="fu">cbind</span>(<span class="fu">Matrix</span>(<span class="dv">1</span>, <span class="dv">1</span>, n, <span class="at">sparse =</span> <span class="cn">TRUE</span>), <span class="fu">Matrix</span>(<span class="dv">0</span>, <span class="dv">1</span>, k, <span class="at">sparse =</span> <span class="cn">TRUE</span>)),  <span class="co"># 1&#39;x = 1</span></span>
+<span id="cb14-17"><a href="#cb14-17" tabindex="-1"></a>  <span class="fu">cbind</span>(<span class="fu">Diagonal</span>(n), <span class="fu">Matrix</span>(<span class="dv">0</span>, n, k, <span class="at">sparse =</span> <span class="cn">TRUE</span>))       <span class="co"># x &gt;= 0</span></span>
+<span id="cb14-18"><a href="#cb14-18" tabindex="-1"></a>)</span>
+<span id="cb14-19"><a href="#cb14-19" tabindex="-1"></a>l <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">rep</span>(<span class="dv">0</span>, k), <span class="dv">1</span>, <span class="fu">rep</span>(<span class="dv">0</span>, n))</span>
+<span id="cb14-20"><a href="#cb14-20" tabindex="-1"></a>u <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">rep</span>(<span class="dv">0</span>, k), <span class="dv">1</span>, <span class="fu">rep</span>(<span class="dv">1</span>, n))</span>
+<span id="cb14-21"><a href="#cb14-21" tabindex="-1"></a></span>
+<span id="cb14-22"><a href="#cb14-22" tabindex="-1"></a>result <span class="ot">&lt;-</span> <span class="fu">solve_osqp</span>(P, q, A, l, u,</span>
+<span id="cb14-23"><a href="#cb14-23" tabindex="-1"></a>                     <span class="at">pars =</span> <span class="fu">osqpSettings</span>(<span class="at">verbose =</span> <span class="cn">FALSE</span>, <span class="at">polishing =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb14-24"><a href="#cb14-24" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Status:&quot;</span>, result<span class="sc">$</span>info<span class="sc">$</span>status, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb14-25"><a href="#cb14-25" tabindex="-1"></a><span class="co">#&gt; Status: solved</span></span>
+<span id="cb14-26"><a href="#cb14-26" tabindex="-1"></a></span>
+<span id="cb14-27"><a href="#cb14-27" tabindex="-1"></a><span class="co"># Portfolio weights (first n variables)</span></span>
+<span id="cb14-28"><a href="#cb14-28" tabindex="-1"></a>weights <span class="ot">&lt;-</span> result<span class="sc">$</span>x[<span class="dv">1</span><span class="sc">:</span>n]</span>
+<span id="cb14-29"><a href="#cb14-29" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Invested assets:&quot;</span>, <span class="fu">sum</span>(weights <span class="sc">&gt;</span> <span class="fl">1e-4</span>), <span class="st">&quot;of&quot;</span>, n, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb14-30"><a href="#cb14-30" tabindex="-1"></a><span class="co">#&gt; Invested assets: 8 of 20</span></span>
+<span id="cb14-31"><a href="#cb14-31" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Sum of weights:&quot;</span>, <span class="fu">round</span>(<span class="fu">sum</span>(weights), <span class="dv">6</span>), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb14-32"><a href="#cb14-32" tabindex="-1"></a><span class="co">#&gt; Sum of weights: 1</span></span></code></pre></div>
+</div>
+<div id="sparse-matrix-input" class="section level2">
+<h2>Sparse Matrix Input</h2>
+<p>OSQP requires sparse matrices in compressed sparse column (CSC)
+format. The package accepts several input types and coerces them
+automatically:</p>
+<ul>
+<li><strong><code>dgCMatrix</code></strong> (from <code>Matrix</code>) —
+used directly</li>
+<li><strong>Dense <code>matrix</code></strong> — converted to
+sparse</li>
+<li><strong><code>simple_triplet_matrix</code></strong> (from
+<code>slam</code>) — converted to sparse</li>
+</ul>
+<p>The objective matrix <code>P</code> is stored as upper triangular
+internally; the package handles this conversion for you.</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="co"># Dense matrix input works fine</span></span>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a>P_dense <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">4</span>, <span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">2</span>), <span class="dv">2</span>, <span class="dv">2</span>)</span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a>q <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a>A_dense <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">1</span>), <span class="dv">3</span>, <span class="dv">2</span>)</span>
+<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a>l <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="dv">0</span>)</span>
+<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a>u <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="fl">0.7</span>, <span class="fl">0.7</span>)</span>
+<span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a></span>
+<span id="cb15-8"><a href="#cb15-8" tabindex="-1"></a>result <span class="ot">&lt;-</span> <span class="fu">solve_osqp</span>(P_dense, q, A_dense, l, u,</span>
+<span id="cb15-9"><a href="#cb15-9" tabindex="-1"></a>                     <span class="at">pars =</span> <span class="fu">osqpSettings</span>(<span class="at">verbose =</span> <span class="cn">FALSE</span>))</span>
+<span id="cb15-10"><a href="#cb15-10" tabindex="-1"></a>result<span class="sc">$</span>x</span>
+<span id="cb15-11"><a href="#cb15-11" tabindex="-1"></a><span class="co">#&gt; [1] 0.3013757 0.6983957</span></span></code></pre></div>
+</div>
+<div id="references" class="section level2">
+<h2>References</h2>
+<p>If you use OSQP in your work, please cite the following
+references.</p>
+<ul>
+<li><p>B. Stellato, G. Banjac, P. Goulart, A. Bemporad, and S. Boyd,
+“OSQP: An Operator Splitting Solver for Quadratic Programs,”
+<em>Mathematical Programming Computation</em>, 2020. <a href="https://doi.org/10.1007/s12532-020-00179-2">doi:10.1007/s12532-020-00179-2</a></p></li>
+<li><p>G. Banjac, P. Goulart, B. Stellato, and S. Boyd, “Infeasibility
+Detection in the Alternating Direction Method of Multipliers for Convex
+Optimization,” <em>Journal of Optimization Theory and Applications</em>,
+2019.</p></li>
+</ul>
+<p>Please also cite the R package: run <code>citation(&quot;osqp&quot;)</code> for
+details.</p>
+<ul>
+<li>B. Stellato, G. Banjac, P. Goulart, S. Boyd, V. Bansal, and B.
+Narasimhan, <em>osqp: Quadratic Programming Solver using the ‘OSQP’
+Library</em>, R package, <a href="https://osqp.org" class="uri">https://osqp.org</a>.</li>
+</ul>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

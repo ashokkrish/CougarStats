@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Parallel Workers on High-Performance Compute Environments</title>
+<style>
+body {
+  font-family: sans-serif;
+  line-height: 1.6;
+  padding-left: 3ex;
+  padding-right: 3ex;
+  background-color: white;
+  color: black;
+}
+
+a {
+  color: #4183C4;
+  text-decoration: none;
+}
+
+h1, h2, h3 {
+  margin: 2ex 0 1ex;
+  padding: 0;
+  font-weight: bold;
+  -webkit-font-smoothing: antialiased;
+  cursor: text;
+  position: relative;
+}
+
+h2 {
+  border-bottom: 1px solid #cccccc;
+}
+
+code {
+  margin: 0 2px;
+  padding: 0 5px;
+  white-space: nowrap;
+  border: 1px solid #eaeaea;
+  background-color: #f8f8f8;
+  border-radius: 3px;
+}
+
+pre code {
+  margin: 0;
+  padding: 0;
+  white-space: pre;
+  border: none;
+  background: transparent;
+}
+
+pre {
+  background-color: #f8f8f8;
+  border: 1px solid #cccccc;
+  line-height: 2.5x;
+  overflow: auto;
+  padding: 0.6ex 1ex;
+  border-radius: 3px;
+}
+
+pre code {
+  background-color: transparent;
+  border: none;
+}
+</style>
+</head>
+<body>
+<h1>Parallel Workers on High-Performance Compute Environments</h1>
+<!--
+%\VignetteIndexEntry{Parallel Workers on High-Performance Compute Environments}
+%\VignetteAuthor{Henrik Bengtsson}
+%\VignetteKeyword{R}
+%\VignetteKeyword{package}
+%\VignetteKeyword{vignette}
+%\VignetteKeyword{HPC}
+%\VignetteEngine{parallelly::selfonly}
+-->
+<h1>Introduction</h1>
+<p>This vignette illustrates how to launch parallel workers via job
+schedulers running in high-performance compute (HPC) environments.</p>
+<h1>Examples</h1>
+<h2>Example: Launch parallel workers via the Grid Engine job scheduler</h2>
+<p>‘Grid Engine’ is a high-performance compute (HPC) job scheduler where
+one can request compute resources on multiple nodes, each running
+multiple cores. Examples of Grid Engine schedulers are Oracle Grid
+Engine (formerly Sun Grid Engine), Univa Grid Engine, and Son of Grid
+Engine - all commonly referred to as SGE schedulers. Each SGE cluster
+may have its own configuration with its own way of requesting
+parallel slots.</p>
+<p>Consider the following two files: <code>script.sh</code> and <code>script.R</code>.</p>
+<p>script.sh:</p>
+<pre><code class="language-sh">#! /usr/bin/env bash
+#$ -cwd               ## Run in current working directory
+#$ -j y               ## Merge stdout and stderr
+#$ -l mem_free=100M   ## 100 MiB RAM per slot
+#$ -l h_rt=00:10:00   ## 10 minutes runtime 
+#$ -pe mpi 8          ## 8 compute slots
+
+echo &quot;Information on R:&quot;
+Rscript --version
+
+echo &quot;Running R script:&quot;
+Rscript script.R
+</code></pre>
+<p>script.R:</p>
+<pre><code class="language-r">library(parallelly)
+library(parallel)
+
+cl &lt;- makeClusterPSOCK(
+  availableWorkers(),
+  rshcmd = &quot;qrsh&quot;, rshopts = c(&quot;-inherit&quot;, &quot;-nostdin&quot;, &quot;-V&quot;)
+)
+print(cl)
+
+# Perform calculations in parallel
+X &lt;- 1:100
+y &lt;- parLapply(cl = cl, X, fun = sqrt)
+y &lt;- unlist(y)
+z &lt;- sum(y)
+print(z)
+
+stopCluster(cl)
+</code></pre>
+<p>The <code>script.sh</code> file is a job script that we submit to the scheduler
+that runs the R script <code>script.R</code> when launched. If we submit
+<code>script.sh</code> as:</p>
+<pre><code class="language-sh">$ qsub script.sh
+</code></pre>
+<p>it will by default request eight slots - on one or more machines,
+which then R and <strong>parallelly</strong> will set up a parallel cluster
+on. Exactly on which machines depends on where the job scheduler finds
+these requested slots.</p>
+<p>Here is the output from one such run, where the scheduler happened to
+allot the slots across three machines:</p>
+<pre><code class="language-sh">Information on R:
+Rscript (R) version 4.5.2 (2025-10-31)
+Running R script:
+Socket cluster with 8 nodes where 4 nodes are on host ‘localhost’
+(R version 4.5.2 (2025-10-31), platform x86_64-pc-linux-gnu), 3
+nodes are on host ‘qb3-id130’ (R version 4.5.2 (2025-10-31), 
+platform x86_64-pc-linux-gnu), 1 node is on host ‘qb3-as16’ (R 
+version 4.5.2 (2025-10-31), platform x86_64-pc-linux-gnu)
+[1] 671.4629
+</code></pre>
+<h2>Example: Launch parallel workers via the Fujitsu Technical Computing Suite job scheduler</h2>
+<p>The ‘Fujitsu Technical Computing Suite’ is a high-performance compute
+(HPC) job scheduler where one can request compute resources on
+multiple nodes, each running multiple cores.</p>
+<p>Consider the following two files: <code>script.sh</code> and <code>script.R</code>.</p>
+<p>script.sh:</p>
+<pre><code class="language-sh">#! /usr/bin/env bash
+
+echo &quot;Information on R:&quot;
+Rscript --version
+
+echo &quot;Running R script:&quot;
+Rscript script.R
+</code></pre>
+<p>script.R:</p>
+<pre><code class="language-r">library(parallelly)
+library(parallel)
+
+cl &lt;- makeClusterPSOCK(
+  availableWorkers(),
+  rshcmd = &quot;pjrsh&quot;
+)
+print(cl)
+
+# Perform calculations in parallel
+X &lt;- 1:100
+y &lt;- parLapply(cl = cl, X, fun = sqrt)
+y &lt;- unlist(y)
+z &lt;- sum(y)
+print(z)
+
+stopCluster(cl)
+</code></pre>
+<p>The <code>script.sh</code> file is a job script that we submit to the scheduler
+that runs the R script <code>script.R</code> when launched. We can submit
+<code>script.sh</code> as:</p>
+<pre><code class="language-sh">$ pjsub -L vnode=3 -L vnode-core=18 script.sh
+</code></pre>
+<p>to request 18 CPU cores on three compute nodes, which in total
+requests 3*18=54 compute slots.</p>
+</body>
+</html>

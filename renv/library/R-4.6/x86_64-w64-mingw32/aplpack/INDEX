@@ -1,0 +1,26 @@
+bagplot                 bagplot, a bivariate boxplot
+bagplot.pairs           'pairs' plot with bagplots
+boxplot2D               Boxplot of projection of two dimensional data
+faces                   Chernoff Faces
+hdepth                  hdepth of points
+iconplot                Icon Plots for Visualization of Contingency
+                        Tables
+plothulls               plothulls for data peeling
+plotsummary             graphical summaries of variables of a data set
+puticon                 Add Icon(s) to a Plot
+skyline.hist            'skyline.hist' computes a skyline plot which is
+                        special histogram.
+slider                  slider / button control widgets
+slider.bootstrap.lm.plot
+                        interactive bootstapping for lm
+slider.brush.pairs      interactive brushing functions
+slider.hist             interactive histogram and density traces
+slider.lowess.plot      interactive lowess smoothing
+slider.smooth.plot.ts   interactive Tukey smoothing
+slider.split.plot.ts    interactive splitting of time series
+slider.stem.leaf        construction of stem and leaf display
+                        interactively
+slider.zoom.plot.ts     interactive zooming of time series
+spin3R                  spin3R
+stem.leaf               stem and leaf display and back to back stem and
+                        leaf display

@@ -1,0 +1,25 @@
+cdfexp                  Exponential distribution
+cdfgam                  Gamma distribution
+cdfgev                  Generalized extreme-value distribution
+cdfglo                  Generalized logistic distribution
+cdfgno                  Generalized normal distribution
+cdfgpa                  Generalized Pareto distribution
+cdfgum                  Gumbel (extreme-value type I) distribution
+cdfkap                  Kappa distribution
+cdfln3                  Three-parameter lognormal distribution
+cdfnor                  Normal distribution
+cdfpe3                  Pearson type III distribution
+cdfwak                  Wakeby distribution
+cdfwei                  Weibull distribution
+evplot                  Extreme-value plot
+lmom-package            The lmom package
+lmr...                  L-moments of specific probability distributions
+lmrd                    L-moment ratio diagram
+lmrdpoints              Add points or lines to an L-moment ratio
+                        diagram
+lmrp                    L-moments of a general probability distribution
+pel...                  Parameter estimation for specific distributions
+                        by the method of L-moments
+pelp                    Parameter estimation for a general distribution
+                        by the method of L-moments
+samlmu                  Sample L-moments

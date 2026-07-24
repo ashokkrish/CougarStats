@@ -1,0 +1,7 @@
+example_math	katex
+katex	katex
+katex_html	katex
+katex_mathml	katex
+math_to_rd	math_to_rd
+pandoc	pandoc
+render_math_in_html	pandoc

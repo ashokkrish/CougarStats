@@ -1,0 +1,15 @@
+export(dgl,dqgl,gl.check.lambda,pgl,plotglc,plotgld,
+      print.starship,qdgl,qgl,qqgl,rgl,starship,starship.adaptivegrid,
+      starship.obj,summary.starship,fit.fkml,fit.fkml.moments,fit.fkml.moments.val,
+      gld.moments,gld.lmoments,fit.gpd,fit.gpd.lmom,
+      BetaLambdaLambda,fit.gpd.lmom.given)
+S3method(plot,starship)
+export(plot.starship)
+S3method(print,starship)
+S3method(print,GldGPDFit)
+S3method(summary,starship)
+import(graphics)
+importFrom("lmom","samlmu")
+importFrom("e1071","moment")
+importFrom("stats", "optim", "constrOptim", "IQR", "median", "quantile", "qqplot", "runif")
+useDynLib(gld,gl_fmkl_distfunc,gl_rs_distfunc,gl_fm5_distfunc,gl_vsk_distfunc)

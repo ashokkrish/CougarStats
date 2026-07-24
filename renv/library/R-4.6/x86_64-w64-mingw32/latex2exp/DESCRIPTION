@@ -1,0 +1,31 @@
+Package: latex2exp
+Type: Package
+Title: Use LaTeX Expressions in Plots
+Version: 0.9.8
+Date: 2024-07-05
+Authors@R: person("Stefano", "Meschiari", email="stefano.meschiari@gmail.com", role=c("aut", "cre"))
+Description: Parses and converts LaTeX math formulas to R's plotmath
+    expressions, used to enter mathematical formulas and symbols to be rendered as
+    text, axis labels, etc. throughout R's plotting system.
+License: MIT + file LICENSE
+URL: https://www.stefanom.io/latex2exp/,
+        https://github.com/stefano-meschiari/latex2exp
+BugReports: https://github.com/stefano-meschiari/latex2exp/issues
+Encoding: UTF-8
+Suggests: tools, testthat, waldo, knitr, ggplot2, rmarkdown, purrr,
+        tibble, reactable, htmltools, RCurl, rlang, dplyr
+VignetteBuilder: knitr
+RoxygenNote: 7.2.3
+Language: en-US
+NeedsCompilation: no
+Packaged: 2026-01-09 08:44:30 UTC; hornik
+Author: Stefano Meschiari [aut, cre]
+Maintainer: Stefano Meschiari <stefano.meschiari@gmail.com>
+Repository: CRAN
+Date/Publication: 2026-01-09 09:00:29 UTC
+Built: R 4.6.0; ; 2026-06-09 01:08:23 UTC; windows
+RemoteType: standard
+RemotePkgRef: latex2exp
+RemoteRef: latex2exp
+RemoteRepos: https://cran.rstudio.com
+RemoteSha.Version: 0.9.8

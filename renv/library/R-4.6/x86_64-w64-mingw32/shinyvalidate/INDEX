@@ -1,0 +1,28 @@
+InputValidator          Shiny validation object
+compose_rules           Combine shinyvalidate rule functions
+input_provided          Check whether an input value has been provided
+skip_validation         Skip any normal validation performed by a rule
+sv_between              Validate that a field is a number bounded by
+                        minimum and maximum values
+sv_email                Validate that a field contains an email address
+sv_equal                Validate that a field is equal to a specified
+                        value
+sv_gt                   Validate that a field is greater than a
+                        specified value
+sv_gte                  Validate that a field is greater than or equal
+                        to a specified value
+sv_in_set               Validate that a field is part of a defined set
+sv_integer              Validate that a field is a number that is
+                        integer-like
+sv_lt                   Validate that a field is less than a specified
+                        value
+sv_lte                  Validate that a field is less than or equal to
+                        a specified value
+sv_not_equal            Validate that a field is not equal to a
+                        specified value
+sv_numeric              Validate that a field is a number
+sv_optional             Indicate that a field is optional
+sv_regex                Validate that a field matches a regular
+                        expression
+sv_required             Validate that the field is present
+sv_url                  Validate that a field contains a URL

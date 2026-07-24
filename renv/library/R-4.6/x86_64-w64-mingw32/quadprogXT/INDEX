@@ -1,0 +1,4 @@
+convertToCompact        Make a Constraint Matrix Compact
+normalizeConstraints    Normalize constraint matrix
+solveQPXT               Solve a quadratic program with absolute values
+                        in constraints & objective

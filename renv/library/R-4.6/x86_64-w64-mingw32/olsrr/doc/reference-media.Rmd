@@ -1,0 +1,14 @@
+---
+title: "Media"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Media}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+## Shiny App Demo
+
+- [YouTube Playlist](https://www.youtube.com/watch?v=v-qSC6bVstE&list=PLDfCKV3ey8-fPVNyOxd6dJfptZLXKTpRl)
+
+

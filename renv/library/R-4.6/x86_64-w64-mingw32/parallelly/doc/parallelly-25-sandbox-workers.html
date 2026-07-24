@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Parallel Workers Running in a Sandbox</title>
+<style>
+body {
+  font-family: sans-serif;
+  line-height: 1.6;
+  padding-left: 3ex;
+  padding-right: 3ex;
+  background-color: white;
+  color: black;
+}
+
+a {
+  color: #4183C4;
+  text-decoration: none;
+}
+
+h1, h2, h3 {
+  margin: 2ex 0 1ex;
+  padding: 0;
+  font-weight: bold;
+  -webkit-font-smoothing: antialiased;
+  cursor: text;
+  position: relative;
+}
+
+h2 {
+  border-bottom: 1px solid #cccccc;
+}
+
+code {
+  margin: 0 2px;
+  padding: 0 5px;
+  white-space: nowrap;
+  border: 1px solid #eaeaea;
+  background-color: #f8f8f8;
+  border-radius: 3px;
+}
+
+pre code {
+  margin: 0;
+  padding: 0;
+  white-space: pre;
+  border: none;
+  background: transparent;
+}
+
+pre {
+  background-color: #f8f8f8;
+  border: 1px solid #cccccc;
+  line-height: 2.5x;
+  overflow: auto;
+  padding: 0.6ex 1ex;
+  border-radius: 3px;
+}
+
+pre code {
+  background-color: transparent;
+  border: none;
+}
+</style>
+</head>
+<body>
+<h1>Parallel Workers Running in a Sandbox</h1>
+<!--
+%\VignetteIndexEntry{Parallel Workers Running in a Sandbox}
+%\VignetteAuthor{Henrik Bengtsson}
+%\VignetteKeyword{R}
+%\VignetteKeyword{package}
+%\VignetteKeyword{vignette}
+%\VignetteKeyword{Docker}
+%\VignetteKeyword{Apptainer}
+%\VignetteEngine{parallelly::selfonly}
+-->
+<h1>Introduction</h1>
+<p>This vignette shows how to set up “sandboxed” parallel workers with
+limited access to the host system.</p>
+<h1>Examples</h1>
+<h2>Example: Bubblewrap on Linux</h2>
+<p>This example sets up two parallel workers on Linux sandboxed using
+<a href="https://github.com/containers/bubblewrap">Bubblewrap</a>.</p>
+<pre><code class="language-r">library(parallelly)
+
+bwrap_sandbox &lt;- function(rscript = &quot;*&quot;) {
+  ro_binds &lt;- function(dirs) {
+    dirs &lt;- unique(dirs[file_test(&quot;-d&quot;, dirs)])
+    opts &lt;- rep(dirs, each = 3L)
+    opts[seq(from = 1, to = length(opts), by = 3)] &lt;- &quot;--ro-bind&quot;
+    opts
+  }
+
+  ro_rlibs_remap &lt;- function(dirs = rev(rev(.libPaths())[-1])) {
+    dirs &lt;- unique(dirs[file_test(&quot;-d&quot;, dirs)])
+    dirs2 &lt;- sub(sprintf(&quot;^%s&quot;, Sys.getenv(&quot;HOME&quot;)), &quot;/home/sandbox-user&quot;, dirs)
+    opts &lt;- rep(dirs, each = 3L)
+    opts[seq(from = 1, to = length(opts), by = 3)] &lt;- &quot;--ro-bind&quot;
+    opts[seq(from = 3, to = length(opts), by = 3)] &lt;- dirs2
+    opts
+  }
+
+  args &lt;- c(&quot;bwrap&quot;)
+  
+  ## Unshares
+  ## Note, we cannot sandbox the network (--unshare-net), because
+  ## PSOCK clusters communicate over socket connections
+  unshares &lt;- c(
+    &quot;--unshare-user&quot;,  # isolate user and group ids
+    &quot;--unshare-pid&quot;,   # isolate processes
+    &quot;--proc&quot;, &quot;/proc&quot;,
+    &quot;--unshare-ipc&quot;    # isolate process communication, e.g. shared memory
+  )
+  args &lt;- c(args, unshares)
+  
+  ## Misc options
+  opts &lt;- c(
+    &quot;--dev&quot;, &quot;/dev&quot;,   # mount host's /dev
+    &quot;--tmpfs&quot;, &quot;/tmp&quot;  # mount fresh, private, empty temporary directory
+  )
+  args &lt;- c(args, opts)
+  
+  ## Read-only Linux mounts
+  dirs &lt;- c(&quot;/usr&quot;, &quot;/bin&quot;, &quot;/usr/bin&quot;, &quot;/lib&quot;, &quot;/lib64&quot;, &quot;/etc/alternatives&quot;)
+
+  ## Use host's R and Rscript (by read-only mounting R home folders)
+  components &lt;- c(&quot;bin&quot;, &quot;lib&quot;, &quot;doc&quot;, &quot;etc&quot;, &quot;include&quot;, &quot;modules&quot;, &quot;share&quot;)
+  r_dirs &lt;- unname(vapply(components, FUN = R.home, FUN.VALUE = NA_character_))
+  r_dirs &lt;- c(r_dirs, dirname(Sys.which(&quot;R&quot;)), dirname(Sys.which(&quot;Rscript&quot;)))
+  r_dirs &lt;- c(r_dirs, rev(.libPaths())[1])
+  dirs &lt;- c(dirs, r_dirs)
+  args &lt;- c(args, ro_binds(dirs))
+
+  ## Remap HOME to fresh, private sandboxed HOME
+  tmp_home &lt;- tempfile(pattern = &quot;sandbox-home-&quot;)
+  dir.create(tmp_home)
+  opts &lt;- c(
+    &quot;--bind&quot;, tmp_home, &quot;/home/sandbox-user&quot;,
+    &quot;--setenv&quot;, &quot;HOME&quot;, &quot;/home/sandbox-user&quot;,
+    &quot;--chdir&quot;, &quot;/home/sandbox-user&quot;
+  )
+  args &lt;- c(args, opts)
+
+  ## Read-only remapped non-system R library paths
+  args &lt;- c(args, ro_rlibs_remap())
+
+  c(args, rscript)
+} ## bwrap_sandbox()
+
+
+## Launch two parallel workers inside a Bubblewrap sandbox
+cl &lt;- makeClusterPSOCK(2L, rscript = bwrap_sandbox(&quot;*&quot;))
+print(cl)
+#&gt; Socket cluster with 2 nodes on host 'localhost' (R version 4.5.2
+#&gt; (2025-10-31), platform x86_64-pc-linux-gnu)
+
+host_user &lt;- Sys.info()[[&quot;user&quot;]]
+host_user
+#&gt; &quot;alice&quot;
+
+worker_user &lt;- unlist(parallel::clusterEvalQ(cl, Sys.info()[[&quot;user&quot;]]))
+worker_user
+#&gt; [1] &quot;unknown&quot; &quot;unknown&quot;
+</code></pre>
+</body>
+</html>

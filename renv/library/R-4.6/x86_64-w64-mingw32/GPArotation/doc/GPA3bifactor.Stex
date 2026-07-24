@@ -1,0 +1,466 @@
+%\VignetteIndexEntry{Bifactor Rotation and Reliability Coefficients}
+%\VignettePackage{GPArotation}
+%\VignetteDepends{GPArotation}
+%\VignetteKeyword{factor rotation}
+%\VignetteKeyword{bifactor}
+%\VignetteKeyword{omega hierarchical}
+%\VignetteKeyword{scale development}
+
+\documentclass[english, 10pt]{article}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\bibliographystyle{apa}
+\usepackage{natbib}
+\usepackage{geometry}
+\geometry{letterpaper}
+
+\begin{document}
+
+\SweaveOpts{eval=TRUE, echo=TRUE, results=hide, fig=FALSE}
+\begin{Scode}{echo=FALSE, results=hide}
+options(continue="  ")
+pdf.options(pointsize = 8)
+library("GPArotation")
+\end{Scode}
+
+\begin{center}
+\section*{Bifactor Rotation and Reliability Coefficients \\ ~~\\
+          The \texttt{GPArotation} Package}
+\end{center}
+\begin{center}
+Author: Coen A. Bernaards
+\end{center}
+
+Bifactor models represent a factor structure where each item loads on
+one general factor that influences all items, plus at most one
+group-specific factor. They are widely used in scale development and
+psychometric research to investigate the relative contributions of
+general and specific sources of variance. This vignette illustrates
+how \texttt{GPArotation} can support bifactor analyses and how the
+results may inform decisions about total scores and subscales.
+
+The tools presented here --- bifactor rotation, omega hierarchical,
+and omega total --- are best understood as aids to thinking rather
+than as decision procedures. Their interpretation always depends on
+substantive theory, the purpose of the measurement, and the broader
+research context.
+
+
+%-------------------------------------------------------------------
+\section*{Bifactor Rotation in GPArotation}
+%-------------------------------------------------------------------
+
+Two bifactor rotation criteria are available:
+
+\begin{itemize}
+  \item \texttt{bifactorT} --- orthogonal bifactor rotation. The general
+        factor and group factors are uncorrelated.
+  \item \texttt{bifactorQ} --- oblique bifactor rotation (biquartimin).
+        The general factor and group factors may be correlated.
+\end{itemize}
+
+Both treat the \emph{first column} of the loading matrix as the general
+factor and rotate the remaining columns as group factors. The general
+factor column should correspond to the dominant factor in the unrotated
+solution. Use \texttt{sortLoadings = FALSE} when printing to preserve
+the general factor in column 1 --- the default sorting by variance
+explained may reorder the factors and obscure the bifactor structure.
+
+\begin{Scode}{results=verbatim}
+data("WansbeekMeijer", package = "GPArotation")
+fa.unrotated <- factanal(factors = 3, covmat = NetherlandsTV,
+                         rotation = "none")
+
+# Orthogonal bifactor rotation
+res.bifT <- bifactorT(loadings(fa.unrotated))
+print(res.bifT, sortLoadings = FALSE, digits = 3)
+
+# Oblique bifactor rotation
+res.bifQ <- bifactorQ(loadings(fa.unrotated))
+print(res.bifQ, sortLoadings = FALSE, digits = 3)
+
+# Structure matrix for oblique solution
+summary(res.bifQ, Structure = TRUE)
+\end{Scode}
+
+The pattern matrix from \texttt{bifactorT} shows loadings on the
+general factor (column 1) and group factors (remaining columns).
+Items with high general factor loadings and near-zero group factor
+loadings are well represented by the total score. Items with
+substantial group factor loadings may be carrying domain-specific
+variance beyond the general factor.
+
+For a detailed treatment of bifactor rotation see \cite{jennbent}.
+A comparison of exploratory bifactor analysis algorithms is provided
+in \cite{garzon}.
+
+
+%-------------------------------------------------------------------
+\section*{Omega Hierarchical}
+%-------------------------------------------------------------------
+
+Omega hierarchical ($\omega_h$) quantifies how much of the total score
+variance may be attributable to the general factor. It is computed
+directly from the bifactor rotation result:
+
+\begin{equation}
+\omega_h = \frac{(\sum_i \lambda_{gi})^2}
+                {(\sum_i \lambda_{gi})^2 + \sum_i \sum_j \lambda_{sij}^2
+                 + \sum_i \theta_{ii}}
+\end{equation}
+
+where $\lambda_{gi}$ are the general factor loadings, $\lambda_{sij}$
+are the group factor loadings, and $\theta_{ii} = 1 - \sum_j
+\lambda_{ij}^2$ are the model-implied unique variances.
+
+\begin{Scode}
+omega_h <- function(bifactor_result) {
+  # Compute omega hierarchical from a GPArotation bifactor solution.
+  # Args:
+  #   bifactor_result : a GPArotation object from bifactorT or bifactorQ
+  L     <- loadings(bifactor_result)
+  lg    <- L[, 1]       # general factor loadings
+  Ls    <- L[, -1]      # group factor loadings
+  theta <- 1 - rowSums(L^2)  # model-implied unique variances
+  sum(lg)^2 / (sum(lg)^2 + sum(Ls^2) + sum(theta))
+}
+
+# Omega total: proportion of total score variance due to all common factors.
+# Requires the observed or population correlation matrix R.
+omega_t <- function(bifactor_result, R) {
+  L     <- loadings(bifactor_result)
+  R_hat <- L %*% t(L)
+  sum(R_hat) / sum(R)
+}
+
+# Coefficient alpha from a correlation matrix
+alpha_coef <- function(R) {
+  k <- nrow(R)
+  k / (k - 1) * (1 - sum(diag(R)) / sum(R))
+}
+\end{Scode}
+
+The denominator of $\omega_h$ partitions total score variance into
+three components: variance due to the general factor, variance due to
+group-specific factors, and measurement error. A higher $\omega_h$
+may suggest that the general factor accounts for a larger share of
+total score variance, which could support the use of a total score
+as a summary measure --- though this interpretation always depends
+on the substantive context.
+
+
+%-------------------------------------------------------------------
+\section*{Comparing Strong and Weak General Factors}
+%-------------------------------------------------------------------
+
+To illustrate how $\omega_h$ varies with the relative strength of the
+general and group factors, we construct two population correlation
+matrices with known bifactor structure.
+
+In Example 1, the general factor is strong (loadings of 0.7) and the
+group factors are weak (loadings of 0.2). In Example 2, the general
+factor is weaker (loadings of 0.3) and the group factors are stronger
+(loadings of 0.6). Both examples use 12 items and 3 group factors of
+4 items each.
+
+\begin{Scode}
+# Example 1: Strong general factor (loadings .7), weak group factors (.2)
+lambda_g1  <- rep(0.7, 12)
+lambda_s1a <- c(rep(0.2, 4), rep(0.0, 8))
+lambda_s1b <- c(rep(0.0, 4), rep(0.2, 4), rep(0.0, 4))
+lambda_s1c <- c(rep(0.0, 8), rep(0.2, 4))
+
+L1 <- cbind(lambda_g1, lambda_s1a, lambda_s1b, lambda_s1c)
+R1 <- L1 %*% t(L1)
+diag(R1) <- 1
+
+fa1  <- factanal(factors = 4, covmat = R1, rotation = "none")
+bif1 <- bifactorT(loadings(fa1))
+
+# Example 2: Weaker general factor (loadings .3), stronger group factors (.6)
+lambda_g2  <- rep(0.3, 12)
+lambda_s2a <- c(rep(0.6, 4), rep(0.0, 8))
+lambda_s2b <- c(rep(0.0, 4), rep(0.6, 4), rep(0.0, 4))
+lambda_s2c <- c(rep(0.0, 8), rep(0.6, 4))
+
+L2 <- cbind(lambda_g2, lambda_s2a, lambda_s2b, lambda_s2c)
+R2 <- L2 %*% t(L2)
+diag(R2) <- 1
+
+fa2  <- factanal(factors = 4, covmat = R2, rotation = "none")
+bif2 <- bifactorT(loadings(fa2))
+\end{Scode}
+
+\begin{Scode}{results=verbatim}
+cat("Example 1 - Strong general factor:\n")
+cat("  alpha   =", round(alpha_coef(R1), 3), "\n")
+cat("  omega_t =", round(omega_t(bif1, R1), 3), "\n")
+cat("  omega_h =", round(omega_h(bif1), 3), "\n\n")
+
+cat("Example 2 - Weaker general factor:\n")
+cat("  alpha   =", round(alpha_coef(R2), 3), "\n")
+cat("  omega_t =", round(omega_t(bif2, R2), 3), "\n")
+cat("  omega_h =", round(omega_h(bif2), 3), "\n")
+\end{Scode}
+
+The three coefficients address related but distinct questions:
+
+\begin{itemize}
+  \item $\alpha$ estimates the proportion of total score variance that
+        may be attributable to common factors, under the assumption of
+        essentially tau-equivalent items (equal factor loadings). When
+        this assumption does not hold well in practice, $\alpha$ may
+        overestimate or underestimate reliability --- something worth
+        keeping in mind when interpreting it.
+  \item $\omega_t$ relaxes the tau-equivalence assumption and estimates
+        the proportion of total score variance that may be due to all
+        common factors combined --- general and group-specific. It may
+        provide a more nuanced picture of reliability than $\alpha$ in
+        some situations, though both are model-dependent estimates.
+        Note that $\omega_t$ requires the observed or population
+        correlation matrix in addition to the bifactor solution.
+  \item $\omega_h$ focuses on the general factor only and may help
+        address the question of how much of the total score variance
+        could reflect the single construct the scale is primarily
+        intended to measure. It is one piece of evidence relevant to
+        construct validity, not a definitive answer.
+\end{itemize}
+
+The gap $\omega_t - \omega_h$ represents the proportion of total score
+variance that may be attributable to group-specific factors. In Example
+1 this gap is small, suggesting the group factors add little beyond the
+general factor and the scale may be reasonably close to unidimensional.
+In Example 2 the gap is larger, which could suggest the group factors
+are contributing meaningfully and that subscale scores might be worth
+examining alongside the total score. Whether to act on this is a
+substantive judgment that goes beyond the numbers alone.
+
+
+%-------------------------------------------------------------------
+\section*{Applied Example: CCAI Climate-Friendly Purchasing Choices domain}
+%-------------------------------------------------------------------
+
+To illustrate how these tools might inform scale interpretation in
+practice, we use the Climate-Friendly Purchasing Choices domain of
+the Climate Change Action Inventory (CCAI),
+analyzed by Bi and Barchard (2024). The scale has 14 items measuring
+the frequency of climate-friendly purchasing behaviors, with three
+factors identified via direct oblimin rotation: Choosing Sustainable
+Options, Supporting Collective Action, and Avoiding Buying New.
+The three factors had strong inter-correlations (0.53--0.59), which
+raises the question of whether a general factor might underlie all
+14 items.
+
+Bi and Barchard (2024) used \texttt{psych::principal} for component
+extraction with oblimin rotation, which calls \texttt{GPArotation}
+internally. Table 2 of the paper reports the pattern matrix from
+this analysis, despite being labeled ``Factor Structure.''
+
+The observed 14$\times$14 correlation matrix and published pattern
+matrix are included in the package as \texttt{CCAI\_R} and
+\texttt{CCAI\_pattern} respectively (see \texttt{?CCAI}).
+The published pattern matrix can be reproduced from the correlation
+matrix via eigendecomposition followed by oblimin rotation ---
+see the examples in \texttt{?CCAI} for the complete code.
+
+\subsection*{Data}
+
+\begin{Scode}
+data("CCAI", package = "GPArotation")
+\end{Scode}
+
+\begin{Scode}{results=verbatim}
+cat("Range of observed correlations:\n")
+cat("  Min:", round(min(CCAI_R[lower.tri(CCAI_R)]), 3), "\n")
+cat("  Max:", round(max(CCAI_R[lower.tri(CCAI_R)]), 3), "\n")
+\end{Scode}
+
+\subsection*{Bifactor Rotation}
+
+We extract three unrotated factors from the observed correlation
+matrix and apply \texttt{bifactorT}:
+
+\begin{Scode}{results=verbatim}
+fa_unrotated <- factanal(factors = 3, covmat = CCAI_R, 
+         n.obs = 461, rotation = "none")
+bif <- bifactorT(loadings(fa_unrotated))
+print(bif, sortLoadings = FALSE, digits = 3)
+\end{Scode}
+
+The general factor (Factor 1) loadings range from 0.444 to 0.854
+across all 14 items. Only one item --- Item 2 (``Use
+borrowed/rented/digital rather than buying'') --- falls below 0.50,
+suggesting it may be the most behaviorally distinct item in the scale.
+The group factors contribute modest additional structure, with the
+Avoiding Buying New items (1, 2, 3, 4) showing the clearest group
+factor pattern beyond the general factor.
+
+The variance explained by each factor may be informative: the general
+factor accounts for approximately 56.3\% of item variance, while the
+two group factors account for 6.5\% and 7.9\% respectively, for a
+total of 70.7\%. The dominance of the general factor relative to the
+group factors is consistent with the high $\omega_h$ of 0.946 calculated below.
+
+\subsection*{Reliability Coefficients}
+
+\begin{Scode}{results=verbatim}
+cat("alpha   =", round(alpha_coef(CCAI_R), 3), "\n")
+cat("omega_t =", round(omega_t(bif, CCAI_R), 3), "\n")
+cat("omega_h =", round(omega_h(bif), 3), "\n")
+cat("gap (omega_t - omega_h) =",
+    round(omega_t(bif, CCAI_R) - omega_h(bif), 3), "\n")
+\end{Scode}
+
+All three coefficients are high and close to each other. The small
+gap between $\omega_t$ and $\omega_h$ ($\approx$ 0.019) could suggest
+that the group factors contribute little unique variance beyond the
+general factor.
+
+\subsection*{Partitioning Total Score Variance}
+
+\begin{Scode}
+omega_h_by_group <- function(bifactor_result, R) {
+  L     <- loadings(bifactor_result)
+  lg    <- L[, 1]
+  Ls    <- L[, -1]
+  theta <- 1 - rowSums(L^2)
+  denom <- sum(lg)^2 + sum(Ls^2) + sum(theta)
+  cat("Variance partition:\n")
+  cat("  General factor:    ", round(sum(lg)^2 / denom, 3), "\n")
+  for (j in 1:ncol(Ls))
+    cat("  Group factor", j + 1, ":     ",
+        round(sum(Ls[, j]^2) / denom, 3), "\n")
+  cat("  Measurement error: ", round(sum(theta) / denom, 3), "\n")
+  cat("  Total (omega_t):   ",
+      round(omega_t(bifactor_result, R), 3), "\n")
+}
+\end{Scode}
+
+\begin{Scode}{results=verbatim}
+omega_h_by_group(bif, CCAI_R)
+\end{Scode}
+
+The partition may be informative here. Approximately 94.6\% of total
+score variance could be attributable to the general factor, with the
+two group factors together contributing around 1.8\% and measurement
+error around 3.6\%. This pattern could suggest that the 14-item total
+score is capturing a single dominant construct --- something like
+general climate-conscious purchasing behavior --- with the three
+subscales adding relatively little unique psychometric information
+beyond that.
+
+\subsection*{What This May Mean}
+
+Bi and Barchard (2024) identified three theoretically meaningful
+subscales and noted their strong inter-correlations. The bifactor
+analysis here offers one additional perspective: the subscales may
+be useful for targeting specific interventions (for example, campaigns
+to encourage buying used, or to support collective action), but from
+a psychometric standpoint the total score may capture most of the
+reliable variance in climate-friendly purchasing behavior.
+
+This does not mean the subscales are without value --- substantive
+and practical considerations matter as much as psychometric ones.
+A researcher interested in behavior change might find the subscale
+distinctions more actionable than a total score, regardless of what
+the reliability coefficients suggest. These analyses are tools for
+thinking through the structure of a scale, not verdicts on how it
+should be used.
+
+%-------------------------------------------------------------------
+\section*{Practical Considerations}
+%-------------------------------------------------------------------
+
+\begin{itemize}
+  \item The general factor must be in the first column of the bifactor
+        solution. Use \texttt{sortLoadings = FALSE} when printing to
+        preserve this ordering.
+  \item $\omega_h$ uses model-implied unique variances
+        ($\theta_{ii} = 1 - \sum_j \lambda_{ij}^2$). If the observed
+        correlation matrix is available, unique variances can be
+        estimated as $\theta_{ii} = R_{ii} - \hat{R}_{ii}$ where
+        $\hat{R} = LL^T$.
+  \item $\omega_h > 0.80$ has been suggested as supporting total score
+        interpretation as a reasonably unidimensional construct
+        \citep{reise2012}, though this threshold should not be applied
+        mechanically.
+  \item $\omega_h < 0.60$ may suggest that subscale scores are worth
+        examining alongside the total score, depending on the context.
+  \item Values between 0.60 and 0.80 require judgment --- examine the
+        general factor loadings for uniformity and consider the
+        theoretical rationale for the subscales.
+  \item These coefficients are tools for thinking, not oracles. They
+        may raise useful questions and provide one perspective on scale
+        structure, but their interpretation always depends on the
+        specific context, the theoretical framework, and the intended
+        purpose of the measurement.
+\end{itemize}
+
+
+%-------------------------------------------------------------------
+\section*{Further Resources}
+%-------------------------------------------------------------------
+
+For detailed treatment of bifactor models and their applications see
+\cite{jennbent} and \cite{mansreise}. For a comparison of exploratory
+bifactor analysis algorithms see \cite{garzon}. For background on
+omega coefficients and their interpretation see \cite{reise2012}.
+
+The \texttt{psych} package provides additional tools for bifactor
+analysis and reliability estimation, including \texttt{omega()} for
+computing omega coefficients directly from a correlation matrix.
+
+For the main \texttt{GPArotation} usage guide see
+\texttt{vignette("GPA1guide", package = "GPArotation")}.
+For local minima diagnostics see
+\texttt{vignette("GPA2local", package = "GPArotation")}.
+
+
+\begin{thebibliography}{}
+
+\bibitem[\protect\citeauthoryear{Bi \& Barchard}{Bi \&
+  Barchard}{2024}]{bibarchard}
+Bi, Y. and Barchard, K.A. (2024).
+\newblock Purchasing choices that reduce climate change: An exploratory
+  factor analysis.
+\newblock \textit{Spectra Undergraduate Research Journal}, \textbf{3}(2),
+  8--14.
+\newblock \href{https://doi.org/10.9741/2766-7227.1028}
+  {doi: 10.9741/2766-7227.1028}
+
+\bibitem[\protect\citeauthoryear{Garcia-Garzon, Abad \& Garrido}
+  {Garcia-Garzon et al.}{2021}]{garzon}
+Garcia-Garzon, E., Abad, F.J., and Garrido, L.E. (2021).
+\newblock On omega hierarchical estimation: A comparison of exploratory
+  bi-factor analysis algorithms.
+\newblock \textit{Multivariate Behavioral Research}, \textbf{56}(1), 101--119.
+\newblock \href{https://doi.org/10.1080/00273171.2020.1736977}
+  {doi: 10.1080/00273171.2020.1736977}
+
+\bibitem[\protect\citeauthoryear{Jennrich \& Bentler}{Jennrich \&
+  Bentler}{2011}]{jennbent}
+Jennrich, R.I. and Bentler, P.M. (2011).
+\newblock Exploratory bi-factor analysis.
+\newblock \textit{Psychometrika}, \textbf{76}(4), 537--549.
+\newblock \href{https://doi.org/10.1007/s11336-011-9218-4}
+  {doi: 10.1007/s11336-011-9218-4}
+
+\bibitem[\protect\citeauthoryear{Mansolf \& Reise}{Mansolf \&
+  Reise}{2016}]{mansreise}
+Mansolf, M. and Reise, S.P. (2016).
+\newblock Exploratory bifactor analysis: The Schmid-Leiman orthogonalization
+  and Jennrich-Bentler analytic rotations.
+\newblock \textit{Multivariate Behavioral Research}, \textbf{51}(5), 698--717.
+\newblock \href{https://doi.org/10.1080/00273171.2016.1215898}
+  {doi: 10.1080/00273171.2016.1215898}
+
+\bibitem[\protect\citeauthoryear{Reise}{Reise}{2012}]{reise2012}
+Reise, S.P. (2012).
+\newblock The rediscovery of bifactor measurement models.
+\newblock \textit{Multivariate Behavioral Research}, \textbf{47}(5), 667--696.
+\newblock \href{https://doi.org/10.1080/00273171.2012.715555}
+  {doi: 10.1080/00273171.2012.715555}
+
+\end{thebibliography}
+
+\end{document}

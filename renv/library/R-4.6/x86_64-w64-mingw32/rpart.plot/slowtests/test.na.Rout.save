@@ -1,0 +1,94 @@
+> # test.na.R: test that NA predicted responses are shown with a hatched box
+> #
+> # TODO To get NA fitted values we force them into the model's frame
+> 
+> source("test.prolog.R")
+Loading required package: rpart
+> data(ptitanic)
+> options(warn=2) # treat warnings as errors (catch NA warnings, if any)
+> 
+> #--- continuous response ---
+> 
+> par(mfrow=c(2,2))
+> options(warn=1) # print warnings as they occur (rpart gives a warning: partial argument match of 'length' to 'length.out')
+> age <- rpart(age~., data=ptitanic, cp=.02)
+> options(warn=2) # treat warnings as errors
+> age$frame$yval[2] <- NA # node 2 (internal)
+> age$frame$yval[6] <- NA # node 5 (leaf)
+> age$frame$yval[8] <- NA # node 6 (leaf)
+> rpart.plot(age, type=4, nn=1, clip.right.labs=FALSE, branch=.3,
++            digits=-2, roundint=TRUE,
++            main="age with na", trace=1) # trace=1 to get message: fitted[6] is NA
+box.palette (not diverging): #F7FBFF (near ghostwhite) to #6BAED6 (near skyblue3)
+fitted[2] is NA
+cex 0.849   xlim c(0, 1)   ylim c(0, 1)
+> print(rpart.rules(age))
+ age                                            
+  17 when pclass is 2nd or 3rd & parch is 1 to 3
+  37 when pclass is 2nd or 3rd & parch >=      3
+  41 when pclass is        1st & parch <  2     
+  NA when pclass is 2nd or 3rd & parch <  1     
+  NA when pclass is        1st & parch >=      2
+> print(rpart.predict(age, rules=TRUE)[53:56,])
+        age                                               
+57       NA because pclass is        1st & parch >=      2
+58       NA because pclass is        1st & parch >=      2
+59 40.54743 because pclass is        1st & parch <  2     
+61 40.54743 because pclass is        1st & parch <  2     
+> 
+> # --- binary response ---
+> 
+> options(warn=1) # print warnings as they occur (rpart gives a warning: partial argument match of 'length' to 'length.out')
+> survived <- rpart(survived~., data=ptitanic, control=list(cp=.02))
+> options(warn=2) # treat warnings as errors
+> survived$frame$yval[3] <- survived$frame$yval2[3,1] <- survived$frame$yval2[3,5] <- NA # node 4 (leaf)
+> survived$frame$yval[4] <- survived$frame$yval2[4,1] <- survived$frame$yval2[4,5] <- NA # node 5 (internal)
+> 
+> expect.err(try(rpart.plot(survived, nn=1, type=1, fallen.leaves=FALSE,
++                main="survived with na")),
++  "Diverging palettes like box.palette=\"BuGn\" cannot be used for this model")
+Error : Diverging palettes like box.palette="BuGn" cannot be used for this model
+       because there are NAs in the fitted values.
+       Try something like box.palette="Blues"
+Got expected error from try(rpart.plot(survived, nn = 1, type = 1, fallen.leaves = FALSE,     main = "survived with na"))
+> 
+> rpart.plot(survived, nn=1, type=1, fallen.leaves=FALSE, box.palette="Blues",
++            main="survived with na")
+> print(rpart.rules(survived, cover=TRUE))
+ survived                                                cover
+     0.05 when sex is   male & age <  9.5 & sibsp >= 3      2%
+     0.73 when sex is female                               36%
+     0.89 when sex is   male & age <  9.5 & sibsp <  3      2%
+       NA when sex is   male & age >= 9.5                  61%
+> print(rpart.predict(survived, rules=TRUE)[1:5,])
+       died  survived                                                
+1 0.2725322 0.7274678 because sex is female                          
+2 0.1111111 0.8888889 because sex is   male & age <  9.5 & sibsp <  3
+3 0.2725322 0.7274678 because sex is female                          
+4 0.8291457        NA because sex is   male & age >= 9.5             
+5 0.2725322 0.7274678 because sex is female                          
+> 
+> #--- multiclass response ---
+> 
+> options(warn=1) # print warnings as they occur (rpart gives a warning: partial argument match of 'length' to 'length.out')
+> pclass <- rpart(pclass ~ ., data=ptitanic, control=rpart.control(cp=.01))
+> options(warn=2) # treat warnings as errors
+> pclass$frame$yval[3] <- pclass$frame$yval2[3,1] <- NA # node 4
+> pclass$frame$yval2[3, 6] <- NA # change class probs [.74 .16 .10] to  [.74 NA .10]
+> rpart.plot(pclass, nn=1, main="pclass with na")
+> print(rpart.rules(pclass))
+ pclass  1st 2nd 3rd                                             
+    1st [.54 .26 .20] when age >=       46 & survived is     died
+    3rd [.21 .25 .54] when age is 35 to 46 & survived is     died
+    3rd [.15 .21 .64] when age <  35                             
+     NA [.74  NA .10] when age >=       35 & survived is survived
+> print(rpart.predict(pclass, rules=TRUE, clip.facs=TRUE)[5:8,])
+        1st       2nd       3rd                                   
+5 0.1519251 0.2091571 0.6389178 because age <  35                 
+6 0.7357143        NA 0.1000000 because age >=       35 & survived
+7 0.7357143        NA 0.1000000 because age >=       35 & survived
+8 0.2136752 0.2478632 0.5384615 because age is 35 to 46 &     died
+> 
+> par(old.par)
+> 
+> source("test.epilog.R")

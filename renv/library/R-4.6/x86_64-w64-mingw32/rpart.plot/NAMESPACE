@@ -1,0 +1,16 @@
+import(rpart)
+export(prp)
+export(rpart.plot)
+export(rpart.predict)
+export(rpart.rules)
+export(show.prp.palettes)
+importFrom("grDevices", "col2rgb", "colors", "dev.cur", "dev.interactive",
+           "gray", "hsv", "palette", "rgb", "rgb2hsv")
+importFrom("stats", ".checkMFClasses", "delete.response",
+           "formula", "getCall", "median", "model.frame",
+           "na.pass", "predict", "quantile", "sd", "weighted.mean")
+importFrom("graphics", "axis", "grid", "identify", "lines", "par",
+           "plot", "polygon", "rect", "strheight", "strwidth", "text")
+importFrom("utils", "capture.output", "flush.console",
+           "getFromNamespace", "head", "str")
+S3method(print, rpart.rules)

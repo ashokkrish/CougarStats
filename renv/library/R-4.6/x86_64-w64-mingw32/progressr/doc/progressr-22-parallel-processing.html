@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>progressr: Parallel and Distributed Processing</title>
+<style>
+body {
+  font-family: sans-serif;
+  line-height: 1.6;
+  padding-left: 3ex;
+  padding-right: 3ex;
+  background-color: white;
+  color: black;
+}
+
+a {
+  color: #4183C4;
+  text-decoration: none;
+}
+
+h1, h2, h3 {
+  margin: 2ex 0 1ex;
+  padding: 0;
+  font-weight: bold;
+  -webkit-font-smoothing: antialiased;
+  cursor: text;
+  position: relative;
+}
+
+h2 {
+  border-bottom: 1px solid #cccccc;
+}
+
+code {
+  margin: 0 2px;
+  padding: 0 5px;
+  white-space: nowrap;
+  border: 1px solid #eaeaea;
+  background-color: #f8f8f8;
+  border-radius: 3px;
+}
+
+pre code {
+  margin: 0;
+  padding: 0;
+  white-space: pre;
+  border: none;
+  background: transparent;
+}
+
+pre {
+  background-color: #f8f8f8;
+  border: 1px solid #cccccc;
+  line-height: 2.5x;
+  overflow: auto;
+  padding: 0.6ex 1ex;
+  border-radius: 3px;
+}
+
+pre code {
+  background-color: transparent;
+  border: none;
+}
+</style>
+</head>
+<body>
+<h1>progressr: Parallel and Distributed Processing</h1>
+<!--
+%\VignetteIndexEntry{progressr: Parallel and Distributed Processing}
+%\VignetteAuthor{Henrik Bengtsson}
+%\VignetteKeyword{R}
+%\VignetteKeyword{package}
+%\VignetteKeyword{vignette}
+%\VignetteKeyword{progress}
+%\VignetteKeyword{parallel}
+%\VignetteKeyword{distributed}
+%\VignetteEngine{progressr::selfonly}
+-->
+<h2>TL;DR</h2>
+<p>The <strong>progressr</strong> package works seamlessly with parallel and
+distributed processing using <strong><a href="https://www.futureverse.org">futureverse</a></strong>, and it will also
+provide near-live progress updates while the parallel processing is
+still running. For example,</p>
+<pre><code class="language-r">library(future)
+library(progressr)
+plan(multisession, workers = 2)
+handlers(global = TRUE)
+handlers(&quot;progress&quot;)
+
+my_fcn &lt;- function(xs) {
+  p &lt;- progressr::progressor(along = xs)
+  future.apply::future_lapply(xs, function(x, ...) {
+    Sys.sleep((10.0-x)/2)
+    p(sprintf(&quot;x=%g&quot;, x))
+    sqrt(x)
+  })
+}
+
+y &lt;- my_fcn(1:10)
+# / [================&gt;-----------------------------]  40% x=2
+</code></pre>
+<h2>Introduction</h2>
+<p>The <strong><a href="https://www.futureverse.org">futureverse</a></strong> framework, which provides a unified API for parallel
+and distributed processing in R, has built-in support for the kind of
+progression updates produced by the <strong>progressr</strong> package.  This means
+that you can use it with, for instance, <strong><a href="https://future.apply.futureverse.org">future.apply</a></strong>, <strong><a href="https://furrr.futureverse.org">furrr</a></strong>,
+and <strong><a href="https://cran.r-project.org/package=foreach">foreach</a></strong> with <strong><a href="https://doFuture.futureverse.org">doFuture</a></strong>, and <strong><a href="https://cran.r-project.org/package=plyr">plyr</a></strong> or
+<strong><a href="https://www.bioconductor.org/packages/BiocParallel/">BiocParallel</a></strong> with <strong>doFuture</strong>.  In contrast, <em>non-future</em>
+parallelization methods such as <strong>parallel</strong>'s <code>mclapply()</code> and
+<code>parallel::parLapply()</code>, and <strong>foreach</strong> adapters like <strong>doParallel</strong>
+do <em>not</em> support progress reports via <strong>progressr</strong>.</p>
+<h3>future_lapply() - parallel lapply()</h3>
+<p>Here is an example that uses <code>future_lapply()</code> of the <strong><a href="https://future.apply.futureverse.org">future.apply</a></strong> package to parallelize on the local machine while at the same time signaling progression updates:</p>
+<pre><code class="language-r">library(future.apply)
+plan(multisession, workers = 2)
+
+library(progressr)
+handlers(global = TRUE)
+
+my_fcn &lt;- function(xs) {
+  p &lt;- progressor(along = xs)
+  future_lapply(xs, function(x, ...) {
+    Sys.sleep((10.0-x)/2)
+    p(sprintf(&quot;x=%g&quot;, x))
+    sqrt(x)
+  })
+}
+
+y &lt;- my_fcn(1:10)
+# / [================&gt;-----------------------------]  40% x=2
+</code></pre>
+<h3>foreach() with doFuture</h3>
+<p>Here is an example that uses <code>foreach()</code> of the <strong><a href="https://cran.r-project.org/package=foreach">foreach</a></strong> package
+together with <code>%dofuture%</code> of the <strong><a href="https://doFuture.futureverse.org">doFuture</a></strong> package to
+parallelize while reporting on progress.  This example parallelizes on
+the local machine; it works also for remote machines:</p>
+<pre><code class="language-r">library(doFuture)    ## %dofuture%
+plan(multisession, workers = 2)
+
+library(progressr)
+handlers(global = TRUE)
+handlers(&quot;progress&quot;)
+
+my_fcn &lt;- function(xs) {
+  p &lt;- progressor(along = xs)
+  foreach(x = xs) %dofuture% {
+    Sys.sleep((10.0-x)/2)
+    p(sprintf(&quot;x=%g&quot;, x))
+    sqrt(x)
+  }
+}
+
+y &lt;- my_fcn(1:10)
+# / [================&gt;-----------------------------]  40% x=2
+</code></pre>
+<p>For existing code using the traditional <code>%dopar%</code> operators of the
+<strong><a href="https://cran.r-project.org/package=foreach">foreach</a></strong> package, we can register the <strong><a href="https://doFuture.futureverse.org">doFuture</a></strong> adapter and
+use the same <strong>progressr</strong> as above to report progress updates;</p>
+<pre><code class="language-r">library(doFuture)
+registerDoFuture()      ## %dopar% parallelizes via future
+plan(multisession, workers = 2)
+
+library(progressr)
+handlers(global = TRUE)
+handlers(&quot;progress&quot;)
+
+my_fcn &lt;- function(xs) {
+  p &lt;- progressor(along = xs)
+  foreach(x = xs) %dopar% {
+    Sys.sleep((10.0-x)/2)
+    p(sprintf(&quot;x=%g&quot;, x))
+    sqrt(x)
+  }
+}
+
+y &lt;- my_fcn(1:10)
+# / [================&gt;-----------------------------]  40% x=2
+</code></pre>
+<h3>future_map() - parallel purrr::map()</h3>
+<p>Here is an example that uses <code>future_map()</code> of the <strong><a href="https://furrr.futureverse.org">furrr</a></strong> package
+to parallelize on the local machine while at the same time signaling
+progression updates:</p>
+<pre><code class="language-r">library(furrr)
+plan(multisession, workers = 2)
+
+library(progressr)
+handlers(global = TRUE)
+handlers(&quot;progress&quot;)
+
+my_fcn &lt;- function(xs) {
+  p &lt;- progressor(along = xs)
+  future_map(xs, function(x) {
+    Sys.sleep((10.0-x)/2)
+    p(sprintf(&quot;x=%g&quot;, x))
+    sqrt(x)
+  })
+}
+
+y &lt;- my_fcn(1:10)
+# / [================&gt;-----------------------------]  40% x=2
+</code></pre>
+<p><em>Note:</em> This solution does not involve the <code>.progress = TRUE</code>
+argument that <strong>furrr</strong> implements.  Because <strong>progressr</strong> is more
+generic and because <code>.progress = TRUE</code> only supports certain future
+backends and produces errors on non-supported backends, I recommend
+to stop using <code>.progress = TRUE</code> and use the <strong>progressr</strong> package
+instead.</p>
+<h3>BiocParallel::bplapply() - parallel lapply()</h3>
+<p>Here is an example that uses <code>bplapply()</code> of the <strong><a href="https://www.bioconductor.org/packages/BiocParallel/">BiocParallel</a></strong>
+package to parallelize on the local machine while at the same time
+signaling progression updates:</p>
+<pre><code class="language-r">library(BiocParallel)
+library(doFuture)
+register(DoparParam())  ## BiocParallel parallelizes via %dopar%
+registerDoFuture()      ## %dopar% parallelizes via future
+plan(multisession, workers = 2)
+
+library(progressr)
+handlers(global = TRUE)
+handlers(&quot;progress&quot;)
+
+my_fcn &lt;- function(xs) {
+  p &lt;- progressor(along = xs)
+  bplapply(xs, function(x) {
+    Sys.sleep((10.0-x)/2)
+    p(sprintf(&quot;x=%g&quot;, x))
+    sqrt(x)
+  })
+}
+
+y &lt;- my_fcn(1:10)
+# / [================&gt;-----------------------------]  40% x=2
+</code></pre>
+<h3>plyr::llply(..., .parallel = TRUE) with doFuture</h3>
+<p>Here is an example that uses <code>llply()</code> of the <strong><a href="https://cran.r-project.org/package=plyr">plyr</a></strong> package to
+parallelize on the local machine while at the same time signaling
+progression updates:</p>
+<pre><code class="language-r">library(plyr)
+library(doFuture)
+registerDoFuture()      ## %dopar% parallelizes via future
+plan(multisession, workers = 2)
+
+library(progressr)
+handlers(global = TRUE)
+handlers(&quot;progress&quot;)
+
+my_fcn &lt;- function(xs) {
+  p &lt;- progressor(along = xs)
+  llply(xs, function(x, ...) {
+    Sys.sleep((10.0-x)/2)
+    p(sprintf(&quot;x=%g&quot;, x))
+    sqrt(x)
+  }, .parallel = TRUE)
+}
+
+y &lt;- my_fcn(1:10)
+# / [================&gt;-----------------------------]  40% x=2
+</code></pre>
+<p><em>Note:</em> As an alternative to the above, recommended approach, one can
+use <code>.progress = &quot;progressr&quot;</code> together with <code>.parallel = TRUE</code>.  This
+requires <strong>plyr</strong> (&gt;= 1.8.7).</p>
+<h3>Near-live versus buffered progress updates with futures</h3>
+<p>As of August 2025, there are six types of <strong>future</strong> backends that are
+known(*) to provide near-live progress updates:</p>
+<ol>
+<li><code>sequential</code>,</li>
+<li><code>multicore</code>,</li>
+<li><code>multisession</code>, and</li>
+<li><code>cluster</code> (local and remote)</li>
+<li><code>future.callr::callr</code></li>
+<li><code>future.mirai::mirai_multisession</code></li>
+</ol>
+<p>Here &quot;near-live&quot; means that the progress handlers will report on
+progress almost immediately when the progress is signaled on the
+worker. This is because these parallel backends handle the special
+condition class <code>immediateCondition</code> - they detect when such
+conditions are signaled and relay them to the parent R process as soon
+as possible. For all other future backends, the progress updates are
+only relayed back to the main machine and reported together with the
+results of the futures.  For instance, if <code>future_lapply(X, FUN)</code>
+chunks up the processing of, say, 100 elements in <code>X</code> into eight
+futures, we will see progress from each of the 100 elements as they
+are done when using a future backend supporting &quot;near-live&quot; updates,
+whereas we will only see those updates flushed eight times when
+using any other types of future backends.</p>
+<p>(*) Other future backends may gain support for &quot;near-live&quot; progress
+updating later.  Adding support for those is independent of the
+<strong>progressr</strong> package.  Feature requests for adding that support
+should go to those future-backend packages.</p>
+</body>
+</html>

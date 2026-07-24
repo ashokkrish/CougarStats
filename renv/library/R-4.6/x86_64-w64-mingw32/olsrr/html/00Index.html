@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html>
+<head><title>R: Tools for Building OLS Regression Models</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<link rel="stylesheet" type="text/css" href="R.css">
+</head><body><div class="container">
+<h1> Tools for Building OLS Regression Models
+<img class="toplogo" src="../../../doc/html/Rlogo.svg" alt="[R logo]">
+</h1>
+<hr>
+<div style="text-align: center;">
+<a href="../../../doc/html/packages.html"><img class="arrow" src="../../../doc/html/left.jpg" alt="[Up]"></a>
+<a href="../../../doc/html/index.html"><img class="arrow" src="../../../doc/html/up.jpg" alt="[Top]"></a>
+</div><h2>Documentation for package &lsquo;olsrr&rsquo; version 0.7.0</h2>
+
+<ul><li><a href="../DESCRIPTION" type="text/plain; charset=utf-8">DESCRIPTION file</a></li>
+<li><a href="../doc/index.html">User guides, package vignettes and other documentation</a></li>
+<li><a href="../NEWS.md">Package NEWS</a></li>
+<li><a href="../README.md">Package README</a></li>
+</ul>
+
+<h2>Help Pages</h2>
+
+
+<p style="text-align: center;">
+<a href="#O">O</a>
+<a href="#P">P</a>
+<a href="#R">R</a>
+<a href="#S">S</a>
+</p>
+
+
+<h2><a id="O">-- O --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="ols_aic.html">ols_aic</a></td>
+<td>Akaike information criterion</td></tr>
+<tr><td style="width: 25%;"><a href="ols_anova.html">ols_anova</a></td>
+<td>ANOVA</td></tr>
+<tr><td style="width: 25%;"><a href="ols_apc.html">ols_apc</a></td>
+<td>Amemiya's prediction criterion</td></tr>
+<tr><td style="width: 25%;"><a href="ols_coll_diag.html">ols_coll_diag</a></td>
+<td>Collinearity diagnostics</td></tr>
+<tr><td style="width: 25%;"><a href="ols_compare_model_performance.html">ols_compare_model_performance</a></td>
+<td>Compare model performance</td></tr>
+<tr><td style="width: 25%;"><a href="ols_correlations.html">ols_correlations</a></td>
+<td>Part and partial correlations</td></tr>
+<tr><td style="width: 25%;"><a href="ols_count_obs.html">ols_count_obs</a></td>
+<td>Observations</td></tr>
+<tr><td style="width: 25%;"><a href="ols_count_parameters.html">ols_count_parameters</a></td>
+<td>Parameters count</td></tr>
+<tr><td style="width: 25%;"><a href="ols_coll_diag.html">ols_eigen_cindex</a></td>
+<td>Collinearity diagnostics</td></tr>
+<tr><td style="width: 25%;"><a href="ols_fpe.html">ols_fpe</a></td>
+<td>Final prediction error</td></tr>
+<tr><td style="width: 25%;"><a href="ols_get_call.html">ols_get_call</a></td>
+<td>Model function call</td></tr>
+<tr><td style="width: 25%;"><a href="ols_get_data.html">ols_get_data</a></td>
+<td>Model data</td></tr>
+<tr><td style="width: 25%;"><a href="ols_get_deviance.html">ols_get_deviance</a></td>
+<td>Deviance</td></tr>
+<tr><td style="width: 25%;"><a href="ols_get_df.html">ols_get_df</a></td>
+<td>Degrees of freedom</td></tr>
+<tr><td style="width: 25%;"><a href="ols_get_formula.html">ols_get_formula</a></td>
+<td>Model formula</td></tr>
+<tr><td style="width: 25%;"><a href="ols_get_interaction_terms.html">ols_get_interaction_terms</a></td>
+<td>Interaction terms</td></tr>
+<tr><td style="width: 25%;"><a href="ols_get_intercept.html">ols_get_intercept</a></td>
+<td>Model intercept</td></tr>
+<tr><td style="width: 25%;"><a href="ols_get_model_matrix.html">ols_get_model_matrix</a></td>
+<td>Model matrix</td></tr>
+<tr><td style="width: 25%;"><a href="ols_get_parameters.html">ols_get_parameters</a></td>
+<td>Model parameters</td></tr>
+<tr><td style="width: 25%;"><a href="ols_get_predicted.html">ols_get_predicted</a></td>
+<td>Fitted values</td></tr>
+<tr><td style="width: 25%;"><a href="ols_get_predictors.html">ols_get_predictors</a></td>
+<td>Predictor variable data</td></tr>
+<tr><td style="width: 25%;"><a href="ols_get_residuals.html">ols_get_residuals</a></td>
+<td>Model residuals</td></tr>
+<tr><td style="width: 25%;"><a href="ols_get_response.html">ols_get_response</a></td>
+<td>Response variable data</td></tr>
+<tr><td style="width: 25%;"><a href="ols_get_sigma.html">ols_get_sigma</a></td>
+<td>Sigma</td></tr>
+<tr><td style="width: 25%;"><a href="ols_get_variables.html">ols_get_variables</a></td>
+<td>Model variables</td></tr>
+<tr><td style="width: 25%;"><a href="ols_get_vcov.html">ols_get_vcov</a></td>
+<td>Variance covariance matrix</td></tr>
+<tr><td style="width: 25%;"><a href="ols_hadi.html">ols_hadi</a></td>
+<td>Hadi's influence measure</td></tr>
+<tr><td style="width: 25%;"><a href="ols_has_intercept.html">ols_has_intercept</a></td>
+<td>Model intercept check</td></tr>
+<tr><td style="width: 25%;"><a href="ols_hsp.html">ols_hsp</a></td>
+<td>Hocking's Sp</td></tr>
+<tr><td style="width: 25%;"><a href="ols_launch_app.html">ols_launch_app</a></td>
+<td>Launch shiny app</td></tr>
+<tr><td style="width: 25%;"><a href="ols_leverage.html">ols_leverage</a></td>
+<td>Leverage</td></tr>
+<tr><td style="width: 25%;"><a href="ols_mallows_cp.html">ols_mallows_cp</a></td>
+<td>Mallow's Cp</td></tr>
+<tr><td style="width: 25%;"><a href="ols_model_info.html">ols_model_info</a></td>
+<td>Model object info</td></tr>
+<tr><td style="width: 25%;"><a href="ols_model_performance.html">ols_model_performance</a></td>
+<td>Model Performance</td></tr>
+<tr><td style="width: 25%;"><a href="ols_msep.html">ols_msep</a></td>
+<td>MSEP</td></tr>
+<tr><td style="width: 25%;"><a href="ols_plot_added_variable.html">ols_plot_added_variable</a></td>
+<td>Added variable plots</td></tr>
+<tr><td style="width: 25%;"><a href="ols_plot_comp_plus_resid.html">ols_plot_comp_plus_resid</a></td>
+<td>Residual plus component plot</td></tr>
+<tr><td style="width: 25%;"><a href="ols_plot_cooksd_bar.html">ols_plot_cooksd_bar</a></td>
+<td>Cooks' D bar plot</td></tr>
+<tr><td style="width: 25%;"><a href="ols_plot_cooksd_chart.html">ols_plot_cooksd_chart</a></td>
+<td>Cooks' D chart</td></tr>
+<tr><td style="width: 25%;"><a href="ols_plot_dfbetas.html">ols_plot_dfbetas</a></td>
+<td>DFBETAs panel</td></tr>
+<tr><td style="width: 25%;"><a href="ols_plot_dffits.html">ols_plot_dffits</a></td>
+<td>DFFITS plot</td></tr>
+<tr><td style="width: 25%;"><a href="ols_plot_diagnostics.html">ols_plot_diagnostics</a></td>
+<td>Diagnostics panel</td></tr>
+<tr><td style="width: 25%;"><a href="ols_plot_resid_fit_spread.html">ols_plot_fm</a></td>
+<td>Residual fit spread plot</td></tr>
+<tr><td style="width: 25%;"><a href="ols_plot_hadi.html">ols_plot_hadi</a></td>
+<td>Hadi plot</td></tr>
+<tr><td style="width: 25%;"><a href="ols_plot_obs_fit.html">ols_plot_obs_fit</a></td>
+<td>Observed vs fitted values plot</td></tr>
+<tr><td style="width: 25%;"><a href="ols_plot_reg_line.html">ols_plot_reg_line</a></td>
+<td>Simple linear regression line</td></tr>
+<tr><td style="width: 25%;"><a href="ols_plot_resid_box.html">ols_plot_resid_box</a></td>
+<td>Residual box plot</td></tr>
+<tr><td style="width: 25%;"><a href="ols_plot_resid_fit.html">ols_plot_resid_fit</a></td>
+<td>Residual vs fitted plot</td></tr>
+<tr><td style="width: 25%;"><a href="ols_plot_resid_fit_spread.html">ols_plot_resid_fit_spread</a></td>
+<td>Residual fit spread plot</td></tr>
+<tr><td style="width: 25%;"><a href="ols_plot_resid_hist.html">ols_plot_resid_hist</a></td>
+<td>Residual histogram</td></tr>
+<tr><td style="width: 25%;"><a href="ols_plot_resid_lev.html">ols_plot_resid_lev</a></td>
+<td>Studentized residuals vs leverage plot</td></tr>
+<tr><td style="width: 25%;"><a href="ols_plot_resid_pot.html">ols_plot_resid_pot</a></td>
+<td>Potential residual plot</td></tr>
+<tr><td style="width: 25%;"><a href="ols_plot_resid_qq.html">ols_plot_resid_qq</a></td>
+<td>Residual QQ plot</td></tr>
+<tr><td style="width: 25%;"><a href="ols_plot_resid_regressor.html">ols_plot_resid_regressor</a></td>
+<td>Residual vs regressor plot</td></tr>
+<tr><td style="width: 25%;"><a href="ols_plot_resid_fit_spread.html">ols_plot_resid_spread</a></td>
+<td>Residual fit spread plot</td></tr>
+<tr><td style="width: 25%;"><a href="ols_plot_resid_stand.html">ols_plot_resid_stand</a></td>
+<td>Standardized residual chart</td></tr>
+<tr><td style="width: 25%;"><a href="ols_plot_resid_stud.html">ols_plot_resid_stud</a></td>
+<td>Studentized residual plot</td></tr>
+<tr><td style="width: 25%;"><a href="ols_plot_resid_stud_fit.html">ols_plot_resid_stud_fit</a></td>
+<td>Deleted studentized residual vs fitted values plot</td></tr>
+<tr><td style="width: 25%;"><a href="ols_plot_response.html">ols_plot_response</a></td>
+<td>Response variable profile</td></tr>
+<tr><td style="width: 25%;"><a href="ols_pred_rsq.html">ols_pred_rsq</a></td>
+<td>Predicted rsquare</td></tr>
+<tr><td style="width: 25%;"><a href="ols_prep_avplot_data.html">ols_prep_avplot_data</a></td>
+<td>Added variable plot data</td></tr>
+<tr><td style="width: 25%;"><a href="ols_prep_cdplot_data.html">ols_prep_cdplot_data</a></td>
+<td>Cooks' D plot data</td></tr>
+<tr><td style="width: 25%;"><a href="ols_prep_cdplot_outliers.html">ols_prep_cdplot_outliers</a></td>
+<td>Cooks' d outlier data</td></tr>
+<tr><td style="width: 25%;"><a href="ols_prep_dfbeta_data.html">ols_prep_dfbeta_data</a></td>
+<td>DFBETAs plot data</td></tr>
+<tr><td style="width: 25%;"><a href="ols_prep_dfbeta_outliers.html">ols_prep_dfbeta_outliers</a></td>
+<td>DFBETAs plot outliers</td></tr>
+<tr><td style="width: 25%;"><a href="ols_prep_dsrvf_data.html">ols_prep_dsrvf_data</a></td>
+<td>Deleted studentized residual plot data</td></tr>
+<tr><td style="width: 25%;"><a href="ols_prep_outlier_obs.html">ols_prep_outlier_obs</a></td>
+<td>Cooks' D outlier observations</td></tr>
+<tr><td style="width: 25%;"><a href="ols_prep_regress_x.html">ols_prep_regress_x</a></td>
+<td>Regress predictor on other predictors</td></tr>
+<tr><td style="width: 25%;"><a href="ols_prep_regress_y.html">ols_prep_regress_y</a></td>
+<td>Regress y on other predictors</td></tr>
+<tr><td style="width: 25%;"><a href="ols_prep_rfsplot_fmdata.html">ols_prep_rfsplot_fmdata</a></td>
+<td>Residual fit spread plot data</td></tr>
+<tr><td style="width: 25%;"><a href="ols_prep_rfsplot_fmdata.html">ols_prep_rfsplot_rsdata</a></td>
+<td>Residual fit spread plot data</td></tr>
+<tr><td style="width: 25%;"><a href="ols_prep_rstudlev_data.html">ols_prep_rstudlev_data</a></td>
+<td>Studentized residual vs leverage plot data</td></tr>
+<tr><td style="width: 25%;"><a href="ols_prep_rvsrplot_data.html">ols_prep_rvsrplot_data</a></td>
+<td>Residual vs regressor plot data</td></tr>
+<tr><td style="width: 25%;"><a href="ols_prep_srchart_data.html">ols_prep_srchart_data</a></td>
+<td>Standardized residual chart data</td></tr>
+<tr><td style="width: 25%;"><a href="ols_prep_srplot_data.html">ols_prep_srplot_data</a></td>
+<td>Studentized residual plot data</td></tr>
+<tr><td style="width: 25%;"><a href="ols_press.html">ols_press</a></td>
+<td>PRESS</td></tr>
+<tr><td style="width: 25%;"><a href="ols_pure_error_anova.html">ols_pure_error_anova</a></td>
+<td>Lack of fit F test</td></tr>
+<tr><td style="width: 25%;"><a href="ols_regress.html">ols_regress</a></td>
+<td>Ordinary least squares regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_regress.html">ols_regress.lm</a></td>
+<td>Ordinary least squares regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_sbc.html">ols_sbc</a></td>
+<td>Bayesian information criterion</td></tr>
+<tr><td style="width: 25%;"><a href="ols_sbic.html">ols_sbic</a></td>
+<td>Sawa's bayesian information criterion</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_all_possible.html">ols_step_all_possible</a></td>
+<td>All possible regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_all_possible.html">ols_step_all_possible.default</a></td>
+<td>All possible regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_all_possible_betas.html">ols_step_all_possible_betas</a></td>
+<td>All possible regression variable coefficients</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_backward_adj_r2.html">ols_step_backward_adj_r2</a></td>
+<td>Stepwise Adjusted R-Squared backward regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_backward_adj_r2.html">ols_step_backward_adj_r2.default</a></td>
+<td>Stepwise Adjusted R-Squared backward regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_backward_aic.html">ols_step_backward_aic</a></td>
+<td>Stepwise AIC backward regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_backward_aic.html">ols_step_backward_aic.default</a></td>
+<td>Stepwise AIC backward regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_backward_p.html">ols_step_backward_p</a></td>
+<td>Stepwise backward regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_backward_p.html">ols_step_backward_p.default</a></td>
+<td>Stepwise backward regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_backward_r2.html">ols_step_backward_r2</a></td>
+<td>Stepwise R-Squared backward regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_backward_r2.html">ols_step_backward_r2.default</a></td>
+<td>Stepwise R-Squared backward regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_backward_sbc.html">ols_step_backward_sbc</a></td>
+<td>Stepwise SBC backward regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_backward_sbc.html">ols_step_backward_sbc.default</a></td>
+<td>Stepwise SBC backward regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_backward_sbic.html">ols_step_backward_sbic</a></td>
+<td>Stepwise SBIC backward regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_backward_sbic.html">ols_step_backward_sbic.default</a></td>
+<td>Stepwise SBIC backward regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_best_subset.html">ols_step_best_subset</a></td>
+<td>Best subsets regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_best_subset.html">ols_step_best_subset.default</a></td>
+<td>Best subsets regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_both_adj_r2.html">ols_step_both_adj_r2</a></td>
+<td>Stepwise Adjusted R-Squared regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_both_adj_r2.html">ols_step_both_adj_r2.default</a></td>
+<td>Stepwise Adjusted R-Squared regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_both_aic.html">ols_step_both_aic</a></td>
+<td>Stepwise AIC regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_both_aic.html">ols_step_both_aic.default</a></td>
+<td>Stepwise AIC regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_both_p.html">ols_step_both_p</a></td>
+<td>Stepwise regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_both_p.html">ols_step_both_p.default</a></td>
+<td>Stepwise regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_both_r2.html">ols_step_both_r2</a></td>
+<td>Stepwise R-Squared regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_both_r2.html">ols_step_both_r2.default</a></td>
+<td>Stepwise R-Squared regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_both_sbc.html">ols_step_both_sbc</a></td>
+<td>Stepwise SBC regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_both_sbc.html">ols_step_both_sbc.default</a></td>
+<td>Stepwise SBC regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_both_sbic.html">ols_step_both_sbic</a></td>
+<td>Stepwise SBIC regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_both_sbic.html">ols_step_both_sbic.default</a></td>
+<td>Stepwise SBIC regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_forward_adj_r2.html">ols_step_forward_adj_r2</a></td>
+<td>Stepwise Adjusted R-Squared forward regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_forward_adj_r2.html">ols_step_forward_adj_r2.default</a></td>
+<td>Stepwise Adjusted R-Squared forward regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_forward_aic.html">ols_step_forward_aic</a></td>
+<td>Stepwise AIC forward regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_forward_aic.html">ols_step_forward_aic.default</a></td>
+<td>Stepwise AIC forward regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_forward_p.html">ols_step_forward_p</a></td>
+<td>Stepwise forward regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_forward_p.html">ols_step_forward_p.default</a></td>
+<td>Stepwise forward regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_forward_r2.html">ols_step_forward_r2</a></td>
+<td>Stepwise R-Squared forward regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_forward_r2.html">ols_step_forward_r2.default</a></td>
+<td>Stepwise R-Squared forward regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_forward_sbc.html">ols_step_forward_sbc</a></td>
+<td>Stepwise SBC forward regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_forward_sbc.html">ols_step_forward_sbc.default</a></td>
+<td>Stepwise SBC forward regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_forward_sbic.html">ols_step_forward_sbic</a></td>
+<td>Stepwise SBIC forward regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_forward_sbic.html">ols_step_forward_sbic.default</a></td>
+<td>Stepwise SBIC forward regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_test_bartlett.html">ols_test_bartlett</a></td>
+<td>Bartlett test</td></tr>
+<tr><td style="width: 25%;"><a href="ols_test_bartlett.html">ols_test_bartlett.default</a></td>
+<td>Bartlett test</td></tr>
+<tr><td style="width: 25%;"><a href="ols_test_breusch_pagan.html">ols_test_breusch_pagan</a></td>
+<td>Breusch pagan test</td></tr>
+<tr><td style="width: 25%;"><a href="ols_test_correlation.html">ols_test_correlation</a></td>
+<td>Correlation test for normality</td></tr>
+<tr><td style="width: 25%;"><a href="ols_test_f.html">ols_test_f</a></td>
+<td>F test</td></tr>
+<tr><td style="width: 25%;"><a href="ols_test_normality.html">ols_test_normality</a></td>
+<td>Test for normality</td></tr>
+<tr><td style="width: 25%;"><a href="ols_test_normality.html">ols_test_normality.lm</a></td>
+<td>Test for normality</td></tr>
+<tr><td style="width: 25%;"><a href="ols_test_outlier.html">ols_test_outlier</a></td>
+<td>Bonferroni Outlier Test</td></tr>
+<tr><td style="width: 25%;"><a href="ols_test_score.html">ols_test_score</a></td>
+<td>Score test</td></tr>
+<tr><td style="width: 25%;"><a href="ols_coll_diag.html">ols_vif_tol</a></td>
+<td>Collinearity diagnostics</td></tr>
+</table>
+
+<h2><a id="P">-- P --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="ols_step_all_possible.html">plot.ols_step_all_possible</a></td>
+<td>All possible regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_backward_adj_r2.html">plot.ols_step_backward_adj_r2</a></td>
+<td>Stepwise Adjusted R-Squared backward regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_backward_aic.html">plot.ols_step_backward_aic</a></td>
+<td>Stepwise AIC backward regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_backward_p.html">plot.ols_step_backward_p</a></td>
+<td>Stepwise backward regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_backward_r2.html">plot.ols_step_backward_r2</a></td>
+<td>Stepwise R-Squared backward regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_backward_sbc.html">plot.ols_step_backward_sbc</a></td>
+<td>Stepwise SBC backward regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_backward_sbic.html">plot.ols_step_backward_sbic</a></td>
+<td>Stepwise SBIC backward regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_best_subset.html">plot.ols_step_best_subset</a></td>
+<td>Best subsets regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_both_adj_r2.html">plot.ols_step_both_adj_r2</a></td>
+<td>Stepwise Adjusted R-Squared regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_both_aic.html">plot.ols_step_both_aic</a></td>
+<td>Stepwise AIC regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_both_p.html">plot.ols_step_both_p</a></td>
+<td>Stepwise regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_both_r2.html">plot.ols_step_both_r2</a></td>
+<td>Stepwise R-Squared regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_both_sbc.html">plot.ols_step_both_sbc</a></td>
+<td>Stepwise SBC regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_both_sbic.html">plot.ols_step_both_sbic</a></td>
+<td>Stepwise SBIC regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_forward_adj_r2.html">plot.ols_step_forward_adj_r2</a></td>
+<td>Stepwise Adjusted R-Squared forward regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_forward_aic.html">plot.ols_step_forward_aic</a></td>
+<td>Stepwise AIC forward regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_forward_p.html">plot.ols_step_forward_p</a></td>
+<td>Stepwise forward regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_forward_r2.html">plot.ols_step_forward_r2</a></td>
+<td>Stepwise R-Squared forward regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_forward_sbc.html">plot.ols_step_forward_sbc</a></td>
+<td>Stepwise SBC forward regression</td></tr>
+<tr><td style="width: 25%;"><a href="ols_step_forward_sbic.html">plot.ols_step_forward_sbic</a></td>
+<td>Stepwise SBIC forward regression</td></tr>
+</table>
+
+<h2><a id="R">-- R --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="rvsr_plot_shiny.html">rvsr_plot_shiny</a></td>
+<td>Residual vs regressors plot for shiny app</td></tr>
+</table>
+
+<h2><a id="S">-- S --</a></h2>
+
+<table style="width: 100%;">
+<tr><td style="width: 25%;"><a href="stepdata.html">stepdata</a></td>
+<td>Test Data Set</td></tr>
+<tr><td style="width: 25%;"><a href="surgical.html">surgical</a></td>
+<td>Surgical Unit Data Set</td></tr>
+</table>
+</div></body></html>

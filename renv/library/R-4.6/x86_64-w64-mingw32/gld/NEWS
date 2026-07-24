@@ -1,0 +1,56 @@
+Changes in version 2.6.8
+  - Documentation URL update
+  - plot.starship and plot.GldGPDFit now include pdf over histogram plot
+  
+Changes in version 2.6.7
+  - Documentation bugfixes
+
+Changes in version 2.6.6
+  - Fix function prototype error in C code for RS type
+
+Changes in version 2.6.5
+  - Fix documentation CRAN issues - nested <em>, escaped &
+
+Changes in version 2.6.4 
+  - New function fit.fkml.moment() - does the same as fit.fkml(method="MoM")
+  - na.rm now works for starship method in fit.gpd
+
+Changes in version 2.6.3
+  - New maintainer email address
+  - fit.gpd() now allows method="starship", then calls starship()
+
+Changes in version 2.6.2
+  - gl.check.lambda bugfix
+
+Changes in version 2.6.1
+  - Add LambdaZeroEpsilon argument to fit.gpd to allow wider range of Lambda values to count as zero, and thus Quantile Based Skew Logistic.  
+Changes in version 2.6
+  - plot method for starship, plot.starship now defaults to one.page=FALSE
+  - The fit.fkml function now;
+    * Returns and prints trimming values in Trimmed mean estimates
+    * Has the LMom method which is trimmed mean with zero trimming
+    * Has MoM, method of moments
+
+Changes in version 2.5
+  - Standard Errors for the L Moment estimates for the GPD type fit.gpd defaults to recording cpu time usage (so that it is the same as fit.fkml)
+
+Changes in version 2.4.2
+  - Fix bug in fit.gpd
+  - BetaLambdaLambda function added (utility function for gpd L-Moment estimation)
+
+Changes in version 2.4.1
+  - Fix pgl() example comment - inverse.eps had defaulted to .Machine$double.eps since version 1.9
+
+Changes in version 2.4
+  - L Moment estimation for the GPD type
+
+Changes in version 2.3.3 
+  - print.starship, summary.starship and plot.starship now display  estimation method and gld type
+
+Changes in version 2.3
+  - Moment estimation for FKML type
+  - qdgl function deprecated in favour of dqgl as it calculates the density quantile function of the gld
+
+Changes in version 2.2
+  - New estimation methods for the FKML parameterisation: Numerical MLE, Maximum Spacings Product, Titteringtons, L Moments, TL Moments, Distributional Least Absolutes
+  - Starship has C speedups from Ben Dean, in fit.fkml function

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 256 256" class="phosphor-svg" height="256px" width="256px" fill="url(#7c81989b0e0854be19d7008f)" style="vertical-align:-0.25em;" stroke="gold" stroke-width="10">
+  <path d="M234.29,114.85l-45,38.83L203,211.75a16.4,16.4,0,0,1-24.5,17.82L128,198.49,77.47,229.57A16.4,16.4,0,0,1,53,211.75l13.76-58.07-45-38.83A16.46,16.46,0,0,1,31.08,86l59-4.76,22.76-55.08a16.36,16.36,0,0,1,30.27,0l22.75,55.08,59,4.76a16.46,16.46,0,0,1,9.37,28.86Z"></path>
+  <title>star-fill</title>
+  <defs>
+    <linearGradient id="7c81989b0e0854be19d7008f" height="0" width="0">
+      <stop offset="0" stop-color="gold"></stop>
+      <stop offset="0.5" stop-color="gold"></stop>
+      <stop offset="0.5" stop-color="#FFF"></stop>
+      <stop offset="1" stop-color="#FFF"></stop>
+    </linearGradient>
+  </defs>
+</svg>

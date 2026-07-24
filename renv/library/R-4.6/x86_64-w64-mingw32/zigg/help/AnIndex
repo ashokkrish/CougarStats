@@ -1,0 +1,6 @@
+zigg-package	zigg-package
+zigg	zigg-package
+zrexp	zrnorm
+zrnorm	zrnorm
+zrunif	zrnorm
+zsetseed	zrnorm

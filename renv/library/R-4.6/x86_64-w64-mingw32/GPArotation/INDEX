@@ -1,0 +1,17 @@
+CCAI                    The CCAI Climate-Friendly Purchasing Choices
+                        Domain
+GPArotation             Gradient Projection Algorithms for Factor
+                        Rotation
+GPFRSorth               Core Algorithms and Random-Start Wrappers
+Harman                  Harman's Eight Physical Variables
+Lp rotation             Lp Rotation
+Random.Start            Random Starting Matrix for Factor Rotation
+Thurstone               Thurstone Box Data
+WansbeekMeijer          Netherlands Television Viewership Data
+echelon                 Echelon Rotation
+eiv                     Errors-in-Variables Rotation
+print.GPArotation       Print and Summary Methods for GPArotation Class
+                        Objects
+rotations               Rotations Functions Using Gradient Projection
+                        Algorithms
+vgQ                     Rotation Criteria: Value and Gradient Functions

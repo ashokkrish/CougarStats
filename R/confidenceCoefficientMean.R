@@ -20,3 +20,4 @@ confidence_coefficient_mean <- function(n,
 #confidence_coefficient_mean(n = 21, sigma = 11, margin.error = 2)
 
 
+

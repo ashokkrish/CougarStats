@@ -1,0 +1,7 @@
+
+export(zrnorm,
+       zrexp,
+       zrunif,
+       zsetseed)
+
+useDynLib(zigg, .registration=TRUE, .fixes = "cpp_")

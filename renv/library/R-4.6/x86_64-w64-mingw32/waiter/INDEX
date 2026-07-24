@@ -1,0 +1,21 @@
+Attendant               Attendant
+attendantBar            Bootstrap 4 Loading Bar
+autoWaiter              Automatic Waiter
+garcon                  Garcon
+hostess                 Hostess
+hostessLoader           Loader
+httr_progress           Waitress with httr
+preview_spinner         Preview spinner
+spinners                Spinners
+steward                 Steward
+transparent             Transparency
+triggerWaiter           Trigger Waiter
+useAttendant            Attendant Progress Dependencies
+waiter                  Waiter
+waiterClass             Waiter R6 Class
+waiterTheme             Define a Theme
+waitress                Waitress
+waitressClass           Waitress R6 Class
+withProgressAttendant   Report Progress Attendant
+withProgressWaitress    Report Progress Waitress
+withWaiter              With Waiter

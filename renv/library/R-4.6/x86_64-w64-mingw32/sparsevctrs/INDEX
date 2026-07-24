@@ -1,0 +1,34 @@
+coerce-vector           Coerce numeric vector to sparse double
+coerce_to_sparse_data_frame
+                        Coerce sparse matrix to data frame with sparse
+                        columns
+coerce_to_sparse_matrix
+                        Coerce sparse data frame to sparse matrix
+coerce_to_sparse_tibble
+                        Coerce sparse matrix to tibble with sparse
+                        columns
+extractors              Information extraction from sparse vectors
+has_sparse_elements     Check for sparse elements
+sparse-arithmatic       Vector arithmatic with sparse vectors
+sparse-arithmatic-scalar
+                        Scalar arithmatic with sparse vectors
+sparse_character        Create sparse character vector
+sparse_double           Create sparse double vector
+sparse_dummy            Generate sparse dummy variables
+sparse_integer          Create sparse integer vector
+sparse_is_na            Detect Pressence of Missing Values
+sparse_lag              Compute lagged values for sparse vectors
+sparse_logical          Create sparse logical vector
+sparse_mean             Calculate mean from sparse vectors
+sparse_median           Calculate median from sparse vectors
+sparse_replace_na       Replace NAs with specified values in sparse
+                        vectors
+sparse_sd               Calculate standard diviation from sparse
+                        vectors
+sparse_sqrt             Calculate sqrt of sparse vectors
+sparse_var              Calculate variance from sparse vectors
+sparse_which_na         Which indices are Missing Values
+sparsevctrs_options     sparsevctrs options
+sparsity                Calculate sparsity of data frames, matrices,
+                        and sparse matrices
+type-predicates         Sparse vector type checkers

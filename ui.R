@@ -73,7 +73,7 @@ ui <- tagList(withTags(html(
       
       tabPanel("Descriptive Statistics", descStatsUI(id = "ds")),
       tabPanel("Probability Distributions", probDistUI(id = "pd")),
-      tabPanel("Sample Size Estimation", sampSizeEstUI(id = "sse")),
+      tabPanel("Sample Size Estimation", sampleSizeConfidCoeEstUI(id = "sse")),
       tabPanel("Statistical Inference", statInfrUI(id = "si")),
       tabPanel("Regression and Correlation", regressionAndCorrelationUI(id = "rc")),
       tabPanel("Machine Learning", machineLearningUI(id = "ml")),

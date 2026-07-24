@@ -1,0 +1,40 @@
+Package: parallelly
+Version: 1.47.0
+Title: Enhancing the 'parallel' Package
+Imports: parallel, tools, utils
+Suggests: commonmark, base64enc
+VignetteBuilder: parallelly
+Authors@R: c(
+        person("Henrik", "Bengtsson",
+               role = c("aut", "cre", "cph"),
+               email = "henrikb@braju.com",
+               comment = c(ORCID = "0000-0002-7579-5165")),
+        person("Mike", "Cheng",
+               role = c("ctb"),
+               email = "mikefc@coolbutuseless.com")
+    )
+Description: Utility functions that enhance the 'parallel' package and support the built-in parallel backends of the 'future' package.  For example, availableCores() gives the number of CPU cores available to your R process as given by the operating system, 'cgroups' and Linux containers, R options, and environment variables, including those set by job schedulers on high-performance compute clusters. If none is set, it will fall back to parallel::detectCores(). Another example is makeClusterPSOCK(), which is backward compatible with parallel::makePSOCKcluster() while doing a better job in setting up remote cluster workers without the need for configuring the firewall to do port-forwarding to your local computer.
+License: LGPL (>= 2.1)
+LazyLoad: TRUE
+ByteCompile: TRUE
+URL: https://parallelly.futureverse.org,
+        https://github.com/futureverse/parallelly
+BugReports: https://github.com/futureverse/parallelly/issues
+Language: en-US
+Encoding: UTF-8
+RoxygenNote: 7.3.3
+NeedsCompilation: yes
+Packaged: 2026-04-16 19:36:18 UTC; hb
+Author: Henrik Bengtsson [aut, cre, cph] (ORCID:
+    <https://orcid.org/0000-0002-7579-5165>),
+  Mike Cheng [ctb]
+Maintainer: Henrik Bengtsson <henrikb@braju.com>
+Repository: CRAN
+Date/Publication: 2026-04-17 05:10:10 UTC
+Built: R 4.6.0; x86_64-w64-mingw32; 2026-06-09 01:06:06 UTC; windows
+Archs: x64
+RemoteType: standard
+RemotePkgRef: parallelly
+RemoteRef: parallelly
+RemoteRepos: https://cran.rstudio.com
+RemoteSha.Version: 1.47.0

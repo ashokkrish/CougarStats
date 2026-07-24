@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Parallel Workers on the Local Machine</title>
+<style>
+body {
+  font-family: sans-serif;
+  line-height: 1.6;
+  padding-left: 3ex;
+  padding-right: 3ex;
+  background-color: white;
+  color: black;
+}
+
+a {
+  color: #4183C4;
+  text-decoration: none;
+}
+
+h1, h2, h3 {
+  margin: 2ex 0 1ex;
+  padding: 0;
+  font-weight: bold;
+  -webkit-font-smoothing: antialiased;
+  cursor: text;
+  position: relative;
+}
+
+h2 {
+  border-bottom: 1px solid #cccccc;
+}
+
+code {
+  margin: 0 2px;
+  padding: 0 5px;
+  white-space: nowrap;
+  border: 1px solid #eaeaea;
+  background-color: #f8f8f8;
+  border-radius: 3px;
+}
+
+pre code {
+  margin: 0;
+  padding: 0;
+  white-space: pre;
+  border: none;
+  background: transparent;
+}
+
+pre {
+  background-color: #f8f8f8;
+  border: 1px solid #cccccc;
+  line-height: 2.5x;
+  overflow: auto;
+  padding: 0.6ex 1ex;
+  border-radius: 3px;
+}
+
+pre code {
+  background-color: transparent;
+  border: none;
+}
+</style>
+</head>
+<body>
+<h1>Parallel Workers on the Local Machine</h1>
+<!--
+%\VignetteIndexEntry{Parallel Workers on the Local Machine}
+%\VignetteAuthor{Henrik Bengtsson}
+%\VignetteKeyword{R}
+%\VignetteKeyword{package}
+%\VignetteKeyword{vignette}
+%\VignetteEngine{parallelly::selfonly}
+-->
+<h1>Introduction</h1>
+<p>This vignette illustrates how to launch parallel workers on the
+current, local machine. This works the same on all operating systems
+where R is supported, e.g. Linux, macOS, and MS Windows.</p>
+<h1>Examples</h1>
+<h2>Example: Launching two parallel workers</h2>
+<p>The below illustrates how to launch a cluster of two parallel workers
+on the current machine, run some basic calculations in parallel, and
+then shut down the cluster.</p>
+<pre><code class="language-r">library(parallelly)
+library(parallel)
+
+cl &lt;- makeClusterPSOCK(2)
+print(cl)
+#&gt; Socket cluster with 2 nodes on host 'localhost' (R version 4.5.2
+#&gt; (2025-10-31), platform x86_64-pc-linux-gnu)
+
+y &lt;- parLapply(cl, X = 1:100, fun = sqrt)
+y &lt;- unlist(y)
+z &lt;- sum(y)
+print(z)
+#&gt; [1] 671.4629
+
+parallel::stopCluster(cl)
+</code></pre>
+<p><em>Comment</em>: In the <strong>parallel</strong> package, a parallel worker is referred
+to a parallel node, or short <em>node</em>, which is why we use the same term
+in the <strong>parallelly</strong> package.</p>
+<p>An alternative to specifying the <em>number</em> of parallel workers is to
+specify a character vector with that number of <code>&quot;localhost&quot;</code> entries,
+e.g.</p>
+<pre><code class="language-r">cl &lt;- makeClusterPSOCK(c(&quot;localhost&quot;, &quot;localhost&quot;))
+</code></pre>
+<h2>Example: Launching as many parallel workers as allotted</h2>
+<p>The <code>availableCores()</code> function will return the number of workers that
+the system allows. It respects many common settings that control the
+number of CPU cores that the current R process is allotted, e.g. R
+options, environment variables, and CGroups settings. For details, see
+<code>help(&quot;availableCores&quot;)</code>. For example,</p>
+<pre><code class="language-r">library(parallelly)
+cl &lt;- makeClusterPSOCK(availableCores())
+print(cl)
+#&gt; Socket cluster with 8 nodes on host 'localhost' (R version 4.5.2
+#&gt; (2025-10-31), platform x86_64-pc-linux-gnu)
+</code></pre>
+</body>
+</html>

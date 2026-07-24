@@ -1,0 +1,13 @@
+CAIC                    Consistent AIC
+ResourceSelection-package
+                        Resource Selection (Probability) Functions for
+                        Use-Availability Data
+goats                   Mountain Goats Data Set
+hoslem.test             Hosmer-Lemeshow Goodness of Fit (GOF) Test
+kdepairs                Scatterplot Matrix with 2D Kernel Density
+makeUsedAvail           Make a Used-Available Data Frame
+mep                     Marginal Effect Plots
+rsf                     Resource Selection (Probability) Functions for
+                        Use-Availability Data
+simulateUsedAvail       Simulate Used-Available Data
+sindex                  Weighted relative suitability index

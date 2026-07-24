@@ -1,0 +1,29 @@
+Package: SQUAREM
+Version: 2026.1
+Title: Squared Extrapolation Methods for Accelerating EM-Like Monotone
+        Algorithms
+Description: Algorithms for accelerating the convergence of slow, monotone 
+    sequences from smooth, contraction mappings such as the EM algorithm. 
+    It can be used to accelerate any smooth, linearly convergent scheme. 
+    A tutorial-style introduction is available in vignette("SQUAREM"). 
+    See also: Varadhan & Roland (2008) <doi:10.18637/jss.v092.i07>.
+Depends: R (>= 4.0)
+Suggests: setRNG, interval
+License: GPL (>= 2)
+Authors@R: person(given = "Ravi",
+                  family = "Varadhan",
+                  role = c("aut", "cre"),
+                  email = "ravi.varadhan@jhu.edu")
+Encoding: UTF-8
+NeedsCompilation: no
+Packaged: 2026-03-11 21:54:35 UTC; raviv
+Author: Ravi Varadhan [aut, cre]
+Maintainer: Ravi Varadhan <ravi.varadhan@jhu.edu>
+Repository: CRAN
+Date/Publication: 2026-03-12 08:30:13 UTC
+Built: R 4.6.0; ; 2026-06-09 01:06:44 UTC; windows
+RemoteType: standard
+RemotePkgRef: SQUAREM
+RemoteRef: SQUAREM
+RemoteRepos: https://cran.rstudio.com
+RemoteSha.Version: 2026.1

@@ -1,0 +1,11 @@
+
+useDynLib(ROI.plugin.qpoases, .registration=TRUE)
+importFrom(Rcpp, evalCpp)
+
+import("ROI")
+import("checkmate")
+importFrom("slam", "simple_triplet_matrix")
+importFrom("slam", "simple_triplet_zero_matrix")
+importFrom("stats", "terms", "aggregate", "setNames")
+importFrom("methods", "getPackageName")
+importFrom("methods", "getFunction")

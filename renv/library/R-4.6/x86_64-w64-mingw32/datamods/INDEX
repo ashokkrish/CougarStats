@@ -1,0 +1,24 @@
+create-column           Create new column
+cut-variable            Module to Convert Numeric to Factor
+demo_edit               Customer Credit Card Information
+edit-data               Shiny module to interactively edit a
+                        'data.frame'
+filter-data             Shiny module to interactively filter a
+                        'data.frame'
+get_data_packages       Get packages containing datasets
+i18n                    Internationalization
+import-copypaste        Import data with copy & paste
+import-file             Import data from a file
+import-globalenv        Import data from an Environment
+import-googlesheets     Import data from Googlesheet
+import-modal            Import from all sources
+import-url              Import data from a URL
+list_pkg_data           List dataset contained in a package
+module-sample           Shiny module to interactively sample a
+                        'data.frame'
+select-group            Select Group Input Module
+show_data               Display a table in a window
+update-factor           Module to Reorder the Levels of a Factor
+                        Variable
+update-variables        Select, rename and convert variables
+validation_ui           Validation module

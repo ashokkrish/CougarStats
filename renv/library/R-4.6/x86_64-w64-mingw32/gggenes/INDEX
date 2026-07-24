@@ -1,0 +1,21 @@
+example_dummies         A set of example dummy alignment genes.
+example_features        A set of example genetic features.
+example_genes           A set of example genes.
+example_terminators     A set of example terminators.
+geom_feature            A 'ggplot2' geom to draw point genetic features
+geom_feature_label      A 'ggplot2' geom to add text labels to point
+                        genetic features
+geom_gene_arrow         A 'ggplot2' geom to draw genes as arrows
+geom_gene_label         A 'ggplot2' geom to add text labels to gene
+                        arrows
+geom_subgene_arrow      A 'ggplot2' geom to draw subgene segments of
+                        gene arrows
+geom_subgene_label      A 'ggplot2' geom to add text labels to subgenes
+geom_terminator         A 'ggplot2' geom to draw transcription
+                        terminators
+geom_terminator_label   A 'ggplot2' geom to add text labels to
+                        transcription terminators
+make_alignment_dummies
+                        Prepare dummy data to visually align a single
+                        gene across faceted molecules
+theme_genes             A 'ggplot2' theme for drawing gene maps

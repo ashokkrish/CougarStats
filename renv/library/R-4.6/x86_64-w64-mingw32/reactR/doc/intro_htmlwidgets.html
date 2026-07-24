@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Alan Dipert" />
+<meta name="author" content="Carson Sievert" />
+
+<meta name="date" content="2024-09-14" />
+
+<title>Authoring htmlwidgets powered by React with reactR</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Authoring htmlwidgets powered by React with
+reactR</h1>
+<h4 class="author">Alan Dipert</h4>
+<h4 class="author">Carson Sievert</h4>
+<h4 class="date">2024-09-14</h4>
+
+
+
+<p>The <a href="https://www.htmlwidgets.org">htmlwidgets</a> package
+provides a framework for creating R bindings to JavaScript libraries.
+Using the <strong>htmlwidgets</strong> package alone, it’s not
+necessarily straight-forward to create an R binding to a <a href="https://reactjs.org/">React</a>-powered JavaScript library. The
+<strong>reactR</strong> package builds on the
+<strong>htmlwidgets</strong> framework to make it much easier to author
+<strong>htmlwidgets</strong> that are powered by React. This vignette
+will show you how to effectively leverage <strong>reactR</strong> to
+build an <strong>htmlwidgets</strong> package that interfaces with <a href="https://github.com/borisyankov/react-sparklines">react-sparklines</a>
+React JavaScript library.</p>
+<div id="software-pre-requisites" class="section level2">
+<h2>Software pre-requisites</h2>
+<p>In order to develop a <strong>reactR</strong> widget, you’ll need to
+install R and optionally RStudio. If you’re on Windows, you should also
+install <a href="https://cran.r-project.org/bin/windows/Rtools/">Rtools</a>.</p>
+<blockquote>
+<p>For an excellent general introduction to R package concepts, check
+out the <a href="https://r-pkgs.org/">R packages</a> online book.</p>
+</blockquote>
+<p>In addition, you’ll need to install the following JavaScript tools on
+your machine:</p>
+<ul>
+<li><a href="https://nodejs.org">Node.js</a>: JavaScript engine and
+runtime for development outside of browsers. Provides the
+<code>node</code> and <code>npm</code> commands.</li>
+<li><a href="https://classic.yarnpkg.com/en/">Yarn</a>: Command-line
+dependency management tool, provides the <code>yarn</code> command.</li>
+</ul>
+<p>To follow along in this vignette, you’ll also need the following R
+packages:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="fu">c</span>(<span class="st">&quot;shiny&quot;</span>, <span class="st">&quot;devtools&quot;</span>, <span class="st">&quot;usethis&quot;</span>, <span class="st">&quot;htmlwidgets&quot;</span>, <span class="st">&quot;reactR&quot;</span>))</span></code></pre></div>
+</div>
+<div id="scaffolding" class="section level2">
+<h2>Scaffolding</h2>
+<p>To create a new widget you can call <code>scaffoldReactWidget</code>
+to generate the basic structure and build configuration. This function
+will:</p>
+<ul>
+<li>Create the .R, .js, .yaml, and .json files required by your
+widget;</li>
+<li>If provided, take an <a href="https://www.npmjs.com/">npm</a>
+package name and version as a named list with <code>name</code> and
+<code>version</code> elements. For example, the npm package
+<code>foo</code> at version <code>^1.2.0</code> would be expressed as
+<code>list(name = &quot;foo&quot;, version = &quot;^1.2.0&quot;)</code>. The package, if
+provided, will be added to the new widget’s <code>package.json</code> as
+a build dependency.</li>
+</ul>
+<p>The following R code will create an R package named
+<strong>sparklines</strong>, then provide the templating for creating an
+htmlwidget powered by the <code>react-sparklines</code> npm package:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="co"># Create the R package</span></span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>usethis<span class="sc">::</span><span class="fu">create_package</span>(<span class="st">&quot;~/sparklines&quot;</span>)</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="co"># Inject the widget templating</span></span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>withr<span class="sc">::</span><span class="fu">with_dir</span>(</span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>  <span class="st">&quot;~/sparklines&quot;</span>, </span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>  reactR<span class="sc">::</span><span class="fu">scaffoldReactWidget</span>(<span class="st">&quot;sparklines&quot;</span>, <span class="fu">list</span>(<span class="st">&quot;react-sparklines&quot;</span> <span class="ot">=</span> <span class="st">&quot;^1.7.0&quot;</span>), <span class="at">edit =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a>)</span></code></pre></div>
+</div>
+<div id="building-and-installing" class="section level2">
+<h2>Building and installing</h2>
+<div id="building-the-javascript" class="section level3">
+<h3>Building the JavaScript</h3>
+<p>The next step is to navigate to the newly-created
+<code>sparklines</code> project and run the following R commands:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">system</span>(<span class="st">&quot;yarn install&quot;</span>)</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="fu">system</span>(<span class="st">&quot;yarn run webpack&quot;</span>)</span></code></pre></div>
+<ul>
+<li><p><code>yarn install</code> downloads all of the dependencies
+listed in <code>package.json</code> and creates a new file,
+<code>yarn.lock</code>. You should add this file to revision control. It
+will be updated whenever you change dependencies and run
+<code>yarn install</code>. <strong>Note: you only need to run it after
+modifying package.json</strong>. For further documentation on
+<code>yarn install</code>, see the <a href="https://classic.yarnpkg.com/en/docs/cli/install/">yarn
+documentation</a>.</p></li>
+<li><p><code>yarn run webpack</code> compiles the <a href="https://babeljs.io/docs/en/learn/">ES2015</a> JavaScript source
+file at <code>srcjs/sparklines.js</code> into
+<code>inst/htmlwidgets/sparklines.js</code>. The later file is one
+actually used by the R package and includes all the relevant JavaScript
+dependencies in a version of JavaScript that most browsers understand.
+Note that, if you add <code>--mode=development</code> to the end of this
+command, it will include a <a href="https://firefox-source-docs.mozilla.org/devtools-user/debugger/how_to/use_a_source_map/index.html">source
+map</a> is included with the compiled JavaScript, which makes JavaScript
+debugging much easier, but hopefully you won’t need to do much of any
+JavaScript debugging.</p></li>
+</ul>
+<p><code>yarn run webpack</code> is not strictly a <code>yarn</code>
+command. In fact, <code>yarn run</code> simply delegates to the <a href="https://webpack.js.org/">webpack</a> program. Webpack’s
+configuration is generated by <code>scaffoldReactWidget</code> in the
+file <code>webpack.config.js</code>, but you can always change this
+configuration and/or modify the <code>yarn run webpack</code> command to
+suit your needs.</p>
+</div>
+<div id="installing-the-r-package" class="section level3">
+<h3>Installing the R package</h3>
+<p>Now that the widget’s JavaScript is compiled, go ahead and install
+the R package:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">document</span>()</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install</span>(<span class="at">quick =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
+<p>Alternatively, in RStudio, you can use the keyboard shortcuts
+<code>Ctrl+Shift+D</code> and <code>Ctrl-Shift-B</code> to document and
+build the package. (On macOS, the shortcuts are <code>Cmd+Shift+D</code>
+and <code>Cmd+Shift+B</code>)</p>
+</div>
+</div>
+<div id="run-the-included-demo" class="section level2">
+<h2>Run the included demo</h2>
+<p>Now that the widget’s JavaScript is compiled, and the R package is
+installed, run <code>app.R</code> to see a demo in action:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>shiny<span class="sc">::</span><span class="fu">runApp</span>()</span></code></pre></div>
+<p>Alternatively, in RStudio, you can open <code>app.R</code> and press
+<code>Ctrl-Shift-Enter</code> (<code>Cmd-Shift-Enter</code> on macOS).
+You should see something like the following appear in the Viewer
+pane:</p>
+<p><img src="data:image/jpeg;base64,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AooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKAMKz+5N/18Tf8AoxqKLP7k3/XxN/6MairIJbX/AJDMH/XvL/6FHWxWPa/8hmD/AK95f/Qo62KllIKKKKQwooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAwrP7k3/AF8Tf+jGoos/uTf9fE3/AKMairIJbX/kMwf9e8v/AKFHWxWPa/8AIZg/695f/Qo62KllIKKKKQwooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAwrP7k3/XxN/6Maiiz+5N/wBfE3/oxqKsgltf+QzB/wBe8v8A6FHWxWPa/wDIZg/695f/AEKOtipZSCiiikMKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKAMKz+5N/18Tf+jGoos/uTf9fE3/oxqKsgltf+QzB/17y/+hR1sVj2v/IZg/695f8A0KOtipZSCiiikMKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKAMKz+5N/18Tf8AoxqKLP7k3/XxN/6MairIJbX/AJDMH/XvL/6FHWxWJJHMt1HPBJGjqjIRJGWBBKnsR/dp/wBq1H/nva/+A7f/ABdIZsUVj/atR/572v8A4Dt/8XR9q1H/AJ72v/gO3/xdKw7mxRWP9q1H/nva/wDgO3/xdH2rUf8Anva/+A7f/F0WC5sUVj/atR/572v/AIDt/wDF0fatR/572v8A4Dt/8XRYLmxRWP8AatR/572v/gO3/wAXR9q1H/nva/8AgO3/AMXRYLmxRWP9q1H/AJ72v/gO3/xdH2rUf+e9r/4Dt/8AF0WC5sUVj/atR/572v8A4Dt/8XR9q1H/AJ72v/gO3/xdFgubFFY/2rUf+e9r/wCA7f8AxdH2rUf+e9r/AOA7f/F0WC5sUVj/AGrUf+e9r/4Dt/8AF0fatR/572v/AIDt/wDF0WC5sUVj/atR/wCe9r/4Dt/8XR9q1H/nva/+A7f/ABdFgubFFY/2rUf+e9r/AOA7f/F0fatR/wCe9r/4Dt/8XRYLmxRWP9q1H/nva/8AgO3/AMXR9q1H/nva/wDgO3/xdFgubFFY/wBq1H/nva/+A7f/ABdH2rUf+e9r/wCA7f8AxdFgubFFY/2rUf8Anva/+A7f/F0fatR/572v/gO3/wAXRYLmxRWP9q1H/nva/wDgO3/xdH2rUf8Anva/+A7f/F0WC5sUVj/atR/572v/AIDt/wDF0fatR/572v8A4Dt/8XRYLmxRWP8AatR/572v/gO3/wAXR9q1H/nva/8AgO3/AMXRYLmxRWP9q1H/AJ72v/gO3/xdH2rUf+e9r/4Dt/8AF0WC5sUVj/atR/572v8A4Dt/8XR9q1H/AJ72v/gO3/xdFgubFFY/2rUf+e9r/wCA7f8AxdH2rUf+e9r/AOA7f/F0WC5sUVj/AGrUf+e9r/4Dt/8AF0fatR/572v/AIDt/wDF0WC5sUVj/atR/wCe9r/4Dt/8XR9q1H/nva/+A7f/ABdFgubFFY/2rUf+e9r/AOA7f/F0fatR/wCe9r/4Dt/8XRYLmxRWP9q1H/nva/8AgO3/AMXR9q1H/nva/wDgO3/xdFgubFFY/wBq1H/nva/+A7f/ABdH2rUf+e9r/wCA7f8AxdFgubFFY/2rUf8Anva/+A7f/F0fatR/572v/gO3/wAXRYLmxRWP9q1H/nva/wDgO3/xdH2rUf8Anva/+A7f/F0WC5sUVj/atR/572v/AIDt/wDF0fatR/572v8A4Dt/8XRYLmxRWP8AatR/572v/gO3/wAXR9q1H/nva/8AgO3/AMXRYLmxRWP9q1H/AJ72v/gO3/xdH2rUf+e9r/4Dt/8AF0WC5sUVj/atR/572v8A4Dt/8XR9q1H/AJ72v/gO3/xdFgubFFY/2rUf+e9r/wCA7f8AxdH2rUf+e9r/AOA7f/F0WC5sUVj/AGrUf+e9r/4Dt/8AF0fatR/572v/AIDt/wDF0WC5FZ/cm/6+Jv8A0Y1FOtYWhjIdg7s7OWVcDLMW4GT60VRJLRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQB//2Q==" /></p>
+</div>
+<div id="authoring-a-react-binding" class="section level2">
+<h2>Authoring a React binding</h2>
+<p>At this point, we’ve built some scaffolding for an htmlwidget powered
+by React. Let’s modify it to create an interface to the
+<code>react-sparklines</code> library. Authoring the interface requires
+some changes on both the JavaScript and R side, but most of the hard
+thinking will be in figuring how best to design your interface. To give
+you an example of how this could work, let’s build an interface to the
+<code>Sparklines</code> component of the react-sparklines library.</p>
+<div id="first-outline-an-interface" class="section level3">
+<h3>First, outline an interface</h3>
+<blockquote>
+<p>Note that the examples in this section are just to demonstrate API
+possibilities and need not be pasted into any file.</p>
+</blockquote>
+<p>Consider the following example taken from the <a href="http://borisyankov.github.io/react-sparklines/">react-sparklines
+documentation</a>.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode js"><code class="sourceCode javascript"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="im">import</span> React <span class="im">from</span> <span class="st">&#39;react&#39;</span><span class="op">;</span></span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="im">import</span> { Sparklines } <span class="im">from</span> <span class="st">&#39;react-sparklines&#39;</span><span class="op">;</span></span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a><span class="op">&lt;</span>Sparklines data<span class="op">=</span>{sampleData}<span class="op">&gt;</span></span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>  <span class="op">&lt;</span>SparklinesLine color<span class="op">=</span><span class="st">&quot;#56b45d&quot;</span> <span class="op">/&gt;</span></span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>  <span class="op">&lt;</span>SparklinesSpots style<span class="op">=</span>{{ <span class="dt">fill</span><span class="op">:</span> <span class="st">&quot;#56b45d&quot;</span> }} <span class="op">/&gt;</span></span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a><span class="op">&lt;/</span>Sparklines<span class="op">&gt;</span></span></code></pre></div>
+<p>You have some choice in terms of how to design an R interface to this
+sort of React library, but usually it makes sense to have one function
+per component and have the arguments to that function feed into the
+properties of that React component. In other words, our goal is to
+create an R function that allows users of our package to recreate this
+example with the following code:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="fu">library</span>(sparklines)</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="fu">sparklines</span>(</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>  <span class="at">data =</span> sampleData,</span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>  <span class="fu">sparklinesLine</span>(<span class="at">color =</span> <span class="st">&quot;#56b45d&quot;</span>),</span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>  <span class="fu">sparklinesSpots</span>(<span class="at">style =</span> <span class="fu">list</span>(<span class="at">fill =</span> <span class="st">&quot;#56b45d&quot;</span>))</span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>)</span></code></pre></div>
+<p>The following sections show how to implement this R interface from
+our scaffolded widget.</p>
+</div>
+<div id="r-implementation" class="section level3">
+<h3>R implementation</h3>
+<p>Consider the template that <code>reactR::scaffoldReactWidget()</code>
+provided for us:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>sparklines <span class="ot">&lt;-</span> <span class="cf">function</span>(message, <span class="at">width =</span> <span class="cn">NULL</span>, <span class="at">height =</span> <span class="cn">NULL</span>, <span class="at">elementId =</span> <span class="cn">NULL</span>) {</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>  </span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>  <span class="co"># describe a React component to send to the browser for rendering.</span></span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>  content <span class="ot">&lt;-</span> htmltools<span class="sc">::</span><span class="fu">tag</span>(<span class="st">&quot;div&quot;</span>, <span class="fu">list</span>(message))</span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>  </span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>  <span class="co"># create widget</span></span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a>  htmlwidgets<span class="sc">::</span><span class="fu">createWidget</span>(</span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a>    <span class="at">name =</span> <span class="st">&#39;sparklines&#39;</span>,</span>
+<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a>    reactR<span class="sc">::</span><span class="fu">reactMarkup</span>(content),</span>
+<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a>    <span class="at">width =</span> width,</span>
+<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a>    <span class="at">height =</span> height,</span>
+<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a>    <span class="at">package =</span> <span class="st">&#39;sparklines&#39;</span>,</span>
+<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a>    <span class="at">elementId =</span> elementId</span>
+<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a>  )</span>
+<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a>}</span></code></pre></div>
+<p>This function is designed to simply display a message within an HTML
+div using <strong>reactR</strong> and <strong>htmlwidgets</strong>. The
+critical piece here that makes it all work is
+<code>reactR::reactMarkup()</code>. This function can prepare a payload
+containing a mix of HTML tags (constructed via
+<code>htmltools::tag()</code>), React components (constructed via
+<code>reactR::component()</code>), or character vectors in a such way
+that the <strong>reactR</strong> and <strong>htmlwidgets</strong>
+toolchain will understand and know how to render in the browser
+(assuming we’ve imported our React component appropriately, as we cover
+later). Thus, to send a <code>&lt;Sparklines&gt;</code> react component
+instead of an HTML <code>&lt;div&gt;</code>, we could simply change:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>content <span class="ot">&lt;-</span> htmltools<span class="sc">::</span><span class="fu">tag</span>(<span class="st">&quot;div&quot;</span>, <span class="fu">list</span>(message))</span></code></pre></div>
+<p>to</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>reactR<span class="sc">::</span><span class="fu">component</span>(<span class="st">&quot;Sparklines&quot;</span>, <span class="fu">list</span>(message))</span></code></pre></div>
+<p>Remember, though, that we’d like <code>&lt;Sparklines&gt;</code> to
+consume a <code>data</code> property and also accept other valid
+components (e.g., <code>&lt;SparklinesLine&gt;</code>,
+<code>&lt;SparklinesSpot&gt;</code>, etc) from this library as children.
+So, we could change the body and signature of <code>sparklines()</code>
+in the following way:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a>sparklines <span class="ot">&lt;-</span> <span class="cf">function</span>(data, ..., <span class="at">width =</span> <span class="cn">NULL</span>, <span class="at">height =</span> <span class="cn">NULL</span>) {</span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>  </span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a>  <span class="co"># describe a React component to send to the browser for rendering.</span></span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a>  content <span class="ot">&lt;-</span> reactR<span class="sc">::</span><span class="fu">component</span>(</span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a>    <span class="st">&quot;Sparklines&quot;</span>,</span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a>    <span class="fu">list</span>(<span class="at">data =</span> data, ...)</span>
+<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a>  )</span>
+<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a>  </span>
+<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a>  <span class="co"># create widget</span></span>
+<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a>  htmlwidgets<span class="sc">::</span><span class="fu">createWidget</span>(</span>
+<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a>    <span class="at">name =</span> <span class="st">&#39;sparklines&#39;</span>,</span>
+<span id="cb11-12"><a href="#cb11-12" tabindex="-1"></a>    reactR<span class="sc">::</span><span class="fu">reactMarkup</span>(content),</span>
+<span id="cb11-13"><a href="#cb11-13" tabindex="-1"></a>    <span class="at">width =</span> width,</span>
+<span id="cb11-14"><a href="#cb11-14" tabindex="-1"></a>    <span class="at">height =</span> height,</span>
+<span id="cb11-15"><a href="#cb11-15" tabindex="-1"></a>    <span class="at">package =</span> <span class="st">&#39;sparklines&#39;</span></span>
+<span id="cb11-16"><a href="#cb11-16" tabindex="-1"></a>  )</span>
+<span id="cb11-17"><a href="#cb11-17" tabindex="-1"></a>}</span></code></pre></div>
+<p>At this point, we define functions that make it easy for the user to
+create the other components by adding these to
+<code>R/sparklines.R</code></p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="co">#&#39; @export</span></span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a>sparklinesLine <span class="ot">&lt;-</span> <span class="cf">function</span>(...) {</span>
+<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a>  reactR<span class="sc">::</span>React<span class="sc">$</span><span class="fu">SparklinesLine</span>(...)</span>
+<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a>}</span>
+<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a></span>
+<span id="cb12-6"><a href="#cb12-6" tabindex="-1"></a><span class="co">#&#39; @export</span></span>
+<span id="cb12-7"><a href="#cb12-7" tabindex="-1"></a>sparklinesSpots <span class="ot">&lt;-</span> <span class="cf">function</span>(...) {</span>
+<span id="cb12-8"><a href="#cb12-8" tabindex="-1"></a>  reactR<span class="sc">::</span>React<span class="sc">$</span><span class="fu">SparklinesSpots</span>(...)</span>
+<span id="cb12-9"><a href="#cb12-9" tabindex="-1"></a>}</span></code></pre></div>
+</div>
+<div id="javascript-changes" class="section level3">
+<h3>JavaScript changes</h3>
+<p>In order for the <strong>reactR</strong> toolchain to know how to
+render components from the ‘react-sparklines’ library, we need to
+register the React components on the JavaScript side. This can be done
+in the <code>srcjs/sparklines.js</code> file which currently looks like
+this:</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode js"><code class="sourceCode javascript"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="im">import</span> { reactWidget } <span class="im">from</span> <span class="st">&#39;reactR&#39;</span><span class="op">;</span></span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a></span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a><span class="fu">reactWidget</span>(<span class="st">&#39;sparklines&#39;</span><span class="op">,</span> <span class="st">&#39;output&#39;</span><span class="op">,</span> {})<span class="op">;</span></span></code></pre></div>
+<p>First, <code>reactWidget</code> is <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import">imported</a>
+from the <code>&#39;reactR&#39;</code> JavaScript module. This function will
+register the React components we want within the <strong>reactR</strong>
+and <strong>htmlwidgets</strong> toolchain. Note that the
+<code>&#39;reactR&#39;</code> JavaScript is an html dependency, but webpack is
+configured in <code>webpack.config.js</code> to consider it a module, so
+it’s available to us here via <code>import</code> syntax.</p>
+<p>Then, there’s a call to <code>reactWidget</code>, and we pass it
+three arguments:</p>
+<ol style="list-style-type: decimal">
+<li>The name of the widget (<code>&#39;sparklines&#39;</code>)</li>
+<li>The type of the widget (<code>&#39;output&#39;</code>)</li>
+<li>The React components that should be exposed to the widget. In this
+template, we didn’t have to include any because it’s just rendering an
+HTML div.</li>
+</ol>
+<p>Instead of passing an empty object (<code>{}</code>) as the React
+components, we provide an object with all the components we need from
+the ‘react-sparklines’ module:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode js"><code class="sourceCode javascript"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="im">import</span> { Sparklines<span class="op">,</span> SparklinesLine<span class="op">,</span> SparklinesSpots } <span class="im">from</span> <span class="st">&#39;react-sparklines&#39;</span><span class="op">;</span></span>
+<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a><span class="im">import</span> { reactWidget } <span class="im">from</span> <span class="st">&#39;reactR&#39;</span><span class="op">;</span></span>
+<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a></span>
+<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a><span class="fu">reactWidget</span>(<span class="st">&#39;sparklines&#39;</span><span class="op">,</span> <span class="st">&#39;output&#39;</span><span class="op">,</span> {</span>
+<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a>  <span class="dt">Sparklines</span><span class="op">:</span> Sparklines<span class="op">,</span></span>
+<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a>  <span class="dt">SparklinesLine</span><span class="op">:</span> SparklinesLine<span class="op">,</span></span>
+<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a>  <span class="dt">SparklinesSpots</span><span class="op">:</span> SparklinesSpots</span>
+<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a>})<span class="op">;</span></span></code></pre></div>
+</div>
+<div id="go-for-a-spin" class="section level3">
+<h3>Go for a spin</h3>
+<p>Now that we’ve made the necessary changes to the JavaScript and R
+source code, it’s time to compile the JavaScript and install the R
+package:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="fu">system</span>(<span class="st">&quot;yarn install&quot;</span>)</span>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a><span class="fu">system</span>(<span class="st">&quot;yarn run webpack&quot;</span>)</span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">document</span>()</span>
+<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install</span>()</span>
+<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a><span class="fu">library</span>(sparklines)</span>
+<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a><span class="fu">sparklines</span>(<span class="fu">rnorm</span>(<span class="dv">10</span>), <span class="fu">sparklinesLine</span>())</span></code></pre></div>
+<p>This should open up the <code>sparklines()</code> widget in your
+browser. If it does, congratulations, you created a React-based
+htmlwidget!</p>
+</div>
+<div id="shiny-integration" class="section level3">
+<h3>Shiny integration</h3>
+<p>The scaffolding template already provides the glue you need to get
+your <strong>reactR</strong> widget to render in <strong>Shiny</strong>.
+The two relevant functions are <code>renderSparklines()</code> and
+<code>sparklinesOutput()</code>. You shouldn’t need to modify these
+functions — they should work out of the box. You will, however, want to
+modify the example <strong>Shiny</strong> app in the <code>app.R</code>
+file:</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="fu">library</span>(shiny)</span>
+<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a><span class="fu">library</span>(sparklines)</span>
+<span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a></span>
+<span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a>ui <span class="ot">&lt;-</span> <span class="fu">fluidPage</span>(</span>
+<span id="cb16-5"><a href="#cb16-5" tabindex="-1"></a>  <span class="fu">titlePanel</span>(<span class="st">&quot;Sparklines library&quot;</span>),</span>
+<span id="cb16-6"><a href="#cb16-6" tabindex="-1"></a>  <span class="fu">sliderInput</span>(<span class="st">&quot;n&quot;</span>, <span class="at">label =</span> <span class="st">&quot;Number of samples&quot;</span>, <span class="at">min =</span> <span class="dv">2</span>, <span class="at">max =</span> <span class="dv">1000</span>, <span class="at">value =</span> <span class="dv">100</span>),</span>
+<span id="cb16-7"><a href="#cb16-7" tabindex="-1"></a>  <span class="fu">sparklinesOutput</span>(<span class="st">&quot;myWidget&quot;</span>)</span>
+<span id="cb16-8"><a href="#cb16-8" tabindex="-1"></a>)</span>
+<span id="cb16-9"><a href="#cb16-9" tabindex="-1"></a></span>
+<span id="cb16-10"><a href="#cb16-10" tabindex="-1"></a>server <span class="ot">&lt;-</span> <span class="cf">function</span>(input, output, session) {</span>
+<span id="cb16-11"><a href="#cb16-11" tabindex="-1"></a>    output<span class="sc">$</span>myWidget <span class="ot">&lt;-</span> <span class="fu">renderSparklines</span>({</span>
+<span id="cb16-12"><a href="#cb16-12" tabindex="-1"></a>        <span class="fu">sparklines</span>(</span>
+<span id="cb16-13"><a href="#cb16-13" tabindex="-1"></a>            <span class="fu">rnorm</span>(input<span class="sc">$</span>n),</span>
+<span id="cb16-14"><a href="#cb16-14" tabindex="-1"></a>            <span class="fu">sparklinesLine</span>()</span>
+<span id="cb16-15"><a href="#cb16-15" tabindex="-1"></a>        )</span>
+<span id="cb16-16"><a href="#cb16-16" tabindex="-1"></a>    })</span>
+<span id="cb16-17"><a href="#cb16-17" tabindex="-1"></a>}</span>
+<span id="cb16-18"><a href="#cb16-18" tabindex="-1"></a></span>
+<span id="cb16-19"><a href="#cb16-19" tabindex="-1"></a><span class="fu">shinyApp</span>(ui, server)</span></code></pre></div>
+<p>Now, when you run <code>shiny::runApp()</code>, you should see your
+react-based htmlwidget rendering in <strong>shiny</strong> app!</p>
+<p><img src="data:image/jpeg;base64,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" /></p>
+</div>
+</div>
+<div id="further-learning" class="section level2">
+<h2>Further learning</h2>
+<p>This tutorial walked you through the steps taken you create an R
+interface to the react-sparklines library. The full example package is
+accessible at <a href="https://github.com/react-R/sparklines-example" class="uri">https://github.com/react-R/sparklines-example</a>. Our
+intention is keep creating example packages under the <a href="https://github.com/react-R" class="uri">https://github.com/react-R</a> organization, so head there
+if you’d like to see other examples of interfacing with React.</p>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1093 @@
+> # rpart.report.R: test code from rpart package vignette with rpart.plot package
+> 
+> source("test.prolog.R")
+Loading required package: rpart
+> 
+> USE.PRP <- TRUE # global option
+> 
+> set.seed(1924)
+> 
+> # Not all the data in the rpart reports is (easily) available
+> # so sometimes we use alternative data below
+> 
+> cat("### Section 3\n")
+### Section 3
+> 
+> # get the stagec data (you will find it in library/rpart/tests/data.stagec)
+> stagec <- read.table("data.stagec",
++                      col.names=c("pgtime", "pgstat", "age", "eet",
++                                  "g2", "grade", "gleason", "ploidy"))
+> 
+> progstat <- factor(stagec$pgstat, levels=0:1, labels=c("No", "Prog"))
+> cfit <- rpart(progstat ~ age + eet + g2 + grade + gleason + ploidy,
++               data=stagec, method='class')
+> print(cfit)
+n= 146 
+
+node), split, n, loss, yval, (yprob)
+      * denotes terminal node
+
+ 1) root 146 54 No (0.6301370 0.3698630)  
+   2) grade< 2.5 61  9 No (0.8524590 0.1475410) *
+   3) grade>=2.5 85 40 Prog (0.4705882 0.5294118)  
+     6) g2< 13.2 35 14 No (0.6000000 0.4000000)  
+      12) g2>=11.845 7  1 No (0.8571429 0.1428571) *
+      13) g2< 11.845 28 13 No (0.5357143 0.4642857)  
+        26) g2< 11.005 21  8 No (0.6190476 0.3809524) *
+        27) g2>=11.005 7  2 Prog (0.2857143 0.7142857) *
+     7) g2>=13.2 50 19 Prog (0.3800000 0.6200000)  
+      14) g2>=17.91 25  9 No (0.6400000 0.3600000) *
+      15) g2< 17.91 25  3 Prog (0.1200000 0.8800000) *
+> print(rpart.rules(cfit))
+ progstat                                 
+     0.14 when grade >= 3 & g2 is 12 to 13
+     0.15 when grade <  3                 
+     0.36 when grade >= 3 & g2 >=       18
+     0.38 when grade >= 3 & g2 <  11      
+     0.71 when grade >= 3 & g2 is 11 to 12
+     0.88 when grade >= 3 & g2 is 13 to 18
+> par(mfrow=c(2,3))
+> if (USE.PRP) {
++     prp(cfit, main="Section 3", uniform=F, branch=1, roundint=FALSE)
++ } else {
++     plot(cfit, main="Section 3")
++     text(cfit)
++ }
+> par(old.par)
+> 
+> cat("### Section 4\n")
+### Section 4
+> 
+> n <- 200
+> temp <- c(1,1,1,0,1,1,1,
++           0,0,1,0,0,1,0,
++           1,0,1,1,1,0,1,
++           1,0,1,1,0,1,1,
++           0,1,1,1,0,1,0,
++           1,1,0,1,0,1,1,
++           0,1,0,1,1,1,1,
++           1,0,1,0,0,1,0,
++           1,1,1,1,1,1,1,
++           1,1,1,1,0,1,0)
+> lights <- matrix(temp, 10, 7, byrow=T) # The true light pattern 0-9
+> set.seed(1) # For reproducibility
+> temp1 <- matrix(rbinom(n*7, 1, .9), n, 7) # Noisy lights
+> y <- rep(0:9, length=200)
+> temp1 <- ifelse(lights[y+1, ]==1, temp1, 1-temp1)
+> temp2 <- matrix(rbinom(n*17, 1, .5), n, 17) #Random lights
+> x <- cbind(temp1, temp2) #x is the matrix of predictors
+> 
+> temp3 <- rpart.control(xval=10, minbucket=2, minsplit=4, cp=0)
+> dfit <- rpart(y ~ x, method='class', control=temp3)
+> printcp(dfit)
+
+Classification tree:
+rpart(formula = y ~ x, method = "class", control = temp3)
+
+Variables actually used in tree construction:
+ [1] x1  x11 x12 x13 x16 x18 x19 x2  x21 x3  x4  x5  x6  x7  x8 
+
+Root node error: 180/200 = 0.9
+
+n= 200 
+
+          CP nsplit rel error  xerror     xstd
+1  0.1111111      0   1.00000 1.08889 0.010999
+2  0.1000000      1   0.88889 1.05556 0.017123
+3  0.0888889      2   0.78889 0.86111 0.032808
+4  0.0833333      3   0.70000 0.77222 0.036173
+5  0.0777778      5   0.53333 0.77222 0.036173
+6  0.0666667      6   0.45556 0.61111 0.039087
+7  0.0500000      7   0.38889 0.50556 0.039124
+8  0.0222222      8   0.33889 0.41111 0.037933
+9  0.0166667      9   0.31667 0.40556 0.037825
+10 0.0111111     10   0.30000 0.38889 0.037474
+11 0.0083333     15   0.24444 0.37778 0.037218
+12 0.0055556     22   0.18333 0.37778 0.037218
+13 0.0037037     31   0.13333 0.40000 0.037712
+14 0.0000000     34   0.12222 0.41111 0.037933
+> print(rpart.rules(dfit))
+ y     0    1    2    3    4    5    6    7    8    9                                                                                                                                                                                               
+ 0 [ .33  .00  .00  .00  .00  .00  .33  .00  .33  .00] when x1 >= 0.5 & x3 <  0.5 & x7 >= 0.5 & x2 >= 0.5 & x5 >= 0.5             & x6 >= 0.5                                                                                                       
+ 0 [ .50  .00  .00  .00  .00  .50  .00  .00  .00  .00] when x1 >= 0.5 & x3 <  0.5 & x7 >= 0.5                                     & x6 <  0.5                                                                                                       
+ 0 [ .50  .00  .00  .50  .00  .00  .00  .00  .00  .00] when x1 >= 0.5 & x3 >= 0.5 & x7 >= 0.5             & x5 >= 0.5             & x6 >= 0.5 & x8 >= 0.5                                                                               & x16 <  0.5
+ 0 [ .50  .00  .00  .00  .00  .00  .00  .00  .00  .50] when x1 >= 0.5 & x3 >= 0.5 & x7 >= 0.5 & x2 >= 0.5 & x5 <  0.5 & x4 >= 0.5 & x6 >= 0.5             & x11 <  0.5 & x12 <  0.5                                                                 
+ 0 [ .67  .00  .00  .00  .00  .00  .00  .17  .00  .17] when x1 <  0.5 & x3 >= 0.5             & x2 >= 0.5 & x5 >= 0.5                                     & x11 <  0.5                                                                              
+ 0 [ .89  .00  .00  .00  .00  .00  .00  .00  .11  .00] when x1 >= 0.5 & x3 >= 0.5 & x7 >= 0.5             & x5 >= 0.5 & x4 <  0.5 & x6 >= 0.5 & x8 <  0.5                                                                                           
+ 0 [1.00  .00  .00  .00  .00  .00  .00  .00  .00  .00] when x1 >= 0.5 & x3 >= 0.5 & x7 >= 0.5             & x5 >= 0.5 & x4 >= 0.5 & x6 >= 0.5 & x8 <  0.5                           & x19 <  0.5                                                    
+ 1 [ .00  .50  .00  .00  .00  .00  .00  .00  .00  .50] when x1 <  0.5 & x3 >= 0.5             & x2 >= 0.5 & x5 <  0.5 & x4 <  0.5                                                                                                                   
+ 1 [ .00 1.00  .00  .00  .00  .00  .00  .00  .00  .00] when x1 <  0.5                         & x2 <  0.5             & x4 <  0.5                                                                                                                   
+ 1 [ .00 1.00  .00  .00  .00  .00  .00  .00  .00  .00] when x1 <  0.5                         & x2 <  0.5             & x4 >= 0.5                                                                & x21 >= 0.5              & x13 <  0.5             
+ 2 [ .00  .00  .50  .50  .00  .00  .00  .00  .00  .00] when x1 >= 0.5 & x3 >= 0.5 & x7 >= 0.5 & x2 >= 0.5                         & x6 <  0.5                          & x12 <  0.5                           & x18 >= 0.5                          
+ 2 [ .00  .00  .88  .06  .00  .06  .00  .00  .00  .00] when x1 >= 0.5 & x3 >= 0.5 & x7 >= 0.5 & x2 <  0.5                         & x6 <  0.5                                                                                                       
+ 2 [ .00  .00 1.00  .00  .00  .00  .00  .00  .00  .00] when x1 >= 0.5 & x3 >= 0.5 & x7 >= 0.5 & x2 >= 0.5                         & x6 <  0.5                                                                 & x18 <  0.5                          
+ 3 [ .00  .00  .00  .90  .00  .10  .00  .00  .00  .00] when x1 >= 0.5 & x3 >= 0.5 & x7 >= 0.5 & x2 <  0.5 & x5 <  0.5 & x4 >= 0.5 & x6 >= 0.5                                                                                                       
+ 3 [ .00  .00  .00 1.00  .00  .00  .00  .00  .00  .00] when x1 <  0.5                         & x2 <  0.5             & x4 >= 0.5                                                                & x21 <  0.5                                       
+ 3 [ .00  .00  .00 1.00  .00  .00  .00  .00  .00  .00] when x1 >= 0.5 & x3 >= 0.5 & x7 >= 0.5 & x2 >= 0.5 & x5 <  0.5 & x4 >= 0.5 & x6 >= 0.5             & x11 <  0.5 & x12 >= 0.5                                                                 
+ 3 [ .00  .00  .00 1.00  .00  .00  .00  .00  .00  .00] when x1 >= 0.5 & x3 <  0.5 & x7 >= 0.5 & x2 <  0.5                         & x6 >= 0.5                                                                                                       
+ 4 [ .00  .00  .00  .00  .67  .00  .00  .00  .33  .00] when x1 <  0.5 & x3 <  0.5             & x2 >= 0.5 & x5 <  0.5                         & x8 <  0.5                                                                                           
+ 4 [ .00  .00  .00  .00 1.00  .00  .00  .00  .00  .00] when x1 <  0.5                         & x2 <  0.5             & x4 >= 0.5                                                                & x21 >= 0.5              & x13 >= 0.5             
+ 4 [ .00  .00  .00  .00 1.00  .00  .00  .00  .00  .00] when x1 <  0.5 & x3 >= 0.5             & x2 >= 0.5 & x5 <  0.5 & x4 >= 0.5                                                                                                                   
+ 5 [ .00  .00  .33  .00  .00  .67  .00  .00  .00  .00] when x1 >= 0.5 & x3 <  0.5 & x7 <  0.5             & x5 <  0.5 & x4 >= 0.5                                                   & x19 >= 0.5                                                    
+ 5 [ .07  .00  .00  .00  .00  .93  .00  .00  .00  .00] when x1 >= 0.5 & x3 <  0.5 & x7 >= 0.5 & x2 >= 0.5 & x5 <  0.5             & x6 >= 0.5                                                                                                       
+ 6 [ .00  .00  .00  .00  .00  .00 1.00  .00  .00  .00] when x1 <  0.5 & x3 <  0.5             & x2 >= 0.5 & x5 <  0.5                         & x8 >= 0.5                                                                                           
+ 6 [ .00  .00  .00  .00  .00  .00 1.00  .00  .00  .00] when x1 <  0.5 & x3 <  0.5             & x2 >= 0.5 & x5 >= 0.5                                                                                                                               
+ 7 [ .33  .00  .00  .00  .00  .00  .00  .67  .00  .00] when x1 >= 0.5 & x3 >= 0.5 & x7 >= 0.5             & x5 <  0.5 & x4 <  0.5 & x6 >= 0.5                                                                                                       
+ 7 [ .00  .00  .00  .00  .00  .00  .00  .94  .00  .06] when x1 >= 0.5             & x7 <  0.5 & x2 <  0.5             & x4 <  0.5                                                                                                                   
+ 8 [ .00  .00  .00  .00  .00  .00  .33  .00  .67  .00] when x1 <  0.5 & x3 >= 0.5             & x2 >= 0.5 & x5 >= 0.5                                     & x11 >= 0.5                                                                              
+ 8 [ .00  .00  .00  .00  .00  .33  .00  .00  .67  .00] when x1 >= 0.5 & x3 >= 0.5 & x7 >= 0.5 & x2 >= 0.5                         & x6 <  0.5                          & x12 >= 0.5                           & x18 >= 0.5                          
+ 8 [ .00  .00  .00  .33  .00  .00  .00  .00  .67  .00] when x1 >= 0.5             & x7 <  0.5             & x5 >= 0.5 & x4 >= 0.5                                                                                                                   
+ 8 [ .00  .00  .00  .00  .00  .00  .00  .00 1.00  .00] when x1 >= 0.5 & x3 >= 0.5 & x7 >= 0.5             & x5 >= 0.5 & x4 >= 0.5 & x6 >= 0.5 & x8 <  0.5                           & x19 >= 0.5                                                    
+ 8 [ .00  .00  .00  .00  .00  .00  .00  .00 1.00  .00] when x1 >= 0.5 & x3 >= 0.5 & x7 >= 0.5             & x5 >= 0.5             & x6 >= 0.5 & x8 >= 0.5                                                                               & x16 >= 0.5
+ 8 [ .00  .00  .00  .00  .00  .00  .00  .00 1.00  .00] when x1 >= 0.5 & x3 >= 0.5 & x7 >= 0.5 & x2 >= 0.5 & x5 <  0.5 & x4 >= 0.5 & x6 >= 0.5             & x11 >= 0.5                                                                              
+ 9 [ .00  .00  .00  .00  .09  .00  .00  .00  .00  .91] when x1 >= 0.5 & x3 >= 0.5 & x7 <  0.5             & x5 <  0.5 & x4 >= 0.5                                                                                                                   
+ 9 [ .00  .00  .00  .00  .00  .00  .00  .00  .00 1.00] when x1 >= 0.5             & x7 <  0.5 & x2 >= 0.5             & x4 <  0.5                                                                                                                   
+ 9 [ .00  .00  .00  .00  .00  .00  .00  .00  .00 1.00] when x1 >= 0.5 & x3 <  0.5 & x7 <  0.5             & x5 <  0.5 & x4 >= 0.5                                                   & x19 <  0.5                                                    
+> 
+> fit9 <- prune(dfit, cp=.02)
+> print(rpart.rules(fit9, style='tall'))
+          0   1   2   3   4   5   6   7   8   9 
+y is 0 [.71 .00 .00 .00 .00 .00 .00 .00 .29 .00] when
+    x1 >= 0.5
+    x7 >= 0.5
+    x5 >= 0.5
+    x6 >= 0.5
+    x3 >= 0.5
+    x8 < 0.5
+
+y is 1 [.00 .79 .00 .12 .08 .00 .00 .00 .00 .00] when
+    x1 < 0.5
+    x2 < 0.5
+
+y is 2 [.04 .00 .70 .07 .00 .11 .00 .00 .07 .00] when
+    x1 >= 0.5
+    x7 >= 0.5
+    x6 < 0.5
+
+y is 3 [.10 .00 .00 .55 .00 .05 .00 .10 .15 .05] when
+    x1 >= 0.5
+    x7 >= 0.5
+    x5 < 0.5
+    x6 >= 0.5
+    x3 >= 0.5
+
+y is 4 [.00 .05 .00 .00 .77 .00 .09 .00 .05 .05] when
+    x1 < 0.5
+    x5 < 0.5
+    x2 >= 0.5
+
+y is 5 [.10 .00 .00 .10 .00 .70 .05 .00 .05 .00] when
+    x1 >= 0.5
+    x7 >= 0.5
+    x6 >= 0.5
+    x3 < 0.5
+
+y is 6 [.16 .00 .00 .00 .00 .00 .68 .04 .08 .04] when
+    x1 < 0.5
+    x5 >= 0.5
+    x2 >= 0.5
+
+y is 7 [.00 .00 .00 .00 .00 .00 .00 .85 .00 .15] when
+    x1 >= 0.5
+    x7 < 0.5
+    x4 < 0.5
+
+y is 8 [.14 .00 .00 .14 .00 .00 .00 .00 .71 .00] when
+    x1 >= 0.5
+    x7 >= 0.5
+    x5 >= 0.5
+    x6 >= 0.5
+    x3 >= 0.5
+    x8 >= 0.5
+
+y is 9 [.00 .00 .05 .05 .05 .10 .00 .00 .10 .67] when
+    x1 >= 0.5
+    x7 < 0.5
+    x4 >= 0.5
+> print(rpart.rules(fit9, trace=1, roundint=FALSE)) # message Variable not in the model.frame
+Variable 'x1' in splits is not in the model.frame (so cannot determine roundint and is.binary for the variable)
+colnames(model.frame): y x
+
+iframe   3 node   4 path c("root", "x1 < 0.5", "x2 < 0.5")
+iframe   5 node  10 path c("root", "x1 < 0.5", "x2 >= 0.5", "x5 < 0.5")
+iframe   6 node  11 path c("root", "x1 < 0.5", "x2 >= 0.5", "x5 >= 0.5")
+iframe   9 node  12 path c("root", "x1 >= 0.5", "x7 >= 0.5", "x6 < 0.5")
+iframe  13 node 104 path c("root", "x1 >= 0.5", "x7 >= 0.5", "x6 >= 0.5", "x3 >= 0.5", "x5 >= 0.5", "x8 < 0.5")
+iframe  14 node 105 path c("root", "x1 >= 0.5", "x7 >= 0.5", "x6 >= 0.5", "x3 >= 0.5", "x5 >= 0.5", "x8 >= 0.5")
+iframe  15 node  53 path c("root", "x1 >= 0.5", "x7 >= 0.5", "x6 >= 0.5", "x3 >= 0.5", "x5 < 0.5")
+iframe  16 node  27 path c("root", "x1 >= 0.5", "x7 >= 0.5", "x6 >= 0.5", "x3 < 0.5")
+iframe  18 node  14 path c("root", "x1 >= 0.5", "x7 < 0.5", "x4 < 0.5")
+iframe  19 node  15 path c("root", "x1 >= 0.5", "x7 < 0.5", "x4 >= 0.5")
+
+raw rules:
+    lab                                                                                                                     fit iclass       cover x1= x1< x1>= x7= x7< x7>= x2= x2< x2>= x4= x4< x4>= x5= x5< x5>= x3= x3< x3>= x21= x21< x21>= x12= x12< x12>= x9= x9< x9>= x18= x18< x18>= x19= x19< x19>= x6= x6< x6>= x13= x13< x13>= x8= x8< x8>= x24= x24< x24>= x11= x11< x11>= x16= x16< x16>= x20= x20< x20>=
+4     1 .0000000000 .7916666667 .0000000000 .1250000000 .0833333333 .0000000000 .0000000000 .0000000000 .0000000000 .0000000000      2 12.00000000     0.5                       0.5                                                                                                                                                                                                                                   
+10    4 .0000000000 .0454545455 .0000000000 .0000000000 .7727272727 .0000000000 .0909090909 .0000000000 .0454545455 .0454545455      5 11.00000000     0.5                            0.5                  0.5                                                                                                                                                                                                         
+11    6 .1600000000 .0000000000 .0000000000 .0000000000 .0000000000 .0000000000 .6800000000 .0400000000 .0800000000 .0400000000      7 12.50000000     0.5                            0.5                       0.5                                                                                                                                                                                                    
+12    2 .0370370370 .0000000000 .7037037037 .0740740741 .0000000000 .1111111111 .0000000000 .0000000000 .0740740741 .0000000000      3 13.50000000          0.5          0.5                                                                                                                                      0.5                                                                                                  
+104   0 .7142857143 .0000000000 .0000000000 .0000000000 .0000000000 .0000000000 .0000000000 .0000000000 .2857142857 .0000000000      1  7.00000000          0.5          0.5                                    0.5          0.5                                                                                       0.5                     0.5                                                                     
+105   8 .1428571429 .0000000000 .0000000000 .1428571429 .0000000000 .0000000000 .0000000000 .0000000000 .7142857143 .0000000000      9  3.50000000          0.5          0.5                                    0.5          0.5                                                                                       0.5                          0.5                                                                
+53    3 .1000000000 .0000000000 .0000000000 .5500000000 .0000000000 .0500000000 .0000000000 .1000000000 .1500000000 .0500000000      4 10.00000000          0.5          0.5                               0.5               0.5                                                                                       0.5                                                                                             
+27    5 .1000000000 .0000000000 .0000000000 .1000000000 .0000000000 .7000000000 .0500000000 .0000000000 .0500000000 .0000000000      6 10.00000000          0.5          0.5                                            0.5                                                                                            0.5                                                                                             
+14    7 .0000000000 .0000000000 .0000000000 .0000000000 .0000000000 .0000000000 .0000000000 .8500000000 .0000000000 .1500000000      8 10.00000000          0.5     0.5                       0.5                                                                                                                                                                                                                      
+15    9 .0000000000 .0000000000 .0476190476 .0476190476 .0476190476 .0952380952 .0000000000 .0000000000 .0952380952 .6666666667     10 10.50000000          0.5     0.5                            0.5                                                                                                                                                                                                                 
+
+processed rules:
+    y    0   1   2   3   4   5   6   7   8   9                                                                                                    
+104 0 [.71 .00 .00 .00 .00 .00 .00 .00 .29 .00] when x1 >= 0.5 & x7 >= 0.5 & x5 >= 0.5 & x6 >= 0.5 & x3 >= 0.5                         & x8 <  0.5
+4   1 [.00 .79 .00 .12 .08 .00 .00 .00 .00 .00] when x1 <  0.5                                                 & x2 <  0.5                        
+12  2 [.04 .00 .70 .07 .00 .11 .00 .00 .07 .00] when x1 >= 0.5 & x7 >= 0.5             & x6 <  0.5                                                
+53  3 [.10 .00 .00 .55 .00 .05 .00 .10 .15 .05] when x1 >= 0.5 & x7 >= 0.5 & x5 <  0.5 & x6 >= 0.5 & x3 >= 0.5                                    
+10  4 [.00 .05 .00 .00 .77 .00 .09 .00 .05 .05] when x1 <  0.5             & x5 <  0.5                         & x2 >= 0.5                        
+27  5 [.10 .00 .00 .10 .00 .70 .05 .00 .05 .00] when x1 >= 0.5 & x7 >= 0.5             & x6 >= 0.5 & x3 <  0.5                                    
+11  6 [.16 .00 .00 .00 .00 .00 .68 .04 .08 .04] when x1 <  0.5             & x5 >= 0.5                         & x2 >= 0.5                        
+14  7 [.00 .00 .00 .00 .00 .00 .00 .85 .00 .15] when x1 >= 0.5 & x7 <  0.5                                                 & x4 <  0.5            
+105 8 [.14 .00 .00 .14 .00 .00 .00 .00 .71 .00] when x1 >= 0.5 & x7 >= 0.5 & x5 >= 0.5 & x6 >= 0.5 & x3 >= 0.5                         & x8 >= 0.5
+15  9 [.00 .00 .05 .05 .05 .10 .00 .00 .10 .67] when x1 >= 0.5 & x7 <  0.5                                                 & x4 >= 0.5            
+
+ y    0   1   2   3   4   5   6   7   8   9                                                                                                    
+ 0 [.71 .00 .00 .00 .00 .00 .00 .00 .29 .00] when x1 >= 0.5 & x7 >= 0.5 & x5 >= 0.5 & x6 >= 0.5 & x3 >= 0.5                         & x8 <  0.5
+ 1 [.00 .79 .00 .12 .08 .00 .00 .00 .00 .00] when x1 <  0.5                                                 & x2 <  0.5                        
+ 2 [.04 .00 .70 .07 .00 .11 .00 .00 .07 .00] when x1 >= 0.5 & x7 >= 0.5             & x6 <  0.5                                                
+ 3 [.10 .00 .00 .55 .00 .05 .00 .10 .15 .05] when x1 >= 0.5 & x7 >= 0.5 & x5 <  0.5 & x6 >= 0.5 & x3 >= 0.5                                    
+ 4 [.00 .05 .00 .00 .77 .00 .09 .00 .05 .05] when x1 <  0.5             & x5 <  0.5                         & x2 >= 0.5                        
+ 5 [.10 .00 .00 .10 .00 .70 .05 .00 .05 .00] when x1 >= 0.5 & x7 >= 0.5             & x6 >= 0.5 & x3 <  0.5                                    
+ 6 [.16 .00 .00 .00 .00 .00 .68 .04 .08 .04] when x1 <  0.5             & x5 >= 0.5                         & x2 >= 0.5                        
+ 7 [.00 .00 .00 .00 .00 .00 .00 .85 .00 .15] when x1 >= 0.5 & x7 <  0.5                                                 & x4 <  0.5            
+ 8 [.14 .00 .00 .14 .00 .00 .00 .00 .71 .00] when x1 >= 0.5 & x7 >= 0.5 & x5 >= 0.5 & x6 >= 0.5 & x3 >= 0.5                         & x8 >= 0.5
+ 9 [.00 .00 .05 .05 .05 .10 .00 .00 .10 .67] when x1 >= 0.5 & x7 <  0.5                                                 & x4 >= 0.5            
+> 
+> df <- data.frame(y, x)
+> dfit.df <- rpart(y ~ ., data=df, method='class', control=temp3)
+> fit9.df <- prune(dfit.df, cp=.02)
+> print(rpart.rules(fit9.df, cover=TRUE))
+ y    0   1   2   3   4   5   6   7   8   9                                                                                       cover
+ 0 [.71 .00 .00 .00 .00 .00 .00 .00 .29 .00] when X1 is 1 & X7 is 1 & X5 is 1 & X6 is 1 & X3 is 1                     & X8 is 0      7%
+ 1 [.00 .79 .00 .12 .08 .00 .00 .00 .00 .00] when X1 is 0                                         & X2 is 0                         12%
+ 2 [.04 .00 .70 .07 .00 .11 .00 .00 .07 .00] when X1 is 1 & X7 is 1           & X6 is 0                                             14%
+ 3 [.10 .00 .00 .55 .00 .05 .00 .10 .15 .05] when X1 is 1 & X7 is 1 & X5 is 0 & X6 is 1 & X3 is 1                                   10%
+ 4 [.00 .05 .00 .00 .77 .00 .09 .00 .05 .05] when X1 is 0           & X5 is 0                     & X2 is 1                         11%
+ 5 [.10 .00 .00 .10 .00 .70 .05 .00 .05 .00] when X1 is 1 & X7 is 1           & X6 is 1 & X3 is 0                                   10%
+ 6 [.16 .00 .00 .00 .00 .00 .68 .04 .08 .04] when X1 is 0           & X5 is 1                     & X2 is 1                         12%
+ 7 [.00 .00 .00 .00 .00 .00 .00 .85 .00 .15] when X1 is 1 & X7 is 0                                         & X4 is 0               10%
+ 8 [.14 .00 .00 .14 .00 .00 .00 .00 .71 .00] when X1 is 1 & X7 is 1 & X5 is 1 & X6 is 1 & X3 is 1                     & X8 is 1      4%
+ 9 [.00 .00 .05 .05 .05 .10 .00 .00 .10 .67] when X1 is 1 & X7 is 0                                         & X4 is 1               10%
+> print(rpart.rules(fit9.df, cover=TRUE, roundint=FALSE))
+ y    0   1   2   3   4   5   6   7   8   9                                                                                                       cover
+ 0 [.71 .00 .00 .00 .00 .00 .00 .00 .29 .00] when X1 >= 0.5 & X7 >= 0.5 & X5 >= 0.5 & X6 >= 0.5 & X3 >= 0.5                         & X8 <  0.5      7%
+ 1 [.00 .79 .00 .12 .08 .00 .00 .00 .00 .00] when X1 <  0.5                                                 & X2 <  0.5                             12%
+ 2 [.04 .00 .70 .07 .00 .11 .00 .00 .07 .00] when X1 >= 0.5 & X7 >= 0.5             & X6 <  0.5                                                     14%
+ 3 [.10 .00 .00 .55 .00 .05 .00 .10 .15 .05] when X1 >= 0.5 & X7 >= 0.5 & X5 <  0.5 & X6 >= 0.5 & X3 >= 0.5                                         10%
+ 4 [.00 .05 .00 .00 .77 .00 .09 .00 .05 .05] when X1 <  0.5             & X5 <  0.5                         & X2 >= 0.5                             11%
+ 5 [.10 .00 .00 .10 .00 .70 .05 .00 .05 .00] when X1 >= 0.5 & X7 >= 0.5             & X6 >= 0.5 & X3 <  0.5                                         10%
+ 6 [.16 .00 .00 .00 .00 .00 .68 .04 .08 .04] when X1 <  0.5             & X5 >= 0.5                         & X2 >= 0.5                             12%
+ 7 [.00 .00 .00 .00 .00 .00 .00 .85 .00 .15] when X1 >= 0.5 & X7 <  0.5                                                 & X4 <  0.5                 10%
+ 8 [.14 .00 .00 .14 .00 .00 .00 .00 .71 .00] when X1 >= 0.5 & X7 >= 0.5 & X5 >= 0.5 & X6 >= 0.5 & X3 >= 0.5                         & X8 >= 0.5      4%
+ 9 [.00 .00 .05 .05 .05 .10 .00 .00 .10 .67] when X1 >= 0.5 & X7 <  0.5                                                 & X4 >= 0.5                 10%
+> print(rpart.rules(fit9.df, cover=TRUE, clip.facs=TRUE))
+ y    0   1   2   3   4   5   6   7   8   9                                                                               cover
+ 0 [.71 .00 .00 .00 .00 .00 .00 .00 .29 .00] when X1     & X7     & X5     & X6     & X3                       & not X8      7%
+ 1 [.00 .79 .00 .12 .08 .00 .00 .00 .00 .00] when not X1                                     & not X2                       12%
+ 2 [.04 .00 .70 .07 .00 .11 .00 .00 .07 .00] when X1     & X7              & not X6                                         14%
+ 3 [.10 .00 .00 .55 .00 .05 .00 .10 .15 .05] when X1     & X7     & not X5 & X6     & X3                                    10%
+ 4 [.00 .05 .00 .00 .77 .00 .09 .00 .05 .05] when not X1          & not X5                   & X2                           11%
+ 5 [.10 .00 .00 .10 .00 .70 .05 .00 .05 .00] when X1     & X7              & X6     & not X3                                10%
+ 6 [.16 .00 .00 .00 .00 .00 .68 .04 .08 .04] when not X1          & X5                       & X2                           12%
+ 7 [.00 .00 .00 .00 .00 .00 .00 .85 .00 .15] when X1     & not X7                                     & not X4              10%
+ 8 [.14 .00 .00 .14 .00 .00 .00 .00 .71 .00] when X1     & X7     & X5     & X6     & X3                       & X8          4%
+ 9 [.00 .00 .05 .05 .05 .10 .00 .00 .10 .67] when X1     & not X7                                     & X4                  10%
+> print(rpart.rules(fit9.df, cover=TRUE, roundint=FALSE, clip.facs=TRUE))
+ y    0   1   2   3   4   5   6   7   8   9                                                                                                       cover
+ 0 [.71 .00 .00 .00 .00 .00 .00 .00 .29 .00] when X1 >= 0.5 & X7 >= 0.5 & X5 >= 0.5 & X6 >= 0.5 & X3 >= 0.5                         & X8 <  0.5      7%
+ 1 [.00 .79 .00 .12 .08 .00 .00 .00 .00 .00] when X1 <  0.5                                                 & X2 <  0.5                             12%
+ 2 [.04 .00 .70 .07 .00 .11 .00 .00 .07 .00] when X1 >= 0.5 & X7 >= 0.5             & X6 <  0.5                                                     14%
+ 3 [.10 .00 .00 .55 .00 .05 .00 .10 .15 .05] when X1 >= 0.5 & X7 >= 0.5 & X5 <  0.5 & X6 >= 0.5 & X3 >= 0.5                                         10%
+ 4 [.00 .05 .00 .00 .77 .00 .09 .00 .05 .05] when X1 <  0.5             & X5 <  0.5                         & X2 >= 0.5                             11%
+ 5 [.10 .00 .00 .10 .00 .70 .05 .00 .05 .00] when X1 >= 0.5 & X7 >= 0.5             & X6 >= 0.5 & X3 <  0.5                                         10%
+ 6 [.16 .00 .00 .00 .00 .00 .68 .04 .08 .04] when X1 <  0.5             & X5 >= 0.5                         & X2 >= 0.5                             12%
+ 7 [.00 .00 .00 .00 .00 .00 .00 .85 .00 .15] when X1 >= 0.5 & X7 <  0.5                                                 & X4 <  0.5                 10%
+ 8 [.14 .00 .00 .14 .00 .00 .00 .00 .71 .00] when X1 >= 0.5 & X7 >= 0.5 & X5 >= 0.5 & X6 >= 0.5 & X3 >= 0.5                         & X8 >= 0.5      4%
+ 9 [.00 .00 .05 .05 .05 .10 .00 .00 .10 .67] when X1 >= 0.5 & X7 <  0.5                                                 & X4 >= 0.5                 10%
+> 
+> df.logical <- data.frame(y, x == 1)
+> dfit.df.logical <- rpart(y ~ ., data=df.logical, method='class', control=temp3)
+> fit9.df.logical <- prune(dfit.df.logical, cp=.02)
+> print(rpart.rules(fit9.df.logical, cover=TRUE))
+ y    0   1   2   3   4   5   6   7   8   9                                                                                       cover
+ 0 [.71 .00 .00 .00 .00 .00 .00 .00 .29 .00] when X1 is 1 & X7 is 1 & X5 is 1 & X6 is 1 & X3 is 1                     & X8 is 0      7%
+ 1 [.00 .79 .00 .12 .08 .00 .00 .00 .00 .00] when X1 is 0                                         & X2 is 0                         12%
+ 2 [.04 .00 .70 .07 .00 .11 .00 .00 .07 .00] when X1 is 1 & X7 is 1           & X6 is 0                                             14%
+ 3 [.10 .00 .00 .55 .00 .05 .00 .10 .15 .05] when X1 is 1 & X7 is 1 & X5 is 0 & X6 is 1 & X3 is 1                                   10%
+ 4 [.00 .05 .00 .00 .77 .00 .09 .00 .05 .05] when X1 is 0           & X5 is 0                     & X2 is 1                         11%
+ 5 [.10 .00 .00 .10 .00 .70 .05 .00 .05 .00] when X1 is 1 & X7 is 1           & X6 is 1 & X3 is 0                                   10%
+ 6 [.16 .00 .00 .00 .00 .00 .68 .04 .08 .04] when X1 is 0           & X5 is 1                     & X2 is 1                         12%
+ 7 [.00 .00 .00 .00 .00 .00 .00 .85 .00 .15] when X1 is 1 & X7 is 0                                         & X4 is 0               10%
+ 8 [.14 .00 .00 .14 .00 .00 .00 .00 .71 .00] when X1 is 1 & X7 is 1 & X5 is 1 & X6 is 1 & X3 is 1                     & X8 is 1      4%
+ 9 [.00 .00 .05 .05 .05 .10 .00 .00 .10 .67] when X1 is 1 & X7 is 0                                         & X4 is 1               10%
+> print(rpart.rules(fit9.df.logical, cover=TRUE, roundint=FALSE))
+ y    0   1   2   3   4   5   6   7   8   9                                                                                       cover
+ 0 [.71 .00 .00 .00 .00 .00 .00 .00 .29 .00] when X1 is 1 & X7 is 1 & X5 is 1 & X6 is 1 & X3 is 1                     & X8 is 0      7%
+ 1 [.00 .79 .00 .12 .08 .00 .00 .00 .00 .00] when X1 is 0                                         & X2 is 0                         12%
+ 2 [.04 .00 .70 .07 .00 .11 .00 .00 .07 .00] when X1 is 1 & X7 is 1           & X6 is 0                                             14%
+ 3 [.10 .00 .00 .55 .00 .05 .00 .10 .15 .05] when X1 is 1 & X7 is 1 & X5 is 0 & X6 is 1 & X3 is 1                                   10%
+ 4 [.00 .05 .00 .00 .77 .00 .09 .00 .05 .05] when X1 is 0           & X5 is 0                     & X2 is 1                         11%
+ 5 [.10 .00 .00 .10 .00 .70 .05 .00 .05 .00] when X1 is 1 & X7 is 1           & X6 is 1 & X3 is 0                                   10%
+ 6 [.16 .00 .00 .00 .00 .00 .68 .04 .08 .04] when X1 is 0           & X5 is 1                     & X2 is 1                         12%
+ 7 [.00 .00 .00 .00 .00 .00 .00 .85 .00 .15] when X1 is 1 & X7 is 0                                         & X4 is 0               10%
+ 8 [.14 .00 .00 .14 .00 .00 .00 .00 .71 .00] when X1 is 1 & X7 is 1 & X5 is 1 & X6 is 1 & X3 is 1                     & X8 is 1      4%
+ 9 [.00 .00 .05 .05 .05 .10 .00 .00 .10 .67] when X1 is 1 & X7 is 0                                         & X4 is 1               10%
+> print(rpart.rules(fit9.df.logical, cover=TRUE, clip.facs=TRUE))
+ y    0   1   2   3   4   5   6   7   8   9                                                                               cover
+ 0 [.71 .00 .00 .00 .00 .00 .00 .00 .29 .00] when X1     & X7     & X5     & X6     & X3                       & not X8      7%
+ 1 [.00 .79 .00 .12 .08 .00 .00 .00 .00 .00] when not X1                                     & not X2                       12%
+ 2 [.04 .00 .70 .07 .00 .11 .00 .00 .07 .00] when X1     & X7              & not X6                                         14%
+ 3 [.10 .00 .00 .55 .00 .05 .00 .10 .15 .05] when X1     & X7     & not X5 & X6     & X3                                    10%
+ 4 [.00 .05 .00 .00 .77 .00 .09 .00 .05 .05] when not X1          & not X5                   & X2                           11%
+ 5 [.10 .00 .00 .10 .00 .70 .05 .00 .05 .00] when X1     & X7              & X6     & not X3                                10%
+ 6 [.16 .00 .00 .00 .00 .00 .68 .04 .08 .04] when not X1          & X5                       & X2                           12%
+ 7 [.00 .00 .00 .00 .00 .00 .00 .85 .00 .15] when X1     & not X7                                     & not X4              10%
+ 8 [.14 .00 .00 .14 .00 .00 .00 .00 .71 .00] when X1     & X7     & X5     & X6     & X3                       & X8          4%
+ 9 [.00 .00 .05 .05 .05 .10 .00 .00 .10 .67] when X1     & not X7                                     & X4                  10%
+> print(rpart.rules(fit9.df.logical, cover=TRUE, roundint=FALSE, clip.facs=TRUE))
+ y    0   1   2   3   4   5   6   7   8   9                                                                               cover
+ 0 [.71 .00 .00 .00 .00 .00 .00 .00 .29 .00] when X1     & X7     & X5     & X6     & X3                       & not X8      7%
+ 1 [.00 .79 .00 .12 .08 .00 .00 .00 .00 .00] when not X1                                     & not X2                       12%
+ 2 [.04 .00 .70 .07 .00 .11 .00 .00 .07 .00] when X1     & X7              & not X6                                         14%
+ 3 [.10 .00 .00 .55 .00 .05 .00 .10 .15 .05] when X1     & X7     & not X5 & X6     & X3                                    10%
+ 4 [.00 .05 .00 .00 .77 .00 .09 .00 .05 .05] when not X1          & not X5                   & X2                           11%
+ 5 [.10 .00 .00 .10 .00 .70 .05 .00 .05 .00] when X1     & X7              & X6     & not X3                                10%
+ 6 [.16 .00 .00 .00 .00 .00 .68 .04 .08 .04] when not X1          & X5                       & X2                           12%
+ 7 [.00 .00 .00 .00 .00 .00 .00 .85 .00 .15] when X1     & not X7                                     & not X4              10%
+ 8 [.14 .00 .00 .14 .00 .00 .00 .00 .71 .00] when X1     & X7     & X5     & X6     & X3                       & X8          4%
+ 9 [.00 .00 .05 .05 .05 .10 .00 .00 .10 .67] when X1     & not X7                                     & X4                  10%
+> 
+> # trace=1 below so we can see message: Variable name 'x1' is not in splits in terms$dataClasses
+> # This message is printed only when trace>0
+> par(mfrow=c(2,4))
+> if (USE.PRP) {
++     prp(fit9,            branch=.3, compress=T, main="Section 4 dfit\ntrace=0 roundint=FALSE",             trace=0, roundint=FALSE) # silent but isbinary() fails
++     prp(fit9,            branch=.3, compress=T, main="Section 4 dfit\ntrace=1 roundint=FALSE",             trace=1, roundint=FALSE) # message Variable not in the model.frame
++     prp(fit9.df,         branch=.3, compress=T, main="Section 4 dfit.df\ntrace=1, roundint=FALSE",         trace=1, roundint=FALSE) # ok
++     prp(fit9.df.logical, branch=.3, compress=T, main="Section 4 dfit.df.logical\ntrace=1, roundint=FALSE", trace=1, roundint=FALSE) # ok
++ 
++     prp(fit9,            branch=.3, compress=T, main="Section 4 dfit trace=0\nroundint=TRUE",     roundint=TRUE)
++     prp(fit9,            branch=.3, compress=T, main="Section 4 dfit trace=1\nroundint=TRUE",     roundint=TRUE)
++     prp(fit9.df,         branch=.3, compress=T, main="Section 4 dfit.df\nroundint=TRUE",          roundint=TRUE)
++     prp(fit9.df.logical, branch=.3, compress=T, main="Section 4 dfit.df.logical\nroundint=TRUE",  roundint=TRUE)
++ } else {
++     plot(fit9, branch=.3, compress=T, main="Section 4 trace=0")
++     text(fit9)
++ }
+Variable 'x1' in splits is not in the model.frame (so cannot determine roundint and is.binary for the variable)
+colnames(model.frame): y x
+cex 1   xlim c(0, 1)   ylim c(0, 1)
+cex 1   xlim c(0, 1)   ylim c(0, 1)
+cex 1   xlim c(0, 1)   ylim c(0, 1)
+> par(old.par)
+> 
+> cat("### Section 5\n")
+### Section 5
+> 
+> printcp(cfit)
+
+Classification tree:
+rpart(formula = progstat ~ age + eet + g2 + grade + gleason + 
+    ploidy, data = stagec, method = "class")
+
+Variables actually used in tree construction:
+[1] g2    grade
+
+Root node error: 54/146 = 0.36986
+
+n= 146 
+
+        CP nsplit rel error  xerror    xstd
+1 0.117284      0   1.00000 1.00000 0.10802
+2 0.027778      3   0.64815 0.90741 0.10566
+3 0.010000      5   0.59259 0.92593 0.10618
+> summary(cfit, cp=.06)
+Call:
+rpart(formula = progstat ~ age + eet + g2 + grade + gleason + 
+    ploidy, data = stagec, method = "class")
+  n= 146 
+
+          CP nsplit rel error    xerror      xstd
+1 0.11728395      0 1.0000000 1.0000000 0.1080241
+2 0.02777778      3 0.6481481 0.9074074 0.1056608
+3 0.01000000      5 0.5925926 0.9259259 0.1061819
+
+Variable importance
+     g2   grade gleason  ploidy     age     eet 
+     31      31      21      10       5       2 
+
+Node number 1: 146 observations,    complexity param=0.117284
+  predicted class=No    expected loss=0.369863  P(node) =1
+    class counts:    92    54
+   probabilities: 0.630 0.370 
+  left son=2 (61 obs) right son=3 (85 obs)
+  Primary splits:
+      grade   < 2.5    to the left,  improve=10.357590, (0 missing)
+      gleason < 5.5    to the left,  improve= 8.399574, (3 missing)
+      ploidy  < 1.5    to the left,  improve= 7.656533, (0 missing)
+      g2      < 13.2   to the left,  improve= 7.186766, (7 missing)
+      age     < 58.5   to the right, improve= 1.388128, (0 missing)
+  Surrogate splits:
+      gleason < 5.5    to the left,  agree=0.863, adj=0.672, (0 split)
+      ploidy  < 1.5    to the left,  agree=0.644, adj=0.148, (0 split)
+      g2      < 9.945  to the left,  agree=0.630, adj=0.115, (0 split)
+      age     < 66.5   to the right, agree=0.589, adj=0.016, (0 split)
+
+Node number 2: 61 observations
+  predicted class=No    expected loss=0.147541  P(node) =0.4178082
+    class counts:    52     9
+   probabilities: 0.852 0.148 
+
+Node number 3: 85 observations,    complexity param=0.117284
+  predicted class=Prog  expected loss=0.4705882  P(node) =0.5821918
+    class counts:    40    45
+   probabilities: 0.471 0.529 
+  left son=6 (35 obs) right son=7 (50 obs)
+  Primary splits:
+      g2      < 13.2   to the left,  improve=2.1781360, (6 missing)
+      ploidy  < 1.5    to the left,  improve=1.9834830, (0 missing)
+      age     < 56.5   to the right, improve=1.6596080, (0 missing)
+      gleason < 8.5    to the left,  improve=1.6386550, (0 missing)
+      eet     < 1.5    to the right, improve=0.1086108, (1 missing)
+  Surrogate splits:
+      ploidy  < 1.5    to the left,  agree=0.924, adj=0.829, (6 split)
+      age     < 68.5   to the right, agree=0.608, adj=0.114, (0 split)
+      gleason < 6.5    to the left,  agree=0.582, adj=0.057, (0 split)
+
+Node number 6: 35 observations
+  predicted class=No    expected loss=0.4  P(node) =0.239726
+    class counts:    21    14
+   probabilities: 0.600 0.400 
+
+Node number 7: 50 observations,    complexity param=0.117284
+  predicted class=Prog  expected loss=0.38  P(node) =0.3424658
+    class counts:    19    31
+   probabilities: 0.380 0.620 
+  left son=14 (25 obs) right son=15 (25 obs)
+  Primary splits:
+      g2      < 17.91  to the right, improve=5.24148300, (6 missing)
+      age     < 61.5   to the right, improve=1.12666700, (0 missing)
+      gleason < 7.5    to the left,  improve=0.25269950, (0 missing)
+      eet     < 1.5    to the right, improve=0.06310024, (1 missing)
+  Surrogate splits:
+      age     < 61.5   to the right, agree=0.614, adj=0.190, (6 split)
+      eet     < 1.5    to the right, agree=0.591, adj=0.143, (0 split)
+      grade   < 3.5    to the right, agree=0.545, adj=0.048, (0 split)
+      gleason < 6.5    to the right, agree=0.545, adj=0.048, (0 split)
+
+Node number 14: 25 observations
+  predicted class=No    expected loss=0.36  P(node) =0.1712329
+    class counts:    16     9
+   probabilities: 0.640 0.360 
+
+Node number 15: 25 observations
+  predicted class=Prog  expected loss=0.12  P(node) =0.1712329
+    class counts:     3    22
+   probabilities: 0.120 0.880 
+
+> 
+> cat("### Section 6\n")
+### Section 6
+> 
+> fit1 <- rpart(Reliability ~ Price + Country + Mileage + Type,
++               data=cu.summary, parms=list(split='gini'))
+> print(rpart.rules(fit1, style='tall', cover=TRUE))
+                            Muc wor ave bet Muc 
+Reliability is Much worse  [.78 .00 .22 .00 .00] with cover 11% when
+    Country is Germany or Korea or Mexico or Sweden or USA
+    Type is Sporty
+
+Reliability is worse       [.29 .43 .07 .21 .00] with cover 16% when
+    Country is Korea or USA
+    Type is Compact or Small
+
+Reliability is average     [.00 .25 .50 .25 .00] with cover 9% when
+    Country is Germany or Mexico or Sweden
+    Type is Compact or Small
+
+Reliability is average     [.26 .15 .59 .00 .00] with cover 32% when
+    Country is Germany or Korea or Mexico or Sweden or USA
+    Type is Large or Medium or Van
+
+Reliability is Much better [.00 .00 .11 .11 .78] with cover 32% when
+    Country is Japan or Japan/USA
+> fit2 <- rpart(Reliability ~ Price + Country + Mileage + Type,
++               data=cu.summary, parms=list(split='information'))
+> print(rpart.rules(fit2))
+ Reliability  Muc wor ave bet Muc                                                                                              
+  Much worse [.78 .00 .22 .00 .00] when Country is Germany or Korea or Mexico or Sweden or USA & Type is                 Sporty
+       worse [.29 .43 .07 .21 .00] when Country is                                Korea or USA & Type is       Compact or Small
+     average [.00 .25 .50 .25 .00] when Country is                 Germany or Mexico or Sweden & Type is       Compact or Small
+     average [.26 .15 .59 .00 .00] when Country is Germany or Korea or Mexico or Sweden or USA & Type is Large or Medium or Van
+ Much better [.00 .00 .11 .11 .78] when Country is                          Japan or Japan/USA                                 
+> par(mfrow=c(1,2))
+> if (USE.PRP) {
++     prp(fit1, extra=T, main="Section 6\ngini", uniform=F, branch=1, xsep="/", under=T, roundint=FALSE)
++     prp(fit2, extra=T, main="nunif", uniform=F, branch=1, under=T, roundint=FALSE)
++ } else {
++     plot(fit1, main="Section 6\ngini"); text(fit1, use.n=T, cex=.8, xpd=NA)
++     plot(fit2, main="\nunif"); text(fit2, use.n=T, cex=.8, xpd=NA)
++ }
+> par(old.par)
+> 
+> lmat <- matrix(c(0,4,3,0), nrow=2, ncol=2, byrow=F)
+> fit1 <- rpart(Kyphosis ~ Age + Number + Start, data=kyphosis)
+> print(rpart.rules(fit1, style='wide'))
+ Kyphosis                                         
+     0.00 when Start >=      15                   
+     0.00 when Start is 9 to 15 & Age <  55       
+     0.14 when Start is 9 to 15 & Age >=       111
+     0.57 when Start is 9 to 15 & Age is 55 to 111
+     0.58 when Start <  9                         
+> fit2 <- rpart(Kyphosis ~ Age + Number + Start, data=kyphosis,
++               parms=list(prior=c(.65,.35)))
+> print(rpart.rules(fit2, style='wide'))
+ Kyphosis                             
+     0.08 when Start >= 13            
+     0.18 when Start <  13 & Age <  35
+     0.72 when Start <  13 & Age >= 35
+> fit3 <- rpart(Kyphosis ~ Age + Number + Start, data=kyphosis,
++               parms=list(loss=lmat))
+> print(rpart.rules(fit3, style='tall'))
+Kyphosis is 0.00 when
+    Start >= 15
+
+Kyphosis is 0.00 when
+    Start is 9 to 15
+    Age < 55
+
+Kyphosis is 0.14 when
+    Start is 9 to 15
+    Age >= 111
+
+Kyphosis is 0.57 when
+    Start is 9 to 15
+    Age is 55 to 111
+
+Kyphosis is 0.58 when
+    Start < 9
+> par(mfrow=c(1,3))
+> if (USE.PRP) {
++     prp(fit1, main="Section 6a", extra=T, type=1, uniform=F, branch=1, roundint=FALSE)
++     # TODO this gives very small text, can improve by using minbranch=.5:
++     # prp(fit1, main="Section 6a", extra=T, type=4, uniform=F, branch=1, roundint=FALSE)
++     prp(fit2, extra=T, type=4, uniform=F, branch=1, roundint=FALSE)
++     prp(fit3, extra=T, type=4, uniform=F, branch=1, yesno.yshift=-.5, roundint=FALSE) # yesno.yshift just to test
++ } else {
++     plot(fit1, main="Section 6a"); text(fit1, use.n=T, fancy=T, xpd=NA)
++     plot(fit2); text(fit2, use.n=T, fancy=T, xpd=NA)
++     plot(fit3); text(fit3, use.n=T, fancy=T, xpd=NA)
++ }
+> par(old.par)
+> 
+> cat("### Section 7\n")
+### Section 7
+> 
+> # was
+> # cars <- car.all[, c(1:12, 15:17, 21, 28, 32:36)]
+> # cars$Eng.Rev <- as.numeric(as.character(car.all$Eng.Rev2))
+> # now (data slightly different, results will not be identical to the document)
+> data(car.test.frame); cars <- car.test.frame
+> 
+> fit3 <- rpart(Price ~ ., data=cars)
+> fit3
+n= 60 
+
+node), split, n, deviance, yval
+      * denotes terminal node
+
+ 1) root 60 983551500 12615.670  
+   2) Weight< 2980 36 283686500 10442.580  
+     4) Type=Small 13  21804710  7682.385 *
+     5) Type=Compact,Medium,Sporty 23 106857900 12002.700  
+      10) Country=Japan/USA,Korea,USA 15  21272980 11261.200 *
+      11) Country=France,Germany,Japan 8  61874100 13393.000 *
+   3) Weight>=2980 24 274858800 15875.290  
+     6) Country=USA 14  47843040 14185.710 *
+     7) Country=Japan,Sweden 10 131098800 18240.700 *
+> print(rpart.rules(fit3, style='wide'))
+ Price                                                                                                  
+  7682 when Weight <  2980                                         & Type is                       Small
+ 11261 when Weight <  2980 & Country is  Japan/USA or Korea or USA & Type is Compact or Medium or Sporty
+ 13393 when Weight <  2980 & Country is France or Germany or Japan & Type is Compact or Medium or Sporty
+ 14186 when Weight >= 2980 & Country is                        USA                                      
+ 18241 when Weight >= 2980 & Country is            Japan or Sweden                                      
+> printcp(fit3)
+
+Regression tree:
+rpart(formula = Price ~ ., data = cars)
+
+Variables actually used in tree construction:
+[1] Country Type    Weight 
+
+Root node error: 983551497/60 = 16392525
+
+n= 60 
+
+        CP nsplit rel error  xerror    xstd
+1 0.432114      0   1.00000 1.02390 0.21301
+2 0.157616      1   0.56789 0.83322 0.14641
+3 0.097521      2   0.41027 0.73065 0.14517
+4 0.024107      3   0.31275 0.57203 0.11016
+5 0.010000      4   0.28864 0.56464 0.11375
+> print(fit3, cp=.10)
+n= 60 
+
+node), split, n, deviance, yval
+      * denotes terminal node
+
+1) root 60 983551500 12615.670  
+  2) Weight< 2980 36 283686500 10442.580  
+    4) Type=Small 13  21804710  7682.385 *
+    5) Type=Compact,Medium,Sporty 23 106857900 12002.700 *
+  3) Weight>=2980 24 274858800 15875.290 *
+> 
+> summary(fit3, cp=.10)
+Call:
+rpart(formula = Price ~ ., data = cars)
+  n= 60 
+
+          CP nsplit rel error    xerror      xstd
+1 0.43211383      0 1.0000000 1.0239010 0.2130051
+2 0.15761648      1 0.5678862 0.8332180 0.1464063
+3 0.09752105      2 0.4102697 0.7306526 0.1451655
+4 0.02410734      3 0.3127486 0.5720304 0.1101630
+5 0.01000000      4 0.2886413 0.5646407 0.1137469
+
+Variable importance
+     Weight       Disp.        Type          HP     Mileage     Country 
+         23          21          18          16          14           8 
+Reliability 
+          1 
+
+Node number 1: 60 observations,    complexity param=0.4321138
+  mean=12615.67, MSE=1.639252e+07 
+  left son=2 (36 obs) right son=3 (24 obs)
+  Primary splits:
+      Weight  < 2980   to the left,  improve=0.4321138, (0 missing)
+      HP      < 104.5  to the left,  improve=0.4141712, (0 missing)
+      Type    splits as  RRRLRR,     improve=0.4106497, (0 missing)
+      Disp.   < 115    to the left,  improve=0.4083029, (0 missing)
+      Mileage < 24.5   to the right, improve=0.3628025, (0 missing)
+  Surrogate splits:
+      Disp.   < 158    to the left,  agree=0.917, adj=0.792, (0 split)
+      HP      < 132.5  to the left,  agree=0.867, adj=0.667, (0 split)
+      Mileage < 22.5   to the right, agree=0.850, adj=0.625, (0 split)
+      Type    splits as  LRRLLR,     agree=0.850, adj=0.625, (0 split)
+      Country splits as  LLLLLLRR,   agree=0.650, adj=0.125, (0 split)
+
+Node number 2: 36 observations,    complexity param=0.1576165
+  mean=10442.58, MSE=7880181 
+  left son=4 (13 obs) right son=5 (23 obs)
+  Primary splits:
+      Type    splits as  R-RLR-,     improve=0.5464621, (0 missing)
+      Weight  < 2462.5 to the left,  improve=0.5308886, (0 missing)
+      Disp.   < 115    to the left,  improve=0.4550460, (0 missing)
+      Mileage < 31     to the right, improve=0.4382905, (0 missing)
+      HP      < 105.5  to the left,  improve=0.4144004, (0 missing)
+  Surrogate splits:
+      Weight  < 2462.5 to the left,  agree=0.944, adj=0.846, (0 split)
+      Disp.   < 115    to the left,  agree=0.917, adj=0.769, (0 split)
+      HP      < 91     to the left,  agree=0.861, adj=0.615, (0 split)
+      Mileage < 27.5   to the right, agree=0.833, adj=0.538, (0 split)
+      Country splits as  RRRRLL-R,   agree=0.694, adj=0.154, (0 split)
+
+Node number 3: 24 observations
+  mean=15875.29, MSE=1.145245e+07 
+
+Node number 4: 13 observations
+  mean=7682.385, MSE=1677286 
+
+Node number 5: 23 observations
+  mean=12002.7, MSE=4645995 
+
+> 
+> par(mfrow=c(1,2))
+> if (USE.PRP) {
++     prp(fit3, extra=T, main="Section 7", uniform=F, under=T, roundint=FALSE)
++ } else {
++     plot(fit3)
++     text(fit3, use.n=T, main="Section 7", xpd=NA)
++ }
+> # test negative digits (so will use standard format function)
+> prp(fit3, extra=T, main="Section 7 (negative digits)", uniform=F, under=T, digits=-6, roundint=FALSE)
+> print(rpart.rules(fit3, digits=-6)) # will treat digits-6 the same as digits=6
+    Price                                                                                                  
+  7682.38 when Weight <  2980                                         & Type is                       Small
+ 11261.20 when Weight <  2980 & Country is  Japan/USA or Korea or USA & Type is Compact or Medium or Sporty
+ 13393.00 when Weight <  2980 & Country is France or Germany or Japan & Type is Compact or Medium or Sporty
+ 14185.71 when Weight >= 2980 & Country is                        USA                                      
+ 18240.70 when Weight >= 2980 & Country is            Japan or Sweden                                      
+> par(old.par)
+> 
+> # plot(predict(fit3), resid(fit3))
+> # axis(3, at=fit3$frame$yval[fit3$frame$var=='<leaf>'],
+> # labels=row.names(fit3$frame)[fit3$frame$var=='<leaf>'])
+> # mtext('leaf number', side=3, line=3)
+> # abline(h=0)
+> 
+> cfit2 <- rpart(pgstat ~ age + eet + g2 + grade + gleason + ploidy, data=stagec)
+> print(rpart.rules(cfit2, style='wide'))
+ pgstat                                                
+  0.051 when grade <  3 & g2 <  13                     
+  0.143 when grade >= 3 & g2 is 12 to 13               
+  0.143 when grade >= 3 & g2 <  11       & gleason <  7
+  0.200 when grade <  3 & g2 >=       15               
+  0.360 when grade >= 3 & g2 >=       18               
+  0.500 when grade >= 3 & g2 <  11       & gleason >= 7
+  0.571 when grade <  3 & g2 is 13 to 15               
+  0.714 when grade >= 3 & g2 is 11 to 12               
+  0.880 when grade >= 3 & g2 is 13 to 18               
+> printcp(cfit2)
+
+Regression tree:
+rpart(formula = pgstat ~ age + eet + g2 + grade + gleason + ploidy, 
+    data = stagec)
+
+Variables actually used in tree construction:
+[1] g2      gleason grade  
+
+Root node error: 34.027/146 = 0.23306
+
+n= 146 
+
+        CP nsplit rel error  xerror     xstd
+1 0.152195      0   1.00000 1.02349 0.046008
+2 0.064308      1   0.84781 0.87287 0.063475
+3 0.029446      3   0.71919 0.94101 0.080485
+4 0.019350      4   0.68974 1.03226 0.090376
+5 0.017213      5   0.67039 1.06292 0.096433
+6 0.010000      8   0.61875 1.08156 0.100688
+> print(cfit2, cp=.03)
+n= 146 
+
+node), split, n, deviance, yval
+      * denotes terminal node
+
+ 1) root 146 34.027400 0.3698630  
+   2) grade< 2.5 61  7.672131 0.1475410 *
+   3) grade>=2.5 85 21.176470 0.5294118  
+     6) g2< 13.2 35  8.400000 0.4000000 *
+     7) g2>=13.2 50 11.780000 0.6200000  
+      14) g2>=17.91 25  5.760000 0.3600000 *
+      15) g2< 17.91 25  2.640000 0.8800000 *
+> 
+> cat("### Section 8\n")
+### Section 8
+> 
+> fit <- rpart(skips ~ Opening + Solder + Mask + PadType + Panel, data=solder,
++              method='poisson', control=rpart.control(cp=.05, maxcompete=2))
+> summary(fit, cp=.10)
+Call:
+rpart(formula = skips ~ Opening + Solder + Mask + PadType + Panel, 
+    data = solder, method = "poisson", control = rpart.control(cp = 0.05, 
+        maxcompete = 2))
+  n= 900 
+
+         CP nsplit rel error    xerror       xstd
+1 0.3037885      0 1.0000000 1.0047897 0.05236551
+2 0.1540759      1 0.6962115 0.7038292 0.03307448
+3 0.1284762      2 0.5421356 0.5738358 0.02771120
+4 0.0500000      3 0.4136595 0.4195756 0.01963556
+
+Variable importance
+Opening    Mask  Solder 
+     49      46       5 
+
+Node number 1: 900 observations,    complexity param=0.3037885
+  events=4977,  estimated rate=5.53 , mean deviance=9.764721 
+  left son=2 (600 obs) right son=3 (300 obs)
+  Primary splits:
+      Opening splits as  LLR,   improve=2669.769, (0 missing)
+      Mask    splits as  LLRLR, improve=2162.010, (0 missing)
+      Solder  splits as  LR,    improve=1168.401, (0 missing)
+
+Node number 2: 600 observations,    complexity param=0.1284762
+  events=1531,  estimated rate=2.552564 , mean deviance=4.927685 
+  left son=4 (420 obs) right son=5 (180 obs)
+  Primary splits:
+      Mask    splits as  LLRLR, improve=1129.0820, (0 missing)
+      Opening splits as  LR-,   improve= 250.7655, (0 missing)
+      Solder  splits as  LR,    improve= 219.7641, (0 missing)
+
+Node number 3: 300 observations,    complexity param=0.1540759
+  events=3446,  estimated rate=11.48308 , mean deviance=10.53956 
+  left son=6 (150 obs) right son=7 (150 obs)
+  Primary splits:
+      Mask    splits as  LLRRR,      improve=1354.0590, (0 missing)
+      Solder  splits as  LR,         improve= 976.9158, (0 missing)
+      PadType splits as  RRRRLLRLRL, improve= 313.2002, (0 missing)
+  Surrogate splits:
+      Solder splits as  LR, agree=0.6, adj=0.2, (0 split)
+
+Node number 4: 420 observations
+  events=433,  estimated rate=1.032889 , mean deviance=2.081981 
+
+Node number 5: 180 observations
+  events=1098,  estimated rate=6.099428 , mean deviance=5.294992 
+
+Node number 6: 150 observations
+  events=680,  estimated rate=4.534533 , mean deviance=4.350953 
+
+Node number 7: 150 observations
+  events=2766,  estimated rate=18.42446 , mean deviance=7.701124 
+
+> par(mfrow=c(2,2))
+> if (USE.PRP) {
++     plot(fit, main="Section 8 plot.rpart")
++     text(fit, use.n=T, xpd=NA)
++     rpart.plot(fit, main="Section 8 rpart.plot", under=TRUE, digits=4)
++     print(rpart.rules(fit, digits=4))
++ } else {
++     plot(fit, main="Section 8")
++     text(fit, use.n=T, xpd=NA)
++ }
+  skips                                                  
+  1.033 when Opening is L or M & Mask is A1.5 or A3 or B3
+  4.535 when Opening is      S & Mask is       A1.5 or A3
+  6.099 when Opening is L or M & Mask is         A6 or B6
+ 18.424 when Opening is      S & Mask is   A6 or B3 or B6
+> 
+> fit.prune <- prune(fit, cp=.15)
+> if (USE.PRP) {
++     plot(fit.prune, main="Section 8a plot.rpart")
++     text(fit.prune, use.n=T, xpd=NA)
++     rpart.plot(fit.prune, main="Section 8a rpart.plot", under=TRUE, digits=4)
++     print(rpart.rules(fit.prune))
++ } else {
++     plot(fit.prune)
++     text(fit.prune, use.n=T, xpd=NA, main="Section 8a")
++ }
+ skips                                                
+   2.6 when Opening is L or M                         
+   4.5 when Opening is      S & Mask is     A1.5 or A3
+  18.4 when Opening is      S & Mask is A6 or B3 or B6
+> 
+> library(survival)
+> fit <- rpart(Surv(stagec$pgtime, stagec$pgstat) ~ age + eet + g2 + grade +
++              gleason + ploidy, data=stagec)
+> print(fit)
+n= 146 
+
+node), split, n, deviance, yval
+      * denotes terminal node
+
+ 1) root 146 195.411600 1.0000000  
+   2) grade< 2.5 61  45.021520 0.3624701  
+     4) g2< 11.36 33   9.120116 0.1225562 *
+     5) g2>=11.36 28  27.804100 0.7335298  
+      10) gleason< 5.5 20  14.376900 0.5292190 *
+      11) gleason>=5.5 8  11.201470 1.3083680 *
+   3) grade>=2.5 85 125.327400 1.6190620  
+     6) age>=56.5 75 104.154700 1.4287310  
+      12) gleason< 7.5 50  66.701410 1.1431320 *
+      13) gleason>=7.5 25  33.993130 2.0355220  
+        26) g2>=15.29 13  16.555970 1.3494740 *
+        27) g2< 15.29 12  14.220260 2.9210480 *
+     7) age< 56.5 10  15.522810 3.1977430 *
+> if (USE.PRP) {
++     plot(fit, uniform=T, branch=.4, compress=T, main="Section 8b plot.rpart")
++     text(fit, use.n=T)
++     rpart.plot(fit, main="Section 8b rpart.plot", under=TRUE, digits=4)
++     print(rpart.rules(fit))
++ } else {
++     plot(fit, uniform=T, branch=.4, compress=T, main="Section 8b")
++     text(fit, use.n=T)
++ }
+ Surv                                                      
+ 0.12 when grade <  3                & g2 <  11            
+ 0.53 when grade <  3 & gleason <  6 & g2 >= 11            
+ 1.14 when grade >= 3 & gleason <  8            & age >= 57
+ 1.31 when grade <  3 & gleason >= 6 & g2 >= 11            
+ 1.35 when grade >= 3 & gleason >= 8 & g2 >= 15 & age >= 57
+ 2.92 when grade >= 3 & gleason >= 8 & g2 <  15 & age >= 57
+ 3.20 when grade >= 3                           & age <  57
+> summary(fit, cp=.02)
+Call:
+rpart(formula = Surv(stagec$pgtime, stagec$pgstat) ~ age + eet + 
+    g2 + grade + gleason + ploidy, data = stagec)
+  n= 146 
+
+          CP nsplit rel error    xerror       xstd
+1 0.12825561      0 1.0000000 1.0032940 0.07336684
+2 0.04143718      1 0.8717444 0.9052024 0.07557803
+3 0.02891302      2 0.8303072 0.9335094 0.08186478
+4 0.01770700      3 0.8013942 0.8998920 0.07985888
+5 0.01646215      4 0.7836872 0.9480198 0.08875563
+6 0.01138994      5 0.7672250 0.9792548 0.09240943
+7 0.01000000      6 0.7558351 0.9910961 0.09249045
+
+Variable importance
+  grade gleason      g2  ploidy     age 
+     30      27      18      14      10 
+
+Node number 1: 146 observations,    complexity param=0.1282556
+  events=54,  estimated rate=1 , mean deviance=1.338436 
+  left son=2 (61 obs) right son=3 (85 obs)
+  Primary splits:
+      grade   < 2.5    to the left,  improve=25.114360, (0 missing)
+      gleason < 5.5    to the left,  improve=21.515590, (3 missing)
+      ploidy  < 1.5    to the left,  improve=13.874260, (0 missing)
+      g2      < 13.2   to the left,  improve=12.370770, (7 missing)
+      age     < 58.5   to the right, improve= 2.659133, (0 missing)
+  Surrogate splits:
+      gleason < 5.5    to the left,  agree=0.863, adj=0.672, (0 split)
+      ploidy  < 1.5    to the left,  agree=0.644, adj=0.148, (0 split)
+      g2      < 9.945  to the left,  agree=0.630, adj=0.115, (0 split)
+      age     < 66.5   to the right, agree=0.589, adj=0.016, (0 split)
+
+Node number 2: 61 observations,    complexity param=0.04143718
+  events=9,  estimated rate=0.3624701 , mean deviance=0.7380577 
+  left son=4 (33 obs) right son=5 (28 obs)
+  Primary splits:
+      g2      < 11.36  to the left,  improve=8.9819660, (1 missing)
+      ploidy  < 1.5    to the left,  improve=6.8795730, (0 missing)
+      age     < 68.5   to the right, improve=4.1362190, (0 missing)
+      gleason < 5.5    to the left,  improve=1.6564990, (3 missing)
+      eet     < 1.5    to the left,  improve=0.5950964, (1 missing)
+  Surrogate splits:
+      ploidy < 1.5    to the left,  agree=0.917, adj=0.815, (1 split)
+      age    < 65.5   to the left,  agree=0.617, adj=0.148, (0 split)
+
+Node number 3: 85 observations,    complexity param=0.02891302
+  events=45,  estimated rate=1.619062 , mean deviance=1.47444 
+  left son=6 (75 obs) right son=7 (10 obs)
+  Primary splits:
+      age     < 56.5   to the right, improve=6.3899780, (0 missing)
+      g2      < 22.765 to the right, improve=4.7850160, (6 missing)
+      gleason < 8.5    to the left,  improve=4.3730790, (0 missing)
+      ploidy  < 1.5    to the left,  improve=1.5650740, (0 missing)
+      eet     < 1.5    to the right, improve=0.8319287, (1 missing)
+
+Node number 4: 33 observations
+  events=1,  estimated rate=0.1225562 , mean deviance=0.2763672 
+
+Node number 5: 28 observations
+  events=8,  estimated rate=0.7335298 , mean deviance=0.9930034 
+
+Node number 6: 75 observations
+  events=37,  estimated rate=1.428731 , mean deviance=1.388729 
+
+Node number 7: 10 observations
+  events=8,  estimated rate=3.197743 , mean deviance=1.552281 
+
+> 
+> # modified for running in a script
+> fit2 <- prune(fit, cp=.015) # was fit2 <- snip.rpart(fit)
+> if (USE.PRP) {
++     plot(fit2, main="Section 8c plot.rpart")
++     text(fit2, use.n=T)
++     rpart.plot(fit2, branch=.4, main="Section 8c rpart.plot", under=TRUE, digits=4)
++     print(rpart.rules(fit2))
++ } else {
++     plot(fit2)
++     text(fit2, use.n=T, main="Section 8c")
++ }
+ Surv                                                      
+ 0.12 when grade <  3 & g2 <  11                           
+ 0.73 when grade <  3 & g2 >= 11                           
+ 1.14 when grade >= 3            & age >= 57 & gleason <  8
+ 1.35 when grade >= 3 & g2 >= 15 & age >= 57 & gleason >= 8
+ 2.92 when grade >= 3 & g2 <  15 & age >= 57 & gleason >= 8
+ 3.20 when grade >= 3            & age <  57               
+> par(old.par)
+> 
+> newgrp <- fit2$where
+> plot(survfit(Surv(pgtime, pgstat) ~ newgrp, data=stagec), mark.time=F, lty=1:4)
+> title(xlab='Time to Progression', ylab='Prob Progression')
+> legend(.2, .2, legend=paste('node', c(4,5,6,7)), lty=1:4)
+> 
+> cat("### Section 9\n")
+### Section 9
+> 
+> fit <- rpart(progstat ~ age + eet + g2 + grade + gleason + ploidy, stagec,
++              control=rpart.control(cp=.025))
+> print(rpart.rules(fit, style='tall'))
+progstat is 0.14 when
+    grade >= 3
+    g2 is 12 to 13
+
+progstat is 0.15 when
+    grade < 3
+
+progstat is 0.36 when
+    grade >= 3
+    g2 >= 18
+
+progstat is 0.38 when
+    grade >= 3
+    g2 < 11
+
+progstat is 0.71 when
+    grade >= 3
+    g2 is 11 to 12
+
+progstat is 0.88 when
+    grade >= 3
+    g2 is 13 to 18
+> par(mfrow=c(2,3))
+> if (USE.PRP) {
++     prp(fit, main="Section 9", uniform=F, branch=1, roundint=FALSE)
++     prp(fit, uniform=T, extra=T, type=1, main="Section 9a", roundint=FALSE)
++     prp(fit, branch=0, extra=T, uniform=F, main="Section 9b", roundint=FALSE)
++     prp(fit, branch=.4, uniform=T, compress=T, type=1, extra=T, main="Section 9c", roundint=FALSE)
++     # post.rpart is essentially:
++     prp(fit, uniform=T, branch=0.2, compress=T, Margin=0.1, type=4, extra=T, under=T, main="Section 9d", roundint=FALSE)
++ } else {
++     plot(fit, main="Section 9")
++     text(fit)
++ 
++     plot(fit, uniform=T, main="Section 9a")
++     text(fit, use.n=T, fancy=T)
++ 
++     plot(fit, branch=0, main="Section 9b")
++     text(fit, use.n=T)
++ 
++     plot(fit, branch=.4, uniform=T, compress=T, main="Section 9c")
++     text(fit, fancy=T, use.n=T)
++ 
++     # post.rpart is essentially:
++     plot(fit, uniform=T, branch=0.2, compress=T, margin=0.1, main="Section 9d")
++     text(fit, fancy=T, use.n=T)
++ }
+> par(old.par)
+> 
+> cat("### Section 10\n")
+### Section 10
+> 
+> fit <- rpart(pgtime ~ age + eet + g2 + grade + gleason + ploidy, stagec)
+> print(rpart.rules(fit, style='wide'))
+ pgtime                                                              
+    3.6 when gleason >=      7 & g2 <  23.5         & age <  61      
+    4.3 when gleason >=      7 & g2 <  23.5         & age >=       64
+    5.7 when gleason <  7      & g2 >=          7.8 & age >=       66
+    5.8 when gleason is 6 to 7 & g2 <  14.7         & age <  66      
+    7.0 when gleason >=      7 & g2 <  23.5         & age is 61 to 64
+    7.4 when gleason <  6      & g2 is  8.7 to 14.7 & age <  66      
+    8.2 when gleason <  7      & g2 <   7.8         & age >=       66
+    8.5 when gleason >=      7 & g2 >=         23.5                  
+    9.5 when gleason <  6      & g2 <   8.7         & age <  66      
+    9.5 when gleason <  7      & g2 >=         14.7 & age <  66      
+> fit$cptable
+          CP nsplit rel error    xerror      xstd
+1 0.07572983      0 1.0000000 1.0086421 0.1317438
+2 0.02825076      2 0.8485403 0.9975647 0.1485540
+3 0.02576114      3 0.8202896 1.0465724 0.1420247
+4 0.02340241      5 0.7687673 1.0647260 0.1455622
+5 0.01789441      7 0.7219625 1.0714391 0.1470863
+6 0.01295145      8 0.7040681 1.1495816 0.1553823
+7 0.01000000      9 0.6911166 1.1734318 0.1644694
+> temp <- xpred.rpart(fit)
+> err <- (stagec$pgtime - temp)^2
+> sum.err <- apply(err, 2, sum)
+> sum.err / (fit$frame)$dev[1]
+0.53786491 0.04625392 0.02697724 0.02455346 0.02046393 0.01522362 0.01138044 
+ 1.0057430  0.9723591  1.0880427  1.0813639  1.1210657  1.1304400  1.1162936 
+> 
+> par(old.par)
+> 
+> source("test.epilog.R")

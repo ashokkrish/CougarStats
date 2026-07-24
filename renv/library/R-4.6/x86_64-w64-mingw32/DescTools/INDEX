@@ -1,0 +1,502 @@
+%c%                     Concatenates Two Strings Without Any Separator
+%like%                  Like Operator
+%nin%                   Find Matching (or Non-Matching) Elements
+%overlaps%              Determines If And How Extensively Two Date
+                        Ranges Overlap
+ABCCoords               Coordinates for "bottomright", etc.
+AUC                     Area Under the Curve
+Abind                   Combine Multidimensional Arrays
+Abstract                Display Compact Abstract of a Data Frame
+AddMonths               Add a Month to a Date
+Agree                   Raw Simple And Extended Percentage Agreement
+AllDuplicated           Index Vector of All Values Involved in Ties
+AllIdentical            Test Multiple Objects for Exact Equality
+AndersonDarlingTest     Anderson-Darling Test of Goodness-of-Fit
+Append                  Append Elements to Objects
+AppendRowNames          Append Rownames to a Data Frame
+AscToChar               Convert ASCII Codes to Characters and Vice
+                        Versa
+Asp                     Get Aspect Ratio of the Current Plot
+Assocs                  Association Measures
+Atkinson                Atkinson Index - A Measure of Inequality.
+AxisBreak               Place a Break Mark on an Axis
+BarText                 Place Value Labels on a Barplot
+BarnardTest             Barnard's Unconditional Test
+BartelsRankTest         Bartels Rank Test of Randomness
+Benford                 Benford's Distribution
+Between                 Operators To Check, If a Value Lies Within Or
+                        Outside a Given Range
+Bg                      Background of a Plot
+BhapkarTest             Bhapkar Marginal Homogeneity Test
+BinToDec                Converts Numbers From Binmode, Octmode or
+                        Hexmode to Decimal and Vice Versa
+BinTree                 Binary Tree
+BinomCI                 Confidence Intervals for Binomial Proportions
+BinomCIn                Sample Size for a Given Width of a Binomial
+                        Confidence Interval
+BinomDiffCI             Confidence Interval for a Difference of
+                        Binomials
+BinomRatioCI            Confidence Intervals for the Ratio of Binomial
+                        Proportions
+BootCI                  Simple Bootstrap Confidence Intervals
+BoxCox                  Box Cox Transformation
+BoxCoxLambda            Automatic Selection of Box Cox Transformation
+                        Parameter
+BoxedText               Add Text in a Box to a Plot
+BreslowDayTest          Breslow-Day Test for Homogeneity of the Odds
+                        Ratios
+BreuschGodfreyTest      Breusch-Godfrey Test
+BrierScore              Brier Score for Assessing Prediction Accuracy
+BrierScoreCI            Confidence Intervals for the BrierScore
+BubbleLegend            Add a Legend to a Bubble Plot
+CCC                     Concordance Correlation Coefficient
+Canvas                  Canvas for Geometric Plotting
+CartToPol               Transform Cartesian to Polar/Spherical
+                        Coordinates and Vice Versa
+CatTable                Function to write a table
+Clockwise               Calculates Begin and End Angle From a List of
+                        Given Angles in Clockwise Mode
+Closest                 Find the Closest Value
+Coalesce                Return the First Element Not Being NA
+CochranArmitageTest     Cochran-Armitage Test for Trend
+CochranQTest            Cochran's Q test
+CoefVar                 Coefficient of Variation
+CohenD                  Cohen's Effect Size
+CohenKappa              Cohen's Kappa and Weighted Kappa
+ColToGrey               Convert Colors to Grey/Grayscale
+ColToHex                Convert a Color or a RGB-color Into Hex String
+ColToHsv                R Color to HSV Conversion
+ColToOpaque             Equivalent Opaque Color for Transparent Color
+ColToRgb                Color to RGB Conversion
+CollapseTable           Collapse Levels of a Table
+ColorLegend             Add a ColorLegend to a Plot
+ColumnWrap              Column Wrap
+CombPairs               Get All Pairs Out of One or Two Sets of
+                        Elements
+CompleteColumns         Find Complete Columns
+ConDisPairs             Concordant and Discordant Pairs
+Conf                    Confusion Matrix And Associated Statistics
+ConnLines               Add Connection Lines to a Barplot
+ConoverTest             Conover's Test of Multiple Comparisons
+Contrasts               Pairwise Contrasts
+ConvUnit                Unit Conversion and Metrix Prefixes
+Cor                     Covariance and Correlation (Matrices)
+CorCI                   Confidence Intervals for Pearson Correlation
+CorPart                 Find the Correlations for a Set x of Variables
+                        With Set y Removed
+CorPolychor             Polychoric Correlation
+CountCompCases          Count Complete Cases
+CountWorkDays           Count Work Days Between Two Dates
+CourseData              Get HWZ Datasets
+CramerVonMisesTest      Cramer-von Mises Test for Normality
+CronbachAlpha           Cronbach's Coefficient Alpha
+Cross                   Vector Cross Product
+CrossN                  n-dimensional Vector Cross Product
+Cstat                   C Statistic (Area Under the ROC Curve)
+CstatCI                 Confidence Intervals for the C Statistic (AUC)
+CutAge                  Create a Factor Variable by Cutting an Age
+                        Variable
+CutQ                    Create a Factor Variable Using the Quantiles of
+                        a Continuous Variable
+DegToRad                Convert Degrees to Radians and Vice Versa
+Depreciation            Several Methods of Depreciation of an Asset
+Desc                    Describe Data
+DescTools-package       Tools for Descriptive Statistics and
+                        Exploratory Data Analysis
+DescToolsOptions        DescTools Options
+DigitSum                Calculate Digit Sum
+DivCoef                 Rao's Diversity Coefficient
+DivCoefMax              Maximal value of Rao's diversity coefficient
+                        also called quadratic entropy
+Divisors                Calculate Divisors
+DoBy                    Evaluates a Function Groupwise
+DoCall                  Fast Alternative To The Internal 'do.call'
+Dot                     Scalar Product
+Downloads               Return Downloaded File in XL- or CSV Format
+DrawArc                 Draw Elliptic Arc(s)
+DrawBand                Draw Confidence Band
+DrawBezier              Draw a Bezier Curve
+DrawCircle              Draw a Circle
+DrawEllipse             Draw an Ellipse
+DrawRegPolygon          Draw Regular Polygon(s)
+Dummy                   Generate Dummy Codes for a Factor
+DunnTest                Dunn's Test of Multiple Comparisons
+DunnettTest             Dunnett's Test for Comparing Several Treatments
+                        With a Control
+DurbinWatsonTest        Durbin-Watson Test
+EX                      Expected Value and Variance
+Entropy                 Shannon Entropy and Mutual Information
+Eps                     Greenhouse-Geisser And Huynh-Feldt Epsilons
+ErrBars                 Add Error Bars to an Existing Plot
+EtaSq                   Effect Size Calculations for ANOVAs
+ExpFreq                 Expected Frequencies
+Factorize               Prime Factorization of Integers
+FctArgs                 Retrieve a Function's Arguments
+Fibonacci               Fibonacci Numbers
+FindColor               Get Color on a Defined Color Range
+FindCorr                Determine Highly Correlated Variables
+FisherZ                 Fisher z-Transformation
+FixToTable              Convert a Text to a Table
+Format                  Format Numbers and Dates
+Frac                    Fractional Part and Maximal Digits of a Numeric
+                        Value
+Freq                    Frequency Table for a Single Variable
+Freq2D                  Bivariate (Two-Dimensional) Frequency
+                        Distribution
+GCD                     Greatest Common Divisor and Least Common
+                        Multiple
+GTest                   G-Test for Count Data
+GenRandGroups           Generate Random Groups
+GeomSn                  Geometric Series
+GeomTrans               Geometric Transformations
+GetCalls                Return All Used Functions Within a Function
+GetCurrWrd              Get a Handle to a Running Word/Excel Instance
+GetNewWrd               Create a New Word Instance
+GetNewXL                Create a New Excel Instance
+Gini                    Gini Coefficient
+GiniSimpson             Gini-Simpson Coefficient, Gini-Deltas
+                        coefficient and Hunter-Gaston Index
+Gmean                   Geometric Mean and Standard Deviation
+Gompertz                The Gompertz distribution
+GoodmanKruskalGamma     Goodman Kruskal's Gamma
+GoodmanKruskalTau       Goodman Kruskal's Tau
+Herfindahl              Concentration Measures
+HexToCol                Identify Closest Match to a Color Given by a
+                        Hexadecimal String
+HexToRgb                Convert a Hexstring Color to a Matrix With
+                        Three Red/Green/Blue Rows
+Hmean                   Harmonic Mean and Its Confidence Interval
+HmsToSec                Convert h:m:s To/From Seconds
+HodgesLehmann           Hodges-Lehmann Estimator of Location
+HoeffD                  Matrix of Hoeffding's D Statistics
+HosmerLemeshowTest      Hosmer-Lemeshow Goodness of Fit Tests
+HotellingsT2Test        Hotelling's T2 Test
+HuberM                  Safe (generalized) Huber M-Estimator of
+                        Location
+ICC                     Intraclass Correlations (ICC1, ICC2, ICC3 From
+                        Shrout and Fleiss)
+IQRw                    The (weighted) Interquartile Range
+IdentifyA               Identify Points in Plot Lying Within a
+                        Rectangle or Polygon
+ImputeKnn               Fill in NA values with the values of the
+                        nearest neighbours
+InDots                  Is a Specific Argument in the Dots-Arguments?
+IsDate                  Check If an Object Is of Type Date
+IsDichotomous           Test If a Variable Contains Only Two Unique
+                        Values
+IsEuclid                Is a Distance Matrix Euclidean?
+IsOdd                   Checks If An Integer Is Even Or Odd
+IsPrime                 IsPrime Property
+IsValidHwnd             Check Windows Pointer
+IsWhole                 Check a Vector For Being Numeric, Zero Or a
+                        Whole Number
+JarqueBeraTest          (Robust) Jarque Bera Test
+JonckheereTerpstraTest
+                        Exact Version of Jonckheere-Terpstra Test
+KappaM                  Kappa for m Raters
+KendallTauA             Kendall's Tau-a
+KendallTauB             Kendall's Tau-b
+KendallW                Kendall's Coefficient of Concordance W
+Keywords                List Keywords For R Manual Pages
+KrippAlpha              Krippendorff's Alpha Reliability Coefficient
+LOCF                    Last Observation Carried Forward
+LOF                     Local Outlier Factor
+Label                   Label, Unit Attribute of an Object
+Lambda                  Goodman Kruskal Lambda
+Large                   Kth Smallest/Largest Values
+Lc                      Lorenz Curve
+LehmacherTest           Lehmacher's Test for Marginal Homogenity
+LeveneTest              Levene's Test for Homogeneity of Variance
+LillieTest              Lilliefors (Kolmogorov-Smirnov) Test for
+                        Normality
+LinScale                Linear Scaling
+LineToUser              Convert Line Coordinates To User Coordinates
+LogSt                   Started Logarithmic Transformation and Its
+                        Inverse
+Logit                   Generalized Logit and Inverse Logit Function
+LsFct                   List Objects, Functions Or Data in a Package
+MAD                     Median Absolute Deviation
+MADCI                   Confidence Intervals for Median Absolute
+                        Deviations
+MAE                     Measures of Accuracy
+MHChisqTest             Mantel-Haenszel Chi-Square Test
+Mar                     Set Plot Margins and Distances
+Mean                    (Weighted) Arithmetic Mean
+MeanAD                  Mean Absolute Deviation From a Center Point
+MeanCI                  Confidence Intervals for the Mean
+MeanCIn                 Sample Size for a Given Width of a Confidence
+                        Interval for a Mean
+MeanDiffCI              Confidence Interval For Difference of Means
+MeanSE                  Standard Error of Mean
+Median                  (Weighted) Median Value
+MedianCI                Confidence Interval for the Median
+Mgsub                   Multiple Gsub
+Midx                    Find the Midpoints of a Numeric Vector
+MixColor                Compute the Convex Combination of Two Colors
+Mode                    Mode, Most Frequent Value(s)
+MosesTest               Moses Test of Extreme Reactions
+MoveAvg                 Moving Average
+MultMerge               Merge Multiple Data Frames
+MultinomCI              Confidence Intervals for Multinomial
+                        Proportions
+N                       Some Aliases Set for Convenience
+NALevel                 Replace NAs in a Factor by a Given Level
+NPV                     Short Selection of Financial Mathematical
+                        Functions
+NZ                      Non Zero Elements
+NemenyiTest             Nemenyi Test
+Nf                      As Numeric Factor
+ORToRelRisk             Transform Odds Ratio to Relative Risk
+OddsRatio               Odds Ratio Estimation and Confidence Intervals
+Outlier                 Outlier
+PDFManual               Get PDF Manual of a Package From CRAN
+PMT                     Periodic Payment of an Annuity.
+PageTest                Exact Page Test for Ordered Alternatives
+PairApply               Pairwise Calculations
+Pal                     Some Custom Palettes
+ParseFormula            Parse a Formula and Create a Model Frame
+ParseSASDatalines       Parse a SAS Dataline Command
+PasswordDlg             Password Dialog
+PearsonTest             Pearson Chi-Square Test for Normality
+PercTable               Percentage Table
+PercentRank             Percent Ranks
+Permn                   Number and Samples for Permutations or
+                        Combinations of a Set
+Phi                     Cramer's V, Pearson's Contingency Coefficient
+                        and Phi Coefficient Yule's Q and Y, Tschuprow's
+                        T
+Phrase                  Phrasing Results of t-Test
+PlotACF                 Combined Plot of a Time Series and Its ACF and
+                        PACF
+PlotArea                Create an Area Plot
+PlotBag                 Bivariate Boxplot
+PlotBubble              Draw a Bubble Plot
+PlotCandlestick         Plot Candlestick Chart
+PlotCashFlow            Cash Flow Plot
+PlotCirc                Plot Circular Plot
+PlotConDens             Plot Conditional Densities
+PlotCorr                Plot a Correlation Matrix
+PlotDot                 Cleveland's Dot Plots
+PlotECDF                Empirical Cumulative Distribution Function
+PlotFaces               Chernoff Faces
+PlotFdist               Frequency Distribution Plot
+PlotFun                 Plot a Function
+PlotLinesA              Plot Lines
+PlotLog                 Logarithmic Plot
+PlotMarDens             Scatterplot With Marginal Densities
+PlotMiss                Plot Missing Data
+PlotMonth               Cycle Plot for Seasonal Effects of an
+                        Univariate Time Series
+PlotMosaic              Mosaic Plots
+PlotMultiDens           Plot Multiple Density Curves
+PlotPairs               Extended Scatterplot Matrices
+PlotPolar               Plot Values on a Circular Grid
+PlotProbDist            Plot Probability Distribution
+PlotPyramid             Draw a Back To Back Pyramid Plot
+PlotQQ                  QQ-Plot for Any Distribution
+PlotTernary             Ternary or Triangular Plots
+PlotTreemap             Create a Treemap
+PlotVenn                Plot a Venn Diagram
+PlotViolin              Plot Violins Instead of Boxplots
+PlotWeb                 Plot a Web of Connected Points
+PoissonCI               Poisson Confidence Interval
+PolarGrid               Plot a Grid in Polar Coordinates
+PostHocTest             Post-Hoc Tests
+PpPlot                  Add Slides, Insert Texts and Plots to
+                        PowerPoint
+Primes                  Find All Primes Less Than n
+PseudoR2                Pseudo R2 Statistics
+PtInPoly                Point in Polygon
+Quantile                (Weighted) Sample Quantiles
+QuantileCI              Confidence Interval for Any Quantile
+Quot                    Lagged Quotients
+RSessionAlive           How Long Has the RSession Been Running?
+RSqCI                   Confidence Intervals for the R squared of a
+                        Linear Model
+Range                   (Robust) Range
+Rank                    Fast Sample Ranks
+ReadSPSS                Read SPSS Datafiles and Return It in Good Old
+                        Style Data Frame Structure
+Recode                  Recode a Factor
+Recycle                 Recyle a List of Elements
+RelRisk                 Relative Risk
+Rename                  Change Names of a Named Object
+Rev                     Reverse Elements of a Vector, a Matrix, a
+                        Table, an Array or a Data.frame
+RevCode                 Reverse Codes
+RgbToCmy                Conversion Between RGB and CMYK
+RgbToCol                Find the Nearest Named R-Color to a Given
+                        RGB-Color
+RndPairs                Create Pairs of Correlated Random Numbers
+RobScale                Robust Scaling With Median and Mad
+RomanToInt              Convert Roman Numerals to Integers
+Rotate                  Rotate a Geometric Structure
+RoundTo                 Round to Multiple
+RunsTest                Runs Test for Randomness
+SD                      (Weighted) Standard Deviation
+Sample                  Random Samples and Permutations
+SampleTwins             Sample Twins
+SaveAs                  Saves an R Object Under a Different Name
+ScheffeTest             Scheffe Test for Pairwise and Otherwise
+                        Comparisons
+SendOutlookMail         Send a Mail Using Outlook as Mail Client
+SetAlpha                Add an Alpha Channel To a Color
+SetNames                Set the Names in an Object
+Shade                   Produce a Shaded Curve
+ShapiroFranciaTest      Shapiro-Francia Test for Normality
+SiegelTukeyTest         Siegel-Tukey Test For Equality In Variability
+SignTest                Sign Test
+Skew                    Skewness and Kurtosis
+SmoothSpline            Formula Interface For 'smooth.spline'
+Some                    Return Some Randomly Chosen Elements of an
+                        Object
+SomersDelta             Somers' Delta
+Sort                    Sort a Vector, a Matrix, a Table or a
+                        Data.frame
+SortMixed               Sort Strings with Embedded Numbers Based on
+                        Their Numeric Order
+SpearmanRho             Spearman Rank Correlation
+SplitAt                 Split a Vector Into Several Pieces at Given
+                        Positions
+SplitPath               Split Path In Drive, Path, Filename
+SplitToCol              Split Data Frame String Column Into Multiple
+                        Columns
+SplitToDummy            Split Strings of a Vector and Provide Dummy
+                        Codes for Found Pieces
+SpreadOut               Spread Out a Vector of Numbers To a Minimum
+                        Interval
+Stamp                   Date/Time/Directory Stamp the Current Plot
+StdCoef                 Standardized Model Coefficients
+Str                     Compactly Display the Structure of any R Object
+StrAbbr                 String Abbreviation
+StrAlign                String Alignment
+StrCap                  Capitalize the First Letter of a String
+StrChop                 Split a String into a Number of Sections of
+                        Defined Length
+StrCountW               Count Words in a String
+StrDist                 Compute Distances Between Strings
+StrExtract              Extract Part of a String
+StrIsNumeric            Does a String Contain Only Numeric Data
+StrPad                  Pad a String With Justification
+StrPos                  Find Position of First Occurrence Of a String
+StrRev                  Reverse a String
+StrRight                Returns the Left Or the Right Part Of a String
+StrSpell                Spell a String Using the NATO Phonetic or the
+                        Morse Alphabet
+StrSplit                Split the Elements of a Character Vector
+StrTrim                 Remove Leading/Trailing Whitespace From A
+                        String
+StrTrunc                Truncate Strings and Add Ellipses If a String
+                        is Truncated.
+StrVal                  Extract All Numeric Values From a String
+Strata                  Stratified Sampling
+StripAttr               Remove Attributes from an Object
+StuartMaxwellTest       Stuart-Maxwell Marginal Homogeneity Test
+StuartTauC              Stuart Tau-c
+SumCI                   Add Up Partial Confidence Intervals to a Total
+                        CI
+SysInfo                 System Information
+TMod                    Comparison Table For Linear Models
+TOne                    Create Table One Describing Baseline
+                        Characteristics
+TTestA                  Student's t-Test Based on Sample Statistics
+TextContrastColor       Choose Textcolor Depending on Background Color
+TextToTable             Converts String To a Table
+TheilU                  Theil's U Index of Inequality
+TitleRect               Plot Boxed Annotation
+ToWide                  Reshape a Vector From Long to Wide Shape Or
+                        Vice Versa
+ToWrd                   Send Objects to Word
+ToWrdB                  Send Objects to Word and Bookmark Them
+ToWrdPlot               Send a Plot to Word and Bookmark it
+Triangular              The Triangular Distribution
+Trim                    Trim a Vector
+TukeyBiweight           Calculate Tukey's Biweight Robust Mean
+TwoGroups               Describe a Variable by a Factor with Two Levels
+UncertCoef              Uncertainty Coefficient
+UnirootAll              Finds many (all) roots of one equation within
+                        an interval
+Untable                 Recover Original Data From Contingency Table
+Unwhich                 Inverse Which
+VIF                     Variance Inflation Factors
+VanWaerdenTest          van der Waerden Test
+Var                     Variance
+VarCI                   Confidence Intervals for the Variance
+VarTest                 ChiSquare Test for One Variance and F Test to
+                        Compare Two Variances
+VecRot                  Vector Rotation (Shift Elements)
+Vigenere                Vigenere Cypher
+VonNeumannTest          Von Neumann's Successive Difference Test
+Winsorize               Winsorize (Replace Extreme Values by Less
+                        Extreme Ones)
+WithOptions             Execute Function with Temporary Options
+WoolfTest               Woolf Test For Homogeneity in 2x2xk Tables
+WrdBookmark             Some Functions to Handle MS-Word Bookmarks
+WrdCaption              Insert Caption to Word
+WrdCellRange            Return the Cell Range Of a Word Table
+WrdFont                 Get or Set the Font in Word
+WrdFormatCells          Format Cells Of a Word Table
+WrdMergeCells           Merges Cells Of a Defined Word Table Range
+WrdPageBreak            Insert a Page Break
+WrdParagraphFormat      Get or Set the Paragraph Format in Word
+WrdPlot                 Insert Active Plot to Word
+WrdSaveAs               Open and Save Word Documents
+WrdStyle                Get or Set the Style in Word
+WrdTable                Insert a Table in a Word Document
+WrdTableBorders         Draw Borders to a Word Table
+WrdTableHeading         Insert Headings for a Table in Word
+XLDateToPOSIXct         Convert Excel Dates to POSIXct
+XLGetRange              Import Data Directly From Excel
+XLSaveAs                Save Excel File
+XLView                  Use MS-Excel as Viewer for a Data.Frame
+Year                    Basic Date Functions
+YuenTTest               Yuen t-Test For Trimmed Means
+ZTest                   Z Test for Known Population Standard Deviation
+ZeroIfNA                Replace NAs by 0
+Zodiac                  Calculate the Zodiac of a Date
+as.matrix.xtabs         Convert xtabs To matrix
+as.ym                   A Class for Dealing with the Yearmonth Format
+axTicks.POSIXct         Compute Axis Tickmark Locations (For POSIXct
+                        Axis)
+cards                   Datasets for Probabilistic Simulation
+d.countries             ISO 3166-1 Country Codes
+d.diamonds              Data diamonds
+d.periodic              Periodic Table of Elements
+d.pizza                 Data pizza
+d.whisky                Classification of Scotch Single Malts
+dExtrVal                Distributions of Maxima and Minima
+dFrechet                The Frechet Distribution
+dGenExtrVal             The Generalized Extreme Value Distribution
+dGenPareto              The Generalized Pareto Distribution
+dGumbel                 The Gumbel Distribution
+dOrder                  Distributions of Order Statistics
+dRevWeibull             The Reverse Weibull Distribution
+day.name                Build-in Constants Extension
+identify.formula        Identify Points In a Plot Using a Formula
+lines.lm                Add a Linear Regression Line
+lines.loess             Add a Loess or a Spline Smoother
+matpow                  Matrix Power
+mbeta                   Mean and Variance of the Beta Distribution
+mbinom                  Mean and Variance of the Binomial Distribution
+mchisq                  Mean and Variance of the Chi-Squared
+                        Distribution
+mexp                    Mean and Variance of the Exponential
+                        Distribution
+mf                      Mean and Variance of the F Distribution
+mgamma                  Mean and Variance of the Gamma Distribution
+mgeom                   Mean and Variance of the Geometric Distribution
+mhyper                  Mean and Variance of the Hypergeometric
+                        Distribution
+mlnorm                  Mean and Variance of the Log-Normal
+                        Distribution
+mnbinom                 Mean and Variance of the Negative Binomial
+                        Distribution
+mnorm                   Mean and Variance of the Normal Distribution
+mpois                   Mean and Variance of the Poisson Distribution
+mt                      Mean and Variance of the t-Distribution
+pRevGumbel              "Reverse" Gumbel Distribution Functions
+power.chisq.test        Power Calculations for ChiSquared Tests
+rSum21                  Random Numbers Adding Up to 1
+reorder.factor          Reorder the Levels of a Factor
+split.formula           Formula Interface for Split
+wdConst                 Word VBA Constants

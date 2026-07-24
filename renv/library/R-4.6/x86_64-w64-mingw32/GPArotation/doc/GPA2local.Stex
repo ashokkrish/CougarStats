@@ -1,0 +1,447 @@
+%\VignetteIndexEntry{Assessing Local Minima in Factor Rotation}
+%\VignettePackage{GPArotation}
+%\VignetteDepends{GPArotation}
+%\VignetteKeyword{factor rotation}
+%\VignetteKeyword{local minima}
+%\VignetteKeyword{random starts}
+%\VignetteKeyword{simplimax}
+
+\documentclass[english, 10pt]{article}
+\usepackage{hyperref}
+\bibliographystyle{apa}
+\usepackage{natbib}
+\usepackage{geometry}
+\geometry{letterpaper}
+
+\begin{document}
+
+\SweaveOpts{eval=TRUE, echo=TRUE, results=hide, fig=FALSE}
+\begin{Scode}{echo=FALSE, results=hide}
+options(continue="  ")
+pdf.options(pointsize = 8)
+\end{Scode}
+
+\begin{center}
+\section*{Assessing Local Minima in Factor Rotation \\ ~~\\
+          The \texttt{GPFallMinima} Function}
+\end{center}
+\begin{center}
+Author: Coen A. Bernaards
+\end{center}
+
+Many rotation criteria have multiple local minima. The standard
+\texttt{GPArotation} functions return only the best solution found among
+all random starts --- the one with the lowest criterion value. While this
+is the right default behavior, it conceals potentially important
+information: how many distinct solutions exist, how often each is found,
+and how different they are from each other.
+
+This vignette introduces \texttt{GPFallMinima}, a companion function that
+runs multiple random starts and retains \emph{all} distinct local minima,
+not just the global minimum. This allows the analyst to assess the
+stability of the rotation solution and to examine alternative solutions
+that may be substantively meaningful.
+
+For background on local minima in factor rotation, see \cite{nguwall} and
+\cite{mansreise}.
+
+
+%-------------------------------------------------------------------
+\section*{The GPFallMinima Function}
+%-------------------------------------------------------------------
+
+\texttt{GPFallMinima} is not part of the standard \texttt{GPArotation}
+package. It is a companion utility intended for diagnostic use. Load it
+alongside \texttt{GPArotation}:
+
+\begin{Scode}
+library("GPArotation")
+
+GPFallMinima <- function(A, method = "quartimin", orthogonal = FALSE,
+                         randomStarts = 100, eps = 1e-5, maxit = 1000,
+                         normalize = FALSE, methodArgs = NULL,
+                         minimumInclusion = 2) {
+  # Runs multiple random starts and returns ALL distinct local minima,
+  # not just the global minimum. Non-converged starts are discarded.
+  # Minima found fewer than minimumInclusion times are excluded.
+  # Minima are sorted by frequency (most common first).
+
+  engine <- if (orthogonal) GPForth else GPFoblq
+
+  Qvalues    <- numeric(randomStarts)
+  Qconverged <- logical(randomStarts)
+  all_res    <- vector("list", randomStarts)
+
+  for (i in 1:randomStarts) {
+    res <- engine(A, Tmat      = Random.Start(ncol(A)),
+                     normalize  = normalize,
+                     eps        = eps,
+                     maxit      = maxit,
+                     method     = method,
+                     methodArgs = methodArgs)
+    Qvalues[i]    <- res$Table[nrow(res$Table), 2]
+    Qconverged[i] <- res$convergence
+    all_res[[i]]  <- res
+  }
+
+  # Discard non-converged starts
+  converged_idx <- which(Qconverged)
+  nConverged    <- length(converged_idx)
+
+  if (nConverged == 0)
+    stop("No starts converged. Consider increasing maxit or relaxing eps.")
+
+  Qvalues_conv <- Qvalues[converged_idx]
+  all_res_conv <- all_res[converged_idx]
+
+  # Bin converged criterion values into equivalence classes
+  Q_round  <- round(Qvalues_conv / eps) * eps
+  Q_unique <- unique(Q_round)
+
+  # Build one representative solution per unique minimum
+  minima <- vector("list", length(Q_unique))
+  for (j in seq_along(Q_unique)) {
+    idx        <- which(Q_round == Q_unique[j])
+    count      <- length(idx)
+    proportion <- count / nConverged
+    minima[[j]] <- list(
+      result     = all_res_conv[[idx[1]]],
+      f          = Q_unique[j],
+      count      = count,
+      proportion = proportion
+    )
+  }
+
+  # Sort by count (most common first)
+  ord    <- order(sapply(minima, `[[`, "count"), decreasing = TRUE)
+  minima <- minima[ord]
+
+  # Filter out minima found fewer than minimumInclusion times
+  keep   <- sapply(minima, `[[`, "count") >= minimumInclusion
+  minima <- minima[keep]
+
+  if (length(minima) == 0)
+    stop("No minima found with count >= minimumInclusion (", minimumInclusion,
+         "). Consider reducing minimumInclusion or increasing randomStarts.")
+
+  # Summary data frame
+  f_values <- sapply(minima, `[[`, "f")
+  f_global <- min(f_values)
+
+  summary_df <- data.frame(
+    minimum    = seq_along(minima),
+    f          = round(f_values, 6),
+    deltaF     = round(f_values - f_global, 6),
+    count      = sapply(minima, `[[`, "count"),
+    proportion = round(sapply(minima, `[[`, "proportion"), 3),
+    isGlobal   = f_values == f_global
+  )
+
+  result <- list(
+    minima           = minima,
+    summary          = summary_df,
+    Qvalues          = Qvalues_conv,
+    nConverged       = nConverged,
+    nStarts          = randomStarts,
+    method           = method,
+    orthogonal       = orthogonal,
+    minimumInclusion = minimumInclusion
+  )
+  class(result) <- "GPFallMinima"
+  result
+}
+
+print.GPFallMinima <- function(x, ...) {
+  cat("Random start analysis:", x$nConverged, "of", x$nStarts,
+      "starts converged\n")
+  cat("Distinct minima found:", nrow(x$summary),
+      "(minimumInclusion =", x$minimumInclusion, ")\n\n")
+  print(x$summary, row.names = FALSE)
+  cat("\nGlobal minimum: f =", min(x$summary$f), "\n")
+  cat("Access full solutions via $minima[[i]]$result\n")
+  invisible(x)
+}
+\end{Scode}
+
+
+%-------------------------------------------------------------------
+\section*{Key Arguments}
+%-------------------------------------------------------------------
+
+\begin{itemize}
+
+  \item \texttt{method} --- the rotation criterion. Criteria with many
+        local minima, such as \texttt{simplimax}, \texttt{geomin}, and
+        \texttt{infomax}, are the most interesting to diagnose.
+
+  \item \texttt{randomStarts} --- number of random starts to attempt.
+        More starts give a more complete picture of the solution space.
+        For a thorough analysis, 500 or more starts are recommended.
+
+  \item \texttt{minimumInclusion} --- minimum number of starts required
+        to retain a minimum. The default of 2 filters out singletons
+        that are likely numerical artifacts. With 500 starts, a value
+        of 5 or 10 is more appropriate.
+
+  \item \texttt{orthogonal} --- \texttt{TRUE} for orthogonal rotation
+        (uses \texttt{GPForth}), \texttt{FALSE} for oblique (uses
+        \texttt{GPFoblq}). Default is \texttt{FALSE}.
+
+\end{itemize}
+
+Non-converged starts are always discarded before analysis. The
+\texttt{proportion} column in the summary is calculated over converged
+starts only, so proportions sum to 1.
+%-------------------------------------------------------------------
+\section*{Example: Simplimax on CCAI Climate-Friendly Purchasing Choices Data}
+%-------------------------------------------------------------------
+
+The CCAI Climate-Friendly Purchasing Choices domain (Bi and Barchard,
+2024) provides a useful dataset for illustrating local minima behavior.
+The data have 14 items and 3 factors with strong inter-correlations
+(0.53--0.59). Bi and Barchard used oblimin rotation in their published
+analysis. We use simplimax here purely to illustrate how rotation
+criteria can produce highly complex landscapes with multiple local
+minima --- not as a recommended analysis of these data.
+
+The data illustrate how dramatically rotation criteria can differ
+in their stability. Oblimin rotation is highly stable on these data ---
+all 200 random starts converge to the same solution. Simplimax, by
+contrast, reveals a highly complex landscape:
+
+\begin{Scode}{results=verbatim}
+library("GPArotation")
+data("CCAI", package = "GPArotation")
+fa_unrotated <- factanal(factors = 3, covmat = CCAI_R, 
+      n.obs = 461, rotation = "none")
+A <- loadings(fa_unrotated)
+
+# Oblimin: highly stable
+res_oblimin <- oblimin(A, normalize = TRUE, randomStarts = 200)
+cat("Oblimin random start diagnostics:\n")
+res_oblimin$randStartChar
+
+# Simplimax: complex landscape
+set.seed(42)
+res_ccai <- GPFallMinima(A, method = "simplimax",
+                         randomStarts = 200,
+                         normalize = TRUE,
+                         minimumInclusion = 2)
+res_ccai
+\end{Scode}
+
+The contrast is striking. Oblimin converges reliably to a single
+solution on these data. Simplimax reveals 16 distinct local minima,
+with only 81 of 200 starts converging (40.5\%) and the global minimum
+found in just 2.5\% of converged starts. This underscores the
+importance of using multiple random starts and verifying convergence,
+particularly when using criteria known to be prone to local minima
+such as simplimax.
+
+The global minimum (f = 0.01080) is clearly separated from the other
+local minima, with the next best solution having a criterion value
+three times larger. The sorted loadings plot shows that the local
+minima produce substantially different factor structures, not merely
+permutations or sign flips of the same solution.
+
+%-------------------------------------------------------------------
+\section*{Examining Individual Solutions}
+%-------------------------------------------------------------------
+Each element of \texttt{res\_ccai\$minima} contains a full \texttt{GPArotation}
+object in \texttt{result}, so the standard \texttt{print} and
+\texttt{summary} methods work directly.
+
+\begin{Scode}{results=verbatim}
+# Print the most common solution
+print(res_ccai$minima[[1]]$result)
+\end{Scode}
+
+Accessing any specific solution is straightforward. For example, to print
+the solution corresponding to row 3 of the summary table:
+
+\begin{Scode}{results=verbatim}
+# Print solution in row 3 of the summary
+print(res_ccai$minima[[3]]$result, digits = 2)
+\end{Scode}
+
+More generally, to print the solution in row \texttt{i}:
+
+\begin{Scode}{results=verbatim}
+i <- 3
+print(res_ccai$minima[[i]]$result, digits = 2)
+\end{Scode}
+
+The row number in the summary table corresponds directly to the index in
+\texttt{res\_ccai\$minima}. Row 1 is always the most common solution, and the
+global minimum is identified by \texttt{res\_ccai\$summary\$isGlobal}.
+
+\begin{Scode}{results=verbatim}
+# Print the global minimum using the GPArotation S3 print method
+global <- which(res_ccai$summary$isGlobal)
+print(res_ccai$minima[[global]]$result, digits = 2)
+\end{Scode}
+
+\begin{Scode}{results=verbatim}
+# Summary with structure matrix for oblique solution
+summary(res_ccai$minima[[global]]$result, Structure = TRUE, digits = 2)
+\end{Scode}
+
+Solutions with small \texttt{deltaF} values may produce loading matrices
+that are very similar to the global minimum after sorting. Solutions with
+large \texttt{deltaF} values are likely to produce meaningfully different
+loading patterns and warrant careful examination.
+
+%-------------------------------------------------------------------
+\section*{Visualizing All Minima}
+%-------------------------------------------------------------------
+
+The sorted absolute loadings plot is a powerful tool for comparing all
+retained minima at once. Each line represents one distinct solution.
+Lines that overlap closely indicate practically equivalent solutions;
+lines that diverge indicate qualitatively different solutions.
+
+The following plotting function is also used in the main \texttt{GPA1guide}
+vignette. It is reproduced here so that this vignette is self-contained.
+
+First define the plotting function:
+
+\begin{Scode}
+plotSortedLoadings <- function(..., labels = NULL, col = NULL,
+                                main = "Sorted Absolute Loadings",
+                                ylab = "Absolute loading",
+                                xlab = "Rank") {
+  solutions <- list(...)
+  for (i in seq_along(solutions)) {
+    if (!inherits(solutions[[i]], "GPArotation"))
+      stop("Argument ", i, " is not a GPArotation object.")
+  }
+  n <- length(solutions)
+  if (is.null(labels))
+    labels <- paste("Solution", seq_len(n))
+  if (is.null(col))
+    col <- palette.colors(n, palette = "Okabe-Ito")
+  sorted_loadings <- lapply(solutions, function(x)
+    sort(abs(as.vector(x$loadings)), decreasing = FALSE))
+  all_values <- unlist(sorted_loadings)
+  max_len    <- max(sapply(sorted_loadings, length))
+  plot(NULL,
+       xlim = c(1, max_len),
+       ylim = c(0, max(all_values)),
+       main = main,
+       xlab = xlab,
+       ylab = ylab,
+       las  = 1)
+  abline(h = seq(0, 1, by = 0.1), col = "grey90", lty = 1)
+  for (i in seq_len(n)) {
+    lines(seq_along(sorted_loadings[[i]]), sorted_loadings[[i]],
+          col = col[i], lwd = 2)
+    points(seq_along(sorted_loadings[[i]]), sorted_loadings[[i]],
+           col = col[i], pch = 19, cex = 0.6)
+  }
+  legend("topleft", legend = labels, col = col, lwd = 2, pch = 19,
+         bty = "n")
+  invisible(sorted_loadings)
+}
+\end{Scode}
+
+Then plot all retained minima:
+
+\begin{Scode}{fig=TRUE}
+do.call(plotSortedLoadings,
+        c(lapply(res_ccai$minima, function(x) x$result),
+          list(labels = paste0("Min ", res_ccai$summary$minimum,
+                               " (f=", round(res_ccai$summary$f, 4),
+                               ", n=", res_ccai$summary$count, ")"))))
+\end{Scode}
+
+Lines that are visually indistinguishable correspond to solutions that
+are practically equivalent regardless of their \texttt{deltaF}. Lines
+that diverge clearly represent genuinely different factor structures
+that merit substantive interpretation.
+
+
+%-------------------------------------------------------------------
+\section*{Practical Guidance}
+%-------------------------------------------------------------------
+
+\begin{itemize}
+
+  \item \textbf{How many random starts?} For criteria that tend to have many local minima, 500
+        or more starts are recommended. The goal is for the proportions
+        in the summary to stabilize --- if running 1000 instead of 500
+        starts changes the proportions substantially, more starts are
+        needed. 
+
+  \item \textbf{Setting minimumInclusion.} With 100 starts, a value of
+        2 is reasonable. With 500 starts, use 5 or 10. The goal is to
+        distinguish genuine local minima from numerical noise.
+
+  \item \textbf{Interpreting deltaF.} There is no universal threshold
+        for what constitutes a ``meaningful'' difference in criterion
+        value. Solutions with \texttt{deltaF} $< 0.001$ are typically
+        negligible. Solutions with \texttt{deltaF} $> 0.01$ may
+        produce visibly different loading patterns.
+
+  \item \textbf{When the global minimum has low proportion.} If the
+        global minimum is found by fewer than 20\% of converged starts,
+        the criterion landscape is complex and the solution may not be
+        stable. Consider trying a different rotation criterion or
+        increasing the number of random starts.
+
+  \item \textbf{Comparing criteria.} Running \texttt{GPFallMinima} with
+        different rotation criteria on the same dataset can reveal which
+        criteria produce stable solutions and which are prone to local
+        minima for a given data structure.
+
+\end{itemize}
+
+
+%-------------------------------------------------------------------
+\section*{Further Resources}
+%-------------------------------------------------------------------
+
+For detailed discussion of local minima in factor rotation and their
+implications for substantive interpretation, see \cite{nguwall}. For
+investigation of local minima using the \textit{fungible} package, see
+the \texttt{faMain} function. The \textit{psych} package provides
+\texttt{faRotations} for similar diagnostics.
+
+The \texttt{randStartChar} element returned by standard
+\texttt{GPArotation} functions provides a quick summary of random start
+results without retaining individual solutions. For routine use,
+\texttt{randStartChar} is sufficient; \texttt{GPFallMinima} is intended
+for deeper diagnostic investigation.
+
+
+\begin{thebibliography}{}
+
+\bibitem[\protect\citeauthoryear{Bi \& Barchard}{Bi \&
+  Barchard}{2024}]{bibarchard}
+Bi, Y. and Barchard, K.A. (2024).
+\newblock Purchasing choices that reduce climate change: An exploratory
+  factor analysis.
+\newblock \textit{Spectra Undergraduate Research Journal}, \textbf{3}(2),
+  8--14.
+\newblock \href{https://doi.org/10.9741/2766-7227.1028}
+  {doi: 10.9741/2766-7227.1028}
+
+\bibitem[\protect\citeauthoryear{Mansolf \& Reise}{Mansolf \&
+  Reise}{2016}]{mansreise}
+Mansolf, M., \& Reise, S. P. (2016).
+\newblock Exploratory bifactor analysis: The Schmid-Leiman orthogonalization
+  and Jennrich-Bentler analytic rotations.
+\newblock \textit{Multivariate Behavioral Research}, 51(5), 698--717.
+\newblock \href{https://doi.org/10.1080/00273171.2016.1215898}
+  {https://doi.org/10.1080/00273171.2016.1215898}
+
+\bibitem[\protect\citeauthoryear{Nguyen \& Waller}{Nguyen \&
+  Waller}{2022}]{nguwall}
+Nguyen, H. V., \& Waller, N. G. (2022).
+\newblock Local minima and factor rotations in exploratory factor analysis.
+\newblock \textit{Psychological Methods}. Advance online publication.
+\newblock \href{https://doi.org/10.1037/met0000467}
+  {https://doi.org/10.1037/met0000467}
+
+\end{thebibliography}
+
+\end{document}

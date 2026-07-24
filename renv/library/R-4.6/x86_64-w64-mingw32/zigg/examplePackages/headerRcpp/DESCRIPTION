@@ -1,0 +1,13 @@
+Package: zigguserHeaderRcpp
+Type: Package
+Title: Usage Example for the 'zigg' Package via Header-File using Rcpp
+Version: 0.0.1
+Date: 2025-01-06
+Authors@R: person("Dirk", "Eddelbuettel", role = c("aut", "cre"), email = "edd@debian.org",
+                  comment = c(ORCID = "0000-0001-6419-907X"))
+Description: The 'zigg' package provides the 'Ziggurat' PRNG for use from R and C and C++.
+ This package provides a sample C++ client which uses the header-only access from the
+ 'zigg' package via 'Rcpp'.
+LinkingTo: zigg, Rcpp
+Imports: Rcpp
+License: GPL (>= 2)

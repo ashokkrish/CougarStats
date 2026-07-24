@@ -1,0 +1,87 @@
+---
+title: "Chained setup chunks"
+author: "Nischal Shrestha"
+output: 
+  learnr::tutorial:
+    progressive: true
+    allow_skip: true
+runtime: shiny_prerendered
+description: > 
+  This is a demo of chained setup chunks and how it can be used to build up / share code.
+---
+
+```{r setup, include = FALSE}
+library(learnr)
+d <- 3
+``` 
+
+## Addition
+
+###
+
+We'll start the setup chunk chain with a regular chunk called `setupA`:
+
+````{verbatim}
+```{r setupA}
+a <- 5 
+``` 
+````
+
+```{r setupA}
+a <- 5 
+``` 
+
+###
+
+Use `exercise.setup` to chain setup chunks.
+Let's start with a simple, single, setup chunk called `setupB` that depends on `setupA`.
+
+````{verbatim}
+```{r setupB, exercise.setup = "setupA"}
+b <- a + d
+``` 
+````
+
+```{r setupB, exercise.setup = "setupA"}
+b <- a + d
+``` 
+
+###
+
+Then we define an exercise, `ex1`,
+that uses `setupB` as its setup chunk,
+thereby also using `setupA` for the exercise.
+
+````{verbatim}
+```{r ex1, exercise = TRUE, exercise.setup = "setupB"} 
+x = b + 1
+x
+```
+````
+
+```{r ex1, exercise = TRUE, exercise.setup = "setupB"} 
+x = b + 1
+x
+```
+
+**Evaluate the code in the above exercise. The result of `x` should be `9`.**
+
+###
+
+Now let's define another exercise, `ex2`,
+that uses the pre-filled code from `ex1` for its setup code,
+thereby also depending on `setupB` and `setupA`.
+
+````{verbatim}
+```{r ex2, exercise = TRUE, exercise.setup = "ex1"}
+y <- x + 1
+y
+```
+````
+
+```{r ex2, exercise = TRUE, exercise.setup = "ex1"}
+y <- x + 1
+y
+```
+
+**Evaluate the code in the above exercise. The result of `y` should be `10`.**

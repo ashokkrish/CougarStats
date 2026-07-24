@@ -1,0 +1,15 @@
+name<-meta$Package
+title<-meta$Title
+year<-substr(meta$Date,1,4)
+note<-paste("R package, version", meta$Version)
+url<-paste("https://CRAN.R-project.org/package=",name,sep="")
+
+bibentry(bibtype = "Manual",
+  title = title,
+  author = as.person("J. R. M. Hosking"),
+  year = year,
+  note = note,
+  url = url,
+  textVersion = paste("J. R. M. Hosking (",year,"). ",
+    title, ". ", note,". URL: ", url, ".", sep="")
+)

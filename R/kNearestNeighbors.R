@@ -97,6 +97,7 @@ KNNSidebarUI <- function(id) {
     ),
 
     div(
+      
       id = ns("predictorsWrapper"),
       pickerInput(
         ns("predictors"),

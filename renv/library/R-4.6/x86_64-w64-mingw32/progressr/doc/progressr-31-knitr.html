@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>progressr: Render 'knitr' Documents</title>
+<style>
+body {
+  font-family: sans-serif;
+  line-height: 1.6;
+  padding-left: 3ex;
+  padding-right: 3ex;
+  background-color: white;
+  color: black;
+}
+
+a {
+  color: #4183C4;
+  text-decoration: none;
+}
+
+h1, h2, h3 {
+  margin: 2ex 0 1ex;
+  padding: 0;
+  font-weight: bold;
+  -webkit-font-smoothing: antialiased;
+  cursor: text;
+  position: relative;
+}
+
+h2 {
+  border-bottom: 1px solid #cccccc;
+}
+
+code {
+  margin: 0 2px;
+  padding: 0 5px;
+  white-space: nowrap;
+  border: 1px solid #eaeaea;
+  background-color: #f8f8f8;
+  border-radius: 3px;
+}
+
+pre code {
+  margin: 0;
+  padding: 0;
+  white-space: pre;
+  border: none;
+  background: transparent;
+}
+
+pre {
+  background-color: #f8f8f8;
+  border: 1px solid #cccccc;
+  line-height: 2.5x;
+  overflow: auto;
+  padding: 0.6ex 1ex;
+  border-radius: 3px;
+}
+
+pre code {
+  background-color: transparent;
+  border: none;
+}
+</style>
+</head>
+<body>
+<h1>progressr: Render 'knitr' Documents</h1>
+<!--
+%\VignetteIndexEntry{progressr: Render 'knitr' Documents}
+%\VignetteAuthor{Henrik Bengtsson}
+%\VignetteKeyword{R}
+%\VignetteKeyword{package}
+%\VignetteKeyword{vignette}
+%\VignetteKeyword{knitr}
+%\VignetteEngine{progressr::selfonly}
+-->
+<p>When compiling (&quot;knitting&quot;) a knitr-based vignette, for instance, via
+<code>knitr::knit()</code>, <strong><a href="https://cran.r-project.org/package=knitr">knitr</a></strong> shows the progress of code chunks
+processed thus far using a progress bar.  We can use <strong><a href="https://progressr.futureverse.org">progressr</a></strong>
+also for this type of progress reporting.  To have <strong>knitr</strong> report on
+progress via <strong>progressr</strong>, set R option <code>knitr.progress.fun</code> as:</p>
+<pre><code class="language-r">options(knitr.progress.fun = function(total, labels) {
+  p &lt;- progressr::progressor(total, on_exit = FALSE)
+  list(
+    update = function(i) p(sprintf(&quot;chunk: %s&quot;, labels[i])),
+    done = function() p(type = &quot;finish&quot;)
+  )
+})
+</code></pre>
+<p>That's it! With the above <code>knitr.progress.fun</code> option set, try to knit
+a document, e.g.</p>
+<pre><code class="language-r">progressr::handlers(global = TRUE)
+infile &lt;- system.file(&quot;examples&quot;, &quot;knitr-minimal.Rnw&quot;, package = &quot;knitr&quot;)
+outfile &lt;- knitr::knit(infile)
+</code></pre>
+<p>To customize the progress bar, try for instance:</p>
+<pre><code class="language-r">progressr::handlers(global = TRUE)
+options(crayon.enabled = TRUE)  ## force use of colors
+progressr::handlers(&quot;pbcol&quot;)
+</code></pre>
+<p>This will produce a colored progress bar in the terminal.</p>
+<p><em>Comment:</em> If the above knit example completes too quickly for you to
+see the progress updates, you can add the &quot;slowdown&quot; handler to slow
+down the knitting process, e.g.</p>
+<pre><code class="language-r">progressr::handlers(c(&quot;pbcol&quot;, &quot;slowdown&quot;))
+</code></pre>
+<p>This will cause the overall process to take at least ten seconds
+(default).</p>
+<p>To make <strong>knitr</strong> report via <strong>progressr</strong> in all your R session, set
+the above R option in your <code>~/.Rprofile</code> startup file, e.g.</p>
+<pre><code class="language-r">if (requireNamespace(&quot;progressr&quot;, quietly = TRUE)) {
+  options(knitr.progress.fun = function(total, labels) {
+    p &lt;- progressr::progressor(total, on_exit = FALSE)
+    list(
+      update = function(i) p(sprintf(&quot;chunk: %s&quot;, labels[i])),
+      done = function() p(type = &quot;finish&quot;)
+    )
+  })
+}
+</code></pre>
+</body>
+</html>

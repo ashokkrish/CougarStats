@@ -1,0 +1,1 @@
+globals:::.onLoad("globals", "globals")

@@ -1,0 +1,33 @@
+Package: GPArotation
+Version: 2026.4-1
+Title: Gradient Projection Factor Rotation
+Authors@R: c(
+    person("Coen", "Bernaards", email = "cab.gparotation@gmail.com", role = c("aut", "cre")),
+    person("Paul", "Gilbert", role = "aut"),
+    person("Robert", "Jennrich", role = "aut")
+    )
+Depends: R (>= 3.5.0)
+Description: Gradient projection algorithms for orthogonal and oblique rotation
+    of factor loadings matrices in factor analysis. Implements a comprehensive
+    set of rotation criteria including quartimax, quartimin, oblimin, geomin,
+    simplimax, the Crawford-Ferguson family, and target rotation, among others. 
+    Supports multiple random starts. For details see Bernaards and Jennrich (2005)
+    <doi:10.1177/0013164404272507>.
+License: GPL (>= 2)
+URL: https://cran.r-project.org/package=GPArotation
+Imports: stats
+LazyData: yes
+NeedsCompilation: no
+Packaged: 2026-04-29 00:32:08 UTC; coen
+Author: Coen Bernaards [aut, cre],
+  Paul Gilbert [aut],
+  Robert Jennrich [aut]
+Maintainer: Coen Bernaards <cab.gparotation@gmail.com>
+Repository: CRAN
+Date/Publication: 2026-04-29 07:30:19 UTC
+Built: R 4.6.0; ; 2026-04-29 15:13:23 UTC; windows
+RemoteType: standard
+RemotePkgRef: GPArotation
+RemoteRef: GPArotation
+RemoteRepos: https://cran.rstudio.com
+RemoteSha.Version: 2026.4-1

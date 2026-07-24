@@ -1,0 +1,3 @@
+useDynLib(flashClust, .registration = TRUE, .fixes = ".F77_")
+
+exportPattern("^[^\\.]")

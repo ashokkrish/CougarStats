@@ -1,0 +1,353 @@
+---
+title: "Developing methods for identifying the inflection point of a convex/concave curve"
+author: "Demetris T. Christopoulos"
+date: "25/6/2019"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteIndexEntry{Developing methods for identifying the inflection point of a convex/concave curve}
+  %\VignetteEncoding{UTF-8}
+---
+
+
+```{css, echo=FALSE}
+    body .main-container {
+      max-width: 1024px !important;
+      width: 1024px !important;
+    }
+    body {
+      max-width: 1024px !important;
+    }
+```
+
+```{r setup, include=FALSE}
+library(inflection)
+knitr::opts_chunk$set(echo = TRUE)
+options(max.width = 1000)
+options(max.print = 100000)
+```
+
+## The Fisher-Pry sigmoid curve with total symmetry (not noisy)
+
+Let’ s take the function:
+$$f (x) = 5 + 5\, tanh (x − 5)$$
+after [3], which has p = 5, L = 10, x1 = 2.7024, x99 = 7.2976 and examine
+it at the interval [2, 8] in order to have data symmetry w.r.t. inflection point.
+The function is also symmetrical around inflection point, i.e. we have total
+symmetry. 
+
+From Corollary 1.1 of [1] we compute $x_l = 5.970315941, x_r = 4.029684059$,
+$x_{F1} = 3.850750196, x_{F2} = 6.149249804$, all inside [2, 8], thus all methods
+are theoretically applicable.
+
+We first take n = 500 sub-intervals equal spaced without error just for checking our estimators. The results are presented at
+Table 1 of [1], while here we also present the BESE iterations done by 'bese()'.
+
+```{r, tanhESE, echo=TRUE,out.width='75%', fig.align='center',fig.width=10, fig.height=6}
+library(inflection)
+data("table_01")
+x=table_01$x
+y=table_01$y
+plot(x,y,cex=0.3,pch=19)
+grid()
+bb=ese(x,y,0);bb
+pese=bb[,3];pese
+abline(v=pese)
+cc=bese(x,y,0)
+cc$iplast
+abline(v=cc$iplast,col='blue')
+knitr::kable(cc$iters, caption = 'BESE')
+```
+
+
+We observe that $\chi_l = 5.9720, \chi_r = 4.0280$, $\chi_{F1} = 3.8480, \chi_{F2} =6.1520$
+are very close to the theoretically expected values, so we are on the results of Lemma 1.3 of [1].
+The absolutely accuracy from the first apply of all methods confirms our theoretical analysis.
+
+## The Fisher-Pry sigmoid curve with total symmetry (noisy)
+
+We next add the error term $\epsilon_i\sim\,U(−0.05, 0.05)$ via the process 14 of [1] and
+run our algorithms again.The results are presented at Table 2 of [1] and here we also present the 
+BESE iterations done by 'bese()'.
+
+
+```{r, tanhESEnoisy, echo=TRUE,out.width='75%', fig.align='center',fig.width=10, fig.height=6}
+library(inflection)
+data("table_02")
+x=table_01$x
+y=table_01$y
+plot(x,y,cex=0.3,pch=19)
+grid()
+bb=ese(x,y,0);bb
+pese=bb[,3];pese
+abline(v=pese)
+cc=bese(x,y,0)
+cc$iplast
+abline(v=cc$iplast,col='blue')
+knitr::kable(cc$iters, caption = 'BESE')
+```
+
+
+## The Fisher-Pry sigmoid curve with data left asymmetry (not noisy)
+
+We continue with the same sigmoid function, but now we choose a proper [a, b] to show data asymmetry w.r.t. inflection point.
+
+Let’ s take for example [4.2, 8]. If we do our theoretical computations
+we find $x_l = 5.974322740, x_r = 4.029684059$, $x_{F1} = 4.025677260$,
+$x_{F2} = 5.974322740$. We have that $x_r < a$, so $\chi_r$ has to estimate a = 4.2 
+and $\chi_S$ must be close to 4.703504993. Additionally, $x_{F1} < a$, so $\chi_{F1}$ must be also
+an estimation of a, thus $\chi_{D}$ must lie near the value 5.087161370. It' s time
+to see if our theoretical predictions will be confirmed by experiment.
+We use for comparability the same Standard Partition as before and have
+the output presented at Table 3 and 4 of [1].
+
+```{r, tanhESEasym, echo=TRUE}
+data("table_03_04")
+x=table_03_04$x
+y=table_03_04$y
+tese=ese(x,y,0);tese
+pese=tese[,3]
+tede=ede(x,y,0);tede
+pede=tede[,3]
+cc=bese(x,y,0)
+cc$iplast
+dd=bede(x,y,0)
+dd$iplast
+```
+
+```{r, tanhESEasymPLOT, echo=FALSE,out.width='75%', fig.align='center',fig.width=10, fig.height=6}
+plot(x,y,cex=0.3,pch=19)
+grid()
+abline(v=pese)
+abline(v=cc$iplast,col='blue')
+abline(v=dd$iplast,col='red')
+knitr::kable(cc$iters, caption = 'BESE')
+knitr::kable(dd$iters, caption = 'BEDE')
+```
+
+
+## The Fisher-Pry sigmoid curve with data left asymmetry (noisy)
+
+Let’ s add again an same error term $\epsilon_i\sim\,U(−0.05, 0.05)$ and run our 
+algorithms. The results at Table 5 of [1] clearly are close enough to the theoretical
+expectations. Since ESE method did not estimate the inflection point with
+acceptable accuracy, after running BESE and BEDE iterative methods we find Table 6 of [1]
+which is a clear improvement of both estimations.
+
+```{r, tanhESEasymNOISE, echo=TRUE,out.width='75%', fig.align='center',fig.width=10, fig.height=6}
+data("table_05_06")
+x=table_05_06$x
+y=table_05_06$y
+tese=ese(x,y,0);tese
+pese=tese[,3]
+tede=ede(x,y,0);tede
+pede=tede[,3]
+cc=bese(x,y,0)
+cc$iplast
+dd=bede(x,y,0)
+dd$iplast
+plot(x,y,cex=0.3,pch=19)
+grid()
+abline(v=pese)
+abline(v=cc$iplast,col='blue')
+abline(v=dd$iplast,col='red')
+knitr::kable(cc$iters, caption = 'BESE')
+knitr::kable(dd$iters, caption = 'BEDE')
+```
+
+
+## The Gompertz non symmetric sigmoid curve (not noisy)
+
+Let’ s examine the function:
+$$f (x) = 10 e^{-e^{5}e^{−x}}$$
+after [4], in the interval [3.5, 8]. It is easy to prove that f is (0.224, 1.0)-asymptotically symmetric around
+inflection point, so we can handle it similar to a symmetric sigmoid only for a distance of ±1 from p = 5.
+
+We use, for comparison reasons, the same SP with 500 sub-intervals without error and obtain the Table 8 of [1] which is 
+absolutely compatible with theoretical predictions. The ESE & EDE iterations are showed at Table 9 of [1]
+where we observe convergence to the real p for both two methods.
+
+
+```{r, Gomb, echo=TRUE}
+data("table_08_09")
+x=table_08_09$x
+y=table_08_09$y
+tese=ese(x,y,0);tese
+pese=tese[,3]
+tede=ede(x,y,0);tede
+pede=tede[,3]
+cc=bese(x,y,0)
+cc$iplast
+dd=bede(x,y,0)
+dd$iplast
+```
+
+```{r, GombPLOT, echo=FALSE,out.width='75%', fig.align='center',fig.width=10, fig.height=6}
+plot(x,y,cex=0.3,pch=19)
+grid()
+abline(v=pese)
+abline(v=cc$iplast,col='blue')
+abline(v=dd$iplast,col='red')
+knitr::kable(cc$iters, caption = 'BESE')
+knitr::kable(dd$iters, caption = 'BEDE')
+```
+
+## The Gompertz non symmetric sigmoid curve (noisy)
+
+We continue with our familiar SP by adding error uniformly distributed
+by U(−0.05, 0.05) and the results are given at Table 10 of [1] while ESE & EDE
+iterations are shown at Table 11 of [1].
+
+```{r, GombNOISE, echo=TRUE}
+data("table_10_11")
+x=table_08_09$x
+y=table_08_09$y
+tese=ese(x,y,0);tese
+pese=tese[,3]
+tede=ede(x,y,0);tede
+pede=tede[,3]
+cc=bese(x,y,0)
+cc$iplast
+dd=bede(x,y,0)
+dd$iplast
+```
+
+```{r, GombPLOTNOISE, echo=FALSE,out.width='75%', fig.align='center',fig.width=10, fig.height=6}
+plot(x,y,cex=0.3,pch=19)
+grid()
+abline(v=pese)
+abline(v=cc$iplast,col='blue')
+abline(v=dd$iplast,col='red')
+knitr::kable(cc$iters, caption = 'BESE')
+knitr::kable(dd$iters, caption = 'BEDE')
+```
+
+From these Tables we conclude that convergence to the true value of inflection point p = 5 occurs
+from the iterative application of ESE and EDE methods in one or two steps only.
+
+## A symmetric 3rd order polynomial with total symmetry
+
+Let the polynomial function:
+$$f(x)=-\frac{1}{3}\,x^3+\frac{5}{2}\,x^2-4x+\frac{1}{2}$$
+We study it at [-2, 7], it has inflection point at p = 2.5 and we have total symmetry.
+The SP with 500 sub-intervals without error gives Table 13 of [1] which is absolutely compatible with theoretical predictions.
+There is no need for any kind of iteration, because both methods agree with the true value.
+
+
+```{r, poly3sym, echo=TRUE,out.width='75%', fig.align='center',fig.width=10, fig.height=6}
+data("table_13")
+x=table_13$x
+y=table_13$y
+plot(x,y,cex=0.3,pch=19)
+grid()
+bb=ese(x,y,0);bb
+pese=bb[,3];pese
+abline(v=pese)
+```
+
+
+
+
+
+
+
+
+The same SP with uniform error distributed by U(−2, 2) gives the results of Table 14 of [1] 
+and two ESE iterations are presented at Table 15 of [1].
+
+
+```{r, poly3symNOISE, echo=TRUE,out.width='75%', fig.align='center',fig.width=10, fig.height=6}
+data("table_14_15")
+x=table_14_15$x
+y=table_14_15$y
+plot(x,y,cex=0.3,pch=19)
+grid()
+bb=ese(x,y,0);bb
+pese=bb[,3];pese
+abline(v=pese)
+cc=bese(x,y,0)
+cc$iplast
+abline(v=cc$iplast,col='blue')
+knitr::kable(cc$iters, caption = 'BESE')
+```
+
+
+## A symmetric 3rd order polynomial with data right asymmetry
+
+For the same symmetric 3rd order polynomial as above we change the interval to
+[-2, 8], thus we have data right asymmetry now. The case of SP with 500 sub-intervals 
+and no error gives Table 17 of [1], while ESE and EDE iterations are presented at Table 18 of [1].
+First results are absolutely compatible with theoretical predictions for ESE method.
+
+```{r, poly3asym, echo=TRUE,out.width='75%', fig.align='center',fig.width=10, fig.height=6}
+data("table_17_18")
+x=table_17_18$x
+y=table_17_18$y
+bb=ese(x,y,0);bb
+pese=bb[,3];pese
+plot(x,y,cex=0.3,pch=19)
+grid()
+cc=bese(x,y,0)
+cc$iplast
+dd=bede(x,y,0)
+dd$iplast
+abline(v=pese)
+abline(v=cc$iplast,col='blue')
+abline(v=dd$iplast,col='red')
+knitr::kable(cc$iters, caption = 'BESE')
+knitr::kable(dd$iters, caption = 'BEDE')
+```
+
+We add uniform error distributed by U(-2, 2) and we have the results of Table 19 of [1], 
+while one ESE & one EDE iteration are given at Table 20 of [1].
+
+
+```{r, poly3asymNOISE, echo=TRUE,out.width='75%', fig.align='center',fig.width=10, fig.height=6}
+data("table_19_20")
+x=table_19_20$x
+y=table_19_20$y
+bb=ese(x,y,0);bb
+pese=bb[,3];pese
+plot(x,y,cex=0.3,pch=19)
+grid()
+cc=bese(x,y,0)
+cc$iplast
+dd=bede(x,y,0)
+dd$iplast
+abline(v=pese)
+abline(v=cc$iplast,col='blue')
+abline(v=dd$iplast,col='red')
+knitr::kable(cc$iters, caption = 'BESE')
+knitr::kable(dd$iters, caption = 'BEDE')
+```
+
+There exist a problem here. Although we have a symmetric polyno-
+mial, the TESE is not equal to the true inflection point. A remedy for this
+problem for the class of 3rd order polynomials is given with Lemma 2.1 of [1].
+Lets apply it here. We have that a = −2, b = 8 and from Table 19 of [1]
+is $\chi_{r} = −0.26, \chi_{l} = 4.74$, so we have that:
+$$\hat{p}=\frac{1}{3}\,\chi_{l} + \frac{1}{3}\,\chi_{r}+\frac{1}{6}\,a+\frac{1}{6}\,b=2.493333333$$
+which is much closer to the true value of 2.5.
+
+
+## Please send your comments, suggestions or bugs found to dchristop@econ.uoa.gr
+
+
+## References
+
+[1] Demetris T. Christopoulos (2014), Developing methods for identifying the inflection point of a convex/concave curve. arXiv:1206.5478v2 [math.NA]. 
+URL: https://doi.org/10.48550/arXiv.1206.5478
+
+
+[2] Demetris T. Christopoulos (2016), On the Efficient Identification of an Inflection Point,
+International Journal of Mathematics and Scientific Computing , Volume 6 (1), June 2016, Pages 13-20, ISSN: 2231-5330. 
+URL: https://demovtu.veltech.edu.in/wp-content/uploads/2016/04/Paper-04-2016.pdf
+
+
+[3] J.C. Fisher and R.H. Pry (1971), A Simple Substitution Model of Technological Change, Technological Forecasting and Social Change, 3, pp. 5–88. 
+URL: https://doi.org/10.1016/S0040-1625(71)80005-7
+
+
+[4] B. Gompertz (1825), On the Nature of the Function Expressive of the Law of Human Mortality, and on a New Mode of Determining the Value of
+Life Contingencies, Philosophical Transactions of the Royal Society of London, 115, pp. 513–585.
+

@@ -1,0 +1,45 @@
+Package: sparsevctrs
+Title: Sparse Vectors for Use in Data Frames
+Version: 0.3.6
+Authors@R: c(
+    person("Emil", "Hvitfeldt", , "emil.hvitfeldt@posit.co", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0002-0679-1945")),
+    person("Davis", "Vaughan", , "davis@posit.co", role = "ctb"),
+    person("Posit Software, PBC", role = c("cph", "fnd"), comment = c(ROR = "03wc8by49"))
+  )
+Description: Provides sparse vectors powered by ALTREP (Alternative
+    Representations for R Objects) that behave like regular vectors, and
+    can thus be used in data frames. Also provides tools to convert
+    between sparse matrices and data frames with sparse columns and
+    functions to interact with sparse vectors.
+License: MIT + file LICENSE
+URL: https://github.com/r-lib/sparsevctrs,
+        https://r-lib.github.io/sparsevctrs/
+BugReports: https://github.com/r-lib/sparsevctrs/issues
+Depends: R (>= 4.1)
+Imports: cli (>= 3.4.0), rlang (>= 1.1.0), vctrs
+Suggests: knitr, Matrix, methods, rmarkdown, testthat (>= 3.0.0),
+        tibble, withr
+VignetteBuilder: knitr
+Config/Needs/website: tidyverse/tidytemplate, rmarkdown, lobstr,
+        ggplot2, bench, tidyr, ggbeeswarm
+Config/testthat/edition: 3
+Encoding: UTF-8
+RoxygenNote: 7.3.3
+Config/usethis/last-upkeep: 2025-05-25
+NeedsCompilation: yes
+Packaged: 2026-01-27 00:07:42 UTC; emilhvitfeldt
+Author: Emil Hvitfeldt [aut, cre] (ORCID:
+    <https://orcid.org/0000-0002-0679-1945>),
+  Davis Vaughan [ctb],
+  Posit Software, PBC [cph, fnd] (ROR: <https://ror.org/03wc8by49>)
+Maintainer: Emil Hvitfeldt <emil.hvitfeldt@posit.co>
+Repository: CRAN
+Date/Publication: 2026-01-27 06:10:17 UTC
+Built: R 4.6.0; x86_64-w64-mingw32; 2026-06-09 02:38:28 UTC; windows
+Archs: x64
+RemoteType: standard
+RemotePkgRef: sparsevctrs
+RemoteRef: sparsevctrs
+RemoteRepos: https://cran.rstudio.com
+RemoteSha.Version: 0.3.6

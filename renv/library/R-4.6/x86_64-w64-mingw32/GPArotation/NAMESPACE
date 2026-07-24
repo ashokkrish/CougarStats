@@ -1,0 +1,50 @@
+importFrom("stats", "rnorm")
+
+export(
+  "GPFoblq",
+  "GPForth",
+  "GPFRSoblq",
+  "GPFRSorth",
+  "Random.Start")
+
+export(
+  "oblimin",
+  "quartimin",
+  "targetT",
+  "targetQ",
+  "pstT",
+  "pstQ",
+  "oblimax",
+  "entropy",
+  "quartimax",
+  "Varimax",
+  "simplimax",
+  "bentlerT",
+  "bentlerQ",
+  "tandemI",
+  "tandemII",
+  "geominT",
+  "geominQ",
+  "bigeominT",
+  "bigeominQ",
+  "cfT",
+  "cfQ",
+  "infomaxT",
+  "infomaxQ",
+  "mccammon",
+  "bifactorT",
+  "bifactorQ",
+  "equamax",
+  "parsimax",
+  "varimin",
+  "lpT",
+  "lpQ",
+  "GPForth.lp",
+  "GPFoblq.lp",
+  "eiv",
+  "echelon"
+)
+
+S3method("print",   "GPArotation")
+S3method("summary", "GPArotation")
+S3method("print",   "summary.GPArotation")

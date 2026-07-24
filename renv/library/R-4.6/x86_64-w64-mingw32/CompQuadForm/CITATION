@@ -1,0 +1,18 @@
+citHeader("To cite the CompQuadForm package in publications use:")
+
+bibentry(bibtype="Article",
+         title = "Computing the Distribution of Quadratic Forms: Further Comparisons Between the Liu-Tang-Zhang Approximation and Exact Methods",
+         author = c(person("Pierre", "Duchesne"), 
+                    person("Pierre", "Lafaye De Micheaux")),
+	 journal = "Computational Statistics and Data Analysis",
+         year  = "2010",
+	 pages = "858-862",
+	 volume = "54",
+         textVersion = 
+         paste("Duchesne, P. and Lafaye De Micheaux, P. (2010)", 
+               "Computing the distribution of quadratic forms: Further comparisons between the Liu-Tang-Zhang approximation and exact methods",
+               "Computational Statistics and Data Analysis",
+              "vol. 54, p.858-862"
+	      )
+)
+

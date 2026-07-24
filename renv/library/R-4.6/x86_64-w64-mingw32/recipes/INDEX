@@ -1,0 +1,141 @@
+.get_data_types         Get types for use in recipes
+add_step                Add a New Operation to the Current Recipe
+bake                    Apply a trained preprocessing recipe
+case-weight-helpers     Helpers for steps with case weights
+case_weights            Using case weights with recipes
+check_class             Check variable class
+check_cols              Check if all columns are present
+check_missing           Check for missing values
+check_new_values        Check for new values
+check_range             Check range consistency
+detect_step             Detect if a particular step or check is used in
+                        a recipe
+developer_functions     Developer functions for creating recipes steps
+discretize              Discretize Numeric Variables
+formula.recipe          Create a formula from a prepared recipe
+fully_trained           Check to see if a recipe is trained/prepared
+has_role                Role Selection
+juice                   Extract transformed training set
+names0                  Naming Tools
+prep                    Estimate a preprocessing recipe
+prepper                 Wrapper function for preparing recipes within
+                        resampling
+print.recipe            Print a Recipe
+recipe                  Create a recipe for preprocessing data
+recipes_argument_select
+                        Evaluate a selection with tidyselect semantics
+                        for arguments
+recipes_eval_select     Evaluate a selection with tidyselect semantics
+                        specific to recipes
+recipes_extension_check
+                        Checks that steps have all S3 methods
+roles                   Manually alter roles
+selections              Methods for selecting variables in step
+                        functions
+sparse_data             Using sparse data with recipes
+step_BoxCox             Box-Cox transformation for non-negative data
+step_YeoJohnson         Yeo-Johnson transformation
+step_arrange            Sort rows using dplyr
+step_bin2factor         Create a factors from A dummy variable
+step_bs                 B-spline basis functions
+step_center             Centering numeric data
+step_classdist          Distances to class centroids
+step_classdist_shrunken
+                        Compute shrunken centroid distances for
+                        classification models
+step_corr               High correlation filter
+step_count              Create counts of patterns using regular
+                        expressions
+step_cut                Cut a numeric variable into a factor
+step_date               Date feature generator
+step_depth              Data depths
+step_discretize         Discretize Numeric Variables
+step_dummy              Create traditional dummy variables
+step_dummy_extract      Extract patterns from nominal data
+step_dummy_multi_choice
+                        Handle levels in multiple predictors together
+step_factor2string      Convert factors to strings
+step_filter             Filter rows using dplyr
+step_filter_missing     Missing value column filter
+step_geodist            Distance between two locations
+step_harmonic           Add sin and cos terms for harmonic analysis
+step_holiday            Holiday feature generator
+step_hyperbolic         Hyperbolic transformations
+step_ica                ICA signal extraction
+step_impute_bag         Impute via bagged trees
+step_impute_knn         Impute via k-nearest neighbors
+step_impute_linear      Impute numeric variables via a linear model
+step_impute_lower       Impute numeric data below the threshold of
+                        measurement
+step_impute_mean        Impute numeric data using the mean
+step_impute_median      Impute numeric data using the median
+step_impute_mode        Impute nominal data using the most common value
+step_impute_roll        Impute numeric data using a rolling window
+                        statistic
+step_indicate_na        Create missing data column indicators
+step_integer            Convert values to predefined integers
+step_interact           Create interaction variables
+step_intercept          Add intercept (or constant) column
+step_inverse            Inverse transformation
+step_invlogit           Inverse logit transformation
+step_isomap             Isomap embedding
+step_kpca               Kernel PCA signal extraction
+step_kpca_poly          Polynomial kernel PCA signal extraction
+step_kpca_rbf           Radial basis function kernel PCA signal
+                        extraction
+step_lag                Create a lagged predictor
+step_lincomb            Linear combination filter
+step_log                Logarithmic transformation
+step_logit              Logit transformation
+step_mutate             Add new variables using dplyr
+step_mutate_at          Mutate multiple columns using dplyr
+step_naomit             Remove observations with missing values
+step_nnmf_sparse        Non-negative matrix factorization signal
+                        extraction with lasso penalization
+step_normalize          Center and scale numeric data
+step_novel              Simple value assignments for novel factor
+                        levels
+step_ns                 Natural spline basis functions
+step_num2factor         Convert numbers to factors
+step_nzv                Near-zero variance filter
+step_ordinalscore       Convert ordinal factors to numeric scores
+step_other              Collapse infrequent categorical levels
+step_pca                PCA signal extraction
+step_percentile         Percentile transformation
+step_pls                Partial least squares feature extraction
+step_poly               Orthogonal polynomial basis functions
+step_poly_bernstein     Generalized bernstein polynomial basis
+step_profile            Create a profiling version of a data set
+step_range              Scaling numeric data to a specific range
+step_ratio              Ratio variable creation
+step_regex              Detect a regular expression
+step_relevel            Relevel factors to a desired level
+step_relu               Apply (smoothed) rectified linear
+                        transformation
+step_rename             Rename variables by name using dplyr
+step_rename_at          Rename multiple columns using dplyr
+step_rm                 General variable filter
+step_sample             Sample rows using dplyr
+step_scale              Scaling numeric data
+step_select             Select variables using dplyr
+step_shuffle            Shuffle variables
+step_slice              Filter rows by position using dplyr
+step_spatialsign        Spatial sign preprocessing
+step_spline_b           Basis splines
+step_spline_convex      Convex splines
+step_spline_monotone    Monotone splines
+step_spline_natural     Natural splines
+step_spline_nonnegative
+                        Non-negative splines
+step_sqrt               Square root transformation
+step_string2factor      Convert strings to factors
+step_time               Time feature generator
+step_unknown            Assign missing categories to "unknown"
+step_unorder            Convert ordered factors to unordered factors
+step_window             Moving window functions
+step_zv                 Zero variance filter
+summary.recipe          Summarize a recipe
+tidy.step_BoxCox        Tidy the result of a recipe
+update.step             Update a recipe step
+update_role_requirements
+                        Update role specific requirements

@@ -1,0 +1,334 @@
+---
+title: "Find inflection points: Mission Impossible!"
+author: "Demetris T. Christopoulos"
+date: "28/6/2019"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteIndexEntry{Find inflection points: Mission Impossible!}
+  %\VignetteEncoding{UTF-8}
+---
+
+
+```{css, echo=FALSE}
+    body .main-container {
+      max-width: 1024px !important;
+      width: 1024px !important;
+    }
+    body {
+      max-width: 1024px !important;
+    }
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(max.width = 1000)
+options(max.print = 100000)
+```
+
+## Can we always find the inflection point?
+
+Let’ s take the function:
+$$f (x) = \frac{\frac{1}{8}x+\frac{1}{2}x^2}{1+\frac{1}{8}x+\frac{1}{2}x^2}$$
+following [3]. What are the inflection points? We must take the first derivative:
+$$f'(x)= \frac {8+64\,x}{ \left( 4\,{x}^{2}+x+8 \right) ^{2}}$$
+
+and continue to second derivative:
+$$f''(x)= \frac {-768\,{x}^{2}-192\,x+496}{ \left( 4\,{x}^{2}+x+8 \right) ^{3}}$$
+Now we must solve above expression for x and find two solutions:
+$$x_1=-1/8-1/24\,\sqrt {381}=-0.9383008876$$
+$$x_2=-1/8+1/24\,\sqrt {381}=0.6883008876$$
+If we study the function we'll see that has a minimum at $x_{min}=-\frac{1}{8}=-0.125$ and it is concave/convex 
+at interval $x<x_{min}$ and convex/concave for $x>x_{min}$.
+
+*But what if we do not want to perform such an analytical approach? What if we just wanted the inflection points
+without more details?*
+
+Then we must follow next steps:
+
+   * define an interval that encloses an inflection point
+   * run ESE or EDE to find a first approximation
+   * choose an interval that encloses inflection with your desired accuracy
+   * run BESE to find the closest available approximation
+   
+Here are the steps for the positive inflection point:
+```{r, positive, echo=TRUE,out.width='75%', fig.align='center',fig.width=10, fig.height=6}
+library(inflection)
+f=function(x){(1/8*x+1/2*x^2)/(1+1/8*x+1/2*x^2)}
+x=seq(0,5,0.1)
+y=f(x)
+# First approximation
+cc=check_curve(x,y);cc
+ese(x,y,cc$index)
+# New interval with equal distances from first approximation
+x=seq(0,1.3,0.001)
+y=f(x)
+# Second approximation 
+cc=check_curve(x,y);cc
+ipbese=bese(x,y,cc$index)
+ipbese$iplast
+plot(x,y,pch=19,cex=0.1)
+abline(v=ipbese$iplast,col='blue')
+```
+
+```{r, positers,echo=FALSE }
+knitr::kable(ipbese$iters, caption = 'BESE')
+```
+
+Since our interval was defined with equal size step 0.001 we expect our estimation to have the same accuracy and indeed it is truth.
+
+If we wanted a better accuracy, for example with 4 digits, then we could define another interval with previous approximation inside it
+and with equal size stpe 0.0001:
+
+```{r, pos6digits, echo=TRUE}
+# x=seq(0.68,0.69,0.0001)
+# y=f(x)
+# cc=check_curve(x,y);cc
+# ipbese=bese(x,y,cc$index,doparallel = TRUE)
+# ipbese$iplast
+# # [1] 0.6883
+# ipbese$iters
+#     n      a      b     ESE
+## 1 101 0.6800 0.6900 0.68870
+## 2  25 0.6876 0.6887 0.68815
+## 3  12 0.6881 0.6886 0.68835
+## 4   6 0.6882 0.6884 0.68830
+```
+
+
+## What if our data set is noisy?
+
+There exist no problem.
+
+Since ESE and EDE methods both give consistent estimators for the inflection point, we do not need to worry about noise.
+
+Lets perform the same task with error added:
+
+```{r, positiveNOISE, echo=TRUE,out.width='75%', fig.align='center',fig.width=10, fig.height=6}
+x=seq(0.0,3.,0.001)
+set.seed(20190628)
+y=f(x)+runif(length(x),-0.01,0.01)
+cc=check_curve(x,y)
+cc
+ipbese=bese(x,y,cc$index)
+ipbese$iplast
+plot(x,y,pch=19,cex=0.1)
+abline(v=ipbese$iplast,col='blue')
+```
+
+
+
+```{r, positersNOISE,echo=FALSE }
+knitr::kable(ipbese$iters, caption = 'BESE')
+```
+
+
+## What about big data?
+
+If your data set gas million of cases, then EDE and BEDE are your best friends.
+
+Lets see why by using 1000001 cases from a function with inflection point equal to 500:
+
+
+```{r, bigdata, echo=TRUE,out.width='75%', fig.align='center',fig.width=10, fig.height=6}
+f=function(x){500+500*tanh(x-500)}
+x=seq(0,1000,0.001)
+y=f(x)
+length(x)
+t1=Sys.time();ede(x,y,0);t2=Sys.time();t2-t1
+ipbede=bede(x,y,cc$index)
+ipbede$iplast
+```
+
+```{r, bigdataiters,echo=FALSE }
+knitr::kable(ipbede$iters, caption = 'BEDE')
+```
+
+Situation will not change if we add error $U(-50,50)$:
+
+
+```{r, bigdataNOISE, echo=TRUE,out.width='75%', fig.align='center',fig.width=10, fig.height=6}
+f=function(x){500+500*tanh(x-500)}
+x=seq(0,1000,0.001)
+set.seed(20190628)
+y=f(x)+runif(length(x),-50,50)
+length(x)
+t1=Sys.time();ede(x,y,0);t2=Sys.time();t2-t1
+ipbede=bede(x,y,0)
+ipbede$iplast
+plot(x[495000:505000],y[495000:505000],xlab="x",ylab="y",pch='.')
+abline(v=ipbede$iplast)
+```
+
+```{r, bigdataitersNOISE,echo=FALSE }
+knitr::kable(ipbede$iters, caption = 'BEDE')
+```
+
+
+Even if our data are not symmetric, estimation will not change:
+
+
+```{r, bigdataNOISEasym, echo=TRUE,out.width='75%', fig.align='center',fig.width=10, fig.height=6}
+f=function(x){500+500*tanh(x-500)}
+x=seq(0,700,0.001)
+set.seed(20190628)
+y=f(x)+runif(length(x),-50,50)
+length(x)
+t1=Sys.time();ede(x,y,0);t2=Sys.time();t2-t1
+ipbede=bede(x,y,0)
+ipbede$iplast
+plot(x[495000:505000],y[495000:505000],xlab="x",ylab="y",pch='.')
+abline(v=ipbede$iplast)
+```
+
+```{r, bigdataitersNOISEasym,echo=FALSE }
+knitr::kable(ipbede$iters, caption = 'BEDE')
+```
+
+**Just try to solve above problems by using regression or other techniques that involve matrix inversion...**
+
+OK, we'll perform that task for you.
+
+#### First task
+
+```{r, positiveNLS, echo=TRUE}
+# library(nlme)
+# x=seq(0,5,0.1)
+# f=function(x){(1/8*x+1/2*x^2)/(1+1/8*x+1/2*x^2)}
+# y=f(x)
+# df=data.frame("x"=x,"y"=y)
+# Asym=1;xmid=1;scal=1;
+# fmla=as.formula("y~SSlogis(x,Asym,xmid,scal)");fmla
+# try(nls(fmla,df))
+# est=try(nls(fmla,df))
+# coef(est)
+```
+
+When it works it gives the result xmid=1.2516 which is away from true inflcetion (0.6883008876), altough 
+all results seem to be statistically 'super':
+
+```{r, nls1}
+# y ~ SSlogis(x, Asym, xmid, scal)
+# Nonlinear regression model
+#   model: y ~ SSlogis(x, Asym, xmid, scal)
+#    data: df
+#   Asym   xmid   scal 
+# 0.8909 1.2516 0.5478 
+#  residual sum-of-squares: 0.05242
+# 
+# Number of iterations to convergence: 0 
+# Achieved convergence tolerance: 1.401e-06
+###
+# est=try(nls(fmla,df))
+# coef(est)
+#      Asym      xmid      scal 
+# 0.8908913 1.2516410 0.5478263 
+# summary(est)
+# 
+# Formula: y ~ SSlogis(x, Asym, xmid, scal)
+# 
+# Parameters:
+#      Estimate Std. Error t value Pr(>|t|)    
+# Asym 0.890891   0.007872  113.18   <2e-16 ***
+# xmid 1.251641   0.025638   48.82   <2e-16 ***
+# scal 0.547826   0.023718   23.10   <2e-16 ***
+# ---
+# Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# 
+# Residual standard error: 0.03305 on 48 degrees of freedom
+# 
+# Number of iterations to convergence: 0 
+# Achieved convergence tolerance: 1.401e-06
+```
+ 
+
+#### Second task
+
+
+```{r, positiveNOISEnls, echo=TRUE}
+# x=seq(0.0,3.,0.001)
+# f=function(x){(1/8*x+1/2*x^2)/(1+1/8*x+1/2*x^2)}
+# set.seed(20190628)
+# y=f(x)+runif(length(x),-0.01,0.01)
+# df=data.frame("x"=x,"y"=y)
+# Asym=1;xmid=1;scal=1;
+# fmla=as.formula("y~SSlogis(x,Asym,xmid,scal)");fmla
+# try(nls(fmla,df))
+```
+
+
+When it works it gives next result xmid=1.0938 which is away from true inflcetion (0.6883008876) and again rsults
+seem to be 'excellent':
+
+```{r, nls2}
+# Nonlinear regression model
+# model: y ~ SSlogis(x, Asym, xmid, scal)
+# data: df
+# Asym   xmid   scal 
+# 0.8018 1.0938 0.4318 
+# residual sum-of-squares: 1.884
+# 
+# Number of iterations to convergence: 0 
+# Achieved convergence tolerance: 1.768e-07
+###
+# est=try(nls(fmla,df))
+# coef(est)
+#      Asym      xmid      scal 
+# 0.8018405 1.0937758 0.4318175 
+# summary(est)
+# 
+# Formula: y ~ SSlogis(x, Asym, xmid, scal)
+# 
+# Parameters:
+#      Estimate Std. Error t value Pr(>|t|)    
+# Asym 0.801840   0.001175   682.7   <2e-16 ***
+# xmid 1.093776   0.002417   452.5   <2e-16 ***
+# scal 0.431817   0.002063   209.3   <2e-16 ***
+# ---
+# Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# 
+# Residual standard error: 0.02507 on 2998 degrees of freedom
+# 
+# Number of iterations to convergence: 0 
+# Achieved convergence tolerance: 1.768e-07
+```
+
+### Third task
+
+We set as initial parameter (xmid) the true solution (500), but it failed to proceed:
+
+```{r, bigdatanls, echo=TRUE}
+# f=function(x){500+500*tanh(x-500)}
+# x=seq(0,1000,0.001)
+# y=f(x)
+# length(x)
+# df=data.frame("x"=x,"y"=y)
+# Asym=1000;xmid=500;scal=1;
+# fmla=as.formula("y~SSlogis(x,Asym,xmid,scal)");fmla
+#
+# t1=Sys.time();
+# try(nls(fmla,df))
+# Error in nls(y ~ 1/(1 + exp((xmid - x)/scal)), data = xy, start = list(xmid = aux[[1L]],  :
+#   step factor 0.000488281 reduced below 'minFactor' of 0.000976562
+# t2=Sys.time();t2-t1
+# Time difference of 19.29784 secs
+```
+
+*So R package inflection can give you an answer for all extremely difficult cases.*
+
+## Please send your comments, suggestions or bugs found to dchristop@econ.uoa.gr
+
+
+## References
+
+[1] Demetris T. Christopoulos (2014), Developing methods for identifying the inflection point of a convex/concave curve. arXiv:1206.5478v2 [math.NA]. 
+URL: https://doi.org/10.48550/arXiv.1206.5478
+
+
+[2] Demetris T. Christopoulos (2016), On the Efficient Identification of an Inflection Point,
+International Journal of Mathematics and Scientific Computing , Volume 6 (1), June 2016, Pages 13-20, ISSN: 2231-5330. 
+URL: https://demovtu.veltech.edu.in/wp-content/uploads/2016/04/Paper-04-2016.pdf
+
+[3] Bardsley, W. G. & Childs, R. E. Sigmoid curves, non-linear double-reciprocal plots and allosterism. Biochemical Journal, Portland Press Limited, 1975, 149, 313-328
+
+

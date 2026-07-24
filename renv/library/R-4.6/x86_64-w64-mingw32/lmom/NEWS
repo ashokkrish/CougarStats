@@ -1,0 +1,390 @@
+       **************************************************
+       *                                                *
+       *               lmom package news                *
+       *                                                *
+       **************************************************
+
+
+Version 3.3     2026 Mar 23
+
+   o   [invisble to users] Changed C code to avoid use of non-API entry points.
+
+
+Version 3.2     2024 Sep 29
+
+   o   Removed inappropriate WRITE statement from Fortran code. (Bug introduced
+       at version 3.1.)
+
+   o   Corrected invalid URL in help file "lmom-package".
+
+
+Version 3.1     2024 Sep 25
+
+   o   In lmrd(fg=...), colour 'fg' is now also used by default for the legend
+       box (if one is drawn, i.e. if 'bty' is supplied as a list element of
+       'legend.lmrd').
+
+   o   [invisible to users] Cleanup of Fortran code: changed routine names that
+       conflict with names of Fortran intrinsic functions recognized by CRAN's
+       compiler (GCC 14.2.0); modifications to avoid warnings from CRAN's
+       compiler about "obsolescent features"; specific names of intrinsic
+       functions changed to generic (two instances missed at version 3.0); in
+       (newly renamed) routine XLGAMA, removed an occurrence of a variable used
+       when undefined.
+
+   o   Minor changes to help for "pel-functions" (changes in section "Details").
+
+   o   Fixed: lmrd() would apply 'font' (when supplied in '...') to tick mark
+       labels, not to plotted points.
+
+
+Version 3.0     2023 Aug 29
+
+   o   [invisible to users] Cleanup of Fortran code: replaced DFLOAT by DBLE, to
+       enable compilation under a strict F2008 standard; modifications to avoid
+       warnings from CRAN's compiler (GCC 12.2.0) about "Fortran 2018 deleted
+       features"; specific names of intrinsic functions changed to generic;
+       double-precision constants occur only in DATA statements.
+
+   o   Corrected typos in documentation of cdfgev() and cdfgpa().
+
+   o   In help for pelkap() and pelwak(), noted that there are some
+       combinations of L-moment values for which these functions are unable to
+       fit a distribution.
+
+
+Version 2.9     2022 May 29
+
+   o   [invisible to users] In evplot.default() and evpoints(), computation of
+       plotting positions uses ppoints() rather than an explicit expression.
+
+   o   In samlmu() and .samlmu(), removed the undocumented behaviour that
+       higher-order sample L-moments were restricted to be no larger than l_2
+       (the sample L-moment of order 2) in absolute value (and concomitantly
+       that sample L-moment ratios were restricted to the range [-1,1]).
+         This restriction applied to untrimmed L-moments, and induced analogous
+       (but much more complex) restrictions on trimmed sample L-moments.
+
+   o   samlmu() and samlmu.s() try harder to compute defensible values when 'x'
+       contains Inf or -Inf.  In particular, samlmu() no longer gives an error
+       when 'x' contains infinite values.
+
+   o   samlmu() and samlmu.s() now warn "all data values equal" only when
+       L-moment ratios are computed (previously, a warning was given even when
+       the sample size after trimming was 1 or 2).
+
+   o   In documentation of cdfgev() and cdfgpa(), added notes explaining that
+       some other R packages use a different convention for the sign of the
+       shape parameter.
+
+   o   Fixed: Most cdf...() and qua...() functions, if called with 'x' having
+       length 1 and 'para' a named vector, would return a named vector.
+       Affected functions: cdfexp(), cdfgam(), cdfgev(), cdfglo(), cdfgno(),
+       cdfgpa(), cdfgum(), cdfkap(), cdfln3(), cdfwei(), quaexp(), quagam(),
+       quagev(), quaglo(), quagno(), quagpa(), quagum(), quakap(), qualn3(),
+       quape3(), quawak(), quawei().
+
+   o   Fixed: lmrd() would give an error when plotting of two-parameter
+       distributions was requested but all points to be plotted were outside
+       the plot region.
+
+   o   Fixed: samlmu() and samlmu.s(), when computing trimmed L-moments, could
+       give incorrect values when extreme values were present in the 'x' values
+       that would be trimmed away.  Example:
+       'samlmu(c(1,2,3,6,1e20), trim=c(0,1))'.
+
+   o   Fixed: samlmu.s(), with trimming at the upper end of the conceptual
+       sample, would compute too few L-moments, with NA values at the end of
+       the returned vector.
+
+   o   Fixed: samlmu.s() with sample size 1 (after trimming if requested) would
+       return l_2 as 0 rather than NA.
+
+
+Version 2.8     2019 Mar 11
+
+   o   In lmrp(), 'symm=NA' now indicates asymmetry, similarly to 'symm=FALSE'.
+
+   o   [invisible to users] Internal C code used by lmrp() and lmrq() changed
+       to avoid a possible memory leak.
+
+
+Version 2.6     2017 Aug  1
+
+   o   "Native routines" are now "registered".
+
+   o   lmrd() now has a non-NULL return value, useful for adding a customized
+       legend to the plot.
+
+   o   Internal function infer_trim(), used by pelp() and pelq(), has defensive
+       coding to work around the possibility (new in R 3.3.0) that nchar() may
+       return NA.
+
+   o   Fixed: lmrd(), when an unrecognized distribution was supplied in
+       argument 'twopar', would give an incorrect error message.
+
+
+Version 2.5     2015 Feb  1
+
+   o   lmrp() no longer allows the argument value 'symm=TRUE' (it was treated
+       as 'symm=0', though this was undocumented).
+
+   o   Fixed: cdfwak() would give an error if 'x' contained no finite values.
+
+   o   Fixed: lmrp(...,symm=,ratios=FALSE) and lmrq(..,symm=TRUE,ratios=FALSE)
+       gave incorrect values, by a factor of 2, for higher-order (even, >=4)
+       L-moments.
+
+   o   Fixed: pelgno() would give an incorrect error message if the supplied
+       value of 'lmom[3]' was greater than 0.95.
+
+   o   Fixed: samlmu() could, in rare cases, return (untrimmed) L-moment ratios
+       greater than 1 in absolute value.
+
+   o   Fixed: samlmu.s(ratios=FALSE), when all 'x' values were equal, could
+       return not-exactly-zero values for L-moments.
+
+
+Version 2.4     2014 Mar 24
+
+   o   Fixed: pelwak() would fail when 'bound' was not NULL.  (Bug introduced
+       at version 2.3.)
+
+
+Version 2.3     2014 Feb  8
+
+   o   Fixed: pelp() and pelq() required their arguments 'ratios' and 'trim'
+       to be set explicitly in some cases when the values of these arguments
+       were documented as being inferred from the names of 'lmom' -- for
+       example, when 'lmom' was a numeric vector returned by lmrp() or lmrq().
+
+   o   [invisible to users] Some internal calls to .Fortran() altered, to avoid
+       a NOTE when building the package for CRAN under R version 3.1.0.
+       (Internal functions lmrxxx() and pelxxx() now use switch() to ensure
+       that, in calls to .Fortran(), argument '.NAME' is always a character
+       string and is recognizable as such to CRAN's code checks.)
+
+   o   [invisible to users] Minor changes to internal Fortran code (routine
+       LMRGPA).
+
+
+Version 2.2     2014 Jan 13
+
+   o   Now explicitly imports standard packages "stats" and "graphics".
+
+   o   pelp() and pelq() gain an argument 'subdiv'.
+
+   o   In samlmu() and samlmu.s(), computation of trimmed L-moments is faster
+       for small degrees of trimming.
+
+   o   Help file for pelwak() now notes the difference between its behaviour
+       and that of the corresponding routine in the LMOMENTS Fortran package.
+
+   o   Fixed: lmrp() could, in rare cases, attempt to evaluate 'pfunc' with an
+       argument outside the user-supplied bounds.
+
+   o   Fixed: lmrp(...,order=1,verbose=TRUE) would fail with error
+       "in data.frame( ... : 'row.names' should specify one of the variables".
+
+       In versions 1.6 and earlier, lmrq(...,order=1,verbose=TRUE) would fail
+       with the same error.  In versions 2.0 and later this was masked by the
+       following bug ...
+
+   o   Fixed: since version 2.0, lmrq(...,order=1) would fail with error
+       "if (denom>0 ... : missing value where TRUE/FALSE needed".
+
+       pelq(...,type="s"), which calls lmrq(...,order=1) internally, would fail
+       with the same error.
+
+   o   Fixed: since version 2.0, samlmu() could give an error in some cases
+       when 'nmom' exceeded the number of non-missing values in 'x'.
+
+
+Version 2.1     2013 Jun 19
+
+   o   Removed Fortran 2003 features from the Fortran code used by lmrp() and
+       lmrq(), to enable compilation by CRAN for Macintosh OS.
+
+
+Version 2.0     2013 Jun 17
+
+   o   Some support added for trimmed L-moments: samlmu(), samlmu.s(), lmrp(),
+       lmrq(), pelp(), and pelq() each gain an argument 'trim'.
+
+   o   Some support added for computing L-moments rather than L-moment ratios:
+       samlmu(), samlmu.s(), lmrp(), lmrq(), pelp(), and pelq() each gain an
+       argument 'ratios'.
+
+   o   New function .samlmu() for fast computation of (untrimmed) L-moment
+       ratios.
+
+   o   lmrp() and lmrq() use an internal function for numerical integration,
+       to avoid the bugs present in R's own integrate() function in R versions
+       2.12.0 through 3.0.1.
+
+   o   In lmrp(), modified the computation method for lambda_1: should make
+       computations a little faster.
+
+   o   LICENSE file no longer included in package, to avoid a NOTE when
+       building the package for CRAN under R version 3.0.0.  The license can
+       be found at http://www.eclipse.org/legal/cpl-v10.html.
+
+
+Version 1.6     2012 Jan 23
+
+   o   In lmrd(), the framing box and the lines at x=0 and y=0 are drawn in
+       colour 'par("fg")'.  The lines for distributions "GEV" and "PE3" use
+       less bright colours.
+
+   o   In lmrd(), argument 'legend.lmrd' can be a list of arguments to legend().
+
+   o   In lmrd() there is a small change to the default position of the legend,
+       ensuring that if a legend box is drawn (via the argument
+       'legend=list(bty="o")'), its top left corner is offset by 45 degrees
+       from the top left corner of the plot.
+
+   o   Removed inappropriate WRITE statements from Fortran code.
+
+   o   Fixed: some minor errors in the documentation (expressions for quantile
+       functions in help topics 'cdfgev', 'cdfglo', 'cdfgpa', and 'cdfkap').
+
+
+Version 1.5     2009 Nov 16
+
+   o   Quantile functions drawn by evplot() now extend across the entire
+       x range of the plot (previously, with 'par("xaxs")' at its default
+       value "r", gaps were left at the sides of the plot).
+
+   o   lmrexp(), lmrgam(), lmrgev(), lmrglo(), lmrgno(), lmrgpa(), lmrgum(),
+       lmrkap(), lmrnor(), lmrpe3(), lmrwak(), pelp(), and pelq() now have
+       a different specification of the default values for some of their
+       arguments.  The actual usage of the functions is unchanged.  The change
+       was made so that the help files can avoid the use of a "\synopsis"
+       section, which was giving unintended results in R 2.10.0.
+
+
+Version 1.4     2009 Jul 10
+
+   o   New functions lmrdpoints() and lmrdlines(), to add points or lines
+       to an existing L-moment ratio diagram.
+
+   o   evplot.default() is now exported from the package namespace.
+
+
+Version 1.3     2009 Apr 30
+
+   o   evplot() is now a generic function, with (only) a default method.
+       (Further methods will be defined in package lmomRFA, version 2.0.)
+
+   o   evplot(), when argument 'qfunc' is present but 'para' is missing, no
+       longer gives an error but instead uses default values for the parameters
+       of the distribution, i.e. internally it calls function 'qfunc' with only
+       one argument.
+
+       evdistp() and evdistq(), when argument 'para' is missing, act similarly.
+
+   o   lmrd(), when 'x' is supplied but not 'y', now tries to identify
+       L-skewness and L-kurtosis elements in 'x' by name rather than by
+       position.
+
+   o   lmrd() now recognizes distribution identifiers ("GEV", etc.) in either
+       upper or lower case.
+
+   o   lmrd() gains an argument 'cex', to control the size of plotted points.
+
+   o   lmrd(), when given an argument 'col' of length 1, will apply it
+       to the plotted points rather than to all the lines.
+
+   o   samlmu() and samlmu.s() give a more direct error message when their
+       first argument is not numeric.
+
+   o   Fixed: evplot() would sometimes not honour the y-axis limits supplied
+       in 'ylim'.  Specifically, if argument 'qfunc' was specified, the y-axis
+       limits would be extended if necessary to include the range of quantile
+       values plotted.
+
+   o   Fixed: lmrd() would set default y axis limits based on the values
+       of 'x', not of 'y'.
+
+
+Version 1.2     2009 Mar 16
+
+   o   Default parameter values for the Weibull distribution are now 'c(0,1,1)'.
+       (The previous default, 'c(0,1,0)', used an invalid value for the third
+       parameter.)  Functions affected: cdfwei(), lmrwei(), quawei().
+
+   o   Fixed: cdfgum() gave incorrect results.
+
+
+Version 1.1     2008 Dec 23
+
+   o   New functions, for the Weibull distribution: cdfwei(), lmrwei(),
+       pelwei(), quawei().
+
+   o   New functions, for the 3-parameter lognormal distribution: cdfln3(),
+       lmrln3(), pelln3(), qualn3().  pelln3() also permits parameter
+       estimation for the 2-parameter lognormal distribution.
+
+   o   Fixed: pelp() and pelq() would fail when the name of the
+       optimization routine (argument 'method') was also the name
+       of an object in the global environment.
+
+
+Version 1.0     2008 Jul  3
+
+   o   Initial release.  Functions included:
+         cdfexp
+         cdfgam
+         cdfgev
+         cdfglo
+         cdfgno
+         cdfgpa
+         cdfgum
+         cdfkap
+         cdfnor
+         cdfpe3
+         cdfwak
+         evdistp
+         evdistq
+         evplot
+         evpoints
+         lmrd
+         lmrexp
+         lmrgam
+         lmrgev
+         lmrglo
+         lmrgno
+         lmrgpa
+         lmrgum
+         lmrkap
+         lmrnor
+         lmrp
+         lmrpe3
+         lmrq
+         lmrwak
+         pelexp
+         pelgam
+         pelgev
+         pelglo
+         pelgno
+         pelgpa
+         pelgum
+         pelkap
+         pelnor
+         pelp
+         pelpe3
+         pelq
+         pelwak
+         quaexp
+         quagam
+         quagev
+         quaglo
+         quagno
+         quagpa
+         quagum
+         quakap
+         quanor
+         quape3
+         quawak
+         samlmu
+         samlmu.s

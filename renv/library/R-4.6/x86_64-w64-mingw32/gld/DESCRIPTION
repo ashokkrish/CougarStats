@@ -1,0 +1,55 @@
+Package: gld
+Version: 2.6.8
+Date: 2025-10-14
+Title: Estimation and Use of the Generalised (Tukey) Lambda
+        Distribution
+Suggests:
+Imports: stats, graphics, e1071, lmom
+Authors@R: 
+  c(person(given="Robert",family="King",
+      role=c("aut","cre"),
+      email="Robert.King.Newcastle@gmail.com",
+      comment=c(ORCID="0000-0001-7495-6599")),
+    person(given="Benjamin",family="Dean",
+      role="aut",
+      email="Benjamin.Dean@uon.edu.au"),
+    person(given="Sigbert",family="Klinke",
+      role="aut"),
+    person(given="Paul",family="van Staden",
+      role="aut",email="paul.vanstaden@up.ac.za",
+      comment=c(ORCID="0000-0002-5710-5984"))
+    )
+Description: The generalised lambda distribution, or Tukey lambda distribution, 
+  provides a wide variety of shapes with one functional form.   
+  This package provides random numbers, quantiles, probabilities, 
+  densities and density quantiles for four different types of the distribution,
+  the FKML (Freimer et al 1988), RS (Ramberg and Schmeiser 1974), GPD (van Staden
+  and Loots 2009) and FM5 - see documentation for details.
+  It provides the density function, distribution function, and Quantile-Quantile 
+  plots.  
+  It implements a variety of estimation methods for the distribution, 
+  including diagnostic plots. 
+  Estimation methods include the starship (all 4 types), 
+  method of L-Moments for the GPD and FKML types, and a 
+  number of methods for only the FKML type.  
+  These include maximum likelihood, maximum product of spacings, 
+  Titterington's method, Moments, Trimmed L-Moments and 
+  Distributional Least Absolutes. 
+License: GPL (>= 2)
+URL: https://github.com/newystats/gld/
+NeedsCompilation: yes
+Packaged: 2025-09-14 11:00:53 UTC; rober
+Author: Robert King [aut, cre] (ORCID: <https://orcid.org/0000-0001-7495-6599>),
+  Benjamin Dean [aut],
+  Sigbert Klinke [aut],
+  Paul van Staden [aut] (ORCID: <https://orcid.org/0000-0002-5710-5984>)
+Maintainer: Robert King <Robert.King.Newcastle@gmail.com>
+Repository: CRAN
+Date/Publication: 2025-09-14 11:30:13 UTC
+Built: R 4.6.0; x86_64-w64-mingw32; 2026-06-09 02:17:06 UTC; windows
+Archs: x64
+RemoteType: standard
+RemotePkgRef: gld
+RemoteRef: gld
+RemoteRepos: https://cran.rstudio.com
+RemoteSha.Version: 2.6.8

@@ -1,0 +1,81 @@
+a-compatibility-note-for-saveRDS-save
+                        Model Serialization and Compatibility
+agaricus.test           Test part from Mushroom Data Set
+agaricus.train          Training part from Mushroom Data Set
+coef.xgb.Booster        Extract coefficients from linear booster
+dim.xgb.DMatrix         Dimensions of xgb.DMatrix
+dimnames.xgb.DMatrix    Handling of column names of 'xgb.DMatrix'
+getinfo.xgb.Booster     Get or set information of xgb.DMatrix and
+                        xgb.Booster objects
+predict.xgb.Booster     Predict method for XGBoost model
+predict.xgboost         Compute predictions from XGBoost model on new
+                        data
+print.xgb.Booster       Print xgb.Booster
+print.xgb.DMatrix       Print xgb.DMatrix
+print.xgb.cv.synchronous
+                        Print xgb.cv result
+print.xgboost           Print info from XGBoost model
+variable.names.xgb.Booster
+                        Get Features Names from Booster
+xgb.Callback            XGBoost Callback Constructor
+xgb.DMatrix             Construct xgb.DMatrix object
+xgb.DMatrix.hasinfo     Check whether DMatrix object has a field
+xgb.DMatrix.save        Save xgb.DMatrix object to binary file
+xgb.DataBatch           Structure for Data Batches
+xgb.DataIter            XGBoost Data Iterator
+xgb.ExtMemDMatrix       DMatrix from External Data
+xgb.QuantileDMatrix.from_iterator
+                        QuantileDMatrix from External Data
+xgb.attr                Accessors for serializable attributes of a
+                        model
+xgb.cb.cv.predict       Callback for returning cross-validation based
+                        predictions
+xgb.cb.early.stop       Callback to activate early stopping
+xgb.cb.evaluation.log   Callback for logging the evaluation history
+xgb.cb.gblinear.history
+                        Callback for collecting coefficients history of
+                        a gblinear booster
+xgb.cb.print.evaluation
+                        Callback for printing the result of evaluation
+xgb.cb.reset.parameters
+                        Callback for resetting booster parameters at
+                        each iteration
+xgb.cb.save.model       Callback for saving a model file
+xgb.config              Accessors for model parameters as JSON string
+xgb.copy.Booster        Deep-copies a Booster Object
+xgb.create.features     Create new features from a previously learned
+                        model
+xgb.cv                  Cross Validation
+xgb.dump                Dump an XGBoost model in text format.
+xgb.gblinear.history    Extract gblinear coefficients history
+xgb.get.DMatrix.data    Get DMatrix Data
+xgb.get.DMatrix.num.non.missing
+                        Get Number of Non-Missing Entries in DMatrix
+xgb.get.DMatrix.qcut    Get Quantile Cuts from DMatrix
+xgb.get.num.boosted.rounds
+                        Get number of boosting in a fitted booster
+xgb.ggplot.deepness     Plot model tree depth
+xgb.ggplot.importance   Plot feature importance
+xgb.ggplot.shap.summary
+                        SHAP summary plot
+xgb.importance          Feature importance
+xgb.is.same.Booster     Check if two boosters share the same C object
+xgb.load                Load XGBoost model from binary file
+xgb.load.raw            Load serialised XGBoost model from R's raw
+                        vector
+xgb.model.dt.tree       Parse model text dump
+xgb.model.parameters<-
+                        Accessors for model parameters
+xgb.params              XGBoost Parameters
+xgb.plot.multi.trees    Project all trees on one tree
+xgb.plot.shap           SHAP dependence plots
+xgb.plot.tree           Plot boosted trees
+xgb.save                Save XGBoost model to binary file
+xgb.save.raw            Save XGBoost model to R's raw vector
+xgb.set.config, xgb.get.config
+                        Set and get global configuration
+xgb.slice.Booster       Slice Booster by Rounds
+xgb.slice.DMatrix       Slice DMatrix
+xgb.train               Fit XGBoost Model
+xgboost                 Fit XGBoost Model
+xgboost-options         XGBoost Options

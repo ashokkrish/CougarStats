@@ -1,0 +1,11 @@
+auto_config             Configure auto theming behavior
+auto_resolve_theme      Resolve auto values
+font_cache_set          Control the directory used for font caching
+font_spec               Font specification
+okabe_ito               A color-blind safe qualitative colorscale
+                        (Okabe-Ito)
+sequential_gradient     Control parameters of the sequential colorscale
+thematic_on             Enable (or disable) simplified theming of R
+                        graphics.
+thematic_save_plot      Capture a thematic plot as a saved file
+thematic_with_theme     Tools for getting and restoring global state
