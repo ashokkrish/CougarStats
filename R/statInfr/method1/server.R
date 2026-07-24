@@ -1,14 +1,9 @@
 statInfrMethodOneServer <- function(id) {
   moduleServer(id, function(input, output, session) {
-    ## NOTE: source cannot be used because it doesn't emulate the code in these
-    ## files having been written directly here. eval(parse(file = "example.R"))
-    ## is akin to LaTeX's \input macro, which may be familiar to you; that macro
-    ## acts as if the code in the file was written here, rather than being
-    ## written in a different file.
-    eval(parse(file = "validation.R"))
-    eval(parse(file = "printers.R"))
-    eval(parse(file = "observers.R"))
-    eval(parse(file = "reactives.R"))
+    source("validation.R", TRUE)
+    source("printers.R", TRUE)
+    source("observers.R", TRUE)
+    source("reactives.R", TRUE)
 
     observeEvent(iv$validate(), {
       if (iv$is_valid()) {

@@ -22,13 +22,14 @@ uploadDataDisclaimer <- withTags(small(
   em(b("Note:"), "CougarStats does not store, log, or share any data you upload. All uploaded files exist only for the duration of your session and are permanently deleted when the session ends.")
 ))
 
-source("../utils.R")# utility functions only used within statistical inference.
-source("../../utilityFunctions.R")# utility functions used across the application.
-source("../../plotOptionsMenu.R")
-source("../../OneSampZInt.R")
 
-source("ui.R")
-source("server.R")
+source("../utils.R", TRUE)# utility functions only used within statistical inference.
+source("../../utilityFunctions.R", TRUE)# utility functions used across the application.
+source("../../plotOptionsMenu.R", TRUE)
+source("../../OneSampZInt.R", TRUE)
+
+source("ui.R", TRUE)
+source("server.R", TRUE)
 
 #' @param super The ID of the application what would be consuming the module.
 #'   This test function emulates such an application, so the parameter for the
