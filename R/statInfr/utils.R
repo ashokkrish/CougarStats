@@ -3,17 +3,14 @@ prehideTab <- function(taglist, value) {
   selector_div <- r"{ div[data-value="%s"] }"
   style <- "display: none;"
   attr <- "data-value"
-  tagQuery(taglist)$
-    find("div")$
-      filter(function(t, i) tagHasAttribute(t, attr) && tagGetAttribute(t, attr) == value)$
-        addAttrs(style = style)$
-          resetSelected()$
-            find("li > a")$
-              filter(function(t, i) tagHasAttribute(t, attr) && tagGetAttribute(t, attr) == value)$
-                parent()$
-                  addAttrs(style = style)$
-                    resetSelected()$
-                      allTags()
+  tagQuery(taglist)$find("div")$filter(function(t, i) {
+    tagHasAttribute(t, attr) && tagGetAttribute(t, attr) == value
+  })$addAttrs(style = style)$resetSelected()$find("li > a")$filter(function(
+    t,
+    i
+  ) {
+    tagHasAttribute(t, attr) && tagGetAttribute(t, attr) == value
+  })$parent()$addAttrs(style = style)$resetSelected()$allTags()
 }
 
 
@@ -61,9 +58,14 @@ newFileInput <- function(fileInputId, namespace) {
   accepted_formats_listing <- "CSV, TSV, RDS, Excel®, Minitab®, SAS®, SPSS®, or Stata® formats are supported"
   tagList(
     uploadDataDisclaimer,
+    tags$label(
+      style = css(cursor = "pointer !important"),
+      `for` = NS(namespace, fileInputId),
+      strong(sprintf("Upload your data (%s)", accepted_formats_listing))
+    ),
     fileInput(
       inputId = NS(namespace, fileInputId),
-      label = strong(sprintf("Upload your data (%s)", accepted_formats_listing)),
+      label = NULL,
       accept = accepted_formats
     )
   )
