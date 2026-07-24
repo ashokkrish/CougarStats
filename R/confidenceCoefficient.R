@@ -355,13 +355,15 @@ confidenceCoefficientServer <- function(id) {
           list(
             sprintf("\\(\\text{Confidence Coefficient } (1 - \\alpha) = 2 \\cdot \\Phi\\left( \\frac{E \\cdot \\sqrt{n}}{\\sigma}\\right) - 1\\)"),
             br(),
+            br(),
             sprintf("\\(\\text{Confidence Coefficient } (1 - \\alpha) = 2 \\cdot \\Phi\\left( \\frac{\\left(\\frac{%s}{2}\\right) \\cdot \\sqrt{%s}}{%s} \\right) - 1\\)",
                     input$ccMargErr,
                     input$confSampSize,
                     input$confPopSD),
             br(),
+            br(),
             sprintf( "\\(\\text{Confidence Coefficient} = %.0f\\%%\\)",
-                     confCoe * 100),
+                     confCoe*100),
             
             br(),
             br(),
@@ -372,8 +374,8 @@ confidenceCoefficientServer <- function(id) {
                     input$confSampSize,
                     input$confPopSD,
                     input$ccMargErr,
-                    confCoe* 100,
-                    confCoe* 100)
+                    confCoe*100,
+                    confCoe*100)
           )
         }
         
@@ -387,13 +389,15 @@ confidenceCoefficientServer <- function(id) {
           list(
             sprintf("\\(\\text{Confidence Coefficient } (1 - \\alpha) = 2 \\cdot \\Phi\\left( \\frac{W \\cdot \\sqrt{n}}{\\sigma}\\right) - 1\\)"),
             br(),
+            br(),
             sprintf("\\(\\text{Confidence Coefficient } (1 - \\alpha) = 2 \\cdot \\Phi\\left(\\frac{\\left(\\frac{%s}{2}\\right) \\cdot \\sqrt{%s}}{%s}\\right) - 1\\)",
                     input$ccMeanWoI,
                     input$confSampSize,
                     input$confPopSD),
             br(),
+            br(),
             sprintf("\\(\\text{Confidence Coefficient} = %.0f\\%%\\)",
-                    confCoe * 100),
+                    confCoe*100),
             
             br(),
             br(),
@@ -404,8 +408,8 @@ confidenceCoefficientServer <- function(id) {
                     input$confSampSize,
                     input$confPopSD,
                     input$ccMeanWoI,
-                    confCoe* 100,
-                    confCoe* 100)
+                    confCoe*100,
+                    confCoe*100)
           )
         }
       )
@@ -432,14 +436,16 @@ confidenceCoefficientServer <- function(id) {
             list(
               sprintf("\\(\\text{Confidence Coefficient } (1 - \\alpha) = 2 \\cdot \\Phi\\left( \\frac{E \\cdot \\sqrt{n}} {\\sqrt{p(1 - p)}} \\right) - 1 \\)"),
               br(),
+              br(),
               sprintf("\\(\\text{Confidence Coefficient } (1 - \\alpha) = 2 \\cdot \\Phi\\left(\\frac{%s \\cdot \\sqrt{%s}}{\\sqrt{%s(1 - %s)}}\\right) - 1\\)",
                       input$ccPropMargErr,
                       input$ccPropSampSize,
                       input$ccTargetProp,
                       input$ccTargetProp),
               br(),
+              br(),
               sprintf("\\(\\text{Confidence Coefficient} = %.0f\\%%\\)",
-                      confCoe * 100),
+                      confCoe*100),
               
               br(),
               br(),
@@ -449,8 +455,8 @@ confidenceCoefficientServer <- function(id) {
                       input$ccPropSampSize,
                       input$ccTargetProp,
                       input$ccPropMargErr,
-                      confCoe* 100,
-                      confCoe* 100)
+                      confCoe*100,
+                      confCoe*100)
             )
           }
           else{
@@ -463,14 +469,16 @@ confidenceCoefficientServer <- function(id) {
             list(
               sprintf("\\(\\text{Confidence Coefficient } (1 - \\alpha) = 2 \\cdot \\Phi\\left( \\frac{W \\cdot \\sqrt{n}} {2 \\cdot \\sqrt{p(1 - p)}} \\right) - 1\\)"),
               br(),
+              br(),
               sprintf("\\(\\text{Confidence Coefficient } (1 - \\alpha)=2 \\cdot \\Phi\\left(\\frac{%s \\cdot \\sqrt{%s}}{2 \\cdot \\sqrt{%s(1 - %s)}} \\right) - 1\\)",
                       input$ccPropWoI,
                       input$ccPropSampSize,
                       input$ccTargetProp,
                       input$ccTargetProp),
               br(),
+              br(),
               sprintf("\\(\\text{Confidence Coefficient} = %.0f\\%%\\)",
-                      confCoe * 100),
+                      confCoe*100),
               
               br(),
               br(),
@@ -480,8 +488,8 @@ confidenceCoefficientServer <- function(id) {
                       input$ccPropSampSize,
                       input$ccTargetProp,
                       input$ccPropWoI,
-                      confCoe* 100,
-                      confCoe* 100
+                      confCoe*100,
+                      confCoe*100
               )
             )
           }
@@ -494,7 +502,7 @@ confidenceCoefficientServer <- function(id) {
         else{
           E <- input$ccPropWoI / 2
         }
-        confCoe <- confidence_coefficient_cp(input$ccPropSampSize, input$ccTargetProp,margin.error = E)
+        confCoe <- confidence_coefficient_cp(input$ccPropSampSize, input$ccTargetProp, margin.error = E)
         
         tagList(
           withMathJax(),
