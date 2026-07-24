@@ -36,9 +36,9 @@ statInfrUI <- function(id) {
                                 "2",
                                 "Multiple",
                                 "Categorical"),
-            choiceNames  = list("Inference about 1 sample\\(\\)",
-                                "Inference about 2 samples\\(\\)",
-                                "Inference about more than 2 samples (e.g. ANOVA or Kruskal-Wallis)\\(\\)",
+            choiceNames  = list("Inference about one sample\\(\\)",
+                                "Inference about two samples\\(\\)",
+                                "Inference about more than two samples (e.g. ANOVA or Kruskal-Wallis)\\(\\)",
                                 "Inference for Categorical Data (e.g \\( \\chi^2 \\) test)"),
             selected     = "1"),
           
@@ -208,7 +208,9 @@ statInfrUI <- function(id) {
                               ".csv",
                               ".xls",
                               ".xlsx")),
-                
+
+                uiOutput(ns("oneMeanUploadStatus")),
+
                 selectizeInput(
                   inputId = ns("oneMeanVariable"),
                   label   = strong("Choose a Column for Analysis"),
@@ -265,21 +267,77 @@ statInfrUI <- function(id) {
             conditionalPanel(
               ns = ns,
               condition = "input.popuParameter == 'Population Standard Deviation'",
-              
-              numericInput(
-                inputId = ns("SSDSampleSize"),
-                label   = strong("Sample Size (\\( n\\))"),
-                value   = 30,
-                min     = 2,
-                step    = 1
-              ),
-              
-              numericInput(
-                inputId = ns("SSDStdDev"),
-                label   = strong("Sample Standard Deviation (\\( s\\))"),
-                value   = 12.23,
-                min     = 0.00001,
-                step    = 0.00001),
+
+              radioButtons(
+                inputId      = ns("sdDataAvailability"),
+                label        = strong("Data Availability"),
+                choiceValues = list("Summarized Data", "Enter Raw Data", "Upload Data"),
+                choiceNames  = list("Summarized Data", "Enter Raw Data", "Upload Data"),
+                selected     = "Summarized Data",
+                inline       = TRUE),
+
+              ##### -------------------- Summarized Data -----------------------------------
+              conditionalPanel(
+                ns = ns,
+                condition = "input.sdDataAvailability == 'Summarized Data'",
+
+                numericInput(
+                  inputId = ns("SSDSampleSize"),
+                  label   = strong("Sample Size (\\( n\\))"),
+                  value   = 39,
+                  min     = 2,
+                  step    = 1
+                ),
+
+                numericInput(
+                  inputId = ns("SSDStdDev"),
+                  label   = strong("Sample Standard Deviation (\\( s\\))"),
+                  value   = 0.6379,
+                  min     = 0.00001,
+                  step    = 0.00001),
+              ), # Summarized Data
+
+              ##### -------------------- Enter Raw Data -----------------------------------
+              conditionalPanel(
+                ns = ns,
+                condition = "input.sdDataAvailability == 'Enter Raw Data'",
+
+                textAreaInput(
+                  inputId     = ns("sdRawData"),
+                  label       = strong("Sample"),
+                  value       = "5.37, 5.47, 5.38, 4.63, 5.37, 3.74, 3.71, 4.96, 4.64, 5.11, 5.65, 5.55, 4.00, 5.62, 4.57, 4.64, 5.48, 4.60, 4.54, 4.51, 4.86, 4.56, 4.61, 4.32, 3.98, 5.70, 4.15, 3.98, 5.65, 3.11, 5.03, 4.62, 4.50, 4.35, 4.16, 4.64, 5.12, 3.71, 4.64",
+                  placeholder = "Enter values separated by a comma with decimals as points",
+                  rows        = 6),
+                
+              ), # Enter Raw Data
+
+              ##### -------------------- Upload Data -----------------------------------
+              conditionalPanel(
+                ns = ns,
+                condition = "input.sdDataAvailability == 'Upload Data'",
+
+                HTML(uploadDataDisclaimer),
+
+                fileInput(
+                  inputId = ns("sdUserData"),
+                  label   = strong("Upload your data (.csv or .xls or .xlsx or .txt)"),
+                  accept  = c("text/csv",
+                              "text/comma-separated-values",
+                              "text/plain",
+                              ".csv",
+                              ".xls",
+                              ".xlsx")),
+
+                uiOutput(ns("sdUploadStatus")),
+
+                selectizeInput(
+                  inputId = ns("sdVariable"),
+                  label   = strong("Choose a Column for Analysis"),
+                  choices = c(""),
+                  options = list(placeholder = 'Select a column',
+                                 onInitialize = I('function() { this.setValue(""); }'))),
+              ), # Upload Data
+
             ), #One Population Standard Deviation
             
             radioButtons(
@@ -352,7 +410,7 @@ statInfrUI <- function(id) {
                 numericInput(
                   inputId = ns("hypStdDeviation"),
                   label   = strong(r"--{Hypothesized Population Standard Deviation (\( \sigma_{0}\)) Value}--"),
-                  value   = 16.00,
+                  value   = 0.8047,
                   min     = 0.001,
                   step    = 0.001)
               ), # Population standard deviation
@@ -371,12 +429,18 @@ statInfrUI <- function(id) {
               ns = ns,
               condition = "input.popuParameter == 'Population Mean' && input.dataAvailability != 'Summarized Data'",
               
-              p(strong("Graph Options")),
-              
-              checkboxInput(
-                inputId = ns("oneMeanBoxplot"),
-                label   = "Boxplot for Sample Data",
-                value   = TRUE),
+              shinyWidgets::pickerInput(
+                inputId  = ns("oneMeanGraphOptions"),
+                label    = strong("Graph Options"),
+                choices  = c("Boxplot", "Histogram"),
+                selected = "Boxplot",
+                multiple = TRUE,
+                options  = list(
+                  `actions-box`      = TRUE,
+                  selectedTextFormat = "values",
+                  multipleSeperator  = ", ",
+                  title              = "Select graph(s) to display"
+                )),
             ) # Pop Mean ! Summarized
           ), #"input.siMethod == '1'"
           
@@ -596,7 +660,9 @@ statInfrUI <- function(id) {
                               ".csv",
                               ".xls",
                               ".xlsx")),
-                
+
+                uiOutput(ns("indMeansUploadStatus")),
+
                 selectizeInput(
                   inputId = ns("indMeansUplSample1"),
                   label   = strong("Column for Sample 1"),
@@ -710,7 +776,9 @@ statInfrUI <- function(id) {
                               ".csv",
                               ".xls",
                               ".xlsx")),
-                
+
+                uiOutput(ns("wilcoxonUploadStatus")),
+
                 selectizeInput(
                   inputId = ns("wilcoxonUpl1"),
                   label   = strong("Column for Sample 1"),
@@ -779,7 +847,9 @@ statInfrUI <- function(id) {
                               ".csv",
                               ".xls",
                               ".xlsx")),
-                
+
+                uiOutput(ns("depMeansUploadStatus")),
+
                 selectizeInput(
                   inputId = ns("depMeansUplSample1"),
                   label   = strong("Column for Sample 1 (e.g. Before, Pre-Treatment, Baseline)"),
@@ -841,14 +911,16 @@ statInfrUI <- function(id) {
 
                 fileInput(
                   inputId = ns("signedRankUpl"),
-                  label   = strong("Upload your Data (.csv or .xls or .xlsx or .txt)"),
+                  label   = strong("Upload your data (.csv or .xls or .xlsx or .txt)"),
                   accept  = c("text/csv",
                               "text/comma-separated-values",
                               "text/plain",
                               ".csv",
                               ".xls",
                               ".xlsx")),
-                
+
+                uiOutput(ns("signedRankUploadStatus")),
+
                 selectizeInput(
                   inputId = ns("signedRankUpl1"),
                   label   = strong("Column for Sample 1 (e.g. Before, Pre-Treatment, Baseline)"),
@@ -1108,7 +1180,7 @@ statInfrUI <- function(id) {
             ), # Hypothesis Testing
             conditionalPanel(
               ns = ns,
-              condition  = "input.popuParameters == 'Wilcoxon rank sum test'", 
+              condition  = "input.popuParameters == 'Wilcoxon rank sum test'",
               radioButtons(
                 inputId  = ns("normaprowrsRankSum"),
                 label    = strong("Method"), # A more descriptive label
@@ -1530,7 +1602,7 @@ statInfrUI <- function(id) {
             inputId = ns("goInference"),
             label   = "Calculate",
             class = "act-btn"),
-          
+
           actionButton(
             inputId = ns("resetInference"),
             label   = "Reset Values",
@@ -1594,7 +1666,7 @@ statInfrUI <- function(id) {
                       title = "Graphs",
                       conditionalPanel(
                         ns = ns,
-                        condition = "input.dataAvailability != 'Summarized Data' && input.oneMeanBoxplot == 1",
+                        condition = "input.dataAvailability != 'Summarized Data' && input.oneMeanGraphOptions.indexOf('Boxplot') > -1",
                         br(),
                         titlePanel(tags$u("Boxplot")),
                         br(),
@@ -1603,6 +1675,18 @@ statInfrUI <- function(id) {
                           plotType = "Boxplot",
                           title = "Boxplot"),
                         uiOutput(ns("renderOneMeanBoxplot")),
+                        br(),
+                      ),
+                      conditionalPanel(
+                        ns = ns,
+                        condition = "input.dataAvailability != 'Summarized Data' && input.oneMeanGraphOptions.indexOf('Histogram') > -1",
+                        br(),
+                        titlePanel(tags$u("Histogram")),
+                        br(),
+                        plotOptionsMenuUI(
+                          id    = ns("oneMeanHistogram"),
+                          title = "Histogram"),
+                        uiOutput(ns("renderOneMeanHistogram")),
                         br(),
                       ),
                     ), 
@@ -1664,26 +1748,44 @@ statInfrUI <- function(id) {
                 conditionalPanel(
                   ns = ns,
                   condition = "input.popuParameter == 'Population Standard Deviation'",
-                  
-                  conditionalPanel(
-                    ns = ns,
-                    condition = "input.inferenceType == 'Confidence Interval'",
-                    
-                    titlePanel(tags$u("Confidence Interval")),
-                    br(),
-                    uiOutput(ns('oneSDCI')),
-                    br(),
-                  ), # Confidence Interval
-                  
-                  conditionalPanel(
-                    ns = ns,
-                    condition = "input.inferenceType == 'Hypothesis Testing'",
-                    
-                    titlePanel(tags$u("Hypothesis Test")),
-                    br(),
-                    uiOutput(ns('onePopulationSDHT')),
-                    br(),
-                  ), # Hypothesis Testing
+
+                  navbarPage(
+                    id = ns("oneSDTabset"),
+                    title = NULL,
+                    selected = "Analysis",
+
+                    tabPanel(
+                      title = "Analysis",
+                      value = "Analysis",
+
+                      conditionalPanel(
+                        ns = ns,
+                        condition = "input.inferenceType == 'Confidence Interval'",
+
+                        titlePanel(tags$u("Confidence Interval")),
+                        br(),
+                        uiOutput(ns('oneSDCI')),
+                        br(),
+                      ), # Confidence Interval
+
+                      conditionalPanel(
+                        ns = ns,
+                        condition = "input.inferenceType == 'Hypothesis Testing'",
+
+                        titlePanel(tags$u("Hypothesis Test")),
+                        br(),
+                        uiOutput(ns('onePopulationSDHT')),
+                        br(),
+                      ), # Hypothesis Testing
+                    ), # Analysis tabPanel
+
+                    tabPanel(
+                      title = "Uploaded Data",
+                      value = "Uploaded Data",
+
+                      uiOutput(ns("renderOneSDData")),
+                    ), # Uploaded Data tabPanel
+                  ), # oneSDTabset navbarPage
                 ), # One Population Proportion
               ), # "input.siMethod == '1'"
               
@@ -2364,6 +2466,9 @@ statInfrServer <- function(id) {
     signedRankUploadvars_iv <- InputValidator$new()
     signedRankrawsd_iv <- InputValidator$new()
     oneSD_iv <- InputValidator$new()
+    oneSDRaw_iv <- InputValidator$new()
+    onesdupload_iv <- InputValidator$new()
+    onesduploadvar_iv <- InputValidator$new()
     oneSDht_iv <- InputValidator$new()
     oneprop_iv <- InputValidator$new()
     onepropht_iv <- InputValidator$new()
@@ -2489,12 +2594,12 @@ statInfrServer <- function(id) {
     # raw_sample1
     indmeansraw_iv$add_rule("raw_sample1", sv_required())
     indmeansraw_iv$add_rule("raw_sample1", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                                    "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)"))
+                                                    "Data must be at least three numeric values separated by a comma (ie: 2,3,4)"))
     
     # raw_sample2
     indmeansraw_iv$add_rule("raw_sample2", sv_required())
     indmeansraw_iv$add_rule("raw_sample2", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                                    "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)."))
+                                                    "Data must be at least three numeric values separated by a comma (ie: 2,3,4)."))
     
     indmeansrawsd_iv$add_rule("popuSDRaw1", sv_required())
     indmeansrawsd_iv$add_rule("popuSDRaw1", sv_gt(0))
@@ -2502,12 +2607,20 @@ statInfrServer <- function(id) {
     indmeansrawsd_iv$add_rule("popuSDRaw2", sv_required())
     indmeansrawsd_iv$add_rule("popuSDRaw2", sv_gt(0))
     
-    indmeansrawsdunk_iv$add_rule("raw_sample1", ~ if(sd(createNumLst(input$raw_sample1)) == 0 
-                                                     && sd(createNumLst(input$raw_sample2)) == 0 
+    indmeansrawsdunk_iv$add_rule("raw_sample1", ~ if(sd(createNumLst(input$raw_sample1)) == 0
+                                                     && sd(createNumLst(input$raw_sample2)) == 0
                                                      && input$inferenceType2 == 'Hypothesis Testing') "Sample standard deviation cannot be 0 for both Sample 1 and Sample 2.")
-    indmeansrawsdunk_iv$add_rule("raw_sample2", ~ if(sd(createNumLst(input$raw_sample1)) == 0 
-                                                     && sd(createNumLst(input$raw_sample2)) == 0 
+    indmeansrawsdunk_iv$add_rule("raw_sample2", ~ if(sd(createNumLst(input$raw_sample1)) == 0
+                                                     && sd(createNumLst(input$raw_sample2)) == 0
                                                      && input$inferenceType2 == 'Hypothesis Testing') "Sample standard deviation cannot be 0 for both Sample 1 and Sample 2.")
+    indmeansrawsdunk_iv$add_rule("raw_sample1", ~ if(sd(createNumLst(input$raw_sample1)) == 0
+                                                     && sd(createNumLst(input$raw_sample2)) == 0
+                                                     && input$inferenceType2 == 'Confidence Interval'
+                                                     && input$bothsigmaEqualRaw == 'FALSE') "Welch-Satterthwaite df is undefined when both sample standard deviations are zero.")
+    indmeansrawsdunk_iv$add_rule("raw_sample2", ~ if(sd(createNumLst(input$raw_sample1)) == 0
+                                                     && sd(createNumLst(input$raw_sample2)) == 0
+                                                     && input$inferenceType2 == 'Confidence Interval'
+                                                     && input$bothsigmaEqualRaw == 'FALSE') "Welch-Satterthwaite df is undefined when both sample standard deviations are zero.")
     
     #indMeansUserData
     indmeansupload_iv$add_rule("indMeansUserData", sv_required())
@@ -2580,12 +2693,18 @@ statInfrServer <- function(id) {
     wilcoxonUpload_iv$add_rule("wilcoxonUpl", ~ if(nrow(WilcoxonUploadData()) < 3) "Samples must include at least 2 observations.")
     wilcoxonraw_iv$add_rule("rankSumRaw1", sv_required())
     wilcoxonraw_iv$add_rule("rankSumRaw1", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                                    "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)"))
+                                                    "Data must be at least three numeric values separated by a comma (ie: 2,3,4)"))
     wilcoxonraw_iv$add_rule("rankSumRaw2", sv_required())
     wilcoxonraw_iv$add_rule("rankSumRaw2", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                                    "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)."))
+                                                    "Data must be at least three numeric values separated by a comma (ie: 2,3,4)."))
     wilcoxonRanksuploadvars_iv$add_rule("wilcoxonUpl1", sv_required())
     wilcoxonRanksuploadvars_iv$add_rule("wilcoxonUpl2", sv_required())
+    wilcoxonRanksuploadvars_iv$add_rule("wilcoxonUpl2", ~ {
+      if (isTruthy(input$wilcoxonUpl1) && isTruthy(input$wilcoxonUpl2) &&
+          input$wilcoxonUpl1 == input$wilcoxonUpl2) {
+        "Sample 1 and Sample 2 must be different columns. Please select two distinct columns."
+      }
+    })
     wRankSumrawsd_iv$add_rule("rankSumRaw2", ~ {
       data <- GetwRankSumMeansData()
       if(is.null(data) || 
@@ -2595,10 +2714,13 @@ statInfrServer <- function(id) {
       }
     })
     wilcoxonUpload_iv$add_rule("wilcoxonUpl", ~ {
+      col1 <- input$wilcoxonUpl1
+      col2 <- input$wilcoxonUpl2
+      if (!isTruthy(col1) || !isTruthy(col2)) return(NULL)
       data <- WilcoxonUploadData()
       if (!is.null(data) && nrow(data) > 0) {
-        if (!all(sapply(data, is.numeric))) {
-          "Uploaded data contains non-numeric values. Please ensure all columns are numeric."
+        if (!is.numeric(data[[col1]]) || !is.numeric(data[[col2]])) {
+          "The selected Sample 1 and Sample 2 columns must both be numeric."
         }
       }
     })
@@ -2608,12 +2730,12 @@ statInfrServer <- function(id) {
     # before
     depmeansraw_iv$add_rule("before", sv_required())
     depmeansraw_iv$add_rule("before", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                               "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)"))
+                                               "Data must be at least three numeric values separated by a comma (ie: 2,3,4)"))
     
     # after
     depmeansraw_iv$add_rule("after", sv_required())
     depmeansraw_iv$add_rule("after", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                              "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)."))
+                                              "Data must be at least three numeric values separated by a comma (ie: 2,3,4)."))
     
     
     depmeansraw_iv$add_rule("before", ~ if(length(createNumLst(input$before)) != length(createNumLst(input$after))) "Sample 1 and Sample 2 must have the same number of observations.")
@@ -2699,10 +2821,10 @@ statInfrServer <- function(id) {
     signedRankUpload_iv$add_rule("signedRankUpl", ~ if(nrow(signedRankUploadData()) < 3) "Samples must include at least 2 observations.")
     signedRankRaw_iv$add_rule("signedRankRaw1", sv_required())
     signedRankRaw_iv$add_rule("signedRankRaw1", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                                         "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)"))
+                                                         "Data must be at least three numeric values separated by a comma (ie: 2,3,4)"))
     signedRankRaw_iv$add_rule("signedRankRaw2", sv_required())
     signedRankRaw_iv$add_rule("signedRankRaw2", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                                         "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)."))
+                                                         "Data must be at least three numeric values separated by a comma (ie: 2,3,4)."))
     signedRankRaw_iv$add_rule("signedRankRaw1", ~ if(length(createNumLst(input$signedRankRaw1)) != length(createNumLst(input$signedRankRaw2))) "Sample 1 and Sample 2 must have the same number of observations.")
     signedRankRaw_iv$add_rule("signedRankRaw2", ~ if(length(createNumLst(input$signedRankRaw1)) != length(createNumLst(input$signedRankRaw2))) "Sample 1 and Sample 2 must have the same number of observations.")
     
@@ -2792,12 +2914,38 @@ statInfrServer <- function(id) {
       }
     })
     
-    # sample standard deviation
+    # sample standard deviation — summarized mode
     oneSD_iv$add_rule("SSDSampleSize", sv_required())
     oneSD_iv$add_rule("SSDSampleSize", sv_integer())
     oneSD_iv$add_rule("SSDSampleSize", sv_gt(1))
     oneSD_iv$add_rule("SSDStdDev", sv_required())
     oneSD_iv$add_rule("SSDStdDev", sv_gt(0))
+
+    # sample standard deviation — raw data mode
+    oneSDRaw_iv$add_rule("sdRawData", ~ {
+      if (!isTruthy(input$sdRawData)) return("Sample data is required.")
+      vals <- createNumLst(input$sdRawData)
+      if (length(vals) < 3) "Sample data must contain at least three numeric values."
+    })
+
+    # sample standard deviation — upload mode
+    onesdupload_iv$add_rule("sdUserData", sv_required())
+    onesdupload_iv$add_rule("sdUserData", ~ if(is.null(fileInputs$sdStatus) || fileInputs$sdStatus == 'reset') "Required")
+    onesdupload_iv$add_rule("sdUserData", ~ if(!(tolower(tools::file_ext(input$sdUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+    onesdupload_iv$add_rule("sdUserData", ~ if(nrow(SDUploadData()) == 0) "File is empty.")
+    onesdupload_iv$add_rule("sdUserData", ~ if(nrow(SDUploadData()) < 3) "Samples must include at least 3 observations.")
+
+    onesduploadvar_iv$add_rule("sdVariable", sv_required())
+    onesduploadvar_iv$add_rule("sdVariable", ~ {
+      if (!isTruthy(input$sdVariable) || !(input$sdVariable %in% names(SDUploadData()))) return(NULL)
+      if (checkNumeric(SDUploadData(), input$sdVariable)) "Selected column contains non-numeric data."
+    })
+    onesduploadvar_iv$add_rule("sdVariable", ~ {
+      if (!isTruthy(input$sdVariable) || !(input$sdVariable %in% names(SDUploadData()))) return(NULL)
+      dat <- na.omit(unlist(SDUploadData()[, input$sdVariable]))
+      if (length(dat) < 3) "Selected column must include at least 3 observations."
+    })
+
     oneSDht_iv$add_rule("hypStdDeviation", sv_required())
     oneSDht_iv$add_rule("hypStdDeviation", sv_gt(0))
     
@@ -2810,13 +2958,13 @@ statInfrServer <- function(id) {
     twoprop_iv$add_rule("numSuccesses1", sv_required())
     twoprop_iv$add_rule("numSuccesses1", sv_integer())
     twoprop_iv$add_rule("numSuccesses1", sv_gte(0))
-    twopropht_iv$add_rule("numSuccesses1", ~ if(checkTwoProp() == 0) "At least one of (x1) and (x2) must be greater than 0.")
+    twopropht_iv$add_rule("numSuccesses1", ~ if(checkTwoProp() == 0) "At least one of (x1) and (x2) must be greater than zero.")
     
     # x2
     twoprop_iv$add_rule("numSuccesses2", sv_required())
     twoprop_iv$add_rule("numSuccesses2", sv_integer())
     twoprop_iv$add_rule("numSuccesses2", sv_gte(0))
-    twopropht_iv$add_rule("numSuccesses2", ~ if(checkTwoProp() == 0) "At least one of (x1) and (x2) must be greater than 0.")
+    twopropht_iv$add_rule("numSuccesses2", ~ if(checkTwoProp() == 0) "At least one of (x1) and (x2) must be greater than zero.")
     twopropht_iv$add_rule("numSuccesses1", ~ {
       if (input$numSuccesses1 == input$numTrials1 &&
           input$numSuccesses2 == input$numTrials2) {
@@ -2874,13 +3022,13 @@ statInfrServer <- function(id) {
     # raw group 1
     twopopvarraw_iv$add_rule("rawSamp1SD", sv_required())
     twopopvarraw_iv$add_rule("rawSamp1SD", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                                    "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)."))
+                                                    "Data must be at least three numeric values separated by a comma (ie: 2,3,4)."))
     twopopvarraw_iv$add_rule("rawSamp1SD", ~ if (sd(createNumLst(input$rawSamp1SD)) == 0) "No variance in sample data")
     
     # raw group 2
     twopopvarraw_iv$add_rule("rawSamp2SD", sv_required())
     twopopvarraw_iv$add_rule("rawSamp2SD", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                                    "Data must be at least 3 numeric values separated by a comma (ie: 2,3,4)."))
+                                                    "Data must be at least three numeric values separated by a comma (ie: 2,3,4)."))
     twopopvarraw_iv$add_rule("rawSamp2SD", ~ if (sd(createNumLst(input$rawSamp2SD)) == 0) "No variance in sample data")
     
     
@@ -3040,8 +3188,10 @@ statInfrServer <- function(id) {
                                              input$popuParameters == 'Independent Population Means' &&
                                              input$dataAvailability2 == 'Enter Raw Data' &&
                                              input$bothsigmaKnownRaw == 'bothUnknown' &&
-                                             input$inferenceType2 == 'Hypothesis Testing' &&
-                                             indmeansraw_iv$is_valid()))
+                                             indmeansraw_iv$is_valid() &&
+                                             (input$inferenceType2 == 'Hypothesis Testing' ||
+                                              (input$inferenceType2 == 'Confidence Interval' &&
+                                               input$bothsigmaEqualRaw == 'FALSE'))))
     
     indmeansupload_iv$condition(~ isTRUE(input$siMethod == '2' &&
                                            input$popuParameters == 'Independent Population Means' &&
@@ -3070,7 +3220,7 @@ statInfrServer <- function(id) {
                                                     input$popuParameters == 'Wilcoxon rank sum test' &&
                                                     input$wilcoxonRankSumTestData == 'Upload Data' &&
                                                     wilcoxonUpload_iv$is_valid()))
-    
+
     wRankSumrawsd_iv$condition(~ isTRUE(input$siMethod == '2' &&
                                           input$popuParameters == 'Wilcoxon rank sum test' &&
                                           input$wilcoxonRankSumTestData == 'Enter Raw Data' &&
@@ -3122,8 +3272,22 @@ statInfrServer <- function(id) {
                                              input$inferenceType2 == 'Hypothesis Testing'))
     
     oneSD_iv$condition(~ isTRUE(input$siMethod == '1' &&
-                                  input$popuParameter == 'Population Standard Deviation'))
-    
+                                  input$popuParameter == 'Population Standard Deviation' &&
+                                  !isTRUE(input$sdDataAvailability == 'Enter Raw Data')))
+
+    oneSDRaw_iv$condition(~ isTRUE(input$siMethod == '1' &&
+                                     input$popuParameter == 'Population Standard Deviation' &&
+                                     isTRUE(input$sdDataAvailability == 'Enter Raw Data')))
+
+    onesdupload_iv$condition(~ isTRUE(input$siMethod == '1' &&
+                                       input$popuParameter == 'Population Standard Deviation' &&
+                                       input$sdDataAvailability == 'Upload Data'))
+
+    onesduploadvar_iv$condition(~ isTRUE(input$siMethod == '1' &&
+                                          input$popuParameter == 'Population Standard Deviation' &&
+                                          input$sdDataAvailability == 'Upload Data' &&
+                                          onesdupload_iv$is_valid()))
+
     ## See: https://rstudio.github.io/shinyvalidate/reference/InputValidator.html#method-InputValidator-condition.
     oneSDht_iv$condition(function() {
       return(all(input$siMethod == '1',
@@ -3229,6 +3393,9 @@ statInfrServer <- function(id) {
     si_iv$add_validator(depmeansuploadvars_iv)
     si_iv$add_validator(depmeansmunaught_iv)
     si_iv$add_validator(oneSD_iv)
+    si_iv$add_validator(oneSDRaw_iv)
+    si_iv$add_validator(onesdupload_iv)
+    si_iv$add_validator(onesduploadvar_iv)
     si_iv$add_validator(oneSDht_iv)
     si_iv$add_validator(oneprop_iv)
     si_iv$add_validator(onepropht_iv)
@@ -3278,6 +3445,7 @@ statInfrServer <- function(id) {
     indmeansuploadsd_iv$enable()
     wilcoxonraw_iv$enable()
     wilcoxonUpload_iv$enable()
+
     indmeansmunaught_iv$enable()
     depmeansraw_iv$enable
     depmeansupload_iv$enable()
@@ -3288,6 +3456,9 @@ statInfrServer <- function(id) {
     signedRankUpload_iv$enable()
 #    signedRankUploadvars_iv$enable()
     oneSD_iv$enable()
+    oneSDRaw_iv$enable()
+    onesdupload_iv$enable()
+    onesduploadvar_iv$enable()
     oneSDht_iv$enable()
     oneprop_iv$enable()
     onepropht_iv$enable()
@@ -3312,6 +3483,7 @@ statInfrServer <- function(id) {
     ## -------- Module Server Elements -----------------------------------------
     #  ========================================================================= #
     plotOptionsMenuServer("oneMeanBoxplot")
+    plotOptionsMenuServer("oneMeanHistogram")
     plotOptionsMenuServer("indMeansBoxplot")
     plotOptionsMenuServer("indMeansQQPlot")
     plotOptionsMenuServer("depMeansQQPlot")
@@ -4351,7 +4523,8 @@ statInfrServer <- function(id) {
     }
     
     wilcoxonZTestPlot <- function(testStatistic, critValue, altHypothesis){
-      x <- round(seq(from = -3.5, to = 3.5, by = 0.1), 2)
+      x_bound <- max(4, abs(testStatistic) * 1.15)
+      x <- round(seq(from = -x_bound, to = x_bound, by = 0.1), 2)
       
       if(altHypothesis == "two.sided") {
         CVs <- c(-critValue, critValue)
@@ -5277,8 +5450,9 @@ statInfrServer <- function(id) {
     #  ========================================================================= #
     fileInputs <- reactiveValues(
       oneMeanStatus = NULL,
+      sdStatus = NULL,
       indMeansStatus = NULL,
-      rankSumStatus = NULL, 
+      rankSumStatus = NULL,
       depMeansStatus = NULL,
       anovaStatus = NULL,
       kwStatus = NULL,
@@ -5357,8 +5531,34 @@ statInfrServer <- function(id) {
       return(sigLvl)
     })
     
+    ### ------------ One SD reactives --------------------------------------------
+
+    SDUploadData <- eventReactive(input$sdUserData, {
+      ext <- tolower(tools::file_ext(input$sdUserData$name))
+      switch(ext,
+             csv  = read_csv(input$sdUserData$datapath, show_col_types = FALSE),
+             xls  = read_xls(input$sdUserData$datapath),
+             xlsx = read_xlsx(input$sdUserData$datapath),
+             txt  = read_tsv(input$sdUserData$datapath, show_col_types = FALSE),
+             validate("Improper file format.")
+      )
+    })
+
+    oneSDData <- reactive({
+      if (isTRUE(input$sdDataAvailability == 'Enter Raw Data')) {
+        vals <- createNumLst(input$sdRawData)
+        list(n = length(vals), s = sd(vals))
+      } else if (isTRUE(input$sdDataAvailability == 'Upload Data')) {
+        req(isTruthy(input$sdVariable))
+        dat <- na.omit(unlist(SDUploadData()[, input$sdVariable]))
+        list(n = length(dat), s = sd(dat))
+      } else {
+        list(n = input$SSDSampleSize, s = input$SSDStdDev)
+      }
+    })
+
     ### ------------ One Mean reactives ------------------------------------------
-    
+
     OneMeanUploadData <- eventReactive(input$oneMeanUserData, {
       
       ext <- tools::file_ext(input$oneMeanUserData$name)
@@ -6400,7 +6600,7 @@ statInfrServer <- function(id) {
             need(length(createNumLst(input$sample1)) > 1, "Sample Data requires a minimum of 2 data points."),
           if (input$sigmaKnownRaw == "rawKnown") {
             need(input$popuSDRaw,"Population Standard Deviation is required.") %then%
-              need(input$popuSDRaw > 0, "Population Standard Deviation must be positive.")
+              need(input$popuSDRaw > 0, "The Population Standard Deviation (σ) must be a positive value greater than zero.")
           },
           errorClass = "myClass"
         )
@@ -6410,7 +6610,7 @@ statInfrServer <- function(id) {
           validate(
           need(
             sd(sampleData, na.rm = TRUE) != 0,
-               "When the sample standard deviation is 0, the test statistic (t) is undefined." 
+               "When the sample standard deviation is zero, the test statistic (t) is undefined." 
           ),
           errorClass = "myClass"
           )
@@ -6419,7 +6619,7 @@ statInfrServer <- function(id) {
       
       if(!onemeansdknown_iv$is_valid()) {
         validate(
-          need(input$popuSD & input$popuSD > 0, "Population Standard Deviation must be positive."),
+          need(input$popuSD & input$popuSD > 0, "The Population Standard Deviation (σ) must be a positive value greater than zero."),
           #need(input$popuSD > 0, "Population Standard Deviation must be greater than 0"),
           errorClass = "myClass")
       }
@@ -6463,7 +6663,7 @@ statInfrServer <- function(id) {
         validate(
           need(
             sd(sampleData, na.rm = TRUE) != 0,
-            "When the sample standard deviation is 0, the test statistic (t) is undefined."
+            "When the sample standard deviation is zero, the test statistic (t) is undefined."
           ),
           errorClass = "myClass"
         )
@@ -6472,7 +6672,7 @@ statInfrServer <- function(id) {
       
       if(!onemeanuploadsd_iv$is_valid()) {
         validate(
-          need(input$popuSDUpload && input$popuSDUpload > 0, "Population Standard Deviation must be positive."),
+          need(input$popuSDUpload && input$popuSDUpload > 0, "The Population Standard Deviation (σ) must be a positive value greater than zero."),
           errorClass = "myClass")
       }
       
@@ -6489,12 +6689,44 @@ statInfrServer <- function(id) {
             need(input$SSDSampleSize > 1 & input$SSDSampleSize %% 1 == 0, "Sample size (n) must be an integer greater than 1."),
           errorClass = "myClass")
       }
-      
+
       if(!oneSD_iv$is_valid()) {
         validate(
           need(input$SSDStdDev, "Sample Standard Deviation (s) is required.") %then%
             need(input$SSDStdDev > 0, "Sample Standard Deviation (s) must be positive."),
           errorClass = "myClass")
+      }
+
+      if(!oneSDRaw_iv$is_valid()) {
+        validate(
+          need(isTruthy(input$sdRawData), "Sample data is required.") %then%
+            need(length(createNumLst(input$sdRawData)) >= 3, "Sample data must contain at least three numeric values."),
+          errorClass = "myClass")
+      }
+
+      if(!onesdupload_iv$is_valid()) {
+        if (is.null(input$sdUserData)) validate("Please upload a file.")
+        validate(
+          need(!is.null(fileInputs$sdStatus) && fileInputs$sdStatus == 'uploaded', "Please upload a file."),
+          errorClass = "myClass")
+        validate(
+          need(nrow(SDUploadData()) > 0, "File is empty."),
+          need(nrow(SDUploadData()) >= 3, "Samples must include at least 3 observations."),
+          errorClass = "myClass")
+      }
+
+      if(!onesduploadvar_iv$is_valid()) {
+        validate(
+          need(isTruthy(input$sdVariable), "Please select a column for analysis."),
+          errorClass = "myClass")
+        if (isTruthy(input$sdVariable) && input$sdVariable %in% names(SDUploadData())) {
+          validate(
+            need(!checkNumeric(SDUploadData(), input$sdVariable), "Selected column contains non-numeric data."),
+            errorClass = "myClass")
+          validate(
+            need(length(na.omit(unlist(SDUploadData()[, input$sdVariable]))) >= 3, "Selected column must include at least 3 observations."),
+            errorClass = "myClass")
+        }
       }
       
       ## DONE: these messages are for debugging purposes only.
@@ -6550,8 +6782,8 @@ statInfrServer <- function(id) {
       if(!indmeanssdknown_iv$is_valid())
       {
         validate(
-          need(input$popuSD1 & input$popuSD1 > 0, "Population Standard Deviation 1 must be positive."),
-          need(input$popuSD2 & input$popuSD2 > 0, "Population Standard Deviation 2 must be positive."),
+          need(input$popuSD1 & input$popuSD1 > 0, "The Population Standard Deviation 1 (σ1) must be a positive value greater than or equal to zero."),
+          need(input$popuSD2 & input$popuSD2 > 0, "The Population Standard Deviation 2 (σ2) must be a positive value greater than or equal to zero."),
           errorClass = "myClass")
       }
       
@@ -6576,15 +6808,21 @@ statInfrServer <- function(id) {
       
       if(!indmeansrawsd_iv$is_valid()) {
         validate(
-          need(input$popuSDRaw1 & input$popuSD1 > 0, "Population Standard Deviation 1 must be positive."),
-          need(input$popuSDRaw2 & input$popuSD2 > 0, "Population Standard Deviation 2 must be positive."),
+          need(input$popuSDRaw1 & input$popuSD1 > 0, "The Population Standard Deviation 1 (σ1) must be a positive value greater than or equal to zero."),
+          need(input$popuSDRaw2 & input$popuSD2 > 0, "The Population Standard Deviation 2 (σ2) must be a positive value greater than or equal to zero."),
           errorClass = "myClass")
       }
       
       if(!indmeansrawsdunk_iv$is_valid()) {
-        validate(
-          need(sd(createNumLst(input$raw_sample1)) != 0 && sd(createNumLst(input$raw_sample2)) != 0, "The test statistic (t) will be undefined when the sample standard deviation of Sample 1 and Sample 2 are both 0."),
-          errorClass = "myClass")
+        if (isTRUE(input$inferenceType2 == 'Confidence Interval' && input$bothsigmaEqualRaw == 'FALSE')) {
+          validate(
+            need(FALSE, "When the sample standard deviation for both Sample 1 and Sample 2 are zero and when you are not able to assume the Population Variances to be equal the Welch-Satterthwaite df is undefined. This makes the confidence interval undefined."),
+            errorClass = "myClass")
+        } else {
+          validate(
+            need(sd(createNumLst(input$raw_sample1)) != 0 && sd(createNumLst(input$raw_sample2)) != 0, "The test statistic (t) will be undefined when the sample standard deviation of Sample 1 and Sample 2 are both 0."),
+            errorClass = "myClass")
+        }
       }
       
       if(!indmeansupload_iv$is_valid()) {
@@ -6648,8 +6886,8 @@ statInfrServer <- function(id) {
       
       if(!indmeansuploadsd_iv$is_valid()) {
         validate(
-          need(input$popuSDUpload1 && input$popuSDUpload1 > 0, "Population Standard Deviation 1 must be positive."),
-          need(input$popuSDUpload2 && input$popuSDUpload2 > 0, "Population Standard Deviation 2 must be positive."),
+          need(input$popuSDUpload1 && input$popuSDUpload1 > 0, "The Population Standard Deviation 1 (σ1) must be a positive value greater than or equal to zero."),
+          need(input$popuSDUpload2 && input$popuSDUpload2 > 0, "The Population Standard Deviation 2 (σ2) must be a positive value greater than or equal to zero."),
           errorClass = "myClass")
       }
       
@@ -6697,7 +6935,7 @@ statInfrServer <- function(id) {
           need(CheckRankSumUploadSamples() == 0, "Same number of data points required for Sample 1 and Sample 2."),
           errorClass = "myClass")
       }
-      
+
       ### ---------------- Wilcoxon Signed Rank Test Validation
       
       if(!signedRankRaw_iv$is_valid()) {
@@ -6872,7 +7110,7 @@ statInfrServer <- function(id) {
       #### ---------------- Two Population Proportion Validation
       if (!twopropht_iv$is_valid()) {
         validate(
-          need(checkTwoProp() > 0, "The Z test statistic is undefined when the Number of Successes 1 (x1) and Number of Successes 2 (x2) are both 0."),
+          need(checkTwoProp() > 0, "The Z test statistic is undefined when the Number of Successes 1 (x1) and Number of Successes 2 (x2) are both zero."),
           need(!(input$numSuccesses1 == input$numTrials1 && input$numSuccesses2 == input$numTrials2),
                "The pooled proportion equals 1, which results in an undefined test statistic (z). This happens when the number of successes equals the number of trials for both samples."),
           errorClass = "myClass"
@@ -7161,6 +7399,19 @@ statInfrServer <- function(id) {
     
     ### ------------ One Mean Outputs --------------------------------------------
     
+    output$oneMeanUploadStatus <- renderUI({
+      req(input$oneMeanUserData)
+      req(onemeanupload_iv$is_valid())
+      df <- OneMeanUploadData()
+      div(
+        class = "alert alert-success",
+        style = "padding: 5px 10px; font-size: 12px; margin-top: 2px; margin-bottom: 10px;",
+        icon("circle-check"),
+        HTML(paste0(" <strong>File loaded:</strong> ", input$oneMeanUserData$name, " (",
+                    nrow(df), " rows × ", ncol(df), " columns)"))
+      )
+    })
+
     #### ------------- Uploaded Data Table --------------------------
     output$onePopMeanUploadTable <- renderDT({
       req(onemeanupload_iv$is_valid())
@@ -7172,7 +7423,22 @@ statInfrServer <- function(id) {
                                                       targets = 0:ncol(OneMeanUploadData())))),
       )
     })
-    
+    outputOptions(output, "onePopMeanUploadTable", suspendWhenHidden = FALSE)
+
+    session$onFlushed(function() {
+      hideTab(inputId = "onePopMeanTabset", target = "Uploaded Data")
+    }, once = TRUE)
+
+    observeEvent(input$dataAvailability, {
+      if (input$dataAvailability == "Upload Data") {
+        showTab(inputId = "onePopMeanTabset", target = "Uploaded Data")
+        updateTabsetPanel(session, "onePopMeanTabset", selected = "Uploaded Data")
+      } else {
+        hideTab(inputId = "onePopMeanTabset", target = "Uploaded Data")
+        updateTabsetPanel(session, "onePopMeanTabset", selected = "Analysis")
+      }
+    }, ignoreInit = TRUE)
+
     #### ---------------- CI ----
     output$oneMeanCI <- renderUI({
       printOneMeanCI()
@@ -7263,13 +7529,95 @@ statInfrServer <- function(id) {
     }, height = function() {GetPlotHeight(input[["oneMeanBoxplot-Height"]], input[["oneMeanBoxplot-HeightPx"]], ui = FALSE)},
     width = function() {GetPlotWidth(input[["oneMeanBoxplot-Width"]], input[["oneMeanBoxplot-WidthPx"]], ui = FALSE)}
     )
-    
+
+    #### ---------------- Histogram ----
+    output$oneMeanHistogram <- renderPlot({
+      req(si_iv$is_valid())
+
+      if(input$dataAvailability == 'Enter Raw Data') {
+        dat <- createNumLst(input$sample1)
+      } else if(input$dataAvailability == 'Upload Data') {
+        dat <- na.omit(unlist(OneMeanUploadData()[,input$oneMeanVariable]))
+      } else {
+        return(NA)
+      }
+
+      RenderHistogram(dat,
+                      input[["oneMeanHistogram-Colour"]],
+                      input[["oneMeanHistogram-Title"]],
+                      input[["oneMeanHistogram-Xlab"]],
+                      input[["oneMeanHistogram-Ylab"]],
+                      input[["oneMeanHistogram-Gridlines"]],
+                      input[["oneMeanHistogram-Flip"]])
+
+    }, height = function() {GetPlotHeight(input[["oneMeanHistogram-Height"]], input[["oneMeanHistogram-HeightPx"]], ui = FALSE)},
+    width = function() {GetPlotWidth(input[["oneMeanHistogram-Width"]], input[["oneMeanHistogram-WidthPx"]], ui = FALSE)}
+    )
+
     ### ------------ One Sample Standard Deviation Outputs -----------------------
+    #### ---- Uploaded Data tab: immediate preview (ML-style) ----
+    output$renderOneSDData <- renderUI({
+      if (input$sdDataAvailability != "Upload Data") return(NULL)
+      if (!onesdupload_iv$is_valid()) {
+        return(helpText("No data yet. Upload a dataset to view it here."))
+      }
+      div(DTOutput(session$ns("oneSDUploadTable")), style = "width: 75%")
+    })
+
+    output$sdUploadStatus <- renderUI({
+      req(input$sdUserData)
+      req(onesdupload_iv$is_valid())
+      df <- SDUploadData()
+      div(
+        class = "alert alert-success",
+        style = "padding: 5px 10px; font-size: 12px; margin-top: 2px; margin-bottom: 10px;",
+        icon("circle-check"),
+        HTML(paste0(" <strong>File loaded:</strong> ", input$sdUserData$name, " (",
+                    nrow(df), " rows × ", ncol(df), " columns)"))
+      )
+    })
+
+    output$oneSDUploadTable <- renderDT({
+      req(onesdupload_iv$is_valid())
+      datatable(SDUploadData(),
+                options = list(pageLength = -1,
+                               lengthMenu = list(c(25, 50, 100, -1),
+                                                 c("25", "50", "100", "all")),
+                               columnDefs = list(list(className = 'dt-center',
+                                                      targets = 0:ncol(SDUploadData())))),
+      )
+    })
+    outputOptions(output, "oneSDUploadTable", suspendWhenHidden = FALSE)
+
+    session$onFlushed(function() {
+      hideTab(inputId = "oneSDTabset", target = "Uploaded Data")
+    }, once = TRUE)
+
+    observeEvent(input$sdDataAvailability, {
+      if (input$sdDataAvailability == "Upload Data") {
+        showTab(inputId = "oneSDTabset", target = "Uploaded Data")
+        updateTabsetPanel(session, "oneSDTabset", selected = "Uploaded Data")
+      } else {
+        hideTab(inputId = "oneSDTabset", target = "Uploaded Data")
+        updateTabsetPanel(session, "oneSDTabset", selected = "Analysis")
+      }
+    }, ignoreInit = TRUE)
+
     #### ---- One population standard deviation confidence interval CI ----
     output$oneSDCI <- renderUI({
       ## Input validation
-      req(oneSD_iv$is_valid())
-      
+      if (isTRUE(input$sdDataAvailability == 'Upload Data')) {
+        req(onesdupload_iv$is_valid())
+        validate(need(isTruthy(input$sdVariable), "Please select a column for analysis."), errorClass = "myClass")
+        sampleDataSD <- na.omit(unlist(SDUploadData()[, input$sdVariable]))
+        validate(need(is.numeric(sampleDataSD), "Selected column must be numeric."), errorClass = "myClass")
+        validate(need(length(sampleDataSD) >= 3, "Selected column must include at least three values."), errorClass = "myClass")
+      } else if (isTRUE(input$sdDataAvailability == 'Enter Raw Data')) {
+        req(oneSDRaw_iv$is_valid())
+      } else {
+        req(oneSD_iv$is_valid())
+      }
+
       ## Required data
       ## n (sample size), s (sample standard deviation), Confidence Level (1 - α)
       ## ns("SSDSampleSize")
@@ -7277,30 +7625,36 @@ statInfrServer <- function(id) {
       ## ns("confidenceLevel")
       ## df = n - 1
       oneSDCIalpha <- 1 - ConfLvl() # e.g.: 0.05
-      oneSDCIdf <- input[["SSDSampleSize"]] - 1
-      
+      oneSDCIdf <- oneSDData()$n - 1
+
+      sDisplay <- if (isTRUE(input$sdDataAvailability == 'Summarized Data')) {
+        format(oneSDData()$s, digits = 15, scientific = FALSE, trim = TRUE)
+      } else {
+        sprintf('%0.4f', oneSDData()$s)
+      }
+
       ## UI
       withMathJax(
         ## Preface
         sprintf("Given:"), br(),
         sprintf("\\( n = %d \\)",
-                input$SSDSampleSize),
+                oneSDData()$n),
         br(),
-        sprintf("\\( s = %0.2f \\)",
-                input$SSDStdDev),
+        sprintf("\\( s = %s \\)",
+                sDisplay),
         br(),
         br(),
-        br(),
-        
+
         sprintf("For a %s Confidence Interval:", input$confidenceLevel),
         br(),
         sprintf("\\( \\alpha = 1 - %0.2f = %0.2f \\)", 1 - oneSDCIalpha, oneSDCIalpha),
         br(),
         sprintf("\\(  df = n - 1 = %d - 1 = %d \\)",
-                input$SSDSampleSize,
-                input$SSDSampleSize - 1),
+                oneSDData()$n,
+                oneSDData()$n - 1),
         br(),
-        sprintf("\\( \\chi^2_{  \\alpha/2, df} = \\chi^2_{    %0.2f / 2 , %d} = \\chi^2_{ %0.3f, %d } = %0.3f \\).",
+        br(),
+        sprintf("\\( \\chi^2_{\\alpha/2,\\,df} = \\chi^2_{%0.2f / 2,\\,%d} = \\chi^2_{%0.3f,\\,%d} = %0.3f \\).",
                 oneSDCIalpha,
                 oneSDCIdf,
                 ## See https://www.easysevens.com/understanding-chi-square-critical-value-a-beginners-tutorial/.
@@ -7308,7 +7662,7 @@ statInfrServer <- function(id) {
                 oneSDCIdf,
                 (oneSSDLeft <- qchisq(p = 1 - critOneSSDLeft, df = oneSDCIdf))),
         br(),
-        sprintf("\\( \\chi^2_{1-\\alpha/2, df} = \\chi^2_{ 1 - %0.2f / 2, %d} = \\chi^2_{ %0.3f, %d} = %0.3f \\)",
+        sprintf("\\( \\chi^2_{1-\\alpha/2,\\,df} = \\chi^2_{1 - %0.2f / 2,\\,%d} = \\chi^2_{%0.3f,\\,%d} = %0.3f \\)",
                 oneSDCIalpha,
                 oneSDCIdf,
                 (critOneSSDRight <- 1 - oneSDCIalpha/2),
@@ -7322,8 +7676,8 @@ statInfrServer <- function(id) {
         sprintf(r"---{\(
           CI = \displaystyle
           \left(
-          \sqrt{\frac{df}{\chi^2_{\alpha/2, df}}} \cdot s, \;\:
-          \sqrt{\frac{df}{\chi^2_{1 - \alpha/2, df}}} \cdot s
+          \sqrt{\frac{df}{\chi^2_{\alpha/2,\,df}}} \cdot s, \;\:
+          \sqrt{\frac{df}{\chi^2_{1 - \alpha/2,\,df}}} \cdot s
           \right) \)}---"),
         br(),
         br(),
@@ -7332,29 +7686,28 @@ statInfrServer <- function(id) {
         sprintf(r"---(
           \(
           \begin{align}
-          CI &= \left( \sqrt{\frac{%d}{%0.3f}} \cdot %0.3f, \;\: \sqrt{\frac{%d}{%0.3f}} \cdot %0.3f \right) \\ \\
-             &= \left(%0.2f, %0.2f\right)
+          CI &= \left( \sqrt{\frac{%d}{%0.3f}} \cdot %s, \;\: \sqrt{\frac{%d}{%0.3f}} \cdot %s \right) \\ \\
+             &= \left(%0.4f, %0.4f\right)
           \end{align}
           \)
           )---",
           ## Left/lower
           oneSDCIdf, # df
           oneSSDLeft,
-          input$SSDStdDev, # s
-          
+          sDisplay, # s
+
           ## Right/upper
           oneSDCIdf, # df
           oneSSDRight,
-          input$SSDStdDev, #s
-          (oneSSDLowerPopStdDev <- sqrt(oneSDCIdf / oneSSDLeft) * input$SSDStdDev),
-          (oneSSDUpperPopStdDev <- sqrt(oneSDCIdf / oneSSDRight) * input$SSDStdDev)),
+          sDisplay, #s
+          (oneSSDLowerPopStdDev <- sqrt(oneSDCIdf / oneSSDLeft) * oneSDData()$s),
+          (oneSSDUpperPopStdDev <- sqrt(oneSDCIdf / oneSSDRight) * oneSDData()$s)),
         br(),
         br(),
-        br(),
-        
+
         ## Step three
         tags$b("Interpretation:"), br(),
-        sprintf("We are %s confident that the population standard deviation (\\( \\sigma \\)) is between \\( %0.2f \\) and \\( %0.2f \\).",
+        sprintf("We are %s confident that the population standard deviation (\\( \\sigma \\)) is between \\( %0.4f \\) and \\( %0.4f \\).",
                 input$confidenceLevel, oneSSDLowerPopStdDev, oneSSDUpperPopStdDev)
       )
     })
@@ -7365,8 +7718,8 @@ statInfrServer <- function(id) {
       evalq(expr = {
         ## This paragraph is related to the final interpretation, as used in the
         ## P-value method.
-        degreesOfFreedom <- input$SSDSampleSize - 1;
-        chiSqTestStatistic <- (degreesOfFreedom * input$SSDStdDev^2) /  input$hypStdDeviation^2;
+        degreesOfFreedom <- oneSDData()$n - 1;
+        chiSqTestStatistic <- (degreesOfFreedom * oneSDData()$s^2) /  input$hypStdDeviation^2;
         ## lower.tail will be false when the alternative hypothesis is >.
         isLeftTailed = input$altHypothesis %in% c(1, 2);
         
@@ -7401,8 +7754,16 @@ statInfrServer <- function(id) {
     }
     
     output$onePopulationSDHTChiSqPlot <- renderPlot({
+      if (isTRUE(input$sdDataAvailability == 'Upload Data')) {
+        req(onesdupload_iv$is_valid(), onesduploadvar_iv$is_valid())
+      } else if (isTRUE(input$sdDataAvailability == 'Enter Raw Data')) {
+        req(oneSDRaw_iv$is_valid())
+      } else {
+        req(oneSD_iv$is_valid())
+      }
+
       chiSqTestData(envir = environment())
-      
+
       ## Clamp the minimum to zero.
       minimumChiSqValue <- min(chiSqTestStatistic, chiSqCValue) - 1
       if (minimumChiSqValue < 0) minimumChiSqValue <- 0
@@ -7532,9 +7893,29 @@ statInfrServer <- function(id) {
       ## altHypothesis (e.g. "<").
       ##
       ## Useful data: SigLvl() [numeric];
-      
+
+      if (isTRUE(input$sdDataAvailability == 'Upload Data')) {
+        req(onesdupload_iv$is_valid())
+        validate(need(isTruthy(input$sdVariable), "Please select a column for analysis."), errorClass = "myClass")
+        sampleDataSD <- na.omit(unlist(SDUploadData()[, input$sdVariable]))
+        validate(need(is.numeric(sampleDataSD), "Selected column must be numeric."), errorClass = "myClass")
+        validate(need(length(sampleDataSD) >= 3, "Selected column must include at least three values."), errorClass = "myClass")
+      } else if (isTRUE(input$sdDataAvailability == 'Enter Raw Data')) {
+        req(oneSDRaw_iv$is_valid())
+      } else {
+        req(oneSD_iv$is_valid())
+      }
+
       chiSqTestData(envir = environment())
-      
+
+      sDisplay <- if (isTRUE(input$sdDataAvailability == 'Summarized Data')) {
+        format(oneSDData()$s, digits = 15, scientific = FALSE, trim = TRUE)
+      } else {
+        sprintf('%0.4f', oneSDData()$s)
+      }
+
+      sigma0Display <- format(input$hypStdDeviation, digits = 15, scientific = FALSE, trim = TRUE)
+
       ## "if P <= alpha, reject H0"
       if (chiSqPValue <= SigLvl()) {
         rejectionOrAcceptanceStatement <-
@@ -7545,8 +7926,8 @@ statInfrServer <- function(id) {
       }
       
       hypothesisFormattedString <- function(hypothesis, nullOrAltHypothesisString) {
-        sprintf(r"--[\( H_%s: \sigma %s %0.3f \)]--", # σ
-                hypothesis, nullOrAltHypothesisString, input$hypStdDeviation);
+        sprintf(r"--[\( H_%s: \sigma %s %s \)]--", # σ
+                hypothesis, nullOrAltHypothesisString, sigma0Display);
       }
       
       ## UI
@@ -7559,9 +7940,9 @@ statInfrServer <- function(id) {
         br(),
         p(tags$b("Test Statistic:")),
         sprintf("Given:"), br(),
-        sprintf(r"--[\( n = %d \)]--", input$SSDSampleSize), br(),
-        sprintf(r"--[\( s = %0.4f \)]--", input$SSDStdDev), br(),
-        sprintf(r"--[\( \sigma_0 = %.4f \)]--", input$hypStdDeviation), br(),
+        sprintf(r"--[\( n = %d \)]--", oneSDData()$n), br(),
+        sprintf(r"--[\( s = %s \)]--", sDisplay), br(),
+        sprintf(r"--[\( \sigma_0 = %s \)]--", sigma0Display), br(),
         
         br(),
         br(),
@@ -7575,10 +7956,10 @@ statInfrServer <- function(id) {
           r"--(
            \(
            \displaystyle
-           \chi^2 = \frac{(%d - 1)  %0.4f ^2}{%0.4f^2} = %0.4f\\
+           \chi^2 = \frac{(%d - 1)  %s ^2}{%s^2} = %0.4f\\
            \)
            )--",
-          input$SSDSampleSize,  input$SSDStdDev,  input$hypStdDeviation, chiSqTestStatistic
+          oneSDData()$n,  sDisplay,  sigma0Display, chiSqTestStatistic
         ),
         
         br(),
@@ -7602,18 +7983,18 @@ statInfrServer <- function(id) {
         br(),
         br(),
         p(tags$b("Using Critical Value Method:")),
-        sprintf("\\(df = n - 1 = %d - 1 = %d\\)", input$SSDSampleSize, degreesOfFreedom), 
+        sprintf("\\(df = n - 1 = %d - 1 = %d\\)", oneSDData()$n, degreesOfFreedom), 
         br(),
         br(),
         if (input$altHypothesis != 2) {
-          HTML(sprintf("Critical value(s): \\( \\chi^2_{%0.2f,%d} = %0.4f \\) <br/>",
+          HTML(sprintf("Critical value(s): \\( \\chi^2_{%0.2f,\\,%d} = %0.4f \\) <br/>",
                        SigLvl(),
                        degreesOfFreedom,
                        chiSqCValue))
         } else {
           HTML(sprintf("Critical value(s): <br/>
-                  \\( \\chi^2_{\\alpha/2,df} = \\chi^2_{%0.4f,%d} = %0.4f \\) <br/>
-                  \\( \\chi^2_{1 - \\alpha/2,df} = \\chi^2_{%0.4f,%d} = %0.4f \\) <br/>",
+                  \\( \\chi^2_{\\alpha/2,\\,df} = \\chi^2_{%0.4f,\\,%d} = %0.4f \\) <br/>
+                  \\( \\chi^2_{1 - \\alpha/2,\\,df} = \\chi^2_{%0.4f,\\,%d} = %0.4f \\) <br/>",
                   SigLvl() / 2,
                   degreesOfFreedom,
                   chiSqCValue[[1]],
@@ -7627,7 +8008,7 @@ statInfrServer <- function(id) {
         ## Example from mu: "Since the test statistic (z) falls within the rejection region, reject H0."
         if (input$altHypothesis != 2) {
           HTML(sprintf(
-            r"--(\(\begin{align} \displaystyle \chi^2 &%s \chi^2_{%0.2f,%d} \\ %0.4f &%s %0.4f  \\ \end{align} \)<br/>)--",
+            r"--(\(\begin{align} \displaystyle \chi^2 &%s \chi^2_{%0.2f,\,%d} \\ %0.4f &%s %0.4f  \\ \end{align} \)<br/>)--",
             ## Both of these are alternative hypothesis-dependent
             {
               if (chiSqTestStatistic < chiSqCValue) { relation("\\leq"); "\\leq" }
@@ -7648,11 +8029,11 @@ statInfrServer <- function(id) {
           
           if (!between) {
             HTML(sprintf(
-              r"--(\(\begin{align} \displaystyle \chi^2 &%s \chi^2_{%0.4f,%d} \\ %0.4f &%s %0.4f \\ \end{align} \)<br/>)--",
+              r"--(\(\begin{align} \displaystyle \chi^2 &%s \chi^2_{%0.4f,\,%d} \\ %0.4f &%s %0.4f \\ \end{align} \)<br/>)--",
               relation(), {if (lessThan) SigLvl()/2 else 1-SigLvl()/2}, degreesOfFreedom,
               chiSqTestStatistic, relation(), if (lessThan) chiSqCValue[[1]]))
           } else {
-            HTML(sprintf(r"--(\(\begin{align} \displaystyle \chi^2_{%0.4f,%d} &< \chi^2 &< \chi^2_{%0.4f,%d} \\ %0.4f &< %0.4f &< %0.4f \\ \end{align} \)<br/>)--",
+            HTML(sprintf(r"--(\(\begin{align} \displaystyle \chi^2_{%0.4f,\,%d} &< \chi^2 &< \chi^2_{%0.4f,\,%d} \\ %0.4f &< %0.4f &< %0.4f \\ \end{align} \)<br/>)--",
                          SigLvl()/2, degreesOfFreedom, 1-SigLvl()/2, degreesOfFreedom,
                          chiSqCValue[[1]], chiSqTestStatistic, chiSqCValue[[2]]))
           }
@@ -7701,7 +8082,7 @@ statInfrServer <- function(id) {
               accept <- FALSE
               sprintf(paste0("Since the test statistic \\( \\left( \\chi^2 \\right) \\)",
                              " falls in the rejection region,",
-                             " \\(\\chi^2 = %0.4f\\) which is less than (or equal to) \\(%0.3f\\), we reject \\(H_0\\)",
+                             " \\(\\chi^2 = %0.4f\\) which is less than (or equal to) \\(%0.4f\\), we reject \\(H_0\\)",
                              " as there is sufficient evidence to accept the",
                              " alternative hypothesis."),
                       chiSqTestStatistic,
@@ -7710,7 +8091,7 @@ statInfrServer <- function(id) {
               accept <- FALSE
               sprintf(paste0("Since the test statistic \\( \\left( \\chi^2 \\right) \\)",
                              " falls in the rejection region,",
-                             " \\(\\chi^2 = %0.34\\) which is greater than (or equal to) \\(%0.4f\\), we reject \\(H_0\\)",
+                             " \\(\\chi^2 = %0.4f\\) which is greater than (or equal to) \\(%0.4f\\), we reject \\(H_0\\)",
                              " as there is sufficient evidence to accept the",
                              " alternative hypothesis."),
                       chiSqTestStatistic,
@@ -7719,7 +8100,7 @@ statInfrServer <- function(id) {
               accept <- TRUE
               sprintf(paste0("Since the test statistic \\( \\left( \\chi^2 \\right) \\)",
                              " falls in the acceptance region,",
-                             " \\(\\chi^2 = %0.3f\\) which is between \\(%0.4f\\) and \\(%0.4f\\), we do not reject \\(H_0\\)",
+                             " \\(\\chi^2 = %0.4f\\) which is between \\(%0.4f\\) and \\(%0.4f\\), we do not reject \\(H_0\\)",
                              " as there is insufficient evidence to accept the",
                              " alternative hypothesis."),
                       chiSqTestStatistic,
@@ -8031,6 +8412,19 @@ statInfrServer <- function(id) {
     
     ### ------------- Ind Means Outputs ------------------------------------------
     
+    output$indMeansUploadStatus <- renderUI({
+      req(input$indMeansUserData)
+      req(indmeansupload_iv$is_valid())
+      df <- IndMeansUploadData()
+      div(
+        class = "alert alert-success",
+        style = "padding: 5px 10px; font-size: 12px; margin-top: 2px; margin-bottom: 10px;",
+        icon("circle-check"),
+        HTML(paste0(" <strong>File loaded:</strong> ", input$indMeansUserData$name, " (",
+                    nrow(df), " rows × ", ncol(df), " columns)"))
+      )
+    })
+
     #### ------------- Uploaded Data Table --------------------------
     output$indPopMeansUploadTable <- renderDT({
       req(indmeansupload_iv$is_valid())
@@ -8042,7 +8436,22 @@ statInfrServer <- function(id) {
                                                       targets = 0:ncol(IndMeansUploadData())))),
       )
     })
-    
+    outputOptions(output, "indPopMeansUploadTable", suspendWhenHidden = FALSE)
+
+    session$onFlushed(function() {
+      hideTab(inputId = "indPopMeansTabset", target = "Uploaded Data")
+    }, once = TRUE)
+
+    observeEvent(input$dataAvailability2, {
+      if (input$dataAvailability2 == "Upload Data") {
+        showTab(inputId = "indPopMeansTabset", target = "Uploaded Data")
+        updateTabsetPanel(session, "indPopMeansTabset", selected = "Uploaded Data")
+      } else {
+        hideTab(inputId = "indPopMeansTabset", target = "Uploaded Data")
+        updateTabsetPanel(session, "indPopMeansTabset", selected = "Analysis")
+      }
+    }, ignoreInit = TRUE)
+
     #### ------------- Q-Q Plots --------------------------
     
     output$indMeansQQPlot <- renderPlot({
@@ -8711,6 +9120,19 @@ statInfrServer <- function(id) {
       indMeansPlot
     })
     ### ------------ Wilcoxon Rank Sum Outputs -------------------------------------------
+    output$wilcoxonUploadStatus <- renderUI({
+      req(input$wilcoxonUpl)
+      req(wilcoxonUpload_iv$is_valid())
+      df <- WilcoxonUploadData()
+      div(
+        class = "alert alert-success",
+        style = "padding: 5px 10px; font-size: 12px; margin-top: 2px; margin-bottom: 10px;",
+        icon("circle-check"),
+        HTML(paste0(" <strong>File loaded:</strong> ", input$wilcoxonUpl$name, " (",
+                    nrow(df), " rows × ", ncol(df), " columns)"))
+      )
+    })
+
     output$wRankSumUploadTable <- renderDT({
       req(wilcoxonUpload_iv$is_valid())
       datatable(WilcoxonUploadData(),
@@ -8721,6 +9143,22 @@ statInfrServer <- function(id) {
                                                       targets = 0:ncol(WilcoxonUploadData())))),
       )
     })
+    outputOptions(output, "wRankSumUploadTable", suspendWhenHidden = FALSE)
+
+    session$onFlushed(function() {
+      hideTab(inputId = "wilcoxonRankSumTabset", target = "Uploaded Data")
+    }, once = TRUE)
+
+    observeEvent(input$wilcoxonRankSumTestData, {
+      if (input$wilcoxonRankSumTestData == "Upload Data") {
+        showTab(inputId = "wilcoxonRankSumTabset", target = "Uploaded Data")
+        updateTabsetPanel(session, "wilcoxonRankSumTabset", selected = "Uploaded Data")
+      } else {
+        hideTab(inputId = "wilcoxonRankSumTabset", target = "Uploaded Data")
+        updateTabsetPanel(session, "wilcoxonRankSumTabset", selected = "Analysis")
+      }
+    }, ignoreInit = TRUE)
+
     #### ---------------- Data Table ----
     output$wRankSumMeansData <- renderDT({
       rankSumData <- GetwRankSumMeansData()
@@ -9172,9 +9610,9 @@ statInfrServer <- function(id) {
       
       u_test_val <- u1_statistic 
       
-      if (input$normaprowrsRankSum == "Exact") {
+      if (isTRUE(input$normaprowrsRankSum == "Exact")) {
         z_stat_val <- ((u_test_val - u_mean) / u_std_dev)
-      } else { 
+      } else {
         if (!is.null(input$continuityCorrectionOption) && input$continuityCorrectionOption == "True") {
           if (input$altHypothesis2 == "2") {
             if (observed_W > mu_w) {
@@ -9194,73 +9632,79 @@ statInfrServer <- function(id) {
     }
     
     output$wilcoxonRankSumPlot <- renderPlot({
-      
-      dat <- GetwRankSumMeansData()
-      if(length(unique(dat$samp1)) > 1 || length(unique(dat$samp2)) > 1) {
-        
-        wilcoxonData <- wilcoxonRankedData()
-        
-        if (input$wilcoxonRankSumTestData == 'Upload Data') {
-          name1 <- input$wilcoxonUpl1
-          name2 <- input$wilcoxonUpl2
-        } else {
-          name1 <- "Sample 1"
-          name2 <- "Sample 2"
-        }
-        
-        n1 <- sum(wilcoxonData$Group == name1)
-        n2 <- sum(wilcoxonData$Group == name2)
-        N <- nrow(wilcoxonData)
-        
-        mu_w <- (n1 * (N + 1)) / 2
-        sigma_w <- sqrt((n1 * n2 * (N + 1)) / 12)
-        observed_W <- sum(wilcoxonData %>% dplyr::filter(Group == name1) %>% dplyr::pull(Rank))
-        observed_W2 <- sum(wilcoxonData %>% dplyr::filter(Group == name2) %>% dplyr::pull(Rank))
-        
-        u1_statistic <- observed_W - (n1 * (n1 + 1) / 2)
-        u2_statistic <- observed_W2 - (n2 * (n2 + 1) / 2)
-        u_mean <- (n1 * n2) / 2
-        
-        group1_data_values <- wilcoxonData %>% dplyr::filter(Group == name1) %>% dplyr::pull(Value)
-        group2_data_values <- wilcoxonData %>% dplyr::filter(Group == name2) %>% dplyr::pull(Value)
-        combined_values <- c(group1_data_values, group2_data_values)
-        has_ties <- length(unique(combined_values)) < length(combined_values)
-        
-        calculate_tie_correction <- function(x) {
-          if (!is.numeric(x) || length(x) == 0) {
-            return(0)
-          }
-          tie_counts <- table(x[duplicated(x) | duplicated(x, fromLast = TRUE)])
-          sum(tie_counts^3 - tie_counts)
-        }
-        
-        tie_correction <- calculate_tie_correction(combined_values)
-        u_std_dev <- sqrt((n1 * n2 / 12) * ((N + 1) - (tie_correction / (N * (N - 1)))))
-        z_stat <- calculate_z_stat(input, observed_W, mu_w, sigma_w, observed_W2, n1, n2, N,
-                                   u1_statistic, u2_statistic, u_mean, u_std_dev,
-                                   has_ties, tie_correction)
-        alternative <- ""
-        z_critical <- NA
-        if(input$altHypothesis2 == "2") {
-          z_critical <- qnorm(1 - SigLvl()/2)
-          alternative <- "two.sided"
-        } else if(input$altHypothesis2 == "1") {
-          z_critical <- qnorm(SigLvl())
-          alternative <- "less"
-        } else {
-          z_critical <- qnorm(1 - SigLvl())
-          alternative <- "greater"
-        }
-        wilcoxonPlot <- wilcoxonZTestPlot(z_stat, z_critical, alternative)
-        wilcoxonPlot
+      req(wilcoxonRankedData())
+
+      wilcoxonData <- wilcoxonRankedData()
+
+      if (input$wilcoxonRankSumTestData == 'Upload Data') {
+        name1 <- input$wilcoxonUpl1
+        name2 <- input$wilcoxonUpl2
+      } else {
+        name1 <- "Sample 1"
+        name2 <- "Sample 2"
       }
+
+      n1 <- sum(wilcoxonData$Group == name1)
+      n2 <- sum(wilcoxonData$Group == name2)
+      N <- nrow(wilcoxonData)
+
+      mu_w    <- (n1 * (N + 1)) / 2
+      sigma_w <- sqrt((n1 * n2 * (N + 1)) / 12)
+      observed_W  <- sum(wilcoxonData %>% dplyr::filter(Group == name1) %>% dplyr::pull(Rank))
+      observed_W2 <- sum(wilcoxonData %>% dplyr::filter(Group == name2) %>% dplyr::pull(Rank))
+
+      u1_statistic <- observed_W  - (n1 * (n1 + 1) / 2)
+      u2_statistic <- observed_W2 - (n2 * (n2 + 1) / 2)
+      u_mean <- (n1 * n2) / 2
+
+      group1_data_values <- wilcoxonData %>% dplyr::filter(Group == name1) %>% dplyr::pull(Value)
+      group2_data_values <- wilcoxonData %>% dplyr::filter(Group == name2) %>% dplyr::pull(Value)
+      combined_values <- c(group1_data_values, group2_data_values)
+      has_ties <- length(unique(combined_values)) < length(combined_values)
+
+      calculate_tie_correction <- function(x) {
+        if (!is.numeric(x) || length(x) == 0) return(0)
+        tie_counts <- table(x[duplicated(x) | duplicated(x, fromLast = TRUE)])
+        sum(tie_counts^3 - tie_counts)
+      }
+
+      tie_correction <- calculate_tie_correction(combined_values)
+      u_std_dev <- sqrt((n1 * n2 / 12) * ((N + 1) - (tie_correction / (N * (N - 1)))))
+
+      validate(
+        need(!is.na(u_std_dev) && u_std_dev > 0,
+             "The Z test statistic is undefined or infinite for this data, so the Z distribution plot cannot be displayed. This typically occurs when both samples have zero within-sample variance and are perfectly separated. Consider using the Exact method instead."),
+        errorClass = "myClass")
+
+      z_stat <- calculate_z_stat(input, observed_W, mu_w, sigma_w, observed_W2, n1, n2, N,
+                                 u1_statistic, u2_statistic, u_mean, u_std_dev,
+                                 has_ties, tie_correction)
+
+      validate(
+        need(is.finite(z_stat),
+             "The Z test statistic is undefined or infinite for this data, so the Z distribution plot cannot be displayed. This typically occurs when both samples have zero within-sample variance and are perfectly separated. Consider using the Exact method instead."),
+        errorClass = "myClass")
+
+      alternative <- ""
+      z_critical  <- NA
+      if (input$altHypothesis2 == "2") {
+        z_critical  <- qnorm(1 - SigLvl() / 2)
+        alternative <- "two.sided"
+      } else if (input$altHypothesis2 == "1") {
+        z_critical  <- qnorm(SigLvl())
+        alternative <- "less"
+      } else {
+        z_critical  <- qnorm(1 - SigLvl())
+        alternative <- "greater"
+      }
+      wilcoxonZTestPlot(z_stat, z_critical, alternative)
     })
     
     ###---- Boxplot Side by Side
     output$sidebysidewRankSum <- renderPlot({
-      
+
       req(input$sidebysidewRankSum)
-      
+
       if(input$wilcoxonRankSumTestData == 'Enter Raw Data') {
         rankSumRaw1 <- createNumLst(input$rankSumRaw1)
         rankSumRaw2 <- createNumLst(input$rankSumRaw2)
@@ -9268,7 +9712,12 @@ statInfrServer <- function(id) {
         rankSumRaw1 <- na.omit(unlist(WilcoxonUploadData()[,input$wilcoxonUpl1]))
         rankSumRaw2 <- na.omit(unlist(WilcoxonUploadData()[,input$wilcoxonUpl2]))
       }
-      
+
+      validate(
+        need(sd(rankSumRaw1) > 0 || sd(rankSumRaw2) > 0,
+             "The side-by-side boxplot cannot be displayed when both samples contain only one repeated value."),
+        errorClass = "myClass")
+
       dat <- c(rankSumRaw1, rankSumRaw2)
       df_boxplot <- data.frame(sample = c(rep("Sample 1",length(rankSumRaw1)), rep("Sample 2",length(rankSumRaw2))),
                                data = c(dat))
@@ -9290,9 +9739,9 @@ statInfrServer <- function(id) {
     
     ###----- QQ Plot
     output$sidebysidewRankQQ <- renderPlot({
-      
+
       req(input$sidebysidewRankQQ)
-      
+
       if(input$wilcoxonRankSumTestData == 'Enter Raw Data') {
         rankSumRaw1 <- createNumLst(input$rankSumRaw1)
         rankSumRaw2 <- createNumLst(input$rankSumRaw2)
@@ -9300,7 +9749,12 @@ statInfrServer <- function(id) {
         rankSumRaw1 <- na.omit(unlist(WilcoxonUploadData()[,input$wilcoxonUpl1]))
         rankSumRaw2 <- na.omit(unlist(WilcoxonUploadData()[,input$wilcoxonUpl2]))
       }
-      
+
+      validate(
+        need(sd(rankSumRaw1) > 0 || sd(rankSumRaw2) > 0,
+             "The Q-Q plots cannot be displayed when both samples contain only one repeated value."),
+        errorClass = "myClass")
+
       RenderWilcoxQQPlots(rankSumRaw1,
                           rankSumRaw2,
                           input[["sidebysidewRankQQ-Colour"]],
@@ -9316,6 +9770,19 @@ statInfrServer <- function(id) {
 
     ### ------------ Dep Means Outputs -------------------------------------------
     
+    output$depMeansUploadStatus <- renderUI({
+      req(input$depMeansUserData)
+      req(depmeansupload_iv$is_valid())
+      df <- DepMeansUploadData()
+      div(
+        class = "alert alert-success",
+        style = "padding: 5px 10px; font-size: 12px; margin-top: 2px; margin-bottom: 10px;",
+        icon("circle-check"),
+        HTML(paste0(" <strong>File loaded:</strong> ", input$depMeansUserData$name, " (",
+                    nrow(df), " rows × ", ncol(df), " columns)"))
+      )
+    })
+
     #### ------------ Uploaded Data Table (no totals) ----------------------------------
     output$depPopMeansUploadTable <- renderDT({
       req(depmeansupload_iv$is_valid())
@@ -9327,7 +9794,22 @@ statInfrServer <- function(id) {
                                                       targets = 0:ncol(DepMeansUploadData())))),
       )
     })
-    
+    outputOptions(output, "depPopMeansUploadTable", suspendWhenHidden = FALSE)
+
+    session$onFlushed(function() {
+      hideTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
+    }, once = TRUE)
+
+    observeEvent(input$dataTypeDependent, {
+      if (input$dataTypeDependent == "Upload Data") {
+        showTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
+        updateTabsetPanel(session, "depPopMeansTabset", selected = "Uploaded Data")
+      } else {
+        hideTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
+        updateTabsetPanel(session, "depPopMeansTabset", selected = "Analysis")
+      }
+    }, ignoreInit = TRUE)
+
     #### ----------- Q-Q Plots ----------------------------------------------------------
     output$depMeansQQPlot <- renderPlot({
       # dep means qq plot
@@ -9853,6 +10335,19 @@ statInfrServer <- function(id) {
       wilcoxonPlot
     })
     
+    output$signedRankUploadStatus <- renderUI({
+      req(input$signedRankUpl)
+      req(signedRankUpload_iv$is_valid())
+      df <- signedRankUploadData()
+      div(
+        class = "alert alert-success",
+        style = "padding: 5px 10px; font-size: 12px; margin-top: 2px; margin-bottom: 10px;",
+        icon("circle-check"),
+        HTML(paste0(" <strong>File loaded:</strong> ", input$signedRankUpl$name, " (",
+                    nrow(df), " rows × ", ncol(df), " columns)"))
+      )
+    })
+
     output$signedRankUploadTable <- renderDT({
       req(signedRankUpload_iv$is_valid())
       datatable(signedRankUploadData(),
@@ -9863,7 +10358,22 @@ statInfrServer <- function(id) {
                                                       targets = 0:ncol(signedRankUploadData())))),
       )
     })
-    
+    outputOptions(output, "signedRankUploadTable", suspendWhenHidden = FALSE)
+
+    session$onFlushed(function() {
+      hideTab(inputId = "signedRankTabset", target = "Uploaded Data")
+    }, once = TRUE)
+
+    observeEvent(input$signedRankTest, {
+      if (input$signedRankTest == "Upload Data") {
+        showTab(inputId = "signedRankTabset", target = "Uploaded Data")
+        updateTabsetPanel(session, "signedRankTabset", selected = "Uploaded Data")
+      } else {
+        hideTab(inputId = "signedRankTabset", target = "Uploaded Data")
+        updateTabsetPanel(session, "signedRankTabset", selected = "Analysis")
+      }
+    }, ignoreInit = TRUE)
+
     output$signedRankQQ <- renderPlot({
       
       req(input$signedRankQQPlot)
@@ -10205,16 +10715,18 @@ statInfrServer <- function(id) {
           y = "Proportion", x = ""
         ) +
         scale_fill_manual(values = c("Successes" = "#4CAF50", "Failures" = "#F44336")) +
+        theme_classic() +
         theme(
           axis.text.x = element_text(size = 14, face = "bold", color = "black"),
-          axis.text = element_text(size = 14, face = "bold"),
+          axis.text.y = element_text(size = 14, face = "bold", color = "black"),
           axis.title = element_text(size = 16, face = "bold"),
           plot.title = element_text(size = 18, face = "bold"),
+          legend.position = "bottom",
           legend.title = element_text(size = 14),
           legend.text = element_text(size = 12)
         )
     })
-    
+
     output$twoPropPieChart <- renderPlot({
       req(input$numTrials1 >= input$numSuccesses1,
           input$numTrials2 >= input$numSuccesses2)
@@ -10890,6 +11402,33 @@ statInfrServer <- function(id) {
     #  ========================================================================= #
     ## -------- Observers ------------------------------------------------------
     #  ========================================================================= #
+    goToUploadedDataTab <- function(tabsetId) {
+      showTab(inputId = tabsetId, target = "Uploaded Data")
+      updateTabsetPanel(session, tabsetId, selected = "Uploaded Data")
+      ## DataTables initializes at zero width when its tab is hidden; force a
+      ## redraw once the tab is actually visible so the table isn't blank.
+      shinyjs::delay(100, {
+        shinyjs::runjs("$(window).trigger('resize');")
+      })
+    }
+
+    observeEvent(input$sdUserData, priority = 5, {
+      hide(id = "inferenceData")
+      hide(id = "sdVariable")
+      fileInputs$sdStatus <- 'uploaded'
+      freezeReactiveValue(input, "sdVariable")
+      updateSelectInput(session = getDefaultReactiveDomain(),
+                        "sdVariable",
+                        choices = c(colnames(SDUploadData())))
+      shinyjs::show(id = "sdVariable")
+
+      if (onesdupload_iv$is_valid()) {
+        shinyjs::show(id = "inferenceMP")
+        shinyjs::show(id = "inferenceData")
+        goToUploadedDataTab("oneSDTabset")
+      }
+    })
+
     observeEvent(input$oneMeanUserData, priority = 5, {
       hide(id = "inferenceData")
       hide(id = "oneMeanVariable")
@@ -10904,10 +11443,16 @@ statInfrServer <- function(id) {
       
       shinyjs::show(id = "oneMeanVariable")
       # }
+
+      if (onemeanupload_iv$is_valid()) {
+        shinyjs::show(id = "inferenceMP")
+        shinyjs::show(id = "inferenceData")
+        goToUploadedDataTab("onePopMeanTabset")
+      }
     })
     
-    observeEvent(input$oneMeanBoxplot, {
-      if (input$oneMeanBoxplot && input$dataAvailability != 'Summarized Data') {
+    observeEvent(input$oneMeanGraphOptions, ignoreNULL = FALSE, {
+      if (length(input$oneMeanGraphOptions) > 0 && input$dataAvailability != 'Summarized Data') {
         showTab(inputId = "onePopMeanTabset", target = "Graphs")
       } else {
         if (input$onePopMeanTabset == "Graphs") {
@@ -10917,14 +11462,14 @@ statInfrServer <- function(id) {
       }
     })
     
-    observeEvent(input$goInference, {
-      output$renderOnePopMeanData <- renderUI({
-        tagList(
-          div(DTOutput(session$ns("onePopMeanUploadTable")), style = "width: 75%")
-        )
-      })
+    output$renderOnePopMeanData <- renderUI({
+      if (input$dataAvailability != "Upload Data") return(NULL)
+      if (!onemeanupload_iv$is_valid()) {
+        return(helpText("No data yet. Upload a dataset to view it here."))
+      }
+      div(DTOutput(session$ns("onePopMeanUploadTable")), style = "width: 75%")
     })
-    
+
     observeEvent(input$indMeansUserData, priority = 5, {
       hide(id = "inferenceData")
       hide(id = "indMeansUplSample1")
@@ -10946,16 +11491,20 @@ statInfrServer <- function(id) {
       shinyjs::show(id = "indMeansUplSample1")
       shinyjs::show(id = "indMeansUplSample2")
       # }
+
+      if (indmeansupload_iv$is_valid()) {
+        goToUploadedDataTab("indPopMeansTabset")
+      }
     })
     
-    observeEvent(input$goInference, {
-      output$renderIndPopMeansData <- renderUI({
-        tagList(
-          div(DTOutput(session$ns("indPopMeansUploadTable")), style = "width: 75%")
-        )
-      })
+    output$renderIndPopMeansData <- renderUI({
+      if (input$dataAvailability2 != "Upload Data") return(NULL)
+      if (!indmeansupload_iv$is_valid()) {
+        return(helpText("No data yet. Upload a dataset to view it here."))
+      }
+      div(DTOutput(session$ns("indPopMeansUploadTable")), style = "width: 75%")
     })
-    
+
     observeEvent(c(input$indMeansBoxplot, input$indMeansQQPlot), {
       if (input$indMeansBoxplot || input$indMeansQQPlot) {
         showTab(inputId = "indPopMeansTabset", target = "Graphs")
@@ -10998,17 +11547,19 @@ statInfrServer <- function(id) {
         )
         shinyjs::show(id = "depMeansUplSample1")
         shinyjs::show(id = "depMeansUplSample2")
+
+        goToUploadedDataTab("depPopMeansTabset")
       }
     })
     
-    observeEvent(input$goInference, {
-      output$renderDepPopMeansData <- renderUI({
-        tagList(
-          div(DTOutput(session$ns("depPopMeansUploadTable")), style = "width: 75%")
-        )
-      })
+    output$renderDepPopMeansData <- renderUI({
+      if (input$dataTypeDependent != "Upload Data") return(NULL)
+      if (!depmeansupload_iv$is_valid()) {
+        return(helpText("No data yet. Upload a dataset to view it here."))
+      }
+      div(DTOutput(session$ns("depPopMeansUploadTable")), style = "width: 75%")
     })
-    
+
     ### ---------- Wilcoxon Rank Sum Observers --------------------
     observeEvent(input$wilcoxonUpl, priority = 5, {
       hide(id = "inferenceData")
@@ -11032,6 +11583,8 @@ statInfrServer <- function(id) {
         )
         shinyjs::show(id = "wilcoxonUpl1")
         shinyjs::show(id = "wilcoxonUpl2")
+
+        goToUploadedDataTab("wilcoxonRankSumTabset")
       }
     })
 
@@ -11047,14 +11600,14 @@ statInfrServer <- function(id) {
       }
     })
     
-    observeEvent(input$goInference, {
-      output$renderWRankSumMeansData <- renderUI({
-        tagList(
-          div(DTOutput(session$ns("wRankSumUploadTable")), style = "width: 75%")
-        )
-      })
+    output$renderWRankSumMeansData <- renderUI({
+      if (input$wilcoxonRankSumTestData != "Upload Data") return(NULL)
+      if (!wilcoxonUpload_iv$is_valid()) {
+        return(helpText("No data yet. Upload a dataset to view it here."))
+      }
+      div(DTOutput(session$ns("wRankSumUploadTable")), style = "width: 75%")
     })
-    
+
     ### ---------- Wilcoxon Signed Rank Test Observers --------------------
     
     observeEvent(input$signedRankUpl, priority = 5, {
@@ -11094,6 +11647,8 @@ statInfrServer <- function(id) {
         
         shinyjs::show(id = "signedRankUpl1")
         shinyjs::show(id = "signedRankUpl2")
+
+        goToUploadedDataTab("signedRankTabset")
       }
 
       Sys.sleep(0.1)
@@ -11115,17 +11670,21 @@ statInfrServer <- function(id) {
       req(input$popuParameters == 'Wilcoxon Signed Rank Test')
 
       rv$calculatePressed <- TRUE
+    })
 
-      output$renderSignedRankUploadData <- renderUI({
-        tagList(
-          titlePanel("Data File"),
-          br(),
-          br(),
-          div(DTOutput(session$ns("signedRankUploadTable")), style = "width: 75%"),
-          br(),
-          br()
-        )
-      })
+    output$renderSignedRankUploadData <- renderUI({
+      if (input$signedRankTest != "Upload Data") return(NULL)
+      if (!signedRankUpload_iv$is_valid()) {
+        return(helpText("No data yet. Upload a dataset to view it here."))
+      }
+      tagList(
+        titlePanel("Data File"),
+        br(),
+        br(),
+        div(DTOutput(session$ns("signedRankUploadTable")), style = "width: 75%"),
+        br(),
+        br()
+      )
     })
     
     observeEvent(input$anovaUserData, priority = 10, {
@@ -11398,6 +11957,11 @@ statInfrServer <- function(id) {
                        height = GetPlotHeight(input[["oneMeanBoxplot-Height"]], input[["oneMeanBoxplot-HeightPx"]], ui = TRUE),
                        width = GetPlotWidth(input[["oneMeanBoxplot-Width"]], input[["oneMeanBoxplot-WidthPx"]], ui = TRUE))
           })
+          output$renderOneMeanHistogram <- renderUI({
+            plotOutput(session$ns("oneMeanHistogram"),
+                       height = GetPlotHeight(input[["oneMeanHistogram-Height"]], input[["oneMeanHistogram-HeightPx"]], ui = TRUE),
+                       width = GetPlotWidth(input[["oneMeanHistogram-Width"]], input[["oneMeanHistogram-WidthPx"]], ui = TRUE))
+          })
         } else if(input$popuParameter == 'Population Proportion') {
           req(input$numTrials && input$numSuccesses)
           if(input$numTrials < input$numSuccesses) {
@@ -11429,6 +11993,7 @@ statInfrServer <- function(id) {
                        width = GetPlotWidth(input[["indMeansQQPlot-Width"]], input[["indMeansQQPlot-WidthPx"]], ui = TRUE))
           })
         } else if(input$popuParameters == "Wilcoxon rank sum test") {
+
           output$renderSidebysidewRankSum <- renderUI({
             plotOutput(session$ns("sidebysidewRankSum"),
                        height = GetPlotHeight(input[["sidebysidewRankSum-Height"]], input[["sidebysidewRankSum-HeightPx"]], ui = TRUE),
@@ -11610,37 +12175,51 @@ statInfrServer <- function(id) {
         hideTab(inputId = "onePopMeanTabset", target = "Uploaded Data")
       } else {
         showTab(inputId = "onePopMeanTabset", target = "Uploaded Data")
+        updateTabsetPanel(session, "onePopMeanTabset", selected = "Analysis")
       }
-      
-      if(input$oneMeanBoxplot && input$dataAvailability != "Summarized Data") {
+
+      # Hide/show tabs for 1 sample population standard deviation
+      if (input$sdDataAvailability != "Upload Data"){
+        updateTabsetPanel(session, "oneSDTabset", selected = "Analysis")
+        hideTab(inputId = "oneSDTabset", target = "Uploaded Data")
+      } else {
+        showTab(inputId = "oneSDTabset", target = "Uploaded Data")
+        updateTabsetPanel(session, "oneSDTabset", selected = "Analysis")
+      }
+
+      if(length(input$oneMeanGraphOptions) > 0 && input$dataAvailability != "Summarized Data") {
         showTab(inputId = "onePopMeanTabset", target = "Graphs")
       } else {
         hideTab(inputId = "onePopMeanTabset", target = "Graphs")
       }
       
       # Hide/show tabs for 2 sample independent populations
+      two_sample_valid <- si_iv$is_valid() && depmeansrawsd_iv$is_valid()
+
       if (input$dataAvailability2 != "Upload Data"){
         updateTabsetPanel(session, "indPopMeansTabset", selected = "Analysis")
         hideTab(inputId = "indPopMeansTabset", target = "Uploaded Data")
       } else {
-        showTab(inputId = "indPopMeansTabset", target = "Uploaded Data")
+        if (two_sample_valid) showTab(inputId = "indPopMeansTabset", target = "Uploaded Data")
+        else hideTab(inputId = "indPopMeansTabset", target = "Uploaded Data")
       }
-      
-      if(input$dataAvailability2 != "Summarized Data" && (input$indMeansBoxplot || input$indMeansQQPlot)) {
+
+      if(two_sample_valid && input$dataAvailability2 != "Summarized Data" && (input$indMeansBoxplot || input$indMeansQQPlot)) {
         showTab(inputId = "indPopMeansTabset", target = "Graphs")
       } else {
         hideTab(inputId = "indPopMeansTabset", target = "Graphs")
       }
-      
+
       # Hide/show tabs for 2 sample dependent populations
       if (input$dataTypeDependent != "Upload Data"){
         updateTabsetPanel(session, "depPopMeansTabset", selected = "Analysis")
         hideTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
       } else {
-        showTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
+        if (two_sample_valid) showTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
+        else hideTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
       }
-      
-      if(input$depMeansQQPlot) {
+
+      if(two_sample_valid && input$depMeansQQPlot) {
         showTab(inputId = "depPopMeansTabset", target = "Graphs")
       } else {
         hideTab(inputId = "depPopMeansTabset", target = "Graphs")
@@ -11653,12 +12232,38 @@ statInfrServer <- function(id) {
       } else {
         showTab(inputId = "wilcoxonRankSumTabset", target = "Uploaded Data")
       }
-      
-      # Hide/show tabs for Wilcoxon Rank Sum Graph
-      if (input$sidebysidewRankSum == 1 || input$sidebysidewRankQQ == 1){
-        showTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
-      } else {
+
+      # Detect content-level error conditions for Wilcoxon Rank Sum
+      rank_data_check <- tryCatch(wilcoxonRankedData(), error = function(e) NULL)
+      wrs_error <- FALSE
+      if (!is.null(rank_data_check)) {
+        combined_vals_chk <- rank_data_check$Value
+        all_identical <- length(unique(combined_vals_chk)) <= 1
+        if (all_identical) {
+          wrs_error <- TRUE
+        } else if (isTRUE(input$normaprowrsRankSum == "Normal approximation (for large samples)")) {
+          name1_chk <- if (input$wilcoxonRankSumTestData == 'Upload Data') input$wilcoxonUpl1 else "Sample 1"
+          name2_chk <- if (input$wilcoxonRankSumTestData == 'Upload Data') input$wilcoxonUpl2 else "Sample 2"
+          n1_chk  <- sum(rank_data_check$Group == name1_chk)
+          n2_chk  <- sum(rank_data_check$Group == name2_chk)
+          nAll_chk <- nrow(rank_data_check)
+          tc_chk  <- calculate_tie_correction(combined_vals_chk)
+          se_chk  <- sqrt((n1_chk * n2_chk / 12) *
+                            ((nAll_chk + 1) - (tc_chk / (nAll_chk * (nAll_chk - 1)))))
+          if (is.na(se_chk) || se_chk <= 0) wrs_error <- TRUE
+        }
+      }
+
+      if (wrs_error) {
+        hideTab(inputId = "wilcoxonRankSumTabset", target = "Data with Ranks")
         hideTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
+      } else {
+        showTab(inputId = "wilcoxonRankSumTabset", target = "Data with Ranks")
+        if (input$sidebysidewRankSum == 1 || input$sidebysidewRankQQ == 1){
+          showTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
+        } else {
+          hideTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
+        }
       }
       
       # Hide/show tabs for Wilcoxon Signed Rank Upload
@@ -11672,34 +12277,135 @@ statInfrServer <- function(id) {
     })
     
     observeEvent(input$resetInference, {
+      ## Reset only the values the user typed in and any columns they picked.
+      ## Radio buttons, checkboxes, and uploaded files are left untouched so
+      ## the current section/mode and uploaded data survive a reset.
+
+      ## -- Numeric inputs --
+      updateNumericInput(session, "sampleSize", value = 18)
+      updateNumericInput(session, "sampleMean", value = 103.5375)
+      updateNumericInput(session, "popuSD", value = 8.25)
+      updateNumericInput(session, "sampSD", value = 4.78)
+      updateNumericInput(session, "popuSDRaw", value = 8.25)
+      updateNumericInput(session, "popuSDUpload", value = 5)
+      updateNumericInput(session, "numSuccesses", value = 1087)
+      updateNumericInput(session, "numTrials", value = 1430)
+      updateNumericInput(session, "SSDSampleSize", value = 39)
+      updateNumericInput(session, "SSDStdDev", value = 0.6379)
+      updateNumericInput(session, "hypMean", value = 99)
+      updateNumericInput(session, "hypProportion", value = 0.73)
+      updateNumericInput(session, "hypStdDeviation", value = 0.8047)
+      updateNumericInput(session, "sampleSize1", value = 21)
+      updateNumericInput(session, "sampleMean1", value = 29.6)
+      updateNumericInput(session, "sampleSize2", value = 21)
+      updateNumericInput(session, "sampleMean2", value = 33.9)
+      updateNumericInput(session, "popuSD1", value = 5.36)
+      updateNumericInput(session, "popuSD2", value = 5.97)
+      updateNumericInput(session, "sampSD1", value = 5.24)
+      updateNumericInput(session, "sampSD2", value = 5.85)
+      updateNumericInput(session, "popuSDRaw1", value = 4.54)
+      updateNumericInput(session, "popuSDRaw2", value = 3.47)
+      updateNumericInput(session, "popuSDUpload1", value = "")
+      updateNumericInput(session, "popuSDUpload2", value = "")
+      updateNumericInput(session, "numSuccesses1", value = 174)
+      updateNumericInput(session, "numTrials1", value = 300)
+      updateNumericInput(session, "numSuccesses2", value = 111)
+      updateNumericInput(session, "numTrials2", value = 300)
+      updateNumericInput(session, "SDSampleSize1", value = 12)
+      updateNumericInput(session, "stdDev1", value = 3)
+      updateNumericInput(session, "SDSampleSize2", value = 18)
+      updateNumericInput(session, "stdDev2", value = 4.8)
+      updateNumericInput(session, "n1", value = 12)
+      updateNumericInput(session, "s1sq", value = 9)
+      updateNumericInput(session, "n2", value = 18)
+      updateNumericInput(session, "s2sq", value = 23.04)
+      updateNumericInput(session, "indMeansMuNaught", value = 0)
+      updateNumericInput(session, "depMeansMuNaught", value = 0)
+      updateNumericInput(session, "propDiffNaught", value = 0)
+
+      ## -- Raw-data text areas --
+      updateTextAreaInput(session, "sample1",
+                          value = "202, 210, 215, 220, 220, 224, 225, 228, 228, 228")
+      updateTextAreaInput(session, "sdRawData",
+                          value = "5.37, 5.47, 5.38, 4.63, 5.37, 3.74, 3.71, 4.96, 4.64, 5.11, 5.65, 5.55, 4.00, 5.62, 4.57, 4.64, 5.48, 4.60, 4.54, 4.51, 4.86, 4.56, 4.61, 4.32, 3.98, 5.70, 4.15, 3.98, 5.65, 3.11, 5.03, 4.62, 4.50, 4.35, 4.16, 4.64, 5.12, 3.71, 4.64")
+      updateTextAreaInput(session, "raw_sample1",
+                          value = "101.1,  111.1,  107.6,  98.1,  99.5,  98.7,  103.3,  108.9,  109.1,  103.3")
+      updateTextAreaInput(session, "raw_sample2",
+                          value = "107.1,  105.0,  98.0,  97.9,  103.3,  104.6,  100.1,  98.2,  97.9")
+      updateTextAreaInput(session, "rankSumRaw1",
+                          value = "2,  1.25,  8.5,  1.1,  1.25,  3.75,  5.5")
+      updateTextAreaInput(session, "rankSumRaw2",
+                          value = "1,  1,  0,  3.25,  1,  0.25")
+      updateTextAreaInput(session, "before",
+                          value = "484, 478, 492, 444, 436, 398, 464, 476")
+      updateTextAreaInput(session, "after",
+                          value = "488, 478, 480, 426, 440, 410, 458, 460")
+      updateTextAreaInput(session, "signedRankRaw1",
+                          value = "484, 478, 492, 444, 436, 398, 464, 476")
+      updateTextAreaInput(session, "signedRankRaw2",
+                          value = "488, 478, 480, 426, 440, 410, 458, 460")
+      updateTextAreaInput(session, "rawSamp1SD",
+                          value = "80, 54, 97, 76, 66, 87, 83, 91")
+      updateTextAreaInput(session, "rawSamp2SD",
+                          value = "45, 54, 67, 95, 100, 82, 83, 74")
+
+      ## -- Chi-square text inputs and matrices --
+      updateTextInput(session, "chiSquareRowHeader", value = "")
+      updateTextInput(session, "chiSquareColHeader", value = "")
+      updateMatrixInput(session, "chiSqInput2x2",
+                        matrix(c(173, 599, 160, 851), nrow = 2, ncol = 2,
+                               dimnames = list(c("R1", "R2"), c("C1", "C2"))))
+      updateMatrixInput(session, "chiSqInput2x3",
+                        matrix(c(160, 40, 140, 60, 40, 60), nrow = 2, ncol = 3,
+                               dimnames = list(c("R1", "R2"), c("C1", "C2", "C3"))))
+      updateMatrixInput(session, "chiSqInput3x2",
+                        matrix(c(162, 106, 201, 353, 259, 332), nrow = 3, ncol = 2,
+                               dimnames = list(c("R1", "R2", "R3"), c("C1", "C2"))))
+      updateMatrixInput(session, "chiSqInput3x3",
+                        matrix(c(6, 14, 50, 38, 31, 50, 31, 4, 5), nrow = 3, ncol = 3,
+                               dimnames = list(c("R1", "R2", "R3"), c("C1", "C2", "C3"))))
+
+      ## -- Column selections: clear the pick, keep the choices (uploaded file stays) --
+      updateSelectizeInput(session, "oneMeanVariable", selected = "")
+      updateSelectizeInput(session, "sdVariable", selected = "")
+      updateSelectizeInput(session, "indMeansUplSample1", selected = "")
+      updateSelectizeInput(session, "indMeansUplSample2", selected = "")
+      updateSelectizeInput(session, "wilcoxonUpl1", selected = "")
+      updateSelectizeInput(session, "wilcoxonUpl2", selected = "")
+      updateSelectizeInput(session, "depMeansUplSample1", selected = "")
+      updateSelectizeInput(session, "depMeansUplSample2", selected = "")
+      updateSelectizeInput(session, "signedRankUpl1", selected = "")
+      updateSelectizeInput(session, "signedRankUpl2", selected = "")
+      updateSelectizeInput(session, "anovaMultiColumns", selected = character(0))
+      updateSelectizeInput(session, "anovaResponse", selected = "")
+      updateSelectizeInput(session, "anovaFactors", selected = "")
+      updateSelectizeInput(session, "kwMultiColumns", selected = character(0))
+      updateSelectizeInput(session, "kwResponse", selected = "")
+      updateSelectizeInput(session, "kwFactors", selected = "")
+
+      ## -- Results are now stale until recalculated; hide them --
       hide(id = "inferenceMP")
-      hide(id = "anovaUploadInputs")
-      hide(id = "kwUploadInputs")
-      shinyjs::reset("inputPanel")
-      fileInputs$oneMeanStatus <- 'reset'
-      fileInputs$indMeansStatus <- 'reset'
-      fileInputs$rankSumStatus <-'reset'
-      fileInputs$depMeansStatus <- 'reset'
-      fileInputs$anovaStatus <- 'reset'
-      fileInputs$kwStatus <- 'reset'
-      fileInputs$signedRankStatus <- 'reset'
-      
-      updateSelectizeInput(session, "kwMultiColumns", 
-                           selected = "",
-                           choices = c(""),
-                           options = list(placeholder = 'Select two or more columns'))
-      
-      updateSelectizeInput(session, "kwResponse",
-                           selected = "",
-                           choices = c(""),
-                           options = list(placeholder = 'Select a variable'))
-      
-      updateSelectizeInput(session, "kwFactors",
-                           selected = "",
-                           choices = c(""),
-                           options = list(placeholder = 'Select a factor'))
-      
-      updateTabsetPanel(session, "onePopMeanTabset", selected = "Analysis")
+
+      ## -- If the currently active section is in Upload Data mode, its data
+      ##    is unaffected by the reset, so bring its Uploaded Data tab back
+      ##    into view once the resets above have settled.
+      shinyjs::delay(100, {
+        uploadTabsetMap <- list(
+          sdDataAvailability      = "oneSDTabset",
+          dataAvailability        = "onePopMeanTabset",
+          dataAvailability2       = "indPopMeansTabset",
+          dataTypeDependent       = "depPopMeansTabset",
+          wilcoxonRankSumTestData = "wilcoxonRankSumTabset",
+          signedRankTest          = "signedRankTabset"
+        )
+        for (modeId in names(uploadTabsetMap)) {
+          if (isTRUE(input[[modeId]] == "Upload Data")) {
+            shinyjs::show(id = "inferenceMP")
+            shinyjs::show(id = "inferenceData")
+            goToUploadedDataTab(uploadTabsetMap[[modeId]])
+          }
+        }
+      })
     })
     
     observe({

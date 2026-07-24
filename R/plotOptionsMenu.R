@@ -76,18 +76,19 @@ library(shinyWidgets)
 #
 # ================================================================ #
 plotOptionsMenuUI <- function(id, plotType = NULL, title = "Plot", xlab = "", ylab = "", colour = "#7293AD",
-                              dim = "auto", includeGridlines = TRUE, includeFlip = TRUE, includeOutlierLabels = FALSE) {
+                              dim = "auto", includeGridlines = TRUE, includeFlip = TRUE, includeOutlierLabels = FALSE,
+                              regressionLineLabel = "Show Regression Line", includeLinearLine = FALSE) {
   ns <- NS(id)
-  
+
   flip <- addFlipCheckbox(includeFlip, ns, plotType)
   grid <- addGridlines(includeGridlines, ns)
   extraOptions <- tagList()
-  
+
   if(!is.null(plotType)) {
     extraOptions <- switch(
-      plotType, 
+      plotType,
       "Boxplot" = BoxplotOptions(ns),
-      "Scatterplot" = ScatterplotOptions(ns) 
+      "Scatterplot" = ScatterplotOptions(ns, regressionLineLabel, includeLinearLine)
     )
   }
   
@@ -240,17 +241,17 @@ BoxplotOptions <- function(ns) {
   )
 }
 
-ScatterplotOptions <- function(ns) {
-  
+ScatterplotOptions <- function(ns, regressionLineLabel = "Show Regression Line", includeLinearLine = FALSE) {
+
   tagList(
     tags$h3("Scatterplot Options"),
-    
+
     colourpicker::colourInput(
-      inputId = ns("PointsColour"), 
-      label = strong("Plot Points Colour"), 
+      inputId = ns("PointsColour"),
+      label = strong("Plot Points Colour"),
       value = "#000000"
     ),
-    
+
     sliderInput(
       inputId = ns("LineWidth"),
       label = strong("Line Width"),
@@ -259,7 +260,7 @@ ScatterplotOptions <- function(ns) {
       value = 1,
       step = 1
     ),
-    
+
     sliderInput(
       inputId = ns("PointSize"),
       label = strong("Point Size"),
@@ -268,22 +269,28 @@ ScatterplotOptions <- function(ns) {
       value = 3,
       step = 1
     ),
-    
+
     checkboxInput(
       inputId = ns("showRegressionLine"),
-      label   = "Show Regression Line",
+      label   = regressionLineLabel,
       value   = TRUE
     ),
-    
+
+    if (includeLinearLine) checkboxInput(
+      inputId = ns("showLinearLine"),
+      label   = "Show Linear Regression Line",
+      value   = FALSE
+    ),
+
     checkboxInput(
       inputId = ns("confidenceInterval"),
-      label = "Confidence Interval for the Mean Response",
+      label = "Confidence Band for the Mean Response",
       value = FALSE
     ),
-    
+
     checkboxInput(
       inputId = ns("predictionInterval"),
-      label = "Prediction Interval",
+      label = "Prediction Band",
       value = FALSE
     )
   )

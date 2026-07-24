@@ -11,7 +11,6 @@ LogisticRegressionSidebarUI <- function(id) {
       id = ns("LOGRSidebar"),
       useShinyjs(),
       withMathJax(
-        HTML(uploadDataDisclaimer),
         helpText("Select a binary response variable (must have exactly two unique values: 0 or 1)."),
         div(
           id = ns("responseVariableWrapper"),
@@ -62,11 +61,32 @@ LogisticRegressionMainPanelUI <- function(id) {
                tabPanel(
                  title = "Data Import",
                  value = "data_import_tab",
-                 div (id = ns("importContainer")),
+                 div(id = ns("importContainer")),
                  uiOutput(ns("fileImportUserMessage")),
-                 import_file_ui(
-                   id = ns("dataImport"),
-                   title = "")),
+                 HTML(uploadDataDisclaimer),
+                 fileInput(
+                   inputId = ns("logrUserData"),
+                   label   = strong("Upload your data (.csv, .xls, .xlsx, .txt, .sas7bdat, .sav, .dta, .rds, .mtp, .mwx, .mpx)"),
+                   width   = "100%",
+                   accept  = c("text/csv",
+                               "text/comma-separated-values",
+                               "text/tab-separated-values",
+                               "text/plain",
+                               ".csv", ".txt", ".xls", ".xlsx",
+                               ".sas7bdat", ".sav", ".dta", ".rds",
+                               ".mtp", ".mwx", ".mpx")),
+                 conditionalPanel(
+                   ns        = ns,
+                   condition = "output.logrShowSheetPicker == true",
+                   selectizeInput(
+                     inputId = ns("logrSheet"),
+                     label   = strong("Choose a Sheet"),
+                     choices = c(""),
+                     width   = "100%",
+                     multiple = FALSE,
+                     options  = list(placeholder  = "Select a sheet",
+                                     onInitialize = I('function() { this.setValue(""); }')))
+                 )),
                tabPanel(title = "Model",
                         uiOutput(ns("Equations"))
                ),
@@ -80,7 +100,7 @@ LogisticRegressionMainPanelUI <- function(id) {
                         plotOutput(ns("logrScatterplot"))
                ),
                tabPanel(title = "Uploaded Data",
-                        DTOutput(ns("uploadedDataTable"))
+                        div(style = "width:100%", DTOutput(ns("uploadedDataTable")))
                ),
                id = ns("mainPanel"),
                theme = bs_theme(version = 4)
@@ -96,11 +116,44 @@ LogisticRegressionServer <- function(id) {
     # Call the plot options module server
     plotOptionsMenuServer("logrPlotOptions")
     
-    imported <- import_file_server(
-      id            = "dataImport",
-      trigger_return = "change",
-      btn_show_data = FALSE,
-      return_class  = "tbl_df"
+    output$logrShowSheetPicker <- reactive({
+      if (is.null(input$logrUserData)) return(FALSE)
+      tolower(tools::file_ext(input$logrUserData$name)) %in% c("xls", "xlsx")
+    })
+    outputOptions(output, "logrShowSheetPicker", suspendWhenHidden = FALSE)
+
+    observeEvent(input$logrUserData, {
+      req(input$logrUserData)
+      ext <- tolower(tools::file_ext(input$logrUserData$name))
+      if (ext %in% c("xls", "xlsx")) {
+        sheets <- tryCatch(readxl::excel_sheets(input$logrUserData$datapath),
+                           error = function(e) character(0))
+        freezeReactiveValue(input, "logrSheet")
+        updateSelectizeInput(session, "logrSheet",
+                             choices  = sheets,
+                             selected = if (length(sheets)) sheets[1] else "")
+      } else {
+        updateSelectizeInput(session, "logrSheet", choices = character(0), selected = "")
+      }
+    }, priority = 50)
+
+    logrUploadData <- eventReactive(list(input$logrUserData, input$logrSheet), {
+      req(input$logrUserData)
+      ext  <- tolower(tools::file_ext(input$logrUserData$name))
+      path <- input$logrUserData$datapath
+      if (ext %in% c("xls", "xlsx")) {
+        req(input$logrSheet)
+        req(input$logrSheet %in% readxl::excel_sheets(path))
+      }
+      dat <- readUploadedDataFile(ext, path, input$logrSheet)
+      dat <- dat[, colSums(!is.na(dat)) > 0, drop = FALSE]
+      dat <- dat[rowSums(!is.na(dat)) > 0, , drop = FALSE]
+      dat
+    })
+
+    imported <- list(
+      data = function() tryCatch(logrUploadData(), error = function(e) NULL),
+      name = function() if (!is.null(input$logrUserData)) input$logrUserData$name else NULL
     )
     
     noFileCalculate <- reactiveVal(FALSE)

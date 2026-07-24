@@ -9,6 +9,7 @@ regressionAndCorrelationUI <- function(id) {
                    tags$b("Methodology"),
                    choices = list("Simple Linear Regression and Correlation Analysis" = "SLR",
                                   "Multiple Linear Regression" = "MLR",
+                                  "Polynomial Regression" = "POLYR",
                                   "Binary Logistic Regression" = "LOGR"
                                   ),
                    selected = "SLR"
@@ -40,6 +41,12 @@ regressionAndCorrelationServer <- function(id) {
     logr_instance_counter <- reactiveVal(0)
     current_logr_module_id <- reactive({
       paste0("logr_dynamic_instance_", logr_instance_counter())
+    })
+
+    # --- Dynamic ID Generation for Polynomial Regression (POLYR) ---
+    polyr_instance_counter <- reactiveVal(0)
+    current_polyr_module_id <- reactive({
+      paste0("polyr_dynamic_instance_", polyr_instance_counter())
     })
 
     # Observer for the main radio button (input$multiple)
@@ -74,6 +81,16 @@ regressionAndCorrelationServer <- function(id) {
           req(current_logr_module_id())
           LogisticRegressionMainPanelUI(session$ns(current_logr_module_id()))
         })
+      } else if (input$multiple == "POLYR") {
+        polyr_instance_counter(polyr_instance_counter() + 1)
+        output$regressionSidebarUI <- renderUI({
+          req(current_polyr_module_id())
+          PolynomialRegressionSidebarUI(session$ns(current_polyr_module_id()))
+        })
+        output$regressionMainPanelUI <- renderUI({
+          req(current_polyr_module_id())
+          PolynomialRegressionMainPanelUI(session$ns(current_polyr_module_id()))
+        })
       }
     }, ignoreNULL = FALSE, ignoreInit = FALSE)
 
@@ -91,6 +108,11 @@ regressionAndCorrelationServer <- function(id) {
       req(input$multiple == "LOGR")
       LogisticRegressionServer(current_logr_module_id())
     }, ignoreNULL = TRUE)
-    
+
+    observeEvent(current_polyr_module_id(), {
+      req(input$multiple == "POLYR")
+      PolynomialRegressionServer(current_polyr_module_id())
+    }, ignoreNULL = TRUE)
+
   })
 }

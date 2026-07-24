@@ -22,6 +22,40 @@ SLRMainPanelUI <- function(id) {
         opacity: 0.4 !important;
         cursor: not-allowed !important;
       }
+      .copy-plot-btn {
+        margin-top: 10px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+    ")),
+    tags$script(HTML("
+      function copyPlotToClipboard(plotId) {
+        var plotDiv = document.getElementById(plotId);
+        if (!plotDiv) return;
+        var btn = document.querySelector('[data-copy-plot=\"' + plotId + '\"]');
+
+        Plotly.toImage(plotDiv, {format: 'png', width: plotDiv.offsetWidth, height: plotDiv.offsetHeight})
+          .then(function(dataUrl) { return fetch(dataUrl); })
+          .then(function(res) { return res.blob(); })
+          .then(function(blob) {
+            return navigator.clipboard.write([new ClipboardItem({'image/png': blob})]);
+          })
+          .then(function() {
+            if (btn) {
+              var orig = btn.innerHTML;
+              btn.innerHTML = '<i class=\"fa fa-check\"></i> Copied!';
+              btn.disabled = true;
+              setTimeout(function() {
+                btn.innerHTML = orig;
+                btn.disabled = false;
+              }, 2000);
+            }
+          })
+          .catch(function(err) {
+            alert('Could not copy to clipboard. Your browser may not support this feature, or the page must be served over HTTPS.');
+          });
+      }
     ")),
     
     hidden(div(
@@ -73,7 +107,15 @@ SLRMainPanelUI <- function(id) {
               plotlyOutput(ns("slrScatterplot"),
                            height = "700px",
                            width  = "100%"),
-              
+
+              tags$button(
+                class             = "btn btn-default copy-plot-btn",
+                `data-copy-plot`  = ns("slrScatterplot"),
+                onclick           = paste0("copyPlotToClipboard('", ns("slrScatterplot"), "')"),
+                tags$i(class = "fa fa-clipboard"),
+                "Copy to Clipboard"
+              ),
+
               br()
             )
           ), # Scatterplot tabpanel
@@ -351,14 +393,14 @@ SLRSidebarUI <- function(id) {
         inputId     = ns("y"),
         label       = strong("Response Variable (\\( y\\))"),
         value       = "2.48, 2.26, 2.47, 2.77, 2.99, 3.05, 3.18, 3.46, 3.03, 3.26, 2.67, 2.53",
-        placeholder = "Enter numeric values separated by a comma with decimals as points. (eg: 1,2,3)",
+        placeholder = "Enter numeric values separated by commas or spaces with decimals as points. (eg: 1,2,3 or 1 2 3)",
         rows        = 3),
 
       textAreaInput(
         inputId     = ns("x"),
         label       = strong("Explanatory Variable (\\( x\\))"),
         value       = "4.51, 3.58, 4.31, 5.06, 5.64, 4.99, 5.29, 5.83, 4.70, 5.61, 4.90, 4.20",
-        placeholder = "Enter numeric values separated by a comma with decimals as points (eg: 1,2,3).",
+        placeholder = "Enter numeric values separated by commas or spaces with decimals as points (eg: 1,2,3 or 1 2 3).",
         rows        = 3)
     ), #dataRegCor == 'Enter Raw Data'
     
@@ -369,17 +411,38 @@ SLRSidebarUI <- function(id) {
         condition = "input.dataRegCor == 'Upload Data'",
         
         HTML(uploadDataDisclaimer),
-        
+
         fileInput(
           inputId = ns("slrUserData"),
-          label   = strong("Upload your data (.csv or .xls or .xlsx or .txt)"),
+          label   = strong("Upload your data (.csv, .xls, .xlsx, .txt, .sas7bdat, .sav, .dta, .rds, .mtp, .mwx, .mpx)"),
           accept  = c("text/csv",
                       "text/comma-separated-values",
+                      "text/tab-separated-values",
                       "text/plain",
                       ".csv",
+                      ".txt",
                       ".xls",
-                      ".xlsx")),
-        
+                      ".xlsx",
+                      ".sas7bdat",
+                      ".sav",
+                      ".dta",
+                      ".rds",
+                      ".mtp",
+                      ".mwx",
+                      ".mpx")),
+
+        conditionalPanel(
+          ns = ns,
+          condition = "output.slrShowSheetPicker == true",
+          selectizeInput(
+            inputId  = ns("slrSheet"),
+            label    = strong("Choose a Sheet"),
+            choices  = c(""),
+            multiple = FALSE,
+            options  = list(placeholder = 'Select a sheet',
+                            onInitialize = I('function() { this.setValue(""); }')))
+        ),
+
         selectizeInput(
           inputId = ns("slrResponse"),
           label   = strong("Choose the Response Variable (\\(y\\))"),
@@ -659,9 +722,9 @@ SLRServer <- function(id) {
     
     ### ------------ Rules -------------------------------------------------------
     slrraw_iv$add_rule("x", sv_required())
-    slrraw_iv$add_rule("x", sv_regex("^\\s*-?\\d*\\.?\\d+(\\s*,\\s*-?\\d*\\.?\\d+)*\\s*$",
-                                     "Data must be numeric values separated by a comma (ie: 2,3,4 or 2, 30, 400)."))
-    slrraw_iv$add_rule("x", ~ if (length(strsplit(input$x, ",")[[1]]) < 4) "Sample Data must include at least four numeric observations.")
+    slrraw_iv$add_rule("x", ~ if (nzchar(trimws(input$x)) && length(createNumLst(input$x)) == 0)
+                                     "Data must be numeric values separated by commas or spaces (ie: 2,3,4 or 2 30 400).")
+    slrraw_iv$add_rule("x", ~ if (length(createNumLst(input$x)) < 4) "Sample Data must include at least four numeric observations.")
     slrraw_iv$add_rule("x", ~ tryCatch(
       if (isTRUE(sampleInfoRaw()$diff != 0)) "x and y must have the same number of observations.",
       error = function(e) NULL
@@ -672,9 +735,9 @@ SLRServer <- function(id) {
     ))
     
     slrraw_iv$add_rule("y", sv_required())
-    slrraw_iv$add_rule("y", sv_regex("^\\s*-?\\d*\\.?\\d+(\\s*,\\s*-?\\d*\\.?\\d+)*\\s*$",
-                                     "Data must be numeric values separated by a comma (ie: 2,3,4 or 2, 30, 400)."))
-    slrraw_iv$add_rule("y", ~ if (length(strsplit(input$x, ",")[[1]]) < 4) "Sample Data must include at least four numeric observations.")
+    slrraw_iv$add_rule("y", ~ if (nzchar(trimws(input$y)) && length(createNumLst(input$y)) == 0)
+                                     "Data must be numeric values separated by commas or spaces (ie: 2,3,4 or 2 30 400).")
+    slrraw_iv$add_rule("y", ~ if (length(createNumLst(input$y)) < 4) "Sample Data must include at least four numeric observations.")
     slrraw_iv$add_rule("y", ~ tryCatch(
       if (isTRUE(sampleInfoRaw()$diff != 0)) "x and y must have the same number of observations.",
       error = function(e) NULL
@@ -686,7 +749,7 @@ SLRServer <- function(id) {
     
     slrupload_iv$add_rule("slrUserData", sv_required())
     slrupload_iv$add_rule("slrUserData", ~ if (is.null(fileInputs$slrStatus) || fileInputs$slrStatus == 'reset') "Required")
-    slrupload_iv$add_rule("slrUserData", ~ if (!(tolower(tools::file_ext(input$slrUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+    slrupload_iv$add_rule("slrUserData", ~ if (!(tolower(tools::file_ext(input$slrUserData$name)) %in% UPLOAD_ACCEPTED_EXTENSIONS)) "File format not accepted.")
     slrupload_iv$add_rule("slrUserData", ~ tryCatch(
       if (isTRUE(nrow(slrUploadData()) == 0)) "File is empty.",
       error = function(e) NULL
@@ -791,23 +854,25 @@ SLRServer <- function(id) {
       slrStatus = NULL,
     )
     
-    slrUploadData <- eventReactive(input$slrUserData, {
-      ext <- tolower(tools::file_ext(input$slrUserData$name))
-      
-      dat <- switch(ext,
-                    csv  = read_csv(input$slrUserData$datapath, show_col_types = FALSE),
-                    xls  = read_xls(input$slrUserData$datapath),
-                    xlsx = read_xlsx(input$slrUserData$datapath),
-                    txt  = read_tsv(input$slrUserData$datapath, show_col_types = FALSE),
-                    validate("Improper file format.")
-      )
-      
+    slrUploadData <- eventReactive(list(input$slrUserData, input$slrSheet), {
+      req(input$slrUserData)
+      ext  <- tolower(tools::file_ext(input$slrUserData$name))
+      path <- input$slrUserData$datapath
+
+      if (ext %in% c("xls", "xlsx")) {
+        req(input$slrSheet)
+        # Block on stale sheet name (transient between file upload and selectize update)
+        req(input$slrSheet %in% readxl::excel_sheets(path))
+      }
+
+      dat <- readUploadedDataFile(ext, path, input$slrSheet)
+
       # Drop columns that are entirely NA (empty phantom columns from Excel)
       dat <- dat[, colSums(!is.na(dat)) > 0, drop = FALSE]
-      
+
       # Drop rows where ALL columns are NA (empty phantom rows from Excel)
       dat <- dat[rowSums(!is.na(dat)) > 0, , drop = FALSE]
-      
+
       dat
     })
     
@@ -889,8 +954,48 @@ SLRServer <- function(id) {
     })
     
     
+    # Tells the UI whether to show the sheet picker (only for xls/xlsx)
+    output$slrShowSheetPicker <- reactive({
+      if (is.null(input$slrUserData)) return(FALSE)
+      tolower(tools::file_ext(input$slrUserData$name)) %in% c("xls", "xlsx")
+    })
+    outputOptions(output, "slrShowSheetPicker", suspendWhenHidden = FALSE)
+
+    # Populate sheet choices when an Excel file is uploaded
     observeEvent(input$slrUserData, {
+      req(input$slrUserData)
+      ext <- tolower(tools::file_ext(input$slrUserData$name))
+      if (ext %in% c("xls", "xlsx")) {
+        sheets <- tryCatch(readxl::excel_sheets(input$slrUserData$datapath),
+                           error = function(e) character(0))
+        freezeReactiveValue(input, "slrSheet")
+        updateSelectizeInput(session, "slrSheet",
+                             choices  = sheets,
+                             selected = if (length(sheets)) sheets[1] else "")
+      } else {
+        updateSelectizeInput(session, "slrSheet", choices = character(0), selected = "")
+      }
+    }, priority = 50)
+
+    # Fills the variable selection options based on data file columns.
+    # Depends on BOTH slrUserData and slrSheet so that for Excel files we wait
+    # until the sheet has been selected before trying to read columns.
+    observeEvent({
+      input$slrUserData
+      input$slrSheet
+    }, {
+      req(input$slrUserData)
       fileInputs$slrStatus <- "uploaded"
+
+      ext <- tolower(tools::file_ext(input$slrUserData$name))
+
+      # For Excel files, defer until a sheet is selected
+      if (ext %in% c("xls", "xlsx") && (is.null(input$slrSheet) || input$slrSheet == "")) {
+        hide("slrExplanatory")
+        hide("slrResponse")
+        hide("uploadedDataPanel")
+        return()
+      }
 
       req(slrUploadData())
       updateSelectInput(
@@ -1367,15 +1472,17 @@ SLRServer <- function(id) {
         
         
         interceptEstimate <- round(summary(model)$coefficients["(Intercept)", "Estimate"], 4)
-        slopeEstimate <- round(summary(model)$coefficients["datx", "Estimate"], 4)
-        
+        slopeEstimate     <- round(summary(model)$coefficients["datx", "Estimate"], 4)
+        b0_raw            <- summary(model)$coefficients["(Intercept)", "Estimate"]
+        b1_raw            <- summary(model)$coefficients["datx", "Estimate"]
+
         output$regLineEquation <- renderUI({
           withMathJax(
             p("The estimated equation of the regression line is"),
             p(sprintf("\\( \\qquad \\hat{y} = \\hat{\\beta}_{0} + \\hat{\\beta}_{1} x \\)")),
             p("where"),
             p(sprintf(
-              "\\( \\qquad \\hat{\\beta}_{1} = \\dfrac{ \\sum xy - \\dfrac{ (\\sum x)(\\sum y) }{ n } }{ \\sum x^2 - \\dfrac{ (\\sum x)^2 }{ n } } = \\dfrac{ %s - \\dfrac{ (%s)(%s) }{ %s } }{ %s - \\dfrac{ (%s)^2 }{ %s } } = %0.4f \\)",
+              "\\( \\qquad \\hat{\\beta}_{1} = \\dfrac{ \\sum xy - \\dfrac{ (\\sum x)(\\sum y) }{ n } }{ \\sum x^2 - \\dfrac{ (\\sum x)^2 }{ n } } = \\dfrac{ %s - \\dfrac{ (%s)(%s) }{ %s } }{ %s - \\dfrac{ (%s)^2 }{ %s } } = %s \\)",
               format(round(dfTotaled["Totals", "xy"], 3), nsmall = 0, scientific = FALSE),
               format(round(dfTotaled["Totals", "x"], 3), nsmall = 0, scientific = FALSE),
               format(round(dfTotaled["Totals", "y"], 3), nsmall = 0, scientific = FALSE),
@@ -1383,28 +1490,28 @@ SLRServer <- function(id) {
               format(round(dfTotaled["Totals", "x<sup>2</sup>"], 3), nsmall = 0, scientific = FALSE),
               format(round(dfTotaled["Totals", "x"], 3), nsmall = 0, scientific = FALSE),
               format(round(length(datx), 3), nsmall = 0, scientific = FALSE),
-              slopeEstimate
+              fmt_sci_latex(b1_raw, 4)
             )),
             p("and"),
             p(sprintf(
-              "\\( \\qquad \\hat{\\beta}_{0} = \\bar{y} - \\hat{\\beta}_{1} \\bar{x} = %s - (%0.4f)(%s) = %s %s %0.4f = %0.4f \\)",
+              "\\( \\qquad \\hat{\\beta}_{0} = \\bar{y} - \\hat{\\beta}_{1} \\bar{x} = %s - (%s)(%s) = %s %s %s = %s \\)",
               format(round(mean(daty), 3), nsmall = 0, scientific = FALSE),
-              summary(model)$coefficients["datx", "Estimate"],
+              fmt_sci_latex(b1_raw, 4),
               format(round(mean(datx), 3), nsmall = 0, scientific = FALSE),
               format(round(mean(daty), 3), nsmall = 0, scientific = FALSE),
               b0HatOp,
-              abs(slopeEstimate) * mean(datx),
-              interceptEstimate
+              fmt_sci_latex(abs(b1_raw) * mean(datx), 4),
+              fmt_sci_latex(b0_raw, 4)
             )),
             br(),
-            p(sprintf("\\( \\qquad \\hat{y} = %0.4f %s %0.4f x \\)",
-                    interceptEstimate,
+            p(sprintf("\\( \\qquad \\hat{y} = %s %s %s x \\)",
+                    fmt_sci_latex(b0_raw, 4),
                     yHatOp,
-                    abs(slopeEstimate))),
+                    fmt_sci_latex(abs(b1_raw), 4))),
             br(),
             p(tags$b("Interpretation:")),
-            p(HTML(paste0("Within the scope of observation, ", interceptEstimate, " is the estimated value of ",
-                          "\\(y\\) when \\(x\\) = 0. A slope of ", slopeEstimate,
+            p(HTML(paste0("Within the scope of observation, \\(", fmt_sci_latex(b0_raw, 4), "\\) is the estimated value of ",
+                          "\\(y\\) when \\(x\\) = 0. A slope of \\(", fmt_sci_latex(b1_raw, 4), "\\)",
                           " represents the estimated ", slopeDirection, " in  \\(y\\)",
                           " for a unit increase of \\(x\\).")))
           )
@@ -1836,7 +1943,8 @@ SLRServer <- function(id) {
           if (!ks$has_ties) {
             sd_tau <- sqrt(2 * (2 * ks$n + 5) / (9 * ks$n * (ks$n - 1)))
             z_stat <- tau / sd_tau
-            p_val  <- 2 * pnorm(-abs(z_stat))
+            # Use cor.test's p-value: exact permutation for n < 50, normal approx for n >= 50
+            p_val  <- kendall$p.value
 
             withMathJax(
               header,
@@ -1984,7 +2092,14 @@ SLRServer <- function(id) {
         })
 
         output$downloadSpearmanXlsx <- downloadHandler(
-          filename    = function() paste0("Spearman_Rank_Correlation_", Sys.Date(), ".xlsx"),
+          filename    = function() {
+            has_ties <- spearman_cf(datx) > 0 || spearman_cf(daty) > 0
+            if (has_ties) {
+              paste0("Spearman_Rank_Correlation_with_ties_", Sys.Date(), ".xlsx")
+            } else {
+              paste0("Spearman_Rank_Correlation_", Sys.Date(), ".xlsx")
+            }
+          },
           contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
           content     = function(file) {
             tryCatch({
@@ -2074,7 +2189,9 @@ SLRServer <- function(id) {
           has_ties    <- spearman_cf(datx) > 0 || spearman_cf(daty) > 0
 
           if (has_ties) {
-            sum_rxry <- sum(spearman_df$rx_ry)
+            sum_rank_x <- sum(spearman_df$rank_x)
+            sum_rank_y <- sum(spearman_df$rank_y)
+            sum_rxry   <- sum(spearman_df$rx_ry)
 
             reactable(
               spearman_df[, c("x", "y", "rank_x", "rank_y", "rx_ry")],
@@ -2088,8 +2205,8 @@ SLRServer <- function(id) {
               columns = list(
                 x      = colDef(name = "x",      align = "center"),
                 y      = colDef(name = "y",      align = "center"),
-                rank_x = colDef(name = "Rank x", align = "center"),
-                rank_y = colDef(name = "Rank y", align = "center"),
+                rank_x = colDef(name = "Rank x", align = "center", footer = tags$b(sum_rank_x)),
+                rank_y = colDef(name = "Rank y", align = "center", footer = tags$b(sum_rank_y)),
                 rx_ry  = colDef(
                   name     = HTML("(Rank x) &times; (Rank y)"),
                   html     = TRUE,
@@ -2107,8 +2224,6 @@ SLRServer <- function(id) {
               )
             )
           } else {
-            sum_d_sq <- sum(spearman_df$d_sq)
-
             reactable(
               spearman_df[, c("x", "y", "rank_x", "rank_y", "d", "d_sq")],
               sortable   = FALSE,
@@ -2123,13 +2238,12 @@ SLRServer <- function(id) {
                 y      = colDef(name = "y",      align = "center"),
                 rank_x = colDef(name = "Rank x", align = "center"),
                 rank_y = colDef(name = "Rank y", align = "center"),
-                d      = colDef(name = "d = (Rank x \u2212 Rank y)", align = "center", footer = tags$b("Total"), minWidth = 190),
+                d      = colDef(name = "d = (Rank x \u2212 Rank y)", align = "center", minWidth = 190),
                 d_sq   = colDef(
-                  name   = HTML("d<sup>2</sup>"),
-                  html   = TRUE,
-                  align  = "center",
-                  footer = tags$b(sum_d_sq),
-                  cell = function(value) {
+                  name  = HTML("d<sup>2</sup>"),
+                  html  = TRUE,
+                  align = "center",
+                  cell  = function(value) {
                     if (value == floor(value)) {
                       formatC(value, format = "d", big.mark = ",")
                     } else {

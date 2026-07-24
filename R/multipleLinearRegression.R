@@ -20,7 +20,6 @@ MLRSidebarUI <- function(id) {
       id = "MLRSidebar",
       useShinyjs(),
       withMathJax(
-        HTML(uploadDataDisclaimer),
         helpText("Only numeric variables are selectable."),
         div(
           id = ns("responseVariableWrapper"),
@@ -81,9 +80,30 @@ MLRMainPanelUI <- function(id) {
                  value = "data_import_tab",
                  div(id = ns("importContainer")),
                  uiOutput(ns("fileImportUserMessage")),
-                 import_file_ui(
-                   id    = ns("dataImport"),
-                   title = "")),
+                 HTML(uploadDataDisclaimer),
+                 fileInput(
+                   inputId = ns("mlrUserData"),
+                   label   = strong("Upload your data (.csv, .xls, .xlsx, .txt, .sas7bdat, .sav, .dta, .rds, .mtp, .mwx, .mpx)"),
+                   width   = "100%",
+                   accept  = c("text/csv",
+                               "text/comma-separated-values",
+                               "text/tab-separated-values",
+                               "text/plain",
+                               ".csv", ".txt", ".xls", ".xlsx",
+                               ".sas7bdat", ".sav", ".dta", ".rds",
+                               ".mtp", ".mwx", ".mpx")),
+                 conditionalPanel(
+                   ns        = ns,
+                   condition = "output.mlrShowSheetPicker == true",
+                   selectizeInput(
+                     inputId = ns("mlrSheet"),
+                     label   = strong("Choose a Sheet"),
+                     choices = c(""),
+                     width   = "100%",
+                     multiple = FALSE,
+                     options  = list(placeholder      = "Select a sheet",
+                                     onInitialize = I('function() { this.setValue(""); }')))
+                 )),
                tabPanel(
                  title = "Variable Encoding",
                  value = "encoding_tab",
@@ -93,7 +113,7 @@ MLRMainPanelUI <- function(id) {
                tabPanel(title = "Inference", uiOutput(ns("ANOVAAndInference"))),
                tabPanel(title = "Multicollinearity Detection", uiOutput(ns("MulticollinearityDetection"))),
                tabPanel(title = "Diagnostic Plots", uiOutput(ns("DiagnosticPlots"))),
-               tabPanel(title = "Uploaded Data", DTOutput(ns("uploadedDataTable"))),
+               tabPanel(title = "Uploaded Data", div(style = "width:100%", DTOutput(ns("uploadedDataTable")))),
                id = ns("mainPanel"),
                theme = bs_theme(version = 4))
   )
@@ -110,12 +130,46 @@ MLRServer <- function(id) {
     },
     once = FALSE)
     
-    uploadedTibble <- import_file_server(
-      id = "dataImport",
-      trigger_return = "change",
-      btn_show_data = FALSE,
-      return_class = "tbl_df"
-      
+    output$mlrShowSheetPicker <- reactive({
+      if (is.null(input$mlrUserData)) return(FALSE)
+      tolower(tools::file_ext(input$mlrUserData$name)) %in% c("xls", "xlsx")
+    })
+    outputOptions(output, "mlrShowSheetPicker", suspendWhenHidden = FALSE)
+
+    observeEvent(input$mlrUserData, {
+      req(input$mlrUserData)
+      ext <- tolower(tools::file_ext(input$mlrUserData$name))
+      if (ext %in% c("xls", "xlsx")) {
+        sheets <- tryCatch(readxl::excel_sheets(input$mlrUserData$datapath),
+                           error = function(e) character(0))
+        freezeReactiveValue(input, "mlrSheet")
+        updateSelectizeInput(session, "mlrSheet",
+                             choices  = sheets,
+                             selected = if (length(sheets)) sheets[1] else "")
+      } else {
+        updateSelectizeInput(session, "mlrSheet", choices = character(0), selected = "")
+      }
+      showTab(inputId = "mainPanel", target = "encoding_tab")
+      showTab(inputId = "mainPanel", target = "Uploaded Data")
+    }, priority = 50)
+
+    mlrUploadData <- eventReactive(list(input$mlrUserData, input$mlrSheet), {
+      req(input$mlrUserData)
+      ext  <- tolower(tools::file_ext(input$mlrUserData$name))
+      path <- input$mlrUserData$datapath
+      if (ext %in% c("xls", "xlsx")) {
+        req(input$mlrSheet)
+        req(input$mlrSheet %in% readxl::excel_sheets(path))
+      }
+      dat <- readUploadedDataFile(ext, path, input$mlrSheet)
+      dat <- dat[, colSums(!is.na(dat)) > 0, drop = FALSE]
+      dat <- dat[rowSums(!is.na(dat)) > 0, , drop = FALSE]
+      dat
+    })
+
+    uploadedTibble <- list(
+      data = function() tryCatch(mlrUploadData(), error = function(e) NULL),
+      name = function() if (!is.null(input$mlrUserData)) input$mlrUserData$name else NULL
     )
     
     encodedData <- reactiveVal(NULL)
@@ -230,8 +284,9 @@ MLRServer <- function(id) {
     
     observeEvent(TRUE, {
       shinyjs::delay(0, {
+        hideTab(inputId = "mainPanel", target = "encoding_tab")
         hideTab(inputId = "mainPanel", target = "Model")
-        hideTab(inputId = "mainPanel", target = "Inference")  
+        hideTab(inputId = "mainPanel", target = "Inference")
         hideTab(inputId = "mainPanel", target = "ANOVA & Parameter Estimates")
         hideTab(inputId = "mainPanel", target = "Multicollinearity Detection")
         hideTab(inputId = "mainPanel", target = "Diagnostic Plots")
@@ -262,6 +317,7 @@ MLRServer <- function(id) {
     ns <- session$ns
     
     observeEvent(input$reset, {
+      hideTab(inputId = "mainPanel", target = "encoding_tab")
       hideTab(inputId = "mainPanel", target = "Model")
       hideTab(inputId = "mainPanel", target = "Inference")
       hideTab(inputId = "mainPanel", target = "ANOVA & Parameter Estimates")

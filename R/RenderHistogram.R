@@ -5,6 +5,8 @@ RenderHistogram <- function(dat, plotColour, plotTitle, plotXlab, plotYlab, grid
   hist <- ggplot(data.frame(x = dat)) +
     geom_histogram(aes(x = x),
                    bins = 15,
+                   boundary = min(dat),
+                   closed = "right",
                    fill = plotColour,
                    color = "black") +
     labs(title = plotTitle,
@@ -14,22 +16,23 @@ RenderHistogram <- function(dat, plotColour, plotTitle, plotXlab, plotYlab, grid
     theme(plot.title = element_text(size = 24,
                                     face = "bold",
                                     hjust = 0.5,
-                                    margin = margin(0,0,10,0)),
-          axis.title.x = element_text(size = 16, 
-                                      face = "bold", 
+                                    margin = ggplot2::margin(0,0,10,0)),
+          axis.title.x = element_text(size = 16,
+                                      face = "bold",
                                       vjust = -1.5,
-                                      margin = margin(5,0,0,0)),
+                                      margin = ggplot2::margin(8,0,0,0)),
           axis.title.y = element_text(size = 16,
-                                      colour = "black",
-                                      face = "bold", 
-                                      angle = 90,
-                                      margin = margin(0,5,0,0)),
-          axis.text.x.bottom = element_text(size = 16,
-                                            margin = margin(5,0,0,0)),
-          axis.text.y.left = element_text(size = 16,
-                                          margin = margin(0,5,0,0)),
+                                      face = "bold",
+                                      vjust = 1.5,
+                                      margin = ggplot2::margin(0,8,0,0)),
+          axis.text.x.bottom = element_text(size = 14,
+                                            face = "bold",
+                                            margin = ggplot2::margin(8,0,0,0)),
+          axis.text.y.left = element_text(size = 14,
+                                          face = "bold",
+                                          margin = ggplot2::margin(0,8,0,0)),
           plot.margin = unit(c(1, 1, 1, 1),"cm"),
-          panel.border = element_rect(fill=NA)) 
+          panel.border = element_rect(fill = NA))
   
   hist <- hist + scale_x_continuous(n.breaks = 10)
   
