@@ -211,6 +211,18 @@ statInfrUI <- function(id) {
 
                 uiOutput(ns("oneMeanUploadStatus")),
 
+                conditionalPanel(
+                  ns = ns,
+                  condition = "output.oneMeanShowSheetPicker == true",
+                  selectizeInput(
+                    inputId  = ns("oneMeanSheet"),
+                    label    = strong("Choose a Sheet"),
+                    choices  = c(""),
+                    multiple = FALSE,
+                    options  = list(placeholder = 'Select a sheet',
+                                    onInitialize = I('function() { this.setValue(""); }')))
+                ),
+
                 selectizeInput(
                   inputId = ns("oneMeanVariable"),
                   label   = strong("Choose a Column for Analysis"),
@@ -329,6 +341,18 @@ statInfrUI <- function(id) {
                               ".xlsx")),
 
                 uiOutput(ns("sdUploadStatus")),
+
+                conditionalPanel(
+                  ns = ns,
+                  condition = "output.sdShowSheetPicker == true",
+                  selectizeInput(
+                    inputId  = ns("sdSheet"),
+                    label    = strong("Choose a Sheet"),
+                    choices  = c(""),
+                    multiple = FALSE,
+                    options  = list(placeholder = 'Select a sheet',
+                                    onInitialize = I('function() { this.setValue(""); }')))
+                ),
 
                 selectizeInput(
                   inputId = ns("sdVariable"),
@@ -663,6 +687,18 @@ statInfrUI <- function(id) {
 
                 uiOutput(ns("indMeansUploadStatus")),
 
+                conditionalPanel(
+                  ns = ns,
+                  condition = "output.indMeansShowSheetPicker == true",
+                  selectizeInput(
+                    inputId  = ns("indMeansSheet"),
+                    label    = strong("Choose a Sheet"),
+                    choices  = c(""),
+                    multiple = FALSE,
+                    options  = list(placeholder = 'Select a sheet',
+                                    onInitialize = I('function() { this.setValue(""); }')))
+                ),
+
                 selectizeInput(
                   inputId = ns("indMeansUplSample1"),
                   label   = strong("Column for Sample 1"),
@@ -778,6 +814,18 @@ statInfrUI <- function(id) {
                               ".xlsx")),
 
                 uiOutput(ns("wilcoxonUploadStatus")),
+
+                conditionalPanel(
+                  ns = ns,
+                  condition = "output.wilcoxonShowSheetPicker == true",
+                  selectizeInput(
+                    inputId  = ns("wilcoxonSheet"),
+                    label    = strong("Choose a Sheet"),
+                    choices  = c(""),
+                    multiple = FALSE,
+                    options  = list(placeholder = 'Select a sheet',
+                                    onInitialize = I('function() { this.setValue(""); }')))
+                ),
 
                 selectizeInput(
                   inputId = ns("wilcoxonUpl1"),
@@ -2550,6 +2598,7 @@ statInfrServer <- function(id) {
     onemeanuploadvar_iv$add_rule("oneMeanVariable", ~ {
       if (!(input$oneMeanVariable %in% names(OneMeanUploadData()))) return(NULL)
       dat <- na.omit(unlist(OneMeanUploadData()[, input$oneMeanVariable]))
+      if (!is.numeric(dat)) return(NULL)   # non-numeric handled by the numeric rule at ~2541; don't run sd() on character data
       if (input$sigmaKnownUpload == "Unknown" && input$inferenceType == 'Hypothesis Testing' && length(dat) > 1 && sd(dat) == 0)
         "No variance in selected column"
     })
@@ -2705,23 +2754,29 @@ statInfrServer <- function(id) {
         "Sample 1 and Sample 2 must be different columns. Please select two distinct columns."
       }
     })
-    wRankSumrawsd_iv$add_rule("rankSumRaw2", ~ {
-      data <- GetwRankSumMeansData()
-      if(is.null(data) || 
-         length(unique(data$samp1)) <= 1 || 
-         length(unique(data$samp2)) <= 1) {
-        "Variance required in Sample 1 and Sample 2 data for hypothesis testing."
+    wilcoxonRanksuploadvars_iv$add_rule("wilcoxonUpl1", ~ {
+      col1 <- input$wilcoxonUpl1
+      if (!isTruthy(col1)) return(NULL)
+      data <- WilcoxonUploadData()
+      if (!is.null(data) && nrow(data) > 0 && col1 %in% names(data)) {
+        if (!is.numeric(data[[col1]])) "Selected column contains non-numeric data."
       }
     })
-    wilcoxonUpload_iv$add_rule("wilcoxonUpl", ~ {
-      col1 <- input$wilcoxonUpl1
+
+    wilcoxonRanksuploadvars_iv$add_rule("wilcoxonUpl2", ~ {
       col2 <- input$wilcoxonUpl2
-      if (!isTruthy(col1) || !isTruthy(col2)) return(NULL)
+      if (!isTruthy(col2)) return(NULL)
       data <- WilcoxonUploadData()
-      if (!is.null(data) && nrow(data) > 0) {
-        if (!is.numeric(data[[col1]]) || !is.numeric(data[[col2]])) {
-          "The selected Sample 1 and Sample 2 columns must both be numeric."
-        }
+      if (!is.null(data) && nrow(data) > 0 && col2 %in% names(data)) {
+        if (!is.numeric(data[[col2]])) "Selected column contains non-numeric data."
+      }
+    })
+    wRankSumrawsd_iv$add_rule("rankSumRaw2", ~ {
+      data <- GetwRankSumMeansData()
+      if(is.null(data) ||
+         length(unique(data$samp1)) <= 1 ||
+         length(unique(data$samp2)) <= 1) {
+        "Variance required in Sample 1 and Sample 2 data for hypothesis testing."
       }
     })
     # ind means Mu Naught
@@ -3731,8 +3786,8 @@ statInfrServer <- function(id) {
           br(),
           sprintf("and"),
           br(),
-          sprintf("\\( \\phantom{CII} s  = \\sqrt{ \\dfrac{\\sum x^{2} - \\dfrac{(\\sum x)^{2}}{n} }{n - 1} } \\)"),
-          sprintf("\\( = \\sqrt{ \\dfrac{%s - \\dfrac{(%s)^{2}}{%g} }{%g - 1} } = %g \\)",
+          sprintf("\\( \\phantom{CII} s  = \\sqrt{ \\frac{\\sum x^{2} - \\frac{(\\sum x)^{2}}{n} }{n - 1} } \\)"),
+          sprintf("\\( = \\sqrt{ \\frac{%s - \\frac{(%s)^{2}}{%g} }{%g - 1} } = %g \\)",
                   OneMeanTotaledData()[2],
                   OneMeanTotaledData()[1],
                   oneMeanData["Sample Size"],
@@ -5458,7 +5513,19 @@ statInfrServer <- function(id) {
       kwStatus = NULL,
       signedRankStatus = NULL
     )
-    
+
+    # Silence noisy but harmless readxl warnings (boolean-to-numeric coercions).
+    quietExcelRead <- function(reader, path, sheet) {
+      withCallingHandlers(
+        reader(path, sheet = sheet),
+        warning = function(w) {
+          if (grepl("Coercing boolean to numeric", conditionMessage(w))) {
+            invokeRestart("muffleWarning")
+          }
+        }
+      )
+    }
+
     ConfLvl <- reactive({
       
       ## MAYBE FIXME: the inputId siMethod has no choiceValue 'n'... it has
@@ -5533,13 +5600,36 @@ statInfrServer <- function(id) {
     
     ### ------------ One SD reactives --------------------------------------------
 
-    SDUploadData <- eventReactive(input$sdUserData, {
-      ext <- tolower(tools::file_ext(input$sdUserData$name))
+    oneSDCalcPressed <- reactiveVal(FALSE)
+
+    observeEvent(list(input$popuParameter, input$siMethod, input$sdDataAvailability, input$inferenceType, input$sdVariable), {
+      oneSDCalcPressed(FALSE)
+    }, ignoreInit = TRUE)
+
+    output$sdShowSheetPicker <- reactive({
+      if (is.null(input$sdUserData)) return(FALSE)
+      tolower(tools::file_ext(input$sdUserData$name)) %in% c("xls", "xlsx")
+    })
+    outputOptions(output, "sdShowSheetPicker", suspendWhenHidden = FALSE)
+
+    SDUploadData <- eventReactive(list(input$sdUserData, input$sdSheet), {
+      req(input$sdUserData)
+      ext  <- tolower(tools::file_ext(input$sdUserData$name))
+      path <- input$sdUserData$datapath
+
       switch(ext,
-             csv  = read_csv(input$sdUserData$datapath, show_col_types = FALSE),
-             xls  = read_xls(input$sdUserData$datapath),
-             xlsx = read_xlsx(input$sdUserData$datapath),
-             txt  = read_tsv(input$sdUserData$datapath, show_col_types = FALSE),
+             csv  = read_csv(path, show_col_types = FALSE),
+             xls  = {
+               req(input$sdSheet)
+               req(input$sdSheet %in% readxl::excel_sheets(path))
+               quietExcelRead(read_xls, path, input$sdSheet)
+             },
+             xlsx = {
+               req(input$sdSheet)
+               req(input$sdSheet %in% readxl::excel_sheets(path))
+               quietExcelRead(read_xlsx, path, input$sdSheet)
+             },
+             txt  = read_tsv(path, show_col_types = FALSE),
              validate("Improper file format.")
       )
     })
@@ -5559,17 +5649,37 @@ statInfrServer <- function(id) {
 
     ### ------------ One Mean reactives ------------------------------------------
 
-    OneMeanUploadData <- eventReactive(input$oneMeanUserData, {
-      
-      ext <- tools::file_ext(input$oneMeanUserData$name)
-      ext <- tolower(ext)
-      
+    oneMeanCalcPressed <- reactiveVal(FALSE)
+
+    observeEvent(list(input$popuParameter, input$siMethod, input$dataAvailability, input$inferenceType, input$oneMeanVariable), {
+      oneMeanCalcPressed(FALSE)
+    }, ignoreInit = TRUE)
+
+    output$oneMeanShowSheetPicker <- reactive({
+      if (is.null(input$oneMeanUserData)) return(FALSE)
+      tolower(tools::file_ext(input$oneMeanUserData$name)) %in% c("xls", "xlsx")
+    })
+    outputOptions(output, "oneMeanShowSheetPicker", suspendWhenHidden = FALSE)
+
+    OneMeanUploadData <- eventReactive(list(input$oneMeanUserData, input$oneMeanSheet), {
+      req(input$oneMeanUserData)
+      ext  <- tolower(tools::file_ext(input$oneMeanUserData$name))
+      path <- input$oneMeanUserData$datapath
+
       data <- switch(ext,
-                     csv = read_csv(input$oneMeanUserData$datapath, show_col_types = FALSE),
-                     xls = read_xls(input$oneMeanUserData$datapath),
-                     xlsx = read_xlsx(input$oneMeanUserData$datapath),
-                     txt = read_tsv(input$oneMeanUserData$datapath, show_col_types = FALSE),
-                     
+                     csv  = read_csv(path, show_col_types = FALSE),
+                     xls  = {
+                       req(input$oneMeanSheet)
+                       req(input$oneMeanSheet %in% readxl::excel_sheets(path))
+                       quietExcelRead(read_xls, path, input$oneMeanSheet)
+                     },
+                     xlsx = {
+                       req(input$oneMeanSheet)
+                       req(input$oneMeanSheet %in% readxl::excel_sheets(path))
+                       quietExcelRead(read_xlsx, path, input$oneMeanSheet)
+                     },
+                     txt  = read_tsv(path, show_col_types = FALSE),
+
                      validate("Improper file format.")
       )
     })
@@ -5885,17 +5995,31 @@ statInfrServer <- function(id) {
       return(rawData)
     })
     
-    IndMeansUploadData <- eventReactive(input$indMeansUserData, {
-      
-      ext <- tools::file_ext(input$indMeansUserData$name)
-      ext <- tolower(ext)
-      
+    output$indMeansShowSheetPicker <- reactive({
+      if (is.null(input$indMeansUserData)) return(FALSE)
+      tolower(tools::file_ext(input$indMeansUserData$name)) %in% c("xls", "xlsx")
+    })
+    outputOptions(output, "indMeansShowSheetPicker", suspendWhenHidden = FALSE)
+
+    IndMeansUploadData <- eventReactive(list(input$indMeansUserData, input$indMeansSheet), {
+      req(input$indMeansUserData)
+      ext  <- tolower(tools::file_ext(input$indMeansUserData$name))
+      path <- input$indMeansUserData$datapath
+
       switch(ext,
-             csv = read_csv(input$indMeansUserData$datapath, show_col_types = FALSE),
-             xls = read_xls(input$indMeansUserData$datapath),
-             xlsx = read_xlsx(input$indMeansUserData$datapath),
-             txt = read_tsv(input$indMeansUserData$datapath, show_col_types = FALSE),
-             
+             csv = read_csv(path, show_col_types = FALSE),
+             xls = {
+               req(input$indMeansSheet)
+               req(input$indMeansSheet %in% readxl::excel_sheets(path))
+               quietExcelRead(read_xls, path, input$indMeansSheet)
+             },
+             xlsx = {
+               req(input$indMeansSheet)
+               req(input$indMeansSheet %in% readxl::excel_sheets(path))
+               quietExcelRead(read_xlsx, path, input$indMeansSheet)
+             },
+             txt = read_tsv(path, show_col_types = FALSE),
+
              validate("Improper file format")
       )
     })
@@ -6043,17 +6167,31 @@ statInfrServer <- function(id) {
     
     ### ------------ Wilcoxon Rank Sum Reactives -----------------------------------
     
-    WilcoxonUploadData <- eventReactive(input$wilcoxonUpl, {
-      
-      ext <- tools::file_ext(input$wilcoxonUpl$name)
-      ext <- tolower(ext)
-      
+    output$wilcoxonShowSheetPicker <- reactive({
+      if (is.null(input$wilcoxonUpl)) return(FALSE)
+      tolower(tools::file_ext(input$wilcoxonUpl$name)) %in% c("xls", "xlsx")
+    })
+    outputOptions(output, "wilcoxonShowSheetPicker", suspendWhenHidden = FALSE)
+
+    WilcoxonUploadData <- eventReactive(list(input$wilcoxonUpl, input$wilcoxonSheet), {
+      req(input$wilcoxonUpl)
+      ext  <- tolower(tools::file_ext(input$wilcoxonUpl$name))
+      path <- input$wilcoxonUpl$datapath
+
       switch(ext,
-             csv = read_csv(input$wilcoxonUpl$datapath, show_col_types = FALSE),
-             xls = read_xls(input$wilcoxonUpl$datapath),
-             xlsx = read_xlsx(input$wilcoxonUpl$datapath),
-             txt = read_tsv(input$wilcoxonUpl$datapath, show_col_types = FALSE),
-             
+             csv = read_csv(path, show_col_types = FALSE),
+             xls = {
+               req(input$wilcoxonSheet)
+               req(input$wilcoxonSheet %in% readxl::excel_sheets(path))
+               quietExcelRead(read_xls, path, input$wilcoxonSheet)
+             },
+             xlsx = {
+               req(input$wilcoxonSheet)
+               req(input$wilcoxonSheet %in% readxl::excel_sheets(path))
+               quietExcelRead(read_xlsx, path, input$wilcoxonSheet)
+             },
+             txt = read_tsv(path, show_col_types = FALSE),
+
              validate("Improper file format")
       )
     })
@@ -6134,10 +6272,7 @@ statInfrServer <- function(id) {
       return(ranked_data)
     })
     
-    output$wilcoxonRankSumDataRanks <- renderUI({
-      req(wilcoxonRankedData())
-      RankedTableOutput(wilcoxonRankedData())
-    })
+    output$wilcoxonRankSumDataRanks <- RankedTableOutput(wilcoxonRankedData)
     
     ### ------------ Dependent Means Reactives -----------------------------------
     
@@ -6311,10 +6446,7 @@ statInfrServer <- function(id) {
       return(signed_rank_data)
     })
     
-    output$signedRankDataRanks <- renderUI({
-      req(signedRankedData())
-      SignedRankTableOutput(signedRankedData())
-    })
+    output$signedRankDataRanks <- SignedRankTableOutput(signedRankedData)
     
     ### ------------ Two Prop Reactives ------------------------------------------
     checkTwoProp <- reactive({
@@ -6647,26 +6779,7 @@ statInfrServer <- function(id) {
       }
       
       if(!onemeanuploadvar_iv$is_valid()) {
-        validate(
-          need(input$oneMeanVariable != "", "Please select a column for analysis."),
-          errorClass = "myClass"
-        )
-        sampleData <- na.omit(unlist(OneMeanUploadData()[, input$oneMeanVariable]))
-        validate(
-          need(is.numeric(sampleData), "Selected column must be numeric."),
-          errorClass = "myClass"
-        )
-        validate(
-          need(length(sampleData) > 1, "Samples must include at least 2 observations."),
-          errorClass = "myClass"
-        )
-        validate(
-          need(
-            sd(sampleData, na.rm = TRUE) != 0,
-            "When the sample standard deviation is zero, the test statistic (t) is undefined."
-          ),
-          errorClass = "myClass"
-        )
+        req(FALSE)  # column errors shown in sidebar via onemeanuploadvar_iv; halt main-panel output silently, leaving the uploaded-data preview visible
       }
       
       
@@ -6716,17 +6829,7 @@ statInfrServer <- function(id) {
       }
 
       if(!onesduploadvar_iv$is_valid()) {
-        validate(
-          need(isTruthy(input$sdVariable), "Please select a column for analysis."),
-          errorClass = "myClass")
-        if (isTruthy(input$sdVariable) && input$sdVariable %in% names(SDUploadData())) {
-          validate(
-            need(!checkNumeric(SDUploadData(), input$sdVariable), "Selected column contains non-numeric data."),
-            errorClass = "myClass")
-          validate(
-            need(length(na.omit(unlist(SDUploadData()[, input$sdVariable]))) >= 3, "Selected column must include at least 3 observations."),
-            errorClass = "myClass")
-        }
+        req(FALSE)  # column errors shown in sidebar via onesduploadvar_iv; halt main-panel output silently, leaving the uploaded-data preview visible
       }
       
       ## DONE: these messages are for debugging purposes only.
@@ -6932,6 +7035,9 @@ statInfrServer <- function(id) {
         validate(
           need(input$wilcoxonUpl1, "Please select a column for sample 1."),
           need(input$wilcoxonUpl2, "Please select a column for sample 2."),
+          need(!(isTruthy(input$wilcoxonUpl1) && isTruthy(input$wilcoxonUpl2) &&
+                 input$wilcoxonUpl1 == input$wilcoxonUpl2),
+               "Sample 1 and Sample 2 must be different columns. Please select two distinct columns."),
           need(CheckRankSumUploadSamples() == 0, "Same number of data points required for Sample 1 and Sample 2."),
           errorClass = "myClass")
       }
@@ -7416,9 +7522,10 @@ statInfrServer <- function(id) {
     output$onePopMeanUploadTable <- renderDT({
       req(onemeanupload_iv$is_valid())
       datatable(OneMeanUploadData(),
-                options = list(pageLength = -1,
+                options = list(pageLength = 25,
                                lengthMenu = list(c(25, 50, 100, -1),
                                                  c("25", "50", "100", "all")),
+                               scrollX = TRUE,
                                columnDefs = list(list(className = 'dt-center',
                                                       targets = 0:ncol(OneMeanUploadData())))),
       )
@@ -7435,17 +7542,24 @@ statInfrServer <- function(id) {
         updateTabsetPanel(session, "onePopMeanTabset", selected = "Uploaded Data")
       } else {
         hideTab(inputId = "onePopMeanTabset", target = "Uploaded Data")
+        showTab(inputId = "onePopMeanTabset", target = "Analysis")
         updateTabsetPanel(session, "onePopMeanTabset", selected = "Analysis")
       }
     }, ignoreInit = TRUE)
 
     #### ---------------- CI ----
     output$oneMeanCI <- renderUI({
+      req(input$popuParameter == "Population Mean")
+      req(input$siMethod == "1")
+      req(oneMeanCalcPressed())
       printOneMeanCI()
     })
-    
+
     #### ------------------ HT ----
     output$oneMeanHT <- renderUI({
+      req(input$popuParameter == "Population Mean")
+      req(input$siMethod == "1")
+      req(oneMeanCalcPressed())
       printOneMeanHT()
     })
     
@@ -7561,8 +7675,15 @@ statInfrServer <- function(id) {
       if (!onesdupload_iv$is_valid()) {
         return(helpText("No data yet. Upload a dataset to view it here."))
       }
-      div(DTOutput(session$ns("oneSDUploadTable")), style = "width: 75%")
+      DTOutput(session$ns("oneSDUploadTable"))
     })
+
+    observeEvent(input$sdVariable, {
+      if (isTRUE(input$sdDataAvailability == "Upload Data") &&
+          onesdupload_iv$is_valid()) {
+        updateTabsetPanel(session, "oneSDTabset", selected = "Uploaded Data")
+      }
+    }, ignoreInit = TRUE)
 
     output$sdUploadStatus <- renderUI({
       req(input$sdUserData)
@@ -7580,9 +7701,10 @@ statInfrServer <- function(id) {
     output$oneSDUploadTable <- renderDT({
       req(onesdupload_iv$is_valid())
       datatable(SDUploadData(),
-                options = list(pageLength = -1,
+                options = list(pageLength = 25,
                                lengthMenu = list(c(25, 50, 100, -1),
                                                  c("25", "50", "100", "all")),
+                               scrollX = TRUE,
                                columnDefs = list(list(className = 'dt-center',
                                                       targets = 0:ncol(SDUploadData())))),
       )
@@ -7599,18 +7721,22 @@ statInfrServer <- function(id) {
         updateTabsetPanel(session, "oneSDTabset", selected = "Uploaded Data")
       } else {
         hideTab(inputId = "oneSDTabset", target = "Uploaded Data")
+        showTab(inputId = "oneSDTabset", target = "Analysis")
         updateTabsetPanel(session, "oneSDTabset", selected = "Analysis")
       }
     }, ignoreInit = TRUE)
 
     #### ---- One population standard deviation confidence interval CI ----
     output$oneSDCI <- renderUI({
+      req(input$popuParameter == "Population Standard Deviation")
+      req(input$siMethod == "1")
+      req(oneSDCalcPressed())
+
       ## Input validation
       if (isTRUE(input$sdDataAvailability == 'Upload Data')) {
         req(onesdupload_iv$is_valid())
         validate(need(isTruthy(input$sdVariable), "Please select a column for analysis."), errorClass = "myClass")
         sampleDataSD <- na.omit(unlist(SDUploadData()[, input$sdVariable]))
-        validate(need(is.numeric(sampleDataSD), "Selected column must be numeric."), errorClass = "myClass")
         validate(need(length(sampleDataSD) >= 3, "Selected column must include at least three values."), errorClass = "myClass")
       } else if (isTRUE(input$sdDataAvailability == 'Enter Raw Data')) {
         req(oneSDRaw_iv$is_valid())
@@ -7886,6 +8012,10 @@ statInfrServer <- function(id) {
     relation <- reactiveVal()
     
     output$onePopulationSDHT <- renderUI({
+      req(input$popuParameter == "Population Standard Deviation")
+      req(input$siMethod == "1")
+      req(oneSDCalcPressed())
+
       ## Required data: n, s, alpha, sigma_naught, hypothesis_alternative; ns(x)
       ## doesn't seem to be required here. Review why that might be.
       ##
@@ -7898,7 +8028,6 @@ statInfrServer <- function(id) {
         req(onesdupload_iv$is_valid())
         validate(need(isTruthy(input$sdVariable), "Please select a column for analysis."), errorClass = "myClass")
         sampleDataSD <- na.omit(unlist(SDUploadData()[, input$sdVariable]))
-        validate(need(is.numeric(sampleDataSD), "Selected column must be numeric."), errorClass = "myClass")
         validate(need(length(sampleDataSD) >= 3, "Selected column must include at least three values."), errorClass = "myClass")
       } else if (isTRUE(input$sdDataAvailability == 'Enter Raw Data')) {
         req(oneSDRaw_iv$is_valid())
@@ -7907,6 +8036,9 @@ statInfrServer <- function(id) {
       }
 
       chiSqTestData(envir = environment())
+
+      req(input$hypStdDeviation, input$altHypothesis)
+      req(!is.na(chiSqTestStatistic), !is.na(chiSqPValue))
 
       sDisplay <- if (isTRUE(input$sdDataAvailability == 'Summarized Data')) {
         format(oneSDData()$s, digits = 15, scientific = FALSE, trim = TRUE)
@@ -8448,6 +8580,7 @@ statInfrServer <- function(id) {
         updateTabsetPanel(session, "indPopMeansTabset", selected = "Uploaded Data")
       } else {
         hideTab(inputId = "indPopMeansTabset", target = "Uploaded Data")
+        showTab(inputId = "indPopMeansTabset", target = "Analysis")
         updateTabsetPanel(session, "indPopMeansTabset", selected = "Analysis")
       }
     }, ignoreInit = TRUE)
@@ -9136,9 +9269,10 @@ statInfrServer <- function(id) {
     output$wRankSumUploadTable <- renderDT({
       req(wilcoxonUpload_iv$is_valid())
       datatable(WilcoxonUploadData(),
-                options = list(pageLength = -1,
+                options = list(pageLength = 25,
                                lengthMenu = list(c(25, 50, 100, -1),
                                                  c("25", "50", "100", "all")),
+                               scrollX = TRUE,
                                columnDefs = list(list(className = 'dt-center',
                                                       targets = 0:ncol(WilcoxonUploadData())))),
       )
@@ -9152,9 +9286,12 @@ statInfrServer <- function(id) {
     observeEvent(input$wilcoxonRankSumTestData, {
       if (input$wilcoxonRankSumTestData == "Upload Data") {
         showTab(inputId = "wilcoxonRankSumTabset", target = "Uploaded Data")
+        hideTab(inputId = "wilcoxonRankSumTabset", target = "Data with Ranks")
+        hideTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
         updateTabsetPanel(session, "wilcoxonRankSumTabset", selected = "Uploaded Data")
       } else {
         hideTab(inputId = "wilcoxonRankSumTabset", target = "Uploaded Data")
+        showTab(inputId = "wilcoxonRankSumTabset", target = "Analysis")
         updateTabsetPanel(session, "wilcoxonRankSumTabset", selected = "Analysis")
       }
     }, ignoreInit = TRUE)
@@ -9803,9 +9940,11 @@ statInfrServer <- function(id) {
     observeEvent(input$dataTypeDependent, {
       if (input$dataTypeDependent == "Upload Data") {
         showTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
+        hideTab(inputId = "depPopMeansTabset", target = "Graphs")
         updateTabsetPanel(session, "depPopMeansTabset", selected = "Uploaded Data")
       } else {
         hideTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
+        showTab(inputId = "depPopMeansTabset", target = "Analysis")
         updateTabsetPanel(session, "depPopMeansTabset", selected = "Analysis")
       }
     }, ignoreInit = TRUE)
@@ -10367,9 +10506,11 @@ statInfrServer <- function(id) {
     observeEvent(input$signedRankTest, {
       if (input$signedRankTest == "Upload Data") {
         showTab(inputId = "signedRankTabset", target = "Uploaded Data")
+        hideTab(inputId = "signedRankTabset", target = "Graphs")
         updateTabsetPanel(session, "signedRankTabset", selected = "Uploaded Data")
       } else {
         hideTab(inputId = "signedRankTabset", target = "Uploaded Data")
+        showTab(inputId = "signedRankTabset", target = "Analysis")
         updateTabsetPanel(session, "signedRankTabset", selected = "Analysis")
       }
     }, ignoreInit = TRUE)
@@ -11412,10 +11553,32 @@ statInfrServer <- function(id) {
       })
     }
 
-    observeEvent(input$sdUserData, priority = 5, {
+    observeEvent(input$sdUserData, priority = 50, {
+      req(input$sdUserData)
+      ext <- tolower(tools::file_ext(input$sdUserData$name))
+      if (ext %in% c("xls", "xlsx")) {
+        sheets <- tryCatch(readxl::excel_sheets(input$sdUserData$datapath),
+                           error = function(e) character(0))
+        freezeReactiveValue(input, "sdSheet")
+        updateSelectizeInput(session, "sdSheet",
+                             choices  = sheets,
+                             selected = if (length(sheets)) sheets[1] else "")
+      } else {
+        updateSelectizeInput(session, "sdSheet", choices = character(0), selected = "")
+      }
+    })
+
+    observeEvent(list(input$sdUserData, input$sdSheet), priority = 5, {
+      req(input$sdUserData)
       hide(id = "inferenceData")
       hide(id = "sdVariable")
       fileInputs$sdStatus <- 'uploaded'
+
+      ext <- tolower(tools::file_ext(input$sdUserData$name))
+      if (ext %in% c("xls", "xlsx") && (is.null(input$sdSheet) || input$sdSheet == "")) {
+        return()
+      }
+
       freezeReactiveValue(input, "sdVariable")
       updateSelectInput(session = getDefaultReactiveDomain(),
                         "sdVariable",
@@ -11425,28 +11588,54 @@ statInfrServer <- function(id) {
       if (onesdupload_iv$is_valid()) {
         shinyjs::show(id = "inferenceMP")
         shinyjs::show(id = "inferenceData")
+        hideTab(inputId = "oneSDTabset", target = "Analysis")
         goToUploadedDataTab("oneSDTabset")
       }
     })
 
-    observeEvent(input$oneMeanUserData, priority = 5, {
+    observeEvent(input$oneMeanUserData, priority = 50, {
+      req(input$oneMeanUserData)
+      ext <- tolower(tools::file_ext(input$oneMeanUserData$name))
+      if (ext %in% c("xls", "xlsx")) {
+        sheets <- tryCatch(readxl::excel_sheets(input$oneMeanUserData$datapath),
+                           error = function(e) character(0))
+        freezeReactiveValue(input, "oneMeanSheet")
+        updateSelectizeInput(session, "oneMeanSheet",
+                             choices  = sheets,
+                             selected = if (length(sheets)) sheets[1] else "")
+      } else {
+        updateSelectizeInput(session, "oneMeanSheet", choices = character(0), selected = "")
+      }
+    })
+
+    observeEvent(list(input$oneMeanUserData, input$oneMeanSheet), priority = 5, {
+      req(input$oneMeanUserData)
       hide(id = "inferenceData")
       hide(id = "oneMeanVariable")
       fileInputs$oneMeanStatus <- 'uploaded'
-      # if(onemeanupload_iv$is_valid())
-      # {
+
+      ext <- tolower(tools::file_ext(input$oneMeanUserData$name))
+      # For Excel files, defer until a sheet is selected. Priority alone does not
+      # guarantee the sheet value has round-tripped from the client within the
+      # same reactive cycle as the sheet-population observer above, so this
+      # early return is the actual guard against reading columns off a
+      # not-yet-selected sheet — not redundant with the priority ordering.
+      if (ext %in% c("xls", "xlsx") && (is.null(input$oneMeanSheet) || input$oneMeanSheet == "")) {
+        return()
+      }
+
       freezeReactiveValue(input, "oneMeanVariable")
       updateSelectInput(session = getDefaultReactiveDomain(),
                         "oneMeanVariable",
                         choices = c(colnames(OneMeanUploadData()))
       )
-      
+
       shinyjs::show(id = "oneMeanVariable")
-      # }
 
       if (onemeanupload_iv$is_valid()) {
         shinyjs::show(id = "inferenceMP")
         shinyjs::show(id = "inferenceData")
+        hideTab(inputId = "onePopMeanTabset", target = "Analysis")
         goToUploadedDataTab("onePopMeanTabset")
       }
     })
@@ -11467,14 +11656,42 @@ statInfrServer <- function(id) {
       if (!onemeanupload_iv$is_valid()) {
         return(helpText("No data yet. Upload a dataset to view it here."))
       }
-      div(DTOutput(session$ns("onePopMeanUploadTable")), style = "width: 75%")
+      DTOutput(session$ns("onePopMeanUploadTable"))
     })
 
-    observeEvent(input$indMeansUserData, priority = 5, {
+    observeEvent(input$oneMeanVariable, {
+      if (isTRUE(input$dataAvailability == "Upload Data") &&
+          onemeanupload_iv$is_valid()) {
+        updateTabsetPanel(session, "onePopMeanTabset", selected = "Uploaded Data")
+      }
+    }, ignoreInit = TRUE)
+
+    observeEvent(input$indMeansUserData, priority = 50, {
+      req(input$indMeansUserData)
+      ext <- tolower(tools::file_ext(input$indMeansUserData$name))
+      if (ext %in% c("xls", "xlsx")) {
+        sheets <- tryCatch(readxl::excel_sheets(input$indMeansUserData$datapath),
+                           error = function(e) character(0))
+        freezeReactiveValue(input, "indMeansSheet")
+        updateSelectizeInput(session, "indMeansSheet",
+                             choices  = sheets,
+                             selected = if (length(sheets)) sheets[1] else "")
+      } else {
+        updateSelectizeInput(session, "indMeansSheet", choices = character(0), selected = "")
+      }
+    })
+
+    observeEvent(list(input$indMeansUserData, input$indMeansSheet), priority = 5, {
+      req(input$indMeansUserData)
       hide(id = "inferenceData")
       hide(id = "indMeansUplSample1")
       hide(id = "indMeansUplSample2")
       fileInputs$indMeansStatus <- 'uploaded'
+
+      ext <- tolower(tools::file_ext(input$indMeansUserData$name))
+      if (ext %in% c("xls", "xlsx") && (is.null(input$indMeansSheet) || input$indMeansSheet == "")) {
+        return()
+      }
       # if(onemeanupload_iv$is_valid())
       # {
       freezeReactiveValue(input, "indMeansUplSample1")
@@ -11493,6 +11710,9 @@ statInfrServer <- function(id) {
       # }
 
       if (indmeansupload_iv$is_valid()) {
+        shinyjs::show(id = "inferenceMP")
+        shinyjs::show(id = "inferenceData")
+        hideTab(inputId = "indPopMeansTabset", target = "Analysis")
         goToUploadedDataTab("indPopMeansTabset")
       }
     })
@@ -11548,6 +11768,10 @@ statInfrServer <- function(id) {
         shinyjs::show(id = "depMeansUplSample1")
         shinyjs::show(id = "depMeansUplSample2")
 
+        shinyjs::show(id = "inferenceMP")
+        shinyjs::show(id = "inferenceData")
+        hideTab(inputId = "depPopMeansTabset", target = "Analysis")
+        hideTab(inputId = "depPopMeansTabset", target = "Graphs")
         goToUploadedDataTab("depPopMeansTabset")
       }
     })
@@ -11561,12 +11785,33 @@ statInfrServer <- function(id) {
     })
 
     ### ---------- Wilcoxon Rank Sum Observers --------------------
-    observeEvent(input$wilcoxonUpl, priority = 5, {
+    observeEvent(input$wilcoxonUpl, priority = 50, {
+      req(input$wilcoxonUpl)
+      ext <- tolower(tools::file_ext(input$wilcoxonUpl$name))
+      if (ext %in% c("xls", "xlsx")) {
+        sheets <- tryCatch(readxl::excel_sheets(input$wilcoxonUpl$datapath),
+                           error = function(e) character(0))
+        freezeReactiveValue(input, "wilcoxonSheet")
+        updateSelectizeInput(session, "wilcoxonSheet",
+                             choices  = sheets,
+                             selected = if (length(sheets)) sheets[1] else "")
+      } else {
+        updateSelectizeInput(session, "wilcoxonSheet", choices = character(0), selected = "")
+      }
+    })
+
+    observeEvent(list(input$wilcoxonUpl, input$wilcoxonSheet), priority = 5, {
+      req(input$wilcoxonUpl)
       hide(id = "inferenceData")
       hide(id = "wilcoxonUpl1")
       hide(id = "wilcoxonUpl2")
       fileInputs$rankSumStatus <- 'uploaded'
-      
+
+      ext <- tolower(tools::file_ext(input$wilcoxonUpl$name))
+      if (ext %in% c("xls", "xlsx") && (is.null(input$wilcoxonSheet) || input$wilcoxonSheet == "")) {
+        return()
+      }
+
       if(wilcoxonUpload_iv$is_valid()) {
         
         
@@ -11584,6 +11829,11 @@ statInfrServer <- function(id) {
         shinyjs::show(id = "wilcoxonUpl1")
         shinyjs::show(id = "wilcoxonUpl2")
 
+        shinyjs::show(id = "inferenceMP")
+        shinyjs::show(id = "inferenceData")
+        hideTab(inputId = "wilcoxonRankSumTabset", target = "Analysis")
+        hideTab(inputId = "wilcoxonRankSumTabset", target = "Data with Ranks")
+        hideTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
         goToUploadedDataTab("wilcoxonRankSumTabset")
       }
     })
@@ -11605,7 +11855,7 @@ statInfrServer <- function(id) {
       if (!wilcoxonUpload_iv$is_valid()) {
         return(helpText("No data yet. Upload a dataset to view it here."))
       }
-      div(DTOutput(session$ns("wRankSumUploadTable")), style = "width: 75%")
+      DTOutput(session$ns("wRankSumUploadTable"))
     })
 
     ### ---------- Wilcoxon Signed Rank Test Observers --------------------
@@ -11648,6 +11898,10 @@ statInfrServer <- function(id) {
         shinyjs::show(id = "signedRankUpl1")
         shinyjs::show(id = "signedRankUpl2")
 
+        shinyjs::show(id = "inferenceMP")
+        shinyjs::show(id = "inferenceData")
+        hideTab(inputId = "signedRankTabset", target = "Analysis")
+        hideTab(inputId = "signedRankTabset", target = "Graphs")
         goToUploadedDataTab("signedRankTabset")
       }
 
@@ -11943,8 +12197,8 @@ statInfrServer <- function(id) {
       
       if(si_iv$is_valid() && depmeansrawsd_iv$is_valid()) {
         shinyjs::show(id = "inferenceData")
-        
-      } else {
+
+      } else if (!uploadPreviewActive()) {
         hide(id = "inferenceData")
       }
       
@@ -11952,6 +12206,7 @@ statInfrServer <- function(id) {
         
         if(input$popuParameter == 'Population Mean') {
           req(si_iv$is_valid())
+          oneMeanCalcPressed(TRUE)
           output$renderOneMeanBoxplot <- renderUI({
             plotOutput(session$ns("oneMeanBoxplot"),
                        height = GetPlotHeight(input[["oneMeanBoxplot-Height"]], input[["oneMeanBoxplot-HeightPx"]], ui = TRUE),
@@ -11962,6 +12217,9 @@ statInfrServer <- function(id) {
                        height = GetPlotHeight(input[["oneMeanHistogram-Height"]], input[["oneMeanHistogram-HeightPx"]], ui = TRUE),
                        width = GetPlotWidth(input[["oneMeanHistogram-Width"]], input[["oneMeanHistogram-WidthPx"]], ui = TRUE))
           })
+        } else if(input$popuParameter == 'Population Standard Deviation') {
+          req(si_iv$is_valid())
+          oneSDCalcPressed(TRUE)
         } else if(input$popuParameter == 'Population Proportion') {
           req(input$numTrials && input$numSuccesses)
           if(input$numTrials < input$numSuccesses) {
@@ -12073,10 +12331,49 @@ statInfrServer <- function(id) {
     }) # input$goInference
     
     ### ------------ Component Display -------------------------------------------
-    observeEvent(!si_iv$is_valid(), {
-      hide(id = "inferenceMP")
-      hide(id = "inferenceData")
+    ## si_iv also requires a column to be picked for uploaded data, which is
+    ## legitimately unmet right after a successful upload (before the user
+    ## has chosen a column). Don't blank the main panel in that case -- the
+    ## Uploaded Data preview is still valid and should stay visible.
+    ## Each clause mirrors its validator's own $condition() (section scoping)
+    ## plus that validator's is_valid() -- Shiny retains hidden inputs, so
+    ## without the section check a clause could fire from an unrelated
+    ## section. If a section's $condition() changes, update its clause here
+    ## to match.
+    uploadPreviewActive <- reactive({
+      (isTRUE(input$siMethod == '1' &&
+              input$popuParameter == 'Population Mean' &&
+              input$dataAvailability == 'Upload Data') && onemeanupload_iv$is_valid()) ||
+        (isTRUE(input$siMethod == '1' &&
+                input$popuParameter == 'Population Standard Deviation' &&
+                input$sdDataAvailability == 'Upload Data') && onesdupload_iv$is_valid()) ||
+        (isTRUE(input$siMethod == '2' &&
+                input$popuParameters == 'Independent Population Means' &&
+                input$dataAvailability2 == 'Upload Data') && indmeansupload_iv$is_valid()) ||
+        (isTRUE(input$siMethod == '2' &&
+                input$popuParameters == 'Dependent Population Means' &&
+                input$dataTypeDependent == 'Upload Data') && depmeansupload_iv$is_valid()) ||
+        (isTRUE(input$siMethod == '2' &&
+                input$popuParameters == 'Wilcoxon rank sum test' &&
+                input$wilcoxonRankSumTestData == 'Upload Data') && wilcoxonUpload_iv$is_valid()) ||
+        (isTRUE(input$siMethod == '2' &&
+                input$popuParameters == 'Wilcoxon Signed Rank Test' &&
+                input$signedRankTest == 'Upload Data') && signedRankUpload_iv$is_valid())
     })
+
+    observeEvent(!si_iv$is_valid(), {
+      if (!uploadPreviewActive()) {
+        hide(id = "inferenceMP")
+        hide(id = "inferenceData")
+      }
+    })
+
+    observeEvent(list(input$popuParameter, input$siMethod), {
+      if (!uploadPreviewActive()) {
+        hide(id = "inferenceMP")
+        hide(id = "inferenceData")
+      }
+    }, ignoreInit = TRUE)
     
     observeEvent(!depmeansrawsd_iv$is_valid(), {
       hide(id = "inferenceMP")
@@ -12171,20 +12468,32 @@ statInfrServer <- function(id) {
     observeEvent(input$goInference, {
       # Hide/show tabs for 1 sample
       if (input$dataAvailability != "Upload Data"){
+        showTab(inputId = "onePopMeanTabset", target = "Analysis")
         updateTabsetPanel(session, "onePopMeanTabset", selected = "Analysis")
         hideTab(inputId = "onePopMeanTabset", target = "Uploaded Data")
       } else {
         showTab(inputId = "onePopMeanTabset", target = "Uploaded Data")
-        updateTabsetPanel(session, "onePopMeanTabset", selected = "Analysis")
+        showTab(inputId = "onePopMeanTabset", target = "Analysis")
+        if (onemeanuploadvar_iv$is_valid()) {
+          updateTabsetPanel(session, "onePopMeanTabset", selected = "Analysis")
+        } else {
+          updateTabsetPanel(session, "onePopMeanTabset", selected = "Uploaded Data")
+        }
       }
 
       # Hide/show tabs for 1 sample population standard deviation
       if (input$sdDataAvailability != "Upload Data"){
+        showTab(inputId = "oneSDTabset", target = "Analysis")
         updateTabsetPanel(session, "oneSDTabset", selected = "Analysis")
         hideTab(inputId = "oneSDTabset", target = "Uploaded Data")
       } else {
         showTab(inputId = "oneSDTabset", target = "Uploaded Data")
-        updateTabsetPanel(session, "oneSDTabset", selected = "Analysis")
+        showTab(inputId = "oneSDTabset", target = "Analysis")
+        if (onesduploadvar_iv$is_valid()) {
+          updateTabsetPanel(session, "oneSDTabset", selected = "Analysis")
+        } else {
+          updateTabsetPanel(session, "oneSDTabset", selected = "Uploaded Data")
+        }
       }
 
       if(length(input$oneMeanGraphOptions) > 0 && input$dataAvailability != "Summarized Data") {
@@ -12197,11 +12506,14 @@ statInfrServer <- function(id) {
       two_sample_valid <- si_iv$is_valid() && depmeansrawsd_iv$is_valid()
 
       if (input$dataAvailability2 != "Upload Data"){
+        showTab(inputId = "indPopMeansTabset", target = "Analysis")
         updateTabsetPanel(session, "indPopMeansTabset", selected = "Analysis")
         hideTab(inputId = "indPopMeansTabset", target = "Uploaded Data")
       } else {
         if (two_sample_valid) showTab(inputId = "indPopMeansTabset", target = "Uploaded Data")
         else hideTab(inputId = "indPopMeansTabset", target = "Uploaded Data")
+        showTab(inputId = "indPopMeansTabset", target = "Analysis")
+        updateTabsetPanel(session, "indPopMeansTabset", selected = "Analysis")
       }
 
       if(two_sample_valid && input$dataAvailability2 != "Summarized Data" && (input$indMeansBoxplot || input$indMeansQQPlot)) {
@@ -12212,11 +12524,17 @@ statInfrServer <- function(id) {
 
       # Hide/show tabs for 2 sample dependent populations
       if (input$dataTypeDependent != "Upload Data"){
+        showTab(inputId = "depPopMeansTabset", target = "Analysis")
         updateTabsetPanel(session, "depPopMeansTabset", selected = "Analysis")
         hideTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
       } else {
-        if (two_sample_valid) showTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
-        else hideTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
+        showTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
+        showTab(inputId = "depPopMeansTabset", target = "Analysis")
+        if (depmeansupload_iv$is_valid() && depmeansuploadvars_iv$is_valid()) {
+          updateTabsetPanel(session, "depPopMeansTabset", selected = "Analysis")
+        } else {
+          updateTabsetPanel(session, "depPopMeansTabset", selected = "Uploaded Data")
+        }
       }
 
       if(two_sample_valid && input$depMeansQQPlot) {
@@ -12227,10 +12545,17 @@ statInfrServer <- function(id) {
       
       # Hide/show tabs for Wilcoxon Rank Sum Upload
       if (input$wilcoxonRankSumTestData != "Upload Data"){
+        showTab(inputId = "wilcoxonRankSumTabset", target = "Analysis")
         updateTabsetPanel(session, "wilcoxonRankSumTabset", selected = "Analysis")
         hideTab(inputId = "wilcoxonRankSumTabset", target = "Uploaded Data")
       } else {
         showTab(inputId = "wilcoxonRankSumTabset", target = "Uploaded Data")
+        showTab(inputId = "wilcoxonRankSumTabset", target = "Analysis")
+        if (wilcoxonUpload_iv$is_valid() && wilcoxonRanksuploadvars_iv$is_valid()) {
+          updateTabsetPanel(session, "wilcoxonRankSumTabset", selected = "Analysis")
+        } else {
+          updateTabsetPanel(session, "wilcoxonRankSumTabset", selected = "Uploaded Data")
+        }
       }
 
       # Detect content-level error conditions for Wilcoxon Rank Sum
@@ -12268,10 +12593,17 @@ statInfrServer <- function(id) {
       
       # Hide/show tabs for Wilcoxon Signed Rank Upload
       if (input$signedRankTest != "Upload Data"){
+        showTab(inputId = "signedRankTabset", target = "Analysis")
         updateTabsetPanel(session, "signedRankTabset", selected = "Analysis")
         hideTab(inputId = "signedRankTabset", target = "Uploaded Data")
       } else {
         showTab(inputId = "signedRankTabset", target = "Uploaded Data")
+        showTab(inputId = "signedRankTabset", target = "Analysis")
+        if (signedRankUpload_iv$is_valid() && signedRankUploadvars_iv$is_valid()) {
+          updateTabsetPanel(session, "signedRankTabset", selected = "Analysis")
+        } else {
+          updateTabsetPanel(session, "signedRankTabset", selected = "Uploaded Data")
+        }
       }
       
     })
