@@ -211,6 +211,18 @@ statInfrUI <- function(id) {
 
                 uiOutput(ns("oneMeanUploadStatus")),
 
+                conditionalPanel(
+                  ns = ns,
+                  condition = "output.oneMeanShowSheetPicker == true",
+                  selectizeInput(
+                    inputId  = ns("oneMeanSheet"),
+                    label    = strong("Choose a Sheet"),
+                    choices  = c(""),
+                    multiple = FALSE,
+                    options  = list(placeholder = 'Select a sheet',
+                                    onInitialize = I('function() { this.setValue(""); }')))
+                ),
+
                 selectizeInput(
                   inputId = ns("oneMeanVariable"),
                   label   = strong("Choose a Column for Analysis"),
@@ -329,6 +341,18 @@ statInfrUI <- function(id) {
                               ".xlsx")),
 
                 uiOutput(ns("sdUploadStatus")),
+
+                conditionalPanel(
+                  ns = ns,
+                  condition = "output.sdShowSheetPicker == true",
+                  selectizeInput(
+                    inputId  = ns("sdSheet"),
+                    label    = strong("Choose a Sheet"),
+                    choices  = c(""),
+                    multiple = FALSE,
+                    options  = list(placeholder = 'Select a sheet',
+                                    onInitialize = I('function() { this.setValue(""); }')))
+                ),
 
                 selectizeInput(
                   inputId = ns("sdVariable"),
@@ -663,6 +687,18 @@ statInfrUI <- function(id) {
 
                 uiOutput(ns("indMeansUploadStatus")),
 
+                conditionalPanel(
+                  ns = ns,
+                  condition = "output.indMeansShowSheetPicker == true",
+                  selectizeInput(
+                    inputId  = ns("indMeansSheet"),
+                    label    = strong("Choose a Sheet"),
+                    choices  = c(""),
+                    multiple = FALSE,
+                    options  = list(placeholder = 'Select a sheet',
+                                    onInitialize = I('function() { this.setValue(""); }')))
+                ),
+
                 selectizeInput(
                   inputId = ns("indMeansUplSample1"),
                   label   = strong("Column for Sample 1"),
@@ -778,6 +814,18 @@ statInfrUI <- function(id) {
                               ".xlsx")),
 
                 uiOutput(ns("wilcoxonUploadStatus")),
+
+                conditionalPanel(
+                  ns = ns,
+                  condition = "output.wilcoxonShowSheetPicker == true",
+                  selectizeInput(
+                    inputId  = ns("wilcoxonSheet"),
+                    label    = strong("Choose a Sheet"),
+                    choices  = c(""),
+                    multiple = FALSE,
+                    options  = list(placeholder = 'Select a sheet',
+                                    onInitialize = I('function() { this.setValue(""); }')))
+                ),
 
                 selectizeInput(
                   inputId = ns("wilcoxonUpl1"),
@@ -5465,7 +5513,19 @@ statInfrServer <- function(id) {
       kwStatus = NULL,
       signedRankStatus = NULL
     )
-    
+
+    # Silence noisy but harmless readxl warnings (boolean-to-numeric coercions).
+    quietExcelRead <- function(reader, path, sheet) {
+      withCallingHandlers(
+        reader(path, sheet = sheet),
+        warning = function(w) {
+          if (grepl("Coercing boolean to numeric", conditionMessage(w))) {
+            invokeRestart("muffleWarning")
+          }
+        }
+      )
+    }
+
     ConfLvl <- reactive({
       
       ## MAYBE FIXME: the inputId siMethod has no choiceValue 'n'... it has
@@ -5546,13 +5606,30 @@ statInfrServer <- function(id) {
       oneSDCalcPressed(FALSE)
     }, ignoreInit = TRUE)
 
-    SDUploadData <- eventReactive(input$sdUserData, {
-      ext <- tolower(tools::file_ext(input$sdUserData$name))
+    output$sdShowSheetPicker <- reactive({
+      if (is.null(input$sdUserData)) return(FALSE)
+      tolower(tools::file_ext(input$sdUserData$name)) %in% c("xls", "xlsx")
+    })
+    outputOptions(output, "sdShowSheetPicker", suspendWhenHidden = FALSE)
+
+    SDUploadData <- eventReactive(list(input$sdUserData, input$sdSheet), {
+      req(input$sdUserData)
+      ext  <- tolower(tools::file_ext(input$sdUserData$name))
+      path <- input$sdUserData$datapath
+
       switch(ext,
-             csv  = read_csv(input$sdUserData$datapath, show_col_types = FALSE),
-             xls  = read_xls(input$sdUserData$datapath),
-             xlsx = read_xlsx(input$sdUserData$datapath),
-             txt  = read_tsv(input$sdUserData$datapath, show_col_types = FALSE),
+             csv  = read_csv(path, show_col_types = FALSE),
+             xls  = {
+               req(input$sdSheet)
+               req(input$sdSheet %in% readxl::excel_sheets(path))
+               quietExcelRead(read_xls, path, input$sdSheet)
+             },
+             xlsx = {
+               req(input$sdSheet)
+               req(input$sdSheet %in% readxl::excel_sheets(path))
+               quietExcelRead(read_xlsx, path, input$sdSheet)
+             },
+             txt  = read_tsv(path, show_col_types = FALSE),
              validate("Improper file format.")
       )
     })
@@ -5578,17 +5655,31 @@ statInfrServer <- function(id) {
       oneMeanCalcPressed(FALSE)
     }, ignoreInit = TRUE)
 
-    OneMeanUploadData <- eventReactive(input$oneMeanUserData, {
-      
-      ext <- tools::file_ext(input$oneMeanUserData$name)
-      ext <- tolower(ext)
-      
+    output$oneMeanShowSheetPicker <- reactive({
+      if (is.null(input$oneMeanUserData)) return(FALSE)
+      tolower(tools::file_ext(input$oneMeanUserData$name)) %in% c("xls", "xlsx")
+    })
+    outputOptions(output, "oneMeanShowSheetPicker", suspendWhenHidden = FALSE)
+
+    OneMeanUploadData <- eventReactive(list(input$oneMeanUserData, input$oneMeanSheet), {
+      req(input$oneMeanUserData)
+      ext  <- tolower(tools::file_ext(input$oneMeanUserData$name))
+      path <- input$oneMeanUserData$datapath
+
       data <- switch(ext,
-                     csv = read_csv(input$oneMeanUserData$datapath, show_col_types = FALSE),
-                     xls = read_xls(input$oneMeanUserData$datapath),
-                     xlsx = read_xlsx(input$oneMeanUserData$datapath),
-                     txt = read_tsv(input$oneMeanUserData$datapath, show_col_types = FALSE),
-                     
+                     csv  = read_csv(path, show_col_types = FALSE),
+                     xls  = {
+                       req(input$oneMeanSheet)
+                       req(input$oneMeanSheet %in% readxl::excel_sheets(path))
+                       quietExcelRead(read_xls, path, input$oneMeanSheet)
+                     },
+                     xlsx = {
+                       req(input$oneMeanSheet)
+                       req(input$oneMeanSheet %in% readxl::excel_sheets(path))
+                       quietExcelRead(read_xlsx, path, input$oneMeanSheet)
+                     },
+                     txt  = read_tsv(path, show_col_types = FALSE),
+
                      validate("Improper file format.")
       )
     })
@@ -5904,17 +5995,31 @@ statInfrServer <- function(id) {
       return(rawData)
     })
     
-    IndMeansUploadData <- eventReactive(input$indMeansUserData, {
-      
-      ext <- tools::file_ext(input$indMeansUserData$name)
-      ext <- tolower(ext)
-      
+    output$indMeansShowSheetPicker <- reactive({
+      if (is.null(input$indMeansUserData)) return(FALSE)
+      tolower(tools::file_ext(input$indMeansUserData$name)) %in% c("xls", "xlsx")
+    })
+    outputOptions(output, "indMeansShowSheetPicker", suspendWhenHidden = FALSE)
+
+    IndMeansUploadData <- eventReactive(list(input$indMeansUserData, input$indMeansSheet), {
+      req(input$indMeansUserData)
+      ext  <- tolower(tools::file_ext(input$indMeansUserData$name))
+      path <- input$indMeansUserData$datapath
+
       switch(ext,
-             csv = read_csv(input$indMeansUserData$datapath, show_col_types = FALSE),
-             xls = read_xls(input$indMeansUserData$datapath),
-             xlsx = read_xlsx(input$indMeansUserData$datapath),
-             txt = read_tsv(input$indMeansUserData$datapath, show_col_types = FALSE),
-             
+             csv = read_csv(path, show_col_types = FALSE),
+             xls = {
+               req(input$indMeansSheet)
+               req(input$indMeansSheet %in% readxl::excel_sheets(path))
+               quietExcelRead(read_xls, path, input$indMeansSheet)
+             },
+             xlsx = {
+               req(input$indMeansSheet)
+               req(input$indMeansSheet %in% readxl::excel_sheets(path))
+               quietExcelRead(read_xlsx, path, input$indMeansSheet)
+             },
+             txt = read_tsv(path, show_col_types = FALSE),
+
              validate("Improper file format")
       )
     })
@@ -6062,17 +6167,31 @@ statInfrServer <- function(id) {
     
     ### ------------ Wilcoxon Rank Sum Reactives -----------------------------------
     
-    WilcoxonUploadData <- eventReactive(input$wilcoxonUpl, {
-      
-      ext <- tools::file_ext(input$wilcoxonUpl$name)
-      ext <- tolower(ext)
-      
+    output$wilcoxonShowSheetPicker <- reactive({
+      if (is.null(input$wilcoxonUpl)) return(FALSE)
+      tolower(tools::file_ext(input$wilcoxonUpl$name)) %in% c("xls", "xlsx")
+    })
+    outputOptions(output, "wilcoxonShowSheetPicker", suspendWhenHidden = FALSE)
+
+    WilcoxonUploadData <- eventReactive(list(input$wilcoxonUpl, input$wilcoxonSheet), {
+      req(input$wilcoxonUpl)
+      ext  <- tolower(tools::file_ext(input$wilcoxonUpl$name))
+      path <- input$wilcoxonUpl$datapath
+
       switch(ext,
-             csv = read_csv(input$wilcoxonUpl$datapath, show_col_types = FALSE),
-             xls = read_xls(input$wilcoxonUpl$datapath),
-             xlsx = read_xlsx(input$wilcoxonUpl$datapath),
-             txt = read_tsv(input$wilcoxonUpl$datapath, show_col_types = FALSE),
-             
+             csv = read_csv(path, show_col_types = FALSE),
+             xls = {
+               req(input$wilcoxonSheet)
+               req(input$wilcoxonSheet %in% readxl::excel_sheets(path))
+               quietExcelRead(read_xls, path, input$wilcoxonSheet)
+             },
+             xlsx = {
+               req(input$wilcoxonSheet)
+               req(input$wilcoxonSheet %in% readxl::excel_sheets(path))
+               quietExcelRead(read_xlsx, path, input$wilcoxonSheet)
+             },
+             txt = read_tsv(path, show_col_types = FALSE),
+
              validate("Improper file format")
       )
     })
@@ -11434,10 +11553,32 @@ statInfrServer <- function(id) {
       })
     }
 
-    observeEvent(input$sdUserData, priority = 5, {
+    observeEvent(input$sdUserData, priority = 50, {
+      req(input$sdUserData)
+      ext <- tolower(tools::file_ext(input$sdUserData$name))
+      if (ext %in% c("xls", "xlsx")) {
+        sheets <- tryCatch(readxl::excel_sheets(input$sdUserData$datapath),
+                           error = function(e) character(0))
+        freezeReactiveValue(input, "sdSheet")
+        updateSelectizeInput(session, "sdSheet",
+                             choices  = sheets,
+                             selected = if (length(sheets)) sheets[1] else "")
+      } else {
+        updateSelectizeInput(session, "sdSheet", choices = character(0), selected = "")
+      }
+    })
+
+    observeEvent(list(input$sdUserData, input$sdSheet), priority = 5, {
+      req(input$sdUserData)
       hide(id = "inferenceData")
       hide(id = "sdVariable")
       fileInputs$sdStatus <- 'uploaded'
+
+      ext <- tolower(tools::file_ext(input$sdUserData$name))
+      if (ext %in% c("xls", "xlsx") && (is.null(input$sdSheet) || input$sdSheet == "")) {
+        return()
+      }
+
       freezeReactiveValue(input, "sdVariable")
       updateSelectInput(session = getDefaultReactiveDomain(),
                         "sdVariable",
@@ -11452,20 +11593,44 @@ statInfrServer <- function(id) {
       }
     })
 
-    observeEvent(input$oneMeanUserData, priority = 5, {
+    observeEvent(input$oneMeanUserData, priority = 50, {
+      req(input$oneMeanUserData)
+      ext <- tolower(tools::file_ext(input$oneMeanUserData$name))
+      if (ext %in% c("xls", "xlsx")) {
+        sheets <- tryCatch(readxl::excel_sheets(input$oneMeanUserData$datapath),
+                           error = function(e) character(0))
+        freezeReactiveValue(input, "oneMeanSheet")
+        updateSelectizeInput(session, "oneMeanSheet",
+                             choices  = sheets,
+                             selected = if (length(sheets)) sheets[1] else "")
+      } else {
+        updateSelectizeInput(session, "oneMeanSheet", choices = character(0), selected = "")
+      }
+    })
+
+    observeEvent(list(input$oneMeanUserData, input$oneMeanSheet), priority = 5, {
+      req(input$oneMeanUserData)
       hide(id = "inferenceData")
       hide(id = "oneMeanVariable")
       fileInputs$oneMeanStatus <- 'uploaded'
-      # if(onemeanupload_iv$is_valid())
-      # {
+
+      ext <- tolower(tools::file_ext(input$oneMeanUserData$name))
+      # For Excel files, defer until a sheet is selected. Priority alone does not
+      # guarantee the sheet value has round-tripped from the client within the
+      # same reactive cycle as the sheet-population observer above, so this
+      # early return is the actual guard against reading columns off a
+      # not-yet-selected sheet — not redundant with the priority ordering.
+      if (ext %in% c("xls", "xlsx") && (is.null(input$oneMeanSheet) || input$oneMeanSheet == "")) {
+        return()
+      }
+
       freezeReactiveValue(input, "oneMeanVariable")
       updateSelectInput(session = getDefaultReactiveDomain(),
                         "oneMeanVariable",
                         choices = c(colnames(OneMeanUploadData()))
       )
-      
+
       shinyjs::show(id = "oneMeanVariable")
-      # }
 
       if (onemeanupload_iv$is_valid()) {
         shinyjs::show(id = "inferenceMP")
@@ -11501,11 +11666,32 @@ statInfrServer <- function(id) {
       }
     }, ignoreInit = TRUE)
 
-    observeEvent(input$indMeansUserData, priority = 5, {
+    observeEvent(input$indMeansUserData, priority = 50, {
+      req(input$indMeansUserData)
+      ext <- tolower(tools::file_ext(input$indMeansUserData$name))
+      if (ext %in% c("xls", "xlsx")) {
+        sheets <- tryCatch(readxl::excel_sheets(input$indMeansUserData$datapath),
+                           error = function(e) character(0))
+        freezeReactiveValue(input, "indMeansSheet")
+        updateSelectizeInput(session, "indMeansSheet",
+                             choices  = sheets,
+                             selected = if (length(sheets)) sheets[1] else "")
+      } else {
+        updateSelectizeInput(session, "indMeansSheet", choices = character(0), selected = "")
+      }
+    })
+
+    observeEvent(list(input$indMeansUserData, input$indMeansSheet), priority = 5, {
+      req(input$indMeansUserData)
       hide(id = "inferenceData")
       hide(id = "indMeansUplSample1")
       hide(id = "indMeansUplSample2")
       fileInputs$indMeansStatus <- 'uploaded'
+
+      ext <- tolower(tools::file_ext(input$indMeansUserData$name))
+      if (ext %in% c("xls", "xlsx") && (is.null(input$indMeansSheet) || input$indMeansSheet == "")) {
+        return()
+      }
       # if(onemeanupload_iv$is_valid())
       # {
       freezeReactiveValue(input, "indMeansUplSample1")
@@ -11599,12 +11785,33 @@ statInfrServer <- function(id) {
     })
 
     ### ---------- Wilcoxon Rank Sum Observers --------------------
-    observeEvent(input$wilcoxonUpl, priority = 5, {
+    observeEvent(input$wilcoxonUpl, priority = 50, {
+      req(input$wilcoxonUpl)
+      ext <- tolower(tools::file_ext(input$wilcoxonUpl$name))
+      if (ext %in% c("xls", "xlsx")) {
+        sheets <- tryCatch(readxl::excel_sheets(input$wilcoxonUpl$datapath),
+                           error = function(e) character(0))
+        freezeReactiveValue(input, "wilcoxonSheet")
+        updateSelectizeInput(session, "wilcoxonSheet",
+                             choices  = sheets,
+                             selected = if (length(sheets)) sheets[1] else "")
+      } else {
+        updateSelectizeInput(session, "wilcoxonSheet", choices = character(0), selected = "")
+      }
+    })
+
+    observeEvent(list(input$wilcoxonUpl, input$wilcoxonSheet), priority = 5, {
+      req(input$wilcoxonUpl)
       hide(id = "inferenceData")
       hide(id = "wilcoxonUpl1")
       hide(id = "wilcoxonUpl2")
       fileInputs$rankSumStatus <- 'uploaded'
-      
+
+      ext <- tolower(tools::file_ext(input$wilcoxonUpl$name))
+      if (ext %in% c("xls", "xlsx") && (is.null(input$wilcoxonSheet) || input$wilcoxonSheet == "")) {
+        return()
+      }
+
       if(wilcoxonUpload_iv$is_valid()) {
         
         
