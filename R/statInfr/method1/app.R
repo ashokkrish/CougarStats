@@ -25,7 +25,7 @@ uploadDataDisclaimer <- withTags(small(
 
 
 source("../utils.R", TRUE)# utility functions only used within statistical inference.
-source("../../utilityFunctions.R", TRUE)# utility functions used across the application.
+source("../../utilityFunctions.R", TRUE)# utility functions used across CougarStats.
 source("../../plotOptionsMenu.R", TRUE)
 source("../../OneSampZInt.R", TRUE)
 

@@ -999,58 +999,48 @@ output$oneSDCI <- renderUI({
 })
 
 
-## FIXME: no DTOutput found!
-## output$onePopMeanUploadTable <- renderDT({
-##   validate(
-##     need(!is.null(input$upload), "Please upload a file."),
-##     need(!is.null(fileInputs$oneMeanStatus) && fileInputs$oneMeanStatus == "uploaded", "Please upload a file."),
-##     need(nrow(Upload()) != 0, "File is empty."),
-##     need(nrow(Upload()) > 2, "Samples must include at least 2 observations."),
-##     errorClass = "myClass"
-##   )
-##   if (onemeanupload_iv$is_valid()) {
-##     datatable(
-##       Upload(),
-##       options = list(
-##         pageLength = -1,
-##         lengthMenu = list(
-##           c(25, 50, 100, -1),
-##           c("25", "50", "100", "all")
-##         ),
-##         columnDefs = list(list(
-##           className = "dt-center",
-##           targets = 0:ncol(Upload())
-##         ))
-##       )
-##     )
-##   }
-## })
+output$UploadedData <- renderDT({
+  validate(
+    need(!is.null(Upload()), "Please upload a file."),
+    need(nrow(Upload()) != 0, "File is empty."),
+    need(nrow(Upload()) > 2, "Samples must include at least 2 observations."),
+    errorClass = "myClass"
+  )
+  datatable(
+    Upload(),
+    options = list(
+      pageLength = -1,
+      lengthMenu = list(
+        c(25, 50, 100, -1),
+        c("25", "50", "100", "all")
+      ),
+      columnDefs = list(list(
+        className = "dt-center",
+        targets = 0:ncol(Upload())
+      ))
+    )
+  )
+})
 
 ## ---------------- HT Plot ----
 output$oneMeanHTPlot <- renderPlot({
   if (input$dataAvailability == "Summarized Data") {
     if (input$sigmaKnown) {
       oneMeanData <- OneMeanZTestSumm()
-      sigmaKnown <- "Known"
     } else if (!input$sigmaKnown) {
       oneMeanData <- OneMeanTTestSumm()
-      sigmaKnown <- "Unknown"
     }
   } else if (input$dataAvailability == "Enter Raw Data") {
     if (input$sigmaKnown) {
       oneMeanData <- OneMeanZTestRaw()
-      sigmaKnown <- "Known"
     } else if (!input$sigmaKnown) {
       oneMeanData <- OneMeanTTestRaw()
-      sigmaKnown <- "Unknown"
     }
   } else if (input$dataAvailability == "Upload Data") {
     if (input$sigmaKnown == "Known") {
       oneMeanData <- OneMeanZTestRaw()
-      sigmaKnown <- "Known"
     } else if (!input$sigmaKnown) {
       oneMeanData <- OneMeanTTestRaw()
-      sigmaKnown <- "Unknown"
     }
   }
 
@@ -1081,13 +1071,13 @@ output$oneMeanBoxplotOutput <- renderPlot(
     req(input$calculate)
     #req(iv$is_valid())# Calculate already requires iv validity.
 
-    if (input$dataAvailability == "Enter Raw Data") {
-      dat <- createNumLst(input$sample1)
-    } else if (input$dataAvailability == "Upload Data") {
-      dat <- na.omit(unlist(Upload()[, input$selectUploadVariable]))
-    } else {
-      return(NA)
-    }
+  if (input$dataAvailability == "Enter Raw Data") {
+    dat <- createNumLst(input$sample1)
+  } else if (input$dataAvailability == "Upload Data") {
+    dat <- na.omit(unlist(Upload()[, input$uploadVariable]))
+  } else {
+    return(NA)
+  }
 
     df_outliers <- getOutliers(dat, "Sample")
     outlier_vals <- df_outliers$data

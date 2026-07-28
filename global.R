@@ -155,13 +155,6 @@ options(scipen = 999) # options(scipen = 0)
 ## How many digits to round Critical Values
 cvDigits <- 3
 
-# wrap this in HTML() function to output the message
-# i.e HTML(uploadDataDisclaimer)
-uploadDataDisclaimer <- withTags(small(
-  style = "color: #999; display: block; margin-bottom: 4px;",
-  em(b("Note:"), "CougarStats does not store, log, or share any data you upload. All uploaded files exist only for the duration of your session and are permanently deleted when the session ends.")
-))
-
 render <- "
 {
   option: function(data, escape){return '<div class=\"option\">'+data.label+'</div>';},

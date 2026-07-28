@@ -17,7 +17,7 @@ OneMeanTotaledData <- reactive({
   if (input$dataAvailability == "Enter Raw Data") {
     dat <- createNumLst(input$sample1)
   } else if (input$dataAvailability == "Upload Data") {
-    dat <- na.omit(unlist(Upload()[, input$selectUploadVariable]))
+    dat <- na.omit(unlist(Upload()[, input$uploadVariable]))
   } else {
     dat <- 0
   }
@@ -78,7 +78,7 @@ OneMeanZIntSumm <- reactive({
 
   nSampOne <- input$sampleSize
   xbarSampOne <- input$sampleMean
-  sigmaSampOne <- input$popuSD
+  sigmaSampOne <- input$populationStandardDeviation
 
   oneMeanZInt <- ZInterval(nSampOne, xbarSampOne, sigmaSampOne, ConfLvl())
   oneMeanZInt["Z Critical"] <- round(oneMeanZInt["Z Critical"], cvDigits)
@@ -91,16 +91,16 @@ OneMeanZIntRaw <- reactive({
 
   if (input$dataAvailability == "Enter Raw Data") {
     dat <- createNumLst(input$sample1)
-    popuSD <- input$popuSDRaw
+    populationStandardDeviation <- input$populationStandardDeviation
   } else if (input$dataAvailability == "Upload Data") {
-    dat <- na.omit(unlist(Upload()[, input$selectUploadVariable]))
-    popuSD <- input$popuSDUpload
+    dat <- na.omit(unlist(Upload()[, input$uploadVariable]))
+    populationStandardDeviation <- input$populationStandardDeviation
   }
 
   sampleSize <- length(dat)
   sampleMean <- mean(dat)
 
-  oneMeanZInt <- ZInterval(sampleSize, sampleMean, popuSD, ConfLvl())
+  oneMeanZInt <- ZInterval(sampleSize, sampleMean, populationStandardDeviation, ConfLvl())
   oneMeanZInt["Z Critical"] <- round(oneMeanZInt["Z Critical"], cvDigits)
 
   return(oneMeanZInt)
@@ -111,9 +111,8 @@ OneMeanTIntSumm <- reactive({
 
   nSampOne <- input$sampleSize
   xbarSampOne <- input$sampleMean
-  sSampOne <- input$sampSD
 
-  oneMeanTInt <- TInterval(nSampOne, xbarSampOne, sSampOne, ConfLvl())
+  oneMeanTInt <- TInterval(nSampOne, xbarSampOne, input$sampleStandardDeviation, ConfLvl())
   oneMeanTInt["T Critical"] <- round(oneMeanTInt["T Critical"], cvDigits)
 
   return(oneMeanTInt)
@@ -125,7 +124,7 @@ OneMeanTIntRaw <- reactive({
   if (input$dataAvailability == "Enter Raw Data") {
     dat <- createNumLst(input$sample1)
   } else if (input$dataAvailability == "Upload Data") {
-    dat <- na.omit(unlist(Upload()[, input$selectUploadVariable]))
+    dat <- na.omit(unlist(Upload()[, input$uploadVariable]))
   }
 
   sampleSize <- length(dat)
@@ -144,7 +143,7 @@ OneMeanZTestSumm <- reactive({
   nSampOne <- input$sampleSize
   xbarSampOne <- input$sampleMean
   hypMeanSampOne <- input$hypMean
-  sigmaSampOne <- input$popuSD
+  sigmaSampOne <- input$populationStandardDeviation
 
   oneMeanZTest <- ZTest(
     nSampOne, xbarSampOne, sigmaSampOne, hypMeanSampOne,
@@ -160,10 +159,10 @@ OneMeanZTestRaw <- reactive({
 
   if (input$dataAvailability == "Enter Raw Data") {
     dat <- createNumLst(input$sample1)
-    popuSD <- input$popuSDRaw
+    populationStandardDeviation <- input$populationStandardDeviation
   } else if (input$dataAvailability == "Upload Data") {
-    dat <- na.omit(unlist(Upload()[, input$selectUploadVariable]))
-    popuSD <- input$popuSDUpload
+    dat <- na.omit(unlist(Upload()[, input$uploadVariable]))
+    populationStandardDeviation <- input$populationStandardDeviation
   }
 
   sampleSize <- length(dat)
@@ -171,7 +170,7 @@ OneMeanZTestRaw <- reactive({
   hypMeanVal <- input$hypMean
 
   oneMeanZTest <- ZTest(
-    sampleSize, sampleMean, popuSD, hypMeanVal,
+    sampleSize, sampleMean, populationStandardDeviation, hypMeanVal,
     OneMeanHypInfo()$alternative, SigLvl()
   )
   oneMeanZTest["Z Critical"] <- round(oneMeanZTest["Z Critical"], cvDigits)
@@ -185,10 +184,9 @@ OneMeanTTestSumm <- reactive({
   nSampOne <- input$sampleSize
   xbarSampOne <- input$sampleMean
   hypMeanSampOne <- input$hypMean
-  sSampOne <- input$sampSD
 
   oneMeanTTest <- TTest(
-    nSampOne, xbarSampOne, sSampOne, hypMeanSampOne,
+    nSampOne, xbarSampOne, input$sampleStandardDeviation, hypMeanSampOne,
     OneMeanHypInfo()$alternative, SigLvl()
   )
   oneMeanTTest["T Critical"] <- round(oneMeanTTest["T Critical"], cvDigits)
@@ -202,7 +200,7 @@ OneMeanTTestRaw <- reactive({
   if (input$dataAvailability == "Enter Raw Data") {
     dat <- createNumLst(input$sample1)
   } else if (input$dataAvailability == "Upload Data") {
-    dat <- na.omit(unlist(Upload()[, input$selectUploadVariable]))
+    dat <- na.omit(unlist(Upload()[, input$uploadVariable]))
   }
 
   sampleSize <- length(dat)

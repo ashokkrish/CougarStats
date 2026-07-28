@@ -56,6 +56,8 @@ table of numeric inputs; Ashok would like to have data upload for this as well.
 
 * TODO Ashok's Implicit Requests [0/2]
 :LOGBOOK:
+CLOCK: [2026-07-21 Tue 20:29]--[2026-07-21 Tue 20:58] =>  0:29
+CLOCK: [2026-07-21 Tue 17:15]--[2026-07-21 Tue 19:36] =>  2:21
 CLOCK: [2026-07-21 Tue 00:40]--[2026-07-21 Tue 03:10] =>  2:30
 CLOCK: [2026-07-20 Mon 12:00]--[2026-07-20 Mon 12:58] =>  0:58
 CLOCK: [2026-07-19 Sun 23:15]--[2026-07-20 Mon 00:22] =>  1:07
@@ -79,15 +81,13 @@ CLOCK: [2026-07-14 Tue 15:53]--[2026-07-14 Tue 18:00] => 2:07
   1. Test the modules independently using the template app written in the Method1 folder.
   2. Review the shinyvalidate library documentation and learn the necessaries to hack together a better validation tree and reduce the amount of code.
 
-* Statistical Inference about multiple samples (2+) using Kruskal-Wallis methodology
-- kwUserData ::
-- kwUploadData :: eventReactive, depending on kwUserData, calling ~kwUploadData_func()~ therewith.
-
-** DONE kwDisplayState                                              :ARCHIVE:
-CLOSED: [2026-07-12 Sun 13:46]
-This is entirely unnecessary and is fucking whack.
-
-Values:
-- "none"
-- "raw"
-- "analysis"
+* Method1
+** Inputs
+- popuParameter
+- mainPanelNavbarPage
+- dataAvailability
+- upload
+- oneMeanBoxplot
+** Outputs
+** Reactives
+** Observers

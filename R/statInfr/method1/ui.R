@@ -36,18 +36,10 @@ statInfrMethodOneUI <- function(id) {
         step    = 0.00001
       ),
 
-      div(id = ns("sigmaKnownSummarizedDataSibling"), style = "display: hidden;"),
-      conditionalPanel(condition = "input.sigmaKnown",
-                       numericInput(
-                         inputId = ns("popuSD"),
-                         label   = strong("Population Standard Deviation (\\( \\sigma\\)) Value"),
-                         value   = 8.25,
-                         min     = 0.00001,
-                         step    = 0.00001
-                       )),
+      div(id = ns("sigmaSummarizedDataSibling"), style = "display: hidden;"),
       conditionalPanel(condition = "!input.sigmaKnown",
                        numericInput(
-                         inputId = ns("sampSD"),
+                         inputId = ns("sampleStandardDeviation"),
                          label   = strong("Sample Standard Deviation (\\( s\\)) Value"),
                          value   = 4.78,
                          min     = 0.00001,
@@ -65,17 +57,7 @@ statInfrMethodOneUI <- function(id) {
         placeholder = "Enter values separated by a comma with decimals as points",
         rows        = 3
       ),
-      div(id = ns("sigmaKnownEnterRawDataSibling"), style = "display: hidden;"),
-      conditionalPanel(
-        condition = "input.sigmaKnown",
-        numericInput(
-          inputId = ns("popuSDRaw"),
-          label   = strong("Population Standard Deviation (\\( \\sigma\\)) Value"),
-          value   = 8.25,
-          min     = 0.00001,
-          step    = 0.00001
-        )
-      )
+      div(id = ns("sigmaEnterRawDataSibling"), style = "display: hidden;")
     ),
 
     conditionalPanel(
@@ -84,7 +66,7 @@ statInfrMethodOneUI <- function(id) {
       conditionalPanel(
         condition = "output.Uploaded",# a reactive output, written in reactives.R.
         selectizeInput(
-          inputId = ns("selectUploadVariable"),
+          inputId = ns("uploadVariable"),
           label = strong("Choose a Column for Analysis"),
           choices = c(""),
           options = list(
@@ -92,17 +74,7 @@ statInfrMethodOneUI <- function(id) {
             onInitialize = I('function() { this.setValue(""); }')
           )
         ),
-        div(id = ns("sigmaKnownUploadDataSibling"), style = "display: hidden;"),
-        conditionalPanel(
-          condition = "input.sigmaKnown",
-          numericInput(
-            inputId = ns("popuSDUpload"),
-            label   = strong("Population Standard Deviation (\\( \\sigma\\)) Value"),
-            value   = 5,
-            min     = 0.00001,
-            step    = 0.00001
-          )
-        )
+        div(id = ns("sigmaUploadDataSibling"), style = "display: hidden;")
       )
     )
   )
@@ -206,7 +178,6 @@ statInfrMethodOneUI <- function(id) {
                          value   = 99,
                          step    = 0.00001)
           ),
-
           conditionalPanel(
             condition = "input.popuParameter == 'Population Proportion'",
             numericInput(inputId = ns("hypProportion"),
@@ -216,7 +187,6 @@ statInfrMethodOneUI <- function(id) {
                          max     = 1,
                          step    = 0.00001)
           ),
-
           conditionalPanel(
             condition = "input.popuParameter == 'Population Standard Deviation'",
             numericInput(inputId = ns("hypStdDeviation"),
@@ -279,7 +249,8 @@ statInfrMethodOneUI <- function(id) {
                            br()
                          )
                        ), value = "popuParameterMeanGraphs"),
-    tabPanel("Uploaded Data", DTOutput(ns("UploadedData")), value = "popuParameterMeanUploadedData"),
+    ## tabPanel("Uploaded Data", DTOutput(ns("UploadedData")), value = "popuParameterMeanUploadedData"),
+    tabPanel("Uploaded Data", tableOutput(ns("UploadedData")), value = "popuParameterMeanUploadedData"),
 
 
 

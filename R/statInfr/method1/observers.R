@@ -22,6 +22,9 @@ id_helper <- function(param, tab = c("Analysis", "Graphs", "UploadedData")) {
   }
   sprintf("popuParameter%s%s", param, tab)
 }
+## NOTE B.C. 2026-07-21: nextTab & showTabs has been commented because I
+## recalled that when the parameter of interest is changed the entire main panel
+## contents should be hidden until Calculate is pressed again.
 observeEvent(input$popuParameter, {
   req(input$mainPanelNavbarPage)
   ## Choose the tab to display next (after the handler finishes executing) based
@@ -36,29 +39,20 @@ observeEvent(input$popuParameter, {
     "Population Mean" = {
       hideTabs("mainPanelNavbarPage", id_helper("Proportion"))
       hideTabs("mainPanelNavbarPage", id_helper("StandardDeviation"))
-      showTabs(
-        "mainPanelNavbarPage",
-        id_helper("Mean"),
-        id_helper("Mean", nextTab)
-      )
+      ## showTabs("mainPanelNavbarPage", id_helper("Mean"), id_helper("Mean", nextTab))
+      if (input$dataAvailability == "Upload Data") {
+        showTabs("mainPanelNavbarPage", id_helper("Mean", "UploadedData"), id_helper("Mean", "UploadedData"))
+      }
     },
     "Population Standard Deviation" = {
       hideTabs("mainPanelNavbarPage", id_helper("Mean"))
       hideTabs("mainPanelNavbarPage", id_helper("Proportion"))
-      showTabs(
-        "mainPanelNavbarPage",
-        id_helper("StandardDeviation"),
-        id_helper("StandardDeviation", nextTab)
-      )
+      ## showTabs("mainPanelNavbarPage", id_helper("StandardDeviation"), id_helper("StandardDeviation", nextTab))
     },
     "Population Proportion" = {
       hideTabs("mainPanelNavbarPage", id_helper("Mean"))
       hideTabs("mainPanelNavbarPage", id_helper("StandardDeviation"))
-      showTabs(
-        "mainPanelNavbarPage",
-        id_helper("Proportion"),
-        id_helper("Proportion", nextTab)
-      )
+      ## showTabs("mainPanelNavbarPage", id_helper("Proportion"), id_helper("Proportion", nextTab))
     },
     stop("popuParameter has an invalid value!")
   )
@@ -94,15 +88,30 @@ observeEvent(input$dataAvailability, {
   }
 
   removeUI(
-    selector = sprintf(
-      "div.checkbox:has(label > #%s)",
-      session$ns("sigmaKnown")
-    ),
+    selector = sprintf("#%s", session$ns("sigma")),
     multiple = TRUE,
     immediate = TRUE,
     session = session
   )
-  sprintf("sigmaKnown%sSibling", gsub(" ", "", input$dataAvailability)) |>
+  sigmaKnownPopulationStandardDeviation <- withMathJax(div(
+    id = session$ns("sigma"),
+    checkboxInput(
+      session$ns("sigmaKnown"),
+      strong("Population Standard Deviation (\\(\\sigma\\)) is known")
+    ),
+    conditionalPanel(
+      condition = "input.sigmaKnown",
+      numericInput(
+        inputId = session$ns("populationStandardDeviation"),
+        label   = strong("Population Standard Deviation (\\(\\sigma\\)) Value"),
+        value   = 8.25,
+        min     = 0.00001,
+        step    = 0.00001
+      ),
+      ns = session$ns
+    )
+  ))
+  sprintf("sigma%sSibling", gsub(" ", "", input$dataAvailability)) |>
     session$ns() |>
     sub(pattern = "^", replacement = "#", x = _) |>
     insertUI(
@@ -114,12 +123,8 @@ observeEvent(input$dataAvailability, {
 })
 
 observeEvent(input$upload, priority = 5, {
-  freezeReactiveValue(input, "selectUploadVariable")
-  updateSelectInput(
-    "selectUploadVariable",
-    choices = c(colnames(Upload())),
-    session = session
-  )
+  freezeReactiveValue(input, "uploadVariable")
+  updateSelectInput("uploadVariable", choices = c(colnames(Upload())), session = session)
 })
 
 ## Whenever there are changes in the value of the checkbox regarding the boxplot

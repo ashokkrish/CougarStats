@@ -265,3 +265,10 @@ hypZTestPlot <- function(testStatistic, critValue, altHypothesis) {
               size = 16 / .pt, fontface = "bold", nudge_y = .03) +
     theme(axis.title.x = element_text(size = 16, face = "bold.italic"))
 }
+
+# wrap this in HTML() function to output the message
+# i.e HTML(uploadDataDisclaimer)
+uploadDataDisclaimer <- withTags(small(
+  style = "color: #999; display: block; margin-bottom: 4px;",
+  em(b("Note:"), "CougarStats does not store, log, or share any data you upload. All uploaded files exist only for the duration of your session and are permanently deleted when the session ends.")
+))

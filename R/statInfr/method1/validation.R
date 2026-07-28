@@ -10,7 +10,8 @@ iv <- InputValidator$new()
 ## │   ├── SummarizedData
 ## │   └── UploadData
 ## ├── populationProportion
-## └── populationStandardDeviation
+## ├── populationStandardDeviation
+## └── sampleStandardDeviation
 ##
 ## NOTE: leaf nodes of the tree are created, conditioned, and populated with
 ## rules before their parent node is created, conditioned, given children,
@@ -18,15 +19,6 @@ iv <- InputValidator$new()
 ## signal the beginning of the input validation seciton of code. Conversely,
 ## we end with enabling iv which also enables all its children and
 ## grandchildren and so on.
-##
-## onemean_iv <- InputValidator$new()
-## onemeansdknown_iv <- InputValidator$new()
-## onemeansdunk_iv <- InputValidator$new()
-## onemeanraw_iv <- InputValidator$new()
-## onemeanht_iv <- InputValidator$new()
-## onemeanupload_iv <- InputValidator$new()
-## onemeanuploadvar_iv <- InputValidator$new()
-## onemeanuploadsd_iv <- InputValidator$new()
 
 populationMeanSummarizedData_iv <- InputValidator$new()
 populationMeanSummarizedData_iv$condition(function() {
@@ -54,7 +46,7 @@ populationMeanEnterRawData_iv$add_rule("sample1", ~ {
     NULL
   }
 })
-populationMeanEnterRawData_iv$add_rule("popuSDRaw", ~ {
+populationMeanEnterRawData_iv$add_rule("populationStandardDeviation", ~ {
   if (input$sigmaKnown) {
     sv_required()(.) %||% sv_gt(0)(.)
   } else {
@@ -66,6 +58,33 @@ populationMeanEnterRawData_iv$add_rule("popuSDRaw", ~ {
 populationMeanUploadData_iv <- InputValidator$new()
 populationMeanUploadData_iv$condition(function() {
   input$dataAvailability == "Upload Data"
+})
+populationMeanUploadData_iv$add_rule("upload", sv_required())
+populationMeanUploadData_iv |> add_rule_accepted_file_formats("upload")
+populationMeanUploadData_iv$add_rule("upload", function(value) if (file.size(value$datapath) == 0) "File is empty")
+populationMeanUploadData_iv$add_rule("upload", function(value) if (nrow(Upload()) == 0) "Table has no rows")
+populationMeanUploadData_iv$add_rule("upload", function(value) if (nrow(Upload()) < 2) "Table has less than two rows")
+populationMeanUploadData_iv$add_rule("uploadVariable", sv_required())
+populationMeanUploadData_iv$add_rule("uploadVariable", ~ {
+  if (checkNumeric(Upload(), .)) {
+    "Selected column contains non-numeric data."
+  }
+})
+populationMeanUploadData_iv$add_rule("uploadVariable", ~ {
+  if (!(. %in% names(Upload()))) {
+    return(NULL)
+  }
+  dat <- na.omit(unlist(Upload()[, .]))
+  if (length(dat) < 2) "Samples must include at least 2 observations"
+})
+populationMeanUploadData_iv$add_rule("uploadVariable", ~ {
+  if (!(. %in% names(Upload()))) {
+    return(NULL)
+  }
+  dat <- na.omit(unlist(Upload()[, .]))
+  if (input$sigmaKnown && input$inferenceType == "Hypothesis Testing" && length(dat) > 1 && sd(dat) == 0) {
+    "No variance in selected column"
+  }
 })
 
 
@@ -79,77 +98,71 @@ populationMean_iv$add_validator(populationMeanUploadData_iv)
 iv$add_validator(populationMean_iv, "Population Mean IV")
 
 
-
-
-
 populationProportion_iv <- InputValidator$new()
 populationProportion_iv$condition(function() {
   input$popuParameter == "Population Proportion"
 })
+populationProportion_iv$add_rule("numSuccesses", sv_required())
+populationProportion_iv$add_rule("numSuccesses", sv_integer())
+populationProportion_iv$add_rule("numSuccesses", sv_gt(-1))
+populationProportion_iv$add_rule("numTrials", sv_required())
+populationProportion_iv$add_rule("numTrials", sv_integer())
+populationProportion_iv$add_rule("numTrials", sv_gt(0))
 iv$add_validator(populationProportion_iv, "Population Proportion IV")
 
 
-
 populationStandardDeviation_iv <- InputValidator$new()
-populationStandardDeviation_iv$condition(function() {
-  input$popuParameter == "Population Standard Deviation"
-})
+populationStandardDeviation_iv$condition(function() input$popuParameter == "Population Standard Deviation")
+populationStandardDeviation_iv$add_rule("SSDSampleSize", sv_required())
+populationStandardDeviation_iv$add_rule("SSDSampleSize", sv_integer())
+populationStandardDeviation_iv$add_rule("SSDSampleSize", sv_gt(1))
+populationStandardDeviation_iv$add_rule("SSDStdDev", sv_required())
+populationStandardDeviation_iv$add_rule("SSDStdDev", sv_numeric())
+populationStandardDeviation_iv$add_rule("SSDStdDev", sv_gt(0))
 iv$add_validator(populationStandardDeviation_iv, "Population Standard Deviation IV")
 
+
+populationStandardDeviationCheckbox_iv <- InputValidator$new()
+populationStandardDeviationCheckbox_iv$condition(function() input$sigmaKnown)
+populationStandardDeviationCheckbox_iv$add_rule("populationStandardDeviation", sv_required())
+populationStandardDeviationCheckbox_iv$add_rule("populationStandardDeviation", sv_numeric())
+populationStandardDeviationCheckbox_iv$add_rule("populationStandardDeviation", sv_gt(0))
+iv$add_validator(populationStandardDeviationCheckbox_iv, "Population Standard Deviation Checkbox Input IV")
 
 
 hypothesisTesting_iv <- InputValidator$new()
 hypothesisTesting_iv$condition(function() {
   input$inferenceType == "Hypothesis Testing"
 })
+hypothesisTestingPopulationMean_iv <- InputValidator$new()
+hypothesisTestingPopulationMean_iv$condition(function() input$popuParameter == "Population Mean")
+hypothesisTestingPopulationMean_iv$add_rule("hypMean", sv_required())
+hypothesisTestingPopulationMean_iv$add_rule("hypMean", sv_numeric())
+hypothesisTestingPopulationProportion_iv <- InputValidator$new()
+hypothesisTestingPopulationProportion_iv$condition(function() input$popuParameter == "Population Proportion")
+hypothesisTestingPopulationProportion_iv$add_rule("hypProportion", sv_required())
+hypothesisTestingPopulationProportion_iv$add_rule("hypProportion", sv_numeric())
+hypothesisTestingPopulationProportion_iv$add_rule("hypProportion", sv_gte(0))
+hypothesisTestingPopulationProportion_iv$add_rule("hypProportion", sv_lte(1))
+hypothesisTestingPopulationStandardDeviation_iv <- InputValidator$new()
+hypothesisTestingPopulationStandardDeviation_iv$condition(function() input$popuParameter == "Population Standard Deviation")
+hypothesisTestingPopulationStandardDeviation_iv$add_rule("hypStdDeviation", sv_required())
+hypothesisTestingPopulationStandardDeviation_iv$add_rule("hypStdDeviation", sv_numeric())
+hypothesisTestingPopulationStandardDeviation_iv$add_rule("hypStdDeviation", sv_gte(0.001))
+hypothesisTesting_iv$add_validator(hypothesisTestingPopulationMean_iv)
+hypothesisTesting_iv$add_validator(hypothesisTestingPopulationStandardDeviation_iv)
+hypothesisTesting_iv$add_validator(hypothesisTestingPopulationProportion_iv)
 iv$add_validator(hypothesisTesting_iv, "Population Hypothesis Testing IV")
 
 
+sampleStandardDeviation_iv <- InputValidator$new()
+sampleStandardDeviation_iv$condition(function() {
+  is.null(input$sigmaKnown) || (!(input$sigmaKnown) && input$popuParameter != "Population Proportion")
+})
+sampleStandardDeviation_iv$add_rule("sampleStandardDeviation", sv_required())
+sampleStandardDeviation_iv$add_rule("sampleStandardDeviation", sv_numeric())
+sampleStandardDeviation_iv$add_rule("sampleStandardDeviation", sv_gt(0))
+iv$add_validator(sampleStandardDeviation_iv, "Sample Standard Deviation IV")
 
-## TODO: input validation for the file upload must be reworked.
-## onemeanupload_iv$add_rule("upload", sv_required())
-## onemeanupload_iv |> add_rule_accepted_file_formats("upload")
-## onemeanupload_iv$add_rule("upload", ~ if (nrow(Upload()) == 0) "File is empty")
-## onemeanupload_iv$add_rule("upload", ~ if (nrow(Upload()) < 3) "Samples must include at least 2 observations")
-
-
-## popuSD
-## onemeansdknown_iv |>
-##   add_rules("popuSD", sv_required(), sv_gt(0))
-## onemeansdkunk_iv |>
-##   add_rules("popuSD", sv_required(), sv_gt(0))
-
-## popuSDUpload
-## onemeanuploadsd_iv$add_rule("popuSDUpload", sv_required())
-## onemeanuploadsd_iv$add_rule("popuSDUpload", sv_gt(0))
-
-## selectUploadVariable
-## onemeanuploadvar_iv$add_rule("selectUploadVariable", sv_required())
-## onemeanuploadvar_iv$add_rule("selectUploadVariable", ~ {
-##   if (checkNumeric(Upload(), input$selectUploadVariable)) {
-##     "Selected column contains non-numeric data."
-##   }
-## })
-## onemeanuploadvar_iv$add_rule("selectUploadVariable", ~ {
-##   if (!(input$selectUploadVariable %in% names(Upload()))) {
-##     return(NULL)
-##   }
-##   dat <- na.omit(unlist(Upload()[, input$selectUploadVariable]))
-##   if (length(dat) < 2) "Samples must include at least 2 observations"
-## })
-## onemeanuploadvar_iv$add_rule("selectUploadVariable", ~ {
-##   if (!(input$selectUploadVariable %in% names(Upload()))) {
-##     return(NULL)
-##   }
-##   dat <- na.omit(unlist(Upload()[, input$selectUploadVariable]))
-##   if (input$sigmaKnown && input$inferenceType == "Hypothesis Testing" && length(dat) > 1 && sd(dat) == 0) {
-##     "No variance in selected column"
-##   }
-## })
-
-
-## sampSD
-## onemeansdunk_iv$add_rule("sampSD", sv_required())
-## onemeansdunk_iv$add_rule("sampSD", sv_gt(0))
 
 iv$enable()

@@ -12,6 +12,22 @@ prehideTab <- function(taglist, value) {
     tagHasAttribute(t, attr) && tagGetAttribute(t, attr) == value
   })$parent()$addAttrs(style = style)$resetSelected()$allTags()
 }
+showTabs <- function(input_id, values, select, session) {
+  for (value in values) {
+    if (!missing(session))
+      shiny::showTab(input_id, value, select == value, session)
+    else
+      shiny::showTab(input_id, value, select == value)
+  }
+}
+hideTabs <- function(input_id, values, session) {
+  for (value in values) {
+    if (!missing(session))
+      shiny::hideTab(input_id, value, session)
+    else
+      shiny::hideTab(input_id, value)
+  }
+}
 
 
 
@@ -613,21 +629,4 @@ createCalculateResetButtonsGroup <- function(ns) {
 
 add_rules <- function(iv, id, ...) {
   lapply(rlang::list2(...), function(rule) iv$add_rule(id, rule))
-}
-
-showTabs <- function(input_id, values, select, session) {
-  for (value in values) {
-    if (!missing(session))
-      shiny::showTab(input_id, value, select == value, session)
-    else
-      shiny::showTab(input_id, value, select == value)
-  }
-}
-hideTabs <- function(input_id, values, session) {
-  for (value in values) {
-    if (!missing(session))
-      shiny::hideTab(input_id, value, session)
-    else
-      shiny::hideTab(input_id, value)
-  }
 }
