@@ -3929,7 +3929,7 @@ statInfrServer <- function(id) {
         hypPopMean <- paste("(", hypPopMean, ")", sep = "")
       
       calcOutput <- tagList(
-        sprintf("\\(%s =  \\dfrac{%g - %g}{ \\dfrac{%g}{\\sqrt{%g}} }\\)",
+        sprintf("\\(%s =  \\dfrac{%g - %s}{ \\dfrac{%g}{\\sqrt{%g}} }\\)",
                 testStat,
                 oneMeanData[2],
                 hypPopMean,
@@ -7759,6 +7759,8 @@ statInfrServer <- function(id) {
         sprintf('%0.4f', oneSDData()$s)
       }
 
+      s2Display <- sprintf('%0.4f', oneSDData()$s^2)
+
       ## UI
       withMathJax(
         ## Preface
@@ -7768,6 +7770,9 @@ statInfrServer <- function(id) {
         br(),
         sprintf("\\( s = %s \\)",
                 sDisplay),
+        br(),
+        sprintf("\\( s^2 = %s \\)",
+                s2Display),
         br(),
         br(),
 
@@ -7795,10 +7800,9 @@ statInfrServer <- function(id) {
                 oneSDCIdf,
                 (oneSSDRight <- qchisq(p = 1 - critOneSSDRight, df = oneSDCIdf))),
         br(),
-        
-        br(),
-        br(),
-        
+
+        br(), tags$b("Confidence Interval for Population Standard Deviation (\\( \\sigma \\)):"), br(),
+
         sprintf(r"---{\(
           CI = \displaystyle
           \left(
@@ -7834,7 +7838,47 @@ statInfrServer <- function(id) {
         ## Step three
         tags$b("Interpretation:"), br(),
         sprintf("We are %s confident that the population standard deviation (\\( \\sigma \\)) is between \\( %0.4f \\) and \\( %0.4f \\).",
-                input$confidenceLevel, oneSSDLowerPopStdDev, oneSSDUpperPopStdDev)
+                input$confidenceLevel, oneSSDLowerPopStdDev, oneSSDUpperPopStdDev),
+
+        br(),
+        br(),
+        tags$b("Confidence Interval for Population Variance (\\( \\sigma^2 \\)):"), br(),
+
+        sprintf(r"---{\(
+          CI = \displaystyle
+          \left(
+          \frac{df}{\chi^2_{\alpha/2,\,df}} \cdot s^2, \;\:
+          \frac{df}{\chi^2_{1 - \alpha/2,\,df}} \cdot s^2
+          \right) \)}---"),
+        br(),
+        br(),
+        br(),
+
+        sprintf(r"---(
+          \(
+          \begin{align}
+          CI &= \left( \frac{%d}{%0.3f} \cdot %s, \;\: \frac{%d}{%0.3f} \cdot %s \right) \\ \\
+             &= \left(%0.4f, %0.4f\right)
+          \end{align}
+          \)
+          )---",
+          ## Left/lower
+          oneSDCIdf, # df
+          oneSSDLeft,
+          s2Display, # s^2
+
+          ## Right/upper
+          oneSDCIdf, # df
+          oneSSDRight,
+          s2Display, # s^2
+          (oneSSDLowerPopVar <- (oneSDCIdf / oneSSDLeft) * oneSDData()$s^2),
+          (oneSSDUpperPopVar <- (oneSDCIdf / oneSSDRight) * oneSDData()$s^2)),
+        br(),
+        br(),
+
+        tags$b("Interpretation:"), br(),
+        sprintf("We are %s confident that the population variance (\\( \\sigma^2 \\)) is between \\( %0.4f \\) and \\( %0.4f \\).",
+                input$confidenceLevel, oneSSDLowerPopVar, oneSSDUpperPopVar)
       )
     })
     
