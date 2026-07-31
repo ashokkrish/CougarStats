@@ -898,6 +898,18 @@ statInfrUI <- function(id) {
 
                 uiOutput(ns("depMeansUploadStatus")),
 
+                conditionalPanel(
+                  ns = ns,
+                  condition = "output.depMeansShowSheetPicker == true",
+                  selectizeInput(
+                    inputId  = ns("depMeansSheet"),
+                    label    = strong("Choose a Sheet"),
+                    choices  = c(""),
+                    multiple = FALSE,
+                    options  = list(placeholder = 'Select a sheet',
+                                    onInitialize = I('function() { this.setValue(""); }')))
+                ),
+
                 selectizeInput(
                   inputId = ns("depMeansUplSample1"),
                   label   = strong("Column for Sample 1 (e.g. Before, Pre-Treatment, Baseline)"),
@@ -968,6 +980,18 @@ statInfrUI <- function(id) {
                               ".xlsx")),
 
                 uiOutput(ns("signedRankUploadStatus")),
+
+                conditionalPanel(
+                  ns = ns,
+                  condition = "output.signedRankShowSheetPicker == true",
+                  selectizeInput(
+                    inputId  = ns("signedRankSheet"),
+                    label    = strong("Choose a Sheet"),
+                    choices  = c(""),
+                    multiple = FALSE,
+                    options  = list(placeholder = 'Select a sheet',
+                                    onInitialize = I('function() { this.setValue(""); }')))
+                ),
 
                 selectizeInput(
                   inputId = ns("signedRankUpl1"),
@@ -1346,7 +1370,19 @@ statInfrUI <- function(id) {
                             ".csv",
                             ".xls",
                             ".xlsx")),
-              
+
+              conditionalPanel(
+                ns = ns,
+                condition = "output.anovaShowSheetPicker == true",
+                selectizeInput(
+                  inputId  = ns("anovaSheet"),
+                  label    = strong("Choose a Sheet"),
+                  choices  = c(""),
+                  multiple = FALSE,
+                  options  = list(placeholder = 'Select a sheet',
+                                  onInitialize = I('function() { this.setValue(""); }')))
+              ),
+
               hidden(tagList(
                 div(
                   id = ns("anovaUploadInputs"),
@@ -3929,7 +3965,7 @@ statInfrServer <- function(id) {
         hypPopMean <- paste("(", hypPopMean, ")", sep = "")
       
       calcOutput <- tagList(
-        sprintf("\\(%s =  \\dfrac{%g - %g}{ \\dfrac{%g}{\\sqrt{%g}} }\\)",
+        sprintf("\\(%s =  \\dfrac{%g - %s}{ \\dfrac{%g}{\\sqrt{%g}} }\\)",
                 testStat,
                 oneMeanData[2],
                 hypPopMean,
@@ -6276,17 +6312,31 @@ statInfrServer <- function(id) {
     
     ### ------------ Dependent Means Reactives -----------------------------------
     
-    DepMeansUploadData <- eventReactive(input$depMeansUserData, {
-      
-      ext <- tools::file_ext(input$depMeansUserData$name)
-      ext <- tolower(ext)
-      
+    output$depMeansShowSheetPicker <- reactive({
+      if (is.null(input$depMeansUserData)) return(FALSE)
+      tolower(tools::file_ext(input$depMeansUserData$name)) %in% c("xls", "xlsx")
+    })
+    outputOptions(output, "depMeansShowSheetPicker", suspendWhenHidden = FALSE)
+
+    DepMeansUploadData <- eventReactive(list(input$depMeansUserData, input$depMeansSheet), {
+      req(input$depMeansUserData)
+      ext  <- tolower(tools::file_ext(input$depMeansUserData$name))
+      path <- input$depMeansUserData$datapath
+
       switch(ext,
-             csv = read_csv(input$depMeansUserData$datapath, show_col_types = FALSE),
-             xls = read_xls(input$depMeansUserData$datapath),
-             xlsx = read_xlsx(input$depMeansUserData$datapath),
-             txt = read_tsv(input$depMeansUserData$datapath, show_col_types = FALSE),
-             
+             csv = read_csv(path, show_col_types = FALSE),
+             xls = {
+               req(input$depMeansSheet)
+               req(input$depMeansSheet %in% readxl::excel_sheets(path))
+               quietExcelRead(read_xls, path, input$depMeansSheet)
+             },
+             xlsx = {
+               req(input$depMeansSheet)
+               req(input$depMeansSheet %in% readxl::excel_sheets(path))
+               quietExcelRead(read_xlsx, path, input$depMeansSheet)
+             },
+             txt = read_tsv(path, show_col_types = FALSE),
+
              validate("Improper file format")
       )
     })
@@ -6334,17 +6384,31 @@ statInfrServer <- function(id) {
       allowColumnValidation = TRUE
     )
     
-    signedRankUploadData <- eventReactive(input$signedRankUpl, {
-      
-      ext <- tools::file_ext(input$signedRankUpl$name)
-      ext <- tolower(ext)
-      
+    output$signedRankShowSheetPicker <- reactive({
+      if (is.null(input$signedRankUpl)) return(FALSE)
+      tolower(tools::file_ext(input$signedRankUpl$name)) %in% c("xls", "xlsx")
+    })
+    outputOptions(output, "signedRankShowSheetPicker", suspendWhenHidden = FALSE)
+
+    signedRankUploadData <- eventReactive(list(input$signedRankUpl, input$signedRankSheet), {
+      req(input$signedRankUpl)
+      ext  <- tolower(tools::file_ext(input$signedRankUpl$name))
+      path <- input$signedRankUpl$datapath
+
       switch(ext,
-             csv = read_csv(input$signedRankUpl$datapath, show_col_types = FALSE),
-             xls = read_xls(input$signedRankUpl$datapath),
-             xlsx = read_xlsx(input$signedRankUpl$datapath),
-             txt = read_tsv(input$signedRankUpl$datapath, show_col_types = FALSE),
-             
+             csv = read_csv(path, show_col_types = FALSE),
+             xls = {
+               req(input$signedRankSheet)
+               req(input$signedRankSheet %in% readxl::excel_sheets(path))
+               quietExcelRead(read_xls, path, input$signedRankSheet)
+             },
+             xlsx = {
+               req(input$signedRankSheet)
+               req(input$signedRankSheet %in% readxl::excel_sheets(path))
+               quietExcelRead(read_xlsx, path, input$signedRankSheet)
+             },
+             txt = read_tsv(path, show_col_types = FALSE),
+
              validate("Improper file format")
       )
     })
@@ -6543,16 +6607,31 @@ statInfrServer <- function(id) {
     })
     
     ### ------------ ANOVA Reactives ---------------------------------------------
-    anovaUploadData <- eventReactive(input$anovaUserData, {
-      ext <- tools::file_ext(input$anovaUserData$name)
-      ext <- tolower(ext)
-      
+    output$anovaShowSheetPicker <- reactive({
+      if (is.null(input$anovaUserData)) return(FALSE)
+      tolower(tools::file_ext(input$anovaUserData$name)) %in% c("xls", "xlsx")
+    })
+    outputOptions(output, "anovaShowSheetPicker", suspendWhenHidden = FALSE)
+
+    anovaUploadData <- eventReactive(list(input$anovaUserData, input$anovaSheet), {
+      req(input$anovaUserData)
+      ext  <- tolower(tools::file_ext(input$anovaUserData$name))
+      path <- input$anovaUserData$datapath
+
       switch(ext,
-             csv = read_csv(input$anovaUserData$datapath, show_col_types = FALSE),
-             xls = read_xls(input$anovaUserData$datapath),
-             xlsx = read_xlsx(input$anovaUserData$datapath),
-             txt = read_tsv(input$anovaUserData$datapath, show_col_types = FALSE),
-             
+             csv = read_csv(path, show_col_types = FALSE),
+             xls = {
+               req(input$anovaSheet)
+               req(input$anovaSheet %in% readxl::excel_sheets(path))
+               quietExcelRead(read_xls, path, input$anovaSheet)
+             },
+             xlsx = {
+               req(input$anovaSheet)
+               req(input$anovaSheet %in% readxl::excel_sheets(path))
+               quietExcelRead(read_xlsx, path, input$anovaSheet)
+             },
+             txt = read_tsv(path, show_col_types = FALSE),
+
              validate("Improper file format.")
       )
     })
@@ -7759,6 +7838,8 @@ statInfrServer <- function(id) {
         sprintf('%0.4f', oneSDData()$s)
       }
 
+      s2Display <- sprintf('%0.4f', oneSDData()$s^2)
+
       ## UI
       withMathJax(
         ## Preface
@@ -7768,6 +7849,9 @@ statInfrServer <- function(id) {
         br(),
         sprintf("\\( s = %s \\)",
                 sDisplay),
+        br(),
+        sprintf("\\( s^2 = %s \\)",
+                s2Display),
         br(),
         br(),
 
@@ -7795,10 +7879,9 @@ statInfrServer <- function(id) {
                 oneSDCIdf,
                 (oneSSDRight <- qchisq(p = 1 - critOneSSDRight, df = oneSDCIdf))),
         br(),
-        
-        br(),
-        br(),
-        
+
+        br(), tags$b("Confidence Interval for Population Standard Deviation (\\( \\sigma \\)):"), br(),
+
         sprintf(r"---{\(
           CI = \displaystyle
           \left(
@@ -7834,7 +7917,47 @@ statInfrServer <- function(id) {
         ## Step three
         tags$b("Interpretation:"), br(),
         sprintf("We are %s confident that the population standard deviation (\\( \\sigma \\)) is between \\( %0.4f \\) and \\( %0.4f \\).",
-                input$confidenceLevel, oneSSDLowerPopStdDev, oneSSDUpperPopStdDev)
+                input$confidenceLevel, oneSSDLowerPopStdDev, oneSSDUpperPopStdDev),
+
+        br(),
+        br(),
+        tags$b("Confidence Interval for Population Variance (\\( \\sigma^2 \\)):"), br(),
+
+        sprintf(r"---{\(
+          CI = \displaystyle
+          \left(
+          \frac{df}{\chi^2_{\alpha/2,\,df}} \cdot s^2, \;\:
+          \frac{df}{\chi^2_{1 - \alpha/2,\,df}} \cdot s^2
+          \right) \)}---"),
+        br(),
+        br(),
+        br(),
+
+        sprintf(r"---(
+          \(
+          \begin{align}
+          CI &= \left( \frac{%d}{%0.3f} \cdot %s, \;\: \frac{%d}{%0.3f} \cdot %s \right) \\ \\
+             &= \left(%0.4f, %0.4f\right)
+          \end{align}
+          \)
+          )---",
+          ## Left/lower
+          oneSDCIdf, # df
+          oneSSDLeft,
+          s2Display, # s^2
+
+          ## Right/upper
+          oneSDCIdf, # df
+          oneSSDRight,
+          s2Display, # s^2
+          (oneSSDLowerPopVar <- (oneSDCIdf / oneSSDLeft) * oneSDData()$s^2),
+          (oneSSDUpperPopVar <- (oneSDCIdf / oneSSDRight) * oneSDData()$s^2)),
+        br(),
+        br(),
+
+        tags$b("Interpretation:"), br(),
+        sprintf("We are %s confident that the population variance (\\( \\sigma^2 \\)) is between \\( %0.4f \\) and \\( %0.4f \\).",
+                input$confidenceLevel, oneSSDLowerPopVar, oneSSDUpperPopVar)
       )
     })
     
@@ -8061,11 +8184,19 @@ statInfrServer <- function(id) {
         sprintf(r"--[\( H_%s: \sigma %s %s \)]--", # σ
                 hypothesis, nullOrAltHypothesisString, sigma0Display);
       }
-      
+
+      hypothesisFormattedStringVar <- function(hypothesis, nullOrAltHypothesisString) {
+        sprintf(r"--[\( H_%s: \sigma^2 %s \left(%s\right)^2 \)]--", # σ²
+                hypothesis, nullOrAltHypothesisString, sigma0Display);
+      }
+
       ## UI
       withMathJax(
         hypothesisFormattedString("0", nullHypString), br(),
         hypothesisFormattedString("a", altHypString), br(),
+        br(),
+        hypothesisFormattedStringVar("0", nullHypString), br(),
+        hypothesisFormattedStringVar("a", altHypString), br(),
         br(),
         sprintf("\\( \\alpha = %0.2f \\)", SigLvl()), br(),
         
@@ -8180,19 +8311,19 @@ statInfrServer <- function(id) {
                      accept = TRUE,
                      lessThan = TRUE) {
               sprintf(paste0("Since the test statistic \\( \\left( \\chi^2 \\right) \\)",
-                             " falls in the %s region,",
-                             " \\(\\chi^2 = %0.4f\\) which is %s than \\(%0.4f\\), we %sreject \\(H_0\\)",
-                             " as there is %ssufficient evidence to accept the",
-                             " alternative hypothesis."),
+                             " falls in the %s region, we %s \\(H_0\\).",
+                             " At \\(\\alpha = %0.2f\\), there is %s evidence to conclude that",
+                             " \\(\\sigma %s %s\\)",
+                             " (equivalently, \\(\\sigma^2 %s \\left(%s\\right)^2\\))."),
                       if (accept) "acceptance" else "rejection",
-                      testStatisticValue,
-                      if (lessThan) "less" else "greater",
-                      criticalValue,
-                      if (accept) "do not " else "",
-                      if (accept) "in" else ""
+                      if (accept) "fail to reject" else "reject",
+                      significanceLevel,
+                      if (accept) "insufficient" else "sufficient",
+                      altHypString, sigma0Display,
+                      altHypString, sigma0Display
               )
             }
-          
+
           if (input$altHypothesis != 2) {
             ## One-tailed test
             if (input$altHypothesis == 1) {
@@ -8211,33 +8342,11 @@ statInfrServer <- function(id) {
           } else {
             ## Two-tailed test
             if (chiSqTestStatistic <= chiSqCValue[[1]]) {
-              accept <- FALSE
-              sprintf(paste0("Since the test statistic \\( \\left( \\chi^2 \\right) \\)",
-                             " falls in the rejection region,",
-                             " \\(\\chi^2 = %0.4f\\) which is less than (or equal to) \\(%0.4f\\), we reject \\(H_0\\)",
-                             " as there is sufficient evidence to accept the",
-                             " alternative hypothesis."),
-                      chiSqTestStatistic,
-                      chiSqCValue[[1]])
+              conclusionString(accept = (accept <- FALSE))
             } else if ((chiSqTestStatistic >= chiSqCValue[[2]])) {
-              accept <- FALSE
-              sprintf(paste0("Since the test statistic \\( \\left( \\chi^2 \\right) \\)",
-                             " falls in the rejection region,",
-                             " \\(\\chi^2 = %0.4f\\) which is greater than (or equal to) \\(%0.4f\\), we reject \\(H_0\\)",
-                             " as there is sufficient evidence to accept the",
-                             " alternative hypothesis."),
-                      chiSqTestStatistic,
-                      chiSqCValue[[2]])
+              conclusionString(accept = (accept <- FALSE))
             } else {
-              accept <- TRUE
-              sprintf(paste0("Since the test statistic \\( \\left( \\chi^2 \\right) \\)",
-                             " falls in the acceptance region,",
-                             " \\(\\chi^2 = %0.4f\\) which is between \\(%0.4f\\) and \\(%0.4f\\), we do not reject \\(H_0\\)",
-                             " as there is insufficient evidence to accept the",
-                             " alternative hypothesis."),
-                      chiSqTestStatistic,
-                      chiSqCValue[[1]],
-                      chiSqCValue[[2]])
+              conclusionString(accept = (accept <- TRUE))
             }
           }
         },
@@ -11338,11 +11447,31 @@ statInfrServer <- function(id) {
                                                       targets = 0:ncol(anovaUploadData())))),
       )
     })
-    
+
+    output$renderAnovaDataView <- renderUI({
+      if (!isTRUE(input$siMethod == 'Multiple' && input$multipleMethodChoice == 'anova')) return(NULL)
+      if (!anovaupload_iv$is_valid()) {
+        return(helpText("No data yet. Upload a dataset to view it here."))
+      }
+      tagList(
+        div(DTOutput(session$ns("anovaUploadTable")), style = "width: 75%")
+      )
+    })
+
     ### ------------ Kruskal-Wallis Outputs ------------------------------------------
     output$kwHT <- kruskalWallisHT(kwResults, reactive({input$kwSigLvl}))
     output$kwUploadTable <- kruskalWallisUpload(kwUploadData, reactive({kwupload_iv$is_valid()}))
     output$kwInitialUploadTable <- kruskalWallisUploadInitial(kwUploadData)
+
+    output$renderKWData <- renderUI({
+      if (!isTRUE(input$siMethod == 'Multiple' && input$multipleMethodChoice == 'kw')) return(NULL)
+      if (!kwupload_iv$is_valid()) {
+        return(helpText("No data yet. Upload a dataset to view it here."))
+      }
+      tagList(
+        div(DTOutput(session$ns("kwUploadTable")), style = "width: 75%")
+      )
+    })
     output$renderKWRM <- kwRankedTableOutput(kwResults()$data)
     output$kruskalWallisPlot <- kruskalWallisPlot(kwResults, reactive({input$kwSigLvl}))
     output$kwConclusionOutput <- kwConclusion(kwResults, reactive({input$kwSigLvl}))
@@ -11747,12 +11876,33 @@ statInfrServer <- function(id) {
       }
     })
     
-    observeEvent(input$depMeansUserData, priority = 5, {
+    observeEvent(input$depMeansUserData, priority = 50, {
+      req(input$depMeansUserData)
+      ext <- tolower(tools::file_ext(input$depMeansUserData$name))
+      if (ext %in% c("xls", "xlsx")) {
+        sheets <- tryCatch(readxl::excel_sheets(input$depMeansUserData$datapath),
+                           error = function(e) character(0))
+        freezeReactiveValue(input, "depMeansSheet")
+        updateSelectizeInput(session, "depMeansSheet",
+                             choices  = sheets,
+                             selected = if (length(sheets)) sheets[1] else "")
+      } else {
+        updateSelectizeInput(session, "depMeansSheet", choices = character(0), selected = "")
+      }
+    })
+
+    observeEvent(list(input$depMeansUserData, input$depMeansSheet), priority = 5, {
+      req(input$depMeansUserData)
       hide(id = "inferenceData")
       hide(id = "depMeansUplSample1")
       hide(id = "depMeansUplSample2")
       fileInputs$depMeansStatus <- 'uploaded'
-      
+
+      ext <- tolower(tools::file_ext(input$depMeansUserData$name))
+      if (ext %in% c("xls", "xlsx") && (is.null(input$depMeansSheet) || input$depMeansSheet == "")) {
+        return()
+      }
+
       if(depmeansupload_iv$is_valid()) {
         freezeReactiveValue(input, "depMeansUplSample1")
         updateSelectInput(session = getDefaultReactiveDomain(),
@@ -11860,7 +12010,23 @@ statInfrServer <- function(id) {
 
     ### ---------- Wilcoxon Signed Rank Test Observers --------------------
     
-    observeEvent(input$signedRankUpl, priority = 5, {
+    observeEvent(input$signedRankUpl, priority = 50, {
+      req(input$signedRankUpl)
+      ext <- tolower(tools::file_ext(input$signedRankUpl$name))
+      if (ext %in% c("xls", "xlsx")) {
+        sheets <- tryCatch(readxl::excel_sheets(input$signedRankUpl$datapath),
+                           error = function(e) character(0))
+        freezeReactiveValue(input, "signedRankSheet")
+        updateSelectizeInput(session, "signedRankSheet",
+                             choices  = sheets,
+                             selected = if (length(sheets)) sheets[1] else "")
+      } else {
+        updateSelectizeInput(session, "signedRankSheet", choices = character(0), selected = "")
+      }
+    })
+
+    observeEvent(list(input$signedRankUpl, input$signedRankSheet), priority = 5, {
+      req(input$signedRankUpl)
       rv$calculatePressed <- FALSE
 
       rv$allowColumnValidation <- FALSE
@@ -11869,6 +12035,11 @@ statInfrServer <- function(id) {
       hide(id = "signedRankUpl1")
       hide(id = "signedRankUpl2")
       fileInputs$signedRankStatus <- 'uploaded'
+
+      ext <- tolower(tools::file_ext(input$signedRankUpl$name))
+      if (ext %in% c("xls", "xlsx") && (is.null(input$signedRankSheet) || input$signedRankSheet == "")) {
+        return()
+      }
 
       freezeReactiveValue(input, "signedRankUpl1")
       updateSelectInput(session = getDefaultReactiveDomain(),
@@ -11941,13 +12112,38 @@ statInfrServer <- function(id) {
       )
     })
     
-    observeEvent(input$anovaUserData, priority = 10, {
-      
+    session$onFlushed(function() {
+      hideTab(inputId = "anovaTabset", target = "Uploaded Data")
+      hideTab(inputId = "kwTabset", target = "Uploaded Data")
+    }, once = TRUE)
+
+    observeEvent(input$anovaUserData, priority = 50, {
+      req(input$anovaUserData)
+      ext <- tolower(tools::file_ext(input$anovaUserData$name))
+      if (ext %in% c("xls", "xlsx")) {
+        sheets <- tryCatch(readxl::excel_sheets(input$anovaUserData$datapath),
+                           error = function(e) character(0))
+        freezeReactiveValue(input, "anovaSheet")
+        updateSelectizeInput(session, "anovaSheet",
+                             choices  = sheets,
+                             selected = if (length(sheets)) sheets[1] else "")
+      } else {
+        updateSelectizeInput(session, "anovaSheet", choices = character(0), selected = "")
+      }
+    })
+
+    observeEvent(list(input$anovaUserData, input$anovaSheet), priority = 10, {
+      req(input$anovaUserData)
       hide(id = "inferenceData")
       hide(id = "anovaUploadInputs")
-      
+
       fileInputs$anovaStatus <- 'uploaded'
-      
+
+      ext <- tolower(tools::file_ext(input$anovaUserData$name))
+      if (ext %in% c("xls", "xlsx") && (is.null(input$anovaSheet) || input$anovaSheet == "")) {
+        return()
+      }
+
       if(anovaupload_iv$is_valid())
       {
         freezeReactiveValue(input, "anovaMultiColumns")
@@ -11955,28 +12151,28 @@ statInfrServer <- function(id) {
                              "anovaMultiColumns",
                              choices = c(colnames(anovaUploadData()))
         )
-        
+
         freezeReactiveValue(input, "anovaResponse")
         updateSelectizeInput(session = getDefaultReactiveDomain(),
                              "anovaResponse",
                              choices = c(colnames(anovaUploadData()))
         )
-        
+
         freezeReactiveValue(input, "anovaFactors")
         updateSelectizeInput(session = getDefaultReactiveDomain(),
                              "anovaFactors",
                              choices = c(colnames(anovaUploadData()))
         )
-        
+
         shinyjs::show(id = "anovaUploadInputs")
+        goToUploadedDataTab("anovaTabset")
       }
     })
-    
+
     observeEvent(input$kwUserData, {
       output$analysisContent <- renderUI({ NULL })
       output$renderKWRM <- renderUI({ NULL })
-      output$renderKWData <- renderUI({ NULL })
-      
+
       output$renderKWRaw <- renderUI({
         tagList(
           div(DTOutput(session$ns("kwInitialUploadTable")), style = "width: 75%")
@@ -12016,9 +12212,10 @@ statInfrServer <- function(id) {
         )
         
         shinyjs::show(id = "kwUploadInputs")
+        goToUploadedDataTab("kwTabset")
       }
     })
-    
+
     observeEvent(input$chisquareDimension, {
       if( input$chisquareDimension != '2 x 2') {
         shinyjs::disable(selector = '#chisquareMethod input[value="Fisher"]')
@@ -12036,12 +12233,6 @@ statInfrServer <- function(id) {
     })
     
     observeEvent(input$goInference, {
-      output$renderAnovaDataView <- renderUI({
-        tagList(
-          div(DTOutput(session$ns("anovaUploadTable")), style = "width: 75%")
-        )
-      })
-      
       output$renderAnovaBoxplot <- renderUI({
         tagList(
           plotOutput(session$ns("anovaBoxplot"),
@@ -12088,15 +12279,9 @@ statInfrServer <- function(id) {
       
       observeEvent(input$goInference, {
         kwDisplayState("analysis")
-        
+
         req(kwUploadData())
         req(kwupload_iv$is_valid())
-        
-        output$renderKWData <- renderUI({
-          tagList(
-            div(DTOutput(session$ns("kwUploadTable")), style = "width: 75%")
-          )
-        })
       })
       
       observe({
@@ -12714,6 +12899,28 @@ statInfrServer <- function(id) {
       updateSelectizeInput(session, "kwMultiColumns", selected = character(0))
       updateSelectizeInput(session, "kwResponse", selected = "")
       updateSelectizeInput(session, "kwFactors", selected = "")
+
+      ## -- Sheet selections: reset Excel uploads to their first sheet rather
+      ##    than "". The sheet-population observer only re-fires on a fresh
+      ##    file upload, not on this reset, so clearing to "" would strand a
+      ##    retained Excel file with an empty, non-repopulating sheet picker
+      ##    (and the column pickers/preview along with it).
+      resetSheetToFirst <- function(fileInputId, sheetInputId) {
+        fileVal <- input[[fileInputId]]
+        if (!is.null(fileVal) && tolower(tools::file_ext(fileVal$name)) %in% c("xls", "xlsx")) {
+          sheets <- tryCatch(readxl::excel_sheets(fileVal$datapath), error = function(e) character(0))
+          updateSelectizeInput(session, sheetInputId, selected = if (length(sheets)) sheets[1] else "")
+        } else {
+          updateSelectizeInput(session, sheetInputId, selected = "")
+        }
+      }
+      resetSheetToFirst("oneMeanUserData", "oneMeanSheet")
+      resetSheetToFirst("sdUserData", "sdSheet")
+      resetSheetToFirst("indMeansUserData", "indMeansSheet")
+      resetSheetToFirst("wilcoxonUpl", "wilcoxonSheet")
+      resetSheetToFirst("depMeansUserData", "depMeansSheet")
+      resetSheetToFirst("signedRankUpl", "signedRankSheet")
+      resetSheetToFirst("anovaUserData", "anovaSheet")
 
       ## -- Results are now stale until recalculated; hide them --
       hide(id = "inferenceMP")
