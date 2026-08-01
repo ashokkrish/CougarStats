@@ -1111,10 +1111,13 @@ PolynomialRegressionServer <- function(id) {
         procedure  = "Kolmogorov-Smirnov Test",
         min_n      = 3,
         run        = function(model) {
-          ks <- ks.test(residuals(model), "pnorm",
-                        mean = mean(residuals(model)),
-                        sd   = sd(residuals(model)))
-          list(statistic = round(ks$statistic, 4), p_value = round(ks$p.value, 4), note = NULL)
+          resids <- residuals(model)
+          has_ties <- anyDuplicated(resids) > 0
+          ks <- suppressWarnings(ks.test(resids, "pnorm",
+                                         mean = mean(resids),
+                                         sd   = sd(resids)))
+          note <- if (has_ties) "Ties detected in residuals; p-value may be unreliable." else NULL
+          list(statistic = round(ks$statistic, 4), p_value = round(ks$p.value, 4), note = note)
         }
       ),
       list(
@@ -1157,13 +1160,14 @@ PolynomialRegressionServer <- function(id) {
           list(statistic = NULL, p_value = NULL, note = paste("Error:", e$message))
         })
         pval_str <- if (!is.null(result$p_value)) as.character(result$p_value) else "—"
-        conclusion <- if (!is.null(result$note)) {
-          result$note
-        } else if (!is.null(result$p_value)) {
-          if (result$p_value <= alpha)
+        conclusion <- if (!is.null(result$p_value)) {
+          base <- if (result$p_value <= alpha)
             paste0("Reject H₀ (p = ", result$p_value, " ≤ 0.05)")
           else
             paste0("Fail to reject H₀ (p = ", result$p_value, " > 0.05)")
+          if (!is.null(result$note)) paste0(base, " — ", result$note) else base
+        } else if (!is.null(result$note)) {
+          result$note
         } else {
           "—"
         }
