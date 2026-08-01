@@ -579,13 +579,16 @@ SLRServer <- function(id) {
         procedure  = "Kolmogorov-Smirnov Test",
         min_n      = 3,
         run        = function(model, datx, daty) {
-          ks <- ks.test(residuals(model), "pnorm",
-                        mean = mean(residuals(model)),
-                        sd   = sd(residuals(model)))
+          resids <- residuals(model)
+          has_ties <- anyDuplicated(resids) > 0
+          ks <- suppressWarnings(ks.test(resids, "pnorm",
+                                         mean = mean(resids),
+                                         sd   = sd(resids)))
+          note <- if (has_ties) "Ties detected in residuals; p-value may be unreliable." else NULL
           list(
             statistic = round(ks$statistic, 4),
             p_value   = round(ks$p.value, 4),
-            note      = NULL
+            note      = note
           )
         }
       ),
@@ -1069,14 +1072,15 @@ SLRServer <- function(id) {
             pval_str <- if (!is.null(result$p_value))   as.character(result$p_value)   else "\u2014"
             
             # Conclusion
-            conclusion <- if (!is.null(result$note)) {
-              result$note
-            } else if (!is.null(result$p_value)) {
-              if (result$p_value <= alpha) {
+            conclusion <- if (!is.null(result$p_value)) {
+              base <- if (result$p_value <= alpha) {
                 paste0("Reject H\u2080 (p = ", result$p_value, " \u2264 0.05)")
               } else {
                 paste0("Fail to reject H\u2080 (p = ", result$p_value, " > 0.05)")
               }
+              if (!is.null(result$note)) paste0(base, " \u2014 ", result$note) else base
+            } else if (!is.null(result$note)) {
+              result$note
             } else {
               "\u2014"
             }
@@ -1382,8 +1386,8 @@ SLRServer <- function(id) {
                     },
                     cell = function(value) {
                       if (!is.numeric(value)) return(value)
-                      if (value == floor(value)) {
-                        formatC(value, format = "f", digits = 0)
+                      if (abs(value - round(value)) < 1e-9) {
+                        formatC(round(value), format = "f", digits = 0)
                       } else {
                         formatC(value, format = "f", digits = 3)
                       }
@@ -2378,106 +2382,87 @@ SLRServer <- function(id) {
         
         output$anovaFCurve <- renderPlot({
           anova_results <- anova(model)
-          
+
           df1    <- 1
           df2    <- n - 2
-          f_stat <- anova_results$`F value`[1]
-          p_val  <- anova_results$`Pr(>F)`[1]
-          f_crit <- qf(0.95, df1, df2)
-          x_max  <- x_max  <- f_crit * 3
-          
-          x <- seq(0, x_max, length.out = 1000)
-          y <- df(x, df1, df2)
-          
-          plot_df <- data.frame(x = x, y = y)
-          
+          f_stat <- round(anova_results$`F value`[1], 4)
+          f_crit <- round(qf(0.95, df1, df2), 4)
+          x_start <- f_crit * 0.55
+          x_max <- if (f_stat > x_start && f_stat < f_crit * 10)
+                     max(f_crit * 2.5, f_stat * 1.3)
+                   else
+                     f_crit * 2.5
+
+          xSeq <- c(seq(x_start, x_max, length.out = 200),
+                    f_crit, (f_crit + x_max) / 2)
+          if (f_stat > x_start && f_stat <= x_max) xSeq <- c(xSeq, f_stat)
+          x_vector <- sort(unique(xSeq))
+          p_vector <- stats::df(x_vector, df1, df2)
+
+          plot_df <- data.frame(x = x_vector, y = p_vector) %>%
+            filter(is.finite(y))
+          cv_df   <- filter(plot_df, x %in% f_crit)
+          ts_df   <- filter(plot_df, x %in% f_stat)
+
+          y_max    <- max(plot_df$y)
+          seg_h    <- y_max * 0.4
+          y_breaks <- Filter(function(b) b >= 0, pretty(c(0, y_max), n = 3))
+
           ggplot(plot_df, aes(x = x, y = y)) +
-            
-            # Main curve
-            geom_line(lwd = 1) +
-            
-            # Rejection region shading (red)
-            geom_area(
-              data = subset(plot_df, x >= f_crit),
-              aes(x = x, y = y),
-              fill  = "red",
-              alpha = 0.3
-            ) +
-            
-            # P-value region shading (blue) - only if f_stat <= x_max
-            {if(f_stat <= x_max)
-              geom_area(
-                data = subset(plot_df, x >= f_stat),
-                aes(x = x, y = y),
-                fill  = "blue",
-                alpha = 0.3
-              )
-            } +
-            
-            # Critical value line
-            geom_vline(
-              xintercept = f_crit,
-              colour     = "red",
-              linewidth  = 0.8,
-              linetype   = "dashed"
-            ) +
-            
-            # F statistic line - only if within plot range
-            {if(f_stat <= x_max)
-              geom_vline(
-                xintercept = f_stat,
-                colour     = "blue",
-                linewidth  = 0.8,
-                linetype   = "dashed"
-              )
-            } +
-            
-            # Labels
-            labs(
-              title = "F Distribution",
-              x     = "F",
-              y     = "Density"
-            ) +
-            
-            # Annotations
-            # Critical value annotation - below the line instead of beside it
+            shadeHtArea(plot_df, f_crit, "greater") +
+            geom_line(linewidth = 0.8) +
             annotate("text",
-                     x     = f_crit,
-                     y     = max(y) * 0.2,
-                     label = sprintf("F critical\n= %.4f", f_crit),
-                     hjust = -0.1,
-                     color = "red",
-                     size  = 3.5) +
-            
-            # P-value annotation - fixed to top right corner
+                     x = f_crit * 0.75, y = y_max * 1.07,
+                     label = "A R",
+                     size = 16 / .pt, fontface = "bold") +
+            annotate("segment",
+                     x = f_crit * 0.75, xend = f_crit * 0.75,
+                     y = y_max * 1.01, yend = y_max * 0.28,
+                     linewidth = 0.45,
+                     arrow = arrow(length = unit(0.15, "cm"), type = "closed")) +
             annotate("text",
-                     x     = x_max * 0.6,
-                     y     = max(y) * 0.9,
-                     label = sprintf("p-value = %.4f", p_val),
-                     color = "black",
-                     size  = 4) +
-            
-            # F statistic annotation - only shown if within plot range
-            {if(f_stat <= x_max)
-              annotate("text",
-                       x     = f_stat,
-                       y     = max(y) * 0.4,
-                       label = sprintf("F statistic\n= %.4f", f_stat),
-                       hjust = -0.1,
-                       color = "blue",
-                       size  = 3.5)
+                     x = (f_crit + x_max) / 2, y = y_max * 0.65,
+                     label = "RR",
+                     size = 16 / .pt, fontface = "bold") +
+            {if (f_stat > x_start && f_stat <= x_max)
+              geom_segment(data = ts_df,
+                           aes(x = x, xend = x, y = 0, yend = seg_h),
+                           linetype = "solid", linewidth = 1.25,
+                           color = "#BD130B")
             } +
-            
-            # Theme
+            {if (f_stat > x_start && f_stat <= x_max)
+              geom_text(data = ts_df,
+                        aes(x = x, y = seg_h, label = x),
+                        size = 16 / .pt, fontface = "bold",
+                        nudge_y = y_max * 0.07)
+            } +
+            geom_segment(data = cv_df,
+                         aes(x = x, xend = x, y = 0, yend = seg_h),
+                         linetype = "solid", lineend = "butt",
+                         linewidth = 1.5, color = "#023B70") +
+            geom_text(data = cv_df,
+                      aes(x = x, y = 0, label = x),
+                      size = 14 / .pt, fontface = "bold",
+                      nudge_x = (x_max - x_start) * 0.03,
+                      nudge_y = y_max * 0.06) +
+            scale_y_continuous(
+              breaks = y_breaks,
+              expand = expansion(mult = c(0, 0.18))
+            ) +
+            scale_x_continuous(
+              expand = expansion(mult = c(0.01, 0.02))
+            ) +
+            ylab("Density") +
+            xlab("F") +
             theme_classic() +
             theme(
-              plot.title   = element_text(hjust = 0.5, face = "bold"),
-              axis.title   = element_text(size = 12, face = "bold"),
-              axis.text    = element_text(size = 10, face ="bold")
-            ) +
-            coord_cartesian(clip = "off")
-        })
-        
+              axis.text    = element_text(size = 9),
+              axis.title.x = element_text(size = 16, face = "bold.italic"),
+              axis.title.y = element_text(size = 11),
+              plot.margin  = margin(t = 20, r = 10, b = 5, l = 5)
+            )
+        }, height = 300, width = 500)
+
         output$pearsonTCurve <- renderPlot({
           hypTTestPlot(
             testStatistic = round(pearson$statistic, 3),
