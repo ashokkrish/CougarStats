@@ -200,7 +200,7 @@ SLRMainPanelUI <- function(id) {
                   div(tableOutput(ns("anovaTable")), width = "100 px;"),
                   br(),
                   br(),
-                  plotOutput(ns("anovaFCurve")),
+                  plotlyOutput(ns("anovaFCurve"), height = "400px"),
                   br(),
                   br(),
                   uiOutput(ns("anovaConclusion")),
@@ -2209,7 +2209,7 @@ SLRServer <- function(id) {
               fullWidth  = FALSE,
               rownames   = FALSE,
               columns = list(
-                x      = colDef(name = "x",      align = "center"),
+                x      = colDef(name = "x",      align = "center", footer = tags$b("Total")),
                 y      = colDef(name = "y",      align = "center"),
                 rank_x = colDef(name = "Rank x", align = "center", footer = tags$b(sum_rank_x)),
                 rank_y = colDef(name = "Rank y", align = "center", footer = tags$b(sum_rank_y)),
@@ -2230,6 +2230,8 @@ SLRServer <- function(id) {
               )
             )
           } else {
+            sum_d_sq <- sum(spearman_df$d_sq)
+
             reactable(
               spearman_df[, c("x", "y", "rank_x", "rank_y", "d", "d_sq")],
               sortable   = FALSE,
@@ -2240,16 +2242,23 @@ SLRServer <- function(id) {
               fullWidth  = FALSE,
               rownames   = FALSE,
               columns = list(
-                x      = colDef(name = "x",      align = "center"),
+                x      = colDef(name = "x",      align = "center", footer = tags$b("Total")),
                 y      = colDef(name = "y",      align = "center"),
                 rank_x = colDef(name = "Rank x", align = "center"),
                 rank_y = colDef(name = "Rank y", align = "center"),
                 d      = colDef(name = "d = (Rank x \u2212 Rank y)", align = "center", minWidth = 190),
                 d_sq   = colDef(
-                  name  = HTML("d<sup>2</sup>"),
-                  html  = TRUE,
-                  align = "center",
-                  cell  = function(value) {
+                  name   = HTML("d<sup>2</sup>"),
+                  html   = TRUE,
+                  align  = "center",
+                  footer = tags$b(
+                    if (sum_d_sq == floor(sum_d_sq)) {
+                      formatC(sum_d_sq, format = "d", big.mark = ",")
+                    } else {
+                      formatC(sum_d_sq, format = "f", digits = 2)
+                    }
+                  ),
+                  cell   = function(value) {
                     if (value == floor(value)) {
                       formatC(value, format = "d", big.mark = ",")
                     } else {
@@ -2380,88 +2389,104 @@ SLRServer <- function(id) {
           )
         })
         
-        output$anovaFCurve <- renderPlot({
+        output$anovaFCurve <- renderPlotly({
           anova_results <- anova(model)
 
           df1    <- 1
           df2    <- n - 2
           f_stat <- round(anova_results$`F value`[1], 4)
           f_crit <- round(qf(0.95, df1, df2), 4)
-          x_start <- f_crit * 0.55
+
+          x_start <- 0.05
           x_max <- if (f_stat > x_start && f_stat < f_crit * 10)
                      max(f_crit * 2.5, f_stat * 1.3)
                    else
                      f_crit * 2.5
 
-          xSeq <- c(seq(x_start, x_max, length.out = 200),
-                    f_crit, (f_crit + x_max) / 2)
-          if (f_stat > x_start && f_stat <= x_max) xSeq <- c(xSeq, f_stat)
-          x_vector <- sort(unique(xSeq))
-          p_vector <- stats::df(x_vector, df1, df2)
+          x_curve <- seq(x_start, x_max, length.out = 600)
+          y_curve <- stats::df(x_curve, df1, df2)
 
-          plot_df <- data.frame(x = x_vector, y = p_vector) %>%
-            filter(is.finite(y))
-          cv_df   <- filter(plot_df, x %in% f_crit)
-          ts_df   <- filter(plot_df, x %in% f_stat)
+          # Cap y so the near-zero spike (infinite for df1=1) doesn't squish the display
+          y_cap     <- stats::df(f_crit * 0.5, df1, df2) * 1.1
+          y_display <- pmin(y_curve, y_cap)
 
-          y_max    <- max(plot_df$y)
-          seg_h    <- y_max * 0.4
-          y_breaks <- Filter(function(b) b >= 0, pretty(c(0, y_max), n = 3))
+          # Rejection region fill points
+          x_fill <- seq(f_crit, x_max, length.out = 300)
+          y_fill <- stats::df(x_fill, df1, df2)
 
-          ggplot(plot_df, aes(x = x, y = y)) +
-            shadeHtArea(plot_df, f_crit, "greater") +
-            geom_line(linewidth = 0.8) +
-            annotate("text",
-                     x = f_crit * 0.75, y = y_max * 1.07,
-                     label = "A R",
-                     size = 16 / .pt, fontface = "bold") +
-            annotate("segment",
-                     x = f_crit * 0.75, xend = f_crit * 0.75,
-                     y = y_max * 1.01, yend = y_max * 0.28,
-                     linewidth = 0.45,
-                     arrow = arrow(length = unit(0.15, "cm"), type = "closed")) +
-            annotate("text",
-                     x = (f_crit + x_max) / 2, y = y_max * 0.65,
-                     label = "RR",
-                     size = 16 / .pt, fontface = "bold") +
-            {if (f_stat > x_start && f_stat <= x_max)
-              geom_segment(data = ts_df,
-                           aes(x = x, xend = x, y = 0, yend = seg_h),
-                           linetype = "solid", linewidth = 1.25,
-                           color = "#BD130B")
-            } +
-            {if (f_stat > x_start && f_stat <= x_max)
-              geom_text(data = ts_df,
-                        aes(x = x, y = seg_h, label = x),
-                        size = 16 / .pt, fontface = "bold",
-                        nudge_y = y_max * 0.07)
-            } +
-            geom_segment(data = cv_df,
-                         aes(x = x, xend = x, y = 0, yend = seg_h),
-                         linetype = "solid", lineend = "butt",
-                         linewidth = 1.5, color = "#023B70") +
-            geom_text(data = cv_df,
-                      aes(x = x, y = 0, label = x),
-                      size = 14 / .pt, fontface = "bold",
-                      nudge_x = (x_max - x_start) * 0.03,
-                      nudge_y = y_max * 0.06) +
-            scale_y_continuous(
-              breaks = y_breaks,
-              expand = expansion(mult = c(0, 0.18))
-            ) +
-            scale_x_continuous(
-              expand = expansion(mult = c(0.01, 0.02))
-            ) +
-            ylab("Density") +
-            xlab("F") +
-            theme_classic() +
-            theme(
-              axis.text    = element_text(size = 9),
-              axis.title.x = element_text(size = 16, face = "bold.italic"),
-              axis.title.y = element_text(size = 11),
-              plot.margin  = margin(t = 20, r = 10, b = 5, l = 5)
+          seg_h          <- y_cap * 0.75
+          f_in_range     <- f_stat > x_start && f_stat <= x_max
+          y_axis_max     <- y_cap * 1.18
+
+          annotations <- list(
+            # ← AR  right-anchored at the critical value line
+            list(x = f_crit, xref = "x", y = 0.82, yref = "paper",
+                 text = "<b>← AR&nbsp;&nbsp;&nbsp;</b>", showarrow = FALSE,
+                 font = list(size = 14), xanchor = "right"),
+            # RR →  left-anchored at the critical value line
+            list(x = f_crit, xref = "x", y = 0.82, yref = "paper",
+                 text = "<b>&nbsp;&nbsp;&nbsp;RR →</b>", showarrow = FALSE,
+                 font = list(size = 14), xanchor = "left"),
+            list(x = f_crit, xref = "x", y = -0.09, yref = "paper",
+                 text = paste0("<b>", f_crit, "</b>"), showarrow = FALSE,
+                 font = list(size = 12, color = "#023B70"),
+                 xanchor = "center", yanchor = "top")
+          )
+
+          if (f_in_range) {
+            annotations <- c(annotations, list(
+              list(x = f_stat, xref = "x", y = -0.09, yref = "paper",
+                   text = paste0("<b>", f_stat, "</b>"), showarrow = FALSE,
+                   font = list(size = 12, color = "#BD130B"),
+                   xanchor = "center", yanchor = "top")
+            ))
+          }
+
+          fig <- plot_ly() %>%
+            add_trace(x = x_fill, y = y_fill,
+                      type = "scatter", mode = "none",
+                      fill = "tozeroy", fillcolor = "rgba(70,130,180,0.35)",
+                      showlegend = FALSE, hoverinfo = "none") %>%
+            add_trace(x = x_curve, y = y_display,
+                      type = "scatter", mode = "lines",
+                      line = list(color = "black", width = 1.5),
+                      showlegend = FALSE, hoverinfo = "none") %>%
+            add_segments(x = f_crit, xend = f_crit, y = 0, yend = seg_h,
+                         line = list(color = "#023B70", width = 2),
+                         showlegend = FALSE, hoverinfo = "none") %>%
+            layout(
+              xaxis = list(title          = list(text = "<b><i>F</i></b>",
+                                               font = list(size = 16)),
+                           showticklabels = FALSE,
+                           zeroline       = FALSE,
+                           showgrid       = FALSE,
+                           showline       = TRUE,
+                           linecolor      = "black",
+                           linewidth      = 1.5,
+                           range          = c(0, x_max * 1.02)),
+              yaxis = list(title         = list(text = "<b><i>Density</i></b>",
+                                               font = list(size = 16)),
+                           showgrid      = FALSE,
+                           zeroline      = FALSE,
+                           showline      = TRUE,
+                           linecolor     = "black",
+                           linewidth     = 1.5,
+                           range         = c(0, y_axis_max)),
+              annotations   = annotations,
+              margin        = list(t = 40, r = 20, b = 55, l = 70),
+              plot_bgcolor  = "white",
+              paper_bgcolor = "white"
             )
-        }, height = 300, width = 500)
+
+          if (f_in_range) {
+            fig <- fig %>%
+              add_segments(x = f_stat, xend = f_stat, y = 0, yend = seg_h,
+                           line = list(color = "#BD130B", width = 1.5),
+                           showlegend = FALSE, hoverinfo = "none")
+          }
+
+          fig
+        })
 
         output$pearsonTCurve <- renderPlot({
           hypTTestPlot(
@@ -2527,7 +2552,11 @@ SLRServer <- function(id) {
         hide(id = "slrExplanatory")
       }
     })
-    
+
+    observeEvent(list(input$x, input$y), {
+      hide(id = "regCorrMP")
+    }, ignoreInit = TRUE)
+
     # observe({
     #   req(isTruthy(input$dataRegCor))
     #   if(input$dataRegCor == 'Enter Raw Data') {
