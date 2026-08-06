@@ -200,7 +200,7 @@ SLRMainPanelUI <- function(id) {
                   div(tableOutput(ns("anovaTable")), width = "100 px;"),
                   br(),
                   br(),
-                  plotlyOutput(ns("anovaFCurve"), height = "400px"),
+                  plotOutput(ns("anovaFCurve")),
                   br(),
                   br(),
                   uiOutput(ns("anovaConclusion")),
@@ -2389,7 +2389,8 @@ SLRServer <- function(id) {
           )
         })
         
-        output$anovaFCurve <- renderPlotly({
+        # ── ggplot F-distribution (active) ──────────────────────────────────────
+        output$anovaFCurve <- renderPlot({
           anova_results <- anova(model)
 
           df1    <- 1
@@ -2398,95 +2399,146 @@ SLRServer <- function(id) {
           f_crit <- round(qf(0.95, df1, df2), 4)
 
           x_start <- 0.05
-          x_max <- if (f_stat > x_start && f_stat < f_crit * 10)
-                     max(f_crit * 2.5, f_stat * 1.3)
-                   else
-                     f_crit * 2.5
+          x_max   <- if (f_stat > x_start && f_stat < f_crit * 10)
+                       max(f_crit * 2.5, f_stat * 1.3)
+                     else
+                       f_crit * 2.5
 
           x_curve <- seq(x_start, x_max, length.out = 600)
           y_curve <- stats::df(x_curve, df1, df2)
+          y_cap   <- stats::df(f_crit * 0.5, df1, df2) * 1.1
+          y_disp  <- pmin(y_curve, y_cap)
 
-          # Cap y so the near-zero spike (infinite for df1=1) doesn't squish the display
-          y_cap     <- stats::df(f_crit * 0.5, df1, df2) * 1.1
-          y_display <- pmin(y_curve, y_cap)
+          plot_df    <- data.frame(x = x_curve, y = y_disp) %>% filter(is.finite(y))
+          seg_h      <- y_cap * 0.75
+          f_in_range <- f_stat > x_start && f_stat <= x_max
 
-          # Rejection region fill points
-          x_fill <- seq(f_crit, x_max, length.out = 300)
-          y_fill <- stats::df(x_fill, df1, df2)
-
-          seg_h          <- y_cap * 0.75
-          f_in_range     <- f_stat > x_start && f_stat <= x_max
-          y_axis_max     <- y_cap * 1.18
-
-          annotations <- list(
-            # ← AR  right-anchored at the critical value line
-            list(x = f_crit, xref = "x", y = 0.82, yref = "paper",
-                 text = "<b>← AR&nbsp;&nbsp;&nbsp;</b>", showarrow = FALSE,
-                 font = list(size = 14), xanchor = "right"),
-            # RR →  left-anchored at the critical value line
-            list(x = f_crit, xref = "x", y = 0.82, yref = "paper",
-                 text = "<b>&nbsp;&nbsp;&nbsp;RR →</b>", showarrow = FALSE,
-                 font = list(size = 14), xanchor = "left"),
-            list(x = f_crit, xref = "x", y = -0.09, yref = "paper",
-                 text = paste0("<b>", f_crit, "</b>"), showarrow = FALSE,
-                 font = list(size = 12, color = "#023B70"),
-                 xanchor = "center", yanchor = "top")
-          )
-
-          if (f_in_range) {
-            annotations <- c(annotations, list(
-              list(x = f_stat, xref = "x", y = -0.09, yref = "paper",
-                   text = paste0("<b>", f_stat, "</b>"), showarrow = FALSE,
-                   font = list(size = 12, color = "#BD130B"),
-                   xanchor = "center", yanchor = "top")
-            ))
-          }
-
-          fig <- plot_ly() %>%
-            add_trace(x = x_fill, y = y_fill,
-                      type = "scatter", mode = "none",
-                      fill = "tozeroy", fillcolor = "rgba(70,130,180,0.35)",
-                      showlegend = FALSE, hoverinfo = "none") %>%
-            add_trace(x = x_curve, y = y_display,
-                      type = "scatter", mode = "lines",
-                      line = list(color = "black", width = 1.5),
-                      showlegend = FALSE, hoverinfo = "none") %>%
-            add_segments(x = f_crit, xend = f_crit, y = 0, yend = seg_h,
-                         line = list(color = "#023B70", width = 2),
-                         showlegend = FALSE, hoverinfo = "none") %>%
-            layout(
-              xaxis = list(title          = list(text = "<b><i>F</i></b>",
-                                               font = list(size = 16)),
-                           showticklabels = FALSE,
-                           zeroline       = FALSE,
-                           showgrid       = FALSE,
-                           showline       = TRUE,
-                           linecolor      = "black",
-                           linewidth      = 1.5,
-                           range          = c(0, x_max * 1.02)),
-              yaxis = list(title         = list(text = "<b><i>Density</i></b>",
-                                               font = list(size = 16)),
-                           showgrid      = FALSE,
-                           zeroline      = FALSE,
-                           showline      = TRUE,
-                           linecolor     = "black",
-                           linewidth     = 1.5,
-                           range         = c(0, y_axis_max)),
-              annotations   = annotations,
-              margin        = list(t = 40, r = 20, b = 55, l = 70),
-              plot_bgcolor  = "white",
-              paper_bgcolor = "white"
+          ggplot(plot_df, aes(x = x, y = y)) +
+            geom_ribbon(data = filter(plot_df, x >= f_crit),
+                        aes(ymin = 0, ymax = y),
+                        fill = "steelblue", alpha = 0.35) +
+            geom_line(linewidth = 0.8) +
+            annotate("text",
+                     x = f_crit, y = y_cap * 1.08,
+                     label = "← AR   ", hjust = 1,
+                     size = 14 / .pt, fontface = "bold") +
+            annotate("text",
+                     x = f_crit, y = y_cap * 1.08,
+                     label = "   RR →", hjust = 0,
+                     size = 14 / .pt, fontface = "bold") +
+            annotate("segment",
+                     x = f_crit, xend = f_crit, y = 0, yend = seg_h,
+                     linewidth = 1.5, color = "#023B70") +
+            {if (f_in_range)
+              annotate("segment",
+                       x = f_stat, xend = f_stat, y = 0, yend = seg_h,
+                       linewidth = 1.25, color = "#BD130B")
+            } +
+            annotate("text",
+                     x = f_crit, y = -y_cap * 0.15,
+                     label = as.character(f_crit),
+                     color = "#023B70", fontface = "bold",
+                     size = 14 / .pt) +
+            {if (f_in_range)
+              annotate("text",
+                       x = f_stat, y = -y_cap * 0.15,
+                       label = as.character(f_stat),
+                       color = "#BD130B", fontface = "bold",
+                       size = 14 / .pt)
+            } +
+            coord_cartesian(xlim = c(0, x_max * 1.02),
+                            ylim = c(0, y_cap * 1.18),
+                            clip = "off") +
+            scale_x_continuous(expand = c(0, 0)) +
+            scale_y_continuous(expand = c(0, 0)) +
+            ylab(expression(bold(italic(Density)))) +
+            xlab(expression(bold(italic(F)))) +
+            theme_classic() +
+            theme(
+              axis.text.x  = element_blank(),
+              axis.ticks.x = element_blank(),
+              axis.text.y  = element_text(size = 9),
+              axis.title.x = element_text(size = 16),
+              axis.title.y = element_text(size = 16),
+              axis.line    = element_line(linewidth = 0.8, color = "black"),
+              plot.margin  = margin(t = 20, r = 10, b = 35, l = 5)
             )
+        }, height = 400, width = 650)
 
-          if (f_in_range) {
-            fig <- fig %>%
-              add_segments(x = f_stat, xend = f_stat, y = 0, yend = seg_h,
-                           line = list(color = "#BD130B", width = 1.5),
-                           showlegend = FALSE, hoverinfo = "none")
-          }
-
-          fig
-        })
+        # ── plotly F-distribution (commented out — kept for reference) ───────────
+        # output$anovaFCurve <- renderPlotly({
+        #   anova_results <- anova(model)
+        #   df1    <- 1
+        #   df2    <- n - 2
+        #   f_stat <- round(anova_results$`F value`[1], 4)
+        #   f_crit <- round(qf(0.95, df1, df2), 4)
+        #   x_start <- 0.05
+        #   x_max <- if (f_stat > x_start && f_stat < f_crit * 10)
+        #              max(f_crit * 2.5, f_stat * 1.3)
+        #            else
+        #              f_crit * 2.5
+        #   x_curve <- seq(x_start, x_max, length.out = 600)
+        #   y_curve <- stats::df(x_curve, df1, df2)
+        #   y_cap     <- stats::df(f_crit * 0.5, df1, df2) * 1.1
+        #   y_display <- pmin(y_curve, y_cap)
+        #   x_fill <- seq(f_crit, x_max, length.out = 300)
+        #   y_fill <- stats::df(x_fill, df1, df2)
+        #   seg_h      <- y_cap * 0.75
+        #   f_in_range <- f_stat > x_start && f_stat <= x_max
+        #   y_axis_max <- y_cap * 1.18
+        #   annotations <- list(
+        #     list(x = f_crit, xref = "x", y = 0.82, yref = "paper",
+        #          text = "<b>← AR&nbsp;&nbsp;&nbsp;</b>", showarrow = FALSE,
+        #          font = list(size = 14), xanchor = "right"),
+        #     list(x = f_crit, xref = "x", y = 0.82, yref = "paper",
+        #          text = "<b>&nbsp;&nbsp;&nbsp;RR →</b>", showarrow = FALSE,
+        #          font = list(size = 14), xanchor = "left"),
+        #     list(x = f_crit, xref = "x", y = -0.09, yref = "paper",
+        #          text = paste0("<b>", f_crit, "</b>"), showarrow = FALSE,
+        #          font = list(size = 12, color = "#023B70"),
+        #          xanchor = "center", yanchor = "top")
+        #   )
+        #   if (f_in_range) {
+        #     annotations <- c(annotations, list(
+        #       list(x = f_stat, xref = "x", y = -0.09, yref = "paper",
+        #            text = paste0("<b>", f_stat, "</b>"), showarrow = FALSE,
+        #            font = list(size = 12, color = "#BD130B"),
+        #            xanchor = "center", yanchor = "top")
+        #     ))
+        #   }
+        #   fig <- plot_ly() %>%
+        #     add_trace(x = x_fill, y = y_fill,
+        #               type = "scatter", mode = "none",
+        #               fill = "tozeroy", fillcolor = "rgba(70,130,180,0.35)",
+        #               showlegend = FALSE, hoverinfo = "none") %>%
+        #     add_trace(x = x_curve, y = y_display,
+        #               type = "scatter", mode = "lines",
+        #               line = list(color = "black", width = 1.5),
+        #               showlegend = FALSE, hoverinfo = "none") %>%
+        #     add_segments(x = f_crit, xend = f_crit, y = 0, yend = seg_h,
+        #                  line = list(color = "#023B70", width = 2),
+        #                  showlegend = FALSE, hoverinfo = "none") %>%
+        #     layout(
+        #       xaxis = list(title = list(text = "<b><i>F</i></b>", font = list(size = 16)),
+        #                    showticklabels = FALSE, zeroline = FALSE, showgrid = FALSE,
+        #                    showline = TRUE, linecolor = "black", linewidth = 1.5,
+        #                    range = c(0, x_max * 1.02)),
+        #       yaxis = list(title = list(text = "<b><i>Density</i></b>", font = list(size = 16)),
+        #                    showgrid = FALSE, zeroline = FALSE,
+        #                    showline = TRUE, linecolor = "black", linewidth = 1.5,
+        #                    range = c(0, y_axis_max)),
+        #       annotations = annotations,
+        #       margin = list(t = 40, r = 20, b = 55, l = 70),
+        #       plot_bgcolor = "white", paper_bgcolor = "white"
+        #     )
+        #   if (f_in_range) {
+        #     fig <- fig %>%
+        #       add_segments(x = f_stat, xend = f_stat, y = 0, yend = seg_h,
+        #                    line = list(color = "#BD130B", width = 1.5),
+        #                    showlegend = FALSE, hoverinfo = "none")
+        #   }
+        #   fig
+        # })
 
         output$pearsonTCurve <- renderPlot({
           hypTTestPlot(
