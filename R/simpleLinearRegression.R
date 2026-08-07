@@ -223,8 +223,30 @@ SLRMainPanelUI <- function(id) {
     
           
           
+          #### ---------------- Prediction Tab ---------------------------------------
+          tabPanel(
+            title = "Prediction",
+            value = "Prediction",
+
+            fluidPage(
+              br(),
+              div(
+                style = "max-width: 500px;",
+                numericInput(
+                  inputId = ns("slrPredictXTab"),
+                  label   = strong("Predict at \\( x_0 \\) ="),
+                  value   = NA,
+                  step    = 0.1,
+                  width   = "220px"
+                )
+              ),
+              uiOutput(ns("slrPrediction")),
+              br()
+            )
+          ), # Prediction tabpanel
+
           #### ---------------- Diagnostic Plots Tab ---------------------------------
-          
+
           tabPanel(
             title = "Diagnostic Plots",
             value = "Diagnostic Plots",
@@ -471,11 +493,29 @@ SLRSidebarUI <- function(id) {
       inputId = ns("goRegression"),
       label = "Calculate",
       class = "act-btn"),
-    
+
     actionButton(
       inputId = ns("resetRegCor"),
       label = "Reset Values",
-      class = "act-btn")
+      class = "act-btn"),
+
+    # ---- SIDEBAR PREDICT INTEGRATION (remove this block to remove sidebar shortcut) ----
+    br(),
+    hr(),
+    p(strong("Prediction")),
+    numericInput(
+      inputId = ns("slrPredictX"),
+      label   = strong("Predict at \\( x_0 \\) ="),
+      value   = NA,
+      step    = 0.1,
+      width   = "220px"
+    ),
+    actionButton(
+      inputId = ns("goPredict"),
+      label   = "Predict",
+      class   = "act-btn"),
+    uiOutput(ns("slrPredictYHat"))
+    # ---- END SIDEBAR PREDICT INTEGRATION ----
   )))
 }
 
@@ -635,8 +675,17 @@ SLRServer <- function(id) {
     nDroppedRows <- reactiveVal(0)
 
     hasHighLeverage <- reactiveVal(FALSE)
-    
+
     hasLeveragePlotIssue <- reactiveVal(FALSE)
+
+    # Stored model for the Prediction tab
+    slrModel <- reactiveVal(NULL)
+    slrDatX  <- reactiveVal(NULL)
+    slrDatY  <- reactiveVal(NULL)
+
+    # Shared trigger for Calculate and Predict buttons
+    # dest: which tab to navigate to after the calculation
+    calcTrigger <- reactiveVal(list(n = 0L, dest = "Model"))
     
     output$diagnosticPlotsWarning <- renderUI({
       
@@ -1025,10 +1074,18 @@ SLRServer <- function(id) {
     })
 
     observeEvent(input$goRegression, {
+      calcTrigger(list(n = calcTrigger()$n + 1L, dest = "Model"))
+    })
+
+    observeEvent(calcTrigger(), {
+      req(calcTrigger()$n > 0L)
+      dest <- calcTrigger()$dest
+
       ## SLR Validation messages ----
       output$perfectFitWarning <- renderUI({ NULL })
       showTab(inputId = "slrNavbarPage", target = "Inference")
       showTab(inputId = "slrNavbarPage", target = "Diagnostic Plots")
+      showTab(inputId = "slrNavbarPage", target = "Prediction")
       toggle(id = "SLRData", condition = regcor_iv$is_valid())
       
       output$slrValidation <- renderUI({
@@ -1221,7 +1278,15 @@ SLRServer <- function(id) {
         }
 
         model <- lm(daty ~ datx)
-        
+
+        # Store for Prediction tab
+        slrModel(model)
+        slrDatX(datx)
+        slrDatY(daty)
+        if (is.na(isolate(input$slrPredictXTab))) {
+          updateNumericInput(session, "slrPredictXTab", value = round(mean(datx), 4))
+        }
+
         h <- hatvalues(model)
         hasLeveragePlotIssue(
           all(abs(h - 0.5) < .Machine$double.eps^0.5)
@@ -2553,13 +2618,185 @@ SLRServer <- function(id) {
         
         
         
-      } #if regcor_iv is valid
-      
-      show(id = "regCorrMP")
-    }) # input$goRegression
-    
+        showTab(inputId = "slrNavbarPage", target = "Prediction")
+        updateNavbarPage(session, "slrNavbarPage", selected = dest)
 
-    
+      } #if regcor_iv is valid
+
+      show(id = "regCorrMP")
+    }) # calcTrigger
+
+
+    # =========================================================================== #
+    # ---- Prediction Tab Output ------------------------------------------------
+    # =========================================================================== #
+    output$slrPrediction <- renderUI({
+      req(slrModel(), slrDatX())
+
+      x0 <- input$slrPredictXTab
+      req(!is.na(x0), is.numeric(x0))
+
+      model  <- slrModel()
+      datx   <- slrDatX()
+      b0     <- coef(model)[1]
+      b1     <- coef(model)[2]
+      y_hat  <- b0 + b1 * x0
+
+      n      <- length(datx)
+      x_bar  <- mean(datx)
+      ssx    <- sum((datx - x_bar)^2)
+      mse    <- sum(residuals(model)^2) / (n - 2)
+      t_crit <- qt(0.975, df = n - 2)
+
+      se_mean  <- sqrt(mse * (1/n + (x0 - x_bar)^2 / ssx))
+      se_pred  <- sqrt(mse * (1 + 1/n + (x0 - x_bar)^2 / ssx))
+      ci_lower <- y_hat - t_crit * se_mean
+      ci_upper <- y_hat + t_crit * se_mean
+      pi_lower <- y_hat - t_crit * se_pred
+      pi_upper <- y_hat + t_crit * se_pred
+
+      is_extrap <- x0 < min(datx) || x0 > max(datx)
+
+      b1_sign   <- if (b1 >= 0) "+" else "-"
+      x0_tex    <- fmt_sci_latex(x0, 4)
+      b0_tex    <- fmt_sci_latex(b0, 4)
+      b1_tex    <- fmt_sci_latex(abs(b1), 4)
+      yh_tex    <- fmt_sci_latex(y_hat, 4)
+      mse_tex   <- fmt_sci_latex(mse, 4)
+      xbar_tex  <- fmt_sci_latex(x_bar, 4)
+      ssx_tex   <- fmt_sci_latex(ssx, 4)
+      tcrit_tex <- fmt_sci_latex(t_crit, 4)
+
+      tagList(
+        if (is_extrap) {
+          div(
+            class = "alert alert-warning",
+            style = "max-width: 600px; margin-bottom: 15px;",
+            tags$b("⚠️ Extrapolation Warning: "),
+            sprintf(
+              "x₀ = %s is outside the observed range [%s, %s]. This prediction extends beyond the data and may be unreliable.",
+              x0_tex,
+              fmt_sci_latex(min(datx), 4),
+              fmt_sci_latex(max(datx), 4)
+            )
+          )
+        },
+        withMathJax(
+
+          # ---- Point Prediction ----
+          p(strong("Point prediction")),
+          p("Given"),
+          p(sprintf("\\( \\qquad x_0 = %s \\)", x0_tex)),
+          br(),
+          p("The estimated response is"),
+          p(sprintf("\\( \\qquad \\hat{y}_0 = \\hat{\\beta}_0 + \\hat{\\beta}_1 x_0 \\)")),
+          br(),
+          p("Substitute"),
+          p(sprintf("\\( \\qquad = %s %s %s(%s) \\)",
+                    b0_tex, b1_sign, b1_tex, x0_tex)),
+          p(sprintf("\\( \\qquad = %s \\)", yh_tex)),
+          hr(style = "max-width: 600px;"),
+          p(strong("Estimated response")),
+          p(HTML(sprintf("$$\\boxed{\\hat{y}_0 = %s}$$", yh_tex))),
+          p(tags$b("Interpretation:")),
+          p(HTML(sprintf(
+            "When \\( x = %s \\), the estimated mean response is \\( %s \\).",
+            x0_tex, yh_tex
+          ))),
+
+          hr(style = "max-width: 600px;"),
+
+          # ---- 95% CI for Mean Response ----
+          p(strong("95% Confidence Interval for the Mean Response")),
+          p("Estimates the true mean value of \\( y \\) across all observations at \\( x_0 \\)."),
+          br(),
+          p(sprintf(
+            "\\( \\qquad \\hat{y}_0 \\pm t_{\\alpha/2,\\, n-2} \\sqrt{MSE \\left( \\dfrac{1}{n} + \\dfrac{(x_0 - \\bar{x})^2}{SS_x} \\right)} \\)"
+          )),
+          br(),
+          p("Substitute"),
+          p(sprintf(
+            "\\( \\qquad = %s \\pm %s \\sqrt{%s \\left( \\dfrac{1}{%d} + \\dfrac{(%s - %s)^2}{%s} \\right)} \\)",
+            yh_tex, tcrit_tex, mse_tex, n, x0_tex, xbar_tex, ssx_tex
+          )),
+          p(sprintf(
+            "\\( \\qquad = %s \\pm %s \\)",
+            yh_tex, fmt_sci_latex(t_crit * se_mean, 4)
+          )),
+          p(HTML(sprintf(
+            "$$\\boxed{(%s, \\; %s)}$$",
+            fmt_sci_latex(ci_lower, 4), fmt_sci_latex(ci_upper, 4)
+          ))),
+          p(tags$b("Interpretation:")),
+          p(HTML(sprintf(
+            "We are 95%% confident that the true mean response when \\( x = %s \\) is between \\( %s \\) and \\( %s \\).",
+            x0_tex, fmt_sci_latex(ci_lower, 4), fmt_sci_latex(ci_upper, 4)
+          ))),
+
+          hr(style = "max-width: 600px;"),
+
+          # ---- 95% Prediction Interval ----
+          p(strong("95% Prediction Interval for an Individual Response")),
+          p("Estimates the range for a single new observation at \\( x_0 \\)."),
+          br(),
+          p(sprintf(
+            "\\( \\qquad \\hat{y}_0 \\pm t_{\\alpha/2,\\, n-2} \\sqrt{MSE \\left( 1 + \\dfrac{1}{n} + \\dfrac{(x_0 - \\bar{x})^2}{SS_x} \\right)} \\)"
+          )),
+          br(),
+          p("Substitute"),
+          p(sprintf(
+            "\\( \\qquad = %s \\pm %s \\sqrt{%s \\left( 1 + \\dfrac{1}{%d} + \\dfrac{(%s - %s)^2}{%s} \\right)} \\)",
+            yh_tex, tcrit_tex, mse_tex, n, x0_tex, xbar_tex, ssx_tex
+          )),
+          p(sprintf(
+            "\\( \\qquad = %s \\pm %s \\)",
+            yh_tex, fmt_sci_latex(t_crit * se_pred, 4)
+          )),
+          p(HTML(sprintf(
+            "$$\\boxed{(%s, \\; %s)}$$",
+            fmt_sci_latex(pi_lower, 4), fmt_sci_latex(pi_upper, 4)
+          ))),
+          p(tags$b("Interpretation:")),
+          p(HTML(sprintf(
+            "We are 95%% confident that a single new observation when \\( x = %s \\) will fall between \\( %s \\) and \\( %s \\).",
+            x0_tex, fmt_sci_latex(pi_lower, 4), fmt_sci_latex(pi_upper, 4)
+          ))),
+          br()
+        )
+      )
+    })
+
+    # ---- SIDEBAR PREDICT INTEGRATION ------------------------------------------
+    # Remove this entire block (and the sidebar UI elements) to drop the shortcut.
+    # The Prediction tab works independently via input$slrPredictXTab alone.
+
+    observeEvent(input$goPredict, {
+      calcTrigger(list(n = calcTrigger()$n + 1L, dest = "Prediction"))
+    })
+
+    observeEvent(input$slrPredictX, {
+      updateNumericInput(session, "slrPredictXTab", value = input$slrPredictX)
+    }, ignoreInit = TRUE, ignoreNULL = FALSE)
+
+    observeEvent(input$slrPredictXTab, {
+      updateNumericInput(session, "slrPredictX", value = input$slrPredictXTab)
+    }, ignoreInit = TRUE, ignoreNULL = FALSE)
+
+    output$slrPredictYHat <- renderUI({
+      req(slrModel())
+      x0 <- input$slrPredictX
+      req(!is.na(x0), is.numeric(x0))
+      b0    <- coef(slrModel())[1]
+      b1    <- coef(slrModel())[2]
+      y_hat <- b0 + b1 * x0
+      withMathJax(
+        hr(),
+        p(HTML(sprintf("\\( \\hat{y}_0 = %s \\)", fmt_sci_latex(y_hat, 4))))
+      )
+    })
+    # ---- END SIDEBAR PREDICT INTEGRATION --------------------------------------
+
+
     ### ------------ Component Display -------------------------------------------
     observeEvent(regcor_iv$is_valid(), {
       if (!isTRUE(regcor_iv$is_valid())) {
@@ -2624,6 +2861,9 @@ SLRServer <- function(id) {
     observeEvent(input$resetRegCor, {
       hasHighLeverage(FALSE)
       nDroppedRows(0)
+      slrModel(NULL)
+      slrDatX(NULL)
+      slrDatY(NULL)
       output$perfectFitWarning <- renderUI({ NULL })
       hide(id = "regCorrMP")
       hide("uploadedDataPanel")
@@ -2632,6 +2872,7 @@ SLRServer <- function(id) {
       fileInputs$slrStatus <- 'reset'
       showTab(inputId = "slrNavbarPage", target = "Inference")
       showTab(inputId = "slrNavbarPage", target = "Diagnostic Plots")
+      showTab(inputId = "slrNavbarPage", target = "Prediction")
       if (!is.null(input$slrNavbarPage)) {
         updateNavbarPage(session, "slrNavbarPage", selected = "Model")
       }
