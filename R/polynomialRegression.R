@@ -75,23 +75,28 @@ PolynomialRegressionSidebarUI <- function(id) {
         )
       ),
 
-      selectizeInput(
-        inputId = ns("polyResponse"),
-        label   = strong("Choose the Response Variable (\\( y \\))"),
-        choices = c(""),
-        options = list(
-          placeholder  = "Select a variable",
-          onInitialize = I('function() { this.setValue(""); }')
-        )
-      ),
+      conditionalPanel(
+        ns        = ns,
+        condition = "output.polyShowVarPickers == true",
 
-      selectizeInput(
-        inputId = ns("polyExplanatory"),
-        label   = strong("Choose the Explanatory Variable (\\( x \\))"),
-        choices = c(""),
-        options = list(
-          placeholder  = "Select a variable",
-          onInitialize = I('function() { this.setValue(""); }')
+        selectizeInput(
+          inputId = ns("polyResponse"),
+          label   = strong("Choose the Response Variable (\\( y \\))"),
+          choices = c(""),
+          options = list(
+            placeholder  = "Select a variable",
+            onInitialize = I('function() { this.setValue(""); }')
+          )
+        ),
+
+        selectizeInput(
+          inputId = ns("polyExplanatory"),
+          label   = strong("Choose the Explanatory Variable (\\( x \\))"),
+          choices = c(""),
+          options = list(
+            placeholder  = "Select a variable",
+            onInitialize = I('function() { this.setValue(""); }')
+          )
         )
       )
     ),
@@ -477,6 +482,13 @@ PolynomialRegressionServer <- function(id) {
       tolower(tools::file_ext(input$polyUserData$name)) %in% c("xls", "xlsx")
     })
     outputOptions(output, "polyShowSheetPicker", suspendWhenHidden = FALSE)
+
+    output$polyShowVarPickers <- reactive({
+      !is.null(input$polyUserData) &&
+        !is.null(fileState$status) &&
+        fileState$status == "uploaded"
+    })
+    outputOptions(output, "polyShowVarPickers", suspendWhenHidden = FALSE)
 
     observeEvent(input$polyUserData, {
       req(input$polyUserData)

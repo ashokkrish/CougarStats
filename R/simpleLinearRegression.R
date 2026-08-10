@@ -197,7 +197,8 @@ SLRMainPanelUI <- function(id) {
                   br(),
                   uiOutput(ns("anovaHypotheses")),
                   br(),
-                  div(tableOutput(ns("anovaTable")), width = "100 px;"),
+                  p(strong("ANOVA Table:")),
+                  div(DTOutput(ns("anovaTable")), width = "100 px;"),
                   br(),
                   br(),
                   plotOutput(ns("anovaFCurve")),
@@ -497,25 +498,7 @@ SLRSidebarUI <- function(id) {
     actionButton(
       inputId = ns("resetRegCor"),
       label = "Reset Values",
-      class = "act-btn"),
-
-    # ---- SIDEBAR PREDICT INTEGRATION (remove this block to remove sidebar shortcut) ----
-    br(),
-    hr(),
-    p(strong("Prediction")),
-    numericInput(
-      inputId = ns("slrPredictX"),
-      label   = strong("Predict at \\( x_0 \\) ="),
-      value   = NA,
-      step    = 0.1,
-      width   = "220px"
-    ),
-    actionButton(
-      inputId = ns("goPredict"),
-      label   = "Predict",
-      class   = "act-btn"),
-    uiOutput(ns("slrPredictYHat"))
-    # ---- END SIDEBAR PREDICT INTEGRATION ----
+      class = "act-btn")
   )))
 }
 
@@ -1350,7 +1333,7 @@ SLRServer <- function(id) {
           if(is.numeric(dfFormatted[[col]])) {
             dfFormatted[[col]] <- sapply(dfFormatted[[col]], function(x) {
               if(is.na(x)) return(NA)
-              format(round(x, 3), nsmall = 0, scientific = FALSE)
+              format(round(x, 4), nsmall = 4, scientific = FALSE)
             })
           }
         }
@@ -1454,7 +1437,7 @@ SLRServer <- function(id) {
                       if (abs(value - round(value)) < 1e-9) {
                         formatC(round(value), format = "f", digits = 0)
                       } else {
-                        formatC(value, format = "f", digits = 3)
+                        formatC(value, format = "f", digits = 4)
                       }
                     }
                   )
@@ -1552,22 +1535,22 @@ SLRServer <- function(id) {
             p("where"),
             p(sprintf(
               "\\( \\qquad \\hat{\\beta}_{1} = \\dfrac{ \\sum xy - \\dfrac{ (\\sum x)(\\sum y) }{ n } }{ \\sum x^2 - \\dfrac{ (\\sum x)^2 }{ n } } = \\dfrac{ %s - \\dfrac{ (%s)(%s) }{ %s } }{ %s - \\dfrac{ (%s)^2 }{ %s } } = %s \\)",
-              format(round(dfTotaled["Totals", "xy"], 3), nsmall = 0, scientific = FALSE),
-              format(round(dfTotaled["Totals", "x"], 3), nsmall = 0, scientific = FALSE),
-              format(round(dfTotaled["Totals", "y"], 3), nsmall = 0, scientific = FALSE),
-              format(round(length(datx), 3), nsmall = 0, scientific = FALSE),
-              format(round(dfTotaled["Totals", "x<sup>2</sup>"], 3), nsmall = 0, scientific = FALSE),
-              format(round(dfTotaled["Totals", "x"], 3), nsmall = 0, scientific = FALSE),
-              format(round(length(datx), 3), nsmall = 0, scientific = FALSE),
+              format(round(dfTotaled["Totals", "xy"], 4), nsmall = 4, scientific = FALSE),
+              format(round(dfTotaled["Totals", "x"], 4), nsmall = 4, scientific = FALSE),
+              format(round(dfTotaled["Totals", "y"], 4), nsmall = 4, scientific = FALSE),
+              format(round(length(datx), 0), nsmall = 0, scientific = FALSE),
+              format(round(dfTotaled["Totals", "x<sup>2</sup>"], 4), nsmall = 4, scientific = FALSE),
+              format(round(dfTotaled["Totals", "x"], 4), nsmall = 4, scientific = FALSE),
+              format(round(length(datx), 0), nsmall = 0, scientific = FALSE),
               fmt_sci_latex(b1_raw, 4)
             )),
             p("and"),
             p(sprintf(
               "\\( \\qquad \\hat{\\beta}_{0} = \\bar{y} - \\hat{\\beta}_{1} \\bar{x} = %s - (%s)(%s) = %s %s %s = %s \\)",
-              format(round(mean(daty), 3), nsmall = 0, scientific = FALSE),
+              format(round(mean(daty), 4), nsmall = 4, scientific = FALSE),
               fmt_sci_latex(b1_raw, 4),
-              format(round(mean(datx), 3), nsmall = 0, scientific = FALSE),
-              format(round(mean(daty), 3), nsmall = 0, scientific = FALSE),
+              format(round(mean(datx), 4), nsmall = 4, scientific = FALSE),
+              format(round(mean(daty), 4), nsmall = 4, scientific = FALSE),
               b0HatOp,
               fmt_sci_latex(abs(b1_raw) * mean(datx), 4),
               fmt_sci_latex(b0_raw, 4)
@@ -1749,25 +1732,25 @@ SLRServer <- function(id) {
               = \\dfrac{ %s }{\\sqrt{ %s } \\times \\sqrt{ %s }}
               = %.4f} \\)",
                         
-                        format(round(dfTotaled["Totals", "xy"], 3), nsmall = 0, scientific = FALSE),
-                        format(round(dfTotaled["Totals", "x"], 3), nsmall = 0, scientific = FALSE),
-                        format(round(dfTotaled["Totals", "y"], 3), nsmall = 0, scientific = FALSE),
+                        format(round(dfTotaled["Totals", "xy"], 4), nsmall = 4, scientific = FALSE),
+                        format(round(dfTotaled["Totals", "x"], 4), nsmall = 4, scientific = FALSE),
+                        format(round(dfTotaled["Totals", "y"], 4), nsmall = 4, scientific = FALSE),
                         format(length(datx), nsmall = 0, scientific = FALSE),
-                        
-                        format(round(dfTotaled["Totals", "x<sup>2</sup>"], 3), nsmall = 0, scientific = FALSE),
-                        format(round(dfTotaled["Totals", "x"], 2), nsmall = 0, scientific = FALSE),
+
+                        format(round(dfTotaled["Totals", "x<sup>2</sup>"], 4), nsmall = 4, scientific = FALSE),
+                        format(round(dfTotaled["Totals", "x"], 4), nsmall = 4, scientific = FALSE),
                         format(length(datx), nsmall = 0, scientific = FALSE),
-                        
-                        format(round(dfTotaled["Totals", "y<sup>2</sup>"], 3), nsmall = 0, scientific = FALSE),
-                        format(round(dfTotaled["Totals", "y"], 3), nsmall = 0, scientific = FALSE),
+
+                        format(round(dfTotaled["Totals", "y<sup>2</sup>"], 4), nsmall = 4, scientific = FALSE),
+                        format(round(dfTotaled["Totals", "y"], 4), nsmall = 4, scientific = FALSE),
                         format(length(datx), nsmall = 0, scientific = FALSE),
-                        
+
                         # simplified √ form — use scientific notation when values would round to 0
-                        fmt_sci_latex(dfTotaled["Totals", "xy"] - sumXSumY / length(datx)),
+                        fmt_sci_latex(dfTotaled["Totals", "xy"] - sumXSumY / length(datx), 4),
 
-                        fmt_sci_latex(dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx)),
+                        fmt_sci_latex(dfTotaled["Totals", "x<sup>2</sup>"] - sumXSqrd / length(datx), 4),
 
-                        fmt_sci_latex(dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx)),
+                        fmt_sci_latex(dfTotaled["Totals", "y<sup>2</sup>"] - sumYSqrd / length(datx), 4),
                         
                         # final result
                         round(pearson$estimate, 4)
@@ -2129,9 +2112,9 @@ SLRServer <- function(id) {
           if (!ks$has_ties) {
             tau    <- as.numeric(kendall$estimate)
             sd_tau <- sqrt(2 * (2 * ks$n + 5) / (9 * ks$n * (ks$n - 1)))
-            z_stat <- round(tau / sd_tau, 3)
+            z_stat <- round(tau / sd_tau, 4)
           } else {
-            z_stat <- round(as.numeric(kendall$statistic), 3)
+            z_stat <- round(as.numeric(kendall$statistic), 4)
           }
           hypZTestPlot(
             testStatistic = z_stat,
@@ -2374,24 +2357,68 @@ SLRServer <- function(id) {
           )
         })
         
-        output$anovaTable <- renderTable(
-          {
-            anova_results <- anova(model)
-            data.frame(
-              Source = c("<strong>Regression (Model)</strong>", "<strong>Error (Residual)</strong>", "<strong>Total</strong>"),
-              df = c(anova_results$Df[1], anova_results$Df[2], sum(anova_results$Df)),
-              SS = c(anova_results$`Sum Sq`[1], anova_results$`Sum Sq`[2], sum(anova_results$`Sum Sq`)),
-              MS = c(anova_results$`Mean Sq`[1], anova_results$`Mean Sq`[2], NA),
-              F = c(anova_results$`F value`[1], NA, NA),
-              `P-value` = c(anova_results$`Pr(>F)`[1], NA, NA),
-              check.names = FALSE
+        output$anovaTable <- renderDT({
+          anova_results <- anova(model)
+
+          p_val <- anova_results$`Pr(>F)`[1]
+          p_val_display <- if (p_val < 0.0001 && p_val > 0) "P < 0.0001" else as.character(round(p_val, 4))
+
+          data <- data.frame(
+            df         = c(anova_results$Df[1], anova_results$Df[2], sum(anova_results$Df)),
+            SS         = c(anova_results$`Sum Sq`[1], anova_results$`Sum Sq`[2], sum(anova_results$`Sum Sq`)),
+            MS         = c(anova_results$`Mean Sq`[1], anova_results$`Mean Sq`[2], NA),
+            F          = c(anova_results$`F value`[1], NA, NA),
+            `P-Value`  = c(p_val_display, NA_character_, NA_character_),
+            check.names = FALSE
+          )
+          rownames(data) <- c("Regression (Model)", "Error (Residual)", "Total")
+
+          colNames <- c("df", "Sum of Squares (SS)", "Mean Sum of Squares (MS)", "F-ratio", "P-Value")
+
+          headers <- htmltools::withTags(table(
+            class = 'display',
+            thead(
+              tr(
+                th("Sources of Variation",
+                   style = "border: 1px solid rgba(0, 0, 0, 0.15);
+                              border-bottom: 1px solid rgba(0, 0, 0, 0.3);"),
+                lapply(colNames, th,
+                       style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
+                                  border-top: 1px solid rgba(0, 0, 0, 0.15);')
+              )
             )
-          },
-          na = "",
-          striped = TRUE,
-          align = "c",
-          sanitize.text.function = function(x) x
-        )
+          ))
+
+          datatable(
+            data,
+            class = 'cell-border stripe',
+            container = headers,
+            options = list(
+              dom = 't',
+              pageLength = -1,
+              ordering = FALSE,
+              searching = FALSE,
+              paging = FALSE,
+              autoWidth = FALSE,
+              scrollX = TRUE,
+              columnDefs = list(
+                list(className = 'dt-center', targets = 0:5),
+                list(width = '150px', targets = 2:5)
+              )
+            ),
+            selection = "none",
+            escape = FALSE,
+            filter = "none"
+          ) %>%
+            formatRound(columns = 1, digits = 0) %>%
+            formatRound(columns = 2:4, digits = 4) %>%
+            formatStyle(columns = c(0, 4), fontWeight = 'bold') %>%
+            formatStyle(
+              columns = 1:5,
+              target = 'row',
+              fontWeight = styleRow(3, "bold")
+            )
+        })
         
         output$anovaConclusion <- renderUI({
           anova_results <- anova(model)
@@ -2402,12 +2429,12 @@ SLRServer <- function(id) {
           
           withMathJax(
             p(strong("Test Statistic:")),
-            p(sprintf("\\( \\displaystyle F = \\frac{\\mathrm{MSR}}{\\mathrm{MSE}} = \\frac{%s}{%s} = %.3f \\)", fmt_sci_latex(msr), fmt_sci_latex(mse), f_value)),
+            p(sprintf("\\( \\displaystyle F = \\frac{\\mathrm{MSR}}{\\mathrm{MSE}} = \\frac{%s}{%s} = %.4f \\)", fmt_sci_latex(msr, 4), fmt_sci_latex(mse, 4), f_value)),
             p(strong("Conclusion:")),
             if (p_value <= 0.05) {
-              p(sprintf("Since the p-value is less than \\( \\alpha \\) (%.3f < 0.05), we reject the null hypothesis and conclude there is enough statistical evidence to support the alternative hypothesis. We can conclude the model is statistically significant.", p_value))
+              p(sprintf("Since the p-value is less than \\( \\alpha \\) (%.4f < 0.05), we reject the null hypothesis and conclude there is enough statistical evidence to support the alternative hypothesis. We can conclude the model is statistically significant.", p_value))
             } else {
-              p(sprintf("Since the p-value is greater than \\( \\alpha \\) (%.3f >  0.05), we fail to reject the null hypothesis and conclude there isn't enough statistical evidence to support the alternative hypothesis. We can conclude the model is not statistically significant.", p_value))
+              p(sprintf("Since the p-value is greater than \\( \\alpha \\) (%.4f >  0.05), we fail to reject the null hypothesis and conclude there isn't enough statistical evidence to support the alternative hypothesis. We can conclude the model is not statistically significant.", p_value))
             }
           )
         })
@@ -2500,13 +2527,13 @@ SLRServer <- function(id) {
                        linewidth = 1.25, color = "#BD130B")
             } +
             annotate("text",
-                     x = f_crit, y = -y_cap * 0.15,
+                     x = f_crit, y = -y_cap * 0.07,
                      label = as.character(f_crit),
                      color = "#023B70", fontface = "bold",
                      size = 14 / .pt) +
             {if (f_in_range)
               annotate("text",
-                       x = f_stat, y = -y_cap * 0.15,
+                       x = f_stat, y = -y_cap * 0.07,
                        label = as.character(f_stat),
                        color = "#BD130B", fontface = "bold",
                        size = 14 / .pt)
@@ -2515,18 +2542,19 @@ SLRServer <- function(id) {
                             ylim = c(0, y_cap * 1.18),
                             clip = "off") +
             scale_x_continuous(expand = c(0, 0)) +
-            scale_y_continuous(expand = c(0, 0)) +
+            scale_y_continuous(breaks = 0, labels = "0", expand = c(0, 0)) +
             ylab(expression(bold(italic(Density)))) +
             xlab(expression(bold(italic(F)))) +
             theme_classic() +
             theme(
               axis.text.x  = element_blank(),
               axis.ticks.x = element_blank(),
-              axis.text.y  = element_text(size = 9),
-              axis.title.x = element_text(size = 16),
-              axis.title.y = element_text(size = 16),
+              axis.text.y  = element_text(size = 13, face = "bold"),
+              axis.title.x = element_text(size = 16, face = "bold.italic",
+                                          margin = margin(t = 22)),
+              axis.title.y = element_text(size = 16, face = "bold.italic"),
               axis.line    = element_line(linewidth = 0.8, color = "black"),
-              plot.margin  = margin(t = 20, r = 10, b = 35, l = 5)
+              plot.margin  = margin(t = 20, r = 10, b = 45, l = 5)
             )
         }, height = 400, width = 650)
 
@@ -2607,7 +2635,7 @@ SLRServer <- function(id) {
 
         output$pearsonTCurve <- renderPlot({
           hypTTestPlot(
-            testStatistic = round(pearson$statistic, 3),
+            testStatistic = round(pearson$statistic, 4),
             degfree       = pearson$parameter,
             critValue     = round(qt(0.975, df = pearson$parameter), 3),
             altHypothesis = "two.sided"
@@ -2766,35 +2794,6 @@ SLRServer <- function(id) {
       )
     })
 
-    # ---- SIDEBAR PREDICT INTEGRATION ------------------------------------------
-    # Remove this entire block (and the sidebar UI elements) to drop the shortcut.
-    # The Prediction tab works independently via input$slrPredictXTab alone.
-
-    observeEvent(input$goPredict, {
-      calcTrigger(list(n = calcTrigger()$n + 1L, dest = "Prediction"))
-    })
-
-    observeEvent(input$slrPredictX, {
-      updateNumericInput(session, "slrPredictXTab", value = input$slrPredictX)
-    }, ignoreInit = TRUE, ignoreNULL = FALSE)
-
-    observeEvent(input$slrPredictXTab, {
-      updateNumericInput(session, "slrPredictX", value = input$slrPredictXTab)
-    }, ignoreInit = TRUE, ignoreNULL = FALSE)
-
-    output$slrPredictYHat <- renderUI({
-      req(slrModel())
-      x0 <- input$slrPredictX
-      req(!is.na(x0), is.numeric(x0))
-      b0    <- coef(slrModel())[1]
-      b1    <- coef(slrModel())[2]
-      y_hat <- b0 + b1 * x0
-      withMathJax(
-        hr(),
-        p(HTML(sprintf("\\( \\hat{y}_0 = %s \\)", fmt_sci_latex(y_hat, 4))))
-      )
-    })
-    # ---- END SIDEBAR PREDICT INTEGRATION --------------------------------------
 
 
     ### ------------ Component Display -------------------------------------------
