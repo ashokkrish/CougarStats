@@ -10,9 +10,9 @@ fmt_sci_latex <- function(x, digits = 3) {
     # x is non-zero but rounds to 0 — show scientific notation instead of "0.0000"
     exp  <- floor(log10(abs(x)))
     mant <- x / 10^exp
-    sprintf("%.3f^{%d}", mant, exp)
+    sprintf("%.*f^{%d}", digits, mant, exp)
   } else {
-    format(rounded, nsmall = 0, scientific = FALSE)
+    format(rounded, nsmall = digits, scientific = FALSE)
   }
 }
 
