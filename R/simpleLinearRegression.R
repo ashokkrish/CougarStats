@@ -96,13 +96,14 @@ SLRMainPanelUI <- function(id) {
               br(),
               
               plotOptionsMenuUI(
-                id          = ns("slrScatter"),
-                plotType    = "Scatterplot",
-                title       = "Scatterplot",
-                xlab        = "x",
-                ylab        = "y",
-                dim         = "in px",
-                includeFlip = FALSE),
+                id                = ns("slrScatter"),
+                plotType          = "Scatterplot",
+                title             = "Scatterplot",
+                xlab              = "x",
+                ylab              = "y",
+                dim               = "in px",
+                includeFlip       = FALSE,
+                includeMeansOption = TRUE),
               
               plotlyOutput(ns("slrScatterplot"),
                            height = "700px",
@@ -489,15 +490,6 @@ SLRSidebarUI <- function(id) {
       label   = "Scatterplot of \\( x\\) versus \\( y\\)",
       value   = TRUE),
 
-    conditionalPanel(
-      ns = ns,
-      condition = "input.scatterPlot == 1",
-      checkboxInput(
-        inputId = ns("showMeans"),
-        label   = "Show \\( \\bar{x} \\) and \\( \\bar{y} \\)",
-        value   = FALSE
-      )
-    ),
     br(),
     
     actionButton(
@@ -1479,23 +1471,26 @@ SLRServer <- function(id) {
             input[["slrScatter-showRegressionLine"]]
           )
 
-          if (isTRUE(input$showMeans)) {
+          if (isTRUE(input[["slrScatter-showMeans"]])) {
+            x_bar <- mean(datx)
+            y_bar <- mean(daty)
             p <- p %>%
               add_trace(
                 inherit = FALSE,
-                x      = mean(datx),
-                y      = mean(daty),
+                x      = x_bar,
+                y      = y_bar,
                 type   = "scatter",
                 mode   = "markers",
-                name   = "x̅, y̅",
+                name   = "(x̅, y̅)",
                 marker = list(
                   color  = "red",
                   size   = 18,
-                  symbol = "asterisk"
+                  symbol = "asterisk-open",
+                  line   = list(color = "red", width = 2)
                 ),
                 hovertemplate = paste0(
-                  "<b>x̅:</b> ", round(mean(datx), 4), "<br>",
-                  "<b>y̅:</b> ", round(mean(daty), 4), "<br>",
+                  "<b>x̅:</b> ", round(x_bar, 4), "<br>",
+                  "<b>y̅:</b> ", round(y_bar, 4), "<br>",
                   "<extra></extra>"
                 )
               )

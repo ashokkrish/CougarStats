@@ -77,7 +77,8 @@ library(shinyWidgets)
 # ================================================================ #
 plotOptionsMenuUI <- function(id, plotType = NULL, title = "Plot", xlab = "", ylab = "", colour = "#7293AD",
                               dim = "auto", includeGridlines = TRUE, includeFlip = TRUE, includeOutlierLabels = FALSE,
-                              regressionLineLabel = "Show Regression Line", includeLinearLine = FALSE) {
+                              regressionLineLabel = "Show Regression Line", includeLinearLine = FALSE,
+                              includeMeansOption = FALSE) {
   ns <- NS(id)
 
   flip <- addFlipCheckbox(includeFlip, ns, plotType)
@@ -88,7 +89,7 @@ plotOptionsMenuUI <- function(id, plotType = NULL, title = "Plot", xlab = "", yl
     extraOptions <- switch(
       plotType,
       "Boxplot" = BoxplotOptions(ns),
-      "Scatterplot" = ScatterplotOptions(ns, regressionLineLabel, includeLinearLine)
+      "Scatterplot" = ScatterplotOptions(ns, regressionLineLabel, includeLinearLine, includeMeansOption)
     )
   }
   
@@ -241,7 +242,7 @@ BoxplotOptions <- function(ns) {
   )
 }
 
-ScatterplotOptions <- function(ns, regressionLineLabel = "Show Regression Line", includeLinearLine = FALSE) {
+ScatterplotOptions <- function(ns, regressionLineLabel = "Show Regression Line", includeLinearLine = FALSE, includeMeansOption = FALSE) {
 
   tagList(
     tags$h3("Scatterplot Options"),
@@ -292,6 +293,12 @@ ScatterplotOptions <- function(ns, regressionLineLabel = "Show Regression Line",
       inputId = ns("predictionInterval"),
       label = "Prediction Band",
       value = FALSE
+    ),
+
+    if (includeMeansOption) checkboxInput(
+      inputId = ns("showMeans"),
+      label   = "Show x̅ and y̅ (Means)",
+      value   = FALSE
     )
   )
 }
