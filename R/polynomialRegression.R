@@ -60,9 +60,8 @@ PolynomialRegressionSidebarUI <- function(id) {
                     ".mtp", ".mwx", ".mpx")
       ),
 
-      conditionalPanel(
-        ns        = ns,
-        condition = "output.polyShowSheetPicker == true",
+      hidden(div(
+        id = ns("polySheetPickerPanel"),
         selectizeInput(
           inputId  = ns("polySheet"),
           label    = strong("Choose a Sheet"),
@@ -73,11 +72,10 @@ PolynomialRegressionSidebarUI <- function(id) {
             onInitialize = I('function() { this.setValue(""); }')
           )
         )
-      ),
+      )),
 
-      conditionalPanel(
-        ns        = ns,
-        condition = "output.polyShowVarPickers == true",
+      hidden(div(
+        id = ns("polyVarPickersPanel"),
 
         selectizeInput(
           inputId = ns("polyResponse"),
@@ -98,7 +96,7 @@ PolynomialRegressionSidebarUI <- function(id) {
             onInitialize = I('function() { this.setValue(""); }')
           )
         )
-      )
+      ))
     ),
 
     br(),
@@ -165,6 +163,10 @@ PolynomialRegressionMainPanelUI <- function(id) {
       id = ns("polyResultsPanel"),
       uiOutput(ns("polyPerfectFitWarning")),
       uiOutput(ns("polyMissingRowsWarning")),
+      uiOutput(ns("polyValidation")),
+
+      div(
+        id = ns("polyNavbarContent"),
 
       navbarPage(
         title = NULL,
@@ -272,6 +274,8 @@ PolynomialRegressionMainPanelUI <- function(id) {
         )
 
       ) # navbarPage
+
+      ) # polyNavbarContent
     )), # polyResultsPanel
 
     # Uploaded data preview panel — only visible in Upload Data mode
@@ -445,6 +449,7 @@ PolynomialRegressionServer <- function(id) {
     # ---- Reset results when data input mode changes -----------------------
     observeEvent(input$polyDataInput, {
       output$polyPerfectFitWarning <- renderUI({ NULL })
+      output$polyValidation        <- renderUI({ NULL })
       hide("polyResultsPanel")
       hideTab(inputId = "polyNavbarPage", target = "Uploaded Data")
       hideTab(inputId = "polyNavbarPage", target = "Inference")
@@ -456,16 +461,21 @@ PolynomialRegressionServer <- function(id) {
       if (input$polyDataInput == "Upload Data" &&
           !is.null(fileState$status) &&
           fileState$status == "uploaded") {
+        show("polySheetPickerPanel")
+        show("polyVarPickersPanel")
         show("polyUploadedDataPanel")
       } else {
+        hide("polySheetPickerPanel")
+        hide("polyVarPickersPanel")
         hide("polyUploadedDataPanel")
       }
     }, ignoreInit = TRUE)
 
     # ---- Reset results when raw inputs change -----------------------------
-    observeEvent(list(input$polyX, input$polyY, input$polyDegree), {
+    observeEvent(list(input$polyX, input$polyY), {
       req(input$polyDataInput == "Enter Raw Data")
       output$polyPerfectFitWarning <- renderUI({ NULL })
+      output$polyValidation        <- renderUI({ NULL })
       hide("polyResultsPanel")
       hideTab(inputId = "polyNavbarPage", target = "Inference")
       hideTab(inputId = "polyNavbarPage", target = "Diagnostic Plots")
@@ -473,22 +483,20 @@ PolynomialRegressionServer <- function(id) {
       storedDaty(NULL)
     }, ignoreInit = TRUE)
 
+    # ---- Reset results when degree changes (both modes) -------------------
+    observeEvent(input$polyDegree, {
+      output$polyPerfectFitWarning <- renderUI({ NULL })
+      output$polyValidation        <- renderUI({ NULL })
+      hide("polyResultsPanel")
+      hideTab(inputId = "polyNavbarPage", target = "Inference")
+      hideTab(inputId = "polyNavbarPage", target = "Diagnostic Plots")
+      storedDatx(NULL)
+      storedDaty(NULL)
+      nDroppedRows(0)
+    }, ignoreInit = TRUE)
+
     # ---- Plot options module ----------------------------------------------
     plotOptionsMenuServer("polyScatter")
-
-    # ---- Sheet picker visibility ------------------------------------------
-    output$polyShowSheetPicker <- reactive({
-      if (is.null(input$polyUserData)) return(FALSE)
-      tolower(tools::file_ext(input$polyUserData$name)) %in% c("xls", "xlsx")
-    })
-    outputOptions(output, "polyShowSheetPicker", suspendWhenHidden = FALSE)
-
-    output$polyShowVarPickers <- reactive({
-      !is.null(input$polyUserData) &&
-        !is.null(fileState$status) &&
-        fileState$status == "uploaded"
-    })
-    outputOptions(output, "polyShowVarPickers", suspendWhenHidden = FALSE)
 
     observeEvent(input$polyUserData, {
       req(input$polyUserData)
@@ -500,7 +508,9 @@ PolynomialRegressionServer <- function(id) {
         updateSelectizeInput(session, "polySheet",
                              choices  = sheets,
                              selected = if (length(sheets)) sheets[1] else "")
+        show("polySheetPickerPanel")
       } else {
+        hide("polySheetPickerPanel")
         updateSelectizeInput(session, "polySheet", choices = character(0), selected = "")
       }
     }, priority = 50)
@@ -516,6 +526,7 @@ PolynomialRegressionServer <- function(id) {
       cols <- colnames(polyUploadData())
       updateSelectizeInput(session, "polyResponse",    choices = cols)
       updateSelectizeInput(session, "polyExplanatory", choices = cols)
+      show("polyVarPickersPanel")
       show("polyUploadedDataPanel")
     })
 
@@ -649,7 +660,19 @@ PolynomialRegressionServer <- function(id) {
 
     # ---- Calculate button -------------------------------------------------
     observeEvent(input$goPolynomial, {
-      toggle("polyResultsPanel", condition = poly_iv$is_valid())
+      show("polyResultsPanel")
+      toggle("polyNavbarContent", condition = poly_iv$is_valid())
+
+      output$polyValidation <- renderUI({
+        if (input$polyDataInput == "Upload Data" && !polyupvars_iv$is_valid()) {
+          validate(
+            need(nzchar(input$polyResponse),    "Please select a Response Variable (y)."),
+            need(nzchar(input$polyExplanatory), "Please select an Explanatory Variable (x)."),
+            errorClass = "validation"
+          )
+        }
+      })
+
       if (!poly_iv$is_valid()) return()
 
       hide("polyUploadedDataPanel")
@@ -1301,14 +1324,17 @@ PolynomialRegressionServer <- function(id) {
 
       # Clear file input and dependent dropdowns
       shinyjs::reset("polyUserData")
+      hide("polySheetPickerPanel")
+      hide("polyVarPickersPanel")
       updateSelectizeInput(session, "polySheet",       choices = character(0), selected = "")
-      updateSelectizeInput(session, "polyResponse",    choices = character(0), selected = "")
-      updateSelectizeInput(session, "polyExplanatory", choices = character(0), selected = "")
+      updateSelectizeInput(session, "polyResponse",    choices = c(""), selected = "")
+      updateSelectizeInput(session, "polyExplanatory", choices = c(""), selected = "")
 
       storedDatx(NULL)
       storedDaty(NULL)
       nDroppedRows(0)
       output$polyPerfectFitWarning <- renderUI({ NULL })
+      output$polyValidation        <- renderUI({ NULL })
       fileState$status <- "reset"
       hide("polyResultsPanel")
       hide("polyUploadedDataPanel")

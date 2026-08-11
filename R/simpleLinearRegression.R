@@ -96,13 +96,14 @@ SLRMainPanelUI <- function(id) {
               br(),
               
               plotOptionsMenuUI(
-                id          = ns("slrScatter"),
-                plotType    = "Scatterplot",
-                title       = "Scatterplot",
-                xlab        = "x",
-                ylab        = "y",
-                dim         = "in px",
-                includeFlip = FALSE),
+                id                = ns("slrScatter"),
+                plotType          = "Scatterplot",
+                title             = "Scatterplot",
+                xlab              = "x",
+                ylab              = "y",
+                dim               = "in px",
+                includeFlip       = FALSE,
+                includeMeansOption = TRUE),
               
               plotlyOutput(ns("slrScatterplot"),
                            height = "700px",
@@ -488,6 +489,7 @@ SLRSidebarUI <- function(id) {
       inputId = ns("scatterPlot"),
       label   = "Scatterplot of \\( x\\) versus \\( y\\)",
       value   = TRUE),
+
     br(),
     
     actionButton(
@@ -1453,7 +1455,7 @@ SLRServer <- function(id) {
         
         
         output$slrScatterplot <- renderPlotly({
-          RenderScatterplot(
+          p <- RenderScatterplot(
             df,
             model,
             input[["slrScatter-Title"]],
@@ -1468,6 +1470,33 @@ SLRServer <- function(id) {
             input[["slrScatter-predictionInterval"]],
             input[["slrScatter-showRegressionLine"]]
           )
+
+          if (isTRUE(input[["slrScatter-showMeans"]])) {
+            x_bar <- mean(datx)
+            y_bar <- mean(daty)
+            p <- p %>%
+              add_trace(
+                inherit = FALSE,
+                x      = x_bar,
+                y      = y_bar,
+                type   = "scatter",
+                mode   = "markers",
+                name   = "(x̅, y̅)",
+                marker = list(
+                  color  = "red",
+                  size   = 18,
+                  symbol = "asterisk-open",
+                  line   = list(color = "red", width = 2)
+                ),
+                hovertemplate = paste0(
+                  "<b>x̅:</b> ", round(x_bar, 4), "<br>",
+                  "<b>y̅:</b> ", round(y_bar, 4), "<br>",
+                  "<extra></extra>"
+                )
+              )
+          }
+
+          p
         })
         
         
@@ -2725,7 +2754,7 @@ SLRServer <- function(id) {
           p(sprintf("\\( \\qquad = %s \\)", yh_tex)),
           hr(style = "max-width: 600px;"),
           p(strong("Estimated response")),
-          p(HTML(sprintf("$$\\boxed{\\hat{y}_0 = %s}$$", yh_tex))),
+          p(sprintf("\\( \\qquad \\hat{y}_0 = %s \\)", yh_tex)),
           p(tags$b("Interpretation:")),
           p(HTML(sprintf(
             "When \\( x = %s \\), the estimated mean response is \\( %s \\).",
@@ -2751,10 +2780,8 @@ SLRServer <- function(id) {
             "\\( \\qquad = %s \\pm %s \\)",
             yh_tex, fmt_sci_latex(t_crit * se_mean, 4)
           )),
-          p(HTML(sprintf(
-            "$$\\boxed{(%s, \\; %s)}$$",
-            fmt_sci_latex(ci_lower, 4), fmt_sci_latex(ci_upper, 4)
-          ))),
+          p(sprintf("\\( \\qquad (%s, \\; %s) \\)",
+                    fmt_sci_latex(ci_lower, 4), fmt_sci_latex(ci_upper, 4))),
           p(tags$b("Interpretation:")),
           p(HTML(sprintf(
             "We are 95%% confident that the true mean response when \\( x = %s \\) is between \\( %s \\) and \\( %s \\).",
@@ -2780,10 +2807,8 @@ SLRServer <- function(id) {
             "\\( \\qquad = %s \\pm %s \\)",
             yh_tex, fmt_sci_latex(t_crit * se_pred, 4)
           )),
-          p(HTML(sprintf(
-            "$$\\boxed{(%s, \\; %s)}$$",
-            fmt_sci_latex(pi_lower, 4), fmt_sci_latex(pi_upper, 4)
-          ))),
+          p(sprintf("\\( \\qquad (%s, \\; %s) \\)",
+                    fmt_sci_latex(pi_lower, 4), fmt_sci_latex(pi_upper, 4))),
           p(tags$b("Interpretation:")),
           p(HTML(sprintf(
             "We are 95%% confident that a single new observation when \\( x = %s \\) will fall between \\( %s \\) and \\( %s \\).",
