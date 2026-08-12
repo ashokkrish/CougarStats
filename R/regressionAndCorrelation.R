@@ -24,7 +24,7 @@ regressionAndCorrelationUI <- function(id) {
 
 regressionAndCorrelationServer <- function(id) {
   moduleServer(id, function(input, output, session) {
-    
+
     # --- Dynamic ID Generation for SLR ---
     slr_instance_counter <- reactiveVal(0)
     current_slr_module_id <- reactive({

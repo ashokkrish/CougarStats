@@ -217,14 +217,28 @@ SLRMainPanelUI <- function(id) {
                   value = "LINE",
                   br(),
                   uiOutput(ns("lineAssumptions"))
+                ),
+
+                tabPanel(
+                  title = "Diagnostic Plots",
+                  value = "Diagnostic Plots",
+                  fluidPage(
+                    br(),
+                    uiOutput(ns("diagnosticPlotsWarning")),
+                    plotOutput(ns("slrResidualsPanelPlot1")),
+                    plotOutput(ns("slrResidualsPanelPlot2")),
+                    plotOutput(ns("slrResidualsPanelPlot3")),
+                    plotOutput(ns("slrResidualsPanelPlot4")),
+                    plotOutput(ns("slrResidualsPanelPlot5"))
+                  )
                 )
               )
             )
           ), # Inference tabpanel
-            
-    
-          
-          
+
+
+
+
           #### ---------------- Prediction Tab ---------------------------------------
           tabPanel(
             title = "Prediction",
@@ -247,21 +261,6 @@ SLRMainPanelUI <- function(id) {
             )
           ), # Prediction tabpanel
 
-          #### ---------------- Diagnostic Plots Tab ---------------------------------
-
-          tabPanel(
-            title = "Diagnostic Plots",
-            value = "Diagnostic Plots",
-            fluidPage(
-              uiOutput(ns("diagnosticPlotsWarning")),
-              plotOutput(ns("slrResidualsPanelPlot1")),
-              plotOutput(ns("slrResidualsPanelPlot2")),
-              plotOutput(ns("slrResidualsPanelPlot3")),
-              plotOutput(ns("slrResidualsPanelPlot4")),
-              plotOutput(ns("slrResidualsPanelPlot5"))
-            )
-          ), # Diagnostic Plots tabpanel
-          
           #### ---------------- Correlation Coefficient Analysis Tab -------------------
           tabPanel(
             title = "Correlation Analysis",
@@ -504,156 +503,154 @@ SLRSidebarUI <- function(id) {
   )))
 }
 
+# ============================================================
+# LINE Assumption Tests Config
+# Add, remove, or reorder tests here freely
+# Each entry: assumption, procedure, test function, min_n
+# ============================================================
+lineTestConfig <- list(
+
+  list(
+    assumption = "Linearity",
+    procedure  = "Residuals vs Fitted Plot",
+    min_n      = 3,
+    run        = function(model, datx, daty) {
+      list(
+        statistic = NULL,
+        p_value   = NULL,
+        note      = "See Residuals vs Fitted plot in Diagnostic Plots tab"
+      )
+    }
+  ),
+
+  list(
+    assumption = "Linearity",
+    procedure  = "Rainbow Test",
+    min_n      = 6,
+    run        = function(model, datx, daty) {
+      rb <- lmtest::raintest(model)
+      list(
+        statistic = round(rb$statistic, 4),
+        p_value   = round(rb$p.value, 4),
+        note      = NULL
+      )
+    }
+  ),
+
+  list(
+    assumption = "Linearity",
+    procedure  = "Ramsey RESET Test",
+    min_n      = 6,
+    run        = function(model, datx, daty) {
+      rt <- lmtest::resettest(model)
+      list(
+        statistic = round(rt$statistic, 4),
+        p_value   = round(rt$p.value, 4),
+        note      = NULL
+      )
+    }
+  ),
+
+  list(
+    assumption = "Independence",
+    procedure  = "Durbin-Watson Test",
+    min_n      = 5,
+    run        = function(model, datx, daty) {
+      dw <- lmtest::dwtest(model)
+      list(
+        statistic = round(dw$statistic, 4),
+        p_value   = round(dw$p.value, 4),
+        note      = NULL
+      )
+    }
+  ),
+
+  list(
+    assumption = "Normality",
+    procedure  = "Shapiro-Wilk Test",
+    min_n      = 3,
+    run        = function(model, datx, daty) {
+      sw <- shapiro.test(residuals(model))
+      list(
+        statistic = round(sw$statistic, 4),
+        p_value   = round(sw$p.value, 4),
+        note      = NULL
+      )
+    }
+  ),
+
+  list(
+    assumption = "Normality",
+    procedure  = "Anderson-Darling Test",
+    min_n      = 7,
+    run        = function(model, datx, daty) {
+      ad <- nortest::ad.test(residuals(model))
+      list(
+        statistic = round(ad$statistic, 4),
+        p_value   = round(ad$p.value, 4),
+        note      = NULL
+      )
+    }
+  ),
+
+  list(
+    assumption = "Normality",
+    procedure  = "Kolmogorov-Smirnov Test",
+    min_n      = 3,
+    run        = function(model, datx, daty) {
+      resids <- residuals(model)
+      has_ties <- anyDuplicated(resids) > 0
+      ks <- suppressWarnings(ks.test(resids, "pnorm",
+                                     mean = mean(resids),
+                                     sd   = sd(resids)))
+      note <- if (has_ties) "Ties detected in residuals; p-value may be unreliable." else NULL
+      list(
+        statistic = round(ks$statistic, 4),
+        p_value   = round(ks$p.value, 4),
+        note      = note
+      )
+    }
+  ),
+
+  list(
+    assumption = "Equal Variance (Homoskedasticity)",
+    procedure  = "Breusch-Pagan Test",
+    min_n      = 5,
+    run        = function(model, datx, daty) {
+      bp <- lmtest::bptest(model)
+      list(
+        statistic = round(bp$statistic, 4),
+        p_value   = round(bp$p.value, 4),
+        note      = NULL
+      )
+    }
+  ),
+
+  list(
+    assumption = "Equal Variance (Homoskedasticity)",
+    procedure  = "White Test",
+    min_n      = 4,
+    run        = function(model, datx, daty) {
+      # White test via auxiliary regression of squared residuals
+      e2  <- residuals(model)^2
+      x2  <- datx^2
+      aux <- lm(e2 ~ datx + x2)
+      wt  <- summary(aux)
+      f   <- wt$fstatistic
+      p   <- pf(f[1], f[2], f[3], lower.tail = FALSE)
+      list(
+        statistic = round(f[1], 4),
+        p_value   = round(p, 4),
+        note      = NULL
+      )
+    }
+  )
+)
+
 SLRServer <- function(id) {
   moduleServer(id, function(input, output, session) {
-    
-    
-    
-    # ============================================================
-    # LINE Assumption Tests Config
-    # Add, remove, or reorder tests here freely
-    # Each entry: assumption, procedure, test function, min_n
-    # ============================================================
-    lineTestConfig <- list(
-      
-      list(
-        assumption = "Linearity",
-        procedure  = "Residuals vs Fitted Plot",
-        min_n      = 3,
-        run        = function(model, datx, daty) {
-          list(
-            statistic = NULL,
-            p_value   = NULL,
-            note      = "See Residuals vs Fitted plot in Diagnostic Plots tab"
-          )
-        }
-      ),
-      
-      list(
-        assumption = "Linearity",
-        procedure  = "Rainbow Test",
-        min_n      = 6,
-        run        = function(model, datx, daty) {
-          rb <- lmtest::raintest(model)
-          list(
-            statistic = round(rb$statistic, 4),
-            p_value   = round(rb$p.value, 4),
-            note      = NULL
-          )
-        }
-      ),
-      
-      list(
-        assumption = "Linearity",
-        procedure  = "Ramsey RESET Test",
-        min_n      = 6,
-        run        = function(model, datx, daty) {
-          rt <- lmtest::resettest(model)
-          list(
-            statistic = round(rt$statistic, 4),
-            p_value   = round(rt$p.value, 4),
-            note      = NULL
-          )
-        }
-      ),
-      
-      list(
-        assumption = "Independence",
-        procedure  = "Durbin-Watson Test",
-        min_n      = 5,
-        run        = function(model, datx, daty) {
-          dw <- lmtest::dwtest(model)
-          list(
-            statistic = round(dw$statistic, 4),
-            p_value   = round(dw$p.value, 4),
-            note      = NULL
-          )
-        }
-      ),
-      
-      list(
-        assumption = "Normality",
-        procedure  = "Shapiro-Wilk Test",
-        min_n      = 3,
-        run        = function(model, datx, daty) {
-          sw <- shapiro.test(residuals(model))
-          list(
-            statistic = round(sw$statistic, 4),
-            p_value   = round(sw$p.value, 4),
-            note      = NULL
-          )
-        }
-      ),
-      
-      list(
-        assumption = "Normality",
-        procedure  = "Anderson-Darling Test",
-        min_n      = 7,
-        run        = function(model, datx, daty) {
-          ad <- nortest::ad.test(residuals(model))
-          list(
-            statistic = round(ad$statistic, 4),
-            p_value   = round(ad$p.value, 4),
-            note      = NULL
-          )
-        }
-      ),
-      
-      list(
-        assumption = "Normality",
-        procedure  = "Kolmogorov-Smirnov Test",
-        min_n      = 3,
-        run        = function(model, datx, daty) {
-          resids <- residuals(model)
-          has_ties <- anyDuplicated(resids) > 0
-          ks <- suppressWarnings(ks.test(resids, "pnorm",
-                                         mean = mean(resids),
-                                         sd   = sd(resids)))
-          note <- if (has_ties) "Ties detected in residuals; p-value may be unreliable." else NULL
-          list(
-            statistic = round(ks$statistic, 4),
-            p_value   = round(ks$p.value, 4),
-            note      = note
-          )
-        }
-      ),
-      
-      list(
-        assumption = "Equal Variance (Homoskedasticity)",
-        procedure  = "Breusch-Pagan Test",
-        min_n      = 5,
-        run        = function(model, datx, daty) {
-          bp <- lmtest::bptest(model)
-          list(
-            statistic = round(bp$statistic, 4),
-            p_value   = round(bp$p.value, 4),
-            note      = NULL
-          )
-        }
-      ),
-      
-      list(
-        assumption = "Equal Variance (Homoskedasticity)",
-        procedure  = "White Test",
-        min_n      = 4,
-        run        = function(model, datx, daty) {
-          # White test via auxiliary regression of squared residuals
-          e2  <- residuals(model)^2
-          x2  <- datx^2
-          aux <- lm(e2 ~ datx + x2)
-          wt  <- summary(aux)
-          f   <- wt$fstatistic
-          p   <- pf(f[1], f[2], f[3], lower.tail = FALSE)
-          list(
-            statistic = round(f[1], 4),
-            p_value   = round(p, 4),
-            note      = NULL
-          )
-        }
-      )
-    )
-    
-    
+
+
     
     slrExportData <- reactiveVal(NULL)
 
@@ -1069,7 +1066,6 @@ SLRServer <- function(id) {
       ## SLR Validation messages ----
       output$perfectFitWarning <- renderUI({ NULL })
       showTab(inputId = "slrNavbarPage", target = "Inference")
-      showTab(inputId = "slrNavbarPage", target = "Diagnostic Plots")
       showTab(inputId = "slrNavbarPage", target = "Prediction")
       toggle(id = "SLRData", condition = regcor_iv$is_valid())
       
@@ -1363,7 +1359,6 @@ SLRServer <- function(id) {
             
             # Hide the tabs
             hideTab(inputId = "slrNavbarPage", target = "Inference")
-            hideTab(inputId = "slrNavbarPage", target = "Diagnostic Plots")
             
             div(
               class = "alert alert-warning",
@@ -1376,20 +1371,17 @@ SLRServer <- function(id) {
             )
           } else {
             showTab(inputId = "slrNavbarPage", target = "Inference")
-            showTab(inputId = "slrNavbarPage", target = "Diagnostic Plots")
             NULL
           }
         })
-        
-          # Disables ANOVA, INFRENCE and DIAGNOSTIC PLOTS if perfect fit is triggered
+
+          # Disables ANOVA and INFERENCE if perfect fit is triggered
           isPerfectFit <- isTRUE(all.equal(r_squared, 1))
-          
+
           if (isPerfectFit) {
             hideTab(inputId = "slrNavbarPage", target = "Inference")
-            hideTab(inputId = "slrNavbarPage", target = "Diagnostic Plots")
           } else {
             showTab(inputId = "slrNavbarPage", target = "Inference")
-            showTab(inputId = "slrNavbarPage", target = "Diagnostic Plots")
           }
           
           
@@ -2895,7 +2887,6 @@ SLRServer <- function(id) {
       shinyjs::reset("inputPanel")
       fileInputs$slrStatus <- 'reset'
       showTab(inputId = "slrNavbarPage", target = "Inference")
-      showTab(inputId = "slrNavbarPage", target = "Diagnostic Plots")
       showTab(inputId = "slrNavbarPage", target = "Prediction")
       if (!is.null(input$slrNavbarPage)) {
         updateNavbarPage(session, "slrNavbarPage", selected = "Model")

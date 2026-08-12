@@ -496,21 +496,29 @@ LogisticRegressionServer <- function(id) {
       
       # Display the table using DT package for better formatting
       output$lrAnovaTable <- renderDT({
-        # Rename the p-value column
         anova_df <- as.data.frame(anova_table)
-        colnames(anova_df)[colnames(anova_df) == "Pr(>Chi)"] <- "p-value"
-        
+        colnames(anova_df)[colnames(anova_df) == "Pr(>Chi)"] <- "P-Value"
+
         datatable(
           anova_df,
+          class = 'cell-border stripe',
           options = list(
-            dom = 't', # Display table only
+            dom = 't',
             searching = FALSE,
             paging = FALSE,
-            ordering = FALSE
+            ordering = FALSE,
+            autoWidth = FALSE,
+            scrollX = TRUE,
+            columnDefs = list(
+              list(className = 'dt-center', targets = "_all")
+            )
           ),
-          caption = 'Analysis of Deviance Table (Likelihood Ratio Test)',
-          rownames = TRUE
-        ) %>% formatRound(columns = c('Deviance', 'p-value', 'Resid. Dev'), digits = 3)
+          rownames = TRUE,
+          selection = "none",
+          filter = "none"
+        ) %>%
+          formatRound(columns = c('Deviance', 'P-Value', 'Resid. Dev'), digits = 4) %>%
+          formatStyle(columns = 0, fontWeight = 'bold')
       })
       
       output$uploadedDataTable <- renderDT({
