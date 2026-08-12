@@ -2887,7 +2887,6 @@ SLRServer <- function(id) {
       shinyjs::reset("inputPanel")
       fileInputs$slrStatus <- 'reset'
       showTab(inputId = "slrNavbarPage", target = "Inference")
-      showTab(inputId = "slrNavbarPage", target = "Diagnostic Plots")
       showTab(inputId = "slrNavbarPage", target = "Prediction")
       if (!is.null(input$slrNavbarPage)) {
         updateNavbarPage(session, "slrNavbarPage", selected = "Model")
