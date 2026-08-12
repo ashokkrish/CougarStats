@@ -121,15 +121,6 @@ MLRMainPanelUI <- function(id) {
 
 MLRServer <- function(id) {
   moduleServer(id, function(input, output, session) {
-    redrawing <- FALSE
-    session$onFlushed(function() {
-      if (redrawing) {
-        shinyjs::runjs(r"[$('#rc-MLR-anovaTable > table > thead > tr').children().css({'font-style': 'italic'})]")
-        redrawing <<- FALSE
-      }
-    },
-    once = FALSE)
-    
     output$mlrShowSheetPicker <- reactive({
       if (is.null(input$mlrUserData)) return(FALSE)
       tolower(tools::file_ext(input$mlrUserData$name)) %in% c("xls", "xlsx")
@@ -1182,48 +1173,89 @@ MLRServer <- function(id) {
       })
     })
     
-    output$anovaTable <- renderTable(
-      {
-        req(encodedData())
-        req(isTruthy(input$responseVariable))
-        req(isTruthy(input$explanatoryVariables))
-        req(length(as.character(input$explanatoryVariables)) >= 2)
-        
-        redrawing <<- TRUE
-        options(knitr.kable.NA = "") # do not display NAs
-        
-        with(encodedData(), {
-          model <- lm(reformulate(
-            sprintf("`%s`", input$explanatoryVariables),
-            sprintf("`%s`", input$responseVariable)
-          ))
-          
-          modelANOVA <- anova(model)
-          SSR <- sum(modelANOVA$"Sum Sq"[-nrow(modelANOVA)]) # all but the residuals
-          SSE <- modelANOVA$"Sum Sq"[nrow(modelANOVA)] # only the residuals
-          SST <- SSR + SSE
-          
-          # Use model rank
-          k <- model$rank - 1
-          n <- nrow(encodedData())
-          MSR <- SSR / k
-          MSE <- SSE / (n - k - 1)
-          F_stat <- MSR / MSE
-          
-          ## RETURN THE TABLE TO RENDER
-          tibble::tribble(
-            ~"Source", ~"df", ~"SS", ~"MS", ~"F", ~"P-value",
-            "<strong>Regression (Model)</strong>", as.integer(k), SSR, MSR, F_stat, pf(F_stat, k, n - k - 1, lower.tail = FALSE),
-            "<strong>Error (Residual)</strong>", as.integer(n - k - 1), SSE, MSE, NA, NA,
-            "<strong>Total</strong>", as.integer(n - 1), SST, NA, NA, NA
+    output$anovaTable <- renderDT({
+      req(encodedData())
+      req(isTruthy(input$responseVariable))
+      req(isTruthy(input$explanatoryVariables))
+      req(length(as.character(input$explanatoryVariables)) >= 2)
+
+      with(encodedData(), {
+        model <- lm(reformulate(
+          sprintf("`%s`", input$explanatoryVariables),
+          sprintf("`%s`", input$responseVariable)
+        ))
+
+        modelANOVA <- anova(model)
+        SSR <- sum(modelANOVA$"Sum Sq"[-nrow(modelANOVA)])
+        SSE <- modelANOVA$"Sum Sq"[nrow(modelANOVA)]
+        SST <- SSR + SSE
+
+        k <- model$rank - 1
+        n <- nrow(encodedData())
+        MSR <- SSR / k
+        MSE <- SSE / (n - k - 1)
+        F_stat <- MSR / MSE
+        p_val <- pf(F_stat, k, n - k - 1, lower.tail = FALSE)
+
+        p_val_display <- if (p_val < 0.0001 && p_val > 0) "P < 0.0001" else as.character(round(p_val, 4))
+
+        data <- data.frame(
+          df        = c(as.integer(k), as.integer(n - k - 1), as.integer(n - 1)),
+          SS        = c(SSR, SSE, SST),
+          MS        = c(MSR, MSE, NA),
+          F         = c(F_stat, NA, NA),
+          `P-Value` = c(p_val_display, NA_character_, NA_character_),
+          check.names = FALSE
+        )
+        rownames(data) <- c("Regression (Model)", "Error (Residual)", "Total")
+
+        colNames <- c("df", "Sum of Squares (SS)", "Mean Sum of Squares (MS)", "F-ratio", "P-Value")
+
+        headers <- htmltools::withTags(table(
+          class = 'display',
+          thead(
+            tr(
+              th("Sources of Variation",
+                 style = "border: 1px solid rgba(0, 0, 0, 0.15);
+                            border-bottom: 1px solid rgba(0, 0, 0, 0.3);"),
+              lapply(colNames, th,
+                     style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
+                                border-top: 1px solid rgba(0, 0, 0, 0.15);')
+            )
           )
-        })
-      },
-      na = "",
-      striped = TRUE,
-      align = "c",
-      sanitize.text.function = function(x) x
-    )
+        ))
+
+        datatable(
+          data,
+          class = 'cell-border stripe',
+          container = headers,
+          options = list(
+            dom = 't',
+            pageLength = -1,
+            ordering = FALSE,
+            searching = FALSE,
+            paging = FALSE,
+            autoWidth = FALSE,
+            scrollX = TRUE,
+            columnDefs = list(
+              list(className = 'dt-center', targets = 0:5),
+              list(width = '150px', targets = 2:5)
+            )
+          ),
+          selection = "none",
+          escape = FALSE,
+          filter = "none"
+        ) %>%
+          formatRound(columns = 1, digits = 0) %>%
+          formatRound(columns = 2:4, digits = 4) %>%
+          formatStyle(columns = c(0, 4), fontWeight = 'bold') %>%
+          formatStyle(
+            columns = 1:5,
+            target = 'row',
+            fontWeight = styleRow(3, "bold")
+          )
+      })
+    })
     
     output$anovaPValueMethod <- renderUI({
       req(encodedData())
@@ -1549,7 +1581,8 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
           br(),
           fluidRow(uiOutput(ns("anovaHypotheses"))),
           br(),
-          fluidRow(tableOutput(ns("anovaTable"))),
+          p(strong("ANOVA Table:")),
+          fluidRow(DTOutput(ns("anovaTable"))),
           br(),
           fluidRow(
             column(12,

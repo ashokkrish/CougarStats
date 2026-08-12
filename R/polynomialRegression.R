@@ -247,20 +247,6 @@ PolynomialRegressionMainPanelUI <- function(id) {
           uiOutput(ns("polyInference"))
         ),
 
-        # ---- Diagnostic Plots Tab -----------------------------------------
-        tabPanel(
-          title = "Diagnostic Plots",
-          value = "Diagnostic Plots",
-          fluidPage(
-            uiOutput(ns("polyDiagnosticPlotsWarning")),
-            plotOutput(ns("polyDiagPlot1")),
-            plotOutput(ns("polyDiagPlot2")),
-            plotOutput(ns("polyDiagPlot3")),
-            plotOutput(ns("polyDiagPlot4")),
-            plotOutput(ns("polyDiagPlot5"))
-          )
-        ),
-
         # ---- Uploaded Data Tab --------------------------------------------
         tabPanel(
           title = "Uploaded Data",
@@ -453,7 +439,6 @@ PolynomialRegressionServer <- function(id) {
       hide("polyResultsPanel")
       hideTab(inputId = "polyNavbarPage", target = "Uploaded Data")
       hideTab(inputId = "polyNavbarPage", target = "Inference")
-      hideTab(inputId = "polyNavbarPage", target = "Diagnostic Plots")
       storedDatx(NULL)
       storedDaty(NULL)
       nDroppedRows(0)
@@ -478,7 +463,6 @@ PolynomialRegressionServer <- function(id) {
       output$polyValidation        <- renderUI({ NULL })
       hide("polyResultsPanel")
       hideTab(inputId = "polyNavbarPage", target = "Inference")
-      hideTab(inputId = "polyNavbarPage", target = "Diagnostic Plots")
       storedDatx(NULL)
       storedDaty(NULL)
     }, ignoreInit = TRUE)
@@ -489,7 +473,6 @@ PolynomialRegressionServer <- function(id) {
       output$polyValidation        <- renderUI({ NULL })
       hide("polyResultsPanel")
       hideTab(inputId = "polyNavbarPage", target = "Inference")
-      hideTab(inputId = "polyNavbarPage", target = "Diagnostic Plots")
       storedDatx(NULL)
       storedDaty(NULL)
       nDroppedRows(0)
@@ -678,7 +661,6 @@ PolynomialRegressionServer <- function(id) {
       hide("polyUploadedDataPanel")
 
       showTab(inputId = "polyNavbarPage", target = "Inference")
-      showTab(inputId = "polyNavbarPage", target = "Diagnostic Plots")
 
       if (input$polyDataInput == "Upload Data") {
         showTab(inputId = "polyNavbarPage", target = "Uploaded Data")
@@ -748,7 +730,6 @@ PolynomialRegressionServer <- function(id) {
       output$polyPerfectFitWarning <- renderUI({
         if (isTRUE(all.equal(r_squared, 1))) {
           hideTab(inputId = "polyNavbarPage", target = "Inference")
-          hideTab(inputId = "polyNavbarPage", target = "Diagnostic Plots")
           div(
             class = "alert alert-warning",
             role  = "alert",
@@ -760,7 +741,6 @@ PolynomialRegressionServer <- function(id) {
           )
         } else {
           showTab(inputId = "polyNavbarPage", target = "Inference")
-          showTab(inputId = "polyNavbarPage", target = "Diagnostic Plots")
           NULL
         }
       })
@@ -768,7 +748,6 @@ PolynomialRegressionServer <- function(id) {
       isPerfectFit <- isTRUE(all.equal(r_squared, 1))
       if (isPerfectFit) {
         hideTab(inputId = "polyNavbarPage", target = "Inference")
-        hideTab(inputId = "polyNavbarPage", target = "Diagnostic Plots")
       }
 
       # -- Model tab ---------------------------------------------------------
@@ -877,7 +856,8 @@ PolynomialRegressionServer <- function(id) {
               br(),
               fluidRow(uiOutput(ns("polyAnovaHypotheses"))),
               br(),
-              fluidRow(tableOutput(ns("polyAnovaTable"))),
+              p(strong("ANOVA Table:")),
+              fluidRow(DTOutput(ns("polyAnovaTable"))),
               br(),
               fluidRow(
                 column(12,
@@ -896,6 +876,18 @@ PolynomialRegressionServer <- function(id) {
               title = "INE",
               br(),
               uiOutput(ns("polyIneAssumptions"))
+            ),
+            tabPanel(
+              title = "Diagnostic Plots",
+              fluidPage(
+                br(),
+                uiOutput(ns("polyDiagnosticPlotsWarning")),
+                plotOutput(ns("polyDiagPlot1")),
+                plotOutput(ns("polyDiagPlot2")),
+                plotOutput(ns("polyDiagPlot3")),
+                plotOutput(ns("polyDiagPlot4")),
+                plotOutput(ns("polyDiagPlot5"))
+              )
             )
           )
         )
@@ -953,7 +945,7 @@ PolynomialRegressionServer <- function(id) {
     })
 
     # ANOVA table
-    output$polyAnovaTable <- renderTable({
+    output$polyAnovaTable <- renderDT({
       model <- polyModel()
       k     <- model$rank - 1
       n     <- length(storedDatx())
@@ -967,14 +959,64 @@ PolynomialRegressionServer <- function(id) {
       F_stat <- MSR / MSE
       p_val  <- pf(F_stat, k, n - k - 1, lower.tail = FALSE)
 
-      tibble::tribble(
-        ~"Source", ~"df", ~"SS", ~"MS", ~"F", ~"P-value",
-        "<strong>Regression (Model)</strong>", as.integer(k),       SSR, MSR,    F_stat, p_val,
-        "<strong>Error (Residual)</strong>",   as.integer(n-k-1),   SSE, MSE,    NA,     NA,
-        "<strong>Total</strong>",              as.integer(n-1),      SST, NA,     NA,     NA
+      p_val_display <- if (p_val < 0.0001 && p_val > 0) "P < 0.0001" else as.character(round(p_val, 4))
+
+      data <- data.frame(
+        df        = c(as.integer(k), as.integer(n - k - 1), as.integer(n - 1)),
+        SS        = c(SSR, SSE, SST),
+        MS        = c(MSR, MSE, NA),
+        F         = c(F_stat, NA, NA),
+        `P-Value` = c(p_val_display, NA_character_, NA_character_),
+        check.names = FALSE
       )
-    }, na = "", striped = TRUE, align = "c",
-       sanitize.text.function = function(x) x)
+      rownames(data) <- c("Regression (Model)", "Error (Residual)", "Total")
+
+      colNames <- c("df", "Sum of Squares (SS)", "Mean Sum of Squares (MS)", "F-ratio", "P-Value")
+
+      headers <- htmltools::withTags(table(
+        class = 'display',
+        thead(
+          tr(
+            th("Sources of Variation",
+               style = "border: 1px solid rgba(0, 0, 0, 0.15);
+                          border-bottom: 1px solid rgba(0, 0, 0, 0.3);"),
+            lapply(colNames, th,
+                   style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
+                              border-top: 1px solid rgba(0, 0, 0, 0.15);')
+          )
+        )
+      ))
+
+      datatable(
+        data,
+        class = 'cell-border stripe',
+        container = headers,
+        options = list(
+          dom = 't',
+          pageLength = -1,
+          ordering = FALSE,
+          searching = FALSE,
+          paging = FALSE,
+          autoWidth = FALSE,
+          scrollX = TRUE,
+          columnDefs = list(
+            list(className = 'dt-center', targets = 0:5),
+            list(width = '150px', targets = 2:5)
+          )
+        ),
+        selection = "none",
+        escape = FALSE,
+        filter = "none"
+      ) %>%
+        formatRound(columns = 1, digits = 0) %>%
+        formatRound(columns = 2:4, digits = 4) %>%
+        formatStyle(columns = c(0, 4), fontWeight = 'bold') %>%
+        formatStyle(
+          columns = 1:5,
+          target = 'row',
+          fontWeight = styleRow(3, "bold")
+        )
+    })
 
     # F distribution plot
     output$polyAnovaFPlot <- renderPlot({
@@ -1340,7 +1382,6 @@ PolynomialRegressionServer <- function(id) {
       hide("polyUploadedDataPanel")
       hideTab(inputId = "polyNavbarPage", target = "Uploaded Data")
       hideTab(inputId = "polyNavbarPage", target = "Inference")
-      hideTab(inputId = "polyNavbarPage", target = "Diagnostic Plots")
       hasPolyLeveragePlotIssue(FALSE)
     })
 
