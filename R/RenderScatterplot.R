@@ -102,13 +102,14 @@ RenderScatterplot <- function(
     # Upper bound
     p <- p %>%
       add_trace(
-        data       = df_conf,
-        x          = ~x,
-        y          = ~upr,
-        type       = "scatter",
-        mode       = "lines",
-        name       = "Confidence Band",
-        line       = list(
+        data        = df_conf,
+        x           = ~x,
+        y           = ~upr,
+        type        = "scatter",
+        mode        = "lines",
+        name        = "Confidence Band",
+        legendgroup = "Confidence Band",
+        line        = list(
           color = "darkblue",
           width = lineWidth * 2,
           dash  = "dash"
@@ -120,14 +121,15 @@ RenderScatterplot <- function(
       ) %>%
       # Lower bound - same legend group so only one legend entry
       add_trace(
-        data       = df_conf,
-        x          = ~x,
-        y          = ~lwr,
-        type       = "scatter",
-        mode       = "lines",
-        name       = "Confidence Band",
-        showlegend = FALSE,
-        line       = list(
+        data        = df_conf,
+        x           = ~x,
+        y           = ~lwr,
+        type        = "scatter",
+        mode        = "lines",
+        name        = "Confidence Band",
+        legendgroup = "Confidence Band",
+        showlegend  = FALSE,
+        line        = list(
           color = "darkblue",
           width = lineWidth * 2,
           dash  = "dash"
@@ -155,13 +157,14 @@ RenderScatterplot <- function(
     # Upper bound
     p <- p %>%
       add_trace(
-        data       = df_pred,
-        x          = ~x,
-        y          = ~upr,
-        type       = "scatter",
-        mode       = "lines",
-        name       = "Prediction Band",
-        line       = list(
+        data        = df_pred,
+        x           = ~x,
+        y           = ~upr,
+        type        = "scatter",
+        mode        = "lines",
+        name        = "Prediction Band",
+        legendgroup = "Prediction Band",
+        line        = list(
           color = "red",
           width = lineWidth * 2,
           dash  = "dash"
@@ -173,14 +176,15 @@ RenderScatterplot <- function(
       ) %>%
       # Lower bound
       add_trace(
-        data       = df_pred,
-        x          = ~x,
-        y          = ~lwr,
-        type       = "scatter",
-        mode       = "lines",
-        name       = "Prediction Band",
-        showlegend = FALSE,
-        line       = list(
+        data        = df_pred,
+        x           = ~x,
+        y           = ~lwr,
+        type        = "scatter",
+        mode        = "lines",
+        name        = "Prediction Band",
+        legendgroup = "Prediction Band",
+        showlegend  = FALSE,
+        line        = list(
           color = "red",
           width = lineWidth * 2,
           dash  = "dash"

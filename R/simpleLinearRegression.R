@@ -202,6 +202,8 @@ SLRMainPanelUI <- function(id) {
                   div(DTOutput(ns("anovaTable")), width = "100 px;"),
                   br(),
                   br(),
+                  p(strong("F Distribution")),
+                  p("The shaded region represents the rejection region at α = 0.05. The dashed red line is the observed F statistic and the dashed blue line is the critical value."),
                   plotOutput(ns("anovaFCurve")),
                   br(),
                   br(),
@@ -1394,7 +1396,23 @@ SLRServer <- function(id) {
           
           # Use original numeric df for sorting
           numericRows <- df
-          
+
+          # Format a value the same way the cell renderer does (for width estimation)
+          .fmt_cell <- function(v) {
+            if (is.na(v) || !is.numeric(v)) return(if (is.na(v)) "" else as.character(v))
+            if (abs(v - round(v)) < 1e-9) formatC(round(v), format = "f", digits = 0)
+            else formatC(v, format = "f", digits = 4)
+          }
+          # Estimate minWidth (px) from an HTML header name + column values
+          .est_width <- function(html_name, vals, px = 10L, pad = 24L, min_w = 80L) {
+            clean <- gsub("<br\\s*/?>", "\n", html_name, ignore.case = TRUE)
+            clean <- gsub("<[^>]+>", "", clean)
+            clean <- gsub("&[a-zA-Z]+;", "~", clean)
+            hdr <- max(nchar(trimws(strsplit(clean, "\n")[[1]])))
+            vw  <- if (length(vals) > 0) max(nchar(sapply(vals, .fmt_cell)), na.rm = TRUE) else 0L
+            max(min_w, max(hdr, vw) * px + pad)
+          }
+
           reactable(
             numericRows,
             sortable   = TRUE,
@@ -1408,19 +1426,27 @@ SLRServer <- function(id) {
             columns = c(
               # Row name column — just used to show "Totals" label in footer
               list(".rownames" = colDef(
-                name   = "Observation Number",
-                align = "center",
-                footer = tags$b("Totals"),
-                style  = list(color = "#333")
-            
+                name     = "Observation Number",
+                align    = "center",
+                minWidth = 175L,
+                footer   = tags$b("Totals"),
+                style    = list(color = "#333", whiteSpace = "nowrap")
               )),
               # Data columns with HTML names and totals footer
               setNames(
                 lapply(names(numericRows), function(col) {
+                  footer_val   <- dfTotaled[nrow(dfTotaled), col]
+                  footer_chars <- if (!is.na(footer_val)) nchar(trimws(as.character(totalsRow[[col]]))) else 0L
+                  col_min_w    <- max(
+                    .est_width(col, numericRows[[col]]),
+                    footer_chars * 10L + 24L
+                  )
                   colDef(
                     html     = TRUE,
                     align    = "center",
                     name     = names(df)[match(col, names(numericRows))],
+                    minWidth = col_min_w,
+                    style    = list(whiteSpace = "nowrap"),
                     footer   = if (is.na(dfTotaled[nrow(dfTotaled), col])) {
                       ""
                     } else {
@@ -1466,15 +1492,67 @@ SLRServer <- function(id) {
           if (isTRUE(input[["slrScatter-showMeans"]])) {
             x_bar <- mean(datx)
             y_bar <- mean(daty)
+
+            # Collect all y-values that are visible in the plot so the
+            # explicit axis range we set below doesn't clip any bands.
+            nd    <- data.frame(datx = seq(min(df$x), max(df$x), length.out = 200))
+            all_y <- df$y
+            if (isTRUE(input[["slrScatter-showRegressionLine"]]))
+              all_y <- c(all_y, predict(model, newdata = nd))
+            if (isTRUE(input[["slrScatter-confidenceInterval"]]))
+              all_y <- c(all_y, suppressWarnings(
+                predict(model, newdata = nd, interval = "confidence"))[, c("lwr", "upr")])
+            if (isTRUE(input[["slrScatter-predictionInterval"]]))
+              all_y <- c(all_y, suppressWarnings(
+                predict(model, newdata = nd, interval = "prediction"))[, c("lwr", "upr")])
+
+            y_span     <- diff(range(all_y))
+            x_span     <- diff(range(df$x))
+            pad        <- 0.07
+            y_axis_min <- min(all_y) - pad * y_span
+            y_axis_max <- max(all_y) + pad * y_span
+            x_axis_min <- min(df$x)  - pad * x_span
+            x_axis_max <- max(df$x)  + pad * x_span
+
+            # Lines extend just past the axis boundary; cliponaxis (default TRUE)
+            # clips them exactly at the axis edge, making them appear to touch it.
+            y_reach <- y_axis_min - 0.01 * y_span
+            x_reach <- x_axis_min - 0.01 * x_span
+
             p <- p %>%
               add_trace(
-                inherit = FALSE,
-                x      = x_bar,
-                y      = y_bar,
-                type   = "scatter",
-                mode   = "markers",
-                name   = "(x̅, y̅)",
-                marker = list(
+                inherit     = FALSE,
+                x           = c(x_bar, x_bar),
+                y           = c(y_reach, y_bar),
+                type        = "scatter",
+                mode        = "lines",
+                name        = "(x̅, y̅)",
+                legendgroup = "(x̅, y̅)",
+                showlegend  = FALSE,
+                hoverinfo   = "skip",
+                line        = list(color = "rgba(255,0,0,0.25)", width = 1.5, dash = "dot")
+              ) %>%
+              add_trace(
+                inherit     = FALSE,
+                x           = c(x_reach, x_bar),
+                y           = c(y_bar, y_bar),
+                type        = "scatter",
+                mode        = "lines",
+                name        = "(x̅, y̅)",
+                legendgroup = "(x̅, y̅)",
+                showlegend  = FALSE,
+                hoverinfo   = "skip",
+                line        = list(color = "rgba(255,0,0,0.25)", width = 1.5, dash = "dot")
+              ) %>%
+              add_trace(
+                inherit     = FALSE,
+                x           = x_bar,
+                y           = y_bar,
+                type        = "scatter",
+                mode        = "markers",
+                name        = "(x̅, y̅)",
+                legendgroup = "(x̅, y̅)",
+                marker      = list(
                   color  = "red",
                   size   = 18,
                   symbol = "asterisk-open",
@@ -1485,6 +1563,10 @@ SLRServer <- function(id) {
                   "<b>y̅:</b> ", round(y_bar, 4), "<br>",
                   "<extra></extra>"
                 )
+              ) %>%
+              layout(
+                xaxis = list(range = c(x_axis_min, x_axis_max)),
+                yaxis = list(range = c(y_axis_min, y_axis_max))
               )
           }
 
@@ -2505,78 +2587,11 @@ SLRServer <- function(id) {
         # ── ggplot F-distribution (active) ──────────────────────────────────────
         output$anovaFCurve <- renderPlot({
           anova_results <- anova(model)
-
           df1    <- 1
           df2    <- n - 2
           f_stat <- round(anova_results$`F value`[1], 4)
           f_crit <- round(qf(0.95, df1, df2), 4)
-
-          x_start <- 0.05
-          x_max   <- if (f_stat > x_start && f_stat < f_crit * 10)
-                       max(f_crit * 2.5, f_stat * 1.3)
-                     else
-                       f_crit * 2.5
-
-          x_curve <- seq(x_start, x_max, length.out = 600)
-          y_curve <- stats::df(x_curve, df1, df2)
-          y_cap   <- stats::df(f_crit * 0.5, df1, df2) * 1.1
-          y_disp  <- pmin(y_curve, y_cap)
-
-          plot_df    <- data.frame(x = x_curve, y = y_disp) %>% filter(is.finite(y))
-          seg_h      <- y_cap * 0.75
-          f_in_range <- f_stat > x_start && f_stat <= x_max
-
-          ggplot(plot_df, aes(x = x, y = y)) +
-            geom_ribbon(data = filter(plot_df, x >= f_crit),
-                        aes(ymin = 0, ymax = y),
-                        fill = "steelblue", alpha = 0.35) +
-            geom_line(linewidth = 0.8) +
-            annotate("text",
-                     x = f_crit, y = y_cap * 1.08,
-                     label = "← AR   ", hjust = 1,
-                     size = 14 / .pt, fontface = "bold") +
-            annotate("text",
-                     x = f_crit, y = y_cap * 1.08,
-                     label = "   RR →", hjust = 0,
-                     size = 14 / .pt, fontface = "bold") +
-            annotate("segment",
-                     x = f_crit, xend = f_crit, y = 0, yend = seg_h,
-                     linewidth = 1.5, color = "#023B70") +
-            {if (f_in_range)
-              annotate("segment",
-                       x = f_stat, xend = f_stat, y = 0, yend = seg_h,
-                       linewidth = 1.25, color = "#BD130B")
-            } +
-            annotate("text",
-                     x = f_crit, y = -y_cap * 0.07,
-                     label = as.character(f_crit),
-                     color = "#023B70", fontface = "bold",
-                     size = 14 / .pt) +
-            {if (f_in_range)
-              annotate("text",
-                       x = f_stat, y = -y_cap * 0.07,
-                       label = as.character(f_stat),
-                       color = "#BD130B", fontface = "bold",
-                       size = 14 / .pt)
-            } +
-            coord_cartesian(xlim = c(0, x_max * 1.02),
-                            ylim = c(0, y_cap * 1.18),
-                            clip = "off") +
-            scale_x_continuous(expand = c(0, 0)) +
-            scale_y_continuous(breaks = 0, labels = "0", expand = c(0, 0)) +
-            ylab(expression(bold(italic(Density)))) +
-            xlab(expression(bold(italic(F)))) +
-            theme_classic() +
-            theme(
-              axis.text.x  = element_blank(),
-              axis.ticks.x = element_blank(),
-              axis.text.y  = element_text(size = 13, face = "bold"),
-              axis.title.x = element_text(size = 16, face = "bold.italic",
-                                          margin = margin(t = 22)),
-              axis.title.y = element_text(size = 16, face = "bold.italic"),
-              axis.line    = element_line(linewidth = 0.8, color = "black"),
-              plot.margin  = margin(t = 20, r = 10, b = 45, l = 5)
-            )
+          anovaFPlot(f_stat, f_crit, df1, df2)
         }, height = 400, width = 650)
 
         # ── plotly F-distribution (commented out — kept for reference) ───────────

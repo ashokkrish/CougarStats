@@ -1,3 +1,86 @@
+## Shared F-distribution plot used by SLR, MLR, and PR ANOVA tabs.
+## f_stat and f_crit should already be rounded before passing in.
+## y_cap adapts to df1: for df1=1 it clips the near-infinite left spike;
+## for df1>=2 it sits above the actual mode so the full curve is visible.
+anovaFPlot <- function(f_stat, f_crit, df1, df2) {
+
+  x_start <- 0.05
+  x_max   <- if (f_stat > x_start && f_stat < f_crit * 10)
+               max(f_crit * 2.5, f_stat * 1.3)
+             else
+               f_crit * 2.5
+
+  y_cap <- if (df1 > 2) {
+    mode_x <- (df1 - 2) / df1 * df2 / (df2 + 2)
+    stats::df(mode_x, df1, df2) * 1.15
+  } else if (df1 == 2) {
+    stats::df(x_start, df1, df2) * 1.05
+  } else {
+    stats::df(f_crit * 0.5, df1, df2) * 1.1
+  }
+
+  x_curve <- seq(x_start, x_max, length.out = 600)
+  y_curve <- stats::df(x_curve, df1, df2)
+  y_disp  <- pmin(y_curve, y_cap)
+  plot_df <- data.frame(x = x_curve, y = y_disp)
+  plot_df <- plot_df[is.finite(plot_df$y), ]
+
+  seg_h      <- y_cap * 0.75
+  f_in_range <- f_stat > x_start && f_stat <= x_max
+
+  ggplot(plot_df, aes(x = x, y = y)) +
+    geom_ribbon(data = plot_df[plot_df$x >= f_crit, ],
+                aes(ymin = 0, ymax = y),
+                fill = "steelblue", alpha = 0.35) +
+    geom_line(linewidth = 0.8) +
+    annotate("text",
+             x = f_crit, y = y_cap * 1.08,
+             label = "← AR   ", hjust = 1,
+             size = 14 / .pt, fontface = "bold") +
+    annotate("text",
+             x = f_crit, y = y_cap * 1.08,
+             label = "   RR →", hjust = 0,
+             size = 14 / .pt, fontface = "bold") +
+    annotate("segment",
+             x = f_crit, xend = f_crit, y = 0, yend = seg_h,
+             linewidth = 1.5, color = "#023B70", linetype = "dashed") +
+    {if (f_in_range)
+      annotate("segment",
+               x = f_stat, xend = f_stat, y = 0, yend = seg_h,
+               linewidth = 1.25, color = "#BD130B", linetype = "dashed")
+    } +
+    annotate("text",
+             x = f_crit, y = -y_cap * 0.07,
+             label = as.character(f_crit),
+             color = "#023B70", fontface = "bold",
+             size = 14 / .pt) +
+    {if (f_in_range)
+      annotate("text",
+               x = f_stat, y = -y_cap * 0.07,
+               label = as.character(f_stat),
+               color = "#BD130B", fontface = "bold",
+               size = 14 / .pt)
+    } +
+    coord_cartesian(xlim = c(0, x_max * 1.02),
+                    ylim = c(0, y_cap * 1.18),
+                    clip = "off") +
+    scale_x_continuous(expand = c(0, 0)) +
+    scale_y_continuous(breaks = 0, labels = "0", expand = c(0, 0)) +
+    ylab(expression(bold(italic(Density)))) +
+    xlab(expression(bold(italic(F)))) +
+    theme_classic() +
+    theme(
+      axis.text.x   = element_blank(),
+      axis.ticks.x  = element_blank(),
+      axis.text.y   = element_text(size = 13, face = "bold"),
+      axis.title.x  = element_text(size = 16, face = "bold.italic",
+                                   margin = margin(t = 22)),
+      axis.title.y  = element_text(size = 16, face = "bold.italic"),
+      axis.line    = element_line(linewidth = 0.8, color = "black"),
+      plot.margin  = margin(t = 20, r = 10, b = 45, l = 5)
+    )
+}
+
 ## Format a number for LaTeX: uses value^{exp} notation when the value would
 ## round to zero at 'digits' decimal places, so fractions never display 0/0.
 ## Passes literal 0 (not x) for the x==0 case to prevent IEEE 754 negative-zero

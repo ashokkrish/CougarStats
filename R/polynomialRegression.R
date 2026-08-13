@@ -1041,37 +1041,7 @@ PolynomialRegressionServer <- function(id) {
       MSE    <- SSE / (n - k - 1)
       f_stat <- MSR / MSE
       f_crit <- qf(0.95, k, n - k - 1)
-      x_max  <- f_crit * 3
-      x      <- seq(0, x_max, length.out = 1000)
-      y      <- df(x, k, n - k - 1)
-      plot_df <- data.frame(x = x, y = y)
-
-      ggplot(plot_df, aes(x = x, y = y)) +
-        geom_line(lwd = 1) +
-        geom_area(data = subset(plot_df, x >= f_crit),
-                  aes(x = x, y = y), fill = "red", alpha = 0.3) +
-        {if (f_stat <= x_max)
-          geom_area(data = subset(plot_df, x >= f_stat),
-                    aes(x = x, y = y), fill = "blue", alpha = 0.3)} +
-        geom_vline(xintercept = f_crit, colour = "red",  linewidth = 0.8, linetype = "dashed") +
-        {if (f_stat <= x_max)
-          geom_vline(xintercept = f_stat, colour = "blue", linewidth = 0.8, linetype = "dashed")} +
-        labs(title = "F Distribution", x = "F", y = "Density") +
-        annotate("text", x = f_crit, y = max(y) * 0.2,
-                 label = sprintf("F critical\n= %.4f", f_crit),
-                 hjust = -0.1, color = "red", size = 3.5) +
-        annotate("text", x = x_max * 0.6, y = max(y) * 0.9,
-                 label = sprintf("p-value = %.4f", pf(f_stat, k, n-k-1, lower.tail = FALSE)),
-                 color = "black", size = 4) +
-        {if (f_stat <= x_max)
-          annotate("text", x = f_stat, y = max(y) * 0.4,
-                   label = sprintf("F statistic\n= %.4f", f_stat),
-                   hjust = -0.1, color = "blue", size = 3.5)} +
-        theme_classic() +
-        theme(plot.title  = element_text(hjust = 0.5, face = "bold"),
-              axis.title  = element_text(size = 12, face = "bold"),
-              axis.text   = element_text(size = 10, face = "bold")) +
-        coord_cartesian(clip = "off")
+      anovaFPlot(round(f_stat, 4), round(f_crit, 4), df1 = k, df2 = n - k - 1)
     })
 
     # ANOVA p-value / conclusion
