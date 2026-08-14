@@ -13,10 +13,10 @@ anovaFPlot <- function(f_stat, f_crit, df1, df2) {
   y_cap <- if (df1 > 2) {
     mode_x <- (df1 - 2) / df1 * df2 / (df2 + 2)
     stats::df(mode_x, df1, df2) * 1.15
-  } else if (df1 == 2) {
-    stats::df(x_start, df1, df2) * 1.05
   } else {
-    stats::df(f_crit * 0.5, df1, df2) * 1.1
+    # df1 <= 2: F density is monotonically decreasing from 0; cap at the curve's
+    # value at x_start so pmin() never creates a flat left section.
+    stats::df(x_start, df1, df2) * 1.05
   }
 
   x_curve <- seq(x_start, x_max, length.out = 600)

@@ -863,7 +863,7 @@ PolynomialRegressionServer <- function(id) {
                 column(12,
                   p(strong("F Distribution")),
                   p("The shaded region represents the rejection region at α = 0.05. The dashed red line is the observed F statistic and the dashed blue line is the critical value."),
-                  plotOutput(ns("polyAnovaFPlot"), height = "350px")
+                  plotOutput(ns("polyAnovaFPlot"))
                 )
               ),
               br(),
@@ -959,7 +959,7 @@ PolynomialRegressionServer <- function(id) {
       F_stat <- MSR / MSE
       p_val  <- pf(F_stat, k, n - k - 1, lower.tail = FALSE)
 
-      p_val_display <- if (p_val < 0.0001 && p_val > 0) "P < 0.0001" else as.character(round(p_val, 4))
+      p_val_display <- if (p_val < 0.0001 && p_val > 0) "P < 0.0001" else sprintf("%.4f", p_val)
 
       data <- data.frame(
         df        = c(as.integer(k), as.integer(n - k - 1), as.integer(n - 1)),
@@ -1042,7 +1042,7 @@ PolynomialRegressionServer <- function(id) {
       f_stat <- MSR / MSE
       f_crit <- qf(0.95, k, n - k - 1)
       anovaFPlot(round(f_stat, 4), round(f_crit, 4), df1 = k, df2 = n - k - 1)
-    })
+    }, height = 400, width = 650)
 
     # ANOVA p-value / conclusion
     output$polyAnovaPValue <- renderUI({

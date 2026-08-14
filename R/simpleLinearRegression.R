@@ -2464,7 +2464,7 @@ SLRServer <- function(id) {
           anova_results <- anova(model)
 
           p_val <- anova_results$`Pr(>F)`[1]
-          p_val_display <- if (p_val < 0.0001 && p_val > 0) "P < 0.0001" else as.character(round(p_val, 4))
+          p_val_display <- if (p_val < 0.0001 && p_val > 0) "P < 0.0001" else sprintf("%.4f", p_val)
 
           data <- data.frame(
             df         = c(anova_results$Df[1], anova_results$Df[2], sum(anova_results$Df)),
@@ -2787,7 +2787,7 @@ SLRServer <- function(id) {
             "\\( \\qquad = %s \\pm %s \\)",
             yh_tex, fmt_sci_latex(t_crit * se_mean, 4)
           )),
-          p(sprintf("\\( \\qquad (%s, \\; %s) \\)",
+          p(sprintf("\\( \\qquad = (%s, \\; %s) \\)",
                     fmt_sci_latex(ci_lower, 4), fmt_sci_latex(ci_upper, 4))),
           p(tags$b("Interpretation:")),
           p(HTML(sprintf(
@@ -2814,7 +2814,7 @@ SLRServer <- function(id) {
             "\\( \\qquad = %s \\pm %s \\)",
             yh_tex, fmt_sci_latex(t_crit * se_pred, 4)
           )),
-          p(sprintf("\\( \\qquad (%s, \\; %s) \\)",
+          p(sprintf("\\( \\qquad = (%s, \\; %s) \\)",
                     fmt_sci_latex(pi_lower, 4), fmt_sci_latex(pi_upper, 4))),
           p(tags$b("Interpretation:")),
           p(HTML(sprintf(

@@ -111,8 +111,6 @@ MLRMainPanelUI <- function(id) {
                ),
                tabPanel(title = "Model", uiOutput(ns("Equations")) ),
                tabPanel(title = "Inference", uiOutput(ns("ANOVAAndInference"))),
-               tabPanel(title = "Multicollinearity Detection", uiOutput(ns("MulticollinearityDetection"))),
-               tabPanel(title = "Diagnostic Plots", uiOutput(ns("DiagnosticPlots"))),
                tabPanel(title = "Uploaded Data", div(style = "width:100%", DTOutput(ns("uploadedDataTable")))),
                id = ns("mainPanel"),
                theme = bs_theme(version = 4))
@@ -282,8 +280,7 @@ MLRServer <- function(id) {
         hideTab(inputId = "mainPanel", target = "Model")
         hideTab(inputId = "mainPanel", target = "Inference")
         hideTab(inputId = "mainPanel", target = "ANOVA & Parameter Estimates")
-        hideTab(inputId = "mainPanel", target = "Multicollinearity Detection")
-        hideTab(inputId = "mainPanel", target = "Diagnostic Plots")
+
         hideTab(inputId = "mainPanel", target = "Uploaded Data")
       })
     }, once = TRUE)
@@ -315,8 +312,6 @@ MLRServer <- function(id) {
       hideTab(inputId = "mainPanel", target = "Model")
       hideTab(inputId = "mainPanel", target = "Inference")
       hideTab(inputId = "mainPanel", target = "ANOVA & Parameter Estimates")
-      hideTab(inputId = "mainPanel", target = "Multicollinearity Detection")
-      hideTab(inputId = "mainPanel", target = "Diagnostic Plots")
       hideTab(inputId = "mainPanel", target = "Uploaded Data")
       
       updatePickerInput(session, "responseVariable", selected = character(0))
@@ -696,8 +691,7 @@ MLRServer <- function(id) {
       showTab(inputId = "mainPanel", target = "Model")
       showTab(inputId = "mainPanel", target = "Inference")
       showTab(inputId = "mainPanel", target = "ANOVA & Parameter Estimates")
-      showTab(inputId = "mainPanel", target = "Multicollinearity Detection")
-      showTab(inputId = "mainPanel", target = "Diagnostic Plots")
+
       showTab(inputId = "mainPanel", target = "Uploaded Data")
       updateNavbarPage(session, "mainPanel", selected = "Model")
     }) |> bindEvent(input$calculate)
@@ -926,7 +920,7 @@ MLRServer <- function(id) {
       x_max  <- f_crit * 3
       
       anovaFPlot(round(f_stat, 4), round(f_crit, 4), df1, df2)
-    })
+    }, height = 400, width = 650)
     
     
     
@@ -1109,7 +1103,7 @@ MLRServer <- function(id) {
         F_stat <- MSR / MSE
         p_val <- pf(F_stat, k, n - k - 1, lower.tail = FALSE)
 
-        p_val_display <- if (p_val < 0.0001 && p_val > 0) "P < 0.0001" else as.character(round(p_val, 4))
+        p_val_display <- if (p_val < 0.0001 && p_val > 0) "P < 0.0001" else sprintf("%.4f", p_val)
 
         data <- data.frame(
           df        = c(as.integer(k), as.integer(n - k - 1), as.integer(n - 1)),
@@ -1500,7 +1494,7 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
             column(12,
                    p(strong("F Distribution")),
                    p("The shaded region represents the rejection region at \u03b1 = 0.05. The dashed red line is the observed F statistic and the dashed blue line is the critical value."),
-                   plotOutput(ns("anovaFDistributionPlot"), height = "350px")
+                   plotOutput(ns("anovaFDistributionPlot"))
             )
           ),
           br(),
@@ -1515,11 +1509,36 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
           br(),
           uiOutput(ns("mlrLineAssumptions"))
         ),
+        tabPanel(
+          title = "Multicollinearity Detection",
+          br(),
+          uiOutput(ns("multicollinearityDetectionMainPanelUI"))
+        ),
+        tabPanel(
+          title = "Diagnostic Plots",
+          fluidPage(
+            br(),
+            fluidRow(
+              column(12,
+                plotOutput(ns("mlrResidualsPanelPlot1")),
+                br(),
+                plotOutput(ns("mlrResidualsPanelPlot2")),
+                br(),
+                plotOutput(ns("mlrResidualsPanelPlot3")),
+                br(),
+                plotOutput(ns("mlrResidualsPanelPlot4")),
+                br(),
+                plotOutput(ns("mlrResidualsPanelPlot5")),
+                br()
+              )
+            )
+          )
+        ),
       )
     )
       )
-    }) 
-    
+    })
+
     output$DiagnosticPlots <- renderUI({
       eval(MLRValidation)
       
