@@ -3946,7 +3946,7 @@ statInfrServer <- function(id) {
     
     printOneMeanHTFormula <- function(sdSymbol, testStat) {
       oneMeanData <- GetOneMeanHT()
-      
+
       formulaOutput <- tagList(
         sprintf("\\(%s = \\dfrac{\\bar{x} - \\mu_{0}}{ \\dfrac{%s}{\\sqrt{n}} } \\)",
                 testStat,
@@ -3960,15 +3960,11 @@ statInfrServer <- function(id) {
         formulaOutput <- tagAppendChildren(formulaOutput, br(), br())
       }
       
-      hypPopMean <- input$hypMean
-      if (hypPopMean < 0)
-        hypPopMean <- paste("(", hypPopMean, ")", sep = "")
-      
       calcOutput <- tagList(
         sprintf("\\(%s =  \\dfrac{%g - %s}{ \\dfrac{%g}{\\sqrt{%g}} }\\)",
                 testStat,
                 oneMeanData[2],
-                hypPopMean,
+                if (input$hypMean >= 0) as.character(input$hypMean) else paste0("(", input$hypMean, ")"),
                 oneMeanData[3],
                 oneMeanData[1]),
         sprintf("\\( = \\dfrac{%g}{%g} \\)",
@@ -5960,6 +5956,7 @@ statInfrServer <- function(id) {
     })
     
     GetOneMeanHT <- reactive({
+	req(input$hypMean)
       
       if(OneMeanSigma() == "Known"){
         
