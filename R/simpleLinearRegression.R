@@ -2345,6 +2345,29 @@ SLRServer <- function(id) {
           spearman_df <- spearmanData()
           has_ties    <- spearman_cf(datx) > 0 || spearman_cf(daty) > 0
 
+          # Format a value the same way its cell renderer does
+          .sp_fmt <- function(v, fmt = "plain") {
+            if (is.na(v) || !is.numeric(v)) return(if (is.na(v)) "" else as.character(v))
+            if (fmt == "rxry") {
+              if (v == floor(v)) formatC(v, format = "f", digits = 0)
+              else formatC(v, format = "f", digits = 2)
+            } else if (fmt == "dsq") {
+              if (v == floor(v)) formatC(v, format = "d", big.mark = ",")
+              else formatC(v, format = "f", digits = 2)
+            } else {
+              if (abs(v - round(v)) < 1e-9) formatC(round(v), format = "f", digits = 0)
+              else formatC(v, format = "f", digits = 4)
+            }
+          }
+          # Estimate minWidth from a plain-text header, column values, and optional footer string
+          .sp_width <- function(name, vals, fmt = "plain", footer_str = NULL,
+                                px = 10L, pad = 24L, min_w = 80L) {
+            hdr <- nchar(name)
+            vw  <- if (length(vals) > 0) max(nchar(sapply(vals, .sp_fmt, fmt = fmt)), na.rm = TRUE) else 0L
+            fw  <- if (!is.null(footer_str)) nchar(as.character(footer_str)) else 0L
+            max(min_w, max(hdr, vw, fw) * px + pad)
+          }
+
           if (has_ties) {
             sum_rank_x <- sum(spearman_df$rank_x)
             sum_rank_y <- sum(spearman_df$rank_y)
@@ -2353,6 +2376,7 @@ SLRServer <- function(id) {
             reactable(
               spearman_df[, c("x", "y", "rank_x", "rank_y", "rx_ry")],
               sortable   = FALSE,
+              resizable  = TRUE,
               bordered   = TRUE,
               striped    = TRUE,
               highlight  = TRUE,
@@ -2360,15 +2384,42 @@ SLRServer <- function(id) {
               fullWidth  = FALSE,
               rownames   = FALSE,
               columns = list(
-                x      = colDef(name = "x",      align = "center", footer = tags$b("Total")),
-                y      = colDef(name = "y",      align = "center"),
-                rank_x = colDef(name = "Rank x", align = "center", footer = tags$b(sum_rank_x)),
-                rank_y = colDef(name = "Rank y", align = "center", footer = tags$b(sum_rank_y)),
+                x      = colDef(
+                  name     = "x",
+                  align    = "center",
+                  minWidth = .sp_width("x", spearman_df$x, footer_str = "Total"),
+                  style    = list(whiteSpace = "nowrap"),
+                  footer   = tags$b("Total")
+                ),
+                y      = colDef(
+                  name     = "y",
+                  align    = "center",
+                  minWidth = .sp_width("y", spearman_df$y),
+                  style    = list(whiteSpace = "nowrap")
+                ),
+                rank_x = colDef(
+                  name     = "Rank x",
+                  align    = "center",
+                  minWidth = .sp_width("Rank x", spearman_df$rank_x,
+                                       footer_str = .sp_fmt(sum_rank_x)),
+                  style    = list(whiteSpace = "nowrap"),
+                  footer   = tags$b(sum_rank_x)
+                ),
+                rank_y = colDef(
+                  name     = "Rank y",
+                  align    = "center",
+                  minWidth = .sp_width("Rank y", spearman_df$rank_y,
+                                       footer_str = .sp_fmt(sum_rank_y)),
+                  style    = list(whiteSpace = "nowrap"),
+                  footer   = tags$b(sum_rank_y)
+                ),
                 rx_ry  = colDef(
                   name     = HTML("(Rank x) &times; (Rank y)"),
                   html     = TRUE,
                   align    = "center",
-                  minWidth = 200,
+                  minWidth = .sp_width("(Rank x) x (Rank y)", spearman_df$rx_ry,
+                                       fmt = "rxry", footer_str = .sp_fmt(sum_rxry, "rxry")),
+                  style    = list(whiteSpace = "nowrap"),
                   footer   = tags$b(sum_rxry),
                   cell = function(value) {
                     if (value == floor(value)) {
@@ -2381,11 +2432,17 @@ SLRServer <- function(id) {
               )
             )
           } else {
-            sum_d_sq <- sum(spearman_df$d_sq)
+            sum_d_sq       <- sum(spearman_df$d_sq)
+            dsq_footer_str <- if (sum_d_sq == floor(sum_d_sq)) {
+              formatC(sum_d_sq, format = "d", big.mark = ",")
+            } else {
+              formatC(sum_d_sq, format = "f", digits = 2)
+            }
 
             reactable(
               spearman_df[, c("x", "y", "rank_x", "rank_y", "d", "d_sq")],
               sortable   = FALSE,
+              resizable  = TRUE,
               bordered   = TRUE,
               striped    = TRUE,
               highlight  = TRUE,
@@ -2393,22 +2450,45 @@ SLRServer <- function(id) {
               fullWidth  = FALSE,
               rownames   = FALSE,
               columns = list(
-                x      = colDef(name = "x",      align = "center", footer = tags$b("Total")),
-                y      = colDef(name = "y",      align = "center"),
-                rank_x = colDef(name = "Rank x", align = "center"),
-                rank_y = colDef(name = "Rank y", align = "center"),
-                d      = colDef(name = "d = (Rank x \u2212 Rank y)", align = "center", minWidth = 190),
+                x      = colDef(
+                  name     = "x",
+                  align    = "center",
+                  minWidth = .sp_width("x", spearman_df$x, footer_str = "Total"),
+                  style    = list(whiteSpace = "nowrap"),
+                  footer   = tags$b("Total")
+                ),
+                y      = colDef(
+                  name     = "y",
+                  align    = "center",
+                  minWidth = .sp_width("y", spearman_df$y),
+                  style    = list(whiteSpace = "nowrap")
+                ),
+                rank_x = colDef(
+                  name     = "Rank x",
+                  align    = "center",
+                  minWidth = .sp_width("Rank x", spearman_df$rank_x),
+                  style    = list(whiteSpace = "nowrap")
+                ),
+                rank_y = colDef(
+                  name     = "Rank y",
+                  align    = "center",
+                  minWidth = .sp_width("Rank y", spearman_df$rank_y),
+                  style    = list(whiteSpace = "nowrap")
+                ),
+                d      = colDef(
+                  name     = "d = (Rank x \u2212 Rank y)",
+                  align    = "center",
+                  minWidth = .sp_width("d = (Rank x - Rank y)", spearman_df$d),
+                  style    = list(whiteSpace = "nowrap")
+                ),
                 d_sq   = colDef(
-                  name   = HTML("d<sup>2</sup>"),
-                  html   = TRUE,
-                  align  = "center",
-                  footer = tags$b(
-                    if (sum_d_sq == floor(sum_d_sq)) {
-                      formatC(sum_d_sq, format = "d", big.mark = ",")
-                    } else {
-                      formatC(sum_d_sq, format = "f", digits = 2)
-                    }
-                  ),
+                  name     = HTML("d<sup>2</sup>"),
+                  html     = TRUE,
+                  align    = "center",
+                  minWidth = .sp_width("d2", spearman_df$d_sq,
+                                       fmt = "dsq", footer_str = dsq_footer_str),
+                  style    = list(whiteSpace = "nowrap"),
+                  footer   = tags$b(dsq_footer_str),
                   cell   = function(value) {
                     if (value == floor(value)) {
                       formatC(value, format = "d", big.mark = ",")
@@ -2543,21 +2623,26 @@ SLRServer <- function(id) {
         })
         
         output$anovaR2 <- renderUI({
-          
+
           anova_results <- anova(model)
-          
-          ssr <- anova_results$`Sum Sq`[1]
-          sse <- anova_results$`Sum Sq`[2]
-          sst <- ssr + sse
-          r2  <- ssr / sst
-          
+
+          ssr    <- anova_results$`Sum Sq`[1]
+          sse    <- anova_results$`Sum Sq`[2]
+          sst    <- ssr + sse
+          r2     <- ssr / sst
+          df_res <- anova_results$Df[2]   # n - 2
+          n_obs  <- df_res + 2
+          mse    <- sse / df_res
+          rse    <- sqrt(mse)
+          adj_r2 <- 1 - (sse / df_res) / (sst / (n_obs - 1))
+
           # Percentage explained
           explained_pct <- r2 * 100
-          
+
           withMathJax(
-            
+
             p(strong("Coefficient of Determination (\\( R^2 \\))")),
-            
+
             tags$div(
               style = "text-align: left;",
               HTML(sprintf(
@@ -2566,21 +2651,44 @@ SLRServer <- function(id) {
                 fmt_sci_latex(ssr, 4), fmt_sci_latex(sst, 4), r2
               ))
             ),
-            
+
             br(),
-            
+
             tags$p(
               strong("Interpretation:")
             ),
-            
+
             tags$p(
               sprintf("Approximately %.2f%% of the variation in ", explained_pct),
               if (input$dataRegCor == "Upload Data") tags$i(input$slrResponse) else withMathJax("\\(y\\)"),
               " can be explained by its linear relationship with ",
               if (input$dataRegCor == "Upload Data") tags$i(input$slrExplanatory) else withMathJax("\\(x\\)"),
               "."
+            ),
+
+            br(),
+            hr(),
+
+            p(strong("Adjusted \\( R^2 \\):")),
+            tags$div(
+              style = "text-align: left;",
+              HTML(sprintf(
+                "\\( R^2_{\\text{adj}} = 1 - \\dfrac{\\mathrm{SSE}/(n-2)}{\\mathrm{SST}/(n-1)} = %.4f \\)",
+                adj_r2
+              ))
+            ),
+
+            br(),
+
+            p(strong("Residual Standard Error (RSE):")),
+            tags$div(
+              style = "text-align: left;",
+              HTML(sprintf(
+                "\\( RSE = \\sqrt{\\dfrac{\\mathrm{SSE}}{n-2}} = \\sqrt{\\mathrm{MSE}} = \\sqrt{%s} = %.4f \\)",
+                fmt_sci_latex(mse, 4), rse
+              ))
             )
-            
+
           )
         })
         

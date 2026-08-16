@@ -901,7 +901,8 @@ PolynomialRegressionServer <- function(id) {
 
       coefs <- as.data.frame(summary(model)$coefficients)
       coefs <- tibble::rownames_to_column(coefs, "Term")
-      term_labels <- c("Intercept", "x", paste0("x^", seq(2, degree)))
+      sup_digits  <- c("⁰","¹","²","³","⁴","⁵","⁶","⁷","⁸","⁹")
+      term_labels <- c("Intercept", "x", paste0("x", sup_digits[seq(2, degree) + 1]))
       if (nrow(coefs) == length(term_labels)) coefs$Term <- term_labels
       names(coefs)[names(coefs) == "Pr(>|t|)"] <- "P-value"
 
@@ -912,7 +913,7 @@ PolynomialRegressionServer <- function(id) {
 
       tbl <- dplyr::left_join(coefs, ci, by = "Term")
       tibble::column_to_rownames(tbl, var = "Term")
-    }, rownames = TRUE, na = "", striped = TRUE, align = "c", digits = 3)
+    }, rownames = TRUE, na = "", striped = TRUE, align = "c", digits = 4)
 
     output$polyParamEstimates <- renderUI({
       req(storedDatx(), storedDaty())

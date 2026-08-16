@@ -772,9 +772,9 @@ MLRServer <- function(id) {
       na = "",
       striped = TRUE,
       align = "c",
-      digits = 3
+      digits = 4
     )
-    
+
     output$lmCoefConfintTableCaption <- renderUI({
       req(encodedData())
       req(isTruthy(input$responseVariable))
@@ -1224,14 +1224,17 @@ MLRServer <- function(id) {
         ))
         
         modelANOVA <- anova(model)
-        SSR <- sum(modelANOVA$"Sum Sq"[-nrow(modelANOVA)]) # all but the residuals
-        SSE <- modelANOVA$"Sum Sq"[nrow(modelANOVA)] # only the residuals
-        SST <- SSR + SSE
-        
+        SSR    <- sum(modelANOVA$"Sum Sq"[-nrow(modelANOVA)]) # all but the residuals
+        SSE    <- modelANOVA$"Sum Sq"[nrow(modelANOVA)] # only the residuals
+        SST    <- SSR + SSE
+        df_res <- modelANOVA$Df[nrow(modelANOVA)]       # n - k - 1
+        mse    <- SSE / df_res
+        rse    <- sqrt(mse)
+
         # Use model rank
         k <- model$rank - 1
         n <- nrow(encodedData())
-        
+
         withMathJax(
           p(strong(r"{ \(R^2\) and Adjusted \(R^2\) :}")),
           br(),
@@ -1256,6 +1259,12 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
               summary(model)$adj.r.squared * 100
             )
           ),
+          br(),
+          p(strong("Residual Standard Error (RSE):")),
+          p(sprintf(
+            r"[\( \displaystyle RSE = \sqrt{\frac{\mathrm{SSE}}{n-k-1}} = \sqrt{\mathrm{MSE}} = \sqrt{%s} = %0.4f \)]",
+            fmt_sci_latex(mse, 4), rse
+          )),
           br(),
           p(strong("Akaike Information Criteria (AIC):")),
           p(sprintf(r"[AIC = \(%0.4f\)]", AIC(model))),
