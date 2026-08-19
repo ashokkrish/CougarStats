@@ -88,6 +88,7 @@ plotOptionsMenuUI <- function(id, plotType = NULL, title = "Plot", xlab = "", yl
   if(!is.null(plotType)) {
     extraOptions <- switch(
       plotType,
+      "Histogram" = HistogramOptions(ns),
       "Boxplot" = BoxplotOptions(ns),
       "Scatterplot" = ScatterplotOptions(ns, regressionLineLabel, includeLinearLine, includeMeansOption)
     )
@@ -195,7 +196,7 @@ plotOptionsMenuUI <- function(id, plotType = NULL, title = "Plot", xlab = "", yl
 addFlipCheckbox <- function(includeFlip, ns, plotType) {
   flip <- tagList()
   
-  if(includeFlip){
+  if(includeFlip && (is.null(plotType) || plotType != "Histogram")) {
     flip <- tagList(
       p(strong("Orientation")),
       checkboxInput(
@@ -225,6 +226,18 @@ addGridlines <- function(includeGridlines, ns) {
       )
     )
   }
+}
+
+HistogramOptions <- function(ns) {
+  tagList(
+    tags$h3("Histogram Options"),
+    
+    checkboxInput(
+      inputId = ns("Density"),
+      label = "Kernel Density Estimation Curve",
+      value = FALSE
+    )
+  )
 }
 
 BoxplotOptions <- function(ns) {

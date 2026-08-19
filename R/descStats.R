@@ -26,7 +26,7 @@ descStatsUI <- function(id) {
               textAreaInput(
                 inputId     = ns("descriptiveStat"), 
                 label       = strong("Sample"), 
-                value       = "2.14,   2.09,   2.65,   3.56,   5.55,   5.00,   5.55,   8.09,   10.79", 
+                value       = "46.5, 47.1, 47.8, 48.4, 48.6, 48.8, 49.2, 49.3, 49.6, 49.8, 49.8, 50.0, 50.1, 50.2, 50.3, 50.4, 50.6, 50.8, 51.0, 51.1, 51.3, 51.5, 51.7, 51.9, 52.2, 52.5, 52.6, 53.1, 53.7", 
                 placeholder = "Enter values separated by a comma, space, or tab with decimals as points",
                 rows        = 3),
             ),
@@ -254,7 +254,9 @@ descStatsUI <- function(id) {
                       br(),
                       plotOptionsMenuUI(
                         id    = ns("dsHisto"),
-                        title = "Histogram"),
+                        plotType = "Histogram",
+                        title = "Histogram",
+                        ylab = "Frequency"),
                       uiOutput(ns("renderDSHistogram"))
                     ) # Histogram
                   ), # Graphs tabPanel
@@ -292,7 +294,7 @@ descStatsServer <- function(id) {
     dsupload_iv$add_rule("dsUserData", ~ if(is.null(fileInputs$dsStatus) || fileInputs$dsStatus == 'reset') "Required")
     dsupload_iv$add_rule("dsUserData", ~ if(!(tolower(tools::file_ext(input$dsUserData$name)) %in% c("csv", "txt", "xls", "xlsx", "sas7bdat", "sav", "dta", "rds", "mtp", "mwx", "mpx"))) "File format not accepted.")
     dsupload_iv$add_rule("dsUserData", ~ if(ncol(dsUploadData()) < 1) "Data must include one variable")
-    dsupload_iv$add_rule("dsUserData", ~ if(nrow(dsUploadData()) < 2) "Samples must include at least 2 observations")
+    dsupload_iv$add_rule("dsUserData", ~ if(nrow(dsUploadData()) < 2) "Samples must include at least two observations")
     
     dsuploadvars_iv$add_rule("dsUploadVars", sv_required())
     dsuploadvars_iv$add_rule("dsUploadVars", ~ {
@@ -303,7 +305,7 @@ descStatsServer <- function(id) {
     dsuploadvars_iv$add_rule("dsUploadVars", ~ {
       col_data <- dsUploadData()[[.x]]      
       if(length(na.omit(col_data)) < 2) {   
-        "Selected column must have at least 2 observations."
+        "Selected column must have at least two observations."
       }
     })
     # ------------------ #
@@ -891,7 +893,7 @@ descStatsServer <- function(id) {
           
           validate(
             need(nrow(dsUploadData()) != 0 && ncol(dsUploadData()) > 0, "File is empty."),
-            need(nrow(dsUploadData()) > 1, "Sample Data must include at least 2 observations."),
+            need(nrow(dsUploadData()) > 1, "Sample Data must include at least two observations."),
             errorClass = "myClass"
           )
         } else if(!dsuploadvars_iv$is_valid()) {
@@ -906,7 +908,7 @@ descStatsServer <- function(id) {
           validate(
             need(
               length(na.omit(dsUploadData()[[input$dsUploadVars]])) >= 2,
-              "Selected column must have at least 2 observations."
+              "Selected column must have at least two observations."
             ),
             errorClass = "myClass"
           )
@@ -935,8 +937,12 @@ descStatsServer <- function(id) {
 
         sampleData <- getSampleVector()
         
-        sample_df <- data.frame(sampleData, sampleData^2)
-        names(sample_df) <- c("x", "x<sup>2</sup>")
+        sample_df <- data.frame(
+          Observation = seq_along(sampleData),
+          x = sampleData,
+          x2 = sampleData^2
+        )
+        
         dfTotaled <- bind_rows(sample_df, summarise(sample_df, across(where(is.numeric), sum)))
         rownames(dfTotaled)[nrow(dfTotaled)] <- "Totals"
         
@@ -946,6 +952,7 @@ descStatsServer <- function(id) {
 
           reactable(
             dataRows,
+            rownames      = FALSE,
             sortable      = TRUE,
             resizable     = TRUE,
             bordered      = TRUE,
@@ -958,8 +965,14 @@ descStatsServer <- function(id) {
               lapply(names(dataRows), function(col) {
                 colDef(
                   html   = TRUE,
-                  name   = col,
-                  footer = tags$b(format(round(totalsRow[[col]], 3), nsmall = 0, scientific = FALSE)),
+                  name = if (col == "Observation") "Observation Number"
+                  else if (col == "x2") "x<sup>2</sup>"
+                  else col,
+                  footer = if (col == "Observation") {
+                    tags$b("Total")
+                  } else {
+                    tags$b(format(round(totalsRow[[col]], 3), nsmall = 0, scientific = FALSE))
+                  },
                   cell   = function(value) {
                     if (!is.numeric(value)) return(value)
                     if (value == floor(value)) formatC(value, format = "f", digits = 0)
@@ -1096,11 +1109,14 @@ descStatsServer <- function(id) {
             hist <- hist + theme(panel.grid.minor = element_line(colour = "#D9D9D9"))
           }
           
-          if(input[["dsHisto-Flip"]] == 1) {
-            hist <- hist + coord_flip() +
-              labs(x = input[["dsHisto-Ylab"]],
-                   y = input[["dsHisto-Xlab"]]) +
-              scale_y_continuous(n.breaks = 10, expand = c(0, 0))
+          if(input[["dsHisto-Density"]]) {
+            bin_width <- (max(dat) - min(dat)) / 15
+            hist <- hist +
+              geom_density(
+                aes(x = x, y = after_stat(density * length(dat) * bin_width)),
+                colour = "orange",
+                linewidth = 1.5
+              )
           }
           
           hist
@@ -1112,6 +1128,18 @@ descStatsServer <- function(id) {
       } else {
         hideResultTabs()
       }
+    })
+    
+    observeEvent(input[["dsHisto-Density"]], {
+      updateTextInput(
+        session,
+        "dsHisto-Ylab",
+        value = if (input[["dsHisto-Density"]]) {
+          "Density"
+        } else {
+          "Frequency"
+        }
+      )
     })
     
     output$dsTableWrap <- renderUI({
@@ -1179,6 +1207,7 @@ descStatsServer <- function(id) {
 
     observe({
       if (is.null(input$dsGraphOptions)) {
+        updateTabsetPanel(session, inputId = "dsTabset", selected = "Descriptive Statistics")
         hideTab(inputId = "dsTabset", target = "Graphs")
       }
     })
@@ -1202,7 +1231,6 @@ descStatsServer <- function(id) {
       updateTextInput(session, "dsBoxplot-Xlab", value = "")
       updateTextInput(session, "dsBoxplot-Ylab", value = "")
       updateTextInput(session, "dsHisto-Xlab",   value = "")
-      updateTextInput(session, "dsHisto-Ylab",   value = "")
     }
 
     observeEvent(input$dataInput,    resetPlotLabels(), ignoreInit = TRUE)
