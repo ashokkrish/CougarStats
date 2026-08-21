@@ -101,7 +101,9 @@ SLRMainPanelUI <- function(id) {
                 title             = "Scatterplot",
                 xlab              = "x",
                 ylab              = "y",
+                colour            = "#00AA00",
                 dim               = "in px",
+                includeGridlines  = FALSE,
                 includeFlip       = FALSE,
                 includeMeansOption = TRUE),
               
@@ -1481,17 +1483,32 @@ SLRServer <- function(id) {
             input[["slrScatter-Ylab"]],
             input[["slrScatter-Colour"]],
             input[["slrScatter-PointsColour"]],
-            input[["slrScatter-LineWidth"]],
+            input[["slrScatter-RegLineWidth"]],
+            input[["slrScatter-ConfidenceBandWidth"]],
+            input[["slrScatter-PredictionBandWidth"]],
             input[["slrScatter-PointSize"]],
             input[["slrScatter-Gridlines"]],
             input[["slrScatter-confidenceInterval"]],
             input[["slrScatter-predictionInterval"]],
-            input[["slrScatter-showRegressionLine"]]
+            input[["slrScatter-showRegressionLine"]],
+            input[["slrScatter-ConfidenceBandColour"]],
+            input[["slrScatter-PredictionBandColour"]],
+            input[["slrScatter-RegLineOpacity"]],
+            input[["slrScatter-ConfidenceBandOpacity"]],
+            input[["slrScatter-PredictionBandOpacity"]]
           )
 
           if (isTRUE(input[["slrScatter-showMeans"]])) {
-            x_bar <- mean(datx)
-            y_bar <- mean(daty)
+            x_bar       <- mean(datx)
+            y_bar       <- mean(daty)
+            col_rgb           <- col2rgb(input[["slrScatter-MeansColour"]])
+            means_alpha       <- input[["slrScatter-MeansOpacity"]] / 100
+            means_rgba        <- sprintf("rgba(%d,%d,%d,%.2f)", col_rgb[1], col_rgb[2], col_rgb[3], means_alpha)
+            means_line_width    <- input[["slrScatter-MeansLineWidth"]]
+            means_marker_shape  <- input[["slrScatter-MeansMarkerShape"]]
+            means_marker_size   <- input[["slrScatter-MeansMarkerSize"]]
+            means_marker_alpha  <- input[["slrScatter-MeansMarkerOpacity"]] / 100
+            means_marker_rgba   <- sprintf("rgba(%d,%d,%d,%.2f)", col_rgb[1], col_rgb[2], col_rgb[3], means_marker_alpha)
 
             # Collect all y-values that are visible in the plot so the
             # explicit axis range we set below doesn't clip any bands.
@@ -1530,7 +1547,7 @@ SLRServer <- function(id) {
                 legendgroup = "(x̅, y̅)",
                 showlegend  = FALSE,
                 hoverinfo   = "skip",
-                line        = list(color = "rgba(255,0,0,0.25)", width = 1.5, dash = "dot")
+                line        = list(color = means_rgba, width = means_line_width, dash = "dot")
               ) %>%
               add_trace(
                 inherit     = FALSE,
@@ -1542,7 +1559,7 @@ SLRServer <- function(id) {
                 legendgroup = "(x̅, y̅)",
                 showlegend  = FALSE,
                 hoverinfo   = "skip",
-                line        = list(color = "rgba(255,0,0,0.25)", width = 1.5, dash = "dot")
+                line        = list(color = means_rgba, width = means_line_width, dash = "dot")
               ) %>%
               add_trace(
                 inherit     = FALSE,
@@ -1553,10 +1570,10 @@ SLRServer <- function(id) {
                 name        = "(x̅, y̅)",
                 legendgroup = "(x̅, y̅)",
                 marker      = list(
-                  color  = "red",
-                  size   = 18,
-                  symbol = "asterisk-open",
-                  line   = list(color = "red", width = 2)
+                  color  = means_marker_rgba,
+                  size   = means_marker_size,
+                  symbol = means_marker_shape,
+                  line   = list(color = means_marker_rgba, width = means_line_width)
                 ),
                 hovertemplate = paste0(
                   "<b>x̅:</b> ", round(x_bar, 4), "<br>",

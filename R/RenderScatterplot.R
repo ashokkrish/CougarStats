@@ -6,13 +6,24 @@ RenderScatterplot <- function(
     plotYLab,
     regLineColour,
     pointColour,
-    lineWidth = 1,
+    regLineWidth = 1,
+    confidenceBandWidth = 1,
+    predictionBandWidth = 1,
     pointSize = 3,
     gridlines,
     showConfidenceInterval,
     showPredictionInterval,
-    showRegressionLine
+    showRegressionLine,
+    confidenceBandColour = "darkblue",
+    predictionBandColour = "purple",
+    regLineOpacity = 100,
+    confidenceBandOpacity = 100,
+    predictionBandOpacity = 100
 ) {
+  rgba <- function(col, pct) {
+    rgb <- col2rgb(col)
+    sprintf("rgba(%d,%d,%d,%.2f)", rgb[1], rgb[2], rgb[3], pct / 100)
+  }
   
   # -------------------------------------------------------------------------
   # Base scatter plot
@@ -76,8 +87,8 @@ RenderScatterplot <- function(
         mode       = "lines",
         name       = "Regression Line",
         line       = list(
-          color = regLineColour,
-          width = lineWidth * 2
+          color = rgba(regLineColour, regLineOpacity),
+          width = regLineWidth * 2
         ),
         hovertemplate = paste0(
           "<b>Fitted:</b> %{y:.4f}<br>",
@@ -110,8 +121,8 @@ RenderScatterplot <- function(
         name        = "Confidence Band",
         legendgroup = "Confidence Band",
         line        = list(
-          color = "darkblue",
-          width = lineWidth * 2,
+          color = rgba(confidenceBandColour, confidenceBandOpacity),
+          width = confidenceBandWidth * 2,
           dash  = "dash"
         ),
         hovertemplate = paste0(
@@ -130,8 +141,8 @@ RenderScatterplot <- function(
         legendgroup = "Confidence Band",
         showlegend  = FALSE,
         line        = list(
-          color = "darkblue",
-          width = lineWidth * 2,
+          color = rgba(confidenceBandColour, confidenceBandOpacity),
+          width = confidenceBandWidth * 2,
           dash  = "dash"
         ),
         hovertemplate = paste0(
@@ -165,8 +176,8 @@ RenderScatterplot <- function(
         name        = "Prediction Band",
         legendgroup = "Prediction Band",
         line        = list(
-          color = "red",
-          width = lineWidth * 2,
+          color = rgba(predictionBandColour, predictionBandOpacity),
+          width = predictionBandWidth * 2,
           dash  = "dash"
         ),
         hovertemplate = paste0(
@@ -185,8 +196,8 @@ RenderScatterplot <- function(
         legendgroup = "Prediction Band",
         showlegend  = FALSE,
         line        = list(
-          color = "red",
-          width = lineWidth * 2,
+          color = rgba(predictionBandColour, predictionBandOpacity),
+          width = predictionBandWidth * 2,
           dash  = "dash"
         ),
         hovertemplate = paste0(
@@ -201,8 +212,8 @@ RenderScatterplot <- function(
   # -------------------------------------------------------------------------
   
   # Gridlines
-  xgrid <- if("Major" %in% gridlines) TRUE else FALSE
-  ygrid <- if("Major" %in% gridlines) TRUE else FALSE
+  xgrid <- isTRUE(gridlines)
+  ygrid <- isTRUE(gridlines)
   
   p <- p %>%
     layout(

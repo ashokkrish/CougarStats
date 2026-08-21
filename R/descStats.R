@@ -1104,7 +1104,7 @@ descStatsServer <- function(id) {
           if("Major" %in% input[["dsHisto-Gridlines"]]) {
             hist <- hist + theme(panel.grid.major = element_line(colour = "#D9D9D9"))
           }
-          
+
           if("Minor" %in% input[["dsHisto-Gridlines"]]) {
             hist <- hist + theme(panel.grid.minor = element_line(colour = "#D9D9D9"))
           }
