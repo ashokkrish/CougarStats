@@ -218,7 +218,9 @@ PolynomialRegressionMainPanelUI <- function(id) {
             title               = "Scatterplot",
             xlab                = "x",
             ylab                = "y",
+            colour              = "#00AA00",
             dim                 = "in px",
+            includeGridlines    = FALSE,
             includeFlip         = FALSE,
             regressionLineLabel = "Polynomial Regression Curve",
             includeLinearLine   = TRUE
@@ -612,12 +614,19 @@ PolynomialRegressionServer <- function(id) {
         input[["polyScatter-Ylab"]],
         input[["polyScatter-Colour"]],
         input[["polyScatter-PointsColour"]],
-        input[["polyScatter-LineWidth"]],
+        input[["polyScatter-RegLineWidth"]],
+        input[["polyScatter-ConfidenceBandWidth"]],
+        input[["polyScatter-PredictionBandWidth"]],
         input[["polyScatter-PointSize"]],
         input[["polyScatter-Gridlines"]],
         isTRUE(input[["polyScatter-confidenceInterval"]]) && df.residual(scatterModel()) > 0,
         isTRUE(input[["polyScatter-predictionInterval"]]) && df.residual(scatterModel()) > 0,
-        input[["polyScatter-showRegressionLine"]]
+        input[["polyScatter-showRegressionLine"]],
+        input[["polyScatter-ConfidenceBandColour"]],
+        input[["polyScatter-PredictionBandColour"]],
+        input[["polyScatter-RegLineOpacity"]],
+        input[["polyScatter-ConfidenceBandOpacity"]],
+        input[["polyScatter-PredictionBandOpacity"]]
       ) %>%
         style(name = "Polynomial Regression Curve", traces = 2)
 
@@ -625,7 +634,7 @@ PolynomialRegressionServer <- function(id) {
         linear_model <- lm(daty ~ datx)
         x_seq        <- seq(min(datx), max(datx), length.out = 200)
         y_linear     <- predict(linear_model, newdata = data.frame(datx = x_seq))
-        lw           <- as.numeric(input[["polyScatter-LineWidth"]]) * 2
+        lw           <- as.numeric(input[["polyScatter-RegLineWidth"]]) * 2
         p <- p %>% add_trace(
           x             = x_seq,
           y             = y_linear,

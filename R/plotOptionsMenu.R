@@ -89,7 +89,7 @@ plotOptionsMenuUI <- function(id, plotType = NULL, title = "Plot", xlab = "", yl
     extraOptions <- switch(
       plotType,
       "Boxplot" = BoxplotOptions(ns),
-      "Scatterplot" = ScatterplotOptions(ns, regressionLineLabel, includeLinearLine, includeMeansOption)
+      "Scatterplot" = ScatterplotOptions(ns, regressionLineLabel, includeLinearLine, includeMeansOption, colour)
     )
   }
   
@@ -112,12 +112,18 @@ plotOptionsMenuUI <- function(id, plotType = NULL, title = "Plot", xlab = "", yl
       ),
       
       textInput(
-        inputId = ns("Ylab"), 
-        label = NULL, 
-        value = ylab, 
+        inputId = ns("Ylab"),
+        label = NULL,
+        value = ylab,
         placeholder = "y-axis label"
       ),
-    
+
+      if (!is.null(plotType) && plotType == "Scatterplot") checkboxInput(
+        inputId = ns("Gridlines"),
+        label   = strong("Add Gridlines"),
+        value   = FALSE
+      ),
+
     # FUTURE WORK: Outlier Labels to be added to renderBoxplot functions
     #  if (!is.null(plotType) && plotType == "Boxplot") {
     #    checkboxInput(
@@ -127,53 +133,53 @@ plotOptionsMenuUI <- function(id, plotType = NULL, title = "Plot", xlab = "", yl
     #    )
     #  },
       
-      colourpicker::colourInput(
-        inputId = ns("Colour"), 
-        label = strong("Plot Colour"), 
-        value = colour
+      if (is.null(plotType) || plotType != "Scatterplot") colourpicker::colourInput(
+        inputId = ns("Colour"),
+        label   = strong("Plot Colour"),
+        value   = colour
       ),
       
-      radioButtons(
-        inputId = ns("Height"),
-        label = strong("Plot Height"),
-        choices = c("auto", "in px"),
-        selected = dim,
-        inline = TRUE
-      ),
-      
-      conditionalPanel(
-        ns = ns,
-        condition = "input.Height == 'in px'",
-        
-        numericInput(
-          inputId = ns("HeightPx"),
-          label = NULL,
-          value = 400,
-          min = 100,
-          max = 1500,
-          step = 1
-        )
-      ),
-      
-      radioButtons(
-        inputId = ns("Width"),
-        label = strong("Plot Width"),
-        choices = c("auto", "in px"),
-        selected = dim,
-        inline = TRUE
-      ),
-      
-      conditionalPanel(
-        ns = ns,
-        condition = "input.Width == 'in px'",
-        
-        numericInput(
-          inputId = ns("WidthPx"),
-          label = NULL,
-          value = 750,
-          min = 100,
-          max = 1500,
-          step = 1
+      if (is.null(plotType) || plotType != "Scatterplot") tagList(
+        radioButtons(
+          inputId = ns("Height"),
+          label = strong("Plot Height"),
+          choices = c("auto", "in px"),
+          selected = dim,
+          inline = TRUE
+        ),
+
+        conditionalPanel(
+          ns = ns,
+          condition = "input.Height == 'in px'",
+          numericInput(
+            inputId = ns("HeightPx"),
+            label = NULL,
+            value = 400,
+            min = 100,
+            max = 1500,
+            step = 1
+          )
+        ),
+
+        radioButtons(
+          inputId = ns("Width"),
+          label = strong("Plot Width"),
+          choices = c("auto", "in px"),
+          selected = dim,
+          inline = TRUE
+        ),
+
+        conditionalPanel(
+          ns = ns,
+          condition = "input.Width == 'in px'",
+          numericInput(
+            inputId = ns("WidthPx"),
+            label = NULL,
+            value = 750,
+            min = 100,
+            max = 1500,
+            step = 1
+          )
         )
       ),
       
@@ -213,7 +219,7 @@ addFlipCheckbox <- function(includeFlip, ns, plotType) {
 
 addGridlines <- function(includeGridlines, ns) {
   grid <- tagList()
-  
+
   if(includeGridlines){
     grid <- tagList(
       checkboxGroupInput(
@@ -242,24 +248,15 @@ BoxplotOptions <- function(ns) {
   )
 }
 
-ScatterplotOptions <- function(ns, regressionLineLabel = "Show Regression Line", includeLinearLine = FALSE, includeMeansOption = FALSE) {
+ScatterplotOptions <- function(ns, regressionLineLabel = "Show Regression Line", includeLinearLine = FALSE, includeMeansOption = FALSE, colour = "#7293AD") {
 
   tagList(
-    tags$h3("Scatterplot Options"),
+    tags$h3("Line Options"),
 
     colourpicker::colourInput(
       inputId = ns("PointsColour"),
       label = strong("Plot Points Colour"),
       value = "#000000"
-    ),
-
-    sliderInput(
-      inputId = ns("LineWidth"),
-      label = strong("Line Width"),
-      min = 1,
-      max = 10,
-      value = 1,
-      step = 1
     ),
 
     sliderInput(
@@ -277,6 +274,26 @@ ScatterplotOptions <- function(ns, regressionLineLabel = "Show Regression Line",
       value   = TRUE
     ),
 
+    conditionalPanel(
+      ns = ns,
+      condition = "input.showRegressionLine",
+      colourpicker::colourInput(
+        inputId = ns("Colour"),
+        label   = strong("Regression Line Colour"),
+        value   = colour
+      ),
+      sliderInput(
+        inputId = ns("RegLineOpacity"),
+        label   = strong("Regression Line Opacity"),
+        min = 0, max = 100, value = 100, step = 5, post = "%"
+      ),
+      sliderInput(
+        inputId = ns("RegLineWidth"),
+        label   = strong("Regression Line Width"),
+        min = 1, max = 10, value = 1, step = 1
+      )
+    ),
+
     if (includeLinearLine) checkboxInput(
       inputId = ns("showLinearLine"),
       label   = "Show Linear Regression Line",
@@ -289,16 +306,108 @@ ScatterplotOptions <- function(ns, regressionLineLabel = "Show Regression Line",
       value = FALSE
     ),
 
+    conditionalPanel(
+      ns = ns,
+      condition = "input.confidenceInterval",
+      colourpicker::colourInput(
+        inputId = ns("ConfidenceBandColour"),
+        label   = strong("Confidence Band Colour"),
+        value   = "darkblue"
+      ),
+      sliderInput(
+        inputId = ns("ConfidenceBandOpacity"),
+        label   = strong("Confidence Band Opacity"),
+        min = 0, max = 100, value = 100, step = 5, post = "%"
+      ),
+      sliderInput(
+        inputId = ns("ConfidenceBandWidth"),
+        label   = strong("Confidence Band Width"),
+        min = 1, max = 10, value = 1, step = 1
+      )
+    ),
+
     checkboxInput(
       inputId = ns("predictionInterval"),
       label = "Prediction Band",
       value = FALSE
     ),
 
-    if (includeMeansOption) checkboxInput(
-      inputId = ns("showMeans"),
-      label   = "Show x̅ and y̅ (Means)",
-      value   = FALSE
+    conditionalPanel(
+      ns = ns,
+      condition = "input.predictionInterval",
+      colourpicker::colourInput(
+        inputId = ns("PredictionBandColour"),
+        label   = strong("Prediction Band Colour"),
+        value   = "purple"
+      ),
+      sliderInput(
+        inputId = ns("PredictionBandOpacity"),
+        label   = strong("Prediction Band Opacity"),
+        min = 0, max = 100, value = 100, step = 5, post = "%"
+      ),
+      sliderInput(
+        inputId = ns("PredictionBandWidth"),
+        label   = strong("Prediction Band Width"),
+        min = 1, max = 10, value = 1, step = 1
+      )
+    ),
+
+    if (includeMeansOption) tagList(
+      checkboxInput(
+        inputId = ns("showMeans"),
+        label   = "Show x̅ and y̅ (Means)",
+        value   = FALSE
+      ),
+      conditionalPanel(
+        ns = ns,
+        condition = "input.showMeans",
+        colourpicker::colourInput(
+          inputId = ns("MeansColour"),
+          label   = strong("Means Colour"),
+          value   = "#FF0000"
+        ),
+        sliderInput(
+          inputId = ns("MeansOpacity"),
+          label   = strong("Means Opacity"),
+          min = 0, max = 100, value = 50, step = 5,
+          post = "%"
+        ),
+        sliderInput(
+          inputId = ns("MeansLineWidth"),
+          label   = strong("Line Thickness"),
+          min = 1, max = 10, value = 2, step = 1
+        ),
+        sliderInput(
+          inputId = ns("MeansMarkerOpacity"),
+          label   = strong("Marker Opacity"),
+          min = 0, max = 100, value = 50, step = 5, post = "%"
+        ),
+        sliderInput(
+          inputId = ns("MeansMarkerSize"),
+          label   = strong("Marker Size"),
+          min = 5, max = 40, value = 18, step = 1
+        ),
+        selectInput(
+          inputId  = ns("MeansMarkerShape"),
+          label    = strong("Marker Shape"),
+          choices  = c(
+            "Asterisk"        = "asterisk-open",
+            "Circle"          = "circle",
+            "Circle (open)"   = "circle-open",
+            "Cross"           = "cross-open",
+            "Diamond"         = "diamond",
+            "Diamond (open)"  = "diamond-open",
+            "Square"          = "square",
+            "Square (open)"   = "square-open",
+            "Star"            = "star",
+            "Star (open)"     = "star-open",
+            "Triangle"        = "triangle-up",
+            "Triangle (open)" = "triangle-up-open",
+            "X"               = "x-open"
+          ),
+          selected = "asterisk-open"
+        )
+      )
     )
   )
 }
