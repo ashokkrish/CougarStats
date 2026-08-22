@@ -988,7 +988,7 @@ descStatsServer <- function(id) {
         output$dsMeanCalc <- renderUI({
           withMathJax(
             sprintf("\\( \\bar{x} = \\dfrac{\\sum x}{n} = \\dfrac{%s}{%s} = %s \\)",
-                    dfTotaled['Totals', 1],
+                    dfTotaled['Totals', 'x'],
                     df['Observations', 3],
                     df['Mean', 3]),
             br()
@@ -999,8 +999,8 @@ descStatsServer <- function(id) {
           withMathJax(
             sprintf("\\( s = \\sqrt{ \\dfrac{\\sum x^{2} - \\dfrac{(\\sum x)^{2}}{n} }{n - 1} } \\)"),
             sprintf("\\( = \\sqrt{ \\dfrac{%s - \\dfrac{(%s)^{2}}{%s} }{%s - 1} } = %s \\)",
-                    dfTotaled['Totals', 2],
-                    dfTotaled['Totals', 1],
+                    dfTotaled['Totals', 'x2'],
+                    dfTotaled['Totals', 'x'],
                     df['Observations', 3],
                     df['Observations', 3],
                     df['Sample Standard Deviation', 3])
@@ -1068,7 +1068,8 @@ descStatsServer <- function(id) {
         #------------------ #
         output$dsHistogram <- renderPlot({
           hist <- ggplot(data.frame(x = dat)) +
-            geom_histogram(aes(x = x),
+            geom_histogram(
+                           aes(x = x, y = if (input[["dsHisto-Density"]]) after_stat(density) else after_stat(count)),
                            bins = 15,
                            boundary = min(dat),
                            closed = "right",
@@ -1110,12 +1111,15 @@ descStatsServer <- function(id) {
           }
           
           if(input[["dsHisto-Density"]]) {
-            bin_width <- (max(dat) - min(dat)) / 15
             hist <- hist +
               geom_density(
-                aes(x = x, y = after_stat(density * length(dat) * bin_width)),
+                aes(x = x, y = after_stat(density)),
                 colour = "orange",
                 linewidth = 1.5
+              ) +
+              scale_y_continuous(
+                limits = c(0, NA),
+                breaks = scales::breaks_pretty(n = 6)
               )
           }
           
