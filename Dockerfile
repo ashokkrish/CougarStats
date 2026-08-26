@@ -74,6 +74,7 @@ RUN R -e \
                     'shinyWidgets',     \
                     'skedastic',        \
                     'sortable',         \
+                    'sur',              \
                     'thematic',         \
                     'tibble',           \
                     'tidyr',            \
