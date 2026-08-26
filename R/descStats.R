@@ -130,7 +130,7 @@ descStatsUI <- function(id) {
               inputId = ns("dsGraphOptions"),
               label = strong("Graph Options"),
               choices = c("Boxplot", "Histogram"),
-              selected = c("Boxplot"),
+              selected = c("Boxplot", "Histogram"),
               multiple = TRUE,
               options = list(
                 `actions-box` = TRUE,
@@ -432,7 +432,7 @@ descStatsServer <- function(id) {
     # Function to find the mode(s)
     Modes <- function(x) {
       modes <- Mode(x)
-      if (anyNA(modes)) {return("No mode exists")}
+      if (anyNA(modes)) {return("No mode exists.")}
       else if (length(modes) == 1) {return(paste(modes))}
       else if (length(modes) > 1) {
         modesList <- paste(modes[1])
@@ -492,7 +492,7 @@ descStatsServer <- function(id) {
       xbar <- mean(dat)
       sampMode <- Modes(dat)
       
-      if(sampMode == "No mode exists"){
+      if(sampMode == "No mode exists."){
         modeFreq <- paste("")
       } else{
         modeFreq <- paste("Each appears", attr(Mode(dat), "freq"), "times")
@@ -510,7 +510,8 @@ descStatsServer <- function(id) {
       numOutliers <- sum(dat < lowerFence) + sum(dat > upperFence)
       
       if(is.na(numOutliers) || numOutliers == 0) {
-        outliers <- "There are no outliers."
+        numOutliers <- "There are no outliers."
+        outliers <- "None"
       } else {
         outliers <- paste(as.character(GetOutliers(dat, lowerFence, upperFence)), collapse=", ")
       }
@@ -537,16 +538,24 @@ descStatsServer <- function(id) {
       if(sampSize < 3){
         # Use e1071::skewness to specify the package
         sampSkewness <- round(e1071::skewness(dat, type = 1), 4)
+        sampSESkewness <- "Not enough data points in the dataset."
+        sampSkewnessRatio <- "Not enough data points in the dataset."
       } else {
         # Use e1071::skewness to specify the package
         sampSkewness <- round(e1071::skewness(dat, type = 2), 4)
+        sampSESkewness <- round(sur::se.skew(dat), 4)
+        sampSkewnessRatio <- round(sampSkewness/sampSESkewness, 4)
       }
       if(sampSize < 4){
         # Use e1071::kurtosis to specify the package
         sampKurtosis <- round(e1071::kurtosis(dat, type = 1), 4)
+        sampSEKurtosis <- "Not enough data points in the dataset."
+        sampKurtosisRatio <- "Not enough data points in the dataset."
       } else {
         # Use e1071::kurtosis to specify the package
         sampKurtosis <- round(e1071::kurtosis(dat, type = 2), 4)
+        sampSEKurtosis <- round(sqrt(24 / sampSize), 4)
+        sampKurtosisRatio <- round(sampKurtosis/sampSEKurtosis, 4)
       }
       
       if(is.nan(sampSkewness)) {
@@ -579,7 +588,11 @@ descStatsServer <- function(id) {
                                     sampMeanSE, 
                                     coeffVar, 
                                     sampSkewness, 
-                                    sampKurtosis)
+                                    sampSESkewness,
+                                    sampSkewnessRatio,
+                                    sampKurtosis,
+                                    sampSEKurtosis,
+                                    sampKurtosisRatio)
       )
     })
     
@@ -667,7 +680,7 @@ descStatsServer <- function(id) {
                                     "Five Number Summary", "Five Number Summary", "Five Number Summary", "Five Number Summary", "Five Number Summary", 
                                     "Check for potential outliers", "Check for potential outliers", "Check for potential outliers", "Check for potential outliers", "Check for potential outliers", 
                                     "Dispersion", "Dispersion", "Dispersion", "Dispersion", "Dispersion", 
-                                    "Distribution", "Distribution"),
+                                    "Distribution", "Distribution", "Distribution", "Distribution", "Distribution", "Distribution"),
                        Variable = c("Number of Observations", 
                                     "Sum", 
                                     "Sum of Squares", 
@@ -690,7 +703,11 @@ descStatsServer <- function(id) {
                                     "Standard Error of the Mean", 
                                     "Coefficient of Variation",
                                     "Skewness", 
-                                    "Kurtosis"))
+                                    "SE(Skewness)",
+                                    "Skewness / SE(Skewness)",
+                                    "Kurtosis",
+                                    "SE(Kurtosis)",
+                                    "Kurtosis / SE(Kurtosis)"))
 
       if(input$dataInput == 'Upload Data')
       {
@@ -733,7 +750,11 @@ descStatsServer <- function(id) {
                         "Standard Error of the Mean", 
                         "Coefficient of Variation", 
                         "Skewness", 
-                        "Kurtosis")
+                        "SE(Skewness)",
+                        "Skewness / SE(Skewness)",
+                        "Kurtosis",
+                        "SE(Kurtosis)",
+                        "Kurtosis / SE(Kurtosis)")
       
       return(df)
     })
@@ -753,17 +774,29 @@ descStatsServer <- function(id) {
 
     buildRowFilter <- function(df) {
       rowFilter <- input$dsTableFilters
-
+      
       if ("Mode" %in% input$dsTableFilters && df['Mode', 3] != "No mode exists.") {
         rowFilter <- c(rowFilter, "Mode Frequency")
       }
-
+      
       if ("Potential Outliers" %in% input$dsTableFilters) {
-        rowFilter <- c(rowFilter, "Lower Fence", "Upper Fence", "Outlier Values")
+        rowFilter <- c(rowFilter, "Lower Fence", "Upper Fence")
+        
+        if (df["Potential Outliers", 3] != "There are no outliers.") {
+          rowFilter <- c(rowFilter, "Outlier Values")
+        }
       }
-
+      
+      if ("Skewness" %in% input$dsTableFilters) {
+        rowFilter <- c(rowFilter, "SE(Skewness)", "Skewness / SE(Skewness)")
+      }
+      
+      if ("Kurtosis" %in% input$dsTableFilters) {
+        rowFilter <- c(rowFilter, "SE(Kurtosis)", "Kurtosis / SE(Kurtosis)")
+      }
+      
       out <- filter(df, rownames(df) %in% rowFilter)
-
+      
       # The 'Value' column is a nested data.frame; flatten any data.frame-columns
       # to plain vectors so the table can render client-side (renderDT server = FALSE).
       for (j in seq_along(out)) if (is.data.frame(out[[j]])) out[[j]] <- out[[j]][[1]]

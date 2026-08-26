@@ -74,6 +74,8 @@ library(shinyWidgets)
 #   - plot line width
 #   - plot points size
 #
+# Histogram options:
+#  - Kernel Density Estimation (KDE) line toggle
 # ================================================================ #
 plotOptionsMenuUI <- function(id, plotType = NULL, title = "Plot", xlab = "", ylab = "", colour = "#7293AD",
                               dim = "auto", includeGridlines = TRUE, includeFlip = TRUE, includeOutlierLabels = FALSE,
@@ -125,15 +127,6 @@ plotOptionsMenuUI <- function(id, plotType = NULL, title = "Plot", xlab = "", yl
         value   = FALSE
       ),
 
-    # FUTURE WORK: Outlier Labels to be added to renderBoxplot functions
-    #  if (!is.null(plotType) && plotType == "Boxplot") {
-    #    checkboxInput(
-    #      inputId = ns("OutlierLabels"),
-    #      label   = "Display outlier labels",
-    #      value   = FALSE
-    #    )
-    #  },
-      
       if (is.null(plotType) || plotType != "Scatterplot") colourpicker::colourInput(
         inputId = ns("Colour"),
         label   = strong("Plot Colour"),
