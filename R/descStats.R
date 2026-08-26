@@ -779,9 +779,12 @@ descStatsServer <- function(id) {
         rowFilter <- c(rowFilter, "Mode Frequency")
       }
       
-      if ("Potential Outliers" %in% input$dsTableFilters && 
-          df["Potential Outliers", 3] != "There are no outliers.") {
-        rowFilter <- c(rowFilter, "Lower Fence", "Upper Fence", "Outlier Values")
+      if ("Potential Outliers" %in% input$dsTableFilters) {
+        rowFilter <- c(rowFilter, "Lower Fence", "Upper Fence")
+        
+        if (df["Potential Outliers", 3] != "There are no outliers.") {
+          rowFilter <- c(rowFilter, "Outlier Values")
+        }
       }
       
       if ("Skewness" %in% input$dsTableFilters) {
