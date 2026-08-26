@@ -80,7 +80,7 @@ library(shinyWidgets)
 plotOptionsMenuUI <- function(id, plotType = NULL, title = "Plot", xlab = "", ylab = "", colour = "#7293AD",
                               dim = "auto", includeGridlines = TRUE, includeFlip = TRUE, includeOutlierLabels = FALSE,
                               regressionLineLabel = "Show Regression Line", includeLinearLine = FALSE,
-                              includeMeansOption = FALSE) {
+                              includeMeansOption = FALSE, lineControlLabel = "Regression Line") {
   ns <- NS(id)
 
   flip <- addFlipCheckbox(includeFlip, ns, plotType)
@@ -92,7 +92,7 @@ plotOptionsMenuUI <- function(id, plotType = NULL, title = "Plot", xlab = "", yl
       plotType,
       "Histogram" = HistogramOptions(ns),
       "Boxplot" = BoxplotOptions(ns),
-      "Scatterplot" = ScatterplotOptions(ns, regressionLineLabel, includeLinearLine, includeMeansOption, colour)
+      "Scatterplot" = ScatterplotOptions(ns, regressionLineLabel, includeLinearLine, includeMeansOption, colour, lineControlLabel)
     )
   }
   
@@ -254,7 +254,7 @@ BoxplotOptions <- function(ns) {
   )
 }
 
-ScatterplotOptions <- function(ns, regressionLineLabel = "Show Regression Line", includeLinearLine = FALSE, includeMeansOption = FALSE, colour = "#7293AD") {
+ScatterplotOptions <- function(ns, regressionLineLabel = "Show Regression Line", includeLinearLine = FALSE, includeMeansOption = FALSE, colour = "#7293AD", lineControlLabel = "Regression Line") {
 
   tagList(
     tags$h3("Line Options"),
@@ -285,25 +285,42 @@ ScatterplotOptions <- function(ns, regressionLineLabel = "Show Regression Line",
       condition = "input.showRegressionLine",
       colourpicker::colourInput(
         inputId = ns("Colour"),
-        label   = strong("Regression Line Colour"),
+        label   = strong(paste(lineControlLabel, "Colour")),
         value   = colour
       ),
       sliderInput(
         inputId = ns("RegLineOpacity"),
-        label   = strong("Regression Line Opacity"),
+        label   = strong(paste(lineControlLabel, "Opacity")),
         min = 0, max = 100, value = 100, step = 5, post = "%"
       ),
       sliderInput(
         inputId = ns("RegLineWidth"),
-        label   = strong("Regression Line Width"),
+        label   = strong(paste(lineControlLabel, "Width")),
         min = 1, max = 10, value = 1, step = 1
       )
     ),
 
-    if (includeLinearLine) checkboxInput(
-      inputId = ns("showLinearLine"),
-      label   = "Show Linear Regression Line",
-      value   = FALSE
+    if (includeLinearLine) tagList(
+      tags$hr(style = "margin: 8px 0;"),
+      checkboxInput(
+        inputId = ns("showLinearLine"),
+        label   = "Show Linear Regression Line",
+        value   = FALSE
+      ),
+      conditionalPanel(
+        ns = ns,
+        condition = "input.showLinearLine",
+        sliderInput(
+          inputId = ns("LinearLineOpacity"),
+          label   = strong("Linear Line Opacity"),
+          min = 0, max = 100, value = 100, step = 5, post = "%"
+        ),
+        sliderInput(
+          inputId = ns("LinearLineWidth"),
+          label   = strong("Linear Line Width"),
+          min = 1, max = 10, value = 1, step = 1
+        )
+      )
     ),
 
     checkboxInput(

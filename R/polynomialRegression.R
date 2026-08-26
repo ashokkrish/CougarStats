@@ -223,7 +223,8 @@ PolynomialRegressionMainPanelUI <- function(id) {
             includeGridlines    = FALSE,
             includeFlip         = FALSE,
             regressionLineLabel = "Polynomial Regression Curve",
-            includeLinearLine   = TRUE
+            includeLinearLine   = TRUE,
+            lineControlLabel    = "Polynomial Curve"
           ),
 
           plotlyOutput(ns("polyScatterplot"),
@@ -634,7 +635,9 @@ PolynomialRegressionServer <- function(id) {
         linear_model <- lm(daty ~ datx)
         x_seq        <- seq(min(datx), max(datx), length.out = 200)
         y_linear     <- predict(linear_model, newdata = data.frame(datx = x_seq))
-        lw           <- as.numeric(input[["polyScatter-RegLineWidth"]]) * 2
+        lw           <- as.numeric(input[["polyScatter-LinearLineWidth"]]) * 2
+        lin_alpha    <- input[["polyScatter-LinearLineOpacity"]] / 100
+        lin_rgba     <- sprintf("rgba(255,0,0,%.2f)", lin_alpha)
         p <- p %>% add_trace(
           x             = x_seq,
           y             = y_linear,
@@ -642,7 +645,7 @@ PolynomialRegressionServer <- function(id) {
           mode          = "lines",
           name          = "Linear Regression Line",
           inherit       = FALSE,
-          line          = list(color = "#2CA02C", width = lw),
+          line          = list(color = lin_rgba, width = lw),
           hovertemplate = "<b>Linear Fit:</b> %{y:.4f}<br><extra></extra>"
         )
       }
