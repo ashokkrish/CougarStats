@@ -10,94 +10,30 @@ PolynomialRegressionSidebarUI <- function(id) {
   tagList(withMathJax(div(
     id = ns("polyInputPanel"),
 
-    radioButtons(
-      inputId      = ns("polyDataInput"),
-      label        = strong("Data"),
-      choiceValues = list("Enter Raw Data", "Upload Data"),
-      choiceNames  = list("Enter Raw Data", "Upload Data"),
-      selected     = "Enter Raw Data",
-      inline       = TRUE
-    ),
+    # Var pickers — shown only in upload mode once data is loaded
+    hidden(div(
+      id = ns("polyVarPickersPanel"),
 
-    # ---- Raw Data Entry ---------------------------------------------------
-    conditionalPanel(
-      ns        = ns,
-      condition = "input.polyDataInput == 'Enter Raw Data'",
-
-      textAreaInput(
-        inputId     = ns("polyY"),
-        label       = strong("Response Variable (\\( y \\))"),
-        value       = "4.997, 6.165, 6.95, 8.218, 9.405, 10.404, 10.425, 10.44, 9.393, 7.854, 5.168",
-        placeholder = "Enter numeric values separated by commas or spaces (e.g. 1,2,3 or 1 2 3)",
-        rows        = 3
+      selectizeInput(
+        inputId = ns("polyResponse"),
+        label   = strong("Choose the Response Variable (\\( y \\))"),
+        choices = c(""),
+        options = list(
+          placeholder  = "Select a variable",
+          onInitialize = I('function() { this.setValue(""); }')
+        )
       ),
 
-      textAreaInput(
-        inputId     = ns("polyX"),
-        label       = strong("Explanatory Variable (\\( x \\))"),
-        value       = "0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10",
-        placeholder = "Enter numeric values separated by commas or spaces (e.g. 1,2,3 or 1 2 3)",
-        rows        = 3
+      selectizeInput(
+        inputId = ns("polyExplanatory"),
+        label   = strong("Choose the Explanatory Variable (\\( x \\))"),
+        choices = c(""),
+        options = list(
+          placeholder  = "Select a variable",
+          onInitialize = I('function() { this.setValue(""); }')
+        )
       )
-    ),
-
-    # ---- File Upload ------------------------------------------------------
-    conditionalPanel(
-      ns        = ns,
-      condition = "input.polyDataInput == 'Upload Data'",
-
-      HTML(uploadDataDisclaimer),
-
-      fileInput(
-        inputId = ns("polyUserData"),
-        label   = strong("Upload your data (.csv, .xls, .xlsx, .txt, .sas7bdat, .sav, .dta, .rds, .mtp, .mwx, .mpx)"),
-        accept  = c("text/csv",
-                    "text/comma-separated-values",
-                    "text/tab-separated-values",
-                    "text/plain",
-                    ".csv", ".txt", ".xls", ".xlsx",
-                    ".sas7bdat", ".sav", ".dta", ".rds",
-                    ".mtp", ".mwx", ".mpx")
-      ),
-
-      hidden(div(
-        id = ns("polySheetPickerPanel"),
-        selectizeInput(
-          inputId  = ns("polySheet"),
-          label    = strong("Choose a Sheet"),
-          choices  = c(""),
-          multiple = FALSE,
-          options  = list(
-            placeholder  = "Select a sheet",
-            onInitialize = I('function() { this.setValue(""); }')
-          )
-        )
-      )),
-
-      hidden(div(
-        id = ns("polyVarPickersPanel"),
-
-        selectizeInput(
-          inputId = ns("polyResponse"),
-          label   = strong("Choose the Response Variable (\\( y \\))"),
-          choices = c(""),
-          options = list(
-            placeholder  = "Select a variable",
-            onInitialize = I('function() { this.setValue(""); }')
-          )
-        ),
-
-        selectizeInput(
-          inputId = ns("polyExplanatory"),
-          label   = strong("Choose the Explanatory Variable (\\( x \\))"),
-          choices = c(""),
-          options = list(
-            placeholder  = "Select a variable",
-            onInitialize = I('function() { this.setValue(""); }')
-          )
-        )
-      ))
-    ),
+    )),
 
     br(),
     p(strong("Model Options")),
@@ -285,13 +221,12 @@ PolynomialRegressionMainPanelUI <- function(id) {
 # ---- Server --------------------------------------------------------------- #
 # =========================================================================== #
 
-PolynomialRegressionServer <- function(id) {
+PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload) {
   moduleServer(id, function(input, output, session) {
 
     ns <- session$ns
 
     # ---- Reactive values --------------------------------------------------
-    fileState    <- reactiveValues(status = NULL)
     nDroppedRows <- reactiveVal(0)
 
     # Store datx/daty so the scatterplot can rerender on degree change
@@ -299,27 +234,8 @@ PolynomialRegressionServer <- function(id) {
     storedDatx <- reactiveVal(NULL)
     storedDaty <- reactiveVal(NULL)
 
-    # ---- Upload data reactive ---------------------------------------------
-    polyUploadData <- eventReactive(list(input$polyUserData, input$polySheet), {
-      req(input$polyUserData)
-      ext  <- tolower(tools::file_ext(input$polyUserData$name))
-      path <- input$polyUserData$datapath
-
-      if (ext %in% c("xls", "xlsx")) {
-        req(input$polySheet)
-        req(input$polySheet %in% readxl::excel_sheets(path))
-      }
-
-      dat <- readUploadedDataFile(ext, path, input$polySheet)
-      dat <- dat[, colSums(!is.na(dat)) > 0, drop = FALSE]
-      dat <- dat[rowSums(!is.na(dat)) > 0, , drop = FALSE]
-      dat
-    })
-
     # ---- Input Validators -------------------------------------------------
     poly_iv       <- InputValidator$new()
-    polyraw_iv    <- InputValidator$new()
-    polyupload_iv <- InputValidator$new()
     polyupvars_iv <- InputValidator$new()
 
     poly_iv$add_rule("polyDegree", sv_required())
@@ -329,114 +245,46 @@ PolynomialRegressionServer <- function(id) {
         "Polynomial degree must be a whole number ≥ 2."
     })
 
-    polyraw_iv$add_rule("polyY", sv_required())
-    polyraw_iv$add_rule("polyY", ~ {
-      if (nzchar(trimws(input$polyY)) && length(createNumLst(input$polyY)) == 0)
-        "Data must be numeric values separated by commas or spaces (e.g. 2,3,4 or 2 3 4)."
-    })
-    polyraw_iv$add_rule("polyY", ~ {
-      yvals <- createNumLst(input$polyY)
-      xvals <- createNumLst(input$polyX)
-      if (length(yvals) > 0 && length(xvals) > 0 && length(yvals) != length(xvals))
-        "x and y must have the same number of observations."
-    })
-    polyraw_iv$add_rule("polyY", ~ {
-      yvals <- createNumLst(input$polyY)
-      if (length(yvals) > 0 && sd(yvals) == 0)
-        "Response variable is constant. At least two distinct values are required."
-    })
-
-    polyraw_iv$add_rule("polyX", sv_required())
-    polyraw_iv$add_rule("polyX", ~ {
-      if (nzchar(trimws(input$polyX)) && length(createNumLst(input$polyX)) == 0)
-        "Data must be numeric values separated by commas or spaces (e.g. 2,3,4 or 2 3 4)."
-    })
-    polyraw_iv$add_rule("polyX", ~ {
-      xvals <- createNumLst(input$polyX)
-      n     <- length(xvals)
-      d     <- input$polyDegree
-      if (n > 0 && !is.na(d)) {
-        if (d >= n - 1)
-          paste0("A degree-", d, " polynomial requires at least ", d + 2, " observations (currently ", n, ").")
-      }
-    })
-    polyraw_iv$add_rule("polyX", ~ {
-      yvals <- createNumLst(input$polyY)
-      xvals <- createNumLst(input$polyX)
-      if (length(xvals) > 0 && length(yvals) > 0 && length(xvals) != length(yvals))
-        "x and y must have the same number of observations."
-    })
-    polyraw_iv$add_rule("polyX", ~ {
-      xvals <- createNumLst(input$polyX)
-      if (length(xvals) > 0 && sd(xvals) == 0)
-        "Explanatory variable has a standard deviation equal to zero (all values are identical). At least two distinct values are required."
-    })
-
-    polyupload_iv$add_rule("polyUserData", sv_required())
-    polyupload_iv$add_rule("polyUserData", ~ {
-      if (is.null(fileState$status) || fileState$status == "reset") "Required"
-    })
-    polyupload_iv$add_rule("polyUserData", ~ {
-      if (!(tolower(tools::file_ext(input$polyUserData$name)) %in% UPLOAD_ACCEPTED_EXTENSIONS))
-        "File format not accepted."
-    })
-    polyupload_iv$add_rule("polyUserData", ~ tryCatch(
-      if (isTRUE(nrow(polyUploadData()) == 0)) "File is empty.",
-      error = function(e) NULL
-    ))
-    polyupload_iv$add_rule("polyUserData", ~ tryCatch(
-      if (isTRUE(ncol(polyUploadData()) < 2))
-        "Data must include one response and at least one explanatory variable.",
-      error = function(e) NULL
-    ))
-
     polyupvars_iv$add_rule("polyResponse",    sv_required())
     polyupvars_iv$add_rule("polyExplanatory", sv_required())
     polyupvars_iv$add_rule("polyExplanatory", ~ tryCatch({
-      raw <- as.data.frame(polyUploadData())[, input$polyExplanatory]
+      raw <- as.data.frame(reg_data())[, input$polyExplanatory]
       if (length(raw) == 0 || any(is.na(suppressWarnings(as.numeric(raw[!is.na(raw)])))))
         "Explanatory variable contains non-numeric data."
     }, error = function(e) NULL))
     polyupvars_iv$add_rule("polyExplanatory", ~ tryCatch({
-      raw  <- suppressWarnings(as.numeric(as.data.frame(polyUploadData())[, input$polyExplanatory]))
+      raw  <- suppressWarnings(as.numeric(as.data.frame(reg_data())[, input$polyExplanatory]))
       n    <- length(na.omit(raw))
       d    <- input$polyDegree
       if (!is.na(d) && n > 0 && d >= n - 1)
         paste0("A degree-", d, " polynomial requires at least ", d + 2, " observations (currently ", n, ").")
     }, error = function(e) NULL))
     polyupvars_iv$add_rule("polyExplanatory", ~ tryCatch({
-      raw  <- suppressWarnings(as.numeric(as.data.frame(polyUploadData())[, input$polyExplanatory]))
+      raw  <- suppressWarnings(as.numeric(as.data.frame(reg_data())[, input$polyExplanatory]))
       datx <- na.omit(raw)
       if (length(datx) > 0 && sd(datx) == 0)
         "Explanatory variable has a standard deviation equal to zero (all values are identical). At least two distinct values are required."
     }, error = function(e) NULL))
     polyupvars_iv$add_rule("polyResponse", ~ tryCatch({
-      raw <- as.data.frame(polyUploadData())[, input$polyResponse]
+      raw <- as.data.frame(reg_data())[, input$polyResponse]
       if (length(raw) == 0 || any(is.na(suppressWarnings(as.numeric(raw[!is.na(raw)])))))
         "Response variable contains non-numeric data."
     }, error = function(e) NULL))
     polyupvars_iv$add_rule("polyResponse", ~ tryCatch({
-      raw  <- suppressWarnings(as.numeric(as.data.frame(polyUploadData())[, input$polyResponse]))
+      raw  <- suppressWarnings(as.numeric(as.data.frame(reg_data())[, input$polyResponse]))
       daty <- na.omit(raw)
       if (length(daty) > 0 && sd(daty) == 0)
         "Response variable is constant. At least two distinct values are required."
     }, error = function(e) NULL))
 
-    polyraw_iv$condition(~ isTRUE(input$polyDataInput == "Enter Raw Data"))
-    polyupload_iv$condition(~ isTRUE(input$polyDataInput == "Upload Data"))
-    polyupvars_iv$condition(~ isTRUE(input$polyDataInput == "Upload Data" && polyupload_iv$is_valid()))
-
-    poly_iv$add_validator(polyraw_iv)
-    poly_iv$add_validator(polyupload_iv)
+    polyupvars_iv$condition(~ isTRUE(input_mode() == "upload" && !is.null(reg_data())))
     poly_iv$add_validator(polyupvars_iv)
 
     poly_iv$enable()
-    polyraw_iv$enable()
-    polyupload_iv$enable()
     polyupvars_iv$enable()
 
-    # ---- Reset results when data input mode changes -----------------------
-    observeEvent(input$polyDataInput, {
+    # ---- Reset results when input mode changes ----------------------------
+    observeEvent(input_mode(), {
       output$polyPerfectFitWarning <- renderUI({ NULL })
       output$polyValidation        <- renderUI({ NULL })
       hide("polyResultsPanel")
@@ -445,29 +293,13 @@ PolynomialRegressionServer <- function(id) {
       storedDatx(NULL)
       storedDaty(NULL)
       nDroppedRows(0)
-
-      if (input$polyDataInput == "Upload Data" &&
-          !is.null(fileState$status) &&
-          fileState$status == "uploaded") {
-        show("polySheetPickerPanel")
+      if (input_mode() == "upload" && !is.null(reg_data())) {
         show("polyVarPickersPanel")
         show("polyUploadedDataPanel")
       } else {
-        hide("polySheetPickerPanel")
         hide("polyVarPickersPanel")
         hide("polyUploadedDataPanel")
       }
-    }, ignoreInit = TRUE)
-
-    # ---- Reset results when raw inputs change -----------------------------
-    observeEvent(list(input$polyX, input$polyY), {
-      req(input$polyDataInput == "Enter Raw Data")
-      output$polyPerfectFitWarning <- renderUI({ NULL })
-      output$polyValidation        <- renderUI({ NULL })
-      hide("polyResultsPanel")
-      hideTab(inputId = "polyNavbarPage", target = "Inference")
-      storedDatx(NULL)
-      storedDaty(NULL)
     }, ignoreInit = TRUE)
 
     # ---- Reset results when degree changes (both modes) -------------------
@@ -484,32 +316,14 @@ PolynomialRegressionServer <- function(id) {
     # ---- Plot options module ----------------------------------------------
     plotOptionsMenuServer("polyScatter")
 
-    observeEvent(input$polyUserData, {
-      req(input$polyUserData)
-      ext <- tolower(tools::file_ext(input$polyUserData$name))
-      if (ext %in% c("xls", "xlsx")) {
-        sheets <- tryCatch(readxl::excel_sheets(input$polyUserData$datapath),
-                           error = function(e) character(0))
-        freezeReactiveValue(input, "polySheet")
-        updateSelectizeInput(session, "polySheet",
-                             choices  = sheets,
-                             selected = if (length(sheets)) sheets[1] else "")
-        show("polySheetPickerPanel")
-      } else {
-        hide("polySheetPickerPanel")
-        updateSelectizeInput(session, "polySheet", choices = character(0), selected = "")
+    observeEvent(list(reg_data(), input_mode()), {
+      dat <- reg_data()
+      if (is.null(dat) || input_mode() != "upload") {
+        hide("polyVarPickersPanel")
+        hide("polyUploadedDataPanel")
+        return()
       }
-    }, priority = 50)
-
-    observeEvent(list(input$polyUserData, input$polySheet), {
-      req(input$polyUserData)
-      fileState$status <- "uploaded"
-
-      ext <- tolower(tools::file_ext(input$polyUserData$name))
-      if (ext %in% c("xls", "xlsx") && (is.null(input$polySheet) || input$polySheet == "")) return()
-
-      req(polyUploadData())
-      cols <- colnames(polyUploadData())
+      cols <- colnames(dat)
       updateSelectizeInput(session, "polyResponse",    choices = cols)
       updateSelectizeInput(session, "polyExplanatory", choices = cols)
       show("polyVarPickersPanel")
@@ -518,9 +332,7 @@ PolynomialRegressionServer <- function(id) {
 
     # ---- Uploaded data preview -------------------------------------------
     output$polyUploadedDataContent <- renderUI({
-      if (is.null(input$polyUserData) ||
-          is.null(fileState$status)   ||
-          fileState$status == "reset") {
+      if (input_mode() != "upload" || is.null(reg_data())) {
         div(
           class = "alert alert-info",
           style = "margin-top: 15px;",
@@ -533,8 +345,8 @@ PolynomialRegressionServer <- function(id) {
     })
 
     output$polyViewUpload <- renderDT({
-      req(input$polyUserData)
-      dat <- polyUploadData()
+      req(input_mode() == "upload", !is.null(reg_data()))
+      dat <- reg_data()
       datatable(dat, options = list(
         pageLength = 25,
         lengthMenu = list(c(25, 50, 100, -1), c("25", "50", "100", "All")),
@@ -544,8 +356,8 @@ PolynomialRegressionServer <- function(id) {
     outputOptions(output, "polyViewUpload", suspendWhenHidden = FALSE)
 
     output$polyViewUploadTab <- renderDT({
-      req(input$polyUserData)
-      dat <- polyUploadData()
+      req(input_mode() == "upload", !is.null(reg_data()))
+      dat <- reg_data()
       datatable(dat, options = list(
         pageLength = 25,
         lengthMenu = list(c(25, 50, 100, -1), c("25", "50", "100", "All")),
@@ -659,7 +471,7 @@ PolynomialRegressionServer <- function(id) {
       toggle("polyNavbarContent", condition = poly_iv$is_valid())
 
       output$polyValidation <- renderUI({
-        if (input$polyDataInput == "Upload Data" && !polyupvars_iv$is_valid()) {
+        if (input_mode() == "upload" && !polyupvars_iv$is_valid()) {
           validate(
             need(nzchar(input$polyResponse),    "Please select a Response Variable (y)."),
             need(nzchar(input$polyExplanatory), "Please select an Explanatory Variable (x)."),
@@ -674,7 +486,7 @@ PolynomialRegressionServer <- function(id) {
 
       showTab(inputId = "polyNavbarPage", target = "Inference")
 
-      if (input$polyDataInput == "Upload Data") {
+      if (input_mode() == "upload") {
         showTab(inputId = "polyNavbarPage", target = "Uploaded Data")
       } else {
         hideTab(inputId = "polyNavbarPage", target = "Uploaded Data")
@@ -685,18 +497,19 @@ PolynomialRegressionServer <- function(id) {
       # -- Extract data ------------------------------------------------------
       degree <- as.integer(input$polyDegree)
 
-      if (input$polyDataInput == "Upload Data") {
-        req(input$polyExplanatory %in% colnames(polyUploadData()))
-        req(input$polyResponse    %in% colnames(polyUploadData()))
-        raw_x        <- suppressWarnings(as.numeric(as.data.frame(polyUploadData())[, input$polyExplanatory]))
-        raw_y        <- suppressWarnings(as.numeric(as.data.frame(polyUploadData())[, input$polyResponse]))
+      if (input_mode() == "upload") {
+        req(!is.null(reg_data()))
+        req(input$polyExplanatory %in% colnames(reg_data()))
+        req(input$polyResponse    %in% colnames(reg_data()))
+        raw_x        <- suppressWarnings(as.numeric(as.data.frame(reg_data())[, input$polyExplanatory]))
+        raw_y        <- suppressWarnings(as.numeric(as.data.frame(reg_data())[, input$polyResponse]))
         complete_idx <- !is.na(raw_x) & !is.na(raw_y)
         datx         <- raw_x[complete_idx]
         daty         <- raw_y[complete_idx]
         nDroppedRows(sum(!complete_idx))
       } else {
-        datx <- createNumLst(input$polyX)
-        daty <- createNumLst(input$polyY)
+        datx <- reg_data()$x
+        daty <- reg_data()$y
         nDroppedRows(0)
       }
 
@@ -885,7 +698,7 @@ PolynomialRegressionServer <- function(id) {
               br()
             ),
             tabPanel(
-              title = "INE",
+              title = "LINE",
               br(),
               uiOutput(ns("polyIneAssumptions"))
             ),
@@ -986,6 +799,20 @@ PolynomialRegressionServer <- function(id) {
 
       colNames <- c("df", "Sum of Squares (SS)", "Mean Sum of Squares (MS)", "F-ratio", "P-Value")
 
+      .aw <- function(hdr, vals, digits = NULL, big_mark = "", px = 9L, pad = 28L, min_w = 60L) {
+        vs    <- vals[!is.na(vals)]
+        fmted <- if (!is.null(digits) && length(vs) > 0)
+          sapply(as.numeric(vs), function(v) formatC(v, format = "f", digits = digits, big.mark = big_mark))
+        else as.character(vs)
+        max(min_w, max(nchar(c(hdr, fmted))) * px + pad)
+      }
+      w0 <- .aw("Sources of Variation",    rownames(data))
+      w1 <- .aw("df",                       data$df,          digits = 0)
+      w2 <- .aw("Sum of Squares (SS)",       data$SS,          digits = 4, big_mark = ",")
+      w3 <- .aw("Mean Sum of Squares (MS)",  data$MS,          digits = 4, big_mark = ",")
+      w4 <- .aw("F-ratio",                   data$F,           digits = 4, big_mark = ",")
+      w5 <- .aw("P-Value",                   data[["P-Value"]])
+
       headers <- htmltools::withTags(table(
         class = 'display',
         thead(
@@ -1002,7 +829,7 @@ PolynomialRegressionServer <- function(id) {
 
       datatable(
         data,
-        class = 'cell-border stripe',
+        class = 'cell-border stripe compact',
         container = headers,
         options = list(
           dom = 't',
@@ -1014,7 +841,12 @@ PolynomialRegressionServer <- function(id) {
           scrollX = TRUE,
           columnDefs = list(
             list(className = 'dt-center', targets = 0:5),
-            list(width = '150px', targets = 2:5)
+            list(width = paste0(w0, 'px'), targets = 0),
+            list(width = paste0(w1, 'px'), targets = 1),
+            list(width = paste0(w2, 'px'), targets = 2),
+            list(width = paste0(w3, 'px'), targets = 3),
+            list(width = paste0(w4, 'px'), targets = 4),
+            list(width = paste0(w5, 'px'), targets = 5)
           )
         ),
         selection = "none",
@@ -1137,8 +969,35 @@ PolynomialRegressionServer <- function(id) {
       )
     })
 
-    # INE assumption tests (Independence, Normality, Equal Variance)
+    # LINE assumption tests (Linearity, Independence, Normality, Equal Variance)
     polyIneTestConfig <- list(
+      list(
+        assumption = "Linearity",
+        procedure  = "Residuals vs Fitted Plot",
+        min_n      = 3,
+        run        = function(model) {
+          list(statistic = NULL, p_value = NULL,
+               note = "See Residuals vs Fitted plot in Diagnostic Plots tab")
+        }
+      ),
+      list(
+        assumption = "Linearity",
+        procedure  = "Rainbow Test",
+        min_n      = 6,
+        run        = function(model) {
+          rb <- lmtest::raintest(model)
+          list(statistic = round(rb$statistic, 4), p_value = round(rb$p.value, 4), note = NULL)
+        }
+      ),
+      list(
+        assumption = "Linearity",
+        procedure  = "Ramsey RESET Test",
+        min_n      = 6,
+        run        = function(model) {
+          rt <- lmtest::resettest(model)
+          list(statistic = round(rt$statistic, 4), p_value = round(rt$p.value, 4), note = NULL)
+        }
+      ),
       list(
         assumption = "Independence",
         procedure  = "Durbin-Watson Test",
@@ -1243,7 +1102,7 @@ PolynomialRegressionServer <- function(id) {
       tableData <- do.call(rbind, results)
 
       tagList(
-        p(strong("Independence, Normality and Equal Variance (I.N.E) Assumptions"),
+        p(strong("Linearity, Independence, Normality and Equal Variance (L.I.N.E) Assumptions"),
           style = "font-size: 16px;"),
         p(paste("Testing at α =", alpha, "| n =", n),
           style = "color: #666; font-size: 13px;"),
@@ -1340,18 +1199,11 @@ PolynomialRegressionServer <- function(id) {
 
     # ---- Reset button -----------------------------------------------------
     observeEvent(input$resetPolynomial, {
-      updateTextAreaInput(session, "polyY",
-        value = "4.997, 6.165, 6.95, 8.218, 9.405, 10.404, 10.425, 10.44, 9.393, 7.854, 5.168")
-      updateTextAreaInput(session, "polyX",
-        value = "0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10")
+      reset_upload()
       updateNumericInput(session, "polyDegree",        value = 2)
       updateNumericInput(session, "polyScatterDegree", value = 2)
 
-      # Clear file input and dependent dropdowns
-      shinyjs::reset("polyUserData")
-      hide("polySheetPickerPanel")
       hide("polyVarPickersPanel")
-      updateSelectizeInput(session, "polySheet",       choices = character(0), selected = "")
       updateSelectizeInput(session, "polyResponse",    choices = c(""), selected = "")
       updateSelectizeInput(session, "polyExplanatory", choices = c(""), selected = "")
 
@@ -1360,7 +1212,6 @@ PolynomialRegressionServer <- function(id) {
       nDroppedRows(0)
       output$polyPerfectFitWarning <- renderUI({ NULL })
       output$polyValidation        <- renderUI({ NULL })
-      fileState$status <- "reset"
       hide("polyResultsPanel")
       hide("polyUploadedDataPanel")
       hideTab(inputId = "polyNavbarPage", target = "Uploaded Data")
