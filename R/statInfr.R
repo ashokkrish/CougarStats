@@ -457,7 +457,7 @@ statInfrUI <- function(id) {
                 inputId  = ns("oneMeanGraphOptions"),
                 label    = strong("Graph Options"),
                 choices  = c("Boxplot", "Histogram"),
-                selected = "Boxplot",
+                selected = c("Boxplot", "Histogram"),
                 multiple = TRUE,
                 options  = list(
                   `actions-box`      = TRUE,
@@ -1769,7 +1769,8 @@ statInfrUI <- function(id) {
                         br(),
                         plotOptionsMenuUI(
                           id    = ns("oneMeanHistogram"),
-                          title = "Histogram"),
+                          title = "Histogram",
+                          plotType = "Histogram"),
                         uiOutput(ns("renderOneMeanHistogram")),
                         br(),
                       ),
@@ -2340,6 +2341,7 @@ statInfrUI <- function(id) {
                       plotOptionsMenuUI(
                         id    = ns("anovaHistogram"),
                         title = "Histogram of Residuals",
+                        plotType = "Histogram",
                         xlab  = "Residuals",
                         ylab  = "Frequency"),
                       uiOutput(ns("renderAnovaHistogram"))
@@ -7738,7 +7740,7 @@ statInfrServer <- function(id) {
                       input[["oneMeanHistogram-Xlab"]],
                       input[["oneMeanHistogram-Ylab"]],
                       input[["oneMeanHistogram-Gridlines"]],
-                      input[["oneMeanHistogram-Flip"]])
+                      input[["oneMeanHistogram-Density"]])
 
     }, height = function() {GetPlotHeight(input[["oneMeanHistogram-Height"]], input[["oneMeanHistogram-HeightPx"]], ui = FALSE)},
     width = function() {GetPlotWidth(input[["oneMeanHistogram-Width"]], input[["oneMeanHistogram-WidthPx"]], ui = FALSE)}
@@ -11389,7 +11391,7 @@ statInfrServer <- function(id) {
                       input[["anovaHistogram-Xlab"]],
                       input[["anovaHistogram-Ylab"]],
                       input[["anovaHistogram-Gridlines"]],
-                      input[["anovaHistogram-Flip"]])
+                      input[["anovaHistogram-Density"]])
       
     }, height = function() {GetPlotHeight(input[["anovaHistogram-Height"]], input[["anovaHistogram-HeightPx"]], ui = FALSE)},
     width = function() {GetPlotWidth(input[["anovaHistogram-Width"]], input[["anovaHistogram-WidthPx"]], ui = FALSE)}
