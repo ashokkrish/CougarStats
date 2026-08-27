@@ -195,7 +195,23 @@ descStatsUI <- function(id) {
                                  input.dsTableFilters.indexOf('Potential Outliers') > -1",
                       
                     helpText("* Note: Quartiles are calculated by excluding the median on both sides.")
+                  ),
+                
+                conditionalPanel(
+                  ns = ns,
+                  condition = "input.dsTableFilters.indexOf('Skewness') > -1 | 
+                               input.dsTableFilters.indexOf('Kurtosis') > -1",
+                  
+                  helpText(
+                    "** Note: Skewness and kurtosis are calculated using the Type 2 method described by ",
+                    tags$a(
+                      href = "https://rss.onlinelibrary.wiley.com/doi/10.1111/1467-9884.00122",
+                      "Joanes and Gill (1998)",
+                      target = "_blank"
+                    ),
+                    ". Different methods may produce slightly different values."
                   )
+                )
                 ), # dsTable tabPanel
                   
                   tabPanel(
@@ -680,7 +696,7 @@ descStatsServer <- function(id) {
                                     "Five Number Summary", "Five Number Summary", "Five Number Summary", "Five Number Summary", "Five Number Summary", 
                                     "Check for potential outliers", "Check for potential outliers", "Check for potential outliers", "Check for potential outliers", "Check for potential outliers", 
                                     "Dispersion", "Dispersion", "Dispersion", "Dispersion", "Dispersion", 
-                                    "Distribution", "Distribution", "Distribution", "Distribution", "Distribution", "Distribution"),
+                                    "Distribution**", "Distribution**", "Distribution**", "Distribution**", "Distribution**", "Distribution**"),
                        Variable = c("Number of Observations", 
                                     "Sum", 
                                     "Sum of Squares", 
@@ -1191,7 +1207,8 @@ descStatsServer <- function(id) {
                 extensions = 'RowGroup',
                 options = list(
                   rowGroup = list(dataSrc = 0),
-                  columnDefs = list(list(visible = FALSE, targets = c(0))),
+                  columnDefs = list(list(visible = FALSE, targets = c(0)),
+                                    list(width = "250px", targets = 1)),
                   dom = 't',
                   pageLength = -1,
                   ordering = FALSE,
