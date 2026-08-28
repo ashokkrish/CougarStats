@@ -548,7 +548,7 @@ descStatsServer <- function(id) {
       if (is.na(coeffVar)) {
         coeffVar <- "Coefficient of Variation is undefined for this data"
       } else if (is.infinite(coeffVar)) {
-        coeffVar <- "Infinity"
+        coeffVar <- "Coefficient of Variation is undefined for this data"
       }
       
       if(sampSize < 3){
@@ -576,10 +576,20 @@ descStatsServer <- function(id) {
       
       if(is.nan(sampSkewness)) {
         sampSkewness <- "Not enough variability or data points in the dataset."
+        sampSkewnessRatio <- "Not enough variability or data points in the dataset."
       }
       
       if(is.nan(sampKurtosis)) {
         sampKurtosis <- "Not enough variability or data points in the dataset."
+        sampKurtosisRatio <- "Not enough variability or data points in the dataset."
+      }
+      
+      format4 <- function(x) {
+        if(is.numeric(x)) {
+          sprintf("%.4f", x)
+        } else {
+          x
+        }
       }
       
       dfCol <- data.frame(Value = c(sampSize, 
@@ -603,12 +613,12 @@ descStatsServer <- function(id) {
                                     sampVar, 
                                     sampMeanSE, 
                                     coeffVar, 
-                                    sampSkewness, 
-                                    sampSESkewness,
-                                    sampSkewnessRatio,
-                                    sampKurtosis,
-                                    sampSEKurtosis,
-                                    sampKurtosisRatio)
+                                    format4(sampSkewness),
+                                    format4(sampSESkewness),
+                                    format4(sampSkewnessRatio),
+                                    format4(sampKurtosis),
+                                    format4(sampSEKurtosis),
+                                    format4(sampKurtosisRatio))
       )
     })
     
@@ -693,8 +703,8 @@ descStatsServer <- function(id) {
       req(ds_iv$is_valid())
       
       df <- data.frame(Category = c("Descriptives", "Descriptives", "Descriptives", "Descriptives", "Descriptives", "Descriptives", 
-                                    "Five Number Summary", "Five Number Summary", "Five Number Summary", "Five Number Summary", "Five Number Summary", 
-                                    "Check for potential outliers", "Check for potential outliers", "Check for potential outliers", "Check for potential outliers", "Check for potential outliers", 
+                                    "Five Number Summary*", "Five Number Summary*", "Five Number Summary*", "Five Number Summary*", "Five Number Summary*", 
+                                    "Check for potential outliers*", "Check for potential outliers*", "Check for potential outliers*", "Check for potential outliers*", "Check for potential outliers*", 
                                     "Dispersion", "Dispersion", "Dispersion", "Dispersion", "Dispersion", 
                                     "Distribution**", "Distribution**", "Distribution**", "Distribution**", "Distribution**", "Distribution**"),
                        Variable = c("Number of Observations", 
@@ -704,15 +714,15 @@ descStatsServer <- function(id) {
                                     "Mode",
                                     "Mode Frequency",
                                     "Minimum", 
-                                    "First Quartile (Q<sub>1</sub>)*", 
+                                    "First Quartile (Q<sub>1</sub>)", 
                                     "Second Quartile or Median (Q<sub>2</sub>)", 
-                                    "Third Quartile (Q<sub>3</sub>)*", 
+                                    "Third Quartile (Q<sub>3</sub>)", 
                                     "Maximum", 
-                                    "Interquartile Range (IQR)*", 
+                                    "Interquartile Range (IQR)", 
                                     "Lower Fence: Q<sub>1</sub> - (1.5 × IQR)", 
                                     "Upper Fence: Q<sub>3</sub> + (1.5 x IQR)", 
-                                    "Number of Potential Outliers*",
-                                    "Outlier Value(s)*",
+                                    "Number of Potential Outliers",
+                                    "Outlier Value(s)",
                                     "Range", 
                                     "Sample Standard Deviation", 
                                     "Sample Variance", 
@@ -1319,7 +1329,7 @@ descStatsServer <- function(id) {
                                      "Potential Outliers", "Maximum",
                                      "Sample Standard Deviation",
                                      "Sample Variance"))
-      updatePickerInput(session, "dsGraphOptions", selected = "Boxplot")
+      updatePickerInput(session, "dsGraphOptions", selected = c("Boxplot", "Histogram"))
 
       keepUpload <- input$dataInput == "Upload Data" &&
         !is.null(input$dsUserData) && dsupload_iv$is_valid()
