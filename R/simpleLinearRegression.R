@@ -381,7 +381,8 @@ SLRMainPanelUI <- function(id) {
       ) # SLRData div
     )), # regCorrMP div (hidden)
     
-    hidden(div(
+    # Uploaded Data — always visible, outside the results panel
+    div(
       id = ns("uploadedDataPanel"),
       tags$h4(
         "Uploaded Data",
@@ -389,7 +390,7 @@ SLRMainPanelUI <- function(id) {
       ),
       uiOutput(ns("uploadedDataContent")),
       br()
-    ))
+    )
     
   )) # tagList withMathJax
 }
@@ -400,24 +401,89 @@ SLRSidebarUI <- function(id) {
   tagList(withMathJax(div(
     id = ns("inputPanel"),
     
-    # Variable pickers — shown in upload mode, hidden in raw mode (server controls visibility)
-    hidden(div(
-      id = ns("slrVarPickersPanel"),
-      selectizeInput(
-        inputId = ns("slrResponse"),
-        label   = strong("Choose the Response Variable (\\(y\\))"),
-        choices = c(""),
-        options = list(placeholder  = "Select a variable",
-                       onInitialize = I('function() { this.setValue(""); }'))
-      ),
-      selectizeInput(
-        inputId = ns("slrExplanatory"),
-        label   = strong("Choose the Explanatory Variable (\\(x\\))"),
-        choices = c(""),
-        options = list(placeholder  = "Select a variable",
-                       onInitialize = I('function() { this.setValue(""); }'))
-      )
-    )),
+    ### ------------ Simple Linear Regression (SLR) ------------------------------------
+    radioButtons(
+      inputId      = ns("dataRegCor"),
+      label        = strong("Data"),
+      choiceValues = list("Enter Raw Data",
+                          "Upload Data"),
+      choiceNames  = list("Enter Raw Data",
+                          "Upload Data"),
+      selected     = "Enter Raw Data", #character(0), #
+      inline       = TRUE), #,width = '1000px'),
+    
+    conditionalPanel(
+      ns = ns,
+      condition = "input.dataRegCor == 'Enter Raw Data'",
+      
+      textAreaInput(
+        inputId     = ns("y"),
+        label       = strong("Response Variable (\\( y\\))"),
+        value       = "2.48, 2.26, 2.47, 2.77, 2.99, 3.05, 3.18, 3.46, 3.03, 3.26, 2.67, 2.53",
+        placeholder = "Enter numeric values separated by commas or spaces with decimals as points. (eg: 1,2,3 or 1 2 3)",
+        rows        = 3),
+
+      textAreaInput(
+        inputId     = ns("x"),
+        label       = strong("Explanatory Variable (\\( x\\))"),
+        value       = "4.51, 3.58, 4.31, 5.06, 5.64, 4.99, 5.29, 5.83, 4.70, 5.61, 4.90, 4.20",
+        placeholder = "Enter numeric values separated by commas or spaces with decimals as points (eg: 1,2,3 or 1 2 3).",
+        rows        = 3)
+    ), #dataRegCor == 'Enter Raw Data'
+    
+    div(
+      id = "userUploadedData",
+      conditionalPanel(
+        ns = ns,
+        condition = "input.dataRegCor == 'Upload Data'",
+        
+        HTML(uploadDataDisclaimer),
+
+        fileInput(
+          inputId = ns("slrUserData"),
+          label   = strong("Upload your data (.csv, .xls, .xlsx, .txt, .sas7bdat, .sav, .dta, .rds, .mtp, .mwx, .mpx)"),
+          accept  = c("text/csv",
+                      "text/comma-separated-values",
+                      "text/tab-separated-values",
+                      "text/plain",
+                      ".csv",
+                      ".txt",
+                      ".xls",
+                      ".xlsx",
+                      ".sas7bdat",
+                      ".sav",
+                      ".dta",
+                      ".rds",
+                      ".mtp",
+                      ".mwx",
+                      ".mpx")),
+
+        conditionalPanel(
+          ns = ns,
+          condition = "output.slrShowSheetPicker == true",
+          selectizeInput(
+            inputId  = ns("slrSheet"),
+            label    = strong("Choose a Sheet"),
+            choices  = c(""),
+            multiple = FALSE,
+            options  = list(placeholder = 'Select a sheet',
+                            onInitialize = I('function() { this.setValue(""); }')))
+        ),
+
+        selectizeInput(
+          inputId = ns("slrResponse"),
+          label   = strong("Choose the Response Variable (\\(y\\))"),
+          choices = c(""),
+          options = list(placeholder = 'Select a variable',
+                         onInitialize = I('function() { this.setValue(""); }'))),
+        
+        selectizeInput(
+          inputId = ns("slrExplanatory"),
+          label   = strong("Choose the Explanatory Variable (\\(x\\))"),
+          choices = c(""),
+          options = list(placeholder = 'Select a variable',
+                         onInitialize = I('function() { this.setValue(""); }')))
+      )), #dataRegCor == 'Upload Data'
     
     br(),
     p(strong("Graph Options")),
@@ -585,7 +651,7 @@ lineTestConfig <- list(
   )
 )
 
-SLRServer <- function(id, reg_data, input_mode, reset_upload) {
+SLRServer <- function(id) {
   moduleServer(id, function(input, output, session) {
 
 
@@ -660,20 +726,26 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload) {
     )
     
     output$slrViewUpload <- renderDT({
-      req(input_mode() == "upload", !is.null(reg_data()))
+      req(input$slrUserData)
+      
+      dat <- slrUploadData()
+      
       datatable(
-        reg_data(),
+        dat,
         options = list(
-          pageLength = 25,
-          lengthMenu = list(c(25, 50, 100, -1), c("25", "50", "100", "All")),
-          scrollX    = TRUE
+          pageLength  = 25,
+          lengthMenu  = list(c(25, 50, 100, -1), c("25", "50", "100", "All")),
+          scrollX     = TRUE
         )
       )
     })
+    
+    outputOptions(output, "slrViewUpload", suspendWhenHidden = FALSE)
 
     output$slrViewUploadTab <- renderDT({
-      req(input_mode() == "upload", !is.null(reg_data()))
-      datatable(reg_data(), options = list(pageLength = 25, lengthMenu = list(c(25, 50, 100, -1), c("25", "50", "100", "All")), scrollX = TRUE))
+      req(input$slrUserData)
+      dat <- slrUploadData()
+      datatable(dat, options = list(pageLength = 25, lengthMenu = list(c(25, 50, 100, -1), c("25", "50", "100", "All")), scrollX = TRUE))
     })
     
     
@@ -681,12 +753,54 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload) {
     #  ========================================================================= #
     ## -------- Data Validation ------------------------------------------------
     #  ========================================================================= #
-    # slrraw_iv and slrupload_iv have moved to the parent (regressionAndCorrelation.R).
-    # slruploadvars_iv stays here — validates variable picker selections in upload mode.
-    regcor_iv        <- InputValidator$new()
+    regcor_iv <- InputValidator$new()
+    slrraw_iv <- InputValidator$new()
+    slrupload_iv <- InputValidator$new()
     slruploadvars_iv <- InputValidator$new()
-
+    
     ### ------------ Rules -------------------------------------------------------
+    slrraw_iv$add_rule("x", sv_required())
+    slrraw_iv$add_rule("x", ~ if (nzchar(trimws(input$x)) && length(createNumLst(input$x)) == 0)
+                                     "Data must be numeric values separated by commas or spaces (ie: 2,3,4 or 2 30 400).")
+    slrraw_iv$add_rule("x", ~ if (length(createNumLst(input$x)) < 4) "Sample Data must include at least four numeric observations.")
+    slrraw_iv$add_rule("x", ~ tryCatch(
+      if (isTRUE(sampleInfoRaw()$diff != 0)) "x and y must have the same number of observations.",
+      error = function(e) NULL
+    ))
+    slrraw_iv$add_rule("x", ~ tryCatch(
+      if (isTRUE(sampleInfoRaw()$xSD == 0)) "Explanatory variable has a standard deviation equal to zero (all values are identical). At least two distinct values are required.",
+      error = function(e) NULL
+    ))
+    
+    slrraw_iv$add_rule("y", sv_required())
+    slrraw_iv$add_rule("y", ~ if (nzchar(trimws(input$y)) && length(createNumLst(input$y)) == 0)
+                                     "Data must be numeric values separated by commas or spaces (ie: 2,3,4 or 2 30 400).")
+    slrraw_iv$add_rule("y", ~ if (length(createNumLst(input$y)) < 4) "Sample Data must include at least four numeric observations.")
+    slrraw_iv$add_rule("y", ~ tryCatch(
+      if (isTRUE(sampleInfoRaw()$diff != 0)) "x and y must have the same number of observations.",
+      error = function(e) NULL
+    ))
+    slrraw_iv$add_rule("y", ~ tryCatch(
+      if (isTRUE(sampleInfoRaw()$ySD == 0)) "Response variable is constant. Correlation is undefined when a variable has a standard deviation equal to zero.",
+      error = function(e) NULL
+    ))
+    
+    slrupload_iv$add_rule("slrUserData", sv_required())
+    slrupload_iv$add_rule("slrUserData", ~ if (is.null(fileInputs$slrStatus) || fileInputs$slrStatus == 'reset') "Required")
+    slrupload_iv$add_rule("slrUserData", ~ if (!(tolower(tools::file_ext(input$slrUserData$name)) %in% UPLOAD_ACCEPTED_EXTENSIONS)) "File format not accepted.")
+    slrupload_iv$add_rule("slrUserData", ~ tryCatch(
+      if (isTRUE(nrow(slrUploadData()) == 0)) "File is empty.",
+      error = function(e) NULL
+    ))
+    slrupload_iv$add_rule("slrUserData", ~ tryCatch(
+      if (isTRUE(ncol(slrUploadData()) < 2)) "Data must include one response and (at least) one explanatory variable.",
+      error = function(e) NULL
+    ))
+    slrupload_iv$add_rule("slrUserData", ~ tryCatch(
+      if (isTRUE(nrow(slrUploadData()) < 4)) "Samples must include at least four numeric observations.",
+      error = function(e) NULL
+    ))
+    
     slruploadvars_iv$add_rule("slrExplanatory", sv_required())
     slruploadvars_iv$add_rule("slrExplanatory", ~ tryCatch(
       if (isTRUE(explanatoryInfoUploadSLR()$invalid)) "Explanatory variable contains non-numeric data.",
@@ -697,11 +811,11 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload) {
       error = function(e) NULL
     ))
     slruploadvars_iv$add_rule("slrExplanatory", ~ tryCatch({
-      raw  <- suppressWarnings(as.numeric(as.data.frame(reg_data())[, input$slrExplanatory]))
+      raw  <- suppressWarnings(as.numeric(as.data.frame(slrUploadData())[, input$slrExplanatory]))
       datx <- na.omit(raw)
       if (length(datx) < 4) "Explanatory variable has fewer than four non-missing numeric values."
     }, error = function(e) NULL))
-
+    
     slruploadvars_iv$add_rule("slrResponse", sv_required())
     slruploadvars_iv$add_rule("slrResponse", ~ tryCatch(
       if (isTRUE(responseInfoUploadSLR()$invalid)) "Response variable contains non-numeric data.",
@@ -716,21 +830,28 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload) {
       error = function(e) NULL
     ))
     slruploadvars_iv$add_rule("slrResponse", ~ tryCatch({
-      raw  <- suppressWarnings(as.numeric(as.data.frame(reg_data())[, input$slrResponse]))
+      raw  <- suppressWarnings(as.numeric(as.data.frame(slrUploadData())[, input$slrResponse]))
       daty <- na.omit(raw)
       if (length(daty) < 4) "Response variable has fewer than four non-missing numeric values."
     }, error = function(e) NULL))
-
+    
+    
+     
     ### ------------ Conditions --------------------------------------------------
-    slruploadvars_iv$condition(function() {
-      isTRUE(input_mode() == "upload" && !is.null(reg_data()))
-    })
-
+    slrraw_iv$condition(~ isTRUE(input$dataRegCor == 'Enter Raw Data'))
+    slrupload_iv$condition(~ isTRUE(input$dataRegCor == 'Upload Data'))
+    slruploadvars_iv$condition(function() {isTRUE(input$dataRegCor == 'Upload Data' &&
+                                                    slrupload_iv$is_valid()) })
+    
     ### ------------ Dependencies ------------------------------------------------
+    regcor_iv$add_validator(slrraw_iv)
+    regcor_iv$add_validator(slrupload_iv)
     regcor_iv$add_validator(slruploadvars_iv)
-
+    
     ### ------------ Activation --------------------------------------------------
     regcor_iv$enable()
+    slrraw_iv$enable()
+    slrupload_iv$enable()
     slruploadvars_iv$enable()
     
     #  ========================================================================= #
@@ -767,12 +888,48 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload) {
     #  ========================================================================= #
     ## -------- Reactives ------------------------------------------------------
     #  ========================================================================= #
+    fileInputs <- reactiveValues(
+      slrStatus = NULL,
+    )
+    
+    slrUploadData <- eventReactive(list(input$slrUserData, input$slrSheet), {
+      req(input$slrUserData)
+      ext  <- tolower(tools::file_ext(input$slrUserData$name))
+      path <- input$slrUserData$datapath
+
+      if (ext %in% c("xls", "xlsx")) {
+        req(input$slrSheet)
+        # Block on stale sheet name (transient between file upload and selectize update)
+        req(input$slrSheet %in% readxl::excel_sheets(path))
+      }
+
+      dat <- readUploadedDataFile(ext, path, input$slrSheet)
+
+      # Drop columns that are entirely NA (empty phantom columns from Excel)
+      dat <- dat[, colSums(!is.na(dat)) > 0, drop = FALSE]
+
+      # Drop rows where ALL columns are NA (empty phantom rows from Excel)
+      dat <- dat[rowSums(!is.na(dat)) > 0, , drop = FALSE]
+
+      dat
+    })
+    
+    sampleInfoRaw <- eventReactive({input$x
+      input$y}, {
+        dat <- list()
+        datx <- createNumLst(input$x)
+        daty <- createNumLst(input$y)
+        dat$diff <- length(datx) - length(daty)
+        dat$xSD <- sd(datx)
+        dat$ySD <- sd(daty)
+        return(dat)
+      })
     
     explanatoryInfoUploadSLR <- eventReactive(input$slrExplanatory, {
       req(input$slrExplanatory != "")
       dat <- list()
       tryCatch({
-        raw  <- as.data.frame(reg_data())[, input$slrExplanatory]
+        raw  <- as.data.frame(slrUploadData())[, input$slrExplanatory]
         datx <- suppressWarnings(as.numeric(raw))
         datx <- na.omit(datx)
         dat$invalid <- length(datx) == 0 || any(is.na(suppressWarnings(as.numeric(raw[!is.na(raw)]))))
@@ -783,12 +940,12 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload) {
       })
       return(dat)
     })
-
+    
     responseInfoUploadSLR <- eventReactive(input$slrResponse, {
       req(input$slrResponse != "")
       dat <- list()
       tryCatch({
-        raw  <- as.data.frame(reg_data())[, input$slrResponse]
+        raw  <- as.data.frame(slrUploadData())[, input$slrResponse]
         daty <- suppressWarnings(as.numeric(raw))
         daty <- na.omit(daty)
         dat$invalid <- length(daty) == 0 || any(is.na(suppressWarnings(as.numeric(raw[!is.na(raw)]))))
@@ -799,15 +956,15 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload) {
       })
       return(dat)
     })
-
+    
     sampleDiffUpload <- eventReactive(c(input$slrExplanatory, input$slrResponse), {
       if (input$slrResponse == "" | input$slrExplanatory == "") {
         return(0)
       } else {
         tryCatch({
-          datx <- na.omit(as.numeric(as.data.frame(reg_data())[, input$slrExplanatory]))
-          daty <- na.omit(as.numeric(as.data.frame(reg_data())[, input$slrResponse]))
-          if (length(datx) == 0 || length(daty) == 0) return(-1)
+          datx <- na.omit(as.numeric(as.data.frame(slrUploadData())[, input$slrExplanatory]))
+          daty <- na.omit(as.numeric(as.data.frame(slrUploadData())[, input$slrResponse]))
+          if (length(datx) == 0 || length(daty) == 0) return(-1)  # signals invalid
           return(length(datx) - length(daty))
         }, error = function(e) return(-1))
       }
@@ -818,7 +975,9 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload) {
     #  ========================================================================= #
     
     output$uploadedDataContent <- renderUI({
-      if (input_mode() != "upload" || is.null(reg_data())) {
+      if (is.null(input$slrUserData) || 
+          is.null(fileInputs$slrStatus) || 
+          fileInputs$slrStatus == "reset") {
         div(
           class = "alert alert-info",
           style = "margin-top: 15px;",
@@ -826,29 +985,68 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload) {
           "Please upload a file using the sidebar to view your data here."
         )
       } else {
-        tagList(DTOutput(session$ns("slrViewUpload")))
+        tagList(
+          DTOutput(session$ns("slrViewUpload"))
+        )
       }
     })
+    
+    
+    # Tells the UI whether to show the sheet picker (only for xls/xlsx)
+    output$slrShowSheetPicker <- reactive({
+      if (is.null(input$slrUserData)) return(FALSE)
+      tolower(tools::file_ext(input$slrUserData$name)) %in% c("xls", "xlsx")
+    })
+    outputOptions(output, "slrShowSheetPicker", suspendWhenHidden = FALSE)
 
-    # Populate variable pickers and show/hide them based on reg_data and mode
-    observeEvent(list(reg_data(), input_mode()), {
-      dat <- reg_data()
-      if (is.null(dat)) {
-        shinyjs::hide("slrVarPickersPanel")
+    # Populate sheet choices when an Excel file is uploaded
+    observeEvent(input$slrUserData, {
+      req(input$slrUserData)
+      ext <- tolower(tools::file_ext(input$slrUserData$name))
+      if (ext %in% c("xls", "xlsx")) {
+        sheets <- tryCatch(readxl::excel_sheets(input$slrUserData$datapath),
+                           error = function(e) character(0))
+        freezeReactiveValue(input, "slrSheet")
+        updateSelectizeInput(session, "slrSheet",
+                             choices  = sheets,
+                             selected = if (length(sheets)) sheets[1] else "")
+      } else {
+        updateSelectizeInput(session, "slrSheet", choices = character(0), selected = "")
+      }
+    }, priority = 50)
+
+    # Fills the variable selection options based on data file columns.
+    # Depends on BOTH slrUserData and slrSheet so that for Excel files we wait
+    # until the sheet has been selected before trying to read columns.
+    observeEvent({
+      input$slrUserData
+      input$slrSheet
+    }, {
+      req(input$slrUserData)
+      fileInputs$slrStatus <- "uploaded"
+
+      ext <- tolower(tools::file_ext(input$slrUserData$name))
+
+      # For Excel files, defer until a sheet is selected
+      if (ext %in% c("xls", "xlsx") && (is.null(input$slrSheet) || input$slrSheet == "")) {
+        hide("slrExplanatory")
+        hide("slrResponse")
         hide("uploadedDataPanel")
         return()
       }
-      if (input_mode() == "raw") {
-        updateSelectInput(session, "slrExplanatory", choices = "x", selected = "x")
-        updateSelectInput(session, "slrResponse",    choices = "y", selected = "y")
-        shinyjs::hide("slrVarPickersPanel")
-        hide("uploadedDataPanel")
-      } else {
-        updateSelectInput(session, "slrExplanatory", choices = colnames(dat))
-        updateSelectInput(session, "slrResponse",    choices = colnames(dat))
-        shinyjs::show("slrVarPickersPanel")
-        show("uploadedDataPanel")
-      }
+
+      req(slrUploadData())
+      updateSelectInput(
+        inputId = "slrExplanatory",
+        choices = colnames(slrUploadData())
+      )
+      updateSelectInput(
+        inputId = "slrResponse",
+        choices = colnames(slrUploadData())
+      )
+      show("slrExplanatory")
+      show("slrResponse")
+      show("uploadedDataPanel")
     })
     
     ## NOTE: related to the old plot options UI.
@@ -873,11 +1071,14 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload) {
       output$perfectFitWarning <- renderUI({ NULL })
       showTab(inputId = "slrNavbarPage", target = "Inference")
       showTab(inputId = "slrNavbarPage", target = "Prediction")
-      toggle(id = "SLRData", condition = !is.null(reg_data()) && regcor_iv$is_valid())
-
+      toggle(id = "SLRData", condition = regcor_iv$is_valid())
+      
       output$slrValidation <- renderUI({
-        if (is.null(reg_data())) {
-          validate("Please provide data using the sidebar.")
+        
+        if(!slrupload_iv$is_valid()){
+          if(is.null(input$slrUserData)) {
+            validate("Please upload a file.")
+          }
         }
         
         # LINE STUFF ==========  
@@ -947,7 +1148,6 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload) {
             br(),
             reactable(
               tableData,
-              compact    = TRUE,
               bordered   = TRUE,
               striped    = FALSE,
               highlight  = TRUE,
@@ -978,17 +1178,15 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload) {
         
         
         
-        if (input_mode() == "upload") {
-          validate(
-            need(!is.null(reg_data()), "Please upload a file."),
-            need(nrow(reg_data()) != 0, "File is empty."),
-            need(ncol(reg_data()) > 1,
-                 "Data must include one response and (at least) one explanatory variable."),
-            need(nrow(reg_data()) > 2,
-                 "Samples must include at least 2 observations."),
-            errorClass = "myClass"
-          )
-        }
+        validate(
+          need(slrupload_iv$is_valid(), "Please upload a file."),
+          need(nrow(slrUploadData()) != 0, "File is empty."),
+          need(ncol(slrUploadData()) > 1,
+               "Data must include one response and (at least) one explanatory variable."),
+          need(nrow(slrUploadData()) > 2,
+               "Samples must include at least 2 observations."),
+          errorClass = "myClass"
+        )
         
         if(!slruploadvars_iv$is_valid()) {
           validate(
@@ -1008,12 +1206,11 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload) {
             errorClass = "myClass")
         }
         
-        if (input_mode() == "upload") {
-          req(!is.null(reg_data()))
-          req(input$slrExplanatory %in% colnames(reg_data()))
-          req(input$slrResponse %in% colnames(reg_data()))
-          raw_x <- suppressWarnings(as.numeric(as.data.frame(reg_data())[, input$slrExplanatory]))
-          raw_y <- suppressWarnings(as.numeric(as.data.frame(reg_data())[, input$slrResponse]))
+        if(input$dataRegCor == 'Upload Data') {
+          req(input$slrExplanatory %in% colnames(slrUploadData()))
+          req(input$slrResponse %in% colnames(slrUploadData()))
+          raw_x <- suppressWarnings(as.numeric(as.data.frame(slrUploadData())[, input$slrExplanatory]))
+          raw_y <- suppressWarnings(as.numeric(as.data.frame(slrUploadData())[, input$slrResponse]))
           complete_idx <- !is.na(raw_x) & !is.na(raw_y)
           datx <- raw_x[complete_idx]
           daty <- raw_y[complete_idx]
@@ -1023,11 +1220,10 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload) {
           }
           nDroppedRows(sum(!complete_idx))
         } else {
-          datx <- reg_data()$x
-          daty <- reg_data()$y
-          nDroppedRows(0)
+          datx <- createNumLst(input$x)
+          daty <- createNumLst(input$y)
         }
-
+        
         validate(
           need(length(datx) >= 2, "Must have at least 2 observations for x."),
           need(length(daty) >= 2, "Must have at least 2 observations for y."),
@@ -1035,10 +1231,17 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload) {
           need(!anyNA(daty), "Data must be numeric."),
           need(length(datx) == length(daty), "x and y must have the same number of observations."),
           errorClass = "myclass")
+        
+        if(!slrraw_iv$is_valid()) {
+          validate(
+            need(sampleInfoRaw()$xSD != 0, "Explanatory variable (x) must have a standard deviation greater than zero to perform regression and correlation analysis."),
+            need(sampleInfoRaw()$ySD != 0, "Response variable (y) must have a standard deviation greater than zero to perform correlation analysis."),
+            errorClass = "myClass")
+        }
       }) #output$slrValidation
       
       if(regcor_iv$is_valid()) {
-        if (input_mode() == "upload") {
+        if (input$dataRegCor == 'Upload Data') {
           hide("uploadedDataPanel")
           showTab(inputId = "slrNavbarPage", target = "Uploaded Data")
         } else {
@@ -1046,18 +1249,17 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload) {
           hideTab(inputId = "slrNavbarPage", target = "Uploaded Data")
         }
 
-        if (input_mode() == "upload") {
-          req(!is.null(reg_data()))
-          req(input$slrExplanatory %in% colnames(reg_data()))
-          req(input$slrResponse %in% colnames(reg_data()))
-          raw_x <- suppressWarnings(as.numeric(as.data.frame(reg_data())[, input$slrExplanatory]))
-          raw_y <- suppressWarnings(as.numeric(as.data.frame(reg_data())[, input$slrResponse]))
+        if(input$dataRegCor == 'Upload Data') {
+          req(input$slrExplanatory %in% colnames(slrUploadData()))
+          req(input$slrResponse %in% colnames(slrUploadData()))
+          raw_x <- suppressWarnings(as.numeric(as.data.frame(slrUploadData())[, input$slrExplanatory]))
+          raw_y <- suppressWarnings(as.numeric(as.data.frame(slrUploadData())[, input$slrResponse]))
           complete_idx <- !is.na(raw_x) & !is.na(raw_y)
           datx <- raw_x[complete_idx]
           daty <- raw_y[complete_idx]
         } else {
-          datx <- reg_data()$x
-          daty <- reg_data()$y
+          datx <- createNumLst(input$x)
+          daty <- createNumLst(input$y)
         }
 
         model <- lm(daty ~ datx)
@@ -1215,7 +1417,6 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload) {
 
           reactable(
             numericRows,
-            compact    = TRUE,
             sortable   = TRUE,
             resizable  = TRUE,
             bordered   = TRUE,
@@ -2191,7 +2392,6 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload) {
 
             reactable(
               spearman_df[, c("x", "y", "rank_x", "rank_y", "rx_ry")],
-              compact    = TRUE,
               sortable   = FALSE,
               resizable  = TRUE,
               bordered   = TRUE,
@@ -2258,7 +2458,6 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload) {
 
             reactable(
               spearman_df[, c("x", "y", "rank_x", "rank_y", "d", "d_sq")],
-              compact    = TRUE,
               sortable   = FALSE,
               resizable  = TRUE,
               bordered   = TRUE,
@@ -2376,20 +2575,6 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload) {
 
           colNames <- c("df", "Sum of Squares (SS)", "Mean Sum of Squares (MS)", "F-ratio", "P-Value")
 
-          .aw <- function(hdr, vals, digits = NULL, big_mark = "", px = 9L, pad = 28L, min_w = 60L) {
-            vs    <- vals[!is.na(vals)]
-            fmted <- if (!is.null(digits) && length(vs) > 0)
-              sapply(as.numeric(vs), function(v) formatC(v, format = "f", digits = digits, big.mark = big_mark))
-            else as.character(vs)
-            max(min_w, max(nchar(c(hdr, fmted))) * px + pad)
-          }
-          w0 <- .aw("Sources of Variation",    rownames(data))
-          w1 <- .aw("df",                       data$df,          digits = 0)
-          w2 <- .aw("Sum of Squares (SS)",       data$SS,          digits = 4, big_mark = ",")
-          w3 <- .aw("Mean Sum of Squares (MS)",  data$MS,          digits = 4, big_mark = ",")
-          w4 <- .aw("F-ratio",                   data$F,           digits = 4, big_mark = ",")
-          w5 <- .aw("P-Value",                   data[["P-Value"]])
-
           headers <- htmltools::withTags(table(
             class = 'display',
             thead(
@@ -2406,7 +2591,7 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload) {
 
           datatable(
             data,
-            class = 'cell-border stripe compact',
+            class = 'cell-border stripe',
             container = headers,
             options = list(
               dom = 't',
@@ -2418,12 +2603,7 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload) {
               scrollX = TRUE,
               columnDefs = list(
                 list(className = 'dt-center', targets = 0:5),
-                list(width = paste0(w0, 'px'), targets = 0),
-                list(width = paste0(w1, 'px'), targets = 1),
-                list(width = paste0(w2, 'px'), targets = 2),
-                list(width = paste0(w3, 'px'), targets = 3),
-                list(width = paste0(w4, 'px'), targets = 4),
-                list(width = paste0(w5, 'px'), targets = 5)
+                list(width = '150px', targets = 2:5)
               )
             ),
             selection = "none",
@@ -2497,9 +2677,9 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload) {
 
             tags$p(
               sprintf("Approximately %.2f%% of the variation in ", explained_pct),
-              if (input_mode() == "upload") tags$i(input$slrResponse) else withMathJax("\\(y\\)"),
+              if (input$dataRegCor == "Upload Data") tags$i(input$slrResponse) else withMathJax("\\(y\\)"),
               " can be explained by its linear relationship with ",
-              if (input_mode() == "upload") tags$i(input$slrExplanatory) else withMathJax("\\(x\\)"),
+              if (input$dataRegCor == "Upload Data") tags$i(input$slrExplanatory) else withMathJax("\\(x\\)"),
               "."
             ),
 
@@ -2781,9 +2961,11 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload) {
       }
     })
     
-    observeEvent(input_mode(), {
+    observeEvent(input$dataRegCor, {
       hide(id = "regCorrMP")
-      if (input_mode() == "upload" && !is.null(reg_data())) {
+      if (input$dataRegCor == "Upload Data" &&
+          !is.null(fileInputs$slrStatus) &&
+          fileInputs$slrStatus == "uploaded") {
         show("uploadedDataPanel")
       } else {
         hide("uploadedDataPanel")
@@ -2791,8 +2973,29 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload) {
       hideTab(inputId = "slrNavbarPage", target = "Uploaded Data")
       output$perfectFitWarning <- renderUI({ NULL })
       nDroppedRows(0)
+
+      if (is.null(fileInputs$slrStatus) || fileInputs$slrStatus != "uploaded"){
+        hide(id = "slrResponse")
+        hide(id = "slrExplanatory")
+      }
+      
       updateTextInput(inputId = "xlab", value = "x")
       updateTextInput(inputId = "ylab", value = "y")
+      ## FIXME: the file upload won't reset to its original state simply by
+      ## switching back and forth between data sources, which it should.
+      #shinyjs::reset("userUploadedData")
+      #fileInputs$slrStatus <- 'reset'
+    })
+    
+    observeEvent(input$dataRegCor, {
+      req(fileInputs$slrStatus)
+      if (fileInputs$slrStatus == "uploaded"){
+        show(id = "slrResponse")
+        show(id = "slrExplanatory")
+      } else {
+        hide(id = "slrResponse")
+        hide(id = "slrExplanatory")
+      }
     })
 
     observeEvent(list(input$x, input$y), {
@@ -2812,7 +3015,6 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload) {
     # })
      
     observeEvent(input$resetRegCor, {
-      reset_upload()
       hasHighLeverage(FALSE)
       nDroppedRows(0)
       slrModel(NULL)
@@ -2823,6 +3025,7 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload) {
       hide("uploadedDataPanel")
       hideTab(inputId = "slrNavbarPage", target = "Uploaded Data")
       shinyjs::reset("inputPanel")
+      fileInputs$slrStatus <- 'reset'
       showTab(inputId = "slrNavbarPage", target = "Inference")
       showTab(inputId = "slrNavbarPage", target = "Prediction")
       if (!is.null(input$slrNavbarPage)) {

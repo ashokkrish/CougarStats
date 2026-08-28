@@ -58,6 +58,35 @@ LogisticRegressionMainPanelUI <- function(id) {
   tagList(
     useShinyjs(),
     navbarPage(title = NULL,
+               tabPanel(
+                 title = "Data Import",
+                 value = "data_import_tab",
+                 div(id = ns("importContainer")),
+                 uiOutput(ns("fileImportUserMessage")),
+                 HTML(uploadDataDisclaimer),
+                 fileInput(
+                   inputId = ns("logrUserData"),
+                   label   = strong("Upload your data (.csv, .xls, .xlsx, .txt, .sas7bdat, .sav, .dta, .rds, .mtp, .mwx, .mpx)"),
+                   width   = "100%",
+                   accept  = c("text/csv",
+                               "text/comma-separated-values",
+                               "text/tab-separated-values",
+                               "text/plain",
+                               ".csv", ".txt", ".xls", ".xlsx",
+                               ".sas7bdat", ".sav", ".dta", ".rds",
+                               ".mtp", ".mwx", ".mpx")),
+                 conditionalPanel(
+                   ns        = ns,
+                   condition = "output.logrShowSheetPicker == true",
+                   selectizeInput(
+                     inputId = ns("logrSheet"),
+                     label   = strong("Choose a Sheet"),
+                     choices = c(""),
+                     width   = "100%",
+                     multiple = FALSE,
+                     options  = list(placeholder  = "Select a sheet",
+                                     onInitialize = I('function() { this.setValue(""); }')))
+                 )),
                tabPanel(title = "Model",
                         uiOutput(ns("Equations"))
                ),
@@ -80,16 +109,51 @@ LogisticRegressionMainPanelUI <- function(id) {
 }
 
 # --- Server logic for Logistic Regression ---
-LogisticRegressionServer <- function(id, reg_data, reset_upload) {
+LogisticRegressionServer <- function(id) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
-
+    
     # Call the plot options module server
     plotOptionsMenuServer("logrPlotOptions")
+    
+    output$logrShowSheetPicker <- reactive({
+      if (is.null(input$logrUserData)) return(FALSE)
+      tolower(tools::file_ext(input$logrUserData$name)) %in% c("xls", "xlsx")
+    })
+    outputOptions(output, "logrShowSheetPicker", suspendWhenHidden = FALSE)
+
+    observeEvent(input$logrUserData, {
+      req(input$logrUserData)
+      ext <- tolower(tools::file_ext(input$logrUserData$name))
+      if (ext %in% c("xls", "xlsx")) {
+        sheets <- tryCatch(readxl::excel_sheets(input$logrUserData$datapath),
+                           error = function(e) character(0))
+        freezeReactiveValue(input, "logrSheet")
+        updateSelectizeInput(session, "logrSheet",
+                             choices  = sheets,
+                             selected = if (length(sheets)) sheets[1] else "")
+      } else {
+        updateSelectizeInput(session, "logrSheet", choices = character(0), selected = "")
+      }
+    }, priority = 50)
+
+    logrUploadData <- eventReactive(list(input$logrUserData, input$logrSheet), {
+      req(input$logrUserData)
+      ext  <- tolower(tools::file_ext(input$logrUserData$name))
+      path <- input$logrUserData$datapath
+      if (ext %in% c("xls", "xlsx")) {
+        req(input$logrSheet)
+        req(input$logrSheet %in% readxl::excel_sheets(path))
+      }
+      dat <- readUploadedDataFile(ext, path, input$logrSheet)
+      dat <- dat[, colSums(!is.na(dat)) > 0, drop = FALSE]
+      dat <- dat[rowSums(!is.na(dat)) > 0, , drop = FALSE]
+      dat
+    })
 
     imported <- list(
-      data = function() reg_data(),
-      name = function() if (!is.null(reg_data())) "uploaded file" else NULL
+      data = function() tryCatch(logrUploadData(), error = function(e) NULL),
+      name = function() if (!is.null(input$logrUserData)) input$logrUserData$name else NULL
     )
     
     noFileCalculate <- reactiveVal(FALSE)
@@ -267,7 +331,7 @@ LogisticRegressionServer <- function(id, reg_data, reset_upload) {
       hideTab(inputId = "mainPanel", target = "diagnostic_plot_tab")
       hideTab(inputId = "mainPanel", target = "Uploaded Data")
       
-      updateNavbarPage(session, "mainPanel", selected = "Model")
+      updateNavbarPage(session, "mainPanel", selected = "data_import_tab")
       
     }) |> bindEvent(imported$data(), ignoreNULL = FALSE, ignoreInit = TRUE)
     
@@ -530,7 +594,6 @@ LogisticRegressionServer <- function(id, reg_data, reset_upload) {
     }, ignoreNULL = TRUE, ignoreInit = TRUE)
     
     observeEvent(input$reset, {
-      reset_upload()
       hideTab(inputId = "mainPanel", target = "Model")
       hideTab(inputId = "mainPanel", target = "Analysis of Deviance")
       hideTab(inputId = "mainPanel", target = "diagnostic_plot_tab")
@@ -551,8 +614,14 @@ LogisticRegressionServer <- function(id, reg_data, reset_upload) {
       output$responseVariableWarning <- renderUI(NULL)
       noFileCalculate(FALSE)
       
-      updateNavbarPage(session, "mainPanel", selected = "Model")
+      updateNavbarPage(session, "mainPanel", selected = "data_import_tab")
     })
     
+    output$fileImportUserMessage <- renderUI({
+      if (noFileCalculate()) {
+        tags$div(class = "shiny-output-error-validation",
+                 "Required: Cannot calculate without a data file.")
+      } else { NULL }
+    })
   })
 }

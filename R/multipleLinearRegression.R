@@ -76,6 +76,35 @@ MLRMainPanelUI <- function(id) {
     ),
     navbarPage(title = NULL,
                tabPanel(
+                 title = "Data Import",
+                 value = "data_import_tab",
+                 div(id = ns("importContainer")),
+                 uiOutput(ns("fileImportUserMessage")),
+                 HTML(uploadDataDisclaimer),
+                 fileInput(
+                   inputId = ns("mlrUserData"),
+                   label   = strong("Upload your data (.csv, .xls, .xlsx, .txt, .sas7bdat, .sav, .dta, .rds, .mtp, .mwx, .mpx)"),
+                   width   = "100%",
+                   accept  = c("text/csv",
+                               "text/comma-separated-values",
+                               "text/tab-separated-values",
+                               "text/plain",
+                               ".csv", ".txt", ".xls", ".xlsx",
+                               ".sas7bdat", ".sav", ".dta", ".rds",
+                               ".mtp", ".mwx", ".mpx")),
+                 conditionalPanel(
+                   ns        = ns,
+                   condition = "output.mlrShowSheetPicker == true",
+                   selectizeInput(
+                     inputId = ns("mlrSheet"),
+                     label   = strong("Choose a Sheet"),
+                     choices = c(""),
+                     width   = "100%",
+                     multiple = FALSE,
+                     options  = list(placeholder      = "Select a sheet",
+                                     onInitialize = I('function() { this.setValue(""); }')))
+                 )),
+               tabPanel(
                  title = "Variable Encoding",
                  value = "encoding_tab",
                  uiOutput(ns("encodingUI"))
@@ -88,32 +117,51 @@ MLRMainPanelUI <- function(id) {
   )
 }
 
-MLRServer <- function(id, reg_data, reset_upload) {
+MLRServer <- function(id) {
   moduleServer(id, function(input, output, session) {
+    output$mlrShowSheetPicker <- reactive({
+      if (is.null(input$mlrUserData)) return(FALSE)
+      tolower(tools::file_ext(input$mlrUserData$name)) %in% c("xls", "xlsx")
+    })
+    outputOptions(output, "mlrShowSheetPicker", suspendWhenHidden = FALSE)
 
-    uploadedTibble <- list(
-      data = function() reg_data(),
-      name = function() if (!is.null(reg_data())) "uploaded file" else NULL
-    )
-
-    observeEvent(reg_data(), {
-      req(reg_data())
+    observeEvent(input$mlrUserData, {
+      req(input$mlrUserData)
+      ext <- tolower(tools::file_ext(input$mlrUserData$name))
+      if (ext %in% c("xls", "xlsx")) {
+        sheets <- tryCatch(readxl::excel_sheets(input$mlrUserData$datapath),
+                           error = function(e) character(0))
+        freezeReactiveValue(input, "mlrSheet")
+        updateSelectizeInput(session, "mlrSheet",
+                             choices  = sheets,
+                             selected = if (length(sheets)) sheets[1] else "")
+      } else {
+        updateSelectizeInput(session, "mlrSheet", choices = character(0), selected = "")
+      }
       showTab(inputId = "mainPanel", target = "encoding_tab")
       showTab(inputId = "mainPanel", target = "Uploaded Data")
+    }, priority = 50)
+
+    mlrUploadData <- eventReactive(list(input$mlrUserData, input$mlrSheet), {
+      req(input$mlrUserData)
+      ext  <- tolower(tools::file_ext(input$mlrUserData$name))
+      path <- input$mlrUserData$datapath
+      if (ext %in% c("xls", "xlsx")) {
+        req(input$mlrSheet)
+        req(input$mlrSheet %in% readxl::excel_sheets(path))
+      }
+      dat <- readUploadedDataFile(ext, path, input$mlrSheet)
+      dat <- dat[, colSums(!is.na(dat)) > 0, drop = FALSE]
+      dat <- dat[rowSums(!is.na(dat)) > 0, , drop = FALSE]
+      dat
     })
+
+    uploadedTibble <- list(
+      data = function() tryCatch(mlrUploadData(), error = function(e) NULL),
+      name = function() if (!is.null(input$mlrUserData)) input$mlrUserData$name else NULL
+    )
     
     encodedData <- reactiveVal(NULL)
-
-    # Guard reactive: silently stops any output whose selected columns no
-    # longer exist in encodedData (e.g. when the parent switches to raw mode).
-    mlrCanFit <- reactive({
-      req(encodedData())
-      req(isTruthy(input$responseVariable))
-      req(isTruthy(input$explanatoryVariables))
-      req(length(input$explanatoryVariables) >= 2)
-      req(all(c(input$responseVariable, input$explanatoryVariables) %in% colnames(encodedData())))
-      TRUE
-    })
 
     # ============================================================
     # LINE Assumption Tests Config
@@ -260,7 +308,6 @@ MLRServer <- function(id, reg_data, reset_upload) {
     ns <- session$ns
     
     observeEvent(input$reset, {
-      reset_upload()
       hideTab(inputId = "mainPanel", target = "encoding_tab")
       hideTab(inputId = "mainPanel", target = "Model")
       hideTab(inputId = "mainPanel", target = "Inference")
@@ -276,7 +323,7 @@ MLRServer <- function(id, reg_data, reset_upload) {
       shinyjs::removeClass(id = "responseVariableWrapper", class = "has-error")
       shinyjs::removeClass(id = "explanatoryVariablesWrapper", class = "has-error")
       
-      updateNavbarPage(session, "mainPanel", selected = "encoding_tab")
+      updateNavbarPage(session, "mainPanel", selected = "data_import_tab")
     })
     
     ## Update the choices for the select inputs when the uploadedTibble changes.
@@ -320,7 +367,10 @@ MLRServer <- function(id, reg_data, reset_upload) {
    # try to fix multi col
      # Clean predictors for multicollinearity diagnostics
     mlrPredictors <- reactive({
-      req(mlrCanFit())
+      
+      req(encodedData())
+      req(isTruthy(input$explanatoryVariables))
+      req(input$responseVariable)
       
       df <- encodedData()[, input$explanatoryVariables, drop = FALSE]
       
@@ -465,6 +515,16 @@ MLRServer <- function(id, reg_data, reset_upload) {
         return(FALSE)
       }
     }
+    
+    output$fileImportUserMessage <- renderUI({ # This version responds to the button
+      if (noFileCalculate()) {
+        tags$div(class = "shiny-output-error-validation",
+                 "Required: Cannot calculate without a data file.")
+      } else {
+        NULL
+      }
+    })
+    
     
     output$encodingUI <- renderUI({
       req(uploadedTibble$data())
@@ -671,7 +731,10 @@ MLRServer <- function(id, reg_data, reset_upload) {
     
     output$linearModelCoefConfint <- renderTable(
       {
-        req(mlrCanFit())
+        req(encodedData())
+        req(isTruthy(input$responseVariable))
+        req(isTruthy(input$explanatoryVariables))
+        req(length(as.character(input$explanatoryVariables)) >= 2)
         
       
         
@@ -713,7 +776,10 @@ MLRServer <- function(id, reg_data, reset_upload) {
     )
 
     output$lmCoefConfintTableCaption <- renderUI({
-      req(mlrCanFit())
+      req(encodedData())
+      req(isTruthy(input$responseVariable))
+      req(isTruthy(input$explanatoryVariables))
+      req(length(as.character(input$explanatoryVariables)) >= 2)
       
       with(encodedData(), {
         model <- lm(reformulate(
@@ -743,7 +809,10 @@ MLRServer <- function(id, reg_data, reset_upload) {
     
     
     output$mlrLineAssumptions <- renderUI({
-      req(mlrCanFit())
+      req(encodedData())
+      req(isTruthy(input$responseVariable))
+      req(isTruthy(input$explanatoryVariables))
+      req(length(as.character(input$explanatoryVariables)) >= 2)
 
       model <- lm(reformulate(
         sprintf("`%s`", input$explanatoryVariables),
@@ -823,7 +892,10 @@ MLRServer <- function(id, reg_data, reset_upload) {
     })
     
     output$anovaFDistributionPlot <- renderPlot({
-      req(mlrCanFit())
+      req(encodedData())
+      req(isTruthy(input$responseVariable))
+      req(isTruthy(input$explanatoryVariables))
+      req(length(as.character(input$explanatoryVariables)) >= 2)
       
       model <- lm(reformulate(
         sprintf("`%s`", input$explanatoryVariables),
@@ -853,7 +925,10 @@ MLRServer <- function(id, reg_data, reset_upload) {
     
     
     output$linearModelEquations <- renderUI({
-      req(mlrCanFit())
+      req(encodedData())
+      req(isTruthy(input$responseVariable))
+      req(isTruthy(input$explanatoryVariables))
+      req(length(as.character(input$explanatoryVariables)) >= 2)
       
       withMathJax(
         div(
@@ -970,7 +1045,10 @@ MLRServer <- function(id, reg_data, reset_upload) {
     
     # Reactive ANOVA tab outputs
     output$anovaHypotheses <- renderUI({
-      req(mlrCanFit())
+      req(encodedData())
+      req(isTruthy(input$responseVariable))
+      req(isTruthy(input$explanatoryVariables))
+      req(length(as.character(input$explanatoryVariables)) >= 2)
       
       with(encodedData(), {
         model <- lm(reformulate(
@@ -1002,7 +1080,10 @@ MLRServer <- function(id, reg_data, reset_upload) {
     })
     
     output$anovaTable <- renderDT({
-      req(mlrCanFit())
+      req(encodedData())
+      req(isTruthy(input$responseVariable))
+      req(isTruthy(input$explanatoryVariables))
+      req(length(as.character(input$explanatoryVariables)) >= 2)
 
       with(encodedData(), {
         model <- lm(reformulate(
@@ -1036,20 +1117,6 @@ MLRServer <- function(id, reg_data, reset_upload) {
 
         colNames <- c("df", "Sum of Squares (SS)", "Mean Sum of Squares (MS)", "F-ratio", "P-Value")
 
-        .aw <- function(hdr, vals, digits = NULL, big_mark = "", px = 9L, pad = 28L, min_w = 60L) {
-          vs    <- vals[!is.na(vals)]
-          fmted <- if (!is.null(digits) && length(vs) > 0)
-            sapply(as.numeric(vs), function(v) formatC(v, format = "f", digits = digits, big.mark = big_mark))
-          else as.character(vs)
-          max(min_w, max(nchar(c(hdr, fmted))) * px + pad)
-        }
-        w0 <- .aw("Sources of Variation",    rownames(data))
-        w1 <- .aw("df",                       data$df,          digits = 0)
-        w2 <- .aw("Sum of Squares (SS)",       data$SS,          digits = 4, big_mark = ",")
-        w3 <- .aw("Mean Sum of Squares (MS)",  data$MS,          digits = 4, big_mark = ",")
-        w4 <- .aw("F-ratio",                   data$F,           digits = 4, big_mark = ",")
-        w5 <- .aw("P-Value",                   data[["P-Value"]])
-
         headers <- htmltools::withTags(table(
           class = 'display',
           thead(
@@ -1066,7 +1133,7 @@ MLRServer <- function(id, reg_data, reset_upload) {
 
         datatable(
           data,
-          class = 'cell-border stripe compact',
+          class = 'cell-border stripe',
           container = headers,
           options = list(
             dom = 't',
@@ -1078,12 +1145,7 @@ MLRServer <- function(id, reg_data, reset_upload) {
             scrollX = TRUE,
             columnDefs = list(
               list(className = 'dt-center', targets = 0:5),
-              list(width = paste0(w0, 'px'), targets = 0),
-              list(width = paste0(w1, 'px'), targets = 1),
-              list(width = paste0(w2, 'px'), targets = 2),
-              list(width = paste0(w3, 'px'), targets = 3),
-              list(width = paste0(w4, 'px'), targets = 4),
-              list(width = paste0(w5, 'px'), targets = 5)
+              list(width = '150px', targets = 2:5)
             )
           ),
           selection = "none",
@@ -1102,7 +1164,10 @@ MLRServer <- function(id, reg_data, reset_upload) {
     })
     
     output$anovaPValueMethod <- renderUI({
-      req(mlrCanFit())
+      req(encodedData())
+      req(isTruthy(input$responseVariable))
+      req(isTruthy(input$explanatoryVariables))
+      req(length(as.character(input$explanatoryVariables)) >= 2)
       
       with(encodedData(), {
         model <- lm(reformulate(
@@ -1147,7 +1212,10 @@ MLRServer <- function(id, reg_data, reset_upload) {
     })
     
     output$rsquareAdjustedRSquareInterpretation <- renderUI({
-      req(mlrCanFit())
+      req(encodedData())
+      req(isTruthy(input$responseVariable))
+      req(isTruthy(input$explanatoryVariables))
+      req(length(as.character(input$explanatoryVariables)) >= 2)
       
       with(encodedData(), {
         model <- lm(reformulate(
@@ -1248,7 +1316,9 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
     align = "c")
     
     output$vifs <- renderTable({
-
+      
+      req(input$responseVariable)
+      
       clean_df <- cbind(
         encodedData()[input$responseVariable],
         mlrPredictors()
@@ -1280,7 +1350,10 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
     
     # Reactive Diagnostic Plots tab outputs
     output$mlrResidualsPanelPlot1 <- renderPlot({
-      req(mlrCanFit())
+      req(encodedData())
+      req(isTruthy(input$responseVariable))
+      req(isTruthy(input$explanatoryVariables))
+      req(length(as.character(input$explanatoryVariables)) >= 2)
       
       with(encodedData(), {
         model <- lm(reformulate(
@@ -1292,7 +1365,10 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
     })
     
     output$mlrResidualsPanelPlot2 <- renderPlot({
-      req(mlrCanFit())
+      req(encodedData())
+      req(isTruthy(input$responseVariable))
+      req(isTruthy(input$explanatoryVariables))
+      req(length(as.character(input$explanatoryVariables)) >= 2)
       
       with(encodedData(), {
         model <- lm(reformulate(
@@ -1304,7 +1380,10 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
     })
     
     output$mlrResidualsPanelPlot3 <- renderPlot({
-      req(mlrCanFit())
+      req(encodedData())
+      req(isTruthy(input$responseVariable))
+      req(isTruthy(input$explanatoryVariables))
+      req(length(as.character(input$explanatoryVariables)) >= 2)
       
       with(encodedData(), {
         model <- lm(reformulate(
@@ -1316,7 +1395,10 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
     })
     
     output$mlrResidualsPanelPlot4 <- renderPlot({
-      req(mlrCanFit())
+      req(encodedData())
+      req(isTruthy(input$responseVariable))
+      req(isTruthy(input$explanatoryVariables))
+      req(length(as.character(input$explanatoryVariables)) >= 2)
 
       with(encodedData(), {
         model <- lm(reformulate(
@@ -1328,7 +1410,10 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
     })
 
     output$mlrResidualsPanelPlot5 <- renderPlot({
-      req(mlrCanFit())
+      req(encodedData())
+      req(isTruthy(input$responseVariable))
+      req(isTruthy(input$explanatoryVariables))
+      req(length(as.character(input$explanatoryVariables)) >= 2)
 
       with(encodedData(), {
         model <- lm(reformulate(
