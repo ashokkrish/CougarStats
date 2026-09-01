@@ -39,7 +39,7 @@ statInfrUI <- function(id) {
             choiceNames  = list("Inference about one sample\\(\\)",
                                 "Inference about two samples\\(\\)",
                                 "Inference about more than two samples (e.g. ANOVA or Kruskal-Wallis)\\(\\)",
-                                "Inference for Categorical Data (e.g \\( \\chi^2 \\) test)"),
+                                "Inference for Categorical Data (e.g. \\( \\chi^2 \\) test)"),
             selected     = "1"),
           
           # radioButtons(inputId = ns("popuDistribution"),
@@ -85,7 +85,7 @@ statInfrUI <- function(id) {
               
               radioButtons(
                 inputId      = ns("dataAvailability"),
-                label        = strong("Data Availability"),
+                label        = strong("Data"),
                 choiceValues = list("Summarized Data",
                                     "Enter Raw Data",
                                     "Upload Data"),
@@ -282,7 +282,7 @@ statInfrUI <- function(id) {
 
               radioButtons(
                 inputId      = ns("sdDataAvailability"),
-                label        = strong("Data Availability"),
+                label        = strong("Data"),
                 choiceValues = list("Summarized Data", "Enter Raw Data", "Upload Data"),
                 choiceNames  = list("Summarized Data", "Enter Raw Data", "Upload Data"),
                 selected     = "Summarized Data",
@@ -500,7 +500,7 @@ statInfrUI <- function(id) {
               
               radioButtons(
                 inputId      = ns("dataAvailability2"),
-                label        = strong("Data Availability"),
+                label        = strong("Data"),
                 choiceValues = list("Summarized Data",
                                     "Enter Raw Data",
                                     "Upload Data"),
@@ -768,7 +768,7 @@ statInfrUI <- function(id) {
               
               radioButtons(
                 inputId      = ns("wilcoxonRankSumTestData"),
-                label        = strong("Data Availability"),
+                label        = strong("Data"),
                 choiceValues = list("Enter Raw Data",
                                     "Upload Data"),
                 choiceNames  = list("Enter Raw Data",
@@ -851,7 +851,7 @@ statInfrUI <- function(id) {
               
               radioButtons(
                 inputId      = ns("dataTypeDependent"),
-                label        = strong("Data Availability"),
+                label        = strong("Data"),
                 choiceValues = list("Enter Raw Data",
                                     "Upload Data"),
                 choiceNames  = list("Enter Raw Data",
@@ -934,7 +934,7 @@ statInfrUI <- function(id) {
               
               radioButtons(
                 inputId      = ns("signedRankTest"),
-                label        = strong("Data Availability"),
+                label        = strong("Data"),
                 choiceValues = list("Enter Raw Data",
                                     "Upload Data"),
                 choiceNames  = list("Enter Raw Data",
@@ -1051,7 +1051,7 @@ statInfrUI <- function(id) {
               
               radioButtons(
                 inputId      = ns("dataAvailability3"),
-                label        = strong("Data Availability"),
+                label        = strong("Data"),
                 choiceValues = list("Summary",
                                     "Variance",
                                     "Enter Raw Data"),
@@ -1275,15 +1275,22 @@ statInfrUI <- function(id) {
               
               p(strong("Graph Options")),
               
-              checkboxInput(
-                inputId = ns("indMeansBoxplot"),
-                label   = "Side-by-side Boxplot for Sample Data",
-                value   = TRUE),
-              
-              checkboxInput(
-                inputId = ns("indMeansQQPlot"),
-                label   = "Q-Q Plots for Sample 1 and Sample 2",
-                value   = TRUE)
+              shinyWidgets::pickerInput(
+                inputId  = ns("indMeansPlots"),
+                label    = NULL,
+                choices  = c(
+                  "Side-by-side Boxplot for Sample Data" = "indMeansBoxplot",
+                  "Q-Q Plots for Sample 1 and Sample 2" = "indMeansQQPlot"
+                ),
+                selected = c("indMeansBoxplot", "indMeansQQPlot"),
+                multiple = TRUE,
+                options = list(
+                  `actions-box`      = TRUE,
+                  selectedTextFormat = "values",
+                  multipleSeparator  = ", ",
+                  title              = "Select graph(s) to display"
+                )
+              )
             ), # Ind Means !Summarized
             
             conditionalPanel(
@@ -1920,7 +1927,7 @@ statInfrUI <- function(id) {
                                       
                                       conditionalPanel(
                                         ns = ns,
-                                        condition = "input.dataAvailability2 != 'Summarized Data' && input.indMeansBoxplot == 1",
+                                        condition = "input.dataAvailability2 != 'Summarized Data' && input.indMeansPlots.indexOf('indMeansBoxplot') !== -1",
                                         br(),
                                         titlePanel(tags$u("Boxplot")),
                                         br(),
@@ -1935,7 +1942,7 @@ statInfrUI <- function(id) {
                                       
                                       conditionalPanel(
                                         ns = ns,
-                                        condition = "input.dataAvailability2 != 'Summarized Data' && input.indMeansQQPlot == 1",
+                                        condition = "input.dataAvailability2 != 'Summarized Data' && input.indMeansPlots.indexOf('indMeansQQPlot') !== -1",
                                         
                                         br(),
                                         hr(),
@@ -8697,8 +8704,6 @@ statInfrServer <- function(id) {
     
     output$indMeansQQPlot <- renderPlot({
       # ind means qq plot
-      req(input$indMeansQQPlot)
-      
       if (input$dataAvailability2 == "Enter Raw Data") {
         dat1 <- createNumLst(input$raw_sample1)
         dat2 <- createNumLst(input$raw_sample2)
@@ -10953,24 +10958,26 @@ statInfrServer <- function(id) {
         Group = c("Group 1", "Group 1", "Group 2", "Group 2"),
         Outcome = c("Successes", "Failures", "Successes", "Failures"),
         Count = c(input$numSuccesses1, input$numTrials1 - input$numSuccesses1,
-                  input$numSuccesses2, input$numTrials2 - input$numSuccesses2)
-      )
-      
+                  input$numSuccesses2, input$numTrials2 - input$numSuccesses2))
       ggplot(df, aes(x = Group, y = Count, fill = Outcome)) +
         geom_col(position = "fill", width = 0.5) +
-        scale_y_continuous(labels = scales::percent_format()) +
+        scale_y_continuous(labels = scales::percent_format(), expand = c(0, 0)) +
         labs(
           title = "Stacked Bar Chart: Proportion of Successes vs Failures",
           y = "Proportion", x = ""
         ) +
-        scale_fill_manual(values = c("Successes" = "#4CAF50", "Failures" = "#F44336")) +
+        scale_fill_manual(
+          values = c("Successes" = "#4CAF50", "Failures" = "#F44336")
+        ) +
         theme_classic() +
         theme(
           axis.text.x = element_text(size = 14, face = "bold", color = "black"),
           axis.text.y = element_text(size = 14, face = "bold", color = "black"),
           axis.title = element_text(size = 16, face = "bold"),
-          plot.title = element_text(size = 18, face = "bold"),
+          plot.title = element_text(size = 18, face = "bold", margin = margin(b = 15)),
+          axis.line = element_line(linewidth = 1, color = "black"),
           legend.position = "bottom",
+          legend.direction = "vertical",
           legend.title = element_text(size = 14),
           legend.text = element_text(size = 12)
         )
@@ -11853,12 +11860,12 @@ statInfrServer <- function(id) {
       div(DTOutput(session$ns("indPopMeansUploadTable")), style = "width: 75%")
     })
 
-    observeEvent(c(input$indMeansBoxplot, input$indMeansQQPlot), {
-      if (input$indMeansBoxplot || input$indMeansQQPlot) {
+    observeEvent(input$indMeansPlots, ignoreNULL = FALSE, {
+      if (length(input$indMeansPlots) > 0 && input$dataAvailability2 != "Summarized Data") {
         showTab(inputId = "indPopMeansTabset", target = "Graphs")
       } else {
         if (input$indPopMeansTabset == "Graphs") {
-          updateTabsetPanel(inputId = 'indPopMeansTabset', selected = "Analysis")
+          updateTabsetPanel(inputId = "indPopMeansTabset", selected = "Analysis")
         }
         hideTab(inputId = "indPopMeansTabset", target = "Graphs")
       }
@@ -12700,7 +12707,7 @@ statInfrServer <- function(id) {
         updateTabsetPanel(session, "indPopMeansTabset", selected = "Analysis")
       }
 
-      if(two_sample_valid && input$dataAvailability2 != "Summarized Data" && (input$indMeansBoxplot || input$indMeansQQPlot)) {
+      if(length(input$indMeansPlots) > 0 && input$dataAvailability2 != "Summarized Data") {
         showTab(inputId = "indPopMeansTabset", target = "Graphs")
       } else {
         hideTab(inputId = "indPopMeansTabset", target = "Graphs")
@@ -12838,6 +12845,12 @@ statInfrServer <- function(id) {
       updateNumericInput(session, "indMeansMuNaught", value = 0)
       updateNumericInput(session, "depMeansMuNaught", value = 0)
       updateNumericInput(session, "propDiffNaught", value = 0)
+      
+      updatePickerInput(
+        session,
+        "indMeansPlots",
+        selected = c("indMeansBoxplot", "indMeansQQPlot")
+      )
 
       ## -- Raw-data text areas --
       updateTextAreaInput(session, "sample1",

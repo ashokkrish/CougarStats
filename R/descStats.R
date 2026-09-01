@@ -28,7 +28,7 @@ descStatsUI <- function(id) {
                 label       = strong("Sample"), 
                 value       = "46.5, 47.1, 47.8, 48.4, 48.6, 48.8, 49.2, 49.3, 49.6, 49.8, 49.8, 50.0, 50.1, 50.2, 50.3, 50.4, 50.6, 50.8, 51.0, 51.1, 51.3, 51.5, 51.7, 51.9, 52.2, 52.5, 52.6, 53.1, 53.7", 
                 placeholder = "Enter values separated by a comma, space, or tab with decimals as points",
-                rows        = 3),
+                rows        = 4),
             ),
             
             conditionalPanel(
