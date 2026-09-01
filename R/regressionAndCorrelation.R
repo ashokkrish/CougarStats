@@ -20,14 +20,25 @@ regressionAndCorrelationUI <- function(id) {
         condition = "input.dataInputMode == 'upload'",
         ns = ns,
         HTML(uploadDataDisclaimer),
-        fileInput(
-          ns("regUserData"),
-          label  = strong("Upload your data (.csv, .xls, .xlsx, .txt, .sas7bdat, .sav, .dta, .rds, .mtp, .mwx, .mpx)"),
-          accept = c("text/csv", "text/comma-separated-values",
-                     "text/tab-separated-values", "text/plain",
-                     ".csv", ".txt", ".xls", ".xlsx",
-                     ".sas7bdat", ".sav", ".dta", ".rds",
-                     ".mtp", ".mwx", ".mpx")
+        div(
+          id = ns("regFileInputWrapper"),
+          fileInput(
+            ns("regUserData"),
+            label  = strong("Upload your data (.csv, .xls, .xlsx, .txt, .sas7bdat, .sav, .dta, .rds, .mtp, .mwx, .mpx)"),
+            accept = c("text/csv", "text/comma-separated-values",
+                       "text/tab-separated-values", "text/plain",
+                       ".csv", ".txt", ".xls", ".xlsx",
+                       ".sas7bdat", ".sav", ".dta", ".rds",
+                       ".mtp", ".mwx", ".mpx")
+          ),
+          uiOutput(ns("regUploadRequired"))
+        ),
+        actionButton(
+          ns("regClearData"),
+          label = "Clear Data",
+          icon  = icon("trash"),
+          class = "btn-danger btn-sm",
+          style = "margin-bottom: 8px;"
         ),
         conditionalPanel(
           condition = "output.regShowSheetPicker == true",
@@ -81,6 +92,13 @@ regressionAndCorrelationUI <- function(id) {
       uiOutput(ns("regressionSidebarUI"))
     ),
     mainPanel(
+      hidden(div(
+        id = ns("sharedDataPreview"),
+        tags$h4("Uploaded Data",
+                style = "color: #18536F; font-weight: bold; margin-bottom: 10px; margin-top: 10px;"),
+        div(style = "overflow-x: auto;", DTOutput(ns("sharedDataTable"))),
+        br()
+      )),
       uiOutput(ns("regressionMainPanelUI"))
     )
   )
@@ -134,6 +152,27 @@ regressionAndCorrelationServer <- function(id) {
     ))
     regraw_iv$condition(~ isTRUE(input$dataInputMode == "raw"))
     regraw_iv$enable()
+
+    regupload_iv <- InputValidator$new()
+    regupload_iv$add_rule("regUserData", sv_required())
+    regupload_iv$add_rule("regUserData", ~ if (
+      !is.null(input$regUserData) &&
+      !(tolower(tools::file_ext(input$regUserData$name)) %in% UPLOAD_ACCEPTED_EXTENSIONS)
+    ) "File format not accepted.")
+    regupload_iv$add_rule("regUserData", ~ tryCatch(
+      if (!is.null(input$regUserData) && isTRUE(nrow(reg_upload_data()) == 0)) "File is empty.",
+      error = function(e) NULL
+    ))
+    regupload_iv$add_rule("regUserData", ~ tryCatch(
+      if (!is.null(input$regUserData) && isTRUE(ncol(reg_upload_data()) < 2)) "Data must include at least two columns.",
+      error = function(e) NULL
+    ))
+    regupload_iv$add_rule("regUserData", ~ tryCatch(
+      if (!is.null(input$regUserData) && isTRUE(nrow(reg_upload_data()) < 4)) "Samples must include at least four numeric observations.",
+      error = function(e) NULL
+    ))
+    regupload_iv$condition(~ isTRUE(input$dataInputMode == "upload"))
+    regupload_iv$enable()
 
     # ---- Sheet picker -------------------------------------------------------
     output$regShowSheetPicker <- reactive({
@@ -206,7 +245,43 @@ regressionAndCorrelationServer <- function(id) {
     # Resets the parent file input — passed to children so their Reset button can clear it
     reset_upload <- function() shinyjs::reset("regUserData")
 
+    # ---- Upload error state (red border + Required text on the file input) ----
+    upload_error <- reactiveVal(FALSE)
+
+    output$regUploadRequired <- renderUI({
+      if (!upload_error()) return(NULL)
+      tagList(
+        tags$style(HTML(sprintf(
+          "#%s .input-group { outline: 2px solid #dc3545 !important; border-radius: 4px; }",
+          session$ns("regFileInputWrapper")
+        ))),
+        tags$p(
+          style = "color: #dc3545; font-size: 12px; margin-top: -8px; margin-bottom: 4px;",
+          "Required"
+        )
+      )
+    })
+
+    # Clear the upload error whenever a file loads successfully
+    observe({
+      dat <- tryCatch(reg_upload_data(), error = function(e) NULL)
+      if (!is.null(dat)) upload_error(FALSE)
+    })
+
+    clear_trigger <- reactiveVal(0)
+
+    observeEvent(input$regClearData, {
+      shinyjs::reset("regUserData")
+      updateSelectizeInput(session, "regSheet", choices = character(0), selected = "")
+      upload_error(FALSE)
+      clear_trigger(clear_trigger() + 1)
+    })
+
     # ---- Update methodology choices based on data input mode ----------------
+    observeEvent(input$dataInputMode, { upload_error(FALSE) })
+
+    observeEvent(input$multiple, { upload_error(FALSE) }, ignoreNULL = FALSE, ignoreInit = TRUE)
+
     observeEvent(input$dataInputMode, {
       current <- isolate(input$multiple)
       if (input$dataInputMode == "raw") {
@@ -227,6 +302,8 @@ regressionAndCorrelationServer <- function(id) {
                            selected = current)
       }
     })
+
+    hide_shared <- reactiveVal(FALSE)
 
     # ---- Dynamic module routing (counter pattern preserved) -----------------
     slr_instance_counter  <- reactiveVal(0)
@@ -261,23 +338,50 @@ regressionAndCorrelationServer <- function(id) {
 
     observeEvent(current_slr_module_id(), {
       req(input$multiple == "SLR")
-      SLRServer(current_slr_module_id(), reg_data, input_mode, reset_upload)
+      SLRServer(current_slr_module_id(), reg_data, input_mode, reset_upload, upload_error, clear_trigger, hide_shared = hide_shared)
     }, ignoreNULL = TRUE)
 
     observeEvent(current_mlr_module_id(), {
       req(input$multiple == "MLR")
-      MLRServer(current_mlr_module_id(), reg_data, reset_upload)
+      MLRServer(current_mlr_module_id(), reg_data, reset_upload, upload_error, clear_trigger, hide_shared = hide_shared)
     }, ignoreNULL = TRUE)
 
     observeEvent(current_logr_module_id(), {
       req(input$multiple == "LOGR")
-      LogisticRegressionServer(current_logr_module_id(), reg_data, reset_upload)
+      LogisticRegressionServer(current_logr_module_id(), reg_data, reset_upload, upload_error, clear_trigger, hide_shared = hide_shared)
     }, ignoreNULL = TRUE)
 
     observeEvent(current_polyr_module_id(), {
       req(input$multiple == "POLYR")
-      PolynomialRegressionServer(current_polyr_module_id(), reg_data, input_mode, reset_upload)
+      PolynomialRegressionServer(current_polyr_module_id(), reg_data, input_mode, reset_upload, upload_error, clear_trigger, hide_shared = hide_shared)
     }, ignoreNULL = TRUE)
+
+    # ---- Shared data preview (shown immediately on upload, above child UI) ----
+    output$sharedDataTable <- renderDT({
+      req(input$dataInputMode == "upload", !is.null(reg_data()))
+      datatable(
+        reg_data(),
+        options = list(
+          pageLength   = 25,
+          lengthMenu   = list(c(25, 50, 100, -1), c("25", "50", "100", "All")),
+          scrollX      = TRUE
+        )
+      )
+    })
+    outputOptions(output, "sharedDataTable", suspendWhenHidden = FALSE)
+
+    observeEvent(list(reg_data(), input$dataInputMode, input$multiple), {
+      hide_shared(FALSE)
+    }, ignoreNULL = FALSE, priority = 10)
+
+    observe({
+      dat_present <- !is.null(reg_data()) && isTRUE(input$dataInputMode == "upload")
+      if (dat_present && !isTRUE(hide_shared())) {
+        shinyjs::show("sharedDataPreview")
+      } else {
+        shinyjs::hide("sharedDataPreview")
+      }
+    })
 
   })
 }

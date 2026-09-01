@@ -71,7 +71,15 @@ SLRMainPanelUI <- function(id) {
           title = NULL,
           id = ns("slrNavbarPage"),
           theme = bs_theme(version = 4),
-          
+
+          tabPanel(
+            title = "Data",
+            value = "data_tab",
+            br(),
+            div(style = "overflow-x: auto;", DTOutput(ns("slrViewUploadTab"))),
+            br()
+          ),
+
           #### ---------------- SLR Tab ------------------------------------------------
           tabPanel(
             title = "Model",
@@ -363,19 +371,7 @@ SLRMainPanelUI <- function(id) {
               ) ## Nested tabsetPanel
             )
             
-          ), ## Correlation Analysis tabPanel
-
-          #### ---------------- Uploaded Data Tab ------------------------------------------
-          tabPanel(
-            title = "Uploaded Data",
-            value = "Uploaded Data",
-            div(
-              DTOutput(ns("slrViewUploadTab")),
-              style = "width: 75%"
-            ),
-            br(),
-            br()
-          ) #slrViewUploadTab tabpanel
+          ) ## Correlation Analysis tabPanel
 
         ) #slrNavbarPage navbarPage
       ) # SLRData div
@@ -585,7 +581,7 @@ lineTestConfig <- list(
   )
 )
 
-SLRServer <- function(id, reg_data, input_mode, reset_upload) {
+SLRServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NULL, clear_trigger = NULL, hide_shared = NULL) {
   moduleServer(id, function(input, output, session) {
 
 
@@ -830,6 +826,10 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload) {
       }
     })
 
+    observeEvent(TRUE, {
+      shinyjs::delay(0, { hideTab(inputId = "slrNavbarPage", target = "data_tab") })
+    }, once = TRUE)
+
     # Populate variable pickers and show/hide them based on reg_data and mode
     observeEvent(list(reg_data(), input_mode()), {
       dat <- reg_data()
@@ -846,8 +846,9 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload) {
       } else {
         updateSelectInput(session, "slrExplanatory", choices = colnames(dat))
         updateSelectInput(session, "slrResponse",    choices = colnames(dat))
-        shinyjs::show("slrVarPickersPanel")
-        show("uploadedDataPanel")
+        shinyjs::delay(0, {
+          shinyjs::show("slrVarPickersPanel")
+        })
       }
     })
     
@@ -862,6 +863,10 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload) {
     })
 
     observeEvent(input$goRegression, {
+      if (!is.null(upload_error)) {
+        if (input_mode() == "upload" && is.null(reg_data())) upload_error(TRUE)
+        else upload_error(FALSE)
+      }
       calcTrigger(list(n = calcTrigger()$n + 1L, dest = "Model"))
     })
 
@@ -877,7 +882,12 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload) {
 
       output$slrValidation <- renderUI({
         if (is.null(reg_data())) {
-          validate("Please provide data using the sidebar.")
+          return(div(
+            class = "alert alert-warning",
+            style = "margin-top: 15px;",
+            icon("triangle-exclamation"),
+            strong(" Please upload data before calculating.")
+          ))
         }
         
         # LINE STUFF ==========  
@@ -1038,12 +1048,10 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload) {
       }) #output$slrValidation
       
       if(regcor_iv$is_valid()) {
+        hide("uploadedDataPanel")
         if (input_mode() == "upload") {
-          hide("uploadedDataPanel")
-          showTab(inputId = "slrNavbarPage", target = "Uploaded Data")
-        } else {
-          hide("uploadedDataPanel")
-          hideTab(inputId = "slrNavbarPage", target = "Uploaded Data")
+          showTab(inputId = "slrNavbarPage", target = "data_tab")
+          if (!is.null(hide_shared)) hide_shared(TRUE)
         }
 
         if (input_mode() == "upload") {
@@ -2783,12 +2791,6 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload) {
     
     observeEvent(input_mode(), {
       hide(id = "regCorrMP")
-      if (input_mode() == "upload" && !is.null(reg_data())) {
-        show("uploadedDataPanel")
-      } else {
-        hide("uploadedDataPanel")
-      }
-      hideTab(inputId = "slrNavbarPage", target = "Uploaded Data")
       output$perfectFitWarning <- renderUI({ NULL })
       nDroppedRows(0)
       updateTextInput(inputId = "xlab", value = "x")
@@ -2821,7 +2823,7 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload) {
       output$perfectFitWarning <- renderUI({ NULL })
       hide(id = "regCorrMP")
       hide("uploadedDataPanel")
-      hideTab(inputId = "slrNavbarPage", target = "Uploaded Data")
+      hideTab(inputId = "slrNavbarPage", target = "data_tab")
       shinyjs::reset("inputPanel")
       showTab(inputId = "slrNavbarPage", target = "Inference")
       showTab(inputId = "slrNavbarPage", target = "Prediction")
@@ -2829,5 +2831,24 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload) {
         updateNavbarPage(session, "slrNavbarPage", selected = "Model")
       }
     })
+
+    if (!is.null(clear_trigger)) {
+      observeEvent(clear_trigger(), {
+        hasHighLeverage(FALSE)
+        nDroppedRows(0)
+        slrModel(NULL)
+        slrDatX(NULL)
+        slrDatY(NULL)
+        output$perfectFitWarning <- renderUI({ NULL })
+        hide(id = "regCorrMP")
+        hide("uploadedDataPanel")
+        shinyjs::reset("inputPanel")
+        showTab(inputId = "slrNavbarPage", target = "Inference")
+        showTab(inputId = "slrNavbarPage", target = "Prediction")
+        if (!is.null(input$slrNavbarPage)) {
+          updateNavbarPage(session, "slrNavbarPage", selected = "Model")
+        }
+      }, ignoreInit = TRUE)
+    }
   })
 }

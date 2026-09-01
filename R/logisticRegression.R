@@ -57,7 +57,15 @@ LogisticRegressionMainPanelUI <- function(id) {
   ns <- NS(id)
   tagList(
     useShinyjs(),
+    uiOutput(ns("noFileWarning")),
     navbarPage(title = NULL,
+               tabPanel(
+                 title = "Data",
+                 value = "data_tab",
+                 br(),
+                 div(style = "overflow-x: auto;", DTOutput(ns("uploadedDataTable"))),
+                 br()
+               ),
                tabPanel(title = "Model",
                         uiOutput(ns("Equations"))
                ),
@@ -70,9 +78,6 @@ LogisticRegressionMainPanelUI <- function(id) {
                         plotOptionsMenuUI(ns("logrPlotOptions"), "Scatterplot", xlab = "x", ylab = "y"),
                         plotOutput(ns("logrScatterplot"))
                ),
-               tabPanel(title = "Uploaded Data",
-                        div(style = "width:100%", DTOutput(ns("uploadedDataTable")))
-               ),
                id = ns("mainPanel"),
                theme = bs_theme(version = 4)
     )
@@ -80,7 +85,7 @@ LogisticRegressionMainPanelUI <- function(id) {
 }
 
 # --- Server logic for Logistic Regression ---
-LogisticRegressionServer <- function(id, reg_data, reset_upload) {
+LogisticRegressionServer <- function(id, reg_data, reset_upload, upload_error = NULL, clear_trigger = NULL, hide_shared = NULL) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
@@ -187,9 +192,11 @@ LogisticRegressionServer <- function(id, reg_data, reset_upload) {
     observe({ # input$calculate
       if (!isTruthy(imported$data())) {
         noFileCalculate(TRUE)
+        if (!is.null(upload_error)) upload_error(TRUE)
         return()
       } else {
         noFileCalculate(FALSE)
+        if (!is.null(upload_error)) upload_error(FALSE)
       }
       
       # Validate response variable
@@ -247,10 +254,21 @@ LogisticRegressionServer <- function(id, reg_data, reset_upload) {
     }) |> bindEvent(input$responseVariable, input$explanatoryVariables, ignoreInit = TRUE)
     
     
+    output$noFileWarning <- renderUI({
+      if (!noFileCalculate()) return(NULL)
+      div(
+        class = "alert alert-warning",
+        style = "margin-top: 15px;",
+        icon("triangle-exclamation"),
+        strong(" Please upload data before calculating.")
+      )
+    })
+
     # Clear errors and reset calculation state when data is uploaded
     observe({
       if(isTruthy(imported$data())){
         noFileCalculate(FALSE)
+        if (!is.null(upload_error)) upload_error(FALSE)
       }
       # Reset calculation_done when new file is uploaded to prevent stale reactive triggers
       calculation_done(FALSE)
@@ -259,16 +277,14 @@ LogisticRegressionServer <- function(id, reg_data, reset_upload) {
       # Clear all rendered outputs
       output$Equations       <- renderUI({})
       output$anovaOutput     <- renderUI({})
-      output$uploadedDataTable <- renderDT({ NULL })
-      
+
       # Hide result tabs
       hideTab(inputId = "mainPanel", target = "Model")
       hideTab(inputId = "mainPanel", target = "Analysis of Deviance")
       hideTab(inputId = "mainPanel", target = "diagnostic_plot_tab")
-      hideTab(inputId = "mainPanel", target = "Uploaded Data")
-      
+
       updateNavbarPage(session, "mainPanel", selected = "Model")
-      
+
     }) |> bindEvent(imported$data(), ignoreNULL = FALSE, ignoreInit = TRUE)
     
     # Scatterplot with logistic curve - rendered separately to ensure it only shows with valid model
@@ -460,42 +476,47 @@ LogisticRegressionServer <- function(id, reg_data, reset_upload) {
       output$uploadedDataTable <- renderDT({
         req(imported$data())
         datatable(imported$data(),
-                  options = list(pageLength = -1,
-                                 lengthMenu = list(c(25, 50, 100, -1), c("25", "50", "100", "All"))))
+                  options = list(pageLength = 25,
+                                 lengthMenu = list(c(25, 50, 100, -1), c("25", "50", "100", "All")),
+                                 scrollX = TRUE))
       })
-      
+
+      showTab(inputId = "mainPanel", target = "data_tab")
+      if (!is.null(hide_shared)) hide_shared(TRUE)
+
       showTab(inputId = "mainPanel", target = "Model")
       showTab(inputId = "mainPanel", target = "Analysis of Deviance")
-      showTab(inputId = "mainPanel", target = "Uploaded Data")
-      
+
       if (length(explanatory_vars_names) == 1) {
         showTab(inputId = "mainPanel", target = "diagnostic_plot_tab")
       } else {
         hideTab(inputId = "mainPanel", target = "diagnostic_plot_tab")
       }
-      
+
       updateNavbarPage(session, "mainPanel", selected = "Model")
     }
     
     observeEvent(TRUE, {
       shinyjs::delay(0, {
+        hideTab(inputId = "mainPanel", target = "data_tab")
         hideTab(inputId = "mainPanel", target = "Model")
         hideTab(inputId = "mainPanel", target = "Analysis of Deviance")
         hideTab(inputId = "mainPanel", target = "diagnostic_plot_tab")
-        hideTab(inputId = "mainPanel", target = "Uploaded Data")
       })
     }, once = TRUE)
     
     observeEvent(imported$data(), {
       df <- imported$data()
-      if (!is.null(df) && ncol(df) > 0) {
-        vars <- names(df)
-        updatePickerInput(session, "responseVariable", choices = vars, selected = character(0))
-        updatePickerInput(session, "explanatoryVariables", choices = vars, selected = character(0))
-      } else {
-        updatePickerInput(session, "responseVariable", choices = c(""), selected = character(0))
-        updatePickerInput(session, "explanatoryVariables", choices = c(""), selected = character(0))
-      }
+      shinyjs::delay(0, {
+        if (!is.null(df) && ncol(df) > 0) {
+          vars <- names(df)
+          updatePickerInput(session, "responseVariable", choices = vars, selected = character(0))
+          updatePickerInput(session, "explanatoryVariables", choices = vars, selected = character(0))
+        } else {
+          updatePickerInput(session, "responseVariable", choices = c(""), selected = character(0))
+          updatePickerInput(session, "explanatoryVariables", choices = c(""), selected = character(0))
+        }
+      })
       output$responseVariableWarning <- renderUI(NULL)
     }, ignoreNULL = FALSE)
     
@@ -529,30 +550,32 @@ LogisticRegressionServer <- function(id, reg_data, reset_upload) {
       }
     }, ignoreNULL = TRUE, ignoreInit = TRUE)
     
-    observeEvent(input$reset, {
-      reset_upload()
+    logr_do_reset <- function() {
+      hideTab(inputId = "mainPanel", target = "data_tab")
       hideTab(inputId = "mainPanel", target = "Model")
       hideTab(inputId = "mainPanel", target = "Analysis of Deviance")
       hideTab(inputId = "mainPanel", target = "diagnostic_plot_tab")
-      hideTab(inputId = "mainPanel", target = "Uploaded Data")
-      
       calculation_done(FALSE)
-      valid_analysis_results(NULL)  # Clear analysis results on reset
-      
+      valid_analysis_results(NULL)
       updatePickerInput(session, "responseVariable", selected = character(0))
       updatePickerInput(session, "explanatoryVariables", selected = character(0))
-      
-      # Clear validation errors
       responseVarError(FALSE)
       explanatoryVarsError(FALSE)
       shinyjs::removeClass(id = "responseVariableWrapper", class = "has-error")
       shinyjs::removeClass(id = "explanatoryVariablesWrapper", class = "has-error")
-      
       output$responseVariableWarning <- renderUI(NULL)
       noFileCalculate(FALSE)
-      
       updateNavbarPage(session, "mainPanel", selected = "Model")
+    }
+
+    observeEvent(input$reset, {
+      reset_upload()
+      logr_do_reset()
     })
+
+    if (!is.null(clear_trigger)) {
+      observeEvent(clear_trigger(), { logr_do_reset() }, ignoreInit = TRUE)
+    }
     
   })
 }

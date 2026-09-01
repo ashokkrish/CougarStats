@@ -109,6 +109,14 @@ PolynomialRegressionMainPanelUI <- function(id) {
         id    = ns("polyNavbarPage"),
         theme = bs_theme(version = 4),
 
+        tabPanel(
+          title = "Data",
+          value = "data_tab",
+          br(),
+          div(style = "overflow-x: auto;", DTOutput(ns("polyViewUploadTab"))),
+          br()
+        ),
+
         # ---- Model Tab ----------------------------------------------------
         tabPanel(
           title = "Model",
@@ -186,18 +194,6 @@ PolynomialRegressionMainPanelUI <- function(id) {
           uiOutput(ns("polyInference"))
         ),
 
-        # ---- Uploaded Data Tab --------------------------------------------
-        tabPanel(
-          title = "Uploaded Data",
-          value = "Uploaded Data",
-          div(
-            DTOutput(ns("polyViewUploadTab")),
-            style = "width: 75%"
-          ),
-          br(),
-          br()
-        )
-
       ) # navbarPage
 
       ) # polyNavbarContent
@@ -221,10 +217,16 @@ PolynomialRegressionMainPanelUI <- function(id) {
 # ---- Server --------------------------------------------------------------- #
 # =========================================================================== #
 
-PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload) {
+PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NULL, clear_trigger = NULL, hide_shared = NULL) {
   moduleServer(id, function(input, output, session) {
 
     ns <- session$ns
+
+    observeEvent(TRUE, {
+      shinyjs::delay(0, {
+        hideTab(inputId = "polyNavbarPage", target = "data_tab")
+      })
+    }, once = TRUE)
 
     # ---- Reactive values --------------------------------------------------
     nDroppedRows <- reactiveVal(0)
@@ -288,14 +290,12 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload) {
       output$polyPerfectFitWarning <- renderUI({ NULL })
       output$polyValidation        <- renderUI({ NULL })
       hide("polyResultsPanel")
-      hideTab(inputId = "polyNavbarPage", target = "Uploaded Data")
       hideTab(inputId = "polyNavbarPage", target = "Inference")
       storedDatx(NULL)
       storedDaty(NULL)
       nDroppedRows(0)
       if (input_mode() == "upload" && !is.null(reg_data())) {
         show("polyVarPickersPanel")
-        show("polyUploadedDataPanel")
       } else {
         hide("polyVarPickersPanel")
         hide("polyUploadedDataPanel")
@@ -326,8 +326,9 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload) {
       cols <- colnames(dat)
       updateSelectizeInput(session, "polyResponse",    choices = cols)
       updateSelectizeInput(session, "polyExplanatory", choices = cols)
-      show("polyVarPickersPanel")
-      show("polyUploadedDataPanel")
+      shinyjs::delay(0, {
+        show("polyVarPickersPanel")
+      })
     })
 
     # ---- Uploaded data preview -------------------------------------------
@@ -467,6 +468,22 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload) {
 
     # ---- Calculate button -------------------------------------------------
     observeEvent(input$goPolynomial, {
+      if (input_mode() == "upload" && is.null(reg_data())) {
+        if (!is.null(upload_error)) upload_error(TRUE)
+        show("polyResultsPanel")
+        hide("polyNavbarContent")
+        output$polyValidation <- renderUI({
+          div(
+            class = "alert alert-warning",
+            style = "margin-top: 15px;",
+            icon("triangle-exclamation"),
+            strong(" Please upload data before calculating.")
+          )
+        })
+        return()
+      }
+      if (!is.null(upload_error)) upload_error(FALSE)
+
       show("polyResultsPanel")
       toggle("polyNavbarContent", condition = poly_iv$is_valid())
 
@@ -485,11 +502,9 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload) {
       hide("polyUploadedDataPanel")
 
       showTab(inputId = "polyNavbarPage", target = "Inference")
-
       if (input_mode() == "upload") {
-        showTab(inputId = "polyNavbarPage", target = "Uploaded Data")
-      } else {
-        hideTab(inputId = "polyNavbarPage", target = "Uploaded Data")
+        showTab(inputId = "polyNavbarPage", target = "data_tab")
+        if (!is.null(hide_shared)) hide_shared(TRUE)
       }
 
       updateNavbarPage(session, "polyNavbarPage", selected = "Model")
@@ -1198,15 +1213,12 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload) {
     })
 
     # ---- Reset button -----------------------------------------------------
-    observeEvent(input$resetPolynomial, {
-      reset_upload()
+    polyr_do_reset <- function() {
       updateNumericInput(session, "polyDegree",        value = 2)
       updateNumericInput(session, "polyScatterDegree", value = 2)
-
       hide("polyVarPickersPanel")
       updateSelectizeInput(session, "polyResponse",    choices = c(""), selected = "")
       updateSelectizeInput(session, "polyExplanatory", choices = c(""), selected = "")
-
       storedDatx(NULL)
       storedDaty(NULL)
       nDroppedRows(0)
@@ -1214,10 +1226,19 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload) {
       output$polyValidation        <- renderUI({ NULL })
       hide("polyResultsPanel")
       hide("polyUploadedDataPanel")
-      hideTab(inputId = "polyNavbarPage", target = "Uploaded Data")
+      hideTab(inputId = "polyNavbarPage", target = "data_tab")
       hideTab(inputId = "polyNavbarPage", target = "Inference")
       hasPolyLeveragePlotIssue(FALSE)
+    }
+
+    observeEvent(input$resetPolynomial, {
+      reset_upload()
+      polyr_do_reset()
     })
+
+    if (!is.null(clear_trigger)) {
+      observeEvent(clear_trigger(), { polyr_do_reset() }, ignoreInit = TRUE)
+    }
 
   })
 }

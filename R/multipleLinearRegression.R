@@ -74,21 +74,23 @@ MLRMainPanelUI <- function(id) {
         }
       "))
     ),
+    uiOutput(ns("noFileWarning")),
     navbarPage(title = NULL,
                tabPanel(
-                 title = "Variable Encoding",
-                 value = "encoding_tab",
-                 uiOutput(ns("encodingUI"))
+                 title = "Data",
+                 value = "data_tab",
+                 br(),
+                 div(style = "overflow-x: auto;", DTOutput(ns("uploadedDataTable"))),
+                 br()
                ),
                tabPanel(title = "Model", uiOutput(ns("Equations")) ),
                tabPanel(title = "Inference", uiOutput(ns("ANOVAAndInference"))),
-               tabPanel(title = "Uploaded Data", div(style = "width:100%", DTOutput(ns("uploadedDataTable")))),
                id = ns("mainPanel"),
                theme = bs_theme(version = 4))
   )
 }
 
-MLRServer <- function(id, reg_data, reset_upload) {
+MLRServer <- function(id, reg_data, reset_upload, upload_error = NULL, clear_trigger = NULL, hide_shared = NULL) {
   moduleServer(id, function(input, output, session) {
 
     uploadedTibble <- list(
@@ -96,12 +98,6 @@ MLRServer <- function(id, reg_data, reset_upload) {
       name = function() if (!is.null(reg_data())) "uploaded file" else NULL
     )
 
-    observeEvent(reg_data(), {
-      req(reg_data())
-      showTab(inputId = "mainPanel", target = "encoding_tab")
-      showTab(inputId = "mainPanel", target = "Uploaded Data")
-    })
-    
     encodedData <- reactiveVal(NULL)
 
     # Guard reactive: silently stops any output whose selected columns no
@@ -228,12 +224,10 @@ MLRServer <- function(id, reg_data, reset_upload) {
     
     observeEvent(TRUE, {
       shinyjs::delay(0, {
-        hideTab(inputId = "mainPanel", target = "encoding_tab")
+        hideTab(inputId = "mainPanel", target = "data_tab")
         hideTab(inputId = "mainPanel", target = "Model")
         hideTab(inputId = "mainPanel", target = "Inference")
         hideTab(inputId = "mainPanel", target = "ANOVA & Parameter Estimates")
-
-        hideTab(inputId = "mainPanel", target = "Uploaded Data")
       })
     }, once = TRUE)
     
@@ -259,34 +253,38 @@ MLRServer <- function(id, reg_data, reset_upload) {
     })
     ns <- session$ns
     
-    observeEvent(input$reset, {
-      reset_upload()
-      hideTab(inputId = "mainPanel", target = "encoding_tab")
+    mlr_do_reset <- function() {
+      hideTab(inputId = "mainPanel", target = "data_tab")
       hideTab(inputId = "mainPanel", target = "Model")
       hideTab(inputId = "mainPanel", target = "Inference")
       hideTab(inputId = "mainPanel", target = "ANOVA & Parameter Estimates")
-      hideTab(inputId = "mainPanel", target = "Uploaded Data")
-      
       updatePickerInput(session, "responseVariable", selected = character(0))
       updatePickerInput(session, "explanatoryVariables", selected = character(0))
-      
-      # Clear validation errors # change this 2026-05-11
       responseVarError(FALSE)
       explanatoryVarsError(FALSE)
       shinyjs::removeClass(id = "responseVariableWrapper", class = "has-error")
       shinyjs::removeClass(id = "explanatoryVariablesWrapper", class = "has-error")
-      
-      updateNavbarPage(session, "mainPanel", selected = "encoding_tab")
+      noFileCalculate(FALSE)
+    }
+
+    observeEvent(input$reset, {
+      reset_upload()
+      mlr_do_reset()
     })
+
+    if (!is.null(clear_trigger)) {
+      observeEvent(clear_trigger(), { mlr_do_reset() }, ignoreInit = TRUE)
+    }
     
     ## Update the choices for the select inputs when the uploadedTibble changes.
     observe({
-      updatePickerInput(inputId = "responseVariable",
-                        choices = colnames(select_if(encodedData(), is.numeric)),
-                        selected = character(0))
-      
-      updatePickerInput(inputId = "explanatoryVariables",
-                        choices = colnames(select_if(encodedData(), is.numeric)))
+      shinyjs::delay(0, {
+        updatePickerInput(inputId = "responseVariable",
+                          choices = colnames(select_if(encodedData(), is.numeric)),
+                          selected = character(0))
+        updatePickerInput(inputId = "explanatoryVariables",
+                          choices = colnames(select_if(encodedData(), is.numeric)))
+      })
     }) |> bindEvent(encodedData())
     
     observeEvent(input$responseVariable, {
@@ -553,8 +551,6 @@ MLRServer <- function(id, reg_data, reset_upload) {
       updatePickerInput(session, "responseVariable", choices = newCols, selected = character(0))
       updatePickerInput(session, "explanatoryVariables", choices = newCols, selected = character(0))
       
-      updateNavbarPage(session, "mainPanel", selected = "encoding_tab")
-      
       showNotification("Encoding applied successfully.", type = "message")
     })
     
@@ -598,9 +594,11 @@ MLRServer <- function(id, reg_data, reset_upload) {
     observe({ # input$calculate
       if (!isTruthy(encodedData())) {
         noFileCalculate(TRUE)
+        if (!is.null(upload_error)) upload_error(TRUE)
         return()
       } else {
         noFileCalculate(FALSE)
+        if (!is.null(upload_error)) upload_error(FALSE)
       }
       
       # Validate response variable
@@ -628,19 +626,30 @@ MLRServer <- function(id, reg_data, reset_upload) {
         return()
       }
       
+      showTab(inputId = "mainPanel", target = "data_tab")
       showTab(inputId = "mainPanel", target = "Model")
       showTab(inputId = "mainPanel", target = "Inference")
       showTab(inputId = "mainPanel", target = "ANOVA & Parameter Estimates")
-
-      showTab(inputId = "mainPanel", target = "Uploaded Data")
+      if (!is.null(hide_shared)) hide_shared(TRUE)
       updateNavbarPage(session, "mainPanel", selected = "Model")
     }) |> bindEvent(input$calculate)
     
     observe({
       if(isTruthy(encodedData())){
         noFileCalculate(FALSE)
+        if (!is.null(upload_error)) upload_error(FALSE)
       }
     }) |> bindEvent(encodedData(), ignoreNULL = FALSE, ignoreInit = TRUE)
+
+    output$noFileWarning <- renderUI({
+      if (!noFileCalculate()) return(NULL)
+      div(
+        class = "alert alert-warning",
+        style = "margin-top: 15px;",
+        icon("triangle-exclamation"),
+        strong(" Please upload data before calculating.")
+      )
+    })
     
     output$Equations <- renderUI({
       eval(MLRValidation)
@@ -1345,8 +1354,8 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
     
     # Reactive Uploaded Data tab output
     output$uploadedDataTable <- renderDT({
-      req(encodedData())
-      datatable(encodedData(),
+      req(reg_data())
+      datatable(reg_data(),
                 options = list(pageLength = -1,
                                lengthMenu = list(c(25, 50, 100, -1), c("25", "50", "100", "All"))))
     })
