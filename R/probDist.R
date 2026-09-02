@@ -1988,6 +1988,16 @@ probDistServer <- function(id) {
       }
     })
     
+    boldTotalRow <- function() {
+      JS(
+        "function(row, data) {",
+        "  if (data[0] === 'Total') {",
+        "    $('td', row).css('font-weight', 'bold');",
+        "  }",
+        "}"
+      )
+    }
+    
     getNormValue <- reactive({
       req(pd_iv$is_valid())
       
@@ -2785,13 +2795,7 @@ probDistServer <- function(id) {
                       ordering = FALSE,
                       searching = FALSE,
                       paging = FALSE,
-                      rowCallback = JS(
-                        "function(row, data) {",
-                        "  if (data[0] === 'Total') {",
-                        "    $('td', row).css('font-weight', 'bold');",
-                        "  }",
-                        "}"
-                      )
+                      rowCallback = boldTotalRow()
                     ),
                     rownames = FALSE,
                     filter = "none"
@@ -3081,6 +3085,10 @@ probDistServer <- function(id) {
         req(pd_iv$is_valid())
         
         dfPoiss <- data.frame(value = seq(qpois(0.0001, input$lambdaPoisson), qpois(0.9999, input$lambdaPoisson)), value = round(dpois(x = qpois(0.0001, input$lambdaPoisson):qpois(0.9999, input$lambdaPoisson), lambda = input$lambdaPoisson), 4))
+        dfPoiss <- rbind(
+          dfPoiss,
+          data.frame(value = "Total", value.1 = 1.0000)
+        )
         colnames(dfPoiss) <- c("X", "P(X = x)")
         datatable(dfPoiss,
                   options = list(
@@ -3088,7 +3096,8 @@ probDistServer <- function(id) {
                     pageLength = -1,
                     ordering = FALSE,
                     searching = FALSE,
-                    paging = FALSE
+                    paging = FALSE,
+                    rowCallback = boldTotalRow()
                   ),
                   rownames = FALSE,
                   filter = "none"
@@ -3413,13 +3422,7 @@ probDistServer <- function(id) {
                       ordering = FALSE,
                       searching = FALSE,
                       paging = FALSE,
-                      rowCallback = JS(
-                        "function(row, data) {",
-                        "  if (data[0] === 'Total') {",
-                        "    $('td', row).css('font-weight', 'bold');",
-                        "  }",
-                        "}"
-                      )
+                      rowCallback = boldTotalRow()
                     ),
                     rownames = FALSE,
                     filter = "none"
@@ -4064,121 +4067,6 @@ probDistServer <- function(id) {
         )
       })
       
-      
-      output$rcodeNormal <- renderUI({
-       # print("rcodeNormal ran")
-        req(pd_iv$is_valid())
-        if (input$calcQuantiles == "Probability") {
-          if (input$sampMeanDistr == 0) {
-            if (input$calcNormal == "cumulative") {
-              HTML(paste0(
-                "pnorm(",
-                codeValue(input$xValue),
-                ", mean = ",
-                codeValue(input$popMean),
-                ", sd = ",
-                codeValue(input$popSD),
-                ")"
-              ))
-            } else if (input$calcNormal == "upperTail") {
-              HTML(paste0(
-                "pnorm(",
-                codeValue(input$xValue),
-                ", mean = ",
-                codeValue(input$popMean),
-                ", sd = ",
-                codeValue(input$popSD),
-                ", lower.tail = FALSE)"
-              ))
-            } else if (input$calcNormal == "between") {
-              
-              HTML(paste0(
-                "pnorm(",
-                codeValue(input$x2Value),
-                ", mean = ",
-                codeValue(input$popMean),
-                ", sd = ",
-                codeValue(input$popSD),
-                ") - pnorm(",
-                codeValue(input$x1Value),
-                ", mean = ",
-                codeValue(input$popMean),
-                ", sd = ",
-                codeValue(input$popSD),
-                ")"
-              ))
-            }
-          } else {
-            sd_samp <- paste0(codeValue(input$popSD), " / sqrt(", codeValue(input$sampDistrSize), ")")
-            
-            if (input$calcNormSampDistr == "cumulative") {
-              HTML(paste0(
-                "pnorm(",
-                codeValue(input$sampDistrxValue),
-                ", mean = ",
-                codeValue(input$popMean),
-                ", sd = ",
-                sd_samp,
-                ")"
-              ))
-            } else if (input$calcNormSampDistr == "upperTail") {
-              HTML(paste0(
-                "pnorm(",
-                codeValue(input$sampDistrxValue),
-                ", mean = ",
-                codeValue(input$popMean),
-                ", sd = ",
-                sd_samp,
-                ", lower.tail = FALSE)"
-              ))
-            } else if (input$calcNormSampDistr == "between") {
-              HTML(paste0(
-                "pnorm(",
-                codeValue(input$sampDistrx2Value),
-                ", mean = ",
-                codeValue(input$popMean),
-                ", sd = ",
-                sd_samp,
-                ") - pnorm(",
-                codeValue(input$sampDistrx1Value),
-                ", mean = ",
-                codeValue(input$popMean),
-                ", sd = ",
-                sd_samp,
-                ")"
-              ))
-            }
-          }
-        } else if (input$calcQuantiles == "Critical Value") {
-          if (input$calcQuartiles == "Percentile") {
-            HTML(paste0(
-              "qnorm(",
-              codeValue(input$percentileValue / 100),
-              ", mean = ",
-              codeValue(input$popMean),
-              ", sd = ",
-              codeValue(input$popSD),
-              ")"
-            ))
-          } else {
-            HTML(paste0(
-              "qnorm(", codeValue(0.25),
-              ", mean = ", codeValue(input$popMean),
-              ", sd = ", codeValue(input$popSD), ")\n\n",
-              
-              "qnorm(", codeValue(0.50),
-              ", mean = ", codeValue(input$popMean),
-              ", sd = ", codeValue(input$popSD), ")\n\n",
-              
-              "qnorm(", codeValue(0.75),
-              ", mean = ", codeValue(input$popMean),
-              ", sd = ", codeValue(input$popSD), ")"
-            ))
-          }
-        }
-      })
-      
-      
       output$quartile1Plot <- renderPlot({
         req(pd_iv$is_valid())
         
@@ -4804,6 +4692,119 @@ probDistServer <- function(id) {
           ))
         }
       })
+    })
+    
+    output$rcodeNormal <- renderUI({
+      req(input$probability == "Normal")
+      req(pd_iv$is_valid())
+      if (input$calcQuantiles == "Probability") {
+        if (input$sampMeanDistr == 0) {
+          if (input$calcNormal == "cumulative") {
+            HTML(paste0(
+              "pnorm(",
+              codeValue(input$xValue),
+              ", mean = ",
+              codeValue(input$popMean),
+              ", sd = ",
+              codeValue(input$popSD),
+              ")"
+            ))
+          } else if (input$calcNormal == "upperTail") {
+            HTML(paste0(
+              "pnorm(",
+              codeValue(input$xValue),
+              ", mean = ",
+              codeValue(input$popMean),
+              ", sd = ",
+              codeValue(input$popSD),
+              ", lower.tail = FALSE)"
+            ))
+          } else if (input$calcNormal == "between") {
+            
+            HTML(paste0(
+              "pnorm(",
+              codeValue(input$x2Value),
+              ", mean = ",
+              codeValue(input$popMean),
+              ", sd = ",
+              codeValue(input$popSD),
+              ") - pnorm(",
+              codeValue(input$x1Value),
+              ", mean = ",
+              codeValue(input$popMean),
+              ", sd = ",
+              codeValue(input$popSD),
+              ")"
+            ))
+          }
+        } else {
+          sd_samp <- paste0(codeValue(input$popSD), " / sqrt(", codeValue(input$sampDistrSize), ")")
+          
+          if (input$calcNormSampDistr == "cumulative") {
+            HTML(paste0(
+              "pnorm(",
+              codeValue(input$sampDistrxValue),
+              ", mean = ",
+              codeValue(input$popMean),
+              ", sd = ",
+              sd_samp,
+              ")"
+            ))
+          } else if (input$calcNormSampDistr == "upperTail") {
+            HTML(paste0(
+              "pnorm(",
+              codeValue(input$sampDistrxValue),
+              ", mean = ",
+              codeValue(input$popMean),
+              ", sd = ",
+              sd_samp,
+              ", lower.tail = FALSE)"
+            ))
+          } else if (input$calcNormSampDistr == "between") {
+            HTML(paste0(
+              "pnorm(",
+              codeValue(input$sampDistrx2Value),
+              ", mean = ",
+              codeValue(input$popMean),
+              ", sd = ",
+              sd_samp,
+              ") - pnorm(",
+              codeValue(input$sampDistrx1Value),
+              ", mean = ",
+              codeValue(input$popMean),
+              ", sd = ",
+              sd_samp,
+              ")"
+            ))
+          }
+        }
+      } else if (input$calcQuantiles == "Critical Value") {
+        if (input$calcQuartiles == "Percentile") {
+          HTML(paste0(
+            "qnorm(",
+            codeValue(input$percentileValue / 100),
+            ", mean = ",
+            codeValue(input$popMean),
+            ", sd = ",
+            codeValue(input$popSD),
+            ")"
+          ))
+        } else {
+          HTML(paste0(
+            "qnorm(", codeValue(0.25),
+            ", mean = ", codeValue(input$popMean),
+            ", sd = ", codeValue(input$popSD), ")\n\n",
+            
+            "qnorm(", codeValue(0.50),
+            ", mean = ", codeValue(input$popMean),
+            ", sd = ", codeValue(input$popSD), ")\n\n",
+            
+            "qnorm(", codeValue(0.75),
+            ", mean = ", codeValue(input$popMean),
+            ", sd = ", codeValue(input$popSD), ")"
+          ))
+        }
+      }
     })
     
     observeEvent({

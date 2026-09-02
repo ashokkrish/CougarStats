@@ -1279,7 +1279,7 @@ statInfrUI <- function(id) {
                 inputId  = ns("indMeansPlots"),
                 label    = NULL,
                 choices  = c(
-                  "Side-by-side Boxplot for Sample Data" = "indMeansBoxplot",
+                  "Side-by-side Boxplot" = "indMeansBoxplot",
                   "Q-Q Plots for Sample 1 and Sample 2" = "indMeansQQPlot"
                 ),
                 selected = c("indMeansBoxplot", "indMeansQQPlot"),
