@@ -1008,6 +1008,12 @@ probDistUI <- function(id) {
                              
                              uiOutput(ns("renderNormPercentile"))), 
                          ), 
+                         codeBox(
+                           boxId = "rcodeNormalBox",
+                           outputId = "rcodeNormal",
+                           ns = ns
+                         ),
+                         
                          br()
               ))
             ) ,
@@ -3727,12 +3733,6 @@ probDistServer <- function(id) {
                       norm_sigma^2)
             ), 
             br(),
-            codeBox(
-              boxId = "rcodeNormalBox",
-              outputId = "rcodeNormal",
-              ns = ns
-            ),
-            br(),
             hr(),
             br(),
             fluidRow(
@@ -3750,125 +3750,7 @@ probDistServer <- function(id) {
           )
         )
       })
-      
-      output$rcodeNormal <- renderUI({
-        req(pd_iv$is_valid())
-        if (input$calcQuantiles == "Probability") {
-          if (input$sampMeanDistr == 0) {
-            if (input$calcNormal == "cumulative") {
-              HTML(paste0(
-                "pnorm(",
-                codeValue(input$xValue),
-                ", mean = ",
-                codeValue(input$popMean),
-                ", sd = ",
-                codeValue(input$popSD),
-                ")"
-              ))
-            } else if (input$calcNormal == "upperTail") {
-              HTML(paste0(
-                "pnorm(",
-                codeValue(input$xValue),
-                ", mean = ",
-                codeValue(input$popMean),
-                ", sd = ",
-                codeValue(input$popSD),
-                ", lower.tail = FALSE)"
-              ))
-            } else if (input$calcNormal == "between") {
-              
-              HTML(paste0(
-                "pnorm(",
-                codeValue(input$x2Value),
-                ", mean = ",
-                codeValue(input$popMean),
-                ", sd = ",
-                codeValue(input$popSD),
-                ") - pnorm(",
-                codeValue(input$x1Value),
-                ", mean = ",
-                codeValue(input$popMean),
-                ", sd = ",
-                codeValue(input$popSD),
-                ")"
-              ))
-            }
-          } else {
-            sd_samp <- paste0(codeValue(input$popSD), " / sqrt(", codeValue(input$sampDistrSize), ")")
-            
-            if (input$calcNormSampDistr == "cumulative") {
-              HTML(paste0(
-                "pnorm(",
-                codeValue(input$sampDistrxValue),
-                ", mean = ",
-                codeValue(input$popMean),
-                ", sd = ",
-                sd_samp,
-                ")"
-              ))
-            } else if (input$calcNormSampDistr == "upperTail") {
-              HTML(paste0(
-                "pnorm(",
-                codeValue(input$sampDistrxValue),
-                ", mean = ",
-                codeValue(input$popMean),
-                ", sd = ",
-                sd_samp,
-                ", lower.tail = FALSE)"
-              ))
-            } else if (input$calcNormSampDistr == "between") {
-              HTML(paste0(
-                "pnorm(",
-                codeValue(input$sampDistrx2Value),
-                ", mean = ",
-                codeValue(input$popMean),
-                ", sd = ",
-                sd_samp,
-                ") - pnorm(",
-                codeValue(input$sampDistrx1Value),
-                ", mean = ",
-                codeValue(input$popMean),
-                ", sd = ",
-                sd_samp,
-                ")"
-              ))
-            }
-          }
-        } else if (input$calcQuantiles == "Critical Value") {
-          if (input$calcQuartiles == "Percentile") {
-            HTML(paste0(
-              "qnorm(",
-              codeValue(input$percentileValue / 100),
-              ", mean = ",
-              codeValue(input$popMean),
-              ", sd = ",
-              codeValue(input$popSD),
-              ")"
-            ))
-          } else {
-            HTML(paste0(
-              "qnorm(0.25, mean = ",
-              codeValue(input$popMean),
-              ", sd = ",
-              codeValue(input$popSD),
-              ")\n\n",
-              
-              "qnorm(0.5, mean = ",
-              codeValue(input$popMean),
-              ", sd = ",
-              codeValue(input$popSD),
-              ")\n\n",
-              
-              "qnorm(0.75, mean = ",
-              codeValue(input$popMean),
-              ", sd = ",
-              codeValue(input$popSD),
-              ")"
-            ))
-          }
-        }
-      })
-      
+ 
       output$normDistrPlot <- renderPlot({
         req(pd_iv$is_valid())
         
@@ -3990,13 +3872,6 @@ probDistServer <- function(id) {
               sprintf("Variance \\( (\\sigma_{\\bar{X}}^2) = \\dfrac{\\sigma^{2}}{n} = %g\\)",
                       input$popSD^2 / input$sampDistrSize)
             ),
-            br(),
-            codeBox(
-              boxId = "rcodeNormalBox",
-              outputId = "rcodeNormal",
-              ns = ns
-            ),
-            br(),
             hr(),
             br(),
             fluidRow(
@@ -4161,14 +4036,124 @@ probDistServer <- function(id) {
                   br())
               )
             ),
-            codeBox(
-              boxId = "rcodeNormalBox",
-              outputId = "rcodeNormal",
-              ns = ns
-            ),
             br())
         )
       })
+      
+      
+      output$rcodeNormal <- renderUI({
+       # print("rcodeNormal ran")
+        req(pd_iv$is_valid())
+        if (input$calcQuantiles == "Probability") {
+          if (input$sampMeanDistr == 0) {
+            if (input$calcNormal == "cumulative") {
+              HTML(paste0(
+                "pnorm(",
+                codeValue(input$xValue),
+                ", mean = ",
+                codeValue(input$popMean),
+                ", sd = ",
+                codeValue(input$popSD),
+                ")"
+              ))
+            } else if (input$calcNormal == "upperTail") {
+              HTML(paste0(
+                "pnorm(",
+                codeValue(input$xValue),
+                ", mean = ",
+                codeValue(input$popMean),
+                ", sd = ",
+                codeValue(input$popSD),
+                ", lower.tail = FALSE)"
+              ))
+            } else if (input$calcNormal == "between") {
+              
+              HTML(paste0(
+                "pnorm(",
+                codeValue(input$x2Value),
+                ", mean = ",
+                codeValue(input$popMean),
+                ", sd = ",
+                codeValue(input$popSD),
+                ") - pnorm(",
+                codeValue(input$x1Value),
+                ", mean = ",
+                codeValue(input$popMean),
+                ", sd = ",
+                codeValue(input$popSD),
+                ")"
+              ))
+            }
+          } else {
+            sd_samp <- paste0(codeValue(input$popSD), " / sqrt(", codeValue(input$sampDistrSize), ")")
+            
+            if (input$calcNormSampDistr == "cumulative") {
+              HTML(paste0(
+                "pnorm(",
+                codeValue(input$sampDistrxValue),
+                ", mean = ",
+                codeValue(input$popMean),
+                ", sd = ",
+                sd_samp,
+                ")"
+              ))
+            } else if (input$calcNormSampDistr == "upperTail") {
+              HTML(paste0(
+                "pnorm(",
+                codeValue(input$sampDistrxValue),
+                ", mean = ",
+                codeValue(input$popMean),
+                ", sd = ",
+                sd_samp,
+                ", lower.tail = FALSE)"
+              ))
+            } else if (input$calcNormSampDistr == "between") {
+              HTML(paste0(
+                "pnorm(",
+                codeValue(input$sampDistrx2Value),
+                ", mean = ",
+                codeValue(input$popMean),
+                ", sd = ",
+                sd_samp,
+                ") - pnorm(",
+                codeValue(input$sampDistrx1Value),
+                ", mean = ",
+                codeValue(input$popMean),
+                ", sd = ",
+                sd_samp,
+                ")"
+              ))
+            }
+          }
+        } else if (input$calcQuantiles == "Critical Value") {
+          if (input$calcQuartiles == "Percentile") {
+            HTML(paste0(
+              "qnorm(",
+              codeValue(input$percentileValue / 100),
+              ", mean = ",
+              codeValue(input$popMean),
+              ", sd = ",
+              codeValue(input$popSD),
+              ")"
+            ))
+          } else {
+            HTML(paste0(
+              "qnorm(", codeValue(0.25),
+              ", mean = ", codeValue(input$popMean),
+              ", sd = ", codeValue(input$popSD), ")\n\n",
+              
+              "qnorm(", codeValue(0.50),
+              ", mean = ", codeValue(input$popMean),
+              ", sd = ", codeValue(input$popSD), ")\n\n",
+              
+              "qnorm(", codeValue(0.75),
+              ", mean = ", codeValue(input$popMean),
+              ", sd = ", codeValue(input$popSD), ")"
+            ))
+          }
+        }
+      })
+      
       
       output$quartile1Plot <- renderPlot({
         req(pd_iv$is_valid())
@@ -4489,12 +4474,6 @@ probDistServer <- function(id) {
                        br())
               )
             ),
-            codeBox(
-              boxId = "rcodeNormalBox",
-              outputId = "rcodeNormal",
-              ns = ns
-            ),
-            br(),
             br())
         )
       })
@@ -4932,8 +4911,8 @@ probDistServer <- function(id) {
       })
     
     observeEvent(input$calcQuartiles, {
-      if(input$calcQuartiles == 'Percentile') {
-        hide(id = "normalResults")
+       if(input$calcQuartiles == 'Percentile') {
+       hide(id = "normalResults")
       }
     })
     
