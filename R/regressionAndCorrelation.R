@@ -10,7 +10,7 @@ regressionAndCorrelationUI <- function(id) {
       radioButtons(
         ns("dataInputMode"),
         tags$b("Data"),
-        choices  = list("Upload File" = "upload", "Enter Raw Data" = "raw"),
+        choices  = list("Upload Data" = "upload", "Enter Raw Data" = "raw"),
         selected = "upload",
         inline   = TRUE
       ),
@@ -82,8 +82,8 @@ regressionAndCorrelationUI <- function(id) {
         tags$b("Methodology"),
         choices  = list(
           "Simple Linear Regression and Correlation Analysis" = "SLR",
-          "Multiple Linear Regression"                        = "MLR",
           "Polynomial Regression"                             = "POLYR",
+          "Multiple Linear Regression"                        = "MLR",
           "Binary Logistic Regression"                        = "LOGR"
         ),
         selected = "SLR"
@@ -282,24 +282,37 @@ regressionAndCorrelationServer <- function(id) {
 
     observeEvent(input$multiple, { upload_error(FALSE) }, ignoreNULL = FALSE, ignoreInit = TRUE)
 
+    observeEvent(TRUE, {
+      if (isolate(input$dataInputMode) == "raw") {
+        grp <- session$ns("multiple")
+        shinyjs::delay(0, shinyjs::runjs(sprintf(
+          "['MLR','LOGR'].forEach(function(v) {
+            var el = document.querySelector('#%s input[value=\"' + v + '\"]');
+            if (el) { el.disabled = true; el.closest('label').style.opacity = '0.4'; el.closest('label').style.pointerEvents = 'none'; }
+          });", grp
+        )))
+      }
+    }, once = TRUE)
+
     observeEvent(input$dataInputMode, {
       current <- isolate(input$multiple)
+      grp <- session$ns("multiple")
       if (input$dataInputMode == "raw") {
-        updateRadioButtons(session, "multiple",
-                           choices  = list(
-                             "Simple Linear Regression and Correlation Analysis" = "SLR",
-                             "Polynomial Regression"                             = "POLYR"
-                           ),
-                           selected = if (current %in% c("SLR", "POLYR")) current else "SLR")
+        if (!(current %in% c("SLR", "POLYR")))
+          updateRadioButtons(session, "multiple", selected = "SLR")
+        shinyjs::runjs(sprintf(
+          "['MLR','LOGR'].forEach(function(v) {
+            var el = document.querySelector('#%s input[value=\"' + v + '\"]');
+            if (el) { el.disabled = true; el.closest('label').style.opacity = '0.4'; el.closest('label').style.pointerEvents = 'none'; }
+          });", grp
+        ))
       } else {
-        updateRadioButtons(session, "multiple",
-                           choices  = list(
-                             "Simple Linear Regression and Correlation Analysis" = "SLR",
-                             "Multiple Linear Regression"                        = "MLR",
-                             "Polynomial Regression"                             = "POLYR",
-                             "Binary Logistic Regression"                        = "LOGR"
-                           ),
-                           selected = current)
+        shinyjs::runjs(sprintf(
+          "['MLR','LOGR'].forEach(function(v) {
+            var el = document.querySelector('#%s input[value=\"' + v + '\"]');
+            if (el) { el.disabled = false; el.closest('label').style.opacity = ''; el.closest('label').style.pointerEvents = ''; }
+          });", grp
+        ))
       }
     })
 
@@ -315,6 +328,18 @@ regressionAndCorrelationServer <- function(id) {
     current_mlr_module_id   <- reactive({ paste0("mlr_dynamic_instance_",  mlr_instance_counter()) })
     current_logr_module_id  <- reactive({ paste0("logr_dynamic_instance_", logr_instance_counter()) })
     current_polyr_module_id <- reactive({ paste0("polyr_dynamic_instance_", polyr_instance_counter()) })
+
+    observeEvent(input$multiple, {
+      if (input$dataInputMode == "raw") {
+        if (input$multiple == "POLYR") {
+          updateTextAreaInput(session, "rawY", value = "4.997, 6.165, 6.95, 8.218, 9.405, 10.404, 10.425, 10.44, 9.393, 7.854, 5.168")
+          updateTextAreaInput(session, "rawX", value = "0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10")
+        } else if (input$multiple == "SLR") {
+          updateTextAreaInput(session, "rawY", value = "2.48, 2.26, 2.47, 2.77, 2.99, 3.05, 3.18, 3.46, 3.03, 3.26, 2.67, 2.53")
+          updateTextAreaInput(session, "rawX", value = "4.51, 3.58, 4.31, 5.06, 5.64, 4.99, 5.29, 5.83, 4.70, 5.61, 4.90, 4.20")
+        }
+      }
+    }, ignoreInit = TRUE)
 
     observeEvent(input$multiple, {
       if (input$multiple == "SLR") {

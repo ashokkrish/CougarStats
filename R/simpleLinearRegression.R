@@ -72,14 +72,6 @@ SLRMainPanelUI <- function(id) {
           id = ns("slrNavbarPage"),
           theme = bs_theme(version = 4),
 
-          tabPanel(
-            title = "Data",
-            value = "data_tab",
-            br(),
-            div(style = "overflow-x: auto;", DTOutput(ns("slrViewUploadTab"))),
-            br()
-          ),
-
           #### ---------------- SLR Tab ------------------------------------------------
           tabPanel(
             title = "Model",
@@ -667,13 +659,6 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NUL
       )
     })
 
-    output$slrViewUploadTab <- renderDT({
-      req(input_mode() == "upload", !is.null(reg_data()))
-      datatable(reg_data(), options = list(pageLength = 25, lengthMenu = list(c(25, 50, 100, -1), c("25", "50", "100", "All")), scrollX = TRUE))
-    })
-    
-    
-    
     #  ========================================================================= #
     ## -------- Data Validation ------------------------------------------------
     #  ========================================================================= #
@@ -825,10 +810,6 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NUL
         tagList(DTOutput(session$ns("slrViewUpload")))
       }
     })
-
-    observeEvent(TRUE, {
-      shinyjs::delay(0, { hideTab(inputId = "slrNavbarPage", target = "data_tab") })
-    }, once = TRUE)
 
     # Populate variable pickers and show/hide them based on reg_data and mode
     observeEvent(list(reg_data(), input_mode()), {
@@ -1050,7 +1031,6 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NUL
       if(regcor_iv$is_valid()) {
         hide("uploadedDataPanel")
         if (input_mode() == "upload") {
-          showTab(inputId = "slrNavbarPage", target = "data_tab")
           if (!is.null(hide_shared)) hide_shared(TRUE)
         }
 
@@ -2823,7 +2803,6 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NUL
       output$perfectFitWarning <- renderUI({ NULL })
       hide(id = "regCorrMP")
       hide("uploadedDataPanel")
-      hideTab(inputId = "slrNavbarPage", target = "data_tab")
       shinyjs::reset("inputPanel")
       showTab(inputId = "slrNavbarPage", target = "Inference")
       showTab(inputId = "slrNavbarPage", target = "Prediction")
