@@ -2771,6 +2771,11 @@ probDistServer <- function(id) {
                                 value = round(dbinom(x = 0:input$numTrialsBinom, 
                                                      size = input$numTrialsBinom, 
                                                      prob = input$successProbBinom), 4))
+          dfBinom <- rbind(
+            dfBinom,
+            data.frame(value = "Total", value.1 = 1.0000)
+          )
+          
           colnames(dfBinom) <- c("X", "P(X = x)")
           
           datatable(dfBinom,
@@ -2779,7 +2784,14 @@ probDistServer <- function(id) {
                       pageLength = -1,
                       ordering = FALSE,
                       searching = FALSE,
-                      paging = FALSE
+                      paging = FALSE,
+                      rowCallback = JS(
+                        "function(row, data) {",
+                        "  if (data[0] === 'Total') {",
+                        "    $('td', row).css('font-weight', 'bold');",
+                        "  }",
+                        "}"
+                      )
                     ),
                     rownames = FALSE,
                     filter = "none"
@@ -3387,6 +3399,11 @@ probDistServer <- function(id) {
         {
           dfHypGeo <- data.frame(value = seq(max(0, input$sampSizeHypGeo + input$popSuccessesHypGeo - input$popSizeHypGeo), min(input$popSuccessesHypGeo, input$sampSizeHypGeo)), 
                                  value = round(dhyper(x = max(0, input$sampSizeHypGeo + input$popSuccessesHypGeo - input$popSizeHypGeo):min(input$popSuccessesHypGeo, input$sampSizeHypGeo), input$popSuccessesHypGeo, (input$popSizeHypGeo - input$popSuccessesHypGeo), input$sampSizeHypGeo), 4))
+          
+          dfHypGeo <- rbind(
+            dfHypGeo,
+            data.frame(value = "Total", value.1 = 1.0000)
+          )
           colnames(dfHypGeo) <- c("X", "P(X = x)")
           
           datatable(dfHypGeo,
@@ -3395,7 +3412,14 @@ probDistServer <- function(id) {
                       pageLength = -1,
                       ordering = FALSE,
                       searching = FALSE,
-                      paging = FALSE
+                      paging = FALSE,
+                      rowCallback = JS(
+                        "function(row, data) {",
+                        "  if (data[0] === 'Total') {",
+                        "    $('td', row).css('font-weight', 'bold');",
+                        "  }",
+                        "}"
+                      )
                     ),
                     rownames = FALSE,
                     filter = "none"
@@ -3411,7 +3435,7 @@ probDistServer <- function(id) {
                       pageLength = -1,
                       ordering = FALSE,
                       searching = FALSE,
-                      paging = FALSE
+                      paging = FALSE,
                     ),
                     rownames = FALSE,
                     filter = "none")
