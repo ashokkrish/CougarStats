@@ -465,7 +465,29 @@ statInfrUI <- function(id) {
                   multipleSeperator  = ", ",
                   title              = "Select graph(s) to display"
                 )),
-            ) # Pop Mean ! Summarized
+            ), # Pop Mean ! Summarized
+            
+            conditionalPanel(
+              ns = ns,
+              condition = "input.popuParameter == 'Population Standard Deviation' && input.sdDataAvailability != 'Summarized Data'",
+              
+              shinyWidgets::pickerInput(
+                inputId  = ns("oneSDPlots"),
+                label    = strong("Graph Options"),
+                choices  = c(
+                  "Boxplot" = "oneSDBoxplot",
+                  "Histogram" = "oneSDHistogram"
+                ),
+                selected = c("oneSDBoxplot", "oneSDHistogram"),
+                multiple = TRUE,
+                options = list(
+                  `actions-box`      = TRUE,
+                  selectedTextFormat = "values",
+                  multipleSeparator  = ", ",
+                  title              = "Select graph(s) to display"
+                )
+              )
+            ),
           ), #"input.siMethod == '1'"
           
           ### ------------ 2 Samples ---------------------------------------------------
@@ -1269,6 +1291,7 @@ statInfrUI <- function(id) {
                   selected = "True", # 'selected' argument takes a single value, not a vector
                   inline   = TRUE ))
             ),
+            
             conditionalPanel(
               ns = ns,
               condition = "(input.popuParameters == 'Independent Population Means' && input.dataAvailability2 != 'Summarized Data')",
@@ -1311,15 +1334,22 @@ statInfrUI <- function(id) {
               
               p(strong("Graph Options")),
               
-              checkboxInput(
-                inputId = ns("sidebysidewRankSum"),
-                label   = "Side-by-side Boxplot",
-                value   = TRUE),
-              
-              checkboxInput(
-                inputId = ns("sidebysidewRankQQ"),
-                label   = "Q-Q plots for Sample 1 and Sample 2",
-                value   = TRUE)
+              shinyWidgets::pickerInput(
+                inputId  = ns("sidebysidewRankPlots"),
+                label    = NULL,
+                choices  = c(
+                  "Side-by-side Boxplot" = "sidebysidewRankSum",
+                  "Q-Q Plots for Sample 1 and Sample 2" = "sidebysidewRankQQ"
+                ),
+                selected = c("sidebysidewRankSum", "sidebysidewRankQQ"),
+                multiple = TRUE,
+                options = list(
+                  `actions-box`      = TRUE,
+                  selectedTextFormat = "values",
+                  multipleSeparator  = ", ",
+                  title              = "Select graph(s) to display"
+                )
+              )
             ), # Wilcoxon Rank Sum Graphs
             #Wilcoxon Signed Rank Test
             conditionalPanel(
@@ -1766,6 +1796,7 @@ statInfrUI <- function(id) {
                           plotType = "Boxplot",
                           title = "Boxplot"),
                         uiOutput(ns("renderOneMeanBoxplot")),
+                        boxplotDisclaimer,
                         br(),
                       ),
                       conditionalPanel(
@@ -1872,11 +1903,49 @@ statInfrUI <- function(id) {
                     ), # Analysis tabPanel
 
                     tabPanel(
+                      title = "Graphs",
+                      value = "Graphs",
+                    
+                      conditionalPanel(
+                        ns = ns,
+                        condition = "input.oneSDPlots.indexOf('oneSDBoxplot') !== -1",
+                        titlePanel(tags$u("Boxplot")),
+                        br(),
+                        plotOptionsMenuUI(
+                          id = ns("oneSDBoxplot"),
+                          plotType = "Boxplot",
+                          title = "Boxplot"
+                        ),
+                        br(),
+                        uiOutput(ns("renderOneSDBoxplot")),
+                        boxplotDisclaimer,
+                        br(), br()
+                      ),
+                      
+                      conditionalPanel(
+                        ns = ns,
+                        condition = "input.oneSDPlots.indexOf('oneSDHistogram') !== -1",
+                        titlePanel(tags$u("Histogram")),
+                        br(),
+                        plotOptionsMenuUI(
+                          id = ns("oneSDHistogram"),
+                          plotType = "Histogram",
+                          title = "Histogram"
+                        ),
+                        uiOutput(ns("renderOneSDHistogram")),
+                        
+                        br(), br()
+                      ), 
+                    ), #Graphs tab
+                    
+                    tabPanel(
                       title = "Uploaded Data",
                       value = "Uploaded Data",
 
                       uiOutput(ns("renderOneSDData")),
                     ), # Uploaded Data tabPanel
+                    
+                    
                   ), # oneSDTabset navbarPage
                 ), # One Population Proportion
               ), # "input.siMethod == '1'"
@@ -1929,13 +1998,14 @@ statInfrUI <- function(id) {
                                         ns = ns,
                                         condition = "input.dataAvailability2 != 'Summarized Data' && input.indMeansPlots.indexOf('indMeansBoxplot') !== -1",
                                         br(),
-                                        titlePanel(tags$u("Boxplot")),
+                                        titlePanel(tags$u("Side-by-side Boxplot")),
                                         br(),
                                         plotOptionsMenuUI(
                                           id = ns("indMeansBoxplot"),
                                           plotType = "Boxplot",
-                                          title = "Boxplot"),
+                                          title = "Side-by-side Boxplot"),
                                         uiOutput(ns("renderIndMeansBoxplot")),
+                                        boxplotDisclaimer,
                                         br(),
                                         br()
                                       ),
@@ -2210,28 +2280,29 @@ statInfrUI <- function(id) {
                                       title = "Graphs",
                                       conditionalPanel(
                                         ns = ns,
-                                        condition = "input.popuParameters == 'Wilcoxon rank sum test' && (input.sidebysidewRankSum == 1 || input.sidebysidewRankQQ == 1)",
+                                        condition = "input.popuParameters == 'Wilcoxon rank sum test' && input.sidebysidewRankPlots.length > 0",
                                         
                                         # Side-by-side Boxplot
                                         conditionalPanel(
                                           ns = ns,
-                                          condition = "input.popuParameters == 'Wilcoxon rank sum test' && input.sidebysidewRankSum == 1",
+                                          condition = "input.popuParameters == 'Wilcoxon rank sum test' && input.sidebysidewRankPlots.indexOf('sidebysidewRankSum') !== -1",
                                           
                                           titlePanel("Side-by-side Boxplot"),
                                           br(),
                                           plotOptionsMenuUI(
                                             id = ns("sidebysidewRankSum"),
                                             plotType = "Boxplot",
-                                            title = "Boxplot"
+                                            title = "Side-by-side Boxplot"
                                           ),
                                           plotOutput(ns("sidebysidewRankSum")),
+                                          boxplotDisclaimer,
                                           br(),br()
                                         ),
                                         
                                         # Q-Q Plots
                                         conditionalPanel(
                                           ns = ns,
-                                          condition = "input.popuParameters == 'Wilcoxon rank sum test' && input.sidebysidewRankQQ == 1",
+                                          condition = "input.popuParameters == 'Wilcoxon rank sum test' && input.sidebysidewRankPlots.indexOf('sidebysidewRankQQ') !== -1",
                                           
                                           titlePanel("Q-Q Plots for Sample 1 and Sample 2"),
                                           br(),
@@ -3584,6 +3655,8 @@ statInfrServer <- function(id) {
     #  ========================================================================= #
     plotOptionsMenuServer("oneMeanBoxplot")
     plotOptionsMenuServer("oneMeanHistogram")
+    plotOptionsMenuServer("oneSDBoxplot")
+    plotOptionsMenuServer("oneSDHistogram")
     plotOptionsMenuServer("indMeansBoxplot")
     plotOptionsMenuServer("indMeansQQPlot")
     plotOptionsMenuServer("depMeansQQPlot")
@@ -3606,6 +3679,13 @@ statInfrServer <- function(id) {
       invalid <- any(!sapply(dat, is.numeric))
       
       return(invalid)
+    }
+    
+    boxplotDisclaimer <- function() {
+      tags$p(
+        "* Note: Quartiles are calculated by excluding the median on both sides.",
+        style = "font-size: 12px; margin-top: 10px;"
+      )
     }
     
     getOutliers <- function(sample, sampleName, coef = 1.5) {
@@ -8383,6 +8463,62 @@ statInfrServer <- function(id) {
         },
         br()) # withMathJax
     }) # renderUI
+    ### ------------ Boxplot --------------------------------------------
+    output$oneSDBoxplot <- renderPlot({
+      req(si_iv$is_valid())
+      
+      if(input$sdDataAvailability == 'Enter Raw Data') {
+        dat <- createNumLst(input$sdRawData)
+      } else if(input$sdDataAvailability == 'Upload Data') {
+        dat <- na.omit(unlist(SDUploadData()[,input$sdVariable]))
+      } else {
+        return(NA)
+      }
+      
+      df_outliers <- getOutliers(dat, "Sample")
+      outlier_vals <- df_outliers$data
+      
+      df_boxplot <- data.frame(x = dat)
+      
+      RenderBoxplot(dat,
+                    df_boxplot,
+                    outlier_vals,
+                    input[["oneSDBoxplot-Colour"]],
+                    input[["oneSDBoxplot-Title"]],
+                    input[["oneSDBoxplot-Xlab"]],
+                    input[["oneSDBoxplot-Ylab"]],
+                    input[["oneSDBoxplot-BoxWidth"]]/10,
+                    input[["oneSDBoxplot-Gridlines"]],
+                    input[["oneSDBoxplot-Flip"]],
+                    input[["oneSDBoxplot-OutlierLabels"]])
+      
+    }, height = function() {GetPlotHeight(input[["oneSDBoxplot-Height"]],input[["oneSDBoxplot-HeightPx"]],ui = FALSE)
+    },width = function() {GetPlotWidth(input[["oneSDBoxplot-Width"]],input[["oneSDBoxplot-WidthPx"]],ui = FALSE)
+    })
+    
+    ### ------------ Histogram --------------------------------------------
+    output$oneSDHistogram <- renderPlot({
+      req(si_iv$is_valid())
+      
+      if(input$sdDataAvailability == 'Enter Raw Data') {
+        dat <- createNumLst(input$sdRawData)
+      } else if(input$sdDataAvailability == 'Upload Data') {
+        dat <- na.omit(unlist(SDUploadData()[,input$sdVariable]))
+      } else {
+        return(NA)
+      }
+      
+      RenderHistogram(dat,
+                      input[["oneSDHistogram-Colour"]],
+                      input[["oneSDHistogram-Title"]],
+                      input[["oneSDHistogram-Xlab"]],
+                      input[["oneSDHistogram-Ylab"]],
+                      input[["oneSDHistogram-Gridlines"]],
+                      input[["oneSDHistogram-Density"]])
+      
+    }, height = function() {GetPlotHeight(input[["oneSDHistogram-Height"]],input[["oneSDHistogram-HeightPx"]],ui = FALSE)
+    },width = function() {GetPlotWidth(input[["oneSDHistogram-Width"]],input[["oneSDHistogram-WidthPx"]],ui = FALSE)
+    })
     
     ### ------------ One Prop Outputs --------------------------------------------
     
@@ -9953,8 +10089,6 @@ statInfrServer <- function(id) {
     ###---- Boxplot Side by Side
     output$sidebysidewRankSum <- renderPlot({
 
-      req(input$sidebysidewRankSum)
-
       if(input$wilcoxonRankSumTestData == 'Enter Raw Data') {
         rankSumRaw1 <- createNumLst(input$rankSumRaw1)
         rankSumRaw2 <- createNumLst(input$rankSumRaw2)
@@ -9989,8 +10123,6 @@ statInfrServer <- function(id) {
     
     ###----- QQ Plot
     output$sidebysidewRankQQ <- renderPlot({
-
-      req(input$sidebysidewRankQQ)
 
       if(input$wilcoxonRankSumTestData == 'Enter Raw Data') {
         rankSumRaw1 <- createNumLst(input$rankSumRaw1)
@@ -10977,7 +11109,6 @@ statInfrServer <- function(id) {
           plot.title = element_text(size = 18, face = "bold", margin = margin(b = 15)),
           axis.line = element_line(linewidth = 1, color = "black"),
           legend.position = "bottom",
-          legend.direction = "vertical",
           legend.title = element_text(size = 14),
           legend.text = element_text(size = 12)
         )
@@ -11800,6 +11931,17 @@ statInfrServer <- function(id) {
         updateTabsetPanel(session, "onePopMeanTabset", selected = "Uploaded Data")
       }
     }, ignoreInit = TRUE)
+    
+    observeEvent(input$oneSDPlots, ignoreNULL = FALSE, {
+      if (length(input$oneSDPlots) > 0 && input$sdDataAvailability != "Summarized Data") {
+        showTab(inputId = "oneSDTabset", target = "Graphs")
+      } else {
+        if (input$oneSDTabset == "Graphs") {
+          updateTabsetPanel(inputId = "oneSDTabset", selected = "Analysis")
+        }
+        hideTab(inputId = "oneSDTabset", target = "Graphs")
+      }
+    })
 
     observeEvent(input$indMeansUserData, priority = 50, {
       req(input$indMeansUserData)
@@ -11870,6 +12012,8 @@ statInfrServer <- function(id) {
         hideTab(inputId = "indPopMeansTabset", target = "Graphs")
       }
     })
+    
+    
     
     observeEvent(input$depMeansQQPlot, {
       if (input$depMeansQQPlot) {
@@ -11995,12 +12139,12 @@ statInfrServer <- function(id) {
     })
 
     
-    observeEvent(c(input$sidebysidewRankSum, input$sidebysidewRankQQ), {
-      if (input$sidebysidewRankSum || input$sidebysidewRankQQ) {
+    observeEvent(input$sidebysidewRankPlots, ignoreNULL = FALSE, {
+      if (length(input$sidebysidewRankPlots) > 0) {
         showTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
       } else {
         if (input$wilcoxonRankSumTabset == "Graphs") {
-          updateTabsetPanel(inputId = 'wilcoxonRankSumTabset', selected = "Analysis")
+          updateTabsetPanel(inputId = "wilcoxonRankSumTabset", selected = "Analysis")
         }
         hideTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
       }
@@ -12411,6 +12555,16 @@ statInfrServer <- function(id) {
         } else if(input$popuParameter == 'Population Standard Deviation') {
           req(si_iv$is_valid())
           oneSDCalcPressed(TRUE)
+          output$renderOneSDBoxplot <- renderUI({
+            plotOutput(session$ns("oneSDBoxplot"),
+                       height = GetPlotHeight(input[["oneSDBoxplot-Height"]], input[["oneSDBoxplot-HeightPx"]], ui = TRUE),
+                       width = GetPlotWidth(input[["oneSDBoxplot-Width"]], input[["oneSDBoxplot-WidthPx"]], ui = TRUE))
+          })
+          output$renderOneSDHistogram <- renderUI({
+            plotOutput(session$ns("oneSDHistogram"),
+                       height = GetPlotHeight(input[["oneSDHistogram-Height"]], input[["oneSDHistogram-HeightPx"]], ui = TRUE),
+                       width = GetPlotWidth(input[["oneSDHistogram-Width"]], input[["oneSDHistogram-WidthPx"]], ui = TRUE))
+          })
         } else if(input$popuParameter == 'Population Proportion') {
           req(input$numTrials && input$numSuccesses)
           if(input$numTrials < input$numSuccesses) {
@@ -12693,6 +12847,12 @@ statInfrServer <- function(id) {
         hideTab(inputId = "onePopMeanTabset", target = "Graphs")
       }
       
+      if(length(input$oneSDPlots) > 0 && input$sdDataAvailability != "Summarized Data") {
+        showTab(inputId = "oneSDTabset", target = "Graphs")
+      } else {
+        hideTab(inputId = "oneSDTabset", target = "Graphs")
+      }
+      
       # Hide/show tabs for 2 sample independent populations
       two_sample_valid <- si_iv$is_valid() && depmeansrawsd_iv$is_valid()
 
@@ -12775,7 +12935,8 @@ statInfrServer <- function(id) {
         hideTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
       } else {
         showTab(inputId = "wilcoxonRankSumTabset", target = "Data with Ranks")
-        if (input$sidebysidewRankSum == 1 || input$sidebysidewRankQQ == 1){
+        
+        if (length(input$sidebysidewRankPlots) > 0) {
           showTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
         } else {
           hideTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
@@ -12850,6 +13011,18 @@ statInfrServer <- function(id) {
         session,
         "indMeansPlots",
         selected = c("indMeansBoxplot", "indMeansQQPlot")
+      )
+      
+      updatePickerInput(
+        session,
+        "oneSDPlots",
+        selected = c("oneSDBoxplot", "oneSDHistogram")
+      )
+      
+      updatePickerInput(
+        session,
+        "sidebysidewRankPlots",
+        selected = c("sidebysidewRankSum", "sidebysidewRankQQ")
       )
 
       ## -- Raw-data text areas --

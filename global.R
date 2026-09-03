@@ -161,6 +161,8 @@ uploadDataDisclaimer <- "<small style='color:#999; display:block; margin-bottom:
               All uploaded files exist only for the duration of your session and are permanently deleted when the session ends.
               </em></small>"
 
+boxplotDisclaimer <-   helpText("* Note: Quartiles are calculated by excluding the median on both sides.")
+
 render <- "
 {
   option: function(data, escape){return '<div class=\"option\">'+data.label+'</div>';},
