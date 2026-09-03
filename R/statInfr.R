@@ -8492,19 +8492,8 @@ statInfrServer <- function(id) {
                     input[["oneSDBoxplot-Flip"]],
                     input[["oneSDBoxplot-OutlierLabels"]])
       
-    }, height = function() {
-      GetPlotHeight(
-        input[["oneSDBoxplot-Height"]],
-        input[["oneSDBoxplot-HeightPx"]],
-        ui = FALSE
-      )
-    },
-    width = function() {
-      GetPlotWidth(
-        input[["oneSDBoxplot-Width"]],
-        input[["oneSDBoxplot-WidthPx"]],
-        ui = FALSE
-      )
+    }, height = function() {GetPlotHeight(input[["oneSDBoxplot-Height"]],input[["oneSDBoxplot-HeightPx"]],ui = FALSE)
+    },width = function() {GetPlotWidth(input[["oneSDBoxplot-Width"]],input[["oneSDBoxplot-WidthPx"]],ui = FALSE)
     })
     
     ### ------------ Histogram --------------------------------------------
