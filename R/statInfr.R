@@ -8516,19 +8516,8 @@ statInfrServer <- function(id) {
                       input[["oneSDHistogram-Gridlines"]],
                       input[["oneSDHistogram-Density"]])
       
-    }, height = function() {
-      GetPlotHeight(
-        input[["oneSDHistogram-Height"]],
-        input[["oneSDHistogram-HeightPx"]],
-        ui = FALSE
-      )
-    },
-    width = function() {
-      GetPlotWidth(
-        input[["oneSDHistogram-Width"]],
-        input[["oneSDHistogram-WidthPx"]],
-        ui = FALSE
-      )
+    }, height = function() {GetPlotHeight(input[["oneSDHistogram-Height"]],input[["oneSDHistogram-HeightPx"]],ui = FALSE)
+    },width = function() {GetPlotWidth(input[["oneSDHistogram-Width"]],input[["oneSDHistogram-WidthPx"]],ui = FALSE)
     })
     
     ### ------------ One Prop Outputs --------------------------------------------
