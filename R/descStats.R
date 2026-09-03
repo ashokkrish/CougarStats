@@ -1083,7 +1083,7 @@ descStatsServer <- function(id) {
               height = GetPlotHeight(input[["dsBoxplot-Height"]], input[["dsBoxplot-HeightPx"]], ui = TRUE),
               width = GetPlotWidth(input[["dsBoxplot-Width"]], input[["dsBoxplot-WidthPx"]], ui = TRUE)),
             br(),
-            helpText("* Note: Quartiles are calculated by excluding the median on both sides."),
+            boxplotDisclaimer,
             br(),
             hr(),
             br(),

@@ -2774,7 +2774,6 @@ probDistServer <- function(id) {
       
       output$binomDistrTable <- DT::renderDT({
         req(pd_iv$is_valid())
-        req(input$numSuccessesBinom <= input$numTrialsBinom)
         if(input$numTrialsBinom < 50)
         {
           dfBinom <- data.frame(value = seq(0, input$numTrialsBinom), 
@@ -2823,7 +2822,6 @@ probDistServer <- function(id) {
       
       req(pd_iv$is_valid())
       req(input$numTrialsBinom < 50)
-      req(input$numSuccessesBinom <= input$numTrialsBinom)
       
       n <- input$numTrialsBinom
       p <- input$successProbBinom
@@ -3111,17 +3109,18 @@ probDistServer <- function(id) {
       observe({
         req(input$probability == "Hypergeometric")
         
-        showBox <- pd_iv$is_valid() &&
-          input$sampSizeHypGeo <= input$popSizeHypGeo &&
-          input$popSuccessesHypGeo <= input$popSizeHypGeo &&
-          input$xHypGeo <= input$sampSizeHypGeo &&
-          input$xHypGeo <= input$popSuccessesHypGeo
+        showBox <- isTRUE(
+          pd_iv$is_valid() &&
+            input$sampSizeHypGeo <= input$popSizeHypGeo &&
+            input$popSuccessesHypGeo <= input$popSizeHypGeo &&
+            input$xHypGeo <= input$sampSizeHypGeo &&
+            input$xHypGeo <= input$popSuccessesHypGeo)
         
         if (showBox && input$calcHypGeo == "between") {
-          showBox <-
+          showBox <- isTRUE(
             input$x1HypGeo <= input$x2HypGeo &&
-            input$x1HypGeo <= input$sampSizeHypGeo &&
-            input$x1HypGeo <= input$popSuccessesHypGeo 
+              input$x1HypGeo <= input$sampSizeHypGeo &&
+              input$x1HypGeo <= input$popSuccessesHypGeo)
         }
         
         toggleCodeBox(showBox, "rcodeHypGeoBox", ns)
@@ -3401,8 +3400,6 @@ probDistServer <- function(id) {
         req(pd_iv$is_valid())
         req(input$sampSizeHypGeo <= input$popSizeHypGeo)
         req(input$popSuccessesHypGeo <= input$popSizeHypGeo)
-        req(input$xHypGeo <= input$sampSizeHypGeo)
-        req(input$xHypGeo <= input$popSuccessesHypGeo)
         
         if(input$sampSizeHypGeo < 50)
         {
@@ -3452,8 +3449,6 @@ probDistServer <- function(id) {
       req(input$sampSizeHypGeo < 50)
       req(input$sampSizeHypGeo <= input$popSizeHypGeo)
       req(input$popSuccessesHypGeo <= input$popSizeHypGeo)
-      req(input$xHypGeo <= input$sampSizeHypGeo)
-      req(input$xHypGeo <= input$popSuccessesHypGeo)
       
       N <- input$popSizeHypGeo
       M <- input$popSuccessesHypGeo
