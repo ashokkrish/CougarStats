@@ -6894,7 +6894,7 @@ statInfrServer <- function(id) {
       if (!onemeanraw_iv$is_valid()) {
         validate(
           need(input$sample1, "Sample Data required.") %then%
-            need(length(createNumLst(input$sample1)) > 1, "Sample Data requires a minimum of 2 data points."),
+            need(length(createNumLst(input$sample1)) > 1, "Sample data must contain at least two numeric values."),
           if (input$sigmaKnownRaw == "rawKnown") {
             need(input$popuSDRaw,"Population Standard Deviation is required.") %then%
               need(input$popuSDRaw > 0, "The Population Standard Deviation (σ) must be a positive value greater than zero.")
@@ -7065,13 +7065,13 @@ statInfrServer <- function(id) {
       
       if(!indmeansraw_iv$is_valid()) {
         validate(
-          need(input$raw_sample1, "Sample 1 requires a minimum of 3 data points.") %then%
-            need(length(createNumLst(input$raw_sample1)) > 2, "Sample Data requires a minimum of 3 data points."),
+          need(input$raw_sample1, "Sample data must contain at least three numeric values.") %then%
+            need(length(createNumLst(input$raw_sample1)) > 2, "Sample data must contain at least three numeric values."),
           need(input$raw_sample2, "Sample 2 requires a minimum of 3 data points.") %then%
-            need(length(createNumLst(input$raw_sample2)) > 2, "Sample Data requires a minimum of 3 data points."),
+            need(length(createNumLst(input$raw_sample2)) > 2, "Sample data must contain at least three numeric values."),
           errorClass = "myClass")
         
-        validate("Samples require a minimum of 3 data points.")
+        validate("Sample data must contain at least three numeric values.")
       }
       
       if(!indmeansrawsd_iv$is_valid()) {
