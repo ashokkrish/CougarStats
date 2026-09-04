@@ -3082,10 +3082,14 @@ probDistServer <- function(id) {
       output$poissDistrTable <- DT::renderDT({
         req(pd_iv$is_valid())
         
-        dfPoiss <- data.frame(value = seq(qpois(0.0001, input$lambdaPoisson), qpois(0.9999, input$lambdaPoisson)), value = round(dpois(x = qpois(0.0001, input$lambdaPoisson):qpois(0.9999, input$lambdaPoisson), lambda = input$lambdaPoisson), 4))
+        dfPoiss <- data.frame(value = seq(qpois(0.0001, input$lambdaPoisson), qpois(0.9999, input$lambdaPoisson)), value.1 = sprintf("%.4f", dpois(x = qpois(0.0001, input$lambdaPoisson):qpois(0.9999, input$lambdaPoisson), lambda = input$lambdaPoisson)))
         dfPoiss <- rbind(
           dfPoiss,
-          data.frame(value = "Total", value.1 = 1.0000)
+          data.frame(value = ".", value.1 = "."),
+          data.frame(value = ".", value.1 = "."),
+          data.frame(value = ".", value.1 = "."),
+          data.frame(value = ".", value.1 = "."),
+          data.frame(value = "Total", value.1 = "1.0000")
         )
         colnames(dfPoiss) <- c("X", "P(X = x)")
         datatable(dfPoiss,
@@ -3095,11 +3099,16 @@ probDistServer <- function(id) {
                     ordering = FALSE,
                     searching = FALSE,
                     paging = FALSE,
+                    autoWidth = FALSE,
+                    columnDefs = list(
+                      list(className = 'dt-left', targets = 0),
+                      list(className = 'dt-right', targets = 1)
+                    ),
                     rowCallback = boldTotalRow()
                   ),
                   rownames = FALSE,
                   filter = "none"
-        ) %>% formatRound(2, digits = 4)
+        )
       })
     }) 
     
