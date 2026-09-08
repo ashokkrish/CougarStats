@@ -1407,6 +1407,8 @@ statInfrUI <- function(id) {
                             ".csv",
                             ".xls",
                             ".xlsx")),
+              
+              uiOutput(ns("anovaUploadStatus")),
 
               conditionalPanel(
                 ns = ns,
@@ -1518,6 +1520,8 @@ statInfrUI <- function(id) {
                             ".csv",
                             ".xls",
                             ".xlsx")),
+              
+              uiOutput(ns("kwUploadStatus")),
               
               hidden(tagList(
                 div(
@@ -2566,7 +2570,8 @@ statInfrUI <- function(id) {
           ) #inferenceData
         ), #inferenceMP
         
-        uiOutput(ns("kwRawContainer"))
+        uiOutput(ns("kwRawContainer")),
+        uiOutput(ns("anovaRawContainer"))
         
       ), #mainPanel
     ) #sidebarLayout
@@ -6698,6 +6703,8 @@ statInfrServer <- function(id) {
       tolower(tools::file_ext(input$anovaUserData$name)) %in% c("xls", "xlsx")
     })
     outputOptions(output, "anovaShowSheetPicker", suspendWhenHidden = FALSE)
+    
+    anovaDisplayState <- reactiveVal("none")  # "none", "raw", "analysis
 
     anovaUploadData <- eventReactive(list(input$anovaUserData, input$anovaSheet), {
       req(input$anovaUserData)
@@ -11584,6 +11591,36 @@ statInfrServer <- function(id) {
                                                       targets = 0:ncol(anovaUploadData())))),
       )
     })
+    
+    output$anovaUploadStatus <- renderUI({
+      req(input$anovaUserData)
+      req(anovaupload_iv$is_valid())
+      
+      df <- anovaUploadData()
+      
+      div(
+        class = "alert alert-success",
+        style = "padding: 5px 10px; font-size: 12px; margin-top: 2px; margin-bottom: 10px;",
+        icon("circle-check"),
+        HTML(paste0(
+          " <strong>File loaded:</strong> ", input$anovaUserData$name, " (",
+          nrow(df), " rows × ", ncol(df), " columns)"
+        ))
+      )
+    })
+    
+    anovaUploadInitial <- function(anovaUploadData_output) {
+      renderDT({
+        datatable(anovaUploadData_output(),
+                  options = list(pageLength = -1,
+                                 lengthMenu = list(c(25, 50, 100, -1),
+                                                   c("25", "50", "100", "all")),
+                                 columnDefs = list(list(className = 'dt-center',
+                                                        targets = 0:ncol(anovaUploadData_output())))))
+      })
+    }
+    
+    output$anovaInitialUploadTable <- anovaUploadInitial(anovaUploadData)
 
     output$renderAnovaDataView <- renderUI({
       if (!isTRUE(input$siMethod == 'Multiple' && input$multipleMethodChoice == 'anova')) return(NULL)
@@ -11592,6 +11629,30 @@ statInfrServer <- function(id) {
       }
       tagList(
         div(DTOutput(session$ns("anovaUploadTable")), style = "width: 75%")
+      )
+    })
+    
+    output$renderAnovaRaw <- renderUI({
+      tagList(
+        div(DTOutput(session$ns("anovaInitialUploadTable")), style = "width: 75%")
+      )
+    })
+    
+    output$anovaRawContainer <- renderUI({
+      req(input$siMethod == "Multiple")
+      req(input$multipleMethodChoice == "anova")
+      req(input$anovaUserData)
+      req(anovaDisplayState() == "raw")
+      
+      navbarPage(
+        id = session$ns("anovaRaw"),
+        title = NULL,
+        selected = "Uploaded Data",
+        
+        tabPanel(
+          title = "Uploaded Data",
+          uiOutput(session$ns("renderAnovaRaw"))
+        )
       )
     })
 
@@ -11609,6 +11670,24 @@ statInfrServer <- function(id) {
         div(DTOutput(session$ns("kwUploadTable")), style = "width: 75%")
       )
     })
+    
+    output$kwUploadStatus <- renderUI({
+      req(input$kwUserData)
+      req(kwupload_iv$is_valid())
+      
+      df <- kwUploadData()
+      
+      div(
+        class = "alert alert-success",
+        style = "padding: 5px 10px; font-size: 12px; margin-top: 2px; margin-bottom: 10px;",
+        icon("circle-check"),
+        HTML(paste0(
+          " <strong>File loaded:</strong> ", input$kwUserData$name, " (",
+          nrow(df), " rows × ", ncol(df), " columns)"
+        ))
+      )
+    })
+    
     output$renderKWRM <- kwRankedTableOutput(kwResults()$data)
     output$kruskalWallisPlot <- kruskalWallisPlot(kwResults, reactive({input$kwSigLvl}))
     output$kwConclusionOutput <- kwConclusion(kwResults, reactive({input$kwSigLvl}))
@@ -11620,20 +11699,31 @@ statInfrServer <- function(id) {
         "siMethod:", input$siMethod
       )
     })
-    output$kwRawContainer <- renderUI({
-      req(input$multipleMethodChoice == 'kw')
-      req(input$kwUserData)
-      req(kwDisplayState() == "raw")  # Only show when in "raw" state
-      
-      tabsetPanel(
-        id = session$ns("kwRaw"),
-        selected = "Uploaded Data",
-        tabPanel(
-          title = "Uploaded Data",
-          uiOutput(session$ns("renderKWRaw"))
-        )
+    
+    
+    output$renderKWRaw <- renderUI({
+      tagList(
+        div(DTOutput(session$ns("kwInitialUploadTable")), style = "width: 75%")
       )
     })
+    
+  output$kwRawContainer <- renderUI({
+    req(input$siMethod == "Multiple")
+    req(input$multipleMethodChoice == "kw")
+    req(input$kwUserData)
+    req(kwDisplayState() == "raw")
+    
+    navbarPage(
+      id = session$ns("kwRaw"),
+      title = NULL,
+      selected = "Uploaded Data",
+      
+      tabPanel(
+        title = "Uploaded Data",
+        uiOutput(session$ns("renderKWRaw"))
+      )
+    )
+  })
     
     ### ------------ Chi-Square Outputs ------------------------------------------
     
@@ -12286,7 +12376,8 @@ statInfrServer <- function(id) {
       req(input$anovaUserData)
       hide(id = "inferenceData")
       hide(id = "anovaUploadInputs")
-
+      
+      anovaDisplayState("raw")
       fileInputs$anovaStatus <- 'uploaded'
 
       ext <- tolower(tools::file_ext(input$anovaUserData$name))
@@ -12320,15 +12411,6 @@ statInfrServer <- function(id) {
     })
 
     observeEvent(input$kwUserData, {
-      output$analysisContent <- renderUI({ NULL })
-      output$renderKWRM <- renderUI({ NULL })
-
-      output$renderKWRaw <- renderUI({
-        tagList(
-          div(DTOutput(session$ns("kwInitialUploadTable")), style = "width: 75%")
-        )
-      })
-      
       kwDisplayState("raw")
       
       #hide(id = "inferenceData")
@@ -12428,10 +12510,22 @@ statInfrServer <- function(id) {
       })
       
       observeEvent(input$goInference, {
-        kwDisplayState("analysis")
-
-        req(kwUploadData())
-        req(kwupload_iv$is_valid())
+        
+        if (input$multipleMethodChoice == "kw") {
+          kwDisplayState("analysis")
+          
+          req(kwUploadData())
+          req(kwupload_iv$is_valid())
+          updateTabsetPanel(session, inputId = "kwTabset", selected = "Analysis")
+        }
+        
+        if (input$multipleMethodChoice == "anova") {
+          anovaDisplayState("analysis")
+          
+          req(anovaUploadData())
+          req(anovaupload_iv$is_valid())
+          updateTabsetPanel(session, inputId = "anovaTabset", selected = "Analysis")
+        }
       })
       
       observe({
@@ -13106,6 +13200,9 @@ statInfrServer <- function(id) {
       resetSheetToFirst("depMeansUserData", "depMeansSheet")
       resetSheetToFirst("signedRankUpl", "signedRankSheet")
       resetSheetToFirst("anovaUserData", "anovaSheet")
+      
+      kwDisplayState("raw")
+      anovaDisplayState("raw")
 
       ## -- Results are now stale until recalculated; hide them --
       hide(id = "inferenceMP")
