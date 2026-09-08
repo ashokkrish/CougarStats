@@ -123,12 +123,12 @@ LDAServer <- function(id, data, shared_explanatory, shared_response) {
     predictorsError <- reactiveVal(FALSE)
     responseContinuous <- reactiveVal(FALSE)
 
-    observeEvent(TRUE, {
-      shinyjs::delay(0, {
-        hideTab(inputId = "ldaMainPanel", target = "results_tab")
-        hideTab(inputId = "ldaMainPanel", target = "plots_tab")
-      })
-    }, once = TRUE)
+    # Called directly (not deferred via shinyjs::delay/session$onFlushed) so
+    # it applies immediately: the module is only ever created once the
+    # client has already bound this tab's markup, so the tabs being hidden
+    # already exist in the DOM by this point.
+    hideTab(inputId = "ldaMainPanel", target = "results_tab")
+    hideTab(inputId = "ldaMainPanel", target = "plots_tab")
     
     # Uploaded Data tab
     output$uploadedDataContainer <- renderUI({

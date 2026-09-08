@@ -165,15 +165,17 @@ PCAServer <- function(id, data, shared_explanatory, shared_response) {
     pca_iv$add_rule("numFactors", shinyvalidate::sv_gte(1, message = "Must be at least 1."))
     pca_iv$enable()
     
-    session$onFlushed(function() {
-      hideTab(inputId = "mainPanel", target = "pca_results_tab")
-      hideTab(inputId = "mainPanel", target = "plots_tab")
-      hideTab(inputId = "mainPanel", target = "transformations_tab")
-      shinyjs::hide("numFactorsContainer")
-      shinyjs::hide("pcXContainer")
-      shinyjs::hide("pcYContainer")
-      shinyjs::hide("transformationContainer")
-    }, once = TRUE)
+    # Called directly (not wrapped in session$onFlushed) so it applies
+    # immediately: the module is only ever created once the client has
+    # already bound this tab's markup, so the tab/containers being hidden
+    # already exist in the DOM by this point.
+    hideTab(inputId = "mainPanel", target = "pca_results_tab")
+    hideTab(inputId = "mainPanel", target = "plots_tab")
+    hideTab(inputId = "mainPanel", target = "transformations_tab")
+    shinyjs::hide("numFactorsContainer")
+    shinyjs::hide("pcXContainer")
+    shinyjs::hide("pcYContainer")
+    shinyjs::hide("transformationContainer")
     
     observeEvent(data(), {
       df <- data()

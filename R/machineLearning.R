@@ -11,7 +11,7 @@ ml_is_continuous_response <- function(x) {
 }
 
 ml_continuous_response_message <- paste(
-  "Invalid response variable: kNN classification requires the response variable:", 
+  "Invalid response variable: kNN classification requires the response variable",
   "to be a categorical factor representing class labels. A continuous numeric",
   "response was detected. Consider using Linear Regression instead."
 )
@@ -21,6 +21,17 @@ machineLearningUI <- function(id) {
   sidebarLayout(
     sidebarPanel(
       shinyjs::useShinyjs(),
+      # Signals the server once Shiny has finished binding the (large,
+      # all-six-methods-at-once) static tab markup below. Needed so module
+      # registration below doesn't run before the client has bound this tab's
+      # widgets -- see the note near that registration for the remaining
+      # caveat this does NOT resolve on its own.
+      tags$script(HTML(sprintf(
+        "$(document).on('shiny:sessioninitialized', function(event) {
+           Shiny.setInputValue('%s', true);
+         });",
+        ns("clientReady")
+      ))),
       HTML(uploadDataDisclaimer),
       fileInput(ns("mlDataFile"),
                 tags$b("Upload Data (.csv, .xls, .xlsx, or .txt)"),
@@ -45,10 +56,35 @@ machineLearningUI <- function(id) {
                    ),
                    selected = "PCA"
       ),
-      uiOutput(ns("mlSidebarUI"))
+      # All six sidebars are mounted once and kept in the DOM; only the
+      # active one is shown. This (plus the matching switch below and the
+      # once-only *Server() calls in machineLearningServer) is what lets
+      # each module's own reactiveVals and hideTab()/onFlushed(once=TRUE)
+      # logic keep working unmodified while avoiding server-instance churn.
+      tabsetPanel(
+        id = ns("sidebarSwitch"),
+        type = "hidden",
+        selected = "PCA",
+        tabPanelBody("PCA",  PCASidebarUI(ns("ml_pca"))),
+        tabPanelBody("KNN",  KNNSidebarUI(ns("ml_knn"))),
+        tabPanelBody("LDA",  LDASidebarUI(ns("ml_lda"))),
+        tabPanelBody("CART", CARTSidebarUI(ns("ml_cart"))),
+        tabPanelBody("RF",   RFSidebarUI(ns("ml_rf"))),
+        tabPanelBody("XGB",  XGBSidebarUI(ns("ml_xgb")))
+      )
     ),
     mainPanel(
-      uiOutput(ns("mlMainPanelUI"))
+      tabsetPanel(
+        id = ns("mainPanelSwitch"),
+        type = "hidden",
+        selected = "PCA",
+        tabPanelBody("PCA",  PCAMainPanelUI(ns("ml_pca"))),
+        tabPanelBody("KNN",  KNNMainPanelUI(ns("ml_knn"))),
+        tabPanelBody("LDA",  LDAMainPanelUI(ns("ml_lda"))),
+        tabPanelBody("CART", CARTMainPanelUI(ns("ml_cart"))),
+        tabPanelBody("RF",   RFMainPanelUI(ns("ml_rf"))),
+        tabPanelBody("XGB",  XGBMainPanelUI(ns("ml_xgb")))
+      )
     )
   )
 }
@@ -65,13 +101,29 @@ machineLearningServer <- function(id) {
     observeEvent(input$mlDataFile, {
       req(input$mlDataFile)
       ext <- tolower(tools::file_ext(input$mlDataFile$name))
-      df <- switch(ext,
-        csv  = read_csv(input$mlDataFile$datapath, show_col_types = FALSE),
-        tsv  = read_tsv(input$mlDataFile$datapath, show_col_types = FALSE),
-        txt  = read_tsv(input$mlDataFile$datapath, show_col_types = FALSE),
-        xls  = read_xls(input$mlDataFile$datapath),
-        xlsx = read_xlsx(input$mlDataFile$datapath)
-      )
+
+      # Wrap in tryCatch so a malformed file (bad encoding, corrupt workbook,
+      # etc.) surfaces a message instead of an unhandled read_* error.
+      df <- tryCatch({
+        switch(ext,
+          csv  = read_csv(input$mlDataFile$datapath, show_col_types = FALSE),
+          tsv  = read_tsv(input$mlDataFile$datapath, show_col_types = FALSE),
+          txt  = read_tsv(input$mlDataFile$datapath, show_col_types = FALSE),
+          xls  = read_xls(input$mlDataFile$datapath),
+          xlsx = read_xlsx(input$mlDataFile$datapath),
+          NULL  # unrecognized extension
+        )
+      }, error = function(e) NULL)
+
+      if (is.null(df)) {
+        showNotification(
+          paste0("Could not read \"", input$mlDataFile$name, "\". Please upload ",
+                 "a valid .csv, .tsv, .txt, .xls, or .xlsx file."),
+          type = "error", duration = 8
+        )
+        return(invisible(NULL))
+      }
+
       ml_data(as.data.frame(df))
       data_source(list(
         type = "file",
@@ -118,114 +170,42 @@ machineLearningServer <- function(id) {
       }
     })
 
-    # ---- Dynamic ID counters for each method ----
-    pca_instance_counter  <- reactiveVal(0)
-    knn_instance_counter  <- reactiveVal(0)
-    lda_instance_counter  <- reactiveVal(0)
-    cart_instance_counter <- reactiveVal(0)
-    rf_instance_counter   <- reactiveVal(0)
-    xgb_instance_counter  <- reactiveVal(0)
-
-    current_pca_module_id  <- reactive({ paste0("ml_pca_",  pca_instance_counter()) })
-    current_knn_module_id  <- reactive({ paste0("ml_knn_",  knn_instance_counter()) })
-    current_lda_module_id  <- reactive({ paste0("ml_lda_",  lda_instance_counter()) })
-    current_cart_module_id <- reactive({ paste0("ml_cart_", cart_instance_counter()) })
-    current_rf_module_id   <- reactive({ paste0("ml_rf_",   rf_instance_counter()) })
-    current_xgb_module_id  <- reactive({ paste0("ml_xgb_",  xgb_instance_counter()) })
-
+    # ---- Method switch: keep the hidden-tabset UIs in sync with the radio ----
+    # The sidebar/main-panel tabsetPanels already default to "PCA" (matching
+    # the radioButtons' default), so there's no first-load render to race
+    # against here. req() just skips the momentary NULL during the server's
+    # first flush, before the client's initial radio value has round-tripped
+    # back; the observer re-fires once the real value arrives.
     observeEvent(input$method, {
-      if (input$method == "PCA") {
-        pca_instance_counter(pca_instance_counter() + 1)
-        output$mlSidebarUI  <- renderUI({
-          req(current_pca_module_id())
-          PCASidebarUI(session$ns(current_pca_module_id()))
-        })
-        output$mlMainPanelUI <- renderUI({
-          req(current_pca_module_id())
-          PCAMainPanelUI(session$ns(current_pca_module_id()))
-        })
-      } else if (input$method == "KNN") {
-        knn_instance_counter(knn_instance_counter() + 1)
-        output$mlSidebarUI  <- renderUI({
-          req(current_knn_module_id())
-          KNNSidebarUI(session$ns(current_knn_module_id()))
-        })
-        output$mlMainPanelUI <- renderUI({
-          req(current_knn_module_id())
-          KNNMainPanelUI(session$ns(current_knn_module_id()))
-        })
-      } else if (input$method == "LDA") {
-        lda_instance_counter(lda_instance_counter() + 1)
-        output$mlSidebarUI  <- renderUI({
-          req(current_lda_module_id())
-          LDASidebarUI(session$ns(current_lda_module_id()))
-        })
-        output$mlMainPanelUI <- renderUI({
-          req(current_lda_module_id())
-          LDAMainPanelUI(session$ns(current_lda_module_id()))
-        })
-      } else if (input$method == "CART") {
-        cart_instance_counter(cart_instance_counter() + 1)
-        output$mlSidebarUI  <- renderUI({
-          req(current_cart_module_id())
-          CARTSidebarUI(session$ns(current_cart_module_id()))
-        })
-        output$mlMainPanelUI <- renderUI({
-          req(current_cart_module_id())
-          CARTMainPanelUI(session$ns(current_cart_module_id()))
-        })
-      } else if (input$method == "RF") {
-        rf_instance_counter(rf_instance_counter() + 1)
-        output$mlSidebarUI  <- renderUI({
-          req(current_rf_module_id())
-          RFSidebarUI(session$ns(current_rf_module_id()))
-        })
-        output$mlMainPanelUI <- renderUI({
-          req(current_rf_module_id())
-          RFMainPanelUI(session$ns(current_rf_module_id()))
-        })
-      } else if (input$method == "XGB") {
-        xgb_instance_counter(xgb_instance_counter() + 1)
-        output$mlSidebarUI  <- renderUI({
-          req(current_xgb_module_id())
-          XGBSidebarUI(session$ns(current_xgb_module_id()))
-        })
-        output$mlMainPanelUI <- renderUI({
-          req(current_xgb_module_id())
-          XGBMainPanelUI(session$ns(current_xgb_module_id()))
-        })
-      }
-    }, ignoreNULL = FALSE, ignoreInit = FALSE)
+      req(input$method)
+      updateTabsetPanel(session, "sidebarSwitch",    selected = input$method)
+      updateTabsetPanel(session, "mainPanelSwitch",  selected = input$method)
+    })
 
-    observeEvent(current_pca_module_id(), {
-      req(input$method == "PCA")
-      PCAServer(current_pca_module_id(), ml_data, shared_explanatory, shared_response)
-    }, ignoreNULL = TRUE)
-
-    observeEvent(current_knn_module_id(), {
-      req(input$method == "KNN")
-      KNNServer(current_knn_module_id(), ml_data, shared_explanatory, shared_response)
-    }, ignoreNULL = TRUE)
-
-    observeEvent(current_lda_module_id(), {
-      req(input$method == "LDA")
-      LDAServer(current_lda_module_id(), ml_data, shared_explanatory, shared_response)
-    }, ignoreNULL = TRUE)
-
-    observeEvent(current_cart_module_id(), {
-      req(input$method == "CART")
-      CARTServer(current_cart_module_id(), ml_data, shared_explanatory, shared_response)
-    }, ignoreNULL = TRUE)
-
-    observeEvent(current_rf_module_id(), {
-      req(input$method == "RF")
-      RFServer(current_rf_module_id(), ml_data, shared_explanatory, shared_response)
-    }, ignoreNULL = TRUE)
-
-    observeEvent(current_xgb_module_id(), {
-      req(input$method == "XGB")
-      XGBServer(current_xgb_module_id(), ml_data, shared_explanatory, shared_response)
-    }, ignoreNULL = TRUE)
+    # ---- Module servers: registered exactly once each, for the life of the
+    # session. Switching methods no longer creates/destroys module server
+    # instances (that was the source of the observer leak and the resulting
+    # "no tabsetPanel with id ..." console errors) -- it only swaps which
+    # tabsetPanel pane is visible. Because each module's own UI stays mounted
+    # in the DOM the whole time, its internal reactiveVals keep working
+    # unmodified, with no reset-on-switch mechanism needed: results/plots
+    # simply persist if the user switches away and back, instead of clearing.
+    #
+    # Registration waits for input$clientReady (set by the sessioninitialized
+    # script above) rather than running inline at session start, so the six
+    # modules' own tab-hiding runs against a DOM the client has actually
+    # finished binding. NOTE: as tested, this alone is not sufficient -- see
+    # the conversation writeup on each module's session$onFlushed(hideTab...)
+    # pattern needing a matching internal tweak before results tabs will
+    # actually start hidden under this architecture.
+    observeEvent(input$clientReady, {
+      PCAServer("ml_pca",   ml_data, shared_explanatory, shared_response)
+      KNNServer("ml_knn",   ml_data, shared_explanatory, shared_response)
+      LDAServer("ml_lda",   ml_data, shared_explanatory, shared_response)
+      CARTServer("ml_cart", ml_data, shared_explanatory, shared_response)
+      RFServer("ml_rf",     ml_data, shared_explanatory, shared_response)
+      XGBServer("ml_xgb",   ml_data, shared_explanatory, shared_response)
+    }, once = TRUE)
 
   })
 }

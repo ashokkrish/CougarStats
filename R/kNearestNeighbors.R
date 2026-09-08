@@ -259,10 +259,12 @@ KNNServer <- function(id, data, shared_explanatory, shared_response) {
     results_ever_calculated <- reactiveVal(FALSE)
     plots_ever_calculated <- reactiveVal(FALSE)
     
-    session$onFlushed(function() {
-      hideTab(inputId = "knnMainPanel", target = "results_tab")
-      hideTab(inputId = "knnMainPanel", target = "plots_tab")
-    }, once = TRUE)
+    # Called directly (not wrapped in session$onFlushed) so it applies
+    # immediately: the module is only ever created once the client has
+    # already bound this tab's markup, so the tabs being hidden already
+    # exist in the DOM by this point.
+    hideTab(inputId = "knnMainPanel", target = "results_tab")
+    hideTab(inputId = "knnMainPanel", target = "plots_tab")
     
     responseError <- reactiveVal(FALSE)
     predictorsError <- reactiveVal(FALSE)
