@@ -125,10 +125,12 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
     cart_iv$add_rule("cp", shinyvalidate::sv_gt(0, message = "Must be greater than 0."))
     cart_iv$enable()
     
-    session$onFlushed(function() {
-      hideTab(inputId = "cartMainPanel", target = "results_tab")
-      hideTab(inputId = "cartMainPanel", target = "plots_tab")
-    }, once = TRUE)
+    # Called directly (not wrapped in session$onFlushed) so it applies
+    # immediately: the module is only ever created once the client has
+    # already bound this tab's markup, so the tabs being hidden already
+    # exist in the DOM by this point.
+    hideTab(inputId = "cartMainPanel", target = "results_tab")
+    hideTab(inputId = "cartMainPanel", target = "plots_tab")
     
     # Uploaded Data tab
     output$uploadedDataContainer <- renderUI({
