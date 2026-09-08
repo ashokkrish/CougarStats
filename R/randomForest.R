@@ -133,10 +133,12 @@ RFServer <- function(id, data, shared_explanatory, shared_response) {
     rf_iv$enable()
 
     # ---- Hide result tabs until Calculate succeeds ----
-    session$onFlushed(function() {
-      hideTab(inputId = "rfMainPanel", target = "model_summary_tab")
-      hideTab(inputId = "rfMainPanel", target = "plots_tab")
-    }, once = TRUE)
+    # Called directly (not wrapped in session$onFlushed) so it applies
+    # immediately: the module is only ever created once the client has
+    # already bound this tab's markup, so the tabs being hidden already
+    # exist in the DOM by this point.
+    hideTab(inputId = "rfMainPanel", target = "model_summary_tab")
+    hideTab(inputId = "rfMainPanel", target = "plots_tab")
 
     # ---- Uploaded Data tab ----
     output$uploadedDataContainer <- renderUI({

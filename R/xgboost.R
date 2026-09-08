@@ -156,10 +156,12 @@ XGBServer <- function(id, data, shared_explanatory, shared_response) {
     xgb_iv$enable()
 
     # ---- Hide tabs until Calculate succeeds ----
-    session$onFlushed(function() {
-      hideTab(inputId = "xgbMainPanel", target = "model_summary_tab")
-      hideTab(inputId = "xgbMainPanel", target = "plots_tab")
-    }, once = TRUE)
+    # Called directly (not wrapped in session$onFlushed) so it applies
+    # immediately: the module is only ever created once the client has
+    # already bound this tab's markup, so the tabs being hidden already
+    # exist in the DOM by this point.
+    hideTab(inputId = "xgbMainPanel", target = "model_summary_tab")
+    hideTab(inputId = "xgbMainPanel", target = "plots_tab")
 
     # ---- Uploaded Data tab ----
     output$uploadedDataContainer <- renderUI({
