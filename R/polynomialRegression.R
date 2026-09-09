@@ -474,10 +474,10 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, u
         hide("polyNavbarContent")
         output$polyValidation <- renderUI({
           div(
-            class = "alert alert-warning",
+            class = "alert alert-danger",
             style = "margin-top: 15px;",
             icon("triangle-exclamation"),
-            strong(" Please upload data before calculating.")
+            strong(" Please upload a dataset before calculating.")
           )
         })
         return()
@@ -488,11 +488,11 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, u
       toggle("polyNavbarContent", condition = poly_iv$is_valid())
 
       output$polyValidation <- renderUI({
-        if (input_mode() == "upload" && !polyupvars_iv$is_valid()) {
-          validate(
-            need(nzchar(input$polyResponse),    "Please select a Response Variable (y)."),
-            need(nzchar(input$polyExplanatory), "Please select an Explanatory Variable (x)."),
-            errorClass = "validation"
+        if (input_mode() == "upload" && (!nzchar(input$polyResponse) || !nzchar(input$polyExplanatory))) {
+          div(
+            style = "margin-top: 15px;",
+            if (!nzchar(input$polyResponse))    p(strong("Please select a Response Variable (y)."),    style = "color: red;"),
+            if (!nzchar(input$polyExplanatory)) p(strong("Please select an Explanatory Variable (x)."), style = "color: red;")
           )
         }
       })
@@ -1216,9 +1216,17 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, u
     polyr_do_reset <- function() {
       updateNumericInput(session, "polyDegree",        value = 2)
       updateNumericInput(session, "polyScatterDegree", value = 2)
-      hide("polyVarPickersPanel")
-      updateSelectizeInput(session, "polyResponse",    choices = c(""), selected = "")
-      updateSelectizeInput(session, "polyExplanatory", choices = c(""), selected = "")
+      dat <- reg_data()
+      if (input_mode() == "upload" && !is.null(dat)) {
+        cols <- colnames(dat)
+        updateSelectizeInput(session, "polyResponse",    choices = cols, selected = "")
+        updateSelectizeInput(session, "polyExplanatory", choices = cols, selected = "")
+        shinyjs::delay(0, show("polyVarPickersPanel"))
+      } else {
+        hide("polyVarPickersPanel")
+        updateSelectizeInput(session, "polyResponse",    choices = c(""), selected = "")
+        updateSelectizeInput(session, "polyExplanatory", choices = c(""), selected = "")
+      }
       storedDatx(NULL)
       storedDaty(NULL)
       nDroppedRows(0)

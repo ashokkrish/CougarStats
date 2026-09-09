@@ -73,6 +73,11 @@ regressionAndCorrelationUI <- function(id) {
             value       = "4.51, 3.58, 4.31, 5.06, 5.64, 4.99, 5.29, 5.83, 4.70, 5.61, 4.90, 4.20",
             placeholder = "Enter numeric values separated by commas or spaces (e.g. 1,2,3 or 1 2 3)",
             rows        = 3
+          ),
+          p(
+            class = "text-muted",
+            style = "font-size: 0.85em; margin-top: 6px;",
+            tags$em("Note: Raw data entry is not available for Multiple Linear Regression and Binary Logistic Regression.")
           )
         )
       ),

@@ -72,6 +72,15 @@ SLRMainPanelUI <- function(id) {
           id = ns("slrNavbarPage"),
           theme = bs_theme(version = 4),
 
+          #### ---------------- Data Tab (upload mode only) --------------------------
+          tabPanel(
+            title = "Data",
+            value = "data_tab",
+            br(),
+            div(style = "overflow-x: auto;", DTOutput(ns("slrViewUploadTab"))),
+            br()
+          ),
+
           #### ---------------- SLR Tab ------------------------------------------------
           tabPanel(
             title = "Model",
@@ -607,8 +616,13 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NUL
     })
     
     outputOptions(output, "diagnosticPlotsWarning", suspendWhenHidden = FALSE)
-    
-    
+
+    observeEvent(TRUE, {
+      shinyjs::delay(0, {
+        hideTab(inputId = "slrNavbarPage", target = "data_tab")
+      })
+    }, once = TRUE)
+
     # output$downloadSLRcsv <- downloadHandler(
     #   filename    = function() paste0("SLR_Calculations", Sys.Date(), ".csv"),
     #   contentType = "text/csv",
@@ -647,6 +661,18 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NUL
       }
     )
     
+    output$slrViewUploadTab <- renderDT({
+      req(input_mode() == "upload", !is.null(reg_data()))
+      datatable(
+        reg_data(),
+        options = list(
+          pageLength = 25,
+          lengthMenu = list(c(25, 50, 100, -1), c("25", "50", "100", "All")),
+          scrollX    = TRUE
+        )
+      )
+    })
+
     output$slrViewUpload <- renderDT({
       req(input_mode() == "upload", !is.null(reg_data()))
       datatable(
@@ -864,10 +890,10 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NUL
       output$slrValidation <- renderUI({
         if (is.null(reg_data())) {
           return(div(
-            class = "alert alert-warning",
+            class = "alert alert-danger",
             style = "margin-top: 15px;",
             icon("triangle-exclamation"),
-            strong(" Please upload data before calculating.")
+            strong(" Please upload a dataset before calculating.")
           ))
         }
         
@@ -982,10 +1008,13 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NUL
         }
         
         if(!slruploadvars_iv$is_valid()) {
-          validate(
-            need(input$slrExplanatory != "", "Please select an Explanatory Variable (x)."),
-            need(input$slrResponse != "", "Please select a Response Variable (y)."),
-            errorClass = "myClass")
+          if (input$slrExplanatory == "" || input$slrResponse == "") {
+            return(div(
+              style = "margin-top: 15px;",
+              if (input$slrResponse == "")    p(strong("Please select a Response Variable (y)."),    style = "color: red;"),
+              if (input$slrExplanatory == "") p(strong("Please select an Explanatory Variable (x)."), style = "color: red;")
+            ))
+          }
 
           validate(
             need(!explanatoryInfoUploadSLR()$invalid, "The Explanatory Variable (x) contains non-numeric data.") %then%
@@ -1031,7 +1060,10 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NUL
       if(regcor_iv$is_valid()) {
         hide("uploadedDataPanel")
         if (input_mode() == "upload") {
+          showTab(inputId = "slrNavbarPage", target = "data_tab")
           if (!is.null(hide_shared)) hide_shared(TRUE)
+        } else {
+          hideTab(inputId = "slrNavbarPage", target = "data_tab")
         }
 
         if (input_mode() == "upload") {
@@ -2804,6 +2836,7 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NUL
       hide(id = "regCorrMP")
       hide("uploadedDataPanel")
       shinyjs::reset("inputPanel")
+      hideTab(inputId = "slrNavbarPage", target = "data_tab")
       showTab(inputId = "slrNavbarPage", target = "Inference")
       showTab(inputId = "slrNavbarPage", target = "Prediction")
       if (!is.null(input$slrNavbarPage)) {
@@ -2822,6 +2855,7 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NUL
         hide(id = "regCorrMP")
         hide("uploadedDataPanel")
         shinyjs::reset("inputPanel")
+        hideTab(inputId = "slrNavbarPage", target = "data_tab")
         showTab(inputId = "slrNavbarPage", target = "Inference")
         showTab(inputId = "slrNavbarPage", target = "Prediction")
         if (!is.null(input$slrNavbarPage)) {
