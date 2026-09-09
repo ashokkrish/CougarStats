@@ -1438,15 +1438,19 @@ statInfrUI <- function(id) {
                     ns = ns,
                     condition = "input.anovaFormat == 'Multiple'",
                     
-                    selectizeInput(
-                      inputId = ns("anovaMultiColumns"),
-                      label = strong("Choose columns to conduct analysis"),
-                      choices = c(""),
-                      multiple = TRUE,
+                    shinyWidgets::pickerInput(
+                      inputId  = ns("anovaMultiColumns"),
+                      label    = strong("Choose columns to conduct analysis"),
+                      choices  = c(""),
                       selected = NULL,
-                      options = list(hideSelected = FALSE,
-                                     placeholder = 'Select two or more columns',
-                                     onInitialize = I('function() { this.setValue(""); }')))
+                      multiple = TRUE,
+                      options  = list(
+                        `actions-box` = TRUE,
+                        selectedTextFormat = "values",
+                        multipleSeperator = ", ",
+                        title = "Select two or more columns"
+                      )
+                    )
                   ), #multiple column anova
                   
                   conditionalPanel(
@@ -1489,18 +1493,27 @@ statInfrUI <- function(id) {
                 choiceValues = c("posthoc"),
                 selected = NULL),
               
-              selectizeInput(
-                inputId = ns("anovaGraphs"),
-                label = strong("Graph Options"),
-                choices = c("Side-by-side Boxplot",
-                            "Histogram of Residuals",
-                            "QQ Plot of Residuals",
-                            "Plot Group Means"),
+              shinyWidgets::pickerInput(
+                inputId  = ns("anovaGraphs"),
+                label    = strong("Graph Options"),
+                choices  = c(
+                  "Side-by-side Boxplot",
+                  "Histogram of Residuals",
+                  "QQ Plot of Residuals",
+                  "Plot Group Means"
+                ),
                 multiple = TRUE,
-                selected = c("Side-by-side Boxplot",
-                             "Plot Group Means"),
-                options = list(hideSelected = FALSE,
-                               placeholder = 'Select graph(s) to display')), 
+                selected = c(
+                  "Side-by-side Boxplot",
+                  "Plot Group Means"
+                ),
+                options = list(
+                  `actions-box`      = TRUE,
+                  selectedTextFormat = "values",
+                  multipleSeperator  = ", ",
+                  title              = "Select graph(s) to display"
+                )
+              )
               
             ), #anova conditionalPanel
             
@@ -1539,15 +1552,19 @@ statInfrUI <- function(id) {
                     ns = ns,
                     condition = "input.kwFormat == 'Multiple'",
                     
-                    selectizeInput(
-                      inputId = ns("kwMultiColumns"),
-                      label = strong("Choose columns to conduct analysis"),
-                      choices = c(""),
-                      multiple = TRUE,
+                    shinyWidgets::pickerInput(
+                      inputId  = ns("kwMultiColumns"),
+                      label    = strong("Choose columns to conduct analysis"),
+                      choices  = c(""),
                       selected = NULL,
-                      options = list(hideSelected = FALSE,
-                                     placeholder = 'Select two or more columns',
-                                     onInitialize = I('function() { this.setValue(""); }')))
+                      multiple = TRUE,
+                      options = list(
+                        `actions-box`      = TRUE,
+                        selectedTextFormat = "values",
+                        multipleSeperator  = ", ",
+                        title              = "Select two or more columns"
+                      )
+                    )
                   ), #multiple column kw
                   
                   conditionalPanel(
@@ -1582,6 +1599,26 @@ statInfrUI <- function(id) {
                              "1%"),
                 selected = "5%",
                 inline   = TRUE),
+              
+              shinyWidgets::pickerInput(
+                inputId  = ns("kwGraphs"),
+                label    = strong("Graph Options"),
+                choices  = c(
+                  "Side-by-side Boxplot",
+                  "Plot Group Means"
+                ),
+                multiple = TRUE,
+                selected = c(
+                  "Side-by-side Boxplot",
+                  "Plot Group Means"
+                ),
+                options = list(
+                  `actions-box`      = TRUE,
+                  selectedTextFormat = "values",
+                  multipleSeperator  = ", ",
+                  title              = "Select graph(s) to display"
+                )
+              )
             ) #Kruskal-Wallis conditionalPanel
           ), #Multiple Samples conditionalPanel
           
@@ -2409,7 +2446,7 @@ statInfrUI <- function(id) {
                       plotOptionsMenuUI(
                         id       = ns("anovaBoxplot"),
                         plotType = "Boxplot",
-                        title    = "Side-by-Side Boxplot"),
+                        title    = "Side-by-side Boxplot"),
                       uiOutput(ns("renderAnovaBoxplot"))
                     ),
                     
@@ -2456,8 +2493,9 @@ statInfrUI <- function(id) {
                         id     = ns("anovaMeanPlot"),
                         title  = "Group Means",
                         xlab   = "Group",
-                        ylab   = "Mean",
-                        colour = "#0F3345"),
+                        ylab   = "Sample Mean",
+                        colour = "#0F3345",
+                        includeFlip = FALSE),
                       uiOutput(ns("renderAnovaMeanPlot"))
                     )
                   ),
@@ -2501,6 +2539,43 @@ statInfrUI <- function(id) {
                     DTOutput("renderrankedmean"),
                     
                     uiOutput(ns("renderKWRM"))
+                  ),
+                  
+                  tabPanel(
+                    title = "Graphs",
+                    
+                    conditionalPanel(
+                      ns = ns,
+                      condition = "input.kwGraphs.indexOf('Side-by-side Boxplot') > -1",
+                      
+                      titlePanel("Side-by-side Boxplot"),
+                      br(),
+                      br(),
+                      plotOptionsMenuUI(
+                        id       = ns("kwBoxplot"),
+                        plotType = "Boxplot",
+                        title    = "Side-by-side Boxplot"
+                      ),
+                      uiOutput(ns("renderKWBoxplot"))
+                    ),
+                    
+                    conditionalPanel(
+                      ns = ns,
+                      condition = "input.kwGraphs.indexOf('Plot Group Means') > -1",
+                      
+                      titlePanel("Group Means"),
+                      br(),
+                      br(),
+                      plotOptionsMenuUI(
+                        id     = ns("kwMeanPlot"),
+                        title  = "Group Means",
+                        xlab   = "Group",
+                        ylab   = "Sample Mean",
+                        colour = "#0F3345",
+                        includeFlip = FALSE
+                      ),
+                      uiOutput(ns("renderKWMeanPlot"))
+                    )
                   ),
                   
                   tabPanel(
@@ -3670,6 +3745,8 @@ statInfrServer <- function(id) {
     plotOptionsMenuServer("anovaHistogram")
     plotOptionsMenuServer("anovaQQplot")
     plotOptionsMenuServer("anovaMeanPlot")
+    plotOptionsMenuServer("kwBoxplot")
+    plotOptionsMenuServer("kwMeanPlot")
     
     #  ========================================================================= #
     ## -------- Functions ------------------------------------------------------
@@ -11657,6 +11734,51 @@ statInfrServer <- function(id) {
     })
 
     ### ------------ Kruskal-Wallis Outputs ------------------------------------------
+    
+    #### ---------------- Side-by-side Boxplot ----
+    output$kwBoxplot <- renderPlot({
+      req(si_iv$is_valid())
+      data <- kwResults()$data
+      
+      df_boxplot <- data.frame(sample = c(data[,"ind"]),
+                               data = c(data[,"values"]))
+      colnames(df_boxplot) <- c("sample", "data")
+      
+      RenderSideBySideBoxplot(df_boxplot[,"data"],
+                              df_boxplot,
+                              input[["kwBoxplot-Colour"]],
+                              input[["kwBoxplot-Title"]],
+                              input[["kwBoxplot-Xlab"]],
+                              input[["kwBoxplot-Ylab"]],
+                              input[["kwBoxplot-BoxWidth"]] / 10,
+                              input[["kwBoxplot-Gridlines"]],
+                              input[["kwBoxplot-Flip"]],
+                              input[["kwBoxplot-OutlierLabels"]])
+      
+    }, height = function() {GetPlotHeight(input[["kwBoxplot-Height"]], input[["kwBoxplot-HeightPx"]], ui = FALSE)},
+    width = function() {GetPlotWidth(input[["kwBoxplot-Width"]], input[["kwBoxplot-WidthPx"]], ui = FALSE)}
+    )
+    
+    #### ---------------- Group Means Plot ----
+    output$kwMeanPlot<- renderPlot({
+      req(si_iv$is_valid())
+      data <- as.data.frame(kwResults()$data)
+      groups <- kwResults()$factornames
+      
+      RenderMeanPlot(data,
+                     groups,
+                     input[["kwMeanPlot-Colour"]],
+                     input[["kwMeanPlot-Title"]],
+                     input[["kwMeanPlot-Xlab"]],
+                     input[["kwMeanPlot-Ylab"]],
+                     input[["kwMeanPlot-Gridlines"]],
+                     input[["kwMeanPlot-Flip"]])
+      
+    }, height = function() {GetPlotHeight(input[["kwMeanPlot-Height"]], input[["kwMeanPlot-HeightPx"]], ui = FALSE)},
+    width = function() {GetPlotWidth(input[["kwMeanPlot-Width"]], input[["kwMeanPlot-WidthPx"]], ui = FALSE)}
+    )
+    
+    # ------------ Uploaded data tables ---------------
     output$kwHT <- kruskalWallisHT(kwResults, reactive({input$kwSigLvl}))
     output$kwUploadTable <- kruskalWallisUpload(kwUploadData, reactive({kwupload_iv$is_valid()}))
     output$kwInitialUploadTable <- kruskalWallisUploadInitial(kwUploadData)
@@ -12388,23 +12510,27 @@ statInfrServer <- function(id) {
       if(anovaupload_iv$is_valid())
       {
         freezeReactiveValue(input, "anovaMultiColumns")
-        updateSelectizeInput(session = getDefaultReactiveDomain(),
-                             "anovaMultiColumns",
-                             choices = c(colnames(anovaUploadData()))
+        updatePickerInput(
+          session = getDefaultReactiveDomain(),
+          inputId = "anovaMultiColumns",
+          choices = colnames(anovaUploadData()),
+          selected = character(0)
         )
-
+        
         freezeReactiveValue(input, "anovaResponse")
-        updateSelectizeInput(session = getDefaultReactiveDomain(),
-                             "anovaResponse",
-                             choices = c(colnames(anovaUploadData()))
+        updateSelectizeInput(
+          session = getDefaultReactiveDomain(),
+          "anovaResponse",
+          choices = colnames(anovaUploadData())
         )
-
+        
         freezeReactiveValue(input, "anovaFactors")
-        updateSelectizeInput(session = getDefaultReactiveDomain(),
-                             "anovaFactors",
-                             choices = c(colnames(anovaUploadData()))
+        updateSelectizeInput(
+          session = getDefaultReactiveDomain(),
+          "anovaFactors",
+          choices = colnames(anovaUploadData())
         )
-
+        
         shinyjs::show(id = "anovaUploadInputs")
         goToUploadedDataTab("anovaTabset")
       }
@@ -12424,10 +12550,11 @@ statInfrServer <- function(id) {
         updateRadioButtons(session, "kwFormat", selected = "Multiple")
         
         freezeReactiveValue(input, "kwMultiColumns")
-        updateSelectizeInput(session = getDefaultReactiveDomain(),
-                             "kwMultiColumns",
-                             choices = c(colnames(kwUploadData())),
-                             selected = character(0)
+        updatePickerInput(
+          session = getDefaultReactiveDomain(),
+          inputId = "kwMultiColumns",
+          choices = colnames(kwUploadData()),
+          selected = character(0)
         )
         
         freezeReactiveValue(input, "kwResponse")
@@ -12479,8 +12606,8 @@ statInfrServer <- function(id) {
       output$renderAnovaHistogram <- renderUI({
         tagList(
           plotOutput(session$ns("anovaHistogram"),
-                     height = GetPlotHeight(input[["anovaBoxplot-Height"]], input[["anovaBoxplot-HeightPx"]], ui = TRUE),
-                     width = GetPlotWidth(input[["anovaBoxplot-Width"]], input[["anovaBoxplot-WidthPx"]], ui = TRUE)),
+                     height = GetPlotHeight(input[["anovaHistogram-Height"]], input[["anovaHistogram-HeightPx"]], ui = TRUE),
+                     width = GetPlotWidth(input[["anovaHistogram-Width"]], input[["anovaHistogram-WidthPx"]], ui = TRUE)),
           br(),
           br(),
           hr()
@@ -12503,6 +12630,28 @@ statInfrServer <- function(id) {
           plotOutput(session$ns("anovaMeanPlot"),
                      height = GetPlotHeight(input[["anovaMeanPlot-Height"]], input[["anovaMeanPlot-HeightPx"]], ui = TRUE),
                      width = GetPlotWidth(input[["anovaMeanPlot-Width"]], input[["anovaMeanPlot-WidthPx"]], ui = TRUE)),
+          br(),
+          br(),
+          hr()
+        )
+      })
+      
+      output$renderKWBoxplot <- renderUI({
+        tagList(
+          plotOutput(session$ns("kwBoxplot"),
+                     height = GetPlotHeight(input[["kwBoxplot-Height"]], input[["kwBoxplot-HeightPx"]], ui = TRUE),
+                     width = GetPlotWidth(input[["kwBoxplot-Width"]], input[["kwBoxplot-WidthPx"]], ui = TRUE)),
+          br(),
+          br(),
+          hr()
+        )
+      })
+      
+      output$renderKWMeanPlot <- renderUI({
+        tagList(
+          plotOutput(session$ns("kwMeanPlot"),
+                     height = GetPlotHeight(input[["kwMeanPlot-Height"]], input[["kwMeanPlot-HeightPx"]], ui = TRUE),
+                     width = GetPlotWidth(input[["kwMeanPlot-Width"]], input[["kwMeanPlot-WidthPx"]], ui = TRUE)),
           br(),
           br(),
           hr()
@@ -13117,6 +13266,18 @@ statInfrServer <- function(id) {
         session,
         "sidebysidewRankPlots",
         selected = c("sidebysidewRankSum", "sidebysidewRankQQ")
+      )
+      
+      updatePickerInput(
+        session,
+        "anovaGraphs",
+        selected = c("Side-by-side Boxplot", "Plot Group Means")
+      )
+      
+      updatePickerInput(
+        session,
+        "kwGraphs",
+        selected = c("Side-by-side Boxplot", "Plot Group Means")
       )
 
       ## -- Raw-data text areas --
