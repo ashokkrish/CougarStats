@@ -12661,20 +12661,14 @@ statInfrServer <- function(id) {
       })
       
       observeEvent(input$goInference, {
-        
+        req(si_iv$is_valid())
         if (input$multipleMethodChoice == "kw") {
           kwDisplayState("analysis")
-          
-          req(kwUploadData())
-          req(kwupload_iv$is_valid())
           updateTabsetPanel(session, inputId = "kwTabset", selected = "Analysis")
         }
         
         if (input$multipleMethodChoice == "anova") {
           anovaDisplayState("analysis")
-          
-          req(anovaUploadData())
-          req(anovaupload_iv$is_valid())
           updateTabsetPanel(session, inputId = "anovaTabset", selected = "Analysis")
         }
       })
