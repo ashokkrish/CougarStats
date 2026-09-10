@@ -12,38 +12,30 @@ LogisticRegressionSidebarUI <- function(id) {
       useShinyjs(),
       withMathJax(
         helpText("Select a binary response variable (must have exactly two unique values: 0 or 1)."),
-        div(
-          id = ns("responseVariableWrapper"),
-          pickerInput(
-            ns("responseVariable"),
-            strong("Binary Response Variable (\\(y\\))"),
-            choices = NULL,
-            multiple = FALSE, # This ensures only one selection is allowed
-            options = list(
-              `live-search` = TRUE,
-              title = "Nothing selected"
-            )
-          ),
-          uiOutput(ns("responseVariableError"))
+        pickerInput(
+          ns("responseVariable"),
+          strong("Binary Response Variable (\\(y\\))"),
+          choices = NULL,
+          multiple = FALSE,
+          options = list(
+            `live-search` = TRUE,
+            title = "Nothing selected"
+          )
         ),
         uiOutput(ns("responseVariableWarning")),
         helpText("Select one or more explanatory variables."),
-        div(
-          id = ns("explanatoryVariablesWrapper"),
-          pickerInput(
-            ns("explanatoryVariables"),
-            strong("Explanatory Variables (x₁, x₂, …, xₖ)"),
-            choices  = NULL,
-            multiple = TRUE,
-            options = list(
-              `actions-box`       = TRUE,
-              `live-search`       = TRUE,
-              title = "Nothing selected",
-              selectedTextFormat = "values",
-              multipleSeperator  = ", "
-            )
-          ),
-          uiOutput(ns("explanatoryVariablesError"))
+        pickerInput(
+          ns("explanatoryVariables"),
+          strong("Explanatory Variables (x₁, x₂, …, xₖ)"),
+          choices  = NULL,
+          multiple = TRUE,
+          options = list(
+            `actions-box`       = TRUE,
+            `live-search`       = TRUE,
+            title = "Nothing selected",
+            selectedTextFormat  = "values",
+            multipleSeperator   = ", "
+          )
         ),
         actionButton(ns("calculate"), "Calculate",    class = "act-btn"),
         actionButton(ns("reset"),     "Reset Values", class = "act-btn")
@@ -58,29 +50,33 @@ LogisticRegressionMainPanelUI <- function(id) {
   tagList(
     useShinyjs(),
     uiOutput(ns("noFileWarning")),
-    navbarPage(title = NULL,
-               tabPanel(
-                 title = "Data",
-                 value = "data_tab",
-                 br(),
-                 div(style = "overflow-x: auto;", DTOutput(ns("uploadedDataTable"))),
-                 br()
-               ),
-               tabPanel(title = "Model",
-                        uiOutput(ns("Equations"))
-               ),
-               tabPanel(title = "Analysis of Deviance",
-                        uiOutput(ns("anovaOutput"))
-               ),
-               tabPanel(title = "Diagnostic Plot",
-                        value = "diagnostic_plot_tab",
-                        h3("Logistic Regression Plot"),
-                        plotOptionsMenuUI(ns("logrPlotOptions"), "Scatterplot", xlab = "x", ylab = "y"),
-                        plotOutput(ns("logrScatterplot"))
-               ),
-               id = ns("mainPanel"),
-               theme = bs_theme(version = 4)
-    )
+    uiOutput(ns("logrResponseWarn")),
+    uiOutput(ns("logrExplanatoryWarn")),
+    hidden(div(id = ns("logrNavPanel"),
+      navbarPage(title = NULL,
+                 tabPanel(
+                   title = "Data",
+                   value = "data_tab",
+                   br(),
+                   div(style = "overflow-x: auto;", DTOutput(ns("uploadedDataTable"))),
+                   br()
+                 ),
+                 tabPanel(title = "Model",
+                          uiOutput(ns("Equations"))
+                 ),
+                 tabPanel(title = "Analysis of Deviance",
+                          uiOutput(ns("anovaOutput"))
+                 ),
+                 tabPanel(title = "Diagnostic Plot",
+                          value = "diagnostic_plot_tab",
+                          h3("Logistic Regression Plot"),
+                          plotOptionsMenuUI(ns("logrPlotOptions"), "Scatterplot", xlab = "x", ylab = "y"),
+                          plotOutput(ns("logrScatterplot"))
+                 ),
+                 id = ns("mainPanel"),
+                 theme = bs_theme(version = 4)
+      )
+    ))
   )
 }
 
@@ -98,55 +94,27 @@ LogisticRegressionServer <- function(id, reg_data, reset_upload, upload_error = 
     )
     
     noFileCalculate <- reactiveVal(FALSE)
+    logrResponseWarn    <- reactiveVal(FALSE)
+    logrExplanatoryWarn <- reactiveVal(FALSE)
     calculation_done <- reactiveVal(FALSE)
     valid_analysis_results <- reactiveVal(NULL)  # Store valid results for the diagnostic plot
-    
-    # Reactive values for validation errors
-    responseVarError <- reactiveVal(FALSE)
-    explanatoryVarsError <- reactiveVal(FALSE)
     
     observeEvent(input$explanatoryVariables, {
       if (!isTruthy(input$explanatoryVariables)) {
         output$anovaOutput <- renderUI({})
       }
     }, ignoreNULL = FALSE)
-    
-    # Error message UI outputs
-    output$responseVariableError <- renderUI({
-      if (responseVarError()) {
-        tags$div(
-          class = "text-danger",
-          style = "font-size: 12px; margin-top: -10px; margin-bottom: 10px;",
-          icon("exclamation-circle"),
-          "Please select a binary response variable."
-        )
-      }
-    })
-    
-    output$explanatoryVariablesError <- renderUI({
-      if (explanatoryVarsError()) {
-        tags$div(
-          class = "text-danger",
-          style = "font-size: 12px; margin-top: -10px; margin-bottom: 10px;",
-          icon("exclamation-circle"),
-          "Please select at least one explanatory variable."
-        )
-      }
-    })
-    
-    # Clear errors when variables are selected
+
+    output$responseVariableError     <- renderUI({ NULL })
+    output$explanatoryVariablesError <- renderUI({ NULL })
+
+    # Clear main-panel warnings when variables are selected
     observeEvent(input$responseVariable, {
-      if (isTruthy(input$responseVariable)) {
-        responseVarError(FALSE)
-        shinyjs::removeClass(id = "responseVariableWrapper", class = "has-error")
-      }
+      if (isTruthy(input$responseVariable)) logrResponseWarn(FALSE)
     })
-    
+
     observeEvent(input$explanatoryVariables, {
-      if (length(input$explanatoryVariables) >= 1) {
-        explanatoryVarsError(FALSE)
-        shinyjs::removeClass(id = "explanatoryVariablesWrapper", class = "has-error")
-      }
+      if (length(input$explanatoryVariables) >= 1) logrExplanatoryWarn(FALSE)
     })
     
     perform_logr_analysis <- function() {
@@ -199,30 +167,19 @@ LogisticRegressionServer <- function(id, reg_data, reset_upload, upload_error = 
         if (!is.null(upload_error)) upload_error(FALSE)
       }
       
-      # Validate response variable
-      hasResponseVar <- isTruthy(input$responseVariable)
-      if (!hasResponseVar) {
-        responseVarError(TRUE)
-        shinyjs::addClass(id = "responseVariableWrapper", class = "has-error")
-      } else {
-        responseVarError(FALSE)
-        shinyjs::removeClass(id = "responseVariableWrapper", class = "has-error")
-      }
-      
-      # Validate explanatory variables (need at least 1)
+      # Validate response and explanatory variables
+      hasResponseVar     <- isTruthy(input$responseVariable)
       hasExplanatoryVars <- isTruthy(input$explanatoryVariables) && length(input$explanatoryVariables) >= 1
-      if (!hasExplanatoryVars) {
-        explanatoryVarsError(TRUE)
-        shinyjs::addClass(id = "explanatoryVariablesWrapper", class = "has-error")
-      } else {
-        explanatoryVarsError(FALSE)
-        shinyjs::removeClass(id = "explanatoryVariablesWrapper", class = "has-error")
-      }
-      
+
       # Only proceed if validation passes
       if (!hasResponseVar || !hasExplanatoryVars) {
+        logrResponseWarn(!hasResponseVar)
+        logrExplanatoryWarn(!hasExplanatoryVars)
+        hide("logrNavPanel")
         return()
       }
+      logrResponseWarn(FALSE)
+      logrExplanatoryWarn(FALSE)
       
       # Perform the analysis
       results <- perform_logr_analysis()
@@ -257,11 +214,25 @@ LogisticRegressionServer <- function(id, reg_data, reset_upload, upload_error = 
     output$noFileWarning <- renderUI({
       if (!noFileCalculate()) return(NULL)
       div(
-        class = "alert alert-warning",
+        class = "alert alert-danger",
         style = "margin-top: 15px;",
         icon("triangle-exclamation"),
-        strong(" Please upload data before calculating.")
+        strong(" Please Upload Data before calculating.")
       )
+    })
+
+    output$logrResponseWarn <- renderUI({
+      if (!logrResponseWarn()) return(NULL)
+      div(class = "alert alert-warning", style = "margin-top: 15px;",
+          icon("triangle-exclamation"),
+          strong(" Please select a Binary Response Variable before calculating."))
+    })
+
+    output$logrExplanatoryWarn <- renderUI({
+      if (!logrExplanatoryWarn()) return(NULL)
+      div(class = "alert alert-warning", style = "margin-top: 15px;",
+          icon("triangle-exclamation"),
+          strong(" Please select at least one Explanatory Variable before calculating."))
     })
 
     # Clear errors and reset calculation state when data is uploaded
@@ -481,6 +452,7 @@ LogisticRegressionServer <- function(id, reg_data, reset_upload, upload_error = 
                                  scrollX = TRUE))
       })
 
+      show("logrNavPanel")
       showTab(inputId = "mainPanel", target = "data_tab")
       if (!is.null(hide_shared)) hide_shared(TRUE)
 
@@ -551,6 +523,10 @@ LogisticRegressionServer <- function(id, reg_data, reset_upload, upload_error = 
     }, ignoreNULL = TRUE, ignoreInit = TRUE)
     
     logr_do_reset <- function() {
+      logrResponseWarn(FALSE)
+      logrExplanatoryWarn(FALSE)
+      noFileCalculate(FALSE)
+      hide("logrNavPanel")
       hideTab(inputId = "mainPanel", target = "data_tab")
       hideTab(inputId = "mainPanel", target = "Model")
       hideTab(inputId = "mainPanel", target = "Analysis of Deviance")
@@ -559,12 +535,7 @@ LogisticRegressionServer <- function(id, reg_data, reset_upload, upload_error = 
       valid_analysis_results(NULL)
       updatePickerInput(session, "responseVariable", selected = character(0))
       updatePickerInput(session, "explanatoryVariables", selected = character(0))
-      responseVarError(FALSE)
-      explanatoryVarsError(FALSE)
-      shinyjs::removeClass(id = "responseVariableWrapper", class = "has-error")
-      shinyjs::removeClass(id = "explanatoryVariablesWrapper", class = "has-error")
       output$responseVariableWarning <- renderUI(NULL)
-      noFileCalculate(FALSE)
       updateNavbarPage(session, "mainPanel", selected = "Model")
     }
 

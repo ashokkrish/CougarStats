@@ -95,6 +95,10 @@ PolynomialRegressionMainPanelUI <- function(id) {
       }
     ")),
 
+    uiOutput(ns("polyNoDataWarn")),
+    uiOutput(ns("polyResponseWarn")),
+    uiOutput(ns("polyExplanatoryWarn")),
+
     hidden(div(
       id = ns("polyResultsPanel"),
       uiOutput(ns("polyPerfectFitWarning")),
@@ -217,7 +221,7 @@ PolynomialRegressionMainPanelUI <- function(id) {
 # ---- Server --------------------------------------------------------------- #
 # =========================================================================== #
 
-PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NULL, clear_trigger = NULL, hide_shared = NULL) {
+PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NULL, clear_trigger = NULL, hide_shared = NULL, reset_raw_data = NULL) {
   moduleServer(id, function(input, output, session) {
 
     ns <- session$ns
@@ -229,12 +233,35 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, u
     }, once = TRUE)
 
     # ---- Reactive values --------------------------------------------------
-    nDroppedRows <- reactiveVal(0)
+    nDroppedRows   <- reactiveVal(0)
+    polyNoDataWarn <- reactiveVal(FALSE)
+    polyResponseWarn    <- reactiveVal(FALSE)
+    polyExplanatoryWarn <- reactiveVal(FALSE)
 
     # Store datx/daty so the scatterplot can rerender on degree change
     # without needing to re-click Calculate
     storedDatx <- reactiveVal(NULL)
     storedDaty <- reactiveVal(NULL)
+
+    # ---- Upload warning outputs -------------------------------------------
+    output$polyNoDataWarn <- renderUI({
+      if (!polyNoDataWarn()) return(NULL)
+      div(class = "alert alert-danger", style = "margin-top: 15px;",
+          icon("triangle-exclamation"),
+          strong(" Please Upload Data before calculating."))
+    })
+    output$polyResponseWarn <- renderUI({
+      if (!polyResponseWarn()) return(NULL)
+      div(class = "alert alert-warning", style = "margin-top: 15px;",
+          icon("triangle-exclamation"),
+          strong(" Please select a Response Variable before calculating."))
+    })
+    output$polyExplanatoryWarn <- renderUI({
+      if (!polyExplanatoryWarn()) return(NULL)
+      div(class = "alert alert-warning", style = "margin-top: 15px;",
+          icon("triangle-exclamation"),
+          strong(" Please select an Explanatory Variable before calculating."))
+    })
 
     # ---- Input Validators -------------------------------------------------
     poly_iv       <- InputValidator$new()
@@ -285,10 +312,26 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, u
     poly_iv$enable()
     polyupvars_iv$enable()
 
+    # ---- Clear no-data warning when data is uploaded ----------------------
+    observeEvent(reg_data(), {
+      if (!is.null(reg_data())) polyNoDataWarn(FALSE)
+    }, ignoreInit = TRUE, ignoreNULL = FALSE)
+
+    # ---- Clear vars warning when a variable is selected ------------------
+    observeEvent(input$polyExplanatory, {
+      if (nzchar(input$polyExplanatory)) polyExplanatoryWarn(FALSE)
+    }, ignoreInit = TRUE)
+    observeEvent(input$polyResponse, {
+      if (nzchar(input$polyResponse)) polyResponseWarn(FALSE)
+    }, ignoreInit = TRUE)
+
     # ---- Reset results when input mode changes ----------------------------
     observeEvent(input_mode(), {
       output$polyPerfectFitWarning <- renderUI({ NULL })
       output$polyValidation        <- renderUI({ NULL })
+      polyNoDataWarn(FALSE)
+      polyResponseWarn(FALSE)
+      polyExplanatoryWarn(FALSE)
       hide("polyResultsPanel")
       hideTab(inputId = "polyNavbarPage", target = "Inference")
       storedDatx(NULL)
@@ -470,32 +513,35 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, u
     observeEvent(input$goPolynomial, {
       if (input_mode() == "upload" && is.null(reg_data())) {
         if (!is.null(upload_error)) upload_error(TRUE)
-        show("polyResultsPanel")
-        hide("polyNavbarContent")
-        output$polyValidation <- renderUI({
-          div(
-            class = "alert alert-danger",
-            style = "margin-top: 15px;",
-            icon("triangle-exclamation"),
-            strong(" Please upload a dataset before calculating.")
-          )
-        })
+        polyNoDataWarn(TRUE)
+        polyResponseWarn(FALSE)
+        polyExplanatoryWarn(FALSE)
+        output$polyValidation <- renderUI({ NULL })
+        hide("polyResultsPanel")
         return()
       }
       if (!is.null(upload_error)) upload_error(FALSE)
+      polyNoDataWarn(FALSE)
+
+      if (input_mode() == "upload") {
+        missingResponse    <- !nzchar(input$polyResponse)
+        missingExplanatory <- !nzchar(input$polyExplanatory)
+        polyResponseWarn(missingResponse)
+        polyExplanatoryWarn(missingExplanatory)
+        if (missingResponse || missingExplanatory) {
+          output$polyValidation <- renderUI({ NULL })
+          hide("polyResultsPanel")
+          return()
+        }
+      } else {
+        polyResponseWarn(FALSE)
+        polyExplanatoryWarn(FALSE)
+      }
 
       show("polyResultsPanel")
       toggle("polyNavbarContent", condition = poly_iv$is_valid())
 
-      output$polyValidation <- renderUI({
-        if (input_mode() == "upload" && (!nzchar(input$polyResponse) || !nzchar(input$polyExplanatory))) {
-          div(
-            style = "margin-top: 15px;",
-            if (!nzchar(input$polyResponse))    p(strong("Please select a Response Variable (y)."),    style = "color: red;"),
-            if (!nzchar(input$polyExplanatory)) p(strong("Please select an Explanatory Variable (x)."), style = "color: red;")
-          )
-        }
-      })
+      output$polyValidation <- renderUI({ NULL })
 
       if (!poly_iv$is_valid()) return()
 
@@ -526,6 +572,19 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, u
         datx <- reg_data()$x
         daty <- reg_data()$y
         nDroppedRows(0)
+      }
+
+      if (is.null(datx) || is.null(daty)) {
+        hide("polyNavbarContent")
+        output$polyValidation <- renderUI({
+          div(
+            class = "alert alert-danger",
+            style = "margin-top: 15px;",
+            icon("triangle-exclamation"),
+            strong(" x and y must have the same number of valid numeric observations.")
+          )
+        })
+        return()
       }
 
       if (length(datx) <= degree + 1) {
@@ -1214,6 +1273,9 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, u
 
     # ---- Reset button -----------------------------------------------------
     polyr_do_reset <- function() {
+      polyNoDataWarn(FALSE)
+      polyResponseWarn(FALSE)
+      polyExplanatoryWarn(FALSE)
       updateNumericInput(session, "polyDegree",        value = 2)
       updateNumericInput(session, "polyScatterDegree", value = 2)
       dat <- reg_data()
@@ -1241,6 +1303,7 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, u
 
     observeEvent(input$resetPolynomial, {
       reset_upload()
+      if (!is.null(reset_raw_data)) reset_raw_data()
       polyr_do_reset()
     })
 

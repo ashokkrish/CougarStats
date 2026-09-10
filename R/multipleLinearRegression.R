@@ -21,38 +21,30 @@ MLRSidebarUI <- function(id) {
       useShinyjs(),
       withMathJax(
         helpText("Only numeric variables are selectable."),
-        div(
-          id = ns("responseVariableWrapper"),
-          pickerInput(
-            ns("responseVariable"),
-            strong("Response Variable (\\(y\\))"),
-            choices = NULL,
-            multiple = FALSE,
-            options = list(
-              `live-search` = TRUE,
-              title = "Nothing selected"
-            )
-          ),
-          uiOutput(ns("responseVariableError"))
+        pickerInput(
+          ns("responseVariable"),
+          strong("Response Variable (\\(y\\))"),
+          choices = NULL,
+          multiple = FALSE,
+          options = list(
+            `live-search` = TRUE,
+            title = "Nothing selected"
+          )
         ),
-        
+
         helpText("Select two or more explanatory variables (numeric)."),
         uiOutput(ns("singleOrMultipleHelpText")),
-        div(
-          id = ns("explanatoryVariablesWrapper"),
-          pickerInput(
-            inputId  = ns("explanatoryVariables"),
-            label = HTML("<strong>Explanatory Variables (\\(x_1, x_2, x_3...x_n\\)) </strong> "),
-            choices  = NULL,
-            multiple = TRUE,
-            options  = list(
-              `actions-box` = TRUE,   # "Select all / Deselect all" buttons
-              `live-search` = TRUE,   # built-in search box
-              selectedTextFormat = "values",
-              multipleSeperator = ", "
-            )
-          ),
-          uiOutput(ns("explanatoryVariablesError"))
+        pickerInput(
+          inputId = ns("explanatoryVariables"),
+          label   = HTML("<strong>Explanatory Variables (\\(x_1, x_2, x_3...x_n\\)) </strong>"),
+          choices  = NULL,
+          multiple = TRUE,
+          options  = list(
+            `actions-box`       = TRUE,
+            `live-search`       = TRUE,
+            selectedTextFormat  = "values",
+            multipleSeperator   = ", "
+          )
         ),
         actionButton(ns("calculate"), "Calculate", class = "act-btn"),
         actionButton(ns("reset"), "Reset Values", class = "act-btn")
@@ -75,18 +67,22 @@ MLRMainPanelUI <- function(id) {
       "))
     ),
     uiOutput(ns("noFileWarning")),
-    navbarPage(title = NULL,
-               tabPanel(
-                 title = "Data",
-                 value = "data_tab",
-                 br(),
-                 div(style = "overflow-x: auto;", DTOutput(ns("uploadedDataTable"))),
-                 br()
-               ),
-               tabPanel(title = "Model", uiOutput(ns("Equations")) ),
-               tabPanel(title = "Inference", uiOutput(ns("ANOVAAndInference"))),
-               id = ns("mainPanel"),
-               theme = bs_theme(version = 4))
+    uiOutput(ns("mlrResponseWarn")),
+    uiOutput(ns("mlrExplanatoryWarn")),
+    hidden(div(id = ns("mlrNavPanel"),
+      navbarPage(title = NULL,
+                 tabPanel(
+                   title = "Data",
+                   value = "data_tab",
+                   br(),
+                   div(style = "overflow-x: auto;", DTOutput(ns("uploadedDataTable"))),
+                   br()
+                 ),
+                 tabPanel(title = "Model", uiOutput(ns("Equations")) ),
+                 tabPanel(title = "Inference", uiOutput(ns("ANOVAAndInference"))),
+                 id = ns("mainPanel"),
+                 theme = bs_theme(version = 4))
+    ))
   )
 }
 
@@ -217,11 +213,9 @@ MLRServer <- function(id, reg_data, reset_upload, upload_error = NULL, clear_tri
     })
     
     noFileCalculate <- reactiveVal(FALSE)
-    
-    # Reactive values for validation errors
-    responseVarError <- reactiveVal(FALSE)
-    explanatoryVarsError <- reactiveVal(FALSE)
-    
+    mlrResponseWarn    <- reactiveVal(FALSE)
+    mlrExplanatoryWarn <- reactiveVal(FALSE)
+
     observeEvent(TRUE, {
       shinyjs::delay(0, {
         hideTab(inputId = "mainPanel", target = "data_tab")
@@ -254,16 +248,15 @@ MLRServer <- function(id, reg_data, reset_upload, upload_error = NULL, clear_tri
     ns <- session$ns
     
     mlr_do_reset <- function() {
+      mlrResponseWarn(FALSE)
+      mlrExplanatoryWarn(FALSE)
+      hide("mlrNavPanel")
       hideTab(inputId = "mainPanel", target = "data_tab")
       hideTab(inputId = "mainPanel", target = "Model")
       hideTab(inputId = "mainPanel", target = "Inference")
       hideTab(inputId = "mainPanel", target = "ANOVA & Parameter Estimates")
       updatePickerInput(session, "responseVariable", selected = character(0))
       updatePickerInput(session, "explanatoryVariables", selected = character(0))
-      responseVarError(FALSE)
-      explanatoryVarsError(FALSE)
-      shinyjs::removeClass(id = "responseVariableWrapper", class = "has-error")
-      shinyjs::removeClass(id = "explanatoryVariablesWrapper", class = "has-error")
       noFileCalculate(FALSE)
     }
 
@@ -554,41 +547,16 @@ MLRServer <- function(id, reg_data, reset_upload, upload_error = NULL, clear_tri
       showNotification("Encoding applied successfully.", type = "message")
     })
     
-    output$responseVariableError <- renderUI({
-      if (responseVarError()) {
-        tags$div(
-          class = "text-danger",
-          style = "font-size: 12px; margin-top: -10px; margin-bottom: 10px;",
-          icon("exclamation-circle"),
-          "Please select a response variable."
-        )
-      }
-    })
+    output$responseVariableError     <- renderUI({ NULL })
+    output$explanatoryVariablesError <- renderUI({ NULL })
     
-    output$explanatoryVariablesError <- renderUI({
-      if (explanatoryVarsError()) {
-        tags$div(
-          class = "text-danger",
-          style = "font-size: 12px; margin-top: -10px; margin-bottom: 10px;",
-          icon("exclamation-circle"),
-          "Please select at least two explanatory variables."
-        )
-      }
-    })
-    
-    # Clear errors when variables are selected
+    # Clear main-panel warnings when variables are selected
     observeEvent(input$responseVariable, {
-      if (isTruthy(input$responseVariable)) {
-        responseVarError(FALSE)
-        shinyjs::removeClass(id = "responseVariableWrapper", class = "has-error")
-      }
+      if (isTruthy(input$responseVariable)) mlrResponseWarn(FALSE)
     })
-    
+
     observeEvent(input$explanatoryVariables, {
-      if (length(input$explanatoryVariables) >= 2) {
-        explanatoryVarsError(FALSE)
-        shinyjs::removeClass(id = "explanatoryVariablesWrapper", class = "has-error")
-      }
+      if (length(input$explanatoryVariables) >= 2) mlrExplanatoryWarn(FALSE)
     })
     
     observe({ # input$calculate
@@ -601,31 +569,21 @@ MLRServer <- function(id, reg_data, reset_upload, upload_error = NULL, clear_tri
         if (!is.null(upload_error)) upload_error(FALSE)
       }
       
-      # Validate response variable
-      hasResponseVar <- isTruthy(input$responseVariable)
-      if (!hasResponseVar) {
-        responseVarError(TRUE)
-        shinyjs::addClass(id = "responseVariableWrapper", class = "has-error")
-      } else {
-        responseVarError(FALSE)
-        shinyjs::removeClass(id = "responseVariableWrapper", class = "has-error")
-      }
-      
-      # Validate explanatory variables (need at least 2)
+      # Validate response and explanatory variables
+      hasResponseVar    <- isTruthy(input$responseVariable)
       hasExplanatoryVars <- isTruthy(input$explanatoryVariables) && length(input$explanatoryVariables) >= 2
-      if (!hasExplanatoryVars) {
-        explanatoryVarsError(TRUE)
-        shinyjs::addClass(id = "explanatoryVariablesWrapper", class = "has-error")
-      } else {
-        explanatoryVarsError(FALSE)
-        shinyjs::removeClass(id = "explanatoryVariablesWrapper", class = "has-error")
-      }
       
       # Only show tabs if validation passes
       if (!hasResponseVar || !hasExplanatoryVars) {
+        mlrResponseWarn(!hasResponseVar)
+        mlrExplanatoryWarn(!hasExplanatoryVars)
+        hide("mlrNavPanel")
         return()
       }
-      
+      mlrResponseWarn(FALSE)
+      mlrExplanatoryWarn(FALSE)
+
+      show("mlrNavPanel")
       showTab(inputId = "mainPanel", target = "data_tab")
       showTab(inputId = "mainPanel", target = "Model")
       showTab(inputId = "mainPanel", target = "Inference")
@@ -644,11 +602,25 @@ MLRServer <- function(id, reg_data, reset_upload, upload_error = NULL, clear_tri
     output$noFileWarning <- renderUI({
       if (!noFileCalculate()) return(NULL)
       div(
-        class = "alert alert-warning",
+        class = "alert alert-danger",
         style = "margin-top: 15px;",
         icon("triangle-exclamation"),
-        strong(" Please upload data before calculating.")
+        strong(" Please Upload Data before calculating.")
       )
+    })
+
+    output$mlrResponseWarn <- renderUI({
+      if (!mlrResponseWarn()) return(NULL)
+      div(class = "alert alert-warning", style = "margin-top: 15px;",
+          icon("triangle-exclamation"),
+          strong(" Please select a Response Variable before calculating."))
+    })
+
+    output$mlrExplanatoryWarn <- renderUI({
+      if (!mlrExplanatoryWarn()) return(NULL)
+      div(class = "alert alert-warning", style = "margin-top: 15px;",
+          icon("triangle-exclamation"),
+          strong(" Please select at least two Explanatory Variables before calculating."))
     })
     
     output$Equations <- renderUI({

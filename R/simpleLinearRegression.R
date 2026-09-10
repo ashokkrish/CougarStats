@@ -58,6 +58,11 @@ SLRMainPanelUI <- function(id) {
       }
     ")),
     
+    uiOutput(ns("slrNoDataWarn")),
+    uiOutput(ns("slrResponseWarn")),
+    uiOutput(ns("slrExplanatoryWarn")),
+    uiOutput(ns("slrRawMismatchWarn")),
+
     hidden(div(
       id = ns("regCorrMP"),
       uiOutput(ns("perfectFitWarning")),
@@ -582,14 +587,18 @@ lineTestConfig <- list(
   )
 )
 
-SLRServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NULL, clear_trigger = NULL, hide_shared = NULL) {
+SLRServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NULL, clear_trigger = NULL, hide_shared = NULL, reset_raw_data = NULL) {
   moduleServer(id, function(input, output, session) {
 
 
     
     slrExportData <- reactiveVal(NULL)
 
-    nDroppedRows <- reactiveVal(0)
+    nDroppedRows  <- reactiveVal(0)
+    slrNoDataWarn <- reactiveVal(FALSE)
+    slrResponseWarn      <- reactiveVal(FALSE)
+    slrExplanatoryWarn   <- reactiveVal(FALSE)
+    slrRawMismatchWarn   <- reactiveVal(FALSE)
 
     hasHighLeverage <- reactiveVal(FALSE)
 
@@ -859,14 +868,56 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NUL
       }
     })
     
+    # Clear results whenever raw data inputs change
+    observeEvent(reg_data(), {
+      req(input_mode() == "raw")
+      hide(id = "regCorrMP")
+      output$perfectFitWarning <- renderUI({ NULL })
+      output$slrValidation     <- renderUI({ NULL })
+    }, ignoreInit = TRUE)
+
+    # ---- Upload warning outputs -------------------------------------------
+    output$slrNoDataWarn <- renderUI({
+      if (!slrNoDataWarn()) return(NULL)
+      div(class = "alert alert-danger", style = "margin-top: 15px;",
+          icon("triangle-exclamation"),
+          strong(" Please Upload Data before calculating."))
+    })
+    output$slrResponseWarn <- renderUI({
+      if (!slrResponseWarn()) return(NULL)
+      div(class = "alert alert-warning", style = "margin-top: 15px;",
+          icon("triangle-exclamation"),
+          strong(" Please select a Response Variable before calculating."))
+    })
+    output$slrExplanatoryWarn <- renderUI({
+      if (!slrExplanatoryWarn()) return(NULL)
+      div(class = "alert alert-warning", style = "margin-top: 15px;",
+          icon("triangle-exclamation"),
+          strong(" Please select an Explanatory Variable before calculating."))
+    })
+
+    output$slrRawMismatchWarn <- renderUI({
+      if (!slrRawMismatchWarn()) return(NULL)
+      div(class = "alert alert-danger", style = "margin-top: 15px;",
+          icon("triangle-exclamation"),
+          strong(" x and y must have the same number of valid numeric observations."))
+    })
+
+    # Clear no-data warning when data is uploaded
+    observeEvent(reg_data(), {
+      if (!is.null(reg_data()) && input_mode() == "upload") slrNoDataWarn(FALSE)
+    }, ignoreInit = TRUE, ignoreNULL = FALSE)
+
     ## NOTE: related to the old plot options UI.
     observeEvent(input$slrExplanatory, {
       updateTextInput(inputId = "xlab", value = input$slrExplanatory)
       output$perfectFitWarning <- renderUI({ NULL })
+      if (nzchar(input$slrExplanatory)) slrExplanatoryWarn(FALSE)
     })
     observeEvent(input$slrResponse, {
       updateTextInput(inputId = "ylab", value = input$slrResponse)
       output$perfectFitWarning <- renderUI({ NULL })
+      if (nzchar(input$slrResponse)) slrResponseWarn(FALSE)
     })
 
     observeEvent(input$goRegression, {
@@ -883,19 +934,47 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NUL
 
       ## SLR Validation messages ----
       output$perfectFitWarning <- renderUI({ NULL })
+
+      if (input_mode() == "upload" && is.null(reg_data())) {
+        slrNoDataWarn(TRUE)
+        slrResponseWarn(FALSE)
+        slrExplanatoryWarn(FALSE)
+        output$slrValidation      <- renderUI({ NULL })
+        output$missingRowsWarning <- renderUI({ NULL })
+        hide("regCorrMP")
+        return()
+      }
+      slrNoDataWarn(FALSE)
+
+      if (input_mode() == "upload") {
+        missingResponse    <- !nzchar(input$slrResponse)
+        missingExplanatory <- !nzchar(input$slrExplanatory)
+        slrResponseWarn(missingResponse)
+        slrExplanatoryWarn(missingExplanatory)
+        if (missingResponse || missingExplanatory) {
+          output$slrValidation      <- renderUI({ NULL })
+          output$missingRowsWarning <- renderUI({ NULL })
+          hide("regCorrMP")
+          return()
+        }
+      } else {
+        slrResponseWarn(FALSE)
+        slrExplanatoryWarn(FALSE)
+        if (is.null(reg_data())) {
+          slrRawMismatchWarn(TRUE)
+          output$missingRowsWarning <- renderUI({ NULL })
+          hide("regCorrMP")
+          return()
+        }
+        slrRawMismatchWarn(FALSE)
+      }
+
       showTab(inputId = "slrNavbarPage", target = "Inference")
       showTab(inputId = "slrNavbarPage", target = "Prediction")
       toggle(id = "SLRData", condition = !is.null(reg_data()) && regcor_iv$is_valid())
 
       output$slrValidation <- renderUI({
-        if (is.null(reg_data())) {
-          return(div(
-            class = "alert alert-danger",
-            style = "margin-top: 15px;",
-            icon("triangle-exclamation"),
-            strong(" Please upload a dataset before calculating.")
-          ))
-        }
+        if (is.null(reg_data())) return(NULL)
         
         # LINE STUFF ==========  
         
@@ -1008,14 +1087,6 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NUL
         }
         
         if(!slruploadvars_iv$is_valid()) {
-          if (input$slrExplanatory == "" || input$slrResponse == "") {
-            return(div(
-              style = "margin-top: 15px;",
-              if (input$slrResponse == "")    p(strong("Please select a Response Variable (y)."),    style = "color: red;"),
-              if (input$slrExplanatory == "") p(strong("Please select an Explanatory Variable (x)."), style = "color: red;")
-            ))
-          }
-
           validate(
             need(!explanatoryInfoUploadSLR()$invalid, "The Explanatory Variable (x) contains non-numeric data.") %then%
               need(explanatoryInfoUploadSLR()$sd != 0, "Explanatory Variable (x) must have a standard deviation greater than zero to perform regression and correlation analysis."),
@@ -1079,6 +1150,8 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NUL
           datx <- reg_data()$x
           daty <- reg_data()$y
         }
+
+        if (is.null(datx) || is.null(daty)) return()
 
         model <- lm(daty ~ datx)
 
@@ -2805,6 +2878,10 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NUL
       hide(id = "regCorrMP")
       output$perfectFitWarning <- renderUI({ NULL })
       nDroppedRows(0)
+      slrNoDataWarn(FALSE)
+      slrResponseWarn(FALSE)
+      slrExplanatoryWarn(FALSE)
+      slrRawMismatchWarn(FALSE)
       updateTextInput(inputId = "xlab", value = "x")
       updateTextInput(inputId = "ylab", value = "y")
     })
@@ -2827,12 +2904,17 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NUL
      
     observeEvent(input$resetRegCor, {
       reset_upload()
+      if (!is.null(reset_raw_data)) reset_raw_data()
       hasHighLeverage(FALSE)
       nDroppedRows(0)
       slrModel(NULL)
       slrDatX(NULL)
       slrDatY(NULL)
       output$perfectFitWarning <- renderUI({ NULL })
+      slrNoDataWarn(FALSE)
+      slrResponseWarn(FALSE)
+      slrExplanatoryWarn(FALSE)
+      slrRawMismatchWarn(FALSE)
       hide(id = "regCorrMP")
       hide("uploadedDataPanel")
       shinyjs::reset("inputPanel")
@@ -2852,6 +2934,10 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NUL
         slrDatX(NULL)
         slrDatY(NULL)
         output$perfectFitWarning <- renderUI({ NULL })
+        slrNoDataWarn(FALSE)
+        slrResponseWarn(FALSE)
+        slrExplanatoryWarn(FALSE)
+        slrRawMismatchWarn(FALSE)
         hide(id = "regCorrMP")
         hide("uploadedDataPanel")
         shinyjs::reset("inputPanel")

@@ -20,6 +20,11 @@ regressionAndCorrelationUI <- function(id) {
         condition = "input.dataInputMode == 'upload'",
         ns = ns,
         HTML(uploadDataDisclaimer),
+        tags$style(HTML(sprintf(
+          "#%s .progress { display: none !important; }
+           #%s .form-group { margin-bottom: 2px !important; }",
+          ns("regFileInputWrapper"), ns("regFileInputWrapper")
+        ))),
         div(
           id = ns("regFileInputWrapper"),
           fileInput(
@@ -38,7 +43,7 @@ regressionAndCorrelationUI <- function(id) {
           label = "Clear Data",
           icon  = icon("trash"),
           class = "btn-danger btn-sm",
-          style = "margin-bottom: 8px;"
+          style = "margin-top: 4px; margin-bottom: 8px;"
         ),
         conditionalPanel(
           condition = "output.regShowSheetPicker == true",
@@ -73,11 +78,6 @@ regressionAndCorrelationUI <- function(id) {
             value       = "4.51, 3.58, 4.31, 5.06, 5.64, 4.99, 5.29, 5.83, 4.70, 5.61, 4.90, 4.20",
             placeholder = "Enter numeric values separated by commas or spaces (e.g. 1,2,3 or 1 2 3)",
             rows        = 3
-          ),
-          p(
-            class = "text-muted",
-            style = "font-size: 0.85em; margin-top: 6px;",
-            tags$em("Note: Raw data entry is not available for Multiple Linear Regression and Binary Logistic Regression.")
           )
         )
       ),
@@ -93,18 +93,27 @@ regressionAndCorrelationUI <- function(id) {
         ),
         selected = "SLR"
       ),
+      conditionalPanel(
+        condition = "input.dataInputMode == 'raw'",
+        ns = ns,
+        p(
+          class = "text-muted",
+          style = "font-size: 0.85em; margin-top: -8px;",
+          tags$em("Note: Raw data entry is not available for Multiple Linear Regression and Binary Logistic Regression.")
+        )
+      ),
 
       uiOutput(ns("regressionSidebarUI"))
     ),
     mainPanel(
+      uiOutput(ns("regressionMainPanelUI")),
       hidden(div(
         id = ns("sharedDataPreview"),
         tags$h4("Uploaded Data",
                 style = "color: #18536F; font-weight: bold; margin-bottom: 10px; margin-top: 10px;"),
         div(style = "overflow-x: auto;", DTOutput(ns("sharedDataTable"))),
         br()
-      )),
-      uiOutput(ns("regressionMainPanelUI"))
+      ))
     )
   )
 }
@@ -250,21 +259,30 @@ regressionAndCorrelationServer <- function(id) {
     # Resets the parent file input — passed to children so their Reset button can clear it
     reset_upload <- function() shinyjs::reset("regUserData")
 
+    # Restores raw data text boxes to their hardcoded defaults
+    reset_raw_data <- function() {
+      if (isTRUE(input$multiple == "POLYR")) {
+        updateTextAreaInput(session, "rawX",
+          value = "0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10")
+        updateTextAreaInput(session, "rawY",
+          value = "4.997, 6.165, 6.95, 8.218, 9.405, 10.404, 10.425, 10.44, 9.393, 7.854, 5.168")
+      } else {
+        updateTextAreaInput(session, "rawX",
+          value = "4.51, 3.58, 4.31, 5.06, 5.64, 4.99, 5.29, 5.83, 4.70, 5.61, 4.90, 4.20")
+        updateTextAreaInput(session, "rawY",
+          value = "2.48, 2.26, 2.47, 2.77, 2.99, 3.05, 3.18, 3.46, 3.03, 3.26, 2.67, 2.53")
+      }
+    }
+
     # ---- Upload error state (red border + Required text on the file input) ----
     upload_error <- reactiveVal(FALSE)
 
     output$regUploadRequired <- renderUI({
       if (!upload_error()) return(NULL)
-      tagList(
-        tags$style(HTML(sprintf(
-          "#%s .input-group { outline: 2px solid #dc3545 !important; border-radius: 4px; }",
-          session$ns("regFileInputWrapper")
-        ))),
-        tags$p(
-          style = "color: #dc3545; font-size: 12px; margin-top: -8px; margin-bottom: 4px;",
-          "Required"
-        )
-      )
+      tags$style(HTML(sprintf(
+        "#%s .input-group { outline: 2px solid #dc3545 !important; border-radius: 4px; }",
+        session$ns("regFileInputWrapper")
+      )))
     })
 
     # Clear the upload error whenever a file loads successfully
@@ -368,7 +386,7 @@ regressionAndCorrelationServer <- function(id) {
 
     observeEvent(current_slr_module_id(), {
       req(input$multiple == "SLR")
-      SLRServer(current_slr_module_id(), reg_data, input_mode, reset_upload, upload_error, clear_trigger, hide_shared = hide_shared)
+      SLRServer(current_slr_module_id(), reg_data, input_mode, reset_upload, upload_error, clear_trigger, hide_shared = hide_shared, reset_raw_data = reset_raw_data)
     }, ignoreNULL = TRUE)
 
     observeEvent(current_mlr_module_id(), {
@@ -383,7 +401,7 @@ regressionAndCorrelationServer <- function(id) {
 
     observeEvent(current_polyr_module_id(), {
       req(input$multiple == "POLYR")
-      PolynomialRegressionServer(current_polyr_module_id(), reg_data, input_mode, reset_upload, upload_error, clear_trigger, hide_shared = hide_shared)
+      PolynomialRegressionServer(current_polyr_module_id(), reg_data, input_mode, reset_upload, upload_error, clear_trigger, hide_shared = hide_shared, reset_raw_data = reset_raw_data)
     }, ignoreNULL = TRUE)
 
     # ---- Shared data preview (shown immediately on upload, above child UI) ----
