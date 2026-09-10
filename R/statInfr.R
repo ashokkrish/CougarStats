@@ -12521,14 +12521,16 @@ statInfrServer <- function(id) {
         updateSelectizeInput(
           session = getDefaultReactiveDomain(),
           "anovaResponse",
-          choices = colnames(anovaUploadData())
+          choices = colnames(anovaUploadData()),
+          selected = ""
         )
         
         freezeReactiveValue(input, "anovaFactors")
         updateSelectizeInput(
           session = getDefaultReactiveDomain(),
           "anovaFactors",
-          choices = colnames(anovaUploadData())
+          choices = colnames(anovaUploadData()),
+          selected = ""
         )
         
         shinyjs::show(id = "anovaUploadInputs")
@@ -12561,13 +12563,13 @@ statInfrServer <- function(id) {
         updateSelectizeInput(session = getDefaultReactiveDomain(),
                              "kwResponse",
                              choices = c(colnames(kwUploadData())),
-                             selected = character(0)
+                             selected = ""
         )
         freezeReactiveValue(input, "kwFactors")
         updateSelectizeInput(session = getDefaultReactiveDomain(),
                              "kwFactors",
                              choices = c(colnames(kwUploadData())),
-                             selected = character(0)
+                             selected = ""
         )
         
         shinyjs::show(id = "kwUploadInputs")
@@ -13333,10 +13335,10 @@ statInfrServer <- function(id) {
       updateSelectizeInput(session, "depMeansUplSample2", selected = "")
       updateSelectizeInput(session, "signedRankUpl1", selected = "")
       updateSelectizeInput(session, "signedRankUpl2", selected = "")
-      updateSelectizeInput(session, "anovaMultiColumns", selected = character(0))
+      updatePickerInput(session, "anovaMultiColumns", selected = character(0))
       updateSelectizeInput(session, "anovaResponse", selected = "")
       updateSelectizeInput(session, "anovaFactors", selected = "")
-      updateSelectizeInput(session, "kwMultiColumns", selected = character(0))
+      updatePickerInput(session, "kwMultiColumns", selected = character(0))
       updateSelectizeInput(session, "kwResponse", selected = "")
       updateSelectizeInput(session, "kwFactors", selected = "")
 
