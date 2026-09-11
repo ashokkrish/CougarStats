@@ -317,6 +317,14 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, u
       if (!is.null(reg_data())) polyNoDataWarn(FALSE)
     }, ignoreInit = TRUE, ignoreNULL = FALSE)
 
+    # Clear results whenever raw data inputs change
+    observeEvent(reg_data(), {
+      req(input_mode() == "raw")
+      hide("polyResultsPanel")
+      output$polyPerfectFitWarning <- renderUI({ NULL })
+      output$polyValidation        <- renderUI({ NULL })
+    }, ignoreInit = TRUE, ignoreNULL = FALSE)
+
     # ---- Clear vars warning when a variable is selected ------------------
     observeEvent(input$polyExplanatory, {
       if (nzchar(input$polyExplanatory)) polyExplanatoryWarn(FALSE)

@@ -2915,6 +2915,7 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NUL
       slrResponseWarn(FALSE)
       slrExplanatoryWarn(FALSE)
       slrRawMismatchWarn(FALSE)
+      if (!is.null(hide_shared)) hide_shared(FALSE)
       hide(id = "regCorrMP")
       hide("uploadedDataPanel")
       shinyjs::reset("inputPanel")
