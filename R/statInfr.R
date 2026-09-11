@@ -1382,6 +1382,40 @@ statInfrUI <- function(id) {
             ns = ns,
             condition = 'input.siMethod == "Multiple"',
             
+            conditionalPanel(
+              ns = ns,
+              condition = 'input.multipleMethodChoice == "anova" || input.multipleMethodChoice == "kw"',
+              
+              HTML(uploadDataDisclaimer),
+              
+              fileInput(
+                inputId = ns("multipleUserData"),
+                label   = strong("Upload your data (.csv or .xls or .xlsx or .txt)"),
+                accept  = c(
+                  "text/csv",
+                  "text/comma-separated-values",
+                  "text/plain",
+                  ".csv",
+                  ".xls",
+                  ".xlsx"
+                )
+              ),
+              
+              uiOutput(ns("multipleUploadStatus"))
+            ),
+            
+            conditionalPanel(
+              ns = ns,
+              condition = "output.multipleShowSheetPicker == true",
+              selectizeInput(
+                inputId  = ns("multipleSheet"),
+                label    = strong("Choose a Sheet"),
+                choices  = c(""),
+                multiple = FALSE,
+                options  = list(placeholder = 'Select a sheet',
+                                onInitialize = I('function() { this.setValue(""); }')))
+            ),
+            
             HTML("<label class='si-label'><b>Hypothesis Test</b></label>"),
             
             radioButtons(
@@ -1395,32 +1429,6 @@ statInfrUI <- function(id) {
             conditionalPanel(
               ns = ns,
               condition = 'input.multipleMethodChoice == "anova"',
-              
-              HTML(uploadDataDisclaimer),
-              
-              fileInput(
-                inputId = ns("anovaUserData"),
-                label   = strong("Upload your data (.csv or .xls or .xlsx or .txt)"),
-                accept  = c("text/csv",
-                            "text/comma-separated-values",
-                            "text/plain",
-                            ".csv",
-                            ".xls",
-                            ".xlsx")),
-              
-              uiOutput(ns("anovaUploadStatus")),
-
-              conditionalPanel(
-                ns = ns,
-                condition = "output.anovaShowSheetPicker == true",
-                selectizeInput(
-                  inputId  = ns("anovaSheet"),
-                  label    = strong("Choose a Sheet"),
-                  choices  = c(""),
-                  multiple = FALSE,
-                  options  = list(placeholder = 'Select a sheet',
-                                  onInitialize = I('function() { this.setValue(""); }')))
-              ),
 
               hidden(tagList(
                 div(
@@ -1521,20 +1529,6 @@ statInfrUI <- function(id) {
             conditionalPanel(
               ns = ns,
               condition = 'input.multipleMethodChoice == "kw"',
-              
-              HTML(uploadDataDisclaimer),
-              
-              fileInput(
-                inputId = ns("kwUserData"),
-                label   = strong("Upload your data (.csv or .xls or .xlsx or .txt)"),
-                accept  = c("text/csv",
-                            "text/comma-separated-values",
-                            "text/plain",
-                            ".csv",
-                            ".xls",
-                            ".xlsx")),
-              
-              uiOutput(ns("kwUploadStatus")),
               
               hidden(tagList(
                 div(
@@ -2504,7 +2498,7 @@ statInfrUI <- function(id) {
                     id    = ns("anovaData"),
                     title = "Uploaded Data",
                     
-                    uiOutput(ns("renderAnovaDataView"))
+                    uiOutput(ns("anovaUploadedDataView"))
                   )
                 ) #anovaTabset tabsetPanel
               ), #Multiple Samples (ANOVA)
@@ -2582,7 +2576,7 @@ statInfrUI <- function(id) {
                     id    = ns("kwData"),
                     title = "Uploaded Data",
                     
-                    uiOutput(ns("renderKWData"))
+                    uiOutput(ns("kwUploadedDataView"))
                   )
                   
                 ), #tabsetPanel 
@@ -2645,8 +2639,7 @@ statInfrUI <- function(id) {
           ) #inferenceData
         ), #inferenceMP
         
-        uiOutput(ns("kwRawContainer")),
-        uiOutput(ns("anovaRawContainer"))
+        uiOutput(ns("multipleRawContainer"))
         
       ), #mainPanel
     ) #sidebarLayout
@@ -2722,10 +2715,9 @@ statInfrServer <- function(id) {
     twopopvarsum_iv <- InputValidator$new()
     twopopvar_iv <- InputValidator$new()
     twopopvarraw_iv <- InputValidator$new()
-    kwupload_iv <- InputValidator$new()
+    multipleupload_iv <- InputValidator$new()
     kwmulti_iv <- InputValidator$new()
     kwstacked_iv <- InputValidator$new()
-    anovaupload_iv <- InputValidator$new()
     anovamulti_iv <- InputValidator$new()
     anovastacked_iv <- InputValidator$new()
     chiSq2x2_iv <- InputValidator$new()
@@ -3306,17 +3298,18 @@ statInfrServer <- function(id) {
     onepropht_iv$add_rule("hypProportion", sv_gt(0))
     onepropht_iv$add_rule("hypProportion", sv_lt(1))
     
-    # Anova
-    anovaupload_iv$add_rule("anovaUserData", sv_required())
-    anovaupload_iv$add_rule("anovaUserData", ~ if(is.null(fileInputs$anovaStatus) || fileInputs$anovaStatus == 'reset') "Required")
-    anovaupload_iv$add_rule("anovaUserData", ~ if(!(tolower(tools::file_ext(input$anovaUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
-    anovaupload_iv$add_rule("anovaUserData", ~ if(ncol(anovaUploadData()) < 2) "Data must include at least two columns")
+    # shared KW and ANOVA upload widget 
+    multipleupload_iv$add_rule("multipleUserData", sv_required())
+    multipleupload_iv$add_rule("multipleUserData", ~ if(is.null(fileInputs$multipleStatus) || fileInputs$multipleStatus == 'reset') "Required")
+    multipleupload_iv$add_rule("multipleUserData", ~ if(!(tolower(tools::file_ext(input$multipleUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+    multipleupload_iv$add_rule("multipleUserData", ~ if(ncol(multipleUploadData()) < 2) "Data must include at least two columns")
     # anovaupload_iv$add_rule("anovaUserData", ~ if(nrow(anovaUploadData()) < 2) "")
     
+    # Anova
     # anovamulti_iv$add_rule("anovaMultiColumns", sv_required())
     anovamulti_iv$add_rule("anovaMultiColumns", ~ if(length(input$anovaMultiColumns) < 2) "Select at least two columns")
     anovamulti_iv$add_rule("anovaMultiColumns", ~ {
-      if (checkNumeric(anovaUploadData(), input$anovaMultiColumns)) {
+      if (checkNumeric(multipleUploadData(), input$anovaMultiColumns)) {
         "Selected column(s) contain non-numeric data."
       }
     })
@@ -3326,19 +3319,15 @@ statInfrServer <- function(id) {
     anovastacked_iv$add_rule("anovaResponse", ~ if(anovaStackedIsValid() == FALSE) "Response variable and factors column cannot be the same")
     anovastacked_iv$add_rule("anovaFactors", ~ if(anovaStackedIsValid() == FALSE) "Response variable and factors column cannot be the same")
     anovastacked_iv$add_rule("anovaResponse", ~ {
-      if (checkNumeric(anovaUploadData(), input$anovaResponse)) {
+      if (checkNumeric(multipleUploadData(), input$anovaResponse)) {
         "Response variable must be numeric."
       }
     })
     
     # Kruskal-Wallis
-    kwupload_iv$add_rule("kwUserData", sv_required())
-    kwupload_iv$add_rule("kwUserData", ~ if(is.null(fileInputs$kwStatus) || fileInputs$kwStatus == 'reset') "Required")
-    kwupload_iv$add_rule("kwUserData", ~ if(!(tolower(tools::file_ext(input$kwUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
-    kwupload_iv$add_rule("kwUserData", ~ if(ncol(kwUploadData()) < 2) "Data must include at least two columns")
     kwmulti_iv$add_rule("kwMultiColumns", ~ if(length(input$kwMultiColumns) < 2) "Select at least two columns")
     kwmulti_iv$add_rule("kwMultiColumns", ~ {
-      if (checkNumeric(kwUploadData(), input$kwMultiColumns)) {
+      if (checkNumeric(multipleUploadData(), input$kwMultiColumns)) {
         "Selected column(s) contain non-numeric data."
       }
     })
@@ -3348,7 +3337,7 @@ statInfrServer <- function(id) {
     kwstacked_iv$add_rule("kwResponse", ~ if(kwStackedIsValid() == FALSE) "Response variable and factors column cannot be the same")
     kwstacked_iv$add_rule("kwFactors", ~ if(kwStackedIsValid() == FALSE) "Response variable and factors column cannot be the same")
     kwstacked_iv$add_rule("kwResponse", ~ {
-      if (checkNumeric(kwUploadData(), input$kwResponse)) {
+      if (checkNumeric(multipleUploadData(), input$kwResponse)) {
         "Response variable must be numeric."
       }
     })
@@ -3576,31 +3565,28 @@ statInfrServer <- function(id) {
                                               input$popuParameters == 'Population Proportions' &&
                                               input$inferenceType2 == 'Hypothesis Testing'))
     
-    kwupload_iv$condition(~ isTRUE(input$siMethod == 'Multiple' &&
-                                     input$multipleMethodChoice == 'kw'))
-    
     kwmulti_iv$condition(~ isTRUE(input$siMethod == 'Multiple' &&
                                     input$kwFormat == 'Multiple' &&
                                     input$multipleMethodChoice == 'kw' &&
-                                    kwupload_iv$is_valid()))
+                                    multipleupload_iv$is_valid()))
     
     kwstacked_iv$condition(~ isTRUE(input$siMethod == 'Multiple' &&
                                       input$kwFormat == 'Stacked' &&
                                       input$multipleMethodChoice == 'kw' &&
-                                      kwupload_iv$is_valid()))
+                                      multipleupload_iv$is_valid()))
     
-    anovaupload_iv$condition(~ isTRUE(input$siMethod == 'Multiple' &&
-                                        input$multipleMethodChoice == 'anova'))
+    multipleupload_iv$condition(~ isTRUE(input$siMethod == 'Multiple' &&
+                                         input$multipleMethodChoice %in% c('anova', 'kw')))
     
     anovamulti_iv$condition(~ isTRUE(input$siMethod == 'Multiple' &&
                                        input$anovaFormat == 'Multiple' &&
                                        input$multipleMethodChoice == 'anova' &&
-                                       anovaupload_iv$is_valid()))
+                                       multipleupload_iv$is_valid()))
     
     anovastacked_iv$condition(~ isTRUE(input$siMethod == 'Multiple' &&
                                          input$anovaFormat == 'Stacked' &&
                                          input$multipleMethodChoice == 'anova' &&
-                                         anovaupload_iv$is_valid()))
+                                         multipleupload_iv$is_valid()))
     
     chiSq2x2_iv$condition(~ isTRUE(input$siMethod == 'Categorical' &&
                                      input$chisquareDimension == '2 x 2'))
@@ -3657,10 +3643,9 @@ statInfrServer <- function(id) {
     si_iv$add_validator(twopopvar_iv)
     si_iv$add_validator(twopopvarraw_iv)
     twoprop_iv$add_validator(twopropht_iv)
-    si_iv$add_validator(kwupload_iv)
     si_iv$add_validator(kwmulti_iv)
     si_iv$add_validator(kwstacked_iv)
-    si_iv$add_validator(anovaupload_iv)
+    si_iv$add_validator(multipleupload_iv)
     si_iv$add_validator(anovamulti_iv)
     si_iv$add_validator(anovastacked_iv)
     si_iv$add_validator(chiSq2x2_iv)
@@ -3719,10 +3704,9 @@ statInfrServer <- function(id) {
     twopopvarsum_iv$enable()
     twopopvar_iv$enable()
     twopopvarraw_iv$enable()
-    kwupload_iv$enable()
     kwmulti_iv$enable()
     kwstacked_iv$enable()
-    anovaupload_iv$enable()
+    multipleupload_iv$enable()
     anovamulti_iv$enable()
     anovastacked_iv$enable()
     chiSq2x2_iv$enable()
@@ -5712,8 +5696,7 @@ statInfrServer <- function(id) {
       indMeansStatus = NULL,
       rankSumStatus = NULL,
       depMeansStatus = NULL,
-      anovaStatus = NULL,
-      kwStatus = NULL,
+      multipleStatus = NULL,
       signedRankStatus = NULL
     )
 
@@ -6775,33 +6758,33 @@ statInfrServer <- function(id) {
     })
     
     ### ------------ ANOVA Reactives ---------------------------------------------
-    output$anovaShowSheetPicker <- reactive({
-      if (is.null(input$anovaUserData)) return(FALSE)
-      tolower(tools::file_ext(input$anovaUserData$name)) %in% c("xls", "xlsx")
+    output$multipleShowSheetPicker <- reactive({
+      if (is.null(input$multipleUserData)) return(FALSE)
+      tolower(tools::file_ext(input$multipleUserData$name)) %in% c("xls", "xlsx")
     })
-    outputOptions(output, "anovaShowSheetPicker", suspendWhenHidden = FALSE)
+    outputOptions(output, "multipleShowSheetPicker", suspendWhenHidden = FALSE)
+    anovaDisplayState <- reactiveVal("none")
+    kwDisplayState <- reactiveVal("none")
     
-    anovaDisplayState <- reactiveVal("none")  # "none", "raw", "analysis
-
-    anovaUploadData <- eventReactive(list(input$anovaUserData, input$anovaSheet), {
-      req(input$anovaUserData)
-      ext  <- tolower(tools::file_ext(input$anovaUserData$name))
-      path <- input$anovaUserData$datapath
-
+    multipleUploadData <- eventReactive(list(input$multipleUserData, input$multipleSheet), {
+      req(input$multipleUserData)
+      ext  <- tolower(tools::file_ext(input$multipleUserData$name))
+      path <- input$multipleUserData$datapath
+      
       switch(ext,
              csv = read_csv(path, show_col_types = FALSE),
              xls = {
-               req(input$anovaSheet)
-               req(input$anovaSheet %in% readxl::excel_sheets(path))
-               quietExcelRead(read_xls, path, input$anovaSheet)
+               req(input$multipleSheet)
+               req(input$multipleSheet %in% readxl::excel_sheets(path))
+               quietExcelRead(read_xls, path, input$multipleSheet)
              },
              xlsx = {
-               req(input$anovaSheet)
-               req(input$anovaSheet %in% readxl::excel_sheets(path))
-               quietExcelRead(read_xlsx, path, input$anovaSheet)
+               req(input$multipleSheet)
+               req(input$multipleSheet %in% readxl::excel_sheets(path))
+               quietExcelRead(read_xlsx, path, input$multipleSheet)
              },
              txt = read_tsv(path, show_col_types = FALSE),
-
+             
              validate("Improper file format.")
       )
     })
@@ -6820,16 +6803,16 @@ statInfrServer <- function(id) {
       })
     
     anovaOneWayResults <- reactive({
-      req(si_iv$is_valid)
+      req(si_iv$is_valid())
       
       results <- list()
       
       if (input$anovaFormat == "Multiple") {
-        anovaData <- stack(anovaUploadData()[,input$anovaMultiColumns])
+        anovaData <- stack(multipleUploadData()[,input$anovaMultiColumns])
         factorCol <- "ind"
         factorNames <- levels(anovaData[,factorCol])
       } else {
-        anovaData <- anovaUploadData()
+        anovaData <- multipleUploadData()
         colnames(anovaData)[colnames(anovaData) == input$anovaFactors] <- "ind"
         colnames(anovaData)[colnames(anovaData) == input$anovaResponse] <- "values"
         anovaData <- anovaData %>% dplyr::mutate(ind = factor(ind))
@@ -6850,17 +6833,11 @@ statInfrServer <- function(id) {
       results$fit <- anovaTest
       results$residuals <- anovaTest$residuals
       results$test <- anova(anovaTest)
-
+      
       return(results)
     })
     
     ### ------------ Kruskal-Wallis Reactives ------------------------------------   
-    kwUploadData <- eventReactive(input$kwUserData, {
-      kwUploadData_func(input$kwUserData)
-    })
-    
-    kwDisplayState <- reactiveVal("none")  # "none", "raw", "analysis
-    
     kwStackedIsValid <- eventReactive(
       list(input$kwResponse, input$kwFactors),
       {
@@ -6875,7 +6852,7 @@ statInfrServer <- function(id) {
       kwResults_func(
         input$kwFormat,
         input$kwMultiColumns,
-        kwUploadData(),
+        multipleUploadData(),
         input$kwFactors,
         input$kwResponse
       )
@@ -7564,29 +7541,30 @@ statInfrServer <- function(id) {
         )
       }
       
-      #### ---------------- ANOVA Validation
-      if(!anovaupload_iv$is_valid()) {
-        if(is.null(input$anovaUserData)) {
+      #### ---------------- ANOVA and KW Upload Validation
+      if(!multipleupload_iv$is_valid()) {
+        if(is.null(input$multipleUserData)) {
           validate("Please upload a file.")
         }
         
         validate(
-          need(!is.null(fileInputs$anovaStatus) && fileInputs$anovaStatus == 'uploaded', "Please upload a file."),
+          need(!is.null(fileInputs$multipleStatus) && fileInputs$multipleStatus == 'uploaded', "Please upload a file."),
           errorClass = "myClass")
         
         validate(
-          need(nrow(anovaUploadData()) > 0, "File is empty."),
-          need(ncol(anovaUploadData()) >= 2, "File must contain at least 2 distinct columns of data to choose from for analysis."),
+          need(nrow(multipleUploadData()) > 0, "File is empty."),
+          need(ncol(multipleUploadData()) >= 2, "File must contain at least 2 distinct columns of data to choose from for analysis."),
           errorClass = "myClass")
       }
       
+      #### ---------------- ANOVA Validation
       if(!anovamulti_iv$is_valid()) {
         validate(
           need(length(input$anovaMultiColumns) >= 2, "Please select two or more columns to conduct analysis."),
           errorClass = "myClass")
         
         validate(
-          need(!checkNumeric(anovaUploadData(), input$anovaMultiColumns), 
+          need(!checkNumeric(multipleUploadData(), input$anovaMultiColumns), 
                "Selected columns must be numeric."),
           errorClass = "myClass"
         )
@@ -7603,30 +7581,13 @@ statInfrServer <- function(id) {
           errorClass = "myClass")
         
         validate(
-          need(!checkNumeric(anovaUploadData(), input$anovaResponse), 
+          need(!checkNumeric(multipleUploadData(), input$anovaResponse), 
                "Response variable must be numeric."),
           errorClass = "myClass"
         )
       }
       
       #### ---------------- Kruskal-Wallis Validation    
-      if(!kwupload_iv$is_valid()) {
-        if(is.null(input$kwUserData)) {
-          validate("Please upload a file.")
-        }
-        
-        validate(
-          need(!is.null(fileInputs$kwStatus)&& fileInputs$kwStatus == 'uploaded', "Please upload a file."),
-          errorClass = "myClass"
-        )
-        
-        validate(
-          need(nrow(kwUploadData()) > 0, "File is empty."),
-          need(ncol(kwUploadData()) >= 2, "File must contain at least 2 distinct columns of data to choose from for analysis."),
-          errorClass = "myClass"
-        )
-      }
-      
       if(!kwmulti_iv$is_valid()) {
         validate(
           need(length(input$kwMultiColumns) >= 2, "Please select two or more columns to conduct analysis."),
@@ -7634,7 +7595,7 @@ statInfrServer <- function(id) {
         )
         
         validate(
-          need(!checkNumeric(kwUploadData(), input$kwMultiColumns), 
+          need(!checkNumeric(multipleUploadData(), input$kwMultiColumns), 
                "Selected columns must be numeric."),
           errorClass = "myClass"
         )
@@ -7652,7 +7613,7 @@ statInfrServer <- function(id) {
           errorClass = "myClass"
         )
         validate(
-          need(!checkNumeric(kwUploadData(), input$kwResponse), 
+          need(!checkNumeric(multipleUploadData(), input$kwResponse), 
                "Response variable must be numeric."),
           errorClass = "myClass"
         )
@@ -11578,6 +11539,23 @@ statInfrServer <- function(id) {
       
     })
     
+    output$multipleUploadStatus <- renderUI({
+      req(input$multipleUserData)
+      req(multipleupload_iv$is_valid())
+      
+      df <- multipleUploadData()
+      
+      div(
+        class = "alert alert-success",
+        style = "padding: 5px 10px; font-size: 12px; margin-top: 2px; margin-bottom: 10px;",
+        icon("circle-check"),
+        HTML(paste0(
+          " <strong>File loaded:</strong> ", input$multipleUserData$name, " (",
+          nrow(df), " rows × ", ncol(df), " columns)"
+        ))
+      )
+    })
+    
     #### ----------------- Boxplot ----
     output$anovaBoxplot <- renderPlot({
       req(si_iv$is_valid())
@@ -11658,77 +11636,81 @@ statInfrServer <- function(id) {
     )
     
     #### ---------------- Uploaded Data Table ----
-    output$anovaUploadTable <- renderDT({
-      req(anovaupload_iv$is_valid())
-      datatable(anovaUploadData(),
+    output$multipleUploadTable <- renderDT({
+      req(multipleupload_iv$is_valid())
+      datatable(multipleUploadData(),
                 options = list(pageLength = -1,
                                lengthMenu = list(c(25, 50, 100, -1),
                                                  c("25", "50", "100", "all")),
                                columnDefs = list(list(className = 'dt-center',
-                                                      targets = 0:ncol(anovaUploadData())))),
+                                                      targets = 0:ncol(multipleUploadData())))),
       )
     })
     
-    output$anovaUploadStatus <- renderUI({
-      req(input$anovaUserData)
-      req(anovaupload_iv$is_valid())
-      
-      df <- anovaUploadData()
-      
-      div(
-        class = "alert alert-success",
-        style = "padding: 5px 10px; font-size: 12px; margin-top: 2px; margin-bottom: 10px;",
-        icon("circle-check"),
-        HTML(paste0(
-          " <strong>File loaded:</strong> ", input$anovaUserData$name, " (",
-          nrow(df), " rows × ", ncol(df), " columns)"
-        ))
-      )
-    })
-    
-    anovaUploadInitial <- function(anovaUploadData_output) {
+    multipleUploadInitial <- function(multipleUploadData_output) {
       renderDT({
-        datatable(anovaUploadData_output(),
+        datatable(multipleUploadData_output(),
                   options = list(pageLength = -1,
                                  lengthMenu = list(c(25, 50, 100, -1),
                                                    c("25", "50", "100", "all")),
                                  columnDefs = list(list(className = 'dt-center',
-                                                        targets = 0:ncol(anovaUploadData_output())))))
+                                                        targets = 0:ncol(multipleUploadData_output())))))
       })
     }
     
-    output$anovaInitialUploadTable <- anovaUploadInitial(anovaUploadData)
-
-    output$renderAnovaDataView <- renderUI({
-      if (!isTRUE(input$siMethod == 'Multiple' && input$multipleMethodChoice == 'anova')) return(NULL)
-      if (!anovaupload_iv$is_valid()) {
+    output$multipleInitialUploadTable <- multipleUploadInitial(multipleUploadData)
+    
+    output$anovaUploadedDataView <- renderUI({
+      if (!isTRUE(input$siMethod == 'Multiple' &&
+                  input$multipleMethodChoice == "anova")) return(NULL)
+      
+      if (!multipleupload_iv$is_valid()) {
         return(helpText("No data yet. Upload a dataset to view it here."))
       }
+      
       tagList(
-        div(DTOutput(session$ns("anovaUploadTable")), style = "width: 75%")
+        div(DTOutput(session$ns("multipleUploadTable")), style = "width: 75%")
       )
     })
     
-    output$renderAnovaRaw <- renderUI({
+    output$kwUploadedDataView <- renderUI({
+      if (!isTRUE(input$siMethod == 'Multiple' &&
+                  input$multipleMethodChoice == "kw")) return(NULL)
+      
+      if (!multipleupload_iv$is_valid()) {
+        return(helpText("No data yet. Upload a dataset to view it here."))
+      }
+      
       tagList(
-        div(DTOutput(session$ns("anovaInitialUploadTable")), style = "width: 75%")
+        div(DTOutput(session$ns("multipleUploadTable")), style = "width: 75%")
       )
     })
     
-    output$anovaRawContainer <- renderUI({
+    output$renderMultipleRaw <- renderUI({
+      tagList(
+        div(DTOutput(session$ns("multipleInitialUploadTable")), style = "width: 75%")
+      )
+    })
+    
+    output$multipleRawContainer <- renderUI({
       req(input$siMethod == "Multiple")
-      req(input$multipleMethodChoice == "anova")
-      req(input$anovaUserData)
-      req(anovaDisplayState() == "raw")
+      req(input$multipleMethodChoice %in% c("anova", "kw"))
+      req(input$multipleUserData)
+      
+      if (input$multipleMethodChoice == "anova") {
+        req(anovaDisplayState() == "raw")
+      } else if (input$multipleMethodChoice == "kw") {
+        req(kwDisplayState() == "raw")
+      }
       
       navbarPage(
-        id = session$ns("anovaRaw"),
+        id = session$ns("multipleRaw"),
         title = NULL,
         selected = "Uploaded Data",
         
         tabPanel(
           title = "Uploaded Data",
-          uiOutput(session$ns("renderAnovaRaw"))
+          uiOutput(session$ns("renderMultipleRaw"))
         )
       )
     })
@@ -11780,35 +11762,7 @@ statInfrServer <- function(id) {
     
     # ------------ Uploaded data tables ---------------
     output$kwHT <- kruskalWallisHT(kwResults, reactive({input$kwSigLvl}))
-    output$kwUploadTable <- kruskalWallisUpload(kwUploadData, reactive({kwupload_iv$is_valid()}))
-    output$kwInitialUploadTable <- kruskalWallisUploadInitial(kwUploadData)
-
-    output$renderKWData <- renderUI({
-      if (!isTRUE(input$siMethod == 'Multiple' && input$multipleMethodChoice == 'kw')) return(NULL)
-      if (!kwupload_iv$is_valid()) {
-        return(helpText("No data yet. Upload a dataset to view it here."))
-      }
-      tagList(
-        div(DTOutput(session$ns("kwUploadTable")), style = "width: 75%")
-      )
-    })
-    
-    output$kwUploadStatus <- renderUI({
-      req(input$kwUserData)
-      req(kwupload_iv$is_valid())
-      
-      df <- kwUploadData()
-      
-      div(
-        class = "alert alert-success",
-        style = "padding: 5px 10px; font-size: 12px; margin-top: 2px; margin-bottom: 10px;",
-        icon("circle-check"),
-        HTML(paste0(
-          " <strong>File loaded:</strong> ", input$kwUserData$name, " (",
-          nrow(df), " rows × ", ncol(df), " columns)"
-        ))
-      )
-    })
+    output$kwInitialUploadTable <- kruskalWallisUploadInitial(multipleUploadData)
     
     output$renderKWRM <- kwRankedTableOutput(kwResults()$data)
     output$kruskalWallisPlot <- kruskalWallisPlot(kwResults, reactive({input$kwSigLvl}))
@@ -11821,31 +11775,6 @@ statInfrServer <- function(id) {
         "siMethod:", input$siMethod
       )
     })
-    
-    
-    output$renderKWRaw <- renderUI({
-      tagList(
-        div(DTOutput(session$ns("kwInitialUploadTable")), style = "width: 75%")
-      )
-    })
-    
-  output$kwRawContainer <- renderUI({
-    req(input$siMethod == "Multiple")
-    req(input$multipleMethodChoice == "kw")
-    req(input$kwUserData)
-    req(kwDisplayState() == "raw")
-    
-    navbarPage(
-      id = session$ns("kwRaw"),
-      title = NULL,
-      selected = "Uploaded Data",
-      
-      tabPanel(
-        title = "Uploaded Data",
-        uiOutput(session$ns("renderKWRaw"))
-      )
-    )
-  })
     
     ### ------------ Chi-Square Outputs ------------------------------------------
     
@@ -12479,104 +12408,105 @@ statInfrServer <- function(id) {
       hideTab(inputId = "kwTabset", target = "Uploaded Data")
     }, once = TRUE)
 
-    observeEvent(input$anovaUserData, priority = 50, {
-      req(input$anovaUserData)
-      ext <- tolower(tools::file_ext(input$anovaUserData$name))
+    observeEvent(input$multipleUserData, priority = 50, {
+      req(input$multipleUserData)
+      ext <- tolower(tools::file_ext(input$multipleUserData$name))
       if (ext %in% c("xls", "xlsx")) {
-        sheets <- tryCatch(readxl::excel_sheets(input$anovaUserData$datapath),
+        sheets <- tryCatch(readxl::excel_sheets(input$multipleUserData$datapath),
                            error = function(e) character(0))
-        freezeReactiveValue(input, "anovaSheet")
-        updateSelectizeInput(session, "anovaSheet",
+        freezeReactiveValue(input, "multipleSheet")
+        updateSelectizeInput(session, "multipleSheet",
                              choices  = sheets,
                              selected = if (length(sheets)) sheets[1] else "")
       } else {
-        updateSelectizeInput(session, "anovaSheet", choices = character(0), selected = "")
+        updateSelectizeInput(session, "multipleSheet", choices = character(0), selected = "")
       }
     })
 
-    observeEvent(list(input$anovaUserData, input$anovaSheet), priority = 10, {
-      req(input$anovaUserData)
-      hide(id = "inferenceData")
-      hide(id = "anovaUploadInputs")
+    observeEvent(list(input$multipleUserData, input$multipleSheet, input$multipleMethodChoice), priority = 10, {
+      req(input$multipleUserData)
       
-      anovaDisplayState("raw")
-      fileInputs$anovaStatus <- 'uploaded'
-
-      ext <- tolower(tools::file_ext(input$anovaUserData$name))
-      if (ext %in% c("xls", "xlsx") && (is.null(input$anovaSheet) || input$anovaSheet == "")) {
+      hide(id = "inferenceData")
+      
+      fileInputs$multipleStatus <- 'uploaded'
+      
+      ext <- tolower(tools::file_ext(input$multipleUserData$name))
+      if (ext %in% c("xls", "xlsx") && (is.null(input$multipleSheet) || input$multipleSheet == "")) {
         return()
       }
-
-      if(anovaupload_iv$is_valid())
+      
+      if(multipleupload_iv$is_valid())
       {
-        freezeReactiveValue(input, "anovaMultiColumns")
-        updatePickerInput(
-          session = getDefaultReactiveDomain(),
-          inputId = "anovaMultiColumns",
-          choices = colnames(anovaUploadData()),
-          selected = character(0)
-        )
+        if (input$multipleMethodChoice == "anova") {
+          anovaDisplayState("raw")
+          hide(id = "anovaUploadInputs")
+          hide(id = "kwUploadInputs")
+          
+          freezeReactiveValue(input, "anovaMultiColumns")
+          updatePickerInput(
+            session = getDefaultReactiveDomain(),
+            inputId = "anovaMultiColumns",
+            choices = colnames(multipleUploadData()),
+            selected = character(0)
+          )
+          
+          freezeReactiveValue(input, "anovaResponse")
+          updateSelectizeInput(
+            session = getDefaultReactiveDomain(),
+            "anovaResponse",
+            choices = colnames(multipleUploadData()),
+            selected = ""
+          )
+          
+          freezeReactiveValue(input, "anovaFactors")
+          updateSelectizeInput(
+            session = getDefaultReactiveDomain(),
+            "anovaFactors",
+            choices = colnames(multipleUploadData()),
+            selected = ""
+          )
+          
+          shinyjs::show(id = "anovaUploadInputs")
+          goToUploadedDataTab("anovaTabset")
+        }
         
-        freezeReactiveValue(input, "anovaResponse")
-        updateSelectizeInput(
-          session = getDefaultReactiveDomain(),
-          "anovaResponse",
-          choices = colnames(anovaUploadData()),
-          selected = ""
-        )
-        
-        freezeReactiveValue(input, "anovaFactors")
-        updateSelectizeInput(
-          session = getDefaultReactiveDomain(),
-          "anovaFactors",
-          choices = colnames(anovaUploadData()),
-          selected = ""
-        )
-        
-        shinyjs::show(id = "anovaUploadInputs")
-        goToUploadedDataTab("anovaTabset")
+        if (input$multipleMethodChoice == "kw") {
+          kwDisplayState("raw")
+          hide(id = "anovaUploadInputs")
+          hide(id = "kwUploadInputs")
+          
+          updateRadioButtons(session, "kwFormat", selected = "Multiple")
+          
+          freezeReactiveValue(input, "kwMultiColumns")
+          updatePickerInput(
+            session = getDefaultReactiveDomain(),
+            inputId = "kwMultiColumns",
+            choices = colnames(multipleUploadData()),
+            selected = character(0)
+          )
+          
+          freezeReactiveValue(input, "kwResponse")
+          updateSelectizeInput(
+            session = getDefaultReactiveDomain(),
+            "kwResponse",
+            choices = c(colnames(multipleUploadData())),
+            selected = ""
+          )
+          
+          freezeReactiveValue(input, "kwFactors")
+          updateSelectizeInput(
+            session = getDefaultReactiveDomain(),
+            "kwFactors",
+            choices = c(colnames(multipleUploadData())),
+            selected = ""
+          )
+          
+          shinyjs::show(id = "kwUploadInputs")
+          goToUploadedDataTab("kwTabset")
+        }
       }
     })
-
-    observeEvent(input$kwUserData, {
-      kwDisplayState("raw")
-      
-      #hide(id = "inferenceData")
-      hide(id = "kwUploadInputs")
-      
-      fileInputs$kwStatus <- 'uploaded'
-      output$kwInitialUploadTable <- kruskalWallisUploadInitial(kwUploadData)
-      
-      if(kwupload_iv$is_valid())
-      {
-        updateRadioButtons(session, "kwFormat", selected = "Multiple")
-        
-        freezeReactiveValue(input, "kwMultiColumns")
-        updatePickerInput(
-          session = getDefaultReactiveDomain(),
-          inputId = "kwMultiColumns",
-          choices = colnames(kwUploadData()),
-          selected = character(0)
-        )
-        
-        freezeReactiveValue(input, "kwResponse")
-        updateSelectizeInput(session = getDefaultReactiveDomain(),
-                             "kwResponse",
-                             choices = c(colnames(kwUploadData())),
-                             selected = ""
-        )
-        freezeReactiveValue(input, "kwFactors")
-        updateSelectizeInput(session = getDefaultReactiveDomain(),
-                             "kwFactors",
-                             choices = c(colnames(kwUploadData())),
-                             selected = ""
-        )
-        
-        shinyjs::show(id = "kwUploadInputs")
-        goToUploadedDataTab("kwTabset")
-      }
-    })
-
+    
     observeEvent(input$chisquareDimension, {
       if( input$chisquareDimension != '2 x 2') {
         shinyjs::disable(selector = '#chisquareMethod input[value="Fisher"]')
@@ -13040,7 +12970,7 @@ statInfrServer <- function(id) {
       }
     })
     
-    observeEvent(!anovaupload_iv$is_valid(), {
+    observeEvent(!multipleupload_iv$is_valid(), {
       hide(id = "inferenceMP")
       hide(id = "inferenceData")
     })
@@ -13356,7 +13286,7 @@ statInfrServer <- function(id) {
       resetSheetToFirst("wilcoxonUpl", "wilcoxonSheet")
       resetSheetToFirst("depMeansUserData", "depMeansSheet")
       resetSheetToFirst("signedRankUpl", "signedRankSheet")
-      resetSheetToFirst("anovaUserData", "anovaSheet")
+      resetSheetToFirst("multipleUserData", "multipleSheet")
       
       kwDisplayState("raw")
       anovaDisplayState("raw")
