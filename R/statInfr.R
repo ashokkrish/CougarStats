@@ -2441,7 +2441,9 @@ statInfrUI <- function(id) {
                         id       = ns("anovaBoxplot"),
                         plotType = "Boxplot",
                         title    = "Side-by-side Boxplot"),
-                      uiOutput(ns("renderAnovaBoxplot"))
+                      uiOutput(ns("renderAnovaBoxplot")),
+                      boxplotDisclaimer,
+                      hr(),
                     ),
                     
                     conditionalPanel(
@@ -2550,7 +2552,9 @@ statInfrUI <- function(id) {
                         plotType = "Boxplot",
                         title    = "Side-by-side Boxplot"
                       ),
-                      uiOutput(ns("renderKWBoxplot"))
+                      uiOutput(ns("renderKWBoxplot")),
+                      boxplotDisclaimer,
+                      hr()
                     ),
                     
                     conditionalPanel(
@@ -12531,7 +12535,6 @@ statInfrServer <- function(id) {
                      width = GetPlotWidth(input[["anovaBoxplot-Width"]], input[["anovaBoxplot-WidthPx"]], ui = TRUE)),
           br(),
           br(),
-          hr()
         )
       })
       
@@ -12575,7 +12578,6 @@ statInfrServer <- function(id) {
                      width = GetPlotWidth(input[["kwBoxplot-Width"]], input[["kwBoxplot-WidthPx"]], ui = TRUE)),
           br(),
           br(),
-          hr()
         )
       })
       
