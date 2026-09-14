@@ -12421,6 +12421,28 @@ statInfrServer <- function(id) {
         updateSelectizeInput(session, "multipleSheet", choices = character(0), selected = "")
       }
     })
+    
+    observeEvent(input$anovaGraphs, ignoreNULL = FALSE, {
+      if (length(input$anovaGraphs) > 0) {
+        showTab(inputId = "anovaTabset", target = "Graphs")
+      } else {
+        if (input$anovaTabset == "Graphs") {
+          updateTabsetPanel(inputId = "anovaTabset", selected = "Analysis")
+        }
+        hideTab(inputId = "anovaTabset", target = "Graphs")
+      }
+    })
+    
+    observeEvent(input$kwGraphs, ignoreNULL = FALSE, {
+      if (length(input$kwGraphs) > 0) {
+        showTab(inputId = "kwTabset", target = "Graphs")
+      } else {
+        if (input$kwTabset == "Graphs") {
+          updateTabsetPanel(inputId = "kwTabset", selected = "Analysis")
+        }
+        hideTab(inputId = "kwTabset", target = "Graphs")
+      }
+    })
 
     observeEvent(list(input$multipleUserData, input$multipleSheet, input$multipleMethodChoice), priority = 10, {
       req(input$multipleUserData)
