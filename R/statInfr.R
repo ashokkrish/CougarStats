@@ -11703,12 +11703,13 @@ statInfrServer <- function(id) {
       }
       
       navbarPage(
-        id = session$ns("multipleRaw"),
         title = NULL,
         selected = "Uploaded Data",
         
         tabPanel(
+          id    = session$ns("multipleRaw"),
           title = "Uploaded Data",
+          
           uiOutput(session$ns("renderMultipleRaw"))
         )
       )
@@ -11752,8 +11753,7 @@ statInfrServer <- function(id) {
                      input[["kwMeanPlot-Title"]],
                      input[["kwMeanPlot-Xlab"]],
                      input[["kwMeanPlot-Ylab"]],
-                     input[["kwMeanPlot-Gridlines"]],
-                     input[["kwMeanPlot-Flip"]])
+                     input[["kwMeanPlot-Gridlines"]])
       
     }, height = function() {GetPlotHeight(input[["kwMeanPlot-Height"]], input[["kwMeanPlot-HeightPx"]], ui = FALSE)},
     width = function() {GetPlotWidth(input[["kwMeanPlot-Width"]], input[["kwMeanPlot-WidthPx"]], ui = FALSE)}
