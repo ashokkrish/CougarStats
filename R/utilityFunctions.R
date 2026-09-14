@@ -111,9 +111,10 @@ pval_tex <- function(p, eps = 0.0001) {
 ## pasted directly from a spreadsheet column), normalizing any run of those
 ## delimiters into a single comma before splitting.
 createNumLst <- function(text) {
-  text <- gsub("[^0-9.,\t\r\n -]", "", text, perl = TRUE) #purge non-numeric, non-delimiter characters
-  text <- gsub("[,\t\r\n ]+", ",", text, perl = TRUE)     #collapse delimiter runs into a single comma
-  text <- gsub("^,|,$", "", text)                         #purge leading/trailing commas
+  text <- trimws(text)
+  text <- gsub("[^0-9.,\t\r\n -]", "", text, perl = TRUE)
+  text <- gsub("[,\t\r\n ]+", ",", text, perl = TRUE)
+  text <- gsub("^,|,$", "", text)
   split <- strsplit(text, ",", fixed = TRUE)[[1]]
   suppressWarnings(na.omit(as.numeric(split)))
 }

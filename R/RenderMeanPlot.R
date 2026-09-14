@@ -1,7 +1,7 @@
 library(ggplot2)
 
 
-RenderMeanPlot <- function(dat, groups, plotColour, plotTitle, plotXlab, plotYlab, gridlines, flip = FALSE) {
+RenderMeanPlot <- function(dat, groups, plotColour, plotTitle, plotXlab, plotYlab, gridlines) {
   
   data_plot = dat %>% 
     group_by(ind) %>% 

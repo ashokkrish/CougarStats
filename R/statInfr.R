@@ -159,7 +159,7 @@ statInfrUI <- function(id) {
                   inputId     = ns("sample1"),
                   label       = strong("Sample"),
                   value       = "202, 210, 215, 220, 220, 224, 225, 228, 228, 228",
-                  placeholder = "Enter values separated by a comma with decimals as points",
+                  placeholder = "Enter values separated by a comma, space, or tab with decimals as points",
                   rows        = 3),
                 
                 radioButtons(
@@ -318,7 +318,7 @@ statInfrUI <- function(id) {
                   inputId     = ns("sdRawData"),
                   label       = strong("Sample"),
                   value       = "5.37, 5.47, 5.38, 4.63, 5.37, 3.74, 3.71, 4.96, 4.64, 5.11, 5.65, 5.55, 4.00, 5.62, 4.57, 4.64, 5.48, 4.60, 4.54, 4.51, 4.86, 4.56, 4.61, 4.32, 3.98, 5.70, 4.15, 3.98, 5.65, 3.11, 5.03, 4.62, 4.50, 4.35, 4.16, 4.64, 5.12, 3.71, 4.64",
-                  placeholder = "Enter values separated by a comma with decimals as points",
+                  placeholder = "Enter values separated by a comma, space, or tab with decimals as points",
                   rows        = 6),
                 
               ), # Enter Raw Data
@@ -633,14 +633,14 @@ statInfrUI <- function(id) {
                   inputId     = ns("raw_sample1"),
                   label       = strong("Sample 1"),
                   value       = "101.1,  111.1,  107.6,  98.1,  99.5,  98.7,  103.3,  108.9,  109.1,  103.3",
-                  placeholder = "Enter values separated by a comma with decimals as points",
+                  placeholder = "Enter values separated by a comma, space, or tab with decimals as points",
                   rows        = 3),
                 
                 textAreaInput(
                   inputId     = ns("raw_sample2"),
                   label       = strong("Sample 2"),
                   value       = "107.1,  105.0,  98.0,  97.9,  103.3,  104.6,  100.1,  98.2,  97.9",
-                  placeholder = "Enter values separated by a comma with decimals as points",
+                  placeholder = "Enter values separated by a comma, space, or tab with decimals as points",
                   rows        = 3),
                 
                 radioButtons(
@@ -807,14 +807,14 @@ statInfrUI <- function(id) {
                   inputId     = ns("rankSumRaw1"),
                   label       = strong("Sample 1"),
                   value       = "2,  1.25,  8.5,  1.1,  1.25,  3.75,  5.5",
-                  placeholder = "Enter values separated by a comma with decimals as points",
+                  placeholder = "Enter values separated by a comma, space, or tab with decimals as points",
                   rows        = 3),
                 
                 textAreaInput(
                   inputId     = ns("rankSumRaw2"),
                   label       = strong("Sample 2"),
                   value       = "1,  1,  0,  3.25,  1,  0.25",
-                  placeholder = "Enter values separated by a comma with decimals as points",
+                  placeholder = "Enter values separated by a comma, space, or tab with decimals as points",
                   rows        = 3),
               ), # Wilcoxon Raw Data
               
@@ -890,14 +890,14 @@ statInfrUI <- function(id) {
                   inputId     = ns("before"),
                   label       = strong("Sample 1 (e.g. Before, Pre-Treatment, Baseline)"),
                   value       = "484, 478, 492, 444, 436, 398, 464, 476",
-                  placeholder = "Enter values separated by a comma with decimals as points",
+                  placeholder = "Enter values separated by a comma, space, or tab with decimals as points",
                   rows        = 3),
                 
                 textAreaInput(
                   inputId     = ns("after"),
                   label       = strong("Sample 2 (e.g. After, Post-Treatment, Follow-Up)"),
                   value       = "488, 478, 480, 426, 440, 410, 458, 460",
-                  placeholder = "Enter values separated by a comma with decimals as points",
+                  placeholder = "Enter values separated by a comma, space, or tab with decimals as points",
                   rows        = 3)
               ), # Raw Data
               
@@ -973,14 +973,14 @@ statInfrUI <- function(id) {
                   inputId     = ns("signedRankRaw1"),
                   label       = strong("Sample 1 (e.g. Before, Pre-Treatment, Baseline)"),
                   value       = "484, 478, 492, 444, 436, 398, 464, 476",
-                  placeholder = "Enter values separated by a comma with decimals as points",
+                  placeholder = "Enter values separated by a comma, space, or tab with decimals as points",
                   rows        = 3),
                 
                 textAreaInput(
                   inputId     = ns("signedRankRaw2"),
                   label       = strong("Sample 2 (e.g. After, Post-Treatment, Follow-Up)"),
                   value       = "488, 478, 480, 426, 440, 410, 458, 460",
-                  placeholder = "Enter values separated by a comma with decimals as points",
+                  placeholder = "Enter values separated by a comma, space, or tab with decimals as points",
                   rows        = 3),
               ), # Signed Rank Raw Data
               
@@ -1175,14 +1175,14 @@ statInfrUI <- function(id) {
                   inputId     = ns("rawSamp1SD"),
                   label       = strong("Sample 1 (e.g Class A test scores)"),
                   value       = "80, 54, 97, 76, 66, 87, 83, 91",
-                  placeholder = "Enter values separated by a comma with decimals as points",
+                  placeholder = "Enter values separated by a comma, space, or tab with decimals as points",
                   rows        = 3),
                 
                 textAreaInput(
                   inputId     = ns("rawSamp2SD"),
                   label       = strong("Sample 2 (e.g Class B test scores)"),
                   value       = "45, 54, 67, 95, 100, 82, 83, 74",
-                  placeholder = "Enter values separated by a comma with decimals as points",
+                  placeholder = "Enter values separated by a comma, space, or tab with decimals as points",
                   rows        = 3)
               ), # Raw Data
             ), # Two Pop Var
@@ -2057,7 +2057,8 @@ statInfrUI <- function(id) {
                                         plotOptionsMenuUI(
                                           id = ns("indMeansQQPlot"),
                                           plotType = "QQ Plot",
-                                          title = "Q-Q Plots"),
+                                          title = "Q-Q Plots",
+                                          includeFlip = FALSE),
                                         uiOutput(ns("renderIndMeansQQPlot")),
                                         br(),
                                         br()
@@ -2128,7 +2129,8 @@ statInfrUI <- function(id) {
                                           plotOptionsMenuUI(
                                             id = ns("signedRankQQ"),
                                             plotType = "QQ Plot",
-                                            title = "Q-Q Plot of the Difference"), 
+                                            title = "Q-Q Plot of the Difference",
+                                            includeFlip = FALSE), 
                                           plotOutput(ns("signedRankQQ")),
                                           br(), br()
                                         )
@@ -2214,7 +2216,8 @@ statInfrUI <- function(id) {
                                         plotOptionsMenuUI(
                                           id = ns("depMeansQQPlot"),
                                           plotType = "QQ Plot",
-                                          title = "Q-Q Plot of the Difference (d)"),
+                                          title = "Q-Q Plot of the Difference (d)",
+                                          includeFlip = FALSE),
                                         uiOutput(ns("renderDepMeansQQPlot")),
                                         br(),
                                         br()
@@ -2344,7 +2347,8 @@ statInfrUI <- function(id) {
                                           plotOptionsMenuUI(
                                             id = ns("sidebysidewRankQQ"),
                                             plotType = "QQ Plot",
-                                            title = "Q-Q Plots"),
+                                            title = "Q-Q Plots",
+                                            includeFlip = FALSE),
                                           plotOutput(ns("sidebysidewRankQQ")),
                                           br(), br()
                                         ))
@@ -2474,7 +2478,8 @@ statInfrUI <- function(id) {
                         title  = "QQ Plot of Residuals",
                         xlab   = "Normal Quantiles",
                         ylab   = "Residuals",
-                        colour = "#0F3345"),
+                        colour = "#0F3345",
+                        includeFlip = FALSE),
                       uiOutput(ns("renderAnovaQQplot"))
                     ),
                     
@@ -2741,8 +2746,8 @@ statInfrServer <- function(id) {
     
     # sample1
     onemeanraw_iv$add_rule("sample1", sv_required())
-    onemeanraw_iv$add_rule("sample1", sv_regex("^( )*(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                               "Data must be numeric values separated by a comma (ie: 2,3,4)"))
+    onemeanraw_iv$add_rule("sample1", sv_regex("^( )*(-)?([0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)*([ \r\n])*$",
+                                               "Data must be numeric values separated by a comma, space, or tab (ie: 2,3,4)"))
     # raw data, SD unknown
     onemeanraw_iv$add_rule("sample1", ~ {
       if (input$sigmaKnownRaw == "rawUnknown" && input$inferenceType == 'Hypothesis Testing' && (sd(createNumLst(input$sample1)) == 0)) {
@@ -2834,13 +2839,13 @@ statInfrServer <- function(id) {
     
     # raw_sample1
     indmeansraw_iv$add_rule("raw_sample1", sv_required())
-    indmeansraw_iv$add_rule("raw_sample1", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                                    "Data must be at least three numeric values separated by a comma (ie: 2,3,4)"))
+    indmeansraw_iv$add_rule("raw_sample1", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
+                                                    "Data must be at least three numeric values separated by a comma, space, or tab (ie: 2,3,4)"))
     
     # raw_sample2
     indmeansraw_iv$add_rule("raw_sample2", sv_required())
-    indmeansraw_iv$add_rule("raw_sample2", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                                    "Data must be at least three numeric values separated by a comma (ie: 2,3,4)."))
+    indmeansraw_iv$add_rule("raw_sample2", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
+                                                    "Data must be at least three numeric values separated by a comma, space, or tab (ie: 2,3,4)."))
     
     indmeansrawsd_iv$add_rule("popuSDRaw1", sv_required())
     indmeansrawsd_iv$add_rule("popuSDRaw1", sv_gt(0))
@@ -2933,11 +2938,11 @@ statInfrServer <- function(id) {
     wilcoxonUpload_iv$add_rule("wilcoxonUpl", ~ if(ncol(WilcoxonUploadData()) < 2) "File must contain at least 2 distinct samples to choose from for analysis.")
     wilcoxonUpload_iv$add_rule("wilcoxonUpl", ~ if(nrow(WilcoxonUploadData()) < 3) "Samples must include at least 2 observations.")
     wilcoxonraw_iv$add_rule("rankSumRaw1", sv_required())
-    wilcoxonraw_iv$add_rule("rankSumRaw1", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                                    "Data must be at least three numeric values separated by a comma (ie: 2,3,4)"))
+    wilcoxonraw_iv$add_rule("rankSumRaw1", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
+                                                    "Data must be at least three numeric values separated by a comma, space, or tab (ie: 2,3,4)"))
     wilcoxonraw_iv$add_rule("rankSumRaw2", sv_required())
-    wilcoxonraw_iv$add_rule("rankSumRaw2", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                                    "Data must be at least three numeric values separated by a comma (ie: 2,3,4)."))
+    wilcoxonraw_iv$add_rule("rankSumRaw2", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
+                                                    "Data must be at least three numeric values separated by a comma, space, or tab (ie: 2,3,4)."))
     wilcoxonRanksuploadvars_iv$add_rule("wilcoxonUpl1", sv_required())
     wilcoxonRanksuploadvars_iv$add_rule("wilcoxonUpl2", sv_required())
     wilcoxonRanksuploadvars_iv$add_rule("wilcoxonUpl2", ~ {
@@ -2976,13 +2981,13 @@ statInfrServer <- function(id) {
     
     # before
     depmeansraw_iv$add_rule("before", sv_required())
-    depmeansraw_iv$add_rule("before", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                               "Data must be at least three numeric values separated by a comma (ie: 2,3,4)"))
+    depmeansraw_iv$add_rule("before", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
+                                               "Data must be at least three numeric values separated by a comma, space, or tab (ie: 2,3,4)"))
     
     # after
     depmeansraw_iv$add_rule("after", sv_required())
-    depmeansraw_iv$add_rule("after", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                              "Data must be at least three numeric values separated by a comma (ie: 2,3,4)."))
+    depmeansraw_iv$add_rule("after", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
+                                              "Data must be at least three numeric values separated by a comma, space, or tab (ie: 2,3,4)."))
     
     
     depmeansraw_iv$add_rule("before", ~ if(length(createNumLst(input$before)) != length(createNumLst(input$after))) "Sample 1 and Sample 2 must have the same number of observations.")
@@ -3067,11 +3072,11 @@ statInfrServer <- function(id) {
     signedRankUpload_iv$add_rule("signedRankUpl", ~ if(ncol(signedRankUploadData()) < 2) "File must contain at least 2 distinct samples to choose from for analysis.")
     signedRankUpload_iv$add_rule("signedRankUpl", ~ if(nrow(signedRankUploadData()) < 3) "Samples must include at least 2 observations.")
     signedRankRaw_iv$add_rule("signedRankRaw1", sv_required())
-    signedRankRaw_iv$add_rule("signedRankRaw1", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                                         "Data must be at least three numeric values separated by a comma (ie: 2,3,4)"))
+    signedRankRaw_iv$add_rule("signedRankRaw1", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
+                                                         "Data must be at least three numeric values separated by a comma, space, or tab (ie: 2,3,4)"))
     signedRankRaw_iv$add_rule("signedRankRaw2", sv_required())
-    signedRankRaw_iv$add_rule("signedRankRaw2", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                                         "Data must be at least three numeric values separated by a comma (ie: 2,3,4)."))
+    signedRankRaw_iv$add_rule("signedRankRaw2", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
+                                                         "Data must be at least three numeric values separated by a comma, space, or tab (ie: 2,3,4)."))
     signedRankRaw_iv$add_rule("signedRankRaw1", ~ if(length(createNumLst(input$signedRankRaw1)) != length(createNumLst(input$signedRankRaw2))) "Sample 1 and Sample 2 must have the same number of observations.")
     signedRankRaw_iv$add_rule("signedRankRaw2", ~ if(length(createNumLst(input$signedRankRaw1)) != length(createNumLst(input$signedRankRaw2))) "Sample 1 and Sample 2 must have the same number of observations.")
     
@@ -3268,14 +3273,14 @@ statInfrServer <- function(id) {
     
     # raw group 1
     twopopvarraw_iv$add_rule("rawSamp1SD", sv_required())
-    twopopvarraw_iv$add_rule("rawSamp1SD", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                                    "Data must be at least three numeric values separated by a comma (ie: 2,3,4)."))
+    twopopvarraw_iv$add_rule("rawSamp1SD", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
+                                                    "Data must be at least three numeric values separated by a comma, space, or tab (ie: 2,3,4)."))
     twopopvarraw_iv$add_rule("rawSamp1SD", ~ if (sd(createNumLst(input$rawSamp1SD)) == 0) "No variance in sample data")
     
     # raw group 2
     twopopvarraw_iv$add_rule("rawSamp2SD", sv_required())
-    twopopvarraw_iv$add_rule("rawSamp2SD", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)(,( )*(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
-                                                    "Data must be at least three numeric values separated by a comma (ie: 2,3,4)."))
+    twopopvarraw_iv$add_rule("rawSamp2SD", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
+                                                    "Data must be at least three numeric values separated by a comma, space, or tab (ie: 2,3,4)."))
     twopopvarraw_iv$add_rule("rawSamp2SD", ~ if (sd(createNumLst(input$rawSamp2SD)) == 0) "No variance in sample data")
     
     
@@ -6428,8 +6433,8 @@ statInfrServer <- function(id) {
       req(input$wilcoxonRankSumTestData)
       
       if (input$wilcoxonRankSumTestData == 'Enter Raw Data') {
-        sample1_vals <- as.numeric(unlist(strsplit(input$rankSumRaw1, ",")))
-        sample2_vals <- as.numeric(unlist(strsplit(input$rankSumRaw2, ",")))
+        sample1_vals <- createNumLst(input$rankSumRaw1)
+        sample2_vals <- createNumLst(input$rankSumRaw2)
         
         group1_name <- "Sample 1"
         group2_name <- "Sample 2"
@@ -6610,8 +6615,8 @@ statInfrServer <- function(id) {
       req(rv$calculatePressed)
       
       if (input$signedRankTest == 'Enter Raw Data') {
-        sample1_vals <- as.numeric(unlist(strsplit(input$signedRankRaw1, ",")))
-        sample2_vals <- as.numeric(unlist(strsplit(input$signedRankRaw2, ",")))
+        sample1_vals <- createNumLst(input$signedRankRaw1)
+        sample2_vals <- createNumLst(input$signedRankRaw2)
         
         group1_name <- "Sample 1"
         group2_name <- "Sample 2"
@@ -8908,9 +8913,7 @@ statInfrServer <- function(id) {
         plotTitle = "Sample 1 Q-Q Plot",
         plotXlab = input[["indMeansQQPlot-Xlab"]],
         plotYlab = input[["indMeansQQPlot-Ylab"]],
-        gridlines = input[["indMeansQQPlot-Gridlines"]],
-        flip = input[["indMeansQQPlot-Flip"]]
-      )
+        gridlines = input[["indMeansQQPlot-Gridlines"]])
       
       # QQ plot for sample 2
       qq2 <- RenderQQPlot(
@@ -8919,9 +8922,7 @@ statInfrServer <- function(id) {
         plotTitle = "Sample 2 Q-Q Plot",
         plotXlab = input[["indMeansQQPlot-Xlab"]],
         plotYlab = input[["indMeansQQPlot-Ylab"]],
-        gridlines = input[["indMeansQQPlot-Gridlines"]],
-        flip = input[["indMeansQQPlot-Flip"]]
-      )
+        gridlines = input[["indMeansQQPlot-Gridlines"]])
       
       # pairs the graphs side by side
       plot_pair <- ggpubr::ggarrange(qq1, qq2, ncol = 2)
@@ -10192,8 +10193,7 @@ statInfrServer <- function(id) {
                           input[["sidebysidewRankQQ-Title"]],
                           input[["sidebysidewRankQQ-Xlab"]],
                           input[["sidebysidewRankQQ-Ylab"]],
-                          input[["sidebysidewRankQQ-Gridlines"]],
-                          input[["sidebysidewRankQQ-Flip"]])
+                          input[["sidebysidewRankQQ-Gridlines"]])
       
     }, height = function() {GetPlotHeight(input[["sidebysidewRankQQ-Height"]], input[["sidebysidewRankQQ-HeightPx"]], ui = FALSE)},
     width = function() {GetPlotWidth(input[["sidebysidewRankQQ-Width"]], input[["sidebysidewRankQQ-WidthPx"]], ui = FALSE)}
@@ -10259,9 +10259,7 @@ statInfrServer <- function(id) {
         plotTitle = input[["depMeansQQPlot-Title"]],
         plotXlab = input[["depMeansQQPlot-Xlab"]],
         plotYlab = input[["depMeansQQPlot-Ylab"]],
-        gridlines = input[["depMeansQQPlot-Gridlines"]],
-        flip = input[["depMeansQQPlot-Flip"]]
-      )
+        gridlines = input[["depMeansQQPlot-Gridlines"]])
     }, height = function() {
       GetPlotHeight(input[["depMeansQQPlot-Height"]], input[["depMeansQQPlot-HeightPx"]], ui = FALSE)
     }, width = function() {
@@ -10848,8 +10846,7 @@ statInfrServer <- function(id) {
                              safe_input("Title"),
                              safe_input("Xlab"),
                              safe_input("Ylab"),
-                             safe_input("Gridlines"),
-                             safe_input("Flip"))
+                             safe_input("Gridlines"))
     }, height = function() {
       height_val <- input[["signedRankQQ-Height"]]
       height_px_val <- input[["signedRankQQ-HeightPx"]]
@@ -11613,8 +11610,7 @@ statInfrServer <- function(id) {
                    input[["anovaQQplot-Title"]],
                    input[["anovaQQplot-Xlab"]],
                    input[["anovaQQplot-Ylab"]],
-                   input[["anovaQQplot-Gridlines"]],
-                   input[["anovaQQplot-Flip"]])
+                   input[["anovaQQplot-Gridlines"]])
       
     }, height = function() {GetPlotHeight(input[["anovaQQplot-Height"]], input[["anovaQQplot-HeightPx"]], ui = FALSE)},
     width = function() {GetPlotWidth(input[["anovaQQplot-Width"]], input[["anovaQQplot-WidthPx"]], ui = FALSE)}
@@ -11632,8 +11628,7 @@ statInfrServer <- function(id) {
                      input[["anovaMeanPlot-Title"]],
                      input[["anovaMeanPlot-Xlab"]],
                      input[["anovaMeanPlot-Ylab"]],
-                     input[["anovaMeanPlot-Gridlines"]],
-                     input[["anovaMeanPlot-Flip"]])
+                     input[["anovaMeanPlot-Gridlines"]])
       
     }, height = function() {GetPlotHeight(input[["anovaMeanPlot-Height"]], input[["anovaMeanPlot-HeightPx"]], ui = FALSE)},
     width = function() {GetPlotWidth(input[["anovaMeanPlot-Width"]], input[["anovaMeanPlot-WidthPx"]], ui = FALSE)}
