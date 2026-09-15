@@ -11703,13 +11703,12 @@ statInfrServer <- function(id) {
       }
       
       navbarPage(
+        id    = session$ns("multipleRaw"),
         title = NULL,
         selected = "Uploaded Data",
         
         tabPanel(
-          id    = session$ns("multipleRaw"),
           title = "Uploaded Data",
-          
           uiOutput(session$ns("renderMultipleRaw"))
         )
       )
