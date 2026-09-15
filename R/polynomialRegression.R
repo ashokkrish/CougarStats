@@ -1302,6 +1302,7 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, u
       nDroppedRows(0)
       output$polyPerfectFitWarning <- renderUI({ NULL })
       output$polyValidation        <- renderUI({ NULL })
+      if (!is.null(hide_shared)) hide_shared(FALSE)
       hide("polyResultsPanel")
       hide("polyUploadedDataPanel")
       hideTab(inputId = "polyNavbarPage", target = "data_tab")

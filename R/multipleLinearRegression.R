@@ -250,6 +250,7 @@ MLRServer <- function(id, reg_data, reset_upload, upload_error = NULL, clear_tri
     mlr_do_reset <- function() {
       mlrResponseWarn(FALSE)
       mlrExplanatoryWarn(FALSE)
+      if (!is.null(hide_shared)) hide_shared(FALSE)
       hide("mlrNavPanel")
       hideTab(inputId = "mainPanel", target = "data_tab")
       hideTab(inputId = "mainPanel", target = "Model")

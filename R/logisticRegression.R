@@ -526,6 +526,7 @@ LogisticRegressionServer <- function(id, reg_data, reset_upload, upload_error = 
       logrResponseWarn(FALSE)
       logrExplanatoryWarn(FALSE)
       noFileCalculate(FALSE)
+      if (!is.null(hide_shared)) hide_shared(FALSE)
       hide("logrNavPanel")
       hideTab(inputId = "mainPanel", target = "data_tab")
       hideTab(inputId = "mainPanel", target = "Model")
