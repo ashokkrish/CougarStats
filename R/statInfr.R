@@ -1107,7 +1107,7 @@ statInfrUI <- function(id) {
                       inputId = ns("stdDev1"),
                       label   = HTML("<strong>Sample Standard Deviation 1</strong> \\( (s_1) \\)"),
                       value   = 3,
-                      min     = 1,
+                      min     = 0,
                       step    = 0.01
                     ),
                     
@@ -1147,7 +1147,7 @@ statInfrUI <- function(id) {
                       inputId = ns("s1sq"),
                       label   = HTML("<strong>Sample Variance 1 </strong>\\( (s_1^2) \\)"),
                       value   = 9,
-                      min     = 1,
+                      min     = 0,
                       step    = 0.01),
                     
                     numericInput(
@@ -2774,7 +2774,7 @@ statInfrServer <- function(id) {
       if (input$sigmaKnownRaw == "rawKnown" && is.na(input$popuSDRaw)) {
         "Required"
       } else if (input$sigmaKnownRaw == "rawKnown" && input$popuSDRaw <= 0) {
-        "Must be greater than 0"
+        "Must be greater than zero"
       }
     })
     
@@ -3249,7 +3249,7 @@ statInfrServer <- function(id) {
     
     # stdDev1
     twopopvarsum_iv$add_rule("stdDev1", sv_required())
-    twopopvarsum_iv$add_rule("stdDev1", sv_gt(0))
+    twopopvarsum_iv$add_rule("stdDev1", sv_gte(0))
     
     # stdDev2
     twopopvarsum_iv$add_rule("stdDev2", sv_required())
@@ -3267,7 +3267,7 @@ statInfrServer <- function(id) {
     
     # Two Std Dev s1^2
     twopopvar_iv$add_rule("s1sq", sv_required())
-    twopopvar_iv$add_rule("s1sq", sv_gt(0))
+    twopopvar_iv$add_rule("s1sq", sv_gte(0))
     
     # Two Std Dev s2^2
     twopopvar_iv$add_rule("s2sq", sv_required())
@@ -7506,8 +7506,7 @@ statInfrServer <- function(id) {
           need(input$SDSampleSize2, "Sample size 2 is required.") %then%
             need(input$SDSampleSize2 %% 1 == 0 && input$SDSampleSize2 > 1, "Sample size 2 must be an integer greater than 1."),
           
-          need(input$stdDev1, "Sample standard deviation 1 is required.") %then%
-            need(input$stdDev1 > 0, "Sample standard deviation 1 must be greater than 0."),
+          need(input$stdDev1, "Sample standard deviation 1 is required."),
           
           need(input$stdDev2, "Sample standard deviation 2 is required.") %then%
             need(input$stdDev2 > 0, "Sample standard deviation 2 must be greater than 0."),
