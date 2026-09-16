@@ -2746,8 +2746,10 @@ statInfrServer <- function(id) {
     
     # sample1
     onemeanraw_iv$add_rule("sample1", sv_required())
-    onemeanraw_iv$add_rule("sample1", sv_regex("^( )*(-)?([0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)*([ \r\n])*$",
-                                               "Data must be numeric values separated by a comma, space, or tab (ie: 2,3,4)"))
+    onemeanraw_iv$add_rule("sample1", sv_regex("^( )*(-)?([0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
+                                               "Data must be at least two numeric values separated by a comma, space, or tab (ie: 2,3,4)"))
+    
+
     # raw data, SD unknown
     onemeanraw_iv$add_rule("sample1", ~ {
       if (input$sigmaKnownRaw == "rawUnknown" && input$inferenceType == 'Hypothesis Testing' && (sd(createNumLst(input$sample1)) == 0)) {
@@ -2760,7 +2762,7 @@ statInfrServer <- function(id) {
     onemeanupload_iv$add_rule("oneMeanUserData", ~ if(is.null(fileInputs$oneMeanStatus) || fileInputs$oneMeanStatus == 'reset') "Required")
     onemeanupload_iv$add_rule("oneMeanUserData", ~ if(!(tolower(tools::file_ext(input$oneMeanUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
     onemeanupload_iv$add_rule("oneMeanUserData", ~ if(nrow(OneMeanUploadData()) == 0) "File is empty")
-    onemeanupload_iv$add_rule("oneMeanUserData", ~ if(nrow(OneMeanUploadData()) < 3) "Samples must include at least 2 observations")
+    onemeanupload_iv$add_rule("oneMeanUserData", ~ if(nrow(OneMeanUploadData()) < 3) "Samples must include at least two observations")
 
     
     # popuSD
@@ -2790,7 +2792,7 @@ statInfrServer <- function(id) {
     onemeanuploadvar_iv$add_rule("oneMeanVariable", ~ {
       if (!(input$oneMeanVariable %in% names(OneMeanUploadData()))) return(NULL)
       dat <- na.omit(unlist(OneMeanUploadData()[, input$oneMeanVariable]))
-      if (length(dat) < 2) "Samples must include at least 2 observations"
+      if (length(dat) < 2) "Samples must include at least two observations"
     })
     onemeanuploadvar_iv$add_rule("oneMeanVariable", ~ {
       if (!(input$oneMeanVariable %in% names(OneMeanUploadData()))) return(NULL)
@@ -2874,7 +2876,7 @@ statInfrServer <- function(id) {
     indmeansupload_iv$add_rule("indMeansUserData", ~ if(!(tolower(tools::file_ext(input$indMeansUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
     indmeansupload_iv$add_rule("indMeansUserData", ~ if(nrow(IndMeansUploadData()) == 0) "File is empty.")
     indmeansupload_iv$add_rule("indMeansUserData", ~ if(ncol(IndMeansUploadData()) < 2) "File must contain at least 2 distinct samples to choose from for analysis.")
-    indmeansupload_iv$add_rule("indMeansUserData", ~ if(nrow(IndMeansUploadData()) < 3) "Samples must include at least 2 observations.")
+    indmeansupload_iv$add_rule("indMeansUserData", ~ if(nrow(IndMeansUploadData()) < 3) "Samples must include at least two observations.")
     
     indmeansuploadsd_iv$add_rule("popuSDUpload1", sv_required())
     indmeansuploadsd_iv$add_rule("popuSDUpload1", sv_gt(0))
@@ -2900,7 +2902,7 @@ statInfrServer <- function(id) {
       col <- input$indMeansUplSample1
       if (is.null(col) || col == "" || !(col %in% names(d))) return(NULL)
       s1 <- na.omit(unlist(d[, col]))
-      if (length(s1) < 2) "Sample 1 must have at least 2 observations"
+      if (length(s1) < 2) "Sample 1 must have at least two observations"
     })
     
     indmeansuploadvar_iv$add_rule("indMeansUplSample2", ~ {
@@ -2908,7 +2910,7 @@ statInfrServer <- function(id) {
       col <- input$indMeansUplSample2
       if (is.null(col) || col == "" || !(col %in% names(d))) return(NULL)
       s2 <- na.omit(unlist(d[, col]))
-      if (length(s2) < 2) "Sample 2 must have at least 2 observations"
+      if (length(s2) < 2) "Sample 2 must have at least two observations"
     })
     
     indmeansuploadvar_iv$add_rule("indMeansUplSample1", ~ {
@@ -2936,7 +2938,7 @@ statInfrServer <- function(id) {
     wilcoxonUpload_iv$add_rule("wilcoxonUpl", ~ if(!(tolower(tools::file_ext(input$wilcoxonUpl$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
     wilcoxonUpload_iv$add_rule("wilcoxonUpl", ~ if(nrow(WilcoxonUploadData()) == 0) "File is empty.")
     wilcoxonUpload_iv$add_rule("wilcoxonUpl", ~ if(ncol(WilcoxonUploadData()) < 2) "File must contain at least 2 distinct samples to choose from for analysis.")
-    wilcoxonUpload_iv$add_rule("wilcoxonUpl", ~ if(nrow(WilcoxonUploadData()) < 3) "Samples must include at least 2 observations.")
+    wilcoxonUpload_iv$add_rule("wilcoxonUpl", ~ if(nrow(WilcoxonUploadData()) < 3) "Samples must include at least two observations.")
     wilcoxonraw_iv$add_rule("rankSumRaw1", sv_required())
     wilcoxonraw_iv$add_rule("rankSumRaw1", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
                                                     "Data must be at least three numeric values separated by a comma, space, or tab (ie: 2,3,4)"))
@@ -2998,7 +3000,7 @@ statInfrServer <- function(id) {
     depmeansupload_iv$add_rule("depMeansUserData", ~ if(!(tolower(tools::file_ext(input$depMeansUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
     depmeansupload_iv$add_rule("depMeansUserData", ~ if(nrow(DepMeansUploadData()) == 0) "File is empty.")
     depmeansupload_iv$add_rule("depMeansUserData", ~ if(ncol(DepMeansUploadData()) < 2) "File must contain at least 2 distinct 'Before' and 'After' sets of data to choose from for analysis.")
-    depmeansupload_iv$add_rule("depMeansUserData", ~ if(nrow(DepMeansUploadData()) < 4) "Samples must include at least 3 observations.")
+    depmeansupload_iv$add_rule("depMeansUserData", ~ if(nrow(DepMeansUploadData()) < 4) "Samples must include at least three observations.")
  
     
     depmeansuploadvars_iv$add_rule("depMeansUplSample1", sv_required())
@@ -3021,14 +3023,14 @@ statInfrServer <- function(id) {
       col <- input$depMeansUplSample1
       if (col == "" || !(col %in% names(d))) return(NULL)
       if (length(na.omit(unlist(d[, col]))) < 3)
-        "Sample 1 must have at least 3 observations."
+        "Sample 1 must have at least three observations."
     })
     depmeansuploadvars_iv$add_rule("depMeansUplSample2", ~ {
       d <- DepMeansUploadData()
       col <- input$depMeansUplSample2
       if (col == "" || !(col %in% names(d))) return(NULL)
       if (length(na.omit(unlist(d[, col]))) < 3)
-        "Sample 2 must have at least 3 observations."
+        "Sample 2 must have at least three observations."
     })
     
     depmeansuploadvars_iv$add_rule("depMeansUplSample1", ~ {
@@ -3070,7 +3072,7 @@ statInfrServer <- function(id) {
     signedRankUpload_iv$add_rule("signedRankUpl", ~ if(!(tolower(tools::file_ext(input$signedRankUpl$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
     signedRankUpload_iv$add_rule("signedRankUpl", ~ if(nrow(signedRankUploadData()) == 0) "File is empty.")
     signedRankUpload_iv$add_rule("signedRankUpl", ~ if(ncol(signedRankUploadData()) < 2) "File must contain at least 2 distinct samples to choose from for analysis.")
-    signedRankUpload_iv$add_rule("signedRankUpl", ~ if(nrow(signedRankUploadData()) < 3) "Samples must include at least 2 observations.")
+    signedRankUpload_iv$add_rule("signedRankUpl", ~ if(nrow(signedRankUploadData()) < 3) "Samples must include at least two observations.")
     signedRankRaw_iv$add_rule("signedRankRaw1", sv_required())
     signedRankRaw_iv$add_rule("signedRankRaw1", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
                                                          "Data must be at least three numeric values separated by a comma, space, or tab (ie: 2,3,4)"))
@@ -3174,10 +3176,10 @@ statInfrServer <- function(id) {
     oneSD_iv$add_rule("SSDStdDev", sv_gt(0))
 
     # sample standard deviation — raw data mode
+    oneSDRaw_iv$add_rule("sdRawData", sv_required())
     oneSDRaw_iv$add_rule("sdRawData", ~ {
-      if (!isTruthy(input$sdRawData)) return("Sample data is required.")
       vals <- createNumLst(input$sdRawData)
-      if (length(vals) < 3) "Sample data must contain at least three numeric values."
+      if (length(vals) < 3) "Data must be at least three numeric values separated by a comma, space, or tab (ie: 2,3,4)."
     })
 
     # sample standard deviation — upload mode
@@ -3185,7 +3187,7 @@ statInfrServer <- function(id) {
     onesdupload_iv$add_rule("sdUserData", ~ if(is.null(fileInputs$sdStatus) || fileInputs$sdStatus == 'reset') "Required")
     onesdupload_iv$add_rule("sdUserData", ~ if(!(tolower(tools::file_ext(input$sdUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
     onesdupload_iv$add_rule("sdUserData", ~ if(nrow(SDUploadData()) == 0) "File is empty.")
-    onesdupload_iv$add_rule("sdUserData", ~ if(nrow(SDUploadData()) < 3) "Samples must include at least 3 observations.")
+    onesdupload_iv$add_rule("sdUserData", ~ if(nrow(SDUploadData()) < 3) "Samples must include at least three observations.")
 
     onesduploadvar_iv$add_rule("sdVariable", sv_required())
     onesduploadvar_iv$add_rule("sdVariable", ~ {
@@ -3195,7 +3197,7 @@ statInfrServer <- function(id) {
     onesduploadvar_iv$add_rule("sdVariable", ~ {
       if (!isTruthy(input$sdVariable) || !(input$sdVariable %in% names(SDUploadData()))) return(NULL)
       dat <- na.omit(unlist(SDUploadData()[, input$sdVariable]))
-      if (length(dat) < 3) "Selected column must include at least 3 observations."
+      if (length(dat) < 3) "Selected column must include at least three observations."
     })
 
     oneSDht_iv$add_rule("hypStdDeviation", sv_required())
@@ -3275,7 +3277,6 @@ statInfrServer <- function(id) {
     twopopvarraw_iv$add_rule("rawSamp1SD", sv_required())
     twopopvarraw_iv$add_rule("rawSamp1SD", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
                                                     "Data must be at least three numeric values separated by a comma, space, or tab (ie: 2,3,4)."))
-    twopopvarraw_iv$add_rule("rawSamp1SD", ~ if (sd(createNumLst(input$rawSamp1SD)) == 0) "No variance in sample data")
     
     # raw group 2
     twopopvarraw_iv$add_rule("rawSamp2SD", sv_required())
@@ -6963,7 +6964,7 @@ statInfrServer <- function(id) {
       
       if (!onemeanraw_iv$is_valid()) {
         validate(
-          need(input$sample1, "Sample Data required.") %then%
+          need(input$sample1, "Sample data must contain at least two numeric values.") %then%
             need(length(createNumLst(input$sample1)) > 1, "Sample data must contain at least two numeric values."),
           if (input$sigmaKnownRaw == "rawKnown") {
             need(input$popuSDRaw,"Population Standard Deviation is required.") %then%
@@ -7009,7 +7010,7 @@ statInfrServer <- function(id) {
         
         validate(
           need(nrow(OneMeanUploadData()) != 0, "File is empty."),
-          need(nrow(OneMeanUploadData()) > 2, "Samples must include at least 2 observations."),
+          need(nrow(OneMeanUploadData()) > 2, "Samples must include at least two observations."),
           errorClass = "myClass")
       }
       
@@ -7047,7 +7048,7 @@ statInfrServer <- function(id) {
 
       if(!oneSDRaw_iv$is_valid()) {
         validate(
-          need(isTruthy(input$sdRawData), "Sample data is required.") %then%
+          need(isTruthy(input$sdRawData), "Sample data must contain at least three numeric values.") %then%
             need(length(createNumLst(input$sdRawData)) >= 3, "Sample data must contain at least three numeric values."),
           errorClass = "myClass")
       }
@@ -7059,7 +7060,7 @@ statInfrServer <- function(id) {
           errorClass = "myClass")
         validate(
           need(nrow(SDUploadData()) > 0, "File is empty."),
-          need(nrow(SDUploadData()) >= 3, "Samples must include at least 3 observations."),
+          need(nrow(SDUploadData()) >= 3, "Samples must include at least three observations."),
           errorClass = "myClass")
       }
 
@@ -7135,10 +7136,10 @@ statInfrServer <- function(id) {
       
       if(!indmeansraw_iv$is_valid()) {
         validate(
-          need(input$raw_sample1, "Sample data must contain at least three numeric values.") %then%
-            need(length(createNumLst(input$raw_sample1)) > 2, "Sample data must contain at least three numeric values."),
-          need(input$raw_sample2, "Sample 2 requires a minimum of 3 data points.") %then%
-            need(length(createNumLst(input$raw_sample2)) > 2, "Sample data must contain at least three numeric values."),
+          need(input$raw_sample1, "Sample 1 data must contain at least three numeric values.") %then%
+            need(length(createNumLst(input$raw_sample1)) > 2, "Sample 1 data must contain at least three numeric values."),
+          need(input$raw_sample2, "Sample 2 data must contain at least three numeric values.") %then%
+            need(length(createNumLst(input$raw_sample2)) > 2, "Sample 2 data must contain at least three numeric values."),
           errorClass = "myClass")
         
         validate("Sample data must contain at least three numeric values.")
@@ -7175,8 +7176,8 @@ statInfrServer <- function(id) {
         
         validate(
           need(nrow(IndMeansUploadData()) != 0, "File is empty."),
-          need(ncol(IndMeansUploadData()) > 1, "File must contain at least 2 distinct samples to choose from for analysis."),
-          need(nrow(IndMeansUploadData()) > 2, "Samples must include at least 2 observations."),
+          need(ncol(IndMeansUploadData()) > 1, "File must contain at least two distinct samples to choose from for analysis."),
+          need(nrow(IndMeansUploadData()) > 2, "Samples must include at least two observations."),
           errorClass = "myClass")
       }
       
@@ -7199,13 +7200,13 @@ statInfrServer <- function(id) {
 
         sample1Data <- na.omit(unlist(IndMeansUploadData()[, input$indMeansUplSample1]))
         validate(
-          need(length(sample1Data) > 1, "Sample 1 must have at least 2 observations."),
+          need(length(sample1Data) > 1, "Sample 1 must have at least two observations."),
           errorClass = "myClass"
         )
 
         sample2Data <- na.omit(unlist(IndMeansUploadData()[, input$indMeansUplSample2]))
         validate(
-          need(length(sample2Data) > 1, "Sample 2 must have at least 2 observations."),
+          need(length(sample2Data) > 1, "Sample 2 must have at least two observations."),
           errorClass = "myClass"
         )
         
@@ -7238,14 +7239,14 @@ statInfrServer <- function(id) {
       ### ---------------- Wilcoxon Rank Sum Validation
       if(!wilcoxonraw_iv$is_valid()) {
         validate(
-          need(input$rankSumRaw1, "Sample 1 data requires a minimum of three data points.") %then%
-          need(length(createNumLst(input$rankSumRaw1)) > 2, "Sample 1 data requires a minimum of three data points."),
-          need(input$rankSumRaw2, "Sample 2 data requires a minimum of three data points.") %then%
-          need(length(createNumLst(input$rankSumRaw2)) > 2, "Sample 2 data requires a minimum of three data points."),
+          need(input$rankSumRaw1, "Sample 1 data must contain at least three numeric values.") %then%
+          need(length(createNumLst(input$rankSumRaw1)) > 2, "Sample 1 data must contain at least three numeric values."),
+          need(input$rankSumRaw2, "Sample 2 data must contain at least three numeric values.") %then%
+          need(length(createNumLst(input$rankSumRaw2)) > 2, "Sample 2 data must contain at least three numeric values."),
           errorClass = "myClass")
         
         validate(
-          need(length(createNumLst(input$rankSumRaw1)) == length(createNumLst(input$rankSumRaw2)), "Same number of data points required for Sample 1 and Sample 2."),
+          need(length(createNumLst(input$rankSumRaw1)) == length(createNumLst(input$rankSumRaw2)), "Same number of numeric values required for Sample 1 and Sample 2."),
           errorClass = "myClass")
       }
       
@@ -7262,7 +7263,7 @@ statInfrServer <- function(id) {
         validate(
           need(nrow(WilcoxonUploadData()) > 0, "File is empty."),
           need(ncol(WilcoxonUploadData()) >= 2, "File must contain at least 2 distinct sample 1 and sample 2 sets of data to choose from for analysis."),
-          need(nrow(WilcoxonUploadData()) >= 3, "Samples must include at least 3 observations."),
+          need(nrow(WilcoxonUploadData()) >= 3, "Samples must include at least three observations."),
           errorClass = "myClass")
       }
       
@@ -7273,7 +7274,7 @@ statInfrServer <- function(id) {
           need(!(isTruthy(input$wilcoxonUpl1) && isTruthy(input$wilcoxonUpl2) &&
                  input$wilcoxonUpl1 == input$wilcoxonUpl2),
                "Sample 1 and Sample 2 must be different columns. Please select two distinct columns."),
-          need(CheckRankSumUploadSamples() == 0, "Same number of data points required for Sample 1 and Sample 2."),
+          need(CheckRankSumUploadSamples() == 0, "Same number of numeric values required for Sample 1 and Sample 2."),
           errorClass = "myClass")
       }
 
@@ -7281,14 +7282,14 @@ statInfrServer <- function(id) {
       
       if(!signedRankRaw_iv$is_valid()) {
         validate(
-          need(input$signedRankRaw1, "Sample 1 data requires a minimum of three data points.") %then%
-          need(length(createNumLst(input$signedRankRaw1)) > 2, "Sample 1 data requires a minimum of three data points."),
-          need(input$signedRankRaw2, "Sample 2 data requires a minimum of three data points.") %then%
-          need(length(createNumLst(input$signedRankRaw2)) > 2, "Sample 2 data requires a minimum of three data points."),
+          need(input$signedRankRaw1, "Sample 1 data must contain at least three numeric values.") %then%
+          need(length(createNumLst(input$signedRankRaw1)) > 2, "Sample 1 data must contain at least three numeric values."),
+          need(input$signedRankRaw2, "Sample 2 data must contain at least three numeric values.") %then%
+          need(length(createNumLst(input$signedRankRaw2)) > 2, "Sample 2 data must contain at least three numeric values."),
           errorClass = "myClass")
         
         validate(
-          need(length(createNumLst(input$signedRankRaw1)) == length(createNumLst(input$signedRankRaw2)), "Same number of data points required for Sample 1 and Sample 2."),
+          need(length(createNumLst(input$signedRankRaw1)) == length(createNumLst(input$signedRankRaw2)), "Same number of numeric values required for Sample 1 and Sample 2."),
           errorClass = "myClass")
         
         if(length(createNumLst(input$signedRankRaw1)) == length(createNumLst(input$signedRankRaw2))) {
@@ -7312,7 +7313,7 @@ statInfrServer <- function(id) {
         validate(
           need(nrow(signedRankUploadData()) > 0, "File is empty."),
           need(ncol(signedRankUploadData()) >= 2, "File must contain at least 2 distinct sample 1 and sample 2 sets of data to choose from for analysis."),
-          need(nrow(signedRankUploadData()) >= 3, "Samples must include at least 3 observations."),
+          need(nrow(signedRankUploadData()) >= 3, "Samples must include at least three observations."),
           errorClass = "myClass")
       }
       
@@ -7320,7 +7321,7 @@ statInfrServer <- function(id) {
         validate(
           need(input$signedRankUpl1, "Please select a column for sample 1."),
           need(input$signedRankUpl2, "Please select a column for sample 2."),
-          need(CheckSignedRankUploadSamples() == 0, "Same number of data points required for Sample 1 and Sample 2."),
+          need(CheckSignedRankUploadSamples() == 0, "Same number of numeric values required for Sample 1 and Sample 2."),
           errorClass = "myClass")
         
         if(input$signedRankUpl1 != "" && input$signedRankUpl2 != "") {
@@ -7354,14 +7355,14 @@ statInfrServer <- function(id) {
       }
       if(!depmeansraw_iv$is_valid()) {
         validate(
-          need(input$before, "Sample 1 data requires a minimum of three data points.") %then%
-            need(length(createNumLst(input$before)) > 2, "Sample 1 data requires a minimum of three data points."),
-          need(input$after, "Sample 2 data requires a minimum of three data points.") %then%
-            need(length(createNumLst(input$after)) > 2, "Sample 2 data requires a minimum of three data points."),
+          need(input$before, "Sample 1 data must contain at least three numeric values.") %then%
+            need(length(createNumLst(input$before)) > 2, "Sample 1 data must contain at least three numeric values."),
+          need(input$after, "Sample 2 data must contain at least three numeric values.") %then%
+            need(length(createNumLst(input$after)) > 2, "Sample 2 data must contain at least three numeric values."),
           errorClass = "myClass")
         
         validate(
-          need(length(createNumLst(input$before)) == length(createNumLst(input$after)), "Same number of data points required for Sample 1 and Sample 2."),
+          need(length(createNumLst(input$before)) == length(createNumLst(input$after)), "Same number of numeric values required for Sample 1 and Sample 2."),
           errorClass = "myClass")
       }
       
@@ -7377,8 +7378,8 @@ statInfrServer <- function(id) {
         
         validate(
           need(nrow(DepMeansUploadData()) > 0, "File is empty."),
-          need(ncol(DepMeansUploadData()) >= 2, "File must contain at least 2 distinct 'Before' and 'After' sets of data to choose from for analysis."),
-          need(nrow(DepMeansUploadData()) >= 3, "Samples must include at least 3 observations."),
+          need(ncol(DepMeansUploadData()) >= 2, "File must contain at least two distinct 'Before' and 'After' sets of data to choose from for analysis."),
+          need(nrow(DepMeansUploadData()) >= 3, "Samples must include at least three observations."),
           errorClass = "myClass")
       }
       
@@ -7386,7 +7387,7 @@ statInfrServer <- function(id) {
         validate(
           need(input$depMeansUplSample1, "Please select a column for Sample 1 (e.g. Before, Pre-Treatment, Baseline)."),
           need(input$depMeansUplSample2, "Please select a column for Sample 2 (e.g. After, Post-Treatment, Follow-Up)."),
-          need(CheckDepUploadSamples() == 0, "Same number of data points required for Sample 1 and Sample 2."),
+          need(CheckDepUploadSamples() == 0, "Same number of numeric values required for Sample 1 and Sample 2."),
           errorClass = "myClass")
        
          validate(
@@ -7404,8 +7405,8 @@ statInfrServer <- function(id) {
         sample1 <- na.omit(unlist(DepMeansUploadData()[, input$depMeansUplSample1]))
         sample2 <- na.omit(unlist(DepMeansUploadData()[, input$depMeansUplSample2]))
         validate(
-          need(length(sample1) > 2, "Sample 1 must have at least 3 observations."),
-          need(length(sample2) > 2, "Sample 2 must have at least 3 observations."),
+          need(length(sample1) > 2, "Sample 1 must have at least three observations."),
+          need(length(sample2) > 2, "Sample 2 must have at least three observations."),
           errorClass = "myClass"
         )
         
@@ -7516,21 +7517,19 @@ statInfrServer <- function(id) {
       
       if (!twopopvar_iv$is_valid()) {
         validate(
-          need(input$n1, "n1 is required.") %then%
+          need(input$n1, "Sample size 1 is required.") %then%
             need(input$n1 %% 1 == 0 && input$n1 > 1,
-                 "n1 must be an integer greater than 1."),
+                 "Sample size 1 must be an integer greater than 1."),
           
-          need(input$s1sq, "s1^2 is required.") %then%
-            need(input$s1sq > 0,
-                 "s1^2 must be greater than 0."),
+          need(input$s1sq, "Sample variance 1 is required."),
           
-          need(input$n2, "n2 is required.") %then%
+          need(input$n2, "Sample size 2 is required.") %then%
             need(input$n2 %% 1 == 0 && input$n2 > 1,
-                 "n2 must be an integer greater than 1."),
+                 "Sample size 2 must be an integer greater than 1."),
           
-          need(input$s2sq, "s2^2 is required.") %then%
+          need(input$s2sq, "Sample variance 2 is required.") %then%
             need(input$s2sq > 0,
-                 "s2^2 must be greater than 0."),
+                 "Variance for sample 2 must be greater than zero."),
           
           errorClass = "myClass"
         )
@@ -7538,13 +7537,12 @@ statInfrServer <- function(id) {
       
       if (!twopopvarraw_iv$is_valid()) {
         validate(
-          need(input$rawSamp1SD, "Group 1 data requires a minimum of 3 numeric values.") %then%
-            need(length(createNumLst(input$rawSamp1SD)) >= 3, "Group 1 data requires a minimum of 3 numeric values.") %then%
-            need(sd(createNumLst(input$rawSamp1SD)) > 0, "Group 1 must have variance."),
+          need(input$rawSamp1SD, "Sample 1 data must contain at least three numeric values.") %then%
+            need(length(createNumLst(input$rawSamp1SD)) >= 3, "Sample 1 data must contain at least three numeric values."),
           
-          need(input$rawSamp2SD, "Group 2 data requires a minimum of 3 numeric values.") %then%
-            need(length(createNumLst(input$rawSamp2SD)) >= 3, "Group 2 data requires a minimum of 3 numeric values.") %then%
-            need(sd(createNumLst(input$rawSamp2SD)) > 0, "Group 2 must have variance."),
+          need(input$rawSamp2SD, "Sample 2 data must contain at least three numeric values.") %then%
+            need(length(createNumLst(input$rawSamp2SD)) >= 3, "Sample 2 data must contain at least three numeric values.") %then%
+            need(sd(createNumLst(input$rawSamp2SD)) > 0, "Variance for sample 2 must be greater than zero."),
           
           errorClass = "myClass"
         )
@@ -7648,7 +7646,7 @@ statInfrServer <- function(id) {
           errorClass = "myClass")
         
         validate(
-          need(all(chiSqTotaled()[,"Total"] > 0) && all(chiSqTotaled()["Total",] > 0), "The test statistic will be undefined if any row or column total equals 0."),
+          need(all(chiSqTotaled()[,"Total"] > 0) && all(chiSqTotaled()["Total",] > 0), "The test statistic will be undefined if any row or column total equals zero."),
           errorClass = "myClass")
       }
       
@@ -7671,7 +7669,7 @@ statInfrServer <- function(id) {
           errorClass = "myClass")
         
         validate(
-          need(all(chiSqTotaled()[,"Total"] > 0) && all(chiSqTotaled()["Total",] > 0), "The test statistic will be undefined if any row or column total equals 0."),
+          need(all(chiSqTotaled()[,"Total"] > 0) && all(chiSqTotaled()["Total",] > 0), "The test statistic will be undefined if any row or column total equals zero."),
           errorClass = "myClass")
       }
       
@@ -7694,7 +7692,7 @@ statInfrServer <- function(id) {
           errorClass = "myClass")
         
         validate(
-          need(all(chiSqTotaled()[,"Total"] > 0) && all(chiSqTotaled()["Total",] > 0), "The test statistic will be undefined if any row or column total equals 0."),
+          need(all(chiSqTotaled()[,"Total"] > 0) && all(chiSqTotaled()["Total",] > 0), "The test statistic will be undefined if any row or column total equals zero."),
           errorClass = "myClass")
       }
       
@@ -7717,7 +7715,7 @@ statInfrServer <- function(id) {
           errorClass = "myClass")
         
         validate(
-          need(all(chiSqTotaled()[,"Total"] > 0) && all(chiSqTotaled()["Total",] > 0), "The test statistic will be undefined if any row or column total equals 0."),
+          need(all(chiSqTotaled()[,"Total"] > 0) && all(chiSqTotaled()["Total",] > 0), "The test statistic will be undefined if any row or column total equals zero."),
           errorClass = "myClass")
       }
     })
@@ -13193,36 +13191,6 @@ statInfrServer <- function(id) {
       updateNumericInput(session, "indMeansMuNaught", value = 0)
       updateNumericInput(session, "depMeansMuNaught", value = 0)
       updateNumericInput(session, "propDiffNaught", value = 0)
-      
-      updatePickerInput(
-        session,
-        "indMeansPlots",
-        selected = c("indMeansBoxplot", "indMeansQQPlot")
-      )
-      
-      updatePickerInput(
-        session,
-        "oneSDPlots",
-        selected = c("oneSDBoxplot", "oneSDHistogram")
-      )
-      
-      updatePickerInput(
-        session,
-        "sidebysidewRankPlots",
-        selected = c("sidebysidewRankSum", "sidebysidewRankQQ")
-      )
-      
-      updatePickerInput(
-        session,
-        "anovaGraphs",
-        selected = c("Side-by-side Boxplot", "Plot Group Means")
-      )
-      
-      updatePickerInput(
-        session,
-        "kwGraphs",
-        selected = c("Side-by-side Boxplot", "Plot Group Means")
-      )
 
       ## -- Raw-data text areas --
       updateTextAreaInput(session, "sample1",
@@ -13283,6 +13251,35 @@ statInfrServer <- function(id) {
       updatePickerInput(session, "kwMultiColumns", selected = character(0))
       updateSelectizeInput(session, "kwResponse", selected = "")
       updateSelectizeInput(session, "kwFactors", selected = "")
+      updatePickerInput(
+        session,
+        "indMeansPlots",
+        selected = c("indMeansBoxplot", "indMeansQQPlot")
+      )
+      
+      updatePickerInput(
+        session,
+        "oneSDPlots",
+        selected = c("oneSDBoxplot", "oneSDHistogram")
+      )
+      
+      updatePickerInput(
+        session,
+        "sidebysidewRankPlots",
+        selected = c("sidebysidewRankSum", "sidebysidewRankQQ")
+      )
+      
+      updatePickerInput(
+        session,
+        "anovaGraphs",
+        selected = c("Side-by-side Boxplot", "Plot Group Means")
+      )
+      
+      updatePickerInput(
+        session,
+        "kwGraphs",
+        selected = c("Side-by-side Boxplot", "Plot Group Means")
+      )
 
       ## -- Sheet selections: reset Excel uploads to their first sheet rather
       ##    than "". The sheet-population observer only re-fires on a fresh
