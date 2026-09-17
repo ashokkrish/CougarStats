@@ -2181,13 +2181,6 @@ statInfrUI <- function(id) {
                                     ), #depPopMeans Analysis tabPanel
                                     
                                     tabPanel(
-                                      id = ns("depPopMeansData"),
-                                      title = "Uploaded Data",
-                                      
-                                      uiOutput(ns("renderDepPopMeansData")),
-                                    ), #depPopMeansData Uploaded Data tabPanel
-                                    
-                                    tabPanel(
                                       id = ns("depMeansDataCalcs"),
                                       title = "Data with Calculations",
                                       br(),
@@ -2223,6 +2216,13 @@ statInfrUI <- function(id) {
                                         br()
                                       )  
                                     ), # Dep means graphs tab panel
+                                    
+                                    tabPanel(
+                                      id = ns("depPopMeansData"),
+                                      title = "Uploaded Data",
+                                      
+                                      uiOutput(ns("renderDepPopMeansData")),
+                                    ), #depPopMeansData Uploaded Data tabPanel
                                   ), # depPopMeansTabset
                                 ), # Two Dependent Samples
                                 
@@ -7012,12 +7012,31 @@ statInfrServer <- function(id) {
         
         validate(
           need(nrow(OneMeanUploadData()) != 0, "File is empty."),
-          need(nrow(OneMeanUploadData()) > 2, "Samples must include at least two observations."),
+          need(nrow(OneMeanUploadData()) >= 2, "Samples must include at least two observations."),
           errorClass = "myClass")
       }
       
       if(!onemeanuploadvar_iv$is_valid()) {
-        req(FALSE)  # column errors shown in sidebar via onemeanuploadvar_iv; halt main-panel output silently, leaving the uploaded-data preview visible
+        
+        if(input$oneMeanVariable %in% names(OneMeanUploadData())) {
+          dat <- na.omit(unlist(OneMeanUploadData()[, input$oneMeanVariable]))
+          
+          validate(
+            need(
+              !checkNumeric(OneMeanUploadData(), input$oneMeanVariable),
+              "Selected column contains non-numeric data."
+            ),
+            need(
+              length(dat) >= 2,
+              "Samples must include at least two observations."
+            ),
+            need(
+              !(input$sigmaKnownUpload == "Unknown" && input$inferenceType == 'Hypothesis Testing' && 
+                  length(dat) > 1 && is.numeric(dat) && sd(dat) == 0),
+              "No variance in selected column"
+            ),
+            errorClass = "myClass")
+        }
       }
       
       
@@ -7191,14 +7210,11 @@ statInfrServer <- function(id) {
         
         validate(
           need(!checkNumeric(IndMeansUploadData(), input$indMeansUplSample1),
-               "Sample 1 must be numeric."),
+               "Sample 1 must be numeric.") %then%
+            need(!checkNumeric(IndMeansUploadData(), input$indMeansUplSample2),
+                 "Sample 2 must be numeric."),
           errorClass = "myClass"
         )
-        
-        validate(
-          need(!checkNumeric(IndMeansUploadData(), input$indMeansUplSample2),
-               "Sample 2 must be numeric."),
-          errorClass = "myClass")
 
         sample1Data <- na.omit(unlist(IndMeansUploadData()[, input$indMeansUplSample1]))
         validate(
@@ -7897,8 +7913,9 @@ statInfrServer <- function(id) {
     })
 
     observeEvent(input$sdVariable, {
-      if (isTRUE(input$sdDataAvailability == "Upload Data") &&
-          onesdupload_iv$is_valid()) {
+      if (isTRUE(input$sdDataAvailability == "Upload Data")) {
+        hideTab(inputId = "oneSDTabset", target = "Analysis")
+        hideTab(inputId = "oneSDTabset", target = "Graphs")
         updateTabsetPanel(session, "oneSDTabset", selected = "Uploaded Data")
       }
     }, ignoreInit = TRUE)
@@ -8886,6 +8903,7 @@ statInfrServer <- function(id) {
     observeEvent(input$dataAvailability2, {
       if (input$dataAvailability2 == "Upload Data") {
         showTab(inputId = "indPopMeansTabset", target = "Uploaded Data")
+        hideTab(inputId = "indPopMeansTabset", target = "Graphs")
         updateTabsetPanel(session, "indPopMeansTabset", selected = "Uploaded Data")
       } else {
         hideTab(inputId = "indPopMeansTabset", target = "Uploaded Data")
@@ -12097,6 +12115,7 @@ statInfrServer <- function(id) {
         shinyjs::show(id = "inferenceMP")
         shinyjs::show(id = "inferenceData")
         hideTab(inputId = "onePopMeanTabset", target = "Analysis")
+        hideTab(inputId = "onePopMeanTabset", target = "Graphs")
         goToUploadedDataTab("onePopMeanTabset")
       }
     })
@@ -12121,8 +12140,9 @@ statInfrServer <- function(id) {
     })
 
     observeEvent(input$oneMeanVariable, {
-      if (isTRUE(input$dataAvailability == "Upload Data") &&
-          onemeanupload_iv$is_valid()) {
+      if (isTRUE(input$dataAvailability == "Upload Data")) {
+        hideTab(inputId = "onePopMeanTabset", target = "Analysis")
+        hideTab(inputId = "onePopMeanTabset", target = "Graphs")
         updateTabsetPanel(session, "onePopMeanTabset", selected = "Uploaded Data")
       }
     }, ignoreInit = TRUE)
@@ -12189,6 +12209,16 @@ statInfrServer <- function(id) {
       }
     })
     
+    observeEvent(list(input$indMeansUplSample1, input$indMeansUplSample2), {
+      if (isTRUE(input$dataAvailability2 == "Upload Data")) {
+        if (!indmeansuploadvar_iv$is_valid()) {
+          hideTab(inputId = "indPopMeansTabset", target = "Analysis")
+          hideTab(inputId = "indPopMeansTabset", target = "Graphs")
+          updateTabsetPanel(session, "indPopMeansTabset", selected = "Uploaded Data")
+        }
+      }
+    }, ignoreInit = TRUE)
+    
     output$renderIndPopMeansData <- renderUI({
       if (input$dataAvailability2 != "Upload Data") return(NULL)
       if (!indmeansupload_iv$is_valid()) {
@@ -12207,7 +12237,6 @@ statInfrServer <- function(id) {
         hideTab(inputId = "indPopMeansTabset", target = "Graphs")
       }
     })
-    
     
     
     observeEvent(input$depMeansQQPlot, {
@@ -12267,9 +12296,21 @@ statInfrServer <- function(id) {
         shinyjs::show(id = "inferenceData")
         hideTab(inputId = "depPopMeansTabset", target = "Analysis")
         hideTab(inputId = "depPopMeansTabset", target = "Graphs")
+        hideTab(inputId = "depPopMeansTabset", target = "Data with Calculations")
         goToUploadedDataTab("depPopMeansTabset")
       }
     })
+    
+    observeEvent(list(input$depMeansUplSample1, input$depMeansUplSample2), {
+      if (isTRUE(input$dataTypeDependent == "Upload Data")) {
+        if (!depmeansupload_iv$is_valid() || !depmeansuploadvars_iv$is_valid()) {
+          hideTab(inputId = "depPopMeansTabset", target = "Analysis")
+          hideTab(inputId = "depPopMeansTabset", target = "Data with Calculations")
+          hideTab(inputId = "depPopMeansTabset", target = "Graphs")
+          updateTabsetPanel(session, "depPopMeansTabset", selected = "Uploaded Data")
+        }
+      }
+    }, ignoreInit = TRUE)
     
     output$renderDepPopMeansData <- renderUI({
       if (input$dataTypeDependent != "Upload Data") return(NULL)
@@ -12333,6 +12374,16 @@ statInfrServer <- function(id) {
       }
     })
 
+    observeEvent(list(input$wilcoxonUpl1, input$wilcoxonUpl2), {
+      if (isTRUE(input$wilcoxonRankSumTestData == "Upload Data")) {
+        if (!wilcoxonUpload_iv$is_valid() || !wilcoxonRanksuploadvars_iv$is_valid()) {
+          hideTab(inputId = "wilcoxonRankSumTabset", target = "Analysis")
+          hideTab(inputId = "wilcoxonRankSumTabset", target = "Data with Ranks")
+          hideTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
+          updateTabsetPanel(session, "wilcoxonRankSumTabset", selected = "Uploaded Data")
+        }
+      }
+    }, ignoreInit = TRUE)
     
     observeEvent(input$sidebysidewRankPlots, ignoreNULL = FALSE, {
       if (length(input$sidebysidewRankPlots) > 0) {
@@ -12418,12 +12469,24 @@ statInfrServer <- function(id) {
         shinyjs::show(id = "inferenceData")
         hideTab(inputId = "signedRankTabset", target = "Analysis")
         hideTab(inputId = "signedRankTabset", target = "Graphs")
+        hideTab(inputId = "signedRankTabset", target = "Data with Ranks")
         goToUploadedDataTab("signedRankTabset")
       }
 
       Sys.sleep(0.1)
       rv$allowColumnValidation <- TRUE
     })
+    
+    observeEvent(list(input$signedRankUpl1, input$signedRankUpl2), {
+      if (isTRUE(input$signedRankTest == "Upload Data")) {
+        if (!signedRankUpload_iv$is_valid() || !signedRankUploadvars_iv$is_valid()) {
+          hideTab(inputId = "signedRankTabset", target = "Analysis")
+          hideTab(inputId = "signedRankTabset", target = "Data with Ranks")
+          hideTab(inputId = "signedRankTabset", target = "Graphs")
+          updateTabsetPanel(session, "signedRankTabset", selected = "Uploaded Data")
+        }
+      }
+    }, ignoreInit = TRUE)
     
     observeEvent(input$signedRankQQPlot, {
       if (input$signedRankQQPlot) {
@@ -12949,53 +13012,16 @@ statInfrServer <- function(id) {
                 input$signedRankTest == 'Upload Data') && signedRankUpload_iv$is_valid())
     })
 
-    observeEvent(!si_iv$is_valid(), {
-      if (!uploadPreviewActive()) {
-        hide(id = "inferenceMP")
-        hide(id = "inferenceData")
-      }
-    })
-
-    observeEvent(list(input$popuParameter, input$siMethod), {
-      if (!uploadPreviewActive()) {
-        hide(id = "inferenceMP")
-        hide(id = "inferenceData")
-      }
-    }, ignoreInit = TRUE)
-    
-    observeEvent(!depmeansrawsd_iv$is_valid(), {
-      hide(id = "inferenceMP")
-      hide(id = "inferenceData")
-    })
-    observeEvent(!wRankSumrawsd_iv$is_valid(), {
-      hide(id = "inferenceMP")
-      hide(id = "inferenceData")
-    })
-    observeEvent(!signedRankrawsd_iv$is_valid(), {
-      hide(id = "inferenceMP")
-      hide(id = "inferenceData")
-    })
-    observeEvent({
-      input$siMethod
-      input$sampleSize
-      input$sampleMean
-      input$popuParameter
-      input$popuParameters
-      input$dataAvailability
-      input$dataAvailability2
-      input$sigmaKnown
-      input$sigmaKnownRaw
-      input$popuSD
-      input$popuSDRaw
-      input$sampSD
-      input$inferenceType
-      input$inferenceType2
-      input$normaprowrs
-      input$normaprowrsRankSum
-      input$input$continuityCorrectionOption
-    }, {
-      hide(id = "inferenceData")
-    })
+      observeEvent(list(input$popuParameter, input$popuParameters, input$siMethod), {
+        
+        if (uploadPreviewActive()) {
+          show(id = "inferenceData")
+        } else {
+          hide(id = "inferenceMP")
+          hide(id = "inferenceData")
+        }
+        
+      }, ignoreInit = TRUE)
     
     observeEvent(fileInputs$oneMeanStatus, {
       if (fileInputs$oneMeanStatus == 'uploaded')
@@ -13044,11 +13070,6 @@ statInfrServer <- function(id) {
       }
     })
     
-    observeEvent(!multipleupload_iv$is_valid(), {
-      hide(id = "inferenceMP")
-      hide(id = "inferenceData")
-    })
-    
     observeEvent(input$goInference, {
       shinyjs::show(id = "inferenceMP")
     })
@@ -13061,10 +13082,13 @@ statInfrServer <- function(id) {
         hideTab(inputId = "onePopMeanTabset", target = "Uploaded Data")
       } else {
         showTab(inputId = "onePopMeanTabset", target = "Uploaded Data")
-        showTab(inputId = "onePopMeanTabset", target = "Analysis")
+        
         if (onemeanuploadvar_iv$is_valid()) {
+          showTab(inputId = "onePopMeanTabset", target = "Analysis")
           updateTabsetPanel(session, "onePopMeanTabset", selected = "Analysis")
         } else {
+          hideTab(inputId = "onePopMeanTabset", target = "Analysis")
+          hideTab(inputId = "onePopMeanTabset", target = "Graphs")
           updateTabsetPanel(session, "onePopMeanTabset", selected = "Uploaded Data")
         }
       }
@@ -13076,21 +13100,28 @@ statInfrServer <- function(id) {
         hideTab(inputId = "oneSDTabset", target = "Uploaded Data")
       } else {
         showTab(inputId = "oneSDTabset", target = "Uploaded Data")
-        showTab(inputId = "oneSDTabset", target = "Analysis")
+        
         if (onesduploadvar_iv$is_valid()) {
+          showTab(inputId = "oneSDTabset", target = "Analysis")
           updateTabsetPanel(session, "oneSDTabset", selected = "Analysis")
         } else {
+          hideTab(inputId = "oneSDTabset", target = "Analysis")
+          hideTab(inputId = "oneSDTabset", target = "Graphs")
           updateTabsetPanel(session, "oneSDTabset", selected = "Uploaded Data")
         }
       }
 
-      if(length(input$oneMeanGraphOptions) > 0 && input$dataAvailability != "Summarized Data") {
+      if(length(input$oneMeanGraphOptions) > 0 && 
+         input$dataAvailability != "Summarized Data" &&
+         si_iv$is_valid()) {
         showTab(inputId = "onePopMeanTabset", target = "Graphs")
       } else {
         hideTab(inputId = "onePopMeanTabset", target = "Graphs")
       }
       
-      if(length(input$oneSDPlots) > 0 && input$sdDataAvailability != "Summarized Data") {
+      if(length(input$oneSDPlots) > 0 && 
+         input$sdDataAvailability != "Summarized Data" &&
+         si_iv$is_valid()) {
         showTab(inputId = "oneSDTabset", target = "Graphs")
       } else {
         hideTab(inputId = "oneSDTabset", target = "Graphs")
@@ -13104,13 +13135,20 @@ statInfrServer <- function(id) {
         updateTabsetPanel(session, "indPopMeansTabset", selected = "Analysis")
         hideTab(inputId = "indPopMeansTabset", target = "Uploaded Data")
       } else {
-        if (two_sample_valid) showTab(inputId = "indPopMeansTabset", target = "Uploaded Data")
-        else hideTab(inputId = "indPopMeansTabset", target = "Uploaded Data")
-        showTab(inputId = "indPopMeansTabset", target = "Analysis")
-        updateTabsetPanel(session, "indPopMeansTabset", selected = "Analysis")
+        showTab(inputId = "indPopMeansTabset", target = "Uploaded Data")
+        
+        if (indmeansupload_iv$is_valid() && indmeansuploadvar_iv$is_valid()) {
+          showTab(inputId = "indPopMeansTabset", target = "Analysis")
+          updateTabsetPanel(session, "indPopMeansTabset", selected = "Analysis")
+        } else {
+          hideTab(inputId = "indPopMeansTabset", target = "Analysis")
+          updateTabsetPanel(session, "indPopMeansTabset", selected = "Uploaded Data")
+        }
       }
-
-      if(length(input$indMeansPlots) > 0 && input$dataAvailability2 != "Summarized Data") {
+      
+      if(length(input$indMeansPlots) > 0 && 
+         input$dataAvailability2 != "Summarized Data" &&
+         si_iv$is_valid()) {
         showTab(inputId = "indPopMeansTabset", target = "Graphs")
       } else {
         hideTab(inputId = "indPopMeansTabset", target = "Graphs")
@@ -13119,18 +13157,24 @@ statInfrServer <- function(id) {
       # Hide/show tabs for 2 sample dependent populations
       if (input$dataTypeDependent != "Upload Data"){
         showTab(inputId = "depPopMeansTabset", target = "Analysis")
+        showTab(inputId = "depPopMeansTabset", target = "Data with Calculations")
         updateTabsetPanel(session, "depPopMeansTabset", selected = "Analysis")
         hideTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
       } else {
         showTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
-        showTab(inputId = "depPopMeansTabset", target = "Analysis")
+        
         if (depmeansupload_iv$is_valid() && depmeansuploadvars_iv$is_valid()) {
+          showTab(inputId = "depPopMeansTabset", target = "Analysis")
+          showTab(inputId = "depPopMeansTabset", target = "Data with Calculations")
           updateTabsetPanel(session, "depPopMeansTabset", selected = "Analysis")
         } else {
+          hideTab(inputId = "depPopMeansTabset", target = "Analysis")
+          hideTab(inputId = "depPopMeansTabset", target = "Data with Calculations")
+          hideTab(inputId = "depPopMeansTabset", target = "Graphs")
           updateTabsetPanel(session, "depPopMeansTabset", selected = "Uploaded Data")
         }
       }
-
+      
       if(two_sample_valid && input$depMeansQQPlot) {
         showTab(inputId = "depPopMeansTabset", target = "Graphs")
       } else {
@@ -13189,14 +13233,20 @@ statInfrServer <- function(id) {
       # Hide/show tabs for Wilcoxon Signed Rank Upload
       if (input$signedRankTest != "Upload Data"){
         showTab(inputId = "signedRankTabset", target = "Analysis")
+        showTab(inputId = "signedRankTabset", target = "Data with Ranks")
         updateTabsetPanel(session, "signedRankTabset", selected = "Analysis")
         hideTab(inputId = "signedRankTabset", target = "Uploaded Data")
       } else {
         showTab(inputId = "signedRankTabset", target = "Uploaded Data")
-        showTab(inputId = "signedRankTabset", target = "Analysis")
+        
         if (signedRankUpload_iv$is_valid() && signedRankUploadvars_iv$is_valid()) {
+          showTab(inputId = "signedRankTabset", target = "Analysis")
+          showTab(inputId = "signedRankTabset", target = "Data with Ranks")
           updateTabsetPanel(session, "signedRankTabset", selected = "Analysis")
         } else {
+          hideTab(inputId = "signedRankTabset", target = "Analysis")
+          hideTab(inputId = "signedRankTabset", target = "Data with Ranks")
+          hideTab(inputId = "signedRankTabset", target = "Graphs")
           updateTabsetPanel(session, "signedRankTabset", selected = "Uploaded Data")
         }
       }
@@ -13381,9 +13431,24 @@ statInfrServer <- function(id) {
         )
         for (modeId in names(uploadTabsetMap)) {
           if (isTRUE(input[[modeId]] == "Upload Data")) {
+            tabsetId <- uploadTabsetMap[[modeId]]
+            
             shinyjs::show(id = "inferenceMP")
-            shinyjs::show(id = "inferenceData")
-            goToUploadedDataTab(uploadTabsetMap[[modeId]])
+            #shinyjs::show(id = "inferenceData")
+            
+            showTab(inputId = tabsetId, target = "Uploaded Data")
+            hideTab(inputId = tabsetId, target = "Analysis")
+            hideTab(inputId = tabsetId, target = "Graphs")
+            
+            if (tabsetId == "depPopMeansTabset") {
+              hideTab(inputId = tabsetId, target = "Data with Calculations")
+            }
+            
+            if (tabsetId %in% c("wilcoxonRankSumTabset", "signedRankTabset")) {
+              hideTab(inputId = tabsetId, target = "Data with Ranks")
+            }
+            
+            updateTabsetPanel(session, tabsetId, selected = "Uploaded Data")
           }
         }
       })
