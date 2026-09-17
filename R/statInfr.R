@@ -1824,7 +1824,7 @@ statInfrUI <- function(id) {
                         ns = ns,
                         condition = "input.dataAvailability != 'Summarized Data' && input.oneMeanGraphOptions.indexOf('Boxplot') > -1",
                         br(),
-                        titlePanel(tags$u("Boxplot")),
+                        titlePanel("Boxplot"),
                         br(),
                         plotOptionsMenuUI(
                           id = ns("oneMeanBoxplot"),
@@ -1838,7 +1838,7 @@ statInfrUI <- function(id) {
                         ns = ns,
                         condition = "input.dataAvailability != 'Summarized Data' && input.oneMeanGraphOptions.indexOf('Histogram') > -1",
                         br(),
-                        titlePanel(tags$u("Histogram")),
+                        titlePanel("Histogram"),
                         br(),
                         plotOptionsMenuUI(
                           id    = ns("oneMeanHistogram"),
@@ -1944,7 +1944,7 @@ statInfrUI <- function(id) {
                       conditionalPanel(
                         ns = ns,
                         condition = "input.oneSDPlots.indexOf('oneSDBoxplot') !== -1",
-                        titlePanel(tags$u("Boxplot")),
+                        titlePanel("Boxplot"),
                         br(),
                         plotOptionsMenuUI(
                           id = ns("oneSDBoxplot"),
@@ -1960,7 +1960,7 @@ statInfrUI <- function(id) {
                       conditionalPanel(
                         ns = ns,
                         condition = "input.oneSDPlots.indexOf('oneSDHistogram') !== -1",
-                        titlePanel(tags$u("Histogram")),
+                        titlePanel("Histogram"),
                         br(),
                         plotOptionsMenuUI(
                           id = ns("oneSDHistogram"),
@@ -2033,7 +2033,7 @@ statInfrUI <- function(id) {
                                         ns = ns,
                                         condition = "input.dataAvailability2 != 'Summarized Data' && input.indMeansPlots.indexOf('indMeansBoxplot') !== -1",
                                         br(),
-                                        titlePanel(tags$u("Side-by-side Boxplot")),
+                                        titlePanel("Side-by-side Boxplot"),
                                         br(),
                                         plotOptionsMenuUI(
                                           id = ns("indMeansBoxplot"),
@@ -2052,7 +2052,7 @@ statInfrUI <- function(id) {
                                         br(),
                                         hr(),
                                         br(),
-                                        titlePanel(tags$u("Q-Q Plots for Sample 1 and Sample 2")),
+                                        titlePanel("Q-Q Plots for Sample 1 and Sample 2"),
                                         br(),
                                         plotOptionsMenuUI(
                                           id = ns("indMeansQQPlot"),
@@ -2211,7 +2211,7 @@ statInfrUI <- function(id) {
                                       conditionalPanel(
                                         ns = ns,
                                         condition = "input.depMeansQQPlot == 1",
-                                        titlePanel(tags$u("Q-Q Plot of the Difference (d)")),
+                                        titlePanel("Q-Q Plot of the Difference (d)"),
                                         br(),
                                         plotOptionsMenuUI(
                                           id = ns("depMeansQQPlot"),
@@ -2537,8 +2537,7 @@ statInfrUI <- function(id) {
                     id    = ns("kwRM"),
                     title = "Data table with Ranks",
                     
-                    DTOutput("renderrankedmean"),
-                    
+                    downloadButton(ns("downloadKWRMxlsx"), "Save as Excel"),
                     uiOutput(ns("renderKWRM"))
                   ),
                   
@@ -3916,7 +3915,7 @@ statInfrServer <- function(id) {
         
         if(OneMeanSigma() == 'Known') {
           givenOutput <- tagList(
-            sprintf("Given:"),
+            sprintf("From the Data:"),
             br(),
             sprintf("\\( \\sigma = %s \\)",
                     oneMeanData[3]),
@@ -4477,11 +4476,14 @@ statInfrServer <- function(id) {
           br(),
           sprintf("\\(s_1 = %.4f\\)", data$sd1),
           br(),
+          sprintf("\\(s_1^2 = %.4f\\)", data$sd1^2),
+          br(), br(),
           sprintf("\\(n_2 = %d\\)", data$n2),
           br(),
           sprintf("\\(s_2 = %.4f\\)", data$sd2),
           br(),
-          br(),
+          sprintf("\\(s_2^2 = %.4f\\)", data$sd2^2),
+          br(), br(),
         )
       }
     }
@@ -4544,7 +4546,7 @@ statInfrServer <- function(id) {
     
     printFStat <- function(sd1, sd2, F_statistic, is_variance, is_HT = FALSE) {
       if (!is_variance) {
-        p(sprintf("\\(%s\\dfrac{s_1^2}{s_2^2} = \\dfrac{%.4f^2}{%.4f^2} = %.4f \\)", if (is_HT) "F = " else "", sd1, sd2, F_statistic))
+        p(sprintf("\\(%s\\dfrac{s_1^2}{s_2^2} = \\dfrac{%.4f}{%.4f} = %.4f \\)", if (is_HT) "F = " else "", sd1^2, sd2^2, F_statistic))
       } else {
         p(sprintf("\\(%s\\dfrac{s_1^2}{s_2^2} = \\dfrac{%.4f}{%.4f} = %.4f \\)", if (is_HT) "F = " else "", sd1, sd2, F_statistic))
       }
@@ -7980,7 +7982,12 @@ statInfrServer <- function(id) {
       ## UI
       withMathJax(
         ## Preface
-        sprintf("Given:"), br(),
+        if (input$sdDataAvailability == "Summarized Data") {
+          sprintf("Given:")
+        } else {
+          sprintf("From the Data:")
+        },
+        br(),
         sprintf("\\( n = %d \\)",
                 oneSDData()$n),
         br(),
@@ -8017,7 +8024,7 @@ statInfrServer <- function(id) {
                 (oneSSDRight <- qchisq(p = 1 - critOneSSDRight, df = oneSDCIdf))),
         br(),
 
-        br(), tags$b("Confidence Interval for Population Standard Deviation (\\( \\sigma \\)):"), br(),
+        br(), tags$b("Confidence Interval for Population Standard Deviation (\\( \\sigma \\)):"), br(), br(),
 
         sprintf(r"---{\(
           CI = \displaystyle
@@ -8058,7 +8065,7 @@ statInfrServer <- function(id) {
 
         br(),
         br(),
-        tags$b("Confidence Interval for Population Variance (\\( \\sigma^2 \\)):"), br(),
+        tags$b("Confidence Interval for Population Variance (\\( \\sigma^2 \\)):"), br(), br(),
 
         sprintf(r"---{\(
           CI = \displaystyle
@@ -8339,7 +8346,7 @@ statInfrServer <- function(id) {
         
         br(),
         p(tags$b("Test Statistic:")),
-        sprintf("Given:"), br(),
+        sprintf("From the Data:"), br(),
         sprintf(r"--[\( n = %d \)]--", oneSDData()$n), br(),
         sprintf(r"--[\( s = %s \)]--", sDisplay), br(),
         sprintf(r"--[\( \sigma_0 = %s \)]--", sigma0Display), br(),
@@ -11207,10 +11214,11 @@ statInfrServer <- function(id) {
         withMathJax(
           
           if(input$dataAvailability3 != "Enter Raw Data") {
-            p("Given:")
+            sprintf("Given:")
           } else {
-            p("From the Data:")
+            sprintf("From the Data:")
           },
+          br(),
           printTwoPopVarGivens(data, is_variance),
           
           p(sprintf("For a \\(%.0f\\%%\\) confidence interval:", conf_percent)),
@@ -11279,11 +11287,11 @@ statInfrServer <- function(id) {
           p(strong("Test Statistic:")), 
           
           if(input$dataAvailability3 != "Enter Raw Data") {
-            p("Given:")
+            sprintf("Given:")
           } else {
-            p("From the Data")
+            sprintf("From the Data")
           },
-          
+          br(),
           # print givens
           printTwoPopVarGivens(data, is_variance),
           
@@ -11634,13 +11642,21 @@ statInfrServer <- function(id) {
     #### ---------------- Uploaded Data Table ----
     output$multipleUploadTable <- renderDT({
       req(multipleupload_iv$is_valid())
-      datatable(multipleUploadData(),
-                options = list(pageLength = -1,
-                               lengthMenu = list(c(25, 50, 100, -1),
-                                                 c("25", "50", "100", "all")),
-                               columnDefs = list(list(className = 'dt-center',
-                                                      targets = 0:ncol(multipleUploadData())))),
-      )
+      
+      data <- multipleUploadData()
+      
+      datatable(
+        data,
+        options = list(
+          pageLength = -1,
+          lengthMenu = list(
+            c(25, 50, 100, -1),
+            c("25", "50", "100", "all")
+          ),
+          columnDefs = list(
+            list(
+              className = 'dt-center',
+              targets = 0:(ncol(data))))))
     })
     
     multipleUploadInitial <- function(multipleUploadData_output) {
@@ -11710,6 +11726,49 @@ statInfrServer <- function(id) {
         )
       )
     })
+    
+    output$downloadKWRMxlsx <- downloadHandler(
+      filename = function() paste0("KWRM_Calculations", Sys.Date(), ".xlsx"),
+      contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      content = function(file) {
+        tryCatch({
+          data <- kwRankedData(kwResults()$data)
+          writexl::write_xlsx(data, file)
+        }, error = function(e) {
+          message("Full error: ", conditionMessage(e))
+        })
+      }
+    )
+    
+    kwRankedData <- function(df) {
+      df %>%
+        dplyr::select(Group = ind, Value = values, Rank = Rank) %>%
+        dplyr::arrange(Group, Rank) %>%
+        dplyr::group_by(Group) %>%
+        dplyr::mutate(ObsID = dplyr::row_number()) %>%
+        dplyr::ungroup() %>%
+        tidyr::pivot_wider(
+          id_cols = ObsID,
+          names_from = Group,
+          values_from = c(Value, Rank),
+          names_sep = " "
+        ) %>%
+        dplyr::select(-ObsID) %>%
+        dplyr::select(
+          order(
+            match(
+              gsub("(Value|Rank) (.*)", "\\2", names(.)),
+              unique(gsub("(Value|Rank) (.*)", "\\2", names(.)))
+            ),
+            match(
+              gsub("(Value|Rank) (.*)", "\\1", names(.)),
+              c("Value", "Rank")
+            )
+          )
+        ) %>%
+        dplyr::rename_with(~gsub("Value (.*)", "\\1 Value", .)) %>%
+        dplyr::rename_with(~gsub("Rank (.*)", "\\1 Rank", .))
+    }
 
     ### ------------ Kruskal-Wallis Outputs ------------------------------------------
     
