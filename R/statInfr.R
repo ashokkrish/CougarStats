@@ -11768,7 +11768,26 @@ statInfrServer <- function(id) {
     )
     
     #### ---------------- Uploaded Data Table ----
-    output$multipleUploadTable <- renderDT({
+    output$kwUploadTable <- renderDT({
+      req(multipleupload_iv$is_valid())
+      
+      data <- multipleUploadData()
+      
+      datatable(
+        data,
+        options = list(
+          pageLength = -1,
+          lengthMenu = list(
+            c(25, 50, 100, -1),
+            c("25", "50", "100", "all")
+          ),
+          columnDefs = list(
+            list(
+              className = 'dt-center',
+              targets = 0:(ncol(data))))))
+    })
+    
+    output$anovaUploadTable <- renderDT({
       req(multipleupload_iv$is_valid())
       
       data <- multipleUploadData()
@@ -11809,7 +11828,7 @@ statInfrServer <- function(id) {
       }
       
       tagList(
-        div(DTOutput(session$ns("multipleUploadTable")), style = "width: 75%")
+        div(DTOutput(session$ns("anovaUploadTable")), style = "width: 75%")
       )
     })
     
@@ -11822,7 +11841,7 @@ statInfrServer <- function(id) {
       }
       
       tagList(
-        div(DTOutput(session$ns("multipleUploadTable")), style = "width: 75%")
+        div(DTOutput(session$ns("kwUploadTable")), style = "width: 75%")
       )
     })
     
