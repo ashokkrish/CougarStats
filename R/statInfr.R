@@ -7210,9 +7210,9 @@ statInfrServer <- function(id) {
         
         validate(
           need(!checkNumeric(IndMeansUploadData(), input$indMeansUplSample1),
-               "Sample 1 must be numeric.") %then%
-            need(!checkNumeric(IndMeansUploadData(), input$indMeansUplSample2),
-                 "Sample 2 must be numeric."),
+               "Sample 1 must be numeric."),
+          need(!checkNumeric(IndMeansUploadData(), input$indMeansUplSample2),
+               "Sample 2 must be numeric."),
           errorClass = "myClass"
         )
 
@@ -12031,7 +12031,60 @@ statInfrServer <- function(id) {
         shinyjs::runjs("$(window).trigger('resize');")
       })
     }
+    
+    observeEvent(!si_iv$is_valid(), {
+      if (!uploadPreviewActive()) {
+        hide(id = "inferenceMP")
+        hide(id = "inferenceData")
+      }
+    })
+    
+    observeEvent(list(input$popuParameter, input$siMethod), {
+      if (!uploadPreviewActive()) {
+        hide(id = "inferenceMP")
+        hide(id = "inferenceData")
+      }
+    }, ignoreInit = TRUE)
+    
+    observeEvent(!depmeansrawsd_iv$is_valid(), {
+      hide(id = "inferenceMP")
+      hide(id = "inferenceData")
+    })
+    observeEvent(!wRankSumrawsd_iv$is_valid(), {
+      hide(id = "inferenceMP")
+      hide(id = "inferenceData")
+    })
+    observeEvent(!signedRankrawsd_iv$is_valid(), {
+      hide(id = "inferenceMP")
+      hide(id = "inferenceData")
+    })
+    observeEvent({
+      input$siMethod
+      input$sampleSize
+      input$sampleMean
+      input$popuParameter
+      input$popuParameters
+      input$dataAvailability
+      input$dataAvailability2
+      input$sigmaKnown
+      input$sigmaKnownRaw
+      input$popuSD
+      input$popuSDRaw
+      input$sampSD
+      input$inferenceType
+      input$inferenceType2
+      input$normaprowrs
+      input$normaprowrsRankSum
+      input$input$continuityCorrectionOption
+    }, {
+      hide(id = "inferenceData")
+    })
 
+    observeEvent(!multipleupload_iv$is_valid(), {
+      hide(id = "inferenceMP")
+      hide(id = "inferenceData")
+    })
+    
     observeEvent(input$sdUserData, priority = 50, {
       req(input$sdUserData)
       ext <- tolower(tools::file_ext(input$sdUserData$name))
