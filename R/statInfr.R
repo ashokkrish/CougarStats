@@ -3086,15 +3086,6 @@ statInfrServer <- function(id) {
     signedRankUploadvars_iv$add_rule("signedRankUpl1", ~ if(CheckSignedRankUploadSamples() != 0) "Sample 1 and Sample 2 must have the same number of observations.")
     signedRankUploadvars_iv$add_rule("signedRankUpl2", ~ if(CheckSignedRankUploadSamples() != 0) "Sample 1 and Sample 2 must have the same number of observations.")
 
-
-    signedRankUpload_iv$add_rule("signedRankUpl", ~ {
-      data <- signedRankUploadData()
-      if (!is.null(data) && nrow(data) > 0) {
-        if (!all(sapply(data, is.numeric))) {
-          "Uploaded data contains non-numeric values. Please ensure all columns are numeric."
-        }
-      }
-    })
     signedRankRaw_iv$add_rule("signedRankRaw1", ~ {
       sample1 <- createNumLst(input$signedRankRaw1)
       sample2 <- createNumLst(input$signedRankRaw2)
@@ -3117,27 +3108,47 @@ statInfrServer <- function(id) {
       }
     })
     
+    signedRankUploadvars_iv$add_rule("signedRankUpl1", sv_required())
+    signedRankUploadvars_iv$add_rule("signedRankUpl2", sv_required())
+    
     signedRankUploadvars_iv$add_rule("signedRankUpl1", ~ {
       if(!rv$allowColumnValidation) {
         return(NULL)
       }
       
-      if(input$signedRankUpl1 != "" && input$signedRankUpl2 != "") {
+      if(checkNumeric(signedRankUploadData(), input$signedRankUpl1)) {
+        "Selected column contains non-numeric data."
+      }
+    })
+    
+    signedRankUploadvars_iv$add_rule("signedRankUpl2", ~ {
+      if(!rv$allowColumnValidation) {
+        return(NULL)
+      }
+      
+      if(checkNumeric(signedRankUploadData(), input$signedRankUpl2)) {
+        "Selected column contains non-numeric data."
+      }
+    })
+    
+    signedRankUploadvars_iv$add_rule("signedRankUpl1", ~ {
+      if(input$signedRankUpl1 != "") {
         data <- signedRankUploadData()
-        if(!(input$signedRankUpl1 %in% colnames(data))) {
-          return("Selected column for Sample 1 does not exist in the uploaded file.")
+        sample1 <- na.omit(data[[input$signedRankUpl1]])
+        
+        if(length(sample1) < 3) {
+          "Sample 1 must include at least three numeric values."
         }
-        if(!(input$signedRankUpl2 %in% colnames(data))) {
-          return("Selected column for Sample 2 does not exist in the uploaded file.")
-        }
-        sample1 <- na.omit(unlist(data[, input$signedRankUpl1]))
-        sample2 <- na.omit(unlist(data[, input$signedRankUpl2]))
-        min_length <- min(length(sample1), length(sample2))
-        if(min_length > 0) {
-          differences <- sample1[1:min_length] - sample2[1:min_length]
-          if(all(differences == 0) || var(differences) == 0) {
-            "'Sample 1’' and 'Sample 2' data are the same."
-          }
+      }
+    })
+    
+    signedRankUploadvars_iv$add_rule("signedRankUpl2", ~ {
+      if(input$signedRankUpl2 != "") {
+        data <- signedRankUploadData()
+        sample2 <- na.omit(data[[input$signedRankUpl2]])
+        
+        if(length(sample2) < 3) {
+          "Sample 2 must include at least three numeric values."
         }
       }
     })
@@ -3147,21 +3158,20 @@ statInfrServer <- function(id) {
         return(NULL)
       }
       
-      if(input$signedRankUpl1 != "" && input$signedRankUpl2 != "") {
+      if(input$signedRankUpl1 != "" && input$signedRankUpl2 != "" &&
+         !checkNumeric(signedRankUploadData(), input$signedRankUpl1) &&
+         !checkNumeric(signedRankUploadData(), input$signedRankUpl2)) {
+        
         data <- signedRankUploadData()
-        if(!(input$signedRankUpl1 %in% colnames(data))) {
-          return("Selected column for Sample 1 does not exist in the uploaded file.")
-        }
-        if(!(input$signedRankUpl2 %in% colnames(data))) {
-          return("Selected column for Sample 2 does not exist in the uploaded file.")
-        }
-        sample1 <- na.omit(unlist(data[, input$signedRankUpl1]))
-        sample2 <- na.omit(unlist(data[, input$signedRankUpl2]))
+        sample1 <- na.omit(data[[input$signedRankUpl1]])
+        sample2 <- na.omit(data[[input$signedRankUpl2]])
         min_length <- min(length(sample1), length(sample2))
+        
         if(min_length > 0) {
           differences <- sample1[1:min_length] - sample2[1:min_length]
+          
           if(all(differences == 0) || var(differences) == 0) {
-            "'Sample 1’' and 'Sample 2' data are the same."
+            "'Sample 1' and 'Sample 2' data are the same."
           }
         }
       }
@@ -3211,12 +3221,30 @@ statInfrServer <- function(id) {
     twoprop_iv$add_rule("numSuccesses1", sv_required())
     twoprop_iv$add_rule("numSuccesses1", sv_integer())
     twoprop_iv$add_rule("numSuccesses1", sv_gte(0))
+    twoprop_iv$add_rule("numSuccesses1", ~ {
+      if (!is.null(input$numSuccesses1) &&
+          !is.null(input$numTrials1) &&
+          !is.na(input$numSuccesses1) &&
+          !is.na(input$numTrials1) &&
+          input$numSuccesses1 > input$numTrials1) {
+        "Number of successes cannot exceed number of trials."
+      }
+    })
     twopropht_iv$add_rule("numSuccesses1", ~ if(checkTwoProp() == 0) "At least one of (x1) and (x2) must be greater than zero.")
     
     # x2
     twoprop_iv$add_rule("numSuccesses2", sv_required())
     twoprop_iv$add_rule("numSuccesses2", sv_integer())
     twoprop_iv$add_rule("numSuccesses2", sv_gte(0))
+    twoprop_iv$add_rule("numSuccesses2", ~ {
+      if (!is.null(input$numSuccesses2) &&
+          !is.null(input$numTrials2) &&
+          !is.na(input$numSuccesses2) &&
+          !is.na(input$numTrials2) &&
+          input$numSuccesses2 > input$numTrials2) {
+        "Number of successes cannot exceed number of trials."
+      }
+    })
     twopropht_iv$add_rule("numSuccesses2", ~ if(checkTwoProp() == 0) "At least one of (x1) and (x2) must be greater than zero.")
     twopropht_iv$add_rule("numSuccesses1", ~ {
       if (input$numSuccesses1 == input$numTrials1 &&
@@ -3699,7 +3727,7 @@ statInfrServer <- function(id) {
     depmeansmunaught_iv$enable()
     signedRankRaw_iv$enable()
     signedRankUpload_iv$enable()
-#    signedRankUploadvars_iv$enable()
+    signedRankUploadvars_iv$enable()
     oneSD_iv$enable()
     oneSDRaw_iv$enable()
     onesdupload_iv$enable()
@@ -6835,6 +6863,14 @@ statInfrServer <- function(id) {
       anovaData <- na.omit(anovaData)
       totalCount <- nrow(anovaData)
       numFactors <- length(factorNames)
+      validate(
+        need(
+          length(unique(anovaData$values)) > 1 &&
+            length(unique(anovaData$ind)) >= 2,
+          "All values in the dataset are identical. The ANOVA test cannot be performed as there is no variance in the data."
+        ),
+        errorClass = "myClass"
+      )
       anovaTest <- aov(formula = values ~ ind, data = anovaData)
       
       results$data <- anovaData
@@ -7017,6 +7053,9 @@ statInfrServer <- function(id) {
       }
       
       if(!onemeanuploadvar_iv$is_valid()) {
+        validate(
+          need(isTruthy(input$oneMeanVariable), "Please select a column."),
+          errorClass = "myClass")
         
         if(input$oneMeanVariable %in% names(OneMeanUploadData())) {
           dat <- na.omit(unlist(OneMeanUploadData()[, input$oneMeanVariable]))
@@ -7086,7 +7125,19 @@ statInfrServer <- function(id) {
       }
 
       if(!onesduploadvar_iv$is_valid()) {
-        req(FALSE)  # column errors shown in sidebar via onesduploadvar_iv; halt main-panel output silently, leaving the uploaded-data preview visible
+        validate(
+          need(isTruthy(input$sdVariable), "Please select a column."),
+          need(
+            !isTruthy(input$sdVariable) ||
+              !checkNumeric(SDUploadData(), input$sdVariable),
+            "Selected column contains non-numeric data."
+          ),
+          need(
+            !isTruthy(input$sdVariable) ||
+              length(na.omit(unlist(SDUploadData()[, input$sdVariable]))) >= 3,
+            "Selected column must include at least three observations."
+          ),
+          errorClass = "myClass")
       }
       
       ## DONE: these messages are for debugging purposes only.
@@ -7344,13 +7395,30 @@ statInfrServer <- function(id) {
         
         if(input$signedRankUpl1 != "" && input$signedRankUpl2 != "") {
           data <- signedRankUploadData()
+          
+          validate(
+            need(is.numeric(data[[input$signedRankUpl1]]), "Sample 1 must be numeric."),
+            need(is.numeric(data[[input$signedRankUpl2]]), "Sample 2 must be numeric."),
+            errorClass = "myClass")
+          
           sample1 <- na.omit(unlist(data[, input$signedRankUpl1]))
           sample2 <- na.omit(unlist(data[, input$signedRankUpl2]))
+          
+          validate(
+            need(length(sample1) >= 3, "Sample 1 must include at least three numeric values."),
+            need(length(sample2) >= 3, "Sample 2 must include at least three numeric values."),
+            errorClass = "myClass")
+          
           min_length <- min(length(sample1), length(sample2))
+          
           if(min_length > 0) {
             differences <- sample1[1:min_length] - sample2[1:min_length]
+            
             validate(
-              need(!all(differences == 0) && var(differences) != 0, "'Sample 1' and 'Sample 2' data are the same. In the Wilcoxon Signed Rank Test the pairs with a difference of zero are dropped.  The effective sample size is now zero. Please check your data."),
+              need(
+                !all(differences == 0) && var(differences) != 0,
+                "'Sample 1' and 'Sample 2' data are the same. In the Wilcoxon Signed Rank Test the pairs with a difference of zero are dropped. The effective sample size is now zero. Please check your data."
+              ),
               errorClass = "myClass")
           }
         }
@@ -7488,10 +7556,12 @@ statInfrServer <- function(id) {
         validate(
           need(input$numSuccesses1 %% 1 == 0, "Number of Successes 1 (x1) must be an integer"),
           need(input$numSuccesses1 >= 0, "Number of Successes 1 (x1) cannot be negative"),
+          need(input$numSuccesses1 <= input$numTrials1, "Number of Successes 1 (x1) cannot exceed Number of Trials 1 (n1)"),
           need(input$numTrials1 %% 1 == 0, "Number of Trials 1 (n1) must be an integer"),
           need(input$numTrials1 > 0, "Number of Trials 1 (n1) must be greater than 0"),
           need(input$numSuccesses2 %% 1 == 0, "Number of Successes 2 (x2) must be an integer"),
           need(input$numSuccesses2 >= 0, "Number of Successes 2 (x2) cannot be negative"),
+          need(input$numSuccesses2 <= input$numTrials2, "Number of Successes 2 (x2) cannot exceed Number of Trials 2 (n2)"),
           need(input$numTrials2 %% 1 == 0, "Number of Trials 2 (n2) must be an integer"),
           need(input$numTrials2 > 0, "Number of Trials 2 (n2) must be greater than 0"),
           errorClass = "myClass")
@@ -7607,6 +7677,16 @@ statInfrServer <- function(id) {
         validate(
           need(!checkNumeric(multipleUploadData(), input$anovaResponse), 
                "Response variable must be numeric."),
+          errorClass = "myClass"
+        )
+        
+        data <- multipleUploadData()[, input$anovaMultiColumns, drop = FALSE]
+        
+        validate(
+          need(
+            length(unique(unlist(data))) > 1,
+            "All values in the dataset are identical. The ANOVA test cannot be performed as there is no variance in the data."
+          ),
           errorClass = "myClass"
         )
       }
@@ -11371,6 +11451,22 @@ statInfrServer <- function(id) {
     ### ------------ ANOVA Outputs -----------------------------------------------
     output$anovaOutput <- renderUI({
       req(si_iv$is_valid())
+      
+      if(input$anovaFormat == "Multiple") {
+        anovaResults <- anovaOneWayResults()
+        values <- anovaResults$data$values
+      } else {
+        values <- multipleUploadData()[[input$anovaResponse]]
+      }
+      
+      validate(
+        need(
+          length(unique(na.omit(values))) > 1,
+          "All values in the dataset are identical. The ANOVA test cannot be performed as there is no variance in the data."
+        ),
+        errorClass = "myClass"
+      )
+      
       PrintANOVA()
     })
     
@@ -11484,6 +11580,20 @@ statInfrServer <- function(id) {
     
     #### ---------------- Post hoc analysis ----
     output$anovaPosthocAnalysis <- renderUI({
+      
+      anovaData <- multipleUploadData()
+      
+      if(input$anovaFormat == "Multiple") {
+        anovaData <- stack(anovaData[, input$anovaMultiColumns])
+        values <- anovaData$values
+      } else {
+        values <- anovaData[[input$anovaResponse]]
+      }
+      
+      if(length(unique(na.omit(values))) <= 1) {
+        return(NULL)
+      }
+      
       
       if(input$anovaSigLvl == "10%") {
         sigLvl <- 0.1
@@ -12564,9 +12674,6 @@ statInfrServer <- function(id) {
         return(helpText("No data yet. Upload a dataset to view it here."))
       }
       tagList(
-        titlePanel("Data File"),
-        br(),
-        br(),
         div(DTOutput(session$ns("signedRankUploadTable")), style = "width: 75%"),
         br(),
         br()
@@ -12939,7 +13046,6 @@ statInfrServer <- function(id) {
           req(!is.na(input$numSuccesses2) && !is.na(input$numTrials2))
           
           if(input$numSuccesses1 > input$numTrials1 || input$numSuccesses2 > input$numTrials2) {
-            print("amde it")
             hide(id = 'inferenceData')
           }
         } else if (input$popuParameters == "Independent Population Means") {
@@ -13241,10 +13347,13 @@ statInfrServer <- function(id) {
         hideTab(inputId = "wilcoxonRankSumTabset", target = "Uploaded Data")
       } else {
         showTab(inputId = "wilcoxonRankSumTabset", target = "Uploaded Data")
-        showTab(inputId = "wilcoxonRankSumTabset", target = "Analysis")
+        
         if (wilcoxonUpload_iv$is_valid() && wilcoxonRanksuploadvars_iv$is_valid()) {
+          showTab(inputId = "wilcoxonRankSumTabset", target = "Analysis")
           updateTabsetPanel(session, "wilcoxonRankSumTabset", selected = "Analysis")
         } else {
+          hideTab(inputId = "wilcoxonRankSumTabset", target = "Analysis")
+          hideTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
           updateTabsetPanel(session, "wilcoxonRankSumTabset", selected = "Uploaded Data")
         }
       }
@@ -13252,25 +13361,32 @@ statInfrServer <- function(id) {
       # Detect content-level error conditions for Wilcoxon Rank Sum
       rank_data_check <- tryCatch(wilcoxonRankedData(), error = function(e) NULL)
       wrs_error <- FALSE
+      
       if (!is.null(rank_data_check)) {
         combined_vals_chk <- rank_data_check$Value
         all_identical <- length(unique(combined_vals_chk)) <= 1
+        
         if (all_identical) {
           wrs_error <- TRUE
         } else if (isTRUE(input$normaprowrsRankSum == "Normal approximation (for large samples)")) {
           name1_chk <- if (input$wilcoxonRankSumTestData == 'Upload Data') input$wilcoxonUpl1 else "Sample 1"
           name2_chk <- if (input$wilcoxonRankSumTestData == 'Upload Data') input$wilcoxonUpl2 else "Sample 2"
-          n1_chk  <- sum(rank_data_check$Group == name1_chk)
-          n2_chk  <- sum(rank_data_check$Group == name2_chk)
+          n1_chk <- sum(rank_data_check$Group == name1_chk)
+          n2_chk <- sum(rank_data_check$Group == name2_chk)
           nAll_chk <- nrow(rank_data_check)
-          tc_chk  <- calculate_tie_correction(combined_vals_chk)
-          se_chk  <- sqrt((n1_chk * n2_chk / 12) *
-                            ((nAll_chk + 1) - (tc_chk / (nAll_chk * (nAll_chk - 1)))))
+          tc_chk <- calculate_tie_correction(combined_vals_chk)
+          se_chk <- sqrt((n1_chk * n2_chk / 12) *
+                           ((nAll_chk + 1) - (tc_chk / (nAll_chk * (nAll_chk - 1)))))
           if (is.na(se_chk) || se_chk <= 0) wrs_error <- TRUE
         }
       }
-
-      if (wrs_error) {
+      
+      if (!wilcoxonUpload_iv$is_valid() || !wilcoxonRanksuploadvars_iv$is_valid()) {
+        hideTab(inputId = "wilcoxonRankSumTabset", target = "Analysis")
+        hideTab(inputId = "wilcoxonRankSumTabset", target = "Data with Ranks")
+        hideTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
+        updateTabsetPanel(session, "wilcoxonRankSumTabset", selected = "Uploaded Data")
+      } else if (wrs_error) {
         hideTab(inputId = "wilcoxonRankSumTabset", target = "Data with Ranks")
         hideTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
       } else {
