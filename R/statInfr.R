@@ -3234,7 +3234,7 @@ statInfrServer <- function(id) {
         "Number of successes cannot exceed number of trials."
       }
     })
-    twopropht_iv$add_rule("numSuccesses1", ~ if(checkTwoProp() == 0) "At least one of (x1) and (x2) must be greater than zero.")
+    twopropht_iv$add_rule("numSuccesses1", ~ if(checkTwoProp() == 0) "At least one of (x₁) and (x₂) must be greater than zero.")
     
     # x2
     twoprop_iv$add_rule("numSuccesses2", sv_required())
@@ -3249,7 +3249,7 @@ statInfrServer <- function(id) {
         "Number of successes cannot exceed number of trials."
       }
     })
-    twopropht_iv$add_rule("numSuccesses2", ~ if(checkTwoProp() == 0) "At least one of (x1) and (x2) must be greater than zero.")
+    twopropht_iv$add_rule("numSuccesses2", ~ if(checkTwoProp() == 0) "At least one of (x₁) and (x₂) must be greater than zero.")
     
     twopropht_iv$add_rule("numSuccesses1", ~ {
       if (input$numSuccesses1 > 0 && input$numSuccesses2 > 0 &&
@@ -7181,11 +7181,11 @@ statInfrServer <- function(id) {
       #### ---------------- Independent Population Means Validation
       if(!indmeanssumm_iv$is_valid()) {
         validate(
-          need(input$sampleSize1, "Sample Size 1 (n1) must be an integer greater than one.") %then%
-            need(input$sampleSize1 > 1 & input$sampleSize1 %% 1 == 0, "Sample Size 1 (n1) must be an integer greater than one."),
+          need(input$sampleSize1, "Sample Size 1 (n₁) must be an integer greater than one.") %then%
+            need(input$sampleSize1 > 1 & input$sampleSize1 %% 1 == 0, "Sample Size 1 (n₁) must be an integer greater than one."),
           need(input$sampleMean1, "Sample Mean 1 required."),
-          need(input$sampleSize2, "Sample Size 2 (n2) must be an integer greater than one.") %then%
-            need(input$sampleSize2 > 1 & input$sampleSize2 %% 1 == 0, "Sample Size 2 (n2) must be an integer greater than one."),
+          need(input$sampleSize2, "Sample Size 2 (n₂) must be an integer greater than one.") %then%
+            need(input$sampleSize2 > 1 & input$sampleSize2 %% 1 == 0, "Sample Size 2 (n₂) must be an integer greater than one."),
           need(input$sampleMean2, "Sample Mean 2 required."),
           errorClass = "myClass")
       }
@@ -7193,16 +7193,16 @@ statInfrServer <- function(id) {
       if(!indmeanssdknown_iv$is_valid())
       {
         validate(
-          need(!is.null(input$popuSD1) && input$popuSD1 >= 0, "The Population Standard Deviation 1 (σ1) must be a positive value greater than or equal to zero."),
-          need(!is.null(input$popuSD2) && input$popuSD2 > 0, "The Population Standard Deviation 2 (σ2) must be a positive value greater than zero."),
+          need(!is.null(input$popuSD1) && input$popuSD1 >= 0, "The Population Standard Deviation 1 (σ₁) must be a positive value greater than or equal to zero."),
+          need(!is.null(input$popuSD2) && input$popuSD2 > 0, "The Population Standard Deviation 2 (σ₂) must be a positive value greater than zero."),
           errorClass = "myClass")
       }
       
       if(!indmeanssdunk_iv$is_valid())
       {
         validate(
-          need(input$sampSD1 && input$sampSD1 >= 0, "Sample Standard Deviation (s1) must be positive."),
-          need(input$sampSD2 && input$sampSD2 > 0, "Sample Standard Deviation (s2) must be positive."),
+          need(input$sampSD1 && input$sampSD1 >= 0, "Sample Standard Deviation (s₁) must be positive."),
+          need(input$sampSD2 && input$sampSD2 > 0, "Sample Standard Deviation (s₂) must be positive."),
           errorClass = "myClass")
       }
       
@@ -7219,8 +7219,8 @@ statInfrServer <- function(id) {
       
       if(!indmeansrawsd_iv$is_valid()) {
         validate(
-          need(!is.null(input$popuSDRaw1) && input$popuSDRaw1 >= 0, "The Population Standard Deviation 1 (σ1) must be a positive value greater than or equal to zero."),
-          need(!is.null(input$popuSDRaw2) && input$popuSDRaw2 > 0, "The Population Standard Deviation 2 (σ2) must be a positive value greater than zero."),
+          need(!is.null(input$popuSDRaw1) && input$popuSDRaw1 >= 0, "The Population Standard Deviation 1 (σ₁) must be a positive value greater than or equal to zero."),
+          need(!is.null(input$popuSDRaw2) && input$popuSDRaw2 > 0, "The Population Standard Deviation 2 (σ₂) must be a positive value greater than zero."),
           errorClass = "myClass")
       }
       
@@ -7294,8 +7294,8 @@ statInfrServer <- function(id) {
       
       if(!indmeansuploadsd_iv$is_valid()) {
         validate(
-          need(!is.null(input$popuSDUpload1) && input$popuSDUpload1 >= 0, "The Population Standard Deviation 1 (σ1) must be a positive value greater than or equal to zero."),
-          need(!is.null(input$popuSDUpload2) && input$popuSDUpload2 > 0, "The Population Standard Deviation 2 (σ2) must be a positive value greater than zero."),
+          need(!is.null(input$popuSDUpload1) && input$popuSDUpload1 >= 0, "The Population Standard Deviation 1 (σ₁) must be a positive value greater than or equal to zero."),
+          need(!is.null(input$popuSDUpload2) && input$popuSDUpload2 > 0, "The Population Standard Deviation 2 (σ₂) must be a positive value greater than zero."),
           errorClass = "myClass")
       }
       
