@@ -2058,6 +2058,7 @@ statInfrUI <- function(id) {
                                           id = ns("indMeansQQPlot"),
                                           plotType = "QQ Plot",
                                           title = "Q-Q Plots",
+                                          xlab    = "Normal Quantiles",
                                           includeFlip = FALSE),
                                         uiOutput(ns("renderIndMeansQQPlot")),
                                         br(),
@@ -2183,6 +2184,7 @@ statInfrUI <- function(id) {
                                     tabPanel(
                                       id = ns("depMeansDataCalcs"),
                                       title = "Data with Calculations",
+                                      downloadButton(ns("downloadDepMeansXlsx"), "Save as Excel"),
                                       br(),
                                       fluidRow(
                                         column(width = 8,
@@ -2210,6 +2212,7 @@ statInfrUI <- function(id) {
                                           id = ns("depMeansQQPlot"),
                                           plotType = "QQ Plot",
                                           title = "Q-Q Plot of the Difference (d)",
+                                          xlab    = "Normal Quantiles",
                                           includeFlip = FALSE),
                                         uiOutput(ns("renderDepMeansQQPlot")),
                                         br(),
@@ -3246,17 +3249,19 @@ statInfrServer <- function(id) {
       }
     })
     twopropht_iv$add_rule("numSuccesses2", ~ if(checkTwoProp() == 0) "At least one of (x1) and (x2) must be greater than zero.")
+    
     twopropht_iv$add_rule("numSuccesses1", ~ {
-      if (input$numSuccesses1 == input$numTrials1 &&
-          input$numSuccesses2 == input$numTrials2) {
+      if (input$numSuccesses1 > 0 && input$numSuccesses2 > 0 &&
+          input$numSuccesses1 == input$numTrials1 &&
+          input$numSuccesses2 == input$numTrials2)
         "Both sample proportions are equal to 1."
-      }
     })
+    
     twopropht_iv$add_rule("numSuccesses2", ~ {
-      if (input$numSuccesses1 == input$numTrials1 &&
-          input$numSuccesses2 == input$numTrials2) {
+      if (input$numSuccesses1 > 0 && input$numSuccesses2 > 0 &&
+          input$numSuccesses1 == input$numTrials1 &&
+          input$numSuccesses2 == input$numTrials2)
         "Both sample proportions are equal to 1."
-      }
     })
     
     # diff naught
@@ -7032,7 +7037,7 @@ statInfrServer <- function(id) {
       
       if(!onemeansdunk_iv$is_valid()) {
         validate(
-          need(input$sampSD && input$sampSD > 0, "Sample Standard Deviation (s) must be positive."),
+          need(input$sampSD && input$sampSD > 0, "Sample Standard Deviation (s) must be a positive value greater than zero."),
           errorClass = "myClass")
       }
       
@@ -7094,8 +7099,8 @@ statInfrServer <- function(id) {
       #### ---------------- One Standard Deviation Validation
       if(!oneSD_iv$is_valid()) {
         validate(
-          need(input$SSDSampleSize, "Sample size (n) is required.") %then%
-            need(input$SSDSampleSize > 1 & input$SSDSampleSize %% 1 == 0, "Sample size (n) must be an integer greater than 1."),
+          need(input$SSDSampleSize, "Sample size (n) must be an integer greater than one.") %then%
+            need(input$SSDSampleSize > 1 & input$SSDSampleSize %% 1 == 0, "Sample size (n) must be an integer greater than one."),
           errorClass = "myClass")
       }
 
@@ -7589,15 +7594,15 @@ statInfrServer <- function(id) {
       if(!twopopvarsum_iv$is_valid()) {
         validate(
           need(input$SDSampleSize1, "Sample size 1 is required.") %then%
-            need(input$SDSampleSize1 %% 1 == 0 && input$SDSampleSize1 > 1, "Sample size 1 must be an integer greater than 1."),
+            need(input$SDSampleSize1 %% 1 == 0 && input$SDSampleSize1 > 1, "Sample size 1 must be an integer greater than one."),
           
           need(input$SDSampleSize2, "Sample size 2 is required.") %then%
-            need(input$SDSampleSize2 %% 1 == 0 && input$SDSampleSize2 > 1, "Sample size 2 must be an integer greater than 1."),
+            need(input$SDSampleSize2 %% 1 == 0 && input$SDSampleSize2 > 1, "Sample size 2 must be an integer greater than one."),
           
           need(input$stdDev1, "Sample standard deviation 1 is required."),
           
           need(input$stdDev2, "Sample standard deviation 2 is required.") %then%
-            need(input$stdDev2 > 0, "Sample standard deviation 2 must be greater than 0."),
+            need(input$stdDev2 > 0, "Sample standard deviation 2 must be greater than zero."),
           
           errorClass = "myClass")
       }
@@ -7606,13 +7611,13 @@ statInfrServer <- function(id) {
         validate(
           need(input$n1, "Sample size 1 is required.") %then%
             need(input$n1 %% 1 == 0 && input$n1 > 1,
-                 "Sample size 1 must be an integer greater than 1."),
+                 "Sample size 1 must be an integer greater than one."),
           
           need(input$s1sq, "Sample variance 1 is required."),
           
           need(input$n2, "Sample size 2 is required.") %then%
             need(input$n2 %% 1 == 0 && input$n2 > 1,
-                 "Sample size 2 must be an integer greater than 1."),
+                 "Sample size 2 must be an integer greater than one."),
           
           need(input$s2sq, "Sample variance 2 is required.") %then%
             need(input$s2sq > 0,
@@ -10315,6 +10320,20 @@ statInfrServer <- function(id) {
                     nrow(df), " rows × ", ncol(df), " columns)"))
       )
     })
+    
+    output$downloadDepMeansXlsx <- downloadHandler(
+      filename = function() paste0("Dependent_Means_Calculations_", Sys.Date(), ".xlsx"),
+      contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      content = function(file) {
+        tryCatch({
+          data <- GetDepMeansData()
+          df <- data.frame(Before = data$before, After = data$after, d = data$d, 'd^2' = data$d^2, check.names = FALSE)
+          writexl::write_xlsx(df, file)
+        }, error = function(e) {
+          message("Full error: ", conditionMessage(e))
+        })
+      }
+    )
 
     #### ------------ Uploaded Data Table (no totals) ----------------------------------
     output$depPopMeansUploadTable <- renderDT({
@@ -11118,7 +11137,7 @@ statInfrServer <- function(id) {
           br(),
           sprintf("\\( \\alpha = %g \\)",
                   SigLvl()),
-          #br(),
+          br(),
           br(),
           p(tags$b("Test Statistic:")),
           sprintf("Given:"),
