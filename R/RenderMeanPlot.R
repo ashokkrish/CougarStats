@@ -1,7 +1,7 @@
 library(ggplot2)
 
 
-RenderMeanPlot <- function(dat, groups, plotColour, plotTitle, plotXlab, plotYlab, gridlines, flip) {
+RenderMeanPlot <- function(dat, groups, plotColour, plotTitle, plotXlab, plotYlab, gridlines) {
   
   data_plot = dat %>% 
     group_by(ind) %>% 
@@ -46,12 +46,6 @@ RenderMeanPlot <- function(dat, groups, plotColour, plotTitle, plotXlab, plotYla
   
   if("Minor" %in% gridlines) {
     gmp <- gmp + theme(panel.grid.minor = element_line(colour = "#D9D9D9"))
-  }
-  
-  if(flip == 1) {
-    gmp <- gmp + coord_flip(clip="off") +
-      labs(x = plotYlab,
-           y = plotXlab) 
   }
   
   return(gmp)

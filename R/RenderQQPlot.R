@@ -1,7 +1,7 @@
 library(ggplot2)
 library(ggpubr)
 
-RenderQQPlot <- function(dat, plotColour, plotTitle, plotXlab, plotYlab, gridlines, flip) {
+RenderQQPlot <- function(dat, plotColour, plotTitle, plotXlab, plotYlab, gridlines) {
   qp <- ggpubr::ggqqplot(dat, x = "values",
                          title = plotTitle,
                          xlab = plotXlab,
@@ -32,19 +32,12 @@ RenderQQPlot <- function(dat, plotColour, plotTitle, plotXlab, plotYlab, gridlin
                 ggtheme = theme(
                   panel.grid.minor = element_line(colour = "#D9D9D9")))
   }
-  
-  if(flip == 1) {
-    qp <- ggpar(qp,
-                orientation = "horiz",
-                xlab = plotYlab,
-                ylab = plotXlab)
-  }
 
   return(qp)
 }
 
 
-RenderWilcoxQQPlots <- function(sample1, sample2, plotColour, plotTitle, plotXlab, plotYlab, gridlines, flip) {
+RenderWilcoxQQPlots <- function(sample1, sample2, plotColour, plotTitle, plotXlab, plotYlab, gridlines) {
 
   df1 <- data.frame(values = sample1)
   df2 <- data.frame(values = sample2)
@@ -97,11 +90,6 @@ RenderWilcoxQQPlots <- function(sample1, sample2, plotColour, plotTitle, plotXla
     qp2 <- ggpar(qp2, ggtheme = theme(panel.grid.minor = element_line(colour = "#D9D9D9")))
   }
 
-  if(flip == 1) {
-    qp1 <- ggpar(qp1, orientation = "horiz", xlab = plotYlab, ylab = plotXlab)
-    qp2 <- ggpar(qp2, orientation = "horiz", xlab = plotYlab, ylab = plotXlab)
-  }
-
   combined_plot <- gridExtra::grid.arrange(qp1, qp2, ncol = 2, 
                                            top = grid::textGrob(plotTitle, 
                                                                 gp = grid::gpar(fontsize = 24, fontface = "bold")))
@@ -113,7 +101,7 @@ RenderWilcoxQQPlots <- function(sample1, sample2, plotColour, plotTitle, plotXla
 #'   is set with a #D9D9D9-coloured line; if it contains "Minor"
 #'   panel.grid.minor is set with a #D9D9D9-coloured line. Major and Minor are
 #'   not exclusive.
-RenderSignedRankQQPlot <- function(dat, plotColour, plotTitle, plotXlab, plotYlab, gridlines, flip) {
+RenderSignedRankQQPlot <- function(dat, plotColour, plotTitle, plotXlab, plotYlab, gridlines) {
   qp <- ggpubr::ggqqplot(dat, x = "values",
                          title = plotTitle,
                          xlab = plotXlab,
@@ -130,11 +118,6 @@ RenderSignedRankQQPlot <- function(dat, plotColour, plotTitle, plotXlab, plotYla
       panel.grid.major = if("Major" %in% gridlines) element_line(colour = "#D9D9D9") else element_blank(),
       panel.grid.minor = if("Minor" %in% gridlines) element_line(colour = "#D9D9D9") else element_blank()
     )
-  
-  if(flip == 1) {
-    qp <- qp + coord_flip() +
-      labs(x = plotYlab, y = plotXlab)
-  }
   
   return(qp)
 }
