@@ -2131,6 +2131,7 @@ statInfrUI <- function(id) {
                                             id = ns("signedRankQQ"),
                                             plotType = "QQ Plot",
                                             title = "Q-Q Plot of the Difference",
+                                            xlab = "Normal Quantiles",
                                             includeFlip = FALSE), 
                                           plotOutput(ns("signedRankQQ")),
                                           br(), br()
@@ -2827,7 +2828,7 @@ statInfrServer <- function(id) {
     
     # popuSD1
     indmeanssdknown_iv$add_rule("popuSD1", sv_required())
-    indmeanssdknown_iv$add_rule("popuSD1", sv_gt(0))
+    indmeanssdknown_iv$add_rule("popuSD1", sv_gte(0))
     
     # popuSD2
     indmeanssdknown_iv$add_rule("popuSD2", sv_required())
@@ -2835,7 +2836,7 @@ statInfrServer <- function(id) {
     
     # sampSD1
     indmeanssdunk_iv$add_rule("sampSD1", sv_required())
-    indmeanssdunk_iv$add_rule("sampSD1", sv_gt(0))
+    indmeanssdunk_iv$add_rule("sampSD1", sv_gte(0))
     
     # sampSD2
     indmeanssdunk_iv$add_rule("sampSD2", sv_required())
@@ -2852,17 +2853,17 @@ statInfrServer <- function(id) {
                                                     "Data must be at least three numeric values separated by a comma, space, or tab (ie: 2,3,4)."))
     
     indmeansrawsd_iv$add_rule("popuSDRaw1", sv_required())
-    indmeansrawsd_iv$add_rule("popuSDRaw1", sv_gt(0))
+    indmeansrawsd_iv$add_rule("popuSDRaw1", sv_gte(0))
     
     indmeansrawsd_iv$add_rule("popuSDRaw2", sv_required())
     indmeansrawsd_iv$add_rule("popuSDRaw2", sv_gt(0))
     
     indmeansrawsdunk_iv$add_rule("raw_sample1", ~ if(sd(createNumLst(input$raw_sample1)) == 0
                                                      && sd(createNumLst(input$raw_sample2)) == 0
-                                                     && input$inferenceType2 == 'Hypothesis Testing') "Sample standard deviation cannot be 0 for both Sample 1 and Sample 2.")
+                                                     && input$inferenceType2 == 'Hypothesis Testing') "Sample standard deviation cannot be zero for both Sample 1 and Sample 2.")
     indmeansrawsdunk_iv$add_rule("raw_sample2", ~ if(sd(createNumLst(input$raw_sample1)) == 0
                                                      && sd(createNumLst(input$raw_sample2)) == 0
-                                                     && input$inferenceType2 == 'Hypothesis Testing') "Sample standard deviation cannot be 0 for both Sample 1 and Sample 2.")
+                                                     && input$inferenceType2 == 'Hypothesis Testing') "Sample standard deviation cannot be zero for both Sample 1 and Sample 2.")
     indmeansrawsdunk_iv$add_rule("raw_sample1", ~ if(sd(createNumLst(input$raw_sample1)) == 0
                                                      && sd(createNumLst(input$raw_sample2)) == 0
                                                      && input$inferenceType2 == 'Confidence Interval'
@@ -2881,7 +2882,7 @@ statInfrServer <- function(id) {
     indmeansupload_iv$add_rule("indMeansUserData", ~ if(nrow(IndMeansUploadData()) < 3) "Samples must include at least two observations.")
     
     indmeansuploadsd_iv$add_rule("popuSDUpload1", sv_required())
-    indmeansuploadsd_iv$add_rule("popuSDUpload1", sv_gt(0))
+    indmeansuploadsd_iv$add_rule("popuSDUpload1", sv_gte(0))
     
     indmeansuploadsd_iv$add_rule("popuSDUpload2", sv_required())
     indmeansuploadsd_iv$add_rule("popuSDUpload2", sv_gt(0))
@@ -2922,7 +2923,7 @@ statInfrServer <- function(id) {
       s1 <- na.omit(unlist(d[, input$indMeansUplSample1]))
       s2 <- na.omit(unlist(d[, input$indMeansUplSample2]))
       if (input$bothsigmaKnownUpload == "bothUnknown" && input$inferenceType2 == 'Hypothesis Testing' && sd(s1) == 0 && sd(s2) == 0)
-        "Sample standard deviation cannot be 0 for both Sample 1 and Sample 2"
+        "Sample standard deviation cannot be zero for both Sample 1 and Sample 2"
     })
     
     indmeansuploadvar_iv$add_rule("indMeansUplSample2", ~ {
@@ -2932,7 +2933,7 @@ statInfrServer <- function(id) {
       s1 <- na.omit(unlist(d[, input$indMeansUplSample1]))
       s2 <- na.omit(unlist(d[, input$indMeansUplSample2]))
       if (input$bothsigmaKnownUpload == "bothUnknown" && input$inferenceType2 == 'Hypothesis Testing' && sd(s1) == 0 && sd(s2) == 0)
-        "Sample standard deviation cannot be 0 for both Sample 1 and Sample 2"
+        "Sample standard deviation cannot be zero for both Sample 1 and Sample 2"
     })
     
     wilcoxonUpload_iv$add_rule("wilcoxonUpl", sv_required())
@@ -3095,7 +3096,7 @@ statInfrServer <- function(id) {
       if(length(sample1) == length(sample2)) {
         differences <- sample1 - sample2
         if(all(differences == 0) || var(differences) == 0) {
-          "'Sample 1’' and 'Sample 2' data are the same."
+          "'Sample 1’ and 'Sample 2' data are the same."
         }
       }
     })
@@ -3106,7 +3107,7 @@ statInfrServer <- function(id) {
       if(length(sample1) == length(sample2)) {
         differences <- sample1 - sample2
         if(all(differences == 0) || var(differences) == 0) {
-          "'Sample 1’' and 'Sample 2' data are the same."
+          "'Sample 1’ and 'Sample 2' data are the same."
         }
       }
     })
@@ -6999,8 +7000,8 @@ statInfrServer <- function(id) {
       
       if(!onemean_iv$is_valid()) {
         validate(
-          need(input$sampleSize, "Sample size (n) must be an integer greater than 1.") %then%
-            need(input$sampleSize > 1 & input$sampleSize %% 1 == 0, "Sample size (n) must be an integer greater than 1."),
+          need(input$sampleSize, "Sample size (n) must be an integer greater than one.") %then%
+            need(input$sampleSize > 1 & input$sampleSize %% 1 == 0, "Sample size (n) must be an integer greater than one."),
           need(input$sampleMean, "Sample mean required."),
           errorClass = "myClass")
       }
@@ -7101,16 +7102,11 @@ statInfrServer <- function(id) {
         validate(
           need(input$SSDSampleSize, "Sample size (n) must be an integer greater than one.") %then%
             need(input$SSDSampleSize > 1 & input$SSDSampleSize %% 1 == 0, "Sample size (n) must be an integer greater than one."),
+          need(input$SSDStdDev, "Sample Standard Deviation (s) must be a positive value greater than zero.") %then%
+            need(input$SSDStdDev > 0, "Sample Standard Deviation (s) must be a positive value greater than zero."),
           errorClass = "myClass")
       }
-
-      if(!oneSD_iv$is_valid()) {
-        validate(
-          need(input$SSDStdDev, "Sample Standard Deviation (s) is required.") %then%
-            need(input$SSDStdDev > 0, "Sample Standard Deviation (s) must be positive."),
-          errorClass = "myClass")
-      }
-
+      
       if(!oneSDRaw_iv$is_valid()) {
         validate(
           need(isTruthy(input$sdRawData), "Sample data must contain at least three numeric values.") %then%
@@ -7159,15 +7155,14 @@ statInfrServer <- function(id) {
       if(!oneprop_iv$is_valid()) {
         validate(
           need(input$numSuccesses, "Numeric value for Number of Successes (x) required"),
-          need(input$numTrials, "Numeric value for Number of Trials (n) required"),
+          need(!is.null(input$numTrials) && input$numTrials > 0, "Number of Trials (n) must be greater than zero."),
           errorClass = "myClass")
         
         validate(
           need(input$numSuccesses %% 1 == 0, "Number of Successes (x) must be an integer"),
           need(input$numSuccesses >= 0, "Number of Successes (x) cannot be negative"),
           need(input$numTrials %% 1 == 0, "Number of Trials (n) must be an integer"),
-          need(input$numTrials > 0, "Number of Trials (n) must be greater than 0") %then%
-            need(input$numSuccesses <= input$numTrials, "Number of Successes (x) cannot be greater than Number of Trials (n)"),
+          need(input$numSuccesses <= input$numTrials, "Number of Successes (x) cannot be greater than Number of Trials (n)"),
           errorClass = "myClass")
       } else if(input$siMethod == '1' && input$popuParameter == 'Population Proportion') {
         req(input$numSuccesses >= 0 && input$numTrials)
@@ -7186,11 +7181,11 @@ statInfrServer <- function(id) {
       #### ---------------- Independent Population Means Validation
       if(!indmeanssumm_iv$is_valid()) {
         validate(
-          need(input$sampleSize1, "Sample Size 1 (n1) must be an integer greater than 1.") %then%
-            need(input$sampleSize1 > 1 & input$sampleSize1 %% 1 == 0, "Sample Size 1 (n1) must be an integer greater than 1."),
+          need(input$sampleSize1, "Sample Size 1 (n1) must be an integer greater than one.") %then%
+            need(input$sampleSize1 > 1 & input$sampleSize1 %% 1 == 0, "Sample Size 1 (n1) must be an integer greater than one."),
           need(input$sampleMean1, "Sample Mean 1 required."),
-          need(input$sampleSize2, "Sample Size 2 (n2) must be an integer greater than 1.") %then%
-            need(input$sampleSize2 > 1 & input$sampleSize2 %% 1 == 0, "Sample Size 2 (n2) must be an integer greater than 1."),
+          need(input$sampleSize2, "Sample Size 2 (n2) must be an integer greater than one.") %then%
+            need(input$sampleSize2 > 1 & input$sampleSize2 %% 1 == 0, "Sample Size 2 (n2) must be an integer greater than one."),
           need(input$sampleMean2, "Sample Mean 2 required."),
           errorClass = "myClass")
       }
@@ -7198,15 +7193,15 @@ statInfrServer <- function(id) {
       if(!indmeanssdknown_iv$is_valid())
       {
         validate(
-          need(input$popuSD1 & input$popuSD1 > 0, "The Population Standard Deviation 1 (σ1) must be a positive value greater than or equal to zero."),
-          need(input$popuSD2 & input$popuSD2 > 0, "The Population Standard Deviation 2 (σ2) must be a positive value greater than or equal to zero."),
+          need(!is.null(input$popuSD1) && input$popuSD1 >= 0, "The Population Standard Deviation 1 (σ1) must be a positive value greater than or equal to zero."),
+          need(!is.null(input$popuSD2) && input$popuSD2 > 0, "The Population Standard Deviation 2 (σ2) must be a positive value greater than zero."),
           errorClass = "myClass")
       }
       
       if(!indmeanssdunk_iv$is_valid())
       {
         validate(
-          need(input$sampSD1 && input$sampSD1 > 0, "Sample Standard Deviation (s1) must be positive."),
+          need(input$sampSD1 && input$sampSD1 >= 0, "Sample Standard Deviation (s1) must be positive."),
           need(input$sampSD2 && input$sampSD2 > 0, "Sample Standard Deviation (s2) must be positive."),
           errorClass = "myClass")
       }
@@ -7224,8 +7219,8 @@ statInfrServer <- function(id) {
       
       if(!indmeansrawsd_iv$is_valid()) {
         validate(
-          need(input$popuSDRaw1 & input$popuSD1 > 0, "The Population Standard Deviation 1 (σ1) must be a positive value greater than or equal to zero."),
-          need(input$popuSDRaw2 & input$popuSD2 > 0, "The Population Standard Deviation 2 (σ2) must be a positive value greater than or equal to zero."),
+          need(!is.null(input$popuSDRaw1) && input$popuSDRaw1 >= 0, "The Population Standard Deviation 1 (σ1) must be a positive value greater than or equal to zero."),
+          need(!is.null(input$popuSDRaw2) && input$popuSDRaw2 > 0, "The Population Standard Deviation 2 (σ2) must be a positive value greater than zero."),
           errorClass = "myClass")
       }
       
@@ -7299,8 +7294,8 @@ statInfrServer <- function(id) {
       
       if(!indmeansuploadsd_iv$is_valid()) {
         validate(
-          need(input$popuSDUpload1 && input$popuSDUpload1 > 0, "The Population Standard Deviation 1 (σ1) must be a positive value greater than or equal to zero."),
-          need(input$popuSDUpload2 && input$popuSDUpload2 > 0, "The Population Standard Deviation 2 (σ2) must be a positive value greater than or equal to zero."),
+          need(!is.null(input$popuSDUpload1) && input$popuSDUpload1 >= 0, "The Population Standard Deviation 1 (σ1) must be a positive value greater than or equal to zero."),
+          need(!is.null(input$popuSDUpload2) && input$popuSDUpload2 > 0, "The Population Standard Deviation 2 (σ2) must be a positive value greater than zero."),
           errorClass = "myClass")
       }
       
@@ -7543,39 +7538,48 @@ statInfrServer <- function(id) {
       #### ---------------- Two Population Proportion Validation
       if (!twopropht_iv$is_valid()) {
         validate(
-          need(checkTwoProp() > 0, "The Z test statistic is undefined when the Number of Successes 1 (x1) and Number of Successes 2 (x2) are both zero."),
+          need(checkTwoProp() > 0, "Unable to calculate test statistic (Division by Zero)
+
+Both samples recorded a 0% success rate (x₁ = 0 and x₂ = 0), resulting in a pooled proportion of 0, which collapses the estimated standard error to zero. This creates a variance of zero and leads to division by zero, preventing the computation of the z-statistic and p-value.
+
+To resolve: Verify your input data. If success rates are truly 0% across both groups, a standard normal hypothesis test cannot measure variability, as there are no observed successes to evaluate."),
           need(!(input$numSuccesses1 == input$numTrials1 && input$numSuccesses2 == input$numTrials2),
-               "The pooled proportion equals 1, which results in an undefined test statistic (z). This happens when the number of successes equals the number of trials for both samples."),
+               "Unable to calculate test statistic (Division by Zero)
+
+Both samples recorded a 100% success rate (x₁ = n₁ and x₂ = n₂), resulting in a pooled proportion of 1, which collapses the estimated standard error to zero. This creates a variance of zero and leads to division by zero, preventing the computation of the z-statistic and p-value.
+                
+To resolve: Verify your input data. If success rates are truly 100% across both groups, a standard normal hypothesis test cannot measure variability, and exact statistical methods (or qualitative evaluation) should be used instead.
+                "),
           errorClass = "myClass"
         )
       }
       
       if(!twoprop_iv$is_valid()) {
         validate(
-          need(input$numSuccesses1, "Numeric value for Number of Successes 1 (x1) required"),
-          need(input$numTrials1, "Numeric value for Number of Trials 1 (n1) required"),
-          need(input$numSuccesses2, "Numeric value for Number of Successes 2 (x2) required"),
-          need(input$numTrials2, "Numeric value for Number of Trials 2 (n2) required"),
+          need(input$numSuccesses1, "Numeric value for Number of Successes 1 (x₁) required"),
+          need(input$numTrials1, "Numeric value for Number of Trials 1 (n₁) required"),
+          need(input$numSuccesses2, "Numeric value for Number of Successes 2 (x₂) required"),
+          need(input$numTrials2, "Numeric value for Number of Trials 2 (n₂) required"),
           errorClass = "myClass")
         
         validate(
-          need(input$numSuccesses1 %% 1 == 0, "Number of Successes 1 (x1) must be an integer"),
-          need(input$numSuccesses1 >= 0, "Number of Successes 1 (x1) cannot be negative"),
-          need(input$numSuccesses1 <= input$numTrials1, "Number of Successes 1 (x1) cannot exceed Number of Trials 1 (n1)"),
-          need(input$numTrials1 %% 1 == 0, "Number of Trials 1 (n1) must be an integer"),
-          need(input$numTrials1 > 0, "Number of Trials 1 (n1) must be greater than 0"),
-          need(input$numSuccesses2 %% 1 == 0, "Number of Successes 2 (x2) must be an integer"),
-          need(input$numSuccesses2 >= 0, "Number of Successes 2 (x2) cannot be negative"),
-          need(input$numSuccesses2 <= input$numTrials2, "Number of Successes 2 (x2) cannot exceed Number of Trials 2 (n2)"),
-          need(input$numTrials2 %% 1 == 0, "Number of Trials 2 (n2) must be an integer"),
-          need(input$numTrials2 > 0, "Number of Trials 2 (n2) must be greater than 0"),
+          need(input$numSuccesses1 %% 1 == 0, "Number of Successes 1 (x₁) must be an integer"),
+          need(input$numSuccesses1 >= 0, "Number of Successes 1 (x₁) cannot be negative"),
+          need(input$numSuccesses1 <= input$numTrials1, "Number of Successes 1 (x₁) cannot exceed Number of Trials 1 (n₁)"),
+          need(input$numTrials1 %% 1 == 0, "Number of Trials 1 (n₁) must be an integer"),
+          need(input$numTrials1 > 0, "Number of Trials 1 (n₁) must be greater than zero"),
+          need(input$numSuccesses2 %% 1 == 0, "Number of Successes 2 (x₂) must be an integer"),
+          need(input$numSuccesses2 >= 0, "Number of Successes 2 (x₂) cannot be negative"),
+          need(input$numSuccesses2 <= input$numTrials2, "Number of Successes 2 (x₂) cannot exceed Number of Trials 2 (n₂)"),
+          need(input$numTrials2 %% 1 == 0, "Number of Trials 2 (n₂) must be an integer"),
+          need(input$numTrials2 > 0, "Number of Trials 2 (n₂) must be greater than zero"),
           errorClass = "myClass")
         
       } else if (input$siMethod == '2' && input$popuParameters == 'Population Proportions') {
         
         validate(
-          need(input$numSuccesses1 <= input$numTrials1, "Number of Successes 1 (x1) cannot be greater than Number of Trials 1 (n1)"),
-          need(input$numSuccesses2 <= input$numTrials2, "Number of Successes 2 (x2) cannot be greater than Number of Trials 2 (n2)"),
+          need(input$numSuccesses1 <= input$numTrials1, "Number of Successes 1 (x₁) cannot be greater than Number of Trials 1 (n₁)"),
+          need(input$numSuccesses2 <= input$numTrials2, "Number of Successes 2 (x₂) cannot be greater than Number of Trials 2 (n₂)"),
           errorClass = "myClass")
         
       }
