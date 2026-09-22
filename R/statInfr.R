@@ -1107,7 +1107,7 @@ statInfrUI <- function(id) {
                       inputId = ns("stdDev1"),
                       label   = HTML("<strong>Sample Standard Deviation 1</strong> \\( (s_1) \\)"),
                       value   = 3,
-                      min     = 0,
+                      min     = 1,
                       step    = 0.01
                     ),
                     
@@ -1147,7 +1147,7 @@ statInfrUI <- function(id) {
                       inputId = ns("s1sq"),
                       label   = HTML("<strong>Sample Variance 1 </strong>\\( (s_1^2) \\)"),
                       value   = 9,
-                      min     = 0,
+                      min     = 1,
                       step    = 0.01),
                     
                     numericInput(
@@ -2110,6 +2110,8 @@ statInfrUI <- function(id) {
                                         
                                         #titlePanel("Results"),
                                         br(),
+                                        downloadButton(ns("downloadSignedRankXlsx"), "Save as Excel"),
+                                        br(), br(),
                                         uiOutput(ns('signedRankDataRanks')),
                                         br(),
                                       ), # Ranked Results by Group
@@ -2185,8 +2187,9 @@ statInfrUI <- function(id) {
                                     tabPanel(
                                       id = ns("depMeansDataCalcs"),
                                       title = "Data with Calculations",
-                                      downloadButton(ns("downloadDepMeansXlsx"), "Save as Excel"),
                                       br(),
+                                      downloadButton(ns("downloadDepMeansXlsx"), "Save as Excel"),
+                                      br(), br(),
                                       fluidRow(
                                         column(width = 8,
                                                uiOutput(ns('depMeansTable')),
@@ -2313,6 +2316,8 @@ statInfrUI <- function(id) {
                                         
                                         titlePanel("Ranked Results by Group"),
                                         br(),
+                                        downloadButton(ns("downloadWilcoxonRankSumXlsx"), "Save as Excel"),
+                                        br(), br(),
                                         uiOutput(ns('wilcoxonRankSumDataRanks')),
                                         br(),
                                       ), # Ranked Results by Group
@@ -2352,6 +2357,7 @@ statInfrUI <- function(id) {
                                             id = ns("sidebysidewRankQQ"),
                                             plotType = "QQ Plot",
                                             title = "Q-Q Plots",
+                                            xlab = "Normal Quantile",
                                             includeFlip = FALSE),
                                           plotOutput(ns("sidebysidewRankQQ")),
                                           br(), br()
@@ -2540,8 +2546,9 @@ statInfrUI <- function(id) {
                   tabPanel(
                     id    = ns("kwRM"),
                     title = "Data table with Ranks",
-                    
+                    br(),
                     downloadButton(ns("downloadKWRMxlsx"), "Save as Excel"),
+                    br(), br(),
                     uiOutput(ns("renderKWRM"))
                   ),
                   
@@ -3217,7 +3224,7 @@ statInfrServer <- function(id) {
     oneSDht_iv$add_rule("hypStdDeviation", sv_gt(0))
     
     # numSuccessesProportion
-    oneprop_iv$add_rule("numSuccesses", sv_required(message = "Numeric value required."))
+    oneprop_iv$add_rule("numSuccesses", sv_required())
     oneprop_iv$add_rule("numSuccesses", sv_integer())
     oneprop_iv$add_rule("numSuccesses", sv_gte(0))
     
@@ -3252,14 +3259,18 @@ statInfrServer <- function(id) {
     twopropht_iv$add_rule("numSuccesses2", ~ if(checkTwoProp() == 0) "At least one of (x₁) and (x₂) must be greater than zero.")
     
     twopropht_iv$add_rule("numSuccesses1", ~ {
-      if (input$numSuccesses1 > 0 && input$numSuccesses2 > 0 &&
+      if (!is.null(input$numSuccesses1) && !is.null(input$numSuccesses2) && !is.null(input$numTrials1) && !is.null(input$numTrials2) &&
+          input$numSuccesses1 > 0 &&
+          input$numSuccesses2 > 0 &&
           input$numSuccesses1 == input$numTrials1 &&
           input$numSuccesses2 == input$numTrials2)
         "Both sample proportions are equal to 1."
     })
     
     twopropht_iv$add_rule("numSuccesses2", ~ {
-      if (input$numSuccesses1 > 0 && input$numSuccesses2 > 0 &&
+      if (!is.null(input$numSuccesses1) && !is.null(input$numSuccesses2) && !is.null(input$numTrials1) && !is.null(input$numTrials2) &&
+          input$numSuccesses1 > 0 &&
+          input$numSuccesses2 > 0 &&
           input$numSuccesses1 == input$numTrials1 &&
           input$numSuccesses2 == input$numTrials2)
         "Both sample proportions are equal to 1."
@@ -3282,7 +3293,7 @@ statInfrServer <- function(id) {
     
     # stdDev1
     twopopvarsum_iv$add_rule("stdDev1", sv_required())
-    twopopvarsum_iv$add_rule("stdDev1", sv_gte(0))
+    twopopvarsum_iv$add_rule("stdDev1", sv_gt(0))
     
     # stdDev2
     twopopvarsum_iv$add_rule("stdDev2", sv_required())
@@ -3300,7 +3311,7 @@ statInfrServer <- function(id) {
     
     # Two Std Dev s1^2
     twopopvar_iv$add_rule("s1sq", sv_required())
-    twopopvar_iv$add_rule("s1sq", sv_gte(0))
+    twopopvar_iv$add_rule("s1sq", sv_gt(0))
     
     # Two Std Dev s2^2
     twopopvar_iv$add_rule("s2sq", sv_required())
@@ -3319,7 +3330,7 @@ statInfrServer <- function(id) {
     
     
     # numTrialsProportion
-    oneprop_iv$add_rule("numTrials", sv_required(message = "Numeric value required."))
+    oneprop_iv$add_rule("numTrials", sv_required())
     oneprop_iv$add_rule("numTrials", sv_integer())
     oneprop_iv$add_rule("numTrials", sv_gt(0))
     
@@ -7231,7 +7242,7 @@ statInfrServer <- function(id) {
             errorClass = "myClass")
         } else {
           validate(
-            need(sd(createNumLst(input$raw_sample1)) != 0 && sd(createNumLst(input$raw_sample2)) != 0, "The test statistic (t) will be undefined when the sample standard deviation of Sample 1 and Sample 2 are both 0."),
+            need(sd(createNumLst(input$raw_sample1)) != 0 && sd(createNumLst(input$raw_sample2)) != 0, "The test statistic (t) will be undefined when the sample standard deviation of Sample 1 and Sample 2 are both zero."),
             errorClass = "myClass")
         }
       }
@@ -7603,10 +7614,11 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
           need(input$SDSampleSize2, "Sample size 2 is required.") %then%
             need(input$SDSampleSize2 %% 1 == 0 && input$SDSampleSize2 > 1, "Sample size 2 must be an integer greater than one."),
           
-          need(input$stdDev1, "Sample standard deviation 1 is required."),
+          need(input$stdDev1, "Sample standard deviation 1 is required.") %then%
+          need(input$stdDev1 > 0, "Standard deviation for sample 1 must be greater than zero."),
           
           need(input$stdDev2, "Sample standard deviation 2 is required.") %then%
-            need(input$stdDev2 > 0, "Sample standard deviation 2 must be greater than zero."),
+            need(input$stdDev2 > 0, "Standard deviation for sample 2 must be greater than zero."),
           
           errorClass = "myClass")
       }
@@ -7617,7 +7629,9 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
             need(input$n1 %% 1 == 0 && input$n1 > 1,
                  "Sample size 1 must be an integer greater than one."),
           
-          need(input$s1sq, "Sample variance 1 is required."),
+          need(input$s1sq, "Sample variance 1 is required.") %then%
+            need(input$s1sq > 0,
+                 "Variance for sample 1 must be greater than zero."),
           
           need(input$n2, "Sample size 2 is required.") %then%
             need(input$n2 %% 1 == 0 && input$n2 > 1,
@@ -7634,7 +7648,8 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       if (!twopopvarraw_iv$is_valid()) {
         validate(
           need(input$rawSamp1SD, "Sample 1 data must contain at least three numeric values.") %then%
-            need(length(createNumLst(input$rawSamp1SD)) >= 3, "Sample 1 data must contain at least three numeric values."),
+            need(length(createNumLst(input$rawSamp1SD)) >= 3, "Sample 1 data must contain at least three numeric values.") %then%
+            need(sd(createNumLst(input$rawSamp1SD)) > 0, "Variance for sample 1 must be greater than zero."),
           
           need(input$rawSamp2SD, "Sample 2 data must contain at least three numeric values.") %then%
             need(length(createNumLst(input$rawSamp2SD)) >= 3, "Sample 2 data must contain at least three numeric values.") %then%
@@ -9663,6 +9678,20 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       indMeansPlot
     })
     ### ------------ Wilcoxon Rank Sum Outputs -------------------------------------------
+    
+    output$downloadWilcoxonRankSumXlsx <- downloadHandler(
+      filename = function() paste0("Wilcoxon_Rank_Sum_Calculations_", Sys.Date(), ".xlsx"),
+      contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      content = function(file) {
+        tryCatch({
+          data <- rankedDisplayData(wilcoxonRankedData)
+          writexl::write_xlsx(data, file)
+        }, error = function(e) {
+          message("Full error: ", conditionMessage(e))
+        })
+      }
+    )
+    
     output$wilcoxonUploadStatus <- renderUI({
       req(input$wilcoxonUpl)
       req(wilcoxonUpload_iv$is_valid())
@@ -10989,6 +11018,18 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       GetPlotWidth(width_val, width_px_val, ui = FALSE)
     })
     
+    output$downloadSignedRankXlsx <- downloadHandler(
+      filename = function() paste0("Signed_Rank_Calculations_", Sys.Date(), ".xlsx"),
+      contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      content = function(file) {
+        tryCatch({
+          data <- signedRankDisplayData(signedRankedData())
+          writexl::write_xlsx(data, file)
+        }, error = function(e) {
+          message("Full error: ", conditionMessage(e))
+        })
+      }
+    )
     ### ------------ Two Prop Outputs --------------------------------------------
     
     #### ---------------- CI ----
