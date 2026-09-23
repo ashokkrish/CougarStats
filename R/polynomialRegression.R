@@ -98,12 +98,12 @@ PolynomialRegressionMainPanelUI <- function(id) {
     uiOutput(ns("polyNoDataWarn")),
     uiOutput(ns("polyResponseWarn")),
     uiOutput(ns("polyExplanatoryWarn")),
+    uiOutput(ns("polyValidation")),
 
     hidden(div(
       id = ns("polyResultsPanel"),
       uiOutput(ns("polyPerfectFitWarning")),
       uiOutput(ns("polyMissingRowsWarning")),
-      uiOutput(ns("polyValidation")),
 
       div(
         id = ns("polyNavbarContent"),
@@ -221,7 +221,7 @@ PolynomialRegressionMainPanelUI <- function(id) {
 # ---- Server --------------------------------------------------------------- #
 # =========================================================================== #
 
-PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NULL, clear_trigger = NULL, hide_shared = NULL, reset_raw_data = NULL, raw_error_msgs = NULL) {
+PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NULL, clear_trigger = NULL, hide_shared = NULL, reset_raw_data = NULL, raw_error_msgs = NULL, raw_input_trigger = NULL, is_active = NULL) {
   moduleServer(id, function(input, output, session) {
 
     ns <- session$ns
@@ -317,13 +317,18 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, u
       if (!is.null(reg_data())) polyNoDataWarn(FALSE)
     }, ignoreInit = TRUE, ignoreNULL = FALSE)
 
-    # Clear results whenever raw data inputs change
-    observeEvent(reg_data(), {
-      req(input_mode() == "raw")
+    # Clear results whenever raw data inputs change.
+    # Uses raw_input_trigger (watches rawX/rawY directly) rather than reg_data() so
+    # the clear fires on every keystroke regardless of whether the data is currently
+    # valid — reg_data() can stay NULL mid-keystroke and silently skip the clear.
+    observeEvent(raw_input_trigger(), {
+      if (!is.null(is_active) && !is_active()) return()
       hide("polyResultsPanel")
+      storedDatx(NULL)
+      storedDaty(NULL)
       output$polyPerfectFitWarning <- renderUI({ NULL })
       output$polyValidation        <- renderUI({ NULL })
-    }, ignoreInit = TRUE, ignoreNULL = FALSE)
+    }, ignoreInit = TRUE, ignoreNULL = TRUE)
 
     # ---- Clear vars warning when a variable is selected ------------------
     observeEvent(input$polyExplanatory, {
@@ -544,15 +549,25 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, u
       } else {
         polyResponseWarn(FALSE)
         polyExplanatoryWarn(FALSE)
-        rawMsgs <- if (!is.null(raw_error_msgs)) raw_error_msgs() else character(0)
-        if (length(rawMsgs) > 0 || is.null(reg_data())) {
-          if (length(rawMsgs) == 0) rawMsgs <- "x and y must have the same number of valid numeric observations."
+        rawMsgs <- if (!is.null(raw_error_msgs)) raw_error_msgs() else list(x = NULL, y = NULL)
+        msgX <- rawMsgs$x
+        msgY <- rawMsgs$y
+        if (!is.null(msgX) || !is.null(msgY) || is.null(reg_data())) {
+          if (is.null(msgX) && is.null(msgY))
+            msgX <- "x and y must have the same number of valid numeric observations."
           output$polyValidation <- renderUI({
-            div(class = "alert alert-danger", style = "margin-top: 15px;",
-                icon("triangle-exclamation"),
-                tagList(lapply(seq_along(rawMsgs), function(i) {
-                  tagList(strong(paste0(" ", rawMsgs[i])), if (i < length(rawMsgs)) br())
-                })))
+            tagList(
+              if (!is.null(msgY)) div(
+                class = "alert alert-danger", style = "margin-top: 15px; margin-bottom: 5px;",
+                icon("triangle-exclamation"), " ",
+                strong(msgY), " — Response variable (y)"
+              ),
+              if (!is.null(msgX)) div(
+                class = "alert alert-danger", style = "margin-top: 5px;",
+                icon("triangle-exclamation"), " ",
+                strong(msgX), " — Explanatory variable (x)"
+              )
+            )
           })
           hide("polyResultsPanel")
           return()
@@ -1330,7 +1345,10 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, u
     })
 
     if (!is.null(clear_trigger)) {
-      observeEvent(clear_trigger(), { polyr_do_reset() }, ignoreInit = TRUE)
+      observeEvent(clear_trigger(), {
+        if (!is.null(is_active) && !is_active()) return()
+        polyr_do_reset()
+      }, ignoreInit = TRUE)
     }
 
   })

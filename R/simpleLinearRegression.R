@@ -587,7 +587,7 @@ lineTestConfig <- list(
   )
 )
 
-SLRServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NULL, clear_trigger = NULL, hide_shared = NULL, reset_raw_data = NULL, raw_error_msgs = NULL) {
+SLRServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NULL, clear_trigger = NULL, hide_shared = NULL, reset_raw_data = NULL, raw_error_msgs = NULL, raw_input_trigger = NULL, is_active = NULL) {
   moduleServer(id, function(input, output, session) {
 
 
@@ -599,7 +599,7 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NUL
     slrResponseWarn      <- reactiveVal(FALSE)
     slrExplanatoryWarn   <- reactiveVal(FALSE)
     slrRawMismatchWarn   <- reactiveVal(FALSE)
-    slrRawMismatchMsgs   <- reactiveVal(character(0))
+    slrRawMismatchMsgs   <- reactiveVal(list(x = NULL, y = NULL))
 
     hasHighLeverage <- reactiveVal(FALSE)
 
@@ -869,13 +869,17 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NUL
       }
     })
     
-    # Clear results whenever raw data inputs change
-    observeEvent(reg_data(), {
-      req(input_mode() == "raw")
+    # Clear results whenever raw data inputs change.
+    # Uses raw_input_trigger (watches rawX/rawY directly) rather than reg_data() so
+    # the clear fires on every keystroke regardless of whether the data is currently
+    # valid — reg_data() can stay NULL mid-keystroke and silently skip the clear.
+    observeEvent(raw_input_trigger(), {
+      if (!is.null(is_active) && !is_active()) return()
       hide(id = "regCorrMP")
       output$perfectFitWarning <- renderUI({ NULL })
       output$slrValidation     <- renderUI({ NULL })
-    }, ignoreInit = TRUE)
+      slrRawMismatchWarn(FALSE)
+    }, ignoreInit = TRUE, ignoreNULL = TRUE)
 
     # ---- Upload warning outputs -------------------------------------------
     output$slrNoDataWarn <- renderUI({
@@ -900,12 +904,22 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NUL
     output$slrRawMismatchWarn <- renderUI({
       if (!slrRawMismatchWarn()) return(NULL)
       msgs <- slrRawMismatchMsgs()
-      if (length(msgs) == 0) msgs <- "x and y must have the same number of valid numeric observations."
-      div(class = "alert alert-danger", style = "margin-top: 15px;",
-          icon("triangle-exclamation"),
-          tagList(lapply(seq_along(msgs), function(i) {
-            tagList(strong(paste0(" ", msgs[i])), if (i < length(msgs)) br())
-          })))
+      msgY <- msgs$y
+      msgX <- msgs$x
+      if (is.null(msgY) && is.null(msgX))
+        msgX <- "x and y must have the same number of valid numeric observations."
+      tagList(
+        if (!is.null(msgY)) div(
+          class = "alert alert-danger", style = "margin-top: 15px; margin-bottom: 5px;",
+          icon("triangle-exclamation"), " ",
+          strong(msgY), " — Response variable (y)"
+        ),
+        if (!is.null(msgX)) div(
+          class = "alert alert-danger", style = "margin-top: 5px;",
+          icon("triangle-exclamation"), " ",
+          strong(msgX), " — Explanatory variable (x)"
+        )
+      )
     })
 
     # Clear no-data warning when data is uploaded
@@ -965,15 +979,15 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NUL
       } else {
         slrResponseWarn(FALSE)
         slrExplanatoryWarn(FALSE)
-        msgs <- if (!is.null(raw_error_msgs)) raw_error_msgs() else character(0)
-        if (length(msgs) > 0 || is.null(reg_data())) {
+        msgs <- if (!is.null(raw_error_msgs)) raw_error_msgs() else list(x = NULL, y = NULL)
+        if (!is.null(msgs$x) || !is.null(msgs$y) || is.null(reg_data())) {
           slrRawMismatchMsgs(msgs)
           slrRawMismatchWarn(TRUE)
           output$missingRowsWarning <- renderUI({ NULL })
           hide("regCorrMP")
           return()
         }
-        slrRawMismatchMsgs(character(0))
+        slrRawMismatchMsgs(list(x = NULL, y = NULL))
         slrRawMismatchWarn(FALSE)
       }
 
@@ -2937,6 +2951,7 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NUL
 
     if (!is.null(clear_trigger)) {
       observeEvent(clear_trigger(), {
+        if (!is.null(is_active) && !is_active()) return()
         hasHighLeverage(FALSE)
         nDroppedRows(0)
         slrModel(NULL)

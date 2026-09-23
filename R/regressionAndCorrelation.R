@@ -139,7 +139,7 @@ regressionAndCorrelationServer <- function(id) {
     # per-field validator (shown below the entry boxes) and the main panel
     # warning shown when Calculate is pressed, so the two never diverge.
     rawXMessage <- function(val, info) {
-      if (!nzchar(trimws(val))) return("Required")
+      if (!nzchar(trimws(val))) return("Data entry is required.")
       if (length(createNumLst(val)) == 0)
         return("Data must be numeric values separated by commas or spaces (ie: 2,3,4 or 2 30 400).")
       if (length(createNumLst(val)) < 4)
@@ -151,7 +151,7 @@ regressionAndCorrelationServer <- function(id) {
       NULL
     }
     rawYMessage <- function(val, info) {
-      if (!nzchar(trimws(val))) return("Required")
+      if (!nzchar(trimws(val))) return("Data entry is required.")
       if (length(createNumLst(val)) == 0)
         return("Data must be numeric values separated by commas or spaces (ie: 2,3,4 or 2 30 400).")
       if (length(createNumLst(val)) < 4)
@@ -174,7 +174,10 @@ regressionAndCorrelationServer <- function(id) {
     # "Calculate" warning banner instead of a generic hardcoded message.
     rawErrorMessages <- reactive({
       info <- sampleInfoRaw()
-      unique(c(rawXMessage(input$rawX, info), rawYMessage(input$rawY, info)))
+      list(
+        x = rawXMessage(input$rawX, info),
+        y = rawYMessage(input$rawY, info)
+      )
     })
 
     regupload_iv <- InputValidator$new()
@@ -261,6 +264,13 @@ regressionAndCorrelationServer <- function(id) {
 
     # Reactive conveying the current input mode to children that need it (SLR, POLYR)
     input_mode <- reactive({ input$dataInputMode })
+
+    # Fires on every raw-input keystroke; returns NULL in upload mode so children
+    # can use ignoreNULL = TRUE to avoid clearing results when not in raw mode.
+    raw_input_trigger <- reactive({
+      req(input$dataInputMode == "raw")
+      list(x = input$rawX, y = input$rawY)
+    })
 
     # ---- Data status label (upload mode only) --------------------------------
     output$regDataStatus <- renderUI({
@@ -416,7 +426,13 @@ regressionAndCorrelationServer <- function(id) {
 
     observeEvent(current_slr_module_id(), {
       req(input$multiple == "SLR")
-      SLRServer(current_slr_module_id(), reg_data, input_mode, reset_upload, upload_error, clear_trigger, hide_shared = hide_shared, reset_raw_data = reset_raw_data, raw_error_msgs = rawErrorMessages)
+      local({
+        spawned_id <- current_slr_module_id()
+        SLRServer(spawned_id, reg_data, input_mode, reset_upload, upload_error, clear_trigger,
+          hide_shared = hide_shared, reset_raw_data = reset_raw_data,
+          raw_error_msgs = rawErrorMessages, raw_input_trigger = raw_input_trigger,
+          is_active = reactive({ input$multiple == "SLR" && current_slr_module_id() == spawned_id }))
+      })
     }, ignoreNULL = TRUE)
 
     observeEvent(current_mlr_module_id(), {
@@ -431,7 +447,13 @@ regressionAndCorrelationServer <- function(id) {
 
     observeEvent(current_polyr_module_id(), {
       req(input$multiple == "POLYR")
-      PolynomialRegressionServer(current_polyr_module_id(), reg_data, input_mode, reset_upload, upload_error, clear_trigger, hide_shared = hide_shared, reset_raw_data = reset_raw_data, raw_error_msgs = rawErrorMessages)
+      local({
+        spawned_id <- current_polyr_module_id()
+        PolynomialRegressionServer(spawned_id, reg_data, input_mode, reset_upload, upload_error, clear_trigger,
+          hide_shared = hide_shared, reset_raw_data = reset_raw_data,
+          raw_error_msgs = rawErrorMessages, raw_input_trigger = raw_input_trigger,
+          is_active = reactive({ input$multiple == "POLYR" && current_polyr_module_id() == spawned_id }))
+      })
     }, ignoreNULL = TRUE)
 
     # ---- Shared data preview (shown immediately on upload, above child UI) ----
