@@ -17,8 +17,7 @@ RenderQQPlot <- function(dat, plotColour, plotTitle, plotXlab, plotYlab, gridlin
         axis.text.x.bottom = element_text(size = 16,
                                           margin = ggplot2::margin(5,0,5,0)),
         axis.text.y.left = element_text(size = 16,
-                                        margin = ggplot2::margin(0,5,0,5)),
-        panel.border = element_rect(fill=NA))
+                                        margin = ggplot2::margin(0,5,0,5)))
     )
   
   if("Major" %in% gridlines) {
