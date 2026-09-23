@@ -7400,8 +7400,8 @@ statInfrServer <- function(id) {
       
       if(!signedRankUploadvars_iv$is_valid()) {
         validate(
-          need(input$signedRankUpl1, "Please select a column for sample 1."),
-          need(input$signedRankUpl2, "Please select a column for sample 2."),
+          need(input$signedRankUpl1, "Please select a column for Sample 1 (e.g. Before, Pre-Treatment, Baseline)."),
+          need(input$signedRankUpl2, "Please select a column for Sample 2 (e.g. After, Post-Treatment, Follow-Up)."),
           need(CheckSignedRankUploadSamples() == 0, "Same number of numeric values required for Sample 1 and Sample 2."),
           errorClass = "myClass")
         
