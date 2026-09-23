@@ -11,6 +11,21 @@ confidence_coefficient_cp <- function(n,
     (upper - lower) - target_width
   }
   
+  lower_alpha <- 1e-10
+  upper_alpha <- 0.4
+  
+  f_lower <- f(lower_alpha)
+  f_upper <- f(upper_alpha)
+  
+  # No confidence coefficient can achieve the requested width
+  if (f_lower * f_upper > 0) {
+    return(NULL)
+  }
+  # No confidence coefficient can achieve the requested width
+  if (f_lower * f_upper > 0) {
+    return(NULL)
+  }
+  
   # Search for alpha such that interval width = target_width
   res <- uniroot(f, interval = c(1e-10, 0.4))   # alpha up to 0.4 (i.e., 60% CI)
   alpha <- res$root
