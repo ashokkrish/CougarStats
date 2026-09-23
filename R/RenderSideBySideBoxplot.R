@@ -85,8 +85,10 @@ RenderSideBySideBoxplot <- function(dat, df_boxplot, plotColour, plotTitle, plot
   # flip
   if(flip == 1){
     bp <- bp + coord_flip(clip = "off") +
-      theme(axis.text.x.bottom = element_text(size = 16),
-            axis.text.y.left = element_blank()) +
+      theme(
+        axis.text.x.bottom = element_text(size = 16, face = "bold"),
+        axis.text.y.left = element_text(size = 16, face = "plain")
+      ) +
       labs(x = plotYlab, y = plotXlab)
   }
   
