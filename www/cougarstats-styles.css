@@ -342,6 +342,12 @@ div.tab-pane form.well {
     font-weight: bold;
 }
 
+/* File upload required state */
+.reg-file-required .input-group {
+    outline: 2px solid #dc3545;
+    border-radius: 4px;
+}
+
 
 
 

@@ -83,6 +83,7 @@ library(xtable)
 
 # shinyDarkmode, ggResidpanel and olsrr have been removed/archived from CRAN. 
 # So install.packages() silently skips it (no error during the Docker build), 
+
 # but then it fails at runtime when your app tries to library() it.
 
 # As a consequence in our Dockerfile, I have removed 'ggResidpanel', from the 
