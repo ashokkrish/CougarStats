@@ -2,12 +2,6 @@ library(ggplot2)
 
 RenderHistogram <- function(dat, plotColour, plotTitle, plotXlab, plotYlab = "Frequency", gridlines, density = FALSE) {
   
-  yLab <- if (plotYlab == "") {
-    if (density) "Density" else "Frequency"
-  } else {
-    plotYlab
-  }
-  
   hist <- ggplot(data.frame(x = dat))
   
   if(density) {
@@ -45,7 +39,7 @@ RenderHistogram <- function(dat, plotColour, plotTitle, plotXlab, plotYlab = "Fr
     labs(
       title = plotTitle,
       x = plotXlab,
-      y = yLab
+      y = plotYlab
     ) +
     theme_void() +
     theme(
