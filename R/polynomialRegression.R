@@ -221,7 +221,7 @@ PolynomialRegressionMainPanelUI <- function(id) {
 # ---- Server --------------------------------------------------------------- #
 # =========================================================================== #
 
-PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NULL, clear_trigger = NULL, hide_shared = NULL, reset_raw_data = NULL) {
+PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NULL, clear_trigger = NULL, hide_shared = NULL, reset_raw_data = NULL, raw_error_msgs = NULL) {
   moduleServer(id, function(input, output, session) {
 
     ns <- session$ns
@@ -544,6 +544,19 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, u
       } else {
         polyResponseWarn(FALSE)
         polyExplanatoryWarn(FALSE)
+        rawMsgs <- if (!is.null(raw_error_msgs)) raw_error_msgs() else character(0)
+        if (length(rawMsgs) > 0 || is.null(reg_data())) {
+          if (length(rawMsgs) == 0) rawMsgs <- "x and y must have the same number of valid numeric observations."
+          output$polyValidation <- renderUI({
+            div(class = "alert alert-danger", style = "margin-top: 15px;",
+                icon("triangle-exclamation"),
+                tagList(lapply(seq_along(rawMsgs), function(i) {
+                  tagList(strong(paste0(" ", rawMsgs[i])), if (i < length(rawMsgs)) br())
+                })))
+          })
+          hide("polyResultsPanel")
+          return()
+        }
       }
 
       show("polyResultsPanel")

@@ -209,6 +209,16 @@ MLRServer <- function(id, reg_data, reset_upload, upload_error = NULL, clear_tri
     )
 
     observeEvent(uploadedTibble$data(), {
+      # A new upload invalidates any model fit on the previous dataset, so
+      # collapse the Model/Inference/ANOVA tabs until Calculate is re-run.
+      hide("mlrNavPanel")
+      hideTab(inputId = "mainPanel", target = "data_tab")
+      hideTab(inputId = "mainPanel", target = "Model")
+      hideTab(inputId = "mainPanel", target = "Inference")
+      hideTab(inputId = "mainPanel", target = "ANOVA & Parameter Estimates")
+      mlrResponseWarn(FALSE)
+      mlrExplanatoryWarn(FALSE)
+      noFileCalculate(FALSE)
       encodedData(uploadedTibble$data())
     })
     

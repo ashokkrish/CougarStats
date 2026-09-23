@@ -135,37 +135,47 @@ regressionAndCorrelationServer <- function(id) {
       dat
     })
 
+    # Single source of truth for the raw-entry error messages, shared by the
+    # per-field validator (shown below the entry boxes) and the main panel
+    # warning shown when Calculate is pressed, so the two never diverge.
+    rawXMessage <- function(val, info) {
+      if (!nzchar(trimws(val))) return("Required")
+      if (length(createNumLst(val)) == 0)
+        return("Data must be numeric values separated by commas or spaces (ie: 2,3,4 or 2 30 400).")
+      if (length(createNumLst(val)) < 4)
+        return("Sample data must include at least four numeric observations.")
+      if (isTRUE(info$diff != 0))
+        return("x and y must have the same number of observations.")
+      if (isTRUE(info$xSD == 0))
+        return("Explanatory variable has a standard deviation equal to zero (all values are identical). At least two distinct values are required.")
+      NULL
+    }
+    rawYMessage <- function(val, info) {
+      if (!nzchar(trimws(val))) return("Required")
+      if (length(createNumLst(val)) == 0)
+        return("Data must be numeric values separated by commas or spaces (ie: 2,3,4 or 2 30 400).")
+      if (length(createNumLst(val)) < 4)
+        return("Sample data must include at least four numeric observations.")
+      if (isTRUE(info$diff != 0))
+        return("x and y must have the same number of observations.")
+      if (isTRUE(info$ySD == 0))
+        return("Response variable is constant. Correlation is undefined when a variable has a standard deviation equal to zero.")
+      NULL
+    }
+
     regraw_iv <- InputValidator$new()
-    regraw_iv$add_rule("rawX", sv_required())
-    regraw_iv$add_rule("rawX", ~ if (nzchar(trimws(input$rawX)) && length(createNumLst(input$rawX)) == 0)
-      "Data must be numeric values separated by commas or spaces (ie: 2,3,4 or 2 30 400).")
-    regraw_iv$add_rule("rawX", ~ if (length(createNumLst(input$rawX)) < 4)
-      "Sample data must include at least four numeric observations.")
-    regraw_iv$add_rule("rawX", ~ tryCatch(
-      if (isTRUE(sampleInfoRaw()$diff != 0)) "x and y must have the same number of observations.",
-      error = function(e) NULL
-    ))
-    regraw_iv$add_rule("rawX", ~ tryCatch(
-      if (isTRUE(sampleInfoRaw()$xSD == 0))
-        "Explanatory variable has a standard deviation equal to zero (all values are identical). At least two distinct values are required.",
-      error = function(e) NULL
-    ))
-    regraw_iv$add_rule("rawY", sv_required())
-    regraw_iv$add_rule("rawY", ~ if (nzchar(trimws(input$rawY)) && length(createNumLst(input$rawY)) == 0)
-      "Data must be numeric values separated by commas or spaces (ie: 2,3,4 or 2 30 400).")
-    regraw_iv$add_rule("rawY", ~ if (length(createNumLst(input$rawY)) < 4)
-      "Sample data must include at least four numeric observations.")
-    regraw_iv$add_rule("rawY", ~ tryCatch(
-      if (isTRUE(sampleInfoRaw()$diff != 0)) "x and y must have the same number of observations.",
-      error = function(e) NULL
-    ))
-    regraw_iv$add_rule("rawY", ~ tryCatch(
-      if (isTRUE(sampleInfoRaw()$ySD == 0))
-        "Response variable is constant. Correlation is undefined when a variable has a standard deviation equal to zero.",
-      error = function(e) NULL
-    ))
+    regraw_iv$add_rule("rawX", ~ tryCatch(rawXMessage(input$rawX, sampleInfoRaw()), error = function(e) NULL))
+    regraw_iv$add_rule("rawY", ~ tryCatch(rawYMessage(input$rawY, sampleInfoRaw()), error = function(e) NULL))
     regraw_iv$condition(~ isTRUE(input$dataInputMode == "raw"))
     regraw_iv$enable()
+
+    # Messages currently shown below the raw-entry boxes, exposed so the
+    # methodology modules (SLR, POLYR) can mirror them in their own
+    # "Calculate" warning banner instead of a generic hardcoded message.
+    rawErrorMessages <- reactive({
+      info <- sampleInfoRaw()
+      unique(c(rawXMessage(input$rawX, info), rawYMessage(input$rawY, info)))
+    })
 
     regupload_iv <- InputValidator$new()
     regupload_iv$add_rule("regUserData", sv_required())
@@ -188,15 +198,23 @@ regressionAndCorrelationServer <- function(id) {
     regupload_iv$condition(~ isTRUE(input$dataInputMode == "upload"))
     regupload_iv$enable()
 
+    # Shiny's fileInput never reports back to the server when it's reset —
+    # input$regUserData keeps its last value, so reg_upload_data() would keep
+    # returning the old file's data forever. This flag is the explicit signal
+    # that a reset/clear happened; it's cleared the moment a genuinely new
+    # file is chosen (which always fires a fresh input$regUserData event).
+    regDataCleared <- reactiveVal(FALSE)
+
     # ---- Sheet picker -------------------------------------------------------
     output$regShowSheetPicker <- reactive({
-      if (is.null(input$regUserData)) return(FALSE)
+      if (is.null(input$regUserData) || isTRUE(regDataCleared())) return(FALSE)
       tolower(tools::file_ext(input$regUserData$name)) %in% c("xls", "xlsx")
     })
     outputOptions(output, "regShowSheetPicker", suspendWhenHidden = FALSE)
 
     observeEvent(input$regUserData, {
       req(input$regUserData)
+      regDataCleared(FALSE)
       ext <- tolower(tools::file_ext(input$regUserData$name))
       if (ext %in% c("xls", "xlsx")) {
         sheets <- tryCatch(readxl::excel_sheets(input$regUserData$datapath),
@@ -234,6 +252,8 @@ regressionAndCorrelationServer <- function(id) {
           data.frame(x = x_vals, y = y_vals)
         else
           NULL
+      } else if (isTRUE(regDataCleared())) {
+        NULL
       } else {
         tryCatch(reg_upload_data(), error = function(e) NULL)
       }
@@ -245,7 +265,7 @@ regressionAndCorrelationServer <- function(id) {
     # ---- Data status label (upload mode only) --------------------------------
     output$regDataStatus <- renderUI({
       req(input$dataInputMode == "upload")
-      dat <- tryCatch(reg_upload_data(), error = function(e) NULL)
+      dat <- reg_data()
       if (is.null(dat)) return(NULL)
       div(
         class = "alert alert-success",
@@ -295,13 +315,23 @@ regressionAndCorrelationServer <- function(id) {
 
     observeEvent(input$regClearData, {
       shinyjs::reset("regUserData")
+      regDataCleared(TRUE)
       updateSelectizeInput(session, "regSheet", choices = character(0), selected = "")
       upload_error(FALSE)
       clear_trigger(clear_trigger() + 1)
     })
 
     # ---- Update methodology choices based on data input mode ----------------
-    observeEvent(input$dataInputMode, { upload_error(FALSE) })
+    # Switching between Raw/Upload otherwise leaves the previous upload's file,
+    # sheet selection, and variable pickers silently in place; clear them so
+    # re-entering Upload mode always starts from a fresh, empty picker.
+    observeEvent(input$dataInputMode, {
+      reset_upload()
+      regDataCleared(TRUE)
+      updateSelectizeInput(session, "regSheet", choices = character(0), selected = "")
+      upload_error(FALSE)
+      clear_trigger(clear_trigger() + 1)
+    }, ignoreInit = TRUE)
 
     observeEvent(input$multiple, { upload_error(FALSE) }, ignoreNULL = FALSE, ignoreInit = TRUE)
 
@@ -386,7 +416,7 @@ regressionAndCorrelationServer <- function(id) {
 
     observeEvent(current_slr_module_id(), {
       req(input$multiple == "SLR")
-      SLRServer(current_slr_module_id(), reg_data, input_mode, reset_upload, upload_error, clear_trigger, hide_shared = hide_shared, reset_raw_data = reset_raw_data)
+      SLRServer(current_slr_module_id(), reg_data, input_mode, reset_upload, upload_error, clear_trigger, hide_shared = hide_shared, reset_raw_data = reset_raw_data, raw_error_msgs = rawErrorMessages)
     }, ignoreNULL = TRUE)
 
     observeEvent(current_mlr_module_id(), {
@@ -401,7 +431,7 @@ regressionAndCorrelationServer <- function(id) {
 
     observeEvent(current_polyr_module_id(), {
       req(input$multiple == "POLYR")
-      PolynomialRegressionServer(current_polyr_module_id(), reg_data, input_mode, reset_upload, upload_error, clear_trigger, hide_shared = hide_shared, reset_raw_data = reset_raw_data)
+      PolynomialRegressionServer(current_polyr_module_id(), reg_data, input_mode, reset_upload, upload_error, clear_trigger, hide_shared = hide_shared, reset_raw_data = reset_raw_data, raw_error_msgs = rawErrorMessages)
     }, ignoreNULL = TRUE)
 
     # ---- Shared data preview (shown immediately on upload, above child UI) ----

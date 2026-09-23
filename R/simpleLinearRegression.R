@@ -587,7 +587,7 @@ lineTestConfig <- list(
   )
 )
 
-SLRServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NULL, clear_trigger = NULL, hide_shared = NULL, reset_raw_data = NULL) {
+SLRServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NULL, clear_trigger = NULL, hide_shared = NULL, reset_raw_data = NULL, raw_error_msgs = NULL) {
   moduleServer(id, function(input, output, session) {
 
 
@@ -599,6 +599,7 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NUL
     slrResponseWarn      <- reactiveVal(FALSE)
     slrExplanatoryWarn   <- reactiveVal(FALSE)
     slrRawMismatchWarn   <- reactiveVal(FALSE)
+    slrRawMismatchMsgs   <- reactiveVal(character(0))
 
     hasHighLeverage <- reactiveVal(FALSE)
 
@@ -898,9 +899,13 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NUL
 
     output$slrRawMismatchWarn <- renderUI({
       if (!slrRawMismatchWarn()) return(NULL)
+      msgs <- slrRawMismatchMsgs()
+      if (length(msgs) == 0) msgs <- "x and y must have the same number of valid numeric observations."
       div(class = "alert alert-danger", style = "margin-top: 15px;",
           icon("triangle-exclamation"),
-          strong(" x and y must have the same number of valid numeric observations."))
+          tagList(lapply(seq_along(msgs), function(i) {
+            tagList(strong(paste0(" ", msgs[i])), if (i < length(msgs)) br())
+          })))
     })
 
     # Clear no-data warning when data is uploaded
@@ -960,12 +965,15 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NUL
       } else {
         slrResponseWarn(FALSE)
         slrExplanatoryWarn(FALSE)
-        if (is.null(reg_data())) {
+        msgs <- if (!is.null(raw_error_msgs)) raw_error_msgs() else character(0)
+        if (length(msgs) > 0 || is.null(reg_data())) {
+          slrRawMismatchMsgs(msgs)
           slrRawMismatchWarn(TRUE)
           output$missingRowsWarning <- renderUI({ NULL })
           hide("regCorrMP")
           return()
         }
+        slrRawMismatchMsgs(character(0))
         slrRawMismatchWarn(FALSE)
       }
 

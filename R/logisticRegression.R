@@ -52,6 +52,7 @@ LogisticRegressionMainPanelUI <- function(id) {
     uiOutput(ns("noFileWarning")),
     uiOutput(ns("logrResponseWarn")),
     uiOutput(ns("logrExplanatoryWarn")),
+    uiOutput(ns("logrAnalysisError")),
     hidden(div(id = ns("logrNavPanel"),
       navbarPage(title = NULL,
                  tabPanel(
@@ -96,6 +97,7 @@ LogisticRegressionServer <- function(id, reg_data, reset_upload, upload_error = 
     noFileCalculate <- reactiveVal(FALSE)
     logrResponseWarn    <- reactiveVal(FALSE)
     logrExplanatoryWarn <- reactiveVal(FALSE)
+    logrAnalysisError   <- reactiveVal(NULL)  # Message explaining why the last analysis attempt failed
     calculation_done <- reactiveVal(FALSE)
     valid_analysis_results <- reactiveVal(NULL)  # Store valid results for the diagnostic plot
     
@@ -117,44 +119,88 @@ LogisticRegressionServer <- function(id, reg_data, reset_upload, upload_error = 
       if (length(input$explanatoryVariables) >= 1) logrExplanatoryWarn(FALSE)
     })
     
+    # Returns list(error = <message>) on failure, or list(fit=, data=, response=,
+    # explanatory=, response_levels=, warning=) on success. `warning` is non-NULL
+    # when the fit shows signs of (quasi-)complete separation.
     perform_logr_analysis <- function() {
       df_orig <- imported$data()
       response_var_name <- input$responseVariable
       explanatory_vars_names <- input$explanatoryVariables
-      
+
       selected_vars_for_model <- unique(c(response_var_name, explanatory_vars_names))
       df_model_data <- df_orig[, selected_vars_for_model, drop = FALSE]
       df_model_data <- na.omit(df_model_data)
-      
-      if(nrow(df_model_data) < (length(explanatory_vars_names) + 2) || nrow(df_model_data) == 0) {
-        return(NULL)
+
+      if (nrow(df_model_data) == 0) {
+        return(list(error = "No complete observations remain after removing rows with missing values."))
       }
-      
+      if (nrow(df_model_data) < (length(explanatory_vars_names) + 2)) {
+        return(list(error = "Not enough complete observations for the number of explanatory variables selected."))
+      }
+
       response_column_data <- df_model_data[[response_var_name]]
       if (!is.factor(response_column_data)) { response_column_data <- as.factor(response_column_data) }
-      
+
       if (nlevels(response_column_data) != 2) {
-        return(NULL)
+        return(list(error = "The response variable must have exactly two unique values (after removing missing values)."))
       }
+      response_levels <- levels(response_column_data)
       df_model_data[[response_var_name]] <- as.numeric(response_column_data) - 1
-      
+
       for (col_name in explanatory_vars_names) {
         if (is.character(df_model_data[[col_name]])) {
           df_model_data[[col_name]] <- as.factor(df_model_data[[col_name]])
         }
       }
-      
+
       formula_str <- paste0("`", response_var_name, "` ~ ", paste0("`", explanatory_vars_names, "`", collapse = " + "))
-      
-      fit <- tryCatch({
-        glm(as.formula(formula_str), data = df_model_data, family = binomial(link = "logit"))
-      }, error = function(e) {
-        return(NULL)
-      })
-      
-      if (!isTruthy(fit)) { return(NULL) }
-      
-      return(list(fit = fit, data = df_model_data, response = response_var_name, explanatory = explanatory_vars_names))
+
+      fit_warnings <- character(0)
+      fit <- withCallingHandlers(
+        tryCatch({
+          glm(as.formula(formula_str), data = df_model_data, family = binomial(link = "logit"))
+        }, error = function(e) e),
+        warning = function(w) {
+          fit_warnings <<- c(fit_warnings, conditionMessage(w))
+          invokeRestart("muffleWarning")
+        }
+      )
+
+      if (inherits(fit, "error") || !isTruthy(fit)) {
+        return(list(error = paste(
+          "The model failed to fit:",
+          if (inherits(fit, "error")) conditionMessage(fit) else "unknown error."
+        )))
+      }
+
+      separation_flag <- any(grepl("fitted probabilities numerically 0 or 1 occurred", fit_warnings, fixed = TRUE)) ||
+        any(grepl("algorithm did not converge", fit_warnings, fixed = TRUE))
+
+      return(list(
+        fit = fit,
+        data = df_model_data,
+        response = response_var_name,
+        explanatory = explanatory_vars_names,
+        response_levels = response_levels,
+        warning = if (separation_flag) {
+          paste(
+            "This model shows signs of complete or quasi-complete separation",
+            "(one or more predictors perfectly or near-perfectly predict the outcome for some cases).",
+            "Coefficient estimates, odds ratios, and confidence intervals may be extreme or unreliable."
+          )
+        } else NULL
+      ))
+    }
+
+    handle_logr_failure <- function(message) {
+      logrAnalysisError(message)
+      output$Equations <- renderUI({})
+      output$anovaOutput <- renderUI({})
+      valid_analysis_results(NULL)
+      hideTab(inputId = "mainPanel", target = "Model")
+      hideTab(inputId = "mainPanel", target = "Analysis of Deviance")
+      hideTab(inputId = "mainPanel", target = "diagnostic_plot_tab")
+      updateNavbarPage(session, "mainPanel", selected = "data_tab")
     }
     
     observe({ # input$calculate
@@ -166,7 +212,7 @@ LogisticRegressionServer <- function(id, reg_data, reset_upload, upload_error = 
         noFileCalculate(FALSE)
         if (!is.null(upload_error)) upload_error(FALSE)
       }
-      
+
       # Validate response and explanatory variables
       hasResponseVar     <- isTruthy(input$responseVariable)
       hasExplanatoryVars <- isTruthy(input$explanatoryVariables) && length(input$explanatoryVariables) >= 1
@@ -175,38 +221,38 @@ LogisticRegressionServer <- function(id, reg_data, reset_upload, upload_error = 
       if (!hasResponseVar || !hasExplanatoryVars) {
         logrResponseWarn(!hasResponseVar)
         logrExplanatoryWarn(!hasExplanatoryVars)
+        logrAnalysisError(NULL)
         hide("logrNavPanel")
         return()
       }
       logrResponseWarn(FALSE)
       logrExplanatoryWarn(FALSE)
-      
+
       # Perform the analysis
       results <- perform_logr_analysis()
-      if (!is.null(results)) {
+      if (is.null(results$error)) {
+        logrAnalysisError(NULL)
         render_analysis_results(results)
         valid_analysis_results(results)
         calculation_done(TRUE)
       } else {
-        valid_analysis_results(NULL)
+        handle_logr_failure(results$error)
       }
     }) |> bindEvent(input$calculate)
-    
+
     observe({
       req(calculation_done())
       # Guard against empty variable selections (can happen when new file is uploaded)
       req(isTruthy(input$responseVariable))
       req(isTruthy(input$explanatoryVariables))
-      
+
       results <- perform_logr_analysis()
-      if (!is.null(results)) {
+      if (is.null(results$error)) {
+        logrAnalysisError(NULL)
         render_analysis_results(results)
         valid_analysis_results(results)
       } else {
-        # Clear outputs if inputs become invalid reactively
-        output$Equations <- renderUI({})
-        output$anovaOutput <- renderUI({})
-        valid_analysis_results(NULL)
+        handle_logr_failure(results$error)
       }
     }) |> bindEvent(input$responseVariable, input$explanatoryVariables, ignoreInit = TRUE)
     
@@ -235,6 +281,14 @@ LogisticRegressionServer <- function(id, reg_data, reset_upload, upload_error = 
           strong(" Please select at least one Explanatory Variable before calculating."))
     })
 
+    output$logrAnalysisError <- renderUI({
+      msg <- logrAnalysisError()
+      if (is.null(msg)) return(NULL)
+      div(class = "alert alert-danger", style = "margin-top: 15px;",
+          icon("triangle-exclamation"),
+          strong(paste0(" ", msg)))
+    })
+
     # Clear errors and reset calculation state when data is uploaded
     observe({
       if(isTruthy(imported$data())){
@@ -244,7 +298,8 @@ LogisticRegressionServer <- function(id, reg_data, reset_upload, upload_error = 
       # Reset calculation_done when new file is uploaded to prevent stale reactive triggers
       calculation_done(FALSE)
       valid_analysis_results(NULL)
-      
+      logrAnalysisError(NULL)
+
       # Clear all rendered outputs
       output$Equations       <- renderUI({})
       output$anovaOutput     <- renderUI({})
@@ -290,7 +345,21 @@ LogisticRegressionServer <- function(id, reg_data, reset_upload, upload_error = 
       df_model_data <- results$data
       response_var_name <- results$response
       explanatory_vars_names <- results$explanatory
-      
+      response_levels <- results$response_levels
+      separation_warning <- results$warning
+
+      # Compute confidence intervals once, shared by the table and its description.
+      # Profile-likelihood CIs (confint's default) can fail under separation/non-convergence,
+      # in which case we fall back to Wald CIs and note that in the UI.
+      ci <- tryCatch(confint(fit), error = function(e) NULL)
+      ci_is_wald_fallback <- is.null(ci)
+      if (ci_is_wald_fallback) {
+        est <- coef(fit)
+        se  <- summary(fit)$coefficients[, "Std. Error"]
+        ci  <- cbind(est - 1.96 * se, est + 1.96 * se)
+        rownames(ci) <- names(est)
+      }
+
       # --- 1. Render the Equations UI ---
       output$logisticModelEquations <- renderUI(withMathJax({
         variable_list <- paste(
@@ -306,42 +375,54 @@ LogisticRegressionServer <- function(id, reg_data, reset_upload, upload_error = 
           ),
           r"{\)}"
         )
-        
+
         symbolic_terms <- paste(
           sprintf("\\hat{\\beta}_{%d}x_{%d}", 1:length(explanatory_vars_names), 1:length(explanatory_vars_names)),
           collapse = " + "
         )
         log_odds_general <- paste0("\\text{logit}(\\hat{p}) = \\hat{\\beta}_0 + ", symbolic_terms)
-        
+
         model_coeffs <- coefficients(fit)
         explanatory_coeffs <- model_coeffs[-1]
-        
+
         value_terms <- paste(
           sprintf("%+.3f x_{%d}", explanatory_coeffs, seq_along(explanatory_coeffs)),
           collapse = " "
         )
-        
+
         log_odds_specific <- gsub(
           "\\+ -", "- ",
           sprintf("\\text{logit}(\\hat{p}) = %.3f %s", model_coeffs[1], value_terms)
         )
-        
+
         combined_latex <- sprintf("\\(%s \\\\ %s\\)", log_odds_general, log_odds_specific)
-        
-        div(
-          p("The variables in the model are"),
-          p(variable_list),
-          p("The estimated binary logistic regression equation is"),
-          p(combined_latex)
+
+        coding_note <- sprintf(
+          'For %s, "%s" is coded as %s = 0 (the reference level) and "%s" is coded as %s = 1 (the event being modeled).',
+          response_var_name, response_levels[1], response_var_name, response_levels[2], response_var_name
+        )
+
+        tagList(
+          if (!is.null(separation_warning)) {
+            div(class = "alert alert-warning", style = "margin-bottom: 15px;",
+                icon("triangle-exclamation"), strong(paste0(" ", separation_warning)))
+          },
+          div(
+            p("The variables in the model are"),
+            p(variable_list),
+            p(coding_note),
+            p("The estimated binary logistic regression equation is"),
+            p(combined_latex)
+          )
         )
       }))
-      
+
       # --- 2. Render the Coefficients and CIs Table with requested columns ---
       output$logrCoefConfintTable <- renderTable({
-        
+
         summary_coeffs <- as.data.frame(summary(fit)$coefficients)
-        
-        or_and_ci <- exp(cbind(OR = coef(fit), confint(fit)))
+
+        or_and_ci <- exp(cbind(OR = coef(fit), ci))
         colnames(or_and_ci) <- c("OR", "Lower_CI_OR", "Upper_CI_OR")
         or_and_ci <- as.data.frame(or_and_ci)
         
@@ -376,6 +457,9 @@ LogisticRegressionServer <- function(id, reg_data, reset_upload, upload_error = 
           12,
           p(strong("Coefficients and Confidence Intervals")),
           p("Coefficients are the log-odds. The Wald statistic tests the hypothesis that a given coefficient is zero. Odds Ratios (OR) and their 95% confidence intervals are also provided."),
+          if (ci_is_wald_fallback) {
+            p(em("Note: profile-likelihood confidence intervals could not be computed for this model, so Wald-based confidence intervals (estimate ± 1.96×SE) are shown instead."))
+          },
           tableOutput(ns("logrCoefConfintTable"))
         )
       })
@@ -413,7 +497,15 @@ LogisticRegressionServer <- function(id, reg_data, reset_upload, upload_error = 
           DTOutput(ns("lrAnovaTable")),
           br(),
           h4("Interpretation"),
-          p("The 'Df' column shows the degrees of freedom for each term. The 'Deviance' column shows the change in deviance when the term is added to the model. The 'p-value' column gives the p-value for the likelihood ratio test. A small p-value (typically < 0.05) indicates that the variable is statistically significant and contributes to the model's explanatory power.")
+          p("The 'Df' column shows the degrees of freedom for each term. The 'Deviance' column shows the change in deviance when the term is added to the model. The 'p-value' column gives the p-value for the likelihood ratio test. A small p-value (typically < 0.05) indicates that the variable is statistically significant and contributes to the model's explanatory power."),
+          if (length(explanatory_vars_names) > 1) {
+            p(em(paste(
+              "Note: with more than one explanatory variable, this is a sequential (Type I) analysis of deviance.",
+              "Each row shows the change in deviance from adding that term after the terms above it, in the order",
+              "the variables were selected (", paste(explanatory_vars_names, collapse = ", "), "). With correlated",
+              "explanatory variables, a different selection order can change each term's reported contribution."
+            )))
+          }
         )
       })
       
@@ -525,6 +617,7 @@ LogisticRegressionServer <- function(id, reg_data, reset_upload, upload_error = 
     logr_do_reset <- function() {
       logrResponseWarn(FALSE)
       logrExplanatoryWarn(FALSE)
+      logrAnalysisError(NULL)
       noFileCalculate(FALSE)
       if (!is.null(hide_shared)) hide_shared(FALSE)
       hide("logrNavPanel")
