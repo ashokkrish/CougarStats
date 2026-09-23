@@ -1370,7 +1370,7 @@ statInfrUI <- function(id) {
               
               checkboxInput(
                 inputId = ns("signedRankQQPlot"),
-                label   = "Q-Q Plot of the Difference",
+                label   = "Q-Q Plot of the Difference (d)",
                 value   = TRUE)
             ),
             
@@ -1421,7 +1421,7 @@ statInfrUI <- function(id) {
             radioButtons(
               inputId = ns("multipleMethodChoice"),
               label   = NULL,
-              choiceNames = c("One-way Analysis of Variance (ANOVA)", "Kruskal-Wallis"),
+              choiceNames = c("One-way Analysis of Variance (ANOVA)", "Kruskal-Wallis test"),
               choiceValues = c("anova", "kw")
             ),
             
@@ -2127,12 +2127,12 @@ statInfrUI <- function(id) {
                                         conditionalPanel(
                                           ns = ns,
                                           condition = "input.popuParameters == 'Wilcoxon Signed Rank Test' && input.signedRankQQPlot == 1",
-                                          titlePanel("Q-Q Plot of the Difference"), 
+                                          titlePanel("Q-Q Plot of the Difference (d)"), 
                                           br(),
                                           plotOptionsMenuUI(
                                             id = ns("signedRankQQ"),
                                             plotType = "QQ Plot",
-                                            title = "Q-Q Plot of the Difference",
+                                            title = "Q-Q Plot of the Difference (d)",
                                             xlab = "Normal Quantiles",
                                             includeFlip = FALSE), 
                                           plotOutput(ns("signedRankQQ")),
@@ -2763,7 +2763,7 @@ statInfrServer <- function(id) {
     # raw data, SD unknown
     onemeanraw_iv$add_rule("sample1", ~ {
       if (input$sigmaKnownRaw == "rawUnknown" && input$inferenceType == 'Hypothesis Testing' && (sd(createNumLst(input$sample1)) == 0)) {
-        "No variance in sample data"
+        "Sample standard deviation cannot be zero."
       }
     })
     
@@ -2835,7 +2835,7 @@ statInfrServer <- function(id) {
     
     # popuSD1
     indmeanssdknown_iv$add_rule("popuSD1", sv_required())
-    indmeanssdknown_iv$add_rule("popuSD1", sv_gte(0))
+    indmeanssdknown_iv$add_rule("popuSD1", sv_gt(0))
     
     # popuSD2
     indmeanssdknown_iv$add_rule("popuSD2", sv_required())
@@ -2843,7 +2843,7 @@ statInfrServer <- function(id) {
     
     # sampSD1
     indmeanssdunk_iv$add_rule("sampSD1", sv_required())
-    indmeanssdunk_iv$add_rule("sampSD1", sv_gte(0))
+    indmeanssdunk_iv$add_rule("sampSD1", sv_gt(0))
     
     # sampSD2
     indmeanssdunk_iv$add_rule("sampSD2", sv_required())
@@ -2860,17 +2860,17 @@ statInfrServer <- function(id) {
                                                     "Data must be at least three numeric values separated by a comma, space, or tab (ie: 2,3,4)."))
     
     indmeansrawsd_iv$add_rule("popuSDRaw1", sv_required())
-    indmeansrawsd_iv$add_rule("popuSDRaw1", sv_gte(0))
+    indmeansrawsd_iv$add_rule("popuSDRaw1", sv_gt(0))
     
     indmeansrawsd_iv$add_rule("popuSDRaw2", sv_required())
     indmeansrawsd_iv$add_rule("popuSDRaw2", sv_gt(0))
     
     indmeansrawsdunk_iv$add_rule("raw_sample1", ~ if(sd(createNumLst(input$raw_sample1)) == 0
-                                                     && sd(createNumLst(input$raw_sample2)) == 0
-                                                     && input$inferenceType2 == 'Hypothesis Testing') "Sample standard deviation cannot be zero for both Sample 1 and Sample 2.")
-    indmeansrawsdunk_iv$add_rule("raw_sample2", ~ if(sd(createNumLst(input$raw_sample1)) == 0
-                                                     && sd(createNumLst(input$raw_sample2)) == 0
-                                                     && input$inferenceType2 == 'Hypothesis Testing') "Sample standard deviation cannot be zero for both Sample 1 and Sample 2.")
+                                                     && input$inferenceType2 == 'Hypothesis Testing') "Sample standard deviation cannot be zero.")
+    
+    indmeansrawsdunk_iv$add_rule("raw_sample2", ~ if(sd(createNumLst(input$raw_sample2)) == 0
+                                                     && input$inferenceType2 == 'Hypothesis Testing') "Sample standard deviation cannot be zero.")
+    
     indmeansrawsdunk_iv$add_rule("raw_sample1", ~ if(sd(createNumLst(input$raw_sample1)) == 0
                                                      && sd(createNumLst(input$raw_sample2)) == 0
                                                      && input$inferenceType2 == 'Confidence Interval'
@@ -2889,7 +2889,7 @@ statInfrServer <- function(id) {
     indmeansupload_iv$add_rule("indMeansUserData", ~ if(nrow(IndMeansUploadData()) < 3) "Samples must include at least two observations.")
     
     indmeansuploadsd_iv$add_rule("popuSDUpload1", sv_required())
-    indmeansuploadsd_iv$add_rule("popuSDUpload1", sv_gte(0))
+    indmeansuploadsd_iv$add_rule("popuSDUpload1", sv_gt(0))
     
     indmeansuploadsd_iv$add_rule("popuSDUpload2", sv_required())
     indmeansuploadsd_iv$add_rule("popuSDUpload2", sv_gt(0))
@@ -3321,12 +3321,13 @@ statInfrServer <- function(id) {
     twopopvarraw_iv$add_rule("rawSamp1SD", sv_required())
     twopopvarraw_iv$add_rule("rawSamp1SD", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
                                                     "Data must be at least three numeric values separated by a comma, space, or tab (ie: 2,3,4)."))
+    twopopvarraw_iv$add_rule("rawSamp1SD", ~ if (sd(createNumLst(input$rawSamp1SD)) == 0) "Sample standard deviation cannot be zero.")
     
     # raw group 2
     twopopvarraw_iv$add_rule("rawSamp2SD", sv_required())
     twopopvarraw_iv$add_rule("rawSamp2SD", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
                                                     "Data must be at least three numeric values separated by a comma, space, or tab (ie: 2,3,4)."))
-    twopopvarraw_iv$add_rule("rawSamp2SD", ~ if (sd(createNumLst(input$rawSamp2SD)) == 0) "No variance in sample data")
+    twopopvarraw_iv$add_rule("rawSamp2SD", ~ if (sd(createNumLst(input$rawSamp2SD)) == 0) "Sample standard deviation cannot be zero.")
     
     
     # numTrialsProportion
@@ -7089,7 +7090,7 @@ statInfrServer <- function(id) {
             need(
               !(input$sigmaKnownUpload == "Unknown" && input$inferenceType == 'Hypothesis Testing' && 
                   length(dat) > 1 && is.numeric(dat) && sd(dat) == 0),
-              "No variance in selected column"
+              "No variance in selected column."
             ),
             errorClass = "myClass")
         }
@@ -7166,7 +7167,7 @@ statInfrServer <- function(id) {
       if(!oneprop_iv$is_valid()) {
         validate(
           need(input$numSuccesses, "Numeric value for Number of Successes (x) required"),
-          need(!is.null(input$numTrials) && input$numTrials > 0, "Number of Trials (n) must be greater than zero."),
+          need(!is.null(input$numTrials) && input$numTrials > 0, "Number of Trials (n) must be an integer greater than zero."),
           errorClass = "myClass")
         
         validate(
@@ -7204,7 +7205,7 @@ statInfrServer <- function(id) {
       if(!indmeanssdknown_iv$is_valid())
       {
         validate(
-          need(!is.null(input$popuSD1) && input$popuSD1 >= 0, "The Population Standard Deviation 1 (σ₁) must be a positive value greater than or equal to zero."),
+          need(!is.null(input$popuSD1) && input$popuSD1 > 0, "The Population Standard Deviation 1 (σ₁) must be a positive value greater than zero."),
           need(!is.null(input$popuSD2) && input$popuSD2 > 0, "The Population Standard Deviation 2 (σ₂) must be a positive value greater than zero."),
           errorClass = "myClass")
       }
@@ -7212,8 +7213,8 @@ statInfrServer <- function(id) {
       if(!indmeanssdunk_iv$is_valid())
       {
         validate(
-          need(input$sampSD1 && input$sampSD1 >= 0, "Sample Standard Deviation (s₁) must be positive."),
-          need(input$sampSD2 && input$sampSD2 > 0, "Sample Standard Deviation (s₂) must be positive."),
+          need(input$sampSD1 && input$sampSD1 > 0, "Standard deviation for sample 1 (s₁) must be greater than zero."),
+          need(input$sampSD2 && input$sampSD2 > 0, "Standard deviation for sample 2 (s₂) must be greater than zero."),
           errorClass = "myClass")
       }
       
@@ -7230,7 +7231,7 @@ statInfrServer <- function(id) {
       
       if(!indmeansrawsd_iv$is_valid()) {
         validate(
-          need(!is.null(input$popuSDRaw1) && input$popuSDRaw1 >= 0, "The Population Standard Deviation 1 (σ₁) must be a positive value greater than or equal to zero."),
+          need(!is.null(input$popuSDRaw1) && input$popuSDRaw1 > 0, "The Population Standard Deviation 1 (σ₁) must be a positive value greater than zero."),
           need(!is.null(input$popuSDRaw2) && input$popuSDRaw2 > 0, "The Population Standard Deviation 2 (σ₂) must be a positive value greater than zero."),
           errorClass = "myClass")
       }
@@ -7242,7 +7243,7 @@ statInfrServer <- function(id) {
             errorClass = "myClass")
         } else {
           validate(
-            need(sd(createNumLst(input$raw_sample1)) != 0 && sd(createNumLst(input$raw_sample2)) != 0, "The test statistic (t) will be undefined when the sample standard deviation of Sample 1 and Sample 2 are both zero."),
+            need(sd(createNumLst(input$raw_sample1)) != 0 && sd(createNumLst(input$raw_sample2)) != 0, "The test statistic (t) will be undefined when the sample standard deviation of Sample 1 or Sample 2 are zero."),
             errorClass = "myClass")
         }
       }
@@ -7305,7 +7306,7 @@ statInfrServer <- function(id) {
       
       if(!indmeansuploadsd_iv$is_valid()) {
         validate(
-          need(!is.null(input$popuSDUpload1) && input$popuSDUpload1 >= 0, "The Population Standard Deviation 1 (σ₁) must be a positive value greater than or equal to zero."),
+          need(!is.null(input$popuSDUpload1) && input$popuSDUpload1 > 0, "The Population Standard Deviation 1 (σ₁) must be a positive value greater than zero."),
           need(!is.null(input$popuSDUpload2) && input$popuSDUpload2 > 0, "The Population Standard Deviation 2 (σ₂) must be a positive value greater than zero."),
           errorClass = "myClass")
       }
@@ -7553,7 +7554,7 @@ statInfrServer <- function(id) {
 
 Both samples recorded a 0% success rate (x₁ = 0 and x₂ = 0), resulting in a pooled proportion of 0, which collapses the estimated standard error to zero. This creates a variance of zero and leads to division by zero, preventing the computation of the z-statistic and p-value.
 
-To resolve: Verify your input data. If success rates are truly 0% across both groups, a standard normal hypothesis test cannot measure variability, as there are no observed successes to evaluate."),
+To resolve: Verify your input data. If success rates are truly 0% across both groups, a standard normal hypothesis test cannot measure variability, as there are no observed successes to evaluate.") %then%
           need(!(input$numSuccesses1 == input$numTrials1 && input$numSuccesses2 == input$numTrials2),
                "Unable to calculate test statistic (Division by Zero)
 
@@ -7611,11 +7612,11 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
           need(input$SDSampleSize1, "Sample size 1 is required.") %then%
             need(input$SDSampleSize1 %% 1 == 0 && input$SDSampleSize1 > 1, "Sample size 1 must be an integer greater than one."),
           
+          need(input$stdDev1, "Sample standard deviation 1 is required.") %then%
+            need(input$stdDev1 > 0, "Standard deviation for sample 1 must be greater than zero."),
+          
           need(input$SDSampleSize2, "Sample size 2 is required.") %then%
             need(input$SDSampleSize2 %% 1 == 0 && input$SDSampleSize2 > 1, "Sample size 2 must be an integer greater than one."),
-          
-          need(input$stdDev1, "Sample standard deviation 1 is required.") %then%
-          need(input$stdDev1 > 0, "Standard deviation for sample 1 must be greater than zero."),
           
           need(input$stdDev2, "Sample standard deviation 2 is required.") %then%
             need(input$stdDev2 > 0, "Standard deviation for sample 2 must be greater than zero."),
@@ -7985,7 +7986,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
     #### ---------------- Histogram ----
     output$oneMeanHistogram <- renderPlot({
       req(si_iv$is_valid())
-
+      
       if(input$dataAvailability == 'Enter Raw Data') {
         dat <- createNumLst(input$sample1)
       } else if(input$dataAvailability == 'Upload Data') {
@@ -7993,7 +7994,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       } else {
         return(NA)
       }
-
+      
       RenderHistogram(dat,
                       input[["oneMeanHistogram-Colour"]],
                       input[["oneMeanHistogram-Title"]],
@@ -8001,10 +8002,22 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
                       input[["oneMeanHistogram-Ylab"]],
                       input[["oneMeanHistogram-Gridlines"]],
                       input[["oneMeanHistogram-Density"]])
-
+      
     }, height = function() {GetPlotHeight(input[["oneMeanHistogram-Height"]], input[["oneMeanHistogram-HeightPx"]], ui = FALSE)},
     width = function() {GetPlotWidth(input[["oneMeanHistogram-Width"]], input[["oneMeanHistogram-WidthPx"]], ui = FALSE)}
     )
+    
+    observeEvent(input[["oneMeanHistogram-Density"]], {
+      updateTextInput(
+        session,
+        "oneMeanHistogram-Ylab",
+        value = if (input[["oneMeanHistogram-Density"]]) {
+          "Density"
+        } else {
+          "Frequency"
+        }
+      )
+    })
 
     ### ------------ One Sample Standard Deviation Outputs -----------------------
     #### ---- Uploaded Data tab: immediate preview (ML-style) ----
@@ -8697,6 +8710,18 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       
     }, height = function() {GetPlotHeight(input[["oneSDHistogram-Height"]],input[["oneSDHistogram-HeightPx"]],ui = FALSE)
     },width = function() {GetPlotWidth(input[["oneSDHistogram-Width"]],input[["oneSDHistogram-WidthPx"]],ui = FALSE)
+    })
+    
+    observeEvent(input[["oneSDHistogram-Density"]], {
+      updateTextInput(
+        session,
+        "oneSDHistogram-Ylab",
+        value = if (input[["oneSDHistogram-Density"]]) {
+          "Density"
+        } else {
+          "Frequency"
+        }
+      )
     })
     
     ### ------------ One Prop Outputs --------------------------------------------
@@ -10995,7 +11020,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
         value
       }
 
-      RenderSignedRankQQPlot(data.frame(values = differences),
+      RenderQQPlot(data.frame(values = differences),
                              safe_input("Colour"),
                              safe_input("Title"),
                              safe_input("Xlab"),
@@ -11794,6 +11819,18 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
     }, height = function() {GetPlotHeight(input[["anovaHistogram-Height"]], input[["anovaHistogram-HeightPx"]], ui = FALSE)},
     width = function() {GetPlotWidth(input[["anovaHistogram-Width"]], input[["anovaHistogram-WidthPx"]], ui = FALSE)}
     )
+    
+    observeEvent(input[["anovaHistogram-Density"]], {
+      updateTextInput(
+        session,
+        "anovaHistogram-Ylab",
+        value = if (input[["anovaHistogram-Density"]]) {
+          "Density"
+        } else {
+          "Frequency"
+        }
+      )
+    })
     
     #### ---------------- QQ Plot of Residuals ----
     output$anovaQQplot <- renderPlot({
