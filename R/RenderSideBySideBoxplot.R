@@ -51,7 +51,7 @@ RenderSideBySideBoxplot <- function(dat, df_boxplot, plotColour, plotTitle, plot
       axis.title.x = element_text(size = 16, face = "bold", vjust = -1.5, margin = ggplot2::margin(5,0,0,0)),
       axis.title.y = element_text(size = 16, face = "bold", margin = ggplot2::margin(0,5,0,0)),
       axis.text.x.bottom = element_text(size = 16),
-      axis.text.y.left = element_text(size = 16),
+      axis.text.y.left = element_text(size = 16, face = "bold"),
       plot.margin = unit(c(1,1,1,1), "cm"),
       panel.border = element_rect(fill = NA)
     ) +
