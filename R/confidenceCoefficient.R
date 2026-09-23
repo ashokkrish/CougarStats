@@ -231,6 +231,7 @@ confidenceCoefficientServer <- function(id) {
     ccePropSampSize_iv$add_rule("ccPropSampSize", sv_gt(1))
     cceProp_iv$add_rule("ccTargetProp", sv_required())
     cceProp_iv$add_rule("ccTargetProp",sv_gt(0))
+    cceProp_iv$add_rule("ccTargetProp",sv_lte(1))
     ccePropMargin_iv$add_rule("ccPropMargErr", sv_required())
     ccePropMargin_iv$add_rule("ccPropMargErr",sv_gt(0))
     ccePropMargin_iv$add_rule("ccPropMargErr",sv_lte(1))
@@ -291,46 +292,44 @@ confidenceCoefficientServer <- function(id) {
     output$ccEstimationValidation <- renderUI({
       if(!cce_iv$is_valid()){
         
-        # Population Mean
-        if(input$confCoeEstParameter == 'Population Mean'){
+        if(input$confCoeEstParameter == "Population Mean"){
           validate(
-            need(input$confSampSize, "Sample Size is required") %then% 
-              need(input$confSampSize, "Sample Size must be positive"), 
+            need(input$confSampSize, "Sample size (n) must be an integer greater than one.") %then%
+              need(input$confSampSize > 1 && input$confSampSize %% 1 == 0, "Sample size (n) must be an integer greater than one."),
             
-            need(input$confPopSD, "Population Standard Deviation is required" ) %then%
-              need(input$confPopSD, "Population Standard Deviation must be positive"),
+            need(input$confPopSD, "The Population Standard Deviation (σ) must be a positive value greater than zero.") %then%
+              need(input$confPopSD > 0, "The Population Standard Deviation (σ) must be a positive value greater than zero."),
             
-            if(input$ccEstimationType == "Margin of Error"){
+            if(input$ccEstimationType == "Margin of Error")
               need(input$ccMargErr, "Margin of Error is required.") %then%
-                need(input$ccMargErr, "Margin of Error must be positive.")
-            },
-            if(input$ccEstimationType == "Width of Interval"){
-              need(input$ccMeanWoI, "Width of Interval is required") %then% 
-                need(input$ccMeanWoI, "Width of Interval must be positive.")
-            },
+              need(input$ccMargErr > 0, "Margin of Error must be a positive value greater than zero."),
+            
+            if(input$ccEstimationType == "Width of Interval")
+              need(input$ccMeanWoI, "Width of Interval is required") %then%
+              need(input$ccMeanWoI > 0, "Width of Interval must be a positive value greater than zero."),
+            
             errorClass = "myClass"
           )
-        }
-        
-        # Population Proportion
-        else if(input$confCoeEstParameter == 'Population Proportion'){
+          
+        } else if(input$confCoeEstParameter == "Population Proportion"){
           validate(
-            need(input$ccPropSampSize ,"Sample Size is required") %then% 
-              need(input$ccPropSampSize, "Sample Size must be positive"),
-            
-            need(input$ccTargetProp, "Target Proportion is required.") %then% 
-              need(input$ccTargetProp, "Target Proportion must be greater than 0 and less than 1."), 
-            
-            if(input$ccPropEstimationType == "Margin of Error"){
-              need(input$ccPropMargErr, "Margin of Error is required.") %then% 
-                need(input$ccPropMargErr, "Margin of Error must be greater than 0 and less than or equal to 1.") 
+            need(input$ccPropSampSize, "Sample size (n) must be an integer greater than one.") %then%
+              need(input$ccPropSampSize > 1 && input$ccPropSampSize %% 1 == 0,
+                   "Sample size (n) must be an integer greater than one."),
               
-            },
+            need(input$ccTargetProp, "Target Proportion is required.") %then%
+              need(input$ccTargetProp > 0 && input$ccTargetProp <= 1,
+                   "Target Proportion must be greater than zero and less than or equal to one."),
             
-            if(input$ccPropEstimationType == "Width of Interval"){
-              need(input$ccPropMeanWoI,"Width of Interval is required.") %then%
-                need(input$ccPropMeanWoI, "Width of Interval must be greater than 0 and less than or equal to 1.")
-            }
+            if(input$ccPropEstimationType == "Margin of Error")
+              need(input$ccPropMargErr, "Margin of Error is required.") %then%
+              need(input$ccPropMargErr > 0 && input$ccPropMargErr <= 1,
+                   "Margin of Error must be greater than zero and less than or equal to one."),
+            
+            if(input$ccPropEstimationType == "Width of Interval")
+              need(input$ccPropWoI, "Width of Interval is required.") %then%
+              need(input$ccPropWoI > 0 && input$ccPropWoI <= 1,
+                   "Width of Interval must be greater than zero and less than or equal to one.")
           )
         }
       }
@@ -339,7 +338,7 @@ confidenceCoefficientServer <- function(id) {
     #### ----- Confidence Coefficient Mean Estimate output
     
     output$ccMeanEstimate <- renderUI({
-      
+      req(cce_iv$is_valid())
       tagList(
         withMathJax(),
         br(),
@@ -418,7 +417,7 @@ confidenceCoefficientServer <- function(id) {
     #### ------ Confidence Coefficient Proportion Estimate output 
     
     output$ccPropEstimate <- renderUI({
-      
+      req(cce_iv$is_valid())
       if(isTRUE(input$propNormalDistribution)){
         
         tagList(
@@ -504,25 +503,23 @@ confidenceCoefficientServer <- function(id) {
         }
         confCoe <- confidence_coefficient_cp(input$ccPropSampSize, input$ccTargetProp, margin.error = E)
         
-        tagList(
-          withMathJax(),
-          br(),
-          sprintf("\\(\\text{Confidence Coefficient} = %.0f\\%%\\)", confCoe*100),
-          br(),
-          br(),
-          tags$em("Note: When the data cannot be assumed to follow a normal distribution, there isn’t a simple formula to calculate the required sample size. Instead, the confidence interval is found by testing different values until the exact interval width is narrow enough and meets the target width. This approach is based on the Clopper–Pearson exact method for binomial proportions.")
-        )
+        if (is.null(confCoe)) {
+          tags$em("A confidence coefficient could not be calculated for these values using the Clopper–Pearson exact method. Try adjusting the sample size, target proportion, or margin of error.")
+        } else {
+          tagList(
+            withMathJax(), br(),
+            sprintf("\\(\\text{Confidence Coefficient} = %.0f\\%%\\)", confCoe * 100),
+            br(), br(),
+            tags$em("Note: When the data cannot be assumed to follow a normal distribution, there isn’t a simple formula to calculate the required sample size. Instead, the confidence interval is found by testing different values until the exact interval width is narrow enough and meets the target width. This approach is based on the Clopper–Pearson exact method for binomial proportions.")
+          )
+        }
       }
     })
     
     ### ------------ Component Display -------------------------------------------
     
     observeEvent(input$goConfidCoeEst, {
-      if (cce_iv$is_valid()) {
         shinyjs::show("ccEstMP")
-      } else {
-        shinyjs::hide("ccEstMP")
-      }
     })
     
     observeEvent(!cce_iv$is_valid(), {
