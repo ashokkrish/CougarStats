@@ -25,8 +25,9 @@ anovaFPlot <- function(f_stat, f_crit, df1, df2) {
   plot_df <- data.frame(x = x_curve, y = y_disp)
   plot_df <- plot_df[is.finite(plot_df$y), ]
 
-  seg_h      <- y_cap * 0.75
-  f_in_range <- f_stat > x_start && f_stat <= x_max
+  seg_h       <- y_cap * 0.75
+  f_in_range  <- f_stat > x_start && f_stat <= x_max
+  f_off_chart <- f_stat > x_max
 
   ggplot(plot_df, aes(x = x, y = y)) +
     geom_ribbon(data = plot_df[plot_df$x >= f_crit, ],
@@ -59,6 +60,20 @@ anovaFPlot <- function(f_stat, f_crit, df1, df2) {
                x = f_stat, y = -y_cap * 0.07,
                label = as.character(f_stat),
                color = "#BD130B", fontface = "bold",
+               size = 14 / .pt)
+    } +
+    {if (f_off_chart)
+      annotate("segment",
+               x = x_max * 0.90, xend = x_max * 0.995,
+               y = seg_h, yend = seg_h,
+               arrow = arrow(length = unit(0.18, "cm"), type = "closed"),
+               linewidth = 1.25, color = "#BD130B")
+    } +
+    {if (f_off_chart)
+      annotate("text",
+               x = x_max * 0.90, y = seg_h + y_cap * 0.06,
+               label = paste0("F = ", as.character(f_stat)),
+               color = "#BD130B", fontface = "bold", hjust = 1,
                size = 14 / .pt)
     } +
     coord_cartesian(xlim = c(0, x_max * 1.02),

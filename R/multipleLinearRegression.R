@@ -21,38 +21,30 @@ MLRSidebarUI <- function(id) {
       useShinyjs(),
       withMathJax(
         helpText("Only numeric variables are selectable."),
-        div(
-          id = ns("responseVariableWrapper"),
-          pickerInput(
-            ns("responseVariable"),
-            strong("Response Variable (\\(y\\))"),
-            choices = NULL,
-            multiple = FALSE,
-            options = list(
-              `live-search` = TRUE,
-              title = "Nothing selected"
-            )
-          ),
-          uiOutput(ns("responseVariableError"))
+        pickerInput(
+          ns("responseVariable"),
+          strong("Response Variable (\\(y\\))"),
+          choices = NULL,
+          multiple = FALSE,
+          options = list(
+            `live-search` = TRUE,
+            title = "Nothing selected"
+          )
         ),
-        
+
         helpText("Select two or more explanatory variables (numeric)."),
         uiOutput(ns("singleOrMultipleHelpText")),
-        div(
-          id = ns("explanatoryVariablesWrapper"),
-          pickerInput(
-            inputId  = ns("explanatoryVariables"),
-            label = HTML("<strong>Explanatory Variables (\\(x_1, x_2, x_3...x_n\\)) </strong> "),
-            choices  = NULL,
-            multiple = TRUE,
-            options  = list(
-              `actions-box` = TRUE,   # "Select all / Deselect all" buttons
-              `live-search` = TRUE,   # built-in search box
-              selectedTextFormat = "values",
-              multipleSeperator = ", "
-            )
-          ),
-          uiOutput(ns("explanatoryVariablesError"))
+        pickerInput(
+          inputId = ns("explanatoryVariables"),
+          label   = HTML("<strong>Explanatory Variables (\\(x_1, x_2, x_3...x_n\\)) </strong>"),
+          choices  = NULL,
+          multiple = TRUE,
+          options  = list(
+            `actions-box`       = TRUE,
+            `live-search`       = TRUE,
+            selectedTextFormat  = "values",
+            multipleSeperator   = ", "
+          )
         ),
         actionButton(ns("calculate"), "Calculate", class = "act-btn"),
         actionButton(ns("reset"), "Reset Values", class = "act-btn")
@@ -74,94 +66,46 @@ MLRMainPanelUI <- function(id) {
         }
       "))
     ),
-    navbarPage(title = NULL,
-               tabPanel(
-                 title = "Data Import",
-                 value = "data_import_tab",
-                 div(id = ns("importContainer")),
-                 uiOutput(ns("fileImportUserMessage")),
-                 HTML(uploadDataDisclaimer),
-                 fileInput(
-                   inputId = ns("mlrUserData"),
-                   label   = strong("Upload your data (.csv, .xls, .xlsx, .txt, .sas7bdat, .sav, .dta, .rds, .mtp, .mwx, .mpx)"),
-                   width   = "100%",
-                   accept  = c("text/csv",
-                               "text/comma-separated-values",
-                               "text/tab-separated-values",
-                               "text/plain",
-                               ".csv", ".txt", ".xls", ".xlsx",
-                               ".sas7bdat", ".sav", ".dta", ".rds",
-                               ".mtp", ".mwx", ".mpx")),
-                 conditionalPanel(
-                   ns        = ns,
-                   condition = "output.mlrShowSheetPicker == true",
-                   selectizeInput(
-                     inputId = ns("mlrSheet"),
-                     label   = strong("Choose a Sheet"),
-                     choices = c(""),
-                     width   = "100%",
-                     multiple = FALSE,
-                     options  = list(placeholder      = "Select a sheet",
-                                     onInitialize = I('function() { this.setValue(""); }')))
-                 )),
-               tabPanel(
-                 title = "Variable Encoding",
-                 value = "encoding_tab",
-                 uiOutput(ns("encodingUI"))
-               ),
-               tabPanel(title = "Model", uiOutput(ns("Equations")) ),
-               tabPanel(title = "Inference", uiOutput(ns("ANOVAAndInference"))),
-               tabPanel(title = "Uploaded Data", div(style = "width:100%", DTOutput(ns("uploadedDataTable")))),
-               id = ns("mainPanel"),
-               theme = bs_theme(version = 4))
+    uiOutput(ns("noFileWarning")),
+    uiOutput(ns("mlrResponseWarn")),
+    uiOutput(ns("mlrExplanatoryWarn")),
+    hidden(div(id = ns("mlrNavPanel"),
+      navbarPage(title = NULL,
+                 tabPanel(
+                   title = "Data",
+                   value = "data_tab",
+                   br(),
+                   div(style = "overflow-x: auto;", DTOutput(ns("uploadedDataTable"))),
+                   br()
+                 ),
+                 tabPanel(title = "Model", uiOutput(ns("Equations")) ),
+                 tabPanel(title = "Inference", uiOutput(ns("ANOVAAndInference"))),
+                 id = ns("mainPanel"),
+                 theme = bs_theme(version = 4))
+    ))
   )
 }
 
-MLRServer <- function(id) {
+MLRServer <- function(id, reg_data, reset_upload, upload_error = NULL, clear_trigger = NULL, hide_shared = NULL) {
   moduleServer(id, function(input, output, session) {
-    output$mlrShowSheetPicker <- reactive({
-      if (is.null(input$mlrUserData)) return(FALSE)
-      tolower(tools::file_ext(input$mlrUserData$name)) %in% c("xls", "xlsx")
-    })
-    outputOptions(output, "mlrShowSheetPicker", suspendWhenHidden = FALSE)
-
-    observeEvent(input$mlrUserData, {
-      req(input$mlrUserData)
-      ext <- tolower(tools::file_ext(input$mlrUserData$name))
-      if (ext %in% c("xls", "xlsx")) {
-        sheets <- tryCatch(readxl::excel_sheets(input$mlrUserData$datapath),
-                           error = function(e) character(0))
-        freezeReactiveValue(input, "mlrSheet")
-        updateSelectizeInput(session, "mlrSheet",
-                             choices  = sheets,
-                             selected = if (length(sheets)) sheets[1] else "")
-      } else {
-        updateSelectizeInput(session, "mlrSheet", choices = character(0), selected = "")
-      }
-      showTab(inputId = "mainPanel", target = "encoding_tab")
-      showTab(inputId = "mainPanel", target = "Uploaded Data")
-    }, priority = 50)
-
-    mlrUploadData <- eventReactive(list(input$mlrUserData, input$mlrSheet), {
-      req(input$mlrUserData)
-      ext  <- tolower(tools::file_ext(input$mlrUserData$name))
-      path <- input$mlrUserData$datapath
-      if (ext %in% c("xls", "xlsx")) {
-        req(input$mlrSheet)
-        req(input$mlrSheet %in% readxl::excel_sheets(path))
-      }
-      dat <- readUploadedDataFile(ext, path, input$mlrSheet)
-      dat <- dat[, colSums(!is.na(dat)) > 0, drop = FALSE]
-      dat <- dat[rowSums(!is.na(dat)) > 0, , drop = FALSE]
-      dat
-    })
 
     uploadedTibble <- list(
-      data = function() tryCatch(mlrUploadData(), error = function(e) NULL),
-      name = function() if (!is.null(input$mlrUserData)) input$mlrUserData$name else NULL
+      data = function() reg_data(),
+      name = function() if (!is.null(reg_data())) "uploaded file" else NULL
     )
-    
+
     encodedData <- reactiveVal(NULL)
+
+    # Guard reactive: silently stops any output whose selected columns no
+    # longer exist in encodedData (e.g. when the parent switches to raw mode).
+    mlrCanFit <- reactive({
+      req(encodedData())
+      req(isTruthy(input$responseVariable))
+      req(isTruthy(input$explanatoryVariables))
+      req(length(input$explanatoryVariables) >= 2)
+      req(all(c(input$responseVariable, input$explanatoryVariables) %in% colnames(encodedData())))
+      TRUE
+    })
 
     # ============================================================
     # LINE Assumption Tests Config
@@ -265,23 +209,29 @@ MLRServer <- function(id) {
     )
 
     observeEvent(uploadedTibble$data(), {
+      # A new upload invalidates any model fit on the previous dataset, so
+      # collapse the Model/Inference/ANOVA tabs until Calculate is re-run.
+      hide("mlrNavPanel")
+      hideTab(inputId = "mainPanel", target = "data_tab")
+      hideTab(inputId = "mainPanel", target = "Model")
+      hideTab(inputId = "mainPanel", target = "Inference")
+      hideTab(inputId = "mainPanel", target = "ANOVA & Parameter Estimates")
+      mlrResponseWarn(FALSE)
+      mlrExplanatoryWarn(FALSE)
+      noFileCalculate(FALSE)
       encodedData(uploadedTibble$data())
     })
     
     noFileCalculate <- reactiveVal(FALSE)
-    
-    # Reactive values for validation errors
-    responseVarError <- reactiveVal(FALSE)
-    explanatoryVarsError <- reactiveVal(FALSE)
-    
+    mlrResponseWarn    <- reactiveVal(FALSE)
+    mlrExplanatoryWarn <- reactiveVal(FALSE)
+
     observeEvent(TRUE, {
       shinyjs::delay(0, {
-        hideTab(inputId = "mainPanel", target = "encoding_tab")
+        hideTab(inputId = "mainPanel", target = "data_tab")
         hideTab(inputId = "mainPanel", target = "Model")
         hideTab(inputId = "mainPanel", target = "Inference")
         hideTab(inputId = "mainPanel", target = "ANOVA & Parameter Estimates")
-
-        hideTab(inputId = "mainPanel", target = "Uploaded Data")
       })
     }, once = TRUE)
     
@@ -307,33 +257,38 @@ MLRServer <- function(id) {
     })
     ns <- session$ns
     
-    observeEvent(input$reset, {
-      hideTab(inputId = "mainPanel", target = "encoding_tab")
+    mlr_do_reset <- function() {
+      mlrResponseWarn(FALSE)
+      mlrExplanatoryWarn(FALSE)
+      if (!is.null(hide_shared)) hide_shared(FALSE)
+      hide("mlrNavPanel")
+      hideTab(inputId = "mainPanel", target = "data_tab")
       hideTab(inputId = "mainPanel", target = "Model")
       hideTab(inputId = "mainPanel", target = "Inference")
       hideTab(inputId = "mainPanel", target = "ANOVA & Parameter Estimates")
-      hideTab(inputId = "mainPanel", target = "Uploaded Data")
-      
       updatePickerInput(session, "responseVariable", selected = character(0))
       updatePickerInput(session, "explanatoryVariables", selected = character(0))
-      
-      # Clear validation errors # change this 2026-05-11
-      responseVarError(FALSE)
-      explanatoryVarsError(FALSE)
-      shinyjs::removeClass(id = "responseVariableWrapper", class = "has-error")
-      shinyjs::removeClass(id = "explanatoryVariablesWrapper", class = "has-error")
-      
-      updateNavbarPage(session, "mainPanel", selected = "data_import_tab")
+      noFileCalculate(FALSE)
+    }
+
+    observeEvent(input$reset, {
+      reset_upload()
+      mlr_do_reset()
     })
+
+    if (!is.null(clear_trigger)) {
+      observeEvent(clear_trigger(), { mlr_do_reset() }, ignoreInit = TRUE)
+    }
     
     ## Update the choices for the select inputs when the uploadedTibble changes.
     observe({
-      updatePickerInput(inputId = "responseVariable",
-                        choices = colnames(select_if(encodedData(), is.numeric)),
-                        selected = character(0))
-      
-      updatePickerInput(inputId = "explanatoryVariables",
-                        choices = colnames(select_if(encodedData(), is.numeric)))
+      shinyjs::delay(0, {
+        updatePickerInput(inputId = "responseVariable",
+                          choices = colnames(select_if(encodedData(), is.numeric)),
+                          selected = character(0))
+        updatePickerInput(inputId = "explanatoryVariables",
+                          choices = colnames(select_if(encodedData(), is.numeric)))
+      })
     }) |> bindEvent(encodedData())
     
     observeEvent(input$responseVariable, {
@@ -367,10 +322,7 @@ MLRServer <- function(id) {
    # try to fix multi col
      # Clean predictors for multicollinearity diagnostics
     mlrPredictors <- reactive({
-      
-      req(encodedData())
-      req(isTruthy(input$explanatoryVariables))
-      req(input$responseVariable)
+      req(mlrCanFit())
       
       df <- encodedData()[, input$explanatoryVariables, drop = FALSE]
       
@@ -516,16 +468,6 @@ MLRServer <- function(id) {
       }
     }
     
-    output$fileImportUserMessage <- renderUI({ # This version responds to the button
-      if (noFileCalculate()) {
-        tags$div(class = "shiny-output-error-validation",
-                 "Required: Cannot calculate without a data file.")
-      } else {
-        NULL
-      }
-    })
-    
-    
     output$encodingUI <- renderUI({
       req(uploadedTibble$data())
       
@@ -613,94 +555,84 @@ MLRServer <- function(id) {
       updatePickerInput(session, "responseVariable", choices = newCols, selected = character(0))
       updatePickerInput(session, "explanatoryVariables", choices = newCols, selected = character(0))
       
-      updateNavbarPage(session, "mainPanel", selected = "encoding_tab")
-      
       showNotification("Encoding applied successfully.", type = "message")
     })
     
-    output$responseVariableError <- renderUI({
-      if (responseVarError()) {
-        tags$div(
-          class = "text-danger",
-          style = "font-size: 12px; margin-top: -10px; margin-bottom: 10px;",
-          icon("exclamation-circle"),
-          "Please select a response variable."
-        )
-      }
-    })
+    output$responseVariableError     <- renderUI({ NULL })
+    output$explanatoryVariablesError <- renderUI({ NULL })
     
-    output$explanatoryVariablesError <- renderUI({
-      if (explanatoryVarsError()) {
-        tags$div(
-          class = "text-danger",
-          style = "font-size: 12px; margin-top: -10px; margin-bottom: 10px;",
-          icon("exclamation-circle"),
-          "Please select at least two explanatory variables."
-        )
-      }
-    })
-    
-    # Clear errors when variables are selected
+    # Clear main-panel warnings when variables are selected
     observeEvent(input$responseVariable, {
-      if (isTruthy(input$responseVariable)) {
-        responseVarError(FALSE)
-        shinyjs::removeClass(id = "responseVariableWrapper", class = "has-error")
-      }
+      if (isTruthy(input$responseVariable)) mlrResponseWarn(FALSE)
     })
-    
+
     observeEvent(input$explanatoryVariables, {
-      if (length(input$explanatoryVariables) >= 2) {
-        explanatoryVarsError(FALSE)
-        shinyjs::removeClass(id = "explanatoryVariablesWrapper", class = "has-error")
-      }
+      if (length(input$explanatoryVariables) >= 2) mlrExplanatoryWarn(FALSE)
     })
     
     observe({ # input$calculate
       if (!isTruthy(encodedData())) {
         noFileCalculate(TRUE)
+        if (!is.null(upload_error)) upload_error(TRUE)
         return()
       } else {
         noFileCalculate(FALSE)
+        if (!is.null(upload_error)) upload_error(FALSE)
       }
       
-      # Validate response variable
-      hasResponseVar <- isTruthy(input$responseVariable)
-      if (!hasResponseVar) {
-        responseVarError(TRUE)
-        shinyjs::addClass(id = "responseVariableWrapper", class = "has-error")
-      } else {
-        responseVarError(FALSE)
-        shinyjs::removeClass(id = "responseVariableWrapper", class = "has-error")
-      }
-      
-      # Validate explanatory variables (need at least 2)
+      # Validate response and explanatory variables
+      hasResponseVar    <- isTruthy(input$responseVariable)
       hasExplanatoryVars <- isTruthy(input$explanatoryVariables) && length(input$explanatoryVariables) >= 2
-      if (!hasExplanatoryVars) {
-        explanatoryVarsError(TRUE)
-        shinyjs::addClass(id = "explanatoryVariablesWrapper", class = "has-error")
-      } else {
-        explanatoryVarsError(FALSE)
-        shinyjs::removeClass(id = "explanatoryVariablesWrapper", class = "has-error")
-      }
       
       # Only show tabs if validation passes
       if (!hasResponseVar || !hasExplanatoryVars) {
+        mlrResponseWarn(!hasResponseVar)
+        mlrExplanatoryWarn(!hasExplanatoryVars)
+        hide("mlrNavPanel")
         return()
       }
-      
+      mlrResponseWarn(FALSE)
+      mlrExplanatoryWarn(FALSE)
+
+      show("mlrNavPanel")
+      showTab(inputId = "mainPanel", target = "data_tab")
       showTab(inputId = "mainPanel", target = "Model")
       showTab(inputId = "mainPanel", target = "Inference")
       showTab(inputId = "mainPanel", target = "ANOVA & Parameter Estimates")
-
-      showTab(inputId = "mainPanel", target = "Uploaded Data")
+      if (!is.null(hide_shared)) hide_shared(TRUE)
       updateNavbarPage(session, "mainPanel", selected = "Model")
     }) |> bindEvent(input$calculate)
     
     observe({
       if(isTruthy(encodedData())){
         noFileCalculate(FALSE)
+        if (!is.null(upload_error)) upload_error(FALSE)
       }
     }) |> bindEvent(encodedData(), ignoreNULL = FALSE, ignoreInit = TRUE)
+
+    output$noFileWarning <- renderUI({
+      if (!noFileCalculate()) return(NULL)
+      div(
+        class = "alert alert-danger",
+        style = "margin-top: 15px;",
+        icon("triangle-exclamation"),
+        strong(" Please Upload Data before calculating.")
+      )
+    })
+
+    output$mlrResponseWarn <- renderUI({
+      if (!mlrResponseWarn()) return(NULL)
+      div(class = "alert alert-warning", style = "margin-top: 15px;",
+          icon("triangle-exclamation"),
+          strong(" Please select a Response Variable before calculating."))
+    })
+
+    output$mlrExplanatoryWarn <- renderUI({
+      if (!mlrExplanatoryWarn()) return(NULL)
+      div(class = "alert alert-warning", style = "margin-top: 15px;",
+          icon("triangle-exclamation"),
+          strong(" Please select at least two Explanatory Variables before calculating."))
+    })
     
     output$Equations <- renderUI({
       eval(MLRValidation)
@@ -731,10 +663,7 @@ MLRServer <- function(id) {
     
     output$linearModelCoefConfint <- renderTable(
       {
-        req(encodedData())
-        req(isTruthy(input$responseVariable))
-        req(isTruthy(input$explanatoryVariables))
-        req(length(as.character(input$explanatoryVariables)) >= 2)
+        req(mlrCanFit())
         
       
         
@@ -776,10 +705,7 @@ MLRServer <- function(id) {
     )
 
     output$lmCoefConfintTableCaption <- renderUI({
-      req(encodedData())
-      req(isTruthy(input$responseVariable))
-      req(isTruthy(input$explanatoryVariables))
-      req(length(as.character(input$explanatoryVariables)) >= 2)
+      req(mlrCanFit())
       
       with(encodedData(), {
         model <- lm(reformulate(
@@ -809,10 +735,7 @@ MLRServer <- function(id) {
     
     
     output$mlrLineAssumptions <- renderUI({
-      req(encodedData())
-      req(isTruthy(input$responseVariable))
-      req(isTruthy(input$explanatoryVariables))
-      req(length(as.character(input$explanatoryVariables)) >= 2)
+      req(mlrCanFit())
 
       model <- lm(reformulate(
         sprintf("`%s`", input$explanatoryVariables),
@@ -892,10 +815,7 @@ MLRServer <- function(id) {
     })
     
     output$anovaFDistributionPlot <- renderPlot({
-      req(encodedData())
-      req(isTruthy(input$responseVariable))
-      req(isTruthy(input$explanatoryVariables))
-      req(length(as.character(input$explanatoryVariables)) >= 2)
+      req(mlrCanFit())
       
       model <- lm(reformulate(
         sprintf("`%s`", input$explanatoryVariables),
@@ -925,10 +845,7 @@ MLRServer <- function(id) {
     
     
     output$linearModelEquations <- renderUI({
-      req(encodedData())
-      req(isTruthy(input$responseVariable))
-      req(isTruthy(input$explanatoryVariables))
-      req(length(as.character(input$explanatoryVariables)) >= 2)
+      req(mlrCanFit())
       
       withMathJax(
         div(
@@ -1045,10 +962,7 @@ MLRServer <- function(id) {
     
     # Reactive ANOVA tab outputs
     output$anovaHypotheses <- renderUI({
-      req(encodedData())
-      req(isTruthy(input$responseVariable))
-      req(isTruthy(input$explanatoryVariables))
-      req(length(as.character(input$explanatoryVariables)) >= 2)
+      req(mlrCanFit())
       
       with(encodedData(), {
         model <- lm(reformulate(
@@ -1080,10 +994,7 @@ MLRServer <- function(id) {
     })
     
     output$anovaTable <- renderDT({
-      req(encodedData())
-      req(isTruthy(input$responseVariable))
-      req(isTruthy(input$explanatoryVariables))
-      req(length(as.character(input$explanatoryVariables)) >= 2)
+      req(mlrCanFit())
 
       with(encodedData(), {
         model <- lm(reformulate(
@@ -1117,6 +1028,20 @@ MLRServer <- function(id) {
 
         colNames <- c("df", "Sum of Squares (SS)", "Mean Sum of Squares (MS)", "F-ratio", "P-Value")
 
+        .aw <- function(hdr, vals, digits = NULL, big_mark = "", px = 9L, pad = 28L, min_w = 60L) {
+          vs    <- vals[!is.na(vals)]
+          fmted <- if (!is.null(digits) && length(vs) > 0)
+            sapply(as.numeric(vs), function(v) formatC(v, format = "f", digits = digits, big.mark = big_mark))
+          else as.character(vs)
+          max(min_w, max(nchar(c(hdr, fmted))) * px + pad)
+        }
+        w0 <- .aw("Sources of Variation",    rownames(data))
+        w1 <- .aw("df",                       data$df,          digits = 0)
+        w2 <- .aw("Sum of Squares (SS)",       data$SS,          digits = 4, big_mark = ",")
+        w3 <- .aw("Mean Sum of Squares (MS)",  data$MS,          digits = 4, big_mark = ",")
+        w4 <- .aw("F-ratio",                   data$F,           digits = 4, big_mark = ",")
+        w5 <- .aw("P-Value",                   data[["P-Value"]])
+
         headers <- htmltools::withTags(table(
           class = 'display',
           thead(
@@ -1133,7 +1058,7 @@ MLRServer <- function(id) {
 
         datatable(
           data,
-          class = 'cell-border stripe',
+          class = 'cell-border stripe compact',
           container = headers,
           options = list(
             dom = 't',
@@ -1145,7 +1070,12 @@ MLRServer <- function(id) {
             scrollX = TRUE,
             columnDefs = list(
               list(className = 'dt-center', targets = 0:5),
-              list(width = '150px', targets = 2:5)
+              list(width = paste0(w0, 'px'), targets = 0),
+              list(width = paste0(w1, 'px'), targets = 1),
+              list(width = paste0(w2, 'px'), targets = 2),
+              list(width = paste0(w3, 'px'), targets = 3),
+              list(width = paste0(w4, 'px'), targets = 4),
+              list(width = paste0(w5, 'px'), targets = 5)
             )
           ),
           selection = "none",
@@ -1164,10 +1094,7 @@ MLRServer <- function(id) {
     })
     
     output$anovaPValueMethod <- renderUI({
-      req(encodedData())
-      req(isTruthy(input$responseVariable))
-      req(isTruthy(input$explanatoryVariables))
-      req(length(as.character(input$explanatoryVariables)) >= 2)
+      req(mlrCanFit())
       
       with(encodedData(), {
         model <- lm(reformulate(
@@ -1212,10 +1139,7 @@ MLRServer <- function(id) {
     })
     
     output$rsquareAdjustedRSquareInterpretation <- renderUI({
-      req(encodedData())
-      req(isTruthy(input$responseVariable))
-      req(isTruthy(input$explanatoryVariables))
-      req(length(as.character(input$explanatoryVariables)) >= 2)
+      req(mlrCanFit())
       
       with(encodedData(), {
         model <- lm(reformulate(
@@ -1316,9 +1240,7 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
     align = "c")
     
     output$vifs <- renderTable({
-      
-      req(input$responseVariable)
-      
+
       clean_df <- cbind(
         encodedData()[input$responseVariable],
         mlrPredictors()
@@ -1350,10 +1272,7 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
     
     # Reactive Diagnostic Plots tab outputs
     output$mlrResidualsPanelPlot1 <- renderPlot({
-      req(encodedData())
-      req(isTruthy(input$responseVariable))
-      req(isTruthy(input$explanatoryVariables))
-      req(length(as.character(input$explanatoryVariables)) >= 2)
+      req(mlrCanFit())
       
       with(encodedData(), {
         model <- lm(reformulate(
@@ -1365,10 +1284,7 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
     })
     
     output$mlrResidualsPanelPlot2 <- renderPlot({
-      req(encodedData())
-      req(isTruthy(input$responseVariable))
-      req(isTruthy(input$explanatoryVariables))
-      req(length(as.character(input$explanatoryVariables)) >= 2)
+      req(mlrCanFit())
       
       with(encodedData(), {
         model <- lm(reformulate(
@@ -1380,10 +1296,7 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
     })
     
     output$mlrResidualsPanelPlot3 <- renderPlot({
-      req(encodedData())
-      req(isTruthy(input$responseVariable))
-      req(isTruthy(input$explanatoryVariables))
-      req(length(as.character(input$explanatoryVariables)) >= 2)
+      req(mlrCanFit())
       
       with(encodedData(), {
         model <- lm(reformulate(
@@ -1395,10 +1308,7 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
     })
     
     output$mlrResidualsPanelPlot4 <- renderPlot({
-      req(encodedData())
-      req(isTruthy(input$responseVariable))
-      req(isTruthy(input$explanatoryVariables))
-      req(length(as.character(input$explanatoryVariables)) >= 2)
+      req(mlrCanFit())
 
       with(encodedData(), {
         model <- lm(reformulate(
@@ -1410,10 +1320,7 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
     })
 
     output$mlrResidualsPanelPlot5 <- renderPlot({
-      req(encodedData())
-      req(isTruthy(input$responseVariable))
-      req(isTruthy(input$explanatoryVariables))
-      req(length(as.character(input$explanatoryVariables)) >= 2)
+      req(mlrCanFit())
 
       with(encodedData(), {
         model <- lm(reformulate(
@@ -1430,8 +1337,8 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
     
     # Reactive Uploaded Data tab output
     output$uploadedDataTable <- renderDT({
-      req(encodedData())
-      datatable(encodedData(),
+      req(reg_data())
+      datatable(reg_data(),
                 options = list(pageLength = -1,
                                lengthMenu = list(c(25, 50, 100, -1), c("25", "50", "100", "All"))))
     })
