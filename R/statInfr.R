@@ -2059,6 +2059,7 @@ statInfrUI <- function(id) {
                                           plotType = "QQ Plot",
                                           title = "Q-Q Plots",
                                           xlab    = "Normal Quantiles",
+                                          ylab    = "Sample Quantiles",
                                           includeFlip = FALSE),
                                         uiOutput(ns("renderIndMeansQQPlot")),
                                         br(),
@@ -2134,6 +2135,7 @@ statInfrUI <- function(id) {
                                             plotType = "QQ Plot",
                                             title = "Q-Q Plot of the Difference (d)",
                                             xlab = "Normal Quantiles",
+                                            ylab = "Differences (d)",
                                             includeFlip = FALSE), 
                                           plotOutput(ns("signedRankQQ")),
                                           br(), br()
@@ -2217,6 +2219,7 @@ statInfrUI <- function(id) {
                                           plotType = "QQ Plot",
                                           title = "Q-Q Plot of the Difference (d)",
                                           xlab    = "Normal Quantiles",
+                                          ylab = "Differences (d)",
                                           includeFlip = FALSE),
                                         uiOutput(ns("renderDepMeansQQPlot")),
                                         br(),
@@ -7568,23 +7571,23 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       
       if(!twoprop_iv$is_valid()) {
         validate(
-          need(input$numSuccesses1, "Numeric value for Number of Successes 1 (x₁) required"),
-          need(input$numTrials1, "Numeric value for Number of Trials 1 (n₁) required"),
-          need(input$numSuccesses2, "Numeric value for Number of Successes 2 (x₂) required"),
-          need(input$numTrials2, "Numeric value for Number of Trials 2 (n₂) required"),
+          need(input$numSuccesses1, "Numeric value for Number of Successes 1 (x₁) required."),
+          need(input$numTrials1, "Numeric value for Number of Trials 1 (n₁) required."),
+          need(input$numSuccesses2, "Numeric value for Number of Successes 2 (x₂) required."),
+          need(input$numTrials2, "Numeric value for Number of Trials 2 (n₂) required."),
           errorClass = "myClass")
         
         validate(
-          need(input$numSuccesses1 %% 1 == 0, "Number of Successes 1 (x₁) must be an integer"),
-          need(input$numSuccesses1 >= 0, "Number of Successes 1 (x₁) cannot be negative"),
-          need(input$numSuccesses1 <= input$numTrials1, "Number of Successes 1 (x₁) cannot exceed Number of Trials 1 (n₁)"),
-          need(input$numTrials1 %% 1 == 0, "Number of Trials 1 (n₁) must be an integer"),
-          need(input$numTrials1 > 0, "Number of Trials 1 (n₁) must be greater than zero"),
-          need(input$numSuccesses2 %% 1 == 0, "Number of Successes 2 (x₂) must be an integer"),
-          need(input$numSuccesses2 >= 0, "Number of Successes 2 (x₂) cannot be negative"),
-          need(input$numSuccesses2 <= input$numTrials2, "Number of Successes 2 (x₂) cannot exceed Number of Trials 2 (n₂)"),
-          need(input$numTrials2 %% 1 == 0, "Number of Trials 2 (n₂) must be an integer"),
-          need(input$numTrials2 > 0, "Number of Trials 2 (n₂) must be greater than zero"),
+          need(input$numSuccesses1 %% 1 == 0, "Number of Successes 1 (x₁) must be an integer."),
+          need(input$numSuccesses1 >= 0, "Number of Successes 1 (x₁) cannot be negative."),
+          need(input$numSuccesses1 <= input$numTrials1, "Number of Successes 1 (x₁) cannot exceed Number of Trials 1 (n₁)."),
+          need(input$numTrials1 %% 1 == 0, "Number of Trials 1 (n₁) must be an integer."),
+          need(input$numTrials1 > 0, "Number of Trials 1 (n₁) must be greater than zero."),
+          need(input$numSuccesses2 %% 1 == 0, "Number of Successes 2 (x₂) must be an integer."),
+          need(input$numSuccesses2 >= 0, "Number of Successes 2 (x₂) cannot be negative."),
+          need(input$numSuccesses2 <= input$numTrials2, "Number of Successes 2 (x₂) cannot exceed Number of Trials 2 (n₂)."),
+          need(input$numTrials2 %% 1 == 0, "Number of Trials 2 (n₂) must be an integer."),
+          need(input$numTrials2 > 0, "Number of Trials 2 (n₂) must be greater than zero."),
           errorClass = "myClass")
         
       } else if (input$siMethod == '2' && input$popuParameters == 'Population Proportions') {
