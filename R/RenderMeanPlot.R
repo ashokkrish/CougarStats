@@ -36,7 +36,7 @@ RenderMeanPlot <- function(dat, groups, plotColour, plotTitle, plotXlab, plotYla
           axis.text.x.bottom = element_text(size = 16, face = "bold", margin = margin(5,0,0,0)),
           axis.text.y.left = element_text(size = 16, face = "bold", margin = margin(0,5,0,0)),
           plot.margin = unit(c(1, 1, 1, 1),"cm"),
-          panel.border = element_rect(fill=NA)) 
+          axis.line = element_line()) 
   
   if("Major" %in% gridlines) {
     gmp <- gmp + theme(panel.grid.major = element_line(colour = "#D9D9D9"))
