@@ -939,6 +939,17 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NUL
       if (nzchar(input$slrResponse)) slrResponseWarn(FALSE)
     })
 
+    # Clear results whenever the uploaded-data variable selection changes, so
+    # output from the previous x/y pair doesn't linger until Calculate is pressed.
+    observeEvent(list(input$slrExplanatory, input$slrResponse), {
+      if (!is.null(is_active) && !is_active()) return()
+      if (input_mode() != "upload") return()
+      hide(id = "regCorrMP")
+      output$perfectFitWarning  <- renderUI({ NULL })
+      output$slrValidation      <- renderUI({ NULL })
+      output$missingRowsWarning <- renderUI({ NULL })
+    }, ignoreInit = TRUE)
+
     observeEvent(input$goRegression, {
       if (!is.null(upload_error)) {
         if (input_mode() == "upload" && is.null(reg_data())) upload_error(TRUE)
@@ -1177,11 +1188,13 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NUL
 
         model <- lm(daty ~ datx)
 
-        # Store for Prediction tab
+        # Store for Prediction tab; reset the default x0 to mean(x) whenever the
+        # dataset changes (keep a user-entered value if the same data is re-run)
+        prevDatX <- isolate(slrDatX())
         slrModel(model)
         slrDatX(datx)
         slrDatY(daty)
-        if (is.na(isolate(input$slrPredictXTab))) {
+        if (!identical(prevDatX, datx) || is.na(isolate(input$slrPredictXTab))) {
           updateNumericInput(session, "slrPredictXTab", value = round(mean(datx), 4))
         }
 
