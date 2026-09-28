@@ -239,6 +239,26 @@ descStatsUI <- function(id) {
                       titlePanel(tags$u("Sample Standard Deviation")),
                       br(),
                       uiOutput(ns("dsSDCalc")),
+
+                      withMathJax(),
+                      titlePanel(tags$u("Standard Error of the Mean")),
+                      br(),
+                      uiOutput(ns("dsSECal")),
+                      
+                      withMathJax(),
+                      titlePanel(tags$u("Coefficient of Variation")),
+                      br(),
+                      uiOutput(ns("dsCVCal")),
+                      
+                      withMathJax(),
+                      titlePanel(tags$u("Range")),
+                      br(),
+                      uiOutput(ns("dsRangeCal")),
+                      
+                      withMathJax(),
+                      titlePanel(tags$u("Interquartile Range")),
+                      br(),
+                      uiOutput(ns("dsIQRCalc")),
                     ), #column
                    ), #fluidRow
                   ),
@@ -1050,6 +1070,7 @@ descStatsServer <- function(id) {
                     dfTotaled['Totals', 'x'],
                     df['Observations', 3],
                     df['Mean', 3]),
+            br(),
             br()
           )
         })
@@ -1062,7 +1083,65 @@ descStatsServer <- function(id) {
                     dfTotaled['Totals', 'x'],
                     df['Observations', 3],
                     df['Observations', 3],
-                    df['Sample Standard Deviation', 3])
+                    df['Sample Standard Deviation', 3]),
+            br(),
+            br()
+          )
+        })
+        
+        output$dsIQRCalc <- renderUI({
+          div(style = "margin: 20px 0;",
+          withMathJax(
+            sprintf("\\( IQR = Q_{3} - Q_{1} \\)"),
+            sprintf("\\( =  %s - (%s) = %s \\)",
+                    df['Third Quartile (Q3)', 3],
+                    df['First Quartile (Q1)', 3],
+                    df['IQR', 3]),
+            br(),
+            br()
+            )
+          )
+        })
+        
+        output$dsRangeCal <- renderUI({
+          div(style = "margin: 20px 0;",
+          withMathJax(
+            sprintf("\\( \\text{Range} = \\text{Maximum} - \\text{Minimum} \\)"),
+            sprintf("\\( = %s - %s = %s \\)",
+                    df['Maximum', 3],
+                    df['Minimum', 3],
+                    df['Range', 3]),
+            br(),
+            br()
+            )
+          )
+        })
+        
+        output$dsSECal <- renderUI({
+          div(style = "margin: 20px 0;",
+          withMathJax(
+            sprintf("\\( SE_{\\bar{x}} = \\dfrac{s}{\\sqrt{n}} \\)"),
+            sprintf("\\( = \\dfrac{%s}{\\sqrt{%s}} = %s \\)",
+                    df['Sample Standard Deviation', 3],
+                    df['Observations', 3],
+                    df['Standard Error of the Mean', 3]),
+            br(),
+            br()
+            )
+          )
+        })
+        
+        output$dsCVCal <- renderUI({
+          div(style = "margin: 20px 0;",
+          withMathJax(
+            sprintf("\\( CV = \\dfrac{s}{\\bar{x}} \\)"),
+            sprintf("\\( = \\dfrac{%s}{%s} = %s \\)",
+                    df['Sample Standard Deviation', 3],
+                    df['Mean', 3],
+                    df['Coefficient of Variation', 3]),
+            br(),
+            br()
+            )
           )
         })
         

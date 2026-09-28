@@ -38,12 +38,11 @@ RenderBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, p
           axis.text.x.bottom = element_blank(),
           axis.text.y.left   = element_text(size = 14, face = "bold", margin = margin(0,8,0,0)),
           plot.margin = unit(c(1,1,1,1), "cm"),
-          panel.border = element_rect(fill = NA)) +
+          axis.line = element_line()) +
     scale_y_continuous(n.breaks = 10)
 
   # whisker "caps"
   bp <- bp +
-    geom_vline(xintercept = 0.5, linewidth = 0.5, color = "grey") +
     geom_segment(aes(x = 0.95, xend = 1.05, y = stats$ymin, yend = stats$ymin)) +
     geom_segment(aes(x = 0.95, xend = 1.05, y = stats$ymax, yend = stats$ymax))
   

@@ -38,7 +38,7 @@ statInfrUI <- function(id) {
                                 "Categorical"),
             choiceNames  = list("Inference about one sample\\(\\)",
                                 "Inference about two samples\\(\\)",
-                                "Inference about more than two samples (e.g. ANOVA or Kruskal-Wallis)\\(\\)",
+                                "Inference about more than two samples (e.g. ANOVA or Kruskal-Wallis Test)\\(\\)",
                                 "Inference for Categorical Data (e.g. \\( \\chi^2 \\) test)"),
             selected     = "1"),
           
@@ -1421,7 +1421,7 @@ statInfrUI <- function(id) {
             radioButtons(
               inputId = ns("multipleMethodChoice"),
               label   = NULL,
-              choiceNames = c("One-way Analysis of Variance (ANOVA)", "Kruskal-Wallis test"),
+              choiceNames = c("One-way Analysis of Variance (ANOVA)", "Kruskal-Wallis Test"),
               choiceValues = c("anova", "kw")
             ),
             
@@ -1507,7 +1507,7 @@ statInfrUI <- function(id) {
                 choices  = c(
                   "Side-by-side Boxplot",
                   "Histogram of Residuals",
-                  "QQ Plot of Residuals",
+                  "Q-Q Plot of Residuals",
                   "Plot Group Means"
                 ),
                 multiple = TRUE,
@@ -2360,7 +2360,8 @@ statInfrUI <- function(id) {
                                             id = ns("sidebysidewRankQQ"),
                                             plotType = "QQ Plot",
                                             title = "Q-Q Plots",
-                                            xlab = "Normal Quantile",
+                                            xlab = "Normal Quantiles",
+                                            ylab = "Sample Quantiles",
                                             includeFlip = FALSE),
                                           plotOutput(ns("sidebysidewRankQQ")),
                                           br(), br()
@@ -2481,14 +2482,14 @@ statInfrUI <- function(id) {
                     
                     conditionalPanel(
                       ns = ns,
-                      condition = "input.anovaGraphs.indexOf('QQ Plot of Residuals') > -1",
+                      condition = "input.anovaGraphs.indexOf('Q-Q Plot of Residuals') > -1",
                       
-                      titlePanel("QQ Plot of Residuals"),
+                      titlePanel("Q-Q Plot of Residuals"),
                       br(),
                       br(),
                       plotOptionsMenuUI(
                         id     = ns("anovaQQplot"),
-                        title  = "QQ Plot of Residuals",
+                        title  = "Q-Q Plot of Residuals",
                         xlab   = "Normal Quantiles",
                         ylab   = "Residuals",
                         colour = "#0F3345",
@@ -3231,6 +3232,16 @@ statInfrServer <- function(id) {
     oneprop_iv$add_rule("numSuccesses", sv_integer())
     oneprop_iv$add_rule("numSuccesses", sv_gte(0))
     
+    # n1
+    twoprop_iv$add_rule("numTrials1", sv_required())
+    twoprop_iv$add_rule("numTrials1", sv_integer())
+    twoprop_iv$add_rule("numTrials1", sv_gt(0))
+    
+    # n2
+    twoprop_iv$add_rule("numTrials2", sv_required())
+    twoprop_iv$add_rule("numTrials2", sv_integer())
+    twoprop_iv$add_rule("numTrials2", sv_gt(0))
+    
     # x1
     twoprop_iv$add_rule("numSuccesses1", sv_required())
     twoprop_iv$add_rule("numSuccesses1", sv_integer())
@@ -3244,7 +3255,6 @@ statInfrServer <- function(id) {
         "Number of successes cannot exceed number of trials."
       }
     })
-    twopropht_iv$add_rule("numSuccesses1", ~ if(checkTwoProp() == 0) "At least one of (x₁) and (x₂) must be greater than zero.")
     
     # x2
     twoprop_iv$add_rule("numSuccesses2", sv_required())
@@ -3259,10 +3269,21 @@ statInfrServer <- function(id) {
         "Number of successes cannot exceed number of trials."
       }
     })
-    twopropht_iv$add_rule("numSuccesses2", ~ if(checkTwoProp() == 0) "At least one of (x₁) and (x₂) must be greater than zero.")
+    
+    twopropht_iv$add_rule(
+      "numSuccesses1",
+      ~ if(atLeastOneSuccess())
+        "At least one of (x₁) and (x₂) must be greater than zero."
+    )
+    
+    twopropht_iv$add_rule(
+      "numSuccesses2",
+      ~ if(atLeastOneSuccess())
+        "At least one of (x₁) and (x₂) must be greater than zero."
+    )
     
     twopropht_iv$add_rule("numSuccesses1", ~ {
-      if (!is.null(input$numSuccesses1) && !is.null(input$numSuccesses2) && !is.null(input$numTrials1) && !is.null(input$numTrials2) &&
+      if (!is.na(input$numSuccesses1) && !is.na(input$numSuccesses2) && !is.na(input$numTrials1) && !is.na(input$numTrials2) &&
           input$numSuccesses1 > 0 &&
           input$numSuccesses2 > 0 &&
           input$numSuccesses1 == input$numTrials1 &&
@@ -3271,7 +3292,7 @@ statInfrServer <- function(id) {
     })
     
     twopropht_iv$add_rule("numSuccesses2", ~ {
-      if (!is.null(input$numSuccesses1) && !is.null(input$numSuccesses2) && !is.null(input$numTrials1) && !is.null(input$numTrials2) &&
+      if (!is.na(input$numSuccesses1) && !is.na(input$numSuccesses2) && !is.na(input$numTrials1) && !is.na(input$numTrials2) &&
           input$numSuccesses1 > 0 &&
           input$numSuccesses2 > 0 &&
           input$numSuccesses1 == input$numTrials1 &&
@@ -3337,16 +3358,6 @@ statInfrServer <- function(id) {
     oneprop_iv$add_rule("numTrials", sv_required())
     oneprop_iv$add_rule("numTrials", sv_integer())
     oneprop_iv$add_rule("numTrials", sv_gt(0))
-    
-    # n1
-    twoprop_iv$add_rule("numTrials1", sv_required())
-    twoprop_iv$add_rule("numTrials1", sv_integer())
-    twoprop_iv$add_rule("numTrials1", sv_gt(0))
-    
-    # n2
-    twoprop_iv$add_rule("numTrials2", sv_required())
-    twoprop_iv$add_rule("numTrials2", sv_integer())
-    twoprop_iv$add_rule("numTrials2", sv_gt(0))
     
     # hypMean
     onemeanht_iv$add_rule("hypMean", sv_required())
@@ -6735,6 +6746,14 @@ statInfrServer <- function(id) {
       
     })
     
+    atLeastOneSuccess <- reactive({
+      !is.na(input$numTrials1) &&
+        !is.na(input$numTrials2) &&
+        input$numTrials1 > 0 &&
+        input$numTrials2 > 0 &&
+        checkTwoProp() == 0
+    })
+    
     ### ------------ Two Pop Var Reactives --------------------------------------
     GetTwoPopVarData <- reactive({
       req(si_iv$is_valid())
@@ -7169,27 +7188,27 @@ statInfrServer <- function(id) {
       #### ---------------- One Prop Validation
       if(!oneprop_iv$is_valid()) {
         validate(
-          need(input$numSuccesses, "Numeric value for Number of Successes (x) required"),
+          need(input$numSuccesses, "Numeric value for Number of Successes (x) required."),
           need(!is.null(input$numTrials) && input$numTrials > 0, "Number of Trials (n) must be an integer greater than zero."),
           errorClass = "myClass")
         
         validate(
-          need(input$numSuccesses %% 1 == 0, "Number of Successes (x) must be an integer"),
-          need(input$numSuccesses >= 0, "Number of Successes (x) cannot be negative"),
-          need(input$numTrials %% 1 == 0, "Number of Trials (n) must be an integer"),
-          need(input$numSuccesses <= input$numTrials, "Number of Successes (x) cannot be greater than Number of Trials (n)"),
+          need(input$numSuccesses %% 1 == 0, "Number of Successes (x) must be an integer."),
+          need(input$numSuccesses >= 0, "Number of Successes (x) cannot be negative."),
+          need(input$numTrials %% 1 == 0, "Number of Trials (n) must be an integer."),
+          need(input$numSuccesses <= input$numTrials, "Number of Successes (x) cannot be greater than Number of Trials (n)."),
           errorClass = "myClass")
       } else if(input$siMethod == '1' && input$popuParameter == 'Population Proportion') {
         req(input$numSuccesses >= 0 && input$numTrials)
         validate(
-          need(input$numSuccesses <= input$numTrials, "Number of Successes (x) cannot be greater than Number of Trials (n)"),
+          need(input$numSuccesses <= input$numTrials, "Number of Successes (x) cannot be greater than Number of Trials (n)."),
           errorClass = "myClass")
       }
       
       if(!onepropht_iv$is_valid()) {
         validate(
-          need(input$hypProportion, "Hypothesized value of the Population Proportion must be between 0 and 1") %then%
-            need(input$hypProportion > 0 && input$hypProportion < 1, "Hypothesized value of the Population Proportion must be between 0 and 1"),
+          need(input$hypProportion, "Hypothesized value of the Population Proportion must be between 0 and 1.") %then%
+            need(input$hypProportion > 0 && input$hypProportion < 1, "Hypothesized value of the Population Proportion must be between 0 and 1."),
           errorClass = "myClass")
       }
       
@@ -7582,12 +7601,12 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
           need(input$numSuccesses1 >= 0, "Number of Successes 1 (x₁) cannot be negative."),
           need(input$numSuccesses1 <= input$numTrials1, "Number of Successes 1 (x₁) cannot exceed Number of Trials 1 (n₁)."),
           need(input$numTrials1 %% 1 == 0, "Number of Trials 1 (n₁) must be an integer."),
-          need(input$numTrials1 > 0, "Number of Trials 1 (n₁) must be greater than zero."),
+          need(input$numTrials1 > 0, "Number of Trials 1 (n₁) must be an integer greater than zero."),
           need(input$numSuccesses2 %% 1 == 0, "Number of Successes 2 (x₂) must be an integer."),
           need(input$numSuccesses2 >= 0, "Number of Successes 2 (x₂) cannot be negative."),
           need(input$numSuccesses2 <= input$numTrials2, "Number of Successes 2 (x₂) cannot exceed Number of Trials 2 (n₂)."),
           need(input$numTrials2 %% 1 == 0, "Number of Trials 2 (n₂) must be an integer."),
-          need(input$numTrials2 > 0, "Number of Trials 2 (n₂) must be greater than zero."),
+          need(input$numTrials2 > 0, "Number of Trials 2 (n₂) must be an integer greater than zero."),
           errorClass = "myClass")
         
       } else if (input$siMethod == '2' && input$popuParameters == 'Population Proportions') {
@@ -9153,15 +9172,18 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       if(input$dataAvailability2 == 'Enter Raw Data') {
         sample1 <- createNumLst(input$raw_sample1)
         sample2 <- createNumLst(input$raw_sample2)
+        sample1_label <- "Sample 1"
+        sample2_label <- "Sample 2"
       } else if(input$dataAvailability2 == 'Upload Data') {
         req(input$indMeansUplSample1, input$indMeansUplSample2)
         sample1 <- na.omit(unlist(IndMeansUploadData()[,input$indMeansUplSample1]))
         sample2 <- na.omit(unlist(IndMeansUploadData()[,input$indMeansUplSample2]))
+        sample1_label <- input$indMeansUplSample1
+        sample2_label <- input$indMeansUplSample2
       }
       
       dat <- c(sample1, sample2)
-      df_boxplot <- data.frame(sample = c(rep("Sample 1",length(sample1)), rep("Sample 2",length(sample2))),
-                               data = c(dat))
+      df_boxplot <- data.frame(sample = c(rep(sample1_label, length(sample1)),rep(sample2_label, length(sample2))),data = dat)
       
       RenderSideBySideBoxplot(dat,
                               df_boxplot,
@@ -10310,9 +10332,13 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       if(input$wilcoxonRankSumTestData == 'Enter Raw Data') {
         rankSumRaw1 <- createNumLst(input$rankSumRaw1)
         rankSumRaw2 <- createNumLst(input$rankSumRaw2)
+        sample1_label <- "Sample 1"
+        sample2_label <- "Sample 2"
       } else if(input$wilcoxonRankSumTestData == 'Upload Data') {
         rankSumRaw1 <- na.omit(unlist(WilcoxonUploadData()[,input$wilcoxonUpl1]))
         rankSumRaw2 <- na.omit(unlist(WilcoxonUploadData()[,input$wilcoxonUpl2]))
+        sample1_label <- input$wilcoxonUpl1
+        sample2_label <- input$wilcoxonUpl2
       }
 
       validate(
@@ -10321,8 +10347,8 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
         errorClass = "myClass")
 
       dat <- c(rankSumRaw1, rankSumRaw2)
-      df_boxplot <- data.frame(sample = c(rep("Sample 1",length(rankSumRaw1)), rep("Sample 2",length(rankSumRaw2))),
-                               data = c(dat))
+      df_boxplot <- data.frame(sample = c(rep(sample1_label,length(rankSumRaw1)), rep(sample2_label,length(rankSumRaw2))),
+                               data = dat)
       
       RenderSideBySideBoxplot(dat,
                               df_boxplot,
@@ -10484,19 +10510,23 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
         br(),
         br(),
         p("where"),
+        sprintf("\\( \\qquad df = n - 1 = %s \\)",
+                tInt["Sample Size"] - 1),
+        br(), 
+        br(),
         sprintf("\\( \\qquad \\bar{d} = \\dfrac{ \\sum d }{ n } = \\dfrac{%s}{%s} = %s \\; , \\)",
                 dSum,
                 tInt["Sample Size"],
                 tInt["Sample Mean"]),
-        sprintf("\\( \\qquad s_{d} = \\sqrt{ \\dfrac{\\sum d^{2} - \\dfrac{(\\sum d)^{2}}{n} }{n - 1} } \\)"),
-        sprintf("\\( = \\sqrt{ \\dfrac{%s - \\dfrac{(%s)^{2}}{%s} }{%s - 1} } = %s \\; , \\)",
-                dSqrdSum,
-                dSum,
-                tInt["Sample Size"],
-                tInt["Sample Size"],
-                tInt['Sample SD']),
-        sprintf("\\( \\qquad df = n - 1 = %s \\)",
-                tInt["Sample Size"] - 1),
+        br(), 
+        br(),
+        sprintf("\\( \\qquad s_{d} = \\sqrt{ \\dfrac{\\sum d^{2} - \\dfrac{(\\sum d)^{2}}{n} }{n - 1} }
+= \\sqrt{ \\dfrac{%s - \\dfrac{(%s)^{2}}{%s} }{%s - 1} } = %s \\; , \\)",
+        dSqrdSum,
+        dSum,
+        tInt["Sample Size"],
+        tInt["Sample Size"],
+        tInt["Sample SD"]),
         br(),
         br(),
         br(),

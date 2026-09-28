@@ -50,10 +50,10 @@ RenderSideBySideBoxplot <- function(dat, df_boxplot, plotColour, plotTitle, plot
       plot.title = element_text(size = 24, face = "bold", hjust = 0.5, margin = ggplot2::margin(0,0,5,0)),
       axis.title.x = element_text(size = 16, face = "bold", vjust = -1.5, margin = ggplot2::margin(5,0,0,0)),
       axis.title.y = element_text(size = 16, face = "bold", margin = ggplot2::margin(0,5,0,0)),
-      axis.text.x.bottom = element_text(size = 16),
+      axis.text.x.bottom = element_text(size = 16, face = "bold"),
       axis.text.y.left = element_text(size = 16, face = "bold"),
       plot.margin = unit(c(1,1,1,1), "cm"),
-      panel.border = element_rect(fill = NA)
+      axis.line = element_line(),
     ) +
     scale_y_continuous(n.breaks = 10)
   
@@ -71,7 +71,6 @@ RenderSideBySideBoxplot <- function(dat, df_boxplot, plotColour, plotTitle, plot
     )
     
     bp <- bp +
-      geom_vline(xintercept = 0.5, color = "grey", linewidth = 0.5) +
       geom_segment(data = cap_data,
                    aes(x = xmin, xend = xmax, y = ymin, yend = ymin)) +
       geom_segment(data = cap_data,
@@ -87,7 +86,7 @@ RenderSideBySideBoxplot <- function(dat, df_boxplot, plotColour, plotTitle, plot
     bp <- bp + coord_flip(clip = "off") +
       theme(
         axis.text.x.bottom = element_text(size = 16, face = "bold"),
-        axis.text.y.left = element_text(size = 16, face = "plain")
+        axis.text.y.left = element_text(size = 16, face = "bold")
       ) +
       labs(x = plotYlab, y = plotXlab)
   }
