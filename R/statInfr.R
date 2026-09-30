@@ -3597,7 +3597,7 @@ statInfrServer <- function(id) {
     
     oneSD_iv$condition(~ isTRUE(input$siMethod == '1' &&
                                   input$popuParameter == 'Population Standard Deviation' &&
-                                  !isTRUE(input$sdDataAvailability == 'Enter Raw Data')))
+                                  isTRUE(input$sdDataAvailability == 'Summarized Data')))
 
     oneSDRaw_iv$condition(~ isTRUE(input$siMethod == '1' &&
                                      input$popuParameter == 'Population Standard Deviation' &&
