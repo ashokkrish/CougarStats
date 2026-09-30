@@ -1264,6 +1264,17 @@ statInfrUI <- function(id) {
                   step    = 0.00001)
               ), # propDiffNaught
               
+              conditionalPanel(
+                ns = ns,
+                condition = "input.popuParameters == 'Two Population Variances'",
+                
+                numericInput(
+                  inputId = ns("twoPopVarNaught"),
+                  label = strong(HTML("Hypothesized Ratio of Population Variances \\((\\sigma_1^2 / \\sigma_2^2)_0\\)")),
+                  value   = 1,
+                  step    = 0.00001)
+              ), # 
+              
               selectizeInput(
                 inputId  = ns("altHypothesis2"),
                 label    = strong("Alternate Hypothesis (\\( H_{a}\\))"),
@@ -2738,6 +2749,7 @@ statInfrServer <- function(id) {
     twopopvarsum_iv <- InputValidator$new()
     twopopvar_iv <- InputValidator$new()
     twopopvarraw_iv <- InputValidator$new()
+    twopopvarnaught_iv <- InputValidator$new()
     multipleupload_iv <- InputValidator$new()
     kwmulti_iv <- InputValidator$new()
     kwstacked_iv <- InputValidator$new()
@@ -3353,6 +3365,9 @@ statInfrServer <- function(id) {
                                                     "Data must be at least three numeric values separated by a comma, space, or tab (ie: 2,3,4)."))
     twopopvarraw_iv$add_rule("rawSamp2SD", ~ if (sd(createNumLst(input$rawSamp2SD)) == 0) "Sample standard deviation cannot be zero.")
     
+    # two pop null hyp
+    twopopvarnaught_iv$add_rule("twoPopVarNaught", sv_required())
+    twopopvarnaught_iv$add_rule("twoPopVarNaught", sv_gt(0))
     
     # numTrialsProportion
     oneprop_iv$add_rule("numTrials", sv_required())
@@ -3630,6 +3645,10 @@ statInfrServer <- function(id) {
                                          input$popuParameters == 'Two Population Variances' &&
                                          input$dataAvailability3 == 'Enter Raw Data'))
     
+    twopopvarnaught_iv$condition(~ isTRUE(input$siMethod == '2' &&
+                                            input$popuParameters == 'Two Population Variances' &&
+                                            input$inferenceType2 == 'Hypothesis Testing'))
+    
     twopropdiffnaught_iv$condition(~ isTRUE(input$siMethod == '2' &&
                                               input$popuParameters == 'Population Proportions' &&
                                               input$inferenceType2 == 'Hypothesis Testing'))
@@ -3711,6 +3730,7 @@ statInfrServer <- function(id) {
     si_iv$add_validator(twopopvarsum_iv)
     si_iv$add_validator(twopopvar_iv)
     si_iv$add_validator(twopopvarraw_iv)
+    si_iv$add_validator(twopopvarnaught_iv)
     twoprop_iv$add_validator(twopropht_iv)
     si_iv$add_validator(kwmulti_iv)
     si_iv$add_validator(kwstacked_iv)
@@ -3773,6 +3793,7 @@ statInfrServer <- function(id) {
     twopopvarsum_iv$enable()
     twopopvar_iv$enable()
     twopopvarraw_iv$enable()
+    twopopvarnaught_iv$enable()
     kwmulti_iv$enable()
     kwstacked_iv$enable()
     multipleupload_iv$enable()
@@ -4469,7 +4490,7 @@ statInfrServer <- function(id) {
       
     }
     
-    TwoPopVarHT <- function(n1, sd1, n2, sd2, sig_lvl, alt_hyp = "two.sided", is_variance) {
+    TwoPopVarHT <- function(n1, sd1, n2, sd2, sig_lvl, alt_hyp = "two.sided", is_variance, naught) {
       df1 <- n1-1
       df2 <- n2-1
       crit_lower <- 0
@@ -4484,7 +4505,7 @@ statInfrServer <- function(id) {
         var2 <- sd2^2
       }
       
-      F_stat <- var1/var2
+      F_stat <- (var1/var2) / naught
       
       if (alt_hyp == "greater") {
         p_value <- pf(F_stat, df1, df2, lower.tail = FALSE)
@@ -4604,11 +4625,26 @@ statInfrServer <- function(id) {
       ))
     }
     
-    printFStat <- function(sd1, sd2, F_statistic, is_variance, is_HT = FALSE) {
-      if (!is_variance) {
-        p(sprintf("\\(%s\\dfrac{s_1^2}{s_2^2} = \\dfrac{%.4f}{%.4f} = %.4f \\)", if (is_HT) "F = " else "", sd1^2, sd2^2, F_statistic))
+    printFStat <- function(sd1, sd2, F_statistic, is_variance, is_HT = FALSE, naught = 1) {
+      var1 <- if (is_variance) sd1 else sd1^2
+      var2 <- if (is_variance) sd2 else sd2^2
+      ratio <- var1/var2
+      
+      if (is_HT) {
+        tagList(
+          sprintf("\\(\\dfrac{s_1^2}{s_2^2}\\)"),
+          sprintf("\\(= \\dfrac{%.4f}{%.4f}\\)", var1, var2),
+          sprintf("\\(= %.4f\\)", ratio),
+          br(), 
+          br(),
+          sprintf("\\(F = \\dfrac{(s_1^2/s_2^2)}{(\\sigma_1^2/\\sigma_2^2)_0}\\)"),
+          sprintf("\\(= \\dfrac{%.4f}{%.4f}\\)", ratio, naught),
+          sprintf("\\(= %.4f\\)", F_statistic),
+          br()
+        )
       } else {
-        p(sprintf("\\(%s\\dfrac{s_1^2}{s_2^2} = \\dfrac{%.4f}{%.4f} = %.4f \\)", if (is_HT) "F = " else "", sd1, sd2, F_statistic))
+        sprintf("\\(\\dfrac{s_1^2}{s_2^2} = \\dfrac{%.4f}{%.4f} = %.4f\\)", var1, var2, F_statistic)
+        br()
       }
     }
     
@@ -6799,25 +6835,28 @@ statInfrServer <- function(id) {
     
     TwoPopVarHypInfo <- reactive({
       hypTestSymbols <- list()
+      naught <- input$twoPopVarNaught
       
       if (input$altHypothesis2 == "3") {
         hypTestSymbols$alternative <- "greater"
-        hypTestSymbols$nullHyp <- "\\sigma^2_1 \\leq \\sigma^2_2"
-        hypTestSymbols$altHyp <- "\\sigma^2_1 \\gt \\sigma^2_2"
+        hypTestSymbols$nullHyp <- sprintf("\\dfrac{\\sigma^2_1}{\\sigma^2_2} \\leq %g", naught)
+        hypTestSymbols$altHyp <- sprintf("\\dfrac{\\sigma^2_1}{\\sigma^2_2} \\gt %g", naught)
         hypTestSymbols$critAlph <- "\\alpha"
         hypTestSymbols$critSign <- ""
         hypTestSymbols$alphaVal <- SigLvl()
+        
       } else if (input$altHypothesis2 == "2") {
         hypTestSymbols$alternative <- "two.sided"
-        hypTestSymbols$nullHyp <- "\\sigma^2_1 = \\sigma^2_2"
-        hypTestSymbols$altHyp <- "\\sigma^2_1 \\neq \\sigma^2_2"
+        hypTestSymbols$nullHyp <- sprintf("\\dfrac{\\sigma^2_1}{\\sigma^2_2} = %g", naught)
+        hypTestSymbols$altHyp <- sprintf("\\dfrac{\\sigma^2_1}{\\sigma^2_2} \\neq %g", naught)
         hypTestSymbols$critAlph <- "\\alpha/2"
         hypTestSymbols$critSign <- "\\pm"
         hypTestSymbols$alphaVal <- SigLvl() / 2
+        
       } else { # less
         hypTestSymbols$alternative <- "less"
-        hypTestSymbols$nullHyp <- "\\sigma^2_1 \\geq \\sigma^2_2"
-        hypTestSymbols$altHyp <- "\\sigma^2_1 \\lt \\sigma^2_2"
+        hypTestSymbols$nullHyp <- sprintf("\\dfrac{\\sigma^2_1}{\\sigma^2_2} \\geq %g", naught)
+        hypTestSymbols$altHyp <- sprintf("\\dfrac{\\sigma^2_1}{\\sigma^2_2} \\lt %g", naught)
         hypTestSymbols$critAlph <- "\\alpha"
         hypTestSymbols$critSign <- "-"
         hypTestSymbols$alphaVal <- SigLvl()
@@ -7680,6 +7719,13 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
           
           errorClass = "myClass"
         )
+      }
+      
+      if(!twopopvarnaught_iv$is_valid()) {
+        validate(
+          need(input$twoPopVarNaught, "Hypothesized value of the Population Variance Ratio is required.") %then%
+          need(input$twoPopVarNaught > 0, "Hypothesized value of the Population Variance Ratio must be greater than zero."),
+          errorClass = "myClass")
       }
       
       #### ---------------- ANOVA and KW Upload Validation
@@ -11498,7 +11544,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       sig_lvl <- SigLvl()
       alt_hyp <- hyp_labels$alternative
       
-      HT <- TwoPopVarHT(data$n1, data$sd1, data$n2, data$sd2, sig_lvl, alt_hyp, is_variance)
+      HT <- TwoPopVarHT(data$n1, data$sd1, data$n2, data$sd2, sig_lvl, alt_hyp, is_variance, input$twoPopVarNaught)
       df1 <- data$n1 - 1
       df2 <- data$n2 - 1
       
