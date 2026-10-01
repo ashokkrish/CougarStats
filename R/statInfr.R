@@ -5934,7 +5934,8 @@ statInfrServer <- function(id) {
       rankSumStatus = NULL,
       depMeansStatus = NULL,
       multipleStatus = NULL,
-      signedRankStatus = NULL
+      signedRankStatus = NULL,
+      twoPopVarStatus = NULL
     )
 
     # Silence noisy but harmless readxl warnings (boolean-to-numeric coercions).
@@ -13148,6 +13149,8 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
     
     observeEvent(list(input$twoPopVarUserData, input$twoPopVarSheet), priority = 5, {
       req(input$twoPopVarUserData)
+      hide(id = "twoPopVarUplSample1")
+      hide(id = "twoPopVarUplSample2")
       fileInputs$twoPopVarStatus <- 'uploaded'
       
       ext <- tolower(tools::file_ext(input$twoPopVarUserData$name))
@@ -13169,6 +13172,13 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       
       shinyjs::show(id = "twoPopVarUplSample1")
       shinyjs::show(id = "twoPopVarUplSample2")
+      
+      if (twopopvarupload_iv$is_valid()) {
+        shinyjs::show(id = "inferenceMP")
+        shinyjs::show(id = "inferenceData")
+        hideTab(inputId = "twoPopVarTabset", target = "Analysis")
+        goToUploadedDataTab("twoPopVarTabset")
+      }
     })
     
     output$renderTwoPopVarData <- renderUI({
@@ -13178,6 +13188,15 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       }
       div(DTOutput(session$ns("twoPopVarUploadTable")), style = "width: 75%")
     })
+    
+    observeEvent(list(input$twoPopVarUplSample1, input$twoPopVarUplSample2), {
+      if (isTRUE(input$dataAvailability3 == "Upload Data")) {
+        if (!twopopvaruploadvars_iv$is_valid()) {
+          hideTab(inputId = "twoPopVarTabset", target = "Analysis")
+          updateTabsetPanel(session, "twoPopVarTabset", selected = "Uploaded Data")
+        }
+      }
+    }, ignoreInit = TRUE)
     
     session$onFlushed(function() {
       hideTab(inputId = "anovaTabset", target = "Uploaded Data")
@@ -13667,7 +13686,10 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
                 input$wilcoxonRankSumTestData == 'Upload Data') && wilcoxonUpload_iv$is_valid()) ||
         (isTRUE(input$siMethod == '2' &&
                 input$popuParameters == 'Wilcoxon Signed Rank Test' &&
-                input$signedRankTest == 'Upload Data') && signedRankUpload_iv$is_valid())
+                input$signedRankTest == 'Upload Data') && signedRankUpload_iv$is_valid()) ||
+        (isTRUE(input$siMethod == '2' &&
+                  input$popuParameters == 'Two Population Variances' &&
+                  input$dataAvailability3 == 'Upload Data') && twopopvarupload_iv$is_valid())
     })
 
       observeEvent(list(input$popuParameter, input$popuParameters, input$siMethod), {
@@ -13725,6 +13747,16 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       } else {
         hide(id = "depMeansUplSample1")
         hide(id = "depMeansUplSample2")
+      }
+    })
+    
+    observeEvent(fileInputs$twoPopVarStatus, {
+      if (fileInputs$twoPopVarStatus == 'uploaded'){
+        show(id = "twoPopVarUplSample1")
+        show(id = "twoPopVarUplSample2")
+      } else {
+        hide(id = "twoPopVarUplSample1")
+        hide(id = "twoPopVarUplSample2")
       }
     })
     
@@ -13922,6 +13954,22 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
         }
       }
       
+      if (input$dataAvailability3 != "Upload Data"){
+        showTab(inputId = "twoPopVarTabset", target = "Analysis")
+        updateTabsetPanel(session, "twoPopVarTabset", selected = "Analysis")
+        hideTab(inputId = "twoPopVarTabset", target = "Uploaded Data")
+      } else {
+        showTab(inputId = "twoPopVarTabset", target = "Uploaded Data")
+        
+        if (twopopvarupload_iv$is_valid() && twopopvaruploadvars_iv$is_valid()) {
+          showTab(inputId = "twoPopVarTabset", target = "Analysis")
+          updateTabsetPanel(session, "twoPopVarTabset", selected = "Analysis")
+        } else {
+          hideTab(inputId = "twoPopVarTabset", target = "Analysis")
+          updateTabsetPanel(session, "twoPopVarTabset", selected = "Uploaded Data")
+        }
+      }
+      
     })
     
     observeEvent(input$resetInference, {
@@ -14024,41 +14072,19 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       updateSelectizeInput(session, "depMeansUplSample2", selected = "")
       updateSelectizeInput(session, "signedRankUpl1", selected = "")
       updateSelectizeInput(session, "signedRankUpl2", selected = "")
+      updateSelectizeInput(session, "twoPopVarUplSample1", selected = "")
+      updateSelectizeInput(session, "twoPopVarUplSample2", selected = "")
       updatePickerInput(session, "anovaMultiColumns", selected = character(0))
       updateSelectizeInput(session, "anovaResponse", selected = "")
       updateSelectizeInput(session, "anovaFactors", selected = "")
       updatePickerInput(session, "kwMultiColumns", selected = character(0))
       updateSelectizeInput(session, "kwResponse", selected = "")
       updateSelectizeInput(session, "kwFactors", selected = "")
-      updatePickerInput(
-        session,
-        "indMeansPlots",
-        selected = c("indMeansBoxplot", "indMeansQQPlot")
-      )
-      
-      updatePickerInput(
-        session,
-        "oneSDPlots",
-        selected = c("oneSDBoxplot", "oneSDHistogram")
-      )
-      
-      updatePickerInput(
-        session,
-        "sidebysidewRankPlots",
-        selected = c("sidebysidewRankSum", "sidebysidewRankQQ")
-      )
-      
-      updatePickerInput(
-        session,
-        "anovaGraphs",
-        selected = c("Side-by-side Boxplot", "Plot Group Means")
-      )
-      
-      updatePickerInput(
-        session,
-        "kwGraphs",
-        selected = c("Side-by-side Boxplot", "Plot Group Means")
-      )
+      updatePickerInput(session,"indMeansPlots",selected = c("indMeansBoxplot", "indMeansQQPlot"))
+      updatePickerInput(session,"oneSDPlots",selected = c("oneSDBoxplot", "oneSDHistogram"))
+      updatePickerInput(session,"sidebysidewRankPlots",selected = c("sidebysidewRankSum", "sidebysidewRankQQ"))
+      updatePickerInput(session,"anovaGraphs",selected = c("Side-by-side Boxplot", "Plot Group Means"))
+      updatePickerInput(session,"kwGraphs",selected = c("Side-by-side Boxplot", "Plot Group Means"))
 
       ## -- Sheet selections: reset Excel uploads to their first sheet rather
       ##    than "". The sheet-population observer only re-fires on a fresh
@@ -14080,8 +14106,9 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       resetSheetToFirst("wilcoxonUpl", "wilcoxonSheet")
       resetSheetToFirst("depMeansUserData", "depMeansSheet")
       resetSheetToFirst("signedRankUpl", "signedRankSheet")
+      resetSheetToFirst("twoPopVarUserData", "twoPopVarSheet")
       resetSheetToFirst("multipleUserData", "multipleSheet")
-      
+
       kwDisplayState("raw")
       anovaDisplayState("raw")
 
@@ -14096,6 +14123,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
           sdDataAvailability      = "oneSDTabset",
           dataAvailability        = "onePopMeanTabset",
           dataAvailability2       = "indPopMeansTabset",
+          dataAvailability3       = "twoPopVarTabset",
           dataTypeDependent       = "depPopMeansTabset",
           wilcoxonRankSumTestData = "wilcoxonRankSumTabset",
           signedRankTest          = "signedRankTabset"
