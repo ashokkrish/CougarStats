@@ -1076,14 +1076,16 @@ statInfrUI <- function(id) {
                 label        = strong("Data"),
                 choiceValues = list("Summary",
                                     "Variance",
-                                    "Enter Raw Data"),
+                                    "Enter Raw Data",
+                                    "Upload Data"),
                 choiceNames  = list(
                   "\\( n_1,\\ n_2,\\ s_1,\\ s_2 \\)",
                   "\\( n_1,\\ n_2,\\ s_1^2,\\ s_2^2 \\)",
-                  "Enter Raw Data"
+                  "Enter Raw Data",
+                  "Upload Data"
                 ),
                 selected     = "Summary",
-                inline       = TRUE),
+                inline       = FALSE),
               
               
               ### ------------ Summary (n1, n2, s1, s2) ------------------------------------
@@ -1185,6 +1187,53 @@ statInfrUI <- function(id) {
                   placeholder = "Enter values separated by a comma, space, or tab with decimals as points",
                   rows        = 3)
               ), # Raw Data
+              
+              conditionalPanel(
+                ns = ns,
+                condition = "input.dataAvailability3 == 'Upload Data'",
+                
+                HTML(uploadDataDisclaimer),
+                
+                fileInput(
+                  inputId = ns("twoPopVarUserData"),
+                  label   = strong("Upload your data (.csv or .xls or .xlsx or .txt)"),
+                  accept  = c("text/csv",
+                              "text/comma-separated-values",
+                              "text/plain",
+                              ".csv",
+                              ".xls",
+                              ".xlsx")),
+                
+                uiOutput(ns("twoPopVarUploadStatus")),
+                
+                conditionalPanel(
+                  ns = ns,
+                  condition = "output.twoPopVarShowSheetPicker == true",
+                  
+                  selectizeInput(
+                    inputId  = ns("twoPopVarSheet"),
+                    label    = strong("Choose a Sheet"),
+                    choices  = c(""),
+                    multiple = FALSE,
+                    options  = list(
+                      placeholder = "Select a sheet",
+                      onInitialize = I('function() { this.setValue(""); }')
+                    ))),
+                
+                selectizeInput(
+                  inputId = ns("twoPopVarUplSample1"),
+                  label   = strong("Column for Sample 1"),
+                  choices = c(""),
+                  options = list(placeholder = 'Select a column',
+                                 onInitialize = I('function() { this.setValue(""); }'))),
+                
+                selectizeInput(
+                  inputId = ns("twoPopVarUplSample2"),
+                  label   = strong("Column for Sample 2"),
+                  choices = c(""),
+                  options = list(placeholder = 'Select a column',
+                                 onInitialize = I('function() { this.setValue(""); }')))
+              ) # upload data
             ), # Two Pop Var
             
             ### ------------ Confidence Level, Inference Type ---------------------------------
@@ -2423,7 +2472,14 @@ statInfrUI <- function(id) {
                                         br(),
                                         
                                       ) # HT
-                                    ))), # Two Pop Var
+                                      ), # Analysis
+                                    tabPanel(
+                                      id = ns("twoPopVarData"),
+                                      title = "Uploaded Data",
+                                      
+                                      uiOutput(ns("renderTwoPopVarData"))
+                                    ), # Uploaded Data
+                                    )), # Two Pop Var
               ), # "input.siMethod == '2'"
               
               ### ------------ Multiple Samples ------------------------------------
@@ -2750,6 +2806,8 @@ statInfrServer <- function(id) {
     twopopvar_iv <- InputValidator$new()
     twopopvarraw_iv <- InputValidator$new()
     twopopvarnaught_iv <- InputValidator$new()
+    twopopvarupload_iv <- InputValidator$new()
+    twopopvaruploadvars_iv <- InputValidator$new()
     multipleupload_iv <- InputValidator$new()
     kwmulti_iv <- InputValidator$new()
     kwstacked_iv <- InputValidator$new()
@@ -2959,6 +3017,10 @@ statInfrServer <- function(id) {
         "Sample standard deviation cannot be zero for both Sample 1 and Sample 2"
     })
     
+    # ind means Mu Naught
+    indmeansmunaught_iv$add_rule("indMeansMuNaught", sv_required())
+    
+    
     wilcoxonUpload_iv$add_rule("wilcoxonUpl", sv_required())
     wilcoxonUpload_iv$add_rule("wilcoxonUpl", ~ if(is.null(fileInputs$rankSumStatus) || fileInputs$rankSumStatus == 'reset') "Required")
     wilcoxonUpload_iv$add_rule("wilcoxonUpl", ~ if(!(tolower(tools::file_ext(input$wilcoxonUpl$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
@@ -3004,8 +3066,6 @@ statInfrServer <- function(id) {
         "Variance required in Sample 1 and Sample 2 data for hypothesis testing."
       }
     })
-    # ind means Mu Naught
-    indmeansmunaught_iv$add_rule("indMeansMuNaught", sv_required())
     
     # before
     depmeansraw_iv$add_rule("before", sv_required())
@@ -3365,6 +3425,62 @@ statInfrServer <- function(id) {
                                                     "Data must be at least three numeric values separated by a comma, space, or tab (ie: 2,3,4)."))
     twopopvarraw_iv$add_rule("rawSamp2SD", ~ if (sd(createNumLst(input$rawSamp2SD)) == 0) "Sample standard deviation cannot be zero.")
     
+    # two pop var upload
+    twopopvarupload_iv$add_rule("twoPopVarUserData", sv_required())
+    twopopvarupload_iv$add_rule("twoPopVarUserData", ~ if(is.null(fileInputs$twoPopVarStatus) || fileInputs$twoPopVarStatus == 'reset') "Required")
+    twopopvarupload_iv$add_rule("twoPopVarUserData", ~ if(!(tolower(tools::file_ext(input$twoPopVarUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+    twopopvarupload_iv$add_rule("twoPopVarUserData", ~ if(nrow(TwoPopVarUploadData()) == 0) "File is empty.")
+    twopopvarupload_iv$add_rule("twoPopVarUserData", ~ if(ncol(TwoPopVarUploadData()) < 2) "File must contain at least 2 distinct samples to choose from for analysis.")
+    
+    twopopvaruploadvars_iv$add_rule("twoPopVarUplSample1", sv_required())
+    twopopvaruploadvars_iv$add_rule("twoPopVarUplSample2", sv_required())
+    
+    twopopvaruploadvars_iv$add_rule("twoPopVarUplSample1", ~ {
+      if (checkNumeric(TwoPopVarUploadData(), input$twoPopVarUplSample1)) {
+        "Selected column contains non-numeric data."
+      }
+    })
+    
+    twopopvaruploadvars_iv$add_rule("twoPopVarUplSample2", ~ {
+      if (checkNumeric(TwoPopVarUploadData(), input$twoPopVarUplSample2)) {
+        "Selected column contains non-numeric data."
+      }
+    })
+    
+    twopopvaruploadvars_iv$add_rule("twoPopVarUplSample1", ~ {
+      d <- TwoPopVarUploadData()
+      col <- input$twoPopVarUplSample1
+      if (is.null(col) || col == "" || !(col %in% names(d))) return(NULL)
+      s1 <- na.omit(unlist(d[, col]))
+      if (length(s1) < 3) "Sample 1 must have at least three observations"
+    })
+    
+    twopopvaruploadvars_iv$add_rule("twoPopVarUplSample2", ~ {
+      d <- TwoPopVarUploadData()
+      col <- input$twoPopVarUplSample2
+      if (is.null(col) || col == "" || !(col %in% names(d))) return(NULL)
+      s2 <- na.omit(unlist(d[, col]))
+      if (length(s2) < 3) "Sample 2 must have at least three observations"
+    })
+    
+    twopopvaruploadvars_iv$add_rule("twoPopVarUplSample1", ~ {
+      d <- TwoPopVarUploadData()
+      col <- input$twoPopVarUplSample1
+      if (is.null(col) || col == "" || !(col %in% names(d))) return(NULL)
+      s1 <- na.omit(unlist(d[, col]))
+      if (length(s1) < 3) return(NULL)
+      if (sd(s1) <= 0) "Sample standard deviation must be greater than zero"
+    })
+    
+    twopopvaruploadvars_iv$add_rule("twoPopVarUplSample2", ~ {
+      d <- TwoPopVarUploadData()
+      col <- input$twoPopVarUplSample2
+      if (is.null(col) || col == "" || !(col %in% names(d))) return(NULL)
+      s2 <- na.omit(unlist(d[, col]))
+      if (length(s2) < 3) return(NULL)
+      if (sd(s2) <= 0) "Sample standard deviation must be greater than zero"
+    })
+    
     # two pop null hyp
     twopopvarnaught_iv$add_rule("twoPopVarNaught", sv_required())
     twopopvarnaught_iv$add_rule("twoPopVarNaught", sv_gt(0))
@@ -3649,6 +3765,15 @@ statInfrServer <- function(id) {
                                             input$popuParameters == 'Two Population Variances' &&
                                             input$inferenceType2 == 'Hypothesis Testing'))
     
+    twopopvarupload_iv$condition(~ isTRUE(input$siMethod == '2' &&
+                                            input$popuParameters == 'Two Population Variances' &&
+                                            input$dataAvailability3 == 'Upload Data'))
+    
+    twopopvaruploadvars_iv$condition(function() {isTRUE(input$siMethod == '2' &&
+                                                          input$popuParameters == 'Two Population Variances' &&
+                                                          input$dataAvailability3 == 'Upload Data' &&
+                                                          twopopvarupload_iv$is_valid()) })
+    
     twopropdiffnaught_iv$condition(~ isTRUE(input$siMethod == '2' &&
                                               input$popuParameters == 'Population Proportions' &&
                                               input$inferenceType2 == 'Hypothesis Testing'))
@@ -3731,6 +3856,8 @@ statInfrServer <- function(id) {
     si_iv$add_validator(twopopvar_iv)
     si_iv$add_validator(twopopvarraw_iv)
     si_iv$add_validator(twopopvarnaught_iv)
+    si_iv$add_validator(twopopvarupload_iv)
+    si_iv$add_validator(twopopvaruploadvars_iv)
     twoprop_iv$add_validator(twopropht_iv)
     si_iv$add_validator(kwmulti_iv)
     si_iv$add_validator(kwstacked_iv)
@@ -3794,6 +3921,8 @@ statInfrServer <- function(id) {
     twopopvar_iv$enable()
     twopopvarraw_iv$enable()
     twopopvarnaught_iv$enable()
+    twopopvarupload_iv$enable()
+    twopopvaruploadvars_iv$enable()
     kwmulti_iv$enable()
     kwstacked_iv$enable()
     multipleupload_iv$enable()
@@ -6869,11 +6998,56 @@ statInfrServer <- function(id) {
       if(input$dataAvailability3 == 'Enter Raw Data') {
         data <- GetTwoPopVarRawData()
       } else if(input$dataAvailability3 == 'Upload Data') {
-        # future work, upload not currently implemented
+        data <- GetTwoPopVarUploadData()
       } else { # Summary or Variance
         data <- GetTwoPopVarData()
       }
       return(data)
+    })
+    
+    TwoPopVarUploadData <- eventReactive(list(input$twoPopVarUserData, input$twoPopVarSheet), {
+      req(input$twoPopVarUserData)
+      ext  <- tolower(tools::file_ext(input$twoPopVarUserData$name))
+      path <- input$twoPopVarUserData$datapath
+      
+      switch(ext,
+             csv = read_csv(path, show_col_types = FALSE),
+             xls = {
+               req(input$twoPopVarSheet)
+               req(input$twoPopVarSheet %in% readxl::excel_sheets(path))
+               quietExcelRead(read_xls, path, input$twoPopVarSheet)
+             },
+             xlsx = {
+               req(input$twoPopVarSheet)
+               req(input$twoPopVarSheet %in% readxl::excel_sheets(path))
+               quietExcelRead(read_xlsx, path, input$twoPopVarSheet)
+             },
+             txt = read_tsv(path, show_col_types = FALSE),
+             
+             validate("Improper file format")
+      )
+    })
+    
+    output$twoPopVarShowSheetPicker <- reactive({
+      if (is.null(input$twoPopVarUserData)) return(FALSE)
+      tolower(tools::file_ext(input$twoPopVarUserData$name)) %in% c("xls", "xlsx")
+    })
+    outputOptions(output, "twoPopVarShowSheetPicker", suspendWhenHidden = FALSE)
+    
+    GetTwoPopVarUploadData <- reactive({
+      req(input$twoPopVarUplSample1, input$twoPopVarUplSample2)
+      
+      dat <- list()
+      
+      sample1 <- na.omit(unlist(TwoPopVarUploadData()[,input$twoPopVarUplSample1]))
+      sample2 <- na.omit(unlist(TwoPopVarUploadData()[,input$twoPopVarUplSample2]))
+      
+      dat$n1 <- length(sample1)
+      dat$sd1 <- sd(sample1)
+      dat$n2 <- length(sample2)
+      dat$sd2 <- sd(sample2)
+      
+      return(dat)
     })
     
     ### ------------ ANOVA Reactives ---------------------------------------------
@@ -7717,6 +7891,52 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
             need(length(createNumLst(input$rawSamp2SD)) >= 3, "Sample 2 data must contain at least three numeric values.") %then%
             need(sd(createNumLst(input$rawSamp2SD)) > 0, "Variance for sample 2 must be greater than zero."),
           
+          errorClass = "myClass"
+        )
+      }
+      
+      if(!twopopvarupload_iv$is_valid()) {
+        
+        if(is.null(input$twoPopVarUserData)) {
+          validate("Please upload a file.")
+        }
+        
+        validate(
+          need(!is.null(fileInputs$twoPopVarStatus) && fileInputs$twoPopVarStatus == 'uploaded', "Please upload a file."),
+          errorClass = "myClass")
+        
+        validate(
+          need(nrow(TwoPopVarUploadData()) != 0, "File is empty."),
+          need(ncol(TwoPopVarUploadData()) > 1, "File must contain at least two distinct samples to choose from for analysis."),
+          need(nrow(TwoPopVarUploadData()) > 2, "Samples must include at least three observations."),
+          errorClass = "myClass")
+      }
+      
+      if(!twopopvaruploadvars_iv$is_valid()) {
+        validate(
+          need(input$twoPopVarUplSample1, "Please select a column for Sample 1."),
+          need(input$twoPopVarUplSample2, "Please select a column for Sample 2."),
+          errorClass = "myClass")
+        
+        validate(
+          need(!checkNumeric(TwoPopVarUploadData(), input$twoPopVarUplSample1),
+               "Sample 1 must be numeric."),
+          need(!checkNumeric(TwoPopVarUploadData(), input$twoPopVarUplSample2),
+               "Sample 2 must be numeric."),
+          errorClass = "myClass"
+        )
+        
+        sample1Data <- na.omit(unlist(TwoPopVarUploadData()[, input$twoPopVarUplSample1]))
+        validate(
+          need(length(sample1Data) > 2, "Sample 1 must have at least three observations."),
+          need(sd(sample1Data) > 0, "Sample 1 standard deviation must be greater than zero."),
+          errorClass = "myClass"
+        )
+        
+        sample2Data <- na.omit(unlist(TwoPopVarUploadData()[, input$twoPopVarUplSample2]))
+        validate(
+          need(length(sample2Data) > 2, "Sample 2 must have at least three observations."),
+          need(sd(sample2Data) > 0, "Sample 2 standard deviation must be greater than zero."),
           errorClass = "myClass"
         )
       }
@@ -11623,6 +11843,31 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       )
     })
     
+    output$twoPopVarUploadStatus <- renderUI({
+      req(input$twoPopVarUserData)
+      req(twopopvarupload_iv$is_valid())
+      df <- TwoPopVarUploadData()
+      div(
+        class = "alert alert-success",
+        style = "padding: 5px 10px; font-size: 12px; margin-top: 2px; margin-bottom: 10px;",
+        icon("circle-check"),
+        HTML(paste0(" <strong>File loaded:</strong> ", input$twoPopVarUserData$name, " (",
+                    nrow(df), " rows × ", ncol(df), " columns)"))
+      )
+    })
+    
+    output$twoPopVarUploadTable <- renderDT({
+      req(twopopvarupload_iv$is_valid())
+      datatable(TwoPopVarUploadData(),
+                options = list(pageLength = -1,
+                               lengthMenu = list(c(25, 50, 100, -1),
+                                                 c("25", "50", "100", "all")),
+                               columnDefs = list(list(className = 'dt-center',
+                                                      targets = 0:ncol(TwoPopVarUploadData())))),
+      )
+    })
+    outputOptions(output, "twoPopVarUploadTable", suspendWhenHidden = FALSE)
+    
     ### ------------ ANOVA Outputs -----------------------------------------------
     output$anovaOutput <- renderUI({
       req(si_iv$is_valid())
@@ -12884,6 +13129,54 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
         br(),
         br()
       )
+    })
+    
+    observeEvent(input$twoPopVarUserData, priority = 50, {
+      req(input$twoPopVarUserData)
+      ext <- tolower(tools::file_ext(input$twoPopVarUserData$name))
+      if (ext %in% c("xls", "xlsx")) {
+        sheets <- tryCatch(readxl::excel_sheets(input$twoPopVarUserData$datapath),
+                           error = function(e) character(0))
+        freezeReactiveValue(input, "twoPopVarSheet")
+        updateSelectizeInput(session, "twoPopVarSheet",
+                             choices  = sheets,
+                             selected = if (length(sheets)) sheets[1] else "")
+      } else {
+        updateSelectizeInput(session, "twoPopVarSheet", choices = character(0), selected = "")
+      }
+    })
+    
+    observeEvent(list(input$twoPopVarUserData, input$twoPopVarSheet), priority = 5, {
+      req(input$twoPopVarUserData)
+      fileInputs$twoPopVarStatus <- 'uploaded'
+      
+      ext <- tolower(tools::file_ext(input$twoPopVarUserData$name))
+      if (ext %in% c("xls", "xlsx") && (is.null(input$twoPopVarSheet) || input$twoPopVarSheet == "")) {
+        return()
+      }
+      
+      freezeReactiveValue(input, "twoPopVarUplSample1")
+      updateSelectInput(session = getDefaultReactiveDomain(),
+                        "twoPopVarUplSample1",
+                        choices = c(colnames(TwoPopVarUploadData()))
+      )
+      
+      freezeReactiveValue(input, "twoPopVarUplSample2")
+      updateSelectInput(session = getDefaultReactiveDomain(),
+                        "twoPopVarUplSample2",
+                        choices = c(colnames(TwoPopVarUploadData()))
+      )
+      
+      shinyjs::show(id = "twoPopVarUplSample1")
+      shinyjs::show(id = "twoPopVarUplSample2")
+    })
+    
+    output$renderTwoPopVarData <- renderUI({
+      if (input$dataAvailability3 != "Upload Data") return(NULL)
+      if (!twopopvarupload_iv$is_valid()) {
+        return(helpText("No data yet. Upload a dataset to view it here."))
+      }
+      div(DTOutput(session$ns("twoPopVarUploadTable")), style = "width: 75%")
     })
     
     session$onFlushed(function() {
