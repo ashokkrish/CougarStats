@@ -99,7 +99,7 @@ regressionAndCorrelationUI <- function(id) {
         p(
           class = "text-muted",
           style = "font-size: 0.85em; margin-top: -8px;",
-          tags$em("Note: Raw data entry is not available for Multiple Linear Regression and Binary Logistic Regression.")
+          tags$em("Note: Raw data entry is not available for Multiple Linear Regression and Binary Logistic Regression. Switch to Upload Data.")
         )
       ),
 

@@ -1226,7 +1226,7 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NUL
         
         df <- data.frame(datx, daty, datx*daty, datx^2, daty^2, y_hat, residuals, residuals_sq, ci_lower, ci_upper, pi_lower, pi_upper)
         names(df) <- c("x", "y", "xy", "x<sup>2</sup>", "y<sup>2</sup>", "&ycirc;",
-                       "<em>e</em> = (<em>y</em> - <em>&ycirc;</em>)", "e<sup>2</sup>",
+                       "<em>e</em> = (<em>y</em> - <em>&ycirc;</em>)", "<em>e</em><sup>2</sup>",
                        "95% CI<br>for the mean<br>response<br>(Lower)", 
                        "95% CI<br>for the mean<br>response<br>(Upper)",
                        "95% prediction<br>interval<br>(Lower)", 
@@ -1241,7 +1241,7 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NUL
                        `y<sup>2</sup>`,
                        `&ycirc;`, 
                        `<em>e</em> = (<em>y</em> - <em>&ycirc;</em>)`,
-                       `e<sup>2</sup>`), sum),
+                       `<em>e</em><sup>2</sup>`), sum),
               across(c(`95% CI<br>for the mean<br>response<br>(Lower)`,
                        `95% CI<br>for the mean<br>response<br>(Upper)`,
                        `95% prediction<br>interval<br>(Lower)`,
