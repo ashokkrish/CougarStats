@@ -1433,7 +1433,30 @@ statInfrUI <- function(id) {
                 label   = "Q-Q Plot of the Difference (d)",
                 value   = TRUE)
             ),
-            
+           
+             conditionalPanel(
+              ns = ns,
+              condition = "(input.popuParameters == 'Two Population Variances' && (input.dataAvailability3 == 'Enter Raw Data' || input.dataAvailability3 == 'Upload Data'))",
+              
+              p(strong("Graph Options")),
+              
+              shinyWidgets::pickerInput(
+                inputId  = ns("twoPopVarPlots"),
+                label    = NULL,
+                choices  = c(
+                  "Side-by-side Boxplot" = "twoPopVarBoxplot",
+                  "Q-Q Plots for Sample 1 and Sample 2" = "twoPopVarQQPlot"
+                ),
+                selected = c("twoPopVarBoxplot", "twoPopVarQQPlot"),
+                multiple = TRUE,
+                options = list(
+                  `actions-box`      = TRUE,
+                  selectedTextFormat = "values",
+                  multipleSeparator  = ", ",
+                  title              = "Select graph(s) to display"
+                )
+              )
+            ),
             
           ), # "input.siMethod == '2'",
           
@@ -2473,6 +2496,50 @@ statInfrUI <- function(id) {
                                         
                                       ) # HT
                                       ), # Analysis
+                                    
+                                    tabPanel(
+                                      id = ns("twoPopVarGraphs"),
+                                      title = "Graphs",
+                                      
+                                      conditionalPanel(
+                                        ns = ns,
+                                        condition = "(input.dataAvailability3 == 'Enter Raw Data' || input.dataAvailability3 == 'Upload Data') && input.twoPopVarPlots.indexOf('twoPopVarBoxplot') !== -1",
+                                        br(),
+                                        titlePanel("Side-by-side Boxplot"),
+                                        br(),
+                                        plotOptionsMenuUI(
+                                          id = ns("twoPopVarBoxplot"),
+                                          plotType = "Boxplot",
+                                          title = "Side-by-side Boxplot"
+                                        ),
+                                        uiOutput(ns("renderTwoPopVarBoxplot")),
+                                        boxplotDisclaimer,
+                                        br(),
+                                        br()
+                                      ),
+                                      
+                                      conditionalPanel(
+                                        ns = ns,
+                                        condition = "(input.dataAvailability3 == 'Enter Raw Data' || input.dataAvailability3 == 'Upload Data') && input.twoPopVarPlots.indexOf('twoPopVarQQPlot') !== -1",
+                                        br(),
+                                        hr(),
+                                        br(),
+                                        titlePanel("Q-Q Plots for Sample 1 and Sample 2"),
+                                        br(),
+                                        plotOptionsMenuUI(
+                                          id = ns("twoPopVarQQPlot"),
+                                          plotType = "QQ Plot",
+                                          title = "Q-Q Plots",
+                                          xlab = "Normal Quantiles",
+                                          ylab = "Sample Quantiles",
+                                          includeFlip = FALSE
+                                        ),
+                                        uiOutput(ns("renderTwoPopVarQQPlot")),
+                                        br(),
+                                        br()
+                                      )
+                                    ), # twoPopVar Graphs
+                                    
                                     tabPanel(
                                       id = ns("twoPopVarData"),
                                       title = "Uploaded Data",
@@ -3944,6 +4011,8 @@ statInfrServer <- function(id) {
     plotOptionsMenuServer("indMeansQQPlot")
     plotOptionsMenuServer("depMeansQQPlot")
     plotOptionsMenuServer("sidebysidewRankSum")
+    plotOptionsMenuServer("twoPopVarQQPlot")
+    plotOptionsMenuServer("twoPopVarBoxplot")
     plotOptionsMenuServer("anovaBoxplot")
     plotOptionsMenuServer("anovaHistogram")
     plotOptionsMenuServer("anovaQQplot")
@@ -4673,7 +4742,7 @@ statInfrServer <- function(id) {
           sprintf("\\(n_1 = %d\\)", data$n1),
           br(),
           sprintf("\\(s_1^2 = %.4f\\)", data$sd1),
-          br(),
+          br(), br(),
           sprintf("\\(n_2 = %d\\)", data$n2),
           br(),
           sprintf("\\(s_2^2 = %.4f\\)", data$sd2),
@@ -4698,13 +4767,15 @@ statInfrServer <- function(id) {
       }
     }
     
-    printDegreesFreedom<- function (df1, df2) {
+    printDegreesFreedom <- function (df1, df2) {
       n1 <- df1+1
       n2 <- df2+1
       
       list(
-        p(sprintf("\\(df_1 = n_1 - 1 = %d - 1 = %d\\)", n1, df1)),
-        p(sprintf("\\(df_2 = n_2 - 1 = %d - 1 = %d\\)", n2, df2)),
+        sprintf("\\(df_1 = n_1 - 1 = %d - 1 = %d\\)", n1, df1),
+        br(), br(),
+        sprintf("\\(df_2 = n_2 - 1 = %d - 1 = %d\\)", n2, df2),
+        br(),
         br())
     }
     
@@ -4769,11 +4840,11 @@ statInfrServer <- function(id) {
           sprintf("\\(F = \\dfrac{(s_1^2/s_2^2)}{(\\sigma_1^2/\\sigma_2^2)_0}\\)"),
           sprintf("\\(= \\dfrac{%.4f}{%.4f}\\)", ratio, naught),
           sprintf("\\(= %.4f\\)", F_statistic),
+          br(),
           br()
         )
       } else {
         sprintf("\\(\\dfrac{s_1^2}{s_2^2} = \\dfrac{%.4f}{%.4f} = %.4f\\)", var1, var2, F_statistic)
-        br()
       }
     }
     
@@ -11691,6 +11762,89 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
     })
     
     ### ------------ Two Pop Var Outputs ----------------------------------------------
+    
+    #### ----------- Plots
+    
+    output$twoPopVarBoxplot <- renderPlot({
+      
+      if(input$dataAvailability3 == 'Enter Raw Data') {
+        sample1 <- createNumLst(input$raw_sample1)
+        sample2 <- createNumLst(input$raw_sample2)
+        sample1_label <- "Sample 1"
+        sample2_label <- "Sample 2"
+      } else if(input$dataAvailability3 == 'Upload Data') {
+        req(input$twoPopVarUplSample1, input$twoPopVarUplSample2)
+        sample1 <- na.omit(unlist(TwoPopVarUploadData()[,input$twoPopVarUplSample1]))
+        sample2 <- na.omit(unlist(TwoPopVarUploadData()[,input$twoPopVarUplSample2]))
+        sample1_label <- input$twoPopVarUplSample1
+        sample2_label <- input$twoPopVarUplSample2
+      }
+      
+      dat <- c(sample1, sample2)
+      df_boxplot <- data.frame(sample = c(rep(sample1_label, length(sample1)),rep(sample2_label, length(sample2))),data = dat)
+      
+      RenderSideBySideBoxplot(dat,
+                              df_boxplot,
+                              input[["twoPopVarBoxplot-Colour"]],
+                              input[["twoPopVarBoxplot-Title"]],
+                              input[["twoPopVarBoxplot-Xlab"]],
+                              input[["twoPopVarBoxplot-Ylab"]],
+                              input[["twoPopVarBoxplot-BoxWidth"]] / 10,
+                              input[["twoPopVarBoxplot-Gridlines"]],
+                              input[["twoPopVarBoxplot-Flip"]],
+                              input[["twoPopVarBoxplot-OutlierLabels"]])
+      
+      
+    }, height = function() {GetPlotHeight(input[["twoPopVarBoxplot-Height"]], input[["twoPopVarBoxplot-HeightPx"]], ui = FALSE)},
+    width = function() {GetPlotWidth(input[["twoPopVarBoxplot-Width"]], input[["twoPopVarBoxplot-WidthPx"]], ui = FALSE)}
+    )
+    
+    output$twoPopVarQQPlot <- renderPlot({
+      
+      if (input$dataAvailability3 == "Enter Raw Data") {
+        dat1 <- createNumLst(input$raw_sample1)
+        dat2 <- createNumLst(input$raw_sample2)
+      } else if (input$dataAvailability3 == "Upload Data") {
+        req(input$twoPopVarUplSample1, input$twoPopVarUplSample2)
+        dat1 <- na.omit(unlist(TwoPopVarUploadData()[,input$twoPopVarUplSample1]))
+        dat2 <- na.omit(unlist(TwoPopVarUploadData()[,input$twoPopVarUplSample2]))
+      }
+      
+      df1 <- tibble(values = dat1)
+      df2 <- tibble(values = dat2)
+      
+      qq1 <- RenderQQPlot(
+        dat = df1,
+        plotColour = input[["twoPopVarQQPlot-Colour"]],
+        plotTitle = "Sample 1 Q-Q Plot",
+        plotXlab = input[["twoPopVarQQPlot-Xlab"]],
+        plotYlab = input[["twoPopVarQQPlot-Ylab"]],
+        gridlines = input[["twoPopVarQQPlot-Gridlines"]])
+      
+      qq2 <- RenderQQPlot(
+        dat = df2,
+        plotColour = input[["twoPopVarQQPlot-Colour"]],
+        plotTitle = "Sample 2 Q-Q Plot",
+        plotXlab = input[["twoPopVarQQPlot-Xlab"]],
+        plotYlab = input[["twoPopVarQQPlot-Ylab"]],
+        gridlines = input[["twoPopVarQQPlot-Gridlines"]])
+      
+      plot_pair <- ggpubr::ggarrange(qq1, qq2, ncol = 2)
+      
+      ggpubr::annotate_figure(
+        plot_pair,
+        top = ggpubr::text_grob(
+          input[["twoPopVarQQPlot-Title"]],
+          face = "bold",
+          size = 24
+        )
+      )
+    }, height = function() {
+      GetPlotHeight(input[["twoPopVarQQPlot-Height"]], input[["twoPopVarQQPlot-HeightPx"]], ui = FALSE)
+    }, width = function() {
+      GetPlotWidth(input[["twoPopVarQQPlot-Width"]], input[["twoPopVarQQPlot-WidthPx"]], ui = FALSE)
+    })
+    
     #### ----------- CI
     output$twoPopVarCI <- renderUI ({
       req(si_iv$is_valid())
@@ -11715,42 +11869,45 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
           br(),
           printTwoPopVarGivens(data, is_variance),
           
-          p(sprintf("For a \\(%.0f\\%%\\) confidence interval:", conf_percent)),
-          p(sprintf("\\(\\alpha = 1 - %.2f = %.2f\\)", ConfLvl(), alpha)),
-          br(),
+          sprintf("For a \\(%.0f\\%%\\) confidence interval:", conf_percent),
+          br(), br(),
+          sprintf("\\(\\alpha = 1 - %.2f = %.2f\\)", ConfLvl(), alpha),
+          br(), br(),
           
           # df
           printDegreesFreedom(df1, df2),
           
           # critical values 
-          p(sprintf("\\(F_{\\alpha/2,\\ df_2,\\ df_1} = F_{%.3f,\\ %d,\\ %d} = %.4f\\)", 
-                    alpha / 2, df2, df1, CI$F_lower)),
-          p(sprintf("\\(F_{1 - \\alpha/2,\\ df_2,\\ df_1} = F_{%.3f,\\ %d,\\ %d} = %.4f\\)", 
-                    1 - (alpha / 2), df2, df1, CI$F_upper)),
-          br(),
+          sprintf("\\(F_{\\alpha/2,\\ df_2,\\ df_1} = F_{%.3f,\\ %d,\\ %d} = %.4f\\)", 
+                    alpha / 2, df2, df1, CI$F_lower),
+          br(), br(),
+          sprintf("\\(F_{1 - \\alpha/2,\\ df_2,\\ df_1} = F_{%.3f,\\ %d,\\ %d} = %.4f\\)", 
+                    1 - (alpha / 2), df2, df1, CI$F_upper),
+          br(), br(),
           
           # F stat calculation
           printFStat(data$sd1, data$sd2, CI$F_statistic, is_variance),
           
+          br(), br(),
           # formula for CI
-          p("\\( \\displaystyle CI = \\left( F_{\\alpha/2,\\ df_2\\,,\\ df_1} \\cdot \\dfrac{s_1^2}{s_2^2},\\ F_{1 - \\alpha/2,\\ df_2\\,,\\ df_1} \\cdot \\dfrac{s_1^2}{s_2^2} \\right) \\)"),
-          br(),
+          sprintf("\\( \\displaystyle CI = \\left( F_{\\alpha/2,\\ df_2\\,,\\ df_1} \\cdot \\dfrac{s_1^2}{s_2^2},\\ F_{1 - \\alpha/2,\\ df_2\\,,\\ df_1} \\cdot \\dfrac{s_1^2}{s_2^2} \\right) \\)"),
+          br(), br(),
           
           # formula with subbed in values
-          p(sprintf("\\( \\displaystyle CI = \\left( %.4f \\cdot %.4f,\\ %.4f \\cdot %.4f \\right) \\)",
-                    CI$F_lower, CI$F_statistic, CI$F_upper, CI$F_statistic)),
-          br(),
+          sprintf("\\( \\displaystyle CI = \\left( %.4f \\cdot %.4f,\\ %.4f \\cdot %.4f \\right) \\)",
+                    CI$F_lower, CI$F_statistic, CI$F_upper, CI$F_statistic),
+          br(), br(),
           
           # CI result
-          p(sprintf("\\( \\displaystyle CI = (%.4f, %.4f) \\)", CI$CI_lower, CI$CI_upper)),
-          br(),
+          sprintf("\\( \\displaystyle CI = (%.4f, %.4f) \\)", CI$CI_lower, CI$CI_upper),
+          br(), br(),
           
           # interpretation
           HTML(sprintf("<strong>Interpretation:</strong>")),
           br(),
           br(),
-          p(sprintf("We are \\(%.0f\\%%\\) confident that the ratio of the population variances is between \\(%.4f\\) and \\(%.4f\\).", 
-                    conf_percent, CI$CI_lower, CI$CI_upper))
+          sprintf("We are \\(%.0f\\%%\\) confident that the ratio of the population variances is between \\(%.4f\\) and \\(%.4f\\).", 
+                    conf_percent, CI$CI_lower, CI$CI_upper)
         ))
     })
 
@@ -13193,10 +13350,23 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       if (isTRUE(input$dataAvailability3 == "Upload Data")) {
         if (!twopopvaruploadvars_iv$is_valid()) {
           hideTab(inputId = "twoPopVarTabset", target = "Analysis")
+          hideTab(inputId = "twoPopVarTabset", target = "Graphs")
           updateTabsetPanel(session, "twoPopVarTabset", selected = "Uploaded Data")
         }
       }
     }, ignoreInit = TRUE)
+    
+    observeEvent(input$twoPopVarPlots, ignoreNULL = FALSE, {
+      if (length(input$twoPopVarPlots) > 0 && 
+          (input$dataAvailability3 == "Enter Raw Data" || input$dataAvailability3 == "Upload Data")) {
+        showTab(inputId = "twoPopVarTabset", target = "Graphs")
+      } else {
+        if (input$twoPopVarTabset == "Graphs") {
+          updateTabsetPanel(inputId = "twoPopVarTabset", selected = "Analysis")
+        }
+        hideTab(inputId = "twoPopVarTabset", target = "Graphs")
+      }
+    })
     
     session$onFlushed(function() {
       hideTab(inputId = "anovaTabset", target = "Uploaded Data")
@@ -13597,7 +13767,22 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
                        height = GetPlotHeight(input[["depMeansQQPlot-Height"]], input[["depMeansQQPlot-HeightPx"]], ui = TRUE),
                        width = GetPlotWidth(input[["depMeansQQPlot-Width"]], input[["depMeansQQPlot-WidthPx"]], ui = TRUE))
           })
+          
+        } else if(input$popuParameters == "Two Population Variances") {
+          
+          output$renderTwoPopVarBoxplot <- renderUI({
+            plotOutput(session$ns("twoPopVarBoxplot"),
+                       height = GetPlotHeight(input[["twoPopVarBoxplot-Height"]], input[["twoPopVarBoxplot-HeightPx"]], ui = TRUE),
+                       width = GetPlotWidth(input[["twoPopVarBoxplot-Width"]], input[["twoPopVarBoxplot-WidthPx"]], ui = TRUE))
+          })
+          
+          output$renderTwoPopVarQQPlot <- renderUI({
+            plotOutput(session$ns("twoPopVarQQPlot"),
+                       height = GetPlotHeight(input[["twoPopVarQQPlot-Height"]], input[["twoPopVarQQPlot-HeightPx"]], ui = TRUE),
+                       width = GetPlotWidth(input[["twoPopVarQQPlot-Width"]], input[["twoPopVarQQPlot-WidthPx"]], ui = TRUE))
+          })
         }
+          
       } else if(input$siMethod == 'Categorical') {
         
         # output$render2x2ChiSq <- renderUI({
@@ -13970,6 +14155,14 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
         }
       }
       
+      if(length(input$twoPopVarPlots) > 0 && 
+         (input$dataAvailability3 == "Enter Raw Data" || input$dataAvailability3 == "Upload Data") &&
+         si_iv$is_valid()) {
+        showTab(inputId = "twoPopVarTabset", target = "Graphs")
+      } else {
+        hideTab(inputId = "twoPopVarTabset", target = "Graphs")
+      }
+      
     })
     
     observeEvent(input$resetInference, {
@@ -14081,6 +14274,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       updateSelectizeInput(session, "kwResponse", selected = "")
       updateSelectizeInput(session, "kwFactors", selected = "")
       updatePickerInput(session,"indMeansPlots",selected = c("indMeansBoxplot", "indMeansQQPlot"))
+      updatePickerInput(session,"twoPopVarPlots",selected = c("twoPopVarBoxplot", "twoPopVarQQPlot"))
       updatePickerInput(session,"oneSDPlots",selected = c("oneSDBoxplot", "oneSDHistogram"))
       updatePickerInput(session,"sidebysidewRankPlots",selected = c("sidebysidewRankSum", "sidebysidewRankQQ"))
       updatePickerInput(session,"anovaGraphs",selected = c("Side-by-side Boxplot", "Plot Group Means"))
