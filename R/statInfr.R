@@ -11947,7 +11947,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
           printTwoPopVarGivens(data, is_variance),
           
           # print F stat calc
-          printFStat(data$sd1, data$sd2, HT$F_statistic, is_variance, is_HT = TRUE),
+          printFStat(data$sd1, data$sd2, HT$F_statistic, is_variance, is_HT = TRUE, input$twoPopVarNaught),
           br(),
           
           # print P value method
@@ -14208,6 +14208,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       updateNumericInput(session, "s1sq", value = 9)
       updateNumericInput(session, "n2", value = 18)
       updateNumericInput(session, "s2sq", value = 23.04)
+      updateNumericInput(session, "twoPopVarNaught", value = 1)
       updateNumericInput(session, "indMeansMuNaught", value = 0)
       updateNumericInput(session, "depMeansMuNaught", value = 0)
       updateNumericInput(session, "propDiffNaught", value = 0)
