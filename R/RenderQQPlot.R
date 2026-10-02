@@ -17,7 +17,9 @@ RenderQQPlot <- function(dat, plotColour, plotTitle, plotXlab, plotYlab, gridlin
         axis.text.x.bottom = element_text(size = 16,
                                           margin = ggplot2::margin(5,0,5,0)),
         axis.text.y.left = element_text(size = 16,
-                                        margin = ggplot2::margin(0,5,0,5)))
+                                        margin = ggplot2::margin(0,5,0,5)),
+        plot.margin = ggplot2::margin(5, 15, 5, 15)
+      )
     )
   
   if("Major" %in% gridlines) {
@@ -31,7 +33,7 @@ RenderQQPlot <- function(dat, plotColour, plotTitle, plotXlab, plotYlab, gridlin
                 ggtheme = theme(
                   panel.grid.minor = element_line(colour = "#D9D9D9")))
   }
-
+  
   return(qp)
 }
 

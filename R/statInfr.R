@@ -1065,7 +1065,7 @@ statInfrUI <- function(id) {
                 step    = 1),
             ), # Two Population Proportions
             
-            ### ------------ 2 Pop Standard Deviations ------------------------------------
+            ### ------------ 2 Pop Variances ------------------------------------
             
             conditionalPanel(
               ns = ns,
@@ -1097,7 +1097,7 @@ statInfrUI <- function(id) {
                 withMathJax(
                   tagList(
                     numericInput(
-                      inputId = ns("SDSampleSize1"),
+                      inputId = ns("twoPopSDSampSize1"),
                       label   = HTML("<strong>Sample Size 1</strong> \\( (n_1) \\)"),
                       value   = 12,
                       min     = 1,
@@ -1106,7 +1106,7 @@ statInfrUI <- function(id) {
                     
                     
                     numericInput(
-                      inputId = ns("stdDev1"),
+                      inputId = ns("twoPopSD1"),
                       label   = HTML("<strong>Sample Standard Deviation 1</strong> \\( (s_1) \\)"),
                       value   = 3,
                       min     = 1,
@@ -1123,7 +1123,7 @@ statInfrUI <- function(id) {
                     
                     
                     numericInput(
-                      inputId = ns("stdDev2"),
+                      inputId = ns("twoPopSD2"),
                       label   = HTML("<strong>Sample Standard Deviation 2</strong> \\( (s_2) \\)"),
                       value   = 4.8,
                       min     = 1,
@@ -1139,28 +1139,28 @@ statInfrUI <- function(id) {
                 withMathJax(
                   tagList(
                     numericInput(
-                      inputId = ns("n1"),
+                      inputId = ns("twoPopVarSampSize1"),
                       label   = HTML("<strong>Sample Size 1</strong> \\( (n_1) \\)"),
                       value   = 12,
                       min     = 1,
                       step    = 1),
                     
                     numericInput(
-                      inputId = ns("s1sq"),
+                      inputId = ns("twoPopVarSampleVar1"),
                       label   = HTML("<strong>Sample Variance 1 </strong>\\( (s_1^2) \\)"),
                       value   = 9,
                       min     = 1,
                       step    = 0.01),
                     
                     numericInput(
-                      inputId = ns("n2"),
+                      inputId = ns("twoPopVarSampSize2"),
                       label   = HTML("<strong>Sample Size 2</strong> \\( (n_2) \\)"),
                       value   = 18,
                       min     = 1,
                       step    = 1),
                     
                     numericInput(
-                      inputId = ns("s2sq"),
+                      inputId = ns("twoPopVarSampleVar2"),
                       label   = HTML("<strong>Sample Variance 2</strong> \\( (s_2^2) \\)"),
                       value   = 23.04,
                       min     = 1,
@@ -1174,14 +1174,14 @@ statInfrUI <- function(id) {
                 condition = "input.dataAvailability3 == 'Enter Raw Data'",
                 
                 textAreaInput(
-                  inputId     = ns("rawSamp1SD"),
+                  inputId     = ns("twoPopVarSamp1"),
                   label       = strong("Sample 1 (e.g Class A test scores)"),
                   value       = "80, 54, 97, 76, 66, 87, 83, 91",
                   placeholder = "Enter values separated by a comma, space, or tab with decimals as points",
                   rows        = 3),
                 
                 textAreaInput(
-                  inputId     = ns("rawSamp2SD"),
+                  inputId     = ns("twoPopVarSamp2"),
                   label       = strong("Sample 2 (e.g Class B test scores)"),
                   value       = "45, 54, 67, 95, 100, 82, 83, 74",
                   placeholder = "Enter values separated by a comma, space, or tab with decimals as points",
@@ -3444,53 +3444,53 @@ statInfrServer <- function(id) {
     twopropdiffnaught_iv$add_rule("propDiffNaught", sv_gte(-1, message = "Value must be between -1 and 1 (inclusive)."))
     twopropdiffnaught_iv$add_rule("propDiffNaught", sv_lte(1, message = "Value must be between -1 and 1 (inclusive)."))
     
-    # SDSampleSize1
-    twopopvarsum_iv$add_rule("SDSampleSize1", sv_required())
-    twopopvarsum_iv$add_rule("SDSampleSize1", sv_integer())
-    twopopvarsum_iv$add_rule("SDSampleSize1", sv_gt(1))
+    # twoPopSDSampSize1
+    twopopvarsum_iv$add_rule("twoPopSDSampSize1", sv_required())
+    twopopvarsum_iv$add_rule("twoPopSDSampSize1", sv_integer())
+    twopopvarsum_iv$add_rule("twoPopSDSampSize1", sv_gt(1))
     
     # SDSampleSize2
     twopopvarsum_iv$add_rule("SDSampleSize2", sv_required())
     twopopvarsum_iv$add_rule("SDSampleSize2", sv_integer())
     twopopvarsum_iv$add_rule("SDSampleSize2", sv_gt(1))
     
-    # stdDev1
-    twopopvarsum_iv$add_rule("stdDev1", sv_required())
-    twopopvarsum_iv$add_rule("stdDev1", sv_gt(0))
+    # twoPopSD1
+    twopopvarsum_iv$add_rule("twoPopSD1", sv_required())
+    twopopvarsum_iv$add_rule("twoPopSD1", sv_gt(0))
     
-    # stdDev2
-    twopopvarsum_iv$add_rule("stdDev2", sv_required())
-    twopopvarsum_iv$add_rule("stdDev2", sv_gt(0))
+    # twoPopSD1
+    twopopvarsum_iv$add_rule("twoPopSD2", sv_required())
+    twopopvarsum_iv$add_rule("twoPopSD2", sv_gt(0))
     
     # Two Std Dev n1
-    twopopvar_iv$add_rule("n1", sv_required())
-    twopopvar_iv$add_rule("n1", sv_integer())
-    twopopvar_iv$add_rule("n1", sv_gt(1))
+    twopopvar_iv$add_rule("twoPopVarSampSize1", sv_required())
+    twopopvar_iv$add_rule("twoPopVarSampSize1", sv_integer())
+    twopopvar_iv$add_rule("twoPopVarSampSize1", sv_gt(1))
     
     # Two Std Dev n2
-    twopopvar_iv$add_rule("n2", sv_required())
-    twopopvar_iv$add_rule("n2", sv_integer())
-    twopopvar_iv$add_rule("n2", sv_gt(1))
+    twopopvar_iv$add_rule("twoPopVarSampSize2", sv_required())
+    twopopvar_iv$add_rule("twoPopVarSampSize2", sv_integer())
+    twopopvar_iv$add_rule("twoPopVarSampSize2", sv_gt(1))
     
     # Two Std Dev s1^2
-    twopopvar_iv$add_rule("s1sq", sv_required())
-    twopopvar_iv$add_rule("s1sq", sv_gt(0))
+    twopopvar_iv$add_rule("twoPopVarSampleVar1", sv_required())
+    twopopvar_iv$add_rule("twoPopVarSampleVar1", sv_gt(0))
     
     # Two Std Dev s2^2
-    twopopvar_iv$add_rule("s2sq", sv_required())
-    twopopvar_iv$add_rule("s2sq", sv_gt(0))
+    twopopvar_iv$add_rule("twoPopVarSampleVar2", sv_required())
+    twopopvar_iv$add_rule("twoPopVarSampleVar2", sv_gt(0))
     
     # raw group 1
-    twopopvarraw_iv$add_rule("rawSamp1SD", sv_required())
-    twopopvarraw_iv$add_rule("rawSamp1SD", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
+    twopopvarraw_iv$add_rule("twoPopVarSamp1", sv_required())
+    twopopvarraw_iv$add_rule("twoPopVarSamp1", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
                                                     "Data must be at least three numeric values separated by a comma, space, or tab (ie: 2,3,4)."))
-    twopopvarraw_iv$add_rule("rawSamp1SD", ~ if (sd(createNumLst(input$rawSamp1SD)) == 0) "Sample standard deviation cannot be zero.")
+    twopopvarraw_iv$add_rule("twoPopVarSamp1", ~ if (sd(createNumLst(input$twoPopVarSamp1)) == 0) "Sample standard deviation cannot be zero.")
     
     # raw group 2
-    twopopvarraw_iv$add_rule("rawSamp2SD", sv_required())
-    twopopvarraw_iv$add_rule("rawSamp2SD", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
+    twopopvarraw_iv$add_rule("twoPopVarSamp2", sv_required())
+    twopopvarraw_iv$add_rule("twoPopVarSamp2", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
                                                     "Data must be at least three numeric values separated by a comma, space, or tab (ie: 2,3,4)."))
-    twopopvarraw_iv$add_rule("rawSamp2SD", ~ if (sd(createNumLst(input$rawSamp2SD)) == 0) "Sample standard deviation cannot be zero.")
+    twopopvarraw_iv$add_rule("twoPopVarSamp2", ~ if (sd(createNumLst(input$twoPopVarSamp2)) == 0) "Sample standard deviation cannot be zero.")
     
     # two pop var upload
     twopopvarupload_iv$add_rule("twoPopVarUserData", sv_required())
@@ -6998,15 +6998,15 @@ statInfrServer <- function(id) {
       dat <- list()
       
       if (input$dataAvailability3 == "Summary") {
-        dat$n1 <- input$SDSampleSize1
+        dat$n1 <- input$twoPopSDSampSize1
         dat$n2 <- input$SDSampleSize2
-        dat$sd1 <- input$stdDev1
-        dat$sd2 <- input$stdDev2
+        dat$sd1 <- input$twoPopSD1
+        dat$sd2 <- input$twoPopSD2
       } else if (input$dataAvailability3 == "Variance") {
-        dat$n1 <- input$n1
-        dat$n2 <- input$n2
-        dat$sd1 <- input$s1sq
-        dat$sd2 <- input$s2sq
+        dat$n1 <- input$twoPopVarSampSize1
+        dat$n2 <- input$twoPopVarSampSize2
+        dat$sd1 <- input$twoPopVarSampleVar1
+        dat$sd2 <- input$twoPopVarSampleVar2
       }
       
       return(dat)
@@ -7017,12 +7017,8 @@ statInfrServer <- function(id) {
       
       dat <- list()
       
-      if(input$dataAvailability3 == 'Enter Raw Data') {
-        samp1 <- createNumLst(input$rawSamp1SD)
-        samp2 <- createNumLst(input$rawSamp2SD)
-      } else if(input$dataAvailability3 == 'Upload'){
-        # future work, uploading files not implemented currently
-      }
+      samp1 <- createNumLst(input$twoPopVarSamp1)
+      samp2 <- createNumLst(input$twoPopVarSamp2)
       
       dat$sample1 <- samp1
       dat$sample2 <- samp2
@@ -7916,37 +7912,37 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       
       if(!twopopvarsum_iv$is_valid()) {
         validate(
-          need(input$SDSampleSize1, "Sample size 1 is required.") %then%
-            need(input$SDSampleSize1 %% 1 == 0 && input$SDSampleSize1 > 1, "Sample size 1 must be an integer greater than one."),
+          need(input$twoPopSDSampSize1, "Sample size 1 is required.") %then%
+            need(input$twoPopSDSampSize1 %% 1 == 0 && input$twoPopSDSampSize1 > 1, "Sample size 1 must be an integer greater than one."),
           
-          need(input$stdDev1, "Sample standard deviation 1 is required.") %then%
-            need(input$stdDev1 > 0, "Standard deviation for sample 1 must be greater than zero."),
+          need(input$twoPopSD1, "Sample standard deviation 1 is required.") %then%
+            need(input$twoPopSD1 > 0, "Standard deviation for sample 1 must be greater than zero."),
           
           need(input$SDSampleSize2, "Sample size 2 is required.") %then%
             need(input$SDSampleSize2 %% 1 == 0 && input$SDSampleSize2 > 1, "Sample size 2 must be an integer greater than one."),
           
-          need(input$stdDev2, "Sample standard deviation 2 is required.") %then%
-            need(input$stdDev2 > 0, "Standard deviation for sample 2 must be greater than zero."),
+          need(input$twoPopSD2, "Sample standard deviation 2 is required.") %then%
+            need(input$twoPopSD2 > 0, "Standard deviation for sample 2 must be greater than zero."),
           
           errorClass = "myClass")
       }
       
       if (!twopopvar_iv$is_valid()) {
         validate(
-          need(input$n1, "Sample size 1 is required.") %then%
-            need(input$n1 %% 1 == 0 && input$n1 > 1,
+          need(input$twoPopVarSampSize1, "Sample size 1 is required.") %then%
+            need(input$twoPopVarSampSize1 %% 1 == 0 && input$twoPopVarSampSize1 > 1,
                  "Sample size 1 must be an integer greater than one."),
           
-          need(input$s1sq, "Sample variance 1 is required.") %then%
-            need(input$s1sq > 0,
+          need(input$twoPopVarSampleVar1, "Sample variance 1 is required.") %then%
+            need(input$twoPopVarSampleVar1 > 0,
                  "Variance for sample 1 must be greater than zero."),
           
-          need(input$n2, "Sample size 2 is required.") %then%
-            need(input$n2 %% 1 == 0 && input$n2 > 1,
+          need(input$twoPopVarSampSize2, "Sample size 2 is required.") %then%
+            need(input$twoPopVarSampSize2 %% 1 == 0 && input$twoPopVarSampSize2 > 1,
                  "Sample size 2 must be an integer greater than one."),
           
-          need(input$s2sq, "Sample variance 2 is required.") %then%
-            need(input$s2sq > 0,
+          need(input$twoPopVarSampleVar2, "Sample variance 2 is required.") %then%
+            need(input$twoPopVarSampleVar2 > 0,
                  "Variance for sample 2 must be greater than zero."),
           
           errorClass = "myClass"
@@ -7955,13 +7951,13 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       
       if (!twopopvarraw_iv$is_valid()) {
         validate(
-          need(input$rawSamp1SD, "Sample 1 data must contain at least three numeric values.") %then%
-            need(length(createNumLst(input$rawSamp1SD)) >= 3, "Sample 1 data must contain at least three numeric values.") %then%
-            need(sd(createNumLst(input$rawSamp1SD)) > 0, "Variance for sample 1 must be greater than zero."),
+          need(input$twoPopVarSamp1, "Sample 1 data must contain at least three numeric values.") %then%
+            need(length(createNumLst(input$twoPopVarSamp1)) >= 3, "Sample 1 data must contain at least three numeric values.") %then%
+            need(sd(createNumLst(input$twoPopVarSamp1)) > 0, "Variance for sample 1 must be greater than zero."),
           
-          need(input$rawSamp2SD, "Sample 2 data must contain at least three numeric values.") %then%
-            need(length(createNumLst(input$rawSamp2SD)) >= 3, "Sample 2 data must contain at least three numeric values.") %then%
-            need(sd(createNumLst(input$rawSamp2SD)) > 0, "Variance for sample 2 must be greater than zero."),
+          need(input$twoPopVarSamp2, "Sample 2 data must contain at least three numeric values.") %then%
+            need(length(createNumLst(input$twoPopVarSamp2)) >= 3, "Sample 2 data must contain at least three numeric values.") %then%
+            need(sd(createNumLst(input$twoPopVarSamp2)) > 0, "Variance for sample 2 must be greater than zero."),
           
           errorClass = "myClass"
         )
@@ -9516,8 +9512,13 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
         req(input$indMeansUplSample1, input$indMeansUplSample2)
         sample1 <- na.omit(unlist(IndMeansUploadData()[,input$indMeansUplSample1]))
         sample2 <- na.omit(unlist(IndMeansUploadData()[,input$indMeansUplSample2]))
-        sample1_label <- input$indMeansUplSample1
-        sample2_label <- input$indMeansUplSample2
+        if (input$indMeansUplSample1 == input$indMeansUplSample2) {
+          sample1_label <- paste0(input$indMeansUplSample1, " (Sample 1)")
+          sample2_label <- paste0(input$indMeansUplSample2, " (Sample 2)")
+        } else {
+          sample1_label <- input$indMeansUplSample1
+          sample2_label <- input$indMeansUplSample2
+        }
       }
       
       dat <- c(sample1, sample2)
@@ -11365,60 +11366,29 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
     }, ignoreInit = TRUE)
 
     output$signedRankQQ <- renderPlot({
-      
+      # signed rank qq plot
       req(input$signedRankQQPlot)
       req(!is.null(signedRankedData()))
-      req(nrow(signedRankedData()) > 0)
       
       data_ranked <- signedRankedData()
+      
       differences <- data_ranked$Sample1 - data_ranked$Sample2
       differences <- differences[differences != 0]
       
-      ## Coalesce NULL to the default value; collapse character vectors of
-      ## empty strings to a single empty string; substitute default value for
-      ## zero-length vectors (as appropriate, a singular empty string,
-      ## zero-length character vector, or the number zero).
-      safe_input <- function(input_name = c("Title", "Xlab", "Ylab", "Colour", "Gridlines", "Flip")) {
-        input_name <- match.arg(input_name)
-        if (input_name %in% c("Title", "Xlab", "Ylab")) {
-          default_value = ""
-        } else if (input_name == "Colour") {
-          default_value = "blue"
-        } else if (input_name == "Gridlines") {
-          default_value = character()
-        } else if (input_name == "Flip") {
-          default_value = 0
-        }
-
-        value <- input[[paste0("signedRankQQ-", input_name)]] %||% default_value
-        if (is.character(value) && all(value == "") || length(value) == 0) {
-          value <- default_value
-        }
-
-        value
-      }
-
-      RenderQQPlot(data.frame(values = differences),
-                             safe_input("Colour"),
-                             safe_input("Title"),
-                             safe_input("Xlab"),
-                             safe_input("Ylab"),
-                             safe_input("Gridlines"))
+      df <- tibble(values = differences)
+      
+      RenderQQPlot(
+        dat = df,
+        plotColour = input[["signedRankQQ-Colour"]],
+        plotTitle = input[["signedRankQQ-Title"]],
+        plotXlab = input[["signedRankQQ-Xlab"]],
+        plotYlab = input[["signedRankQQ-Ylab"]],
+        gridlines = input[["signedRankQQ-Gridlines"]])
+      
     }, height = function() {
-      height_val <- input[["signedRankQQ-Height"]]
-      height_px_val <- input[["signedRankQQ-HeightPx"]]
-      if(is.null(height_val) || is.null(height_px_val)) {
-        return(400)
-      }
-      GetPlotHeight(height_val, height_px_val, ui = FALSE)
-    },
-    width = function() {
-      width_val <- input[["signedRankQQ-Width"]]
-      width_px_val <- input[["signedRankQQ-WidthPx"]]
-      if(is.null(width_val) || is.null(width_px_val)) {
-        return(600)
-      }
-      GetPlotWidth(width_val, width_px_val, ui = FALSE)
+      GetPlotHeight(input[["signedRankQQ-Height"]], input[["signedRankQQ-HeightPx"]], ui = FALSE)
+    }, width = function() {
+      GetPlotWidth(input[["signedRankQQ-Width"]], input[["signedRankQQ-WidthPx"]], ui = FALSE)
     })
     
     output$downloadSignedRankXlsx <- downloadHandler(
@@ -11768,16 +11738,21 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
     output$twoPopVarBoxplot <- renderPlot({
       
       if(input$dataAvailability3 == 'Enter Raw Data') {
-        sample1 <- createNumLst(input$raw_sample1)
-        sample2 <- createNumLst(input$raw_sample2)
+        sample1 <- createNumLst(input$twoPopVarSamp1)
+        sample2 <- createNumLst(input$twoPopVarSamp2)
         sample1_label <- "Sample 1"
         sample2_label <- "Sample 2"
       } else if(input$dataAvailability3 == 'Upload Data') {
         req(input$twoPopVarUplSample1, input$twoPopVarUplSample2)
         sample1 <- na.omit(unlist(TwoPopVarUploadData()[,input$twoPopVarUplSample1]))
         sample2 <- na.omit(unlist(TwoPopVarUploadData()[,input$twoPopVarUplSample2]))
-        sample1_label <- input$twoPopVarUplSample1
-        sample2_label <- input$twoPopVarUplSample2
+        if (input$twoPopVarUplSample1 == input$twoPopVarUplSample2) {
+          sample1_label <- paste0(input$twoPopVarUplSample1, " (Sample 1)")
+          sample2_label <- paste0(input$twoPopVarUplSample2, " (Sample 2)")
+        } else {
+          sample1_label <- input$twoPopVarUplSample1
+          sample2_label <- input$twoPopVarUplSample2
+        }
       }
       
       dat <- c(sample1, sample2)
@@ -11802,8 +11777,8 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
     output$twoPopVarQQPlot <- renderPlot({
       
       if (input$dataAvailability3 == "Enter Raw Data") {
-        dat1 <- createNumLst(input$raw_sample1)
-        dat2 <- createNumLst(input$raw_sample2)
+        dat1 <- createNumLst(input$twoPopVarSamp1)
+        dat2 <- createNumLst(input$twoPopVarSamp2)
       } else if (input$dataAvailability3 == "Upload Data") {
         req(input$twoPopVarUplSample1, input$twoPopVarUplSample2)
         dat1 <- na.omit(unlist(TwoPopVarUploadData()[,input$twoPopVarUplSample1]))
@@ -14200,14 +14175,14 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       updateNumericInput(session, "numTrials1", value = 300)
       updateNumericInput(session, "numSuccesses2", value = 111)
       updateNumericInput(session, "numTrials2", value = 300)
-      updateNumericInput(session, "SDSampleSize1", value = 12)
-      updateNumericInput(session, "stdDev1", value = 3)
+      updateNumericInput(session, "twoPopSDSampSize1", value = 12)
+      updateNumericInput(session, "twoPopSD1", value = 3)
       updateNumericInput(session, "SDSampleSize2", value = 18)
-      updateNumericInput(session, "stdDev2", value = 4.8)
-      updateNumericInput(session, "n1", value = 12)
-      updateNumericInput(session, "s1sq", value = 9)
-      updateNumericInput(session, "n2", value = 18)
-      updateNumericInput(session, "s2sq", value = 23.04)
+      updateNumericInput(session, "twoPopSD2", value = 4.8)
+      updateNumericInput(session, "twoPopVarSampSize1", value = 12)
+      updateNumericInput(session, "twoPopVarSampleVar1", value = 9)
+      updateNumericInput(session, "twoPopVarSampSize2", value = 18)
+      updateNumericInput(session, "twoPopVarSampleVar2", value = 23.04)
       updateNumericInput(session, "twoPopVarNaught", value = 1)
       updateNumericInput(session, "indMeansMuNaught", value = 0)
       updateNumericInput(session, "depMeansMuNaught", value = 0)
@@ -14234,9 +14209,9 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
                           value = "484, 478, 492, 444, 436, 398, 464, 476")
       updateTextAreaInput(session, "signedRankRaw2",
                           value = "488, 478, 480, 426, 440, 410, 458, 460")
-      updateTextAreaInput(session, "rawSamp1SD",
+      updateTextAreaInput(session, "twoPopVarSamp1",
                           value = "80, 54, 97, 76, 66, 87, 83, 91")
-      updateTextAreaInput(session, "rawSamp2SD",
+      updateTextAreaInput(session, "twoPopVarSamp2",
                           value = "45, 54, 67, 95, 100, 82, 83, 74")
 
       ## -- Chi-square text inputs and matrices --
