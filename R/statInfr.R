@@ -11370,10 +11370,19 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       req(input$signedRankQQPlot)
       req(!is.null(signedRankedData()))
       
-      data_ranked <- signedRankedData()
+      if (input$signedRankTest == "Enter Raw Data") {
+        sample1_vals <- createNumLst(input$signedRankRaw1)
+        sample2_vals <- createNumLst(input$signedRankRaw2)
+      } else if (input$signedRankTest == "Upload Data") {
+        req(signedRankUpload_iv$is_valid())
+        uploaded_data <- signedRankUploadData()
+        sample1_vals <- na.omit(uploaded_data[[input$signedRankUpl1]])
+        sample2_vals <- na.omit(uploaded_data[[input$signedRankUpl2]])
+      }
       
-      differences <- data_ranked$Sample1 - data_ranked$Sample2
-      differences <- differences[differences != 0]
+      min_length <- min(length(sample1_vals), length(sample2_vals))
+      
+      differences <- sample1_vals[1:min_length] - sample2_vals[1:min_length]
       
       df <- tibble(values = differences)
       
