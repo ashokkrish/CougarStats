@@ -17,7 +17,12 @@ ZTest <- function(n, xbar, sigma, mu = 0, alternative = c("two.sided", "less", "
     z.crit <- qnorm(1 - s_level)
   }
   
-  dat <- sapply(c(n, xbar, sigma, z.crit, se, zstat, p_value), function(x){ if(x < 0.0001 && x > -1e-2) {signif(x,1)} else {round(x, 4)}})
+  # e.g. sigma = 0 with xbar = mu (0/0): the test statistic does not exist
+  validate(
+    need(!anyNA(c(z.crit, zstat, p_value)), "Unable to calculate the test statistic. Check that the population standard deviation is greater than zero."),
+    errorClass = "myClass")
+  
+  dat <- sapply(c(n, xbar, sigma, z.crit, se, zstat, p_value), function(x){ if(!is.na(x) && x < 0.0001 && x > -1e-2) {signif(x,1)} else {round(x, 4)}})
   
   names(dat) <- c("Sample Size", "Sample Mean", "Population SD", "Z Critical", "Std Error", "Test Statistic", "P-Value")
   

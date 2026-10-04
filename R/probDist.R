@@ -746,34 +746,8 @@ probDistUI <- function(id) {
       #  ========================================================================== #
       mainPanel(
         div(id = ns("probabilityMP"),
-            tags$script(HTML("
-              function copyPlotToClipboard(plotId) {
-                var plotDiv = document.getElementById(plotId);
-                if (!plotDiv) return;
-                var btn = document.querySelector('[data-copy-plot=\"' + plotId + '\"]');
-        
-                Plotly.toImage(plotDiv, {format: 'png', width: plotDiv.offsetWidth, height: plotDiv.offsetHeight})
-                  .then(function(dataUrl) { return fetch(dataUrl); })
-                  .then(function(res) { return res.blob(); })
-                  .then(function(blob) {
-                    return navigator.clipboard.write([new ClipboardItem({'image/png': blob})]);
-                  })
-                  .then(function() {
-                    if (btn) {
-                      var orig = btn.innerHTML;
-                      btn.innerHTML = '<i class=\"fa fa-check\"></i> Copied!';
-                      btn.disabled = true;
-                      setTimeout(function() {
-                        btn.innerHTML = orig;
-                        btn.disabled = false;
-                      }, 2000);
-                    }
-                  })
-                  .catch(function(err) {
-                    alert('Could not copy to clipboard. Your browser may not support this feature, or the page must be served over HTTPS.');
-                  });
-              }
-            ")),
+            ## copyPlotToClipboard() for the Copy to Clipboard button is defined once in
+            ## www/copyPlotToClipboard.js, loaded from ui.R.
             ### ------------ Contingency Tables -------------------------------------------
             conditionalPanel(
               ns = ns,
@@ -1039,6 +1013,28 @@ probDistUI <- function(id) {
                     
                     uiOutput(ns("renderCriticalValueStudentT"))
                   ),
+                  
+                  # One code box shared by both calculation types (static so its ids are unique)
+                  codeBox(
+                    boxId = "rcodeStudentTBox",
+                    outputId = "rcodeStudentT",
+                    ns = ns
+                  ),
+                  
+                  # Plots, shown below the code box
+                  conditionalPanel(
+                    ns = ns,
+                    condition = "input.calcTypeStudentT == 'Probability'",
+                    
+                    uiOutput(ns("renderProbabilityStudentTPlot"))
+                  ),
+                  
+                  conditionalPanel(
+                    ns = ns,
+                    condition = "input.calcTypeStudentT == 'Critical Value'",
+                    
+                    uiOutput(ns("renderCriticalValueStudentTPlot"))
+                  ),
                   br())))), 
       ) 
     ) 
@@ -1068,17 +1064,6 @@ probDistServer <- function(id) {
     ctable3x2conditional_iv <- InputValidator$new()
     ctable3x3_iv <- InputValidator$new()
     ctable3x3conditional_iv <- InputValidator$new()
-    
-    ptable_iv <- InputValidator$new()
-    ptableconditional_iv <- InputValidator$new()
-    ptable2x2_iv <- InputValidator$new()
-    ptable2x2conditional_iv <- InputValidator$new()
-    ptable2x3_iv <- InputValidator$new()
-    ptable2x3conditional_iv <- InputValidator$new()
-    ptable3x2_iv <- InputValidator$new()
-    ptable3x2conditional_iv <- InputValidator$new()
-    ptable3x3_iv <- InputValidator$new()
-    ptable3x3conditional_iv <- InputValidator$new()
     
     binom_iv <- InputValidator$new()
     binomprob_iv <- InputValidator$new()
@@ -1112,11 +1097,23 @@ probDistServer <- function(id) {
     
     ### ------------ Rules -------------------------------------------------------
     
+    # Text for an all-zero matrix. With the Conditional probability type it is the
+    # conditional totals text (the zero totals are what stops those probabilities,
+    # as before); the other types keep the all-zero text. The rule still fails in
+    # both cases, so what the results show does not change.
+    ctableAllZeroMsg <- function() {
+      if (isTRUE(input$cTableProb == 'Conditional')) {
+        "Row and Column totals must be greater than 0."
+      } else {
+        "All cell values cannot be equal to zero."
+      }
+    }
+    
     ctable2x2_iv$add_rule("cMatrix2x2", sv_required())
     ctable2x2_iv$add_rule("cMatrix2x2", ~ if(any(is.na(cMatrixData2x2()))) "Fields must be positive integers.")
     ctable2x2_iv$add_rule("cMatrix2x2", ~ if(any(cMatrixData2x2() < 0)) "Fields must be positive integers.")
     ctable2x2_iv$add_rule("cMatrix2x2", ~ if(any(cMatrixData2x2() %% 1 != 0)) "Fields must be positive integers.")
-    ctable2x2_iv$add_rule("cMatrix2x2", ~ if(all(cMatrixData2x2() == 0)) "All cell values cannot be equal to zero.")
+    ctable2x2_iv$add_rule("cMatrix2x2", ~ if(all(cMatrixData2x2() == 0)) ctableAllZeroMsg())
     
     ctable2x2conditional_iv$add_rule("cMatrix2x2", ~ if(any(cMatrix2x2Totaled()['Total',] == 0)) "Row and Column totals must be greater than 0.")
     ctable2x2conditional_iv$add_rule("cMatrix2x2", ~ if(any(cMatrix2x2Totaled()[,'Total'] == 0)) "Row and Column totals must be greater than 0.")
@@ -1125,7 +1122,7 @@ probDistServer <- function(id) {
     ctable2x3_iv$add_rule("cMatrix2x3", ~ if(any(is.na(cMatrixData2x3()))) "Fields must be positive integers.")
     ctable2x3_iv$add_rule("cMatrix2x3", ~ if(any(cMatrixData2x3() < 0)) "Fields must be positive integers.")
     ctable2x3_iv$add_rule("cMatrix2x3", ~ if(any(cMatrixData2x3() %% 1 != 0)) "Fields must be positive integers.")
-    ctable2x3_iv$add_rule("cMatrix2x3", ~ if(all(cMatrixData2x3() == 0)) "All cell values cannot be equal to zero.")
+    ctable2x3_iv$add_rule("cMatrix2x3", ~ if(all(cMatrixData2x3() == 0)) ctableAllZeroMsg())
     
     ctable2x3conditional_iv$add_rule("cMatrix2x3", ~ if(any(cMatrix2x3Totaled()['Total',] == 0)) "Row and Column totals must be greater than 0.")
     ctable2x3conditional_iv$add_rule("cMatrix2x3", ~ if(any(cMatrix2x3Totaled()[,'Total'] == 0)) "Row and Column totals must be greater than 0.")
@@ -1134,7 +1131,7 @@ probDistServer <- function(id) {
     ctable3x2_iv$add_rule("cMatrix3x2", ~ if(any(is.na(cMatrixData3x2()))) "Fields must be positive integers.")
     ctable3x2_iv$add_rule("cMatrix3x2", ~ if(any(cMatrixData3x2() < 0)) "Fields must be positive integers.")
     ctable3x2_iv$add_rule("cMatrix3x2", ~ if(any(cMatrixData3x2() %% 1 != 0)) "Fields must be positive integers.")
-    ctable3x2_iv$add_rule("cMatrix3x2", ~ if(all(cMatrixData3x2() == 0)) "All cell values cannot be equal to zero.")
+    ctable3x2_iv$add_rule("cMatrix3x2", ~ if(all(cMatrixData3x2() == 0)) ctableAllZeroMsg())
     
     ctable3x2conditional_iv$add_rule("cMatrix3x2", ~ if(any(cMatrix3x2Totaled()['Total',] == 0)) "Row and Column totals must be greater than 0.")
     ctable3x2conditional_iv$add_rule("cMatrix3x2", ~ if(any(cMatrix3x2Totaled()[,'Total'] == 0)) "Row and Column totals must be greater than 0.")
@@ -1143,42 +1140,10 @@ probDistServer <- function(id) {
     ctable3x3_iv$add_rule("cMatrix3x3", ~ if(any(is.na(cMatrixData3x3()))) "Fields must be positive integers.")
     ctable3x3_iv$add_rule("cMatrix3x3", ~ if(any(cMatrixData3x3() < 0)) "Fields must be positive integers.")
     ctable3x3_iv$add_rule("cMatrix3x3", ~ if(any(cMatrixData3x3() %% 1 != 0)) "Fields must be positive integers.")
-    ctable3x3_iv$add_rule("cMatrix3x3", ~ if(all(cMatrixData3x3() == 0)) "All cell values cannot be equal to zero.")
+    ctable3x3_iv$add_rule("cMatrix3x3", ~ if(all(cMatrixData3x3() == 0)) ctableAllZeroMsg())
     
     ctable3x3conditional_iv$add_rule("cMatrix3x3", ~ if(any(cMatrix3x3Totaled()['Total',] == 0)) "Row and Column totals must be greater than 0.")
     ctable3x3conditional_iv$add_rule("cMatrix3x3", ~ if(any(cMatrix3x3Totaled()[,'Total'] == 0)) "Row and Column totals must be greater than 0.")
-    
-    ptable2x2_iv$add_rule("pMatrix2x2", sv_required())
-    ptable2x2_iv$add_rule("pMatrix2x2", ~ if(any(is.na(pMatrixData2x2()))) "Probabilities must be between 0 and 1.")
-    ptable2x2_iv$add_rule("pMatrix2x2", ~ if(any(pMatrixData2x2() < 0)) "Probabilities must be between 0 and 1.")
-    ptable2x2_iv$add_rule("pMatrix2x2", ~ if(any(pMatrixData2x2() >= 1)) "Probabilities must be between 0 and 1.")
-    
-    ptable2x2conditional_iv$add_rule("pMatrix2x2", ~ if(any(pMatrix2x2Totaled()['Total',] == 0)) "Row and Column totals must be greater than 0.")
-    ptable2x2conditional_iv$add_rule("pMatrix2x2", ~ if(any(pMatrix2x2Totaled()[,'Total'] == 0)) "Row and Column totals must be greater than 0.")
-    
-    ptable2x3_iv$add_rule("pMatrix2x3", sv_required())
-    ptable2x3_iv$add_rule("pMatrix2x3", ~ if(any(is.na(pMatrixData2x3()))) "Probabilities must be between 0 and 1.")
-    ptable2x3_iv$add_rule("pMatrix2x3", ~ if(any(pMatrixData2x3() < 0)) "Probabilities must be between 0 and 1.")
-    ptable2x3_iv$add_rule("pMatrix2x3", ~ if(any(pMatrixData2x3() >= 1)) "Probabilities must be between 0 and 1.")
-    
-    ptable2x3conditional_iv$add_rule("pMatrix2x3", ~ if(any(pMatrix2x3Totaled()['Total',] == 0)) "Row and Column totals must be greater than 0.")
-    ptable2x3conditional_iv$add_rule("pMatrix2x3", ~ if(any(pMatrix2x3Totaled()[,'Total'] == 0)) "Row and Column totals must be greater than 0.")
-    
-    ptable3x2_iv$add_rule("pMatrix3x2", sv_required())
-    ptable3x2_iv$add_rule("pMatrix3x2", ~ if(any(is.na(pMatrixData3x2()))) "Probabilities must be between 0 and 1.")
-    ptable3x2_iv$add_rule("pMatrix3x2", ~ if(any(pMatrixData3x2() < 0)) "Probabilities must be between 0 and 1.")
-    ptable3x2_iv$add_rule("pMatrix3x2", ~ if(any(pMatrixData3x2() >= 1)) "Probabilities must be between 0 and 1.")
-    
-    ptable3x2conditional_iv$add_rule("pMatrix3x2", ~ if(any(pMatrix3x2Totaled()['Total',] == 0)) "Row and Column totals must be greater than 0.")
-    ptable3x2conditional_iv$add_rule("pMatrix3x2", ~ if(any(pMatrix3x2Totaled()[,'Total'] == 0)) "Row and Column totals must be greater than 0.")
-    
-    ptable3x3_iv$add_rule("pMatrix3x3", sv_required())
-    ptable3x3_iv$add_rule("pMatrix3x3", ~ if(any(is.na(pMatrixData3x3()))) "Probabilities must be between 0 and 1.")
-    ptable3x3_iv$add_rule("pMatrix3x3", ~ if(any(pMatrixData3x3() < 0)) "Probabilities must be between 0 and 1.")
-    ptable3x3_iv$add_rule("pMatrix3x3", ~ if(any(pMatrixData3x3() >= 1)) "Probabilities must be between 0 and 1.")
-    
-    ptable3x3conditional_iv$add_rule("pMatrix3x3", ~ if(any(pMatrix3x3Totaled()['Total',] == 0)) "Row and Column totals must be greater than 0.")
-    ptable3x3conditional_iv$add_rule("pMatrix3x3", ~ if(any(pMatrix3x3Totaled()[,'Total'] == 0)) "Row and Column totals must be greater than 0.")
     
     binom_iv$add_rule("numTrialsBinom", sv_required())
     binom_iv$add_rule("numTrialsBinom", sv_integer())
@@ -1251,13 +1216,9 @@ probDistServer <- function(id) {
     NegBinprob_iv$add_rule("xNegBin", sv_integer())
     NegBinprob_iv$add_rule("xNegBin", sv_gte(0))
     
-    NegBinbetween_iv$add_rule("x1NegBin", sv_required())
-    NegBinbetween_iv$add_rule("x1NegBin", sv_integer())
-    NegBinbetween_iv$add_rule("x1NegBin", sv_gte(0))
-    
-    NegBinbetween_iv$add_rule("x2NegBin", sv_required())
-    NegBinbetween_iv$add_rule("x2NegBin", sv_integer())
-    NegBinbetween_iv$add_rule("x2NegBin", sv_gte(0))
+    # NegBinbetween_iv has no rules: the "between" option and its x1NegBin/x2NegBin
+    # inputs are commented out of the UI, and rules on missing inputs make the
+    # browser log a warning on every validation update.
     
     norm_iv$add_rule("popMean", sv_required())
     
@@ -1325,42 +1286,6 @@ probDistServer <- function(id) {
     
     ctable3x3conditional_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
                                                  input$cTableDimension == '3 x 3' &&
-                                                 input$cTableProb == 'Conditional'))
-    
-    ptable2x2_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
-                                      input$cTableDimension == '2 x 2' &&
-                                      input$cTableType == 'Probability Distribution'))
-    
-    ptable2x2conditional_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
-                                                 input$cTableDimension == '2 x 2' &&
-                                                 input$cTableType == 'Probability Distribution'&&
-                                                 input$cTableProb == 'Conditional'))
-    
-    ptable2x3_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
-                                      input$cTableDimension == '2 x 3' &&
-                                      input$cTableType == 'Probability Distribution'))
-    
-    ptable2x3conditional_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
-                                                 input$cTableDimension == '2 x 3' &&
-                                                 input$cTableType == 'Probability Distribution'&&
-                                                 input$cTableProb == 'Conditional'))
-    
-    ptable3x2_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
-                                      input$cTableDimension == '3 x 2' &&
-                                      input$cTableType == 'Probability Distribution'))
-    
-    ptable3x2conditional_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
-                                                 input$cTableDimension == '3 x 2' &&
-                                                 input$cTableType == 'Probability Distribution'&&
-                                                 input$cTableProb == 'Conditional'))
-    
-    ptable3x3_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
-                                      input$cTableDimension == '3 x 3' &&
-                                      input$cTableType == 'Probability Distribution'))
-    
-    ptable3x3conditional_iv$condition(~ isTRUE(input$probability == 'Contingency Table' &&
-                                                 input$cTableDimension == '3 x 3' &&
-                                                 input$cTableType == 'Probability Distribution'&&
                                                  input$cTableProb == 'Conditional'))
     
     binom_iv$condition(~ isTRUE(input$probability == 'Binomial'))
@@ -1448,16 +1373,6 @@ probDistServer <- function(id) {
     ctableconditional_iv$add_validator(ctable3x2conditional_iv)
     ctableconditional_iv$add_validator(ctable3x3conditional_iv)
     
-    ptable_iv$add_validator(ptable2x2_iv)
-    ptable_iv$add_validator(ptable2x3_iv)
-    ptable_iv$add_validator(ptable3x2_iv)
-    ptable_iv$add_validator(ptable3x3_iv)
-    
-    ptableconditional_iv$add_validator(ptable2x2conditional_iv)
-    ptableconditional_iv$add_validator(ptable2x3conditional_iv)
-    ptableconditional_iv$add_validator(ptable3x2conditional_iv)
-    ptableconditional_iv$add_validator(ptable3x3conditional_iv)
-    
     binom_iv$add_validator(binomprob_iv)
     binom_iv$add_validator(binombetween_iv)
     
@@ -1482,7 +1397,6 @@ probDistServer <- function(id) {
     studentt_iv$add_validator(studenttcritical_iv)
     
     pd_iv$add_validator(ctable_iv)
-    pd_iv$add_validator(ptable_iv)
     pd_iv$add_validator(binom_iv)
     pd_iv$add_validator(poiss_iv)
     pd_iv$add_validator(HypGeo_iv)
@@ -1490,59 +1404,19 @@ probDistServer <- function(id) {
     pd_iv$add_validator(norm_iv)
     pd_iv$add_validator(studentt_iv)
     
-    pd_iv$enable()
+    # Every validator above is a child of pd_iv, so only top-level validators
+    # need enable() (enable() is a no-op on a child). pd_iv decides whether the
+    # results can be computed. pd_feedback_iv shows the input feedback: it
+    # holds pd_iv plus the contingency-table "Conditional" rules, so one
+    # observer reports on each input and the two validators can no longer
+    # overwrite each other's message for the same matrix.
+    pd_feedback_iv <- InputValidator$new()
+    pd_feedback_iv$add_validator(pd_iv)
+    pd_feedback_iv$add_validator(ctableconditional_iv)
+    pd_feedback_iv$enable()
     
-    ctable_iv$enable()
-    ctableconditional_iv$enable()
-    ctable2x2_iv$enable()
-    ctable2x2conditional_iv$enable()
-    ctable2x3_iv$enable()
-    ctable2x3conditional_iv$enable()
-    ctable3x2_iv$enable()
-    ctable3x2conditional_iv$enable()
-    ctable3x3_iv$enable()
-    ctable3x3conditional_iv$enable()
-    
-    ptable_iv$enable()
-    ptableconditional_iv$enable()
-    ptable2x2_iv$enable()
-    ptable2x2conditional_iv$enable()
-    ptable2x3_iv$enable()
-    ptable2x3conditional_iv$enable()
-    ptable3x2_iv$enable()
-    ptable3x2conditional_iv$enable()
-    ptable3x3_iv$enable()
-    ptable3x3conditional_iv$enable()
-    
-    binom_iv$enable()
-    binomprob_iv$enable()
-    binombetween_iv$enable()
-    
-    poiss_iv$enable()
-    poissprob_iv$enable()
-    poissbetween_iv$enable()
-    
-    HypGeo_iv$enable()
-    HypGeoprob_iv$enable()
-    HypGeobetween_iv$enable()
-    
-    NegBin_iv$enable()
-    NegBinprob_iv$enable()
-    NegBinbetween_iv$enable()
-    
-    norm_iv$enable()
-    normprob_iv$enable()
-    normbetween_iv$enable()
-    
-    sampdistrprob_iv$enable()
-    sampdistrbetween_iv$enable()
-    sampdistrsize_iv$enable()
-    percentile_iv$enable()
-    
-    studentt_iv$enable()
-    studenttprob_iv$enable()
-    studenttbetween_iv$enable()
-    studenttcritical_iv$enable()
+    # is_valid() re-runs every active rule on each call, so compute it once per change
+    pd_valid <- reactive(pd_iv$is_valid())
     
     default2x2 <- matrix(
       c(18, 22,
@@ -1766,7 +1640,7 @@ probDistServer <- function(id) {
     }
     
     labelNormZArea <- function(probVal, probType, normLines){
-      req(pd_iv$is_valid())
+      req(pd_valid())
       if(probType == 'cumulative') {
         centerPoint <- normLines - 0.5
       } else if (probType == 'upperTail') {
@@ -1800,8 +1674,7 @@ probDistServer <- function(id) {
     }
     
     normPlot <- function(normValue, normLines, popmean, variance, standDev, lineLabels, probType, plotLab){
-      req(pd_iv$is_valid())
-      withMathJax()
+      req(pd_valid())
       
       x <- round(seq(from = -3, to = 3, by = 0.1), 2)
       xSeq <- unique(sort(c(x, normLines)))
@@ -1868,7 +1741,7 @@ probDistServer <- function(id) {
     }
     
     normZPlot <- function(normValue, normLines, probType){
-      req(pd_iv$is_valid())
+      req(pd_valid())
       
       x <- round(seq(from = -3, to = 3, by = 0.1), 2)
       xSeq <- unique(sort(c(x, normLines)))
@@ -1999,7 +1872,7 @@ probDistServer <- function(id) {
     }
     
     getNormValue <- reactive({
-      req(pd_iv$is_valid())
+      req(pd_valid())
       
       if(input$calcNormal == "cumulative")
       {
@@ -2017,7 +1890,7 @@ probDistServer <- function(id) {
     })
     
     getMeanNormValue <- reactive({
-      req(pd_iv$is_valid())
+      req(pd_valid())
       
       sampSE <- input$popSD / sqrt(input$sampDistrSize)
       
@@ -2036,36 +1909,79 @@ probDistServer <- function(id) {
       }
     })
     
-    observeEvent(TRUE, {
-      shinyjs::delay(0, {
-        hide(id = "contingencyResults")
-        hide(id = "binomialResults")
-        hide(id = "poissonResults")
-        hide(id = "hypgeoResults")
-        hide(id = "negBinResults")
-        hide(id = "normalResults")
+    # Runs the body of a Calculate handler. An unexpected error is reported to
+    # the user instead of ending the session; req()/validate() stops are passed
+    # through untouched (they stay silent).
+    safeCalc <- function(expr) {
+      tryCatch(expr, error = function(e) {
+        if (inherits(e, "shiny.silent.error")) stop(e)
+        showNotification(paste("Calculation failed:", conditionMessage(e)),
+                         type = "error")
       })
-    }, once = TRUE)
+    }
     
-    observeEvent(binom_state(), {
-      if (binom_state()) {
-        showTab(inputId = "binomialNavbar", target = "tableTab")
-        showTab(inputId = "binomialNavbar", target = "plotTab")
-      } else {
-        updateTabsetPanel(
-          session,
-          "binomialNavbar",
-          selected = "Calculations"
-        )
-        hideTab(inputId = "binomialNavbar", target = "tableTab")
-        hideTab(inputId = "binomialNavbar", target = "plotTab")
+    # Results are defined once at the top level of the module. The result
+    # renderUIs (which contain math) read their Calculate button, so they appear
+    # after the first click and are rebuilt on each click while the results are
+    # shown, as before (math typeset while the results are hidden would come
+    # out slightly mis-sized). The code boxes, tables and plots read these
+    # flags instead, set to TRUE by the first Calculate click of each
+    # distribution (in the show observers at the end), so a repeated click with
+    # unchanged inputs does not rebuild them (reactiveValues ignores an
+    # identical value).
+    calculated <- reactiveValues(binom = FALSE, poisson = FALSE,
+                                 hypgeo = FALSE, negbin = FALSE, normProb = FALSE,
+                                 normQuan = FALSE, studentT = FALSE)
+    
+    # Last display state sent to each code box, so a box is only toggled (one
+    # runjs message) when its state actually changes.
+    codeBoxShown <- list()
+    setCodeBox <- function(showBox, boxId) {
+      showBox <- isTRUE(showBox)
+      if (!identical(codeBoxShown[[boxId]], showBox)) {
+        codeBoxShown[[boxId]] <<- showBox
+        toggleCodeBox(showBox, boxId, ns)
       }
-    })
+    }
+    
+    # Values used by the Probability Distribution Table / Histogram tabs. They are
+    # captured when the user clicks Calculate or changes the type of probability
+    # (the only change that keeps the results on screen). reactiveVal ignores an
+    # identical value, so the table and plot rebuild only when these change.
+    binomTabData <- reactiveVal(NULL)
+    hypgeoTabData <- reactiveVal(NULL)
+    poissonTabData <- reactiveVal(NULL)
+    
+    # Largest lambda for which the Poisson probability distribution table is built
+    poissonTableMaxLambda <- 100000
+    
+    # The Table / Histogram tabs are shown or hidden when the user clicks
+    # Calculate or changes the type of probability, not on every keystroke
+    # (which used to send the user back to "Calculations" while typing).
+    observeEvent(list(input$goBinom, input$calcBinom), {
+      safeCalc({
+        binomTabData(list(valid = pd_valid(),
+                          n = input$numTrialsBinom,
+                          p = input$successProbBinom))
+        if (isTRUE(binom_state())) {
+          showTab(inputId = "binomialNavbar", target = "tableTab")
+          showTab(inputId = "binomialNavbar", target = "plotTab")
+        } else {
+          updateTabsetPanel(
+            session,
+            "binomialNavbar",
+            selected = "Calculations"
+          )
+          hideTab(inputId = "binomialNavbar", target = "tableTab")
+          hideTab(inputId = "binomialNavbar", target = "plotTab")
+        }
+      })
+    }, ignoreInit = TRUE)
     
     binom_state <- reactive({
       req(input$probability == "Binomial")
       
-      if (!pd_iv$is_valid()) return(FALSE)
+      if (!pd_valid()) return(FALSE)
       
       if (input$calcBinom != "between") {
         return(input$numSuccessesBinom <= input$numTrialsBinom)
@@ -2078,21 +1994,27 @@ probDistServer <- function(id) {
       }
     })
     
-    observeEvent(hypgeo_state(), {
-      if (hypgeo_state()) {
-        showTab(inputId = "hypgeoNavbar", target = "Probability Distribution Table")
-        showTab(inputId = "hypgeoNavbar", target = "Probability Histogram")
-      } else {
-        updateTabsetPanel(session, "hypgeoNavbar", selected = "Calculations")
-        hideTab(inputId = "hypgeoNavbar", target = "Probability Distribution Table")
-        hideTab(inputId = "hypgeoNavbar", target = "Probability Histogram")
-      }
-    })
+    observeEvent(list(input$goHypGeo, input$calcHypGeo), {
+      safeCalc({
+        hypgeoTabData(list(valid = pd_valid(),
+                           N = input$popSizeHypGeo,
+                           M = input$popSuccessesHypGeo,
+                           n = input$sampSizeHypGeo))
+        if (isTRUE(hypgeo_state())) {
+          showTab(inputId = "hypgeoNavbar", target = "Probability Distribution Table")
+          showTab(inputId = "hypgeoNavbar", target = "Probability Histogram")
+        } else {
+          updateTabsetPanel(session, "hypgeoNavbar", selected = "Calculations")
+          hideTab(inputId = "hypgeoNavbar", target = "Probability Distribution Table")
+          hideTab(inputId = "hypgeoNavbar", target = "Probability Histogram")
+        }
+      })
+    }, ignoreInit = TRUE)
     
     hypgeo_state <- reactive({
       req(input$probability == "Hypergeometric")
       
-      if (!pd_iv$is_valid()) return(FALSE)
+      if (!pd_valid()) return(FALSE)
       if (
         input$sampSizeHypGeo > input$popSizeHypGeo ||
         input$popSuccessesHypGeo > input$popSizeHypGeo
@@ -2115,19 +2037,23 @@ probDistServer <- function(id) {
       }
     })
     
-    observeEvent(poisson_state(), {
-      if (poisson_state()) {
-        showTab(inputId = "poissonNavbar", target = "Probability Distribution Table")
-      } else {
-        updateTabsetPanel(session, "poissonNavbar", selected = "Calculations")
-        hideTab(inputId = "poissonNavbar", target = "Probability Distribution Table")
-      }
-    })
+    observeEvent(list(input$goPoisson, input$calcPoisson), {
+      safeCalc({
+        poissonTabData(list(valid = pd_valid(),
+                            lambda = input$lambdaPoisson))
+        if (isTRUE(poisson_state())) {
+          showTab(inputId = "poissonNavbar", target = "Probability Distribution Table")
+        } else {
+          updateTabsetPanel(session, "poissonNavbar", selected = "Calculations")
+          hideTab(inputId = "poissonNavbar", target = "Probability Distribution Table")
+        }
+      })
+    }, ignoreInit = TRUE)
     
     poisson_state <- reactive({
       req(input$probability == "Poisson")
       
-      if (!pd_iv$is_valid()) return(FALSE)
+      if (!pd_valid()) return(FALSE)
       if (input$calcPoisson != "between") {
         return(TRUE)
       } else {
@@ -2135,379 +2061,392 @@ probDistServer <- function(id) {
       }
     })
     
-    observeEvent(input$gocTable, {
+    # Contingency table results. The outputs are defined once and appear after
+    # the first Calculate click; only the selected dimension and probability
+    # type are computed, because hidden outputs are suspended.
+    output$render2x2cTable <- renderUI({
+      req(input$gocTable > 0)
       
-      output$render2x2cTable <- renderUI({
-        
-        validate(
-          need(input$cMatrix2x2, invalidContingencyTableMsg),
-          errorClass = "myClass")
-        
-        validate(
-          need(all(!is.na(cMatrixData2x2())), invalidContingencyTableMsg) %then%
-            need(all(cMatrixData2x2() %% 1 == 0), invalidContingencyTableMsg),
-          errorClass = "myClass")
-        
-        validate(
-          need(all(cMatrixData2x2() >= 0), invalidContingencyTableMsg),
-          errorClass = "myClass")
-        
-        validate(
-          need(any(cMatrixData2x2() != 0), "All cell values cannot be equal to zero."),
-          errorClass = "myClass")
-        
-        tagList(
-          titlePanel("Frequency Distribution Table"),
-          hr(),
-          DTOutput(session$ns("cTable2x2"), width = '500px'),
-          br(),
-          titlePanel("Probability Distribution Table"),
-          hr(),
-          DTOutput(session$ns("probTable2x2"), width = '500px')
-        )
-      })
+      validate(
+        need(input$cMatrix2x2, invalidContingencyTableMsg),
+        errorClass = "myClass")
       
-      output$render2x3cTable <- renderUI({
-        
-        validate(
-          need(input$cMatrix2x3, invalidContingencyTableMsg),
-          errorClass = "myClass")
-        
-        validate(
-          need(all(!is.na(cMatrixData2x3())), invalidContingencyTableMsg) %then%
-            need(all(cMatrixData2x3() %% 1 == 0), invalidContingencyTableMsg),
-          errorClass = "myClass")
-        
-        validate(
-          need(all(cMatrixData2x3() >= 0), invalidContingencyTableMsg),
-          errorClass = "myClass")
-        
-        validate(
-          need(any(cMatrixData2x3() != 0), "All cell values cannot be equal to zero."),
-          errorClass = "myClass")
-        
-        tagList(
-          titlePanel("Frequency Distribution Table"),
-          hr(),
-          DTOutput(session$ns("cTable2x3"), width = '625px'),
-          br(),
-          titlePanel("Probability Distribution Table"),
-          hr(),
-          DTOutput(session$ns("probTable2x3"), width = '625px')
-        )
-      })
+      validate(
+        need(all(!is.na(cMatrixData2x2())), invalidContingencyTableMsg) %then%
+          need(all(cMatrixData2x2() %% 1 == 0), invalidContingencyTableMsg),
+        errorClass = "myClass")
       
-      output$render3x2cTable <- renderUI({
-        
-        validate(
-          need(input$cMatrix3x2, invalidContingencyTableMsg),
-          errorClass = "myClass")
-        
-        validate(
-          need(all(!is.na(cMatrixData3x2())), invalidContingencyTableMsg) %then%
-            need(all(cMatrixData3x2() %% 1 == 0), invalidContingencyTableMsg),
-          errorClass = "myClass")
-        
-        validate(
-          need(all(cMatrixData3x2() >= 0), invalidContingencyTableMsg),
-          errorClass = "myClass")
-        
-        validate(
-          need(any(cMatrixData3x2() != 0), "All cell values cannot be equal to zero."),
-          errorClass = "myClass")
-        
-        tagList(
-          titlePanel("Frequency Distribution Table"),
-          hr(),
-          DTOutput(session$ns("cTable3x2"), width = '500px'),
-          br(),
-          titlePanel("Probability Distribution Table"),
-          hr(),
-          DTOutput(session$ns("probTable3x2"), width = '500px')
-        )
-      })
+      validate(
+        need(all(cMatrixData2x2() >= 0), invalidContingencyTableMsg),
+        errorClass = "myClass")
       
-      output$render3x3cTable <- renderUI({
-        
-        validate(
-          need(input$cMatrix3x3, invalidContingencyTableMsg),
-          errorClass = "myClass")
-        
-        validate(
-          need(all(!is.na(cMatrixData3x3())), invalidContingencyTableMsg) %then%
-            need(all(cMatrixData3x3() %% 1 == 0), invalidContingencyTableMsg),
-          errorClass = "myClass")
-        
-        validate(
-          need(all(cMatrixData3x3() >= 0), invalidContingencyTableMsg),
-          errorClass = "myClass")
-        
-        validate(
-          need(any(cMatrixData3x3() != 0), "All cell values cannot be equal to zero."),
-          errorClass = "myClass")
-        
-        tagList(
-          titlePanel("Frequency Distribution Table"),
-          hr(),
-          DTOutput(session$ns("cTable3x3"), width = '625px'),
-          br(),
-          titlePanel("Probability Distribution Table"),
-          hr(),
-          DTOutput(session$ns("probTable3x3"), width = '625px')
-        )
-      })
+      validate(
+        need(any(cMatrixData2x2() != 0), "All cell values cannot be equal to zero."),
+        errorClass = "myClass")
       
-      cData2x2 <- matrix(cMatrixData2x2(), ncol = ncol(input$cMatrix2x2))
-      cData2x2 <- getTotaledMatrix(cData2x2, input$cMatrix2x2)
+      tagList(
+        titlePanel("Frequency Distribution Table"),
+        hr(),
+        DTOutput(session$ns("cTable2x2"), width = '500px'),
+        br(),
+        titlePanel("Probability Distribution Table"),
+        hr(),
+        DTOutput(session$ns("probTable2x2"), width = '500px')
+      )
+    })
+    
+    output$render2x3cTable <- renderUI({
+      req(input$gocTable > 0)
       
-      output$cTable2x2 <- renderDT({
-        datatable(cData2x2,
-                  class = 'cell-border stripe',
-                  options = list(
-                    dom = 't',
-                    pageLength = -1,
-                    ordering = FALSE,
-                    searching = FALSE,
-                    paging = FALSE,
-                    autoWidth = FALSE,
-                    scrollX = TRUE,
-                    columnDefs = list(list(width = '100px', targets = c(0, 1, 2, 3)),
-                                      list(className = 'dt-center', targets = c(0, 1, 2, 3)))
-                  ),
-                  selection = "none",
-                  escape = FALSE,
-                  filter = "none",) %>%
-          formatStyle(columns = c(0,3),
-                      fontWeight = 'bold') %>%
-          formatStyle(columns = 1:3,
-                      target = 'row',
-                      fontWeight = styleRow(dim(cData2x2)[1], "bold"))
-      })
+      validate(
+        need(input$cMatrix2x3, invalidContingencyTableMsg),
+        errorClass = "myClass")
       
+      validate(
+        need(all(!is.na(cMatrixData2x3())), invalidContingencyTableMsg) %then%
+          need(all(cMatrixData2x3() %% 1 == 0), invalidContingencyTableMsg),
+        errorClass = "myClass")
+      
+      validate(
+        need(all(cMatrixData2x3() >= 0), invalidContingencyTableMsg),
+        errorClass = "myClass")
+      
+      validate(
+        need(any(cMatrixData2x3() != 0), "All cell values cannot be equal to zero."),
+        errorClass = "myClass")
+      
+      tagList(
+        titlePanel("Frequency Distribution Table"),
+        hr(),
+        DTOutput(session$ns("cTable2x3"), width = '625px'),
+        br(),
+        titlePanel("Probability Distribution Table"),
+        hr(),
+        DTOutput(session$ns("probTable2x3"), width = '625px')
+      )
+    })
+    
+    output$render3x2cTable <- renderUI({
+      req(input$gocTable > 0)
+      
+      validate(
+        need(input$cMatrix3x2, invalidContingencyTableMsg),
+        errorClass = "myClass")
+      
+      validate(
+        need(all(!is.na(cMatrixData3x2())), invalidContingencyTableMsg) %then%
+          need(all(cMatrixData3x2() %% 1 == 0), invalidContingencyTableMsg),
+        errorClass = "myClass")
+      
+      validate(
+        need(all(cMatrixData3x2() >= 0), invalidContingencyTableMsg),
+        errorClass = "myClass")
+      
+      validate(
+        need(any(cMatrixData3x2() != 0), "All cell values cannot be equal to zero."),
+        errorClass = "myClass")
+      
+      tagList(
+        titlePanel("Frequency Distribution Table"),
+        hr(),
+        DTOutput(session$ns("cTable3x2"), width = '500px'),
+        br(),
+        titlePanel("Probability Distribution Table"),
+        hr(),
+        DTOutput(session$ns("probTable3x2"), width = '500px')
+      )
+    })
+    
+    output$render3x3cTable <- renderUI({
+      req(input$gocTable > 0)
+      
+      validate(
+        need(input$cMatrix3x3, invalidContingencyTableMsg),
+        errorClass = "myClass")
+      
+      validate(
+        need(all(!is.na(cMatrixData3x3())), invalidContingencyTableMsg) %then%
+          need(all(cMatrixData3x3() %% 1 == 0), invalidContingencyTableMsg),
+        errorClass = "myClass")
+      
+      validate(
+        need(all(cMatrixData3x3() >= 0), invalidContingencyTableMsg),
+        errorClass = "myClass")
+      
+      validate(
+        need(any(cMatrixData3x3() != 0), "All cell values cannot be equal to zero."),
+        errorClass = "myClass")
+      
+      tagList(
+        titlePanel("Frequency Distribution Table"),
+        hr(),
+        DTOutput(session$ns("cTable3x3"), width = '625px'),
+        br(),
+        titlePanel("Probability Distribution Table"),
+        hr(),
+        DTOutput(session$ns("probTable3x3"), width = '625px')
+      )
+    })
+    
+    # The tables are small, so their data is sent with the table (server = FALSE)
+    # instead of through DT's server-side ajax. With ajax, a table still on the
+    # page from the previous Calculate could request rows by its old column
+    # names (e.g. after renaming a row or column), which made DataTables show an
+    # "is not found in data" alert.
+    output$cTable2x2 <- renderDT({
+      cData2x2 <- cMatrix2x2Totaled()
+      req(cData2x2)
+      datatable(cData2x2,
+                class = 'cell-border stripe',
+                options = list(
+                  dom = 't',
+                  pageLength = -1,
+                  ordering = FALSE,
+                  searching = FALSE,
+                  paging = FALSE,
+                  autoWidth = FALSE,
+                  scrollX = TRUE,
+                  columnDefs = list(list(width = '100px', targets = c(0, 1, 2, 3)),
+                                    list(className = 'dt-center', targets = c(0, 1, 2, 3)))
+                ),
+                selection = "none",
+                escape = FALSE,
+                filter = "none",) %>%
+        formatStyle(columns = c(0,3),
+                    fontWeight = 'bold') %>%
+        formatStyle(columns = 1:3,
+                    target = 'row',
+                    fontWeight = styleRow(dim(cData2x2)[1], "bold"))
+    }, server = FALSE)
+    
+    output$probTable2x2 <- renderDT({
+      cData2x2 <- cMatrix2x2Totaled()
+      req(cData2x2)
       probData2x2 <- apply(cData2x2, 2, getProbabilities, t=cData2x2['Total',3])
-      
-      output$probTable2x2 <- renderDT({
-        datatable(probData2x2,
-                  class = 'cell-border stripe',
-                  options = list(
-                    dom = 't',
-                    pageLength = -1,
-                    ordering = FALSE,
-                    searching = FALSE,
-                    paging = FALSE,
-                    autoWidth = FALSE,
-                    scrollX = TRUE,
-                    columnDefs = list(list(width = '100px', targets = c(0, 1, 2, 3)),
-                                      list(className = 'dt-center', targets = c(0, 1, 2, 3)))
-                  ),
-                  selection = "none",
-                  escape = FALSE,
-                  filter = "none",) %>% 
-          formatStyle(columns = c(0,3), 
-                      fontWeight = 'bold') %>%
-          formatStyle(columns = 1:3,
-                      target = 'row',
-                      fontWeight = styleRow(dim(probData2x2)[1], "bold"))
-      })
-      
-      cData2x3 <- matrix(cMatrixData2x3(), ncol = ncol(input$cMatrix2x3))
-      cData2x3 <- getTotaledMatrix(cData2x3, input$cMatrix2x3)
-      
-      output$cTable2x3 <- renderDT({
-        datatable(cData2x3,
-                  class = 'cell-border stripe',
-                  options = list(
-                    dom = 't',
-                    pageLength = -1,
-                    ordering = FALSE,
-                    searching = FALSE,
-                    paging = FALSE,
-                    autoWidth = FALSE,
-                    scrollX = TRUE,
-                    columnDefs = list(list(width = '100px', targets = c(1, 2, 3, 4)),
-                                      list(className = 'dt-center', targets = c(0, 1, 2, 3, 4)))
-                  ),
-                  selection = "none",
-                  escape = FALSE,
-                  filter = "none",) %>% 
-          formatStyle(columns = c(0,4), 
-                      fontWeight = 'bold') %>%
-          formatStyle(columns = 1:4,
-                      target = 'row',
-                      fontWeight = styleRow(dim(cData2x3)[1], "bold"))
-      })
-      
+      datatable(probData2x2,
+                class = 'cell-border stripe',
+                options = list(
+                  dom = 't',
+                  pageLength = -1,
+                  ordering = FALSE,
+                  searching = FALSE,
+                  paging = FALSE,
+                  autoWidth = FALSE,
+                  scrollX = TRUE,
+                  columnDefs = list(list(width = '100px', targets = c(0, 1, 2, 3)),
+                                    list(className = 'dt-center', targets = c(0, 1, 2, 3)))
+                ),
+                selection = "none",
+                escape = FALSE,
+                filter = "none",) %>% 
+        formatStyle(columns = c(0,3), 
+                    fontWeight = 'bold') %>%
+        formatStyle(columns = 1:3,
+                    target = 'row',
+                    fontWeight = styleRow(dim(probData2x2)[1], "bold"))
+    }, server = FALSE)
+    
+    output$cTable2x3 <- renderDT({
+      cData2x3 <- cMatrix2x3Totaled()
+      req(cData2x3)
+      datatable(cData2x3,
+                class = 'cell-border stripe',
+                options = list(
+                  dom = 't',
+                  pageLength = -1,
+                  ordering = FALSE,
+                  searching = FALSE,
+                  paging = FALSE,
+                  autoWidth = FALSE,
+                  scrollX = TRUE,
+                  columnDefs = list(list(width = '100px', targets = c(1, 2, 3, 4)),
+                                    list(className = 'dt-center', targets = c(0, 1, 2, 3, 4)))
+                ),
+                selection = "none",
+                escape = FALSE,
+                filter = "none",) %>% 
+        formatStyle(columns = c(0,4), 
+                    fontWeight = 'bold') %>%
+        formatStyle(columns = 1:4,
+                    target = 'row',
+                    fontWeight = styleRow(dim(cData2x3)[1], "bold"))
+    }, server = FALSE)
+    
+    output$probTable2x3 <- renderDT({
+      cData2x3 <- cMatrix2x3Totaled()
+      req(cData2x3)
       probData2x3 <- apply(cData2x3, 2, getProbabilities, t=cData2x3['Total',4])
-      
-      output$probTable2x3 <- renderDT({
-        datatable(probData2x3,
-                  class = 'cell-border stripe',
-                  options = list(
-                    dom = 't',
-                    pageLength = -1,
-                    ordering = FALSE,
-                    searching = FALSE,
-                    paging = FALSE,
-                    autoWidth = FALSE,
-                    scrollX = TRUE,
-                    columnDefs = list(list(width = '100px', targets = c(1, 2, 3, 4)),
-                                      list(className = 'dt-center', targets = c(0, 1, 2, 3, 4)))
-                  ),
-                  selection = "none",
-                  escape = FALSE,
-                  filter = "none",) %>% 
-          formatStyle(columns = c(0,4), 
-                      fontWeight = 'bold') %>%
-          formatStyle(columns = 1:4,
-                      target = 'row',
-                      fontWeight = styleRow(dim(probData2x3)[1], "bold"))
-      })
-      
-      cData3x2 <- matrix(cMatrixData3x2(), ncol = ncol(input$cMatrix3x2))
-      cData3x2 <- getTotaledMatrix(cData3x2, input$cMatrix3x2)
-      
-      output$cTable3x2 <- renderDT({
-        datatable(cData3x2,
-                  class = 'cell-border stripe',
-                  options = list(
-                    dom = 't',
-                    pageLength = -1,
-                    ordering = FALSE,
-                    searching = FALSE,
-                    paging = FALSE,
-                    autoWidth = FALSE,
-                    scrollX = TRUE,
-                    columnDefs = list(list(width = '100px', targets = c(1, 2, 3)),
-                                      list(className = 'dt-center', targets = c(0, 1, 2, 3)))
-                  ),
-                  selection = "none",
-                  escape = FALSE,
-                  filter = "none",) %>% 
-          formatStyle(columns = c(0,3), 
-                      fontWeight = 'bold') %>%
-          formatStyle(columns = 1:3,
-                      target = 'row',
-                      fontWeight = styleRow(dim(cData3x2)[1], "bold"))
-      })
-      
+      datatable(probData2x3,
+                class = 'cell-border stripe',
+                options = list(
+                  dom = 't',
+                  pageLength = -1,
+                  ordering = FALSE,
+                  searching = FALSE,
+                  paging = FALSE,
+                  autoWidth = FALSE,
+                  scrollX = TRUE,
+                  columnDefs = list(list(width = '100px', targets = c(1, 2, 3, 4)),
+                                    list(className = 'dt-center', targets = c(0, 1, 2, 3, 4)))
+                ),
+                selection = "none",
+                escape = FALSE,
+                filter = "none",) %>% 
+        formatStyle(columns = c(0,4), 
+                    fontWeight = 'bold') %>%
+        formatStyle(columns = 1:4,
+                    target = 'row',
+                    fontWeight = styleRow(dim(probData2x3)[1], "bold"))
+    }, server = FALSE)
+    
+    output$cTable3x2 <- renderDT({
+      cData3x2 <- cMatrix3x2Totaled()
+      req(cData3x2)
+      datatable(cData3x2,
+                class = 'cell-border stripe',
+                options = list(
+                  dom = 't',
+                  pageLength = -1,
+                  ordering = FALSE,
+                  searching = FALSE,
+                  paging = FALSE,
+                  autoWidth = FALSE,
+                  scrollX = TRUE,
+                  columnDefs = list(list(width = '100px', targets = c(1, 2, 3)),
+                                    list(className = 'dt-center', targets = c(0, 1, 2, 3)))
+                ),
+                selection = "none",
+                escape = FALSE,
+                filter = "none",) %>% 
+        formatStyle(columns = c(0,3), 
+                    fontWeight = 'bold') %>%
+        formatStyle(columns = 1:3,
+                    target = 'row',
+                    fontWeight = styleRow(dim(cData3x2)[1], "bold"))
+    }, server = FALSE)
+    
+    output$probTable3x2 <- renderDT({
+      cData3x2 <- cMatrix3x2Totaled()
+      req(cData3x2)
       probData3x2 <- apply(cData3x2, 2, getProbabilities, t=cData3x2['Total',3])
-      
-      output$probTable3x2 <- renderDT({
-        datatable(probData3x2,
-                  class = 'cell-border stripe',
-                  options = list(
-                    dom = 't',
-                    pageLength = -1,
-                    ordering = FALSE,
-                    searching = FALSE,
-                    paging = FALSE,
-                    autoWidth = FALSE,
-                    scrollX = TRUE,
-                    columnDefs = list(list(width = '100px', targets = c(1, 2, 3)),
-                                      list(className = 'dt-center', targets = c(0, 1, 2, 3)))
-                  ),
-                  selection = "none",
-                  escape = FALSE,
-                  filter = "none",) %>% 
-          formatStyle(columns = c(0,3), 
-                      fontWeight = 'bold') %>%
-          formatStyle(columns = 1:3,
-                      target = 'row',
-                      fontWeight = styleRow(dim(probData3x2)[1], "bold"))
-      })
-      
-      cData3x3 <- matrix(cMatrixData3x3(), ncol = ncol(input$cMatrix3x3))
-      cData3x3 <- getTotaledMatrix(cData3x3, input$cMatrix3x3)
-      
-      output$cTable3x3 <- renderDT({
-        datatable(cData3x3,
-                  class = 'cell-border stripe',
-                  options = list(
-                    dom = 't',
-                    pageLength = -1,
-                    ordering = FALSE,
-                    searching = FALSE,
-                    paging = FALSE,
-                    autoWidth = FALSE,
-                    scrollX = TRUE,
-                    columnDefs = list(list(width = '100px', targets = c(1, 2, 3, 4)),
-                                      list(className = 'dt-center', targets = c(0, 1, 2, 3, 4)))
-                  ),
-                  selection = "none",
-                  escape = FALSE,
-                  filter = "none",) %>% 
-          formatStyle(columns = c(0,4), 
-                      fontWeight = 'bold') %>%
-          formatStyle(columns = 1:4,
-                      target = 'row',
-                      fontWeight = styleRow(dim(cData3x3)[1], "bold"))
-      })
-      
+      datatable(probData3x2,
+                class = 'cell-border stripe',
+                options = list(
+                  dom = 't',
+                  pageLength = -1,
+                  ordering = FALSE,
+                  searching = FALSE,
+                  paging = FALSE,
+                  autoWidth = FALSE,
+                  scrollX = TRUE,
+                  columnDefs = list(list(width = '100px', targets = c(1, 2, 3)),
+                                    list(className = 'dt-center', targets = c(0, 1, 2, 3)))
+                ),
+                selection = "none",
+                escape = FALSE,
+                filter = "none",) %>% 
+        formatStyle(columns = c(0,3), 
+                    fontWeight = 'bold') %>%
+        formatStyle(columns = 1:3,
+                    target = 'row',
+                    fontWeight = styleRow(dim(probData3x2)[1], "bold"))
+    }, server = FALSE)
+    
+    output$cTable3x3 <- renderDT({
+      cData3x3 <- cMatrix3x3Totaled()
+      req(cData3x3)
+      datatable(cData3x3,
+                class = 'cell-border stripe',
+                options = list(
+                  dom = 't',
+                  pageLength = -1,
+                  ordering = FALSE,
+                  searching = FALSE,
+                  paging = FALSE,
+                  autoWidth = FALSE,
+                  scrollX = TRUE,
+                  columnDefs = list(list(width = '100px', targets = c(1, 2, 3, 4)),
+                                    list(className = 'dt-center', targets = c(0, 1, 2, 3, 4)))
+                ),
+                selection = "none",
+                escape = FALSE,
+                filter = "none",) %>% 
+        formatStyle(columns = c(0,4), 
+                    fontWeight = 'bold') %>%
+        formatStyle(columns = 1:4,
+                    target = 'row',
+                    fontWeight = styleRow(dim(cData3x3)[1], "bold"))
+    }, server = FALSE)
+    
+    output$probTable3x3 <- renderDT({
+      cData3x3 <- cMatrix3x3Totaled()
+      req(cData3x3)
       probData3x3 <- apply(cData3x3, 2, getProbabilities, t=cData3x3['Total',4])
+      datatable(probData3x3,
+                class = 'cell-border stripe',
+                options = list(
+                  dom = 't',
+                  pageLength = -1,
+                  ordering = FALSE,
+                  searching = FALSE,
+                  paging = FALSE,
+                  autoWidth = FALSE,
+                  scrollX = TRUE,
+                  columnDefs = list(list(width = '100px', targets = c(1, 2, 3, 4)),
+                                    list(className = 'dt-center', targets = c(0, 1, 2, 3, 4)))
+                ),
+                selection = "none",
+                escape = FALSE,
+                filter = "none",) %>% 
+        formatStyle(columns = c(0,4), 
+                    fontWeight = 'bold') %>%
+        formatStyle(columns = 1:4,
+                    target = 'row',
+                    fontWeight = styleRow(dim(probData3x3)[1], "bold"))
+    }, server = FALSE)
+    
+    # Totaled counts and probabilities of the selected table dimension
+    activeCTable <- reactive({
+      req(input$cTableDimension)
+      activeCMatrix <- switch(input$cTableDimension,
+                              '2 x 2' = cMatrix2x2Totaled(),
+                              '2 x 3' = cMatrix2x3Totaled(),
+                              '3 x 2' = cMatrix3x2Totaled(),
+                              '3 x 3' = cMatrix3x3Totaled())
+      req(activeCMatrix)
+      list(cMatrix = activeCMatrix,
+           probMatrix = apply(activeCMatrix, 2, getProbabilities,
+                              t = activeCMatrix['Total', ncol(activeCMatrix)]))
+    })
+    
+    output$renderMarginalProbs <- renderUI({
+      req(input$gocTable > 0)
+      req(pd_valid())
+      printMarginalProbs(activeCTable()$probMatrix, activeCTable()$cMatrix)
       
-      output$probTable3x3 <- renderDT({
-        datatable(probData3x3,
-                  class = 'cell-border stripe',
-                  options = list(
-                    dom = 't',
-                    pageLength = -1,
-                    ordering = FALSE,
-                    searching = FALSE,
-                    paging = FALSE,
-                    autoWidth = FALSE,
-                    scrollX = TRUE,
-                    columnDefs = list(list(width = '100px', targets = c(1, 2, 3, 4)),
-                                      list(className = 'dt-center', targets = c(0, 1, 2, 3, 4)))
-                  ),
-                  selection = "none",
-                  escape = FALSE,
-                  filter = "none",) %>% 
-          formatStyle(columns = c(0,4), 
-                      fontWeight = 'bold') %>%
-          formatStyle(columns = 1:4,
-                      target = 'row',
-                      fontWeight = styleRow(dim(probData3x3)[1], "bold"))
-      })
-      
-      if(input$cTableDimension == '2 x 2') {
-        activeProbMatrix <- probData2x2
-        activeCMatrix <- cData2x2
-      } else if(input$cTableDimension == '2 x 3') {
-        activeProbMatrix <- probData2x3
-        activeCMatrix <- cData2x3
-      } else if(input$cTableDimension == '3 x 2') {
-        activeProbMatrix <- probData3x2
-        activeCMatrix <- cData3x2
-      } else if(input$cTableDimension == '3 x 3') {
-        activeProbMatrix <- probData3x3
-        activeCMatrix <- cData3x3
+    })
+    
+    output$renderJointProbs <- renderUI({
+      req(input$gocTable > 0)
+      req(pd_valid())
+      printJointProbs(activeCTable()$probMatrix, activeCTable()$cMatrix)
+    })
+    
+    output$renderUnionProbs <- renderUI({
+      req(input$gocTable > 0)
+      req(pd_valid())
+      printUnionProbs(activeCTable()$probMatrix, activeCTable()$cMatrix)
+    })
+    
+    output$renderConditionalProbs <- renderUI({
+      req(input$gocTable > 0)
+      req(pd_valid())
+      if(ctableconditional_iv$is_valid()) {
+        printConditionalProbs(activeCTable()$cMatrix)
+      } else {
+        validate("Row and Column totals must be greater than 0 to calculate conditional probabilities.",
+                 errorClass = "myClass")
       }
-      
-      output$renderMarginalProbs <- renderUI({
-        req(pd_iv$is_valid())
-        printMarginalProbs(activeProbMatrix, activeCMatrix)
-        
-      })
-      
-      output$renderJointProbs <- renderUI({
-        req(pd_iv$is_valid())
-        printJointProbs(activeProbMatrix, activeCMatrix)
-      })
-      
-      output$renderUnionProbs <- renderUI({
-        req(pd_iv$is_valid())
-        printUnionProbs(activeProbMatrix, activeCMatrix)
-      })
-      
-      output$renderConditionalProbs <- renderUI({
-        req(pd_iv$is_valid())
-        if(ctableconditional_iv$is_valid()) {
-          printConditionalProbs(activeCMatrix)
-        } else {
-          validate("Row and Column totals must be greater than 0 to calculate conditional probabilities.",
-                   errorClass = "myClass")
-        }
-      })
     })
     
     observeEvent(input$resetcTable, {
@@ -2519,312 +2458,322 @@ probDistServer <- function(id) {
       shinyjs::reset("contingencyPanel")
     })
     
-    observeEvent(input$goBinom, {
-      
-      observe({
-        req(input$probability == "Binomial")
-        showBox <- FALSE
-        if (pd_iv$is_valid()) {
-          if (input$calcBinom != "between") {
-            showBox <- input$numSuccessesBinom <= input$numTrialsBinom
-          } else {
-            req(input$numSuccessesBinomx1,
-                input$numSuccessesBinomx2,
-                input$numTrialsBinom)
-            showBox <-
-              input$numSuccessesBinomx1 <= input$numSuccessesBinomx2 &&
-              input$numSuccessesBinomx1 <= input$numTrialsBinom &&
-              input$numSuccessesBinomx2 <= input$numTrialsBinom
-          }
+    # Binomial results: outputs and code box are defined once (not on every click)
+    
+    # Code box: created once, active after the first Calculate click
+    observe({
+      req(calculated$binom)
+      req(input$probability == "Binomial")
+      showBox <- FALSE
+      if (pd_valid()) {
+        if (input$calcBinom != "between") {
+          showBox <- input$numSuccessesBinom <= input$numTrialsBinom
+        } else {
+          req(input$numSuccessesBinomx1,
+              input$numSuccessesBinomx2,
+              input$numTrialsBinom)
+          showBox <-
+            input$numSuccessesBinomx1 <= input$numSuccessesBinomx2 &&
+            input$numSuccessesBinomx1 <= input$numTrialsBinom &&
+            input$numSuccessesBinomx2 <= input$numTrialsBinom
         }
-        toggleCodeBox(showBox, "rcodeBinomBox", ns)
-      })
-      
-      output$renderProbabilityBinom <- renderUI({
-        withMathJax(
-          if(!pd_iv$is_valid())
+      }
+      setCodeBox(showBox, "rcodeBinomBox")
+    })
+    
+    output$renderProbabilityBinom <- renderUI({
+      req(input$goBinom > 0)
+        if(!pd_valid())
+        {
+          if(!binomprob_iv$is_valid())
           {
-            if(!binomprob_iv$is_valid())
-            {
-              validate(
-                need(input$numTrialsBinom, "Number of Trials (n) must be a positive integer") %then%
-                  need(input$numTrialsBinom > 0 && input$numTrialsBinom %% 1 == 0, "Number of Trials (n) must be a positive integer"),
-                need(input$successProbBinom, "Probability of Success (p) must be between 0 and 1") %then%
-                  need(input$successProbBinom >= 0 && input$successProbBinom <= 1, "Probability of Success (p) must be between 0 and 1"),
-                need(input$numSuccessesBinom != "", "Enter a value for the Number of Successes (x)") %then%
-                  need(input$numSuccessesBinom >= 0 && input$numSuccessesBinom %% 1 == 0, "Number of Successes (x) must be a positive integer"),
-                errorClass = "myClass")
-            }
-            
-            if(!binombetween_iv$is_valid())
-            {
-              validate(
-                need(input$numTrialsBinom, "Number of Trials (n) must be a positive integer") %then%
-                  need(input$numTrialsBinom > 0 && input$numTrialsBinom %% 1 == 0, "Number of Trials (n) must be a positive integer"),
-                need(input$successProbBinom, "Probability of Success (p) must be between 0 and 1") %then%
-                  need(input$successProbBinom >= 0 && input$successProbBinom <= 1, "Probability of Success (p) must be between 0 and 1"),
-                need(input$numSuccessesBinomx1, "Number of Successes (x1) must be a positive integer") %then%
-                  need(input$numSuccessesBinomx1 >= 0 && input$numSuccessesBinomx1 %% 1 == 0, "Number of Successes (x1) must be a positive integer"),
-                need(input$numSuccessesBinomx2, "Enter a value for the Number of Successes (x2)") %then%
-                  need(input$numSuccessesBinomx2 >= 0 && input$numSuccessesBinomx2 %% 1 == 0, "Number of Successes (x2) must be a positive integer"),
-                errorClass = "myClass")
-            }
-            
             validate(
               need(input$numTrialsBinom, "Number of Trials (n) must be a positive integer") %then%
                 need(input$numTrialsBinom > 0 && input$numTrialsBinom %% 1 == 0, "Number of Trials (n) must be a positive integer"),
               need(input$successProbBinom, "Probability of Success (p) must be between 0 and 1") %then%
                 need(input$successProbBinom >= 0 && input$successProbBinom <= 1, "Probability of Success (p) must be between 0 and 1"),
+              need(input$numSuccessesBinom != "", "Enter a value for the Number of Successes (x)") %then%
+                need(input$numSuccessesBinom >= 0 && input$numSuccessesBinom %% 1 == 0, "Number of Successes (x) must be a positive integer"),
               errorClass = "myClass")
           }
-          else
+          
+          if(!binombetween_iv$is_valid())
           {
-            req(pd_iv$is_valid())
-            binom_n <- input$numTrialsBinom
-            binom_p <- input$successProbBinom
-            binom_mu <- round(binom_n * binom_p, 4)
-            binom_var <- round(binom_mu * (1 - binom_p), 4)
-            binom_sd <- round(sqrt(binom_var), 4)
-            
-            if(input$calcBinom != 'between')
-            {
-              binom_x <- input$numSuccessesBinom
-              
-              validate(
-                need(binom_x <= binom_n, "Number of Successes (x) must be less than or equal to the Number of Trials (n)"),
-                errorClass = "myClass")
-              
-              if(input$calcBinom == 'exact'){
-                binomProb <- paste("P(X = ", binom_x, ")") 
-                binomForm <- paste("\\binom{", binom_n, "}{", binom_x, "}", binom_p, "^{", binom_x, "}(1-", binom_p, ")^{", binom_n, "-", binom_x, "}")
-                binomVal <- round(dbinom(binom_x,binom_n,binom_p), 4)
-              }
-              else if(input$calcBinom == 'cumulative'){
-                binomProb <- paste("P(X \\leq ", binom_x, ")") 
-                binomForm <- paste("\\sum_{x = 0}^{", binom_x, "} \\binom{", binom_n, "}{x}", binom_p, "^x (1-", binom_p, ")^{", binom_n, "- x}")
-                binomVal <- round(pbinom(binom_x,binom_n,binom_p,lower.tail = TRUE), 4)
-              }
-              else if(input$calcBinom == 'upperTail'){
-                binomProb <- paste("P(X \\geq ", binom_x, ")") 
-                binomForm <- paste("\\sum_{x = ", binom_x, "}^{", binom_n, "} \\binom{", binom_n, "}{x}", binom_p, "^x (1-", binom_p, ")^{", binom_n, "- x}")
-                binomVal <- round(pbinom(binom_x - 1,binom_n,binom_p,lower.tail = FALSE), 4)
-              }
-              else if(input$calcBinom == 'greaterThan'){
-                binomProb <- paste("P(X \\gt ", binom_x, ")") 
-                binomForm <- paste("\\sum_{x = ", binom_x + 1, "}^{", binom_n, "} \\binom{", binom_n, "}{x}", binom_p, "^x (1-", binom_p, ")^{", binom_n, "- x}")
-                binomVal <- round(pbinom(binom_x,binom_n,binom_p,lower.tail = FALSE), 4)
-              }
-              else if(input$calcBinom == 'lessThan'){
-                binomProb <- paste("P(X \\lt ", binom_x, ")") 
-                binomForm <- paste("\\sum_{x = 0}^{", binom_x - 1, "} \\binom{", binom_n, "}{x}", binom_p, "^x (1-", binom_p, ")^{", binom_n, "- x}")
-                binomVal <- round(pbinom(binom_x - 1,binom_n,binom_p,lower.tail = TRUE), 4)
-              }
-            }
-            else if(input$calcBinom == 'between')
-            {
-              binom_x1 <- input$numSuccessesBinomx1
-              binom_x2 <- input$numSuccessesBinomx2
-              
-              validate(
-                need(binom_x1 <= binom_n, "Number of Successes (x1) must be less than or equal to the Number of Trials (n)"),
-                need(binom_x2 <= binom_n, "Number of Successes (x2) must be less than or equal to the Number of Trials (n)"),
-                need(binom_x1 <= binom_x2, "Number of Successes (x1) must be less than or equal to Number of Successes (x2)"),
-                errorClass = "myClass")
-              
-              binomProb <- paste("P(", binom_x1, " \\leq X \\leq ", binom_x2, ")")
-              binomForm <- paste("\\sum_{x = ", binom_x1, "}^{", binom_x2, "} \\binom{", binom_n, "}{x}", binom_p, "^x (1-", binom_p, ")^{", binom_n, "- x}")
-              binomVal <- round(pbinom(binom_x2,binom_n,binom_p,lower.tail = TRUE) - pbinom(binom_x1-1,binom_n,binom_p,lower.tail = TRUE), 4)
-            }
-            
-            tagList(
-              withMathJax(
-                div(
-                  h3(
-                    sprintf("Calculating  \\( %s \\)   when  \\(  X \\sim Bin(n = %1.0f, p = %g): \\)",
-                            binomProb,
-                            binom_n,
-                            binom_p)),
-                  hr(),
-                  br(),
-                  p(tags$b("Using the Probability Mass Function: ")),
-                  sprintf("\\( P(X = x) = \\binom{n}{x} p^x (1-p)^{n-x} \\)"),
-                  sprintf("\\( \\qquad \\) for \\( x = 0, 1, 2, ..., n\\)"),
-                  br(),
-                  br(),
-                  br(),
-                  sprintf("\\( \\displaystyle %s = %s\\)",
-                          binomProb,
-                          binomForm),
-                  br(),
-                  br(),
-                  sprintf("\\( %s = %0.4f\\)",
-                          binomProb,
-                          binomVal),
-                  br(),
-                  br(),
-                  br(),
-                  sprintf("\\( E(X) = \\mu = np = %g \\)", binom_mu),
-                  br(), 
-                  br(),
-                  sprintf("\\( SD(X) = \\sigma = \\sqrt{np(1 - p)} = %g \\)", binom_sd),
-                  br(), 
-                  br(),
-                  sprintf("\\( Var(X) = \\sigma^2 = np(1 - p) = %g \\)", binom_var)
-                )
-              )
-            ) 
-          })
-      })
-      
-      output$rcodeBinom <- renderUI({
-        req(pd_iv$is_valid())
-        if (input$calcBinom == "exact") {
+            validate(
+              need(input$numTrialsBinom, "Number of Trials (n) must be a positive integer") %then%
+                need(input$numTrialsBinom > 0 && input$numTrialsBinom %% 1 == 0, "Number of Trials (n) must be a positive integer"),
+              need(input$successProbBinom, "Probability of Success (p) must be between 0 and 1") %then%
+                need(input$successProbBinom >= 0 && input$successProbBinom <= 1, "Probability of Success (p) must be between 0 and 1"),
+              need(input$numSuccessesBinomx1, "Number of Successes (x1) must be a positive integer") %then%
+                need(input$numSuccessesBinomx1 >= 0 && input$numSuccessesBinomx1 %% 1 == 0, "Number of Successes (x1) must be a positive integer"),
+              need(input$numSuccessesBinomx2, "Enter a value for the Number of Successes (x2)") %then%
+                need(input$numSuccessesBinomx2 >= 0 && input$numSuccessesBinomx2 %% 1 == 0, "Number of Successes (x2) must be a positive integer"),
+              errorClass = "myClass")
+          }
           
-          HTML(paste0(
-            "dbinom(x = ",
-            codeValue(input$numSuccessesBinom),
-            ", size = ",
-            codeValue(input$numTrialsBinom),
-            ", prob = ",
-            codeValue(input$successProbBinom),
-            ")"
-          ))
-          
-        } else if (input$calcBinom == "cumulative") {
-          
-          HTML(paste0(
-            "pbinom(",
-            codeValue(input$numSuccessesBinom),
-            ", size = ",
-            codeValue(input$numTrialsBinom),
-            ", prob = ",
-            codeValue(input$successProbBinom),
-            ")"
-          ))
-          
-        } else if (input$calcBinom == "upperTail") {
-          
-          HTML(paste0(
-            "pbinom(",
-            codeValue(input$numSuccessesBinom - 1),
-            ", size = ",
-            codeValue(input$numTrialsBinom),
-            ", prob = ",
-            codeValue(input$successProbBinom),
-            ", lower.tail = ",
-            codeValue("FALSE"),
-            ")"
-          ))
-          
-        } else if (input$calcBinom == "greaterThan") {
-          
-          HTML(paste0(
-            "pbinom(",
-            codeValue(input$numSuccessesBinom),
-            ", size = ",
-            codeValue(input$numTrialsBinom),
-            ", prob = ",
-            codeValue(input$successProbBinom),
-            ", lower.tail = ",
-            codeValue("FALSE"),
-            ")"
-          ))
-          
-        } else if (input$calcBinom == "lessThan") {
-          
-          HTML(paste0(
-            "pbinom(",
-            codeValue(input$numSuccessesBinom - 1),
-            ", size = ",
-            codeValue(input$numTrialsBinom),
-            ", prob = ",
-            codeValue(input$successProbBinom),
-            ")"
-          ))
-          
-        } else if (input$calcBinom == "between") {
-          
-          HTML(paste0(
-            "<span style='color:#888;'># Method 1 (CDF difference):</span>\n",
-            "pbinom(",
-            codeValue(input$numSuccessesBinomx2),
-            ", size = ",
-            codeValue(input$numTrialsBinom),
-            ", prob = ",
-            codeValue(input$successProbBinom),
-            ") - pbinom(",
-            codeValue(input$numSuccessesBinomx1 - 1),
-            ", size = ",
-            codeValue(input$numTrialsBinom),
-            ", prob = ",
-            codeValue(input$successProbBinom),
-            ")\n\n",
-            
-            "<span style='color:#888;'># Method 2 (sum of exact probabilities):</span>\n",
-            "sum(dbinom(",
-            codeValue(paste0(input$numSuccessesBinomx1, ":", input$numSuccessesBinomx2)),
-            ", size = ",
-            codeValue(input$numTrialsBinom),
-            ", prob = ",
-            codeValue(input$successProbBinom),
-            "))"
-          ))
-        }
-      })
-      
-      output$binomDistrTable <- DT::renderDT({
-        req(pd_iv$is_valid())
-        if(input$numTrialsBinom < 50)
-        {
-          dfBinom <- data.frame(value = seq(0, input$numTrialsBinom), 
-                                value = round(dbinom(x = 0:input$numTrialsBinom, 
-                                                     size = input$numTrialsBinom, 
-                                                     prob = input$successProbBinom), 4))
-          dfBinom <- rbind(
-            dfBinom,
-            data.frame(value = "Total", value.1 = 1.0000)
-          )
-          
-          colnames(dfBinom) <- c("X", "P(X = x)")
-          
-          datatable(dfBinom,
-                    options = list(
-                      dom = 't',
-                      pageLength = -1,
-                      ordering = FALSE,
-                      searching = FALSE,
-                      paging = FALSE,
-                      rowCallback = boldTotalRow()
-                    ),
-                    rownames = FALSE,
-                    filter = "none"
-          ) %>% formatRound(2, digits = 4)
+          validate(
+            need(input$numTrialsBinom, "Number of Trials (n) must be a positive integer") %then%
+              need(input$numTrialsBinom > 0 && input$numTrialsBinom %% 1 == 0, "Number of Trials (n) must be a positive integer"),
+            need(input$successProbBinom, "Probability of Success (p) must be between 0 and 1") %then%
+              need(input$successProbBinom >= 0 && input$successProbBinom <= 1, "Probability of Success (p) must be between 0 and 1"),
+            errorClass = "myClass")
         }
         else
         {
-          dfBinom <- data.frame(value = "Probability distribution table limited to sample sizes less than 50")
-          colnames(dfBinom) <- c("Sample Size Too Large")
-          datatable(dfBinom,
-                    options = list(
-                      dom = '',
-                      pageLength = -1,
-                      ordering = FALSE,
-                      searching = FALSE,
-                      paging = FALSE
-                    ),
-                    rownames = FALSE,
-                    filter = "none")
+          req(pd_valid())
+          binom_n <- input$numTrialsBinom
+          binom_p <- input$successProbBinom
+          binom_mu <- round(binom_n * binom_p, 4)
+          binom_var <- round(binom_mu * (1 - binom_p), 4)
+          binom_sd <- round(sqrt(binom_var), 4)
+          
+          if(input$calcBinom != 'between')
+          {
+            binom_x <- input$numSuccessesBinom
+            
+            validate(
+              need(binom_x <= binom_n, "Number of Successes (x) must be less than or equal to the Number of Trials (n)"),
+              errorClass = "myClass")
+            
+            if(input$calcBinom == 'exact'){
+              binomProb <- paste("P(X = ", binom_x, ")") 
+              binomForm <- paste("\\binom{", binom_n, "}{", binom_x, "}", binom_p, "^{", binom_x, "}(1-", binom_p, ")^{", binom_n, "-", binom_x, "}")
+              binomVal <- round(dbinom(binom_x,binom_n,binom_p), 4)
+            }
+            else if(input$calcBinom == 'cumulative'){
+              binomProb <- paste("P(X \\leq ", binom_x, ")") 
+              binomForm <- paste("\\sum_{x = 0}^{", binom_x, "} \\binom{", binom_n, "}{x}", binom_p, "^x (1-", binom_p, ")^{", binom_n, "- x}")
+              binomVal <- round(pbinom(binom_x,binom_n,binom_p,lower.tail = TRUE), 4)
+            }
+            else if(input$calcBinom == 'upperTail'){
+              binomProb <- paste("P(X \\geq ", binom_x, ")") 
+              binomForm <- paste("\\sum_{x = ", binom_x, "}^{", binom_n, "} \\binom{", binom_n, "}{x}", binom_p, "^x (1-", binom_p, ")^{", binom_n, "- x}")
+              binomVal <- round(pbinom(binom_x - 1,binom_n,binom_p,lower.tail = FALSE), 4)
+            }
+            else if(input$calcBinom == 'greaterThan'){
+              binomProb <- paste("P(X \\gt ", binom_x, ")") 
+              binomForm <- paste("\\sum_{x = ", binom_x + 1, "}^{", binom_n, "} \\binom{", binom_n, "}{x}", binom_p, "^x (1-", binom_p, ")^{", binom_n, "- x}")
+              binomVal <- round(pbinom(binom_x,binom_n,binom_p,lower.tail = FALSE), 4)
+            }
+            else if(input$calcBinom == 'lessThan'){
+              binomProb <- paste("P(X \\lt ", binom_x, ")") 
+              binomForm <- paste("\\sum_{x = 0}^{", binom_x - 1, "} \\binom{", binom_n, "}{x}", binom_p, "^x (1-", binom_p, ")^{", binom_n, "- x}")
+              binomVal <- round(pbinom(binom_x - 1,binom_n,binom_p,lower.tail = TRUE), 4)
+            }
+          }
+          else if(input$calcBinom == 'between')
+          {
+            binom_x1 <- input$numSuccessesBinomx1
+            binom_x2 <- input$numSuccessesBinomx2
+            
+            validate(
+              need(binom_x1 <= binom_n, "Number of Successes (x1) must be less than or equal to the Number of Trials (n)"),
+              need(binom_x2 <= binom_n, "Number of Successes (x2) must be less than or equal to the Number of Trials (n)"),
+              need(binom_x1 <= binom_x2, "Number of Successes (x1) must be less than or equal to Number of Successes (x2)"),
+              errorClass = "myClass")
+            
+            binomProb <- paste("P(", binom_x1, " \\leq X \\leq ", binom_x2, ")")
+            binomForm <- paste("\\sum_{x = ", binom_x1, "}^{", binom_x2, "} \\binom{", binom_n, "}{x}", binom_p, "^x (1-", binom_p, ")^{", binom_n, "- x}")
+            binomVal <- round(pbinom(binom_x2,binom_n,binom_p,lower.tail = TRUE) - pbinom(binom_x1-1,binom_n,binom_p,lower.tail = TRUE), 4)
+          }
+          
+          tagList(
+            withMathJax(
+              div(
+                h3(
+                  sprintf("Calculating  \\( %s \\)   when  \\(  X \\sim Bin(n = %1.0f, p = %g): \\)",
+                          binomProb,
+                          binom_n,
+                          binom_p)),
+                hr(),
+                br(),
+                p(tags$b("Using the Probability Mass Function: ")),
+                sprintf("\\( P(X = x) = \\binom{n}{x} p^x (1-p)^{n-x} \\)"),
+                sprintf("\\( \\qquad \\) for \\( x = 0, 1, 2, ..., n\\)"),
+                br(),
+                br(),
+                br(),
+                sprintf("\\( \\displaystyle %s = %s\\)",
+                        binomProb,
+                        binomForm),
+                br(),
+                br(),
+                sprintf("\\( %s = %0.4f\\)",
+                        binomProb,
+                        binomVal),
+                br(),
+                br(),
+                br(),
+                sprintf("\\( E(X) = \\mu = np = %g \\)", binom_mu),
+                br(), 
+                br(),
+                sprintf("\\( SD(X) = \\sigma = \\sqrt{np(1 - p)} = %g \\)", binom_sd),
+                br(), 
+                br(),
+                sprintf("\\( Var(X) = \\sigma^2 = np(1 - p) = %g \\)", binom_var)
+              )
+            )
+          ) 
         }
-      }) 
     })
+    
+    output$rcodeBinom <- renderUI({
+      req(calculated$binom)
+      req(pd_valid())
+      if (input$calcBinom == "exact") {
+        
+        HTML(paste0(
+          "dbinom(x = ",
+          codeValue(input$numSuccessesBinom),
+          ", size = ",
+          codeValue(input$numTrialsBinom),
+          ", prob = ",
+          codeValue(input$successProbBinom),
+          ")"
+        ))
+        
+      } else if (input$calcBinom == "cumulative") {
+        
+        HTML(paste0(
+          "pbinom(",
+          codeValue(input$numSuccessesBinom),
+          ", size = ",
+          codeValue(input$numTrialsBinom),
+          ", prob = ",
+          codeValue(input$successProbBinom),
+          ")"
+        ))
+        
+      } else if (input$calcBinom == "upperTail") {
+        
+        HTML(paste0(
+          "pbinom(",
+          codeValue(input$numSuccessesBinom - 1),
+          ", size = ",
+          codeValue(input$numTrialsBinom),
+          ", prob = ",
+          codeValue(input$successProbBinom),
+          ", lower.tail = ",
+          codeValue("FALSE"),
+          ")"
+        ))
+        
+      } else if (input$calcBinom == "greaterThan") {
+        
+        HTML(paste0(
+          "pbinom(",
+          codeValue(input$numSuccessesBinom),
+          ", size = ",
+          codeValue(input$numTrialsBinom),
+          ", prob = ",
+          codeValue(input$successProbBinom),
+          ", lower.tail = ",
+          codeValue("FALSE"),
+          ")"
+        ))
+        
+      } else if (input$calcBinom == "lessThan") {
+        
+        HTML(paste0(
+          "pbinom(",
+          codeValue(input$numSuccessesBinom - 1),
+          ", size = ",
+          codeValue(input$numTrialsBinom),
+          ", prob = ",
+          codeValue(input$successProbBinom),
+          ")"
+        ))
+        
+      } else if (input$calcBinom == "between") {
+        
+        HTML(paste0(
+          "<span style='color:#888;'># Method 1 (CDF difference):</span>\n",
+          "pbinom(",
+          codeValue(input$numSuccessesBinomx2),
+          ", size = ",
+          codeValue(input$numTrialsBinom),
+          ", prob = ",
+          codeValue(input$successProbBinom),
+          ") - pbinom(",
+          codeValue(input$numSuccessesBinomx1 - 1),
+          ", size = ",
+          codeValue(input$numTrialsBinom),
+          ", prob = ",
+          codeValue(input$successProbBinom),
+          ")\n\n",
+          
+          "<span style='color:#888;'># Method 2 (sum of exact probabilities):</span>\n",
+          "sum(dbinom(",
+          codeValue(paste0(input$numSuccessesBinomx1, ":", input$numSuccessesBinomx2)),
+          ", size = ",
+          codeValue(input$numTrialsBinom),
+          ", prob = ",
+          codeValue(input$successProbBinom),
+          "))"
+        ))
+      }
+    })
+    
+    # Uses the values captured at the last Calculate click (binomTabData). Its
+    # data is sent with the table (server = FALSE), as for the contingency tables.
+    output$binomDistrTable <- DT::renderDT({
+      req(calculated$binom)
+      tab <- binomTabData()
+      req(tab$valid)
+      if(tab$n < 50)
+      {
+        dfBinom <- data.frame(value = seq(0, tab$n), 
+                              value = round(dbinom(x = 0:tab$n, 
+                                                   size = tab$n, 
+                                                   prob = tab$p), 4))
+        dfBinom <- rbind(
+          dfBinom,
+          data.frame(value = "Total", value.1 = 1.0000)
+        )
+        
+        colnames(dfBinom) <- c("X", "P(X = x)")
+        
+        datatable(dfBinom,
+                  options = list(
+                    dom = 't',
+                    pageLength = -1,
+                    ordering = FALSE,
+                    searching = FALSE,
+                    paging = FALSE,
+                    rowCallback = boldTotalRow()
+                  ),
+                  rownames = FALSE,
+                  filter = "none"
+        ) %>% formatRound(2, digits = 4)
+      }
+      else
+      {
+        dfBinom <- data.frame(value = "Probability distribution table limited to sample sizes less than 50")
+        colnames(dfBinom) <- c("Sample Size Too Large")
+        datatable(dfBinom,
+                  options = list(
+                    dom = '',
+                    pageLength = -1,
+                    ordering = FALSE,
+                    searching = FALSE,
+                    paging = FALSE
+                  ),
+                  rownames = FALSE,
+                  filter = "none")
+      }
+    }, server = FALSE)
     
     output$binomDistrBarPlot <- renderPlotly({
       
-      req(pd_iv$is_valid())
-      req(input$numTrialsBinom < 50)
+      req(calculated$binom)
+      tab <- binomTabData()
+      req(tab$valid)
+      validate(
+        need(tab$n < 50, "Probability histogram limited to sample sizes less than 50"),
+        errorClass = "myClass")
       
-      n <- input$numTrialsBinom
-      p <- input$successProbBinom
+      n <- tab$n
+      p <- tab$p
       x_vals <- 0:n
       
       dfBinom <- data.frame(
@@ -2858,8 +2807,8 @@ probDistServer <- function(id) {
           title = list(
             text = paste0(
               "<b>Binomial Distribution:</b> ",
-              "<b><i>X</i> ~ Bin(<i>n</i> = ", input$numTrialsBinom,
-              ", <i>p</i> = ", input$successProbBinom, ")</b>"),
+              "<b><i>X</i> ~ Bin(<i>n</i> = ", n,
+              ", <i>p</i> = ", p, ")</b>"),
             x = 0.5),
           
           xaxis = list(
@@ -2871,218 +2820,231 @@ probDistServer <- function(id) {
               text = "<b>P(<i>X</i> = <i>x</i>)</b>")))
     })
 
-    observeEvent(input$goPoisson, {
-      
-      observe({
-        req(input$probability == "Poisson")
-        showBox <- FALSE
-        if (input$calcPoisson != "between") {
-          showBox <- pd_iv$is_valid()
-        } else {
-          showBox <- pd_iv$is_valid() &&
-            input$x1Poisson <= input$x2Poisson
-        }
-        toggleCodeBox(showBox, "rcodePoissonBox", ns)
-      })
-      
-      output$renderProbabilityPoisson <- renderUI({
-        withMathJax(
-          if(!pd_iv$is_valid())
+    # Poisson results: outputs and code box are defined once (not on every click)
+    
+    # Code box: created once, active after the first Calculate click
+    observe({
+      req(calculated$poisson)
+      req(input$probability == "Poisson")
+      showBox <- FALSE
+      if (input$calcPoisson != "between") {
+        showBox <- pd_valid()
+      } else {
+        showBox <- pd_valid() &&
+          input$x1Poisson <= input$x2Poisson
+      }
+      setCodeBox(showBox, "rcodePoissonBox")
+    })
+    
+    output$renderProbabilityPoisson <- renderUI({
+      req(input$goPoisson > 0)
+        if(!pd_valid())
+        {
+          if(!poissprob_iv$is_valid())
           {
-            if(!poissprob_iv$is_valid())
-            {
-              validate(
-                need(input$lambdaPoisson && input$lambdaPoisson > 0, "Average Number of Successes (lambda) must be greater than zero"),
-                need(input$xPoisson , "Number of Successes (x) must be a positive integer") %then%
-                  need(input$xPoisson >= 0 && input$xPoisson %% 1 == 0, "Number of Successes (x) must be a positive integer"),
-                errorClass = "myClass")
-            }
-            
-            if(!poissbetween_iv$is_valid())
-            {
-              validate(
-                need(input$lambdaPoisson && input$lambdaPoisson > 0, "Average Number of Successes (lambda) must be greater than zero"),
-                need(input$x1Poisson, "Enter a value for the Number of Successes (x1)") %then%
-                  need(input$x1Poisson >= 0 && input$x1Poisson %% 1 == 0, "Number of Successes (x1) must be a positive integer"),
-                need(input$x2Poisson, "Enter a value for the Number of Successes (x2)") %then%
-                  need(input$x2Poisson >= 0 && input$x2Poisson %% 1 == 0, "Number of Successes (x2) must be a positive integer"),
-                errorClass = "myClass")
-            }
-            
             validate(
               need(input$lambdaPoisson && input$lambdaPoisson > 0, "Average Number of Successes (lambda) must be greater than zero"),
+              need(input$xPoisson , "Number of Successes (x) must be a positive integer") %then%
+                need(input$xPoisson >= 0 && input$xPoisson %% 1 == 0, "Number of Successes (x) must be a positive integer"),
               errorClass = "myClass")
           }
-          else
+          
+          if(!poissbetween_iv$is_valid())
           {
-            req(pd_iv$is_valid())
-            poisson_lambda <- input$lambdaPoisson
-            poisson_sd <- round(sqrt(input$lambdaPoisson), 4)
-            
-            if(input$calcPoisson != 'between')
-            {
-              poisson_x <- input$xPoisson
-              
-              if(input$calcPoisson == 'exact'){
-                poissProb <- paste("P(X = ", poisson_x, ")") 
-                poissForm <- paste("\\dfrac{e^{-", poisson_lambda, "}", poisson_lambda, "^{", poisson_x, "}}{", poisson_x, "!}")
-                poissVal <- round(dpois(poisson_x,poisson_lambda), 4)
-              }
-              else if(input$calcPoisson == 'cumulative'){
-                poissProb <- paste("P(X \\leq ", poisson_x, ")") 
-                poissForm <- paste("\\sum_{x = 0}^{", poisson_x, "} \\dfrac{e^{-", poisson_lambda, "}", poisson_lambda, "^x}{x!}")
-                poissVal <- round(ppois(poisson_x,poisson_lambda,lower.tail = TRUE), 4)
-              }
-              else if(input$calcPoisson == 'upperTail'){
-                poissProb <- paste("P(X \\geq ", poisson_x, ")") 
-                poissForm <- paste("1 - \\sum_{x = 0}^{", poisson_x - 1, "} \\dfrac{e^{-", poisson_lambda, "}", poisson_lambda, "^x}{x!}")
-                poissVal <- round(ppois(poisson_x - 1,poisson_lambda,lower.tail = FALSE), 4)
-              }
-              else if(input$calcPoisson == 'greaterThan'){
-                poissProb <- paste("P(X \\gt ", poisson_x, ")") 
-                poissForm <- paste("1 - \\sum_{x = 0}^{", poisson_x, "} \\dfrac{e^{-", poisson_lambda, "}", poisson_lambda, "^x}{x!}")
-                poissVal <- round(ppois(poisson_x,poisson_lambda,lower.tail = FALSE), 4)
-              }
-              else if(input$calcPoisson == 'lessThan'){
-                poissProb <- paste("P(X \\lt ", poisson_x, ")") 
-                poissForm <- paste("\\sum_{x = 0}^{", poisson_x - 1, "} \\dfrac{e^{-", poisson_lambda, "}", poisson_lambda, "^x}{x!}")
-                poissVal <- round(ppois(poisson_x - 1,poisson_lambda,lower.tail = TRUE), 4)
-              }
-            }
-            else if(input$calcPoisson == 'between')
-            {
-              validate(
-                need(input$x1Poisson <= input$x2Poisson, "Number of Successes (x1) must be less than or equal to Number of Successes (x2)"),
-                errorClass = "myClass")
-              
-              poisson_x1 <- input$x1Poisson
-              poisson_x2 <- input$x2Poisson
-              
-              poissProb <- paste("P(", poisson_x1, " \\leq X \\leq ", poisson_x2, ")")
-              poissForm <- paste("\\sum_{x = ", poisson_x1, "}^{", poisson_x2, "} \\dfrac{e^{-", poisson_lambda, "}", poisson_lambda, "^x}{x!}")
-              poissVal <- round(ppois(poisson_x2, poisson_lambda, lower.tail = TRUE) - ppois(poisson_x1 - 1, poisson_lambda, lower.tail = TRUE), 4)
-            }
-            
-            tagList(
-              withMathJax(
-                div(
-                  h3(
-                    sprintf("Calculating  \\( %s \\)   when  \\(  X \\sim Pois(\\lambda = %g): \\)",
-                            poissProb,
-                            poisson_lambda)),
-                  hr(),
-                  br(),
-                  p(tags$b("Using the Probability Mass Function: ")),
-                  sprintf("\\( P(X = x) = \\dfrac{e^{-\\lambda} \\lambda^x}{x!} \\)"),
-                  sprintf("\\( \\qquad \\) for \\( x = 0, 1, 2, ... \\)"),
-                  br(),
-                  br(),
-                  br(),
-                  sprintf("\\( \\displaystyle %s = %s\\)",
-                          poissProb,
-                          poissForm),
-                  br(),
-                  br(),
-                  sprintf("\\( %s = %0.4f\\)",
-                          poissProb,
-                          poissVal),
-                  br(),
-                  br(),
-                  br(),
-                  sprintf("\\( E(X) = \\lambda = %g \\)", poisson_lambda),
-                  br(), 
-                  br(),
-                  sprintf("\\( SD(X) = \\sigma = \\sqrt{\\lambda} = %g \\)", poisson_sd),
-                  br(), 
-                  br(),
-                  sprintf("\\( Var(X) = \\sigma^2 = \\lambda = %g \\)", poisson_lambda)
-                )
-              ) 
-            ) 
-          }) 
-      }) 
-      
-      output$rcodePoisson <- renderUI({
-        req(pd_iv$is_valid())
-        
-        if (input$calcPoisson == "exact") {
+            validate(
+              need(input$lambdaPoisson && input$lambdaPoisson > 0, "Average Number of Successes (lambda) must be greater than zero"),
+              need(input$x1Poisson, "Enter a value for the Number of Successes (x1)") %then%
+                need(input$x1Poisson >= 0 && input$x1Poisson %% 1 == 0, "Number of Successes (x1) must be a positive integer"),
+              need(input$x2Poisson, "Enter a value for the Number of Successes (x2)") %then%
+                need(input$x2Poisson >= 0 && input$x2Poisson %% 1 == 0, "Number of Successes (x2) must be a positive integer"),
+              errorClass = "myClass")
+          }
           
-          HTML(paste0(
-            "dpois(x = ",
-            codeValue(input$xPoisson),
-            ", lambda = ",
-            codeValue(input$lambdaPoisson),
-            ")"
-          ))
-          
-        } else if (input$calcPoisson == "cumulative") {
-          
-          HTML(paste0(
-            "ppois(",
-            codeValue(input$xPoisson),
-            ", lambda = ",
-            codeValue(input$lambdaPoisson),
-            ")"
-          ))
-          
-        } else if (input$calcPoisson == "upperTail") {
-          
-          HTML(paste0(
-            "ppois(",
-            codeValue(input$xPoisson - 1),
-            ", lambda = ",
-            codeValue(input$lambdaPoisson),
-            ", lower.tail = FALSE)"
-          ))
-          
-        } else if (input$calcPoisson == "greaterThan") {
-          
-          HTML(paste0(
-            "ppois(",
-            codeValue(input$xPoisson),
-            ", lambda = ",
-            codeValue(input$lambdaPoisson),
-            ", lower.tail = FALSE)"
-          ))
-          
-        } else if (input$calcPoisson == "lessThan") {
-          
-          HTML(paste0(
-            "ppois(",
-            codeValue(input$xPoisson - 1),
-            ", lambda = ",
-            codeValue(input$lambdaPoisson),
-            ")"
-          ))
-          
-        } else if (input$calcPoisson == "between") {
-          
-          HTML(paste0(
-            "<span style='color:#888;'># Method 1 (CDF difference):</span>\n",
-            "ppois(",
-            codeValue(input$x2Poisson),
-            ", lambda = ",
-            codeValue(input$lambdaPoisson),
-            ") - ppois(",
-            codeValue(input$x1Poisson - 1),
-            ", lambda = ",
-            codeValue(input$lambdaPoisson),
-            ")",
-            
-            "\n\n<span style='color:#888;'># Method 2 (sum of exact probabilities):</span>\n",
-            "sum(dpois(",
-            codeValue(paste0(input$x1Poisson, ":", input$x2Poisson)),
-            ", lambda = ",
-            codeValue(input$lambdaPoisson),
-            "))"
-          ))
+          validate(
+            need(input$lambdaPoisson && input$lambdaPoisson > 0, "Average Number of Successes (lambda) must be greater than zero"),
+            errorClass = "myClass")
         }
-      })
+        else
+        {
+          req(pd_valid())
+          poisson_lambda <- input$lambdaPoisson
+          poisson_sd <- round(sqrt(input$lambdaPoisson), 4)
+          
+          if(input$calcPoisson != 'between')
+          {
+            poisson_x <- input$xPoisson
+            
+            if(input$calcPoisson == 'exact'){
+              poissProb <- paste("P(X = ", poisson_x, ")") 
+              poissForm <- paste("\\dfrac{e^{-", poisson_lambda, "}", poisson_lambda, "^{", poisson_x, "}}{", poisson_x, "!}")
+              poissVal <- round(dpois(poisson_x,poisson_lambda), 4)
+            }
+            else if(input$calcPoisson == 'cumulative'){
+              poissProb <- paste("P(X \\leq ", poisson_x, ")") 
+              poissForm <- paste("\\sum_{x = 0}^{", poisson_x, "} \\dfrac{e^{-", poisson_lambda, "}", poisson_lambda, "^x}{x!}")
+              poissVal <- round(ppois(poisson_x,poisson_lambda,lower.tail = TRUE), 4)
+            }
+            else if(input$calcPoisson == 'upperTail'){
+              poissProb <- paste("P(X \\geq ", poisson_x, ")") 
+              poissForm <- paste("1 - \\sum_{x = 0}^{", poisson_x - 1, "} \\dfrac{e^{-", poisson_lambda, "}", poisson_lambda, "^x}{x!}")
+              poissVal <- round(ppois(poisson_x - 1,poisson_lambda,lower.tail = FALSE), 4)
+            }
+            else if(input$calcPoisson == 'greaterThan'){
+              poissProb <- paste("P(X \\gt ", poisson_x, ")") 
+              poissForm <- paste("1 - \\sum_{x = 0}^{", poisson_x, "} \\dfrac{e^{-", poisson_lambda, "}", poisson_lambda, "^x}{x!}")
+              poissVal <- round(ppois(poisson_x,poisson_lambda,lower.tail = FALSE), 4)
+            }
+            else if(input$calcPoisson == 'lessThan'){
+              poissProb <- paste("P(X \\lt ", poisson_x, ")") 
+              poissForm <- paste("\\sum_{x = 0}^{", poisson_x - 1, "} \\dfrac{e^{-", poisson_lambda, "}", poisson_lambda, "^x}{x!}")
+              poissVal <- round(ppois(poisson_x - 1,poisson_lambda,lower.tail = TRUE), 4)
+            }
+          }
+          else if(input$calcPoisson == 'between')
+          {
+            validate(
+              need(input$x1Poisson <= input$x2Poisson, "Number of Successes (x1) must be less than or equal to Number of Successes (x2)"),
+              errorClass = "myClass")
+            
+            poisson_x1 <- input$x1Poisson
+            poisson_x2 <- input$x2Poisson
+            
+            poissProb <- paste("P(", poisson_x1, " \\leq X \\leq ", poisson_x2, ")")
+            poissForm <- paste("\\sum_{x = ", poisson_x1, "}^{", poisson_x2, "} \\dfrac{e^{-", poisson_lambda, "}", poisson_lambda, "^x}{x!}")
+            poissVal <- round(ppois(poisson_x2, poisson_lambda, lower.tail = TRUE) - ppois(poisson_x1 - 1, poisson_lambda, lower.tail = TRUE), 4)
+          }
+          
+          tagList(
+            withMathJax(
+              div(
+                h3(
+                  sprintf("Calculating  \\( %s \\)   when  \\(  X \\sim Pois(\\lambda = %g): \\)",
+                          poissProb,
+                          poisson_lambda)),
+                hr(),
+                br(),
+                p(tags$b("Using the Probability Mass Function: ")),
+                sprintf("\\( P(X = x) = \\dfrac{e^{-\\lambda} \\lambda^x}{x!} \\)"),
+                sprintf("\\( \\qquad \\) for \\( x = 0, 1, 2, ... \\)"),
+                br(),
+                br(),
+                br(),
+                sprintf("\\( \\displaystyle %s = %s\\)",
+                        poissProb,
+                        poissForm),
+                br(),
+                br(),
+                sprintf("\\( %s = %0.4f\\)",
+                        poissProb,
+                        poissVal),
+                br(),
+                br(),
+                br(),
+                sprintf("\\( E(X) = \\lambda = %g \\)", poisson_lambda),
+                br(), 
+                br(),
+                sprintf("\\( SD(X) = \\sigma = \\sqrt{\\lambda} = %g \\)", poisson_sd),
+                br(), 
+                br(),
+                sprintf("\\( Var(X) = \\sigma^2 = \\lambda = %g \\)", poisson_lambda)
+              )
+            ) 
+          ) 
+        }
+    }) 
+    
+    output$rcodePoisson <- renderUI({
+      req(calculated$poisson)
+      req(pd_valid())
       
-      output$poissDistrTable <- DT::renderDT({
-        req(pd_iv$is_valid())
+      if (input$calcPoisson == "exact") {
         
-        dfPoiss <- data.frame(value = seq(qpois(0.0001, input$lambdaPoisson), qpois(0.9999, input$lambdaPoisson)), value.1 = sprintf("%.4f", dpois(x = qpois(0.0001, input$lambdaPoisson):qpois(0.9999, input$lambdaPoisson), lambda = input$lambdaPoisson)))
+        HTML(paste0(
+          "dpois(x = ",
+          codeValue(input$xPoisson),
+          ", lambda = ",
+          codeValue(input$lambdaPoisson),
+          ")"
+        ))
+        
+      } else if (input$calcPoisson == "cumulative") {
+        
+        HTML(paste0(
+          "ppois(",
+          codeValue(input$xPoisson),
+          ", lambda = ",
+          codeValue(input$lambdaPoisson),
+          ")"
+        ))
+        
+      } else if (input$calcPoisson == "upperTail") {
+        
+        HTML(paste0(
+          "ppois(",
+          codeValue(input$xPoisson - 1),
+          ", lambda = ",
+          codeValue(input$lambdaPoisson),
+          ", lower.tail = FALSE)"
+        ))
+        
+      } else if (input$calcPoisson == "greaterThan") {
+        
+        HTML(paste0(
+          "ppois(",
+          codeValue(input$xPoisson),
+          ", lambda = ",
+          codeValue(input$lambdaPoisson),
+          ", lower.tail = FALSE)"
+        ))
+        
+      } else if (input$calcPoisson == "lessThan") {
+        
+        HTML(paste0(
+          "ppois(",
+          codeValue(input$xPoisson - 1),
+          ", lambda = ",
+          codeValue(input$lambdaPoisson),
+          ")"
+        ))
+        
+      } else if (input$calcPoisson == "between") {
+        
+        HTML(paste0(
+          "<span style='color:#888;'># Method 1 (CDF difference):</span>\n",
+          "ppois(",
+          codeValue(input$x2Poisson),
+          ", lambda = ",
+          codeValue(input$lambdaPoisson),
+          ") - ppois(",
+          codeValue(input$x1Poisson - 1),
+          ", lambda = ",
+          codeValue(input$lambdaPoisson),
+          ")",
+          
+          "\n\n<span style='color:#888;'># Method 2 (sum of exact probabilities):</span>\n",
+          "sum(dpois(",
+          codeValue(paste0(input$x1Poisson, ":", input$x2Poisson)),
+          ", lambda = ",
+          codeValue(input$lambdaPoisson),
+          "))"
+        ))
+      }
+    })
+    
+    # Uses the values captured at the last Calculate click (poissonTabData).
+    # The table lists about 7.5 * sqrt(lambda) rows, so, like the Binomial and
+    # Hypergeometric tables, it is limited in size: it is built only when lambda
+    # is at most poissonTableMaxLambda (about 2,400 rows).
+    output$poissDistrTable <- DT::renderDT({
+      req(calculated$poisson)
+      tab <- poissonTabData()
+      req(tab$valid)
+      
+      if(tab$lambda <= poissonTableMaxLambda)
+      {
+        xLow <- qpois(0.0001, tab$lambda)
+        xHigh <- qpois(0.9999, tab$lambda)
+        dfPoiss <- data.frame(value = seq(xLow, xHigh), value.1 = sprintf("%.4f", dpois(x = xLow:xHigh, lambda = tab$lambda)))
         dfPoiss <- rbind(
           dfPoiss,
           data.frame(value = ".", value.1 = "."),
@@ -3109,66 +3071,43 @@ probDistServer <- function(id) {
                   rownames = FALSE,
                   filter = "none"
         )
-      })
-    }) 
+      }
+      else
+      {
+        dfPoiss <- data.frame(value = "Probability distribution table limited to an average (lambda) of 100,000 or less")
+        colnames(dfPoiss) <- c("Average Too Large")
+        datatable(dfPoiss,
+                  options = list(
+                    dom = '',
+                    pageLength = -1,
+                    ordering = FALSE,
+                    searching = FALSE,
+                    paging = FALSE
+                  ),
+                  rownames = FALSE,
+                  filter = "none")
+      }
+    }, server = FALSE)
     
 
     
-    observeEvent(input$goHypGeo, {
-      observe({
-        req(input$probability == "Hypergeometric")
-        
-        showBox <- isTRUE(
-          pd_iv$is_valid() &&
-            input$sampSizeHypGeo <= input$popSizeHypGeo &&
-            input$popSuccessesHypGeo <= input$popSizeHypGeo &&
-            input$xHypGeo <= input$sampSizeHypGeo &&
-            input$xHypGeo <= input$popSuccessesHypGeo)
-        
-        if (showBox && input$calcHypGeo == "between") {
-          showBox <- isTRUE(
-            input$x1HypGeo <= input$x2HypGeo &&
-              input$x1HypGeo <= input$sampSizeHypGeo &&
-              input$x1HypGeo <= input$popSuccessesHypGeo)
-        }
-        
-        toggleCodeBox(showBox, "rcodeHypGeoBox", ns)
-      })
+    # Hypergeometric results: outputs and code box are defined once (not on every click)
+    # Code box: created once, active after the first Calculate click. It is shown
+    # when the inputs are valid for the selected probability type (hypgeo_state);
+    # "between" no longer depends on the hidden single-x input.
+    observe({
+      req(calculated$hypgeo)
+      req(input$probability == "Hypergeometric")
       
-      output$renderProbabilityHypGeo <- renderUI({
-        withMathJax(
-          if(!pd_iv$is_valid())
+      setCodeBox(isTRUE(hypgeo_state()), "rcodeHypGeoBox")
+    })
+    
+    output$renderProbabilityHypGeo <- renderUI({
+      req(input$goHypGeo > 0)
+        if(!pd_valid())
+        {
+          if(!HypGeoprob_iv$is_valid())
           {
-            if(!HypGeoprob_iv$is_valid())
-            {
-              validate(
-                need(input$popSizeHypGeo , "Population Size (N) must be a positive integer")%then%
-                  need(input$popSizeHypGeo > 0 && input$popSizeHypGeo %% 1 == 0, "Population Size (N) must be a positive integer"),
-                need(input$popSuccessesHypGeo && input$popSuccessesHypGeo > 0, "Number of Successes in the Population (M) must be a positive integer")%then%
-                  need(input$popSuccessesHypGeo %% 1 == 0, "Number of Successes in the Population (M) must be a positive integer"),
-                need(input$sampSizeHypGeo && input$sampSizeHypGeo > 0, "Sample Size (n) must be a positive integer")%then%
-                  need(input$sampSizeHypGeo %% 1 == 0, "Sample Size (n) must be a positive integer"),
-                need(input$xHypGeo , "Number of Successes in the Sample (x) must be a positive integer") %then%
-                  need(input$xHypGeo >= 0 && input$xHypGeo %% 1 == 0, "Number of Successes in the Sample (x) must be a positive integer"),
-                errorClass = "myClass")
-            }
-            
-            if(!HypGeobetween_iv$is_valid())
-            {
-              validate(
-                need(input$popSizeHypGeo , "Population Size (N) must be a positive integer")%then%
-                  need(input$popSizeHypGeo > 0 && input$popSizeHypGeo %% 1 == 0, "Population Size (N) must be a positive integer"),
-                need(input$popSuccessesHypGeo && input$popSuccessesHypGeo > 0, "Number of Successes in the Population (M) must be a positive integer")%then%
-                  need(input$popSuccessesHypGeo %% 1 == 0, "Number of Successes in the Population (M) must be a positive integer"),
-                need(input$sampSizeHypGeo && input$sampSizeHypGeo > 0, "Sample Size (n) must be a positive integer")%then%
-                  need(input$sampSizeHypGeo %% 1 == 0, "Sample Size (n) must be a positive integer"),
-                need(input$x1HypGeo , "Number of Successes in the Sample (x1) must be a positive integer") %then%
-                  need(input$x1HypGeo >= 0 && input$x1HypGeo %% 1 == 0, "Number of Successes in the Sample (x1) must be a positive integer"),
-                need(input$x2HypGeo , "Number of Successes in the Sample (x2) must be a positive integer") %then%
-                  need(input$x2HypGeo >= 0 && input$x2HypGeo %% 1 == 0, "Number of Successes in the Sample (x2) must be a positive integer"),
-                errorClass = "myClass")
-            }
-            
             validate(
               need(input$popSizeHypGeo , "Population Size (N) must be a positive integer")%then%
                 need(input$popSizeHypGeo > 0 && input$popSizeHypGeo %% 1 == 0, "Population Size (N) must be a positive integer"),
@@ -3176,292 +3115,328 @@ probDistServer <- function(id) {
                 need(input$popSuccessesHypGeo %% 1 == 0, "Number of Successes in the Population (M) must be a positive integer"),
               need(input$sampSizeHypGeo && input$sampSizeHypGeo > 0, "Sample Size (n) must be a positive integer")%then%
                 need(input$sampSizeHypGeo %% 1 == 0, "Sample Size (n) must be a positive integer"),
+              need(input$xHypGeo , "Number of Successes in the Sample (x) must be a positive integer") %then%
+                need(input$xHypGeo >= 0 && input$xHypGeo %% 1 == 0, "Number of Successes in the Sample (x) must be a positive integer"),
               errorClass = "myClass")
           }
-          else
+          
+          if(!HypGeobetween_iv$is_valid())
           {
-            popSizeHypGeo <- input$popSizeHypGeo
-            popSuccessesHypGeo <- input$popSuccessesHypGeo
-            sampSizeHypGeo <- input$sampSizeHypGeo
-            
             validate(
-              need(popSizeHypGeo >= popSuccessesHypGeo, "Number of Successes in the Population (M) must be less than or equal to Population Size (N)"),
-              need(popSizeHypGeo >= sampSizeHypGeo, "Sample Size (n) must be less than or equal to Population Size (N)"),
+              need(input$popSizeHypGeo , "Population Size (N) must be a positive integer")%then%
+                need(input$popSizeHypGeo > 0 && input$popSizeHypGeo %% 1 == 0, "Population Size (N) must be a positive integer"),
+              need(input$popSuccessesHypGeo && input$popSuccessesHypGeo > 0, "Number of Successes in the Population (M) must be a positive integer")%then%
+                need(input$popSuccessesHypGeo %% 1 == 0, "Number of Successes in the Population (M) must be a positive integer"),
+              need(input$sampSizeHypGeo && input$sampSizeHypGeo > 0, "Sample Size (n) must be a positive integer")%then%
+                need(input$sampSizeHypGeo %% 1 == 0, "Sample Size (n) must be a positive integer"),
+              need(input$x1HypGeo , "Number of Successes in the Sample (x1) must be a positive integer") %then%
+                need(input$x1HypGeo >= 0 && input$x1HypGeo %% 1 == 0, "Number of Successes in the Sample (x1) must be a positive integer"),
+              need(input$x2HypGeo , "Number of Successes in the Sample (x2) must be a positive integer") %then%
+                need(input$x2HypGeo >= 0 && input$x2HypGeo %% 1 == 0, "Number of Successes in the Sample (x2) must be a positive integer"),
               errorClass = "myClass")
-            
-            HypGeo_mu <- round(sampSizeHypGeo*popSuccessesHypGeo/popSizeHypGeo, 4)
-            if (popSizeHypGeo <= 1) {
-              HypGeo_var <- 0
-            } else {
-              HypGeo_var <- round(sampSizeHypGeo * (popSuccessesHypGeo / popSizeHypGeo) * ((popSizeHypGeo - popSuccessesHypGeo) / popSizeHypGeo) * ((popSizeHypGeo - sampSizeHypGeo) / (popSizeHypGeo - 1)), 4)
-            }
-            HypGeo_sd <- round(sqrt(HypGeo_var), 4)
-            
-            if(input$calcHypGeo != 'between')
-            {
-              xHypGeo <- input$xHypGeo
-              
-              validate(
-                need(xHypGeo <= sampSizeHypGeo, "Number of Successes in the Sample (x) must be less than or equal to the Sample Size (n)"),
-                need(xHypGeo <= popSuccessesHypGeo, "Number of Successes in the Sample (x) must be less than or equal to the Number of Successes in the Population (M)"),
-                need(
-                  (sampSizeHypGeo - xHypGeo) <= (popSizeHypGeo - popSuccessesHypGeo),
-                  "Since (n - x) > (N - M) the following are true:\n\nP(X = x) = 0\n\nP(X < x) = P(X ≤ x) = 0\n\nP(X > x) = P(X ≥ x) = 1"
-                ),
-                errorClass = "myClass")
-              
-              if(input$calcHypGeo == 'exact'){
-                HypGeoProb <- paste("P(X = ", xHypGeo, ")") 
-                HypGeoForm <- paste("\\dfrac{\\binom{", popSuccessesHypGeo, "}{", xHypGeo, "}", "\\binom{", (popSizeHypGeo - popSuccessesHypGeo), "}{", (sampSizeHypGeo - xHypGeo), "}}{\\binom{", popSizeHypGeo, "}{", sampSizeHypGeo, "}}")
-                HypGeoVal <- round(dhyper(xHypGeo, popSuccessesHypGeo, (popSizeHypGeo - popSuccessesHypGeo), sampSizeHypGeo), 4) 
-              }
-              else if(input$calcHypGeo == 'cumulative'){
-                HypGeoProb <- paste("P(X \\leq ", xHypGeo, ")")
-                HypGeoForm <- paste("\\sum_{x = ", max(0, sampSizeHypGeo + popSuccessesHypGeo - popSizeHypGeo), "}^{", xHypGeo, "} \\dfrac{\\binom{", popSuccessesHypGeo, "}{x} \\binom{", (popSizeHypGeo - popSuccessesHypGeo), "}{", sampSizeHypGeo,  "- x}}{\\binom{", popSizeHypGeo, "}{", sampSizeHypGeo, "}}")
-                HypGeoVal <- round(phyper(xHypGeo, popSuccessesHypGeo, (popSizeHypGeo - popSuccessesHypGeo), sampSizeHypGeo, lower.tail = TRUE), 4)
-              }
-              else if(input$calcHypGeo == 'upperTail'){
-                HypGeoProb <- paste("P(X \\geq ", xHypGeo, ")")
-                HypGeoForm <- paste("\\sum_{x =", xHypGeo,"}^{", min(popSuccessesHypGeo, sampSizeHypGeo), "} \\dfrac{\\binom{", popSuccessesHypGeo, "}{x} \\binom{", (popSizeHypGeo - popSuccessesHypGeo), "}{", sampSizeHypGeo,  "- x}}{\\binom{", popSizeHypGeo, "}{", sampSizeHypGeo, "}}")
-                HypGeoVal <- round(phyper(xHypGeo - 1, popSuccessesHypGeo, (popSizeHypGeo - popSuccessesHypGeo), sampSizeHypGeo, lower.tail = FALSE), 4)
-              }
-              else if(input$calcHypGeo == 'greaterThan'){
-                HypGeoProb <- paste("P(X \\gt ", xHypGeo, ")")
-                HypGeoForm <- paste("\\sum_{x =", xHypGeo + 1,"}^{", min(popSuccessesHypGeo, sampSizeHypGeo), "} \\dfrac{\\binom{", popSuccessesHypGeo, "}{x} \\binom{", (popSizeHypGeo - popSuccessesHypGeo), "}{", sampSizeHypGeo,  "- x}}{\\binom{", popSizeHypGeo, "}{", sampSizeHypGeo, "}}")
-                HypGeoVal <- round(phyper(xHypGeo, popSuccessesHypGeo, (popSizeHypGeo - popSuccessesHypGeo), sampSizeHypGeo, lower.tail = FALSE), 4)
-              }
-              else if(input$calcHypGeo == 'lessThan'){
-                HypGeoProb <- paste("P(X \\lt ", xHypGeo, ")")
-                HypGeoForm <- paste("\\sum_{x ", max(0, sampSizeHypGeo + popSuccessesHypGeo - popSizeHypGeo), "}^{", xHypGeo - 1, "} \\dfrac{\\binom{", popSuccessesHypGeo, "}{x} \\binom{", (popSizeHypGeo - popSuccessesHypGeo), "}{", sampSizeHypGeo,  "- x}}{\\binom{", popSizeHypGeo, "}{", sampSizeHypGeo, "}}")
-                HypGeoVal <- round(phyper(xHypGeo - 1, popSuccessesHypGeo, (popSizeHypGeo - popSuccessesHypGeo), sampSizeHypGeo, lower.tail = TRUE), 4)
-              }
-            }
-            else if(input$calcHypGeo == 'between')
-            {
-              x1HypGeo <- input$x1HypGeo
-              x2HypGeo <- input$x2HypGeo
-              
-              validate(
-                need(x1HypGeo <= sampSizeHypGeo, "Number of Successes in the Sample (x1) must be less than or equal to the Sample Size (n)"),
-                need(x2HypGeo <= sampSizeHypGeo, "Number of Successes in the Sample (x2) must be less than or equal to the Sample Size (n)"),
-                need(x1HypGeo <= popSuccessesHypGeo, "Number of Successes in the Sample (x1) must be less than or equal to the Number of Successes in the Population (M)"),
-                need(x2HypGeo <= popSuccessesHypGeo, "Number of Successes in the Sample (x2) must be less than or equal to the Number of Successes in the Population (M)"),
-                need(x1HypGeo <= x2HypGeo, "Number of Successes in the Sample (x1) must be less than or equal to Number of Successes in the Sample (x2)"),
-                errorClass = "myClass")
-              
-              HypGeoProb <- paste("P(", x1HypGeo, " \\leq X \\leq ", x2HypGeo, ")")
-              HypGeoForm <- paste("\\sum_{x = ", x1HypGeo, "}^{", x2HypGeo, "} \\dfrac{\\binom{", popSuccessesHypGeo, "}{x} \\binom{", (popSizeHypGeo - popSuccessesHypGeo), "}{", sampSizeHypGeo,  "- x}}{\\binom{", popSizeHypGeo, "}{", sampSizeHypGeo, "}}")
-              HypGeoVal <- round(phyper(x2HypGeo, popSuccessesHypGeo, (popSizeHypGeo - popSuccessesHypGeo), sampSizeHypGeo, lower.tail = TRUE) - phyper(x1HypGeo - 1, popSuccessesHypGeo, (popSizeHypGeo - popSuccessesHypGeo), sampSizeHypGeo, lower.tail = TRUE), 4)
-            }
-            
-            tagList(
-              withMathJax(
-                div(
-                  h3(
-                    sprintf("Calculating  \\( %s \\)   when  \\(  X \\sim Hyper(N = %1.0f, M = %1.0f, n = %1.0f): \\)",
-                            HypGeoProb,
-                            popSizeHypGeo,
-                            popSuccessesHypGeo,
-                            sampSizeHypGeo)),
-                  hr(),
-                  br(),
-                  p(tags$b("Using the Probability Mass Function: ")),
-                  sprintf("\\( P(X = x) = \\dfrac{\\binom{M}{x} \\binom{N - M}{n - x}}{\\binom{N}{n}} \\)"),
-                  sprintf("\\( \\qquad \\) for \\( x = max(0, n + M - N), ..., min(n, M) \\)"),
-                  br(),
-                  br(),
-                  br(),
-                  sprintf("\\( \\displaystyle %s = %s\\)",
-                          HypGeoProb,
-                          HypGeoForm),
-                  br(),
-                  br(),
-                  sprintf("\\( %s = %0.4f\\)",
-                          HypGeoProb,
-                          HypGeoVal),
-                  br(),
-                  br(),
-                  br(),
-                  sprintf("\\(E(X) = \\mu = n\\left(\\dfrac{M}{N}\\right) = %g \\)", HypGeo_mu),
-                  br(),
-                  br(),
-                  sprintf("\\(SD(X) = \\sigma = \\sqrt{n\\left(\\dfrac{M}{N}\\right)\\left(\\dfrac{N-M}{N}\\right)\\left(\\dfrac{N-n}{N-1}\\right)} = %g \\)", HypGeo_sd),
-                  br(),
-                  br(),
-                  sprintf("\\(Var(X) = \\sigma^2 = n\\left(\\dfrac{M}{N}\\right)\\left(\\dfrac{N-M}{N}\\right)\\left(\\dfrac{N-n}{N-1}\\right) = %g \\)", HypGeo_var)
-                )
-              ) 
-            ) 
-          }) 
-        
-      }) 
-      
-      output$rcodeHypGeo <- renderUI({
-        req(pd_iv$is_valid())
-        
-        if (input$calcHypGeo == "exact") {
-          HTML(paste0(
-            "dhyper(x = ",
-            codeValue(input$xHypGeo),
-            ", m = ",
-            codeValue(input$popSuccessesHypGeo),
-            ", n = ",
-            codeValue(input$popSizeHypGeo - input$popSuccessesHypGeo),
-            ", k = ",
-            codeValue(input$sampSizeHypGeo),
-            ")"
-          ))
+          }
           
-        } else if (input$calcHypGeo == "cumulative") {
-          
-          HTML(paste0(
-            "phyper(",
-            codeValue(input$xHypGeo),
-            ", m = ",
-            codeValue(input$popSuccessesHypGeo),
-            ", n = ",
-            codeValue(input$popSizeHypGeo - input$popSuccessesHypGeo),
-            ", k = ",
-            codeValue(input$sampSizeHypGeo),
-            ")"
-          ))
-          
-        } else if (input$calcHypGeo == "upperTail") {
-          
-          HTML(paste0(
-            "phyper(",
-            codeValue(input$xHypGeo - 1),
-            ", m = ",
-            codeValue(input$popSuccessesHypGeo),
-            ", n = ",
-            codeValue(input$popSizeHypGeo - input$popSuccessesHypGeo),
-            ", k = ",
-            codeValue(input$sampSizeHypGeo),
-            ", lower.tail = FALSE)"
-          ))
-          
-        } else if (input$calcHypGeo == "greaterThan") {
-          
-          HTML(paste0(
-            "phyper(",
-            codeValue(input$xHypGeo),
-            ", m = ",
-            codeValue(input$popSuccessesHypGeo),
-            ", n = ",
-            codeValue(input$popSizeHypGeo - input$popSuccessesHypGeo),
-            ", k = ",
-            codeValue(input$sampSizeHypGeo),
-            ", lower.tail = FALSE)"
-          ))
-          
-        } else if (input$calcHypGeo == "lessThan") {
-          
-          HTML(paste0(
-            "phyper(",
-            codeValue(input$xHypGeo - 1),
-            ", m = ",
-            codeValue(input$popSuccessesHypGeo),
-            ", n = ",
-            codeValue(input$popSizeHypGeo - input$popSuccessesHypGeo),
-            ", k = ",
-            codeValue(input$sampSizeHypGeo),
-            ")"
-          ))
-          
-        } else if (input$calcHypGeo == "between") {
-          
-          HTML(paste0(
-            
-            "<span style='color:#888;'># Method 1 (CDF difference):</span>\n",
-            "phyper(",
-            codeValue(input$x2HypGeo),
-            ", m = ",
-            codeValue(input$popSuccessesHypGeo),
-            ", n = ",
-            codeValue(input$popSizeHypGeo - input$popSuccessesHypGeo),
-            ", k = ",
-            codeValue(input$sampSizeHypGeo),
-            ") - phyper(",
-            codeValue(input$x1HypGeo - 1),
-            ", m = ",
-            codeValue(input$popSuccessesHypGeo),
-            ", n = ",
-            codeValue(input$popSizeHypGeo - input$popSuccessesHypGeo),
-            ", k = ",
-            codeValue(input$sampSizeHypGeo),
-            ")",
-            
-            "\n\n<span style='color:#888;'># Method 2 (sum of exact probabilities):</span><br>",
-            "sum(dhyper(",
-            codeValue(paste0(input$x1HypGeo, ":", input$x2HypGeo)),
-            ", m = ",
-            codeValue(input$popSuccessesHypGeo),
-            ", n = ",
-            codeValue(input$popSizeHypGeo - input$popSuccessesHypGeo),
-            ", k = ",
-            codeValue(input$sampSizeHypGeo),
-            "))"
-          ))
-        }
-      })
-      
-      output$HypGeoDistrTable <- DT::renderDT({
-        req(pd_iv$is_valid())
-        req(input$sampSizeHypGeo <= input$popSizeHypGeo)
-        req(input$popSuccessesHypGeo <= input$popSizeHypGeo)
-        
-        if(input$sampSizeHypGeo < 50)
-        {
-          dfHypGeo <- data.frame(value = seq(max(0, input$sampSizeHypGeo + input$popSuccessesHypGeo - input$popSizeHypGeo), min(input$popSuccessesHypGeo, input$sampSizeHypGeo)), 
-                                 value = round(dhyper(x = max(0, input$sampSizeHypGeo + input$popSuccessesHypGeo - input$popSizeHypGeo):min(input$popSuccessesHypGeo, input$sampSizeHypGeo), input$popSuccessesHypGeo, (input$popSizeHypGeo - input$popSuccessesHypGeo), input$sampSizeHypGeo), 4))
-          
-          dfHypGeo <- rbind(
-            dfHypGeo,
-            data.frame(value = "Total", value.1 = 1.0000)
-          )
-          colnames(dfHypGeo) <- c("X", "P(X = x)")
-          
-          datatable(dfHypGeo,
-                    options = list(
-                      dom = 't',
-                      pageLength = -1,
-                      ordering = FALSE,
-                      searching = FALSE,
-                      paging = FALSE,
-                      rowCallback = boldTotalRow()
-                    ),
-                    rownames = FALSE,
-                    filter = "none"
-          ) %>% formatRound(2, digits = 4)
+          validate(
+            need(input$popSizeHypGeo , "Population Size (N) must be a positive integer")%then%
+              need(input$popSizeHypGeo > 0 && input$popSizeHypGeo %% 1 == 0, "Population Size (N) must be a positive integer"),
+            need(input$popSuccessesHypGeo && input$popSuccessesHypGeo > 0, "Number of Successes in the Population (M) must be a positive integer")%then%
+              need(input$popSuccessesHypGeo %% 1 == 0, "Number of Successes in the Population (M) must be a positive integer"),
+            need(input$sampSizeHypGeo && input$sampSizeHypGeo > 0, "Sample Size (n) must be a positive integer")%then%
+              need(input$sampSizeHypGeo %% 1 == 0, "Sample Size (n) must be a positive integer"),
+            errorClass = "myClass")
         }
         else
         {
-          dfHypGeo <- data.frame(value = "Probability distribution table limited to sample sizes less than 50")
-          colnames(dfHypGeo) <- c("Sample Size Too Large")
-          datatable(dfHypGeo,
-                    options = list(
-                      dom = '',
-                      pageLength = -1,
-                      ordering = FALSE,
-                      searching = FALSE,
-                      paging = FALSE,
-                    ),
-                    rownames = FALSE,
-                    filter = "none")
+          popSizeHypGeo <- input$popSizeHypGeo
+          popSuccessesHypGeo <- input$popSuccessesHypGeo
+          sampSizeHypGeo <- input$sampSizeHypGeo
+          
+          validate(
+            need(popSizeHypGeo >= popSuccessesHypGeo, "Number of Successes in the Population (M) must be less than or equal to Population Size (N)"),
+            need(popSizeHypGeo >= sampSizeHypGeo, "Sample Size (n) must be less than or equal to Population Size (N)"),
+            errorClass = "myClass")
+          
+          # as.numeric(): n*M is an integer product (Shiny sends whole numbers as integers) and overflows to NA above 2,147,483,647
+          HypGeo_mu <- round(as.numeric(sampSizeHypGeo)*popSuccessesHypGeo/popSizeHypGeo, 4)
+          if (popSizeHypGeo <= 1) {
+            HypGeo_var <- 0
+          } else {
+            HypGeo_var <- round(sampSizeHypGeo * (popSuccessesHypGeo / popSizeHypGeo) * ((popSizeHypGeo - popSuccessesHypGeo) / popSizeHypGeo) * ((popSizeHypGeo - sampSizeHypGeo) / (popSizeHypGeo - 1)), 4)
+          }
+          HypGeo_sd <- round(sqrt(HypGeo_var), 4)
+          
+          if(input$calcHypGeo != 'between')
+          {
+            xHypGeo <- input$xHypGeo
+            
+            validate(
+              need(xHypGeo <= sampSizeHypGeo, "Number of Successes in the Sample (x) must be less than or equal to the Sample Size (n)"),
+              need(xHypGeo <= popSuccessesHypGeo, "Number of Successes in the Sample (x) must be less than or equal to the Number of Successes in the Population (M)"),
+              need(
+                (sampSizeHypGeo - xHypGeo) <= (popSizeHypGeo - popSuccessesHypGeo),
+                "Since (n - x) > (N - M) the following are true:\n\nP(X = x) = 0\n\nP(X < x) = P(X ≤ x) = 0\n\nP(X > x) = P(X ≥ x) = 1"
+              ),
+              errorClass = "myClass")
+            
+            if(input$calcHypGeo == 'exact'){
+              HypGeoProb <- paste("P(X = ", xHypGeo, ")") 
+              HypGeoForm <- paste("\\dfrac{\\binom{", popSuccessesHypGeo, "}{", xHypGeo, "}", "\\binom{", (popSizeHypGeo - popSuccessesHypGeo), "}{", (sampSizeHypGeo - xHypGeo), "}}{\\binom{", popSizeHypGeo, "}{", sampSizeHypGeo, "}}")
+              HypGeoVal <- round(dhyper(xHypGeo, popSuccessesHypGeo, (popSizeHypGeo - popSuccessesHypGeo), sampSizeHypGeo), 4) 
+            }
+            else if(input$calcHypGeo == 'cumulative'){
+              HypGeoProb <- paste("P(X \\leq ", xHypGeo, ")")
+              HypGeoForm <- paste("\\sum_{x = ", max(0, sampSizeHypGeo + popSuccessesHypGeo - popSizeHypGeo), "}^{", xHypGeo, "} \\dfrac{\\binom{", popSuccessesHypGeo, "}{x} \\binom{", (popSizeHypGeo - popSuccessesHypGeo), "}{", sampSizeHypGeo,  "- x}}{\\binom{", popSizeHypGeo, "}{", sampSizeHypGeo, "}}")
+              HypGeoVal <- round(phyper(xHypGeo, popSuccessesHypGeo, (popSizeHypGeo - popSuccessesHypGeo), sampSizeHypGeo, lower.tail = TRUE), 4)
+            }
+            else if(input$calcHypGeo == 'upperTail'){
+              HypGeoProb <- paste("P(X \\geq ", xHypGeo, ")")
+              HypGeoForm <- paste("\\sum_{x =", xHypGeo,"}^{", min(popSuccessesHypGeo, sampSizeHypGeo), "} \\dfrac{\\binom{", popSuccessesHypGeo, "}{x} \\binom{", (popSizeHypGeo - popSuccessesHypGeo), "}{", sampSizeHypGeo,  "- x}}{\\binom{", popSizeHypGeo, "}{", sampSizeHypGeo, "}}")
+              HypGeoVal <- round(phyper(xHypGeo - 1, popSuccessesHypGeo, (popSizeHypGeo - popSuccessesHypGeo), sampSizeHypGeo, lower.tail = FALSE), 4)
+            }
+            else if(input$calcHypGeo == 'greaterThan'){
+              HypGeoProb <- paste("P(X \\gt ", xHypGeo, ")")
+              HypGeoForm <- paste("\\sum_{x =", xHypGeo + 1,"}^{", min(popSuccessesHypGeo, sampSizeHypGeo), "} \\dfrac{\\binom{", popSuccessesHypGeo, "}{x} \\binom{", (popSizeHypGeo - popSuccessesHypGeo), "}{", sampSizeHypGeo,  "- x}}{\\binom{", popSizeHypGeo, "}{", sampSizeHypGeo, "}}")
+              HypGeoVal <- round(phyper(xHypGeo, popSuccessesHypGeo, (popSizeHypGeo - popSuccessesHypGeo), sampSizeHypGeo, lower.tail = FALSE), 4)
+            }
+            else if(input$calcHypGeo == 'lessThan'){
+              HypGeoProb <- paste("P(X \\lt ", xHypGeo, ")")
+              HypGeoForm <- paste("\\sum_{x ", max(0, sampSizeHypGeo + popSuccessesHypGeo - popSizeHypGeo), "}^{", xHypGeo - 1, "} \\dfrac{\\binom{", popSuccessesHypGeo, "}{x} \\binom{", (popSizeHypGeo - popSuccessesHypGeo), "}{", sampSizeHypGeo,  "- x}}{\\binom{", popSizeHypGeo, "}{", sampSizeHypGeo, "}}")
+              HypGeoVal <- round(phyper(xHypGeo - 1, popSuccessesHypGeo, (popSizeHypGeo - popSuccessesHypGeo), sampSizeHypGeo, lower.tail = TRUE), 4)
+            }
+          }
+          else if(input$calcHypGeo == 'between')
+          {
+            x1HypGeo <- input$x1HypGeo
+            x2HypGeo <- input$x2HypGeo
+            
+            validate(
+              need(x1HypGeo <= sampSizeHypGeo, "Number of Successes in the Sample (x1) must be less than or equal to the Sample Size (n)"),
+              need(x2HypGeo <= sampSizeHypGeo, "Number of Successes in the Sample (x2) must be less than or equal to the Sample Size (n)"),
+              need(x1HypGeo <= popSuccessesHypGeo, "Number of Successes in the Sample (x1) must be less than or equal to the Number of Successes in the Population (M)"),
+              need(x2HypGeo <= popSuccessesHypGeo, "Number of Successes in the Sample (x2) must be less than or equal to the Number of Successes in the Population (M)"),
+              need(x1HypGeo <= x2HypGeo, "Number of Successes in the Sample (x1) must be less than or equal to Number of Successes in the Sample (x2)"),
+              errorClass = "myClass")
+            
+            HypGeoProb <- paste("P(", x1HypGeo, " \\leq X \\leq ", x2HypGeo, ")")
+            HypGeoForm <- paste("\\sum_{x = ", x1HypGeo, "}^{", x2HypGeo, "} \\dfrac{\\binom{", popSuccessesHypGeo, "}{x} \\binom{", (popSizeHypGeo - popSuccessesHypGeo), "}{", sampSizeHypGeo,  "- x}}{\\binom{", popSizeHypGeo, "}{", sampSizeHypGeo, "}}")
+            HypGeoVal <- round(phyper(x2HypGeo, popSuccessesHypGeo, (popSizeHypGeo - popSuccessesHypGeo), sampSizeHypGeo, lower.tail = TRUE) - phyper(x1HypGeo - 1, popSuccessesHypGeo, (popSizeHypGeo - popSuccessesHypGeo), sampSizeHypGeo, lower.tail = TRUE), 4)
+          }
+          
+          tagList(
+            withMathJax(
+              div(
+                h3(
+                  sprintf("Calculating  \\( %s \\)   when  \\(  X \\sim Hyper(N = %1.0f, M = %1.0f, n = %1.0f): \\)",
+                          HypGeoProb,
+                          popSizeHypGeo,
+                          popSuccessesHypGeo,
+                          sampSizeHypGeo)),
+                hr(),
+                br(),
+                p(tags$b("Using the Probability Mass Function: ")),
+                sprintf("\\( P(X = x) = \\dfrac{\\binom{M}{x} \\binom{N - M}{n - x}}{\\binom{N}{n}} \\)"),
+                sprintf("\\( \\qquad \\) for \\( x = max(0, n + M - N), ..., min(n, M) \\)"),
+                br(),
+                br(),
+                br(),
+                sprintf("\\( \\displaystyle %s = %s\\)",
+                        HypGeoProb,
+                        HypGeoForm),
+                br(),
+                br(),
+                sprintf("\\( %s = %0.4f\\)",
+                        HypGeoProb,
+                        HypGeoVal),
+                br(),
+                br(),
+                br(),
+                sprintf("\\(E(X) = \\mu = n\\left(\\dfrac{M}{N}\\right) = %g \\)", HypGeo_mu),
+                br(),
+                br(),
+                sprintf("\\(SD(X) = \\sigma = \\sqrt{n\\left(\\dfrac{M}{N}\\right)\\left(\\dfrac{N-M}{N}\\right)\\left(\\dfrac{N-n}{N-1}\\right)} = %g \\)", HypGeo_sd),
+                br(),
+                br(),
+                sprintf("\\(Var(X) = \\sigma^2 = n\\left(\\dfrac{M}{N}\\right)\\left(\\dfrac{N-M}{N}\\right)\\left(\\dfrac{N-n}{N-1}\\right) = %g \\)", HypGeo_var)
+              )
+            ) 
+          ) 
         }
-      }) 
+      
     }) 
+    
+    output$rcodeHypGeo <- renderUI({
+      req(calculated$hypgeo)
+      req(pd_valid())
+      
+      if (input$calcHypGeo == "exact") {
+        HTML(paste0(
+          "dhyper(x = ",
+          codeValue(input$xHypGeo),
+          ", m = ",
+          codeValue(input$popSuccessesHypGeo),
+          ", n = ",
+          codeValue(input$popSizeHypGeo - input$popSuccessesHypGeo),
+          ", k = ",
+          codeValue(input$sampSizeHypGeo),
+          ")"
+        ))
+        
+      } else if (input$calcHypGeo == "cumulative") {
+        
+        HTML(paste0(
+          "phyper(",
+          codeValue(input$xHypGeo),
+          ", m = ",
+          codeValue(input$popSuccessesHypGeo),
+          ", n = ",
+          codeValue(input$popSizeHypGeo - input$popSuccessesHypGeo),
+          ", k = ",
+          codeValue(input$sampSizeHypGeo),
+          ")"
+        ))
+        
+      } else if (input$calcHypGeo == "upperTail") {
+        
+        HTML(paste0(
+          "phyper(",
+          codeValue(input$xHypGeo - 1),
+          ", m = ",
+          codeValue(input$popSuccessesHypGeo),
+          ", n = ",
+          codeValue(input$popSizeHypGeo - input$popSuccessesHypGeo),
+          ", k = ",
+          codeValue(input$sampSizeHypGeo),
+          ", lower.tail = FALSE)"
+        ))
+        
+      } else if (input$calcHypGeo == "greaterThan") {
+        
+        HTML(paste0(
+          "phyper(",
+          codeValue(input$xHypGeo),
+          ", m = ",
+          codeValue(input$popSuccessesHypGeo),
+          ", n = ",
+          codeValue(input$popSizeHypGeo - input$popSuccessesHypGeo),
+          ", k = ",
+          codeValue(input$sampSizeHypGeo),
+          ", lower.tail = FALSE)"
+        ))
+        
+      } else if (input$calcHypGeo == "lessThan") {
+        
+        HTML(paste0(
+          "phyper(",
+          codeValue(input$xHypGeo - 1),
+          ", m = ",
+          codeValue(input$popSuccessesHypGeo),
+          ", n = ",
+          codeValue(input$popSizeHypGeo - input$popSuccessesHypGeo),
+          ", k = ",
+          codeValue(input$sampSizeHypGeo),
+          ")"
+        ))
+        
+      } else if (input$calcHypGeo == "between") {
+        
+        HTML(paste0(
+          
+          "<span style='color:#888;'># Method 1 (CDF difference):</span>\n",
+          "phyper(",
+          codeValue(input$x2HypGeo),
+          ", m = ",
+          codeValue(input$popSuccessesHypGeo),
+          ", n = ",
+          codeValue(input$popSizeHypGeo - input$popSuccessesHypGeo),
+          ", k = ",
+          codeValue(input$sampSizeHypGeo),
+          ") - phyper(",
+          codeValue(input$x1HypGeo - 1),
+          ", m = ",
+          codeValue(input$popSuccessesHypGeo),
+          ", n = ",
+          codeValue(input$popSizeHypGeo - input$popSuccessesHypGeo),
+          ", k = ",
+          codeValue(input$sampSizeHypGeo),
+          ")",
+          
+          "\n\n<span style='color:#888;'># Method 2 (sum of exact probabilities):</span><br>",
+          "sum(dhyper(",
+          codeValue(paste0(input$x1HypGeo, ":", input$x2HypGeo)),
+          ", m = ",
+          codeValue(input$popSuccessesHypGeo),
+          ", n = ",
+          codeValue(input$popSizeHypGeo - input$popSuccessesHypGeo),
+          ", k = ",
+          codeValue(input$sampSizeHypGeo),
+          "))"
+        ))
+      }
+    })
+    
+    # Uses the values captured at the last Calculate click (hypgeoTabData)
+    output$HypGeoDistrTable <- DT::renderDT({
+      req(calculated$hypgeo)
+      tab <- hypgeoTabData()
+      req(tab$valid)
+      req(tab$n <= tab$N)
+      req(tab$M <= tab$N)
+      
+      if(tab$n < 50)
+      {
+        dfHypGeo <- data.frame(value = seq(max(0, tab$n + tab$M - tab$N), min(tab$M, tab$n)), 
+                               value = round(dhyper(x = max(0, tab$n + tab$M - tab$N):min(tab$M, tab$n), tab$M, (tab$N - tab$M), tab$n), 4))
+        
+        dfHypGeo <- rbind(
+          dfHypGeo,
+          data.frame(value = "Total", value.1 = 1.0000)
+        )
+        colnames(dfHypGeo) <- c("X", "P(X = x)")
+        
+        datatable(dfHypGeo,
+                  options = list(
+                    dom = 't',
+                    pageLength = -1,
+                    ordering = FALSE,
+                    searching = FALSE,
+                    paging = FALSE,
+                    rowCallback = boldTotalRow()
+                  ),
+                  rownames = FALSE,
+                  filter = "none"
+        ) %>% formatRound(2, digits = 4)
+      }
+      else
+      {
+        dfHypGeo <- data.frame(value = "Probability distribution table limited to sample sizes less than 50")
+        colnames(dfHypGeo) <- c("Sample Size Too Large")
+        datatable(dfHypGeo,
+                  options = list(
+                    dom = '',
+                    pageLength = -1,
+                    ordering = FALSE,
+                    searching = FALSE,
+                    paging = FALSE
+                  ),
+                  rownames = FALSE,
+                  filter = "none")
+      }
+    }, server = FALSE)
     
     output$HypGeoDistrBarPlot <- renderPlotly({
       
-      req(pd_iv$is_valid())
-      req(input$sampSizeHypGeo < 50)
-      req(input$sampSizeHypGeo <= input$popSizeHypGeo)
-      req(input$popSuccessesHypGeo <= input$popSizeHypGeo)
+      req(calculated$hypgeo)
+      tab <- hypgeoTabData()
+      req(tab$valid)
+      req(tab$n <= tab$N)
+      req(tab$M <= tab$N)
+      validate(
+        need(tab$n < 50, "Probability histogram limited to sample sizes less than 50"),
+        errorClass = "myClass")
       
-      N <- input$popSizeHypGeo
-      M <- input$popSuccessesHypGeo
-      n <- input$sampSizeHypGeo
+      N <- tab$N
+      M <- tab$M
+      n <- tab$n
       
       x_vals <- max(0, n + M - N):min(M, n)
       
@@ -3512,1195 +3487,997 @@ probDistServer <- function(id) {
               text = "<b>P(<i>X</i> = <i>x</i>)</b>")))
     })
     
-    observeEvent(input$goNegBin, {
+    # Negative Binomial results: outputs and code box are defined once (not on every click)
+    
+    # Code box: created once, active after the first Calculate click
+    observe({
+      req(calculated$negbin)
+      req(input$probability == "Negative Binomial")
       
-      observe({
-        req(input$probability == "Negative Binomial")
-        
-        toggleCodeBox(pd_iv$is_valid(), "rcodeNegBinBox", ns)
-      })
-      
-      output$renderProbabilityNegBin <- renderUI({
-        withMathJax(
-          if(!pd_iv$is_valid())
+      setCodeBox(pd_valid(), "rcodeNegBinBox")
+    })
+    
+    output$renderProbabilityNegBin <- renderUI({
+      req(input$goNegBin > 0)
+        if(!pd_valid())
+        {
+          if(!NegBinprob_iv$is_valid())
           {
-            if(!NegBinprob_iv$is_valid())
-            {
-              validate(
-                need(input$successNegBin , "Required Number of Successes (r) must be greater than zero.")%then%
-                  need(input$successNegBin >= 0 && input$successNegBin %% 1 == 0, "Required Number of Successes (r) must be greater than zero."),
-                need(input$successProbNegBin, "Probability of Success (p) must be between 0 and 1") %then%
-                  need(input$successProbNegBin > 0 && input$successProbNegBin <= 1, "Probability of Success (p) must be 0 < p  ≤ 1"),
-                need(input$xNegBin , "Number of Failures (x) prior to the rth success must be a positive integer.") %then%
-                  need(input$xNegBin >= 0 && input$xNegBin %% 1 == 0, "Number of Failures (x) prior to the rth success must be a positive integer."),
-                errorClass = "myClass")
-            }
-            
-            if(!NegBinbetween_iv$is_valid())
-            {
-              validate(
-                need(input$successNegBin , "Required Number of Successes (r) must be greater than zero.")%then%
-                  need(input$successNegBin >= 0 && input$successNegBin %% 1 == 0, "Required Number of Successes (r) must be greater than zero."),
-                need(input$successProbNegBin, "Probability of Success (p) must be between 0 and 1") %then%
-                  need(input$successProbNegBin > 0 && input$successProbNegBin <= 1, "Probability of Success (p) must be 0 < p  ≤ 1"),
-                need(input$x1NegBin , "Number of Failures (x1) must be a positive integer") %then%
-                  need(input$x1NegBin >= 0 && input$x1NegBin %% 1 == 0, "Number of Failures (x1) must be a positive integer"),
-                need(input$x2NegBin , "Number of Failures (x2) must be a positive integer") %then%
-                  need(input$x2NegBin >= 0 && input$x2NegBin %% 1 == 0, "Number of Failures (x2) must be a positive integer"),
-                errorClass = "myClass")
-            }
-            
             validate(
               need(input$successNegBin , "Required Number of Successes (r) must be greater than zero.")%then%
-                need(input$successNegBin > 0 && input$successNegBin %% 1 == 0, "Required Number of Successes (r) must be greater than zero."),
+                need(input$successNegBin >= 0 && input$successNegBin %% 1 == 0, "Required Number of Successes (r) must be greater than zero."),
               need(input$successProbNegBin, "Probability of Success (p) must be between 0 and 1") %then%
-                need(input$successProbNegBin >= 0 && input$successProbNegBin <= 1, "Probability of Success (p) must be between 0 and 1"),
+                need(input$successProbNegBin > 0 && input$successProbNegBin <= 1, "Probability of Success (p) must be 0 < p  ≤ 1"),
+              need(input$xNegBin , "Number of Failures (x) prior to the rth success must be a positive integer.") %then%
+                need(input$xNegBin >= 0 && input$xNegBin %% 1 == 0, "Number of Failures (x) prior to the rth success must be a positive integer."),
               errorClass = "myClass")
           }
-          else
+          
+          if(!NegBinbetween_iv$is_valid())
           {
-            successNegBin <- input$successNegBin
-            successProbNegBin <- input$successProbNegBin
+            validate(
+              need(input$successNegBin , "Required Number of Successes (r) must be greater than zero.")%then%
+                need(input$successNegBin >= 0 && input$successNegBin %% 1 == 0, "Required Number of Successes (r) must be greater than zero."),
+              need(input$successProbNegBin, "Probability of Success (p) must be between 0 and 1") %then%
+                need(input$successProbNegBin > 0 && input$successProbNegBin <= 1, "Probability of Success (p) must be 0 < p  ≤ 1"),
+              need(input$x1NegBin , "Number of Failures (x1) must be a positive integer") %then%
+                need(input$x1NegBin >= 0 && input$x1NegBin %% 1 == 0, "Number of Failures (x1) must be a positive integer"),
+              need(input$x2NegBin , "Number of Failures (x2) must be a positive integer") %then%
+                need(input$x2NegBin >= 0 && input$x2NegBin %% 1 == 0, "Number of Failures (x2) must be a positive integer"),
+              errorClass = "myClass")
+          }
+          
+          validate(
+            need(input$successNegBin , "Required Number of Successes (r) must be greater than zero.")%then%
+              need(input$successNegBin > 0 && input$successNegBin %% 1 == 0, "Required Number of Successes (r) must be greater than zero."),
+            need(input$successProbNegBin, "Probability of Success (p) must be between 0 and 1") %then%
+              need(input$successProbNegBin >= 0 && input$successProbNegBin <= 1, "Probability of Success (p) must be between 0 and 1"),
+            errorClass = "myClass")
+        }
+        else
+        {
+          successNegBin <- input$successNegBin
+          successProbNegBin <- input$successProbNegBin
+          
+          NegBin_mu <- round((successNegBin*(1 - successProbNegBin))/successProbNegBin, 4)
+          NegBin_var <- round((successNegBin*(1 - successProbNegBin))/(successProbNegBin^2), 4)
+          NegBin_sd <- round(sqrt(NegBin_var), 4)
+          
+          if(input$calcNegBin != 'between')
+          {
+            xNegBin <- input$xNegBin
             
-            NegBin_mu <- round((successNegBin*(1 - successProbNegBin))/successProbNegBin, 4)
-            NegBin_var <- round((successNegBin*(1 - successProbNegBin))/(successProbNegBin^2), 4)
-            NegBin_sd <- round(sqrt(NegBin_var), 4)
-            
-            if(input$calcNegBin != 'between')
-            {
-              xNegBin <- input$xNegBin
-              
-              if(input$calcNegBin == 'exact'){
-                NegBinProb <- paste("P(X = ", xNegBin, ")")
-                NegBinForm <- paste("\\dbinom{", xNegBin, "+", successNegBin, "-1}{", successNegBin, "-1} ",
-                                    "(", successProbNegBin, ")^{", successNegBin, "}",
-                                    " (1-", successProbNegBin, ")^{", xNegBin, "}")
-                NegBinVal <- round(dnbinom(xNegBin, successNegBin, successProbNegBin), 4)
-              }
+            if(input$calcNegBin == 'exact'){
+              NegBinProb <- paste("P(X = ", xNegBin, ")")
+              NegBinForm <- paste("\\dbinom{", xNegBin, "+", successNegBin, "-1}{", successNegBin, "-1} ",
+                                  "(", successProbNegBin, ")^{", successNegBin, "}",
+                                  " (1-", successProbNegBin, ")^{", xNegBin, "}")
+              NegBinVal <- round(dnbinom(xNegBin, successNegBin, successProbNegBin), 4)
             }
-            else if(input$calcNegBin == 'between')
-            {
-              x1NegBin <- input$x1NegBin
-              x2NegBin <- input$x2NegBin
-              
-              validate(
-                need(x1NegBin <= x2NegBin, "Number of Failures (x1) must be less than or equal to Number of Failures (x2)"),
-                errorClass = "myClass")
-              
-            }
+          }
+          else if(input$calcNegBin == 'between')
+          {
+            x1NegBin <- input$x1NegBin
+            x2NegBin <- input$x2NegBin
             
-            tagList(
-              withMathJax(
-                div(
-                  h3(
-                    sprintf("Calculating  \\( %s \\)   when  \\(  X \\sim NegBin(r = %1.0f, p = %g): \\)",
-                            NegBinProb,
-                            successNegBin,
-                            successProbNegBin
-                    )),
-                  hr(),
-                  br(),
-                  p(tags$b("Using the Probability Mass Function: ")),
-                  sprintf("\\( P(X = x) = \\dbinom{x+r-1}{r-1} (p)^r (1-p)^{x} \\)"),
-                  sprintf("\\( \\qquad \\) for \\( x = 0,1,2,3,... \\)"),
-                  br(),
-                  br(),
-                  br(),
-                  sprintf("\\( \\displaystyle %s = %s\\)",
+            validate(
+              need(x1NegBin <= x2NegBin, "Number of Failures (x1) must be less than or equal to Number of Failures (x2)"),
+              errorClass = "myClass")
+            
+          }
+          
+          tagList(
+            withMathJax(
+              div(
+                h3(
+                  sprintf("Calculating  \\( %s \\)   when  \\(  X \\sim NegBin(r = %1.0f, p = %g): \\)",
                           NegBinProb,
-                          NegBinForm),
-                  br(),
-                  br(),
-                  sprintf("\\( %s = %0.4f\\)",
-                          NegBinProb,
-                          NegBinVal),
-                  br(),
-                  br(),
-                  br(),
-                  sprintf("\\(E(X) = \\mu = \\dfrac{r(1 - p)}{p} = %g \\)", NegBin_mu),
-                  br(), 
-                  br(),
-                  sprintf("\\(SD(X) = \\sigma = \\sqrt{\\dfrac{r(1 - p)}{p^2}} = %g \\)", NegBin_sd),
-                  br(), 
-                  br(),
-                  sprintf("\\(Var(X) = \\sigma^2 = \\dfrac{r(1 - p)}{p^2} = %g \\)", NegBin_var)
-                )
-              ) 
+                          successNegBin,
+                          successProbNegBin
+                  )),
+                hr(),
+                br(),
+                p(tags$b("Using the Probability Mass Function: ")),
+                sprintf("\\( P(X = x) = \\dbinom{x+r-1}{r-1} (p)^r (1-p)^{x} \\)"),
+                sprintf("\\( \\qquad \\) for \\( x = 0,1,2,3,... \\)"),
+                br(),
+                br(),
+                br(),
+                sprintf("\\( \\displaystyle %s = %s\\)",
+                        NegBinProb,
+                        NegBinForm),
+                br(),
+                br(),
+                sprintf("\\( %s = %0.4f\\)",
+                        NegBinProb,
+                        NegBinVal),
+                br(),
+                br(),
+                br(),
+                sprintf("\\(E(X) = \\mu = \\dfrac{r(1 - p)}{p} = %g \\)", NegBin_mu),
+                br(), 
+                br(),
+                sprintf("\\(SD(X) = \\sigma = \\sqrt{\\dfrac{r(1 - p)}{p^2}} = %g \\)", NegBin_sd),
+                br(), 
+                br(),
+                sprintf("\\(Var(X) = \\sigma^2 = \\dfrac{r(1 - p)}{p^2} = %g \\)", NegBin_var)
+              )
             ) 
-          }) 
-      }) 
-      
-      output$rcodeNegBin <- renderUI({
-        req(pd_iv$is_valid())
-        
-        HTML(paste0(
-          "dnbinom(x = ",
-          codeValue(input$xNegBin),
-          ", size = ",
-          codeValue(input$successNegBin),
-          ", prob = ",
-          codeValue(input$successProbNegBin),
-          ")"
-        ))
-      })
+          ) 
+        }
     }) 
     
-    observeEvent(input$goNormalProb, {
+    output$rcodeNegBin <- renderUI({
+      req(calculated$negbin)
+      req(pd_valid())
       
-      observe({
-        req(input$probability == "Normal")
-        showBox <- FALSE
-        
-        if(pd_iv$is_valid()){
-          if(input$calcQuantiles=="Probability" && input$calcNormal=="between"){
-            showBox <- input$x1Value < input$x2Value
-          } else if(input$calcQuantiles=="Probability" && input$calcNormSampDistr=="between"){
-            showBox <- input$sampDistrx1Value < input$sampDistrx2Value
-          } else {
-            showBox <- TRUE
-          }
+      HTML(paste0(
+        "dnbinom(x = ",
+        codeValue(input$xNegBin),
+        ", size = ",
+        codeValue(input$successNegBin),
+        ", prob = ",
+        codeValue(input$successProbNegBin),
+        ")"
+      ))
+    })
+    
+    # Normal probability results: outputs are defined once (not on every click)
+    
+    # Code box: created once, active after the first Calculate click of either
+    # calculation type. Each "between" check applies only to the probability
+    # that is selected (Normal or sampling distribution of the mean).
+    observe({
+      req(calculated$normProb || calculated$normQuan)
+      req(input$probability == "Normal")
+      showBox <- FALSE
+      
+      if(pd_valid()){
+        if(input$calcQuantiles=="Probability" && input$sampMeanDistr == 0 && input$calcNormal=="between"){
+          showBox <- input$x1Value < input$x2Value
+        } else if(input$calcQuantiles=="Probability" && input$sampMeanDistr == 1 && input$calcNormSampDistr=="between"){
+          showBox <- input$sampDistrx1Value < input$sampDistrx2Value
+        } else {
+          showBox <- TRUE
         }
-        
-        toggleCodeBox(showBox, "rcodeNormalBox", ns)
-      })
+      }
       
-      output$renderProbabilityNorm <- renderUI({
-        if(!pd_iv$is_valid())
+      setCodeBox(showBox, "rcodeNormalBox")
+    })
+    
+    output$renderProbabilityNorm <- renderUI({
+      req(input$goNormalProb > 0)
+      if(!pd_valid())
+      {
+        if(!normprob_iv$is_valid())
         {
-          if(!normprob_iv$is_valid())
-          {
-            validate(
-              need(input$popMean, "Enter a value for Population Mean (mu)"),
-              need(input$popSD && input$popSD > 0, "Population Standard Deviation (sigma) must be greater than 0"),
-              need(input$xValue, "Enter a value for Normally Distributed Variable (x)"),
-              errorClass = "myClass")
-          }
-          
-          if(!normbetween_iv$is_valid())
-          {
-            validate(
-              need(input$popMean, "Enter a value for Population Mean (mu)"),
-              need(input$popSD && input$popSD > 0, "Population Standard Deviation (sigma) must be greater than 0"),
-              need(input$x1Value, "Enter a value for Normally Distributed Variable (x1)"),
-              need(input$x2Value, "Enter a value for Normally Distributed Variable (x2)"),
-              errorClass = "myClass")
-          }
-          
           validate(
             need(input$popMean, "Enter a value for Population Mean (mu)"),
             need(input$popSD && input$popSD > 0, "Population Standard Deviation (sigma) must be greater than 0"),
+            need(input$xValue, "Enter a value for Normally Distributed Variable (x)"),
             errorClass = "myClass")
         }
         
-        norm_sigma <- input$popSD
-        norm_mu <- input$popMean
-        
-        norm_mu_str <- input$popMean
-        if (norm_mu < 0)
-          norm_mu_str <- paste("(", norm_mu, ")", sep = "")
-        
-        if(input$calcNormal != 'between')
+        if(!normbetween_iv$is_valid())
         {
-          norm_x <- input$xValue
-          probValue <- round((norm_x - norm_mu)/norm_sigma, 4)
-          
-          if(input$calcNormal == "cumulative"){
-            normProb <- paste("P(X \\leq ", norm_x,")")
-            normProbTransform <- paste("P \\left( \\dfrac{X - \\mu}{\\sigma} \\leq \\dfrac{", norm_x, " - ", norm_mu_str, "}{", norm_sigma, "} \\right)")
-            normForm <- paste("= P(Z \\leq", probValue, ")")
-          }
-          else if(input$calcNormal == "upperTail"){
-            normProb <- paste("P(X \\gt ", norm_x,")")
-            normProbTransform <- paste("P \\left( \\dfrac{X - \\mu}{\\sigma} \\gt \\dfrac{", norm_x, " - ", norm_mu_str, "}{", norm_sigma, "} \\right)")
-            normForm <- paste("= P(Z \\gt", probValue, ")")
-          }
-        }
-        else if(input$calcNormal == 'between')
-        {
-          norm_x1 <- input$x1Value
-          norm_x2 <- input$x2Value
-          
           validate(
-            need((norm_x1 != norm_x2) && (norm_x1 < norm_x2), "Normally Distributed Variable (x1) must be less than Normally Distributed Variable (x2)"),
+            need(input$popMean, "Enter a value for Population Mean (mu)"),
+            need(input$popSD && input$popSD > 0, "Population Standard Deviation (sigma) must be greater than 0"),
+            need(input$x1Value, "Enter a value for Normally Distributed Variable (x1)"),
+            need(input$x2Value, "Enter a value for Normally Distributed Variable (x2)"),
             errorClass = "myClass")
-          
-          normProb <- paste("P(", norm_x1, " ",  " \\leq X \\leq"," ", norm_x2,")") 
-          normProbTransform <- paste("P \\left( \\dfrac{", norm_x1, " - ", norm_mu_str, "}{", norm_sigma, "} \\leq \\dfrac{X - \\mu}{\\sigma} \\leq",
-                                     "\\dfrac{", norm_x2, " - ", norm_mu_str, "}{", norm_sigma, "} \\right)")
-          normForm <- paste("= P(", round((norm_x1 - norm_mu)/norm_sigma, 4), "\\leq Z \\leq", round((norm_x2 - norm_mu)/norm_sigma, 4), ") = ", 
-                            round(pnorm(norm_x2,norm_mu, norm_sigma,lower.tail = TRUE), 4), " - ", round(pnorm(norm_x1,norm_mu, norm_sigma,lower.tail = TRUE), 4))
         }
         
-        tagList(
-          withMathJax(
-            div(
-              h3(
-                sprintf("Calculating  \\( %s \\)   when  \\(  X \\sim N(\\mu = %g, \\sigma = %g): \\)",
-                        normProb,
-                        norm_mu,
-                        norm_sigma)),
-              hr(),
-              br(),
-              sprintf("\\( \\displaystyle %s = %s\\)",
+        validate(
+          need(input$popMean, "Enter a value for Population Mean (mu)"),
+          need(input$popSD && input$popSD > 0, "Population Standard Deviation (sigma) must be greater than 0"),
+          errorClass = "myClass")
+      }
+      
+      norm_sigma <- input$popSD
+      norm_mu <- input$popMean
+      
+      norm_mu_str <- input$popMean
+      if (norm_mu < 0)
+        norm_mu_str <- paste("(", norm_mu, ")", sep = "")
+      
+      if(input$calcNormal != 'between')
+      {
+        norm_x <- input$xValue
+        probValue <- round((norm_x - norm_mu)/norm_sigma, 4)
+        
+        if(input$calcNormal == "cumulative"){
+          normProb <- paste("P(X \\leq ", norm_x,")")
+          normProbTransform <- paste("P \\left( \\dfrac{X - \\mu}{\\sigma} \\leq \\dfrac{", norm_x, " - ", norm_mu_str, "}{", norm_sigma, "} \\right)")
+          normForm <- paste("= P(Z \\leq", probValue, ")")
+        }
+        else if(input$calcNormal == "upperTail"){
+          normProb <- paste("P(X \\gt ", norm_x,")")
+          normProbTransform <- paste("P \\left( \\dfrac{X - \\mu}{\\sigma} \\gt \\dfrac{", norm_x, " - ", norm_mu_str, "}{", norm_sigma, "} \\right)")
+          normForm <- paste("= P(Z \\gt", probValue, ")")
+        }
+      }
+      else if(input$calcNormal == 'between')
+      {
+        norm_x1 <- input$x1Value
+        norm_x2 <- input$x2Value
+        
+        validate(
+          need((norm_x1 != norm_x2) && (norm_x1 < norm_x2), "Normally Distributed Variable (x1) must be less than Normally Distributed Variable (x2)"),
+          errorClass = "myClass")
+        
+        normProb <- paste("P(", norm_x1, " ",  " \\leq X \\leq"," ", norm_x2,")") 
+        normProbTransform <- paste("P \\left( \\dfrac{", norm_x1, " - ", norm_mu_str, "}{", norm_sigma, "} \\leq \\dfrac{X - \\mu}{\\sigma} \\leq",
+                                   "\\dfrac{", norm_x2, " - ", norm_mu_str, "}{", norm_sigma, "} \\right)")
+        normForm <- paste("= P(", round((norm_x1 - norm_mu)/norm_sigma, 4), "\\leq Z \\leq", round((norm_x2 - norm_mu)/norm_sigma, 4), ") = ", 
+                          round(pnorm(norm_x2,norm_mu, norm_sigma,lower.tail = TRUE), 4), " - ", round(pnorm(norm_x1,norm_mu, norm_sigma,lower.tail = TRUE), 4))
+      }
+      
+      tagList(
+        withMathJax(
+          div(
+            h3(
+              sprintf("Calculating  \\( %s \\)   when  \\(  X \\sim N(\\mu = %g, \\sigma = %g): \\)",
                       normProb,
-                      normProbTransform),
-              br(),
-              br(),
-              sprintf("\\( \\displaystyle %s = %g\\)",
-                      normForm,
-                      getNormValue()),
-              br(),
-              br(),
-              br(),
-              sprintf("Population Mean \\( (\\mu) = %g\\)",
-                      norm_mu),
-              br(),
-              br(),
-              sprintf("Population Standard Deviation \\( (\\sigma) = %g\\)",
-                      norm_sigma),
-              br(),
-              br(),
-              sprintf("Population Variance \\( (\\sigma^{2}) = %g\\)",
-                      norm_sigma^2)
-            ), 
-            br(),
+                      norm_mu,
+                      norm_sigma)),
             hr(),
             br(),
-            fluidRow(
-              column(
-                width = 6,
-                plotOutput(session$ns('normDistrPlot'))
-              ),
-              column(
-                width = 6,
-                plotOutput(session$ns('normZPlot'))
-              )
-            ),
+            sprintf("\\( \\displaystyle %s = %s\\)",
+                    normProb,
+                    normProbTransform),
             br(),
-            br()
-          )
+            br(),
+            sprintf("\\( \\displaystyle %s = %g\\)",
+                    normForm,
+                    getNormValue()),
+            br(),
+            br(),
+            br(),
+            sprintf("Population Mean \\( (\\mu) = %g\\)",
+                    norm_mu),
+            br(),
+            br(),
+            sprintf("Population Standard Deviation \\( (\\sigma) = %g\\)",
+                    norm_sigma),
+            br(),
+            br(),
+            sprintf("Population Variance \\( (\\sigma^{2}) = %g\\)",
+                    norm_sigma^2)
+          ), 
+          br(),
+          hr(),
+          br(),
+          fluidRow(
+            column(
+              width = 6,
+              plotOutput(session$ns('normDistrPlot'))
+            ),
+            column(
+              width = 6,
+              plotOutput(session$ns('normZPlot'))
+            )
+          ),
+          br(),
+          br()
         )
-      })
+      )
+    })
  
-      output$normDistrPlot <- renderPlot({
-        req(pd_iv$is_valid())
-        
-        if(input$calcNormal == "between") {
-          normLines <- c(round((input$x1Value - input$popMean)/input$popSD, 4), round((input$x2Value - input$popMean)/input$popSD, 4))
-          lineLabels <- c(input$x1Value, input$x2Value) 
-        } else {
-          normLines <- round((input$xValue - input$popMean)/input$popSD, 4)
-          lineLabels <- input$xValue
-        }
-        normPlot(getNormValue(), normLines, input$popMean, input$popSD^2, input$popSD, lineLabels, input$calcNormal)
-      })
+    output$normDistrPlot <- renderPlot({
+      req(pd_valid())
       
-      output$normZPlot <- renderPlot({
-        req(pd_iv$is_valid())
-        
-        if(input$calcNormal == "between") {
-          req(input$x1Value <= input$x2Value)
-          normLines <- c(round((input$x1Value - input$popMean)/input$popSD, 4), round((input$x2Value - input$popMean)/input$popSD, 4))
-        } else {
-          normLines <- round((input$xValue - input$popMean)/input$popSD, 4)
-        }
-        normZPlot(getNormValue(), normLines, input$calcNormal)
-      })
+      if(input$calcNormal == "between") {
+        normLines <- c(round((input$x1Value - input$popMean)/input$popSD, 4), round((input$x2Value - input$popMean)/input$popSD, 4))
+        lineLabels <- c(input$x1Value, input$x2Value) 
+      } else {
+        normLines <- round((input$xValue - input$popMean)/input$popSD, 4)
+        lineLabels <- input$xValue
+      }
+      normPlot(getNormValue(), normLines, input$popMean, input$popSD^2, input$popSD, lineLabels, input$calcNormal)
+    })
+    
+    output$normZPlot <- renderPlot({
+      req(pd_valid())
       
-      output$renderSampMeanDistr <- renderUI({
-        if(!pd_iv$is_valid()) {
-          if(!sampdistrprob_iv$is_valid()) {
-            withMathJax()
-            validate(
-              need(input$popMean, "Enter a value for Population Mean (mu)."),
-              need(input$popSD && input$popSD > 0, "Population Standard Deviation (sigma) must be greater than 0."),
-              need(input$sampDistrxValue, "Enter a value for Normally Distributed Variable (x)."),
-              need(input$sampDistrSize > 0 && input$sampDistrSize %% 1 == 0, "Sample Size (n) must be a positive integer."),
-              errorClass = "myClass")
-          }
-          
-          if(!sampdistrbetween_iv$is_valid()) {
-            validate(
-              need(input$popMean, "Enter a value for Population Mean (mu)."),
-              need(input$popSD && input$popSD > 0, "Population Standard Deviation (sigma) must be greater than 0."),
-              need(input$sampDistrx1Value, "Enter a value for Normally Distributed Variable (x1)."),
-              need(input$sampDistrx2Value, "Enter a value for Normally Distributed Variable (x2)."),
-              need(input$sampDistrSize > 0 && input$sampDistrSize %% 1 == 0, "Sample Size (n) must be a positive integer."),
-              errorClass = "myClass")
-          }
-          
+      if(input$calcNormal == "between") {
+        req(input$x1Value <= input$x2Value)
+        normLines <- c(round((input$x1Value - input$popMean)/input$popSD, 4), round((input$x2Value - input$popMean)/input$popSD, 4))
+      } else {
+        normLines <- round((input$xValue - input$popMean)/input$popSD, 4)
+      }
+      normZPlot(getNormValue(), normLines, input$calcNormal)
+    })
+    
+    output$renderSampMeanDistr <- renderUI({
+      req(input$goNormalProb > 0)
+      if(!pd_valid()) {
+        if(!sampdistrprob_iv$is_valid()) {
           validate(
             need(input$popMean, "Enter a value for Population Mean (mu)."),
             need(input$popSD && input$popSD > 0, "Population Standard Deviation (sigma) must be greater than 0."),
+            need(input$sampDistrxValue, "Enter a value for Normally Distributed Variable (x)."),
             need(input$sampDistrSize > 0 && input$sampDistrSize %% 1 == 0, "Sample Size (n) must be a positive integer."),
             errorClass = "myClass")
         }
         
-        norm_mu_str <- input$popMean
-        if (norm_mu_str < 0)
-          norm_mu_str <- paste("(", norm_mu_str, ")", sep = "")
-        
-        if(input$calcNormSampDistr != 'between') {
-          probValue <- round((input$sampDistrxValue - input$popMean)/(input$popSD/sqrt(input$sampDistrSize)), 4)
-          
-          if(input$calcNormSampDistr == "cumulative"){
-            normProb <- paste("P(\\bar{X} \\leq ", input$sampDistrxValue,")")
-            normProbTransform <- paste("P \\left( \\dfrac{\\bar{X} - \\mu}{ \\left( \\dfrac{\\sigma}{\\sqrt{n}} \\right) } \\leq \\dfrac{", input$sampDistrxValue, " - ", norm_mu_str, "}{ \\left( \\dfrac{", input$popSD, "}{\\sqrt{", input$sampDistrSize, "}} \\right) } \\right)")
-            normForm <- paste("= P(Z \\leq", probValue, ")")
-          } else if(input$calcNormSampDistr == "upperTail"){
-            normProb <- paste("P(\\bar{X} \\gt ", input$sampDistrxValue,")")
-            normProbTransform <- paste("P \\left( \\dfrac{\\bar{X} - \\mu}{ \\left( \\dfrac{\\sigma}{\\sqrt{n}} \\right) } \\gt \\dfrac{", input$sampDistrxValue, " - ", norm_mu_str, "}{ \\left( \\dfrac{", input$popSD, "}{\\sqrt{", input$sampDistrSize, "}} \\right) } \\right)")
-            normForm <- paste("= P(Z \\gt", probValue, ")")
-          }
-        } else if(input$calcNormSampDistr == 'between') {
-          norm_x1 <- input$sampDistrx1Value
-          norm_x2 <- input$sampDistrx2Value
-          sampSE <- input$popSD / sqrt(input$sampDistrSize)
-          
+        if(!sampdistrbetween_iv$is_valid()) {
           validate(
-            need((norm_x1 != norm_x2) && (norm_x1 <= norm_x2), "Normally Distributed Variable (x1) must be less than or equal to Normally Distributed Variable (x2)"),
+            need(input$popMean, "Enter a value for Population Mean (mu)."),
+            need(input$popSD && input$popSD > 0, "Population Standard Deviation (sigma) must be greater than 0."),
+            need(input$sampDistrx1Value, "Enter a value for Normally Distributed Variable (x1)."),
+            need(input$sampDistrx2Value, "Enter a value for Normally Distributed Variable (x2)."),
+            need(input$sampDistrSize > 0 && input$sampDistrSize %% 1 == 0, "Sample Size (n) must be a positive integer."),
             errorClass = "myClass")
-          
-          normProb <- paste("P(", norm_x1, " ",  " \\leq \\bar{X} \\leq"," ", norm_x2,")")
-          
-          normProbTransform <- paste("P \\left( \\dfrac{", norm_x1, " - ", norm_mu_str, "}{ \\left( \\dfrac{", input$popSD, "}{\\sqrt{", input$sampDistrSize, "}} \\right) } \\leq \\dfrac{\\bar{X} - \\mu}{ \\left( \\dfrac{\\sigma}{\\sqrt{n}} \\right) } \\leq",
-                                     "\\dfrac{", norm_x2, " - ", norm_mu_str, "}{ \\left( \\dfrac{", input$popSD, "}{\\sqrt{", input$sampDistrSize, "}} \\right) } \\right)")
-          normForm <- paste("= P(", round((norm_x1 - input$popMean)/(input$popSD/sqrt(input$sampDistrSize)), 4), "\\leq Z \\leq", round((norm_x2 - input$popMean)/(input$popSD/sqrt(input$sampDistrSize)), 4), ") = ", 
-                            round(pnorm(norm_x2, input$popMean, sampSE, lower.tail = TRUE), 4), " - ", round(pnorm(norm_x1, input$popMean, sampSE, lower.tail = TRUE), 4))
         }
         
-        sampMeanDistrSD <- input$popSD / sqrt(input$sampDistrSize)
+        validate(
+          need(input$popMean, "Enter a value for Population Mean (mu)."),
+          need(input$popSD && input$popSD > 0, "Population Standard Deviation (sigma) must be greater than 0."),
+          need(input$sampDistrSize > 0 && input$sampDistrSize %% 1 == 0, "Sample Size (n) must be a positive integer."),
+          errorClass = "myClass")
+      }
+      
+      norm_mu_str <- input$popMean
+      if (norm_mu_str < 0)
+        norm_mu_str <- paste("(", norm_mu_str, ")", sep = "")
+      
+      if(input$calcNormSampDistr != 'between') {
+        probValue <- round((input$sampDistrxValue - input$popMean)/(input$popSD/sqrt(input$sampDistrSize)), 4)
         
-        tagList(
-          withMathJax(
-            div(
-              h3(
-                sprintf("Calculating  \\( %s \\)   when  \\(  \\bar{X} \\sim N(\\mu_{\\bar{X}} = \\mu = %g, \\, \\sigma_{\\bar{X}} = \\dfrac{\\sigma}{\\sqrt{n}} = %0.4f): \\)",
-                        normProb,
-                        input$popMean,
-                        sampMeanDistrSD)
-              ),
-              hr(),
-              br(),
-              sprintf("\\( \\displaystyle %s = %s\\)",
+        if(input$calcNormSampDistr == "cumulative"){
+          normProb <- paste("P(\\bar{X} \\leq ", input$sampDistrxValue,")")
+          normProbTransform <- paste("P \\left( \\dfrac{\\bar{X} - \\mu}{ \\left( \\dfrac{\\sigma}{\\sqrt{n}} \\right) } \\leq \\dfrac{", input$sampDistrxValue, " - ", norm_mu_str, "}{ \\left( \\dfrac{", input$popSD, "}{\\sqrt{", input$sampDistrSize, "}} \\right) } \\right)")
+          normForm <- paste("= P(Z \\leq", probValue, ")")
+        } else if(input$calcNormSampDistr == "upperTail"){
+          normProb <- paste("P(\\bar{X} \\gt ", input$sampDistrxValue,")")
+          normProbTransform <- paste("P \\left( \\dfrac{\\bar{X} - \\mu}{ \\left( \\dfrac{\\sigma}{\\sqrt{n}} \\right) } \\gt \\dfrac{", input$sampDistrxValue, " - ", norm_mu_str, "}{ \\left( \\dfrac{", input$popSD, "}{\\sqrt{", input$sampDistrSize, "}} \\right) } \\right)")
+          normForm <- paste("= P(Z \\gt", probValue, ")")
+        }
+      } else if(input$calcNormSampDistr == 'between') {
+        norm_x1 <- input$sampDistrx1Value
+        norm_x2 <- input$sampDistrx2Value
+        sampSE <- input$popSD / sqrt(input$sampDistrSize)
+        
+        validate(
+          need((norm_x1 != norm_x2) && (norm_x1 <= norm_x2), "Normally Distributed Variable (x1) must be less than or equal to Normally Distributed Variable (x2)"),
+          errorClass = "myClass")
+        
+        normProb <- paste("P(", norm_x1, " ",  " \\leq \\bar{X} \\leq"," ", norm_x2,")")
+        
+        normProbTransform <- paste("P \\left( \\dfrac{", norm_x1, " - ", norm_mu_str, "}{ \\left( \\dfrac{", input$popSD, "}{\\sqrt{", input$sampDistrSize, "}} \\right) } \\leq \\dfrac{\\bar{X} - \\mu}{ \\left( \\dfrac{\\sigma}{\\sqrt{n}} \\right) } \\leq",
+                                   "\\dfrac{", norm_x2, " - ", norm_mu_str, "}{ \\left( \\dfrac{", input$popSD, "}{\\sqrt{", input$sampDistrSize, "}} \\right) } \\right)")
+        normForm <- paste("= P(", round((norm_x1 - input$popMean)/(input$popSD/sqrt(input$sampDistrSize)), 4), "\\leq Z \\leq", round((norm_x2 - input$popMean)/(input$popSD/sqrt(input$sampDistrSize)), 4), ") = ", 
+                          round(pnorm(norm_x2, input$popMean, sampSE, lower.tail = TRUE), 4), " - ", round(pnorm(norm_x1, input$popMean, sampSE, lower.tail = TRUE), 4))
+      }
+      
+      sampMeanDistrSD <- input$popSD / sqrt(input$sampDistrSize)
+      
+      tagList(
+        withMathJax(
+          div(
+            h3(
+              sprintf("Calculating  \\( %s \\)   when  \\(  \\bar{X} \\sim N(\\mu_{\\bar{X}} = \\mu = %g, \\, \\sigma_{\\bar{X}} = \\dfrac{\\sigma}{\\sqrt{n}} = %0.4f): \\)",
                       normProb,
-                      normProbTransform),
-              br(),
-              br(),
-              sprintf("\\( \\displaystyle %s = %g\\)",
-                      normForm,
-                      getMeanNormValue()),
-              br(),
-              br(),
-              br(),
-              sprintf("Mean \\( (\\mu_{\\bar{X}}) = \\mu = %g\\)",
-                      input$popMean),
-              br(),
-              br(),
-              sprintf("Standard Deviation \\( (\\sigma_{\\bar{X}}) = \\dfrac{\\sigma}{\\sqrt{n}} = %0.4f\\)",
-                      sampMeanDistrSD),
-              br(),
-              sprintf("Variance \\( (\\sigma_{\\bar{X}}^2) = \\dfrac{\\sigma^{2}}{n} = %g\\)",
-                      input$popSD^2 / input$sampDistrSize)
+                      input$popMean,
+                      sampMeanDistrSD)
+            ),
+            hr(),
+            br(),
+            sprintf("\\( \\displaystyle %s = %s\\)",
+                    normProb,
+                    normProbTransform),
+            br(),
+            br(),
+            sprintf("\\( \\displaystyle %s = %g\\)",
+                    normForm,
+                    getMeanNormValue()),
+            br(),
+            br(),
+            br(),
+            sprintf("Mean \\( (\\mu_{\\bar{X}}) = \\mu = %g\\)",
+                    input$popMean),
+            br(),
+            br(),
+            sprintf("Standard Deviation \\( (\\sigma_{\\bar{X}}) = \\dfrac{\\sigma}{\\sqrt{n}} = %0.4f\\)",
+                    sampMeanDistrSD),
+            br(),
+            sprintf("Variance \\( (\\sigma_{\\bar{X}}^2) = \\dfrac{\\sigma^{2}}{n} = %g\\)",
+                    input$popSD^2 / input$sampDistrSize)
+          ),
+          hr(),
+          br(),
+          fluidRow(
+            column(width = 6,
+                   plotOutput(session$ns('sampMeanDistrPlot'))),
+            column(width = 6,
+                   plotOutput(session$ns('sampMeanZPlot')))
+          ),
+          br(),
+          br()
+        )
+      )
+    })
+    
+    output$sampMeanDistrPlot <- renderPlot({
+      req(pd_valid())
+      
+      sampSE <- round(input$popSD / sqrt(input$sampDistrSize), 4)
+      
+      if(input$calcNormSampDistr == "between") {
+        req(input$sampDistrx1Value <= input$sampDistrx2Value)
+        normLines <- c(round((input$sampDistrx1Value - input$popMean)/(input$popSD/sqrt(input$sampDistrSize)), 4), 
+                       round((input$sampDistrx2Value - input$popMean)/(input$popSD/sqrt(input$sampDistrSize)), 4))
+        lineLabels <- c(input$sampDistrx1Value, input$sampDistrx2Value)
+      } else {
+        normLines <- round((input$sampDistrxValue - input$popMean)/(input$popSD/sqrt(input$sampDistrSize)), 4)
+        lineLabels <- c(input$sampDistrxValue)
+      }
+      normPlot(getMeanNormValue(), normLines, input$popMean, round(input$popSD^2 / input$sampDistrSize, 4), sampSE, lineLabels, input$calcNormSampDistr)
+    })
+    
+    output$sampMeanZPlot <- renderPlot({
+      req(pd_valid())
+      
+      if(input$calcNormSampDistr == "between") {
+        req(input$sampDistrx1Value <= input$sampDistrx2Value)
+        normLines <- c(round((input$sampDistrx1Value - input$popMean)/(input$popSD/sqrt(input$sampDistrSize)), 4), 
+                       round((input$sampDistrx2Value - input$popMean)/(input$popSD/sqrt(input$sampDistrSize)), 4))
+      } else {
+        normLines <- round((input$sampDistrxValue - input$popMean)/(input$popSD/sqrt(input$sampDistrSize)), 4)
+      }
+      normZPlot(getMeanNormValue(), normLines, input$calcNormSampDistr)
+    })
+    
+  
+    
+    # Normal critical value results: outputs are defined once (not on every click)
+    
+    output$renderNormQuartiles <- renderUI({
+      req(input$goNormalQuan > 0)
+      validate(
+        need(input$popMean, "Enter a value for Population Mean (mu)."),
+        need(input$popSD && input$popSD > 0, "Population Standard Deviation (sigma) must be greater than 0."),
+        errorClass = "myClass")
+      
+      qOne <- round(qnorm(0.25, input$popMean, input$popSD, TRUE), 4)
+      qTwo <- round(qnorm(0.5, input$popMean, input$popSD, TRUE), 4)
+      qThree <- round(qnorm(0.75, input$popMean, input$popSD, TRUE), 4)
+      
+      norm_mu_str <- input$popMean
+      if (norm_mu_str < 0)
+        norm_mu_str <- paste("(", norm_mu_str, ")", sep = "")
+      
+      tagList(
+        withMathJax(
+          div(
+            h3(
+              sprintf("Given \\( X \\sim N(\\mu  = %s, \\sigma = %g) \\) then",
+                      norm_mu_str,
+                      input$popSD)
+            ),
+            hr(),
+            br(),
+            br(),
+            fluidRow(
+              column(width = 5,
+                     div(style = "padding-top: 60px;",
+                         sprintf("\\( P(X \\le x) = P \\left( \\dfrac{X - \\mu}{\\sigma} \\le \\dfrac{x - %s}{%s} \\right) \\)",
+                                 norm_mu_str,
+                                 input$popSD),
+                         br(),
+                         br(),
+                         sprintf("\\( \\phantom{ P(X\\lex) } = P(Z \\le -0.6745) = 0.25\\)"),
+                         br(),
+                         br(),
+                         sprintf("Quartile 1 \\( \\displaystyle (Q_{1}) \\) is obtained by solving for \\(x\\)"),
+                         br(),
+                         br(),
+                         sprintf("\\( \\displaystyle x = %s + (-0.6745 \\times %s) = %s\\)",
+                                 norm_mu_str,
+                                 input$popSD,
+                                 qOne),
+                         br(),
+                         br(),
+                         br())),
+              column(width = 7,
+                     plotOutput(session$ns("quartile1Plot"), height = "300px"),
+                     br())
             ),
             hr(),
             br(),
             fluidRow(
-              column(width = 6,
-                     plotOutput(session$ns('sampMeanDistrPlot'))),
-              column(width = 6,
-                     plotOutput(session$ns('sampMeanZPlot')))
-            ),
-            br(),
-            br()
-          )
-        )
-      })
-      
-      output$sampMeanDistrPlot <- renderPlot({
-        req(pd_iv$is_valid())
-        
-        withMathJax()
-        sampSE <- round(input$popSD / sqrt(input$sampDistrSize), 4)
-        
-        if(input$calcNormSampDistr == "between") {
-          req(input$sampDistrx1Value <= input$sampDistrx2Value)
-          normLines <- c(round((input$sampDistrx1Value - input$popMean)/(input$popSD/sqrt(input$sampDistrSize)), 4), 
-                         round((input$sampDistrx2Value - input$popMean)/(input$popSD/sqrt(input$sampDistrSize)), 4))
-          lineLabels <- c(input$sampDistrx1Value, input$sampDistrx2Value)
-        } else {
-          normLines <- round((input$sampDistrxValue - input$popMean)/(input$popSD/sqrt(input$sampDistrSize)), 4)
-          lineLabels <- c(input$sampDistrxValue)
-        }
-        normPlot(getMeanNormValue(), normLines, input$popMean, round(input$popSD^2 / input$sampDistrSize, 4), sampSE, lineLabels, input$calcNormSampDistr)
-      })
-      
-      output$sampMeanZPlot <- renderPlot({
-        req(pd_iv$is_valid())
-        
-        if(input$calcNormSampDistr == "between") {
-          req(input$sampDistrx1Value <= input$sampDistrx2Value)
-          normLines <- c(round((input$sampDistrx1Value - input$popMean)/(input$popSD/sqrt(input$sampDistrSize)), 4), 
-                         round((input$sampDistrx2Value - input$popMean)/(input$popSD/sqrt(input$sampDistrSize)), 4))
-        } else {
-          normLines <- round((input$sampDistrxValue - input$popMean)/(input$popSD/sqrt(input$sampDistrSize)), 4)
-        }
-        normZPlot(getMeanNormValue(), normLines, input$calcNormSampDistr)
-      })
-      
-    })
-  
-    
-    observeEvent(input$goNormalQuan, {
-      
-      output$renderNormQuartiles <- renderUI({
-        validate(
-          need(input$popMean, "Enter a value for Population Mean (mu)."),
-          need(input$popSD && input$popSD > 0, "Population Standard Deviation (sigma) must be greater than 0."),
-          errorClass = "myClass")
-        
-        qOne <- round(qnorm(0.25, input$popMean, input$popSD, TRUE), 4)
-        qTwo <- round(qnorm(0.5, input$popMean, input$popSD, TRUE), 4)
-        qThree <- round(qnorm(0.75, input$popMean, input$popSD, TRUE), 4)
-        
-        norm_mu_str <- input$popMean
-        if (norm_mu_str < 0)
-          norm_mu_str <- paste("(", norm_mu_str, ")", sep = "")
-        
-        tagList(
-          withMathJax(
-            div(
-              h3(
-                sprintf("Given \\( X \\sim N(\\mu  = %s, \\sigma = %g) \\) then",
-                        norm_mu_str,
-                        input$popSD)
-              ),
-              hr(),
-              br(),
-              br(),
-              fluidRow(
-                column(width = 5,
-                       div(style = "padding-top: 60px;",
-                           sprintf("\\( P(X \\le x) = P \\left( \\dfrac{X - \\mu}{\\sigma} \\le \\dfrac{x - %s}{%s} \\right) \\)",
-                                   norm_mu_str,
-                                   input$popSD),
-                           br(),
-                           br(),
-                           sprintf("\\( \\phantom{ P(X\\lex) } = P(Z \\le -0.6745) = 0.25\\)"),
-                           br(),
-                           br(),
-                           sprintf("Quartile 1 \\( \\displaystyle (Q_{1}) \\) is obtained by solving for \\(x\\)"),
-                           br(),
-                           br(),
-                           sprintf("\\( \\displaystyle x = %s + (-0.6745 \\times %s) = %s\\)",
-                                   norm_mu_str,
-                                   input$popSD,
-                                   qOne),
-                           br(),
-                           br(),
-                           br())),
-                column(width = 7,
-                       plotOutput(session$ns("quartile1Plot"), height = "300px"),
-                       br())
-              ),
-              hr(),
-              br(),
-              fluidRow(
-                column(
-                  width = 5,
-                  div(
-                    style = "padding-top: 60px;",
-                    sprintf("\\( P(X \\le x) = P \\left( \\dfrac{X - \\mu}{\\sigma} \\le \\dfrac{x - %s}{%s} \\right) \\)",
-                            norm_mu_str,
-                            input$popSD),
-                    br(),
-                    br(),
-                    sprintf("\\( \\phantom{ P(X\\lex) } = P(Z \\le 0) = 0.50\\)"),
-                    br(),
-                    br(),
-                    sprintf("Quartile 2 \\( \\displaystyle (Q_{2}) \\) is obtained by solving for \\(x\\)"),
-                    br(),
-                    br(),
-                    sprintf("\\( \\displaystyle x = %s + (0 \\times %s) = %s\\)",
-                            norm_mu_str,
-                            input$popSD,
-                            qTwo),
-                    br(),
-                    br(),
-                    br()
-                  )
-                ),
-                column(
-                  width = 7,
-                  plotOutput(session$ns("quartile2Plot"), height = "300px"),
+              column(
+                width = 5,
+                div(
+                  style = "padding-top: 60px;",
+                  sprintf("\\( P(X \\le x) = P \\left( \\dfrac{X - \\mu}{\\sigma} \\le \\dfrac{x - %s}{%s} \\right) \\)",
+                          norm_mu_str,
+                          input$popSD),
+                  br(),
+                  br(),
+                  sprintf("\\( \\phantom{ P(X\\lex) } = P(Z \\le 0) = 0.50\\)"),
+                  br(),
+                  br(),
+                  sprintf("Quartile 2 \\( \\displaystyle (Q_{2}) \\) is obtained by solving for \\(x\\)"),
+                  br(),
+                  br(),
+                  sprintf("\\( \\displaystyle x = %s + (0 \\times %s) = %s\\)",
+                          norm_mu_str,
+                          input$popSD,
+                          qTwo),
+                  br(),
+                  br(),
                   br()
                 )
               ),
-              hr(),
-              br(),
-              fluidRow(
-                column(
-                  width = 5,
-                  div(
-                    style = "padding-top: 60px;",
-                    sprintf("\\( P(X \\le x) = P \\left( \\dfrac{X - \\mu}{\\sigma} \\le \\dfrac{x - %s}{%s} \\right)\\)",
-                            norm_mu_str,
-                            input$popSD),
-                    br(),
-                    br(),
-                    sprintf("\\( \\phantom{ P(X\\lex) } = P(Z \\le 0.6745) = 0.75\\)"),
-                    br(),
-                    br(),
-                    sprintf("Quartile 3 \\( \\displaystyle (Q_{3}) \\) is obtained by solving for \\(x\\)"),
-                    br(),
-                    br(),
-                    sprintf("\\( \\displaystyle x = %s + (0.6745 \\times %s) = %s\\)",
-                            norm_mu_str,
-                            input$popSD,
-                            qThree),
-                    br(),
-                    br())),
-                column(
-                  width = 7,
-                  plotOutput(session$ns("quartile3Plot"), height = "300px"),
-                  br(),
-                  br())
+              column(
+                width = 7,
+                plotOutput(session$ns("quartile2Plot"), height = "300px"),
+                br()
               )
             ),
-            br())
-        )
-      })
+            hr(),
+            br(),
+            fluidRow(
+              column(
+                width = 5,
+                div(
+                  style = "padding-top: 60px;",
+                  sprintf("\\( P(X \\le x) = P \\left( \\dfrac{X - \\mu}{\\sigma} \\le \\dfrac{x - %s}{%s} \\right)\\)",
+                          norm_mu_str,
+                          input$popSD),
+                  br(),
+                  br(),
+                  sprintf("\\( \\phantom{ P(X\\lex) } = P(Z \\le 0.6745) = 0.75\\)"),
+                  br(),
+                  br(),
+                  sprintf("Quartile 3 \\( \\displaystyle (Q_{3}) \\) is obtained by solving for \\(x\\)"),
+                  br(),
+                  br(),
+                  sprintf("\\( \\displaystyle x = %s + (0.6745 \\times %s) = %s\\)",
+                          norm_mu_str,
+                          input$popSD,
+                          qThree),
+                  br(),
+                  br())),
+              column(
+                width = 7,
+                plotOutput(session$ns("quartile3Plot"), height = "300px"),
+                br(),
+                br())
+            )
+          ),
+          br())
+      )
+    })
+    
+    # Normal curve shaded up to the quantile of `probability`; used by the
+    # quartile plots (line width 1.25) and the percentile plot (line width 1)
+    normQuantilePlot <- function(probability, lineWidth) {
+      req(pd_valid())
       
-      output$quartile1Plot <- renderPlot({
-        req(pd_iv$is_valid())
-        
-        probability <- 0.25
-        probLine <- round(qnorm(0.25, input$popMean, input$popSD, TRUE), 4)
-        
-        xStart <- input$popMean - (3 * input$popSD)
-        xEnd <- input$popMean + (3 * input$popSD)
-        
-        x <- round(seq(from = xStart, to = xEnd, length.out = 60), 2)
-        xSeq <- unique(sort(c(x, input$popMean, probLine)))
-        # The length.out = 60 argument is a visual resolution choice, not statistically motivated. 
-        # It’s acceptable for quick teaching visuals but is not optimal for polished density plots.
-        # Consider increasing this number to 200 at some point for publication quality and an interactive Shiny experience.
-        
-        df <- distinct(data.frame(x = xSeq, y = dnorm(xSeq, mean = input$popMean, sd = input$popSD)))
-        
-        meanDF <- filter(df, x %in% c(input$popMean))
-        lineDF <- filter(df, x %in% c(probLine))
-        
-        nPlot <- ggplot(df, aes(x = x, y = y)) +
-          geom_line(linetype = "solid",
-                    linewidth = 0.75,
-                    color='#021C38') +
-          geom_area(data = df,
-                    aes(y=y), 
-                    fill = NA, 
-                    color = NA) +
-          geom_area(data = subset(df, x <= probLine),
-                    aes(y=y), 
-                    fill = "#023B70", 
-                    color = NA, 
-                    alpha = 0.4) +
-          geom_segment(data = lineDF,
-                       aes(x = x, xend = x, yend = y),
-                       y = 0,
-                       linetype = "solid",
-                       lineend = 'round',
-                       linewidth = 1.25,
-                       color='#021C38') +
-          geom_text(data = lineDF, 
-                    aes(x = x, y = 0, label = x), 
-                    size = 16 / .pt,
-                    fontface = "bold",
-                    check_overlap = TRUE,
-                    vjust = 1.5) +
-          geom_segment(data = meanDF,
-                       aes(x = x, xend = x, yend = y),
-                       y = 0,
-                       linetype = "dotted",
-                       lineend = 'round',
-                       linewidth = 1,
-                       color='#021C38',
-                       alpha = 0.5) +
-          geom_text(data = meanDF, 
-                    aes(x = x, y = 0, label = x), 
-                    size = 16 / .pt,
-                    fontface = "bold",
-                    check_overlap = TRUE,
-                    vjust = 1.5) +
-          geom_segment(data = df,
-                       aes(),
-                       x = xStart,
-                       xend = xEnd,
-                       y = 0,
-                       yend = 0,
-                       linetype = "solid",
-                       linewidth = 0.5,
-                       color='#021C38') +
-          coord_cartesian(clip="off") +
-          theme_minimal()  +
-          theme(plot.title = element_text(size = 24, face = "bold", hjust = 0.5),
-                axis.title.x = element_text(size = 18, face = "bold.italic", vjust = -1),
-                axis.text.x.bottom = element_text(size = 14)) +
-          scale_x_continuous(breaks = NULL) +
-          scale_y_continuous(breaks = NULL) +
-          ylab("") +
-          xlab("X") 
-        
-        nPlot
-      })
+      probLine <- round(qnorm(probability, input$popMean, input$popSD, TRUE), 4)
       
-      output$quartile2Plot <- renderPlot({
-        req(pd_iv$is_valid())
-        
-        probability <- 0.5
-        probLine <- round(qnorm(probability, input$popMean, input$popSD, TRUE), 4)
-        
-        xStart <- input$popMean - (3 * input$popSD)
-        xEnd <- input$popMean + (3 * input$popSD)
-        
-        x <- round(seq(from = xStart, to = xEnd, length.out = 60), 2)
-        xSeq <- unique(sort(c(x, input$popMean, probLine)))
-        # The length.out = 60 argument is a visual resolution choice, not statistically motivated. 
-        # It’s acceptable for quick teaching visuals but is not optimal for polished density plots.
-        # Consider increasing this number to 200 at some point for publication quality and an interactive Shiny experience.
-        
-        df <- distinct(data.frame(x = xSeq, y = dnorm(xSeq, mean = input$popMean, sd = input$popSD)))
-        
-        meanDF <- filter(df, x %in% c(input$popMean))
-        lineDF <- filter(df, x %in% c(probLine))
-        
-        nPlot <- ggplot(df, aes(x = x, y = y)) +
-          geom_line(linetype = "solid",
-                    linewidth = 0.75,
-                    color='#021C38') +
-          geom_area(data = df,
-                    aes(y=y), 
-                    fill = NA, 
-                    color = NA) +
-          geom_area(data = subset(df, x <= probLine),
-                    aes(y=y), 
-                    fill = "#023B70", 
-                    color = NA, 
-                    alpha = 0.4) +
-          geom_segment(data = lineDF,
-                       aes(x = x, xend = x, yend = y),
-                       y = 0,
-                       linetype = "solid",
-                       lineend = 'round',
-                       linewidth = 1.25,
-                       color='#021C38') +
-          geom_text(data = lineDF, 
-                    aes(x = x, y = 0, label = x), 
-                    size = 16 / .pt,
-                    fontface = "bold",
-                    check_overlap = TRUE,
-                    vjust = 1.5) +
-          geom_segment(data = meanDF,
-                       aes(x = x, xend = x, yend = y),
-                       y = 0,
-                       linetype = "dotted",
-                       lineend = 'round',
-                       linewidth = 1,
-                       color='#021C38',
-                       alpha = 0.5) +
-          geom_text(data = meanDF, 
-                    aes(x = x, y = 0, label = x), 
-                    size = 16 / .pt,
-                    fontface = "bold",
-                    check_overlap = TRUE,
-                    vjust = 1.5) +
-          geom_segment(data = df,
-                       aes(),
-                       x = xStart,
-                       xend = xEnd,
-                       y = 0,
-                       yend = 0,
-                       linetype = "solid",
-                       linewidth = 0.5,
-                       color='#021C38') +
-          coord_cartesian(clip="off") +
-          theme_minimal()  +
-          theme(plot.title = element_text(size = 24, face = "bold", hjust = 0.5),
-                axis.title.x = element_text(size = 18, face = "bold.italic", vjust = -1),
-                axis.text.x.bottom = element_text(size = 14)) +
-          scale_x_continuous(breaks = NULL) +
-          scale_y_continuous(breaks = NULL) +
-          ylab("") +
-          xlab("X") 
-        
-        nPlot
-      })
+      xStart <- input$popMean - (3 * input$popSD)
+      xEnd <- input$popMean + (3 * input$popSD)
       
-      output$quartile3Plot <- renderPlot({
-        req(pd_iv$is_valid())
-        
-        probability <- 0.75
-        probLine <- round(qnorm(probability, input$popMean, input$popSD, TRUE), 4)
-        
-        xStart <- input$popMean - (3 * input$popSD)
-        xEnd <- input$popMean + (3 * input$popSD)
-        
-        x <- round(seq(from = xStart, to = xEnd, length.out = 60), 2)
-        xSeq <- unique(sort(c(x, input$popMean, probLine)))
-        # The length.out = 60 argument is a visual resolution choice, not statistically motivated. 
-        # It’s acceptable for quick teaching visuals but is not optimal for polished density plots.
-        # Consider increasing this number to 200 at some point for publication quality and an interactive Shiny experience.
-        
-        df <- distinct(data.frame(x = xSeq, y = dnorm(xSeq, mean = input$popMean, sd = input$popSD)))
-        
-        meanDF <- filter(df, x %in% c(input$popMean))
-        lineDF <- filter(df, x %in% c(probLine))
-        
-        nPlot <- ggplot(df, aes(x = x, y = y)) +
-          geom_line(linetype = "solid",
-                    linewidth = 0.75,
-                    color='#021C38') +
-          geom_area(data = df,
-                    aes(y=y), 
-                    fill = NA, 
-                    color = NA) +
-          geom_area(data = subset(df, x <= probLine),
-                    aes(y=y), 
-                    fill = "#023B70", 
-                    color = NA, 
-                    alpha = 0.4) +
-          geom_segment(data = lineDF,
-                       aes(x = x, xend = x, yend = y),
-                       y = 0,
-                       linetype = "solid",
-                       lineend = 'round',
-                       linewidth = 1.25,
-                       color='#021C38') +
-          geom_text(data = lineDF, 
-                    aes(x = x, y = 0, label = x), 
-                    size = 16 / .pt,
-                    fontface = "bold",
-                    check_overlap = TRUE,
-                    vjust = 1.5) +
-          geom_segment(data = meanDF,
-                       aes(x = x, xend = x, yend = y),
-                       y = 0,
-                       linetype = "dotted",
-                       lineend = 'round',
-                       linewidth = 1,
-                       color='#021C38',
-                       alpha = 0.5) +
-          geom_text(data = meanDF, 
-                    aes(x = x, y = 0, label = x), 
-                    size = 16 / .pt,
-                    fontface = "bold",
-                    check_overlap = TRUE,
-                    vjust = 1.5) +
-          geom_segment(data = df,
-                       aes(),
-                       x = xStart,
-                       xend = xEnd,
-                       y = 0,
-                       yend = 0,
-                       linetype = "solid",
-                       linewidth = 0.5,
-                       color='#021C38') +
-          coord_cartesian(clip="off") +
-          theme_minimal()  +
-          theme(plot.title = element_text(size = 24, face = "bold", hjust = 0.5),
-                axis.title.x = element_text(size = 18, face = "bold.italic", vjust = -1),
-                axis.text.x.bottom = element_text(size = 14)) +
-          scale_x_continuous(breaks = NULL) +
-          scale_y_continuous(breaks = NULL) +
-          ylab("") +
-          xlab("X") 
-        
-        nPlot
-      })
+      x <- round(seq(from = xStart, to = xEnd, length.out = 60), 2)
+      xSeq <- unique(sort(c(x, input$popMean, probLine)))
+      # The length.out = 60 argument is a visual resolution choice, not statistically motivated. 
+      # It’s acceptable for quick teaching visuals but is not optimal for polished density plots.
+      # Consider increasing this number to 200 at some point for publication quality and an interactive Shiny experience.
       
-      output$renderNormPercentile <- renderUI({
-        validate(
-          need(input$popMean, "Enter a value for Population Mean (mu)."),
-          need(input$popSD && input$popSD > 0, "Population Standard Deviation (sigma) must be greater than 0."),
-          need(input$percentileValue, "Enter a Percentile Value between 0 and 100."),
-          errorClass = "myClass")
+      df <- distinct(data.frame(x = xSeq, y = dnorm(xSeq, mean = input$popMean, sd = input$popSD)))
+      
+      meanDF <- filter(df, x %in% c(input$popMean))
+      lineDF <- filter(df, x %in% c(probLine))
+      
+      nPlot <- ggplot(df, aes(x = x, y = y)) +
+        geom_line(linetype = "solid",
+                  linewidth = 0.75,
+                  color='#021C38') +
+        geom_area(data = df,
+                  aes(y=y), 
+                  fill = NA, 
+                  color = NA) +
+        geom_area(data = subset(df, x <= probLine),
+                  aes(y=y), 
+                  fill = "#023B70", 
+                  color = NA, 
+                  alpha = 0.4) +
+        geom_segment(data = lineDF,
+                     aes(x = x, xend = x, yend = y),
+                     y = 0,
+                     linetype = "solid",
+                     lineend = 'round',
+                     linewidth = lineWidth,
+                     color='#021C38') +
+        geom_text(data = lineDF, 
+                  aes(x = x, y = 0, label = x), 
+                  size = 16 / .pt,
+                  fontface = "bold",
+                  check_overlap = TRUE,
+                  vjust = 1.5) +
+        geom_segment(data = meanDF,
+                     aes(x = x, xend = x, yend = y),
+                     y = 0,
+                     linetype = "dotted",
+                     lineend = 'round',
+                     linewidth = 1,
+                     color='#021C38',
+                     alpha = 0.5) +
+        geom_text(data = meanDF, 
+                  aes(x = x, y = 0, label = x), 
+                  size = 16 / .pt,
+                  fontface = "bold",
+                  check_overlap = TRUE,
+                  vjust = 1.5) +
+        geom_segment(data = df,
+                     aes(),
+                     x = xStart,
+                     xend = xEnd,
+                     y = 0,
+                     yend = 0,
+                     linetype = "solid",
+                     linewidth = 0.5,
+                     color='#021C38') +
+        coord_cartesian(clip="off") +
+        theme_minimal()  +
+        theme(plot.title = element_text(size = 24, face = "bold", hjust = 0.5),
+              axis.title.x = element_text(size = 18, face = "bold.italic", vjust = -1),
+              axis.text.x.bottom = element_text(size = 14)) +
+        scale_x_continuous(breaks = NULL) +
+        scale_y_continuous(breaks = NULL) +
+        ylab("") +
+        xlab("X") 
+      
+      nPlot
+    }
+    
+    output$quartile1Plot <- renderPlot({
+      normQuantilePlot(0.25, 1.25)
+    })
+    
+    output$quartile2Plot <- renderPlot({
+      normQuantilePlot(0.5, 1.25)
+    })
+    
+    output$quartile3Plot <- renderPlot({
+      normQuantilePlot(0.75, 1.25)
+    })
+    
+    output$renderNormPercentile <- renderUI({
+      req(input$goNormalQuan > 0)
+      validate(
+        need(input$popMean, "Enter a value for Population Mean (mu)."),
+        need(input$popSD && input$popSD > 0, "Population Standard Deviation (sigma) must be greater than 0."),
+        need(input$percentileValue, "Enter a Percentile Value between 0 and 100."),
+        errorClass = "myClass")
+      
+      validate(
+        need(input$percentileValue > 0 && input$percentileValue < 100, "Percentile Value must be between 0 and 100"),
+        errorClass = "myClass")
+      
+      if(input$percentileValue %% 100 %in% c(11, 12, 13)) {
+        ordinal <- 'th'
+      } else if(input$percentileValue %% 10 == 1) {
+        ordinal <- 'st'
+      } else if(input$percentileValue %% 10 == 2) {
+        ordinal <- 'nd'
+      } else if(input$percentileValue %% 10 == 3) {
+        ordinal <- 'rd'
+      } else {
+        ordinal <- 'th'
+      }
+      
+      probability <- (input$percentileValue / 100)
+      zVal <- round(qnorm(probability, 0, 1, TRUE), 4)
+      percentile <- round(qnorm(probability, input$popMean, input$popSD, TRUE), 4)
+      
+      norm_mu_str <- input$popMean
+      if (norm_mu_str < 0)
+        norm_mu_str <- paste("(", norm_mu_str, ")", sep="")
+      
+      tagList(
+        withMathJax(
+          div(
+            h3(
+              sprintf("Given \\( X \\sim N(\\mu  = %s, \\sigma = %g) \\) then",
+                      norm_mu_str,
+                      input$popSD)),
+            hr(),
+            br(),
+            br(),
+            fluidRow(
+              column(width = 5,
+                     div(style = "padding-top: 60px;",
+                         sprintf("\\( P(X \\le x) = P \\left( \\dfrac{X - \\mu}{\\sigma} \\le \\dfrac{x - %s}{%s} \\right)\\)",
+                                 norm_mu_str,
+                                 input$popSD),
+                         br(),
+                         br(),
+                         sprintf("\\( \\phantom{ P(X\\lex) } = P(Z \\le %s) = %s\\)",
+                                 zVal,
+                                 probability),
+                         br(),
+                         br(),
+                         sprintf("the \\( \\displaystyle %d^{%s} \\) percentile is obtained by solving for \\(x\\)",
+                                 input$percentileValue,
+                                 ordinal),
+                         br(),
+                         br(),
+                         sprintf("\\( \\displaystyle x = %s + (%s \\times %s) = %s\\)",
+                                 norm_mu_str,
+                                 zVal,
+                                 input$popSD,
+                                 percentile),
+                         br(),
+                         br(),
+                         br(),
+                     ),
+              ),
+              column(width = 7,
+                     plotOutput(session$ns("percentilePlot"), height = "300px"),
+                     br(),
+                     br())
+            )
+          ),
+          br())
+      )
+    })
+    
+    output$percentilePlot <- renderPlot({
+      normQuantilePlot(input$percentileValue / 100, 1)
+    })
+    
+    # Student's t results: outputs and code box are defined once (not on every click)
+    
+    # Code box (static UI, shared by both calculation types): created once,
+    # active after the first Calculate click
+    observe({
+      req(calculated$studentT)
+      req(input$probability == "Student's t")
+      
+      showBox <- FALSE
+      if(studentt_iv$is_valid()) {
         
-        validate(
-          need(input$percentileValue > 0 && input$percentileValue < 100, "Percentile Value must be between 0 and 100"),
-          errorClass = "myClass")
-        
-        if(input$percentileValue %% 10 == 1) {
-          ordinal <- 'st'
-        } else if(input$percentileValue %% 10 == 2) {
-          ordinal <- 'nd'
-        } else if(input$percentileValue %% 10 == 3) {
-          ordinal <- 'rd'
+        if(input$calcTypeStudentT == "Probability" &&
+           input$calcStudentT == "between") {
+          showBox <- input$t1StudentT < input$t2StudentT
         } else {
-          ordinal <- 'th'
+          showBox <- TRUE
+        }
+      }
+      setCodeBox(showBox, "rcodeStudentTBox")
+    })
+    
+    output$renderProbabilityStudentT <- renderUI({
+      req(input$goStudentT > 0)
+      if(!studentt_iv$is_valid())
+      {
+        if(!studenttprob_iv$is_valid())
+        {
+          validate(
+            need(input$dfStudentT && input$dfStudentT > 0,
+                 "Degrees of freedom must be a positive number."),
+            need(input$tStudentT,
+                 "Enter a value for the t Distributed Variable (x)."),
+            errorClass = "myClass"
+          )
         }
         
-        probability <- (input$percentileValue / 100)
-        zVal <- round(qnorm(probability, 0, 1, TRUE), 4)
-        percentile <- round(qnorm(probability, input$popMean, input$popSD, TRUE), 4)
+        if(!studenttbetween_iv$is_valid())
+        {
+          validate(
+            need(input$dfStudentT && input$dfStudentT > 0,
+                 "Degrees of freedom must be a positive number."),
+            need(input$t1StudentT,
+                 "Enter a value for the t Distributed Variable (x1)."),
+            need(input$t2StudentT,
+                 "Enter a value for the t Distributed Variable (x2)."),
+            errorClass = "myClass"
+          )
+        }
         
-        norm_mu_str <- input$popMean
-        if (norm_mu_str < 0)
-          norm_mu_str <- paste("(", norm_mu_str, ")", sep="")
+        validate(
+          need(input$dfStudentT && input$dfStudentT > 0,
+               "Degrees of freedom must be a positive number."),
+          errorClass = "myClass"
+        )
+      }
+      req(input$probability == "Student's t")
+      
+      if(input$calcTypeStudentT == "Probability") {
+        df <- input$dfStudentT
+        if(input$calcStudentT == "cumulative") {
+          tValue <- input$tStudentT
+          tProb <- pt(tValue, df)
+          studentTProb <- paste("P(X \\leq", tValue, ")")
+        } else if(input$calcStudentT == "upperTail") {
+          tValue <- input$tStudentT
+          tProb <- 1 - pt(tValue, df)
+          studentTProb <- paste("P(X \\geq", tValue, ")")
+        } else if(input$calcStudentT == "between") {
+          validate(
+            need(
+              isTRUE(input$t1StudentT < input$t2StudentT),
+              "t Distributed Variable (x1) must be less than t Distributed Variable (x2)."
+            ),
+            errorClass = "myClass"
+          )
+          t1 <- input$t1StudentT
+          t2 <- input$t2StudentT
+          tProb <- pt(t2, df) - pt(t1, df)
+          studentTProb <- paste("P(", t1, "\\leq X \\leq", t2, ")")
+        }
+        tagList(
+          withMathJax(
+            div(h3(sprintf("Calculating \\(%s\\) when \\(X \\sim t(df = %g)\\):", studentTProb,df)),
+              hr(),
+              br(),
+              sprintf("\\(\\displaystyle %s = %s\\)", studentTProb, sprintf("%.4f", tProb)),
+              br(), br()
+            )
+          )
+        )
+      }
+    })
+    
+    # The plot sits below the static code box, so it has its own output; it
+    # shows in the same cases as the result above.
+    output$renderProbabilityStudentTPlot <- renderUI({
+      req(calculated$studentT)
+      req(studentt_iv$is_valid())
+      req(input$probability == "Student's t")
+      req(input$calcTypeStudentT == "Probability")
+      if(input$calcStudentT == "between") {
+        req(isTRUE(input$t1StudentT < input$t2StudentT))
+      }
+      # No leading br(): the static code box above is a block element, so the
+      # spacing is the same as when the plot followed the box in one renderUI
+      tagList(
+        hr(), br(),
+        plotOutput(session$ns("studentTDistrPlot"))
+      )
+    })
+    
+    
+    output$renderCriticalValueStudentT <- renderUI({
+      req(input$goStudentT > 0)
+      if(!studentt_iv$is_valid())
+      {
+        if(!studenttcritical_iv$is_valid())
+        {
+          validate(
+            need(input$dfStudentT && input$dfStudentT > 0,
+                 "Degrees of freedom must be a positive number."),
+            need(input$probStudentT > 0 && input$probStudentT < 1,
+                 "Probability must be strictly between 0 and 1."),
+            errorClass = "myClass"
+          )
+        }
+        
+        validate(
+          need(input$dfStudentT && input$dfStudentT > 0,
+               "Degrees of freedom must be a positive number."),
+          errorClass = "myClass"
+        )
+      }
+      
+      if(input$calcTypeStudentT == "Critical Value") {
+        df <- input$dfStudentT
+        p <- input$probStudentT
+        tCritical <- qt(p, df)
         
         tagList(
           withMathJax(
-            div(
-              h3(
-                sprintf("Given \\( X \\sim N(\\mu  = %s, \\sigma = %g) \\) then",
-                        norm_mu_str,
-                        input$popSD)),
+            div(h3(sprintf("Calculating the critical value when \\(X \\sim t(df = %g)\\):", df)),
               hr(),
               br(),
-              br(),
-              fluidRow(
-                column(width = 5,
-                       div(style = "padding-top: 60px;",
-                           sprintf("\\( P(X \\le x) = P \\left( \\dfrac{X - \\mu}{\\sigma} \\le \\dfrac{x - %s}{%s} \\right)\\)",
-                                   norm_mu_str,
-                                   input$popSD),
-                           br(),
-                           br(),
-                           sprintf("\\( \\phantom{ P(X\\lex) } = P(Z \\le %s) = %s\\)",
-                                   zVal,
-                                   probability),
-                           br(),
-                           br(),
-                           sprintf("the \\( \\displaystyle %d^{%s} \\) percentile is obtained by solving for \\(x\\)",
-                                   input$percentileValue,
-                                   ordinal),
-                           br(),
-                           br(),
-                           sprintf("\\( \\displaystyle x = %s + (%s \\times %s) = %s\\)",
-                                   norm_mu_str,
-                                   zVal,
-                                   input$popSD,
-                                   percentile),
-                           br(),
-                           br(),
-                           br(),
-                       ),
-                ),
-                column(width = 7,
-                       plotOutput(session$ns("percentilePlot"), height = "300px"),
-                       br(),
-                       br())
-              )
+              sprintf("\\(\\displaystyle t_{area,df}=t_{%g,%g}=%s\\)", p, df, sprintf("%.4f", tCritical)),
             ),
-            br())
+            br()
+            )
         )
-      })
-      
-      output$percentilePlot <- renderPlot({
-        req(pd_iv$is_valid())
-        
-        probability <- input$percentileValue / 100
-        percentileLine <- round(qnorm(probability, input$popMean, input$popSD, TRUE), 4)
-        
-        xStart <- input$popMean - (3 * input$popSD)
-        xEnd <- input$popMean + (3 * input$popSD)
-        
-        x <- round(seq(from = xStart, to = xEnd, length.out = 60), 2)
-        xSeq <- unique(sort(c(x, input$popMean, percentileLine)))
-        
-        df <- distinct(data.frame(x = xSeq, y = dnorm(xSeq, mean = input$popMean, sd = input$popSD)))
-        
-        meanDF <- filter(df, x %in% c(input$popMean))
-        lineDF <- filter(df, x %in% c(percentileLine))
-        
-        nPlot <- ggplot(df, aes(x = x, y = y)) +
-          geom_line(linetype = "solid",
-                    linewidth = 0.75,
-                    color='#021C38') +
-          geom_area(data = df,
-                    aes(y=y), 
-                    fill = NA, 
-                    color = NA) +
-          geom_area(data = subset(df, x <= percentileLine),
-                    aes(y=y), 
-                    fill = "#023B70", 
-                    color = NA, 
-                    alpha = 0.4) +
-          geom_segment(data = lineDF,
-                       aes(x = x, xend = x, yend = y),
-                       y = 0,
-                       linetype = "solid",
-                       lineend = 'round',
-                       linewidth = 1,
-                       color='#021C38') +
-          geom_text(data = lineDF, 
-                    aes(x = x, y = 0, label = x), 
-                    size = 16 / .pt,
-                    fontface = "bold",
-                    check_overlap = TRUE,
-                    vjust = 1.5) +
-          geom_segment(data = meanDF,
-                       aes(x = x, xend = x, yend = y),
-                       y = 0,
-                       linetype = "dotted",
-                       lineend = 'round',
-                       linewidth = 1,
-                       color='#021C38',
-                       alpha = 0.5) +
-          geom_text(data = meanDF, 
-                    aes(x = x, y = 0, label = x), 
-                    size = 16 / .pt,
-                    fontface = "bold",
-                    check_overlap = TRUE,
-                    vjust = 1.5) +
-          geom_segment(data = df,
-                       aes(),
-                       x = xStart,
-                       xend = xEnd,
-                       y = 0,
-                       yend = 0,
-                       linetype = "solid",
-                       linewidth = 0.5,
-                       color='#021C38') +
-          coord_cartesian(clip="off") +
-          theme_minimal()  +
-          theme(plot.title = element_text(size = 24, face = "bold", hjust = 0.5),
-                axis.title.x = element_text(size = 18, face = "bold.italic", vjust = -1),
-                axis.text.x.bottom = element_text(size = 14)) +
-          scale_x_continuous(breaks = NULL) +
-          scale_y_continuous(breaks = NULL) +
-          ylab("") +
-          xlab("X") 
-        
-        nPlot
-      })
+      }
     })
     
-    observeEvent(input$goStudentT, {
+    output$renderCriticalValueStudentTPlot <- renderUI({
+      req(calculated$studentT)
+      req(studentt_iv$is_valid())
+      req(input$calcTypeStudentT == "Critical Value")
+      # No leading br(): the static code box above is a block element, so the
+      # spacing is the same as when the plot followed the box in one renderUI
+      tagList(
+        hr(), br(),
+        plotOutput(session$ns("studentTCriticalPlot"))
+      )
+    })
+    
+    output$studentTDistrPlot <- renderPlot({
+      req(pd_valid())
+      req(input$probability == "Student's t")
+      req(input$calcTypeStudentT == "Probability")
       
-      observe({
-        req(input$probability == "Student's t")
+      if(input$calcStudentT == "cumulative") {
         
-        showBox <- FALSE
-        if(studentt_iv$is_valid()) {
-          
-          if(input$calcTypeStudentT == "Probability" &&
-             input$calcStudentT == "between") {
-            showBox <- input$t1StudentT < input$t2StudentT
-          } else {
-            showBox <- TRUE
-          }
-        }
-        toggleCodeBox(showBox, "rcodeStudentTBox", ns)
-      })
+        plot_t_distribution(
+          df = input$dfStudentT,
+          direction = "left",
+          x1 = input$tStudentT
+        )
+        
+      } else if(input$calcStudentT == "upperTail") {
+        
+        plot_t_distribution(
+          df = input$dfStudentT,
+          direction = "right",
+          x1 = input$tStudentT
+        )
+        
+      } else if(input$calcStudentT == "between") {
+        plot_t_distribution(df = input$dfStudentT,direction = "between", x1 = input$t1StudentT, x2 = input$t2StudentT)
+      }
+    })
+    
+    output$studentTCriticalPlot <- renderPlot({
+      req(pd_valid())
+      req(input$probability == "Student's t")
+      req(input$calcTypeStudentT == "Critical Value")
       
-      output$renderProbabilityStudentT <- renderUI({
-        if(!studentt_iv$is_valid())
-        {
-          if(!studenttprob_iv$is_valid())
-          {
-            validate(
-              need(input$dfStudentT && input$dfStudentT > 0,
-                   "Degrees of freedom must be a positive number."),
-              need(input$tStudentT,
-                   "Enter a value for the t Distributed Variable (x)."),
-              errorClass = "myClass"
-            )
-          }
-          
-          if(!studenttbetween_iv$is_valid())
-          {
-            validate(
-              need(input$dfStudentT && input$dfStudentT > 0,
-                   "Degrees of freedom must be a positive number."),
-              need(input$t1StudentT,
-                   "Enter a value for the t Distributed Variable (x1)."),
-              need(input$t2StudentT,
-                   "Enter a value for the t Distributed Variable (x2)."),
-              errorClass = "myClass"
-            )
-          }
-          
-          validate(
-            need(input$dfStudentT && input$dfStudentT > 0,
-                 "Degrees of freedom must be a positive number."),
-            errorClass = "myClass"
-          )
-        }
-        req(input$probability == "Student's t")
-        
-        if(input$calcTypeStudentT == "Probability") {
-          df <- input$dfStudentT
-          if(input$calcStudentT == "cumulative") {
-            tValue <- input$tStudentT
-            tProb <- pt(tValue, df)
-            studentTProb <- paste("P(X \\leq", tValue, ")")
-          } else if(input$calcStudentT == "upperTail") {
-            tValue <- input$tStudentT
-            tProb <- 1 - pt(tValue, df)
-            studentTProb <- paste("P(X \\geq", tValue, ")")
-          } else if(input$calcStudentT == "between") {
-            validate(
-              need(
-                isTRUE(input$t1StudentT < input$t2StudentT),
-                "t Distributed Variable (x1) must be less than t Distributed Variable (x2)."
-              ),
-              errorClass = "myClass"
-            )
-            t1 <- input$t1StudentT
-            t2 <- input$t2StudentT
-            tProb <- pt(t2, df) - pt(t1, df)
-            studentTProb <- paste("P(", t1, "\\leq X \\leq", t2, ")")
-          }
-          tagList(
-            withMathJax(
-              div(h3(sprintf("Calculating \\(%s\\) when \\(X \\sim t(df = %g)\\):", studentTProb,df)),
-                hr(),
-                br(),
-                sprintf("\\(\\displaystyle %s = %s\\)", studentTProb, sprintf("%.4f", tProb)),
-                br(), br(),
-                codeBox(
-                  boxId = "rcodeStudentTBox",
-                  outputId = "rcodeStudentT",
-                  ns = ns
-                ),
-                br(), hr(), br(),
-                plotOutput(session$ns("studentTDistrPlot"))
-              )
-            )
-          )
-        }
-      })
+      tCritical <- qt(input$probStudentT, input$dfStudentT)
       
+      plot_t_distribution(df = input$dfStudentT, direction = "left", x1 = tCritical)
+    })
+    
+    output$rcodeStudentT <- renderUI({
       
-      output$renderCriticalValueStudentT <- renderUI({
-        if(!studentt_iv$is_valid())
-        {
-          if(!studenttcritical_iv$is_valid())
-          {
-            validate(
-              need(input$dfStudentT && input$dfStudentT > 0,
-                   "Degrees of freedom must be a positive number."),
-              need(input$probStudentT > 0 && input$probStudentT < 1,
-                   "Probability must be strictly between 0 and 1."),
-              errorClass = "myClass"
-            )
-          }
-          
-          validate(
-            need(input$dfStudentT && input$dfStudentT > 0,
-                 "Degrees of freedom must be a positive number."),
-            errorClass = "myClass"
-          )
-        }
-        
-        if(input$calcTypeStudentT == "Critical Value") {
-          df <- input$dfStudentT
-          p <- input$probStudentT
-          tCritical <- qt(p, df)
-          
-          tagList(
-            withMathJax(
-              div(h3(sprintf("Calculating the critical value when \\(X \\sim t(df = %g)\\):", df)),
-                hr(),
-                br(),
-                sprintf("\\(\\displaystyle t_{area,df}=t_{%g,%g}=%s\\)", p, df, sprintf("%.4f", tCritical)),
-              ),
-              br(),
-              codeBox(
-                boxId = "rcodeStudentTBox",
-                outputId = "rcodeStudentT",
-                ns = ns
-              ),
-              br(), hr(), br(),
-              plotOutput(session$ns("studentTCriticalPlot"))
-              )
-          )
-        }
-      })
-      
-      output$studentTDistrPlot <- renderPlot({
-        req(pd_iv$is_valid())
-        req(input$probability == "Student's t")
-        req(input$calcTypeStudentT == "Probability")
-        
-        if(input$calcStudentT == "cumulative") {
-          
-          plot_t_distribution(
-            df = input$dfStudentT,
-            direction = "left",
-            x1 = input$tStudentT
-          )
-          
-        } else if(input$calcStudentT == "upperTail") {
-          
-          plot_t_distribution(
-            df = input$dfStudentT,
-            direction = "right",
-            x1 = input$tStudentT
-          )
-          
-        } else if(input$calcStudentT == "between") {
-          plot_t_distribution(df = input$dfStudentT,direction = "between", x1 = input$t1StudentT, x2 = input$t2StudentT)
-        }
-      })
-      
-      output$studentTCriticalPlot <- renderPlot({
-        req(pd_iv$is_valid())
-        req(input$probability == "Student's t")
-        req(input$calcTypeStudentT == "Critical Value")
-        
-        tCritical <- qt(input$probStudentT, input$dfStudentT)
-        
-        plot_t_distribution(df = input$dfStudentT, direction = "left", x1 = tCritical)
-      })
-      
-      output$rcodeStudentT <- renderUI({
-        
-        req(pd_iv$is_valid())
-        if (input$calcTypeStudentT == "Probability") {
-          if (input$calcStudentT == "cumulative") {
-            HTML(paste0(
-              "pt(",
-              codeValue(input$tStudentT),
-              ", df = ",
-              codeValue(input$dfStudentT),
-              ")"
-            ))
-          } else if (input$calcStudentT == "upperTail") {
-            HTML(paste0(
-              "pt(",
-              codeValue(input$tStudentT),
-              ", df = ",
-              codeValue(input$dfStudentT),
-              ", lower.tail = FALSE)"
-            ))
-          } else if (input$calcStudentT == "between") {
-            HTML(paste0(
-              "pt(",
-              codeValue(input$t2StudentT),
-              ", df = ",
-              codeValue(input$dfStudentT),
-              ") - pt(",
-              codeValue(input$t1StudentT),
-              ", df = ",
-              codeValue(input$dfStudentT),
-              ")"
-            ))
-          }
-        } else if (input$calcTypeStudentT == "Critical Value") {
+      req(pd_valid())
+      if (input$calcTypeStudentT == "Probability") {
+        if (input$calcStudentT == "cumulative") {
           HTML(paste0(
-            "qt(",
-            codeValue(input$probStudentT),
+            "pt(",
+            codeValue(input$tStudentT),
+            ", df = ",
+            codeValue(input$dfStudentT),
+            ")"
+          ))
+        } else if (input$calcStudentT == "upperTail") {
+          HTML(paste0(
+            "pt(",
+            codeValue(input$tStudentT),
+            ", df = ",
+            codeValue(input$dfStudentT),
+            ", lower.tail = FALSE)"
+          ))
+        } else if (input$calcStudentT == "between") {
+          HTML(paste0(
+            "pt(",
+            codeValue(input$t2StudentT),
+            ", df = ",
+            codeValue(input$dfStudentT),
+            ") - pt(",
+            codeValue(input$t1StudentT),
             ", df = ",
             codeValue(input$dfStudentT),
             ")"
           ))
         }
-      })
+      } else if (input$calcTypeStudentT == "Critical Value") {
+        HTML(paste0(
+          "qt(",
+          codeValue(input$probStudentT),
+          ", df = ",
+          codeValue(input$dfStudentT),
+          ")"
+        ))
+      }
     })
     
     output$rcodeNormal <- renderUI({
       req(input$probability == "Normal")
-      req(pd_iv$is_valid())
+      req(pd_valid())
       if (input$calcQuantiles == "Probability") {
         if (input$sampMeanDistr == 0) {
           if (input$calcNormal == "cumulative") {
@@ -4811,21 +4588,23 @@ probDistServer <- function(id) {
       }
     })
     
+    # The result panels start hidden in the UI, so the hide observers below use
+    # ignoreInit = TRUE and only react to changes made by the user.
     observeEvent({
       input$cTableDimension
-      input$cTableType
       input$cMatrix2x2
       input$cMatrix2x3
       input$cMatrix3x2
       input$cMatrix3x3}, {
         hide(id = 'contingencyResults')
-      })
+      }, ignoreInit = TRUE)
     
     observeEvent(input$gocTable, {
       show(id = 'contingencyResults')
     })
     
     observeEvent(input$goBinom, {
+      calculated$binom <- TRUE
       show(id = 'binomialResults')
     })
     
@@ -4835,13 +4614,13 @@ probDistServer <- function(id) {
       input$numSuccessesBinomx1
       input$numSuccessesBinomx2}, {
         hide(id = 'binomialResults')
-      })
+      }, ignoreInit = TRUE)
     
     observeEvent(input$calcBinom, {
       if(input$calcBinom == 'between') {
         hide(id = "binomialResults")
       }
-    })
+    }, ignoreInit = TRUE)
     
     observeEvent(input$resetBinomial, {
       hide(id = 'binomialResults')
@@ -4849,6 +4628,7 @@ probDistServer <- function(id) {
     })
     
     observeEvent(input$goPoisson, {
+      calculated$poisson <- TRUE
       show(id = "poissonResults")
     })
     
@@ -4857,13 +4637,13 @@ probDistServer <- function(id) {
       input$x1Poisson
       input$x2Poisson}, {
         hide(id = 'poissonResults')
-      })
+      }, ignoreInit = TRUE)
     
     observeEvent(input$calcPoisson, {
       if(input$calcPoisson == 'between') {
         hide(id = "poissonResults")
       }
-    })
+    }, ignoreInit = TRUE)
     
     observeEvent(input$resetPoisson, {
       hide(id = "poissonResults")
@@ -4871,6 +4651,7 @@ probDistServer <- function(id) {
     })
     
     observeEvent(input$goHypGeo, {
+      calculated$hypgeo <- TRUE
       show(id = "hypgeoResults")
     })
     
@@ -4881,13 +4662,13 @@ probDistServer <- function(id) {
       input$x1HypGeo
       input$x2HypGeo}, {
         hide(id = 'hypgeoResults')
-      })
+      }, ignoreInit = TRUE)
     
     observeEvent(input$calcHypGeo, {
       if(input$calcHypGeo == 'between') {
         hide(id = "hypgeoResults")
       }
-    })
+    }, ignoreInit = TRUE)
     
     observeEvent(input$resetHypGeo, {
       hide(id = "hypgeoResults")
@@ -4895,6 +4676,7 @@ probDistServer <- function(id) {
     })
     
     observeEvent(input$goNegBin, {
+      calculated$negbin <- TRUE
       show(id = "negBinResults")
     })
     
@@ -4903,13 +4685,13 @@ probDistServer <- function(id) {
       input$xNegBin
     }, {
       hide(id = 'negBinResults')
-    })
+    }, ignoreInit = TRUE)
     
     observeEvent(input$calcNegBin, {
       if(input$calcNegBin == 'between') {
         hide(id = "negBinResults")
       }
-    })
+    }, ignoreInit = TRUE)
     
     observeEvent(input$resetNegBin, {
       hide(id = "negBinResults")
@@ -4917,10 +4699,12 @@ probDistServer <- function(id) {
     })
     
     observeEvent(input$goNormalProb, {
+      calculated$normProb <- TRUE
       show(id = "normalResults")
     })
     
     observeEvent(input$goNormalQuan, {
+      calculated$normQuan <- TRUE
       show(id = "normalResults")
     })
     
@@ -4937,25 +4721,25 @@ probDistServer <- function(id) {
       input$calcQuantiles
       input$percentileValue}, {
         hide(id = 'normalResults')
-      })
+      }, ignoreInit = TRUE)
     
     observeEvent(input$calcQuartiles, {
        if(input$calcQuartiles == 'Percentile') {
        hide(id = "normalResults")
       }
-    })
+    }, ignoreInit = TRUE)
     
     observeEvent(input$calcNormal, {
       if(input$calcNormal == 'between') {
         hide(id = "normalResults")
       }
-    })
+    }, ignoreInit = TRUE)
     
     observeEvent(input$calcNormSampDistr, {
       if(input$calcNormSampDistr == 'between') {
         hide(id = "normalResults")
       }
-    })
+    }, ignoreInit = TRUE)
     
     observeEvent(input$resetNormalProb, {
       hide(id = "normalResults")
@@ -4968,11 +4752,8 @@ probDistServer <- function(id) {
     })
     
     observeEvent(input$goStudentT, {
+      calculated$studentT <- TRUE
       show(id = "studentTResults")
-    })
-    
-    observeEvent(input$calcTypeStudentT, {
-      hide(id = "studentTResults")
     })
     
     observeEvent(input$resetStudentT, {
@@ -4984,7 +4765,7 @@ probDistServer <- function(id) {
       if(input$calcStudentT == 'between') {
         hide(id = "studentTResults")
       }
-    })
+    }, ignoreInit = TRUE)
     
     observeEvent({
       input$dfStudentT
@@ -4995,26 +4776,17 @@ probDistServer <- function(id) {
       input$probStudentT
     }, {
       hide(id = "studentTResults")
-    })
+    }, ignoreInit = TRUE)
     
-    observeEvent({
-      input$dfStudentT
-      input$calcTypeStudentT
-      input$tStudentT
-      input$t1StudentT
-      input$t2StudentT
-      input$probStudentT
-    }, {
-      hide(id = "studentTResults")
-    })
-    
+    # One message hides all the result panels (the contingency table results are
+    # kept, as before)
     observeEvent(input$probability, {
-      hide(id = "binomialResults")
-      hide(id = "poissonResults")
-      hide(id = "hypgeoResults")
-      hide(id = "negBinResults")
-      hide(id = "normalResults")
-      hide(id = "studentTResults")
-    })
+      hide(selector = paste0("#", ns(c("binomialResults",
+                                       "poissonResults",
+                                       "hypgeoResults",
+                                       "negBinResults",
+                                       "normalResults",
+                                       "studentTResults")), collapse = ", "))
+    }, ignoreInit = TRUE)
   })
 }

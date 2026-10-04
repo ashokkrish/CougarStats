@@ -1,4 +1,3 @@
-library(dplyr)
 ChiSquareTest <- function(tableData, correction = FALSE) {
   
   # print(typeof(tableData))

@@ -1,13 +1,10 @@
-library(ggplot2)
-library(ggpubr)
-
 RenderQQPlot <- function(dat, plotColour, plotTitle, plotXlab, plotYlab, gridlines) {
   qp <- ggpubr::ggqqplot(dat, x = "values",
                          title = plotTitle,
                          xlab = plotXlab,
                          ylab = plotYlab,
                          color = plotColour) %>%
-    ggpar(
+    ggpubr::ggpar(
       font.title = c(24, "bold", "black"),
       font.x = c(16, "bold", "black"),
       font.y = c(16, "bold", "black"),
@@ -21,13 +18,13 @@ RenderQQPlot <- function(dat, plotColour, plotTitle, plotXlab, plotYlab, gridlin
     )
   
   if("Major" %in% gridlines) {
-    qp <- ggpar(qp,
+    qp <- ggpubr::ggpar(qp,
                 ggtheme = theme(
                   panel.grid.major = element_line(colour = "#D9D9D9")))
   }
   
   if("Minor" %in% gridlines) {
-    qp <- ggpar(qp,
+    qp <- ggpubr::ggpar(qp,
                 ggtheme = theme(
                   panel.grid.minor = element_line(colour = "#D9D9D9")))
   }
@@ -46,7 +43,7 @@ RenderWilcoxQQPlots <- function(sample1, sample2, plotColour, plotTitle, plotXla
                           xlab = plotXlab,
                           ylab = plotYlab,
                           color = plotColour) %>%
-    ggpar(
+    ggpubr::ggpar(
       font.title = c(20, "bold", "black"),
       font.x = c(14, "bold", "black"),
       font.y = c(14, "bold", "black"),
@@ -65,7 +62,7 @@ RenderWilcoxQQPlots <- function(sample1, sample2, plotColour, plotTitle, plotXla
                           xlab = plotXlab,
                           ylab = plotYlab,
                           color = plotColour) %>%
-    ggpar(
+    ggpubr::ggpar(
       font.title = c(20, "bold", "black"),
       font.x = c(14, "bold", "black"),
       font.y = c(14, "bold", "black"),
@@ -80,13 +77,13 @@ RenderWilcoxQQPlots <- function(sample1, sample2, plotColour, plotTitle, plotXla
     )
 
   if("Major" %in% gridlines) {
-    qp1 <- ggpar(qp1, ggtheme = theme(panel.grid.major = element_line(colour = "#D9D9D9")))
-    qp2 <- ggpar(qp2, ggtheme = theme(panel.grid.major = element_line(colour = "#D9D9D9")))
+    qp1 <- ggpubr::ggpar(qp1, ggtheme = theme(panel.grid.major = element_line(colour = "#D9D9D9")))
+    qp2 <- ggpubr::ggpar(qp2, ggtheme = theme(panel.grid.major = element_line(colour = "#D9D9D9")))
   }
   
   if("Minor" %in% gridlines) {
-    qp1 <- ggpar(qp1, ggtheme = theme(panel.grid.minor = element_line(colour = "#D9D9D9")))
-    qp2 <- ggpar(qp2, ggtheme = theme(panel.grid.minor = element_line(colour = "#D9D9D9")))
+    qp1 <- ggpubr::ggpar(qp1, ggtheme = theme(panel.grid.minor = element_line(colour = "#D9D9D9")))
+    qp2 <- ggpubr::ggpar(qp2, ggtheme = theme(panel.grid.minor = element_line(colour = "#D9D9D9")))
   }
 
   combined_plot <- gridExtra::grid.arrange(qp1, qp2, ncol = 2, 

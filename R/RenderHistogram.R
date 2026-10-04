@@ -1,5 +1,3 @@
-library(ggplot2)
-
 RenderHistogram <- function(dat, plotColour, plotTitle, plotXlab, plotYlab = "Frequency", gridlines, density = FALSE) {
   
   hist <- ggplot(data.frame(x = dat))

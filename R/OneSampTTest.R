@@ -19,7 +19,12 @@ TTest <- function(n, xbar, s, mu = 0, alternative = c("two.sided", "less", "grea
     t.crit <- qt(1 - s_level, df)
   }
   
-  dat <- sapply(c(n, xbar, s, t.crit, se, tstat, p_value, df), function(x){ if(x < 0.0001 && x > -1e-2)  {signif(x,1)} else {round(x, 4)}})
+  # e.g. s = 0 with xbar = mu (0/0), or n = 1 (no degrees of freedom): the test statistic does not exist
+  validate(
+    need(!anyNA(c(t.crit, tstat, p_value)), "Unable to calculate the test statistic. Check that the sample size is at least 2 and that the sample standard deviation is greater than zero."),
+    errorClass = "myClass")
+  
+  dat <- sapply(c(n, xbar, s, t.crit, se, tstat, p_value, df), function(x){ if(!is.na(x) && x < 0.0001 && x > -1e-2)  {signif(x,1)} else {round(x, 4)}})
   
   names(dat) <- c("Sample Size", "Sample Mean", "Sample SD", "T Critical", "Std Error", "Test Statistic", "P-Value", "df")
   

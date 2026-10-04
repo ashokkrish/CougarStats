@@ -1,5 +1,3 @@
-source("R/KruskalWallisUI.R")
-source("R/RankedDataTable.R")
 # render <- "
 # {
 #   option: function(data, escape){return '<div class=\"option\">'+data.label+'</div>';},
@@ -12,6 +10,42 @@ source("R/RankedDataTable.R")
 
 lessThanInequalGreaterThanChoices123 <-
   c("<" = 1, "≠" = 2, ">" = 3)
+
+## Tabs of the result navbarPages that are hidden when the page loads (every
+## section starts in Summarized or Raw mode, with nothing uploaded).
+## statInfrServer() starts from this same list as its record of which tabs the
+## browser shows, so the two must stay in sync.
+siInitialHiddenTabs <- list(
+  onePopMeanTabset      = c("Graphs", "Uploaded Data"),
+  oneSDTabset           = c("Graphs", "Uploaded Data"),
+  indPopMeansTabset     = c("Graphs", "Uploaded Data"),
+  depPopMeansTabset     = "Uploaded Data",
+  wilcoxonRankSumTabset = "Uploaded Data",
+  signedRankTabset      = "Uploaded Data",
+  anovaTabset           = "Uploaded Data",
+  kwTabset              = "Uploaded Data"
+)
+
+## Script for statInfrUI() that hides those tabs when the page loads, the way
+## hideTab() does (display: none on the tab's <li> and on its pane). It runs on
+## DOM ready, before the server sends anything. (The <li> tags get their
+## Bootstrap classes from render hooks, so they are not edited in R.)
+siHiddenTabsScript <- function(ns) {
+  calls <- unlist(lapply(names(siInitialHiddenTabs), function(tabsetId) {
+    sprintf("hide('%s', '%s');", ns(tabsetId), siInitialHiddenTabs[[tabsetId]])
+  }))
+  tags$script(HTML(paste0(
+    "$(function() {\n",
+    "  var hide = function(id, value) {\n",
+    "    var $ul = $('#' + id);\n",
+    "    $ul.find('> li > a[data-value=\"' + value + '\"]').parent().hide();\n",
+    "    $('div.tab-content[data-tabsetid=\"' + $ul.attr('data-tabsetid') + '\"]')\n",
+    "      .children('div.tab-pane[data-value=\"' + value + '\"]').hide();\n",
+    "  };\n",
+    paste0("  ", calls, collapse = "\n"), "\n",
+    "});"
+  )))
+}
 
 statInfrUI <- function(id) {
   ns <- NS(id)
@@ -1771,12 +1805,15 @@ statInfrUI <- function(id) {
       ## -------- Main Panel -----------------------------------------------------
       #  ========================================================================= #
       mainPanel(
-        div(
+        ## Both start hidden: nothing is shown until Calculate or an upload.
+        ## (Hiding them here instead of from the server avoids a flash of the
+        ## empty panel when the module server starts on first opening the tab.)
+        shinyjs::hidden(div(
           id = ns("inferenceMP"),
           
           uiOutput(ns("inferenceValidation")),
           
-          div(id = ns("inferenceData"),
+          shinyjs::hidden(div(id = ns("inferenceData"),
               
               ### ------------ 1 Sample ----------------------------------------------------
               conditionalPanel(
@@ -1830,7 +1867,7 @@ statInfrUI <- function(id) {
                           id = ns("oneMeanBoxplot"),
                           plotType = "Boxplot",
                           title = "Boxplot"),
-                        uiOutput(ns("renderOneMeanBoxplot")),
+                        plotOutput(ns("oneMeanBoxplot"), height = "400px", width = "auto"),
                         boxplotDisclaimer,
                         br(),
                       ),
@@ -1843,8 +1880,9 @@ statInfrUI <- function(id) {
                         plotOptionsMenuUI(
                           id    = ns("oneMeanHistogram"),
                           title = "Histogram",
-                          plotType = "Histogram"),
-                        uiOutput(ns("renderOneMeanHistogram")),
+                          plotType = "Histogram",
+                          ylab  = "Frequency"),
+                        plotOutput(ns("oneMeanHistogram"), height = "400px", width = "auto"),
                         br(),
                       ),
                     ), 
@@ -1952,7 +1990,7 @@ statInfrUI <- function(id) {
                           title = "Boxplot"
                         ),
                         br(),
-                        uiOutput(ns("renderOneSDBoxplot")),
+                        plotOutput(ns("oneSDBoxplot"), height = "400px", width = "auto"),
                         boxplotDisclaimer,
                         br(), br()
                       ),
@@ -1965,9 +2003,10 @@ statInfrUI <- function(id) {
                         plotOptionsMenuUI(
                           id = ns("oneSDHistogram"),
                           plotType = "Histogram",
-                          title = "Histogram"
+                          title = "Histogram",
+                          ylab = "Frequency"
                         ),
-                        uiOutput(ns("renderOneSDHistogram")),
+                        plotOutput(ns("oneSDHistogram"), height = "400px", width = "auto"),
                         
                         br(), br()
                       ), 
@@ -2039,7 +2078,7 @@ statInfrUI <- function(id) {
                                           id = ns("indMeansBoxplot"),
                                           plotType = "Boxplot",
                                           title = "Side-by-side Boxplot"),
-                                        uiOutput(ns("renderIndMeansBoxplot")),
+                                        plotOutput(ns("indMeansBoxplot"), height = "400px", width = "auto"),
                                         boxplotDisclaimer,
                                         br(),
                                         br()
@@ -2061,7 +2100,7 @@ statInfrUI <- function(id) {
                                           xlab    = "Normal Quantiles",
                                           ylab    = "Sample Quantiles",
                                           includeFlip = FALSE),
-                                        uiOutput(ns("renderIndMeansQQPlot")),
+                                        plotOutput(ns("indMeansQQPlot"), height = "400px", width = "auto"),
                                         br(),
                                         br()
                                       )
@@ -2194,7 +2233,7 @@ statInfrUI <- function(id) {
                                       br(), br(),
                                       fluidRow(
                                         column(width = 8,
-                                               uiOutput(ns('depMeansTable')),
+                                               DTOutput(ns("depMeansData")),
                                         ),
                                         
                                         column(width = 4,
@@ -2221,7 +2260,7 @@ statInfrUI <- function(id) {
                                           xlab    = "Normal Quantiles",
                                           ylab = "Differences (d)",
                                           includeFlip = FALSE),
-                                        uiOutput(ns("renderDepMeansQQPlot")),
+                                        plotOutput(ns("depMeansQQPlotOutput"), height = "400px", width = "auto"),
                                         br(),
                                         br()
                                       )  
@@ -2459,7 +2498,9 @@ statInfrUI <- function(id) {
                         id       = ns("anovaBoxplot"),
                         plotType = "Boxplot",
                         title    = "Side-by-side Boxplot"),
-                      uiOutput(ns("renderAnovaBoxplot")),
+                      plotOutput(ns("anovaBoxplot"), height = "400px", width = "auto"),
+                      br(),
+                      br(),
                       boxplotDisclaimer,
                       hr(),
                     ),
@@ -2477,7 +2518,10 @@ statInfrUI <- function(id) {
                         plotType = "Histogram",
                         xlab  = "Residuals",
                         ylab  = "Frequency"),
-                      uiOutput(ns("renderAnovaHistogram"))
+                      plotOutput(ns("anovaHistogram"), height = "400px", width = "auto"),
+                      br(),
+                      br(),
+                      hr()
                     ),
                     
                     conditionalPanel(
@@ -2494,7 +2538,10 @@ statInfrUI <- function(id) {
                         ylab   = "Residuals",
                         colour = "#0F3345",
                         includeFlip = FALSE),
-                      uiOutput(ns("renderAnovaQQplot"))
+                      plotOutput(ns("anovaQQplot"), height = "400px", width = "auto"),
+                      br(),
+                      br(),
+                      hr()
                     ),
                     
                     conditionalPanel(
@@ -2511,7 +2558,10 @@ statInfrUI <- function(id) {
                         ylab   = "Sample Mean",
                         colour = "#0F3345",
                         includeFlip = FALSE),
-                      uiOutput(ns("renderAnovaMeanPlot"))
+                      plotOutput(ns("anovaMeanPlot"), height = "400px", width = "auto"),
+                      br(),
+                      br(),
+                      hr()
                     )
                   ),
                   
@@ -2571,7 +2621,9 @@ statInfrUI <- function(id) {
                         plotType = "Boxplot",
                         title    = "Side-by-side Boxplot"
                       ),
-                      uiOutput(ns("renderKWBoxplot")),
+                      plotOutput(ns("kwBoxplot"), height = "400px", width = "auto"),
+                      br(),
+                      br(),
                       boxplotDisclaimer,
                       hr()
                     ),
@@ -2591,7 +2643,10 @@ statInfrUI <- function(id) {
                         colour = "#0F3345",
                         includeFlip = FALSE
                       ),
-                      uiOutput(ns("renderKWMeanPlot"))
+                      plotOutput(ns("kwMeanPlot"), height = "400px", width = "auto"),
+                      br(),
+                      br(),
+                      hr()
                     )
                   ),
                   
@@ -2620,12 +2675,12 @@ statInfrUI <- function(id) {
                   br(),
                   h4("Observed Frequencies"),
                   br(),
-                  uiOutput(ns("renderChiSqObs")),
+                  DTOutput(ns("chiSqObs"), width = '500px'),
                   br(),
                   br(),
                   h4("Expected Frequencies"),
                   br(),
-                  uiOutput(ns("renderChiSqExp")),
+                  DTOutput(ns("chiSqExp"), width = '500px'),
                   br(),
                   br(),
                   h4("Calculation of the \\( \\chi^2 \\) statistic value"),
@@ -2648,7 +2703,7 @@ statInfrUI <- function(id) {
                   hr(),
                   br(),
                   h4("Observed Frequencies"),
-                  uiOutput(ns("renderFishersObs")),
+                  DTOutput(ns("fishersObs"), width = '500px'),
                   br(),
                   br(),
                   hr(),
@@ -2659,13 +2714,14 @@ statInfrUI <- function(id) {
                   br(),
                 ) #Fisher
               ) # input.siMethod == 'Categorical'
-          ) #inferenceData
-        ), #inferenceMP
+          )) #inferenceData
+        )), #inferenceMP
         
         uiOutput(ns("multipleRawContainer"))
         
       ), #mainPanel
-    ) #sidebarLayout
+    ), #sidebarLayout
+    siHiddenTabsScript(ns)
   ) # UI tagList
 }
 
@@ -2715,7 +2771,6 @@ statInfrServer <- function(id) {
     wilcoxonUpload_iv <- InputValidator$new()
     wilcoxonraw_iv <- InputValidator$new()
     wilcoxonRanksuploadvars_iv <- InputValidator$new()
-    wRankSumrawsd_iv <- InputValidator$new()
     depmeansraw_iv <- InputValidator$new()
     depmeansupload_iv <- InputValidator$new()
     depmeansuploadvars_iv <- InputValidator$new()
@@ -2724,7 +2779,6 @@ statInfrServer <- function(id) {
     signedRankUpload_iv <- InputValidator$new()
     signedRankRaw_iv <- InputValidator$new()
     signedRankUploadvars_iv <- InputValidator$new()
-    signedRankrawsd_iv <- InputValidator$new()
     oneSD_iv <- InputValidator$new()
     oneSDRaw_iv <- InputValidator$new()
     onesdupload_iv <- InputValidator$new()
@@ -2748,6 +2802,60 @@ statInfrServer <- function(id) {
     chiSq3x2_iv <- InputValidator$new()
     chiSq3x3_iv <- InputValidator$new()
     
+    ## Shown when an uploaded file can't be parsed (readSIUpload() returned
+    ## NULL) and the shared reader gave no more specific reason.
+    siUploadReadError <- "Unable to read this file. Make sure it is a valid .csv, tab-delimited .txt, .xls or .xlsx file (text files must be UTF-8 encoded)."
+
+    ## The raw data patterns accept a number with any number of digits, and
+    ## createNumLst() turns one that is too large for a double into Inf.
+    siTooLargeMsg <- "Data contains values that are too large to compute."
+    siTooLargeRule <- function(value) {
+      if (any(is.infinite(createNumLst(value)))) siTooLargeMsg
+    }
+
+    ## Largest n1 x n2 accepted by the Exact method of the Wilcoxon rank sum
+    ## test (see Guard 4 in output$wilcoxonRankSum).
+    siMaxExactRankSum <- 200000
+
+    ## Largest number of groups (factor levels or selected columns) accepted by
+    ## ANOVA. Far above classroom use; it keeps aov() (whose model matrix is
+    ## n x k), the pairwise table and the per-group output from blocking the
+    ## shared R process for minutes, or exhausting its memory, on an ID-like
+    ## column. Kruskal-Wallis has no such cost and is not limited.
+    siMaxGroups <- 100
+
+    ## Largest number of groups for which each Kruskal-Wallis graph and the
+    ## "Data table with Ranks" are drawn; for more groups a message is shown in
+    ## that output's place (the test and its steps are shown for any number of
+    ## groups). Each limit is far above classroom use and keeps that output to
+    ## about 1.5 s of work in the shared R process. Measured, 2 values per group:
+    ##   side-by-side boxplot   1.3 s at 500 groups, 2.4 s at 1,000, 12 s at 5,000
+    ##   data table with ranks  0.6 s at 2,000 groups, 2.2 s at 5,000
+    ##   group means plot       1.7 s at 20,000 groups, 4 s at 50,000
+    siMaxKWBoxplotGroups   <- 500
+    siMaxKWRankTableGroups <- 2000
+    siMaxKWMeanPlotGroups  <- 20000
+    siKWTooManyGroupsMsg <- function(what, limit, groups) {
+      sprintf("The %s is not shown for more than %s groups (this data has %s groups).",
+              what, format(limit, big.mark = ",", scientific = FALSE),
+              format(groups, big.mark = ",", scientific = FALSE))
+    }
+
+    ## Number of groups the stacked format would compare for a Factors column
+    ## (its distinct non-missing values), or 0 if there is nothing to count.
+    siFactorGroupCount <- function(col) {
+      dat <- multipleUploadData()
+      if (is.null(dat) || !isTruthy(col) || !(col %in% names(dat))) return(0)
+      length(unique(na.omit(dat[[col]])))
+    }
+    siTooManyColumnsMsg <- function() {
+      sprintf("Please select at most %s columns.", siMaxGroups)
+    }
+    siTooManyGroupsMsg <- function(col) {
+      sprintf("The Factors column has %s distinct groups. ANOVA can compare at most %s groups; please choose a Factors column with fewer distinct values.",
+              siFactorGroupCount(col), siMaxGroups)
+    }
+    
     ### ------------ Rules -------------------------------------------------------
     
     # sampleSize
@@ -2762,6 +2870,7 @@ statInfrServer <- function(id) {
     onemeanraw_iv$add_rule("sample1", sv_required())
     onemeanraw_iv$add_rule("sample1", sv_regex("^( )*(-)?([0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
                                                "Data must be at least two numeric values separated by a comma, space, or tab (ie: 2,3,4)"))
+    onemeanraw_iv$add_rule("sample1", siTooLargeRule)
     
 
     # raw data, SD unknown
@@ -2775,6 +2884,7 @@ statInfrServer <- function(id) {
     onemeanupload_iv$add_rule("oneMeanUserData", sv_required())
     onemeanupload_iv$add_rule("oneMeanUserData", ~ if(is.null(fileInputs$oneMeanStatus) || fileInputs$oneMeanStatus == 'reset') "Required")
     onemeanupload_iv$add_rule("oneMeanUserData", ~ if(!(tolower(tools::file_ext(input$oneMeanUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+    onemeanupload_iv$add_rule("oneMeanUserData", ~ if(is.null(OneMeanUploadData())) siUploadErrorMsg(input$oneMeanUserData))
     onemeanupload_iv$add_rule("oneMeanUserData", ~ if(nrow(OneMeanUploadData()) == 0) "File is empty")
     onemeanupload_iv$add_rule("oneMeanUserData", ~ if(nrow(OneMeanUploadData()) < 3) "Samples must include at least two observations")
 
@@ -2857,11 +2967,13 @@ statInfrServer <- function(id) {
     indmeansraw_iv$add_rule("raw_sample1", sv_required())
     indmeansraw_iv$add_rule("raw_sample1", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
                                                     "Data must be at least three numeric values separated by a comma, space, or tab (ie: 2,3,4)"))
+    indmeansraw_iv$add_rule("raw_sample1", siTooLargeRule)
     
     # raw_sample2
     indmeansraw_iv$add_rule("raw_sample2", sv_required())
     indmeansraw_iv$add_rule("raw_sample2", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
                                                     "Data must be at least three numeric values separated by a comma, space, or tab (ie: 2,3,4)."))
+    indmeansraw_iv$add_rule("raw_sample2", siTooLargeRule)
     
     indmeansrawsd_iv$add_rule("popuSDRaw1", sv_required())
     indmeansrawsd_iv$add_rule("popuSDRaw1", sv_gt(0))
@@ -2888,6 +3000,7 @@ statInfrServer <- function(id) {
     indmeansupload_iv$add_rule("indMeansUserData", sv_required())
     indmeansupload_iv$add_rule("indMeansUserData", ~ if(is.null(fileInputs$indMeansStatus) || fileInputs$indMeansStatus == 'reset') "Required")
     indmeansupload_iv$add_rule("indMeansUserData", ~ if(!(tolower(tools::file_ext(input$indMeansUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+    indmeansupload_iv$add_rule("indMeansUserData", ~ if(is.null(IndMeansUploadData())) siUploadErrorMsg(input$indMeansUserData))
     indmeansupload_iv$add_rule("indMeansUserData", ~ if(nrow(IndMeansUploadData()) == 0) "File is empty.")
     indmeansupload_iv$add_rule("indMeansUserData", ~ if(ncol(IndMeansUploadData()) < 2) "File must contain at least 2 distinct samples to choose from for analysis.")
     indmeansupload_iv$add_rule("indMeansUserData", ~ if(nrow(IndMeansUploadData()) < 3) "Samples must include at least two observations.")
@@ -2950,15 +3063,18 @@ statInfrServer <- function(id) {
     wilcoxonUpload_iv$add_rule("wilcoxonUpl", sv_required())
     wilcoxonUpload_iv$add_rule("wilcoxonUpl", ~ if(is.null(fileInputs$rankSumStatus) || fileInputs$rankSumStatus == 'reset') "Required")
     wilcoxonUpload_iv$add_rule("wilcoxonUpl", ~ if(!(tolower(tools::file_ext(input$wilcoxonUpl$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+    wilcoxonUpload_iv$add_rule("wilcoxonUpl", ~ if(is.null(WilcoxonUploadData())) siUploadErrorMsg(input$wilcoxonUpl))
     wilcoxonUpload_iv$add_rule("wilcoxonUpl", ~ if(nrow(WilcoxonUploadData()) == 0) "File is empty.")
     wilcoxonUpload_iv$add_rule("wilcoxonUpl", ~ if(ncol(WilcoxonUploadData()) < 2) "File must contain at least 2 distinct samples to choose from for analysis.")
     wilcoxonUpload_iv$add_rule("wilcoxonUpl", ~ if(nrow(WilcoxonUploadData()) < 3) "Samples must include at least two observations.")
     wilcoxonraw_iv$add_rule("rankSumRaw1", sv_required())
     wilcoxonraw_iv$add_rule("rankSumRaw1", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
                                                     "Data must be at least three numeric values separated by a comma, space, or tab (ie: 2,3,4)"))
+    wilcoxonraw_iv$add_rule("rankSumRaw1", siTooLargeRule)
     wilcoxonraw_iv$add_rule("rankSumRaw2", sv_required())
     wilcoxonraw_iv$add_rule("rankSumRaw2", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
                                                     "Data must be at least three numeric values separated by a comma, space, or tab (ie: 2,3,4)."))
+    wilcoxonraw_iv$add_rule("rankSumRaw2", siTooLargeRule)
     wilcoxonRanksuploadvars_iv$add_rule("wilcoxonUpl1", sv_required())
     wilcoxonRanksuploadvars_iv$add_rule("wilcoxonUpl2", sv_required())
     wilcoxonRanksuploadvars_iv$add_rule("wilcoxonUpl2", ~ {
@@ -2984,14 +3100,6 @@ statInfrServer <- function(id) {
         if (!is.numeric(data[[col2]])) "Selected column contains non-numeric data."
       }
     })
-    wRankSumrawsd_iv$add_rule("rankSumRaw2", ~ {
-      data <- GetwRankSumMeansData()
-      if(is.null(data) ||
-         length(unique(data$samp1)) <= 1 ||
-         length(unique(data$samp2)) <= 1) {
-        "Variance required in Sample 1 and Sample 2 data for hypothesis testing."
-      }
-    })
     # ind means Mu Naught
     indmeansmunaught_iv$add_rule("indMeansMuNaught", sv_required())
     
@@ -2999,11 +3107,13 @@ statInfrServer <- function(id) {
     depmeansraw_iv$add_rule("before", sv_required())
     depmeansraw_iv$add_rule("before", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
                                                "Data must be at least three numeric values separated by a comma, space, or tab (ie: 2,3,4)"))
+    depmeansraw_iv$add_rule("before", siTooLargeRule)
     
     # after
     depmeansraw_iv$add_rule("after", sv_required())
     depmeansraw_iv$add_rule("after", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
                                               "Data must be at least three numeric values separated by a comma, space, or tab (ie: 2,3,4)."))
+    depmeansraw_iv$add_rule("after", siTooLargeRule)
     
     
     depmeansraw_iv$add_rule("before", ~ if(length(createNumLst(input$before)) != length(createNumLst(input$after))) "Sample 1 and Sample 2 must have the same number of observations.")
@@ -3012,6 +3122,7 @@ statInfrServer <- function(id) {
     depmeansupload_iv$add_rule("depMeansUserData", sv_required())
     depmeansupload_iv$add_rule("depMeansUserData", ~ if(is.null(fileInputs$depMeansStatus) || fileInputs$depMeansStatus == 'reset') "Required")
     depmeansupload_iv$add_rule("depMeansUserData", ~ if(!(tolower(tools::file_ext(input$depMeansUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+    depmeansupload_iv$add_rule("depMeansUserData", ~ if(is.null(DepMeansUploadData())) siUploadErrorMsg(input$depMeansUserData))
     depmeansupload_iv$add_rule("depMeansUserData", ~ if(nrow(DepMeansUploadData()) == 0) "File is empty.")
     depmeansupload_iv$add_rule("depMeansUserData", ~ if(ncol(DepMeansUploadData()) < 2) "File must contain at least 2 distinct 'Before' and 'After' sets of data to choose from for analysis.")
     depmeansupload_iv$add_rule("depMeansUserData", ~ if(nrow(DepMeansUploadData()) < 4) "Samples must include at least three observations.")
@@ -3076,23 +3187,26 @@ statInfrServer <- function(id) {
       }
     })
     
-    depmeansraw_iv$add_rule("before", ~ if(GetDepMeansData()$sd == 0) "Standard deviation of the difference (sd) is zero.")
-    depmeansraw_iv$add_rule("after", ~ if(GetDepMeansData()$sd == 0) "Standard deviation of the difference (sd) is zero.")
+    depmeansraw_iv$add_rule("before", ~ if(isTRUE(GetDepMeansData()$sd == 0)) "Standard deviation of the difference (sd) is zero.")
+    depmeansraw_iv$add_rule("after", ~ if(isTRUE(GetDepMeansData()$sd == 0)) "Standard deviation of the difference (sd) is zero.")
     
     depmeansmunaught_iv$add_rule("depMeansMuNaught", sv_required())
     # signed Rank Test
     signedRankUpload_iv$add_rule("signedRankUpl", sv_required())
     signedRankUpload_iv$add_rule("signedRankUpl", ~ if(is.null(fileInputs$signedRankStatus) || fileInputs$signedRankStatus == 'reset') "Required")
     signedRankUpload_iv$add_rule("signedRankUpl", ~ if(!(tolower(tools::file_ext(input$signedRankUpl$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+    signedRankUpload_iv$add_rule("signedRankUpl", ~ if(is.null(signedRankUploadData())) siUploadErrorMsg(input$signedRankUpl))
     signedRankUpload_iv$add_rule("signedRankUpl", ~ if(nrow(signedRankUploadData()) == 0) "File is empty.")
     signedRankUpload_iv$add_rule("signedRankUpl", ~ if(ncol(signedRankUploadData()) < 2) "File must contain at least 2 distinct samples to choose from for analysis.")
     signedRankUpload_iv$add_rule("signedRankUpl", ~ if(nrow(signedRankUploadData()) < 3) "Samples must include at least two observations.")
     signedRankRaw_iv$add_rule("signedRankRaw1", sv_required())
     signedRankRaw_iv$add_rule("signedRankRaw1", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
                                                          "Data must be at least three numeric values separated by a comma, space, or tab (ie: 2,3,4)"))
+    signedRankRaw_iv$add_rule("signedRankRaw1", siTooLargeRule)
     signedRankRaw_iv$add_rule("signedRankRaw2", sv_required())
     signedRankRaw_iv$add_rule("signedRankRaw2", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
                                                          "Data must be at least three numeric values separated by a comma, space, or tab (ie: 2,3,4)."))
+    signedRankRaw_iv$add_rule("signedRankRaw2", siTooLargeRule)
     signedRankRaw_iv$add_rule("signedRankRaw1", ~ if(length(createNumLst(input$signedRankRaw1)) != length(createNumLst(input$signedRankRaw2))) "Sample 1 and Sample 2 must have the same number of observations.")
     signedRankRaw_iv$add_rule("signedRankRaw2", ~ if(length(createNumLst(input$signedRankRaw1)) != length(createNumLst(input$signedRankRaw2))) "Sample 1 and Sample 2 must have the same number of observations.")
     
@@ -3106,7 +3220,7 @@ statInfrServer <- function(id) {
       sample2 <- createNumLst(input$signedRankRaw2)
       if(length(sample1) == length(sample2)) {
         differences <- sample1 - sample2
-        if(all(differences == 0) || var(differences) == 0) {
+        if(isTRUE(all(differences == 0) || var(differences) == 0)) {
           "'Sample 1’ and 'Sample 2' data are the same."
         }
       }
@@ -3117,7 +3231,7 @@ statInfrServer <- function(id) {
       sample2 <- createNumLst(input$signedRankRaw2)
       if(length(sample1) == length(sample2)) {
         differences <- sample1 - sample2
-        if(all(differences == 0) || var(differences) == 0) {
+        if(isTRUE(all(differences == 0) || var(differences) == 0)) {
           "'Sample 1’ and 'Sample 2' data are the same."
         }
       }
@@ -3205,11 +3319,13 @@ statInfrServer <- function(id) {
       vals <- createNumLst(input$sdRawData)
       if (length(vals) < 3) "Data must be at least three numeric values separated by a comma, space, or tab (ie: 2,3,4)."
     })
+    oneSDRaw_iv$add_rule("sdRawData", siTooLargeRule)
 
     # sample standard deviation — upload mode
     onesdupload_iv$add_rule("sdUserData", sv_required())
     onesdupload_iv$add_rule("sdUserData", ~ if(is.null(fileInputs$sdStatus) || fileInputs$sdStatus == 'reset') "Required")
     onesdupload_iv$add_rule("sdUserData", ~ if(!(tolower(tools::file_ext(input$sdUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+    onesdupload_iv$add_rule("sdUserData", ~ if(is.null(SDUploadData())) siUploadErrorMsg(input$sdUserData))
     onesdupload_iv$add_rule("sdUserData", ~ if(nrow(SDUploadData()) == 0) "File is empty.")
     onesdupload_iv$add_rule("sdUserData", ~ if(nrow(SDUploadData()) < 3) "Samples must include at least three observations.")
 
@@ -3345,12 +3461,14 @@ statInfrServer <- function(id) {
     twopopvarraw_iv$add_rule("rawSamp1SD", sv_required())
     twopopvarraw_iv$add_rule("rawSamp1SD", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
                                                     "Data must be at least three numeric values separated by a comma, space, or tab (ie: 2,3,4)."))
+    twopopvarraw_iv$add_rule("rawSamp1SD", siTooLargeRule)
     twopopvarraw_iv$add_rule("rawSamp1SD", ~ if (sd(createNumLst(input$rawSamp1SD)) == 0) "Sample standard deviation cannot be zero.")
     
     # raw group 2
     twopopvarraw_iv$add_rule("rawSamp2SD", sv_required())
     twopopvarraw_iv$add_rule("rawSamp2SD", sv_regex("( )*^(-)?([0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)([, \t\r\n]+(-)?[0-9]+(\\.[0-9]+)?)+([ \r\n])*$",
                                                     "Data must be at least three numeric values separated by a comma, space, or tab (ie: 2,3,4)."))
+    twopopvarraw_iv$add_rule("rawSamp2SD", siTooLargeRule)
     twopopvarraw_iv$add_rule("rawSamp2SD", ~ if (sd(createNumLst(input$rawSamp2SD)) == 0) "Sample standard deviation cannot be zero.")
     
     
@@ -3371,12 +3489,14 @@ statInfrServer <- function(id) {
     multipleupload_iv$add_rule("multipleUserData", sv_required())
     multipleupload_iv$add_rule("multipleUserData", ~ if(is.null(fileInputs$multipleStatus) || fileInputs$multipleStatus == 'reset') "Required")
     multipleupload_iv$add_rule("multipleUserData", ~ if(!(tolower(tools::file_ext(input$multipleUserData$name)) %in% c("csv", "txt", "xls", "xlsx"))) "File format not accepted.")
+    multipleupload_iv$add_rule("multipleUserData", ~ if(is.null(multipleUploadData())) siUploadErrorMsg(input$multipleUserData))
     multipleupload_iv$add_rule("multipleUserData", ~ if(ncol(multipleUploadData()) < 2) "Data must include at least two columns")
     # anovaupload_iv$add_rule("anovaUserData", ~ if(nrow(anovaUploadData()) < 2) "")
     
     # Anova
     # anovamulti_iv$add_rule("anovaMultiColumns", sv_required())
     anovamulti_iv$add_rule("anovaMultiColumns", ~ if(length(input$anovaMultiColumns) < 2) "Select at least two columns")
+    anovamulti_iv$add_rule("anovaMultiColumns", ~ if(length(input$anovaMultiColumns) > siMaxGroups) siTooManyColumnsMsg())
     anovamulti_iv$add_rule("anovaMultiColumns", ~ {
       if (checkNumeric(multipleUploadData(), input$anovaMultiColumns)) {
         "Selected column(s) contain non-numeric data."
@@ -3387,6 +3507,7 @@ statInfrServer <- function(id) {
     anovastacked_iv$add_rule("anovaFactors", sv_required())
     anovastacked_iv$add_rule("anovaResponse", ~ if(anovaStackedIsValid() == FALSE) "Response variable and factors column cannot be the same")
     anovastacked_iv$add_rule("anovaFactors", ~ if(anovaStackedIsValid() == FALSE) "Response variable and factors column cannot be the same")
+    anovastacked_iv$add_rule("anovaFactors", ~ if(siFactorGroupCount(input$anovaFactors) > siMaxGroups) siTooManyGroupsMsg(input$anovaFactors))
     anovastacked_iv$add_rule("anovaResponse", ~ {
       if (checkNumeric(multipleUploadData(), input$anovaResponse)) {
         "Response variable must be numeric."
@@ -3530,11 +3651,6 @@ statInfrServer <- function(id) {
                                                     input$wilcoxonRankSumTestData == 'Upload Data' &&
                                                     wilcoxonUpload_iv$is_valid()))
 
-    wRankSumrawsd_iv$condition(~ isTRUE(input$siMethod == '2' &&
-                                          input$popuParameters == 'Wilcoxon rank sum test' &&
-                                          input$wilcoxonRankSumTestData == 'Enter Raw Data' &&
-                                          wilcoxonraw_iv$is_valid()))
-    
     signedRankRaw_iv$condition(~ isTRUE(input$siMethod == '2' &&
                                           input$popuParameters == 'Wilcoxon Signed Rank Test' &&
                                           input$signedRankTest == 'Enter Raw Data'))
@@ -3547,11 +3663,6 @@ statInfrServer <- function(id) {
                                                  input$popuParameters == 'Wilcoxon Signed Rank Test' &&
                                                  input$signedRankTest == 'Upload Data' &&
                                                  signedRankUpload_iv$is_valid()))
-    
-    signedRankrawsd_iv$condition(~ isTRUE(input$siMethod == '2' &&
-                                            input$popuParameters == 'Wilcoxon Signed Rank Test' &&
-                                            input$signedRankTest == 'Enter Raw Data' &&
-                                            signedRankRaw_iv$is_valid()))
     
     
     indmeansmunaught_iv$condition(~ isTRUE(input$siMethod == '2' &&
@@ -3582,7 +3693,7 @@ statInfrServer <- function(id) {
     
     oneSD_iv$condition(~ isTRUE(input$siMethod == '1' &&
                                   input$popuParameter == 'Population Standard Deviation' &&
-                                  !isTRUE(input$sdDataAvailability == 'Enter Raw Data')))
+                                  isTRUE(input$sdDataAvailability == 'Summarized Data')))
 
     oneSDRaw_iv$condition(~ isTRUE(input$siMethod == '1' &&
                                      input$popuParameter == 'Population Standard Deviation' &&
@@ -3637,12 +3748,12 @@ statInfrServer <- function(id) {
     kwmulti_iv$condition(~ isTRUE(input$siMethod == 'Multiple' &&
                                     input$kwFormat == 'Multiple' &&
                                     input$multipleMethodChoice == 'kw' &&
-                                    multipleupload_iv$is_valid()))
+                                    multipleUploadValid()))
     
     kwstacked_iv$condition(~ isTRUE(input$siMethod == 'Multiple' &&
                                       input$kwFormat == 'Stacked' &&
                                       input$multipleMethodChoice == 'kw' &&
-                                      multipleupload_iv$is_valid()))
+                                      multipleUploadValid()))
     
     multipleupload_iv$condition(~ isTRUE(input$siMethod == 'Multiple' &&
                                          input$multipleMethodChoice %in% c('anova', 'kw')))
@@ -3650,12 +3761,12 @@ statInfrServer <- function(id) {
     anovamulti_iv$condition(~ isTRUE(input$siMethod == 'Multiple' &&
                                        input$anovaFormat == 'Multiple' &&
                                        input$multipleMethodChoice == 'anova' &&
-                                       multipleupload_iv$is_valid()))
+                                       multipleUploadValid()))
     
     anovastacked_iv$condition(~ isTRUE(input$siMethod == 'Multiple' &&
                                          input$anovaFormat == 'Stacked' &&
                                          input$multipleMethodChoice == 'anova' &&
-                                         multipleupload_iv$is_valid()))
+                                         multipleUploadValid()))
     
     chiSq2x2_iv$condition(~ isTRUE(input$siMethod == 'Categorical' &&
                                      input$chisquareDimension == '2 x 2'))
@@ -3722,6 +3833,13 @@ statInfrServer <- function(id) {
     si_iv$add_validator(chiSq3x2_iv)
     si_iv$add_validator(chiSq3x3_iv)
     
+    ## InputValidator$is_valid() re-runs every active rule on each call and is
+    ## not cached, so share one result per change of the inputs it reads.
+    ## Use siValid() / multipleUploadValid() instead of calling is_valid() on
+    ## these two validators directly.
+    siValid <- reactive(si_iv$is_valid())
+    multipleUploadValid <- reactive(multipleupload_iv$is_valid())
+    
     ### ------------ Activation --------------------------------------------------
     
     ## FIXME: If this validator object has been added to another validator
@@ -3752,7 +3870,7 @@ statInfrServer <- function(id) {
     wilcoxonUpload_iv$enable()
 
     indmeansmunaught_iv$enable()
-    depmeansraw_iv$enable
+    depmeansraw_iv$enable()
     depmeansupload_iv$enable()
     depmeansuploadvars_iv$enable()
     depmeansrawsd_iv$enable()
@@ -3850,9 +3968,10 @@ statInfrServer <- function(id) {
       }
     }
     
+    ## Every output that uses this has its own withMathJax(), which typesets the
+    ## whole output, so this part does not add another.
     printHTConclusion <- function(region, reject, suffEvidence, altHyp, altHypValue) {
       conclusion <- tagList(
-        withMathJax(),
         p(tags$b("Conclusion:")),
         sprintf("At \\( \\alpha = %s \\), since the test statistic falls in the %s region we %s \\(
                H_{0}\\) and conclude that there %s enough statistical evidence to support that \\(%s %s\\).",
@@ -4364,10 +4483,12 @@ statInfrServer <- function(id) {
       return (showTable)
     }
     
-    GetDepMeansData <- function() {
+    ## A reactive (not a plain function) so the data is parsed once per input
+    ## change instead of on every one of its many calls.
+    GetDepMeansData <- reactive({
       ### JB note: this req caused a bunch of errors for input validation on Mu Naught in Dep Means hypothesis testing
       ### leaving it commented out for now
-      # req(si_iv$is_valid())
+      # req(siValid())
       
       dat <- list()
       
@@ -4389,11 +4510,11 @@ statInfrServer <- function(id) {
       dat$muNaught <- input$depMeansMuNaught 
       
       return(dat)
-    }
+    })
     
 
-    GetwRankSumMeansData <- function() {
-      req(si_iv$is_valid())
+    GetwRankSumMeansData <- reactive({
+      req(siValid())
       
       dat <- list()
       
@@ -4413,10 +4534,10 @@ statInfrServer <- function(id) {
       dat$mean2 <- mean(samp2)
       
       return(dat)
-    }
+    })
     
-    GetSignedRankMeansData <- function() {
-      req(si_iv$is_valid())
+    GetSignedRankMeansData <- reactive({
+      req(siValid())
       
       dat <- list()
       
@@ -4436,7 +4557,7 @@ statInfrServer <- function(id) {
       dat$mean2 <- mean(samp2)
       
       return(dat)
-    }
+    })
     
     TwoPopVarCI <- function(n1, sd1, n2, sd2, conf_level = 0.95, is_variance) {
       df1 <- n1-1
@@ -5772,16 +5893,98 @@ statInfrServer <- function(id) {
       signedRankStatus = NULL
     )
 
-    # Silence noisy but harmless readxl warnings (boolean-to-numeric coercions).
-    quietExcelRead <- function(reader, path, sheet) {
-      withCallingHandlers(
-        reader(path, sheet = sheet),
-        warning = function(w) {
-          if (grepl("Coercing boolean to numeric", conditionMessage(w))) {
-            invokeRestart("muffleWarning")
+    # Backstop for observer bodies: an unexpected error is reported to the user
+    # (and logged) instead of ending the session. req()/validate() still stop
+    # silently, as they do in any observer.
+    siReportErrors <- function(expr, what = "Calculation failed") {
+      tryCatch(expr,
+               shiny.silent.error = function(e) invisible(NULL),
+               error = function(e) {
+                 message("Statistical Inference: ", what, ": ", conditionMessage(e))
+                 showNotification(paste0(what, ": ", conditionMessage(e)),
+                                  type = "error", duration = 8)
+               })
+    }
+
+    # Why readSIUpload() returned NULL for an upload, when the shared reader
+    # gave a specific reason (e.g. the file is too large once decompressed).
+    # Keyed by the upload's temporary path, which is new for every upload.
+    siUploadProblems <- new.env(parent = emptyenv())
+
+    # Reads an uploaded file for the *UploadData reactives with the shared
+    # reader readUploadedDataFile() (utilityFunctions.R), which also refuses
+    # files that expand beyond its size limits. Returns NULL when the file
+    # cannot be read (UTF-16 text, binary data renamed .csv, a corrupt
+    # workbook, a file that is too large, ...), so the upload validators can
+    # show siUploadErrorMsg() instead of the error ending the session.
+    # req() and validate() on the file type and sheet still stop silently, as before.
+    readSIUpload <- function(fileInfo, sheet, formatMsg) {
+      ext  <- tolower(tools::file_ext(fileInfo$name))
+      path <- fileInfo$datapath
+
+      if (!(ext %in% c("csv", "xls", "xlsx", "txt"))) {
+        validate(formatMsg)
+      }
+
+      if (ext %in% c("xls", "xlsx")) {
+        sheets <- tryCatch(readxl::excel_sheets(path), error = function(e) character(0))
+        if (length(sheets) == 0) return(NULL)
+        req(sheet)
+        req(sheet %in% sheets)
+      }
+
+      tryCatch(
+        readUploadedDataFile(ext, path, sheet),
+        shiny.silent.error = function(e) {
+          if (nzchar(conditionMessage(e))) {
+            assign(path, conditionMessage(e), envir = siUploadProblems)
           }
-        }
+          NULL
+        },
+        error = function(e) NULL
       )
+    }
+
+    # Message for an upload that readSIUpload() could not read.
+    siUploadErrorMsg <- function(fileInfo) {
+      path <- fileInfo$datapath
+      if (is.character(path) && length(path) == 1 &&
+          exists(path, envir = siUploadProblems, inherits = FALSE)) {
+        get(path, envir = siUploadProblems, inherits = FALSE)
+      } else {
+        siUploadReadError
+      }
+    }
+
+    # Output for a container around an uploaded-data table. `state()` says what
+    # the container shows and `ui(state)` builds it. The container is rebuilt
+    # only when the state changes, not for every new file: a rebuilt DTOutput
+    # is first filled with the previous file's table (the last value the
+    # browser has for that output), and that table's request for its rows,
+    # made with the old column names against the new file's data, showed a
+    # DataTables alert(). A container that is kept draws the new table instead.
+    siUploadContainer <- function(state, ui) {
+      shown <- NULL
+      renderUI({
+        now <- state()
+        req(!identical(now, shown), cancelOutput = TRUE)
+        shown <<- now
+        ui(now)
+      })
+    }
+
+    # State and contents of an Uploaded Data tab: nothing outside Upload Data
+    # mode, a note until a valid file has been read, then the table.
+    siUploadPreviewState <- function(mode, valid) {
+      if (!isTRUE(mode == "Upload Data")) "none"
+      else if (!valid) "empty"
+      else "table"
+    }
+    siUploadPreview <- function(state, table) {
+      switch(state,
+             none  = NULL,
+             empty = helpText("No data yet. Upload a dataset to view it here."),
+             table = table)
     }
 
     ConfLvl <- reactive({
@@ -5872,24 +6075,7 @@ statInfrServer <- function(id) {
 
     SDUploadData <- eventReactive(list(input$sdUserData, input$sdSheet), {
       req(input$sdUserData)
-      ext  <- tolower(tools::file_ext(input$sdUserData$name))
-      path <- input$sdUserData$datapath
-
-      switch(ext,
-             csv  = read_csv(path, show_col_types = FALSE),
-             xls  = {
-               req(input$sdSheet)
-               req(input$sdSheet %in% readxl::excel_sheets(path))
-               quietExcelRead(read_xls, path, input$sdSheet)
-             },
-             xlsx = {
-               req(input$sdSheet)
-               req(input$sdSheet %in% readxl::excel_sheets(path))
-               quietExcelRead(read_xlsx, path, input$sdSheet)
-             },
-             txt  = read_tsv(path, show_col_types = FALSE),
-             validate("Improper file format.")
-      )
+      readSIUpload(input$sdUserData, input$sdSheet, "Improper file format.")
     })
 
     oneSDData <- reactive({
@@ -5921,25 +6107,7 @@ statInfrServer <- function(id) {
 
     OneMeanUploadData <- eventReactive(list(input$oneMeanUserData, input$oneMeanSheet), {
       req(input$oneMeanUserData)
-      ext  <- tolower(tools::file_ext(input$oneMeanUserData$name))
-      path <- input$oneMeanUserData$datapath
-
-      data <- switch(ext,
-                     csv  = read_csv(path, show_col_types = FALSE),
-                     xls  = {
-                       req(input$oneMeanSheet)
-                       req(input$oneMeanSheet %in% readxl::excel_sheets(path))
-                       quietExcelRead(read_xls, path, input$oneMeanSheet)
-                     },
-                     xlsx = {
-                       req(input$oneMeanSheet)
-                       req(input$oneMeanSheet %in% readxl::excel_sheets(path))
-                       quietExcelRead(read_xlsx, path, input$oneMeanSheet)
-                     },
-                     txt  = read_tsv(path, show_col_types = FALSE),
-
-                     validate("Improper file format.")
-      )
+      readSIUpload(input$oneMeanUserData, input$oneMeanSheet, "Improper file format.")
     })
     
     OneMeanUploadStatus <- reactive({
@@ -5953,7 +6121,7 @@ statInfrServer <- function(id) {
     })
     
     OneMeanTotaledData <- reactive({
-      req(si_iv$is_valid())
+      req(siValid())
       
       if(input$dataAvailability == 'Enter Raw Data'){
         dat <- createNumLst(input$sample1)
@@ -6000,7 +6168,7 @@ statInfrServer <- function(id) {
     })
     
     OneMeanSigma <- reactive({
-      req(si_iv$is_valid())
+      req(siValid())
       
       if(input$dataAvailability == 'Summarized Data') {
         sigmaKnown <- input$sigmaKnown
@@ -6018,7 +6186,7 @@ statInfrServer <- function(id) {
     })
     
     OneMeanZIntSumm <- reactive({
-      req(si_iv$is_valid())
+      req(siValid())
       
       nSampOne <- input$sampleSize
       xbarSampOne <- input$sampleMean
@@ -6031,7 +6199,7 @@ statInfrServer <- function(id) {
     })
     
     OneMeanZIntRaw <- reactive({
-      req(si_iv$is_valid())
+      req(siValid())
       
       if(input$dataAvailability == 'Enter Raw Data') {
         dat <- createNumLst(input$sample1)
@@ -6052,7 +6220,7 @@ statInfrServer <- function(id) {
     })
     
     OneMeanTIntSumm <- reactive({
-      req(si_iv$is_valid())
+      req(siValid())
       
       nSampOne <- input$sampleSize
       xbarSampOne <- input$sampleMean
@@ -6065,7 +6233,7 @@ statInfrServer <- function(id) {
     })
     
     OneMeanTIntRaw <- reactive({
-      req(si_iv$is_valid())
+      req(siValid())
       
       if(input$dataAvailability == 'Enter Raw Data') {
         dat <- createNumLst(input$sample1)
@@ -6085,7 +6253,7 @@ statInfrServer <- function(id) {
     })
     
     OneMeanZTestSumm <- reactive({
-      req(si_iv$is_valid())
+      req(siValid())
       
       nSampOne <- input$sampleSize
       xbarSampOne <- input$sampleMean
@@ -6100,7 +6268,7 @@ statInfrServer <- function(id) {
     })
     
     OneMeanZTestRaw <- reactive({
-      req(si_iv$is_valid())
+      req(siValid())
       
       if(input$dataAvailability == 'Enter Raw Data') {
         dat <- createNumLst(input$sample1)
@@ -6122,7 +6290,7 @@ statInfrServer <- function(id) {
     })
     
     OneMeanTTestSumm <- reactive({
-      req(si_iv$is_valid())
+      req(siValid())
       
       nSampOne <- input$sampleSize
       xbarSampOne <- input$sampleMean
@@ -6137,7 +6305,7 @@ statInfrServer <- function(id) {
     })
     
     OneMeanTTestRaw <- reactive({
-      req(si_iv$is_valid())
+      req(siValid())
       
       if(input$dataAvailability == 'Enter Raw Data') {
         dat <- createNumLst(input$sample1)
@@ -6208,7 +6376,7 @@ statInfrServer <- function(id) {
     ### ------------ Independent Sample Means reactives --------------------------
     
     IndMeansSummData <- reactive({
-      req(si_iv$is_valid())
+      req(siValid())
       
       summData <- list()
       
@@ -6230,7 +6398,7 @@ statInfrServer <- function(id) {
     })
     
     IndMeansRawData <- reactive({
-      req(si_iv$is_valid())
+      req(siValid())
       
       rawData <- list()
       
@@ -6262,25 +6430,7 @@ statInfrServer <- function(id) {
 
     IndMeansUploadData <- eventReactive(list(input$indMeansUserData, input$indMeansSheet), {
       req(input$indMeansUserData)
-      ext  <- tolower(tools::file_ext(input$indMeansUserData$name))
-      path <- input$indMeansUserData$datapath
-
-      switch(ext,
-             csv = read_csv(path, show_col_types = FALSE),
-             xls = {
-               req(input$indMeansSheet)
-               req(input$indMeansSheet %in% readxl::excel_sheets(path))
-               quietExcelRead(read_xls, path, input$indMeansSheet)
-             },
-             xlsx = {
-               req(input$indMeansSheet)
-               req(input$indMeansSheet %in% readxl::excel_sheets(path))
-               quietExcelRead(read_xlsx, path, input$indMeansSheet)
-             },
-             txt = read_tsv(path, show_col_types = FALSE),
-
-             validate("Improper file format")
-      )
+      readSIUpload(input$indMeansUserData, input$indMeansSheet, "Improper file format")
     })
     
     GetMeansUploadData <- reactive({
@@ -6353,7 +6503,7 @@ statInfrServer <- function(id) {
     })
     
     IndMeansZInt <- reactive({
-      req(si_iv$is_valid())
+      req(siValid())
       
       if (input$dataAvailability2 == 'Summarized Data') {
         data <- IndMeansSummData()
@@ -6370,7 +6520,7 @@ statInfrServer <- function(id) {
     })
     
     IndMeansTInt <- reactive({
-      req(si_iv$is_valid())
+      req(siValid())
       
       if(input$dataAvailability2 == 'Summarized Data') {
         data <- IndMeansSummData()
@@ -6387,7 +6537,7 @@ statInfrServer <- function(id) {
     })
     
     IndMeansZTest <- reactive({
-      req(si_iv$is_valid())
+      req(siValid())
       
       if(input$dataAvailability2 == 'Summarized Data') {
         data <- IndMeansSummData()
@@ -6406,7 +6556,7 @@ statInfrServer <- function(id) {
     })
     
     IndMeansTTest <- reactive({
-      req(si_iv$is_valid())
+      req(siValid())
       
       if(input$dataAvailability2 == 'Summarized Data') {
         data <- IndMeansSummData()
@@ -6434,25 +6584,7 @@ statInfrServer <- function(id) {
 
     WilcoxonUploadData <- eventReactive(list(input$wilcoxonUpl, input$wilcoxonSheet), {
       req(input$wilcoxonUpl)
-      ext  <- tolower(tools::file_ext(input$wilcoxonUpl$name))
-      path <- input$wilcoxonUpl$datapath
-
-      switch(ext,
-             csv = read_csv(path, show_col_types = FALSE),
-             xls = {
-               req(input$wilcoxonSheet)
-               req(input$wilcoxonSheet %in% readxl::excel_sheets(path))
-               quietExcelRead(read_xls, path, input$wilcoxonSheet)
-             },
-             xlsx = {
-               req(input$wilcoxonSheet)
-               req(input$wilcoxonSheet %in% readxl::excel_sheets(path))
-               quietExcelRead(read_xlsx, path, input$wilcoxonSheet)
-             },
-             txt = read_tsv(path, show_col_types = FALSE),
-
-             validate("Improper file format")
-      )
+      readSIUpload(input$wilcoxonUpl, input$wilcoxonSheet, "Improper file format")
     })
     
     CheckRankSumUploadSamples <- eventReactive (c(input$wilcoxonUpl1,input$wilcoxonUpl2), {
@@ -6466,7 +6598,7 @@ statInfrServer <- function(id) {
       }
     })
     wRankSumTInt <- reactive({
-      req(si_iv$is_valid())
+      req(siValid())
       
       data <- GetwRankSumMeansData()
       
@@ -6477,7 +6609,7 @@ statInfrServer <- function(id) {
     })
     
     wRankSumTTest <- reactive({
-      req(si_iv$is_valid())
+      req(siValid())
       
       data <- GetwRankSumMeansData()
       
@@ -6543,25 +6675,7 @@ statInfrServer <- function(id) {
 
     DepMeansUploadData <- eventReactive(list(input$depMeansUserData, input$depMeansSheet), {
       req(input$depMeansUserData)
-      ext  <- tolower(tools::file_ext(input$depMeansUserData$name))
-      path <- input$depMeansUserData$datapath
-
-      switch(ext,
-             csv = read_csv(path, show_col_types = FALSE),
-             xls = {
-               req(input$depMeansSheet)
-               req(input$depMeansSheet %in% readxl::excel_sheets(path))
-               quietExcelRead(read_xls, path, input$depMeansSheet)
-             },
-             xlsx = {
-               req(input$depMeansSheet)
-               req(input$depMeansSheet %in% readxl::excel_sheets(path))
-               quietExcelRead(read_xlsx, path, input$depMeansSheet)
-             },
-             txt = read_tsv(path, show_col_types = FALSE),
-
-             validate("Improper file format")
-      )
+      readSIUpload(input$depMeansUserData, input$depMeansSheet, "Improper file format")
     })
     
     CheckDepUploadSamples <- eventReactive (c(input$depMeansUplSample1,
@@ -6578,7 +6692,7 @@ statInfrServer <- function(id) {
                                               })
     
     DepMeansTInt <- reactive({
-      req(si_iv$is_valid())
+      req(siValid())
       
       data <- GetDepMeansData()
       
@@ -6590,7 +6704,7 @@ statInfrServer <- function(id) {
     
     
     DepMeansTTest <- reactive({
-      req(si_iv$is_valid() && depmeansrawsd_iv$is_valid())
+      req(siValid() && depmeansrawsd_iv$is_valid())
       
       data <- GetDepMeansData()
       
@@ -6615,25 +6729,7 @@ statInfrServer <- function(id) {
 
     signedRankUploadData <- eventReactive(list(input$signedRankUpl, input$signedRankSheet), {
       req(input$signedRankUpl)
-      ext  <- tolower(tools::file_ext(input$signedRankUpl$name))
-      path <- input$signedRankUpl$datapath
-
-      switch(ext,
-             csv = read_csv(path, show_col_types = FALSE),
-             xls = {
-               req(input$signedRankSheet)
-               req(input$signedRankSheet %in% readxl::excel_sheets(path))
-               quietExcelRead(read_xls, path, input$signedRankSheet)
-             },
-             xlsx = {
-               req(input$signedRankSheet)
-               req(input$signedRankSheet %in% readxl::excel_sheets(path))
-               quietExcelRead(read_xlsx, path, input$signedRankSheet)
-             },
-             txt = read_tsv(path, show_col_types = FALSE),
-
-             validate("Improper file format")
-      )
+      readSIUpload(input$signedRankUpl, input$signedRankSheet, "Improper file format")
     })
     
     CheckSignedRankUploadSamples <- eventReactive (c(input$signedRankUpl1,input$signedRankUpl2), {
@@ -6647,7 +6743,7 @@ statInfrServer <- function(id) {
       }
     })
     signedRankTInt <- reactive({
-      req(si_iv$is_valid())
+      req(siValid())
       
       data <- GetSignedRankMeansData()
       
@@ -6658,7 +6754,7 @@ statInfrServer <- function(id) {
     })
     
     signedRankTTest <- reactive({
-      req(si_iv$is_valid())
+      req(siValid())
       
       data <- GetSignedRankMeansData()
       
@@ -6756,7 +6852,7 @@ statInfrServer <- function(id) {
     
     ### ------------ Two Pop Var Reactives --------------------------------------
     GetTwoPopVarData <- reactive({
-      req(si_iv$is_valid())
+      req(siValid())
       
       dat <- list()
       
@@ -6776,7 +6872,7 @@ statInfrServer <- function(id) {
     })
     
     GetTwoPopVarRawData <- reactive({
-      req(si_iv$is_valid())
+      req(siValid())
       
       dat <- list()
       
@@ -6848,25 +6944,7 @@ statInfrServer <- function(id) {
     
     multipleUploadData <- eventReactive(list(input$multipleUserData, input$multipleSheet), {
       req(input$multipleUserData)
-      ext  <- tolower(tools::file_ext(input$multipleUserData$name))
-      path <- input$multipleUserData$datapath
-      
-      switch(ext,
-             csv = read_csv(path, show_col_types = FALSE),
-             xls = {
-               req(input$multipleSheet)
-               req(input$multipleSheet %in% readxl::excel_sheets(path))
-               quietExcelRead(read_xls, path, input$multipleSheet)
-             },
-             xlsx = {
-               req(input$multipleSheet)
-               req(input$multipleSheet %in% readxl::excel_sheets(path))
-               quietExcelRead(read_xlsx, path, input$multipleSheet)
-             },
-             txt = read_tsv(path, show_col_types = FALSE),
-             
-             validate("Improper file format.")
-      )
+      readSIUpload(input$multipleUserData, input$multipleSheet, "Improper file format.")
     })
     
     anovaStackedIsValid <- eventReactive({input$anovaResponse
@@ -6883,7 +6961,7 @@ statInfrServer <- function(id) {
       })
     
     anovaOneWayResults <- reactive({
-      req(si_iv$is_valid())
+      req(siValid())
       
       results <- list()
       
@@ -6892,7 +6970,10 @@ statInfrServer <- function(id) {
         factorCol <- "ind"
         factorNames <- levels(anovaData[,factorCol])
       } else {
-        anovaData <- multipleUploadData()
+        # Only the two selected columns take part in the test, so a missing
+        # value in some other column of the file must not remove the row
+        # (na.omit() below).
+        anovaData <- multipleUploadData()[, unique(c(input$anovaFactors, input$anovaResponse)), drop = FALSE]
         colnames(anovaData)[colnames(anovaData) == input$anovaFactors] <- "ind"
         colnames(anovaData)[colnames(anovaData) == input$anovaResponse] <- "values"
         anovaData <- anovaData %>% dplyr::mutate(ind = factor(ind))
@@ -6909,6 +6990,15 @@ statInfrServer <- function(id) {
             length(unique(anovaData$ind)) >= 2,
           "All values in the dataset are identical. The ANOVA test cannot be performed as there is no variance in the data."
         ),
+        errorClass = "myClass"
+      )
+      ## aov() stops on Inf, and with one observation per group the residual
+      ## degrees of freedom are zero (F and its p-value are undefined).
+      validate(
+        need(all(is.finite(anovaData$values)),
+             "The response values must be finite numbers. Please remove Inf or -Inf values to perform the ANOVA test."),
+        need(totalCount > length(unique(anovaData$ind)),
+             "Every group has only one observation, so the ANOVA F test cannot be computed. At least one group must contain two or more observations."),
         errorClass = "myClass"
       )
       anovaTest <- aov(formula = values ~ ind, data = anovaData)
@@ -6935,7 +7025,7 @@ statInfrServer <- function(id) {
     
     kwResults <- reactive({
       req(input$siMethod == 'Multiple' && input$multipleMethodChoice == 'kw')
-      req(si_iv$is_valid())
+      req(siValid())
       
       kwResults_func(
         input$kwFormat,
@@ -6989,7 +7079,7 @@ statInfrServer <- function(id) {
     })
     
     chiSqResults <- reactive({
-      req(si_iv$is_valid())
+      req(siValid())
       return(suppressWarnings(ChiSquareTest(chiSqActiveMatrix(), input$chiSquareYates)))
     })
     
@@ -7005,8 +7095,12 @@ statInfrServer <- function(id) {
     })
     
     fishersResults <- reactive({
-      req(si_iv$is_valid())
-      return(fisher.test(chiSqActiveMatrix()))
+      req(siValid())
+      results <- tryCatch(fisher.test(chiSqActiveMatrix()), error = function(e) NULL)
+      validate(
+        need(!is.null(results), "Fisher's Exact Test could not be computed for this table. Please check the cell counts or use the Chi-Square test."),
+        errorClass = "myClass")
+      return(results)
     })
     
     
@@ -7032,6 +7126,16 @@ statInfrServer <- function(id) {
     #### ---------------- One Mean Validation
     output$inferenceValidation <- renderUI({
       
+      ## Every message below sits behind if(!<child of si_iv>$is_valid()),
+      ## except the "x cannot be greater than n" checks of the two proportion
+      ## sections. When si_iv is valid outside those sections no message can
+      ## be produced, so skip the ~50 per-validator checks.
+      if (siValid() &&
+          !isTRUE(input$siMethod == '1' && input$popuParameter == 'Population Proportion') &&
+          !isTRUE(input$siMethod == '2' && input$popuParameters == 'Population Proportions')) {
+        return(NULL)
+      }
+      
       if(!onemean_iv$is_valid()) {
         validate(
           need(input$sampleSize, "Sample size (n) must be an integer greater than one.") %then%
@@ -7043,7 +7147,8 @@ statInfrServer <- function(id) {
       if (!onemeanraw_iv$is_valid()) {
         validate(
           need(input$sample1, "Sample data must contain at least two numeric values.") %then%
-            need(length(createNumLst(input$sample1)) > 1, "Sample data must contain at least two numeric values."),
+            need(length(createNumLst(input$sample1)) > 1, "Sample data must contain at least two numeric values.") %then%
+            need(!any(is.infinite(createNumLst(input$sample1))), siTooLargeMsg),
           if (input$sigmaKnownRaw == "rawKnown") {
             need(input$popuSDRaw,"Population Standard Deviation is required.") %then%
               need(input$popuSDRaw > 0, "The Population Standard Deviation (σ) must be a positive value greater than zero.")
@@ -7084,6 +7189,10 @@ statInfrServer <- function(id) {
         
         validate(
           need(!is.null(fileInputs$oneMeanStatus) && fileInputs$oneMeanStatus == 'uploaded', "Please upload a file."),
+          errorClass = "myClass")
+        
+        validate(
+          need(!is.null(OneMeanUploadData()), siUploadErrorMsg(input$oneMeanUserData)),
           errorClass = "myClass")
         
         validate(
@@ -7144,7 +7253,8 @@ statInfrServer <- function(id) {
       if(!oneSDRaw_iv$is_valid()) {
         validate(
           need(isTruthy(input$sdRawData), "Sample data must contain at least three numeric values.") %then%
-            need(length(createNumLst(input$sdRawData)) >= 3, "Sample data must contain at least three numeric values."),
+            need(length(createNumLst(input$sdRawData)) >= 3, "Sample data must contain at least three numeric values.") %then%
+            need(!any(is.infinite(createNumLst(input$sdRawData))), siTooLargeMsg),
           errorClass = "myClass")
       }
 
@@ -7153,6 +7263,10 @@ statInfrServer <- function(id) {
         validate(
           need(!is.null(fileInputs$sdStatus) && fileInputs$sdStatus == 'uploaded', "Please upload a file."),
           errorClass = "myClass")
+        validate(
+          need(!is.null(SDUploadData()), siUploadErrorMsg(input$sdUserData)),
+          errorClass = "myClass")
+        
         validate(
           need(nrow(SDUploadData()) > 0, "File is empty."),
           need(nrow(SDUploadData()) >= 3, "Samples must include at least three observations."),
@@ -7243,9 +7357,11 @@ statInfrServer <- function(id) {
       if(!indmeansraw_iv$is_valid()) {
         validate(
           need(input$raw_sample1, "Sample 1 data must contain at least three numeric values.") %then%
-            need(length(createNumLst(input$raw_sample1)) > 2, "Sample 1 data must contain at least three numeric values."),
+            need(length(createNumLst(input$raw_sample1)) > 2, "Sample 1 data must contain at least three numeric values.") %then%
+            need(!any(is.infinite(createNumLst(input$raw_sample1))), "Sample 1 data contains values that are too large to compute."),
           need(input$raw_sample2, "Sample 2 data must contain at least three numeric values.") %then%
-            need(length(createNumLst(input$raw_sample2)) > 2, "Sample 2 data must contain at least three numeric values."),
+            need(length(createNumLst(input$raw_sample2)) > 2, "Sample 2 data must contain at least three numeric values.") %then%
+            need(!any(is.infinite(createNumLst(input$raw_sample2))), "Sample 2 data contains values that are too large to compute."),
           errorClass = "myClass")
         
         validate("Sample data must contain at least three numeric values.")
@@ -7278,6 +7394,10 @@ statInfrServer <- function(id) {
         
         validate(
           need(!is.null(fileInputs$indMeansStatus) && fileInputs$indMeansStatus == 'uploaded', "Please upload a file."),
+          errorClass = "myClass")
+        
+        validate(
+          need(!is.null(IndMeansUploadData()), siUploadErrorMsg(input$indMeansUserData)),
           errorClass = "myClass")
         
         validate(
@@ -7343,9 +7463,11 @@ statInfrServer <- function(id) {
       if(!wilcoxonraw_iv$is_valid()) {
         validate(
           need(input$rankSumRaw1, "Sample 1 data must contain at least three numeric values.") %then%
-          need(length(createNumLst(input$rankSumRaw1)) > 2, "Sample 1 data must contain at least three numeric values."),
+          need(length(createNumLst(input$rankSumRaw1)) > 2, "Sample 1 data must contain at least three numeric values.") %then%
+          need(!any(is.infinite(createNumLst(input$rankSumRaw1))), "Sample 1 data contains values that are too large to compute."),
           need(input$rankSumRaw2, "Sample 2 data must contain at least three numeric values.") %then%
-          need(length(createNumLst(input$rankSumRaw2)) > 2, "Sample 2 data must contain at least three numeric values."),
+          need(length(createNumLst(input$rankSumRaw2)) > 2, "Sample 2 data must contain at least three numeric values.") %then%
+          need(!any(is.infinite(createNumLst(input$rankSumRaw2))), "Sample 2 data contains values that are too large to compute."),
           errorClass = "myClass")
         
         validate(
@@ -7361,6 +7483,10 @@ statInfrServer <- function(id) {
         
         validate(
           need(!is.null(fileInputs$rankSumStatus) && fileInputs$rankSumStatus == 'uploaded', "Please upload a file."),
+          errorClass = "myClass")
+        
+        validate(
+          need(!is.null(WilcoxonUploadData()), siUploadErrorMsg(input$wilcoxonUpl)),
           errorClass = "myClass")
         
         validate(
@@ -7386,9 +7512,11 @@ statInfrServer <- function(id) {
       if(!signedRankRaw_iv$is_valid()) {
         validate(
           need(input$signedRankRaw1, "Sample 1 data must contain at least three numeric values.") %then%
-          need(length(createNumLst(input$signedRankRaw1)) > 2, "Sample 1 data must contain at least three numeric values."),
+          need(length(createNumLst(input$signedRankRaw1)) > 2, "Sample 1 data must contain at least three numeric values.") %then%
+          need(!any(is.infinite(createNumLst(input$signedRankRaw1))), "Sample 1 data contains values that are too large to compute."),
           need(input$signedRankRaw2, "Sample 2 data must contain at least three numeric values.") %then%
-          need(length(createNumLst(input$signedRankRaw2)) > 2, "Sample 2 data must contain at least three numeric values."),
+          need(length(createNumLst(input$signedRankRaw2)) > 2, "Sample 2 data must contain at least three numeric values.") %then%
+          need(!any(is.infinite(createNumLst(input$signedRankRaw2))), "Sample 2 data contains values that are too large to compute."),
           errorClass = "myClass")
         
         validate(
@@ -7411,6 +7539,10 @@ statInfrServer <- function(id) {
         
         validate(
           need(!is.null(fileInputs$signedRankStatus) && fileInputs$signedRankStatus == 'uploaded', "Please upload a file."),
+          errorClass = "myClass")
+        
+        validate(
+          need(!is.null(signedRankUploadData()), siUploadErrorMsg(input$signedRankUpl)),
           errorClass = "myClass")
         
         validate(
@@ -7476,9 +7608,11 @@ statInfrServer <- function(id) {
       if(!depmeansraw_iv$is_valid()) {
         validate(
           need(input$before, "Sample 1 data must contain at least three numeric values.") %then%
-            need(length(createNumLst(input$before)) > 2, "Sample 1 data must contain at least three numeric values."),
+            need(length(createNumLst(input$before)) > 2, "Sample 1 data must contain at least three numeric values.") %then%
+            need(!any(is.infinite(createNumLst(input$before))), "Sample 1 data contains values that are too large to compute."),
           need(input$after, "Sample 2 data must contain at least three numeric values.") %then%
-            need(length(createNumLst(input$after)) > 2, "Sample 2 data must contain at least three numeric values."),
+            need(length(createNumLst(input$after)) > 2, "Sample 2 data must contain at least three numeric values.") %then%
+            need(!any(is.infinite(createNumLst(input$after))), "Sample 2 data contains values that are too large to compute."),
           errorClass = "myClass")
         
         validate(
@@ -7494,6 +7628,10 @@ statInfrServer <- function(id) {
         
         validate(
           need(!is.null(fileInputs$depMeansStatus) && fileInputs$depMeansStatus == 'uploaded', "Please upload a file."),
+          errorClass = "myClass")
+        
+        validate(
+          need(!is.null(DepMeansUploadData()), siUploadErrorMsg(input$depMeansUserData)),
           errorClass = "myClass")
         
         validate(
@@ -7672,10 +7810,12 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
         validate(
           need(input$rawSamp1SD, "Sample 1 data must contain at least three numeric values.") %then%
             need(length(createNumLst(input$rawSamp1SD)) >= 3, "Sample 1 data must contain at least three numeric values.") %then%
+            need(!any(is.infinite(createNumLst(input$rawSamp1SD))), "Sample 1 data contains values that are too large to compute.") %then%
             need(sd(createNumLst(input$rawSamp1SD)) > 0, "Variance for sample 1 must be greater than zero."),
           
           need(input$rawSamp2SD, "Sample 2 data must contain at least three numeric values.") %then%
             need(length(createNumLst(input$rawSamp2SD)) >= 3, "Sample 2 data must contain at least three numeric values.") %then%
+            need(!any(is.infinite(createNumLst(input$rawSamp2SD))), "Sample 2 data contains values that are too large to compute.") %then%
             need(sd(createNumLst(input$rawSamp2SD)) > 0, "Variance for sample 2 must be greater than zero."),
           
           errorClass = "myClass"
@@ -7683,13 +7823,17 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       }
       
       #### ---------------- ANOVA and KW Upload Validation
-      if(!multipleupload_iv$is_valid()) {
+      if(!multipleUploadValid()) {
         if(is.null(input$multipleUserData)) {
           validate("Please upload a file.")
         }
         
         validate(
           need(!is.null(fileInputs$multipleStatus) && fileInputs$multipleStatus == 'uploaded', "Please upload a file."),
+          errorClass = "myClass")
+        
+        validate(
+          need(!is.null(multipleUploadData()), siUploadErrorMsg(input$multipleUserData)),
           errorClass = "myClass")
         
         validate(
@@ -7702,6 +7846,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       if(!anovamulti_iv$is_valid()) {
         validate(
           need(length(input$anovaMultiColumns) >= 2, "Please select two or more columns to conduct analysis."),
+          need(length(input$anovaMultiColumns) <= siMaxGroups, siTooManyColumnsMsg()),
           errorClass = "myClass")
         
         validate(
@@ -7719,6 +7864,10 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
         
         validate(
           need(anovaStackedIsValid() == TRUE, "Please select distinct columns for the Response Variable and Factors."),
+          errorClass = "myClass")
+        
+        validate(
+          need(siFactorGroupCount(input$anovaFactors) <= siMaxGroups, siTooManyGroupsMsg(input$anovaFactors)),
           errorClass = "myClass")
         
         validate(
@@ -7855,7 +8004,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
           errorClass = "myClass")
         
         validate(
-          need(any(cchiSqActiveData()$numeric != 0), "All cell values cannot be equal to zero."),
+          need(any(chiSqActiveData()$numeric != 0), "All cell values cannot be equal to zero."),
           errorClass = "myClass")
         
         validate(
@@ -7891,22 +8040,6 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
                                                       targets = 0:ncol(OneMeanUploadData())))),
       )
     })
-    outputOptions(output, "onePopMeanUploadTable", suspendWhenHidden = FALSE)
-
-    session$onFlushed(function() {
-      hideTab(inputId = "onePopMeanTabset", target = "Uploaded Data")
-    }, once = TRUE)
-
-    observeEvent(input$dataAvailability, {
-      if (input$dataAvailability == "Upload Data") {
-        showTab(inputId = "onePopMeanTabset", target = "Uploaded Data")
-        updateTabsetPanel(session, "onePopMeanTabset", selected = "Uploaded Data")
-      } else {
-        hideTab(inputId = "onePopMeanTabset", target = "Uploaded Data")
-        showTab(inputId = "onePopMeanTabset", target = "Analysis")
-        updateTabsetPanel(session, "onePopMeanTabset", selected = "Analysis")
-      }
-    }, ignoreInit = TRUE)
 
     #### ---------------- CI ----
     output$oneMeanCI <- renderUI({
@@ -7974,7 +8107,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
     
     #### ---------------- Boxplot ----
     output$oneMeanBoxplot <- renderPlot({
-      req(si_iv$is_valid())
+      req(siValid())
       
       if(input$dataAvailability == 'Enter Raw Data') {
         dat <- createNumLst(input$sample1)
@@ -8007,7 +8140,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
 
     #### ---------------- Histogram ----
     output$oneMeanHistogram <- renderPlot({
-      req(si_iv$is_valid())
+      req(siValid())
       
       if(input$dataAvailability == 'Enter Raw Data') {
         dat <- createNumLst(input$sample1)
@@ -8029,35 +8162,27 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
     width = function() {GetPlotWidth(input[["oneMeanHistogram-Width"]], input[["oneMeanHistogram-WidthPx"]], ui = FALSE)}
     )
     
-    observeEvent(input[["oneMeanHistogram-Density"]], {
-      updateTextInput(
-        session,
-        "oneMeanHistogram-Ylab",
-        value = if (input[["oneMeanHistogram-Density"]]) {
-          "Density"
-        } else {
-          "Frequency"
-        }
-      )
-    })
+    ## The histogram's y-axis label follows its Density option. The plot reads
+    ## both, so the label is frozen until the browser reports the new value;
+    ## otherwise the plot would draw once with the old label, then again.
+    ## Nothing is sent when the label already matches. ignoreInit on the
+    ## observers: the menus start with Density off and "Frequency" as label.
+    siSyncHistogramYlab <- function(menuId) {
+      ylabId <- paste0(menuId, "-Ylab")
+      label <- if (isTRUE(input[[paste0(menuId, "-Density")]])) "Density" else "Frequency"
+      if (!identical(input[[ylabId]], label)) {
+        freezeReactiveValue(input, ylabId)
+        updateTextInput(session, ylabId, value = label)
+      }
+    }
+
+    observeEvent(input[["oneMeanHistogram-Density"]], siSyncHistogramYlab("oneMeanHistogram"), ignoreInit = TRUE)
 
     ### ------------ One Sample Standard Deviation Outputs -----------------------
     #### ---- Uploaded Data tab: immediate preview (ML-style) ----
-    output$renderOneSDData <- renderUI({
-      if (input$sdDataAvailability != "Upload Data") return(NULL)
-      if (!onesdupload_iv$is_valid()) {
-        return(helpText("No data yet. Upload a dataset to view it here."))
-      }
-      DTOutput(session$ns("oneSDUploadTable"))
-    })
-
-    observeEvent(input$sdVariable, {
-      if (isTRUE(input$sdDataAvailability == "Upload Data")) {
-        hideTab(inputId = "oneSDTabset", target = "Analysis")
-        hideTab(inputId = "oneSDTabset", target = "Graphs")
-        updateTabsetPanel(session, "oneSDTabset", selected = "Uploaded Data")
-      }
-    }, ignoreInit = TRUE)
+    output$renderOneSDData <- siUploadContainer(
+      function() siUploadPreviewState(input$sdDataAvailability, onesdupload_iv$is_valid()),
+      function(state) siUploadPreview(state, DTOutput(session$ns("oneSDUploadTable"))))
 
     output$sdUploadStatus <- renderUI({
       req(input$sdUserData)
@@ -8083,22 +8208,6 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
                                                       targets = 0:ncol(SDUploadData())))),
       )
     })
-    outputOptions(output, "oneSDUploadTable", suspendWhenHidden = FALSE)
-
-    session$onFlushed(function() {
-      hideTab(inputId = "oneSDTabset", target = "Uploaded Data")
-    }, once = TRUE)
-
-    observeEvent(input$sdDataAvailability, {
-      if (input$sdDataAvailability == "Upload Data") {
-        showTab(inputId = "oneSDTabset", target = "Uploaded Data")
-        updateTabsetPanel(session, "oneSDTabset", selected = "Uploaded Data")
-      } else {
-        hideTab(inputId = "oneSDTabset", target = "Uploaded Data")
-        showTab(inputId = "oneSDTabset", target = "Analysis")
-        updateTabsetPanel(session, "oneSDTabset", selected = "Analysis")
-      }
-    }, ignoreInit = TRUE)
 
     #### ---- One population standard deviation confidence interval CI ----
     output$oneSDCI <- renderUI({
@@ -8339,8 +8448,9 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       ## Account for two-tailed hypothesis tests.
       if (length(chiSqCValue) == 1) {
         ## applies to lower and upper tailed tests
-        lowerRejectionRegion <- sort(seq(0, chiSqCValue, by = 0.00001))
-        upperRejectionRegion <- sort(seq(chiSqCValue, maximumChiSqValue, by = 0.00001))
+        ## Fixed-size grids: a step of 1e-5 built ~1e8-element vectors for large df.
+        lowerRejectionRegion <- seq(0, chiSqCValue, length.out = 500)
+        upperRejectionRegion <- seq(chiSqCValue, maximumChiSqValue, length.out = 500)
         lowerPVector <- dchisq(lowerRejectionRegion, df = degreesOfFreedom)
         upperPVector <- dchisq(upperRejectionRegion, df = degreesOfFreedom)
         if (input$altHypothesis == 1)
@@ -8377,14 +8487,14 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
         )
       } else {
         ## two-tailed hypothesis tests
-        lowerRejectionRegion <- seq(0, chiSqCValue[[1]], by = 0.00001)
+        lowerRejectionRegion <- seq(0, chiSqCValue[[1]], length.out = 500)
         lowerPVector <- dchisq(lowerRejectionRegion, df = degreesOfFreedom)
         polygon(c(lowerRejectionRegion, rev(lowerRejectionRegion)),
                 c(lowerPVector, rep(0, length(lowerPVector))),
                 col = adjustcolor("red", alpha = 0.3),
                 border = NA)
         
-        upperRejectionRegion <- seq(chiSqCValue[[2]], max(chiSqTestStatistic, chiSqCValue) + 1)
+        upperRejectionRegion <- seq(chiSqCValue[[2]], max(chiSqTestStatistic, chiSqCValue) + 1, length.out = 500)
         upperPVector <- dchisq(upperRejectionRegion, df = degreesOfFreedom)
         polygon(c(upperRejectionRegion, rev(upperRejectionRegion)),
                 c(upperPVector, rep(0, length(upperPVector))),
@@ -8679,7 +8789,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
     }) # renderUI
     ### ------------ Boxplot --------------------------------------------
     output$oneSDBoxplot <- renderPlot({
-      req(si_iv$is_valid())
+      req(siValid())
       
       if(input$sdDataAvailability == 'Enter Raw Data') {
         dat <- createNumLst(input$sdRawData)
@@ -8712,7 +8822,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
     
     ### ------------ Histogram --------------------------------------------
     output$oneSDHistogram <- renderPlot({
-      req(si_iv$is_valid())
+      req(siValid())
       
       if(input$sdDataAvailability == 'Enter Raw Data') {
         dat <- createNumLst(input$sdRawData)
@@ -8734,23 +8844,13 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
     },width = function() {GetPlotWidth(input[["oneSDHistogram-Width"]],input[["oneSDHistogram-WidthPx"]],ui = FALSE)
     })
     
-    observeEvent(input[["oneSDHistogram-Density"]], {
-      updateTextInput(
-        session,
-        "oneSDHistogram-Ylab",
-        value = if (input[["oneSDHistogram-Density"]]) {
-          "Density"
-        } else {
-          "Frequency"
-        }
-      )
-    })
+    observeEvent(input[["oneSDHistogram-Density"]], siSyncHistogramYlab("oneSDHistogram"), ignoreInit = TRUE)
     
     ### ------------ One Prop Outputs --------------------------------------------
     
     #### ----------------- #3 Graphs! ---------
     output$onePropBarGraph <- renderPlot({
-      req(si_iv$is_valid() && input$numTrials >= input$numSuccesses)
+      req(siValid() && input$numTrials >= input$numSuccesses)
       
       df <- tibble(
         Outcome = c("Successes", "Failures"),
@@ -8777,7 +8877,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
     height = 400)
     
     output$onePropPieChart <- renderPlot({
-      req(si_iv$is_valid() && input$numTrials >= input$numSuccesses)
+      req(siValid() && input$numTrials >= input$numSuccesses)
       
       x <- tibble(
         Outcome = c("Successes", "Failures"),
@@ -8801,7 +8901,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
     
     #### ---------------- CI ----
     output$onePropCI <- renderUI({
-      req(si_iv$is_valid() && input$numTrials >= input$numSuccesses);
+      req(siValid() && input$numTrials >= input$numSuccesses);
       
       onePropData <- OnePropZInterval(input$numSuccesses, input$numTrials, ConfLvl());
       critVal <- round(onePropData["Z Critical"], cvDigits);
@@ -8878,7 +8978,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
     
     #### ---------------- HT ----
     output$onePropHT <- renderUI({
-      req(si_iv$is_valid() && input$numTrials >= input$numSuccesses)
+      req(siValid() && input$numTrials >= input$numSuccesses)
       
       onePropData <- OnePropZTest(input$numSuccesses, input$numTrials, input$hypProportion, OneMeanHypInfo()$alternative, SigLvl())
       
@@ -8984,7 +9084,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       # br(),
       
       onePropHTTail <- tagList(
-        withMathJax(
+        tagList(
           p(tags$b("Using Critical Value Method:")),
           sprintf("Critical Value(s) \\( = %s z_{%s} = %s z_{%s} = %s \\)",
                   OneMeanHypInfo()$critSign,
@@ -9038,30 +9138,13 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
     output$indPopMeansUploadTable <- renderDT({
       req(indmeansupload_iv$is_valid())
       datatable(IndMeansUploadData(),
-                options = list(pageLength = -1,
+                options = list(pageLength = 25,
                                lengthMenu = list(c(25, 50, 100, -1),
                                                  c("25", "50", "100", "all")),
                                columnDefs = list(list(className = 'dt-center',
                                                       targets = 0:ncol(IndMeansUploadData())))),
       )
     })
-    outputOptions(output, "indPopMeansUploadTable", suspendWhenHidden = FALSE)
-
-    session$onFlushed(function() {
-      hideTab(inputId = "indPopMeansTabset", target = "Uploaded Data")
-    }, once = TRUE)
-
-    observeEvent(input$dataAvailability2, {
-      if (input$dataAvailability2 == "Upload Data") {
-        showTab(inputId = "indPopMeansTabset", target = "Uploaded Data")
-        hideTab(inputId = "indPopMeansTabset", target = "Graphs")
-        updateTabsetPanel(session, "indPopMeansTabset", selected = "Uploaded Data")
-      } else {
-        hideTab(inputId = "indPopMeansTabset", target = "Uploaded Data")
-        showTab(inputId = "indPopMeansTabset", target = "Analysis")
-        updateTabsetPanel(session, "indPopMeansTabset", selected = "Analysis")
-      }
-    }, ignoreInit = TRUE)
 
     #### ------------- Q-Q Plots --------------------------
     
@@ -9391,8 +9474,6 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
     #### ----------------- HT ----
     output$indMeansHT <- renderUI({
       
-      withMathJax()
-      
       intrpInfo <- IndMeansHypInfo()
       muNaught <- input$indMeansMuNaught
       
@@ -9512,7 +9593,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       
       
       indHTTail <- tagList(
-        withMathJax(
+        tagList(
           p(tags$b("Using Critical Value Method:")),
           sprintf("Critical Value(s) \\( = %s = %s\\)",
                   critValDF,
@@ -9766,24 +9847,6 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
                                                       targets = 0:ncol(WilcoxonUploadData())))),
       )
     })
-    outputOptions(output, "wRankSumUploadTable", suspendWhenHidden = FALSE)
-
-    session$onFlushed(function() {
-      hideTab(inputId = "wilcoxonRankSumTabset", target = "Uploaded Data")
-    }, once = TRUE)
-
-    observeEvent(input$wilcoxonRankSumTestData, {
-      if (input$wilcoxonRankSumTestData == "Upload Data") {
-        showTab(inputId = "wilcoxonRankSumTabset", target = "Uploaded Data")
-        hideTab(inputId = "wilcoxonRankSumTabset", target = "Data with Ranks")
-        hideTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
-        updateTabsetPanel(session, "wilcoxonRankSumTabset", selected = "Uploaded Data")
-      } else {
-        hideTab(inputId = "wilcoxonRankSumTabset", target = "Uploaded Data")
-        showTab(inputId = "wilcoxonRankSumTabset", target = "Analysis")
-        updateTabsetPanel(session, "wilcoxonRankSumTabset", selected = "Analysis")
-      }
-    }, ignoreInit = TRUE)
 
     #### ---------------- Data Table ----
     output$wRankSumMeansData <- renderDT({
@@ -9796,7 +9859,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       
       datatable(round(df_rankSumData, digits = 4),
                 options = list(dom = 'lftp',
-                               pageLength = -1,
+                               pageLength = 25,
                                lengthMenu = list(c(-1, 10, 25, 50), c("All", "10", "25", "50")),
                                ordering = FALSE
                 ),
@@ -9878,6 +9941,24 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
           errorClass = "myClass")
       }
 
+      ### ---------------- Guard 4: size limit of the Exact method ----------------
+      ## pwilcox()/qwilcox() cost grows with (n1 * n2)^2: about 10 s at 450 x 450,
+      ## blocking every session on the R process. Once choose(n1 + n2, n1)
+      ## overflows (e.g. 600 x 600) qwilcox() does not return at all.
+      if (isTRUE(input$normaprowrsRankSum == "Exact")) {
+        validate(
+          need(as.numeric(n1) * n2 <= siMaxExactRankSum,
+               sprintf("The Exact method is limited to samples with n\u2081 \u00d7 n\u2082 \u2264 %s (for example, 400 observations in each sample) because the exact distribution becomes too slow to compute. Please use the Normal approximation (for large samples) method.",
+                       formatC(siMaxExactRankSum, format = "d", big.mark = ","))),
+          errorClass = "myClass")
+      }
+
+      ## The Normal approximation branches below always set p_value themselves,
+      ## so the exact test is only run when its p-value is used.
+      normalApproxPValue <- isTRUE(!is.null(input$continuityCorrectionOption) && !is.null(input$normaprowrsRankSum) &&
+                                     input$continuityCorrectionOption %in% c("True", "False") &&
+                                     input$normaprowrsRankSum == "Normal approximation (for large samples)")
+
       u1_statistic <- observed_W-(n1*(n1+1)/2)
       u2_statistic <- observed_W2-(n2*(n2+1)/2)
       u_mean <- (n1*n2)/2
@@ -9953,10 +10034,12 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
           p_value <- pnorm(z_stat, lower.tail = FALSE)
         }
       }
-      else if(!has_ties){
+      else if(!has_ties && !normalApproxPValue){
+        ## conf.int is not requested: only the p-value is used, and the
+        ## exact confidence interval more than doubles the run time.
         test_result <- suppressWarnings(
           safe_wilcox_test(group1_data, group2_data, paired = FALSE, alternative = altern,
-                      conf.level = significance, exact = TRUE, conf.int = TRUE)
+                      conf.level = significance, exact = TRUE)
         )
         validate(
           need(!is.null(test_result), "The Wilcoxon rank sum test could not be computed for this data. Please check your data for sufficient variation in both samples."),
@@ -9981,9 +10064,14 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       if (isTRUE(!is.null(input$continuityCorrectionOption) && !is.null(input$normaprowrsRankSum) &&
           input$continuityCorrectionOption == "True" && input$normaprowrsRankSum == "Normal approximation (for large samples)")){
         if(isTRUE(has_ties)){
+          ## exact = FALSE: the Normal approximation (with tie correction) is
+          ## the selected method. Since R 4.4, exact = TRUE no longer falls back
+          ## to it when there are ties; it computes the exact conditional
+          ## distribution instead (ignoring the continuity correction option),
+          ## which takes minutes for a few hundred observations.
           test_result <- suppressWarnings(
             safe_wilcox_test(group1_data, group2_data, paired = FALSE, alternative = altern,
-                        conf.level = significance, exact = TRUE, correct = TRUE)
+                        conf.level = significance, exact = FALSE, correct = TRUE)
           )
           validate(
             need(!is.null(test_result), "The Wilcoxon rank sum test could not be computed for this data. Please check your data for sufficient variation in both samples."),
@@ -10004,9 +10092,14 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       else if (isTRUE(!is.null(input$continuityCorrectionOption) && !is.null(input$normaprowrsRankSum) &&
                input$continuityCorrectionOption == "False" && input$normaprowrsRankSum == "Normal approximation (for large samples)")){
         if(isTRUE(has_ties)){
+          ## exact = FALSE: the Normal approximation (with tie correction) is
+          ## the selected method. Since R 4.4, exact = TRUE no longer falls back
+          ## to it when there are ties; it computes the exact conditional
+          ## distribution instead (ignoring the continuity correction option),
+          ## which takes minutes for a few hundred observations.
           test_result <- suppressWarnings(
             safe_wilcox_test(group1_data, group2_data, paired = FALSE, alternative = altern,
-                        conf.level = significance, exact = TRUE, correct = FALSE)
+                        conf.level = significance, exact = FALSE, correct = FALSE)
           )
           validate(
             need(!is.null(test_result), "The Wilcoxon rank sum test could not be computed for this data. Please check your data for sufficient variation in both samples."),
@@ -10204,7 +10297,6 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
         if (input$normaprowrsRankSum == "Normal approximation (for large samples)") {
         tagList(
         p(
-          withMathJax(),
           p(tags$b("Using Critical Value Method:")),
           sprintf("Critical Value(s) \\( = %s z_{%s} = %s \\)",
                   if(input$altHypothesis2 == "2") "\\pm" else if(input$altHypothesis2 == "1") "-" else "",
@@ -10426,33 +10518,16 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
     output$depPopMeansUploadTable <- renderDT({
       req(depmeansupload_iv$is_valid())
       datatable(DepMeansUploadData(),
-                options = list(pageLength = -1,
+                options = list(pageLength = 25,
                                lengthMenu = list(c(25, 50, 100, -1),
                                                  c("25", "50", "100", "all")),
                                columnDefs = list(list(className = 'dt-center',
                                                       targets = 0:ncol(DepMeansUploadData())))),
       )
     })
-    outputOptions(output, "depPopMeansUploadTable", suspendWhenHidden = FALSE)
-
-    session$onFlushed(function() {
-      hideTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
-    }, once = TRUE)
-
-    observeEvent(input$dataTypeDependent, {
-      if (input$dataTypeDependent == "Upload Data") {
-        showTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
-        hideTab(inputId = "depPopMeansTabset", target = "Graphs")
-        updateTabsetPanel(session, "depPopMeansTabset", selected = "Uploaded Data")
-      } else {
-        hideTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
-        showTab(inputId = "depPopMeansTabset", target = "Analysis")
-        updateTabsetPanel(session, "depPopMeansTabset", selected = "Analysis")
-      }
-    }, ignoreInit = TRUE)
 
     #### ----------- Q-Q Plots ----------------------------------------------------------
-    output$depMeansQQPlot <- renderPlot({
+    output$depMeansQQPlotOutput <- renderPlot({
       # dep means qq plot
       req(input$depMeansQQPlot)
       
@@ -10485,7 +10560,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       
       datatable(round(df_depData, digits = 4),
                 options = list(dom = 'lftp',
-                               pageLength = -1,
+                               pageLength = 25,
                                lengthMenu = list(c(-1, 10, 25, 50), c("All", "10", "25", "50")),
                                ordering = FALSE
                 ),
@@ -10682,7 +10757,6 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       
       depHTTail <- tagList(
         p(
-          withMathJax(),
           p(tags$b("Using Critical Value Method:")),
           sprintf("Critical Value(s) \\( = %s t_{%s, \\, df} = %s t_{%s, \\, %s} = %s \\)",
                   IndMeansHypInfo()$critSign,
@@ -10901,7 +10975,6 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       
       signedRankHTTail <- tagList(
         p(
-          withMathJax(),
           p(tags$b("Using Critical Value Method:")),
           sprintf("Critical Value(s) \\( = %s z_{%s} = %s \\)",
                   if(input$altHypothesis2 == "2") "\\pm" else if(input$altHypothesis2 == "1") "-" else "",
@@ -10994,30 +11067,13 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
     output$signedRankUploadTable <- renderDT({
       req(signedRankUpload_iv$is_valid())
       datatable(signedRankUploadData(),
-                options = list(pageLength = -1,
+                options = list(pageLength = 25,
                                lengthMenu = list(c(25, 50, 100, -1),
                                                  c("25", "50", "100", "all")),
                                columnDefs = list(list(className = 'dt-center',
                                                       targets = 0:ncol(signedRankUploadData())))),
       )
     })
-    outputOptions(output, "signedRankUploadTable", suspendWhenHidden = FALSE)
-
-    session$onFlushed(function() {
-      hideTab(inputId = "signedRankTabset", target = "Uploaded Data")
-    }, once = TRUE)
-
-    observeEvent(input$signedRankTest, {
-      if (input$signedRankTest == "Upload Data") {
-        showTab(inputId = "signedRankTabset", target = "Uploaded Data")
-        hideTab(inputId = "signedRankTabset", target = "Graphs")
-        updateTabsetPanel(session, "signedRankTabset", selected = "Uploaded Data")
-      } else {
-        hideTab(inputId = "signedRankTabset", target = "Uploaded Data")
-        showTab(inputId = "signedRankTabset", target = "Analysis")
-        updateTabsetPanel(session, "signedRankTabset", selected = "Analysis")
-      }
-    }, ignoreInit = TRUE)
 
     output$signedRankQQ <- renderPlot({
       
@@ -11092,7 +11148,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
     
     #### ---------------- CI ----
     output$twoPropCI <- renderUI({
-      req(si_iv$is_valid())
+      req(siValid())
       
       twoPropZInt <- TwoPropZInt(input$numSuccesses1, input$numTrials1, input$numSuccesses2, input$numTrials2, ConfLvl())
       twoPropZInt["Z Critical"] <- round(twoPropZInt["Z Critical"], cvDigits)
@@ -11185,7 +11241,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
     
     #### ---------------- HT ----
     output$twoPropHT <- renderUI({
-      req(si_iv$is_valid())
+      req(siValid())
       
       diffNaught <- input$propDiffNaught
       twoPropZTest <- TwoPropZTest(input$numSuccesses1, input$numTrials1, input$numSuccesses2, input$numTrials2, diffNaught, IndMeansHypInfo()$alternative, SigLvl())
@@ -11314,7 +11370,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
                                    reject)
       
       twoPropHTTail <- tagList(
-        withMathJax(
+        tagList(
           p(tags$b("Using Critical Value Method:")),
           sprintf("Critical Value(s) \\( = %s z_{%s} = %s z_{%s} = %s \\)",
                   IndMeansHypInfo()$critSign,
@@ -11342,7 +11398,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
     
     #### ---------------- HT Plot ----
     output$twoPropHTPlot <- renderPlot({
-      req(si_iv$is_valid())
+      req(siValid())
       
       twoPropZTest <- TwoPropZTest(input$numSuccesses1, input$numTrials1, input$numSuccesses2, input$numTrials2, input$propDiffNaught, IndMeansHypInfo()$alternative, SigLvl())
       htPlotCritVal <- round(twoPropZTest["Z Critical"], cvDigits)
@@ -11419,7 +11475,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
     ### ------------ Two Pop Var Outputs ----------------------------------------------
     #### ----------- CI
     output$twoPopVarCI <- renderUI ({
-      req(si_iv$is_valid())
+      req(siValid())
       
       data <- GetAllTwoPopVarData()
       is_variance <- (input$dataAvailability3 == 'Variance')
@@ -11482,7 +11538,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
 
     #### ------------ HT
     output$twoPopVarHT <- renderUI({
-      req(si_iv$is_valid())
+      req(siValid())
       
       data <- GetAllTwoPopVarData()
       hyp_labels <- TwoPopVarHypInfo()
@@ -11572,7 +11628,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
     
     ### ------------ ANOVA Outputs -----------------------------------------------
     output$anovaOutput <- renderUI({
-      req(si_iv$is_valid())
+      req(siValid())
       
       if(input$anovaFormat == "Multiple") {
         anovaResults <- anovaOneWayResults()
@@ -11589,29 +11645,42 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
         errorClass = "myClass"
       )
       
+      ## When the values within every group are identical, MSE is zero and
+      ## F = MSB / MSE is undefined; aov() then returns an F of about 1e30
+      ## computed from rounding error.
+      anovaData <- anovaOneWayResults()$data
+      validate(
+        need(
+          !all(vapply(split(anovaData$values, anovaData$ind, drop = TRUE),
+                      function(v) all(v == v[1]), logical(1))),
+          "The values within each group are identical (there is no variation within the groups), so MSE = 0 and the ANOVA F statistic (F = MSB / MSE) is undefined."
+        ),
+        errorClass = "myClass"
+      )
+      
       PrintANOVA()
     })
     
     #### ---------------- Factor Table ----
     output$oneWayFactorTable <- renderDT({
-      req(si_iv$is_valid())
+      req(siValid())
       PrintANOVAFactorTable()
     })
     
     #### ---------------- ANOVA Table ----
     output$oneWayAnovaTable <- renderDT({
-      req(si_iv$is_valid())
+      req(siValid())
       PrintANOVATable()
     })
 
     ## output$oneWayAnovaTableHTML <- renderUI({
-    ##   req(si_iv$is_valid())
+    ##   req(siValid())
     ##   PrintANOVATableHTML()
     ## })
     
     #### ---------------- HT Plot ----
     output$oneWayAnovaPlot <- renderPlot({
-      req(si_iv$is_valid())
+      req(siValid())
       
       data <- anovaOneWayResults()$test
       anovaF <- round(data[1,"F value"], 4)
@@ -11797,7 +11866,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
     
     output$multipleUploadStatus <- renderUI({
       req(input$multipleUserData)
-      req(multipleupload_iv$is_valid())
+      req(multipleUploadValid())
       
       df <- multipleUploadData()
       
@@ -11814,7 +11883,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
     
     #### ----------------- Boxplot ----
     output$anovaBoxplot <- renderPlot({
-      req(si_iv$is_valid())
+      req(siValid())
       data <- anovaOneWayResults()$data
       
       df_boxplot <- data.frame(sample = c(data[,"ind"]),
@@ -11838,7 +11907,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
     
     #### ---------------- Histogram of Residuals ----
     output$anovaHistogram <- renderPlot({
-      req(si_iv$is_valid())
+      req(siValid())
       data <- anovaOneWayResults()$residuals
       
       RenderHistogram(data,
@@ -11853,21 +11922,11 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
     width = function() {GetPlotWidth(input[["anovaHistogram-Width"]], input[["anovaHistogram-WidthPx"]], ui = FALSE)}
     )
     
-    observeEvent(input[["anovaHistogram-Density"]], {
-      updateTextInput(
-        session,
-        "anovaHistogram-Ylab",
-        value = if (input[["anovaHistogram-Density"]]) {
-          "Density"
-        } else {
-          "Frequency"
-        }
-      )
-    })
+    observeEvent(input[["anovaHistogram-Density"]], siSyncHistogramYlab("anovaHistogram"), ignoreInit = TRUE)
     
     #### ---------------- QQ Plot of Residuals ----
     output$anovaQQplot <- renderPlot({
-      req(si_iv$is_valid())
+      req(siValid())
       data <- anovaOneWayResults()$residuals
       
       qqplot_df <- data.frame(values = data)
@@ -11885,7 +11944,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
     
     #### ---------------- Group Means Plot ----
     output$anovaMeanPlot<- renderPlot({
-      req(si_iv$is_valid())
+      req(siValid())
       data <- as.data.frame(anovaOneWayResults()$data)
       groups <- anovaOneWayResults()$factornames
       
@@ -11903,14 +11962,18 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
     
     #### ---------------- Uploaded Data Table ----
     output$kwUploadTable <- renderDT({
-      req(multipleupload_iv$is_valid())
+      # Re-rendered when Calculate shows the results again: an update sent in
+      # the same flush that hides them, as a new upload does, is dropped by the
+      # browser, and the kept table (see siUploadContainer()) would show the old file.
+      kwDisplayState()
+      req(multipleUploadValid())
       
       data <- multipleUploadData()
       
       datatable(
         data,
         options = list(
-          pageLength = -1,
+          pageLength = 25,
           lengthMenu = list(
             c(25, 50, 100, -1),
             c("25", "50", "100", "all")
@@ -11922,14 +11985,18 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
     })
     
     output$anovaUploadTable <- renderDT({
-      req(multipleupload_iv$is_valid())
+      # Re-rendered when Calculate shows the results again: an update sent in
+      # the same flush that hides them, as a new upload does, is dropped by the
+      # browser, and the kept table (see siUploadContainer()) would show the old file.
+      anovaDisplayState()
+      req(multipleUploadValid())
       
       data <- multipleUploadData()
       
       datatable(
         data,
         options = list(
-          pageLength = -1,
+          pageLength = 25,
           lengthMenu = list(
             c(25, 50, 100, -1),
             c("25", "50", "100", "all")
@@ -11942,8 +12009,11 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
     
     multipleUploadInitial <- function(multipleUploadData_output) {
       renderDT({
+        validate(
+          need(!is.null(multipleUploadData_output()), siUploadErrorMsg(input$multipleUserData)),
+          errorClass = "myClass")
         datatable(multipleUploadData_output(),
-                  options = list(pageLength = -1,
+                  options = list(pageLength = 25,
                                  lengthMenu = list(c(25, 50, 100, -1),
                                                    c("25", "50", "100", "all")),
                                  columnDefs = list(list(className = 'dt-center',
@@ -11953,31 +12023,25 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
     
     output$multipleInitialUploadTable <- multipleUploadInitial(multipleUploadData)
     
-    output$anovaUploadedDataView <- renderUI({
-      if (!isTRUE(input$siMethod == 'Multiple' &&
-                  input$multipleMethodChoice == "anova")) return(NULL)
-      
-      if (!multipleupload_iv$is_valid()) {
-        return(helpText("No data yet. Upload a dataset to view it here."))
-      }
-      
-      tagList(
+    output$anovaUploadedDataView <- siUploadContainer(
+      function() {
+        if (!isTRUE(input$siMethod == 'Multiple' && input$multipleMethodChoice == "anova")) "none"
+        else if (!multipleUploadValid()) "empty"
+        else "table"
+      },
+      function(state) siUploadPreview(state, tagList(
         div(DTOutput(session$ns("anovaUploadTable")), style = "width: 75%")
-      )
-    })
+      )))
     
-    output$kwUploadedDataView <- renderUI({
-      if (!isTRUE(input$siMethod == 'Multiple' &&
-                  input$multipleMethodChoice == "kw")) return(NULL)
-      
-      if (!multipleupload_iv$is_valid()) {
-        return(helpText("No data yet. Upload a dataset to view it here."))
-      }
-      
-      tagList(
+    output$kwUploadedDataView <- siUploadContainer(
+      function() {
+        if (!isTRUE(input$siMethod == 'Multiple' && input$multipleMethodChoice == "kw")) "none"
+        else if (!multipleUploadValid()) "empty"
+        else "table"
+      },
+      function(state) siUploadPreview(state, tagList(
         div(DTOutput(session$ns("kwUploadTable")), style = "width: 75%")
-      )
-    })
+      )))
     
     output$renderMultipleRaw <- renderUI({
       tagList(
@@ -11985,16 +12049,19 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       )
     })
     
-    output$multipleRawContainer <- renderUI({
-      req(input$siMethod == "Multiple")
-      req(input$multipleMethodChoice %in% c("anova", "kw"))
-      req(input$multipleUserData)
-      
-      if (input$multipleMethodChoice == "anova") {
-        req(anovaDisplayState() == "raw")
-      } else if (input$multipleMethodChoice == "kw") {
-        req(kwDisplayState() == "raw")
-      }
+    ## Shown (TRUE) from an upload until Calculate; kept, not rebuilt, for a
+    ## replacement file (see siUploadContainer()).
+    output$multipleRawContainer <- siUploadContainer(function() {
+      isTRUE(input$siMethod == "Multiple") &&
+        isTRUE(input$multipleMethodChoice %in% c("anova", "kw")) &&
+        isTruthy(input$multipleUserData) &&
+        if (input$multipleMethodChoice == "anova") {
+          anovaDisplayState() == "raw"
+        } else {
+          kwDisplayState() == "raw"
+        }
+    }, function(show) {
+      if (!show) return(NULL)
       
       navbarPage(
         id    = session$ns("multipleRaw"),
@@ -12055,8 +12122,13 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
     
     #### ---------------- Side-by-side Boxplot ----
     output$kwBoxplot <- renderPlot({
-      req(si_iv$is_valid())
+      req(siValid())
       data <- kwResults()$data
+      kwGroups <- length(unique(data$ind))
+      validate(
+        need(kwGroups <= siMaxKWBoxplotGroups,
+             siKWTooManyGroupsMsg("side-by-side boxplot", siMaxKWBoxplotGroups, kwGroups)),
+        errorClass = "myClass")
       
       df_boxplot <- data.frame(sample = c(data[,"ind"]),
                                data = c(data[,"values"]))
@@ -12079,7 +12151,12 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
     
     #### ---------------- Group Means Plot ----
     output$kwMeanPlot<- renderPlot({
-      req(si_iv$is_valid())
+      req(siValid())
+      kwGroups <- length(unique(kwResults()$data$ind))
+      validate(
+        need(kwGroups <= siMaxKWMeanPlotGroups,
+             siKWTooManyGroupsMsg("group means plot", siMaxKWMeanPlotGroups, kwGroups)),
+        errorClass = "myClass")
       data <- as.data.frame(kwResults()$data)
       groups <- kwResults()$factornames
       
@@ -12099,7 +12176,27 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
     output$kwHT <- kruskalWallisHT(kwResults, reactive({input$kwSigLvl}))
     output$kwInitialUploadTable <- kruskalWallisUploadInitial(multipleUploadData)
     
-    output$renderKWRM <- kwRankedTableOutput(kwResults()$data)
+    ## Reads kwResults() reactively, so the ranked table follows the current
+    ## data and columns.
+    output$renderKWRM <- renderUI({
+      req(kwResults())
+      if (is.null(kwResults()$data)) {
+        return(tagList(
+          p("No data available for ranking.",
+            style = "color: #666; font-style: italic; text-align: center; padding: 20px;")
+        ))
+      }
+      kwGroups <- length(unique(kwResults()$data$ind))
+      if (kwGroups > siMaxKWRankTableGroups) {
+        return(tagList(
+          p(siKWTooManyGroupsMsg("data table with ranks", siMaxKWRankTableGroups, kwGroups),
+            "Use \"Save as Excel\" to download it.",
+            style = "color: #666; font-style: italic; text-align: center; padding: 20px;")
+        ))
+      }
+      uiOutput(session$ns("kwRankedTable"))
+    })
+    output$kwRankedTable <- kwRankedTableOutput(reactive(kwResults()$data))
     output$kruskalWallisPlot <- kruskalWallisPlot(kwResults, reactive({input$kwSigLvl}))
     output$kwConclusionOutput <- kwConclusion(kwResults, reactive({input$kwSigLvl}))
     output$debug_kw_state <- renderText({
@@ -12112,19 +12209,31 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
     })
     
     ### ------------ Chi-Square Outputs ------------------------------------------
+    ## The chi-square and Fisher tables are sent again on every Calculate
+    ## (input$goInference). A table that changes in the same update that hides
+    ## the result area (e.g. a new Dimension) reaches the browser while hidden;
+    ## DT then keeps the value without drawing it, and showing the area again
+    ## does not draw it either, so the previous table stayed on screen. The
+    ## value sent after Calculate arrives once the area is visible again.
+    ## The tables are small, so their data is sent with the table
+    ## (server = FALSE): a table rebuilt by renderChiSqResults (Yates option)
+    ## cannot request rows by old column names, which showed a DataTables alert.
     
     output$chiSqObs <- renderDT({
+      input$goInference
       chiSqData <- chiSqTotaled()
       
       CreateChiSqObserved(chiSqData)
-    })
+    }, server = FALSE)
     
     output$chiSqExp <- renderDT({
+      input$goInference
       CreateChiSqExpected(chiSqResults()$Results$expected)
-    })
+    }, server = FALSE)
     
     output$chiSqResultsMatrix <- renderDT({
-      req(si_iv$is_valid())
+      input$goInference
+      req(siValid())
       
       chiSqTest <- suppressWarnings(ChiSquareTest(chiSqActiveMatrix(), input$chiSquareYates))
       
@@ -12174,7 +12283,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
         formatStyle(columns = 0:ncol(display_matrix),
                     target = 'row',
                     fontWeight = styleRow(dim(display_matrix)[1], "bold"))
-    })
+    }, server = FALSE)
     
     
     output$chiSqTest <- renderUI({
@@ -12273,10 +12382,11 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
     })
     
     output$fishersObs <- renderDT({
-      req(si_iv$is_valid())
+      input$goInference
+      req(siValid())
       
       CreateChiSqObserved(chiSqTotaled())
-    })
+    }, server = FALSE)
     
     output$fishersTest <- renderUI({
       PrintFishersTest()
@@ -12294,59 +12404,252 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
         shinyjs::runjs("$(window).trigger('resize');")
       })
     }
-    
-    observeEvent(!si_iv$is_valid(), {
-      if (!uploadPreviewActive()) {
-        hide(id = "inferenceMP")
-        hide(id = "inferenceData")
-      }
+
+    ### ------------ Result tab strips -------------------------------------------
+    ## The tabs shown in each section's result navbarPage, and the selected tab,
+    ## are decided only by syncSectionTabs(). The events below (data-mode or
+    ## graph-option change, upload, column change, Calculate, Reset) record what
+    ## happened in siTabState and then call it for their own section.
+    siSections <- list(
+      onePopMean      = list(id = "onePopMeanTabset", mode = "dataAvailability",
+                             graphs = "oneMeanGraphOptions",
+                             tabs = c("Analysis", "Graphs", "Uploaded Data")),
+      oneSD           = list(id = "oneSDTabset", mode = "sdDataAvailability",
+                             graphs = "oneSDPlots",
+                             tabs = c("Analysis", "Graphs", "Uploaded Data")),
+      indPopMeans     = list(id = "indPopMeansTabset", mode = "dataAvailability2",
+                             graphs = "indMeansPlots",
+                             tabs = c("Analysis", "Graphs", "Uploaded Data")),
+      depPopMeans     = list(id = "depPopMeansTabset", mode = "dataTypeDependent",
+                             graphs = "depMeansQQPlot",
+                             tabs = c("Analysis", "Data with Calculations", "Graphs", "Uploaded Data")),
+      wilcoxonRankSum = list(id = "wilcoxonRankSumTabset", mode = "wilcoxonRankSumTestData",
+                             graphs = "sidebysidewRankPlots",
+                             tabs = c("Analysis", "Data with Ranks", "Graphs", "Uploaded Data")),
+      signedRank      = list(id = "signedRankTabset", mode = "signedRankTest",
+                             graphs = "signedRankQQPlot",
+                             tabs = c("Analysis", "Data with Ranks", "Graphs", "Uploaded Data"))
+    )
+
+    ## shown:    which tabs the browser shows (starts as the static UI).
+    ## view:     "results" once Calculate succeeded in Upload Data mode;
+    ##           "upload" while only the Uploaded Data preview applies.
+    ## graphsOK: FALSE when the last Calculate had invalid inputs for the graphs.
+    ## blocked:  TRUE when the last Wilcoxon rank sum Calculate found no rank
+    ##           variation (its Data with Ranks and Graphs tabs stay hidden).
+    ## mode:     the data mode last seen, to tell a mode change from a
+    ##           graph-option change.
+    siTabState <- new.env(parent = emptyenv())
+    siTabState$shown <- lapply(siSections, function(s) {
+      setNames(!(s$tabs %in% siInitialHiddenTabs[[s$id]]), s$tabs)
     })
-    
-    observeEvent(list(input$popuParameter, input$siMethod), {
+    siTabState$view     <- lapply(siSections, function(s) "upload")
+    siTabState$graphsOK <- lapply(siSections, function(s) TRUE)
+    siTabState$blocked  <- lapply(siSections, function(s) FALSE)
+    siTabState$mode     <- lapply(siSections, function(s) NULL)
+
+    siGraphsWanted <- function(key) {
+      s <- siSections[[key]]
+      switch(key,
+             depPopMeans = ,
+             signedRank  = isTRUE(input[[s$graphs]]),
+             wilcoxonRankSum = length(input[[s$graphs]]) > 0,
+             length(input[[s$graphs]]) > 0 &&
+               !isTRUE(input[[s$mode]] == "Summarized Data"))
+    }
+
+    ## Show/hide the section's tabs so they match its current state, sending
+    ## only the changes, then select `select` (or, when the selected tab is
+    ## being hidden, the first tab that stays visible).
+    syncSectionTabs <- function(key, select = NULL, resize = FALSE) {
+      s <- siSections[[key]]
+      isolate({
+        upload  <- isTRUE(input[[s$mode]] == "Upload Data")
+        results <- !upload || identical(siTabState$view[[key]], "results")
+        blocked <- isTRUE(siTabState$blocked[[key]])
+        want <- c(Analysis                 = results,
+                  `Data with Calculations` = results,
+                  `Data with Ranks`        = results && !blocked,
+                  Graphs                   = results && !blocked &&
+                    isTRUE(siTabState$graphsOK[[key]]) && siGraphsWanted(key),
+                  `Uploaded Data`          = upload)[s$tabs]
+        shown <- siTabState$shown[[key]]
+        current <- input[[s$id]]
+        if (is.null(select) && length(current) == 1 && current %in% s$tabs &&
+            !want[[current]] && any(want)) {
+          select <- s$tabs[want][1]
+        }
+        for (tab in s$tabs[want & !shown]) showTab(inputId = s$id, target = tab, session = session)
+        for (tab in s$tabs[!want & shown]) hideTab(inputId = s$id, target = tab, session = session)
+        siTabState$shown[[key]] <- want
+        if (!is.null(select)) {
+          updateTabsetPanel(session, s$id, selected = select)
+        }
+      })
+      if (resize) {
+        ## DataTables initializes at zero width when its tab is hidden; force a
+        ## redraw once the tab is actually visible so the table isn't blank.
+        shinyjs::delay(100, {
+          shinyjs::runjs("$(window).trigger('resize');")
+        })
+      }
+    }
+
+    ## The section whose result tabs are on screen, or NULL.
+    siActiveSection <- function() {
+      key <- NULL
+      if (isTRUE(input$siMethod == '1')) {
+        key <- c("Population Mean" = "onePopMean",
+                 "Population Standard Deviation" = "oneSD")[input$popuParameter]
+      } else if (isTRUE(input$siMethod == '2')) {
+        key <- c("Independent Population Means" = "indPopMeans",
+                 "Dependent Population Means" = "depPopMeans",
+                 "Wilcoxon rank sum test" = "wilcoxonRankSum",
+                 "Wilcoxon Signed Rank Test" = "signedRank")[input$popuParameters]
+      }
+      if (length(key) == 1 && !is.na(key)) unname(key) else NULL
+    }
+
+    ## Data mode or graph options changed. A new data mode starts over: no
+    ## results yet, and its main tab (Uploaded Data or Analysis) selected.
+    lapply(names(siSections), function(key) {
+      s <- siSections[[key]]
+      observeEvent(list(input[[s$mode]], input[[s$graphs]]), ignoreNULL = FALSE, {
+        mode <- input[[s$mode]]
+        select <- NULL
+        if (!identical(mode, siTabState$mode[[key]])) {
+          if (!is.null(siTabState$mode[[key]])) {
+            select <- if (identical(mode, "Upload Data")) "Uploaded Data" else "Analysis"
+          }
+          siTabState$mode[[key]]     <- mode
+          siTabState$view[[key]]     <- "upload"
+          siTabState$graphsOK[[key]] <- TRUE
+          siTabState$blocked[[key]]  <- FALSE
+        }
+        syncSectionTabs(key, select = select)
+      })
+    })
+
+    ## A file (or sheet) was read: show only its Uploaded Data preview.
+    siShowUploadedData <- function(key) {
+      siTabState$view[[key]] <- "upload"
+      syncSectionTabs(key, select = "Uploaded Data", resize = TRUE)
+    }
+
+    ## The column choice changed in Upload Data mode: unless the section keeps
+    ## valid results (`keepResults`), go back to the Uploaded Data preview.
+    siColumnsChanged <- function(key, keepResults) {
+      if (isTRUE(input[[siSections[[key]]$mode]] == "Upload Data") && !keepResults) {
+        siTabState$view[[key]] <- "upload"
+        syncSectionTabs(key, select = "Uploaded Data")
+      }
+    }
+    observeEvent(input$oneMeanVariable, siColumnsChanged("onePopMean", FALSE), ignoreInit = TRUE)
+    observeEvent(input$sdVariable, siColumnsChanged("oneSD", FALSE), ignoreInit = TRUE)
+    observeEvent(list(input$indMeansUplSample1, input$indMeansUplSample2), {
+      siColumnsChanged("indPopMeans", indmeansuploadvar_iv$is_valid())
+    }, ignoreInit = TRUE)
+    observeEvent(list(input$depMeansUplSample1, input$depMeansUplSample2), {
+      siColumnsChanged("depPopMeans", depmeansupload_iv$is_valid() && depmeansuploadvars_iv$is_valid())
+    }, ignoreInit = TRUE)
+    observeEvent(list(input$wilcoxonUpl1, input$wilcoxonUpl2), {
+      siColumnsChanged("wilcoxonRankSum", wilcoxonUpload_iv$is_valid() && wilcoxonRanksuploadvars_iv$is_valid())
+    }, ignoreInit = TRUE)
+    observeEvent(list(input$signedRankUpl1, input$signedRankUpl2), {
+      siColumnsChanged("signedRank", signedRankUpload_iv$is_valid() && signedRankUploadvars_iv$is_valid())
+    }, ignoreInit = TRUE)
+
+    ## Wilcoxon rank sum: TRUE when the data has no rank variation (all values
+    ## identical) or, under the normal approximation, a zero standard error.
+    wilcoxonRankSumDegenerate <- function() {
+      rank_data_check <- tryCatch(wilcoxonRankedData(), error = function(e) NULL)
+      wrs_error <- FALSE
+
+      if (!is.null(rank_data_check)) {
+        combined_vals_chk <- rank_data_check$Value
+        all_identical <- length(unique(combined_vals_chk)) <= 1
+
+        if (all_identical) {
+          wrs_error <- TRUE
+        } else if (isTRUE(input$normaprowrsRankSum == "Normal approximation (for large samples)")) {
+          name1_chk <- if (input$wilcoxonRankSumTestData == 'Upload Data') input$wilcoxonUpl1 else "Sample 1"
+          name2_chk <- if (input$wilcoxonRankSumTestData == 'Upload Data') input$wilcoxonUpl2 else "Sample 2"
+          n1_chk <- sum(rank_data_check$Group == name1_chk)
+          n2_chk <- sum(rank_data_check$Group == name2_chk)
+          nAll_chk <- nrow(rank_data_check)
+          tc_chk <- calculate_tie_correction(combined_vals_chk)
+          se_chk <- sqrt((n1_chk * n2_chk / 12) *
+                           ((nAll_chk + 1) - (tc_chk / (nAll_chk * (nAll_chk - 1)))))
+          if (is.na(se_chk) || se_chk <= 0) wrs_error <- TRUE
+        }
+      }
+      wrs_error
+    }
+
+    ## Calculate was pressed with `key` the active section.
+    siCalculateTabs <- function(key) {
+      s <- siSections[[key]]
+      uploadOK <- switch(key,
+                         onePopMean      = onemeanuploadvar_iv$is_valid(),
+                         oneSD           = onesduploadvar_iv$is_valid(),
+                         indPopMeans     = indmeansupload_iv$is_valid() && indmeansuploadvar_iv$is_valid(),
+                         depPopMeans     = depmeansupload_iv$is_valid() && depmeansuploadvars_iv$is_valid(),
+                         wilcoxonRankSum = wilcoxonUpload_iv$is_valid() && wilcoxonRanksuploadvars_iv$is_valid(),
+                         signedRank      = signedRankUpload_iv$is_valid() && signedRankUploadvars_iv$is_valid())
+      showResults <- !isTRUE(input[[s$mode]] == "Upload Data") || uploadOK
+      siTabState$view[[key]] <- if (showResults) "results" else "upload"
+      siTabState$graphsOK[[key]] <- switch(key,
+                                           onePopMean  = ,
+                                           oneSD       = ,
+                                           indPopMeans = siValid(),
+                                           depPopMeans = siValid() && depmeansrawsd_iv$is_valid(),
+                                           TRUE)
+      siTabState$blocked[[key]] <- key == "wilcoxonRankSum" && showResults && wilcoxonRankSumDegenerate()
+      syncSectionTabs(key, select = if (showResults) "Analysis" else "Uploaded Data")
+    }
+
+    ## ignoreInit: both panels start hidden in statInfrUI, so the start-up run
+    ## would only re-hide them.
+    observeEvent(!siValid(), {
       if (!uploadPreviewActive()) {
         hide(id = "inferenceMP")
         hide(id = "inferenceData")
       }
     }, ignoreInit = TRUE)
     
-    observeEvent(!depmeansrawsd_iv$is_valid(), {
-      hide(id = "inferenceMP")
-      hide(id = "inferenceData")
-    })
-    observeEvent(!wRankSumrawsd_iv$is_valid(), {
-      hide(id = "inferenceMP")
-      hide(id = "inferenceData")
-    })
-    observeEvent(!signedRankrawsd_iv$is_valid(), {
-      hide(id = "inferenceMP")
-      hide(id = "inferenceData")
-    })
-    observeEvent({
-      input$siMethod
-      input$sampleSize
-      input$sampleMean
-      input$popuParameter
-      input$popuParameters
-      input$dataAvailability
-      input$dataAvailability2
-      input$sigmaKnown
-      input$sigmaKnownRaw
-      input$popuSD
-      input$popuSDRaw
-      input$sampSD
-      input$inferenceType
-      input$inferenceType2
-      input$normaprowrs
-      input$normaprowrsRankSum
-      input$input$continuityCorrectionOption
-    }, {
-      hide(id = "inferenceData")
-    })
+    ## Results are stale once one of these inputs changes; hide them until the
+    ## next Calculate (the !siValid() observer above already covers the
+    ## inputs that have validation rules). A list() event never evaluates to
+    ## NULL, so the handler fires on every change. Like the observer above, it
+    ## leaves a valid Uploaded Data preview on screen.
+    observeEvent(list(
+      input$siMethod,
+      input$sampleSize,
+      input$sampleMean,
+      input$popuParameter,
+      input$popuParameters,
+      input$dataAvailability,
+      input$dataAvailability2,
+      input$sigmaKnown,
+      input$sigmaKnownRaw,
+      input$popuSD,
+      input$popuSDRaw,
+      input$sampSD,
+      input$inferenceType,
+      input$inferenceType2,
+      input$normaprowrs,
+      input$normaprowrsRankSum,
+      input$continuityCorrectionOption
+    ), {
+      if (!uploadPreviewActive()) {
+        hide(id = "inferenceData")
+      }
+    }, ignoreInit = TRUE)
 
-    observeEvent(!multipleupload_iv$is_valid(), {
+    observeEvent(!multipleUploadValid(), {
       hide(id = "inferenceMP")
       hide(id = "inferenceData")
-    })
+    }, ignoreInit = TRUE)
     
     observeEvent(input$sdUserData, priority = 50, {
       req(input$sdUserData)
@@ -12363,7 +12666,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       }
     })
 
-    observeEvent(list(input$sdUserData, input$sdSheet), priority = 5, {
+    observeEvent(list(input$sdUserData, input$sdSheet), priority = 5, siReportErrors({
       req(input$sdUserData)
       hide(id = "inferenceData")
       hide(id = "sdVariable")
@@ -12377,16 +12680,15 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       freezeReactiveValue(input, "sdVariable")
       updateSelectInput(session = getDefaultReactiveDomain(),
                         "sdVariable",
-                        choices = c(colnames(SDUploadData())))
+                        choices = as.character(colnames(SDUploadData())))
       shinyjs::show(id = "sdVariable")
 
       if (onesdupload_iv$is_valid()) {
         shinyjs::show(id = "inferenceMP")
         shinyjs::show(id = "inferenceData")
-        hideTab(inputId = "oneSDTabset", target = "Analysis")
-        goToUploadedDataTab("oneSDTabset")
+        siShowUploadedData("oneSD")
       }
-    })
+    }, "Could not process the uploaded file"))
 
     observeEvent(input$oneMeanUserData, priority = 50, {
       req(input$oneMeanUserData)
@@ -12403,7 +12705,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       }
     })
 
-    observeEvent(list(input$oneMeanUserData, input$oneMeanSheet), priority = 5, {
+    observeEvent(list(input$oneMeanUserData, input$oneMeanSheet), priority = 5, siReportErrors({
       req(input$oneMeanUserData)
       hide(id = "inferenceData")
       hide(id = "oneMeanVariable")
@@ -12422,7 +12724,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       freezeReactiveValue(input, "oneMeanVariable")
       updateSelectInput(session = getDefaultReactiveDomain(),
                         "oneMeanVariable",
-                        choices = c(colnames(OneMeanUploadData()))
+                        choices = as.character(colnames(OneMeanUploadData()))
       )
 
       shinyjs::show(id = "oneMeanVariable")
@@ -12430,49 +12732,13 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       if (onemeanupload_iv$is_valid()) {
         shinyjs::show(id = "inferenceMP")
         shinyjs::show(id = "inferenceData")
-        hideTab(inputId = "onePopMeanTabset", target = "Analysis")
-        hideTab(inputId = "onePopMeanTabset", target = "Graphs")
-        goToUploadedDataTab("onePopMeanTabset")
+        siShowUploadedData("onePopMean")
       }
-    })
+    }, "Could not process the uploaded file"))
     
-    observeEvent(input$oneMeanGraphOptions, ignoreNULL = FALSE, {
-      if (length(input$oneMeanGraphOptions) > 0 && input$dataAvailability != 'Summarized Data') {
-        showTab(inputId = "onePopMeanTabset", target = "Graphs")
-      } else {
-        if (input$onePopMeanTabset == "Graphs") {
-          updateTabsetPanel(inputId = 'onePopMeanTabset', selected = "Analysis")
-        }
-        hideTab(inputId = "onePopMeanTabset", target = "Graphs")
-      }
-    })
-    
-    output$renderOnePopMeanData <- renderUI({
-      if (input$dataAvailability != "Upload Data") return(NULL)
-      if (!onemeanupload_iv$is_valid()) {
-        return(helpText("No data yet. Upload a dataset to view it here."))
-      }
-      DTOutput(session$ns("onePopMeanUploadTable"))
-    })
-
-    observeEvent(input$oneMeanVariable, {
-      if (isTRUE(input$dataAvailability == "Upload Data")) {
-        hideTab(inputId = "onePopMeanTabset", target = "Analysis")
-        hideTab(inputId = "onePopMeanTabset", target = "Graphs")
-        updateTabsetPanel(session, "onePopMeanTabset", selected = "Uploaded Data")
-      }
-    }, ignoreInit = TRUE)
-    
-    observeEvent(input$oneSDPlots, ignoreNULL = FALSE, {
-      if (length(input$oneSDPlots) > 0 && input$sdDataAvailability != "Summarized Data") {
-        showTab(inputId = "oneSDTabset", target = "Graphs")
-      } else {
-        if (input$oneSDTabset == "Graphs") {
-          updateTabsetPanel(inputId = "oneSDTabset", selected = "Analysis")
-        }
-        hideTab(inputId = "oneSDTabset", target = "Graphs")
-      }
-    })
+    output$renderOnePopMeanData <- siUploadContainer(
+      function() siUploadPreviewState(input$dataAvailability, onemeanupload_iv$is_valid()),
+      function(state) siUploadPreview(state, DTOutput(session$ns("onePopMeanUploadTable"))))
 
     observeEvent(input$indMeansUserData, priority = 50, {
       req(input$indMeansUserData)
@@ -12489,7 +12755,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       }
     })
 
-    observeEvent(list(input$indMeansUserData, input$indMeansSheet), priority = 5, {
+    observeEvent(list(input$indMeansUserData, input$indMeansSheet), priority = 5, siReportErrors({
       req(input$indMeansUserData)
       hide(id = "inferenceData")
       hide(id = "indMeansUplSample1")
@@ -12505,13 +12771,13 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       freezeReactiveValue(input, "indMeansUplSample1")
       updateSelectInput(session = getDefaultReactiveDomain(),
                         "indMeansUplSample1",
-                        choices = c(colnames(IndMeansUploadData()))
+                        choices = as.character(colnames(IndMeansUploadData()))
       )
       
       freezeReactiveValue(input, "indMeansUplSample2")
       updateSelectInput(session = getDefaultReactiveDomain(),
                         "indMeansUplSample2",
-                        choices = c(colnames(IndMeansUploadData()))
+                        choices = as.character(colnames(IndMeansUploadData()))
       )
       shinyjs::show(id = "indMeansUplSample1")
       shinyjs::show(id = "indMeansUplSample2")
@@ -12520,52 +12786,14 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       if (indmeansupload_iv$is_valid()) {
         shinyjs::show(id = "inferenceMP")
         shinyjs::show(id = "inferenceData")
-        hideTab(inputId = "indPopMeansTabset", target = "Analysis")
-        goToUploadedDataTab("indPopMeansTabset")
+        siShowUploadedData("indPopMeans")
       }
-    })
+    }, "Could not process the uploaded file"))
     
-    observeEvent(list(input$indMeansUplSample1, input$indMeansUplSample2), {
-      if (isTRUE(input$dataAvailability2 == "Upload Data")) {
-        if (!indmeansuploadvar_iv$is_valid()) {
-          hideTab(inputId = "indPopMeansTabset", target = "Analysis")
-          hideTab(inputId = "indPopMeansTabset", target = "Graphs")
-          updateTabsetPanel(session, "indPopMeansTabset", selected = "Uploaded Data")
-        }
-      }
-    }, ignoreInit = TRUE)
-    
-    output$renderIndPopMeansData <- renderUI({
-      if (input$dataAvailability2 != "Upload Data") return(NULL)
-      if (!indmeansupload_iv$is_valid()) {
-        return(helpText("No data yet. Upload a dataset to view it here."))
-      }
-      div(DTOutput(session$ns("indPopMeansUploadTable")), style = "width: 75%")
-    })
+    output$renderIndPopMeansData <- siUploadContainer(
+      function() siUploadPreviewState(input$dataAvailability2, indmeansupload_iv$is_valid()),
+      function(state) siUploadPreview(state, div(DTOutput(session$ns("indPopMeansUploadTable")), style = "width: 75%")))
 
-    observeEvent(input$indMeansPlots, ignoreNULL = FALSE, {
-      if (length(input$indMeansPlots) > 0 && input$dataAvailability2 != "Summarized Data") {
-        showTab(inputId = "indPopMeansTabset", target = "Graphs")
-      } else {
-        if (input$indPopMeansTabset == "Graphs") {
-          updateTabsetPanel(inputId = "indPopMeansTabset", selected = "Analysis")
-        }
-        hideTab(inputId = "indPopMeansTabset", target = "Graphs")
-      }
-    })
-    
-    
-    observeEvent(input$depMeansQQPlot, {
-      if (input$depMeansQQPlot) {
-        showTab(inputId = "depPopMeansTabset", target = "Graphs")
-      } else {
-        if (input$depPopMeansTabset == "Graphs") {
-          updateTabsetPanel(inputId = 'depPopMeansTabset', selected = "Analysis")
-        }
-        hideTab(inputId = "depPopMeansTabset", target = "Graphs")
-      }
-    })
-    
     observeEvent(input$depMeansUserData, priority = 50, {
       req(input$depMeansUserData)
       ext <- tolower(tools::file_ext(input$depMeansUserData$name))
@@ -12581,7 +12809,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       }
     })
 
-    observeEvent(list(input$depMeansUserData, input$depMeansSheet), priority = 5, {
+    observeEvent(list(input$depMeansUserData, input$depMeansSheet), priority = 5, siReportErrors({
       req(input$depMeansUserData)
       hide(id = "inferenceData")
       hide(id = "depMeansUplSample1")
@@ -12610,31 +12838,13 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
 
         shinyjs::show(id = "inferenceMP")
         shinyjs::show(id = "inferenceData")
-        hideTab(inputId = "depPopMeansTabset", target = "Analysis")
-        hideTab(inputId = "depPopMeansTabset", target = "Graphs")
-        hideTab(inputId = "depPopMeansTabset", target = "Data with Calculations")
-        goToUploadedDataTab("depPopMeansTabset")
+        siShowUploadedData("depPopMeans")
       }
-    })
+    }, "Could not process the uploaded file"))
     
-    observeEvent(list(input$depMeansUplSample1, input$depMeansUplSample2), {
-      if (isTRUE(input$dataTypeDependent == "Upload Data")) {
-        if (!depmeansupload_iv$is_valid() || !depmeansuploadvars_iv$is_valid()) {
-          hideTab(inputId = "depPopMeansTabset", target = "Analysis")
-          hideTab(inputId = "depPopMeansTabset", target = "Data with Calculations")
-          hideTab(inputId = "depPopMeansTabset", target = "Graphs")
-          updateTabsetPanel(session, "depPopMeansTabset", selected = "Uploaded Data")
-        }
-      }
-    }, ignoreInit = TRUE)
-    
-    output$renderDepPopMeansData <- renderUI({
-      if (input$dataTypeDependent != "Upload Data") return(NULL)
-      if (!depmeansupload_iv$is_valid()) {
-        return(helpText("No data yet. Upload a dataset to view it here."))
-      }
-      div(DTOutput(session$ns("depPopMeansUploadTable")), style = "width: 75%")
-    })
+    output$renderDepPopMeansData <- siUploadContainer(
+      function() siUploadPreviewState(input$dataTypeDependent, depmeansupload_iv$is_valid()),
+      function(state) siUploadPreview(state, div(DTOutput(session$ns("depPopMeansUploadTable")), style = "width: 75%")))
 
     ### ---------- Wilcoxon Rank Sum Observers --------------------
     observeEvent(input$wilcoxonUpl, priority = 50, {
@@ -12652,7 +12862,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       }
     })
 
-    observeEvent(list(input$wilcoxonUpl, input$wilcoxonSheet), priority = 5, {
+    observeEvent(list(input$wilcoxonUpl, input$wilcoxonSheet), priority = 5, siReportErrors({
       req(input$wilcoxonUpl)
       hide(id = "inferenceData")
       hide(id = "wilcoxonUpl1")
@@ -12683,42 +12893,13 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
 
         shinyjs::show(id = "inferenceMP")
         shinyjs::show(id = "inferenceData")
-        hideTab(inputId = "wilcoxonRankSumTabset", target = "Analysis")
-        hideTab(inputId = "wilcoxonRankSumTabset", target = "Data with Ranks")
-        hideTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
-        goToUploadedDataTab("wilcoxonRankSumTabset")
+        siShowUploadedData("wilcoxonRankSum")
       }
-    })
+    }, "Could not process the uploaded file"))
 
-    observeEvent(list(input$wilcoxonUpl1, input$wilcoxonUpl2), {
-      if (isTRUE(input$wilcoxonRankSumTestData == "Upload Data")) {
-        if (!wilcoxonUpload_iv$is_valid() || !wilcoxonRanksuploadvars_iv$is_valid()) {
-          hideTab(inputId = "wilcoxonRankSumTabset", target = "Analysis")
-          hideTab(inputId = "wilcoxonRankSumTabset", target = "Data with Ranks")
-          hideTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
-          updateTabsetPanel(session, "wilcoxonRankSumTabset", selected = "Uploaded Data")
-        }
-      }
-    }, ignoreInit = TRUE)
-    
-    observeEvent(input$sidebysidewRankPlots, ignoreNULL = FALSE, {
-      if (length(input$sidebysidewRankPlots) > 0) {
-        showTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
-      } else {
-        if (input$wilcoxonRankSumTabset == "Graphs") {
-          updateTabsetPanel(inputId = "wilcoxonRankSumTabset", selected = "Analysis")
-        }
-        hideTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
-      }
-    })
-    
-    output$renderWRankSumMeansData <- renderUI({
-      if (input$wilcoxonRankSumTestData != "Upload Data") return(NULL)
-      if (!wilcoxonUpload_iv$is_valid()) {
-        return(helpText("No data yet. Upload a dataset to view it here."))
-      }
-      DTOutput(session$ns("wRankSumUploadTable"))
-    })
+    output$renderWRankSumMeansData <- siUploadContainer(
+      function() siUploadPreviewState(input$wilcoxonRankSumTestData, wilcoxonUpload_iv$is_valid()),
+      function(state) siUploadPreview(state, DTOutput(session$ns("wRankSumUploadTable"))))
 
     ### ---------- Wilcoxon Signed Rank Test Observers --------------------
     
@@ -12737,7 +12918,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       }
     })
 
-    observeEvent(list(input$signedRankUpl, input$signedRankSheet), priority = 5, {
+    observeEvent(list(input$signedRankUpl, input$signedRankSheet), priority = 5, siReportErrors({
       req(input$signedRankUpl)
       rv$calculatePressed <- FALSE
 
@@ -12783,61 +12964,20 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
 
         shinyjs::show(id = "inferenceMP")
         shinyjs::show(id = "inferenceData")
-        hideTab(inputId = "signedRankTabset", target = "Analysis")
-        hideTab(inputId = "signedRankTabset", target = "Graphs")
-        hideTab(inputId = "signedRankTabset", target = "Data with Ranks")
-        goToUploadedDataTab("signedRankTabset")
+        siShowUploadedData("signedRank")
       }
 
-      Sys.sleep(0.1)
       rv$allowColumnValidation <- TRUE
-    })
+    }, "Could not process the uploaded file"))
     
-    observeEvent(list(input$signedRankUpl1, input$signedRankUpl2), {
-      if (isTRUE(input$signedRankTest == "Upload Data")) {
-        if (!signedRankUpload_iv$is_valid() || !signedRankUploadvars_iv$is_valid()) {
-          hideTab(inputId = "signedRankTabset", target = "Analysis")
-          hideTab(inputId = "signedRankTabset", target = "Data with Ranks")
-          hideTab(inputId = "signedRankTabset", target = "Graphs")
-          updateTabsetPanel(session, "signedRankTabset", selected = "Uploaded Data")
-        }
-      }
-    }, ignoreInit = TRUE)
-    
-    observeEvent(input$signedRankQQPlot, {
-      if (input$signedRankQQPlot) {
-        showTab(inputId = "signedRankTabset", target = "Graphs")  
-      } else {
-        if (input$signedRankTabset == "Graphs") {  
-          updateTabsetPanel(inputId = 'signedRankTabset', selected = "Analysis") 
-        }
-        hideTab(inputId = "signedRankTabset", target = "Graphs")  
-      }
-    })
-    
-    observeEvent(input$goInference, {
-      req(input$popuParameters == 'Wilcoxon Signed Rank Test')
-
-      rv$calculatePressed <- TRUE
-    })
-
-    output$renderSignedRankUploadData <- renderUI({
-      if (input$signedRankTest != "Upload Data") return(NULL)
-      if (!signedRankUpload_iv$is_valid()) {
-        return(helpText("No data yet. Upload a dataset to view it here."))
-      }
-      tagList(
+    output$renderSignedRankUploadData <- siUploadContainer(
+      function() siUploadPreviewState(input$signedRankTest, signedRankUpload_iv$is_valid()),
+      function(state) siUploadPreview(state, tagList(
         div(DTOutput(session$ns("signedRankUploadTable")), style = "width: 75%"),
         br(),
         br()
-      )
-    })
+      )))
     
-    session$onFlushed(function() {
-      hideTab(inputId = "anovaTabset", target = "Uploaded Data")
-      hideTab(inputId = "kwTabset", target = "Uploaded Data")
-    }, once = TRUE)
-
     observeEvent(input$multipleUserData, priority = 50, {
       req(input$multipleUserData)
       ext <- tolower(tools::file_ext(input$multipleUserData$name))
@@ -12853,29 +12993,31 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       }
     })
     
-    observeEvent(input$anovaGraphs, ignoreNULL = FALSE, {
+    ## ignoreInit: both pickers start with graphs selected and the Graphs tabs
+    ## start visible, so the start-up run would only re-show them.
+    observeEvent(input$anovaGraphs, ignoreNULL = FALSE, ignoreInit = TRUE, {
       if (length(input$anovaGraphs) > 0) {
         showTab(inputId = "anovaTabset", target = "Graphs")
       } else {
-        if (input$anovaTabset == "Graphs") {
+        if (isTRUE(input$anovaTabset == "Graphs")) {
           updateTabsetPanel(inputId = "anovaTabset", selected = "Analysis")
         }
         hideTab(inputId = "anovaTabset", target = "Graphs")
       }
     })
     
-    observeEvent(input$kwGraphs, ignoreNULL = FALSE, {
+    observeEvent(input$kwGraphs, ignoreNULL = FALSE, ignoreInit = TRUE, {
       if (length(input$kwGraphs) > 0) {
         showTab(inputId = "kwTabset", target = "Graphs")
       } else {
-        if (input$kwTabset == "Graphs") {
+        if (isTRUE(input$kwTabset == "Graphs")) {
           updateTabsetPanel(inputId = "kwTabset", selected = "Analysis")
         }
         hideTab(inputId = "kwTabset", target = "Graphs")
       }
     })
 
-    observeEvent(list(input$multipleUserData, input$multipleSheet, input$multipleMethodChoice), priority = 10, {
+    observeEvent(list(input$multipleUserData, input$multipleSheet, input$multipleMethodChoice), priority = 10, siReportErrors({
       req(input$multipleUserData)
       
       hide(id = "inferenceData")
@@ -12887,7 +13029,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
         return()
       }
       
-      if(multipleupload_iv$is_valid())
+      if(multipleUploadValid())
       {
         if (input$multipleMethodChoice == "anova") {
           anovaDisplayState("raw")
@@ -12957,91 +13099,123 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
           goToUploadedDataTab("kwTabset")
         }
       }
-    })
+    }, "Could not process the uploaded file"))
     
-    observeEvent(input$chisquareDimension, {
+    ## ignoreInit: at start-up the dimension is 2 x 2 (Fisher already enabled)
+    ## and the header inputs still hold their initial values.
+    observeEvent(input$chisquareDimension, ignoreInit = TRUE, {
+      ## shinyjs namespaces id= but not selector=, so use the full id.
+      fisherSelector <- sprintf('#%s input[value="Fisher"]', session$ns("chisquareMethod"))
       if( input$chisquareDimension != '2 x 2') {
-        shinyjs::disable(selector = '#chisquareMethod input[value="Fisher"]')
+        shinyjs::disable(selector = fisherSelector)
         
         updatePrettyRadioButtons(
           inputId = "chisquareMethod",
           selected = "Chi-Square"
         )
       } else {
-        shinyjs::enable(selector = '#chisquareMethod input[value="Fisher"]')
+        shinyjs::enable(selector = fisherSelector)
       }
       
       shinyjs::reset(id = "chiSquareRowHeader")
       shinyjs::reset(id = "chiSquareColHeader")
     })
     
-    observeEvent(input$goInference, {
-      output$renderAnovaBoxplot <- renderUI({
-        tagList(
-          plotOutput(session$ns("anovaBoxplot"),
-                     height = GetPlotHeight(input[["anovaBoxplot-Height"]], input[["anovaBoxplot-HeightPx"]], ui = TRUE),
-                     width = GetPlotWidth(input[["anovaBoxplot-Width"]], input[["anovaBoxplot-WidthPx"]], ui = TRUE)),
-          br(),
-          br(),
-        )
+    ### ------------ Plot and table containers -----------------------------------
+    ## The plot outputs are static in statInfrUI (400px high, auto width, the
+    ## size their menus start with). When a menu's Height/Width option changes,
+    ## only the existing container's style is updated, so the output is not
+    ## rebuilt; the image itself is sized by renderPlot's height/width.
+    siPlotMenus <- c(oneMeanBoxplot       = "oneMeanBoxplot",
+                     oneMeanHistogram     = "oneMeanHistogram",
+                     oneSDBoxplot         = "oneSDBoxplot",
+                     oneSDHistogram       = "oneSDHistogram",
+                     indMeansBoxplot      = "indMeansBoxplot",
+                     indMeansQQPlot       = "indMeansQQPlot",
+                     depMeansQQPlotOutput = "depMeansQQPlot",
+                     anovaBoxplot         = "anovaBoxplot",
+                     anovaHistogram       = "anovaHistogram",
+                     anovaQQplot          = "anovaQQplot",
+                     anovaMeanPlot        = "anovaMeanPlot",
+                     kwBoxplot            = "kwBoxplot",
+                     kwMeanPlot           = "kwMeanPlot")
+    siPlotSizes <- new.env(parent = emptyenv())  # size each container has now
+
+    lapply(names(siPlotMenus), function(plotId) {
+      menuId <- siPlotMenus[[plotId]]
+      observe({
+        size <- c(GetPlotHeight(input[[paste0(menuId, "-Height")]], input[[paste0(menuId, "-HeightPx")]], ui = TRUE),
+                  GetPlotWidth(input[[paste0(menuId, "-Width")]], input[[paste0(menuId, "-WidthPx")]], ui = TRUE))
+        current <- if (is.null(siPlotSizes[[plotId]])) c("400px", "auto") else siPlotSizes[[plotId]]
+        if (!identical(size, current) && all(grepl("^([0-9]+(\\.[0-9]+)?px|auto)$", size))) {
+          siPlotSizes[[plotId]] <- size
+          shinyjs::runjs(sprintf(
+            "(function(){var e=document.getElementById('%s'); if(e){e.style.height='%s'; e.style.width='%s';}})();",
+            session$ns(plotId), size[1], size[2]))
+        }
       })
+    })
+
+    output$renderChiSqResults <- renderUI({
+      if (input$chiSquareYates){
+        DTOutput(session$ns("chiSqResultsMatrix"), width = "850px")
+      } else
+        DTOutput(session$ns("chiSqResultsMatrix"), width = "750px")
+    })
+    
+    ### ------------ Calculate ---------------------------------------------------
+    ## The one handler for the Calculate button. Each step only acts on the
+    ## method that is selected.
+    observeEvent(input$goInference, siReportErrors({
+      if (isTRUE(input$popuParameters == 'Wilcoxon Signed Rank Test')) {
+        rv$calculatePressed <- TRUE
+      }
       
-      output$renderAnovaHistogram <- renderUI({
-        tagList(
-          plotOutput(session$ns("anovaHistogram"),
-                     height = GetPlotHeight(input[["anovaHistogram-Height"]], input[["anovaHistogram-HeightPx"]], ui = TRUE),
-                     width = GetPlotWidth(input[["anovaHistogram-Width"]], input[["anovaHistogram-WidthPx"]], ui = TRUE)),
-          br(),
-          br(),
-          hr()
-        )
-      })
+      if(siValid() && depmeansrawsd_iv$is_valid()) {
+        shinyjs::show(id = "inferenceData")
+        
+      } else if (!uploadPreviewActive()) {
+        hide(id = "inferenceData")
+      }
       
-      output$renderAnovaQQplot <- renderUI({
-        tagList(
-          plotOutput(session$ns("anovaQQplot"),
-                     height = GetPlotHeight(input[["anovaQQplot-Height"]], input[["anovaQQplot-HeightPx"]], ui = TRUE),
-                     width = GetPlotWidth(input[["anovaQQplot-Width"]], input[["anovaQQplot-WidthPx"]], ui = TRUE)),
-          br(),
-          br(),
-          hr()
-        )
-      })
+      if(input$siMethod == '1'){
+        
+        if(input$popuParameter == 'Population Mean') {
+          if (siValid()) {
+            oneMeanCalcPressed(TRUE)
+          }
+        } else if(input$popuParameter == 'Population Standard Deviation') {
+          if (siValid()) {
+            oneSDCalcPressed(TRUE)
+          }
+        } else if(input$popuParameter == 'Population Proportion') {
+          if (isTRUE(input$numTrials && input$numSuccesses) &&
+              input$numTrials < input$numSuccesses) {
+            hide(id = "inferenceData")
+          }
+        } # input$popuParameter == 'Population Proportion'
+      } # one sample
       
-      output$renderAnovaMeanPlot <- renderUI({
-        tagList(
-          plotOutput(session$ns("anovaMeanPlot"),
-                     height = GetPlotHeight(input[["anovaMeanPlot-Height"]], input[["anovaMeanPlot-HeightPx"]], ui = TRUE),
-                     width = GetPlotWidth(input[["anovaMeanPlot-Width"]], input[["anovaMeanPlot-WidthPx"]], ui = TRUE)),
-          br(),
-          br(),
-          hr()
-        )
-      })
+      else if(input$siMethod == '2') {
+        
+        if(input$popuParameters == 'Population Proportions') {
+          if (isTRUE(!is.na(input$numSuccesses1) && !is.na(input$numTrials1) &&
+                     !is.na(input$numSuccesses2) && !is.na(input$numTrials2)) &&
+              (input$numSuccesses1 > input$numTrials1 || input$numSuccesses2 > input$numTrials2)) {
+            hide(id = 'inferenceData')
+          }
+        }
+      }
       
-      output$renderKWBoxplot <- renderUI({
-        tagList(
-          plotOutput(session$ns("kwBoxplot"),
-                     height = GetPlotHeight(input[["kwBoxplot-Height"]], input[["kwBoxplot-HeightPx"]], ui = TRUE),
-                     width = GetPlotWidth(input[["kwBoxplot-Width"]], input[["kwBoxplot-WidthPx"]], ui = TRUE)),
-          br(),
-          br(),
-        )
-      })
+      shinyjs::show(id = "inferenceMP")
       
-      output$renderKWMeanPlot <- renderUI({
-        tagList(
-          plotOutput(session$ns("kwMeanPlot"),
-                     height = GetPlotHeight(input[["kwMeanPlot-Height"]], input[["kwMeanPlot-HeightPx"]], ui = TRUE),
-                     width = GetPlotWidth(input[["kwMeanPlot-Width"]], input[["kwMeanPlot-WidthPx"]], ui = TRUE)),
-          br(),
-          br(),
-          hr()
-        )
-      })
+      ## Result tabs of the selected method only.
+      section <- siActiveSection()
+      if (!is.null(section)) {
+        siCalculateTabs(section)
+      }
       
-      observeEvent(input$goInference, {
-        req(si_iv$is_valid())
+      if (isTRUE(input$siMethod == 'Multiple') && siValid()) {
         if (input$multipleMethodChoice == "kw") {
           kwDisplayState("analysis")
           updateTabsetPanel(session, inputId = "kwTabset", selected = "Analysis")
@@ -13051,247 +13225,8 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
           anovaDisplayState("analysis")
           updateTabsetPanel(session, inputId = "anovaTabset", selected = "Analysis")
         }
-      })
-      
-      observe({
-        req(kwResults())
-        
-        results <- NULL
-        tryCatch({
-          results <- kwResults()
-        }, error = function(e) {
-          cat("Error in kwResults():", e$message, "\n")
-          return(NULL)
-        })
-        
-        if (is.null(results)) {
-          output$analysisContent <- renderUI({
-            tagList(
-              p("Unable to calculate results. Please check your data and selections.", 
-                style = "color: red; font-weight: bold; font-size: 16px;")
-            )
-          })
-          return()
-        }
-        
-        if (!is.null(results$validation_error)) {
-          output$analysisContent <- renderUI({
-            tagList(
-              p(results$validation_error, style = "color: red; font-weight: bold; font-size: 16px;")
-            )
-          })
-        } else {
-          output$analysisContent <- renderUI({
-            tagList(
-              kruskalWallisHT(kwResults, reactive(input$kwSigLvl))(),
-              br(),
-              kruskalWallisPlot(kwResults, reactive(input$kwSigLvl))(),
-              br(),
-              kwConclusion(kwResults, reactive(input$kwSigLvl))()
-            )
-          })
-        }
-      })
-      
-      observe({
-        req(kwResults())
-        
-        results <- NULL
-        tryCatch({
-          results <- kwResults()
-        }, error = function(e) {
-          cat("Error in kwResults() for ranking:", e$message, "\n")
-          return(NULL)
-        })
-        
-        if (is.null(results)) {
-          output$renderKWRM <- renderUI({ 
-            tagList(
-              p("Unable to generate ranking table.", 
-                style = "color: #666; font-style: italic; text-align: center; padding: 20px;")
-            )
-          })
-          return()
-        }
-        
-        if (!is.null(results$data)) {
-          output$renderKWRM <- kwRankedTableOutput(results$data)
-        } else {
-          output$renderKWRM <- renderUI({ 
-            tagList(
-              p("No data available for ranking.", 
-                style = "color: #666; font-style: italic; text-align: center; padding: 20px;")
-            )
-          })
-        }
-      })
-      
-      output$renderChiSqObs <- renderUI({
-        DTOutput(session$ns("chiSqObs"), width = '500px')
-      })
-      
-      output$renderChiSqExp <- renderUI({
-        DTOutput(session$ns("chiSqExp"), width = '500px')
-      })
-      
-      output$renderChiSqResults <- renderUI({
-        if (input$chiSquareYates){
-          DTOutput(session$ns("chiSqResultsMatrix"), width = "850px")
-        } else
-          DTOutput(session$ns("chiSqResultsMatrix"), width = "750px")
-      })
-      
-      output$renderFishersObs <- renderUI({
-        DTOutput(session$ns("fishersObs"), width = '500px')
-      })
-    })
-    
-    observeEvent(input$goInference, {
-      #output$renderInference <- renderDataTable(
-      
-      if(si_iv$is_valid() && depmeansrawsd_iv$is_valid()) {
-        shinyjs::show(id = "inferenceData")
-
-      } else if (!uploadPreviewActive()) {
-        hide(id = "inferenceData")
       }
-      
-      if(input$siMethod == '1'){
-        
-        if(input$popuParameter == 'Population Mean') {
-          req(si_iv$is_valid())
-          oneMeanCalcPressed(TRUE)
-          output$renderOneMeanBoxplot <- renderUI({
-            plotOutput(session$ns("oneMeanBoxplot"),
-                       height = GetPlotHeight(input[["oneMeanBoxplot-Height"]], input[["oneMeanBoxplot-HeightPx"]], ui = TRUE),
-                       width = GetPlotWidth(input[["oneMeanBoxplot-Width"]], input[["oneMeanBoxplot-WidthPx"]], ui = TRUE))
-          })
-          output$renderOneMeanHistogram <- renderUI({
-            plotOutput(session$ns("oneMeanHistogram"),
-                       height = GetPlotHeight(input[["oneMeanHistogram-Height"]], input[["oneMeanHistogram-HeightPx"]], ui = TRUE),
-                       width = GetPlotWidth(input[["oneMeanHistogram-Width"]], input[["oneMeanHistogram-WidthPx"]], ui = TRUE))
-          })
-        } else if(input$popuParameter == 'Population Standard Deviation') {
-          req(si_iv$is_valid())
-          oneSDCalcPressed(TRUE)
-          output$renderOneSDBoxplot <- renderUI({
-            plotOutput(session$ns("oneSDBoxplot"),
-                       height = GetPlotHeight(input[["oneSDBoxplot-Height"]], input[["oneSDBoxplot-HeightPx"]], ui = TRUE),
-                       width = GetPlotWidth(input[["oneSDBoxplot-Width"]], input[["oneSDBoxplot-WidthPx"]], ui = TRUE))
-          })
-          output$renderOneSDHistogram <- renderUI({
-            plotOutput(session$ns("oneSDHistogram"),
-                       height = GetPlotHeight(input[["oneSDHistogram-Height"]], input[["oneSDHistogram-HeightPx"]], ui = TRUE),
-                       width = GetPlotWidth(input[["oneSDHistogram-Width"]], input[["oneSDHistogram-WidthPx"]], ui = TRUE))
-          })
-        } else if(input$popuParameter == 'Population Proportion') {
-          req(input$numTrials && input$numSuccesses)
-          if(input$numTrials < input$numSuccesses) {
-            hide(id = "inferenceData")
-          }
-        } # input$popuParameter == 'Population Proportion'
-      } # one sample
-      
-      else if(input$siMethod == '2') {
-        
-        if(input$popuParameters == 'Population Proportions') {
-          req(!is.na(input$numSuccesses1) && !is.na(input$numTrials1))
-          req(!is.na(input$numSuccesses2) && !is.na(input$numTrials2))
-          
-          if(input$numSuccesses1 > input$numTrials1 || input$numSuccesses2 > input$numTrials2) {
-            hide(id = 'inferenceData')
-          }
-        } else if (input$popuParameters == "Independent Population Means") {
-          
-          output$renderIndMeansBoxplot <- renderUI({
-            plotOutput(session$ns("indMeansBoxplot"),
-                       height = GetPlotHeight(input[["indMeansBoxplot-Height"]], input[["indMeansBoxplot-HeightPx"]], ui = TRUE),
-                       width = GetPlotWidth(input[["indMeansBoxplot-Width"]], input[["indMeansBoxplot-WidthPx"]], ui = TRUE))
-          })
-          output$renderIndMeansQQPlot <- renderUI({
-            plotOutput(session$ns("indMeansQQPlot"),
-                       height = GetPlotHeight(input[["indMeansQQPlot-Height"]], input[["indMeansQQPlot-HeightPx"]], ui = TRUE),
-                       width = GetPlotWidth(input[["indMeansQQPlot-Width"]], input[["indMeansQQPlot-WidthPx"]], ui = TRUE))
-          })
-        } else if(input$popuParameters == "Wilcoxon rank sum test") {
-
-          output$renderSidebysidewRankSum <- renderUI({
-            plotOutput(session$ns("sidebysidewRankSum"),
-                       height = GetPlotHeight(input[["sidebysidewRankSum-Height"]], input[["sidebysidewRankSum-HeightPx"]], ui = TRUE),
-                       width = GetPlotWidth(input[["sidebysidewRankSum-Width"]], input[["sidebysidewRankSum-WidthPx"]], ui = TRUE))
-          })
-          
-        } else if(input$popuParameters == 'Dependent Population Means') {
-          
-          output$depMeansTable <- renderUI({
-            DTOutput(session$ns("depMeansData"))
-          })
-          
-          output$renderDepMeansQQPlot <- renderUI({
-            plotOutput(session$ns("depMeansQQPlot"),
-                       height = GetPlotHeight(input[["depMeansQQPlot-Height"]], input[["depMeansQQPlot-HeightPx"]], ui = TRUE),
-                       width = GetPlotWidth(input[["depMeansQQPlot-Width"]], input[["depMeansQQPlot-WidthPx"]], ui = TRUE))
-          })
-        }
-      } else if(input$siMethod == 'Categorical') {
-        
-        # output$render2x2ChiSq <- renderUI({
-        #   tagList(
-        #
-        #     titlePanel("Chi-Square Test for Independence"),
-        #     hr(),
-        #     br(),
-        #     h3("Observed Frequencies"),
-        #     DTOutput("chiSq2x2Obs", width = '500px'),
-        #     br(),
-        #     br(),
-        #     h3("Expected Frequencies"),
-        #     DTOutput("chiSq2x2", width = '500px'),
-        #     br(),
-        #   )
-        # })
-        #
-        # output$render2x3ChiSq <- renderUI({
-        #   tagList(
-        #
-        #     titlePanel("Chi-Square Test for Independence"),
-        #     hr(),
-        #     br(),
-        #     DTOutput("chiSq2x3", width = '500px'),
-        #     br(),
-        #     br(),
-        #     br(),
-        #   )
-        # })
-        #
-        # output$render3x2ChiSq <- renderUI({
-        #   tagList(
-        #
-        #     titlePanel("Chi-Square Test for Independence"),
-        #     hr(),
-        #     br(),
-        #     DTOutput("chiSq3x2", width = '500px'),
-        #     br(),
-        #     br(),
-        #     br(),
-        #   )
-        # })
-        #
-        # output$render3x3ChiSq <- renderUI({
-        #   tagList(
-        #
-        #     titlePanel("Chi-Square Test for Independence"),
-        #     hr(),
-        #     br(),
-        #     DTOutput("chiSq3x3", width = '500px'),
-        #     br(),
-        #     br(),
-        #     br(),
-        #   )
-        # })
-      }
-       #) # renderInference
-    }) # input$goInference
+    })) # input$goInference
     
     ### ------------ Component Display -------------------------------------------
     ## si_iv also requires a column to be picked for uploaded data, which is
@@ -13380,199 +13315,6 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
         hide(id = "depMeansUplSample1")
         hide(id = "depMeansUplSample2")
       }
-    })
-    
-    observeEvent(input$goInference, {
-      shinyjs::show(id = "inferenceMP")
-    })
-    
-    observeEvent(input$goInference, {
-      # Hide/show tabs for 1 sample
-      if (input$dataAvailability != "Upload Data"){
-        showTab(inputId = "onePopMeanTabset", target = "Analysis")
-        updateTabsetPanel(session, "onePopMeanTabset", selected = "Analysis")
-        hideTab(inputId = "onePopMeanTabset", target = "Uploaded Data")
-      } else {
-        showTab(inputId = "onePopMeanTabset", target = "Uploaded Data")
-        
-        if (onemeanuploadvar_iv$is_valid()) {
-          showTab(inputId = "onePopMeanTabset", target = "Analysis")
-          updateTabsetPanel(session, "onePopMeanTabset", selected = "Analysis")
-        } else {
-          hideTab(inputId = "onePopMeanTabset", target = "Analysis")
-          hideTab(inputId = "onePopMeanTabset", target = "Graphs")
-          updateTabsetPanel(session, "onePopMeanTabset", selected = "Uploaded Data")
-        }
-      }
-
-      # Hide/show tabs for 1 sample population standard deviation
-      if (input$sdDataAvailability != "Upload Data"){
-        showTab(inputId = "oneSDTabset", target = "Analysis")
-        updateTabsetPanel(session, "oneSDTabset", selected = "Analysis")
-        hideTab(inputId = "oneSDTabset", target = "Uploaded Data")
-      } else {
-        showTab(inputId = "oneSDTabset", target = "Uploaded Data")
-        
-        if (onesduploadvar_iv$is_valid()) {
-          showTab(inputId = "oneSDTabset", target = "Analysis")
-          updateTabsetPanel(session, "oneSDTabset", selected = "Analysis")
-        } else {
-          hideTab(inputId = "oneSDTabset", target = "Analysis")
-          hideTab(inputId = "oneSDTabset", target = "Graphs")
-          updateTabsetPanel(session, "oneSDTabset", selected = "Uploaded Data")
-        }
-      }
-
-      if(length(input$oneMeanGraphOptions) > 0 && 
-         input$dataAvailability != "Summarized Data" &&
-         si_iv$is_valid()) {
-        showTab(inputId = "onePopMeanTabset", target = "Graphs")
-      } else {
-        hideTab(inputId = "onePopMeanTabset", target = "Graphs")
-      }
-      
-      if(length(input$oneSDPlots) > 0 && 
-         input$sdDataAvailability != "Summarized Data" &&
-         si_iv$is_valid()) {
-        showTab(inputId = "oneSDTabset", target = "Graphs")
-      } else {
-        hideTab(inputId = "oneSDTabset", target = "Graphs")
-      }
-      
-      # Hide/show tabs for 2 sample independent populations
-      two_sample_valid <- si_iv$is_valid() && depmeansrawsd_iv$is_valid()
-
-      if (input$dataAvailability2 != "Upload Data"){
-        showTab(inputId = "indPopMeansTabset", target = "Analysis")
-        updateTabsetPanel(session, "indPopMeansTabset", selected = "Analysis")
-        hideTab(inputId = "indPopMeansTabset", target = "Uploaded Data")
-      } else {
-        showTab(inputId = "indPopMeansTabset", target = "Uploaded Data")
-        
-        if (indmeansupload_iv$is_valid() && indmeansuploadvar_iv$is_valid()) {
-          showTab(inputId = "indPopMeansTabset", target = "Analysis")
-          updateTabsetPanel(session, "indPopMeansTabset", selected = "Analysis")
-        } else {
-          hideTab(inputId = "indPopMeansTabset", target = "Analysis")
-          updateTabsetPanel(session, "indPopMeansTabset", selected = "Uploaded Data")
-        }
-      }
-      
-      if(length(input$indMeansPlots) > 0 && 
-         input$dataAvailability2 != "Summarized Data" &&
-         si_iv$is_valid()) {
-        showTab(inputId = "indPopMeansTabset", target = "Graphs")
-      } else {
-        hideTab(inputId = "indPopMeansTabset", target = "Graphs")
-      }
-
-      # Hide/show tabs for 2 sample dependent populations
-      if (input$dataTypeDependent != "Upload Data"){
-        showTab(inputId = "depPopMeansTabset", target = "Analysis")
-        showTab(inputId = "depPopMeansTabset", target = "Data with Calculations")
-        updateTabsetPanel(session, "depPopMeansTabset", selected = "Analysis")
-        hideTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
-      } else {
-        showTab(inputId = "depPopMeansTabset", target = "Uploaded Data")
-        
-        if (depmeansupload_iv$is_valid() && depmeansuploadvars_iv$is_valid()) {
-          showTab(inputId = "depPopMeansTabset", target = "Analysis")
-          showTab(inputId = "depPopMeansTabset", target = "Data with Calculations")
-          updateTabsetPanel(session, "depPopMeansTabset", selected = "Analysis")
-        } else {
-          hideTab(inputId = "depPopMeansTabset", target = "Analysis")
-          hideTab(inputId = "depPopMeansTabset", target = "Data with Calculations")
-          hideTab(inputId = "depPopMeansTabset", target = "Graphs")
-          updateTabsetPanel(session, "depPopMeansTabset", selected = "Uploaded Data")
-        }
-      }
-      
-      if(two_sample_valid && input$depMeansQQPlot) {
-        showTab(inputId = "depPopMeansTabset", target = "Graphs")
-      } else {
-        hideTab(inputId = "depPopMeansTabset", target = "Graphs")
-      }
-      
-      # Hide/show tabs for Wilcoxon Rank Sum Upload
-      if (input$wilcoxonRankSumTestData != "Upload Data"){
-        showTab(inputId = "wilcoxonRankSumTabset", target = "Analysis")
-        updateTabsetPanel(session, "wilcoxonRankSumTabset", selected = "Analysis")
-        hideTab(inputId = "wilcoxonRankSumTabset", target = "Uploaded Data")
-      } else {
-        showTab(inputId = "wilcoxonRankSumTabset", target = "Uploaded Data")
-        
-        if (wilcoxonUpload_iv$is_valid() && wilcoxonRanksuploadvars_iv$is_valid()) {
-          showTab(inputId = "wilcoxonRankSumTabset", target = "Analysis")
-          updateTabsetPanel(session, "wilcoxonRankSumTabset", selected = "Analysis")
-        } else {
-          hideTab(inputId = "wilcoxonRankSumTabset", target = "Analysis")
-          hideTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
-          updateTabsetPanel(session, "wilcoxonRankSumTabset", selected = "Uploaded Data")
-        }
-      }
-
-      # Detect content-level error conditions for Wilcoxon Rank Sum
-      rank_data_check <- tryCatch(wilcoxonRankedData(), error = function(e) NULL)
-      wrs_error <- FALSE
-      
-      if (!is.null(rank_data_check)) {
-        combined_vals_chk <- rank_data_check$Value
-        all_identical <- length(unique(combined_vals_chk)) <= 1
-        
-        if (all_identical) {
-          wrs_error <- TRUE
-        } else if (isTRUE(input$normaprowrsRankSum == "Normal approximation (for large samples)")) {
-          name1_chk <- if (input$wilcoxonRankSumTestData == 'Upload Data') input$wilcoxonUpl1 else "Sample 1"
-          name2_chk <- if (input$wilcoxonRankSumTestData == 'Upload Data') input$wilcoxonUpl2 else "Sample 2"
-          n1_chk <- sum(rank_data_check$Group == name1_chk)
-          n2_chk <- sum(rank_data_check$Group == name2_chk)
-          nAll_chk <- nrow(rank_data_check)
-          tc_chk <- calculate_tie_correction(combined_vals_chk)
-          se_chk <- sqrt((n1_chk * n2_chk / 12) *
-                           ((nAll_chk + 1) - (tc_chk / (nAll_chk * (nAll_chk - 1)))))
-          if (is.na(se_chk) || se_chk <= 0) wrs_error <- TRUE
-        }
-      }
-      
-      if (!wilcoxonUpload_iv$is_valid() || !wilcoxonRanksuploadvars_iv$is_valid()) {
-        hideTab(inputId = "wilcoxonRankSumTabset", target = "Analysis")
-        hideTab(inputId = "wilcoxonRankSumTabset", target = "Data with Ranks")
-        hideTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
-        updateTabsetPanel(session, "wilcoxonRankSumTabset", selected = "Uploaded Data")
-      } else if (wrs_error) {
-        hideTab(inputId = "wilcoxonRankSumTabset", target = "Data with Ranks")
-        hideTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
-      } else {
-        showTab(inputId = "wilcoxonRankSumTabset", target = "Data with Ranks")
-        
-        if (length(input$sidebysidewRankPlots) > 0) {
-          showTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
-        } else {
-          hideTab(inputId = "wilcoxonRankSumTabset", target = "Graphs")
-        }
-      }
-      
-      # Hide/show tabs for Wilcoxon Signed Rank Upload
-      if (input$signedRankTest != "Upload Data"){
-        showTab(inputId = "signedRankTabset", target = "Analysis")
-        showTab(inputId = "signedRankTabset", target = "Data with Ranks")
-        updateTabsetPanel(session, "signedRankTabset", selected = "Analysis")
-        hideTab(inputId = "signedRankTabset", target = "Uploaded Data")
-      } else {
-        showTab(inputId = "signedRankTabset", target = "Uploaded Data")
-        
-        if (signedRankUpload_iv$is_valid() && signedRankUploadvars_iv$is_valid()) {
-          showTab(inputId = "signedRankTabset", target = "Analysis")
-          showTab(inputId = "signedRankTabset", target = "Data with Ranks")
-          updateTabsetPanel(session, "signedRankTabset", selected = "Analysis")
-        } else {
-          hideTab(inputId = "signedRankTabset", target = "Analysis")
-          hideTab(inputId = "signedRankTabset", target = "Data with Ranks")
-          hideTab(inputId = "signedRankTabset", target = "Graphs")
-          updateTabsetPanel(session, "signedRankTabset", selected = "Uploaded Data")
-        }
-      }
-      
     })
     
     observeEvent(input$resetInference, {
@@ -13743,49 +13485,33 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       ##    is unaffected by the reset, so bring its Uploaded Data tab back
       ##    into view once the resets above have settled.
       shinyjs::delay(100, {
-        uploadTabsetMap <- list(
-          sdDataAvailability      = "oneSDTabset",
-          dataAvailability        = "onePopMeanTabset",
-          dataAvailability2       = "indPopMeansTabset",
-          dataTypeDependent       = "depPopMeansTabset",
-          wilcoxonRankSumTestData = "wilcoxonRankSumTabset",
-          signedRankTest          = "signedRankTabset"
-        )
-        for (modeId in names(uploadTabsetMap)) {
-          if (isTRUE(input[[modeId]] == "Upload Data")) {
-            tabsetId <- uploadTabsetMap[[modeId]]
-            
-            shinyjs::show(id = "inferenceMP")
-            #shinyjs::show(id = "inferenceData")
-            
-            showTab(inputId = tabsetId, target = "Uploaded Data")
-            hideTab(inputId = tabsetId, target = "Analysis")
-            hideTab(inputId = tabsetId, target = "Graphs")
-            
-            if (tabsetId == "depPopMeansTabset") {
-              hideTab(inputId = tabsetId, target = "Data with Calculations")
+        for (key in names(siSections)) {
+          if (isTRUE(input[[siSections[[key]]$mode]] == "Upload Data")) {
+            if (identical(siActiveSection(), key)) {
+              shinyjs::show(id = "inferenceMP")
+              #shinyjs::show(id = "inferenceData")
             }
-            
-            if (tabsetId %in% c("wilcoxonRankSumTabset", "signedRankTabset")) {
-              hideTab(inputId = tabsetId, target = "Data with Ranks")
-            }
-            
-            updateTabsetPanel(session, tabsetId, selected = "Uploaded Data")
+            siTabState$view[[key]] <- "upload"
+            syncSectionTabs(key, select = "Uploaded Data")
           }
         }
       })
     })
     
-    observe({
-      
+    chiSqDimensionRadios <- paste(
+      sprintf('#%s input[value="%s"]', session$ns("chisquareDimension"), c("2 x 3", "3 x 2", "3 x 3")),
+      collapse = ", ")
+    
+    ## ignoreInit: the method starts as Chi-Square, whose branch only re-shows
+    ## what is already visible.
+    observeEvent(input$chisquareMethod, ignoreInit = TRUE, {
+
       if (input$chisquareMethod == "Fisher"){
         updateRadioButtons(session, "chisquareDimension", selected = "2 x 2")
         
-        # hide radio buttons
-        runjs("$('input[value=\"2 x 3\"]').parent().hide();
-               $('input[value=\"3 x 2\"]').parent().hide();
-               $('input[value=\"3 x 3\"]').parent().hide();
-              ")
+        # hide radio buttons (scoped to this module's dimension input; a bare
+        # input[value=...] selector also matched Probability Distributions)
+        runjs(sprintf("$('%s').parent().hide();", chiSqDimensionRadios))
         
         # hide matrices
         hide(id = "chiSqInput2x3")
@@ -13795,10 +13521,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       else {
         
         # show radio buttons
-        runjs("$('input[value=\"2 x 3\"]').parent().show();
-               $('input[value=\"3 x 2\"]').parent().show();
-               $('input[value=\"3 x 3\"]').parent().show();
-              ")
+        runjs(sprintf("$('%s').parent().show();", chiSqDimensionRadios))
         
         # show matrices
         show(id = "chiSqInput2x3")

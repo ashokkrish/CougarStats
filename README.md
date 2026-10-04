@@ -26,6 +26,14 @@ and navigate to 127.0.0.1:3838 using a browser of your choice to access a copy o
 
 Read more about [Getting Started with Docker](https://www.docker.com/get-started/).   -->
 
+### Deployment notes
+
+- The app runs as one single-threaded R process (`shiny::runApp`). All sessions share it, so a long computation in one session delays everyone else, and a crash ends every session.
+- Run the container with a restart policy and a memory limit, for example `docker run -d --restart unless-stopped --memory 6g -p 3838:3838 <image>`. The image has a `HEALTHCHECK` on `/`.
+- Give the container at least 4 to 6 GB. One Random Forest fit near its size limit (`RF_MAX_TRAIN_TREES` in `R/randomForest.R`) needs up to about 4 GB (measured: 2.5 GB for the fit, 3.5 GB for its Plots tab), and a container that runs out of memory is killed, which ends every session.
+- To stop one user's computation from blocking the others, run more than one replica of the container behind a proxy with sticky sessions (websocket support and a long read timeout), so each user stays on the same R process.
+- The base image is pinned to the tested R version (`rocker/shiny:4.6.1`). Change it deliberately when upgrading R.
+
 ## Key features
 
 - Calculate the descriptive statistics (ex. mean, median, mode, quartiles, IQR, standard deviation, check for potential outliers etc.)

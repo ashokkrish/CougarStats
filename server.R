@@ -133,10 +133,25 @@ server <- function(session, input, output) {
     ))
   })
 
-  descStatsServer(id = "ds")
-  probDistServer(id = "pd")
-  sampleSizeConfidCoeEstServer(id = "sse")
-  statInfrServer(id = "si")
-  regressionAndCorrelationServer(id = "rc")
-  machineLearningServer(id = "ml")
+  ## Each navbar tab's module server is started the first time the user opens
+  ## that tab, instead of all six at once for every new session. The default
+  ## tab (Descriptive Statistics) starts at connect. A started module stays
+  ## for the rest of the session, so later visits reuse it.
+  module_servers <- list(
+    "Descriptive Statistics"     = function() descStatsServer(id = "ds"),
+    "Probability Distributions"  = function() probDistServer(id = "pd"),
+    "Sample Size Estimation"     = function() sampleSizeConfidCoeEstServer(id = "sse"),
+    "Statistical Inference"      = function() statInfrServer(id = "si"),
+    "Regression and Correlation" = function() regressionAndCorrelationServer(id = "rc"),
+    "Machine Learning"           = function() machineLearningServer(id = "ml")
+  )
+  start_module <- function(tab) {
+    if (!isTRUE(tab %in% names(module_servers))) return(invisible())
+    start <- module_servers[[tab]]
+    module_servers[[tab]] <<- NULL
+    start()
+  }
+
+  start_module("Descriptive Statistics")
+  observeEvent(input[["methods-nav"]], start_module(input[["methods-nav"]]))
 }

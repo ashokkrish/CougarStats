@@ -1,0 +1,11 @@
+# Not needed in the image (version control, IDE state, local R session files,
+# shinyapps.io deployment records and tests).
+.git
+.Rproj.user
+.RDataTmp
+.RData
+.Rhistory
+rsconnect
+tests
+.claude
+.vscode

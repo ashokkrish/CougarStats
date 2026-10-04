@@ -1,5 +1,7 @@
 # Base image https://hub.docker.com/u/rocker/
-FROM rocker/shiny:latest
+# Pinned to the R version the app is tested with. ':latest' could move to a new
+# R release (and package snapshot) on any rebuild.
+FROM rocker/shiny:4.6.1
 
 # system libraries of general use
 ## install debian packages
@@ -15,7 +17,8 @@ RUN apt-get update && \
             libfftw3-dev \
             libnode-dev \
             nodejs \
-            libwebp-dev
+            libwebp-dev \
+            curl
 
 ## Install R packages
 RUN R -e \
@@ -42,6 +45,7 @@ RUN R -e \
                     'ggpubr',           \
                     'ggsci',            \
                     'gridExtra',        \
+                    'haven',            \
                     'htmltools',        \
                     'iml',              \
                     'katex',            \
@@ -59,6 +63,7 @@ RUN R -e \
                     'reactable',        \
                     'readr',            \
                     'readxl',           \
+                    'reshape2',         \
                     'remotes',          \
                     'ResourceSelection',\
                     'rpart',            \
@@ -74,6 +79,7 @@ RUN R -e \
                     'shinyWidgets',     \
                     'skedastic',        \
                     'sortable',         \
+                    'stringr',          \
                     'sur',              \
                     'thematic',         \
                     'tibble',           \
@@ -85,6 +91,7 @@ RUN R -e \
                     'waiter',           \
                     'writexl',          \
                     'xgboost',          \
+                    'xml2',             \
                     'xtable'),          \
                   dependencies = TRUE); \
   remotes::install_github('deepanshu88/shinyDarkmode'); \
@@ -106,4 +113,21 @@ RUN sudo chown -R shiny:shiny /srv/shiny-server
 
 EXPOSE 3838
 
+# Marks the container unhealthy when the app stops answering page requests
+# (the page is cached after the first request, so the check is cheap).
+HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
+  CMD curl -fsS -o /dev/null http://localhost:3838/ || exit 1
+
+# The app runs as one single-threaded R process: every session shares it, so a
+# long computation in one session delays all others, and a crash ends every
+# session. Run the container with a restart policy and a memory limit, e.g.
+#   docker run -d --restart unless-stopped --memory 6g -p 3838:3838 <image>
+# Give it at least 4-6 GB: one Random Forest fit near its size limit
+# (RF_MAX_TRAIN_TREES in R/randomForest.R) needs up to about 4 GB on top of the
+# other sessions (measured: 2.5 GB for the fit and 3.5 GB for its Plots tab at
+# 10,000 rows x 2,000 trees), and a container that runs out of memory is
+# killed with every session in it.
+# Removing the single-process blocking needs more than one replica of this
+# container behind a proxy with sticky sessions (websocket support, long read
+# timeout), so each user stays on one R process.
 CMD ["R", "-e", "shiny::runApp('/srv/shiny-server', host='0.0.0.0', port=3838)"]

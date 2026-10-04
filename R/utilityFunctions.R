@@ -123,19 +123,29 @@ pval_tex <- function(p, eps = 0.0001) {
 
 ## String List to Numeric List
 ## Accepts values separated by commas, spaces, tabs, and/or newlines (e.g.
-## pasted directly from a spreadsheet column), normalizing any run of those
-## delimiters into a single comma before splitting.
+## pasted directly from a spreadsheet column), treating any run of those
+## delimiters as a single separator. A value written in plain or scientific
+## notation (e.g. 2.5e2, 1E-3, +4) is read as is; any other value has its
+## non-numeric characters purged first, as before. NULL, empty or NA input
+## (e.g. an input that is not rendered yet) gives numeric(0). A plain number
+## too large for a double (a long run of digits) is Inf, as before, so callers
+## can report it.
 createNumLst <- function(text) {
-  text <- gsub("[^0-9.,\t\r\n -]", "", text, perl = TRUE) #purge non-numeric, non-delimiter characters
-  text <- gsub("[,\t\r\n ]+", ",", text, perl = TRUE)     #collapse delimiter runs into a single comma
-  text <- gsub("^,|,$", "", text)                         #purge leading/trailing commas
-  split <- strsplit(text, ",", fixed = TRUE)[[1]]
-  suppressWarnings(na.omit(as.numeric(split)))
+  if (is.null(text) || length(text) == 0 || is.na(text[1])) return(numeric(0))
+  text   <- gsub("[,\t\r\n ]+", ",", as.character(text[1]), perl = TRUE)     #collapse delimiter runs into a single comma
+  tokens <- strsplit(text, ",", fixed = TRUE)[[1]]
+  isNum  <- grepl("^[+-]?([0-9]+\\.?[0-9]*|\\.[0-9]+)([eE][+-]?[0-9]+)?$", tokens, perl = TRUE)
+  values <- rep(NA_real_, length(tokens))
+  values[isNum]  <- suppressWarnings(as.numeric(tokens[isNum]))
+  values[!isNum] <- suppressWarnings(as.numeric(gsub("[^0-9.-]", "", tokens[!isNum], perl = TRUE))) #purge non-numeric characters
+  values[isNum & grepl("[eE]", tokens) & !is.finite(values)] <- NA            #e.g. 1e999 overflows to Inf
+  values[!is.na(values)]
 }
 
+## NULL/NA-safe: an input that is not rendered yet falls back to the default size.
 GetPlotHeight  <- function(plotToggle, pxValue, ui) {
 
-  ifelse(plotToggle == 'in px' && !is.na(pxValue),
+  ifelse(isTRUE(plotToggle == 'in px') && isTRUE(!is.na(pxValue)),
          height <- pxValue,
          height <- 400)
 
@@ -146,7 +156,7 @@ GetPlotHeight  <- function(plotToggle, pxValue, ui) {
 
 GetPlotWidth  <- function(plotToggle, pxValue, ui) {
 
-  if(plotToggle == 'in px' && !is.na(pxValue)) {
+  if(isTRUE(plotToggle == 'in px') && isTRUE(!is.na(pxValue))) {
     width <- pxValue
 
     if(ui) {
@@ -202,13 +212,14 @@ codeBox <- function(title = "R Code", boxId, outputId, ns) {
   )
 }
 
-# Shows/hides code box
+# Shows/hides code box. Does nothing on the client if the box is not on the
+# page (yet), e.g. while the renderUI that contains it has not rendered.
 toggleCodeBox <- function(showBox, boxId, ns) {
-  if (is.null(showBox) || is.na(showBox)) {
+  if (length(showBox) == 0 || is.na(showBox[1])) {
     showBox <- FALSE
   }
   runjs(sprintf(
-    "document.getElementById('%s').style.display='%s';",
+    "(function(){var e=document.getElementById('%s'); if (e) e.style.display='%s';})();",
     ns(paste0(boxId, "Wrapper")),
     if (showBox) "block" else "none"
   ))
@@ -227,6 +238,74 @@ codeValue <- function(x) {
 
 UPLOAD_ACCEPTED_EXTENSIONS <- c("csv", "txt", "xls", "xlsx", "sas7bdat",
                                 "sav", "dta", "rds", "mtp", "mwx", "mpx")
+
+## Upload size limits. Shiny already caps the upload itself (5 MB by default),
+## but zip containers (.xlsx/.mwx/.mpx), gzip/bzip2/xz streams (.rds, and
+## .csv/.txt/.mtp, which the readers decompress transparently) and the
+## internally compressed SAS/SPSS formats can expand far beyond that inside
+## the single shared R process.
+UPLOAD_MAX_UNCOMPRESSED_BYTES <- 200 * 1024^2 # 200 MB once decompressed
+UPLOAD_MAX_CELLS              <- 20e6         # rows x columns of the data read
+
+# Size in bytes of an uploaded file once decompressed, counted as a stream
+# without keeping it in memory (counting stops once 'limit' is exceeded).
+# Uncompressed files return their size on disk. NA when the file cannot be
+# inspected; the reader then reports its usual error.
+uploadDecompressedSize <- function(path, limit = UPLOAD_MAX_UNCOMPRESSED_BYTES) {
+  magic <- readBin(path, "raw", n = 6)
+  isZip <- length(magic) >= 4 && magic[1] == as.raw(0x50) && magic[2] == as.raw(0x4b) &&
+           ((magic[3] == as.raw(3) && magic[4] == as.raw(4)) ||
+            (magic[3] == as.raw(5) && magic[4] == as.raw(6)) ||
+            (magic[3] == as.raw(7) && magic[4] == as.raw(8)))
+  isStream <- (length(magic) >= 2 && magic[1] == as.raw(0x1f) && magic[2] == as.raw(0x8b)) ||        # gzip
+              (length(magic) >= 3 && identical(magic[1:3], as.raw(c(0x42, 0x5a, 0x68)))) ||           # bzip2
+              (length(magic) >= 6 && identical(magic[1:6], as.raw(c(0xfd, 0x37, 0x7a, 0x58, 0x5a, 0x00)))) # xz
+  if (isZip) {
+    entries <- tryCatch(utils::unzip(path, list = TRUE), error = function(e) NULL)
+    if (is.null(entries)) return(NA_real_)
+    return(sum(as.numeric(entries$Length)))
+  }
+  if (isStream) {
+    return(tryCatch({
+      con <- gzfile(path, "rb")
+      on.exit(close(con), add = TRUE)
+      total <- 0
+      repeat {
+        chunk <- readBin(con, "raw", n = 4 * 1024^2)
+        if (length(chunk) == 0) break
+        total <- total + length(chunk)
+        if (total > limit) break
+        if (total %% (32 * 1024^2) == 0) gc(full = FALSE) # drop counted chunks early on big streams
+      }
+      total
+    }, error = function(e) NA_real_))
+  }
+  as.numeric(file.size(path))
+}
+
+# validate()s that an uploaded file stays within UPLOAD_MAX_UNCOMPRESSED_BYTES
+# once decompressed. Can be called by any module before reading an upload.
+validateUploadSize <- function(path) {
+  size <- uploadDecompressedSize(path)
+  validate(need(is.na(size) || size <= UPLOAD_MAX_UNCOMPRESSED_BYTES,
+                sprintf("File is too large: it expands to more than %d MB when decompressed.",
+                        UPLOAD_MAX_UNCOMPRESSED_BYTES / 1024^2)))
+}
+
+uploadTooManyCellsMsg <- sprintf("File is too large: more than %s values (rows x columns).",
+                                 format(UPLOAD_MAX_CELLS, big.mark = ",", scientific = FALSE))
+
+# haven readers (SAS/SPSS/Stata) with a cap on rows x columns. The header is
+# read first (n_max = 0) so the row limit can be derived from the number of
+# columns before any data is allocated; within the cap the result is the same
+# as an uncapped read.
+readHavenCapped <- function(reader, path) {
+  header  <- reader(path, n_max = 0)
+  maxRows <- floor(UPLOAD_MAX_CELLS / max(1, ncol(header)))
+  dat     <- reader(path, n_max = maxRows + 1)
+  validate(need(nrow(dat) <= maxRows, uploadTooManyCellsMsg))
+  dat
+}
 
 # Silence noisy but harmless readxl warnings (boolean-to-numeric coercions).
 quietExcelRead <- function(reader, path, sheet) {
@@ -256,7 +335,10 @@ read_mtp_helper <- function(path) {
 read_minitab_xml <- function(path) {
   tmp <- tempfile()
   on.exit(unlink(tmp, recursive = TRUE), add = TRUE)
-  utils::unzip(path, exdir = tmp)
+  # Only the .xml entries are read below, so only those are extracted.
+  entries <- tryCatch(utils::unzip(path, list = TRUE)$Name, error = function(e) character(0))
+  xml_entries <- entries[grepl("\\.xml$", basename(entries)) & !grepl("/$", entries)]
+  if (length(xml_entries) > 0) utils::unzip(path, files = xml_entries, exdir = tmp)
   xml_files <- list.files(tmp, pattern = "\\.xml$", recursive = TRUE, full.names = TRUE)
   validate(need(length(xml_files) > 0, "Could not find data inside Minitab file. Try exporting to .xlsx."))
 
@@ -291,18 +373,121 @@ read_minitab_xml <- function(path) {
   as.data.frame(df_cols, stringsAsFactors = FALSE)
 }
 
+# Message for an uploaded file that cannot be read (corrupt, binary data, text
+# in an unsupported encoding, ...). It names the format but never the server's
+# temporary path.
+uploadReadErrorMsg <- function(ext) {
+  ext <- tolower(ext)
+  sprintf("Unable to read this file. Make sure it is a valid %s file%s.",
+          if (ext == "txt") "tab-delimited .txt" else paste0(".", ext),
+          if (ext %in% c("csv", "txt")) " (text files must be UTF-8 encoded)" else "")
+}
+
+# Signals that an uploaded file cannot be read: an error of class
+# "uploadReadError" with uploadReadErrorMsg(). It is not a validate() message,
+# so a caller with its own text for unreadable files (Statistical Inference,
+# Machine Learning) keeps showing that text; the other callers turn it into a
+# validate() message (see readUploadedDataFile()).
+uploadReadError <- function(ext) {
+  stop(structure(class = c("uploadReadError", "error", "condition"),
+                 list(message = uploadReadErrorMsg(ext), call = NULL)))
+}
+
+# Evaluates 'expr' (a reader call). validate() and req() stop as usual; any
+# other error (the reader's own message can contain the temporary path) becomes
+# uploadReadError(ext).
+withUploadReadError <- function(ext, expr) {
+  tryCatch(expr, error = function(e) {
+    if (inherits(e, "shiny.silent.error")) stop(e)
+    uploadReadError(ext)
+  })
+}
+
+# TRUE when a text upload (.csv/.txt) is binary data, e.g. an image or a PDF
+# renamed .csv: its start (decompressed) contains NUL bytes and it is not
+# UTF-16 text (which has a byte-order mark, or NULs in every other byte).
+# Such data is not handed to readr, which can crash the whole R process on it.
+# A zip archive is left to readr, which reads the archive's first file.
+uploadLooksBinary <- function(path) {
+  magic <- readBin(path, "raw", n = 4)
+  if (length(magic) == 4 && identical(magic, as.raw(c(0x50, 0x4b, 0x03, 0x04)))) return(FALSE)
+  b <- tryCatch({
+    con <- gzfile(path, "rb")
+    on.exit(close(con), add = TRUE)
+    readBin(con, "raw", n = 65536)
+  }, error = function(e) raw(0))
+  nul <- b == as.raw(0)
+  if (!any(nul)) return(FALSE)
+  if (length(b) >= 2 && (identical(b[1:2], as.raw(c(0xff, 0xfe))) ||
+                         identical(b[1:2], as.raw(c(0xfe, 0xff))))) return(FALSE)
+  even <- nul[c(TRUE, FALSE)]
+  odd  <- nul[c(FALSE, TRUE)]
+  !((mean(odd) > 0.9 && mean(even) < 0.1) || (mean(even) > 0.9 && mean(odd) < 0.1))
+}
+
+# Text of an uploaded data frame as valid UTF-8. readr returns the bytes of a
+# file as they are, so a CSV saved by Excel in Windows-1252 / Latin-1 (e.g. a
+# header "café") gives column names and values that are not valid UTF-8; Shiny
+# would send them to the browser, which then drops the connection. Such names,
+# values and factor levels are converted from Windows-1252 (from Latin-1 for the
+# few bytes Windows-1252 leaves undefined); valid UTF-8 text is left as it is.
+# If the file had such text and then contains control characters, it is binary
+# data (e.g. an image renamed .csv), and this is an error.
+uploadTextToUTF8 <- function(dat) {
+  converted <- FALSE
+  # The converted text, or NULL when 'x' is valid UTF-8 already.
+  toUTF8 <- function(x) {
+    bad <- !is.na(x) & !validUTF8(x)
+    if (!any(bad)) return(NULL)
+    converted <<- TRUE
+    fixed <- iconv(x[bad], "WINDOWS-1252", "UTF-8")
+    undefined <- is.na(fixed)
+    fixed[undefined] <- iconv(x[bad][undefined], "latin1", "UTF-8")
+    x[bad] <- fixed
+    x
+  }
+  if (!is.null(x <- toUTF8(names(dat)))) names(dat) <- x
+  for (j in seq_along(dat)) {
+    col <- dat[[j]]
+    if (is.character(col)) {
+      if (!is.null(x <- toUTF8(col))) dat[[j]] <- x
+    } else if (is.factor(col)) {
+      if (!is.null(x <- toUTF8(levels(col)))) levels(dat[[j]]) <- x
+    }
+  }
+  if (converted) {
+    text <- c(names(dat), unlist(lapply(dat, function(col) {
+      if (is.character(col)) col else if (is.factor(col)) levels(col)
+    }), use.names = FALSE))
+    if (any(grepl("[\\x01-\\x08\\x0B\\x0C\\x0E-\\x1F\\x7F]|\\xC2[\\x80-\\x9F]", text,
+                  perl = TRUE, useBytes = TRUE))) {
+      stop("binary data")
+    }
+  }
+  dat
+}
+
 # Reads an uploaded data file of any format in UPLOAD_ACCEPTED_EXTENSIONS into
 # a data frame. 'sheet' is only used for xls/xlsx; callers must validate it
 # (e.g. req(sheet %in% readxl::excel_sheets(path))) before invoking this.
+# A file that cannot be read signals uploadReadError(); value labels (SPSS,
+# Stata, SAS) are dropped, keeping the stored values.
 readUploadedDataFile <- function(ext, path, sheet = NULL) {
-  switch(tolower(ext),
-        csv      = read_csv(path, show_col_types = FALSE),
-        xls      = quietExcelRead(read_xls, path, sheet),
-        xlsx     = quietExcelRead(read_xlsx, path, sheet),
-        txt      = read_tsv(path, show_col_types = FALSE),
-        sas7bdat = read_sas(path),
-        sav      = read_sav(path),
-        dta      = haven::read_dta(path),
+  validateUploadSize(path)
+  dat <- withUploadReadError(ext, switch(tolower(ext),
+        csv      = {
+          if (uploadLooksBinary(path)) stop("binary data")
+          readr::read_csv(path, show_col_types = FALSE)
+        },
+        xls      = quietExcelRead(readxl::read_xls, path, sheet),
+        xlsx     = quietExcelRead(readxl::read_xlsx, path, sheet),
+        txt      = {
+          if (uploadLooksBinary(path)) stop("binary data")
+          readr::read_tsv(path, show_col_types = FALSE)
+        },
+        sas7bdat = readHavenCapped(haven::read_sas, path),
+        sav      = readHavenCapped(haven::read_sav, path),
+        dta      = readHavenCapped(haven::read_dta, path),
         rds      = {
           obj <- readRDS(path)
           validate(need(is.data.frame(obj), ".rds file must contain a data frame."))
@@ -311,7 +496,31 @@ readUploadedDataFile <- function(ext, path, sheet = NULL) {
         mtp      = read_mtp_helper(path),
         mwx      = read_minitab_xml(path),
         mpx      = read_minitab_xml(path),
-        validate("Improper file format"))
+        validate("Improper file format")))
+  validate(need(as.numeric(NROW(dat)) * max(1, NCOL(dat)) <= UPLOAD_MAX_CELLS, uploadTooManyCellsMsg))
+  # Labelled columns (haven_labelled) cannot be shown by DT or used as plain numbers.
+  if (any(vapply(dat, inherits, logical(1), what = "haven_labelled"))) {
+    dat <- haven::zap_labels(dat)
+  }
+  withUploadReadError(ext, uploadTextToUTF8(dat))
+}
+
+# For shinyvalidate rules on a file input. Evaluates 'expr' (e.g. the reactive
+# that calls readUploadedDataFile) and returns the message of a validate() error
+# raised by the readers (".rds file must contain a data frame.", "File is too
+# large ...", ...) or of uploadReadError(), so it shows under the file input.
+# shinyvalidate itself would show "An unexpected error occurred during input
+# validation" for it, and a rule that swallows errors would show nothing. NULL
+# when 'expr' succeeds or fails silently (req()) or for any other reason, so
+# other rules apply as before.
+uploadValidationMessage <- function(expr) {
+  tryCatch({
+    expr
+    NULL
+  }, error = function(e) {
+    msg <- conditionMessage(e)
+    if ((inherits(e, "validation") || inherits(e, "uploadReadError")) && nzchar(msg)) msg else NULL
+  })
 }
 
 

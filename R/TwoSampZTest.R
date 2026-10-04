@@ -33,8 +33,13 @@ TwoSampZTest <- function(xbar1, sigma1, n1, xbar2, sigma2, n2, alternative = c("
     z.crit <- qnorm(1 - s_level)
   }
 
+  # e.g. both population standard deviations 0 and a difference equal to the hypothesized one (0/0)
+  validate(
+    need(!anyNA(c(z.crit, zstat, p_value)), "Unable to calculate the test statistic. Check that the population standard deviations are greater than zero."),
+    errorClass = "myClass")
+
   dat <- sapply(c(((xbar1 - xbar2) - muNaught), z.crit, se, zstat, p_value), function(x) {
-    if (x < 0.0001 && x > -1e-2) {
+    if (!is.na(x) && x < 0.0001 && x > -1e-2) {
       signif(x, 1)
     } else {
       round(x, 4)

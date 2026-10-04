@@ -103,10 +103,30 @@ regressionAndCorrelationUI <- function(id) {
         )
       ),
 
-      uiOutput(ns("regressionSidebarUI"))
+      # All four methodology sidebars are mounted once and kept in the DOM;
+      # only the selected one is shown (same pattern as machineLearning.R).
+      # Each module server is created once, the first time its methodology is
+      # selected (see regressionAndCorrelationServer).
+      tabsetPanel(
+        id       = ns("regSidebarSwitch"),
+        type     = "hidden",
+        selected = "SLR",
+        tabPanelBody("SLR",   SLRSidebarUI(ns("slr"))),
+        tabPanelBody("POLYR", PolynomialRegressionSidebarUI(ns("polyr"))),
+        tabPanelBody("MLR",   MLRSidebarUI(ns("mlr"))),
+        tabPanelBody("LOGR",  LogisticRegressionSidebarUI(ns("logr")))
+      )
     ),
     mainPanel(
-      uiOutput(ns("regressionMainPanelUI")),
+      tabsetPanel(
+        id       = ns("regMainPanelSwitch"),
+        type     = "hidden",
+        selected = "SLR",
+        tabPanelBody("SLR",   SLRMainPanelUI(ns("slr"))),
+        tabPanelBody("POLYR", PolynomialRegressionMainPanelUI(ns("polyr"))),
+        tabPanelBody("MLR",   MLRMainPanelUI(ns("mlr"))),
+        tabPanelBody("LOGR",  LogisticRegressionMainPanelUI(ns("logr")))
+      ),
       hidden(div(
         id = ns("sharedDataPreview"),
         tags$h4("Uploaded Data",
@@ -180,22 +200,31 @@ regressionAndCorrelationServer <- function(id) {
       )
     })
 
+    # TRUE while a file is uploaded and not cleared. The file-content rules
+    # below give no message about a file that was cleared (the file input
+    # keeps its last value, see regDataCleared below).
+    regHasFile <- function() !is.null(input$regUserData) && !isTRUE(regDataCleared())
+
     regupload_iv <- InputValidator$new()
     regupload_iv$add_rule("regUserData", sv_required())
     regupload_iv$add_rule("regUserData", ~ if (
-      !is.null(input$regUserData) &&
+      regHasFile() &&
       !(tolower(tools::file_ext(input$regUserData$name)) %in% UPLOAD_ACCEPTED_EXTENSIONS)
     ) "File format not accepted.")
+    # Why the file reader rejected the file (e.g. too large, .rds is not a data
+    # frame, the file cannot be read). The rules below stay silent for a file
+    # that cannot be read.
+    regupload_iv$add_rule("regUserData", ~ if (regHasFile()) uploadValidationMessage(reg_upload_data()))
     regupload_iv$add_rule("regUserData", ~ tryCatch(
-      if (!is.null(input$regUserData) && isTRUE(nrow(reg_upload_data()) == 0)) "File is empty.",
+      if (regHasFile() && isTRUE(nrow(reg_upload_data()) == 0)) "File is empty.",
       error = function(e) NULL
     ))
     regupload_iv$add_rule("regUserData", ~ tryCatch(
-      if (!is.null(input$regUserData) && isTRUE(ncol(reg_upload_data()) < 2)) "Data must include at least two columns.",
+      if (regHasFile() && isTRUE(ncol(reg_upload_data()) < 2)) "Data must include at least two columns.",
       error = function(e) NULL
     ))
     regupload_iv$add_rule("regUserData", ~ tryCatch(
-      if (!is.null(input$regUserData) && isTRUE(nrow(reg_upload_data()) < 4)) "Samples must include at least four numeric observations.",
+      if (regHasFile() && isTRUE(nrow(reg_upload_data()) < 4)) "Samples must include at least four numeric observations.",
       error = function(e) NULL
     ))
     regupload_iv$condition(~ isTRUE(input$dataInputMode == "upload"))
@@ -237,10 +266,14 @@ regressionAndCorrelationServer <- function(id) {
       ext  <- tolower(tools::file_ext(input$regUserData$name))
       path <- input$regUserData$datapath
       if (ext %in% c("xls", "xlsx")) {
+        sheets <- tryCatch(readxl::excel_sheets(path), error = function(e) character(0))
+        validate(need(length(sheets) > 0, uploadReadErrorMsg(ext)))
         req(input$regSheet)
-        req(input$regSheet %in% readxl::excel_sheets(path))
+        req(input$regSheet %in% sheets)
       }
-      dat <- readUploadedDataFile(ext, path, input$regSheet)
+      # A file that cannot be read stops with the reader's short message.
+      dat <- tryCatch(readUploadedDataFile(ext, path, input$regSheet),
+                      uploadReadError = function(e) validate(conditionMessage(e)))
       dat <- dat[, colSums(!is.na(dat)) > 0, drop = FALSE]
       dat <- dat[rowSums(!is.na(dat)) > 0, , drop = FALSE]
       dat
@@ -286,8 +319,20 @@ regressionAndCorrelationServer <- function(id) {
       )
     })
 
-    # Resets the parent file input — passed to children so their Reset button can clear it
-    reset_upload <- function() shinyjs::reset("regUserData")
+    # Clears the uploaded file: resets the file input, tells reg_data() the file
+    # is gone (see regDataCleared above) and empties the sheet picker.
+    # shinyjs::reset() namespaces its id with the current reactive domain, so it
+    # is run with this module's session: reset_upload() below is called from
+    # the children's Reset observers, whose domain is the child's session.
+    clear_upload <- function() {
+      withReactiveDomain(session, shinyjs::reset("regUserData"))
+      regDataCleared(TRUE)
+      updateSelectizeInput(session, "regSheet", choices = character(0), selected = "")
+    }
+
+    # Clears the parent's upload (file input, reg_data(), sheet picker) — passed
+    # to children so their Reset button can clear it
+    reset_upload <- function() clear_upload()
 
     # Restores raw data text boxes to their hardcoded defaults
     reset_raw_data <- function() {
@@ -324,9 +369,7 @@ regressionAndCorrelationServer <- function(id) {
     clear_trigger <- reactiveVal(0)
 
     observeEvent(input$regClearData, {
-      shinyjs::reset("regUserData")
-      regDataCleared(TRUE)
-      updateSelectizeInput(session, "regSheet", choices = character(0), selected = "")
+      clear_upload()
       upload_error(FALSE)
       clear_trigger(clear_trigger() + 1)
     })
@@ -336,61 +379,45 @@ regressionAndCorrelationServer <- function(id) {
     # sheet selection, and variable pickers silently in place; clear them so
     # re-entering Upload mode always starts from a fresh, empty picker.
     observeEvent(input$dataInputMode, {
-      reset_upload()
-      regDataCleared(TRUE)
-      updateSelectizeInput(session, "regSheet", choices = character(0), selected = "")
+      clear_upload()
       upload_error(FALSE)
       clear_trigger(clear_trigger() + 1)
     }, ignoreInit = TRUE)
 
     observeEvent(input$multiple, { upload_error(FALSE) }, ignoreNULL = FALSE, ignoreInit = TRUE)
 
-    observeEvent(TRUE, {
-      if (isolate(input$dataInputMode) == "raw") {
-        grp <- session$ns("multiple")
-        shinyjs::delay(0, shinyjs::runjs(sprintf(
-          "['MLR','LOGR'].forEach(function(v) {
-            var el = document.querySelector('#%s input[value=\"' + v + '\"]');
-            if (el) { el.disabled = true; el.closest('label').style.opacity = '0.4'; el.closest('label').style.pointerEvents = 'none'; }
-          });", grp
-        )))
-      }
-    }, once = TRUE)
+    # Raw data entry is only available for SLR and POLYR: grey out MLR and LOGR.
+    setRawOnlyMethods <- function(disabled) {
+      shinyjs::runjs(sprintf(
+        "['MLR','LOGR'].forEach(function(v) {
+          var el = document.querySelector('#%s input[value=\"' + v + '\"]');
+          var lbl = el ? el.closest('label') : null;
+          if (!el || !lbl) return;
+          el.disabled = %s; lbl.style.opacity = '%s'; lbl.style.pointerEvents = '%s';
+        });",
+        session$ns("multiple"),
+        if (disabled) "true" else "false",
+        if (disabled) "0.4" else "",
+        if (disabled) "none" else ""
+      ))
+    }
 
+    modeObserverRan <- FALSE
     observeEvent(input$dataInputMode, {
       current <- isolate(input$multiple)
-      grp <- session$ns("multiple")
       if (input$dataInputMode == "raw") {
         if (!(current %in% c("SLR", "POLYR")))
           updateRadioButtons(session, "multiple", selected = "SLR")
-        shinyjs::runjs(sprintf(
-          "['MLR','LOGR'].forEach(function(v) {
-            var el = document.querySelector('#%s input[value=\"' + v + '\"]');
-            if (el) { el.disabled = true; el.closest('label').style.opacity = '0.4'; el.closest('label').style.pointerEvents = 'none'; }
-          });", grp
-        ))
-      } else {
-        shinyjs::runjs(sprintf(
-          "['MLR','LOGR'].forEach(function(v) {
-            var el = document.querySelector('#%s input[value=\"' + v + '\"]');
-            if (el) { el.disabled = false; el.closest('label').style.opacity = ''; el.closest('label').style.pointerEvents = ''; }
-          });", grp
-        ))
+        setRawOnlyMethods(TRUE)
+      } else if (modeObserverRan) {
+        # The radios start enabled, so the first (startup) run in upload mode
+        # has nothing to undo.
+        setRawOnlyMethods(FALSE)
       }
+      modeObserverRan <<- TRUE
     })
 
     hide_shared <- reactiveVal(FALSE)
-
-    # ---- Dynamic module routing (counter pattern preserved) -----------------
-    slr_instance_counter  <- reactiveVal(0)
-    mlr_instance_counter  <- reactiveVal(0)
-    logr_instance_counter <- reactiveVal(0)
-    polyr_instance_counter <- reactiveVal(0)
-
-    current_slr_module_id   <- reactive({ paste0("slr_dynamic_instance_",  slr_instance_counter()) })
-    current_mlr_module_id   <- reactive({ paste0("mlr_dynamic_instance_",  mlr_instance_counter()) })
-    current_logr_module_id  <- reactive({ paste0("logr_dynamic_instance_", logr_instance_counter()) })
-    current_polyr_module_id <- reactive({ paste0("polyr_dynamic_instance_", polyr_instance_counter()) })
 
     observeEvent(input$multiple, {
       if (input$dataInputMode == "raw") {
@@ -404,57 +431,80 @@ regressionAndCorrelationServer <- function(id) {
       }
     }, ignoreInit = TRUE)
 
+    # ---- Methodology modules: one server per method, created once ----------
+    # Each child server is created the first time its methodology is selected
+    # and then kept for the session, with a stable id ("slr", "polyr", "mlr",
+    # "logr"); switching methodology only swaps the visible pane of the hidden
+    # tabsetPanels in the UI. (Previously a new server instance was spawned on
+    # every switch and the old ones were never destroyed.)
+    #
+    # A child only reacts while its methodology is selected. The shared
+    # reactives are handed to it through gates (methodGate) that stop with a
+    # silent req() while it is not selected, so an unselected child does no
+    # work and sends no UI messages; its writes to the shared reactiveVals are
+    # ignored too (methodGateRV). When a child is selected again, the gates
+    # re-fire its observers on the shared data, input mode and clear trigger,
+    # so it starts again from a clean state with the current data, as a newly
+    # spawned instance did before.
+    regMethods <- c("SLR", "POLYR", "MLR", "LOGR")
+    methodActive  <- lapply(setNames(regMethods, regMethods), function(m) reactiveVal(FALSE))
+    methodStarted <- setNames(rep(FALSE, length(regMethods)), regMethods)
+    # Results navbar of each child; its first tab is "data_tab".
+    methodNavbarIds <- c(SLR = "slr-slrNavbarPage", POLYR = "polyr-polyNavbarPage",
+                         MLR = "mlr-mainPanel",     LOGR  = "logr-mainPanel")
+
+    methodGate <- function(active, r) reactive({
+      req(active())
+      r()
+    })
+    methodGateRV <- function(active, rv) function(value) {
+      if (missing(value)) return(rv())
+      if (isTRUE(isolate(active()))) rv(value)
+      invisible(NULL)
+    }
+
+    startMethodServer <- function(m) {
+      active    <- methodActive[[m]]
+      is_active <- function() active()
+      gated_reg_data      <- methodGate(active, reg_data)
+      gated_clear_trigger <- methodGate(active, clear_trigger)
+      gated_upload_error  <- methodGateRV(active, upload_error)
+      gated_hide_shared   <- methodGateRV(active, hide_shared)
+      switch(m,
+        SLR = SLRServer("slr", gated_reg_data, methodGate(active, input_mode), reset_upload,
+          gated_upload_error, gated_clear_trigger,
+          hide_shared = gated_hide_shared, reset_raw_data = reset_raw_data,
+          raw_error_msgs = rawErrorMessages, raw_input_trigger = methodGate(active, raw_input_trigger),
+          is_active = is_active),
+        POLYR = PolynomialRegressionServer("polyr", gated_reg_data, methodGate(active, input_mode), reset_upload,
+          gated_upload_error, gated_clear_trigger,
+          hide_shared = gated_hide_shared, reset_raw_data = reset_raw_data,
+          raw_error_msgs = rawErrorMessages, raw_input_trigger = methodGate(active, raw_input_trigger),
+          is_active = is_active),
+        MLR = MLRServer("mlr", gated_reg_data, reset_upload, gated_upload_error, gated_clear_trigger,
+          hide_shared = gated_hide_shared, is_active = is_active),
+        LOGR = LogisticRegressionServer("logr", gated_reg_data, reset_upload, gated_upload_error, gated_clear_trigger,
+          hide_shared = gated_hide_shared, is_active = is_active)
+      )
+    }
+
     observeEvent(input$multiple, {
-      if (input$multiple == "SLR") {
-        slr_instance_counter(slr_instance_counter() + 1)
-        output$regressionSidebarUI   <- renderUI({ req(current_slr_module_id()); SLRSidebarUI(session$ns(current_slr_module_id())) })
-        output$regressionMainPanelUI <- renderUI({ req(current_slr_module_id()); SLRMainPanelUI(session$ns(current_slr_module_id())) })
-      } else if (input$multiple == "MLR") {
-        mlr_instance_counter(mlr_instance_counter() + 1)
-        output$regressionSidebarUI   <- renderUI({ req(current_mlr_module_id()); MLRSidebarUI(session$ns(current_mlr_module_id())) })
-        output$regressionMainPanelUI <- renderUI({ req(current_mlr_module_id()); MLRMainPanelUI(session$ns(current_mlr_module_id())) })
-      } else if (input$multiple == "LOGR") {
-        logr_instance_counter(logr_instance_counter() + 1)
-        output$regressionSidebarUI   <- renderUI({ req(current_logr_module_id()); LogisticRegressionSidebarUI(session$ns(current_logr_module_id())) })
-        output$regressionMainPanelUI <- renderUI({ req(current_logr_module_id()); LogisticRegressionMainPanelUI(session$ns(current_logr_module_id())) })
-      } else if (input$multiple == "POLYR") {
-        polyr_instance_counter(polyr_instance_counter() + 1)
-        output$regressionSidebarUI   <- renderUI({ req(current_polyr_module_id()); PolynomialRegressionSidebarUI(session$ns(current_polyr_module_id())) })
-        output$regressionMainPanelUI <- renderUI({ req(current_polyr_module_id()); PolynomialRegressionMainPanelUI(session$ns(current_polyr_module_id())) })
+      m <- input$multiple
+      req(m %in% regMethods)
+      updateTabsetPanel(session, "regSidebarSwitch",   selected = m)
+      updateTabsetPanel(session, "regMainPanelSwitch", selected = m)
+      for (k in regMethods) methodActive[[k]](identical(k, m))
+      if (!methodStarted[[m]]) {
+        methodStarted[[m]] <<- TRUE
+        startMethodServer(m)
+      } else {
+        # Selected again: put the child's results navbar back on its first tab,
+        # as in a newly created UI. Otherwise a tab left selected from an earlier
+        # Calculate stays "active" while the child's reset hides it, and the
+        # child's next updateNavbarPage() to that same tab shows an empty pane.
+        updateNavbarPage(session, methodNavbarIds[[m]], selected = "data_tab")
       }
-    }, ignoreNULL = FALSE, ignoreInit = FALSE)
-
-    observeEvent(current_slr_module_id(), {
-      req(input$multiple == "SLR")
-      local({
-        spawned_id <- current_slr_module_id()
-        SLRServer(spawned_id, reg_data, input_mode, reset_upload, upload_error, clear_trigger,
-          hide_shared = hide_shared, reset_raw_data = reset_raw_data,
-          raw_error_msgs = rawErrorMessages, raw_input_trigger = raw_input_trigger,
-          is_active = reactive({ input$multiple == "SLR" && current_slr_module_id() == spawned_id }))
-      })
-    }, ignoreNULL = TRUE)
-
-    observeEvent(current_mlr_module_id(), {
-      req(input$multiple == "MLR")
-      MLRServer(current_mlr_module_id(), reg_data, reset_upload, upload_error, clear_trigger, hide_shared = hide_shared)
-    }, ignoreNULL = TRUE)
-
-    observeEvent(current_logr_module_id(), {
-      req(input$multiple == "LOGR")
-      LogisticRegressionServer(current_logr_module_id(), reg_data, reset_upload, upload_error, clear_trigger, hide_shared = hide_shared)
-    }, ignoreNULL = TRUE)
-
-    observeEvent(current_polyr_module_id(), {
-      req(input$multiple == "POLYR")
-      local({
-        spawned_id <- current_polyr_module_id()
-        PolynomialRegressionServer(spawned_id, reg_data, input_mode, reset_upload, upload_error, clear_trigger,
-          hide_shared = hide_shared, reset_raw_data = reset_raw_data,
-          raw_error_msgs = rawErrorMessages, raw_input_trigger = raw_input_trigger,
-          is_active = reactive({ input$multiple == "POLYR" && current_polyr_module_id() == spawned_id }))
-      })
-    }, ignoreNULL = TRUE)
+    })
 
     # ---- Shared data preview (shown immediately on upload, above child UI) ----
     output$sharedDataTable <- renderDT({

@@ -170,7 +170,6 @@ descStatsUI <- function(id) {
                 id = ns("dsTable"),
                 title = "Descriptive Statistics",
                 value = "Descriptive Statistics",
-                withMathJax(),
                   
                   conditionalPanel(
                     ns = ns,
@@ -230,32 +229,26 @@ descStatsUI <- function(id) {
                     column(
                       width = 8,
                       
-                      withMathJax(),
                       titlePanel(tags$u("Sample Mean")),
                       br(),
                       uiOutput(ns("dsMeanCalc")),
 
-                      withMathJax(),
                       titlePanel(tags$u("Sample Standard Deviation")),
                       br(),
                       uiOutput(ns("dsSDCalc")),
 
-                      withMathJax(),
                       titlePanel(tags$u("Standard Error of the Mean")),
                       br(),
                       uiOutput(ns("dsSECal")),
                       
-                      withMathJax(),
                       titlePanel(tags$u("Coefficient of Variation")),
                       br(),
                       uiOutput(ns("dsCVCal")),
                       
-                      withMathJax(),
                       titlePanel(tags$u("Range")),
                       br(),
                       uiOutput(ns("dsRangeCal")),
                       
-                      withMathJax(),
                       titlePanel(tags$u("Interquartile Range")),
                       br(),
                       uiOutput(ns("dsIQRCalc")),
@@ -279,7 +272,12 @@ descStatsUI <- function(id) {
                         plotType = "Boxplot",
                         title    = "Boxplot"),
                       
-                      uiOutput(ns("renderDSBoxplot"))
+                      plotOutput(ns("dsBoxplot"), height = "400px", width = "auto"),
+                      br(),
+                      boxplotDisclaimer,
+                      br(),
+                      hr(),
+                      br()
                     ), # Boxplot
                     
                     conditionalPanel(
@@ -293,7 +291,10 @@ descStatsUI <- function(id) {
                         plotType = "Histogram",
                         title = "Histogram",
                         ylab = "Frequency"),
-                      uiOutput(ns("renderDSHistogram"))
+                      plotOutput(ns("dsHistogram"), height = "400px", width = "auto"),
+                      br(),
+                      hr(),
+                      br()
                     ) # Histogram
                   ), # Graphs tabPanel
 
@@ -326,9 +327,13 @@ descStatsServer <- function(id) {
     dsraw_iv$add_rule("descriptiveStat", sv_required())
     dsraw_iv$add_rule("descriptiveStat", sv_regex("^[[:space:]]*(-)?[0-9]+(\\.[0-9]+)?([,[:space:]]+(-)?[0-9]+(\\.[0-9]+)?)+[[:space:]]*$",
                                                   "Data must be numeric values separated by a comma, space, or tab (ie: 2,3,4 or 2 3 4)"))
+    # The pattern above accepts arbitrarily long digit strings, which become Inf.
+    dsraw_iv$add_rule("descriptiveStat", ~ if(any(is.infinite(dsRawData()))) "Data contains values that are too large to compute.")
     dsupload_iv$add_rule("dsUserData", sv_required())
     dsupload_iv$add_rule("dsUserData", ~ if(is.null(fileInputs$dsStatus) || fileInputs$dsStatus == 'reset') "Required")
     dsupload_iv$add_rule("dsUserData", ~ if(!(tolower(tools::file_ext(input$dsUserData$name)) %in% c("csv", "txt", "xls", "xlsx", "sas7bdat", "sav", "dta", "rds", "mtp", "mwx", "mpx"))) "File format not accepted.")
+    # Why the file reader rejected the file (e.g. too large, .rds is not a data frame)
+    dsupload_iv$add_rule("dsUserData", ~ uploadValidationMessage(dsUploadData()))
     dsupload_iv$add_rule("dsUserData", ~ if(ncol(dsUploadData()) < 1) "Data must include one variable")
     dsupload_iv$add_rule("dsUserData", ~ if(nrow(dsUploadData()) < 2) "Samples must include at least two observations")
     
@@ -342,6 +347,11 @@ descStatsServer <- function(id) {
       col_data <- dsUploadData()[[.x]]      
       if(length(na.omit(col_data)) < 2) {   
         "Selected column must have at least two observations."
+      }
+    })
+    dsuploadvars_iv$add_rule("dsUploadVars", ~ {
+      if(any(is.infinite(dsUploadData()[[.x]]))) {
+        "Selected variable contains infinite values."
       }
     })
     # ------------------ #
@@ -380,60 +390,6 @@ descStatsServer <- function(id) {
       )
     })
 
-    # ----------------------------------------------------------- #
-    #     Minitab file readers                                    #
-    # ----------------------------------------------------------- #
-    # Older Minitab Portable Worksheet (.mtp) – text-based.
-    read_mtp_helper <- function(path) {
-      raw <- foreign::read.mtp(path)
-      keep <- raw[vapply(raw, is.numeric, logical(1))]
-      validate(need(length(keep) > 0, "No numeric columns found in .mtp file."))
-      max_len <- max(vapply(keep, length, integer(1)))
-      keep <- lapply(keep, function(v) { length(v) <- max_len; v })
-      if (is.null(names(keep)) || any(names(keep) == ""))
-        names(keep) <- paste0("V", seq_along(keep))
-      as.data.frame(keep, stringsAsFactors = FALSE)
-    }
-
-    # Newer Minitab XML formats (.mwx / .mpx) – best-effort, schema varies.
-    read_minitab_xml <- function(path) {
-      tmp <- tempfile()
-      on.exit(unlink(tmp, recursive = TRUE), add = TRUE)
-      utils::unzip(path, exdir = tmp)
-      xml_files <- list.files(tmp, pattern = "\\.xml$", recursive = TRUE, full.names = TRUE)
-      validate(need(length(xml_files) > 0, "Could not find data inside Minitab file. Try exporting to .xlsx."))
-
-      doc <- NULL
-      for (f in xml_files) {
-        candidate <- try(xml2::read_xml(f), silent = TRUE)
-        if (inherits(candidate, "xml_document") &&
-            length(xml2::xml_find_all(candidate, "//*[local-name()='Column']")) > 0) {
-          doc <- candidate; break
-        }
-      }
-      validate(need(!is.null(doc), "Could not parse Minitab file. Please export to .xlsx in Minitab."))
-
-      cols <- xml2::xml_find_all(doc, "//*[local-name()='Column']")
-      col_data <- lapply(seq_along(cols), function(i) {
-        col <- cols[[i]]
-        nm  <- xml2::xml_attr(col, "Name")
-        if (is.na(nm)) nm <- xml2::xml_attr(col, "name")
-        if (is.na(nm)) nm <- paste0("C", i)
-        cells <- xml2::xml_find_all(col, ".//*[local-name()='Cell' or local-name()='Value' or local-name()='R']")
-        vals  <- xml2::xml_text(cells)
-        list(name = nm, values = vals)
-      })
-
-      max_len <- max(vapply(col_data, function(x) length(x$values), integer(1)))
-      df_cols <- lapply(col_data, function(x) {
-        v <- x$values; length(v) <- max_len
-        nv <- suppressWarnings(as.numeric(v))
-        if (sum(is.na(nv)) <= sum(is.na(v))) nv else v
-      })
-      names(df_cols) <- vapply(col_data, function(x) x$name, character(1))
-      as.data.frame(df_cols, stringsAsFactors = FALSE)
-    }
-
     #  -------------------------------------------------------------------- #
     ## ------------------- Descriptive Stats functions --------------------
     #  -------------------------------------------------------------------- #
@@ -449,7 +405,7 @@ descStatsServer <- function(id) {
     # https://rdrr.io/github/skgrange/threadr/src/R/decimal_count.R
     DecimalCount <- function(x) {
       
-      req(class(x) == "numeric")
+      req(is.numeric(x))
       
       # If contains a period
       if (grepl("\\.", x)) {
@@ -466,17 +422,11 @@ descStatsServer <- function(id) {
     }
     
     # Function to find the mode(s)
-    Modes <- function(x) {
-      modes <- Mode(x)
+    Modes <- function(x, modes = DescTools::Mode(x)) {
       if (anyNA(modes)) {return("No mode exists.")}
       else if (length(modes) == 1) {return(paste(modes))}
       else if (length(modes) > 1) {
-        modesList <- paste(modes[1])
-        
-        for(index in 2:length(modes)) {
-          modesList <- paste0(modesList, ", ", modes[index])
-        }
-        return(modesList)
+        return(paste(modes, collapse = ", "))
       }
     }
     
@@ -509,29 +459,33 @@ descStatsServer <- function(id) {
     }
     
     GetOutliers <- function(dat, lower, upper) {
-      outliers <- c()
-      
-      for(x in dat) {
-        if(x < lower | x > upper) {
-          outliers <-c(outliers, x)
-        }
+      return(sort(dat[dat < lower | dat > upper]))
+    }
+    
+    # Outlier values as numbers, parsed from the outlier text of the statistics table
+    getOutlierValues <- function(df) {
+      if(df['Outlier Values',3] != "There are no outliers.") {
+        createNumLst(df['Outlier Values',3])
+      } else {
+        data.frame()
       }
-      
-      return(sort(outliers))
     }
     
     # Function for populating the value column of the datatable
     createDSColumn <- function(dat) ({
+      # Integer-typed columns (.rds, .dta, ...) are treated as plain numbers.
+      dat <- as.numeric(dat)
       sampSize <- length(dat)
       sampSum <- sum(dat)
       sumSquares <- sum(dat^2)
       xbar <- mean(dat)
-      sampMode <- Modes(dat)
+      modeResult <- DescTools::Mode(dat)
+      sampMode <- Modes(dat, modeResult)
       
       if(sampMode == "No mode exists."){
         modeFreq <- paste("")
       } else{
-        modeFreq <- paste("Each appears", attr(Mode(dat), "freq"), "times")
+        modeFreq <- paste("Each appears", attr(modeResult, "freq"), "times")
       }
       
       sampMin <- min(dat)
@@ -554,10 +508,11 @@ descStatsServer <- function(id) {
       
       sampRange <- Range(min(dat), max(dat))
       sampVar <- round(var(dat),4)
-      sampMeanSE <- round(sd(dat)/sqrt(length(dat)), 4)
       sampStdDev <- sd(dat)
+      sampMeanSE <- round(sampStdDev/sqrt(length(dat)), 4)
       
-      if (sampStdDev < 0.0001) {
+      # sd() is NaN/NA when the data overflow; only apply the small-SD format to real numbers
+      if (is.finite(sampStdDev) && sampStdDev < 0.0001) {
         formattedSD <- sprintf("%.4e", sampStdDev)    # use scientific notation if SD is sufficiently small
       } else {
         formattedSD <- sprintf("%.4f", sampStdDev)
@@ -652,6 +607,17 @@ descStatsServer <- function(id) {
     # rendered once (see below) and reacts to this value, so every Calculate /
     # filter change refreshes it -- re-assigning renderDT in the observer did not.
     dsTableDf <- reactiveVal(NULL)
+
+    # Snapshot of the last successful Calculate (data, totals and the full statistics
+    # table). The result outputs are created once and read this value.
+    dsCalc <- reactiveVal(NULL)
+
+    # Message shown in the results message area when Calculate fails unexpectedly
+    dsCalcError <- reactiveVal(NULL)
+
+    # TRUE while the result tabs (Descriptive Statistics, Calculations, Graphs) are
+    # available, i.e. from a successful Calculate until the data changes or is reset.
+    dsResultsShown <- reactiveVal(FALSE)
     
     fileInputs <- reactiveValues(
       dsStatus = NULL)
@@ -663,56 +629,34 @@ descStatsServer <- function(id) {
       return(dat)
     })
     
-    # Silence noisy but harmless readxl warnings (boolean-to-numeric coercions).
-    quietExcelRead <- function(reader, path, sheet) {
-      withCallingHandlers(
-        reader(path, sheet = sheet),
-        warning = function(w) {
-          if (grepl("Coercing boolean to numeric", conditionMessage(w))) {
-            invokeRestart("muffleWarning")
-          }
-        }
-      )
-    }
-
-    # Function to read the uploaded data file
+    # Function to read the uploaded data file (shared reader in utilityFunctions.R,
+    # which also applies the upload size limits). A file that cannot be read
+    # stops with the reader's short "Unable to read this file..." message.
     dsUploadData <- eventReactive(list(input$dsUserData, input$dsSheet), {
       req(input$dsUserData)
       ext  <- tolower(tools::file_ext(input$dsUserData$name))
       path <- input$dsUserData$datapath
 
-      switch(ext,
-            csv      = read_csv(path, show_col_types = FALSE),
-            xls      = {
-              req(input$dsSheet)
-              # Block on stale sheet name (transient between file upload and selectize update)
-              req(input$dsSheet %in% readxl::excel_sheets(path))
-              quietExcelRead(read_xls, path, input$dsSheet)
-            },
-            xlsx     = {
-              req(input$dsSheet)
-              req(input$dsSheet %in% readxl::excel_sheets(path))
-              quietExcelRead(read_xlsx, path, input$dsSheet)
-            },
-            txt      = read_tsv(path, show_col_types = FALSE),
-            sas7bdat = read_sas(path),
-            sav      = read_sav(path),
-            dta      = haven::read_dta(path),
-            rds      = {
-              obj <- readRDS(path)
-              validate(need(is.data.frame(obj), ".rds file must contain a data frame."))
-              obj
-            },
-            mtp      = read_mtp_helper(path),
-            mwx      = read_minitab_xml(path),
-            mpx      = read_minitab_xml(path),
+      if (ext %in% c("xls", "xlsx")) {
+        sheets <- tryCatch(readxl::excel_sheets(path), error = function(e) character(0))
+        validate(need(length(sheets) > 0, uploadReadErrorMsg(ext)))
+        req(input$dsSheet)
+        # Block on stale sheet name (transient between file upload and selectize update)
+        req(input$dsSheet %in% sheets)
+      }
 
-            validate("Improper file format"))
+      tryCatch(readUploadedDataFile(ext, path, input$dsSheet),
+               uploadReadError = function(e) validate(conditionMessage(e)))
     })
+
+    # Complete observations of one uploaded column, as plain numbers
+    getUploadVector <- function(variable) {
+      as.numeric(na.omit(as.data.frame(dsUploadData())[[variable]]))
+    }
 
     getSampleVector <- function() {
       if (input$dataInput == 'Upload Data') {
-        na.omit(as.data.frame(dsUploadData())[, input$dsUploadVars])
+        getUploadVector(input$dsUploadVars)
       } else {
         dsRawData()
       }
@@ -755,24 +699,22 @@ descStatsServer <- function(id) {
                                     "SE(Kurtosis)",
                                     "Kurtosis / SE(Kurtosis)"))
 
+      # The value column is built on its own and appended, rather than assigned by
+      # name, so a variable called "Variable" or "Category" cannot overwrite a label column.
       if(input$dataInput == 'Upload Data')
       {
         req(dsuploadvars_iv$is_valid())
 
-        for( x in input$dsUploadVars)
-        {
-          dat <- na.omit(as.data.frame(dsUploadData())[, x])
-          newCol <- createDSColumn(dat)
-          df[x] <- newCol
-        }
-        colnames(df) <- c("Category", "Variable", input$dsUploadVars)
+        valueName <- input$dsUploadVars
+        dat <- getUploadVector(valueName)
       }
       else
       {
+        valueName <- "Value"
         dat <- dsRawData()
-        newCol <- createDSColumn(dat)
-        df$Value <-newCol
       }
+      
+      df <- cbind(df, setNames(data.frame(createDSColumn(dat)[[1]]), valueName))
       
       rownames(df) <- c("Observations", 
                         "Sum", 
@@ -841,18 +783,16 @@ descStatsServer <- function(id) {
         rowFilter <- c(rowFilter, "SE(Kurtosis)", "Kurtosis / SE(Kurtosis)")
       }
       
-      out <- filter(df, rownames(df) %in% rowFilter)
-      
-      # The 'Value' column is a nested data.frame; flatten any data.frame-columns
-      # to plain vectors so the table can render client-side (renderDT server = FALSE).
-      for (j in seq_along(out)) if (is.data.frame(out[[j]])) out[[j]] <- out[[j]][[1]]
-      out
+      # Base subsetting: the value column is named after the uploaded variable, which
+      # can duplicate a label column name ("Variable"), and dplyr::filter() rejects that.
+      df[rownames(df) %in% rowFilter, , drop = FALSE]
     }
 
     hideResultTabs <- function() {
       hideTab(inputId = "dsTabset", target = "Descriptive Statistics")
       hideTab(inputId = "dsTabset", target = "Calculations")
       hideTab(inputId = "dsTabset", target = "Graphs")
+      dsResultsShown(FALSE)
     }
 
     showResultTabs <- function() {
@@ -861,6 +801,7 @@ descStatsServer <- function(id) {
       if (!is.null(input$dsGraphOptions)) {
         showTab(inputId = "dsTabset", target = "Graphs")
       }
+      dsResultsShown(TRUE)
       shinyjs::runjs(sprintf(
         "setTimeout(function(){var a=$('#%s a[data-value=\"Descriptive Statistics\"]');a.removeClass('active');a.tab('show');$(window).trigger('resize');},50);",
         session$ns("dsTabset")))
@@ -906,8 +847,10 @@ descStatsServer <- function(id) {
 
       ext <- tolower(tools::file_ext(input$dsUserData$name))
 
-      # For Excel files, defer until a sheet is selected
-      if (ext %in% c("xls", "xlsx") && (is.null(input$dsSheet) || input$dsSheet == "")) {
+      # For Excel files, defer until a sheet is selected (a workbook that
+      # cannot be read has no sheets; it is handled below like any unreadable file)
+      if (ext %in% c("xls", "xlsx") && (is.null(input$dsSheet) || input$dsSheet == "") &&
+          is.null(uploadValidationMessage(dsUploadData()))) {
         shinyjs::hide("dsUploadVarsWrap")
         ds_data_source(NULL)
         return()
@@ -931,6 +874,11 @@ descStatsServer <- function(id) {
       } else {
         shinyjs::hide("dsUploadVarsWrap")
         ds_data_source(NULL)
+        # The results of an earlier file no longer apply (a valid upload hides
+        # them through the variable picker reset).
+        dsCalcError(NULL)
+        hideResultTabs()
+        goToUploadedDataTab()
       }
     })
 
@@ -956,321 +904,379 @@ descStatsServer <- function(id) {
       )
     })
 
-    observeEvent(input$goDescpStats, {
+    # Results message area. It stays empty until the first Calculate click.
+    output$renderDescrStats <- renderUI({
+      req(input$goDescpStats)
       
-      output$renderDescrStats <- renderUI({
-        if(!dsupload_iv$is_valid())
-        {
-          if(is.null(input$dsUserData)) {
-            validate("Please upload a file.")
-          }
-          
-          validate(
-            need(!is.null(fileInputs$dsStatus) && fileInputs$dsStatus == 'uploaded', "Please upload a file."),
-            errorClass = "myClass"
-          )
-          
-          validate(
-            need(nrow(dsUploadData()) != 0 && ncol(dsUploadData()) > 0, "File is empty."),
-            need(nrow(dsUploadData()) > 1, "Sample Data must include at least two observations."),
-            errorClass = "myClass"
-          )
-        } else if(!dsuploadvars_iv$is_valid()) {
-          validate(
-            need(input$dsUploadVars != "", "Please select a variable."),
-            errorClass = "myClass"
-          )
-          validate(
-            need(!checkNumeric(), "Selected variable contains non-numeric data."),
-            errorClass = "myClass"
-          )
-          validate(
-            need(
-              length(na.omit(dsUploadData()[[input$dsUploadVars]])) >= 2,
-              "Selected column must have at least two observations."
-            ),
-            errorClass = "myClass"
-          )
-          
-        } else if(!dsraw_iv$is_valid()) {
-          validate(
-            need(length(dsRawData()) >= 2, "Sample data must contain at least two numeric values."),
-            errorClass = "myClass"
-          )
-          
-          validate("Sample Data must be numeric.")
-        } 
-      })
-      
-      if(ds_iv$is_valid())
+      if(!dsupload_iv$is_valid())
       {
-        dsReset(FALSE)
-        
-        df <- getDsDataframe()
-        
-        filteredDf <- buildRowFilter(df)
-
-        # Push the row-filtered (flattened) data to the table. It is rendered
-        # once below and reacts to dsTableDf(), so this refreshes it every time.
-        dsTableDf(filteredDf)
-
-        sampleData <- getSampleVector()
-        
-        sample_df <- data.frame(
-          Observation = seq_along(sampleData),
-          x = sampleData,
-          x2 = sampleData^2
-        )
-        
-        dfTotaled <- bind_rows(sample_df, summarise(sample_df, across(where(is.numeric), sum)))
-        rownames(dfTotaled)[nrow(dfTotaled)] <- "Totals"
-        
-        output$sampleDataTable <- renderReactable({
-          dataRows  <- dfTotaled[1:(nrow(dfTotaled) - 1), , drop = FALSE]
-          totalsRow <- dfTotaled[nrow(dfTotaled), , drop = FALSE]
-
-          reactable(
-            dataRows,
-            rownames      = FALSE,
-            sortable      = TRUE,
-            resizable     = TRUE,
-            bordered      = TRUE,
-            striped       = TRUE,
-            highlight     = TRUE,
-            pagination    = FALSE,
-            fullWidth     = TRUE,
-            defaultColDef = colDef(align = "center"),
-            columns = setNames(
-              lapply(names(dataRows), function(col) {
-                colDef(
-                  html   = TRUE,
-                  name = if (col == "Observation") "Observation Number"
-                  else if (col == "x2") "x<sup>2</sup>"
-                  else col,
-                  footer = if (col == "Observation") {
-                    tags$b("Total")
-                  } else {
-                    tags$b(format(round(totalsRow[[col]], 3), nsmall = 0, scientific = FALSE))
-                  },
-                  cell   = function(value) {
-                    if (!is.numeric(value)) return(value)
-                    if (value == floor(value)) formatC(value, format = "f", digits = 0)
-                    else                       formatC(value, format = "f", digits = 3)
-                  }
-                )
-              }),
-              names(dataRows)
-            )
-          )
-        })
-        
-        output$dsMeanCalc <- renderUI({
-          withMathJax(
-            sprintf("\\( \\bar{x} = \\dfrac{\\sum x}{n} = \\dfrac{%s}{%s} = %s \\)",
-                    dfTotaled['Totals', 'x'],
-                    df['Observations', 3],
-                    df['Mean', 3]),
-            br(),
-            br()
-          )
-        })
-
-        output$dsSDCalc <- renderUI({
-          withMathJax(
-            sprintf("\\( s = \\sqrt{ \\dfrac{\\sum x^{2} - \\dfrac{(\\sum x)^{2}}{n} }{n - 1} } \\)"),
-            sprintf("\\( = \\sqrt{ \\dfrac{%s - \\dfrac{(%s)^{2}}{%s} }{%s - 1} } = %s \\)",
-                    dfTotaled['Totals', 'x2'],
-                    dfTotaled['Totals', 'x'],
-                    df['Observations', 3],
-                    df['Observations', 3],
-                    df['Sample Standard Deviation', 3]),
-            br(),
-            br()
-          )
-        })
-        
-        output$dsIQRCalc <- renderUI({
-          div(style = "margin: 20px 0;",
-          withMathJax(
-            sprintf("\\( IQR = Q_{3} - Q_{1} \\)"),
-            sprintf("\\( =  %s - (%s) = %s \\)",
-                    df['Third Quartile (Q3)', 3],
-                    df['First Quartile (Q1)', 3],
-                    df['IQR', 3]),
-            br(),
-            br()
-            )
-          )
-        })
-        
-        output$dsRangeCal <- renderUI({
-          div(style = "margin: 20px 0;",
-          withMathJax(
-            sprintf("\\( \\text{Range} = \\text{Maximum} - \\text{Minimum} \\)"),
-            sprintf("\\( = %s - %s = %s \\)",
-                    df['Maximum', 3],
-                    df['Minimum', 3],
-                    df['Range', 3]),
-            br(),
-            br()
-            )
-          )
-        })
-        
-        output$dsSECal <- renderUI({
-          div(style = "margin: 20px 0;",
-          withMathJax(
-            sprintf("\\( SE_{\\bar{x}} = \\dfrac{s}{\\sqrt{n}} \\)"),
-            sprintf("\\( = \\dfrac{%s}{\\sqrt{%s}} = %s \\)",
-                    df['Sample Standard Deviation', 3],
-                    df['Observations', 3],
-                    df['Standard Error of the Mean', 3]),
-            br(),
-            br()
-            )
-          )
-        })
-        
-        output$dsCVCal <- renderUI({
-          div(style = "margin: 20px 0;",
-          withMathJax(
-            sprintf("\\( CV = \\dfrac{s}{\\bar{x}} \\)"),
-            sprintf("\\( = \\dfrac{%s}{%s} = %s \\)",
-                    df['Sample Standard Deviation', 3],
-                    df['Mean', 3],
-                    df['Coefficient of Variation', 3]),
-            br(),
-            br()
-            )
-          )
-        })
-        
-        dat <- getSampleVector()
-
-        df_boxplot <- data.frame(x = dat)
-        
-        if(df['Outlier Values',3] != "There are no outliers.") {
-          df_outliers <- createNumLst(df['Outlier Values',3])
-        } else {
-          df_outliers <- data.frame()
+        if(is.null(input$dsUserData)) {
+          validate("Please upload a file.")
         }
         
-        output$renderDSBoxplot <- renderUI({
-          tagList(
-            plotOutput(
-              session$ns("dsBoxplot"),
-              height = GetPlotHeight(input[["dsBoxplot-Height"]], input[["dsBoxplot-HeightPx"]], ui = TRUE),
-              width = GetPlotWidth(input[["dsBoxplot-Width"]], input[["dsBoxplot-WidthPx"]], ui = TRUE)),
-            br(),
-            boxplotDisclaimer,
-            br(),
-            hr(),
-            br(),
-          )
-        })
+        validate(
+          need(!is.null(fileInputs$dsStatus) && fileInputs$dsStatus == 'uploaded', "Please upload a file."),
+          errorClass = "myClass"
+        )
         
-        output$renderDSHistogram <- renderUI({
-          tagList(
-            plotOutput(
-              session$ns("dsHistogram"),
-              height = GetPlotHeight(input[["dsHisto-Height"]], input[["dsHisto-HeightPx"]], ui = TRUE),
-              width = GetPlotWidth(input[["dsHisto-Width"]], input[["dsHisto-WidthPx"]], ui = TRUE)),
-            br(),
-            hr(),
-            br(),
-          )
-        })
+        validate(
+          need(nrow(dsUploadData()) != 0 && ncol(dsUploadData()) > 0, "File is empty."),
+          need(nrow(dsUploadData()) > 1, "Sample Data must include at least two observations."),
+          errorClass = "myClass"
+        )
+      } else if(!dsuploadvars_iv$is_valid()) {
+        validate(
+          need(input$dsUploadVars != "", "Please select a variable."),
+          errorClass = "myClass"
+        )
+        validate(
+          need(!checkNumeric(), "Selected variable contains non-numeric data."),
+          errorClass = "myClass"
+        )
+        validate(
+          need(
+            length(na.omit(dsUploadData()[[input$dsUploadVars]])) >= 2,
+            "Selected column must have at least two observations."
+          ),
+          errorClass = "myClass"
+        )
+        validate(
+          need(
+            !any(is.infinite(dsUploadData()[[input$dsUploadVars]])),
+            "Selected variable contains infinite values."
+          ),
+          errorClass = "myClass"
+        )
         
-        #---------------- #
-        #### Boxplot ---- 
-        #---------------- #
-        output$dsBoxplot <- renderPlot({
-          RenderBoxplot(dat,
-                        df_boxplot,
-                        df_outliers,
-                        input[["dsBoxplot-Colour"]],
-                        input[["dsBoxplot-Title"]],
-                        input[["dsBoxplot-Xlab"]],
-                        input[["dsBoxplot-Ylab"]],
-                        input[["dsBoxplot-BoxWidth"]]/10,
-                        input[["dsBoxplot-Gridlines"]],
-                        input[["dsBoxplot-Flip"]],
-                        input[["dsBoxplot-OutlierLabels"]])
-          
-          
-        }, height = function() {GetPlotHeight(input[["dsBoxplot-Height"]], input[["dsBoxplot-HeightPx"]], ui = FALSE)},
-           width = function() {GetPlotWidth(input[["dsBoxplot-Width"]], input[["dsBoxplot-WidthPx"]], ui = FALSE)})
+      } else if(!dsraw_iv$is_valid()) {
+        validate(
+          need(length(dsRawData()) >= 2, "Sample data must contain at least two numeric values."),
+          errorClass = "myClass"
+        )
+        validate(
+          need(!any(is.infinite(dsRawData())), "Data contains values that are too large to compute."),
+          errorClass = "myClass"
+        )
         
-        #------------------ #
-        #### Histogram ----
-        #------------------ #
-        output$dsHistogram <- renderPlot({
-          hist <- ggplot(data.frame(x = dat)) +
-            geom_histogram(
-                           aes(x = x, y = if (input[["dsHisto-Density"]]) after_stat(density) else after_stat(count)),
-                           bins = 15,
-                           boundary = min(dat),
-                           closed = "right",
-                           fill = input[["dsHisto-Colour"]],
-                           color = "black") +
-            labs(title = input[["dsHisto-Title"]],
-                 x = input[["dsHisto-Xlab"]],
-                 y = input[["dsHisto-Ylab"]]) +
-            theme_void() +
-            theme(plot.title = element_text(size = 24,
-                                            face = "bold",
-                                            hjust = 0.5,
-                                            margin = margin(0,0,10,0)),
-                  axis.title.x = element_text(size = 16,
-                                              face = "bold",
-                                              vjust = -1.5,
-                                              margin = margin(8,0,0,0)),
-                  axis.title.y = element_text(size = 16,
-                                              face = "bold",
-                                              vjust = 1.5,
-                                              margin = margin(0,8,0,0)),
-                  axis.text.x.bottom = element_text(size = 14,
-                                                    face = "bold",
-                                                    margin = margin(8,0,0,0)),
-                  axis.text.y.left = element_text(size = 14,
-                                                  face = "bold",
-                                                  margin = margin(0,8,0,0)),
-                  plot.margin = unit(c(1, 1, 1, 1),"cm"),
-                  panel.border = element_rect(fill = NA))
-          
-          hist <- hist + scale_x_continuous(n.breaks = 10)
-          
-          if("Major" %in% input[["dsHisto-Gridlines"]]) {
-            hist <- hist + theme(panel.grid.major = element_line(colour = "#D9D9D9"))
-          }
-
-          if("Minor" %in% input[["dsHisto-Gridlines"]]) {
-            hist <- hist + theme(panel.grid.minor = element_line(colour = "#D9D9D9"))
-          }
-          
-          if(input[["dsHisto-Density"]]) {
-            hist <- hist +
-              geom_density(
-                aes(x = x, y = after_stat(density)),
-                colour = "orange",
-                linewidth = 1.5
-              ) +
-              scale_y_continuous(
-                limits = c(0, NA),
-                breaks = scales::breaks_pretty(n = 6)
-              )
-          }
-          
-          hist
-        }, height = function() {GetPlotHeight(input[["dsHisto-Height"]], input[["dsHisto-HeightPx"]], ui = FALSE)},
-           width = function() {GetPlotWidth(input[["dsHisto-Width"]], input[["dsHisto-WidthPx"]], ui = FALSE)})
-        
-        shinyjs::show("descriptiveStatsMP")
-        showResultTabs()
-      } else {
-        hideResultTabs()
+        validate("Sample Data must be numeric.")
+      } else if(!is.null(dsCalcError())) {
+        validate(dsCalcError(), errorClass = "myClass")
       }
     })
+    
+    observeEvent(input$goDescpStats, {
+      dsCalcError(NULL)
+      
+      # An unexpected error here would otherwise end the session. Silent errors
+      # (req/validate) keep their usual meaning and are passed on.
+      tryCatch({
+        if(ds_iv$is_valid())
+        {
+          dsReset(FALSE)
+          
+          df <- getDsDataframe()
+          
+          # Push the row-filtered data to the table. It is rendered once below and
+          # reacts to dsTableDf(), so this refreshes it every time.
+          dsTableDf(buildRowFilter(df))
+          
+          dat <- getSampleVector()
+          
+          dsCalc(list(
+            df      = df,
+            dat     = dat,
+            sumX    = sum(dat),
+            sumX2   = sum(dat^2)
+          ))
+          
+          shinyjs::show("descriptiveStatsMP")
+          showResultTabs()
+        } else {
+          hideResultTabs()
+        }
+      }, error = function(e) {
+        if(inherits(e, "shiny.silent.error")) stop(e)
+        
+        message("[descStats] Calculate failed: ", conditionMessage(e))
+        dsCalcError(paste("The calculation could not be completed:", conditionMessage(e)))
+        hideResultTabs()
+      })
+    })
+    
+    # The result outputs below are created once. Each reads the snapshot of the
+    # last Calculate, so they stay blank until a Calculate has succeeded.
+    getCalc <- function() {
+      calc <- dsCalc()
+      req(calc)
+      calc
+    }
+    
+    output$sampleDataTable <- renderReactable({
+      calc <- getCalc()
+      
+      # Numbers are shown without decimals when whole and with 3 decimals otherwise.
+      # The text is formatted here, vectorised, and displayed by a JS renderer, so the
+      # columns still sort numerically and no R function runs per cell.
+      formatCell <- function(v) {
+        ifelse(v == floor(v), formatC(v, format = "f", digits = 0), formatC(v, format = "f", digits = 3))
+      }
+      
+      dataRows <- data.frame(
+        Observation = seq_along(calc$dat),
+        x           = calc$dat,
+        x2          = calc$dat^2
+      )
+      dataRows$x_text  <- formatCell(dataRows$x)
+      dataRows$x2_text <- formatCell(dataRows$x2)
+      
+      # All rows are shown on one page; above 1000 rows they are paged (100 per
+      # page, page size menu up to all rows, as in Simple Linear Regression) so
+      # the browser does not have to draw every row at once. The footer totals
+      # are computed over all rows either way.
+      dsReactable <- function(data, ...) {
+        n <- nrow(data)
+        if (n <= 1000) return(reactable(data, ..., pagination = FALSE))
+        reactable(data, ..., pagination = TRUE, defaultPageSize = 100,
+                  showPageSizeOptions = TRUE,
+                  pageSizeOptions = unique(c(25, 50, 100, 250, 500, 1000, n)))
+      }
+      
+      dsReactable(
+        dataRows,
+        rownames      = FALSE,
+        sortable      = TRUE,
+        resizable     = TRUE,
+        bordered      = TRUE,
+        striped       = TRUE,
+        highlight     = TRUE,
+        fullWidth     = TRUE,
+        defaultColDef = colDef(align = "center"),
+        columns = list(
+          Observation = colDef(
+            html   = TRUE,
+            name   = "Observation Number",
+            footer = tags$b("Total")
+          ),
+          x = colDef(
+            html   = TRUE,
+            name   = "x",
+            footer = tags$b(format(round(calc$sumX, 3), nsmall = 0, scientific = FALSE)),
+            cell   = reactable::JS("function(cellInfo) { return cellInfo.row['x_text']; }")
+          ),
+          x2 = colDef(
+            html   = TRUE,
+            name   = "x<sup>2</sup>",
+            footer = tags$b(format(round(calc$sumX2, 3), nsmall = 0, scientific = FALSE)),
+            cell   = reactable::JS("function(cellInfo) { return cellInfo.row['x2_text']; }")
+          ),
+          x_text  = colDef(show = FALSE),
+          x2_text = colDef(show = FALSE)
+        )
+      )
+    })
+    
+    output$dsMeanCalc <- renderUI({
+      calc <- getCalc()
+      df   <- calc$df
+      
+      withMathJax(
+        sprintf("\\( \\bar{x} = \\dfrac{\\sum x}{n} = \\dfrac{%s}{%s} = %s \\)",
+                calc$sumX,
+                df['Observations', 3],
+                df['Mean', 3]),
+        br(),
+        br()
+      )
+    })
+
+    output$dsSDCalc <- renderUI({
+      calc <- getCalc()
+      df   <- calc$df
+      
+      withMathJax(
+        sprintf("\\( s = \\sqrt{ \\dfrac{\\sum x^{2} - \\dfrac{(\\sum x)^{2}}{n} }{n - 1} } \\)"),
+        sprintf("\\( = \\sqrt{ \\dfrac{%s - \\dfrac{(%s)^{2}}{%s} }{%s - 1} } = %s \\)",
+                calc$sumX2,
+                calc$sumX,
+                df['Observations', 3],
+                df['Observations', 3],
+                df['Sample Standard Deviation', 3]),
+        br(),
+        br()
+      )
+    })
+    
+    output$dsIQRCalc <- renderUI({
+      df <- getCalc()$df
+      
+      div(style = "margin: 20px 0;",
+      withMathJax(
+        sprintf("\\( IQR = Q_{3} - Q_{1} \\)"),
+        sprintf("\\( =  %s - (%s) = %s \\)",
+                df['Third Quartile (Q3)', 3],
+                df['First Quartile (Q1)', 3],
+                df['IQR', 3]),
+        br(),
+        br()
+        )
+      )
+    })
+    
+    output$dsRangeCal <- renderUI({
+      df <- getCalc()$df
+      
+      div(style = "margin: 20px 0;",
+      withMathJax(
+        sprintf("\\( \\text{Range} = \\text{Maximum} - \\text{Minimum} \\)"),
+        sprintf("\\( = %s - %s = %s \\)",
+                df['Maximum', 3],
+                df['Minimum', 3],
+                df['Range', 3]),
+        br(),
+        br()
+        )
+      )
+    })
+    
+    output$dsSECal <- renderUI({
+      df <- getCalc()$df
+      
+      div(style = "margin: 20px 0;",
+      withMathJax(
+        sprintf("\\( SE_{\\bar{x}} = \\dfrac{s}{\\sqrt{n}} \\)"),
+        sprintf("\\( = \\dfrac{%s}{\\sqrt{%s}} = %s \\)",
+                df['Sample Standard Deviation', 3],
+                df['Observations', 3],
+                df['Standard Error of the Mean', 3]),
+        br(),
+        br()
+        )
+      )
+    })
+    
+    output$dsCVCal <- renderUI({
+      df <- getCalc()$df
+      
+      div(style = "margin: 20px 0;",
+      withMathJax(
+        sprintf("\\( CV = \\dfrac{s}{\\bar{x}} \\)"),
+        sprintf("\\( = \\dfrac{%s}{%s} = %s \\)",
+                df['Sample Standard Deviation', 3],
+                df['Mean', 3],
+                df['Coefficient of Variation', 3]),
+        br(),
+        br()
+        )
+      )
+    })
+    
+    #---------------- #
+    #### Plot sizes ----
+    #---------------- #
+    # The plot outputs are static. Their container size follows the Height/Width
+    # options through the style of the existing element, so changing an option does
+    # not rebuild the output (the plots themselves resize via renderPlot below).
+    setPlotContainerSize <- function(plotId, menuId) {
+      req(input[[paste0(menuId, "-Height")]], input[[paste0(menuId, "-Width")]])
+      
+      shinyjs::runjs(sprintf(
+        "(function(){var e=document.getElementById('%s'); if(e){e.style.height='%s'; e.style.width='%s';}})();",
+        session$ns(plotId),
+        GetPlotHeight(input[[paste0(menuId, "-Height")]], input[[paste0(menuId, "-HeightPx")]], ui = TRUE),
+        GetPlotWidth(input[[paste0(menuId, "-Width")]], input[[paste0(menuId, "-WidthPx")]], ui = TRUE)))
+    }
+    
+    observe(setPlotContainerSize("dsBoxplot", "dsBoxplot"))
+    observe(setPlotContainerSize("dsHistogram", "dsHisto"))
+    
+    #---------------- #
+    #### Boxplot ---- 
+    #---------------- #
+    output$dsBoxplot <- renderPlot({
+      calc <- getCalc()
+      
+      RenderBoxplot(calc$dat,
+                    data.frame(x = calc$dat),
+                    getOutlierValues(calc$df),
+                    input[["dsBoxplot-Colour"]],
+                    input[["dsBoxplot-Title"]],
+                    input[["dsBoxplot-Xlab"]],
+                    input[["dsBoxplot-Ylab"]],
+                    input[["dsBoxplot-BoxWidth"]]/10,
+                    input[["dsBoxplot-Gridlines"]],
+                    input[["dsBoxplot-Flip"]],
+                    input[["dsBoxplot-OutlierLabels"]])
+      
+      
+    }, height = function() {GetPlotHeight(input[["dsBoxplot-Height"]], input[["dsBoxplot-HeightPx"]], ui = FALSE)},
+       width = function() {GetPlotWidth(input[["dsBoxplot-Width"]], input[["dsBoxplot-WidthPx"]], ui = FALSE)})
+    
+    #------------------ #
+    #### Histogram ----
+    #------------------ #
+    output$dsHistogram <- renderPlot({
+      dat <- getCalc()$dat
+      
+      hist <- ggplot(data.frame(x = dat)) +
+        geom_histogram(
+                       aes(x = x, y = if (input[["dsHisto-Density"]]) after_stat(density) else after_stat(count)),
+                       bins = 15,
+                       boundary = min(dat),
+                       closed = "right",
+                       fill = input[["dsHisto-Colour"]],
+                       color = "black") +
+        labs(title = input[["dsHisto-Title"]],
+             x = input[["dsHisto-Xlab"]],
+             y = input[["dsHisto-Ylab"]]) +
+        theme_void() +
+        theme(plot.title = element_text(size = 24,
+                                        face = "bold",
+                                        hjust = 0.5,
+                                        margin = margin(0,0,10,0)),
+              axis.title.x = element_text(size = 16,
+                                          face = "bold",
+                                          vjust = -1.5,
+                                          margin = margin(8,0,0,0)),
+              axis.title.y = element_text(size = 16,
+                                          face = "bold",
+                                          vjust = 1.5,
+                                          margin = margin(0,8,0,0)),
+              axis.text.x.bottom = element_text(size = 14,
+                                                face = "bold",
+                                                margin = margin(8,0,0,0)),
+              axis.text.y.left = element_text(size = 14,
+                                              face = "bold",
+                                              margin = margin(0,8,0,0)),
+              plot.margin = unit(c(1, 1, 1, 1),"cm"),
+              panel.border = element_rect(fill = NA))
+      
+      hist <- hist + scale_x_continuous(n.breaks = 10)
+      
+      if("Major" %in% input[["dsHisto-Gridlines"]]) {
+        hist <- hist + theme(panel.grid.major = element_line(colour = "#D9D9D9"))
+      }
+
+      if("Minor" %in% input[["dsHisto-Gridlines"]]) {
+        hist <- hist + theme(panel.grid.minor = element_line(colour = "#D9D9D9"))
+      }
+      
+      if(input[["dsHisto-Density"]]) {
+        hist <- hist +
+          geom_density(
+            aes(x = x, y = after_stat(density)),
+            colour = "orange",
+            linewidth = 1.5
+          ) +
+          scale_y_continuous(
+            limits = c(0, NA),
+            breaks = scales::breaks_pretty(n = 6)
+          )
+      }
+      
+      hist
+    }, height = function() {GetPlotHeight(input[["dsHisto-Height"]], input[["dsHisto-HeightPx"]], ui = FALSE)},
+       width = function() {GetPlotWidth(input[["dsHisto-Width"]], input[["dsHisto-WidthPx"]], ui = FALSE)})
+    
     
     observeEvent(input[["dsHisto-Density"]], {
       updateTextInput(
@@ -1284,6 +1290,12 @@ descStatsServer <- function(id) {
       )
     })
     
+    # The table has a value only after the first Calculate (dsTableDf() is NULL
+    # until then), so nothing is built at session start. The wrapper is re-created
+    # with every new value and both outputs stay unsuspended: DT postpones rendering
+    # into a hidden container and only renders a fresh element reliably when it is
+    # shown (the resize in showResultTabs), so a static DTOutput could keep showing
+    # the previous table.
     output$dsTableWrap <- renderUI({
       req(dsTableDf())
       DT::DTOutput(session$ns("dsTableData"))
@@ -1299,7 +1311,6 @@ descStatsServer <- function(id) {
                   columnDefs = list(list(visible = FALSE, targets = c(0)),
                                     list(width = "250px", targets = 1)),
                   dom = 't',
-                  pageLength = -1,
                   ordering = FALSE,
                   searching = FALSE,
                   paging = FALSE,
@@ -1312,11 +1323,14 @@ descStatsServer <- function(id) {
     }, server = FALSE)
     outputOptions(output, "dsTableData", suspendWhenHidden = FALSE)
 
+    # A Statistics change refilters the statistics of the last Calculate. Nothing is
+    # computed before the first Calculate.
     observeEvent(input$dsTableFilters, {
       req(dsReset() == FALSE)
+      calc <- getCalc()
 
-      dsTableDf(buildRowFilter(getDsDataframe()))
-    })
+      dsTableDf(buildRowFilter(calc$df))
+    }, ignoreInit = TRUE)
     
     #  -------------------------------------------------------------------- #
     #  ------------------------ Component Display -------------------------
@@ -1324,22 +1338,37 @@ descStatsServer <- function(id) {
     
     observeEvent({input$descriptiveStat
       input$dsUploadVars}, {
+        dsCalcError(NULL)
         hideResultTabs()
-      })
+      }, ignoreInit = TRUE)
 
-    session$onFlushed(function() {
+    # Initial tab state: no data tab and no result tabs until they are needed. This
+    # runs in the module's own reactive context, so the tabset id is namespaced
+    # (inside session$onFlushed it was not, and the tabs were never hidden).
+    observeEvent(TRUE, {
       hideTab(inputId = "dsTabset", target = "Uploaded Data")
       hideResultTabs()
-      shinyjs::hide("dsUploadVarsWrap")
     }, once = TRUE)
 
     observeEvent(input$dataInput, {
+      dsCalcError(NULL)
       hideResultTabs()
 
       if (input$dataInput == "Upload Data") {
         shinyjs::show("descriptiveStatsMP")
         goToUploadedDataTab()
-        shinyjs::hide("dsUploadVarsWrap")
+        # A file uploaded before is still selected and used by Calculate: show
+        # its "File loaded" banner and variable picker again, as after the upload.
+        if (!is.null(input$dsUserData) && dsupload_iv$is_valid()) {
+          ds_data_source(list(
+            name = input$dsUserData$name,
+            rows = nrow(dsUploadData()),
+            cols = ncol(dsUploadData())
+          ))
+          shinyjs::show("dsUploadVarsWrap")
+        } else {
+          shinyjs::hide("dsUploadVarsWrap")
+        }
       } else {
         hideTab(inputId = "dsTabset", target = "Uploaded Data")
         updateNavbarPage(session, "dsTabset", selected = "Descriptive Statistics")
@@ -1348,12 +1377,18 @@ descStatsServer <- function(id) {
       }
     }, ignoreInit = TRUE)
 
-    observe({
+    # Graph Options: with nothing selected the Graphs tab is hidden (and left if it
+    # is the open tab); selecting a graph again brings the tab back while results exist.
+    observeEvent(input$dsGraphOptions, {
       if (is.null(input$dsGraphOptions)) {
-        updateTabsetPanel(session, inputId = "dsTabset", selected = "Descriptive Statistics")
+        if (identical(input$dsTabset, "Graphs")) {
+          updateNavbarPage(session, "dsTabset", selected = "Descriptive Statistics")
+        }
         hideTab(inputId = "dsTabset", target = "Graphs")
+      } else if (dsResultsShown()) {
+        showTab(inputId = "dsTabset", target = "Graphs")
       }
-    })
+    }, ignoreNULL = FALSE, ignoreInit = TRUE)
     
     observeEvent(input$goDescpStats, {
       if (input$dataInput == "Enter Raw Data") {
@@ -1395,6 +1430,8 @@ descStatsServer <- function(id) {
     observeEvent(input$resetAll,{
       dsReset(TRUE)
       dsTableDf(NULL)
+      dsCalc(NULL)
+      dsCalcError(NULL)
       hideResultTabs()
 
       resetPlotLabels()
