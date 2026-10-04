@@ -10,10 +10,10 @@ ml_is_continuous_response <- function(x) {
   is.numeric(x) && any(x != floor(x))
 }
 
-# Shown by every classification method (kNN, LDA, CART, Random Forest, XGBoost),
-# so it does not name one of them.
+# Shown by every classification method (kNN, LDA, CART, Random Forest, XGBoost).
+# The wording is the original app's, kept on purpose.
 ml_continuous_response_message <- paste(
-  "Invalid response variable: classification requires the response variable",
+  "Invalid response variable: kNN classification requires the response variable",
   "to be a categorical factor representing class labels. A continuous numeric",
   "response was detected. Consider using Linear Regression instead."
 )
