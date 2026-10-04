@@ -2,13 +2,15 @@
 
 # ============== LIMITS AND HELPERS ==============
 
-# Largest (training rows x trees) product fitted by one Calculate. Growing the
-# forest takes about 90 s on one core and peaks at roughly 4 GB of memory at the
-# limit (measured: about 135 bytes per training row and tree, because
-# randomForest pre-allocates (2 * rows + 1) x trees node arrays and copies them
-# around its C call). Beyond that the fit blocks the shared R process for
-# minutes or can run it out of memory.
-RF_MAX_TRAIN_TREES <- 3e7
+# Largest (training rows x trees) product fitted by one Calculate. The fit needs
+# about 135 bytes per training row and tree (randomForest pre-allocates
+# (2 * rows + 1) x trees node arrays and copies them around its C call), so the
+# limit keeps one fit plus its Plots tab under 1 GB for the whole process
+# (measured: 0.9 GB peak at 8,000 training rows x 625 trees, 1 vCPU / 2 GB).
+# That fits the 2 GB production instance (DigitalOcean App Platform, 1 vCPU)
+# with room for the other sessions; 3e7 peaked at 2.5-3.5 GB and would get the
+# container killed, ending every session. Raise it only with a bigger instance.
+RF_MAX_TRAIN_TREES <- 5e6
 
 # PDP / ICE / ALE are computed on at most this many training rows (all rows when
 # there are fewer), and on fewer when many predictors x trees would make the

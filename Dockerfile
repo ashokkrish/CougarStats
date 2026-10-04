@@ -120,13 +120,13 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
 
 # The app runs as one single-threaded R process: every session shares it, so a
 # long computation in one session delays all others, and a crash ends every
-# session. Run the container with a restart policy and a memory limit, e.g.
-#   docker run -d --restart unless-stopped --memory 6g -p 3838:3838 <image>
-# Give it at least 4-6 GB: one Random Forest fit near its size limit
-# (RF_MAX_TRAIN_TREES in R/randomForest.R) needs up to about 4 GB on top of the
-# other sessions (measured: 2.5 GB for the fit and 3.5 GB for its Plots tab at
-# 10,000 rows x 2,000 trees), and a container that runs out of memory is
-# killed with every session in it.
+# session. Production runs on DigitalOcean App Platform with 1 shared vCPU and
+# 2 GB RAM; to test locally under the same limits:
+#   docker run -d --restart unless-stopped --cpus 1 --memory 2g -p 3838:3838 <image>
+# The app idles at about 370 MB. The largest Random Forest allowed
+# (RF_MAX_TRAIN_TREES in R/randomForest.R) peaked at 0.9 GB in a 2 GB test.
+# A container that runs out of memory is killed with every session in it, so
+# raise that limit only together with a bigger instance.
 # Removing the single-process blocking needs more than one replica of this
 # container behind a proxy with sticky sessions (websocket support, long read
 # timeout), so each user stays on one R process.
