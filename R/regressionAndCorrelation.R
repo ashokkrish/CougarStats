@@ -248,7 +248,11 @@ regressionAndCorrelationServer <- function(id) {
 
     # ---- Shared data reactive (passed to all child modules) -----------------
     reg_data <- reactive({
-      if (input$dataInputMode == "raw") {
+      # input$dataInputMode can be NULL for a moment when a session starts;
+      # `if (NULL == "raw")` errors ("argument is of length zero") and crashes the session.
+      mode <- input$dataInputMode
+      if (is.null(mode)) return(NULL)
+      if (mode == "raw") {
         x_vals <- createNumLst(input$rawX)
         y_vals <- createNumLst(input$rawY)
         if (length(x_vals) >= 4 && length(y_vals) >= 4 && length(x_vals) == length(y_vals))
@@ -263,7 +267,8 @@ regressionAndCorrelationServer <- function(id) {
     })
 
     # Reactive conveying the current input mode to children that need it (SLR, POLYR)
-    input_mode <- reactive({ input$dataInputMode })
+    # Never NULL, so children's `input_mode() == "upload"` checks always get TRUE/FALSE.
+    input_mode <- reactive({ if (is.null(input$dataInputMode)) "" else input$dataInputMode })
 
     # Fires on every raw-input keystroke; returns NULL in upload mode so children
     # can use ignoreNULL = TRUE to avoid clearing results when not in raw mode.
@@ -346,7 +351,7 @@ regressionAndCorrelationServer <- function(id) {
     observeEvent(input$multiple, { upload_error(FALSE) }, ignoreNULL = FALSE, ignoreInit = TRUE)
 
     observeEvent(TRUE, {
-      if (isolate(input$dataInputMode) == "raw") {
+      if (isTRUE(isolate(input$dataInputMode) == "raw")) {
         grp <- session$ns("multiple")
         shinyjs::delay(0, shinyjs::runjs(sprintf(
           "['MLR','LOGR'].forEach(function(v) {
@@ -360,7 +365,7 @@ regressionAndCorrelationServer <- function(id) {
     observeEvent(input$dataInputMode, {
       current <- isolate(input$multiple)
       grp <- session$ns("multiple")
-      if (input$dataInputMode == "raw") {
+      if (isTRUE(input$dataInputMode == "raw")) {
         if (!(current %in% c("SLR", "POLYR")))
           updateRadioButtons(session, "multiple", selected = "SLR")
         shinyjs::runjs(sprintf(
@@ -393,7 +398,7 @@ regressionAndCorrelationServer <- function(id) {
     current_polyr_module_id <- reactive({ paste0("polyr_dynamic_instance_", polyr_instance_counter()) })
 
     observeEvent(input$multiple, {
-      if (input$dataInputMode == "raw") {
+      if (isTRUE(input$dataInputMode == "raw")) {
         if (input$multiple == "POLYR") {
           updateTextAreaInput(session, "rawY", value = "4.997, 6.165, 6.95, 8.218, 9.405, 10.404, 10.425, 10.44, 9.393, 7.854, 5.168")
           updateTextAreaInput(session, "rawX", value = "0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10")
@@ -405,6 +410,7 @@ regressionAndCorrelationServer <- function(id) {
     }, ignoreInit = TRUE)
 
     observeEvent(input$multiple, {
+      req(input$multiple)  # may be NULL at session start (ignoreNULL = FALSE); wait for a value
       if (input$multiple == "SLR") {
         slr_instance_counter(slr_instance_counter() + 1)
         output$regressionSidebarUI   <- renderUI({ req(current_slr_module_id()); SLRSidebarUI(session$ns(current_slr_module_id())) })
