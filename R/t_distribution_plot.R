@@ -1,5 +1,3 @@
-library(ggplot2)
-
 plot_t_distribution <- function(df,
                                 direction = c("left", "right", "between"),
                                 x1,
@@ -141,27 +139,27 @@ plot_t_distribution <- function(df,
     )
 }
 
-# Example usage - Hide below lines before sourcing
+# Example usage (kept as comments so nothing runs when the file is loaded)
 
 # Left tail
-plot_t_distribution(
-  df = 30,
-  direction = "left",
-  x1 = 1.697
-)
+# plot_t_distribution(
+#   df = 30,
+#   direction = "left",
+#   x1 = 1.697
+# )
 
 # Right tail
-plot_t_distribution(
-  df = 30,
-  direction = "right",
-  x1 = 1.697
-)
+# plot_t_distribution(
+#   df = 30,
+#   direction = "right",
+#   x1 = 1.697
+# )
 
 # Area between
 
-plot_t_distribution(
-  df = 30,
-  direction = "between",
-  x1 = -2.101,
-  x2 = 2.101
-)
+# plot_t_distribution(
+#   df = 30,
+#   direction = "between",
+#   x1 = -2.101,
+#   x2 = 2.101
+# )

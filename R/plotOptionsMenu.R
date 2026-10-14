@@ -1,7 +1,3 @@
-library(htmltools)
-library(shiny)
-library(shinyWidgets)
-
 # ================================================================ #
 # Description 
 # -----------
@@ -84,7 +80,9 @@ plotOptionsMenuUI <- function(id, plotType = NULL, title = "Plot", xlab = "", yl
   ns <- NS(id)
 
   flip <- addFlipCheckbox(includeFlip, ns, plotType)
-  grid <- addGridlines(includeGridlines, ns)
+  # The Scatterplot menu has its own "Add Gridlines" checkbox (same input id),
+  # so the Major/Minor group must not be emitted as well (duplicate input id).
+  grid <- addGridlines(includeGridlines && !identical(plotType, "Scatterplot"), ns)
   extraOptions <- tagList()
 
   if(!is.null(plotType)) {
@@ -97,7 +95,7 @@ plotOptionsMenuUI <- function(id, plotType = NULL, title = "Plot", xlab = "", yl
   }
   
   menu <- tagList(
-    dropdown(
+    shinyWidgets::dropdown(
       tags$h3("Plot Options"),
       
       textInput(
@@ -185,9 +183,9 @@ plotOptionsMenuUI <- function(id, plotType = NULL, title = "Plot", xlab = "", yl
       icon = icon("gear"),
       status = "primary", 
       width = "300px",
-      animate = animateOptions(
-        enter = animations$fading_entrances$fadeInDown,
-        exit = animations$fading_exits$fadeOutUp)
+      animate = shinyWidgets::animateOptions(
+        enter = shinyWidgets::animations$fading_entrances$fadeInDown,
+        exit = shinyWidgets::animations$fading_exits$fadeOutUp)
     )
   )
 }
@@ -209,6 +207,8 @@ addFlipCheckbox <- function(includeFlip, ns, plotType) {
       )
     )
   }
+  
+  return(flip)
 }
 
 addGridlines <- function(includeGridlines, ns) {
@@ -225,6 +225,8 @@ addGridlines <- function(includeGridlines, ns) {
       )
     )
   }
+  
+  return(grid)
 }
 
 HistogramOptions <- function(ns) {
@@ -440,20 +442,29 @@ plotOptionsMenuServer <- function(id) {
     
     #Swap the axis labels
     observeEvent(input$Flip, {
-      if(!is.null(input$Xlab) && !is.null(input$Ylab)){
-        xlab <- input$Xlab
-        
+      xlab <- input$Xlab
+      ylab <- input$Ylab
+
+      # Swapping two identical labels changes nothing, so there is nothing to send
+      # (and nothing would come back from the browser to un-freeze the plot below).
+      if(!is.null(xlab) && !is.null(ylab) && !identical(xlab, ylab)){
+        # The plots read Flip, Xlab and Ylab. Without freezing, they would draw once
+        # with the new orientation and the old labels, then draw again when the
+        # browser reports the swapped labels. Freezing makes them wait for the labels.
+        freezeReactiveValue(input, "Xlab")
+        freezeReactiveValue(input, "Ylab")
+
         updateTextInput(
           inputId = "Xlab",
-          value = input$Ylab
+          value = ylab
         )
-        
+
         updateTextInput(
           inputId = "Ylab",
           value = xlab
         )
-      } 
-      
+      }
+
     }, ignoreInit = TRUE)
 
   })

@@ -49,8 +49,14 @@ TwoSampTTest <- function(xbar1, s1, n1, xbar2, s2, n2, var.equal = TRUE, alterna
 
   ##If var.equal == TRUE then sp must be printed in dat: PENDING
 
+  # e.g. both sample standard deviations 0 and a difference equal to the hypothesized one (0/0),
+  # or samples too small for the degrees of freedom to exist
+  validate(
+    need(!anyNA(c(t.crit, df, tstat, p_value)), "Unable to calculate the test statistic. Check that both sample sizes are at least 2 and that at least one sample standard deviation is greater than zero."),
+    errorClass = "myClass")
+
   dat <- sapply(c(((xbar1 - xbar2) - muNaught), t.crit, df, se, tstat, p_value), function(x) {
-    if (x < 0.0001 && x > -1e-2) {
+    if (!is.na(x) && x < 0.0001 && x > -1e-2) {
       signif(x, 1)
     } else {
       round(x, 4)

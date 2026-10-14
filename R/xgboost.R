@@ -1,5 +1,33 @@
 # R/xgboost.R
 
+# Upper limits that keep one Calculate from freezing or crashing the shared R
+# process. Training time grows with rounds x trees per round x rows (about 12 s
+# for 10,000 trees on 16,000 rows, 24-33 s for 20,000 rounds, so a typo such as
+# 1e6 rounds would freeze every session for the better part of an hour) and
+# memory with rows x classes (700 MB for 4,000 classes on 8,000 rows).
+xgb_max_nrounds   <- 1000
+xgb_max_depth     <- 12
+xgb_max_classes   <- 100
+xgb_max_trees     <- 10000   # nrounds x number of classes (1 tree per round if binary)
+
+# Hides the named tabs of a navbarPage as soon as the page is parsed, so they
+# never flash into view when the module is first opened. showTab() reveals
+# them again (it clears this inline style), hideTab() hides them again.
+xgbHideTabsOnLoad <- function(tabsetId, values) {
+  tags$script(HTML(sprintf(
+    "(function() {
+       var nav = document.getElementById('%s');
+       if (!nav) return;
+       [%s].forEach(function(v) {
+         var a = nav.querySelector('a[data-value=\"' + v + '\"]');
+         if (a && a.parentNode) a.parentNode.style.display = 'none';
+       });
+     })();",
+    tabsetId,
+    paste0("'", values, "'", collapse = ", ")
+  )))
+}
+
 # ============== UI ==============
 
 XGBSidebarUI <- function(id) {
@@ -17,13 +45,13 @@ XGBSidebarUI <- function(id) {
     numericInput(
       ns("nrounds"),
       strong("Number of Boosting Rounds (M)"),
-      value = 100, min = 1, step = 1
+      value = 100, min = 1, max = xgb_max_nrounds, step = 1
     ),
 
     numericInput(
       ns("max_depth"),
       strong("Max Tree Depth (d)"),
-      value = 6, min = 1, step = 1
+      value = 6, min = 1, max = xgb_max_depth, step = 1
     ),
 
     numericInput(
@@ -112,7 +140,8 @@ XGBMainPanelUI <- function(id) {
       id       = ns("xgbMainPanel"),
       selected = "uploaded_data_tab",
       theme    = bs_theme(version = 4)
-    )
+    ),
+    xgbHideTabsOnLoad(ns("xgbMainPanel"), c("model_summary_tab", "plots_tab"))
   )
 }
 
@@ -136,11 +165,13 @@ XGBServer <- function(id, data, shared_explanatory, shared_response) {
     xgb_iv <- shinyvalidate::InputValidator$new()
     xgb_iv$add_rule("nrounds",   shinyvalidate::sv_required())
     xgb_iv$add_rule("nrounds",   shinyvalidate::sv_gte(1, message = "Must be at least 1."))
+    xgb_iv$add_rule("nrounds", shinyvalidate::sv_lte(xgb_max_nrounds, message = paste0("Must be at most ", xgb_max_nrounds, ".")))
     xgb_iv$add_rule("nrounds", function(v) {
       if (!is.na(v) && v != round(v)) "Must be a whole number."
     })
     xgb_iv$add_rule("max_depth", shinyvalidate::sv_required())
     xgb_iv$add_rule("max_depth", shinyvalidate::sv_gte(1, message = "Must be at least 1."))
+    xgb_iv$add_rule("max_depth", shinyvalidate::sv_lte(xgb_max_depth, message = paste0("Must be at most ", xgb_max_depth, ".")))
     xgb_iv$add_rule("eta", shinyvalidate::sv_required())
     xgb_iv$add_rule("eta", function(v) {
       if (!is.na(v) && (v <= 0 || v > 1)) "Must be between 0 (exclusive) and 1."
@@ -155,13 +186,29 @@ XGBServer <- function(id, data, shared_explanatory, shared_response) {
     })
     xgb_iv$enable()
 
-    # ---- Hide tabs until Calculate succeeds ----
-    # Called directly (not wrapped in session$onFlushed) so it applies
-    # immediately: the module is only ever created once the client has
-    # already bound this tab's markup, so the tabs being hidden already
-    # exist in the DOM by this point.
-    hideTab(inputId = "xgbMainPanel", target = "model_summary_tab")
-    hideTab(inputId = "xgbMainPanel", target = "plots_tab")
+    # ---- Tabs hidden until Calculate succeeds ----
+    # The Results and Plots tabs start hidden (xgbHideTabsOnLoad in the UI),
+    # so nothing needs hiding here when the module server starts.
+
+    # Selections this module pushes into its own pickers after an upload. The
+    # change event the client echoes back for them is not a user edit and must
+    # not overwrite the selections shared with the other methods.
+    pushed <- new.env(parent = emptyenv())
+    is_echo <- function(key, value) {
+      expected <- pushed[[key]]
+      pushed[[key]] <- NULL
+      !is.null(expected) &&
+        identical(sort(as.character(value)), sort(as.character(expected)))
+    }
+    # The browser only sends a change event when a picker's value really
+    # changes, so expect an echo only when the pushed value differs from the
+    # current one. Otherwise the marker would linger and swallow the user's next
+    # identical selection (e.g. Deselect All, then the same variables again).
+    expect_echo <- function(key, value) {
+      current <- isolate(input[[key]])
+      same <- identical(sort(as.character(value)), sort(as.character(current)))
+      pushed[[key]] <- if (same) NULL else value
+    }
 
     # ---- Uploaded Data tab ----
     output$uploadedDataContainer <- renderUI({
@@ -191,24 +238,32 @@ XGBServer <- function(id, data, shared_explanatory, shared_response) {
 
       df           <- data()
       cols         <- colnames(df)
-      numeric_cols <- cols[sapply(df, is.numeric)]
+      # vapply (not sapply) so a table with no columns gives logical(0), not list()
+      numeric_cols <- cols[vapply(df, is.numeric, logical(1))]
 
-      pre_predictors <- intersect(shared_explanatory(), numeric_cols)
       shared_resp    <- shared_response()
-      pre_response   <- if (isTruthy(shared_resp) && shared_resp %in% cols) shared_resp else character(0)
+      pre_response   <- if (length(shared_resp) == 1 && isTruthy(shared_resp) && shared_resp %in% cols) shared_resp else character(0)
 
-      updatePickerInput(session, "response",   choices = cols,         selected = pre_response)
-      updatePickerInput(session, "predictors", choices = numeric_cols, selected = pre_predictors)
+      # The response is never offered as a predictor (the response observer
+      # below does not run when a new file keeps the same response selected)
+      predictor_cols <- setdiff(numeric_cols, pre_response)
+      pre_predictors <- intersect(shared_explanatory(), predictor_cols)
+
+      expect_echo("response",   pre_response)
+      expect_echo("predictors", pre_predictors)
+      updatePickerInput(session, "response",   choices = cols,           selected = pre_response)
+      updatePickerInput(session, "predictors", choices = predictor_cols, selected = pre_predictors)
     }, ignoreNULL = TRUE)
 
-    # ---- Keep response out of predictors ----
+    # ---- Keep response out of predictors (also when the response is cleared,
+    # so its column becomes selectable as a predictor again) ----
     observeEvent(input$response, {
-      shared_response(input$response)
+      if (!is_echo("response", input$response)) shared_response(input$response)
       req(data())
 
       df           <- data()
       cols         <- colnames(df)
-      numeric_cols <- cols[sapply(df, is.numeric)]
+      numeric_cols <- cols[vapply(df, is.numeric, logical(1))]
 
       available    <- setdiff(numeric_cols, input$response)
       selected     <- intersect(input$predictors, available)
@@ -220,7 +275,7 @@ XGBServer <- function(id, data, shared_explanatory, shared_response) {
       }
 
       responseContinuous(isTruthy(input$response) && ml_is_continuous_response(df[[input$response[1]]]))
-    }, ignoreInit = TRUE)
+    }, ignoreInit = TRUE, ignoreNULL = FALSE)
 
     output$responseContinuousWarning <- renderUI({
       if (responseContinuous()) {
@@ -234,12 +289,12 @@ XGBServer <- function(id, data, shared_explanatory, shared_response) {
     })
 
     observeEvent(input$predictors, {
-      shared_explanatory(input$predictors)
+      if (!is_echo("predictors", input$predictors)) shared_explanatory(input$predictors)
       if (length(input$predictors) >= 1) {
         predictorsError(FALSE)
         shinyjs::removeClass(id = "predictorsWrapper", class = "has-error")
       }
-    })
+    }, ignoreInit = TRUE, ignoreNULL = FALSE)
 
     # ---- Clear outputs when settings change ----
     observeEvent(
@@ -296,8 +351,336 @@ XGBServer <- function(id, data, shared_explanatory, shared_response) {
       }
     })
 
+    # ---- Results outputs ----
+    # Defined once here, reading only from calc_results(), so nothing holds on
+    # to the data copies of an earlier Calculate.
+    output$modelSummaryUI <- renderUI({
+      r       <- calc_results()
+      req(r)
+      correct <- sum(diag(r$confusion))
+      total   <- sum(r$confusion)
+
+      withMathJax(
+        tags$h4("Model Summary"),
+        tableOutput(session$ns("xgbModelInfo")),
+        tags$hr(),
+
+        tags$h4("Class Distribution (Full Dataset)"),
+        tableOutput(session$ns("xgbClassDist")),
+        tags$hr(),
+
+        tags$h4("Classification Report (Test Set)"),
+        tableOutput(session$ns("xgbClassReport")),
+        tags$script(HTML("setTimeout(function(){ if(typeof tippy!=='undefined') tippy('[data-tippy-content]'); }, 200);")),
+        tags$hr(),
+
+        tags$h4("Confusion Matrix (Test Set)"),
+        tableOutput(session$ns("xgbConfusionTable")),
+        tags$h5(tags$strong("Accuracy Calculation"),
+                style = "margin-top: 14px; margin-bottom: 2px;"),
+        tags$p(HTML(sprintf(
+          "\\( \\text{Accuracy} = \\dfrac{\\text{Correct Predictions}}{\\text{Total Observations}} = \\dfrac{%d}{%d} = %.2f\\%% \\)",
+          correct, total, r$accuracy * 100
+        ))),
+        tags$hr(),
+
+        tags$h4("Per-Class Metrics"),
+        tableOutput(session$ns("xgbClassMetrics")),
+        tags$hr(),
+
+        tags$div(
+          style = paste(
+            "background-color: #f8f9fa;",
+            "border-left: 4px solid #dee2e6;",
+            "border-radius: 4px;",
+            "padding: 16px 20px;",
+            "margin-top: 6px;"
+          ),
+          tags$h5(tags$strong("Interpretation of Results"),
+                  style = "margin-top: 0; margin-bottom: 12px;"),
+          tags$p(
+            style = "margin-bottom: 8px;",
+            paste0(
+              "XGBoost is a gradient boosting algorithm that builds trees sequentially, ",
+              "each one correcting the errors of the previous. ",
+              "The model was trained on ", r$n_train, " observations and tested on ",
+              r$n_test, " observations."
+            )
+          ),
+          tags$p(
+            style = "margin-bottom: 8px;",
+            HTML(sprintf(
+              paste0(
+                "Your model built \\( M = %s \\) trees sequentially, each of depth \\( d = %s \\). ",
+                "At each step, the new tree's contribution was scaled by the learning rate ",
+                "\\( \\eta = %s \\) before being added to the ensemble. Each tree was trained on ",
+                "\\( s = %s\\%% \\) of the rows and \\( c = %s\\%% \\) of the columns, which ",
+                "introduces randomness to reduce overfitting."
+              ),
+              r$nrounds, r$max_depth, r$eta,
+              round(r$subsample * 100), round(r$colsample_bytree * 100)
+            ))
+          ),
+          tags$div(
+            style = "margin: 4px 0 12px 0;",
+            tags$style(HTML(
+              ".xgb-formula-left mjx-container[display=\"true\"],
+               .xgb-formula-left .MathJax_Display,
+               .xgb-formula-left .MJXc-display {
+                 text-align: left !important;
+                 margin-left: 0 !important;
+               }"
+            )),
+            tags$p(tags$strong("Additive Model Formula"), style = "margin-bottom: 6px;"),
+            tags$p(
+              class = "xgb-formula-left",
+              style = "margin-bottom: 4px; text-align: left; font-size: 18px;",
+              HTML("$$ F_M(x) = F_0(x) + \\eta \\sum_{m=1}^{M} T_m(x) $$")
+            ),
+            tags$p(
+              class = "xgb-formula-left",
+              style = "margin-bottom: 6px; text-align: left; font-size: 18px;",
+              HTML(sprintf(
+                "$$ F_{%s}(x) = F_0(x) + %s \\sum_{m=1}^{%s} T_m(x) $$",
+                r$nrounds, r$eta, r$nrounds
+              ))
+            ),
+            tags$p(
+              style = "margin-bottom: 0; color: #444;",
+              sprintf(
+                paste0(
+                  "Starting from an initial prediction F₀(x), your model added %s trees ",
+                  "sequentially, each scaled by a learning rate of %s before being summed into ",
+                  "the final prediction."
+                ),
+                r$nrounds, r$eta
+              )
+            )
+          ),
+          tags$p(
+            style = "margin-bottom: 0;",
+            paste0(
+              "The model correctly classified ", round(r$accuracy * 100, 2),
+              "% of observations in the test set."
+            )
+          )
+        )
+      )
+    })
+
+    # ---- Results renderTable calls ----
+    output$xgbModelInfo <- renderTable({
+      r <- calc_results()
+      req(r)
+      data.frame(
+        Item = c(
+          "Type",
+          "Number of Boosting Rounds (M)",
+          "Max Tree Depth (d)",
+          "Learning Rate (η)",
+          "Subsample Ratio (s)",
+          "Column Sample per Tree (c)",
+          "Number of Predictors",
+          "Total Observations",
+          "Training Observations",
+          "Test Observations",
+          "Train/Test Split",
+          "Accuracy"
+        ),
+        Value = c(
+          "Classification",
+          as.character(r$nrounds),
+          as.character(r$max_depth),
+          as.character(r$eta),
+          as.character(r$subsample),
+          as.character(r$colsample_bytree),
+          as.character(length(r$predictors)),
+          as.character(r$n_total),
+          as.character(r$n_train),
+          as.character(r$n_test),
+          paste0(r$split, "%"),
+          sprintf("%.4f", r$accuracy)
+        ),
+        check.names = FALSE
+      )
+    }, rownames = FALSE, striped = TRUE, bordered = TRUE)
+
+    output$xgbClassDist <- renderTable({
+      r <- calc_results()
+      req(r)
+      r$class_dist
+    }, rownames = FALSE, striped = TRUE, bordered = TRUE)
+
+    output$xgbClassReport <- renderTable({
+      r <- calc_results()
+      req(r)
+      r$class_report
+    }, rownames = FALSE, striped = TRUE, bordered = TRUE,
+       sanitize.colnames.function = function(x) {
+         tips <- c(
+           Precision = "Of all instances predicted as this class, the fraction that are truly this class. High precision means few false positives.",
+           Recall    = "Of all actual instances of this class, the fraction correctly predicted. High recall means few false negatives.",
+           F1        = "Harmonic mean of Precision and Recall — balances both into a single score.",
+           Support   = "Number of actual instances of this class in the dataset."
+         )
+         sapply(x, function(col) {
+           if (col %in% names(tips)) {
+             paste0('<b><span data-tippy-content="', tips[[col]],
+                    '" style="cursor:help;border-bottom:1px dotted #555;">', col, '</span></b>')
+           } else {
+             paste0("<b>", col, "</b>")
+           }
+         }, USE.NAMES = FALSE)
+       })
+
+    output$xgbConfusionTable <- renderTable({
+      r <- calc_results()
+      req(r)
+      cm <- as.data.frame.matrix(r$confusion)
+      cm$Actual <- paste0("<b>", rownames(cm), "</b>")
+      cm <- cm[, c("Actual", setdiff(names(cm), "Actual"))]
+      rownames(cm) <- NULL
+      cm
+    }, rownames = FALSE, striped = TRUE, bordered = TRUE,
+       sanitize.text.function = identity,
+       sanitize.colnames.function = function(x) {
+         sapply(x, function(col) {
+           if (col == "Actual") "<b>Actual \\ Predicted</b>" else paste0("<b>", col, "</b>")
+         }, USE.NAMES = FALSE)
+       })
+
+    output$xgbClassMetrics <- renderTable({
+      r <- calc_results()
+      req(r)
+      r$class_metrics
+    }, rownames = FALSE, striped = TRUE, bordered = TRUE)
+
+    # ---- Plots ----
+    output$xgbTrainingCurveContainer <- renderUI({
+      r <- calc_results()
+      req(r)
+      tagList(
+        tags$h4("Training Curve (Error vs Number of Trees)", style = "margin-top: 10px;"),
+        plotOutput(session$ns("xgbTrainingCurvePlot"), height = "450px"),
+        tags$div(
+          style = "margin-top: 12px; font-size: 14px; color: #444;",
+          tags$p(
+            "Training error keeps falling the longer boosting continues, but test error typically ",
+            "bottoms out and then rises again — that turning point is where the model starts ",
+            "overfitting. The dashed vertical line marks the boosting round with the lowest test error; ",
+            "if it falls well short of your chosen ", tags$strong("Number of Boosting Rounds"), ", consider ",
+            "lowering that value."
+          )
+        )
+      )
+    })
+
+    output$xgbTrainingCurvePlot <- renderPlot({
+      r <- calc_results()
+      req(r)
+
+      log_df <- r$eval_log
+      req(nrow(log_df) > 0, !is.null(r$train_err_col), !is.null(r$test_err_col))
+
+      train_err <- log_df[[r$train_err_col]]
+      test_err  <- log_df[[r$test_err_col]]
+      iters     <- log_df$iter
+      best_iter <- iters[which.min(test_err)]
+
+      par(mar = c(7, 4, 4, 2))
+
+      plot(
+        iters, train_err,
+        type      = "l",
+        col       = "#4472C4",
+        lwd       = 2,
+        main      = "Training Error vs Number of Trees",
+        xlab      = "Number of Boosting Iterations (Trees)",
+        ylab      = "Error Rate",
+        ylim      = range(c(train_err, test_err), na.rm = TRUE),
+        cex.main  = 1.3,
+        font.main = 2,
+        cex.lab   = 1.1,
+        font.lab  = 2,
+        cex.axis  = 1.0,
+        bty       = "l"
+      )
+      lines(iters, test_err, col = "#ED7D31", lwd = 2)
+      abline(v = best_iter, col = "#555555", lty = 2, lwd = 1.5)
+
+      legend(
+        "bottom",
+        legend = c("Training Error", "Test Error", paste0("Best round = ", best_iter)),
+        col    = c("#4472C4", "#ED7D31", "#555555"),
+        lty    = c(1, 1, 2),
+        lwd    = c(2, 2, 1.5),
+        bty    = "n",
+        cex    = 0.95,
+        horiz  = TRUE,
+        xpd    = TRUE,
+        inset  = c(0, -0.35)
+      )
+    })
+
+    output$xgbVarImpContainer <- renderUI({
+      r <- calc_results()
+      req(r)
+      tagList(
+        tags$h4("Variable Importance (Gain)", style = "margin-top: 10px;"),
+        plotOutput(session$ns("xgbVarImpPlot"), height = "450px"),
+        tags$div(
+          style = "margin-top: 12px; font-size: 14px; color: #444;",
+          tags$p(
+            tags$strong("Gain: "),
+            "The fractional contribution of each feature to the model based on the total improvement ",
+            "in accuracy it brings to the splits it is used in. Higher gain = more important feature."
+          ),
+          tags$p(
+            tags$strong("Cover: "),
+            "The relative number of observations related to this feature. Higher cover = used on more data points."
+          ),
+          tags$p(
+            tags$strong("Frequency: "),
+            "The percentage of times the feature appears in trees across all boosting rounds."
+          )
+        )
+      )
+    })
+
+    output$xgbVarImpPlot <- renderPlot({
+      r <- calc_results()
+      req(r)
+
+      imp_df <- r$importance
+      if (nrow(imp_df) == 0) {
+        plot.new()
+        text(0.5, 0.5, "No variable importance available.", cex = 0.9, col = "#555555")
+        return()
+      }
+
+      # Labels and margin: see ml_importance_labels() in decisionTrees.R
+      lab <- ml_importance_labels(imp_df$Variable)
+
+      par(mar = c(5, lab$left_mar, 4, 2))
+
+      barplot(
+        imp_df$Gain,
+        names.arg = lab$labels,
+        horiz     = TRUE,
+        las       = 1,
+        col       = "#4472C4",
+        main      = "Variable Importance (Gain)",
+        xlab      = "Gain",
+        cex.main  = 1.3,
+        font.main = 2,
+        cex.lab   = 1.1,
+        font.lab  = 2,
+        cex.names = 0.95
+      )
+    })
+
     # ---- Calculate ----
-    observeEvent(input$calculate, {
+    xgb_calculate <- function() {
 
       xgb_message(NULL)
 
@@ -309,6 +692,9 @@ XGBServer <- function(id, data, shared_explanatory, shared_response) {
         noFileCalculate(FALSE)
       }
 
+      # The response is never also used as a predictor
+      predictors <- setdiff(input$predictors, input$response)
+
       # 2. Response variable
       if (!isTruthy(input$response)) {
         responseError(TRUE)
@@ -319,7 +705,7 @@ XGBServer <- function(id, data, shared_explanatory, shared_response) {
       }
 
       # 3. Predictors
-      if (!isTruthy(input$predictors) || length(input$predictors) < 1) {
+      if (length(predictors) < 1) {
         predictorsError(TRUE)
         shinyjs::addClass(id = "predictorsWrapper", class = "has-error")
       } else {
@@ -327,13 +713,24 @@ XGBServer <- function(id, data, shared_explanatory, shared_response) {
         shinyjs::removeClass(id = "predictorsWrapper", class = "has-error")
       }
 
-      if (!isTruthy(input$response) || !isTruthy(input$predictors) || length(input$predictors) < 1) return()
+      if (!isTruthy(input$response) || length(predictors) < 1) return()
 
       # 4. Numeric input validation
       req(xgb_iv$is_valid())
 
       resp_col <- input$response[1]
       df       <- data()
+
+      # Selections can be stale for an instant after a new upload
+      missing_cols <- setdiff(c(predictors, resp_col), colnames(df))
+      if (length(missing_cols) > 0) {
+        xgb_message(paste0(
+          "The following selected variable(s) are not in the current dataset: ",
+          paste(missing_cols, collapse = ", "),
+          ". Please reselect your variables."
+        ))
+        return()
+      }
 
       # Continuous response guard — block classification on a continuous variable
       if (ml_is_continuous_response(df[[resp_col]])) {
@@ -342,7 +739,7 @@ XGBServer <- function(id, data, shared_explanatory, shared_response) {
       }
 
       # 5. Drop incomplete rows
-      analysis_df <- df[, c(input$predictors, resp_col), drop = FALSE]
+      analysis_df <- df[, c(predictors, resp_col), drop = FALSE]
       analysis_df <- na.omit(analysis_df)
 
       if (nrow(analysis_df) == 0) {
@@ -365,8 +762,29 @@ XGBServer <- function(id, data, shared_explanatory, shared_response) {
         return()
       }
 
+      # Training builds nrounds x classes trees and holds rows x classes
+      # gradients, so unbounded class counts could freeze or crash the shared R
+      # process (see the xgb_max_* limits).
+      if (n_classes > xgb_max_classes) {
+        xgb_message(paste0(
+          "The selected response variable has more than ", xgb_max_classes,
+          " classes, which is too many for XGBoost. Please choose a response with fewer classes."
+        ))
+        return()
+      }
+
+      trees_per_round <- if (n_classes == 2) 1L else n_classes
+      if (as.integer(input$nrounds) * trees_per_round > xgb_max_trees) {
+        xgb_message(paste0(
+          "With ", n_classes, " classes, XGBoost builds one tree per class in every boosting round. ",
+          "Please reduce the Number of Boosting Rounds to at most ",
+          floor(xgb_max_trees / trees_per_round), " (", xgb_max_trees, " trees in total)."
+        ))
+        return()
+      }
+
       # 8. Zero variance check
-      sds <- sapply(analysis_df[, input$predictors, drop = FALSE], sd, na.rm = TRUE)
+      sds <- sapply(analysis_df[, predictors, drop = FALSE], sd, na.rm = TRUE)
       zero_var <- names(sds)[is.na(sds) | sds == 0]
       if (length(zero_var) > 0) {
         xgb_message(paste0(
@@ -377,7 +795,7 @@ XGBServer <- function(id, data, shared_explanatory, shared_response) {
       }
 
       # 9. Coerce predictors to double
-      for (col in input$predictors) {
+      for (col in predictors) {
         analysis_df[[col]] <- as.double(analysis_df[[col]])
       }
 
@@ -390,6 +808,13 @@ XGBServer <- function(id, data, shared_explanatory, shared_response) {
         return()
       }
 
+      # Seed the split (and the training below, which draws from R's RNG when
+      # subsample < 1) without re-seeding the RNG that every other session of
+      # this R process shares: the previous state is put back when Calculate
+      # returns (knn_save_rng() is defined in kNearestNeighbors.R). Results are
+      # unchanged.
+      restore_rng <- knn_save_rng()
+      on.exit(restore_rng(), add = TRUE)
       set.seed(123)
       train_idx <- sample(seq_len(n), size = n_train)
       train_df  <- analysis_df[ train_idx, , drop = FALSE]
@@ -406,11 +831,22 @@ XGBServer <- function(id, data, shared_explanatory, shared_response) {
       xgb_label_train <- label_to_int(train_df[[resp_col]])
       xgb_label_test  <- label_to_int(test_df[[resp_col]])
 
-      X_train <- as.matrix(train_df[, input$predictors, drop = FALSE])
-      X_test  <- as.matrix(test_df[,  input$predictors, drop = FALSE])
+      X_train <- as.matrix(train_df[, predictors, drop = FALSE])
+      X_test  <- as.matrix(test_df[,  predictors, drop = FALSE])
 
-      dtrain <- xgboost::xgb.DMatrix(data = X_train, label = xgb_label_train)
-      dtest  <- xgboost::xgb.DMatrix(data = X_test, label = xgb_label_test)
+      dmats <- tryCatch(
+        list(
+          train = xgboost::xgb.DMatrix(data = X_train, label = xgb_label_train),
+          test  = xgboost::xgb.DMatrix(data = X_test, label = xgb_label_test)
+        ),
+        error = function(e) {
+          xgb_message(paste("XGBoost could not be computed:", conditionMessage(e)))
+          NULL
+        }
+      )
+      if (is.null(dmats)) return()
+      dtrain <- dmats$train
+      dtest  <- dmats$test
 
       # 13. Set objective based on binary vs. multi-class
       if (n_classes == 2) {
@@ -502,7 +938,7 @@ XGBServer <- function(id, data, shared_explanatory, shared_response) {
 
       # 19. Feature importance (Gain)
       imp_mat <- tryCatch(
-        xgboost::xgb.importance(feature_names = input$predictors, model = xgb_fit),
+        xgboost::xgb.importance(feature_names = predictors, model = xgb_fit),
         error = function(e) NULL
       )
       importance_df <- if (!is.null(imp_mat) && nrow(imp_mat) > 0) {
@@ -521,10 +957,8 @@ XGBServer <- function(id, data, shared_explanatory, shared_response) {
 
       res <- list(
         fit              = xgb_fit,
-        train_df         = train_df,
-        test_df          = test_df,
         response         = resp_col,
-        predictors       = input$predictors,
+        predictors       = predictors,
         class_levels     = class_levels,
         class_dist       = class_dist_df,
         n_total          = n,
@@ -549,334 +983,6 @@ XGBServer <- function(id, data, shared_explanatory, shared_response) {
 
       calc_results(res)
 
-      # ---- Model Summary UI ----
-      output$modelSummaryUI <- renderUI({
-        r       <- calc_results()
-        req(r)
-        correct <- sum(diag(r$confusion))
-        total   <- sum(r$confusion)
-
-        tagList(
-          tags$h4("Model Summary"),
-          tableOutput(session$ns("xgbModelInfo")),
-          tags$hr(),
-
-          tags$h4("Class Distribution (Full Dataset)"),
-          tableOutput(session$ns("xgbClassDist")),
-          tags$hr(),
-
-          tags$h4("Classification Report (Test Set)"),
-          tableOutput(session$ns("xgbClassReport")),
-          tags$script(HTML("setTimeout(function(){ if(typeof tippy!=='undefined') tippy('[data-tippy-content]'); }, 200);")),
-          tags$hr(),
-
-          tags$h4("Confusion Matrix (Test Set)"),
-          tableOutput(session$ns("xgbConfusionTable")),
-          tags$h5(tags$strong("Accuracy Calculation"),
-                  style = "margin-top: 14px; margin-bottom: 2px;"),
-          withMathJax(),
-          tags$p(HTML(sprintf(
-            "\\( \\text{Accuracy} = \\dfrac{\\text{Correct Predictions}}{\\text{Total Observations}} = \\dfrac{%d}{%d} = %.2f\\%% \\)",
-            correct, total, r$accuracy * 100
-          ))),
-          tags$script(HTML("if(window.MathJax){ MathJax.Hub ? MathJax.Hub.Queue(['Typeset',MathJax.Hub]) : MathJax.typesetPromise(); }")),
-          tags$hr(),
-
-          tags$h4("Per-Class Metrics"),
-          tableOutput(session$ns("xgbClassMetrics")),
-          tags$hr(),
-
-          tags$div(
-            style = paste(
-              "background-color: #f8f9fa;",
-              "border-left: 4px solid #dee2e6;",
-              "border-radius: 4px;",
-              "padding: 16px 20px;",
-              "margin-top: 6px;"
-            ),
-            tags$h5(tags$strong("Interpretation of Results"),
-                    style = "margin-top: 0; margin-bottom: 12px;"),
-            tags$p(
-              style = "margin-bottom: 8px;",
-              paste0(
-                "XGBoost is a gradient boosting algorithm that builds trees sequentially, ",
-                "each one correcting the errors of the previous. ",
-                "The model was trained on ", r$n_train, " observations and tested on ",
-                r$n_test, " observations."
-              )
-            ),
-            tags$p(
-              style = "margin-bottom: 8px;",
-              HTML(sprintf(
-                paste0(
-                  "Your model built \\( M = %s \\) trees sequentially, each of depth \\( d = %s \\). ",
-                  "At each step, the new tree's contribution was scaled by the learning rate ",
-                  "\\( \\eta = %s \\) before being added to the ensemble. Each tree was trained on ",
-                  "\\( s = %s\\%% \\) of the rows and \\( c = %s\\%% \\) of the columns, which ",
-                  "introduces randomness to reduce overfitting."
-                ),
-                r$nrounds, r$max_depth, r$eta,
-                round(r$subsample * 100), round(r$colsample_bytree * 100)
-              ))
-            ),
-            tags$div(
-              style = "margin: 4px 0 12px 0;",
-              tags$style(HTML(
-                ".xgb-formula-left mjx-container[display=\"true\"],
-                 .xgb-formula-left .MathJax_Display,
-                 .xgb-formula-left .MJXc-display {
-                   text-align: left !important;
-                   margin-left: 0 !important;
-                 }"
-              )),
-              tags$p(tags$strong("Additive Model Formula"), style = "margin-bottom: 6px;"),
-              tags$p(
-                class = "xgb-formula-left",
-                style = "margin-bottom: 4px; text-align: left; font-size: 18px;",
-                HTML("$$ F_M(x) = F_0(x) + \\eta \\sum_{m=1}^{M} T_m(x) $$")
-              ),
-              tags$p(
-                class = "xgb-formula-left",
-                style = "margin-bottom: 6px; text-align: left; font-size: 18px;",
-                HTML(sprintf(
-                  "$$ F_{%s}(x) = F_0(x) + %s \\sum_{m=1}^{%s} T_m(x) $$",
-                  r$nrounds, r$eta, r$nrounds
-                ))
-              ),
-              tags$p(
-                style = "margin-bottom: 0; color: #444;",
-                sprintf(
-                  paste0(
-                    "Starting from an initial prediction F₀(x), your model added %s trees ",
-                    "sequentially, each scaled by a learning rate of %s before being summed into ",
-                    "the final prediction."
-                  ),
-                  r$nrounds, r$eta
-                )
-              )
-            ),
-            tags$p(
-              style = "margin-bottom: 0;",
-              paste0(
-                "The model correctly classified ", round(r$accuracy * 100, 2),
-                "% of observations in the test set."
-              )
-            )
-          )
-        )
-      })
-
-      # ---- Results renderTable calls ----
-      output$xgbModelInfo <- renderTable({
-        r <- calc_results()
-        req(r)
-        data.frame(
-          Item = c(
-            "Type",
-            "Number of Boosting Rounds (M)",
-            "Max Tree Depth (d)",
-            "Learning Rate (η)",
-            "Subsample Ratio (s)",
-            "Column Sample per Tree (c)",
-            "Number of Predictors",
-            "Total Observations",
-            "Training Observations",
-            "Test Observations",
-            "Train/Test Split",
-            "Accuracy"
-          ),
-          Value = c(
-            "Classification",
-            as.character(r$nrounds),
-            as.character(r$max_depth),
-            as.character(r$eta),
-            as.character(r$subsample),
-            as.character(r$colsample_bytree),
-            as.character(length(r$predictors)),
-            as.character(r$n_total),
-            as.character(r$n_train),
-            as.character(r$n_test),
-            paste0(r$split, "%"),
-            sprintf("%.4f", r$accuracy)
-          ),
-          check.names = FALSE
-        )
-      }, rownames = FALSE, striped = TRUE, bordered = TRUE)
-
-      output$xgbClassDist <- renderTable({
-        r <- calc_results()
-        req(r)
-        r$class_dist
-      }, rownames = FALSE, striped = TRUE, bordered = TRUE)
-
-      output$xgbClassReport <- renderTable({
-        r <- calc_results()
-        req(r)
-        r$class_report
-      }, rownames = FALSE, striped = TRUE, bordered = TRUE,
-         sanitize.colnames.function = function(x) {
-           tips <- c(
-             Precision = "Of all instances predicted as this class, the fraction that are truly this class. High precision means few false positives.",
-             Recall    = "Of all actual instances of this class, the fraction correctly predicted. High recall means few false negatives.",
-             F1        = "Harmonic mean of Precision and Recall — balances both into a single score.",
-             Support   = "Number of actual instances of this class in the dataset."
-           )
-           sapply(x, function(col) {
-             if (col %in% names(tips)) {
-               paste0('<b><span data-tippy-content="', tips[[col]],
-                      '" style="cursor:help;border-bottom:1px dotted #555;">', col, '</span></b>')
-             } else {
-               paste0("<b>", col, "</b>")
-             }
-           }, USE.NAMES = FALSE)
-         })
-
-      output$xgbConfusionTable <- renderTable({
-        r <- calc_results()
-        req(r)
-        cm <- as.data.frame.matrix(r$confusion)
-        cm$Actual <- paste0("<b>", rownames(cm), "</b>")
-        cm <- cm[, c("Actual", setdiff(names(cm), "Actual"))]
-        rownames(cm) <- NULL
-        cm
-      }, rownames = FALSE, striped = TRUE, bordered = TRUE,
-         sanitize.text.function = identity,
-         sanitize.colnames.function = function(x) {
-           sapply(x, function(col) {
-             if (col == "Actual") "<b>Actual \\ Predicted</b>" else paste0("<b>", col, "</b>")
-           }, USE.NAMES = FALSE)
-         })
-
-      output$xgbClassMetrics <- renderTable({
-        r <- calc_results()
-        req(r)
-        r$class_metrics
-      }, rownames = FALSE, striped = TRUE, bordered = TRUE)
-
-      # ---- Plots ----
-      output$xgbTrainingCurveContainer <- renderUI({
-        r <- calc_results()
-        req(r)
-        tagList(
-          tags$h4("Training Curve (Error vs Number of Trees)", style = "margin-top: 10px;"),
-          plotOutput(session$ns("xgbTrainingCurvePlot"), height = "450px"),
-          tags$div(
-            style = "margin-top: 12px; font-size: 14px; color: #444;",
-            tags$p(
-              "Training error keeps falling the longer boosting continues, but test error typically ",
-              "bottoms out and then rises again — that turning point is where the model starts ",
-              "overfitting. The dashed vertical line marks the boosting round with the lowest test error; ",
-              "if it falls well short of your chosen ", tags$strong("Number of Boosting Rounds"), ", consider ",
-              "lowering that value."
-            )
-          )
-        )
-      })
-
-      output$xgbTrainingCurvePlot <- renderPlot({
-        r <- calc_results()
-        req(r)
-
-        log_df <- r$eval_log
-        req(nrow(log_df) > 0, !is.null(r$train_err_col), !is.null(r$test_err_col))
-
-        train_err <- log_df[[r$train_err_col]]
-        test_err  <- log_df[[r$test_err_col]]
-        iters     <- log_df$iter
-        best_iter <- iters[which.min(test_err)]
-
-        par(mar = c(7, 4, 4, 2))
-
-        plot(
-          iters, train_err,
-          type      = "l",
-          col       = "#4472C4",
-          lwd       = 2,
-          main      = "Training Error vs Number of Trees",
-          xlab      = "Number of Boosting Iterations (Trees)",
-          ylab      = "Error Rate",
-          ylim      = range(c(train_err, test_err), na.rm = TRUE),
-          cex.main  = 1.3,
-          font.main = 2,
-          cex.lab   = 1.1,
-          font.lab  = 2,
-          cex.axis  = 1.0,
-          bty       = "l"
-        )
-        lines(iters, test_err, col = "#ED7D31", lwd = 2)
-        abline(v = best_iter, col = "#555555", lty = 2, lwd = 1.5)
-
-        legend(
-          "bottom",
-          legend = c("Training Error", "Test Error", paste0("Best round = ", best_iter)),
-          col    = c("#4472C4", "#ED7D31", "#555555"),
-          lty    = c(1, 1, 2),
-          lwd    = c(2, 2, 1.5),
-          bty    = "n",
-          cex    = 0.95,
-          horiz  = TRUE,
-          xpd    = TRUE,
-          inset  = c(0, -0.35)
-        )
-      })
-
-      output$xgbVarImpContainer <- renderUI({
-        r <- calc_results()
-        req(r)
-        tagList(
-          tags$h4("Variable Importance (Gain)", style = "margin-top: 10px;"),
-          plotOutput(session$ns("xgbVarImpPlot"), height = "450px"),
-          tags$div(
-            style = "margin-top: 12px; font-size: 14px; color: #444;",
-            tags$p(
-              tags$strong("Gain: "),
-              "The fractional contribution of each feature to the model based on the total improvement ",
-              "in accuracy it brings to the splits it is used in. Higher gain = more important feature."
-            ),
-            tags$p(
-              tags$strong("Cover: "),
-              "The relative number of observations related to this feature. Higher cover = used on more data points."
-            ),
-            tags$p(
-              tags$strong("Frequency: "),
-              "The percentage of times the feature appears in trees across all boosting rounds."
-            )
-          )
-        )
-      })
-
-      output$xgbVarImpPlot <- renderPlot({
-        r <- calc_results()
-        req(r)
-
-        imp_df <- r$importance
-        if (nrow(imp_df) == 0) {
-          plot.new()
-          text(0.5, 0.5, "No variable importance available.", cex = 0.9, col = "#555555")
-          return()
-        }
-
-        max_chars <- max(nchar(imp_df$Variable), na.rm = TRUE)
-        left_mar  <- max(4, ceiling(max_chars * 0.6))
-
-        par(mar = c(5, left_mar, 4, 2))
-
-        barplot(
-          imp_df$Gain,
-          names.arg = imp_df$Variable,
-          horiz     = TRUE,
-          las       = 1,
-          col       = "#4472C4",
-          main      = "Variable Importance (Gain)",
-          xlab      = "Gain",
-          cex.main  = 1.3,
-          font.main = 2,
-          cex.lab   = 1.1,
-          font.lab  = 2,
-          cex.names = 0.95
-        )
-      })
-
       # ---- Show tabs and navigate ----
       summary_ready(TRUE)
       summary_ever_calculated(TRUE)
@@ -887,7 +993,18 @@ XGBServer <- function(id, data, shared_explanatory, shared_response) {
       shinyjs::delay(100, {
         updateNavbarPage(session, "xgbMainPanel", selected = "model_summary_tab")
       })
+    }
 
+    observeEvent(input$calculate, {
+      # Backstop: an uncaught error inside an observer ends the whole session,
+      # so anything the checks above missed is reported instead.
+      tryCatch(
+        xgb_calculate(),
+        error = function(e) {
+          if (inherits(e, "shiny.silent.error")) stop(e)   # req()/validate(): stay silent
+          xgb_message(paste("XGBoost could not be computed:", conditionMessage(e)))
+        }
+      )
     }, ignoreInit = TRUE)
 
     # ---- Reset ----

@@ -4,158 +4,155 @@
 
 sampSizeEstSidebarUI <- function(id){
   ns <- NS(id)
-  
+
   tagList(
-    
+
     withMathJax(),
-    shinyjs::useShinyjs(), 
-    
-    radioButtons(
-      inputId      = ns("sampSizeEstParameter"),
-      label        = strong("Parameter of Interest"),
-      choiceValues = list("Population Mean",
-                          "Population Proportion"),
-      choiceNames  = list("Population Mean (\\( \\mu \\)) ",
-                          "Population Proportion (\\( p\\))"),
-      selected     = "Population Mean",
-      inline       = TRUE),
-    
-    conditionalPanel(
-      ns = ns,
-      condition = "input.sampSizeEstParameter == 'Population Mean'",
-      
+    shinyjs::useShinyjs(),
+
+    # Every sidebar input sits inside this div so that "Reset Values" can
+    # restore all of them with shinyjs::reset("sidebarWrap").
+    div(
+      id = ns("sidebarWrap"),
+
       radioButtons(
-        inputId  = ns("confLevelnMean"),
-        label    = strong("Confidence Level (\\( 1- \\alpha\\))"),
-        choices = c("90%", 
-                    "95%",
-                    "99%"),
-        selected = "95%",
-        inline   = TRUE),
-      
-      numericInput(
-        inputId = ns("ssePopuSD"),
-        label   = strong("Population Standard Deviation (\\( \\sigma\\))"),
-        value   = "12", 
-        min     = 0.00001, 
-        step    = 0.00001),
-      
-      radioButtons(
-        inputId      = ns("sseEstimationType"),
-        label        = strong("Estimation Type"),
-        choiceValues = list("Margin of Error",
-                            "Width of Interval"),
-        choiceNames  = list("Margin of Error (\\( E\\)) ",
-                            "Width of Interval (\\( W\\))"),
-        selected     = "Margin of Error",
+        inputId      = ns("sampSizeEstParameter"),
+        label        = strong("Parameter of Interest"),
+        choiceValues = list("Population Mean",
+                            "Population Proportion"),
+        choiceNames  = list("Population Mean (\\( \\mu \\)) ",
+                            "Population Proportion (\\( p\\))"),
+        selected     = "Population Mean",
         inline       = TRUE),
-      
+
       conditionalPanel(
         ns = ns,
-        condition = "input.sseEstimationType == 'Margin of Error'",
-        
+        condition = "input.sampSizeEstParameter == 'Population Mean'",
+
+        radioButtons(
+          inputId  = ns("confLevelnMean"),
+          label    = strong("Confidence Level (\\( 1- \\alpha\\))"),
+          choices = c("90%",
+                      "95%",
+                      "99%"),
+          selected = "95%",
+          inline   = TRUE),
+
         numericInput(
-          inputId = ns("sseMeanMargErr"),
-          label   = strong("Margin of Error (\\( E\\))"),
-          value   = "8", 
-          min     = 0.00001, 
-          step    = 0.01)
-      ), #sseEstimationType == 'Margin of Error'
-      
+          inputId = ns("ssePopuSD"),
+          label   = strong("Population Standard Deviation (\\( \\sigma\\))"),
+          value   = "12",
+          min     = 0.00001,
+          step    = 0.00001),
+
+        radioButtons(
+          inputId      = ns("sseEstimationType"),
+          label        = strong("Estimation Type"),
+          choiceValues = list("Margin of Error",
+                              "Width of Interval"),
+          choiceNames  = list("Margin of Error (\\( E\\)) ",
+                              "Width of Interval (\\( W\\))"),
+          selected     = "Margin of Error",
+          inline       = TRUE),
+
+        conditionalPanel(
+          ns = ns,
+          condition = "input.sseEstimationType == 'Margin of Error'",
+
+          numericInput(
+            inputId = ns("sseMeanMargErr"),
+            label   = strong("Margin of Error (\\( E\\))"),
+            value   = "8",
+            min     = 0.00001,
+            step    = 0.01)
+        ), #sseEstimationType == 'Margin of Error'
+
+        conditionalPanel(
+          ns = ns,
+          condition = "input.sseEstimationType == 'Width of Interval'",
+
+          numericInput(
+            inputId = ns("sseMeanWoI"),
+            label   = strong("Width of Interval (\\( W\\))"),
+            value   = "16",
+            min     = 0.00001,
+            step    = 0.01)
+        ) #sseEstimationType == 'Width of Interval'
+      ), #sampSizeEstParameter == 'Population Mean'
+
+      # Population Proportion
       conditionalPanel(
         ns = ns,
-        condition = "input.sseEstimationType == 'Width of Interval'",
-        
+        condition = "input.sampSizeEstParameter == 'Population Proportion'",
+
+        radioButtons(
+          inputId  = ns("confLevelnProp"),
+          label    = strong("Confidence Level (\\( 1- \\alpha\\))"),
+          choices  = c("90%",
+                       "95%",
+                       "99%"),
+          selected = "95%",
+          inline   = TRUE),
+
         numericInput(
-          inputId = ns("sseMeanWoI"),
-          label   = strong("Width of Interval (\\( W\\))"),
-          value   = "16", 
-          min     = 0.00001, 
-          step    = 0.01)
-      ), #sseEstimationType == 'Width of Interval'
-      
+          inputId = ns("sseTargetProp"),
+          label   = strong("Target Proportion (\\( \\hat{p} \\))"),
+          value   = "0.5",
+          min     = 0.00001,
+          step    = 0.01),
+
+        checkboxInput(
+          inputId = ns("normalDistribution"),
+          label   = "Assume data follows a normal distribution",
+          value   = TRUE
+        ),
+
+        radioButtons(
+          inputId      = ns("sseEstimationTypeProp"),
+          label        = strong("Estimation Type"),
+          choiceValues = list("Margin of Error",
+                              "Width of Interval"),
+          choiceNames  = list("Margin of Error (\\( E\\)) ",
+                              "Width of Interval (\\( W\\))"),
+          selected     = "Margin of Error",
+          inline       = TRUE),
+
+        conditionalPanel(
+          ns = ns,
+          condition = "input.sseEstimationTypeProp == 'Margin of Error'",
+
+          numericInput(
+            inputId = ns("ssePropMargErr"),
+            label   = strong("Margin of Error (\\( E\\))"),
+            value   = "0.01",
+            min     = 0.00001,
+            step    = 0.01)
+        ), #sseEstimationType == 'Margin of Error'
+
+        conditionalPanel(
+          ns = ns,
+          condition = "input.sseEstimationTypeProp == 'Width of Interval'",
+
+          numericInput(
+            inputId = ns("ssePropWoI"),
+            label   = strong("Width of Interval (\\( W\\))"),
+            value   = "0.02",
+            min     = 0.00001,
+            step    = 0.01)
+        ) #sseEstimationType == 'Width of Interval'
+      ), #sampSizeEstParameter == 'Population Proportion'
+
+      # Shared by both parameters, so each id appears exactly once in the page
       actionButton(
-        inputId = ns("goSampSizeEst"), 
+        inputId = ns("goSampSizeEst"),
         label   = "Calculate",
         class   = "act-btn"),
-      
+
       actionButton(
-        inputId = ns("resetSampSizeEst"), 
+        inputId = ns("resetSampSizeEst"),
         label   = "Reset Values",
         class   = "act-btn")
-    ), #sampSizeEstParameter == 'Population Mean'
-    
-    # Population Proportion                                             
-    conditionalPanel(
-      ns = ns,
-      condition = "input.sampSizeEstParameter == 'Population Proportion'",
-      
-      radioButtons(
-        inputId  = ns("confLevelnProp"),
-        label    = strong("Confidence Level (\\( 1- \\alpha\\))"),
-        choices  = c("90%", 
-                     "95%",
-                     "99%"),
-        selected = "95%",
-        inline   = TRUE),
-      
-      numericInput(
-        inputId = ns("sseTargetProp"),
-        label   = strong("Target Proportion (\\( \\hat{p} \\))"),
-        value   = "0.5", 
-        min     = 0.00001, 
-        step    = 0.01),
-      
-      checkboxInput(
-        inputId = ns("normalDistribution"),
-        label   = "Assume data follows a normal distribution",
-        value   = TRUE
-      ),
-      
-      radioButtons(
-        inputId      = ns("sseEstimationTypeProp"),
-        label        = strong("Estimation Type"),
-        choiceValues = list("Margin of Error",
-                            "Width of Interval"),
-        choiceNames  = list("Margin of Error (\\( E\\)) ",
-                            "Width of Interval (\\( W\\))"),
-        selected     = "Margin of Error",
-        inline       = TRUE),
-      
-      conditionalPanel(
-        ns = ns,
-        condition = "input.sseEstimationTypeProp == 'Margin of Error'",
-        
-        numericInput(
-          inputId = ns("ssePropMargErr"),
-          label   = strong("Margin of Error (\\( E\\))"),
-          value   = "0.01", 
-          min     = 0.00001, 
-          step    = 0.01)
-      ), #sseEstimationType == 'Margin of Error'
-      
-      conditionalPanel(
-        ns = ns,
-        condition = "input.sseEstimationTypeProp == 'Width of Interval'",
-        
-        numericInput(
-          inputId = ns("ssePropWoI"),
-          label   = strong("Width of Interval (\\( W\\))"),
-          value   = "0.02", 
-          min     = 0.00001, 
-          step    = 0.01)
-      ), #sseEstimationType == 'Width of Interval'
-      
-      actionButton(
-        inputId = ns("goSampSizeEst"), 
-        label   = "Calculate",
-        class = "act-btn"),
-      
-      actionButton(
-        inputId = ns("resetSampSizeEst"), 
-        label   = "Reset Values",
-        class = "act-btn")
-    ) #sampSizeEstParameter == 'Population Proportion'
+    ) #sidebarWrap
   ) #tagList
 }
 
@@ -523,12 +520,17 @@ sampSizeEstServer <- function(id) {
         )
         
         nEstimate <- ceiling(n)
-        
+
         tagList(
           withMathJax(),
           br(),
-          
-          sprintf("\\( n = %d \\)", nEstimate),
+
+          # The search stops at 100,000 observations; beyond that there is no answer
+          if (is.na(nEstimate)) {
+            tags$em("A sample size could not be found within 100,000 observations for these values using the Clopper–Pearson exact method. Try a larger margin of error or width of interval.")
+          } else {
+            sprintf("\\( n = %d \\)", nEstimate)
+          },
           br(),
           br(),
           tags$em("Note: When the data cannot be assumed to follow a normal distribution, there isn’t a simple formula to calculate the required sample size. Instead, the sample size is found by testing different values until the exact confidence interval is narrow enough and meets the chosen confidence level. This approach is based on the Clopper–Pearson exact method for binomial proportions.")
@@ -548,17 +550,16 @@ sampSizeEstServer <- function(id) {
       }
     })
 
+    # The results panel starts out hidden (see ssEstimationMP), so these only
+    # need to react to changes made after the module has started.
     observeEvent(!sse_iv$is_valid(), {
       shinyjs::hide(id = "ssEstimationMP") # Should this line be commented???
       shinyjs::hide(id = "ssEstMP")
-    })
+    }, ignoreInit = TRUE)
 
-    observeEvent({input$sampSizeEstParameter
-      input$popuSDSampSizeEst
-      input$targetPropSampSizeEst
-      input$margErrSampSizeEst}, {
-        shinyjs::hide(id = "ssEstMP")
-      })
+    observeEvent(input$sampSizeEstParameter, {
+      shinyjs::hide(id = "ssEstMP")
+    }, ignoreInit = TRUE)
 
     # observeEvent(input$goSampSizeEst, {
     #   shinyjs::show(id = "ssEstMP")
@@ -567,7 +568,7 @@ sampSizeEstServer <- function(id) {
     observeEvent(input$resetSampSizeEst, {
       shinyjs::hide(id = "ssEstMP")
       #hide(id = "ssEstimationMP")
-      shinyjs::reset("sampSizeEstSidebarUI")
+      shinyjs::reset("sidebarWrap")
     })
   })
 }

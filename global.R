@@ -6,80 +6,32 @@
 ## options(conflicts.policy = TRUE)
 ## library(conflicted)
 
-library(aplpack)
-library(base)
+## Only packages whose functions are called without pkg:: somewhere in the app
+## are attached (in their original order, so name masking is unchanged).
+## Packages the app calls as pkg::fun() (DescTools, GGally, ggpubr, haven, olsrr
+## and others) are loaded on first use; they stay installed by the Dockerfile.
 library(bslib)
-library(broom)
-library(broom.helpers)
-library(car)
-library(caret)
-library(class)
-library(colourpicker)
-library(datamods)
-library(DescTools)
 library(dplyr)
 library(DT)
-library(e1071)
-library(factoextra)
-library(forecast)
-library(foreign)
 library(generics)
-library(GGally)
-library(ggfortify)
 library(ggplot2)
-library(ggpubr)
-library(ggResidpanel)
-library(ggsci)
-library(gridExtra)
-library(haven)
 library(htmltools)
-library(katex)
-library(knitr)
-library(latex2exp)
-library(lmtest)
-library(magrittr)
-library(markdown)
-library(MASS)
-library(moments)
-library(nortest)
+## magrittr is not attached: the app's only magrittr function, %>%, is the copy
+## that dplyr, plotly and tibble re-export (a re-export was found first before too).
 library(plotly)
-library(psych)
-#library(iml)
-library(randomForest)
-library(xgboost)
-library(tippy)
-library(treeshap)
-library(shapviz)
-library(rpart)
-library(rpart.plot)
 library(reactable)
 library(readr)
 library(readxl)
-library(remotes)
-library(ResourceSelection)
-library(rpart)
-library(rpart.plot)
-library(rstatix)
 library(shiny)
-library(shinyalert)
 library(shinyjs)
 library(shinyMatrix)
-library(shinythemes)
 library(shinyvalidate)
 library(shinyWidgets)
-library(skedastic)
-library(sortable)
-library(sur)
-sortable::enable_modules()
+## sortable (and its sortable::enable_modules() call) was dropped: its only
+## user, the drag-and-drop rank_list() in an MLR encoding UI that was never
+## shown, is gone. It stays in the Dockerfile.
 library(thematic)
 library(tibble)
-library(tidyr)
-library(tinytex)
-library(tools)
-library(waiter)
-library(writexl)
-library(xml2)
-library(xtable)
 
 # shinyDarkmode, ggResidpanel and olsrr have been removed/archived from CRAN. 
 # So install.packages() silently skips it (no error during the Docker build), 
@@ -91,63 +43,16 @@ library(xtable)
 # section at the bottom of the RUN step
 
 library(shinyDarkmode)
-library(ggResidpanel)
-library(olsrr)
 
 margin <- ggplot2::margin
 
-source("R/utilityFunctions.R")
-source("R/ChiSquareTest.R")
-source("R/descStats.R")
+## The R/ files are loaded by Shiny itself: it sources every R/*.R file
+## (alphabetically) after this file, so they are not source()d here.
 
-source('R/OneSampZInt.R')
-source('R/OneSampTInt.R')
-source("R/OneSampZTest.R")
-source("R/OneSampTTest.R")
-
-source('R/OnePropZInt.R')
-source('R/OnePropZTest.R')
-
-source('R/plotOptionsMenu.R')
-
-source("R/probDist.R")
-
-source("R/RenderBoxplot.R")
-source("R/RenderMeanPlot.R")
-source("R/RenderQQPlot.R")
-source("R/RenderScatterplot.R")
-source("R/RenderSideBySideBoxplot.R")
-
-source("R/sampleSizeConfidCoeEst.R")
-source("R/confidenceCoefficient.R")
-source("R/sampSizeEst.R")
-source("R/confidenceCoefficientCp.R")
-source("R/confidenceCoefficientMean.R")
-source("R/confidenceCoefficientProportion.R")
-
-source("R/statInfr.R")
-
-source('R/TwoSampZInt.R')
-source('R/TwoSampTInt.R')
-source('R/TwoSampZTest.R')
-source('R/TwoSampTTest.R')
-
-source('R/TwoPropZInt.R')
-source('R/TwoPropZTest.R')
-
-source("R/simpleLinearRegression.R")
-source("R/multipleLinearRegression.R")
-source("R/polynomialRegression.R")
-source("R/regressionAndCorrelation.R")
-source("R/logisticRegression.R")
-
-source("R/decisionTrees.R")
-source("R/kNearestNeighbors.R")
-source("R/linearDiscriminantAnalysis.R")
-source("R/principalComponentAnalysis.R")
-source("R/randomForest.R")
-source("R/xgboost.R")
-source("R/machineLearning.R")
+## MathJax: request the version that https://mathjax.rstudio.com/latest/ redirects
+## to (the same files), so the script and each file it loads afterwards (config,
+## output jax, fonts) no longer cost an extra redirect round trip.
+options(shiny.mathjax.url = "https://mathjax.rstudio.com/2.7.9/MathJax.js")
 
 options(scipen = 999) # options(scipen = 0)
 ## options(shiny.reactlog = TRUE)
@@ -191,3 +96,52 @@ shiny::addResourcePath("www", "www")
 ## dark mode.
 ggplot2::theme_set(ggplot2::theme_minimal())
 thematic_shiny()
+
+## Byte-compile the app's own functions (everything the R/ files define) once
+## per R process, in the background, soon after start-up. Otherwise R's JIT
+## compiles each large module server on its second call, inside the session of
+## the second visitor who opens that tab (about 4 s for statInfrServer alone),
+## and every other session waits meanwhile. Compiled functions behave exactly
+## like the originals, and the JIT stays on for everything else.
+## Shiny sources this file from shiny::loadSupport(), whose `renv` argument is
+## the environment the R/ files are sourced into next. The work starts 5 s
+## after the server is up (so a visitor who arrives right at start-up, e.g. the
+## one who woke the app, gets the page first) and compiles one function per
+## turn of Shiny's event loop, largest first, so requests that arrive meanwhile
+## are served in between. When the app is started some other way, or in Shiny's
+## test mode (shinytest2 drives the app from its first second, and a blocking
+## compile would only skew its waits), nothing is scheduled and the JIT works
+## as usual.
+local({
+  if (isTRUE(shiny::getShinyOption("testmode", default = FALSE))) return(invisible())
+  for (i in rev(seq_len(sys.nframe()))) {
+    if (identical(sys.function(i), shiny::loadSupport)) {
+      app_env <- get("renv", envir = sys.frame(i))
+      later::later(function() {
+        fns <- Filter(function(nm) {
+          f <- get(nm, envir = app_env, inherits = FALSE)
+          is.function(f) && !is.primitive(f)
+        }, ls(app_env, all.names = TRUE))
+        size <- vapply(fns, function(nm) {
+          as.numeric(utils::object.size(body(get(nm, envir = app_env, inherits = FALSE))))
+        }, numeric(1))
+        queue <- fns[order(size, decreasing = TRUE)]
+        compile_next <- function() {
+          if (length(queue) == 0) return(invisible())
+          nm <- queue[1]
+          queue <<- queue[-1]
+          compiled <- tryCatch(compiler::cmpfun(get(nm, envir = app_env, inherits = FALSE)),
+                               error = function(e) {
+                                 message("Byte-compiling ", nm, " failed (the JIT will handle it): ",
+                                         conditionMessage(e))
+                                 NULL
+                               })
+          if (!is.null(compiled)) assign(nm, compiled, envir = app_env)
+          later::later(compile_next)
+        }
+        compile_next()
+      }, delay = 5)
+      break
+    }
+  }
+})

@@ -1,5 +1,101 @@
 # R/decisionTrees.R
 
+# With a response of 3 or more classes, rpart tries every way of splitting a
+# categorical predictor's categories into two groups, which grows as
+# 2^(categories - 1): about 0.4 s at 26 categories, over 40 s at 33, and no end
+# in sight for an ID-like column. Predictors above this limit are refused.
+cart_max_categories <- 25
+
+# Upper limit on the number of response classes (see the check in Calculate).
+cart_max_classes <- 100
+
+# rpart finds its model-frame columns again from the printed form of the term
+# labels, which only gives back the column name when deparse() writes it
+# unchanged between backticks. A name with a backtick, a backslash or a control
+# character cannot be used that way, and neither can ..1 or ... (R reads them as
+# arguments). Calculate fits those columns under placeholder names and puts the
+# real names back into the fit afterwards (cart_relabel).
+cart_name_ok <- function(x) {
+  !grepl("[`\\\\[:cntrl:]]", x) & !grepl("^\\.\\.(\\.|[0-9]+)$", x)
+}
+
+# Renames the variables of an rpart fit from `from` to `to`, everywhere the
+# tree, its plot and its importance read them.
+cart_relabel <- function(fit, from, to) {
+  rename <- function(x) {
+    i <- match(x, from)
+    ifelse(is.na(i), x, to[i])
+  }
+  rename_classes <- function(terms) {
+    classes <- attr(terms, "dataClasses")
+    if (!is.null(classes)) names(attr(terms, "dataClasses")) <- rename(names(classes))
+    terms
+  }
+
+  var <- fit$frame$var
+  if (is.factor(var)) levels(var) <- rename(levels(var)) else var <- rename(var)
+  fit$frame$var <- var
+  if (!is.null(fit$splits))
+    rownames(fit$splits) <- rename(rownames(fit$splits))
+  if (!is.null(fit$variable.importance))
+    names(fit$variable.importance) <- rename(names(fit$variable.importance))
+  if (!is.null(fit$ordered))
+    names(fit$ordered) <- rename(names(fit$ordered))
+  if (length(attr(fit, "xlevels")) > 0)
+    names(attr(fit, "xlevels")) <- rename(names(attr(fit, "xlevels")))
+  if (!is.null(fit$model)) {
+    model_terms <- rename_classes(attr(fit$model, "terms"))
+    names(fit$model) <- rename(names(fit$model))
+    attr(fit$model, "terms") <- model_terms
+  }
+  fit$terms <- rename_classes(fit$terms)
+  fit
+}
+
+# Bar labels and left margin (in lines of text) for a horizontal Variable
+# Importance bar chart about to be drawn on the current device, with `panels`
+# charts side by side (also used by randomForest.R and xgboost.R). The margin
+# grows with the longest name, as it always has. Only when that would leave less
+# than two lines of width for the bars (at worst the plot fails with "figure
+# margins too large") is the margin half the panel instead, with the longer names
+# shortened in the middle ("Average_mo...in_2024").
+ml_importance_labels <- function(labels, panels = 1) {
+  labels    <- as.character(labels)
+  max_chars <- max(nchar(labels), na.rm = TRUE)
+  left_mar  <- max(4, ceiling(max_chars * 0.6))
+
+  panel_lines <- par("din")[1] / panels / (par("csi") * par("mex"))
+  if (left_mar + 2 + 2 > panel_lines) {
+    left_mar <- max(4, floor(panel_lines / 2))
+    fit      <- max(5, floor(left_mar / 0.6))
+    long     <- !is.na(labels) & nchar(labels) > fit
+    head_n   <- ceiling((fit - 3) / 2)
+    tail_n   <- fit - 3 - head_n
+    labels[long] <- paste0(substr(labels[long], 1, head_n), "...",
+                           substring(labels[long], nchar(labels[long]) - tail_n + 1))
+  }
+
+  list(labels = labels, left_mar = left_mar)
+}
+
+# Hides the named tabs of a navbarPage as soon as the page is parsed, so they
+# never flash into view when the module is first opened. showTab() reveals
+# them again (it clears this inline style), hideTab() hides them again.
+cartHideTabsOnLoad <- function(tabsetId, values) {
+  tags$script(HTML(sprintf(
+    "(function() {
+       var nav = document.getElementById('%s');
+       if (!nav) return;
+       [%s].forEach(function(v) {
+         var a = nav.querySelector('a[data-value=\"' + v + '\"]');
+         if (a && a.parentNode) a.parentNode.style.display = 'none';
+       });
+     })();",
+    tabsetId,
+    paste0("'", values, "'", collapse = ", ")
+  )))
+}
+
 CARTSidebarUI <- function(id) {
   ns <- NS(id)
 
@@ -94,7 +190,8 @@ CARTMainPanelUI <- function(id) {
       id = ns("cartMainPanel"),
       selected = "uploaded_data_tab",
       theme = bs_theme(version = 4)
-    )
+    ),
+    cartHideTabsOnLoad(ns("cartMainPanel"), c("results_tab", "plots_tab"))
   )
 }
 
@@ -125,12 +222,28 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
     cart_iv$add_rule("cp", shinyvalidate::sv_gt(0, message = "Must be greater than 0."))
     cart_iv$enable()
     
-    # Called directly (not wrapped in session$onFlushed) so it applies
-    # immediately: the module is only ever created once the client has
-    # already bound this tab's markup, so the tabs being hidden already
-    # exist in the DOM by this point.
-    hideTab(inputId = "cartMainPanel", target = "results_tab")
-    hideTab(inputId = "cartMainPanel", target = "plots_tab")
+    # The Results and Plots tabs start hidden (cartHideTabsOnLoad in the UI),
+    # so nothing needs hiding here when the module server starts.
+    
+    # Selections this module pushes into its own pickers after an upload. The
+    # change event the client echoes back for them is not a user edit and must
+    # not overwrite the selections shared with the other methods.
+    pushed <- new.env(parent = emptyenv())
+    is_echo <- function(key, value) {
+      expected <- pushed[[key]]
+      pushed[[key]] <- NULL
+      !is.null(expected) &&
+        identical(sort(as.character(value)), sort(as.character(expected)))
+    }
+    # The browser only sends a change event when a picker's value really
+    # changes, so expect an echo only when the pushed value differs from the
+    # current one. Otherwise the marker would linger and swallow the user's next
+    # identical selection (e.g. Deselect All, then the same variables again).
+    expect_echo <- function(key, value) {
+      current <- isolate(input[[key]])
+      same <- identical(sort(as.character(value)), sort(as.character(current)))
+      pushed[[key]] <- if (same) NULL else value
+    }
     
     # Uploaded Data tab
     output$uploadedDataContainer <- renderUI({
@@ -164,18 +277,25 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
       df <- data()
       cols <- colnames(df)
       
-      pre_predictors <- intersect(shared_explanatory(), cols)
       shared_resp    <- shared_response()
 
       n_rows         <- nrow(df)
-      valid_response <- cols[sapply(cols, function(col) {
+      # vapply (not sapply) so a table with no columns gives logical(0), not list()
+      valid_response <- cols[vapply(cols, function(col) {
         n_uniq <- length(unique(na.omit(df[[col]])))
         n_uniq >= 2 && n_uniq <= floor(n_rows / 2)
-      })]
-      pre_response   <- if (isTruthy(shared_resp) && shared_resp %in% valid_response) shared_resp else character(0)
+      }, logical(1))]
+      pre_response   <- if (length(shared_resp) == 1 && isTruthy(shared_resp) && shared_resp %in% valid_response) shared_resp else character(0)
 
+      # The response is never offered as a predictor (the response observer
+      # below does not run when a new file keeps the same response selected)
+      predictor_cols <- setdiff(cols, pre_response)
+      pre_predictors <- intersect(shared_explanatory(), predictor_cols)
+
+      expect_echo("response",   pre_response)
+      expect_echo("predictors", pre_predictors)
       updatePickerInput(session, "response",   choices = valid_response, selected = pre_response)
-      updatePickerInput(session, "predictors", choices = cols,           selected = pre_predictors)
+      updatePickerInput(session, "predictors", choices = predictor_cols, selected = pre_predictors)
 
       results_ready(FALSE)
       plots_ready(FALSE)
@@ -184,7 +304,8 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
       cart_message(NULL)
     })
     
-    # Keep response out of predictors
+    # Keep response out of predictors (also when the response is cleared, so
+    # its column becomes selectable as a predictor again)
     observeEvent(input$response, {
       req(data())
       
@@ -200,7 +321,7 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
         choices = available_predictors,
         selected = selected_predictors
       )
-    }, ignoreInit = TRUE)
+    }, ignoreInit = TRUE, ignoreNULL = FALSE)
     
     # Clear outputs if settings change after calculate
     observeEvent(
@@ -316,7 +437,7 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
     })
     
     observeEvent(input$response, {
-      shared_response(input$response)
+      if (!is_echo("response", input$response)) shared_response(input$response)
       if (isTruthy(input$response)) {
         responseError(FALSE)
         shinyjs::removeClass(id = "responseWrapper", class = "has-error")
@@ -327,7 +448,7 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
       } else {
         responseContinuous(FALSE)
       }
-    })
+    }, ignoreInit = TRUE, ignoreNULL = FALSE)
 
     output$responseContinuousWarning <- renderUI({
       if (responseContinuous()) {
@@ -341,14 +462,183 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
     })
 
     observeEvent(input$predictors, {
-      shared_explanatory(input$predictors)
+      if (!is_echo("predictors", input$predictors)) shared_explanatory(input$predictors)
       if (length(input$predictors) >= 1) {
         predictorsError(FALSE)
         shinyjs::removeClass(id = "predictorsWrapper", class = "has-error")
       }
+    }, ignoreInit = TRUE, ignoreNULL = FALSE)
+
+    # ---- Results outputs ----
+    # Defined once here, reading only from calc_results()/plot_results(), so
+    # nothing holds on to the data copies of an earlier Calculate and the
+    # settings shown are the ones the model was fitted with.
+    output$resultsUI <- renderUI({
+      r <- calc_results()
+      req(r)
+      
+      correct <- sum(diag(r$confusion))
+      total   <- sum(r$confusion)
+
+      tagList(
+        tags$h4("Model Summary"),
+        tableOutput(session$ns("cartModelInfo")),
+        tags$hr(),
+
+        tags$h4("Class Distribution (Full Dataset)"),
+        tableOutput(session$ns("cartClassDist")),
+        tags$hr(),
+
+        tags$h4("Classification Report"),
+        tableOutput(session$ns("cartClassReport")),
+        tags$script(HTML("setTimeout(function(){ if(typeof tippy!=='undefined') tippy('[data-tippy-content]'); }, 200);")),
+        tags$hr(),
+
+        tags$h4("Confusion Matrix"),
+        tableOutput(session$ns("confusionMatrixResults")),
+        tags$h5(tags$strong("Accuracy Calculation"),
+                style = "margin-top: 14px; margin-bottom: 2px;"),
+        withMathJax(
+          tags$p(HTML(sprintf(
+            "\\( \\text{Accuracy} = \\dfrac{\\text{Correct Predictions}}{\\text{Total Observations}} = \\dfrac{%d}{%d} = %.2f\\%% \\)",
+            correct, total, r$accuracy * 100
+          )))
+        )
+      )
+    })
+    
+    output$cartModelInfo <- renderTable({
+      r <- calc_results()
+      req(r)
+
+      data.frame(
+        Item = c(
+          "Number of Classes",
+          "Number of Predictors",
+          "Number of Complete Cases",
+          "Maximum Tree Depth",
+          "Minimum Split Size",
+          "Complexity Parameter",
+          "Accuracy"
+        ),
+        Value = c(
+          as.character(r$n_classes),
+          as.character(length(r$predictors)),
+          as.character(r$n),
+          as.character(r$max_depth),
+          as.character(r$min_split),
+          as.character(r$cp),
+          as.character(round(r$accuracy, 4))
+        ),
+        check.names = FALSE
+      )
+    }, rownames = FALSE, striped = TRUE, bordered = TRUE)
+
+    output$cartClassDist <- renderTable({
+      r <- calc_results()
+      req(r)
+      r$class_dist
+    }, rownames = FALSE, striped = TRUE, bordered = TRUE)
+
+    output$cartClassReport <- renderTable({
+      r <- calc_results()
+      req(r)
+      r$class_report
+    }, rownames = FALSE, striped = TRUE, bordered = TRUE,
+       sanitize.colnames.function = function(x) {
+         tips <- c(
+           Precision = "Of all instances predicted as this class, the fraction that are truly this class. High precision means few false positives.",
+           Recall    = "Of all actual instances of this class, the fraction correctly predicted. High recall means few false negatives.",
+           F1        = "Harmonic mean of Precision and Recall — balances both into a single score.",
+           Support   = "Number of actual instances of this class in the dataset."
+         )
+         sapply(x, function(col) {
+           if (col %in% names(tips)) {
+             paste0('<b><span data-tippy-content="', tips[[col]],
+                    '" style="cursor:help;border-bottom:1px dotted #555;">', col, '</span></b>')
+           } else {
+             paste0("<b>", col, "</b>")
+           }
+         }, USE.NAMES = FALSE)
+       })
+
+    output$confusionMatrixResults <- renderTable({
+      r <- calc_results()
+      req(r)
+
+      cm <- as.data.frame.matrix(r$confusion)
+      cm$Actual <- paste0("<b>", rownames(cm), "</b>")
+      cm <- cm[, c("Actual", setdiff(names(cm), "Actual"))]
+      rownames(cm) <- NULL
+      cm
+    }, rownames = FALSE, striped = TRUE, bordered = TRUE,
+       sanitize.text.function = identity,
+       sanitize.colnames.function = function(x) {
+         sapply(x, function(col) {
+           if (col == "Actual") "<b>Actual \\ Predicted</b>" else paste0("<b>", col, "</b>")
+         }, USE.NAMES = FALSE)
+       })
+    
+    output$treePlot <- renderPlot({
+      r <- plot_results()
+      req(r)
+      
+      par(mar = c(1, 1, 3, 1))
+      
+      rpart.plot::rpart.plot(
+        r$fit,
+        main = "Decision Tree Diagram",
+        extra = 104,
+        fallen.leaves = TRUE,
+        tweak = 1.05,
+        under = TRUE,
+        faclen = 0,
+        varlen = 0,
+        shadow.col = 0,
+        box.palette = "Blues",
+        col        = "black",
+        split.col  = "black",
+        under.col  = "black",
+        branch.col = "black",
+        border.col = "black"
+      )
+    }, res = 96)
+    
+    output$varImportancePlot <- renderPlot({
+      r <- plot_results()
+      req(r)
+
+      if (nrow(r$importance) == 0) {
+        plot.new()
+        text(0.5, 0.5, "No variable importance available for this model.",
+             cex = 0.9, col = "#555555")
+        return()
+      }
+
+      imp_df    <- r$importance[order(r$importance$ImportancePct, decreasing = FALSE), ]
+      lab       <- ml_importance_labels(imp_df$Variable)
+
+      par(mar = c(5, lab$left_mar, 4, 2))
+
+      barplot(
+        imp_df$ImportancePct,
+        names.arg = lab$labels,
+        horiz     = TRUE,
+        las       = 1,
+        col       = "#18536F",
+        main      = "Variable Importance",
+        xlab      = "Importance (%)",
+        cex.main  = 1.3,
+        font.main = 2,
+        cex.lab   = 1.1,
+        font.lab  = 2,
+        cex.names = 0.95
+      )
     })
 
-    observeEvent(input$calculate, {
+    cart_calculate <- function() {
+      cart_message(NULL)
+      
       if (!isTruthy(data())) {
         noFileCalculate(TRUE)
         return()
@@ -356,6 +646,9 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
         noFileCalculate(FALSE)
       }
       
+      # The response is never also used as a predictor
+      predictors <- setdiff(input$predictors, input$response)
+
       # input validation
       if (!isTruthy(input$response)) {
         responseError(TRUE)
@@ -365,7 +658,7 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
         shinyjs::removeClass(id = "responseWrapper", class = "has-error")
       }
       
-      if (!isTruthy(input$predictors) || length(input$predictors) < 1) {
+      if (length(predictors) < 1) {
         predictorsError(TRUE)
         shinyjs::addClass(id = "predictorsWrapper", class = "has-error")
       } else {
@@ -376,13 +669,23 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
       req(cart_iv$is_valid())
 
       if (!isTruthy(input$response) ||
-          !isTruthy(input$predictors) ||
-          length(input$predictors) < 1) {
+          length(predictors) < 1) {
         return()
       }
       
       resp_col <- input$response[1]
       df <- data()
+
+      # Selections can be stale for an instant after a new upload
+      missing_cols <- setdiff(c(predictors, resp_col), colnames(df))
+      if (length(missing_cols) > 0) {
+        cart_message(paste0(
+          "The following selected variable(s) are not in the current dataset: ",
+          paste(missing_cols, collapse = ", "),
+          ". Please reselect your variables."
+        ))
+        return()
+      }
 
       # Continuous response guard — block classification on a continuous variable
       if (ml_is_continuous_response(df[[resp_col]])) {
@@ -390,7 +693,7 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
         return()
       }
 
-      analysis_df <- df[, c(input$predictors, resp_col), drop = FALSE]
+      analysis_df <- df[, c(predictors, resp_col), drop = FALSE]
 
       na_cols <- names(which(sapply(analysis_df, function(x) any(is.na(x)))))
       if (length(na_cols) > 0) {
@@ -424,8 +727,21 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
         )
         return()
       }
+
+      # rpart's work and memory grow with rows x classes (20,000 rows and 10,000
+      # classes took over a minute and about 1 GB), so unbounded class counts
+      # could freeze or crash the shared R process.
+      if (nlevels(analysis_df[[resp_col]]) > cart_max_classes) {
+        showNotification(
+          paste0("The selected response variable has more than ", cart_max_classes,
+                 " classes, which is too many for CART. Please choose a response with fewer classes."),
+          type = "error",
+          duration = 8
+        )
+        return()
+      }
       
-      predictor_df      <- analysis_df[, input$predictors, drop = FALSE]
+      predictor_df      <- analysis_df[, predictors, drop = FALSE]
       numeric_predictors <- names(predictor_df)[sapply(predictor_df, is.numeric)]
 
       if (length(numeric_predictors) > 0) {
@@ -439,26 +755,63 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
           return()
         }
       }
+
+      # A categorical predictor with very many categories (an ID or free-text
+      # column) makes rpart's split search for a 3+ class response effectively
+      # endless (see cart_max_categories). With 2 classes rpart orders the
+      # categories instead, which is fast, so that case is left alone.
+      if (nlevels(analysis_df[[resp_col]]) > 2) {
+        n_categories <- vapply(predictor_df, function(x) {
+          if (is.factor(x) || is.character(x)) length(unique(x)) else 0L
+        }, integer(1))
+        many_category_cols <- names(n_categories)[n_categories > cart_max_categories]
+        if (length(many_category_cols) > 0) {
+          cart_message(paste0(
+            "These selected categorical variable(s) have more than ", cart_max_categories,
+            " categories, which is too many to search for splits when the response has 3 or more classes: ",
+            paste(many_category_cols, collapse = ", "),
+            ". Please deselect them or group their categories."
+          ))
+          return()
+        }
+      }
       
+      # The formula is built from symbols, so any column name works in it. Names
+      # rpart could not look up again (see cart_name_ok) are fitted under
+      # placeholders; the columns are the predictors followed by the response.
+      fit_df    <- analysis_df
+      fit_preds <- predictors
+      fit_resp  <- resp_col
+      placeholders <- !all(cart_name_ok(c(fit_preds, fit_resp)))
+      if (placeholders) {
+        fit_preds <- paste0("x", seq_along(predictors))
+        fit_resp  <- "y"
+        names(fit_df) <- c(fit_preds, fit_resp)
+      }
       cart_formula <- as.formula(
-        paste(
-          paste0("`", resp_col, "`"),
-          "~",
-          paste(paste0("`", input$predictors, "`"), collapse = " + ")
-        )
+        call("~", as.name(fit_resp),
+             Reduce(function(a, b) call("+", a, b), lapply(fit_preds, as.name))),
+        env = baseenv()
       )
       
       cart_message(NULL)
       
+      # xval = 0: rpart's default 10-fold cross-validation refits the tree 10
+      # more times to fill the cp table's xerror column, which is never used.
+      # model = TRUE keeps the model frame with the fit, which rpart.plot needs
+      # to label split values of integer predictors (it would otherwise look
+      # for the data in the plot's environment, where it no longer is).
       cart_fit <- tryCatch(
         rpart::rpart(
           formula = cart_formula,
-          data = analysis_df,
+          data = fit_df,
           method = "class",
+          model = TRUE,
           control = rpart::rpart.control(
             maxdepth = as.integer(input$max_depth),
             minsplit = as.integer(input$min_split),
-            cp = as.numeric(input$cp)
+            cp = as.numeric(input$cp),
+            xval = 0
           )
         ),
         error = function(e) {
@@ -474,7 +827,7 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
       req(cart_fit)
       
       cart_pred <- tryCatch(
-        predict(cart_fit, analysis_df[, input$predictors, drop = FALSE], type = "class"),
+        predict(cart_fit, fit_df[, fit_preds, drop = FALSE], type = "class"),
         error = function(e) {
           showNotification(
             paste("Predictions could not be generated:", e$message),
@@ -486,6 +839,10 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
       )
       
       req(cart_pred)
+      
+      if (placeholders) {
+        cart_fit <- cart_relabel(cart_fit, c(fit_preds, fit_resp), c(predictors, resp_col))
+      }
       
       confusion_mat <- table(
         Actual = analysis_df[[resp_col]],
@@ -520,8 +877,12 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
         confusion = confusion_mat,
         accuracy = accuracy,
         response = resp_col,
-        predictors = input$predictors,
+        predictors = predictors,
         n = nrow(analysis_df),
+        n_classes = length(unique(analysis_df[[resp_col]])),
+        max_depth = as.integer(input$max_depth),
+        min_split = as.integer(input$min_split),
+        cp = input$cp,
         importance = importance_df,
         class_dist = class_dist_df,
         class_report = cart_class_report
@@ -535,177 +896,28 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
       results_ever_calculated(TRUE)
       plots_ever_calculated(TRUE)
       
-      output$resultsUI <- renderUI({
-        r <- calc_results()
-        req(r)
-        
-        correct <- sum(diag(r$confusion))
-        total   <- sum(r$confusion)
-
-        tagList(
-          tags$h4("Model Summary"),
-          tableOutput(session$ns("cartModelInfo")),
-          tags$hr(),
-
-          tags$h4("Class Distribution (Full Dataset)"),
-          tableOutput(session$ns("cartClassDist")),
-          tags$hr(),
-
-          tags$h4("Classification Report"),
-          tableOutput(session$ns("cartClassReport")),
-          tags$script(HTML("setTimeout(function(){ if(typeof tippy!=='undefined') tippy('[data-tippy-content]'); }, 200);")),
-          tags$hr(),
-
-          tags$h4("Confusion Matrix"),
-          tableOutput(session$ns("confusionMatrixResults")),
-          tags$h5(tags$strong("Accuracy Calculation"),
-                  style = "margin-top: 14px; margin-bottom: 2px;"),
-          withMathJax(),
-          tags$p(HTML(sprintf(
-            "\\( \\text{Accuracy} = \\dfrac{\\text{Correct Predictions}}{\\text{Total Observations}} = \\dfrac{%d}{%d} = %.2f\\%% \\)",
-            correct, total, r$accuracy * 100
-          ))),
-          tags$script(HTML("if(window.MathJax){ MathJax.Hub ? MathJax.Hub.Queue(['Typeset',MathJax.Hub]) : MathJax.typesetPromise(); }"))
-        )
-      })
-      
-      output$cartModelInfo <- renderTable({
-        r <- calc_results()
-        req(r)
-
-        data.frame(
-          Item = c(
-            "Number of Classes",
-            "Number of Predictors",
-            "Number of Complete Cases",
-            "Maximum Tree Depth",
-            "Minimum Split Size",
-            "Complexity Parameter",
-            "Accuracy"
-          ),
-          Value = c(
-            as.character(length(unique(analysis_df[[resp_col]]))),
-            as.character(length(r$predictors)),
-            as.character(r$n),
-            as.character(as.integer(input$max_depth)),
-            as.character(as.integer(input$min_split)),
-            as.character(input$cp),
-            as.character(round(r$accuracy, 4))
-          ),
-          check.names = FALSE
-        )
-      }, rownames = FALSE, striped = TRUE, bordered = TRUE)
-
-      output$cartClassDist <- renderTable({
-        r <- calc_results()
-        req(r)
-        r$class_dist
-      }, rownames = FALSE, striped = TRUE, bordered = TRUE)
-
-      output$cartClassReport <- renderTable({
-        r <- calc_results()
-        req(r)
-        r$class_report
-      }, rownames = FALSE, striped = TRUE, bordered = TRUE,
-         sanitize.colnames.function = function(x) {
-           tips <- c(
-             Precision = "Of all instances predicted as this class, the fraction that are truly this class. High precision means few false positives.",
-             Recall    = "Of all actual instances of this class, the fraction correctly predicted. High recall means few false negatives.",
-             F1        = "Harmonic mean of Precision and Recall — balances both into a single score.",
-             Support   = "Number of actual instances of this class in the dataset."
-           )
-           sapply(x, function(col) {
-             if (col %in% names(tips)) {
-               paste0('<b><span data-tippy-content="', tips[[col]],
-                      '" style="cursor:help;border-bottom:1px dotted #555;">', col, '</span></b>')
-             } else {
-               paste0("<b>", col, "</b>")
-             }
-           }, USE.NAMES = FALSE)
-         })
-
-      output$confusionMatrixResults <- renderTable({
-        r <- calc_results()
-        req(r)
-
-        cm <- as.data.frame.matrix(r$confusion)
-        cm$Actual <- paste0("<b>", rownames(cm), "</b>")
-        cm <- cm[, c("Actual", setdiff(names(cm), "Actual"))]
-        rownames(cm) <- NULL
-        cm
-      }, rownames = FALSE, striped = TRUE, bordered = TRUE,
-         sanitize.text.function = identity,
-         sanitize.colnames.function = function(x) {
-           sapply(x, function(col) {
-             if (col == "Actual") "<b>Actual \\ Predicted</b>" else paste0("<b>", col, "</b>")
-           }, USE.NAMES = FALSE)
-         })
-      
-      output$treePlot <- renderPlot({
-        r <- plot_results()
-        req(r)
-        
-        par(mar = c(1, 1, 3, 1))
-        
-        rpart.plot::rpart.plot(
-          r$fit,
-          main = "Decision Tree Diagram",
-          extra = 104,
-          fallen.leaves = TRUE,
-          tweak = 1.05,
-          under = TRUE,
-          faclen = 0,
-          varlen = 0,
-          shadow.col = 0,
-          box.palette = "Blues",
-          col        = "black",
-          split.col  = "black",
-          under.col  = "black",
-          branch.col = "black",
-          border.col = "black"
-        )
-      }, res = 96)
-      
-      output$varImportancePlot <- renderPlot({
-        r <- plot_results()
-        req(r)
-
-        if (nrow(r$importance) == 0) {
-          plot.new()
-          text(0.5, 0.5, "No variable importance available for this model.",
-               cex = 0.9, col = "#555555")
-          return()
-        }
-
-        imp_df    <- r$importance[order(r$importance$ImportancePct, decreasing = FALSE), ]
-        max_chars <- max(nchar(imp_df$Variable), na.rm = TRUE)
-        left_mar  <- max(4, ceiling(max_chars * 0.6))
-
-        par(mar = c(5, left_mar, 4, 2))
-
-        barplot(
-          imp_df$ImportancePct,
-          names.arg = imp_df$Variable,
-          horiz     = TRUE,
-          las       = 1,
-          col       = "#18536F",
-          main      = "Variable Importance",
-          xlab      = "Importance (%)",
-          cex.main  = 1.3,
-          font.main = 2,
-          cex.lab   = 1.1,
-          font.lab  = 2,
-          cex.names = 0.95
-        )
-      })
-      
       showTab(inputId = "cartMainPanel", target = "results_tab")
       showTab(inputId = "cartMainPanel", target = "plots_tab")
       
       shinyjs::delay(100, {
         updateNavbarPage(session, "cartMainPanel", selected = "results_tab")
       })
-      
+    }
+
+    observeEvent(input$calculate, {
+      # Backstop: an uncaught error inside an observer ends the whole session,
+      # so anything the checks above missed is reported instead.
+      tryCatch(
+        cart_calculate(),
+        error = function(e) {
+          if (inherits(e, "shiny.silent.error")) stop(e)   # req()/validate(): stay silent
+          showNotification(
+            paste("Decision tree could not be computed:", conditionMessage(e)),
+            type = "error",
+            duration = 8
+          )
+        }
+      )
     }, ignoreInit = TRUE)
     
     observeEvent(input$reset, {
@@ -714,6 +926,8 @@ CARTServer <- function(id, data, shared_explanatory, shared_response) {
       
       results_ready(FALSE)
       plots_ready(FALSE)
+      calc_results(NULL)
+      plot_results(NULL)
       results_ever_calculated(FALSE)
       plots_ever_calculated(FALSE)
       
