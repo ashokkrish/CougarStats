@@ -99,7 +99,7 @@ regressionAndCorrelationUI <- function(id) {
         p(
           class = "text-muted",
           style = "font-size: 0.85em; margin-top: -8px;",
-          tags$em("Note: Raw data entry is not available for Multiple Linear Regression and Binary Logistic Regression.")
+          tags$em("Note: Raw data entry is not available for Multiple Linear Regression and Binary Logistic Regression. Switch to Upload Data.")
         )
       ),
 
@@ -281,7 +281,11 @@ regressionAndCorrelationServer <- function(id) {
 
     # ---- Shared data reactive (passed to all child modules) -----------------
     reg_data <- reactive({
-      if (input$dataInputMode == "raw") {
+      # input$dataInputMode can be NULL for a moment when a session starts;
+      # `if (NULL == "raw")` errors ("argument is of length zero") and crashes the session.
+      mode <- input$dataInputMode
+      if (is.null(mode)) return(NULL)
+      if (mode == "raw") {
         x_vals <- createNumLst(input$rawX)
         y_vals <- createNumLst(input$rawY)
         if (length(x_vals) >= 4 && length(y_vals) >= 4 && length(x_vals) == length(y_vals))
@@ -296,7 +300,8 @@ regressionAndCorrelationServer <- function(id) {
     })
 
     # Reactive conveying the current input mode to children that need it (SLR, POLYR)
-    input_mode <- reactive({ input$dataInputMode })
+    # Never NULL, so children's `input_mode() == "upload"` checks always get TRUE/FALSE.
+    input_mode <- reactive({ if (is.null(input$dataInputMode)) "" else input$dataInputMode })
 
     # Fires on every raw-input keystroke; returns NULL in upload mode so children
     # can use ignoreNULL = TRUE to avoid clearing results when not in raw mode.
@@ -420,7 +425,7 @@ regressionAndCorrelationServer <- function(id) {
     hide_shared <- reactiveVal(FALSE)
 
     observeEvent(input$multiple, {
-      if (input$dataInputMode == "raw") {
+      if (isTRUE(input$dataInputMode == "raw")) {
         if (input$multiple == "POLYR") {
           updateTextAreaInput(session, "rawY", value = "4.997, 6.165, 6.95, 8.218, 9.405, 10.404, 10.425, 10.44, 9.393, 7.854, 5.168")
           updateTextAreaInput(session, "rawX", value = "0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10")
