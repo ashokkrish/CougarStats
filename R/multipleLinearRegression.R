@@ -56,7 +56,7 @@ MLRSidebarUI <- function(id) {
         uiOutput(ns("singleOrMultipleHelpText")),
         pickerInput(
           inputId = ns("explanatoryVariables"),
-          label   = HTML("<strong>Explanatory Variables (\\(x_1, x_2, x_3...x_k\\)) </strong>"),
+          label   = HTML("<strong>Explanatory Variables (\\(x_1, x_2, x_3...x_n\\)) </strong>"),
           choices  = NULL,
           multiple = TRUE,
           options  = list(
@@ -893,88 +893,8 @@ MLRServer <- function(id, reg_data, reset_upload, upload_error = NULL, clear_tri
 
     # Reactive ANOVA tab outputs
     output$anovaHypotheses <- renderUI({
-<<<<<<< HEAD
       a <- mlrAnova()
       omitted <- nrow(encodedData()) - a$n
-=======
-      req(mlrCanFit())
-      
-      with(encodedData(), {
-        model <- lm(reformulate(
-          sprintf("`%s`", input$explanatoryVariables),
-          sprintf("`%s`", input$responseVariable)
-        ))
-        
-        # Use model rank for k to match ANOVA table
-        k <- model$rank - 1
-        
-        withMathJax(
-          p(strong("Analysis of Variance (ANOVA)")),
-          p(
-            r"{\( H_0: \beta_1 = \beta_2 = \cdots = \beta_k = 0\)}",
-            br(),
-            r"{\( H_a: \) At least one \(\beta_j\ne 0\), where \(j = 1, \cdots, k\).}"
-          ),
-          #br(),
-          p(r"{\( \alpha = 0.05\ \)}"),
-          #br(),
-          p(
-            sprintf(r"{\( n = %i \)}", nrow(encodedData())),
-            br(),
-            sprintf(r"{\( k = %i \)}", k)
-          ),
-          p(r"[where \(n\) is the sample size and \(k\) is the number of explanatory variables in the multiple regression model.]")
-        )
-      })
-    })
-
-    # Template ANOVA table showing how each entry is calculated
-    output$anovaTemplateTable <- renderUI({
-      req(mlrCanFit())
-
-      cell_style <- "border: 1px solid rgba(0, 0, 0, 0.15); padding: 6px 12px; text-align: center;"
-      hdr_style  <- paste(cell_style, "font-weight: bold; border-bottom: 1px solid rgba(0, 0, 0, 0.3);")
-      src_style  <- paste(cell_style, "font-weight: bold;")
-
-      hdrs <- c("Sources of Variation", "df", "Sum of Squares (SS)",
-                "Mean Sum of Squares (MS)", "F-ratio", "P-Value")
-      rows <- list(
-        c("Regression (Model)", "\\( k \\)", "\\( SSR \\)",
-          "\\( MSR = \\dfrac{SSR}{k} \\)", "\\( F_{obs} = \\dfrac{MSR}{MSE} \\)",
-          "\\( P(F > F_{obs}) \\)"),
-        c("Error (Residual)", "\\( n - k - 1 \\)", "\\( SSE \\)",
-          "\\( MSE = \\dfrac{SSE}{n - k - 1} \\)", "", ""),
-        c("Total", "\\( n - 1 \\)", "\\( SST \\)", "", "", "")
-      )
-
-      withMathJax(
-        div(
-          style = "overflow-x: auto;",
-          tags$table(
-            style = "border-collapse: collapse; width: 100%;",
-            tags$thead(tags$tr(lapply(hdrs, tags$th, style = hdr_style))),
-            tags$tbody(
-              lapply(seq_along(rows), function(i) {
-                r <- rows[[i]]
-                bg <- if (i %% 2 == 1) "background-color: rgba(0, 0, 0, 0.03);" else ""
-                tags$tr(
-                  tags$td(r[1], style = paste(src_style, bg)),
-                  lapply(r[-1], tags$td, style = paste(cell_style, bg))
-                )
-              })
-            )
-          )
-        ),
-        p(
-          style = "margin-top: 8px;",
-          "where \\( n \\) is the sample size and \\( k \\) is the number of explanatory variables."
-        )
-      )
-    })
-
-    output$anovaTable <- renderDT({
-      req(mlrCanFit())
->>>>>>> kais_branch
 
       withMathJax(
         p(strong("Analysis of Variance (ANOVA)")),
@@ -1372,9 +1292,6 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
           title = "ANOVA",
           br(),
           fluidRow(uiOutput(ns("anovaHypotheses"))),
-          br(),
-          p(strong("ANOVA Table Formulas:")),
-          fluidRow(uiOutput(ns("anovaTemplateTable"))),
           br(),
           p(strong("ANOVA Table:")),
           fluidRow(DTOutput(ns("anovaTable"))),
