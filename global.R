@@ -11,6 +11,8 @@
 ## Packages the app calls as pkg::fun() (DescTools, GGally, ggpubr, haven, olsrr
 ## and others) are loaded on first use; they stay installed by the Dockerfile.
 library(bslib)
+library(DescTools) # Added Oct 15, 2026
+library(sur) # Added Oct 15, 2026
 library(dplyr)
 library(DT)
 library(generics)
