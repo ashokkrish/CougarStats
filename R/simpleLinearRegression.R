@@ -214,6 +214,9 @@ SLRMainPanelUI <- function(id) {
                   br(),
                   uiOutput(ns("anovaHypotheses")),
                   br(),
+                  p(strong("ANOVA Table Formulas:")),
+                  uiOutput(ns("anovaTemplateTable")),
+                  br(),
                   p(strong("ANOVA Table:")),
                   div(DTOutput(ns("anovaTable")), width = "100 px;"),
                   br(),
@@ -2485,7 +2488,49 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NUL
             p(sprintf("\\( n = %d \\)", n))
           )
         })
-        
+
+        # Template ANOVA table showing how each entry is calculated
+        output$anovaTemplateTable <- renderUI({
+          cell_style <- "border: 1px solid rgba(0, 0, 0, 0.15); padding: 6px 12px; text-align: center;"
+          hdr_style  <- paste(cell_style, "font-weight: bold; border-bottom: 1px solid rgba(0, 0, 0, 0.3);")
+          src_style  <- paste(cell_style, "font-weight: bold;")
+
+          hdrs <- c("Sources of Variation", "df", "Sum of Squares (SS)",
+                    "Mean Sum of Squares (MS)", "F-ratio", "P-Value")
+          rows <- list(
+            c("Regression (Model)", "\\( p \\)", "\\( SSR \\)",
+              "\\( MSR = \\dfrac{SSR}{p} \\)", "\\( F_{obs} = \\dfrac{MSR}{MSE} \\)",
+              "\\( P(F > F_{obs}) \\)"),
+            c("Error (Residual)", "\\( n - p - 1 \\)", "\\( SSE \\)",
+              "\\( MSE = \\dfrac{SSE}{n - p - 1} \\)", "", ""),
+            c("Total", "\\( n - 1 \\)", "\\( SST \\)", "", "", "")
+          )
+
+          withMathJax(
+            div(
+              style = "overflow-x: auto;",
+              tags$table(
+                style = "border-collapse: collapse; width: 100%;",
+                tags$thead(tags$tr(lapply(hdrs, tags$th, style = hdr_style))),
+                tags$tbody(
+                  lapply(seq_along(rows), function(i) {
+                    r <- rows[[i]]
+                    bg <- if (i %% 2 == 1) "background-color: rgba(0, 0, 0, 0.03);" else ""
+                    tags$tr(
+                      tags$td(r[1], style = paste(src_style, bg)),
+                      lapply(r[-1], tags$td, style = paste(cell_style, bg))
+                    )
+                  })
+                )
+              )
+            ),
+            p(
+              style = "margin-top: 8px;",
+              "where \\( n \\) is the sample size and \\( p \\) is the number of explanatory variables."
+            )
+          )
+        })
+
         output$anovaTable <- renderDT({
           anova_results <- anova(model)
 
