@@ -148,7 +148,7 @@ PCAMainPanelUI <- function(id) {
 # ============== SERVER ==============
 
 
-PCAServer <- function(id, data, shared_explanatory, shared_response) {
+PCAServer <- function(id, data, shared_explanatory, shared_response, clear_trigger = NULL) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
@@ -227,7 +227,7 @@ PCAServer <- function(id, data, shared_explanatory, shared_response) {
     output$uploadedDataContainer <- renderUI({
       if (is.null(data())) {
         tagList(
-          helpText("No data yet. Upload a dataset in the Data Import tab to view it here.")
+          helpText("No data yet. Upload a dataset or load the example dataset in the sidebar to view it here.")
         )
       } else {
         DT::DTOutput(ns("pcaUploadTable"))
@@ -763,7 +763,39 @@ PCAServer <- function(id, data, shared_explanatory, shared_response) {
 
       updateNavbarPage(session, "mainPanel", selected = "uploaded_data_tab")
     })
-    
+
+    # Clear Data (parent sidebar): the dataset is gone, so drop results, errors
+    # and the variable choices, and put this method's settings back to their
+    # defaults (as Clear Data does for Simple Linear and Polynomial Regression).
+    if (!is.null(clear_trigger)) {
+      observeEvent(clear_trigger(), {
+        hideTab(inputId = "mainPanel", target = "pca_results_tab")
+        hideTab(inputId = "mainPanel", target = "transformations_tab")
+        hideTab(inputId = "mainPanel", target = "plots_tab")
+        shinyjs::hide("numFactorsContainer")
+        shinyjs::hide("pcXContainer")
+        shinyjs::hide("pcYContainer")
+
+        pca_results(NULL)
+        analysis_data(NULL)
+        original_data(NULL)
+        grouping_var(NULL)
+        noFileCalculate(FALSE)
+        predictorsError(FALSE)
+        pca_message(NULL)
+        shinyjs::removeClass(id = "predictorsWrapper", class = "has-error")
+
+        updatePickerInput(session, "predictors", choices = character(0), selected = character(0))
+        updatePickerInput(session, "response",   choices = character(0), selected = character(0))
+        updateSelectInput(session, "pcX", choices = character(0))
+        updateSelectInput(session, "pcY", choices = character(0))
+        updateRadioButtons(session, "transformation", selected = "Original scale")
+        updateNumericInput(session, "numFactors", value = 2)
+
+        updateNavbarPage(session, "mainPanel", selected = "uploaded_data_tab")
+      }, ignoreInit = TRUE)
+    }
+
     observe({
       outputOptions(output, "biplot", suspendWhenHidden = TRUE)
       outputOptions(output, "scorePlot", suspendWhenHidden = TRUE)

@@ -159,14 +159,14 @@ KNNMainPanelUI <- function(id) {
   )
 }
 
-KNNServer <- function(id, data, shared_explanatory, shared_response) {
+KNNServer <- function(id, data, shared_explanatory, shared_response, clear_trigger = NULL) {
   moduleServer(id, function(input, output, session) {
 
     # ---- Uploaded Data container (message until dataset exists) ----
     output$uploadedDataContainer <- renderUI({
       if (is.null(data())) {
         tagList(
-          helpText("No data yet. Upload a dataset in the Data Import tab to view it here.")
+          helpText("No data yet. Upload a dataset or load the example dataset in the sidebar to view it here.")
         )
       } else {
         DT::DTOutput(session$ns("knnUploadTable"))
@@ -534,8 +534,7 @@ KNNServer <- function(id, data, shared_explanatory, shared_response) {
       
       hideTab(inputId = "knnMainPanel", target = "results_tab")
       hideTab(inputId = "knnMainPanel", target = "plots_tab")
-      hideTab(inputId = "knnMainPanel", target = "uploaded_data_tab")
-      
+
       results_ready(FALSE)
       plots_ready(FALSE)
       
@@ -558,6 +557,41 @@ KNNServer <- function(id, data, shared_explanatory, shared_response) {
       updatePickerInput(session, "predictors", selected = character(0))
       updateNavbarPage(session, "knnMainPanel", selected = "uploaded_data_tab")
     })
+
+    # Clear Data (parent sidebar): the dataset is gone, so drop results, errors
+    # and the variable choices, and put this method's settings back to their
+    # defaults (as Clear Data does for Simple Linear and Polynomial Regression).
+    if (!is.null(clear_trigger)) {
+      observeEvent(clear_trigger(), {
+        hideTab(inputId = "knnMainPanel", target = "results_tab")
+        hideTab(inputId = "knnMainPanel", target = "plots_tab")
+
+        results_ready(FALSE)
+        plots_ready(FALSE)
+        results_ever_calculated(FALSE)
+        plots_ever_calculated(FALSE)
+
+        calc_settings(NULL)
+        plot_settings(NULL)
+
+        responseError(FALSE)
+        predictorsError(FALSE)
+        responseContinuous(FALSE)
+        fileImportError(FALSE)
+        knn_message(NULL)
+
+        shinyjs::removeClass(id = "responseWrapper", class = "has-error")
+        shinyjs::removeClass(id = "predictorsWrapper", class = "has-error")
+
+        updatePickerInput(session, "response",   choices = character(0), selected = character(0))
+        updatePickerInput(session, "predictors", choices = character(0), selected = character(0))
+        updateSliderInput(session,   "split",        value = 80)
+        updateNumericInput(session,  "k",            value = 10)
+        updateCheckboxInput(session, "standardize",  value = TRUE)
+        updateCheckboxInput(session, "showBoundary", value = FALSE)
+        updateNavbarPage(session, "knnMainPanel", selected = "uploaded_data_tab")
+      }, ignoreInit = TRUE)
+    }
 
 
     observeEvent(input$calculate, {
