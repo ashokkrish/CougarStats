@@ -148,7 +148,7 @@ XGBMainPanelUI <- function(id) {
 
 # ============== SERVER ==============
 
-XGBServer <- function(id, data, shared_explanatory, shared_response) {
+XGBServer <- function(id, data, shared_explanatory, shared_response, clear_trigger = NULL) {
   moduleServer(id, function(input, output, session) {
 
     # ---- Reactive state ----
@@ -213,7 +213,7 @@ XGBServer <- function(id, data, shared_explanatory, shared_response) {
     # ---- Uploaded Data tab ----
     output$uploadedDataContainer <- renderUI({
       if (is.null(data())) {
-        tagList(helpText("No data yet. Upload a dataset in the Data Import tab to view it here."))
+        tagList(helpText("No data yet. Upload a dataset or load the example dataset in the sidebar to view it here."))
       } else {
         DT::DTOutput(session$ns("xgbUploadTable"))
       }
@@ -1035,6 +1035,39 @@ XGBServer <- function(id, data, shared_explanatory, shared_response) {
 
       updateNavbarPage(session, "xgbMainPanel", selected = "uploaded_data_tab")
     })
+
+    # Clear Data (parent sidebar): the dataset is gone, so drop results, errors
+    # and the variable choices, and put this method's settings back to their
+    # defaults (as Clear Data does for Simple Linear and Polynomial Regression).
+    if (!is.null(clear_trigger)) {
+      observeEvent(clear_trigger(), {
+        hideTab(inputId = "xgbMainPanel", target = "model_summary_tab")
+        hideTab(inputId = "xgbMainPanel", target = "plots_tab")
+
+        summary_ready(FALSE)
+        summary_ever_calculated(FALSE)
+        noFileCalculate(FALSE)
+        responseError(FALSE)
+        predictorsError(FALSE)
+        responseContinuous(FALSE)
+        xgb_message(NULL)
+        calc_results(NULL)
+
+        shinyjs::removeClass(id = "responseWrapper",   class = "has-error")
+        shinyjs::removeClass(id = "predictorsWrapper", class = "has-error")
+
+        updatePickerInput(session,  "response",   choices = character(0), selected = character(0))
+        updatePickerInput(session,  "predictors", choices = character(0), selected = character(0))
+        updateNumericInput(session, "nrounds",          value = 100)
+        updateNumericInput(session, "max_depth",        value = 6)
+        updateNumericInput(session, "eta",              value = 0.3)
+        updateNumericInput(session, "subsample",        value = 1)
+        updateNumericInput(session, "colsample_bytree", value = 1)
+        updateSliderInput(session,  "split",            value = 80)
+
+        updateNavbarPage(session, "xgbMainPanel", selected = "uploaded_data_tab")
+      }, ignoreInit = TRUE)
+    }
 
   })
 }

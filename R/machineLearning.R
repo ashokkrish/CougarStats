@@ -25,14 +25,24 @@ machineLearningUI <- function(id) {
       shinyjs::useShinyjs(),
       HTML(uploadDataDisclaimer),
       fileInput(ns("mlDataFile"),
-                tags$b("Upload Data (.csv, .xls, .xlsx, or .txt)"),
-                accept = c("text/csv", "text/comma-separated-values", "text/plain",
-                           ".csv", ".tsv", ".txt", ".xls", ".xlsx")),
+                tags$b("Upload Data (.csv, .xls, .xlsx, .txt, .sas7bdat, .sav, .dta, .rds, .mtp, .mwx, .mpx)"),
+                accept = c("text/csv", "text/comma-separated-values",
+                           "text/tab-separated-values", "text/plain",
+                           ".csv", ".tsv", ".txt", ".xls", ".xlsx",
+                           ".sas7bdat", ".sav", ".dta", ".rds",
+                           ".mtp", ".mwx", ".mpx")),
       actionButton(
         ns("loadIris"),
         label = tagList(icon("seedling"), "Load Example Dataset (iris)"),
         class = "btn btn-outline-secondary btn-sm w-100",
         style = "margin-top: -8px; margin-bottom: 6px; border: 2px solid #aaa; border-radius: 4px;"
+      ),
+      actionButton(
+        ns("mlClearData"),
+        label = "Clear Data",
+        icon  = icon("trash"),
+        class = "btn-danger btn-sm",
+        style = "margin-top: 4px; margin-bottom: 8px;"
       ),
       uiOutput(ns("mlDataStatus")),
       radioButtons(ns("method"),
@@ -87,6 +97,10 @@ machineLearningServer <- function(id) {
     shared_explanatory <- reactiveVal(NULL)
     shared_response    <- reactiveVal(NULL)
     data_source        <- reactiveVal(NULL)   # tracks what is currently loaded
+    # Bumped by Clear Data. Each method module watches it, drops its results,
+    # errors and variable choices and resets its settings (data() going NULL alone doesn't
+    # reach them: their observeEvent(data(), ...) handlers ignore NULL).
+    clear_trigger      <- reactiveVal(0)
 
     # ---- File upload ----
     observeEvent(input$mlDataFile, {
@@ -101,7 +115,7 @@ machineLearningServer <- function(id) {
       # as the notification.
       readProblem <- NULL
       df <- tryCatch({
-        if (ext %in% c("csv", "tsv", "txt", "xls", "xlsx")) {
+        if (ext %in% c("tsv", UPLOAD_ACCEPTED_EXTENSIONS)) {
           readUploadedDataFile(if (ext == "tsv") "txt" else ext, input$mlDataFile$datapath)
         } else {
           NULL  # unrecognized extension
@@ -116,7 +130,8 @@ machineLearningServer <- function(id) {
       if (is.null(df)) {
         if (is.null(readProblem)) {
           readProblem <- paste0("Could not read \"", input$mlDataFile$name, "\". Please upload ",
-                                "a valid .csv, .tsv, .txt, .xls, or .xlsx file.")
+                                "a valid .csv, .xls, .xlsx, .txt, .sas7bdat, .sav, ",
+                                ".dta, .rds, .mtp, .mwx, or .mpx file.")
         }
         showNotification(readProblem, type = "error", duration = 8)
         return(invisible(NULL))
@@ -155,6 +170,19 @@ machineLearningServer <- function(id) {
         rows = 150L,
         cols = 5L
       ))
+    })
+
+    # ---- Clear Data ----
+    # Removes the loaded dataset (uploaded file or iris). Each method module
+    # then clears its results and variable choices and resets its settings
+    # (see their clear_trigger handlers); the selected methodology is kept.
+    observeEvent(input$mlClearData, {
+      shinyjs::reset("mlDataFile")      # clear the filename from the widget
+      shared_explanatory(NULL)
+      shared_response(NULL)
+      ml_data(NULL)
+      data_source(NULL)
+      clear_trigger(clear_trigger() + 1)
     })
 
     # ---- Data source status label ----
@@ -203,12 +231,12 @@ machineLearningServer <- function(id) {
     # unmodified, with no reset-on-switch mechanism needed: results/plots
     # simply persist if the user switches away and back, instead of clearing.
     ml_servers <- list(
-      PCA  = function(explanatory, response) PCAServer("ml_pca",   ml_data, explanatory, response),
-      KNN  = function(explanatory, response) KNNServer("ml_knn",   ml_data, explanatory, response),
-      LDA  = function(explanatory, response) LDAServer("ml_lda",   ml_data, explanatory, response),
-      CART = function(explanatory, response) CARTServer("ml_cart", ml_data, explanatory, response),
-      RF   = function(explanatory, response) RFServer("ml_rf",     ml_data, explanatory, response),
-      XGB  = function(explanatory, response) XGBServer("ml_xgb",   ml_data, explanatory, response)
+      PCA  = function(explanatory, response) PCAServer("ml_pca",   ml_data, explanatory, response, clear_trigger),
+      KNN  = function(explanatory, response) KNNServer("ml_knn",   ml_data, explanatory, response, clear_trigger),
+      LDA  = function(explanatory, response) LDAServer("ml_lda",   ml_data, explanatory, response, clear_trigger),
+      CART = function(explanatory, response) CARTServer("ml_cart", ml_data, explanatory, response, clear_trigger),
+      RF   = function(explanatory, response) RFServer("ml_rf",     ml_data, explanatory, response, clear_trigger),
+      XGB  = function(explanatory, response) XGBServer("ml_xgb",   ml_data, explanatory, response, clear_trigger)
     )
 
     # Shared selections as they stood when the current dataset was loaded.

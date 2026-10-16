@@ -90,7 +90,7 @@ LDAMainPanelUI <- function(id) {
   )
 }
 
-LDAServer <- function(id, data, shared_explanatory, shared_response) {
+LDAServer <- function(id, data, shared_explanatory, shared_response, clear_trigger = NULL) {
   moduleServer(id, function(input, output, session) {
 
     prepare_lda_response <- function(x) {
@@ -169,7 +169,7 @@ LDAServer <- function(id, data, shared_explanatory, shared_response) {
     output$uploadedDataContainer <- renderUI({
       if (is.null(data())) {
         tagList(
-          helpText("No data yet. Upload a dataset in the Data Import tab to view it here.")
+          helpText("No data yet. Upload a dataset or load the example dataset in the sidebar to view it here.")
         )
       } else if (ncol(data()) == 0) {
         tagList(
@@ -863,5 +863,36 @@ LDAServer <- function(id, data, shared_explanatory, shared_response) {
       updatePickerInput(session, "predictors", selected = character(0))
       updateNavbarPage(session, "ldaMainPanel", selected = "uploaded_data_tab")
     })
+
+    # Clear Data (parent sidebar): the dataset is gone, so drop results, errors
+    # and the variable choices, and put this method's settings back to their
+    # defaults (as Clear Data does for Simple Linear and Polynomial Regression).
+    if (!is.null(clear_trigger)) {
+      observeEvent(clear_trigger(), {
+        hideTab(inputId = "ldaMainPanel", target = "results_tab")
+        hideTab(inputId = "ldaMainPanel", target = "plots_tab")
+
+        results_ready(FALSE)
+        plots_ready(FALSE)
+        results_ever_calculated(FALSE)
+        plots_ever_calculated(FALSE)
+
+        noFileCalculate(FALSE)
+        responseError(FALSE)
+        predictorsError(FALSE)
+        responseContinuous(FALSE)
+        lda_message(NULL)
+        calc_results(NULL)
+        plot_results(NULL)
+
+        shinyjs::removeClass(id = "responseWrapper", class = "has-error")
+        shinyjs::removeClass(id = "predictorsWrapper", class = "has-error")
+
+        updatePickerInput(session, "response",   choices = character(0), selected = character(0))
+        updatePickerInput(session, "predictors", choices = character(0), selected = character(0))
+        updateCheckboxInput(session, "useCV", value = FALSE)
+        updateNavbarPage(session, "ldaMainPanel", selected = "uploaded_data_tab")
+      }, ignoreInit = TRUE)
+    }
   })
 }
