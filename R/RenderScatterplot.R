@@ -25,6 +25,18 @@ RenderScatterplot <- function(
     sprintf("rgba(%d,%d,%d,%.2f)", rgb[1], rgb[2], rgb[3], pct / 100)
   }
   
+  # The option inputs are NULL until the plot options menu has reached the server
+  # (and can be NULL on the first run), so treat a missing flag as "off".
+  showRegressionLine     <- isTRUE(showRegressionLine)
+  showConfidenceInterval <- isTRUE(showConfidenceInterval)
+  showPredictionInterval <- isTRUE(showPredictionInterval)
+  
+  # Grid of x values shared by the regression line and both bands
+  if(showRegressionLine || showConfidenceInterval || showPredictionInterval) {
+    x_seq    <- seq(min(df$x), max(df$x), length.out = 200)
+    new_data <- data.frame(datx = x_seq)
+  }
+  
   # -------------------------------------------------------------------------
   # Base scatter plot
   # -------------------------------------------------------------------------
@@ -75,8 +87,6 @@ RenderScatterplot <- function(
   
   if(showRegressionLine) {
     
-    x_seq    <- seq(min(df$x), max(df$x), length.out = 200)
-    new_data <- data.frame(datx = x_seq)
     y_pred   <- predict(model, newdata = new_data)
     
     p <- p %>%
@@ -103,12 +113,11 @@ RenderScatterplot <- function(
   
   if(showConfidenceInterval) {
 
-    x_seq_ci <- seq(min(df$x), max(df$x), length.out = 200)
     conf_int <- suppressWarnings(
-      predict(model, newdata = data.frame(datx = x_seq_ci), interval = "confidence")
+      predict(model, newdata = new_data, interval = "confidence")
     )
 
-    df_conf <- data.frame(x = x_seq_ci, conf_int)
+    df_conf <- data.frame(x = x_seq, conf_int)
     
     # Upper bound
     p <- p %>%
@@ -158,12 +167,11 @@ RenderScatterplot <- function(
   
   if(showPredictionInterval) {
 
-    x_seq_pi <- seq(min(df$x), max(df$x), length.out = 200)
     pred_int <- suppressWarnings(
-      predict(model, newdata = data.frame(datx = x_seq_pi), interval = "prediction")
+      predict(model, newdata = new_data, interval = "prediction")
     )
 
-    df_pred <- data.frame(x = x_seq_pi, pred_int)
+    df_pred <- data.frame(x = x_seq, pred_int)
     
     # Upper bound
     p <- p %>%

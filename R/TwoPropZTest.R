@@ -35,8 +35,13 @@ TwoPropZTest <- function(X1, n1, X2, n2, hyp_diff = 0, alternative = c("two.side
     z.crit <- qnorm(1 - s_level)
   }
 
+  # a pooled proportion of 0 or 1 gives a standard error of 0 (0/0), so the test statistic does not exist
+  validate(
+    need(!anyNA(c(z.crit, zstat, p_value)), "Unable to calculate the test statistic. The standard error is zero (the pooled proportion is 0 or 1) or a sample size is zero."),
+    errorClass = "myClass")
+
   dat <- sapply(c(phat1, phat2, pooled_p, z.crit, se, zstat, p_value), function(x) {
-    if (x < 0.0001 && x > 0) {
+    if (!is.na(x) && x < 0.0001 && x > 0) {
       signif(x,1)
     } else {
       round(x, 4)

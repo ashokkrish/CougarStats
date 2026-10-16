@@ -4,156 +4,153 @@
 
 confidCoefSidebarUI <- function(id){
   ns <- NS(id)
-  
+
   tagList(
-    
+
     withMathJax(),
-    shinyjs::useShinyjs(), 
-    
-    radioButtons(
-      inputId      = ns("confCoeEstParameter"),
-      label        = strong("Parameter of Interest"),
-      choiceValues = list("Population Mean",
-                          "Population Proportion"),
-      choiceNames  = list("Population Mean (\\( \\mu \\)) ",
-                          "Population Proportion (\\( p\\))"),
-      selected     = "Population Mean",
-      inline       = TRUE),
-    
-    conditionalPanel(
-      ns = ns,
-      condition = "input.confCoeEstParameter == 'Population Mean'",
-      
-      numericInput(
-        inputId = ns("confSampSize"),
-        label = strong("Sample Size (\\(n\\))"),
-        value = "18",
-        min = 1, 
-        step = 1
-      ),
-      
-      numericInput(
-        inputId = ns("confPopSD"),
-        label = strong("Population Standard Deviation (\\( \\sigma\\))"),
-        value = "12",
-        min     = 0.00001, 
-        step    = 0.00001
-      ),
-      
+    shinyjs::useShinyjs(),
+
+    # Every sidebar input sits inside this div so that "Reset Values" can
+    # restore all of them with shinyjs::reset("sidebarWrap").
+    div(
+      id = ns("sidebarWrap"),
+
       radioButtons(
-        inputId      = ns("ccEstimationType"),
-        label        = strong("Estimation Type"),
-        choiceValues = list("Margin of Error",
-                            "Width of Interval"),
-        choiceNames  = list("Margin of Error (\\( E\\)) ",
-                            "Width of Interval (\\( W\\))"),
-        selected     = "Margin of Error",
+        inputId      = ns("confCoeEstParameter"),
+        label        = strong("Parameter of Interest"),
+        choiceValues = list("Population Mean",
+                            "Population Proportion"),
+        choiceNames  = list("Population Mean (\\( \\mu \\)) ",
+                            "Population Proportion (\\( p\\))"),
+        selected     = "Population Mean",
         inline       = TRUE),
-      
+
       conditionalPanel(
         ns = ns,
-        condition = "input.ccEstimationType == 'Margin of Error'",
-        
+        condition = "input.confCoeEstParameter == 'Population Mean'",
+
         numericInput(
-          inputId = ns("ccMargErr"),
-          label   = strong("Margin of Error (\\( E\\))"),
-          value   = "8", 
-          min     = 0.00001, 
-          step    = 0.01)
-      ), #ccEstimationType == 'Margin of Error'
-      
+          inputId = ns("confSampSize"),
+          label = strong("Sample Size (\\(n\\))"),
+          value = "18",
+          min = 1,
+          step = 1
+        ),
+
+        numericInput(
+          inputId = ns("confPopSD"),
+          label = strong("Population Standard Deviation (\\( \\sigma\\))"),
+          value = "12",
+          min     = 0.00001,
+          step    = 0.00001
+        ),
+
+        radioButtons(
+          inputId      = ns("ccEstimationType"),
+          label        = strong("Estimation Type"),
+          choiceValues = list("Margin of Error",
+                              "Width of Interval"),
+          choiceNames  = list("Margin of Error (\\( E\\)) ",
+                              "Width of Interval (\\( W\\))"),
+          selected     = "Margin of Error",
+          inline       = TRUE),
+
+        conditionalPanel(
+          ns = ns,
+          condition = "input.ccEstimationType == 'Margin of Error'",
+
+          numericInput(
+            inputId = ns("ccMargErr"),
+            label   = strong("Margin of Error (\\( E\\))"),
+            value   = "8",
+            min     = 0.00001,
+            step    = 0.01)
+        ), #ccEstimationType == 'Margin of Error'
+
+        conditionalPanel(
+          ns = ns,
+          condition = "input.ccEstimationType == 'Width of Interval'",
+
+          numericInput(
+            inputId = ns("ccMeanWoI"),
+            label   = strong("Width of Interval (\\( W\\))"),
+            value   = "16",
+            min     = 0.00001,
+            step    = 0.01)
+        ) #ccEstimationType == 'Width of Interval'
+      ), #confCoeEstParameter == 'Population Mean'
+
+      # Population Proportion
       conditionalPanel(
         ns = ns,
-        condition = "input.ccEstimationType == 'Width of Interval'",
-        
+        condition = "input.confCoeEstParameter == 'Population Proportion'",
+
         numericInput(
-          inputId = ns("ccMeanWoI"),
-          label   = strong("Width of Interval (\\( W\\))"),
-          value   = "16", 
-          min     = 0.00001, 
-          step    = 0.01)
-      ), #ccEstimationType == 'Width of Interval'
-      
+          inputId = ns("ccPropSampSize"),
+          label = strong("Sample Size \\(n\\)"),
+          value = "18",
+          min = 1,
+          step = 1),
+
+        numericInput(
+          inputId = ns("ccTargetProp"),
+          label   = strong("Planning value for the Population Proportion (\\( p\\))"),
+          value   = "0.5",
+          min     = 0.00001,
+          step    = 0.01),
+
+        checkboxInput(
+          inputId = ns("propNormalDistribution"),
+          label   = "Assume data follows a normal distribution",
+          value   = TRUE),
+
+        radioButtons(
+          inputId = ns("ccPropEstimationType"),
+          label = strong("Estimation Type"),
+          choiceValues = list("Margin of Error",
+                              "Width of Interval"),
+          choiceNames  = list("Margin of Error (\\( E\\)) ",
+                              "Width of Interval (\\( W\\))"),
+          selected = "Margin of Error",
+          inline = TRUE
+        ),
+
+        conditionalPanel(
+          ns = ns,
+          condition = "input.ccPropEstimationType == 'Margin of Error'",
+
+          numericInput(
+            inputId = ns("ccPropMargErr"),
+            label   = strong("Margin of Error (\\( E\\))"),
+            value   = "0.01",
+            min     = 0.00001,
+            step    = 0.01)
+        ), #ccPropEstimationType == 'Margin of Error'
+
+        conditionalPanel(
+          ns = ns,
+          condition = "input.ccPropEstimationType == 'Width of Interval'",
+
+          numericInput(
+            inputId = ns("ccPropWoI"),
+            label   = strong("Width of Interval (\\( W\\))"),
+            value   = "0.02",
+            min     = 0.00001,
+            step    = 0.01)
+        ) #ccPropEstimationType == 'Width of Interval'
+      ), #confCoeEstParameter == 'Population Proportion'
+
+      # Shared by both parameters, so each id appears exactly once in the page
       actionButton(
         inputId = ns("goConfidCoeEst"),
         label   = "Calculate",
-        class   = "act-btn"), 
-      
+        class   = "act-btn"),
+
       actionButton(
         inputId = ns("resetConfidCoeEst"),
         label   = "Reset Values",
         class   = "act-btn")
-    ), #confCoeEstParameter == 'Population Mean'
-    
-    # Population Proportion 
-    conditionalPanel(
-      ns = ns,
-      condition = "input.confCoeEstParameter == 'Population Proportion'",
-      
-      numericInput(
-        inputId = ns("ccPropSampSize"),
-        label = strong("Sample Size \\(n\\)"),
-        value = "18",
-        min = 1, 
-        step = 1),
-      
-      numericInput(
-        inputId = ns("ccTargetProp"),
-        label   = strong("Planning value for the Population Proportion (\\( p\\))"),
-        value   = "0.5", 
-        min     = 0.00001, 
-        step    = 0.01),
-      
-      checkboxInput(
-        inputId = ns("propNormalDistribution"),
-        label   = "Assume data follows a normal distribution",
-        value   = TRUE),
-      
-      radioButtons(
-        inputId = ns("ccPropEstimationType"),
-        label = strong("Estimation Type"),
-        choiceValues = list("Margin of Error",
-                            "Width of Interval"),
-        choiceNames  = list("Margin of Error (\\( E\\)) ",
-                            "Width of Interval (\\( W\\))"),
-        selected = "Margin of Error",
-        inline = TRUE
-      ),
-      
-      conditionalPanel(
-        ns = ns,
-        condition = "input.ccPropEstimationType == 'Margin of Error'",
-        
-        numericInput(
-          inputId = ns("ccPropMargErr"),
-          label   = strong("Margin of Error (\\( E\\))"),
-          value   = "0.01", 
-          min     = 0.00001, 
-          step    = 0.01)
-      ), #ccPropEstimationType == 'Margin of Error'
-      
-      conditionalPanel(
-        ns = ns,
-        condition = "input.ccPropEstimationType == 'Width of Interval'",
-        
-        numericInput(
-          inputId = ns("ccPropWoI"),
-          label   = strong("Width of Interval (\\( W\\))"),
-          value   = "0.02", 
-          min     = 0.00001, 
-          step    = 0.01)
-      ), #ccPropEstimationType == 'Width of Interval'
-      
-      actionButton(
-        inputId = ns("goConfidCoeEst"),
-        label = "Calculate",
-        class = "act-btn"), 
-      
-      actionButton(
-        inputId = ns("resetConfidCoeEst"),
-        label = "Reset Values",
-        class = "act-btn")
-    )
+    ) #sidebarWrap
   ) #tagList
 }
 
@@ -219,6 +216,7 @@ confidenceCoefficientServer <- function(id) {
     #### ------- confidence coefficient popMean 
     cceSampSize_iv$add_rule("confSampSize", sv_required())
     cceSampSize_iv$add_rule("confSampSize", sv_gt(1))
+    cceSampSize_iv$add_rule("confSampSize", sv_integer())
     ccePopSD_iv$add_rule("confPopSD", sv_required())
     ccePopSD_iv$add_rule("confPopSD",sv_gt(0))
     cceMeanMargin_iv$add_rule("ccMargErr", sv_required())
@@ -229,6 +227,7 @@ confidenceCoefficientServer <- function(id) {
     #### ------ confidence coefficient popProp 
     ccePropSampSize_iv$add_rule("ccPropSampSize", sv_required())
     ccePropSampSize_iv$add_rule("ccPropSampSize", sv_gt(1))
+    ccePropSampSize_iv$add_rule("ccPropSampSize", sv_integer())
     cceProp_iv$add_rule("ccTargetProp", sv_required())
     cceProp_iv$add_rule("ccTargetProp",sv_gt(0))
     cceProp_iv$add_rule("ccTargetProp",sv_lte(1))
@@ -355,7 +354,7 @@ confidenceCoefficientServer <- function(id) {
             sprintf("\\(\\text{Confidence Coefficient } (1 - \\alpha) = 2 \\cdot \\Phi\\left( \\frac{E \\cdot \\sqrt{n}}{\\sigma}\\right) - 1\\)"),
             br(),
             br(),
-            sprintf("\\(\\text{Confidence Coefficient } (1 - \\alpha) = 2 \\cdot \\Phi\\left( \\frac{\\left(\\frac{%s}{2}\\right) \\cdot \\sqrt{%s}}{%s} \\right) - 1\\)",
+            sprintf("\\(\\text{Confidence Coefficient } (1 - \\alpha) = 2 \\cdot \\Phi\\left( \\frac{%s \\cdot \\sqrt{%s}}{%s} \\right) - 1\\)",
                     input$ccMargErr,
                     input$confSampSize,
                     input$confPopSD),
@@ -386,7 +385,7 @@ confidenceCoefficientServer <- function(id) {
           )
           
           list(
-            sprintf("\\(\\text{Confidence Coefficient } (1 - \\alpha) = 2 \\cdot \\Phi\\left( \\frac{W \\cdot \\sqrt{n}}{\\sigma}\\right) - 1\\)"),
+            sprintf("\\(\\text{Confidence Coefficient } (1 - \\alpha) = 2 \\cdot \\Phi\\left( \\frac{\\left(\\frac{W}{2}\\right) \\cdot \\sqrt{n}}{\\sigma}\\right) - 1\\)"),
             br(),
             br(),
             sprintf("\\(\\text{Confidence Coefficient } (1 - \\alpha) = 2 \\cdot \\Phi\\left(\\frac{\\left(\\frac{%s}{2}\\right) \\cdot \\sqrt{%s}}{%s}\\right) - 1\\)",
@@ -522,13 +521,15 @@ confidenceCoefficientServer <- function(id) {
         shinyjs::show("ccEstMP")
     })
     
+    # The results panel starts out hidden (see ccEstimationMP), so these only
+    # need to react to changes made after the module has started.
     observeEvent(!cce_iv$is_valid(), {
         shinyjs::hide("ccEstMP")
-    })
+    }, ignoreInit = TRUE)
     
     observeEvent(input$resetConfidCoeEst, {
       shinyjs::hide("ccEstMP")
-      shinyjs::reset("confidCoefSidebarUI")
+      shinyjs::reset("sidebarWrap")
     })
   })
 }

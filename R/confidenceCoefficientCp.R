@@ -14,13 +14,14 @@ confidence_coefficient_cp <- function(n,
   lower_alpha <- 1e-10
   upper_alpha <- 0.4
   
-  f_lower <- f(lower_alpha)
-  f_upper <- f(upper_alpha)
+  f_lower <- suppressWarnings(f(lower_alpha))
+  f_upper <- suppressWarnings(f(upper_alpha))
   
-  # No confidence coefficient can achieve the requested width
-  if (f_lower * f_upper > 0) {
+  # The interval limits could not be computed (e.g. an extremely large n)
+  if (!is.finite(f_lower) || !is.finite(f_upper)) {
     return(NULL)
   }
+  
   # No confidence coefficient can achieve the requested width
   if (f_lower * f_upper > 0) {
     return(NULL)

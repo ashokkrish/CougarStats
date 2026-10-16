@@ -10,6 +10,8 @@ ml_is_continuous_response <- function(x) {
   is.numeric(x) && any(x != floor(x))
 }
 
+# Shown by every classification method (kNN, LDA, CART, Random Forest, XGBoost).
+# The wording is the original app's, kept on purpose.
 ml_continuous_response_message <- paste(
   "Invalid response variable: kNN classification requires the response variable",
   "to be a categorical factor representing class labels. A continuous numeric",
@@ -21,17 +23,6 @@ machineLearningUI <- function(id) {
   sidebarLayout(
     sidebarPanel(
       shinyjs::useShinyjs(),
-      # Signals the server once Shiny has finished binding the (large,
-      # all-six-methods-at-once) static tab markup below. Needed so module
-      # registration below doesn't run before the client has bound this tab's
-      # widgets -- see the note near that registration for the remaining
-      # caveat this does NOT resolve on its own.
-      tags$script(HTML(sprintf(
-        "$(document).on('shiny:sessioninitialized', function(event) {
-           Shiny.setInputValue('%s', true);
-         });",
-        ns("clientReady")
-      ))),
       HTML(uploadDataDisclaimer),
       fileInput(ns("mlDataFile"),
                 tags$b("Upload Data (.csv, .xls, .xlsx, .txt, .sas7bdat, .sav, .dta, .rds, .mtp, .mwx, .mpx)"),
@@ -116,48 +107,47 @@ machineLearningServer <- function(id) {
       req(input$mlDataFile)
       ext <- tolower(tools::file_ext(input$mlDataFile$name))
 
-      # Same reader as Regression and Correlation (R/utilityFunctions.R), so
-      # format support is maintained in one place. .tsv is read like .txt.
-      # Excel files are read from their first sheet. Wrapped in tryCatch so a
-      # malformed file (bad encoding, corrupt workbook, an .rds that isn't a
-      # data frame, etc.) surfaces a message instead of an unhandled error.
-      read_ext <- if (ext == "tsv") "txt" else ext
-      read_err <- NULL
-      df <- if (!(read_ext %in% UPLOAD_ACCEPTED_EXTENSIONS)) NULL else tryCatch(
-        readUploadedDataFile(read_ext, input$mlDataFile$datapath),
-        error = function(e) {
-          read_err <<- conditionMessage(e)
-          NULL
+      # Wrap in tryCatch so a malformed file (bad encoding, corrupt workbook,
+      # etc.) surfaces a message instead of an unhandled read_* error.
+      # The shared reader (utilityFunctions.R) applies the upload size limits
+      # and converts Windows-1252/Latin-1 text to UTF-8; a .tsv file is read
+      # like a tab-delimited .txt file. A size-limit message from it is shown
+      # as the notification.
+      readProblem <- NULL
+      df <- tryCatch({
+        if (ext %in% c("tsv", UPLOAD_ACCEPTED_EXTENSIONS)) {
+          readUploadedDataFile(if (ext == "tsv") "txt" else ext, input$mlDataFile$datapath)
+        } else {
+          NULL  # unrecognized extension
         }
-      )
+      }, error = function(e) {
+        if (inherits(e, "validation") && nzchar(conditionMessage(e))) {
+          readProblem <<- conditionMessage(e)
+        }
+        NULL
+      })
 
-      if (is.null(df) || !is.data.frame(df)) {
+      if (is.null(df)) {
+        if (is.null(readProblem)) {
+          readProblem <- paste0("Could not read \"", input$mlDataFile$name, "\". Please upload ",
+                                "a valid .csv, .xls, .xlsx, .txt, .sas7bdat, .sav, ",
+                                ".dta, .rds, .mtp, .mwx, or .mpx file.")
+        }
+        showNotification(readProblem, type = "error", duration = 8)
+        return(invisible(NULL))
+      }
+
+      # An empty file (0 bytes, blank lines, an empty sheet) parses without
+      # error to a table with no columns or no rows, which the methods cannot
+      # use (with zero columns their data() observers stop with an error).
+      if (ncol(df) == 0 || nrow(df) == 0) {
         showNotification(
-          paste0("Could not read \"", input$mlDataFile$name, "\". ",
-                 if (!is.null(read_err) && nzchar(read_err)) paste0(read_err, " ") else "",
-                 "Please upload a valid .csv, .xls, .xlsx, .txt, .sas7bdat, .sav, ",
-                 ".dta, .rds, .mtp, .mwx, or .mpx file."),
+          paste0("\"", input$mlDataFile$name, "\" contains no data. Please upload ",
+                 "a file with at least one column and one row of data."),
           type = "error", duration = 8
         )
         return(invisible(NULL))
       }
-
-      # SPSS (.sav) and Stata (.dta) value labels arrive as haven_labelled
-      # columns, which the methods' as.factor() / model calls can't handle.
-      # A column whose every value has a label (e.g. 1 = setosa, 2 = versicolor)
-      # is a category, so it becomes a factor of those labels; any other
-      # labelled column keeps its numbers.
-      df[] <- lapply(df, function(x) {
-        if (!inherits(x, "haven_labelled")) return(x)
-        vals <- unique(as.vector(unclass(x)))
-        vals <- vals[!is.na(vals)]
-        labs <- as.vector(attr(x, "labels"))
-        if (length(labs) > 0 && all(vals %in% labs)) {
-          haven::as_factor(x, levels = "labels")
-        } else {
-          haven::zap_labels(x)
-        }
-      })
 
       ml_data(as.data.frame(df))
       data_source(list(
@@ -228,32 +218,59 @@ machineLearningServer <- function(id) {
       req(input$method)
       updateTabsetPanel(session, "sidebarSwitch",    selected = input$method)
       updateTabsetPanel(session, "mainPanelSwitch",  selected = input$method)
+      start_method(input$method)
     })
 
-    # ---- Module servers: registered exactly once each, for the life of the
-    # session. Switching methods no longer creates/destroys module server
+    # ---- Module servers: each registered exactly once, for the life of the
+    # session, the first time its method is selected (PCA, the default, starts
+    # with this tab). Switching methods never creates/destroys module server
     # instances (that was the source of the observer leak and the resulting
     # "no tabsetPanel with id ..." console errors) -- it only swaps which
     # tabsetPanel pane is visible. Because each module's own UI stays mounted
     # in the DOM the whole time, its internal reactiveVals keep working
     # unmodified, with no reset-on-switch mechanism needed: results/plots
     # simply persist if the user switches away and back, instead of clearing.
-    #
-    # Registration waits for input$clientReady (set by the sessioninitialized
-    # script above) rather than running inline at session start, so the six
-    # modules' own tab-hiding runs against a DOM the client has actually
-    # finished binding. NOTE: as tested, this alone is not sufficient -- see
-    # the conversation writeup on each module's session$onFlushed(hideTab...)
-    # pattern needing a matching internal tweak before results tabs will
-    # actually start hidden under this architecture.
-    observeEvent(input$clientReady, {
-      PCAServer("ml_pca",   ml_data, shared_explanatory, shared_response, clear_trigger)
-      KNNServer("ml_knn",   ml_data, shared_explanatory, shared_response, clear_trigger)
-      LDAServer("ml_lda",   ml_data, shared_explanatory, shared_response, clear_trigger)
-      CARTServer("ml_cart", ml_data, shared_explanatory, shared_response, clear_trigger)
-      RFServer("ml_rf",     ml_data, shared_explanatory, shared_response, clear_trigger)
-      XGBServer("ml_xgb",   ml_data, shared_explanatory, shared_response, clear_trigger)
-    }, once = TRUE)
+    ml_servers <- list(
+      PCA  = function(explanatory, response) PCAServer("ml_pca",   ml_data, explanatory, response, clear_trigger),
+      KNN  = function(explanatory, response) KNNServer("ml_knn",   ml_data, explanatory, response, clear_trigger),
+      LDA  = function(explanatory, response) LDAServer("ml_lda",   ml_data, explanatory, response, clear_trigger),
+      CART = function(explanatory, response) CARTServer("ml_cart", ml_data, explanatory, response, clear_trigger),
+      RF   = function(explanatory, response) RFServer("ml_rf",     ml_data, explanatory, response, clear_trigger),
+      XGB  = function(explanatory, response) XGBServer("ml_xgb",   ml_data, explanatory, response, clear_trigger)
+    )
+
+    # Shared selections as they stood when the current dataset was loaded.
+    # Each method's data() observer reads them to preselect its pickers. When
+    # all six methods were registered up front, every one of them ran that
+    # observer at load time; a method opened for the first time later must
+    # therefore start from these same values, not from selections made since
+    # in another method.
+    loaded_with <- list(explanatory = NULL, response = NULL)
+    observeEvent(ml_data(), {
+      loaded_with <<- list(explanatory = shared_explanatory(),
+                           response    = shared_response())
+    }, priority = 100)
+
+    start_method <- function(method) {
+      start <- ml_servers[[method]]
+      if (is.null(start)) return(invisible())
+      ml_servers[[method]] <<- NULL
+
+      # Reads made while the new module runs its first round of observers
+      # return the load-time values; writes always go to the shared state.
+      starting <- TRUE
+      session$onFlushed(function() starting <<- FALSE, once = TRUE)
+      as_loaded <- function(shared, field) {
+        function(value) {
+          if (!missing(value)) return(shared(value))
+          current <- shared()
+          if (starting) loaded_with[[field]] else current
+        }
+      }
+
+      start(as_loaded(shared_explanatory, "explanatory"),
+            as_loaded(shared_response, "response"))
+    }
 
   })
 }

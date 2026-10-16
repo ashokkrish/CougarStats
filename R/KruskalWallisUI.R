@@ -1,10 +1,3 @@
-library(shiny)
-library(readr)
-library(readxl)
-library(dplyr)
-library(DT)
-library(ggplot2)
-
 ### ------------ Kruskal-Wallis Reactives ------------------------------------   
 kwValidateVariance_func <- function(kwData) {
   # Check if all values are identical
@@ -18,8 +11,8 @@ kwValidateVariance_func <- function(kwData) {
   
   # Check if there are at least 2 groups with different values
   group_medians <- kwData %>%
-    group_by(ind) %>%
-    summarise(median_val = median(values, na.rm = TRUE), .groups = 'drop')
+    dplyr::group_by(ind) %>%
+    dplyr::summarise(median_val = median(values, na.rm = TRUE), .groups = 'drop')
   
   if (length(unique(group_medians$median_val)) == 1) {
     return(list(
@@ -36,10 +29,10 @@ kwUploadData_func <- function(kwUserData) {
   ext <- tolower(ext)
   
   switch(ext,
-         csv = read_csv(kwUserData$datapath, show_col_types = FALSE),
-         xls = read_xls(kwUserData$datapath),
-         xlsx = read_xlsx(kwUserData$datapath),
-         txt = read_tsv(kwUserData$datapath, show_col_types = FALSE),
+         csv = readr::read_csv(kwUserData$datapath, show_col_types = FALSE),
+         xls = readxl::read_xls(kwUserData$datapath),
+         xlsx = readxl::read_xlsx(kwUserData$datapath),
+         txt = readr::read_tsv(kwUserData$datapath, show_col_types = FALSE),
          validate("Improper file format.")
          
          
@@ -91,7 +84,9 @@ kwResults_func <- function(kwFormat, kwMultiColumns, kwUploadData_output, kwFact
       return(results)
     }
     
-    kwData <- kwUploadData_output
+    # Only the two selected columns take part in the test, so a missing value in
+    # some other column of the file must not remove the row (na.omit() below).
+    kwData <- kwUploadData_output[, unique(c(kwFactors, kwResponse)), drop = FALSE]
     colnames(kwData)[colnames(kwData) == kwFactors] <- "ind"
     colnames(kwData)[colnames(kwData) == kwResponse] <- "values"
     kwData <- kwData %>% dplyr::mutate(ind = factor(ind)) 
@@ -162,10 +157,6 @@ kruskalWallisHT <- function(kwResults_output, kwSigLvl_input) {
     group_n <- tapply(global_ranks, kwData$ind, length)
     
     # Remove NA values for calculations
-    valid_groups <- !is.na(group_sums) & !is.na(group_n)
-    group_sums_clean <- group_sums[valid_groups]
-    group_n_clean <- group_n[valid_groups]
-    
     valid_groups <- !is.na(group_sums) & !is.na(group_n)
     group_sums_clean <- group_sums[valid_groups]
     group_n_clean <- group_n[valid_groups]
@@ -288,7 +279,8 @@ kwConclusion <- function(kwResults, kwSigLvl_input) {
     
     kw_chi <- round(qchisq(1 - kw_sl, df = kw_df), 4)
     
-    tagList(
+    # withMathJax() typesets only its own output, so this output needs its own.
+    withMathJax(tagList(
       p(tags$b("Conclusion: ")),
       if (kw_chi <= kw_test_rounded_comparison) {
         p(sprintf("At the %1.0f%% significance level, there is sufficient statistical evidence in support of the alternative hypothesis \\( (H_{a})\\)
@@ -297,7 +289,7 @@ that at least one group differs in median from the others.", kw_sl_display))
         p(sprintf("At the %1.0f%% significance level, there is not enough statistical evidence in support of the alternative
                   hypothesis \\( (H_{a}) \\) that at least one group differs in median from the others.", kw_sl_display))
       }
-    )
+    ))
   })
 }
 
@@ -331,11 +323,11 @@ kruskalWallisPlot <- function(kwResults_output, kwSigLvl_input) {
     x_vector <- sort(c(xSeq, rrLabel))
     p_vector <- dchisq(x_vector, df = kw_df)
     
-    kw_dataframe <- distinct(data.frame(x = x_vector, y = p_vector))
-    cv_dataframe <- filter(kw_dataframe, x %in% cv)
-    ts_dataframe <- filter(kw_dataframe, x %in% kwTstat)
-    rrLabelDF <- filter(kw_dataframe, x %in% rrLabel)
-    arLabelDF <- filter(kw_dataframe, y %in% max(p_vector))
+    kw_dataframe <- dplyr::distinct(data.frame(x = x_vector, y = p_vector))
+    cv_dataframe <- dplyr::filter(kw_dataframe, x %in% cv)
+    ts_dataframe <- dplyr::filter(kw_dataframe, x %in% kwTstat)
+    rrLabelDF <- dplyr::filter(kw_dataframe, x %in% rrLabel)
+    arLabelDF <- dplyr::filter(kw_dataframe, y %in% max(p_vector))
     
     ggplot(kw_dataframe,
            aes(x = x, y = y)) +
@@ -344,13 +336,13 @@ kruskalWallisPlot <- function(kwResults_output, kwSigLvl_input) {
                     geom = "Density",
                     fill = NA) +
       shadeHtArea2(kw_dataframe, cv, "greater") +
-      geom_segment(data = filter(kw_dataframe, y %in% max(p_vector)),
+      geom_segment(data = dplyr::filter(kw_dataframe, y %in% max(p_vector)),
                    aes(x = 0, xend = 0, y = 0, yend = y, alpha = 0.5),
                    linetype = "solid",
                    linewidth = 0.75,
                    color='black',
                    show.legend = FALSE) +
-      geom_text(data = filter(kw_dataframe, x %in% c(0)),
+      geom_text(data = dplyr::filter(kw_dataframe, x %in% c(0)),
                 aes(x = x, y = 0, label = "0"),
                 size = 14 / .pt,
                 fontface = "bold",
@@ -425,10 +417,10 @@ shadeHtArea2 <- function(data, cv, direction = "greater") {
 }
 
 kruskalWallisUpload <- function(kwUploadData_output, kwupload_iv_is_valid) {
-  renderDT({
+  DT::renderDT({
     req(kwupload_iv_is_valid())
-    datatable(kwUploadData_output(),
-              options = list(pageLength = -1,
+    DT::datatable(kwUploadData_output(),
+              options = list(pageLength = 25,
                              lengthMenu = list(c(25, 50, 100, -1),
                                                c("25", "50", "100", "all")),
                              columnDefs = list(list(className = 'dt-center',
@@ -436,9 +428,9 @@ kruskalWallisUpload <- function(kwUploadData_output, kwupload_iv_is_valid) {
   })
 }
 kruskalWallisUploadInitial <- function(kwUploadData_output) {
-  renderDT({
-    datatable(kwUploadData_output(),
-              options = list(pageLength = -1,
+  DT::renderDT({
+    DT::datatable(kwUploadData_output(),
+              options = list(pageLength = 25,
                              lengthMenu = list(c(25, 50, 100, -1),
                                                c("25", "50", "100", "all")),
                              columnDefs = list(list(className = 'dt-center',
@@ -456,7 +448,7 @@ kwRankedTableOutput <- function(data) {
       dplyr::select(Group = ind, Value = values, Rank = Rank) %>%
       dplyr::arrange(Group, Rank) %>%
       dplyr::group_by(Group) %>%
-      dplyr::mutate(ObsID = row_number()) %>%
+      dplyr::mutate(ObsID = dplyr::row_number()) %>%
       dplyr::ungroup() %>%
       tidyr::pivot_wider(
         id_cols = ObsID,
@@ -482,7 +474,7 @@ kwRankedTableOutput <- function(data) {
       dplyr::rename_with(~gsub("Rank (.*)", "\\1 Rank", .))
     
     tagList(
-      titlePanel("Ranked Results by Group"),
+      h2("Ranked Results by Group"),
       br(),
       br(),
       div(
@@ -490,7 +482,7 @@ kwRankedTableOutput <- function(data) {
           ranked_data_wide,
           rownames = FALSE,
           options = list(
-            pageLength = -1,
+            pageLength = 25,
             lengthMenu = list(c(10, 25, 50, 100, -1), c("10", "25", "50", "100", "all")),
             scrollX = TRUE,
             columnDefs = list(

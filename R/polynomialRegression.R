@@ -1,5 +1,39 @@
 # R/polynomialRegression.R
 
+# Largest polynomial degree accepted (model and scatterplot curve). A raw
+# polynomial of much higher degree is numerically rank-deficient for any real
+# data, and the cost of the fit grows with the square of the degree.
+POLY_MAX_DEGREE <- 50L
+
+# Most data points the scatterplot draws. Every point is sent to the browser
+# and drawn as an SVG marker (about 100 bytes of JSON each), so a much larger
+# plot freezes the browser tab. The fit and every other result always use all
+# of the rows.
+POLY_MAX_PLOT_POINTS <- 100000L
+
+# Least-squares fit of a raw polynomial. The variable names datx/daty matter:
+# the scatterplot predicts on a data frame whose column is called datx.
+polyFitModel <- function(datx, daty, degree) {
+  lm(daty ~ poly(datx, degree, raw = TRUE))
+}
+
+# White's test for heteroskedasticity (squares of the regressors, no
+# cross-products): n * R^2 of the regression of the squared residuals on the
+# regressors and their squares, compared with a chi-squared distribution.
+# This is the computation of skedastic::white(model), but that function builds
+# several n x n matrices (about 20 GB at 50,000 observations) only to sum the
+# squared deviations of the squared residuals, which is done here directly.
+polyWhiteTest <- function(model) {
+  X    <- stats::model.matrix(model)
+  X    <- X[, colSums(X != 1) > 0, drop = FALSE]          # drop the intercept
+  Z    <- cbind(1, X, X^2)
+  esq  <- stats::resid(model)^2
+  aux  <- stats::lm.fit(Z, esq)
+  stat <- length(esq) * (1 - sum(aux$residuals^2) / sum((esq - mean(esq))^2))
+  list(statistic = stat,
+       p.value   = stats::pchisq(stat, df = ncol(Z) - 1, lower.tail = FALSE))
+}
+
 # =========================================================================== #
 # ---- UI Components -------------------------------------------------------- #
 # =========================================================================== #
@@ -44,6 +78,7 @@ PolynomialRegressionSidebarUI <- function(id) {
       label   = strong("Polynomial Degree (must be ≥ 2)"),
       value   = 2,
       min     = 2,
+      max     = POLY_MAX_DEGREE,
       step    = 1
     ),
 
@@ -67,33 +102,11 @@ PolynomialRegressionSidebarUI <- function(id) {
 PolynomialRegressionMainPanelUI <- function(id) {
   ns <- NS(id)
 
-  tagList(withMathJax(
+  tagList(
     useShinyjs(),
 
-    tags$script(HTML("
-      function copyPlotToClipboard(plotId) {
-        var plotDiv = document.getElementById(plotId);
-        if (!plotDiv) return;
-        var btn = document.querySelector('[data-copy-plot=\"' + plotId + '\"]');
-        Plotly.toImage(plotDiv, {format: 'png', width: plotDiv.offsetWidth, height: plotDiv.offsetHeight})
-          .then(function(dataUrl) { return fetch(dataUrl); })
-          .then(function(res) { return res.blob(); })
-          .then(function(blob) {
-            return navigator.clipboard.write([new ClipboardItem({'image/png': blob})]);
-          })
-          .then(function() {
-            if (btn) {
-              var orig = btn.innerHTML;
-              btn.innerHTML = '<i class=\"fa fa-check\"></i> Copied!';
-              btn.disabled = true;
-              setTimeout(function() { btn.innerHTML = orig; btn.disabled = false; }, 2000);
-            }
-          })
-          .catch(function(err) {
-            alert('Could not copy to clipboard. Your browser may not support this feature, or the page must be served over HTTPS.');
-          });
-      }
-    ")),
+    ## copyPlotToClipboard() for the Copy to Clipboard button is defined once in
+    ## www/copyPlotToClipboard.js, loaded from ui.R.
 
     uiOutput(ns("polyNoDataWarn")),
     uiOutput(ns("polyResponseWarn")),
@@ -148,6 +161,7 @@ PolynomialRegressionMainPanelUI <- function(id) {
                 label   = strong("Degree of fitted curve"),
                 value   = 2,
                 min     = 2,
+                max     = POLY_MAX_DEGREE,
                 step    = 1
               ),
               p(
@@ -159,6 +173,7 @@ PolynomialRegressionMainPanelUI <- function(id) {
           ),
 
           uiOutput(ns("polyScatterIntervalWarning")),
+          uiOutput(ns("polyScatterSampleNote")),
 
           plotOptionsMenuUI(
             id                  = ns("polyScatter"),
@@ -203,17 +218,15 @@ PolynomialRegressionMainPanelUI <- function(id) {
       ) # polyNavbarContent
     )), # polyResultsPanel
 
-    # Uploaded data preview panel — only visible in Upload Data mode
-    hidden(div(
-      id = ns("polyUploadedDataPanel"),
-      tags$h4(
-        "Uploaded Data",
-        style = "color: #18536F; font-weight: bold; margin-bottom: 15px; margin-top: 10px;"
-      ),
-      uiOutput(ns("polyUploadedDataContent")),
-      br()
-    ))
-  ))
+    # The Data tab only exists in Upload Data mode once results are shown, so
+    # its link starts hidden in the page itself (the same inline display:none
+    # that hideTab() sets, and that showTab() undoes) rather than being hidden
+    # by the server when it starts.
+    tags$script(HTML(sprintf(
+      "$(function() { $('#%s a[data-value=\"data_tab\"]').parent().hide(); });",
+      ns("polyNavbarPage")
+    )))
+  )
 }
 
 
@@ -226,14 +239,9 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, u
 
     ns <- session$ns
 
-    observeEvent(TRUE, {
-      shinyjs::delay(0, {
-        hideTab(inputId = "polyNavbarPage", target = "data_tab")
-      })
-    }, once = TRUE)
-
     # ---- Reactive values --------------------------------------------------
     nDroppedRows   <- reactiveVal(0)
+    nNonFiniteRows <- reactiveVal(0)
     polyNoDataWarn <- reactiveVal(FALSE)
     polyResponseWarn    <- reactiveVal(FALSE)
     polyExplanatoryWarn <- reactiveVal(FALSE)
@@ -242,6 +250,28 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, u
     # without needing to re-click Calculate
     storedDatx <- reactiveVal(NULL)
     storedDaty <- reactiveVal(NULL)
+
+    # The degree and the fitted model of the last successful Calculate. The
+    # Model and Inference tabs read these (never the live degree box), so
+    # editing the degree box cannot make them refit with a half-typed value.
+    storedDegree <- reactiveVal(NULL)
+    storedModel  <- reactiveVal(NULL)
+
+    # Content of the warning outputs below. They are plain outputs created
+    # once; the observers only change these values.
+    polyValidationUI <- reactiveVal(NULL)
+    polyPerfectFit   <- reactiveVal(FALSE)
+
+    # Forgets the results of the last Calculate and the warnings shown with them
+    polyClearResults <- function() {
+      storedDatx(NULL)
+      storedDaty(NULL)
+      storedDegree(NULL)
+      storedModel(NULL)
+      polyPerfectFit(FALSE)
+      nDroppedRows(0)
+      nNonFiniteRows(0)
+    }
 
     # ---- Upload warning outputs -------------------------------------------
     output$polyNoDataWarn <- renderUI({
@@ -263,6 +293,56 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, u
           strong(" Please select an Explanatory Variable before calculating."))
     })
 
+    output$polyValidation <- renderUI({ polyValidationUI() })
+
+    output$polyMissingRowsWarning <- renderUI({
+      n <- nDroppedRows()
+      if (n > 0) {
+        div(
+          class = "alert alert-warning",
+          role  = "alert",
+          style = "margin-top: 10px;",
+          tags$b("⚠️ Missing Data Detected: "),
+          sprintf("%d row%s with %s removed before analysis.",
+                  n, if (n == 1) "" else "s",
+                  if (nNonFiniteRows() > 0) "missing or non-finite values" else "missing values")
+        )
+      }
+    })
+
+    output$polyPerfectFitWarning <- renderUI({
+      if (isTRUE(polyPerfectFit())) {
+        div(
+          class = "alert alert-warning",
+          role  = "alert",
+          style = "margin-top: 10px;",
+          tags$b("⚠️ Perfect Fit Detected: "),
+          "This may indicate that ",
+          tags$b("x and y are identical or linearly dependent,"),
+          " which can produce unreliable inference and diagnostic plots. Standard statistical significance tests cannot run on perfect fits. Please check your data."
+        )
+      }
+    })
+
+    # ---- Selected columns (upload mode) -----------------------------------
+    # Parsed once and shared by the validators and by Calculate.
+    polyRawX <- reactive({
+      dat <- reg_data()
+      req(!is.null(dat), input$polyExplanatory %in% colnames(dat))
+      as.data.frame(dat)[[input$polyExplanatory]]
+    })
+    polyRawY <- reactive({
+      dat <- reg_data()
+      req(!is.null(dat), input$polyResponse %in% colnames(dat))
+      as.data.frame(dat)[[input$polyResponse]]
+    })
+    polyNumX <- reactive(suppressWarnings(as.numeric(polyRawX())))
+    polyNumY <- reactive(suppressWarnings(as.numeric(polyRawY())))
+    polyDistinctX <- reactive({
+      datx <- polyNumX()
+      length(unique(datx[is.finite(datx)]))
+    })
+
     # ---- Input Validators -------------------------------------------------
     poly_iv       <- InputValidator$new()
     polyupvars_iv <- InputValidator$new()
@@ -273,35 +353,45 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, u
       if (!is.na(d) && (d != floor(d) || d < 2))
         "Polynomial degree must be a whole number ≥ 2."
     })
+    poly_iv$add_rule("polyDegree", ~ {
+      d <- input$polyDegree
+      if (!is.na(d) && d > POLY_MAX_DEGREE)
+        paste0("Polynomial degree must be at most ", POLY_MAX_DEGREE, ".")
+    })
 
     polyupvars_iv$add_rule("polyResponse",    sv_required())
     polyupvars_iv$add_rule("polyExplanatory", sv_required())
     polyupvars_iv$add_rule("polyExplanatory", ~ tryCatch({
-      raw <- as.data.frame(reg_data())[, input$polyExplanatory]
-      if (length(raw) == 0 || any(is.na(suppressWarnings(as.numeric(raw[!is.na(raw)])))))
+      raw <- polyRawX()
+      if (length(raw) == 0 || any(is.na(polyNumX()) & !is.na(raw)))
         "Explanatory variable contains non-numeric data."
     }, error = function(e) NULL))
     polyupvars_iv$add_rule("polyExplanatory", ~ tryCatch({
-      raw  <- suppressWarnings(as.numeric(as.data.frame(reg_data())[, input$polyExplanatory]))
-      n    <- length(na.omit(raw))
-      d    <- input$polyDegree
+      n <- sum(!is.na(polyNumX()))
+      d <- input$polyDegree
       if (!is.na(d) && n > 0 && d >= n - 1)
         paste0("A degree-", d, " polynomial requires at least ", d + 2, " observations (currently ", n, ").")
     }, error = function(e) NULL))
     polyupvars_iv$add_rule("polyExplanatory", ~ tryCatch({
-      raw  <- suppressWarnings(as.numeric(as.data.frame(reg_data())[, input$polyExplanatory]))
-      datx <- na.omit(raw)
+      k <- polyDistinctX()
+      d <- input$polyDegree
+      if (!is.na(d) && k > 0 && d >= k)
+        paste0("A degree-", d, " polynomial requires at least ", d + 1, " distinct values of x (currently ", k, ").")
+    }, error = function(e) NULL))
+    polyupvars_iv$add_rule("polyExplanatory", ~ tryCatch({
+      datx <- polyNumX()
+      datx <- datx[is.finite(datx)]
       if (length(datx) > 0 && sd(datx) == 0)
         "Explanatory variable has a standard deviation equal to zero (all values are identical). At least two distinct values are required."
     }, error = function(e) NULL))
     polyupvars_iv$add_rule("polyResponse", ~ tryCatch({
-      raw <- as.data.frame(reg_data())[, input$polyResponse]
-      if (length(raw) == 0 || any(is.na(suppressWarnings(as.numeric(raw[!is.na(raw)])))))
+      raw <- polyRawY()
+      if (length(raw) == 0 || any(is.na(polyNumY()) & !is.na(raw)))
         "Response variable contains non-numeric data."
     }, error = function(e) NULL))
     polyupvars_iv$add_rule("polyResponse", ~ tryCatch({
-      raw  <- suppressWarnings(as.numeric(as.data.frame(reg_data())[, input$polyResponse]))
-      daty <- na.omit(raw)
+      daty <- polyNumY()
+      daty <- daty[is.finite(daty)]
       if (length(daty) > 0 && sd(daty) == 0)
         "Response variable is constant. At least two distinct values are required."
     }, error = function(e) NULL))
@@ -324,59 +414,54 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, u
     observeEvent(raw_input_trigger(), {
       if (!is.null(is_active) && !is_active()) return()
       hide("polyResultsPanel")
-      storedDatx(NULL)
-      storedDaty(NULL)
-      output$polyPerfectFitWarning <- renderUI({ NULL })
-      output$polyValidation        <- renderUI({ NULL })
+      polyClearResults()
+      polyValidationUI(NULL)
     }, ignoreInit = TRUE, ignoreNULL = TRUE)
 
     # ---- Clear vars warning when a variable is selected ------------------
     observeEvent(input$polyExplanatory, {
-      if (nzchar(input$polyExplanatory)) polyExplanatoryWarn(FALSE)
+      if (isTruthy(input$polyExplanatory)) polyExplanatoryWarn(FALSE)
     }, ignoreInit = TRUE)
     observeEvent(input$polyResponse, {
-      if (nzchar(input$polyResponse)) polyResponseWarn(FALSE)
+      if (isTruthy(input$polyResponse)) polyResponseWarn(FALSE)
     }, ignoreInit = TRUE)
 
     # ---- Reset results when input mode changes ----------------------------
     observeEvent(input_mode(), {
-      output$polyPerfectFitWarning <- renderUI({ NULL })
-      output$polyValidation        <- renderUI({ NULL })
+      polyValidationUI(NULL)
       polyNoDataWarn(FALSE)
       polyResponseWarn(FALSE)
       polyExplanatoryWarn(FALSE)
       hide("polyResultsPanel")
       hideTab(inputId = "polyNavbarPage", target = "Inference")
-      storedDatx(NULL)
-      storedDaty(NULL)
-      nDroppedRows(0)
+      polyClearResults()
       if (input_mode() == "upload" && !is.null(reg_data())) {
         show("polyVarPickersPanel")
       } else {
         hide("polyVarPickersPanel")
-        hide("polyUploadedDataPanel")
       }
     }, ignoreInit = TRUE)
 
     # ---- Reset results when degree changes (both modes) -------------------
     observeEvent(input$polyDegree, {
-      output$polyPerfectFitWarning <- renderUI({ NULL })
-      output$polyValidation        <- renderUI({ NULL })
+      polyValidationUI(NULL)
       hide("polyResultsPanel")
       hideTab(inputId = "polyNavbarPage", target = "Inference")
-      storedDatx(NULL)
-      storedDaty(NULL)
-      nDroppedRows(0)
+      polyClearResults()
     }, ignoreInit = TRUE)
 
     # ---- Plot options module ----------------------------------------------
     plotOptionsMenuServer("polyScatter")
 
+    # Keeps the variable pickers in step with the uploaded data. Raw entry has
+    # no pickers (the input_mode() observer above hides them), so typing in the
+    # raw boxes, which changes reg_data() on nearly every keystroke, does
+    # nothing here.
     observeEvent(list(reg_data(), input_mode()), {
+      if (input_mode() != "upload") return()
       dat <- reg_data()
-      if (is.null(dat) || input_mode() != "upload") {
+      if (is.null(dat)) {
         hide("polyVarPickersPanel")
-        hide("polyUploadedDataPanel")
         return()
       }
       cols <- colnames(dat)
@@ -388,30 +473,6 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, u
     })
 
     # ---- Uploaded data preview -------------------------------------------
-    output$polyUploadedDataContent <- renderUI({
-      if (input_mode() != "upload" || is.null(reg_data())) {
-        div(
-          class = "alert alert-info",
-          style = "margin-top: 15px;",
-          tags$b("No data uploaded. "),
-          "Please upload a file using the sidebar to view your data here."
-        )
-      } else {
-        DTOutput(session$ns("polyViewUpload"))
-      }
-    })
-
-    output$polyViewUpload <- renderDT({
-      req(input_mode() == "upload", !is.null(reg_data()))
-      dat <- reg_data()
-      datatable(dat, options = list(
-        pageLength = 25,
-        lengthMenu = list(c(25, 50, 100, -1), c("25", "50", "100", "All")),
-        scrollX    = TRUE
-      ))
-    })
-    outputOptions(output, "polyViewUpload", suspendWhenHidden = FALSE)
-
     output$polyViewUploadTab <- renderDT({
       req(input_mode() == "upload", !is.null(reg_data()))
       dat <- reg_data()
@@ -431,8 +492,12 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, u
       daty <- storedDaty()
       n    <- length(datx)
       d    <- input$polyScatterDegree
-      req(!is.null(d), !is.na(d), d >= 2, d < n)
-      lm(daty ~ poly(datx, as.integer(d), raw = TRUE))
+      req(!is.null(d), !is.na(d), d >= 2, d <= POLY_MAX_DEGREE, d < n)
+      fit <- tryCatch(polyFitModel(datx, daty, as.integer(d)), error = function(e) e)
+      validate(need(!inherits(fit, "error"), paste0(
+        "The degree-", as.integer(d), " curve could not be fitted to this data (",
+        if (inherits(fit, "error")) conditionMessage(fit) else "", "). Please choose a lower degree.")))
+      fit
     })
 
     output$polyScatterIntervalWarning <- renderUI({
@@ -446,6 +511,13 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, u
           style = "margin-top: 10px;",
           tags$b("Invalid degree: "),
           "Degree must be a whole number ≥ 2."
+        )
+      } else if (d > POLY_MAX_DEGREE) {
+        div(
+          class = "alert alert-danger",
+          style = "margin-top: 10px;",
+          tags$b("Invalid degree: "),
+          paste0("Degree must be at most ", POLY_MAX_DEGREE, ".")
         )
       } else if (d >= n) {
         div(
@@ -470,11 +542,44 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, u
       }
     })
 
+    # Points drawn on the scatterplot. Above POLY_MAX_PLOT_POINTS rows only an
+    # evenly spaced subset of the rows (always including the smallest and the
+    # largest x) is drawn, so the plot stays responsive; the fitted curve and
+    # bands always use every observation. Computed once per Calculate.
+    scatterPoints <- reactive({
+      req(storedDatx(), storedDaty())
+      datx <- storedDatx()
+      daty <- storedDaty()
+      n    <- length(datx)
+      if (n > POLY_MAX_PLOT_POINTS) {
+        idx  <- unique(c(round(seq(1, n, length.out = POLY_MAX_PLOT_POINTS)),
+                         which.min(datx), which.max(datx)))
+        datx <- datx[idx]
+        daty <- daty[idx]
+      }
+      data.frame(x = datx, y = daty)
+    })
+
+    output$polyScatterSampleNote <- renderUI({
+      req(storedDatx())
+      n <- length(storedDatx())
+      if (n > POLY_MAX_PLOT_POINTS) {
+        p(
+          class = "text-muted",
+          style = "font-size: 0.85em;",
+          tags$em(sprintf(
+            "Note: to keep the plot responsive, %s of the %s points are drawn (evenly spaced rows). The fitted curve, the bands and all other results use all %s observations.",
+            format(POLY_MAX_PLOT_POINTS, big.mark = ","), format(n, big.mark = ","), format(n, big.mark = ",")
+          ))
+        )
+      }
+    })
+
     output$polyScatterplot <- renderPlotly({
       req(scatterModel(), storedDatx(), storedDaty())
       datx <- storedDatx()
       daty <- storedDaty()
-      df   <- data.frame(x = datx, y = daty)
+      df   <- scatterPoints()
 
       p <- RenderScatterplot(
         df,
@@ -523,13 +628,25 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, u
     })
 
     # ---- Calculate button -------------------------------------------------
-    observeEvent(input$goPolynomial, {
+    # Tells the user why nothing was calculated, and hides the results panel
+    # (which an earlier step of Calculate may already have shown) so that no
+    # result of an earlier run is left on screen.
+    polyCalcFailed <- function(msg, duration = 8) {
+      showNotification(msg, type = "error", duration = duration)
+      polyClearResults()
+      hide("polyResultsPanel")
+      # An earlier successful Calculate hid the shared data preview: show it
+      # again, or the main panel is left empty once the message has gone.
+      if (input_mode() == "upload" && !is.null(hide_shared)) hide_shared(FALSE)
+    }
+
+    polyCalculate <- function() {
       if (input_mode() == "upload" && is.null(reg_data())) {
         if (!is.null(upload_error)) upload_error(TRUE)
         polyNoDataWarn(TRUE)
         polyResponseWarn(FALSE)
         polyExplanatoryWarn(FALSE)
-        output$polyValidation <- renderUI({ NULL })
+        polyValidationUI(NULL)
         hide("polyResultsPanel")
         return()
       }
@@ -537,12 +654,12 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, u
       polyNoDataWarn(FALSE)
 
       if (input_mode() == "upload") {
-        missingResponse    <- !nzchar(input$polyResponse)
-        missingExplanatory <- !nzchar(input$polyExplanatory)
+        missingResponse    <- !isTruthy(input$polyResponse)
+        missingExplanatory <- !isTruthy(input$polyExplanatory)
         polyResponseWarn(missingResponse)
         polyExplanatoryWarn(missingExplanatory)
         if (missingResponse || missingExplanatory) {
-          output$polyValidation <- renderUI({ NULL })
+          polyValidationUI(NULL)
           hide("polyResultsPanel")
           return()
         }
@@ -555,7 +672,7 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, u
         if (!is.null(msgX) || !is.null(msgY) || is.null(reg_data())) {
           if (is.null(msgX) && is.null(msgY))
             msgX <- "x and y must have the same number of valid numeric observations."
-          output$polyValidation <- renderUI({
+          polyValidationUI(
             tagList(
               if (!is.null(msgY)) div(
                 class = "alert alert-danger", style = "margin-top: 15px; margin-bottom: 5px;",
@@ -568,21 +685,95 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, u
                 strong(msgX), " — Explanatory variable (x)"
               )
             )
-          })
+          )
           hide("polyResultsPanel")
           return()
         }
       }
 
+      polyClearResults()
       show("polyResultsPanel")
       toggle("polyNavbarContent", condition = poly_iv$is_valid())
 
-      output$polyValidation <- renderUI({ NULL })
+      polyValidationUI(NULL)
 
       if (!poly_iv$is_valid()) return()
 
-      hide("polyUploadedDataPanel")
+      # -- Extract data ------------------------------------------------------
+      degree <- input$polyDegree
+      req(is.numeric(degree), is.finite(degree), degree == floor(degree),
+          degree >= 2, degree <= POLY_MAX_DEGREE)
+      degree <- as.integer(degree)
 
+      if (input_mode() == "upload") {
+        raw_x <- polyNumX()
+        raw_y <- polyNumY()
+      } else {
+        raw_x <- reg_data()$x
+        raw_y <- reg_data()$y
+      }
+
+      if (is.null(raw_x) || is.null(raw_y)) {
+        hide("polyNavbarContent")
+        polyValidationUI(
+          div(
+            class = "alert alert-danger",
+            style = "margin-top: 15px;",
+            icon("triangle-exclamation"),
+            strong(" x and y must have the same number of valid numeric observations.")
+          )
+        )
+        return()
+      }
+
+      # Complete, finite pairs only (an uploaded column can hold Inf)
+      complete_idx <- is.finite(raw_x) & is.finite(raw_y)
+      datx         <- raw_x[complete_idx]
+      daty         <- raw_y[complete_idx]
+      nDroppedRows(sum(!complete_idx))
+      nNonFiniteRows(sum(is.infinite(raw_x) | is.infinite(raw_y)))
+
+      if (length(datx) <= degree + 1) {
+        polyCalcFailed(paste0(
+          "After removing missing values, fewer than ", degree + 2,
+          " complete observations remain for a degree-", degree,
+          " polynomial. Please choose different variables or a lower degree."
+        ))
+        return()
+      }
+
+      nDistinctX <- length(unique(datx))
+      if (nDistinctX <= degree) {
+        polyCalcFailed(paste0(
+          "A degree-", degree, " polynomial requires at least ", degree + 1,
+          " distinct values of x, but only ", nDistinctX,
+          " remain after removing missing values. Please choose different variables or a lower degree."
+        ))
+        return()
+      }
+
+      # -- Fit model ---------------------------------------------------------
+      model <- tryCatch(polyFitModel(datx, daty, degree), error = function(e) e)
+      if (inherits(model, "error")) {
+        polyCalcFailed(paste0(
+          "The degree-", degree, " polynomial model could not be fitted to this data (",
+          conditionMessage(model), "). Please check the data for extremely large values or choose a lower degree."
+        ), duration = 10)
+        return()
+      }
+      if (anyNA(coef(model))) {
+        polyCalcFailed(paste0(
+          "A degree-", degree, " polynomial cannot be estimated for this data: the powers of x are too close to ",
+          "being linearly dependent, so some coefficients cannot be determined. Please choose a lower degree."
+        ), duration = 10)
+        return()
+      }
+
+      # -- Perfect fit detection ---------------------------------------------
+      r_squared    <- summary(model)$r.squared
+      isPerfectFit <- isTRUE(all.equal(r_squared, 1))
+
+      # -- Show the results --------------------------------------------------
       showTab(inputId = "polyNavbarPage", target = "Inference")
       if (input_mode() == "upload") {
         showTab(inputId = "polyNavbarPage", target = "data_tab")
@@ -591,153 +782,93 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, u
 
       updateNavbarPage(session, "polyNavbarPage", selected = "Model")
 
-      # -- Extract data ------------------------------------------------------
-      degree <- as.integer(input$polyDegree)
-
-      if (input_mode() == "upload") {
-        req(!is.null(reg_data()))
-        req(input$polyExplanatory %in% colnames(reg_data()))
-        req(input$polyResponse    %in% colnames(reg_data()))
-        raw_x        <- suppressWarnings(as.numeric(as.data.frame(reg_data())[, input$polyExplanatory]))
-        raw_y        <- suppressWarnings(as.numeric(as.data.frame(reg_data())[, input$polyResponse]))
-        complete_idx <- !is.na(raw_x) & !is.na(raw_y)
-        datx         <- raw_x[complete_idx]
-        daty         <- raw_y[complete_idx]
-        nDroppedRows(sum(!complete_idx))
-      } else {
-        datx <- reg_data()$x
-        daty <- reg_data()$y
-        nDroppedRows(0)
-      }
-
-      if (is.null(datx) || is.null(daty)) {
-        hide("polyNavbarContent")
-        output$polyValidation <- renderUI({
-          div(
-            class = "alert alert-danger",
-            style = "margin-top: 15px;",
-            icon("triangle-exclamation"),
-            strong(" x and y must have the same number of valid numeric observations.")
-          )
-        })
-        return()
-      }
-
-      if (length(datx) <= degree + 1) {
-        showNotification(
-          paste0("After removing missing values, fewer than ", degree + 2,
-                 " complete observations remain for a degree-", degree,
-                 " polynomial. Please choose different variables or a lower degree."),
-          type = "error", duration = 8
-        )
-        return()
-      }
-
-      # Store for scatterplot reactive use
+      # Store for scatterplot reactive use and for the Model / Inference tabs
       storedDatx(datx)
       storedDaty(daty)
+      storedDegree(degree)
+      storedModel(model)
 
-      # Sync scatter degree to model degree on each Calculate press
-      updateNumericInput(session, "polyScatterDegree", value = degree)
-
-      # -- Fit model ---------------------------------------------------------
-      model <- lm(daty ~ poly(datx, degree, raw = TRUE))
-      coefs <- coef(model)
-
-      # -- Missing rows warning ----------------------------------------------
-      output$polyMissingRowsWarning <- renderUI({
-        n <- nDroppedRows()
-        if (n > 0) {
-          div(
-            class = "alert alert-warning",
-            role  = "alert",
-            style = "margin-top: 10px;",
-            tags$b("⚠️ Missing Data Detected: "),
-            sprintf("%d row%s with missing values removed before analysis.",
-                    n, if (n == 1) "" else "s")
-          )
-        }
-      })
-
-      # -- Perfect fit detection ---------------------------------------------
-      r_squared <- summary(model)$r.squared
-
-      output$polyPerfectFitWarning <- renderUI({
-        if (isTRUE(all.equal(r_squared, 1))) {
-          hideTab(inputId = "polyNavbarPage", target = "Inference")
-          div(
-            class = "alert alert-warning",
-            role  = "alert",
-            style = "margin-top: 10px;",
-            tags$b("⚠️ Perfect Fit Detected: "),
-            "This may indicate that ",
-            tags$b("x and y are identical or linearly dependent,"),
-            " which can produce unreliable inference and diagnostic plots. Standard statistical significance tests cannot run on perfect fits. Please check your data."
-          )
-        } else {
-          showTab(inputId = "polyNavbarPage", target = "Inference")
-          NULL
-        }
-      })
-
-      isPerfectFit <- isTRUE(all.equal(r_squared, 1))
+      polyPerfectFit(isPerfectFit)
       if (isPerfectFit) {
         hideTab(inputId = "polyNavbarPage", target = "Inference")
       }
 
-      # -- Model tab ---------------------------------------------------------
-      output$polyModelEquation <- renderUI({
+      # Sync scatter degree to model degree on each Calculate press
+      updateNumericInput(session, "polyScatterDegree", value = degree)
+    } # polyCalculate
 
-        fmt_coef <- function(x) fmt_sci_latex(x, 4)
-
-        sym_terms <- paste0(
-          "\\hat{\\beta}_{0}",
-          paste(sapply(seq_len(degree), function(k) {
-            if (k == 1) sprintf(" + \\hat{\\beta}_{1} x")
-            else        sprintf(" + \\hat{\\beta}_{%d} x^{%d}", k, k)
-          }), collapse = "")
-        )
-
-        b0        <- coefs[1]
-        num_terms <- fmt_coef(b0)
-        for (k in seq_len(degree)) {
-          bk  <- coefs[k + 1]
-          sgn <- if (bk >= 0) " + " else " - "
-          if (k == 1) {
-            num_terms <- paste0(num_terms, sgn, fmt_coef(abs(bk)), " x")
-          } else {
-            num_terms <- paste0(num_terms, sgn, fmt_coef(abs(bk)), " x^{", k, "}")
-          }
+    # An uncaught error in an observer would end the user's session, so any
+    # unexpected failure is reported to the user instead. A req()/validate()
+    # that stops the calculation is not an error: it is passed on to Shiny
+    # untouched (the results panel is hidden first, as nothing was calculated).
+    observeEvent(input$goPolynomial, {
+      tryCatch(
+        withCallingHandlers(
+          polyCalculate(),
+          shiny.silent.error = function(e) hide("polyResultsPanel")
+        ),
+        error = function(e) {
+          if (inherits(e, "shiny.silent.error")) stop(e)
+          message("Polynomial regression: Calculate failed: ", conditionMessage(e))
+          polyCalcFailed(paste0("The polynomial regression could not be calculated: ", conditionMessage(e)), duration = 10)
         }
+      )
+    })
 
-        withMathJax(
-          p(sprintf(
-            "The estimated equation of the degree-%d polynomial regression model is",
-            degree
-          )),
-          p(sprintf("\\( \\qquad \\hat{y} = %s \\)", sym_terms)),
-          br(),
-          p("The estimated polynomial regression model is"),
-          p(sprintf("\\( \\qquad \\hat{y} = %s \\)", num_terms)),
-          br(),
-          p(tags$b("Interpretation:")),
-          p(HTML(paste0(
-            "The degree-", degree, " polynomial model was fitted to the data. ",
-            "\\( \\hat{\\beta}_0 = ", fmt_coef(b0), " \\) is the estimated value of \\( y \\) when \\( x = 0 \\). ",
-            "The remaining coefficients capture the curvature of the relationship between \\( x \\) and \\( y \\)."
-          )))
-        )
-      })
+    # ---- Model tab --------------------------------------------------------
+    output$polyModelEquation <- renderUI({
 
-    }) # goPolynomial
+      model  <- polyModel()
+      degree <- storedDegree()
+      coefs  <- coef(model)
+
+      fmt_coef <- function(x) fmt_sci_latex(x, 4)
+
+      sym_terms <- paste0(
+        "\\hat{\\beta}_{0}",
+        paste(sapply(seq_len(degree), function(k) {
+          if (k == 1) sprintf(" + \\hat{\\beta}_{1} x")
+          else        sprintf(" + \\hat{\\beta}_{%d} x^{%d}", k, k)
+        }), collapse = "")
+      )
+
+      b0        <- coefs[1]
+      num_terms <- fmt_coef(b0)
+      for (k in seq_len(degree)) {
+        bk  <- coefs[k + 1]
+        sgn <- if (bk >= 0) " + " else " - "
+        if (k == 1) {
+          num_terms <- paste0(num_terms, sgn, fmt_coef(abs(bk)), " x")
+        } else {
+          num_terms <- paste0(num_terms, sgn, fmt_coef(abs(bk)), " x^{", k, "}")
+        }
+      }
+
+      withMathJax(
+        p(sprintf(
+          "The estimated equation of the degree-%d polynomial regression model is",
+          degree
+        )),
+        p(sprintf("\\( \\qquad \\hat{y} = %s \\)", sym_terms)),
+        br(),
+        p("The estimated polynomial regression model is"),
+        p(sprintf("\\( \\qquad \\hat{y} = %s \\)", num_terms)),
+        br(),
+        p(tags$b("Interpretation:")),
+        p(HTML(paste0(
+          "The degree-", degree, " polynomial model was fitted to the data. ",
+          "\\( \\hat{\\beta}_0 = ", fmt_coef(b0), " \\) is the estimated value of \\( y \\) when \\( x = 0 \\). ",
+          "The remaining coefficients capture the curvature of the relationship between \\( x \\) and \\( y \\)."
+        )))
+      )
+    })
 
     # ---- Inference tab ----------------------------------------------------
 
-    # Helper: rebuild the poly model from stored data + current degree
+    # The model fitted by the last Calculate (see storedModel above)
     polyModel <- reactive({
-      req(storedDatx(), storedDaty())
-      degree <- as.integer(input$polyDegree)
-      lm(storedDaty() ~ poly(storedDatx(), degree, raw = TRUE))
+      req(storedModel(), storedDegree())
+      storedModel()
     })
 
     output$polyInference <- renderUI({
@@ -832,12 +963,15 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, u
     # Parameter Estimates
     output$polyParamCoefTable <- renderTable({
       model  <- polyModel()
-      degree <- as.integer(input$polyDegree)
+      degree <- storedDegree()
 
       coefs <- as.data.frame(summary(model)$coefficients)
       coefs <- tibble::rownames_to_column(coefs, "Term")
       sup_digits  <- c("⁰","¹","²","³","⁴","⁵","⁶","⁷","⁸","⁹")
-      term_labels <- c("Intercept", "x", paste0("x", sup_digits[seq(2, degree) + 1]))
+      # Superscript exponent, one digit at a time (degrees of 10 and above)
+      sup_exp     <- function(k) vapply(k, function(e)
+        paste(sup_digits[as.integer(strsplit(as.character(e), "")[[1]]) + 1], collapse = ""), "")
+      term_labels <- c("Intercept", "x", paste0("x", sup_exp(seq(2, degree))))
       if (nrow(coefs) == length(term_labels)) coefs$Term <- term_labels
       names(coefs)[names(coefs) == "Pr(>|t|)"] <- "P-value"
 
@@ -1013,7 +1147,7 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, u
       p_val  <- pf(F_stat, k, n - k - 1, lower.tail = FALSE)
 
       if (is.nan(p_val) || is.na(p_val)) {
-        return(withMathJax(
+        return(tagList(
           p(strong("Test Statistic:")),
           p("F statistic cannot be computed: the model is a perfect fit (residual df = 0)."),
           p(strong("Conclusion:")),
@@ -1121,6 +1255,7 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, u
         assumption = "Normality",
         procedure  = "Shapiro-Wilk Test",
         min_n      = 3,
+        max_n      = 5000,    # shapiro.test() only accepts 3 to 5000 observations
         run        = function(model) {
           sw <- shapiro.test(residuals(model))
           list(statistic = round(sw$statistic, 4), p_value = round(sw$p.value, 4), note = NULL)
@@ -1163,7 +1298,7 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, u
         procedure  = "White Test",
         min_n      = 4,
         run        = function(model) {
-          wt <- skedastic::white(model)
+          wt <- polyWhiteTest(model)
           list(statistic = round(wt$statistic, 4), p_value = round(wt$p.value, 4), note = NULL)
         }
       )
@@ -1185,9 +1320,23 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, u
             check.names = FALSE
           ))
         }
+        if (!is.null(cfg$max_n) && n > cfg$max_n) {
+          return(data.frame(
+            Assumption  = cfg$assumption,
+            Procedure   = cfg$procedure,
+            `P-Value`   = NA_character_,
+            Conclusion  = paste("Requires n ≤", cfg$max_n),
+            check.names = FALSE
+          ))
+        }
         result <- tryCatch(cfg$run(model), error = function(e) {
           list(statistic = NULL, p_value = NULL, note = paste("Error:", e$message))
         })
+        # A test that returns no usable p-value must not break the whole table
+        if (!is.null(result$p_value) && !(length(result$p_value) == 1 && is.finite(result$p_value))) {
+          result <- list(statistic = NULL, p_value = NULL,
+                         note = "The test statistic could not be computed for these data.")
+        }
         pval_str <- if (!is.null(result$p_value)) as.character(result$p_value) else "—"
         conclusion <- if (!is.null(result$p_value)) {
           base <- if (result$p_value <= alpha)
@@ -1237,16 +1386,13 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, u
 
     # ---- Diagnostic Plots -------------------------------------------------
 
-    hasPolyLeveragePlotIssue <- reactiveVal(FALSE)
-
-    observe({
-      req(storedDatx(), storedDaty())
+    hasPolyLeveragePlotIssue <- reactive({
       h <- hatvalues(polyModel())
-      hasPolyLeveragePlotIssue(all(abs(h - 0.5) < .Machine$double.eps^0.5))
+      all(abs(h - 0.5) < .Machine$double.eps^0.5)
     })
 
     output$polyDiagnosticPlotsWarning <- renderUI({
-      if (hasPolyLeveragePlotIssue()) {
+      if (isTRUE(hasPolyLeveragePlotIssue())) {
         div(
           class = "alert alert-warning",
           tags$b("⚠ Diagnostic Plot Warning: "),
@@ -1254,7 +1400,6 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, u
         )
       }
     })
-    outputOptions(output, "polyDiagnosticPlotsWarning", suspendWhenHidden = FALSE)
 
     output$polyDiagPlot1 <- renderPlot({
       model <- polyModel()
@@ -1325,17 +1470,12 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, u
         updateSelectizeInput(session, "polyResponse",    choices = c(""), selected = "")
         updateSelectizeInput(session, "polyExplanatory", choices = c(""), selected = "")
       }
-      storedDatx(NULL)
-      storedDaty(NULL)
-      nDroppedRows(0)
-      output$polyPerfectFitWarning <- renderUI({ NULL })
-      output$polyValidation        <- renderUI({ NULL })
+      polyClearResults()
+      polyValidationUI(NULL)
       if (!is.null(hide_shared)) hide_shared(FALSE)
       hide("polyResultsPanel")
-      hide("polyUploadedDataPanel")
       hideTab(inputId = "polyNavbarPage", target = "data_tab")
       hideTab(inputId = "polyNavbarPage", target = "Inference")
-      hasPolyLeveragePlotIssue(FALSE)
     }
 
     observeEvent(input$resetPolynomial, {

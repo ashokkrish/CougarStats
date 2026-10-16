@@ -1,16 +1,13 @@
-library(ggplot2)
-
-
 RenderMeanPlot <- function(dat, groups, plotColour, plotTitle, plotXlab, plotYlab, gridlines) {
   
   data_plot = dat %>% 
-    group_by(ind) %>% 
-    summarise(m=mean(values), #calculate the summaries you want on the plot
-              n_dat=n(),
-              sem=sd(values)/sqrt(n()), 
-              ci_low=m-1.96*sem, 
-              ci_hi=m+1.96*sem) %>% 
-    ungroup()
+    dplyr::group_by(ind) %>% 
+    dplyr::summarise(m=mean(values), #calculate the summaries you want on the plot
+                     n_dat=dplyr::n(),
+                     sem=sd(values)/sqrt(dplyr::n()), 
+                     ci_low=m-1.96*sem, 
+                     ci_hi=m+1.96*sem) %>% 
+    dplyr::ungroup()
   
   gmp <- ggplot(data_plot, aes(x=ind, y=m, ymin=ci_low, ymax=ci_hi)) +
     geom_line(aes(group = 1), linewidth = 1) +
@@ -23,18 +20,18 @@ RenderMeanPlot <- function(dat, groups, plotColour, plotTitle, plotXlab, plotYla
     theme(plot.title = element_text(size = 24,
                                     face = "bold",
                                     hjust = 0.5,
-                                    margin = margin(0,0,10,0)),
+                                    margin = ggplot2::margin(0,0,10,0)),
           axis.title.x = element_text(size = 18, 
                                       face = "bold", 
                                       vjust = -1.5,
-                                      margin = margin(5,0,0,0)),
+                                      margin = ggplot2::margin(5,0,0,0)),
           axis.title.y = element_text(size = 18,
                                       colour = "black",
                                       face = "bold", 
                                       angle = 90,
-                                      margin = margin(0,5,0,0)),
-          axis.text.x.bottom = element_text(size = 16, face = "bold", margin = margin(5,0,0,0)),
-          axis.text.y.left = element_text(size = 16, face = "bold", margin = margin(0,5,0,0)),
+                                      margin = ggplot2::margin(0,5,0,0)),
+          axis.text.x.bottom = element_text(size = 16, face = "bold", margin = ggplot2::margin(5,0,0,0)),
+          axis.text.y.left = element_text(size = 16, face = "bold", margin = ggplot2::margin(0,5,0,0)),
           plot.margin = unit(c(1, 1, 1, 1),"cm"),
           axis.line = element_line()) 
   

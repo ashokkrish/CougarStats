@@ -1,10 +1,7 @@
-library(ggplot2)
-library(dplyr)
-
 RenderBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, plotXlab, plotYlab, 
                           boxWidth, gridlines, flip, showLabels = TRUE) {
   stats <- custom_box_stats(dat)
-  df_outliers <- tibble(x = 1, y = stats$outliers[[1]])
+  df_outliers <- tibble::tibble(x = 1, y = stats$outliers[[1]])
   
   # plot vertically by default
   bp <- ggplot() +
@@ -32,11 +29,11 @@ RenderBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, p
          x = plotXlab,
          y = plotYlab) +
     theme_void() +
-    theme(plot.title  = element_text(size = 24, face = "bold", hjust = 0.5, margin = margin(0,0,10,0)),
-          axis.title.x = element_text(size = 16, face = "bold", vjust = -1.5, margin = margin(8,0,0,0)),
-          axis.title.y = element_text(size = 16, face = "bold", vjust = 1.5,  margin = margin(0,8,0,0)),
+    theme(plot.title  = element_text(size = 24, face = "bold", hjust = 0.5, margin = ggplot2::margin(0,0,10,0)),
+          axis.title.x = element_text(size = 16, face = "bold", vjust = -1.5, margin = ggplot2::margin(8,0,0,0)),
+          axis.title.y = element_text(size = 16, face = "bold", vjust = 1.5,  margin = ggplot2::margin(0,8,0,0)),
           axis.text.x.bottom = element_blank(),
-          axis.text.y.left   = element_text(size = 14, face = "bold", margin = margin(0,8,0,0)),
+          axis.text.y.left   = element_text(size = 14, face = "bold", margin = ggplot2::margin(0,8,0,0)),
           plot.margin = unit(c(1,1,1,1), "cm"),
           axis.line = element_line()) +
     scale_y_continuous(n.breaks = 10)
@@ -50,10 +47,10 @@ RenderBoxplot <- function(dat, df_boxplot, df_outliers, plotColour, plotTitle, p
   if("Major" %in% gridlines) bp <- bp + theme(panel.grid.major = element_line(colour = "#D9D9D9"))
   if("Minor" %in% gridlines) bp <- bp + theme(panel.grid.minor = element_line(colour = "#D9D9D9"))
   
-   if(flip == 1){
+  if(isTRUE(flip == 1)){
     bp <- bp + coord_flip(clip = "off") +
       theme(
-        axis.text.x.bottom = element_text(size = 14, face = "bold", margin = margin(8,0,0,0)),
+        axis.text.x.bottom = element_text(size = 14, face = "bold", margin = ggplot2::margin(8,0,0,0)),
         axis.text.y.left   = element_blank()
       ) +
       labs(x = plotYlab, y = plotXlab)
@@ -87,7 +84,7 @@ custom_box_stats <- function(x, coef = 1.5) {
   
   outliers <- x[x < lower_fence | x > upper_fence]
   
-  tibble(
+  tibble::tibble(
     x = 1,
     ymin = whisker_low,
     lower = Q1,
