@@ -923,26 +923,29 @@ MLRServer <- function(id, reg_data, reset_upload, upload_error = NULL, clear_tri
     output$anovaTemplateTable <- renderUI({
       req(mlrAnova())
 
-      cell_style <- "border: 1px solid rgba(0, 0, 0, 0.15); padding: 6px 12px; text-align: center;"
+      cell_style <- "border: 1px solid rgba(0, 0, 0, 0.15); padding: 2px 8px; text-align: center; white-space: nowrap;"
       hdr_style  <- paste(cell_style, "font-weight: bold; border-bottom: 1px solid rgba(0, 0, 0, 0.3);")
       src_style  <- paste(cell_style, "font-weight: bold;")
 
       hdrs <- c("Sources of Variation", "df", "Sum of Squares (SS)",
                 "Mean Sum of Squares (MS)", "F-ratio", "P-Value")
       rows <- list(
-        c("Regression (Model)", "\\( k \\)", "\\( SSR \\)",
+        c("Regression (Model)", "\\( k \\)",
+          "\\( SSR = \\sum\\limits_{i=1}^{n} (\\hat{y}_i - \\bar{y})^2 \\)",
           "\\( MSR = \\dfrac{SSR}{k} \\)", "\\( F_{obs} = \\dfrac{MSR}{MSE} \\)",
           "\\( P(F > F_{obs}) \\)"),
-        c("Error (Residual)", "\\( n - k - 1 \\)", "\\( SSE \\)",
+        c("Error (Residual)", "\\( n - k - 1 \\)",
+          "\\( SSE = \\sum\\limits_{i=1}^{n} (y_i - \\hat{y}_i)^2 \\)",
           "\\( MSE = \\dfrac{SSE}{n - k - 1} \\)", "", ""),
-        c("Total", "\\( n - 1 \\)", "\\( SST \\)", "", "", "")
+        c("Total", "\\( n - 1 \\)",
+          "\\( SST = \\sum\\limits_{i=1}^{n} (y_i - \\bar{y})^2 \\)", "", "", "")
       )
 
       withMathJax(
         div(
           style = "overflow-x: auto;",
           tags$table(
-            style = "border-collapse: collapse; width: 100%;",
+            style = "border-collapse: collapse; width: auto; font-size: 0.9em;",
             tags$thead(tags$tr(lapply(hdrs, tags$th, style = hdr_style))),
             tags$tbody(
               lapply(seq_along(rows), function(i) {
@@ -990,7 +993,7 @@ MLRServer <- function(id, reg_data, reset_upload, upload_error = NULL, clear_tri
 
       colNames <- c("df", "Sum of Squares (SS)", "Mean Sum of Squares (MS)", "F-ratio", "P-Value")
 
-      .aw <- function(hdr, vals, digits = NULL, big_mark = "", px = 9L, pad = 28L, min_w = 60L) {
+      .aw <- function(hdr, vals, digits = NULL, big_mark = "", px = 8L, pad = 18L, min_w = 60L) {
         vs    <- vals[!is.na(vals)]
         fmted <- if (!is.null(digits) && length(vs) > 0)
           sapply(as.numeric(vs), function(v) formatC(v, format = "f", digits = digits, big.mark = big_mark))
@@ -1009,10 +1012,10 @@ MLRServer <- function(id, reg_data, reset_upload, upload_error = NULL, clear_tri
         thead(
           tr(
             th("Sources of Variation",
-               style = "border: 1px solid rgba(0, 0, 0, 0.15);
+               style = "border: 1px solid rgba(0, 0, 0, 0.15); padding: 2px 8px; font-size: 0.9em; white-space: nowrap;
                             border-bottom: 1px solid rgba(0, 0, 0, 0.3);"),
             lapply(colNames, th,
-                   style = 'border-right: 1px solid rgba(0, 0, 0, 0.15);
+                   style = 'border-right: 1px solid rgba(0, 0, 0, 0.15); padding: 2px 8px; font-size: 0.9em; white-space: nowrap;
                                 border-top: 1px solid rgba(0, 0, 0, 0.15);')
           )
         )
@@ -1046,6 +1049,7 @@ MLRServer <- function(id, reg_data, reset_upload, upload_error = NULL, clear_tri
       ) %>%
         formatRound(columns = 1, digits = 0) %>%
         formatRound(columns = 2:4, digits = 4) %>%
+        formatStyle(columns = 0:5, padding = '2px 8px', fontSize = '0.9em', whiteSpace = 'nowrap') %>%
         formatStyle(columns = c(0, 4), fontWeight = 'bold') %>%
         formatStyle(
           columns = 1:5,
