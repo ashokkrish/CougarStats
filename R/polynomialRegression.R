@@ -1093,22 +1093,9 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, u
 
       colNames <- c("df", "Sum of Squares (SS)", "Mean Sum of Squares (MS)", "F-ratio", "P-Value")
 
-      .aw <- function(hdr, vals, digits = NULL, big_mark = "", px = 8L, pad = 18L, min_w = 60L) {
-        vs    <- vals[!is.na(vals)]
-        fmted <- if (!is.null(digits) && length(vs) > 0)
-          sapply(as.numeric(vs), function(v) formatC(v, format = "f", digits = digits, big.mark = big_mark))
-        else as.character(vs)
-        max(min_w, max(nchar(c(hdr, fmted))) * px + pad)
-      }
-      w0 <- .aw("Sources of Variation",    rownames(data))
-      w1 <- .aw("df",                       data$df,          digits = 0)
-      w2 <- .aw("Sum of Squares (SS)",       data$SS,          digits = 4, big_mark = ",")
-      w3 <- .aw("Mean Sum of Squares (MS)",  data$MS,          digits = 4, big_mark = ",")
-      w4 <- .aw("F-ratio",                   data$F,           digits = 4, big_mark = ",")
-      w5 <- .aw("P-Value",                   data[["P-Value"]])
-
       headers <- htmltools::withTags(table(
         class = 'display',
+        style = 'width: auto; margin-left: 0;',
         thead(
           tr(
             th("Sources of Variation",
@@ -1131,16 +1118,10 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, u
           ordering = FALSE,
           searching = FALSE,
           paging = FALSE,
-          autoWidth = FALSE,
+          autoWidth = TRUE,
           scrollX = TRUE,
           columnDefs = list(
-            list(className = 'dt-center', targets = 0:5),
-            list(width = paste0(w0, 'px'), targets = 0),
-            list(width = paste0(w1, 'px'), targets = 1),
-            list(width = paste0(w2, 'px'), targets = 2),
-            list(width = paste0(w3, 'px'), targets = 3),
-            list(width = paste0(w4, 'px'), targets = 4),
-            list(width = paste0(w5, 'px'), targets = 5)
+            list(className = 'dt-center', targets = 0:5)
           )
         ),
         selection = "none",

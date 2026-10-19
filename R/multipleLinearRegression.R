@@ -56,7 +56,7 @@ MLRSidebarUI <- function(id) {
         uiOutput(ns("singleOrMultipleHelpText")),
         pickerInput(
           inputId = ns("explanatoryVariables"),
-          label   = HTML("<strong>Explanatory Variables (\\(x_1, x_2, x_3...x_k\\)) </strong>"),
+          label   = HTML("<strong>Explanatory Variables (\\(x_1, x_2, x_3...x_p\\)) </strong>"),
           choices  = NULL,
           multiple = TRUE,
           options  = list(
@@ -899,9 +899,9 @@ MLRServer <- function(id, reg_data, reset_upload, upload_error = NULL, clear_tri
       withMathJax(
         p(strong("Analysis of Variance (ANOVA)")),
         p(
-          r"{\( H_0: \beta_1 = \beta_2 = \cdots = \beta_k = 0\)}",
+          r"{\( H_0: \beta_1 = \beta_2 = \cdots = \beta_p = 0\)}",
           br(),
-          r"{\( H_a: \) At least one \(\beta_j\ne 0\), where \(j = 1, \cdots, k\).}"
+          r"{\( H_a: \) At least one \(\beta_j\ne 0\), where \(j = 1, \cdots, p\).}"
         ),
         #br(),
         p(r"{\( \alpha = 0.05\ \)}"),
@@ -909,9 +909,9 @@ MLRServer <- function(id, reg_data, reset_upload, upload_error = NULL, clear_tri
         p(
           sprintf(r"{\( n = %i \)}", a$n),
           br(),
-          sprintf(r"{\( k = %i \)}", a$k)
+          sprintf(r"{\( p = %i \)}", a$k)
         ),
-        p(r"[where \(n\) is the sample size and \(k\) is the number of explanatory variables in the multiple regression model.]"),
+        p(r"[where \(n\) is the sample size and \(p\) is the number of explanatory variables in the multiple regression model.]"),
         if (omitted > 0)
           p(class = "text-muted",
             sprintf("Note: rows with a missing value in the response or an explanatory variable are left out of the model (%s of %s rows).",
@@ -930,13 +930,13 @@ MLRServer <- function(id, reg_data, reset_upload, upload_error = NULL, clear_tri
       hdrs <- c("Sources of Variation", "df", "Sum of Squares (SS)",
                 "Mean Sum of Squares (MS)", "F-ratio", "P-Value")
       rows <- list(
-        c("Regression (Model)", "\\( k \\)",
+        c("Regression (Model)", "\\( p \\)",
           "\\( SSR = \\sum\\limits_{i=1}^{n} (\\hat{y}_i - \\bar{y})^2 \\)",
-          "\\( MSR = \\dfrac{SSR}{k} \\)", "\\( F_{obs} = \\dfrac{MSR}{MSE} \\)",
+          "\\( MSR = \\dfrac{SSR}{p} \\)", "\\( F_{obs} = \\dfrac{MSR}{MSE} \\)",
           "\\( P(F > F_{obs}) \\)"),
-        c("Error (Residual)", "\\( n - k - 1 \\)",
+        c("Error (Residual)", "\\( n - p - 1 \\)",
           "\\( SSE = \\sum\\limits_{i=1}^{n} (y_i - \\hat{y}_i)^2 \\)",
-          "\\( MSE = \\dfrac{SSE}{n - k - 1} \\)", "", ""),
+          "\\( MSE = \\dfrac{SSE}{n - p - 1} \\)", "", ""),
         c("Total", "\\( n - 1 \\)",
           "\\( SST = \\sum\\limits_{i=1}^{n} (y_i - \\bar{y})^2 \\)", "", "", "")
       )
@@ -961,7 +961,7 @@ MLRServer <- function(id, reg_data, reset_upload, upload_error = NULL, clear_tri
         ),
         p(
           style = "margin-top: 8px;",
-          "where \\( n \\) is the sample size and \\( k \\) is the number of explanatory variables."
+          "where \\( n \\) is the sample size and \\( p \\) is the number of explanatory variables."
         )
       )
     })
@@ -993,22 +993,9 @@ MLRServer <- function(id, reg_data, reset_upload, upload_error = NULL, clear_tri
 
       colNames <- c("df", "Sum of Squares (SS)", "Mean Sum of Squares (MS)", "F-ratio", "P-Value")
 
-      .aw <- function(hdr, vals, digits = NULL, big_mark = "", px = 8L, pad = 18L, min_w = 60L) {
-        vs    <- vals[!is.na(vals)]
-        fmted <- if (!is.null(digits) && length(vs) > 0)
-          sapply(as.numeric(vs), function(v) formatC(v, format = "f", digits = digits, big.mark = big_mark))
-        else as.character(vs)
-        max(min_w, max(nchar(c(hdr, fmted))) * px + pad)
-      }
-      w0 <- .aw("Sources of Variation",    rownames(data))
-      w1 <- .aw("df",                       data$df,          digits = 0)
-      w2 <- .aw("Sum of Squares (SS)",       data$SS,          digits = 4, big_mark = ",")
-      w3 <- .aw("Mean Sum of Squares (MS)",  data$MS,          digits = 4, big_mark = ",")
-      w4 <- .aw("F-ratio",                   data$F,           digits = 4, big_mark = ",")
-      w5 <- .aw("P-Value",                   data[["P-Value"]])
-
       headers <- htmltools::withTags(table(
         class = 'display',
+        style = 'width: auto; margin-left: 0;',
         thead(
           tr(
             th("Sources of Variation",
@@ -1031,16 +1018,10 @@ MLRServer <- function(id, reg_data, reset_upload, upload_error = NULL, clear_tri
           ordering = FALSE,
           searching = FALSE,
           paging = FALSE,
-          autoWidth = FALSE,
+          autoWidth = TRUE,
           scrollX = TRUE,
           columnDefs = list(
-            list(className = 'dt-center', targets = 0:5),
-            list(width = paste0(w0, 'px'), targets = 0),
-            list(width = paste0(w1, 'px'), targets = 1),
-            list(width = paste0(w2, 'px'), targets = 2),
-            list(width = paste0(w3, 'px'), targets = 3),
-            list(width = paste0(w4, 'px'), targets = 4),
-            list(width = paste0(w5, 'px'), targets = 5)
+            list(className = 'dt-center', targets = 0:5)
           )
         ),
         selection = "none",
@@ -1113,7 +1094,7 @@ MLRServer <- function(id, reg_data, reset_upload, upload_error = NULL, clear_tri
           r"{
 \(
 \displaystyle
-R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %0.4f
+R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-p-1} \right] = %0.4f
 \)
 }",
           adj_r2
@@ -1128,7 +1109,7 @@ R^2_{\text{adj}} = 1 - \left[ \left( 1-R^2 \right) \frac{n-1}{n-k-1} \right] = %
         br(),
         p(strong("Residual Standard Error (RSE):")),
         p(sprintf(
-          r"[\( \displaystyle RSE = \sqrt{\frac{\mathrm{SSE}}{n-k-1}} = \sqrt{\mathrm{MSE}} = \sqrt{%s} = %0.4f \)]",
+          r"[\( \displaystyle RSE = \sqrt{\frac{\mathrm{SSE}}{n-p-1}} = \sqrt{\mathrm{MSE}} = \sqrt{%s} = %0.4f \)]",
           fmt_sci_latex(mse, 4), rse
         )),
         br(),
