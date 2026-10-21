@@ -57,7 +57,9 @@ regressionAndCorrelationUI <- function(id) {
                             onInitialize = I('function() { this.setValue(""); }'))
           )
         ),
-        uiOutput(ns("regDataStatus"))
+        uiOutput(ns("regDataStatus")),
+        # Encoding of the text/factor columns, shared by all four methods
+        uiOutput(ns("regEncodingUI"))
       ),
 
       # Raw entry widgets (SLR and POLYR only — methodology radio filters to those two)
@@ -324,6 +326,136 @@ regressionAndCorrelationServer <- function(id) {
       )
     })
 
+    # ---- Categorical variable encoding (upload mode only) --------------------
+    # The methods only offer numeric columns in their pickers, so text and
+    # factor columns are turned into numeric ones here, once for all four:
+    # dummy encoding replaces a column by a 0/1 column for each category but
+    # the first (the reference category); label encoding numbers the
+    # categories 1, 2, ... in an order set by drag and drop. Nothing changes
+    # until Apply Encoding is clicked.
+    #
+    # A column with more categories than this would add that many dummy
+    # columns (and an equally long drag-and-drop list), so dummy encoding is
+    # not offered for it and label encoding numbers it in sorted order.
+    regEncodeMaxLevels <- 20L
+
+    regCategoricalCols <- function(dat)
+      names(dat)[vapply(dat, function(v) is.character(v) || is.factor(v), logical(1))]
+
+    # Categories of a column in their default order: factor levels, else sorted.
+    regLevels <- function(v)
+      if (is.factor(v)) levels(droplevels(v)) else sort(unique(v[!is.na(v)]))
+
+    # The encoded data from the last Apply Encoding, or NULL. It is dropped as
+    # soon as the uploaded data change or are cleared (before the methods see
+    # the new data: priority), and the encoding panel starts again.
+    regEncoded <- reactiveVal(NULL)
+    observeEvent(reg_data(), regEncoded(NULL), ignoreNULL = FALSE, priority = 100)
+
+    # The data the methods and the data preview use.
+    reg_model_data <- reactive({
+      enc <- regEncoded()
+      if (is.null(enc)) reg_data() else enc
+    })
+
+    output$regEncodingUI <- renderUI({
+      req(input$dataInputMode == "upload")
+      dat <- reg_data()
+      req(dat)
+      catCols <- regCategoricalCols(dat)
+      if (length(catCols) == 0) return(NULL)
+      note <- function(...) p(class = "text-muted", style = "font-size: 0.85em; margin: 2px 0 4px 0;", ...)
+
+      tags$details(
+        open  = NA,
+        style = "margin-bottom: 10px;",
+        # Each category in a label-encoding list shows the number it is given;
+        # a CSS counter follows the list order, so it updates while dragging.
+        tags$style(HTML(
+          ".reg-label-order .rank-list { counter-reset: regLabel; }
+           .reg-label-order .rank-list-item { position: relative; overflow: visible; margin-left: 3em; }
+           .reg-label-order .rank-list-item::before {
+             counter-increment: regLabel; content: counter(regLabel) ' \\2192';
+             position: absolute; right: 100%; top: 50%; transform: translateY(-50%);
+             padding-right: 0.5em; white-space: nowrap; font-weight: bold;
+           }"
+        )),
+        tags$summary(strong(sprintf("Categorical Variables (%d found)", length(catCols)))),
+        note("These columns are not numeric, so they cannot be selected as variables until they are encoded. Choose an encoding for each and click Apply Encoding."),
+        lapply(seq_along(catCols), function(i) {
+          col   <- catCols[i]
+          lv    <- regLevels(dat[[col]])
+          encId <- session$ns(paste0("regEncoding_", i))
+          canDummy <- length(lv) >= 2 && length(lv) <= regEncodeMaxLevels
+          choices <- c("Do not encode" = "none",
+                       if (canDummy) c("Dummy encoding" = "dummy"),
+                       "Label encoding" = "label")
+          div(
+            style = "border-top: 1px solid #ddd; padding-top: 6px; margin-top: 6px;",
+            p(strong(col), em(sprintf(" (%d categories)", length(lv))), style = "margin-bottom: 2px;"),
+            selectInput(encId, label = NULL, choices = choices, width = "100%"),
+            if (length(lv) > regEncodeMaxLevels) {
+              note(sprintf("Dummy encoding is limited to %d categories. Label encoding numbers the categories in sorted order.",
+                           regEncodeMaxLevels))
+            } else tagList(
+              if (canDummy) conditionalPanel(
+                condition = sprintf("input['%s'] === 'dummy'", encId),
+                note(sprintf("Adds %d binary column%s. Reference category: %s",
+                             length(lv) - 1, if (length(lv) > 2) "s" else "", lv[1]))
+              ),
+              conditionalPanel(
+                condition = sprintf("input['%s'] === 'label'", encId),
+                note(em("Drag to set the order:")),
+                div(class = "reg-label-order",
+                    sortable::rank_list(text = NULL, labels = lv,
+                                        input_id = session$ns(paste0("regOrder_", i))))
+              )
+            )
+          )
+        }),
+        actionButton(session$ns("regApplyEncoding"), "Apply Encoding", class = "act-btn")
+      )
+    })
+
+    observeEvent(input$regApplyEncoding, {
+      dat <- reg_data()
+      req(dat)
+      catCols <- regCategoricalCols(dat)
+      out <- as.data.frame(dat, check.names = FALSE)
+      nEncoded <- 0L
+      for (i in seq_along(catCols)) {
+        col    <- catCols[i]
+        method <- input[[paste0("regEncoding_", i)]]
+        if (is.null(method) || method == "none") next
+        v  <- as.character(dat[[col]])
+        lv <- regLevels(dat[[col]])
+        if (method == "label") {
+          ord <- input[[paste0("regOrder_", i)]]
+          if (length(lv) > regEncodeMaxLevels || !setequal(ord, lv)) ord <- lv
+          out[[col]] <- match(v, ord)
+        } else if (method == "dummy" && length(lv) >= 2 && length(lv) <= regEncodeMaxLevels) {
+          # Built by hand rather than with model.matrix(), which drops the rows
+          # with a missing value; here they stay NA.
+          dummies <- lapply(lv[-1], function(l) as.integer(v == l))
+          others  <- setdiff(names(out), col)
+          names(dummies) <- tail(make.unique(c(others, paste0(col, "_", lv[-1]))), length(dummies))
+          pos <- match(col, names(out))
+          out <- cbind(out[seq_len(pos - 1)],
+                       as.data.frame(dummies, check.names = FALSE),
+                       out[setdiff(seq_along(out), seq_len(pos))])
+        } else next
+        nEncoded <- nEncoded + 1L
+      }
+      if (nEncoded == 0L) {
+        regEncoded(NULL)
+        showNotification("No columns were encoded: choose an encoding for at least one column.", type = "warning")
+      } else {
+        regEncoded(out)
+        showNotification(sprintf("Encoding applied to %d column%s.", nEncoded, if (nEncoded > 1) "s" else ""),
+                         type = "message")
+      }
+    })
+
     # Clears the uploaded file: resets the file input, tells reg_data() the file
     # is gone (see regDataCleared above) and empties the sheet picker.
     # shinyjs::reset() namespaces its id with the current reactive domain, so it
@@ -471,7 +603,7 @@ regressionAndCorrelationServer <- function(id) {
     startMethodServer <- function(m) {
       active    <- methodActive[[m]]
       is_active <- function() active()
-      gated_reg_data      <- methodGate(active, reg_data)
+      gated_reg_data      <- methodGate(active, reg_model_data)
       gated_clear_trigger <- methodGate(active, clear_trigger)
       gated_upload_error  <- methodGateRV(active, upload_error)
       gated_hide_shared   <- methodGateRV(active, hide_shared)
@@ -513,9 +645,9 @@ regressionAndCorrelationServer <- function(id) {
 
     # ---- Shared data preview (shown immediately on upload, above child UI) ----
     output$sharedDataTable <- renderDT({
-      req(input$dataInputMode == "upload", !is.null(reg_data()))
+      req(input$dataInputMode == "upload", !is.null(reg_model_data()))
       datatable(
-        reg_data(),
+        reg_model_data(),
         options = list(
           pageLength   = 25,
           lengthMenu   = list(c(25, 50, 100, -1), c("25", "50", "100", "All")),
@@ -525,7 +657,7 @@ regressionAndCorrelationServer <- function(id) {
     })
     outputOptions(output, "sharedDataTable", suspendWhenHidden = FALSE)
 
-    observeEvent(list(reg_data(), input$dataInputMode, input$multiple), {
+    observeEvent(list(reg_model_data(), input$dataInputMode, input$multiple), {
       hide_shared(FALSE)
     }, ignoreNULL = FALSE, priority = 10)
 

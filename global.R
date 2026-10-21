@@ -29,9 +29,9 @@ library(shinyjs)
 library(shinyMatrix)
 library(shinyvalidate)
 library(shinyWidgets)
-## sortable (and its sortable::enable_modules() call) was dropped: its only
-## user, the drag-and-drop rank_list() in an MLR encoding UI that was never
-## shown, is gone. It stays in the Dockerfile.
+## sortable is not attached: its only user, the drag-and-drop label-encoding
+## order in Regression and Correlation, calls sortable::rank_list(). It stays
+## in the Dockerfile.
 library(thematic)
 library(tibble)
 
