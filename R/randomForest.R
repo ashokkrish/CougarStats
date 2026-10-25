@@ -626,6 +626,12 @@ RFServer <- function(id, data, shared_explanatory, shared_response, clear_trigge
     }
 
     rf_calculate <- function() {
+      # Hand the shared R process's RNG state back when Calculate returns, as
+      # k-NN and XGBoost do. The seeded split and fit already restore it, but
+      # shinyjs::delay() below draws a random number for its timer id.
+      restore_rng <- knn_save_rng()
+      on.exit(restore_rng(), add = TRUE)
+
 
       rf_message(NULL)
 

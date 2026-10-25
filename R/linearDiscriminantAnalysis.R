@@ -675,6 +675,13 @@ LDAServer <- function(id, data, shared_explanatory, shared_response, clear_trigg
 
     # Main calculation
     observeEvent(input$calculate, {
+      # Hand the shared R process's RNG state back when Calculate returns, as
+      # k-NN and XGBoost do. The seeded split already restores it, but
+      # MASS's predict() and lda(CV = TRUE) break class ties with a random
+      # draw (max.col), which they make even when there is no tie.
+      restore_rng <- knn_save_rng()
+      on.exit(restore_rng(), add = TRUE)
+
       # Any unexpected error (bad column names, a degenerate class, an
       # unreadable value, ...) is reported in the message area instead of
       # ending the session.
