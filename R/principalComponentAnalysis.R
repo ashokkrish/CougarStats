@@ -461,10 +461,21 @@ PCAServer <- function(id, data, shared_explanatory, shared_response, clear_trigg
         )
     }, res = 96)
 
+    # Loadings: each eigenvector ($rotation column) scaled by its component's
+    # standard deviation. The data are standardized (scale. = TRUE), so these
+    # are the correlations between the variables and the components -- the
+    # same scale as the varimax table from psych::principal. Used by the
+    # unrotated loadings table, the heatmap and the interpretation; the
+    # Eigenvectors table keeps $rotation.
+    pca_loadings <- reactive({
+      req(pca_results())
+      sweep(pca_results()$rotation, 2, pca_results()$sdev, "*")
+    })
+
     output$loadingsHeatmap <- renderPlot({
       req(pca_results(), input$numFactors)
-      
-      loadings <- as.data.frame(pca_results()$rotation)
+
+      loadings <- as.data.frame(pca_loadings())
       
       k <- min(input$numFactors, ncol(loadings))
       validate(need(k >= 1, "Choose at least 1 factor."))
@@ -526,7 +537,7 @@ PCAServer <- function(id, data, shared_explanatory, shared_response, clear_trigg
     output$pcaLoadings <- renderTable({
       req(pca_results())
       validate_num_factors()
-      loadings_df <- as.data.frame(pca_results()$rotation)[, 1:input$numFactors, drop = FALSE]
+      loadings_df <- as.data.frame(pca_loadings())[, 1:input$numFactors, drop = FALSE]
       round(loadings_df, 3)
     }, rownames = TRUE, striped = TRUE, bordered = TRUE)
     
@@ -535,7 +546,7 @@ PCAServer <- function(id, data, shared_explanatory, shared_response, clear_trigg
       validate_num_factors()
 
       summary_data  <- summary(pca_results())$importance
-      loadings_data <- pca_results()$rotation
+      loadings_data <- pca_loadings()
       sdev_vals     <- round(pca_results()$sdev, 2)
       sd_pc1        <- sdev_vals[1]
       sd_pc2        <- if (length(sdev_vals) >= 2) sdev_vals[2] else NA
