@@ -201,7 +201,8 @@ CARTMainPanelUI <- function(id) {
   )
 }
 
-CARTServer <- function(id, data, shared_explanatory, shared_response, clear_trigger = NULL) {
+CARTServer <- function(id, data, shared_explanatory, shared_response, clear_trigger = NULL,
+                       shared_split = NULL) {
   moduleServer(id, function(input, output, session) {
 
     results_ready <- reactiveVal(FALSE)
@@ -984,6 +985,19 @@ CARTServer <- function(id, data, shared_explanatory, shared_response, clear_trig
 
       updateNavbarPage(session, "cartMainPanel", selected = "uploaded_data_tab")
     })
+
+    # Train/Test split shared by every classifier (held in machineLearning.R),
+    # so they all draw the same test rows: moving this slider moves the others,
+    # and a method opened later starts at the shared value. ignoreInit keeps
+    # this slider's default from overwriting a value set in another method.
+    if (!is.null(shared_split)) {
+      observeEvent(input$split, shared_split(input$split), ignoreInit = TRUE)
+      observeEvent(shared_split(), {
+        if (!identical(input$split, shared_split())) {
+          updateSliderInput(session, "split", value = shared_split())
+        }
+      })
+    }
 
     # Clear Data (parent sidebar): the dataset is gone, so drop results, errors
     # and the variable choices, and put this method's settings back to their
