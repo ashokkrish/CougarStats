@@ -379,7 +379,7 @@ XGBServer <- function(id, data, shared_explanatory, shared_response, clear_trigg
         tags$h5(tags$strong("Accuracy Calculation"),
                 style = "margin-top: 14px; margin-bottom: 2px;"),
         tags$p(HTML(sprintf(
-          "\\( \\text{Accuracy} = \\dfrac{\\text{Correct Predictions}}{\\text{Total Observations}} = \\dfrac{%d}{%d} = %.2f\\%% \\)",
+          "\\( \\text{Test Set Accuracy} = \\dfrac{\\text{Correct Test Predictions}}{\\text{Test Observations}} = \\dfrac{%d}{%d} = %.2f\\%% \\)",
           correct, total, r$accuracy * 100
         ))),
         tags$hr(),
@@ -485,7 +485,7 @@ XGBServer <- function(id, data, shared_explanatory, shared_response, clear_trigg
           "Training Observations",
           "Test Observations",
           "Train/Test Split",
-          "Accuracy"
+          "Test Set Accuracy"
         ),
         Value = c(
           "Classification",
@@ -521,7 +521,7 @@ XGBServer <- function(id, data, shared_explanatory, shared_response, clear_trigg
            Precision = "Of all instances predicted as this class, the fraction that are truly this class. High precision means few false positives.",
            Recall    = "Of all actual instances of this class, the fraction correctly predicted. High recall means few false negatives.",
            F1        = "Harmonic mean of Precision and Recall — balances both into a single score.",
-           Support   = "Number of actual instances of this class in the dataset."
+           Support   = "Number of actual instances of this class in the test set."
          )
          sapply(x, function(col) {
            if (col %in% names(tips)) {
@@ -964,6 +964,7 @@ XGBServer <- function(id, data, shared_explanatory, shared_response, clear_trigg
         n_total          = n,
         n_train          = n_train,
         n_test           = n - n_train,
+        test_idx         = setdiff(seq_len(n), train_idx),
         split            = input$split,
         nrounds          = as.integer(input$nrounds),
         max_depth        = as.integer(input$max_depth),

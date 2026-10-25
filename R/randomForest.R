@@ -176,6 +176,7 @@ rf_fit_model <- function(analysis_df, resp_col, predictors, ntree, mtry_val, n_t
     n_total       = n,
     n_train       = n_train,
     n_test        = n - n_train,
+    test_idx      = setdiff(seq_len(n), train_idx),
     ntree         = ntree,
     mtry_used     = rf_fit$mtry,
     oob_error     = oob_error,
@@ -864,7 +865,7 @@ RFServer <- function(id, data, shared_explanatory, shared_response, clear_trigge
                 style = "margin-top: 14px; margin-bottom: 2px;"),
         withMathJax(),
         tags$p(HTML(sprintf(
-          "\\( \\text{Accuracy} = \\dfrac{\\text{Correct Predictions}}{\\text{Total Observations}} = \\dfrac{%d}{%d} = %.2f\\%% \\)",
+          "\\( \\text{Test Set Accuracy} = \\dfrac{\\text{Correct Test Predictions}}{\\text{Test Observations}} = \\dfrac{%d}{%d} = %.2f\\%% \\)",
           rf_correct, rf_total, r$accuracy * 100
         ))),
         tags$hr(),
@@ -972,7 +973,7 @@ RFServer <- function(id, data, shared_explanatory, shared_response, clear_trigge
            Precision = "Of all instances predicted as this class, the fraction that are truly this class. High precision means few false positives.",
            Recall    = "Of all actual instances of this class, the fraction correctly predicted. High recall means few false negatives.",
            F1        = "Harmonic mean of Precision and Recall — balances both into a single score.",
-           Support   = "Number of actual instances of this class in the dataset."
+           Support   = "Number of actual instances of this class in the test set."
          )
          sapply(x, function(col) {
            if (col %in% names(tips)) {

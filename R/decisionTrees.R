@@ -102,6 +102,12 @@ CARTSidebarUI <- function(id) {
   tagList(
     useShinyjs(),
 
+    sliderInput(
+      ns("split"),
+      label = strong("Train/Test split (%)"),
+      min = 50, max = 90, value = 80, step = 1
+    ),
+
     numericInput(
       ns("max_depth"),
       strong("Maximum Tree Depth"),
@@ -329,6 +335,7 @@ CARTServer <- function(id, data, shared_explanatory, shared_response, clear_trig
         data(),
         input$response,
         input$predictors,
+        input$split,
         input$max_depth,
         input$min_split,
         input$cp
@@ -489,18 +496,18 @@ CARTServer <- function(id, data, shared_explanatory, shared_response, clear_trig
         tableOutput(session$ns("cartClassDist")),
         tags$hr(),
 
-        tags$h4("Classification Report"),
+        tags$h4("Classification Report (Test Set)"),
         tableOutput(session$ns("cartClassReport")),
         tags$script(HTML("setTimeout(function(){ if(typeof tippy!=='undefined') tippy('[data-tippy-content]'); }, 200);")),
         tags$hr(),
 
-        tags$h4("Confusion Matrix"),
+        tags$h4("Confusion Matrix (Test Set)"),
         tableOutput(session$ns("confusionMatrixResults")),
         tags$h5(tags$strong("Accuracy Calculation"),
                 style = "margin-top: 14px; margin-bottom: 2px;"),
         withMathJax(
           tags$p(HTML(sprintf(
-            "\\( \\text{Accuracy} = \\dfrac{\\text{Correct Predictions}}{\\text{Total Observations}} = \\dfrac{%d}{%d} = %.2f\\%% \\)",
+            "\\( \\text{Test Set Accuracy} = \\dfrac{\\text{Correct Test Predictions}}{\\text{Test Observations}} = \\dfrac{%d}{%d} = %.2f\\%% \\)",
             correct, total, r$accuracy * 100
           )))
         )
@@ -516,15 +523,21 @@ CARTServer <- function(id, data, shared_explanatory, shared_response, clear_trig
           "Number of Classes",
           "Number of Predictors",
           "Number of Complete Cases",
+          "Training Observations",
+          "Test Observations",
+          "Train/Test Split",
           "Maximum Tree Depth",
           "Minimum Split Size",
           "Complexity Parameter",
-          "Accuracy"
+          "Test Set Accuracy"
         ),
         Value = c(
           as.character(r$n_classes),
           as.character(length(r$predictors)),
           as.character(r$n),
+          as.character(r$n_train),
+          as.character(r$n_test),
+          paste0(r$split, "%"),
           as.character(r$max_depth),
           as.character(r$min_split),
           as.character(r$cp),
@@ -550,7 +563,7 @@ CARTServer <- function(id, data, shared_explanatory, shared_response, clear_trig
            Precision = "Of all instances predicted as this class, the fraction that are truly this class. High precision means few false positives.",
            Recall    = "Of all actual instances of this class, the fraction correctly predicted. High recall means few false negatives.",
            F1        = "Harmonic mean of Precision and Recall — balances both into a single score.",
-           Support   = "Number of actual instances of this class in the dataset."
+           Support   = "Number of actual instances of this class in the test set."
          )
          sapply(x, function(col) {
            if (col %in% names(tips)) {
@@ -794,8 +807,23 @@ CARTServer <- function(id, data, shared_explanatory, shared_response, clear_trig
         env = baseenv()
       )
       
+      # Train / test split: the same seeded draw as Random Forest, k-NN and
+      # XGBoost (rf_with_seed() puts the shared RNG state back afterwards), so
+      # every classifier is tested on the same rows. The tree is grown on the
+      # training rows and evaluated on the test rows.
+      n       <- nrow(analysis_df)
+      n_train <- floor(n * (input$split / 100))
+
+      if (n_train < 10) {
+        cart_message("Training set is too small. Try increasing the split percentage or using a larger dataset.")
+        return()
+      }
+
+      train_idx <- rf_with_seed(123, sample(seq_len(n), size = n_train))
+      test_idx  <- setdiff(seq_len(n), train_idx)
+
       cart_message(NULL)
-      
+
       # xval = 0: rpart's default 10-fold cross-validation refits the tree 10
       # more times to fill the cp table's xerror column, which is never used.
       # model = TRUE keeps the model frame with the fit, which rpart.plot needs
@@ -804,7 +832,7 @@ CARTServer <- function(id, data, shared_explanatory, shared_response, clear_trig
       cart_fit <- tryCatch(
         rpart::rpart(
           formula = cart_formula,
-          data = fit_df,
+          data = fit_df[train_idx, , drop = FALSE],
           method = "class",
           model = TRUE,
           control = rpart::rpart.control(
@@ -827,7 +855,7 @@ CARTServer <- function(id, data, shared_explanatory, shared_response, clear_trig
       req(cart_fit)
       
       cart_pred <- tryCatch(
-        predict(cart_fit, fit_df[, fit_preds, drop = FALSE], type = "class"),
+        predict(cart_fit, fit_df[test_idx, fit_preds, drop = FALSE], type = "class"),
         error = function(e) {
           showNotification(
             paste("Predictions could not be generated:", e$message),
@@ -844,17 +872,19 @@ CARTServer <- function(id, data, shared_explanatory, shared_response, clear_trig
         cart_fit <- cart_relabel(cart_fit, c(fit_preds, fit_resp), c(predictors, resp_col))
       }
       
+      test_actual <- analysis_df[[resp_col]][test_idx]
+
       confusion_mat <- table(
-        Actual = analysis_df[[resp_col]],
+        Actual = test_actual,
         Predicted = cart_pred
       )
-      
+
       accuracy <- sum(diag(confusion_mat)) / sum(confusion_mat)
-      
+
       class_dist_df     <- as.data.frame(table(analysis_df[[resp_col]]))
       colnames(class_dist_df) <- c("Class", "Count")
 
-      cart_class_report <- knn_classification_report(analysis_df[[resp_col]], cart_pred)$report
+      cart_class_report <- knn_classification_report(test_actual, cart_pred)$report
 
       importance <- cart_fit$variable.importance
       if (is.null(importance)) {
@@ -879,6 +909,10 @@ CARTServer <- function(id, data, shared_explanatory, shared_response, clear_trig
         response = resp_col,
         predictors = predictors,
         n = nrow(analysis_df),
+        n_train = n_train,
+        n_test = length(test_idx),
+        split = input$split,
+        test_idx = test_idx,
         n_classes = length(unique(analysis_df[[resp_col]])),
         max_depth = as.integer(input$max_depth),
         min_split = as.integer(input$min_split),
@@ -943,7 +977,8 @@ CARTServer <- function(id, data, shared_explanatory, shared_response, clear_trig
       updateNumericInput(session, "max_depth", value = 10)
       updateNumericInput(session, "min_split", value = 20)
       updateNumericInput(session, "cp", value = 0.01)
-      
+      updateSliderInput(session, "split", value = 80)
+
       updatePickerInput(session, "response", selected = character(0))
       updatePickerInput(session, "predictors", selected = character(0))
 
@@ -979,6 +1014,7 @@ CARTServer <- function(id, data, shared_explanatory, shared_response, clear_trig
         updateNumericInput(session, "max_depth", value = 10)
         updateNumericInput(session, "min_split", value = 20)
         updateNumericInput(session, "cp", value = 0.01)
+        updateSliderInput(session, "split", value = 80)
 
         updateNavbarPage(session, "cartMainPanel", selected = "uploaded_data_tab")
       }, ignoreInit = TRUE)

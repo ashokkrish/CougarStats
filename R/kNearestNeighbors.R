@@ -840,17 +840,17 @@ KNNServer <- function(id, data, shared_explanatory, shared_response, clear_trigg
         tableOutput(session$ns("classDist")),
         tags$hr(),
 
-        tags$h4("Classification Report"),
+        tags$h4("Classification Report (Test Set)"),
         tableOutput(session$ns("classReport")),
         tags$script(HTML("setTimeout(function(){ if(typeof tippy!=='undefined') tippy('[data-tippy-content]'); }, 200);")),
 
-        tags$h4("Confusion Matrix"),
+        tags$h4("Confusion Matrix (Test Set)"),
         tableOutput(session$ns("confMat")),
         tags$h5(tags$strong("Accuracy Calculation"),
                 style = "margin-top: 14px; margin-bottom: 2px;"),
         withMathJax(
           tags$p(HTML(sprintf(
-            "\\( \\text{Accuracy} = \\dfrac{\\text{Correct Predictions}}{\\text{Total Observations}} = \\dfrac{%d}{%d} = %.2f\\%% \\)",
+            "\\( \\text{Test Set Accuracy} = \\dfrac{\\text{Correct Test Predictions}}{\\text{Test Observations}} = \\dfrac{%d}{%d} = %.2f\\%% \\)",
             correct, total, s$metrics$accuracy * 100
           )))
         )
@@ -870,7 +870,7 @@ KNNServer <- function(id, data, shared_explanatory, shared_response, clear_trigg
           "Train/Test Split",
           "Selected k",
           "Recommended k",
-          "Accuracy"
+          "Test Set Accuracy"
         ),
         Value = c(
           as.character(s$n_total),
@@ -900,7 +900,7 @@ KNNServer <- function(id, data, shared_explanatory, shared_response, clear_trigg
            Precision = "Of all instances predicted as this class, the fraction that are truly this class. High precision means few false positives.",
            Recall    = "Of all actual instances of this class, the fraction correctly predicted. High recall means few false negatives.",
            F1        = "Harmonic mean of Precision and Recall — balances both into a single score.",
-           Support   = "Number of actual instances of this class in the dataset."
+           Support   = "Number of actual instances of this class in the test set."
          )
          sapply(x, function(col) {
            if (col %in% names(tips)) {
@@ -1065,7 +1065,7 @@ KNNServer <- function(id, data, shared_explanatory, shared_response, clear_trigg
 
       legend(
         "bottom",
-        legend = c("Accuracy", paste0("Selected k = ", s$k)),
+        legend = c("Test Set Accuracy", paste0("Selected k = ", s$k)),
         col    = c("#4472C4", "#ED7D31"),
         lty    = c(1, 2),
         pch    = c(19, 19),
@@ -1281,6 +1281,7 @@ KNNServer <- function(id, data, shared_explanatory, shared_response, clear_trigg
         n_train       = n_train,
         k_recommended = k_recommended,
         k_sqrt_odd    = k_sqrt_odd,
+        test_idx      = setdiff(seq_len(n), train_idx),
         metrics       = metrics,
         class_dist    = class_dist_df
       ))
