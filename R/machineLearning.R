@@ -101,6 +101,9 @@ machineLearningServer <- function(id) {
     # errors and variable choices and resets its settings (data() going NULL alone doesn't
     # reach them: their observeEvent(data(), ...) handlers ignore NULL).
     clear_trigger      <- reactiveVal(0)
+    # Train/Test split (%) shared by the five classifiers, so they all test on
+    # the same rows. Each method's slider reads and writes it.
+    shared_split       <- reactiveVal(80)
 
     # ---- File upload ----
     observeEvent(input$mlDataFile, {
@@ -232,11 +235,16 @@ machineLearningServer <- function(id) {
     # simply persist if the user switches away and back, instead of clearing.
     ml_servers <- list(
       PCA  = function(explanatory, response) PCAServer("ml_pca",   ml_data, explanatory, response, clear_trigger),
-      KNN  = function(explanatory, response) KNNServer("ml_knn",   ml_data, explanatory, response, clear_trigger),
-      LDA  = function(explanatory, response) LDAServer("ml_lda",   ml_data, explanatory, response, clear_trigger),
-      CART = function(explanatory, response) CARTServer("ml_cart", ml_data, explanatory, response, clear_trigger),
-      RF   = function(explanatory, response) RFServer("ml_rf",     ml_data, explanatory, response, clear_trigger),
-      XGB  = function(explanatory, response) XGBServer("ml_xgb",   ml_data, explanatory, response, clear_trigger)
+      KNN  = function(explanatory, response) KNNServer("ml_knn",   ml_data, explanatory, response, clear_trigger,
+                                                           shared_split = shared_split),
+      LDA  = function(explanatory, response) LDAServer("ml_lda",   ml_data, explanatory, response, clear_trigger,
+                                                           shared_split = shared_split),
+      CART = function(explanatory, response) CARTServer("ml_cart", ml_data, explanatory, response, clear_trigger,
+                                                           shared_split = shared_split),
+      RF   = function(explanatory, response) RFServer("ml_rf",     ml_data, explanatory, response, clear_trigger,
+                                                           shared_split = shared_split),
+      XGB  = function(explanatory, response) XGBServer("ml_xgb",   ml_data, explanatory, response, clear_trigger,
+                                                           shared_split = shared_split)
     )
 
     # Shared selections as they stood when the current dataset was loaded.

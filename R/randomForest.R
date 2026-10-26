@@ -176,6 +176,7 @@ rf_fit_model <- function(analysis_df, resp_col, predictors, ntree, mtry_val, n_t
     n_total       = n,
     n_train       = n_train,
     n_test        = n - n_train,
+    test_idx      = setdiff(seq_len(n), train_idx),
     ntree         = ntree,
     mtry_used     = rf_fit$mtry,
     oob_error     = oob_error,
@@ -386,7 +387,8 @@ RFMainPanelUI <- function(id) {
 
 # ============== SERVER ==============
 
-RFServer <- function(id, data, shared_explanatory, shared_response, clear_trigger = NULL) {
+RFServer <- function(id, data, shared_explanatory, shared_response, clear_trigger = NULL,
+                     shared_split = NULL) {
   moduleServer(id, function(input, output, session) {
 
     # ---- Reactive state ----
@@ -624,6 +626,12 @@ RFServer <- function(id, data, shared_explanatory, shared_response, clear_trigge
     }
 
     rf_calculate <- function() {
+      # Hand the shared R process's RNG state back when Calculate returns, as
+      # k-NN and XGBoost do. The seeded split and fit already restore it, but
+      # shinyjs::delay() below draws a random number for its timer id.
+      restore_rng <- knn_save_rng()
+      on.exit(restore_rng(), add = TRUE)
+
 
       rf_message(NULL)
 
@@ -864,7 +872,7 @@ RFServer <- function(id, data, shared_explanatory, shared_response, clear_trigge
                 style = "margin-top: 14px; margin-bottom: 2px;"),
         withMathJax(),
         tags$p(HTML(sprintf(
-          "\\( \\text{Accuracy} = \\dfrac{\\text{Correct Predictions}}{\\text{Total Observations}} = \\dfrac{%d}{%d} = %.2f\\%% \\)",
+          "\\( \\text{Test Set Accuracy} = \\dfrac{\\text{Correct Test Predictions}}{\\text{Test Observations}} = \\dfrac{%d}{%d} = %.2f\\%% \\)",
           rf_correct, rf_total, r$accuracy * 100
         ))),
         tags$hr(),
@@ -972,7 +980,7 @@ RFServer <- function(id, data, shared_explanatory, shared_response, clear_trigge
            Precision = "Of all instances predicted as this class, the fraction that are truly this class. High precision means few false positives.",
            Recall    = "Of all actual instances of this class, the fraction correctly predicted. High recall means few false negatives.",
            F1        = "Harmonic mean of Precision and Recall — balances both into a single score.",
-           Support   = "Number of actual instances of this class in the dataset."
+           Support   = "Number of actual instances of this class in the test set."
          )
          sapply(x, function(col) {
            if (col %in% names(tips)) {
@@ -1421,6 +1429,19 @@ RFServer <- function(id, data, shared_explanatory, shared_response, clear_trigge
 
       updateNavbarPage(session, "rfMainPanel", selected = "uploaded_data_tab")
     })
+
+    # Train/Test split shared by every classifier (held in machineLearning.R),
+    # so they all draw the same test rows: moving this slider moves the others,
+    # and a method opened later starts at the shared value. ignoreInit keeps
+    # this slider's default from overwriting a value set in another method.
+    if (!is.null(shared_split)) {
+      observeEvent(input$split, shared_split(input$split), ignoreInit = TRUE)
+      observeEvent(shared_split(), {
+        if (!identical(input$split, shared_split())) {
+          updateSliderInput(session, "split", value = shared_split())
+        }
+      })
+    }
 
     # Clear Data (parent sidebar): the dataset is gone, so drop results, errors
     # and the variable choices, and put this method's settings back to their

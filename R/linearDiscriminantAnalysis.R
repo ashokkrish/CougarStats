@@ -6,6 +6,27 @@ LDASidebarUI <- function(id) {
   tagList(
     useShinyjs(),
 
+    # How accuracy is measured. The train/test split (the default) draws the
+    # same seeded test rows as every other classifier; leave-one-out uses
+    # every row, so the split slider is hidden while it is chosen.
+    radioButtons(
+      ns("evaluation"),
+      strong("Evaluation"),
+      choices = c("Train/test split" = "split",
+                  "Leave-one-out cross-validation" = "loocv"),
+      selected = "split"
+    ),
+
+    conditionalPanel(
+      condition = "input.evaluation == 'split'",
+      ns = ns,
+      sliderInput(
+        ns("split"),
+        label = strong("Train/Test split (%)"),
+        min = 50, max = 90, value = 80, step = 1
+      )
+    ),
+
     div(
       style = "font-size: 15px; color: #6c757d; margin-top: 8px; margin-bottom: 6px; ",
       "Select a categorical variable, must have 2 or more unique categories."
@@ -35,13 +56,7 @@ LDASidebarUI <- function(id) {
       ),
       uiOutput(ns("predictorsError"))
     ),
-    
-    checkboxInput(
-      ns("useCV"),
-      "Use Leave-One-Out Cross-Validation",
-      value = FALSE
-    ),
-    
+
     uiOutput(ns("fileImportUserMessage")),
     actionButton(ns("calculate"), "Calculate", class = "act-btn"),
     actionButton(ns("reset"), "Reset Values", class = "act-btn")
@@ -90,7 +105,8 @@ LDAMainPanelUI <- function(id) {
   )
 }
 
-LDAServer <- function(id, data, shared_explanatory, shared_response, clear_trigger = NULL) {
+LDAServer <- function(id, data, shared_explanatory, shared_response, clear_trigger = NULL,
+                      shared_split = NULL) {
   moduleServer(id, function(input, output, session) {
 
     prepare_lda_response <- function(x) {
@@ -266,7 +282,8 @@ LDAServer <- function(id, data, shared_explanatory, shared_response, clear_trigg
         data(),
         input$response,
         input$predictors,
-        input$useCV
+        input$evaluation,
+        input$split
       ),
       {
         if (isTRUE(results_ready())) {
@@ -413,10 +430,15 @@ LDAServer <- function(id, data, shared_explanatory, shared_response, clear_trigg
       r <- calc_results()
       req(r)
 
-      conf_used <- if (isTRUE(r$use_cv) && !is.null(r$cv_confusion)) r$cv_confusion else r$confusion
-      acc_used  <- if (isTRUE(r$use_cv) && !is.null(r$cv_accuracy))  r$cv_accuracy  else r$accuracy
-      correct   <- sum(diag(conf_used))
-      total     <- sum(conf_used)
+      correct  <- sum(diag(r$confusion))
+      total    <- sum(r$confusion)
+      loocv    <- identical(r$evaluation, "loocv")
+      eval_tag <- if (loocv) "(Leave-One-Out CV)" else "(Test Set)"
+      acc_formula <- if (loocv) {
+        "\\( \\text{LOOCV Accuracy} = \\dfrac{\\text{Correct Held-Out Predictions}}{\\text{Observations}} = \\dfrac{%d}{%d} = %.2f\\%% \\)"
+      } else {
+        "\\( \\text{Test Set Accuracy} = \\dfrac{\\text{Correct Test Predictions}}{\\text{Test Observations}} = \\dfrac{%d}{%d} = %.2f\\%% \\)"
+      }
 
       tagList(
         tags$h4("Model Summary"),
@@ -427,20 +449,17 @@ LDAServer <- function(id, data, shared_explanatory, shared_response, clear_trigg
         tableOutput(session$ns("ldaClassDist")),
         tags$hr(),
 
-        tags$h4("Classification Report"),
+        tags$h4(paste("Classification Report", eval_tag)),
         tableOutput(session$ns("ldaClassReport")),
         tags$script(HTML("setTimeout(function(){ if(typeof tippy!=='undefined') tippy('[data-tippy-content]'); }, 200);")),
         tags$hr(),
 
-        tags$h4("Confusion Matrix"),
+        tags$h4(paste("Confusion Matrix", eval_tag)),
         tableOutput(session$ns("confusionMatrix")),
         tags$h5(tags$strong("Accuracy Calculation"),
                 style = "margin-top: 14px; margin-bottom: 2px;"),
         withMathJax(
-          tags$p(HTML(sprintf(
-            "\\( \\text{Accuracy} = \\dfrac{\\text{Correct Predictions}}{\\text{Total Observations}} = \\dfrac{%d}{%d} = %.2f\\%% \\)",
-            correct, total, acc_used * 100
-          )))
+          tags$p(HTML(sprintf(acc_formula, correct, total, r$accuracy * 100)))
         ),
         tags$hr(),
 
@@ -462,29 +481,49 @@ LDAServer <- function(id, data, shared_explanatory, shared_response, clear_trigg
       r <- calc_results()
       req(r)
 
-      acc <- if (isTRUE(r$use_cv) && !is.null(r$cv_accuracy)) {
-        round(r$cv_accuracy, 4)
+      if (identical(r$evaluation, "loocv")) {
+        data.frame(
+          Item = c(
+            "Number of Classes",
+            "Number of Predictors",
+            "Number of Complete Cases",
+            "Evaluation",
+            "LOOCV Accuracy"
+          ),
+          Value = c(
+            length(r$fit$prior),
+            length(r$predictors),
+            r$n,
+            "Leave-one-out cross-validation",
+            round(r$accuracy, 4)
+          ),
+          check.names = FALSE
+        )
       } else {
-        round(r$accuracy, 4)
+        data.frame(
+          Item = c(
+            "Number of Classes",
+            "Number of Predictors",
+            "Number of Complete Cases",
+            "Evaluation",
+            "Training Observations",
+            "Test Observations",
+            "Train/Test Split",
+            "Test Set Accuracy"
+          ),
+          Value = c(
+            length(r$fit$prior),
+            length(r$predictors),
+            r$n,
+            "Train/test split",
+            r$n_train,
+            r$n_test,
+            paste0(r$split, "%"),
+            round(r$accuracy, 4)
+          ),
+          check.names = FALSE
+        )
       }
-
-      data.frame(
-        Item = c(
-          "Number of Classes",
-          "Number of Predictors",
-          "Number of Complete Cases",
-          "Cross Validation",
-          "Accuracy"
-        ),
-        Value = c(
-          length(r$fit$prior),
-          length(r$predictors),
-          r$n,
-          if (isTRUE(r$use_cv)) "Leave-One-Out" else "None",
-          acc
-        ),
-        check.names = FALSE
-      )
     }, rownames = FALSE, striped = TRUE, bordered = TRUE)
 
     output$ldaClassDist <- renderTable({
@@ -503,7 +542,11 @@ LDAServer <- function(id, data, shared_explanatory, shared_response, clear_trigg
            Precision = "Of all instances predicted as this class, the fraction that are truly this class. High precision means few false positives.",
            Recall    = "Of all actual instances of this class, the fraction correctly predicted. High recall means few false negatives.",
            F1        = "Harmonic mean of Precision and Recall — balances both into a single score.",
-           Support   = "Number of actual instances of this class in the dataset."
+           Support   = if (identical(isolate(calc_results())$evaluation, "loocv")) {
+             "Number of actual instances of this class; each was predicted by a model fitted without it."
+           } else {
+             "Number of actual instances of this class in the test set."
+           }
          )
          sapply(x, function(col) {
            if (col %in% names(tips)) {
@@ -553,11 +596,7 @@ LDAServer <- function(id, data, shared_explanatory, shared_response, clear_trigg
       r <- calc_results()
       req(r)
 
-      cm <- if (isTRUE(r$use_cv) && !is.null(r$cv_confusion)) {
-        as.data.frame.matrix(r$cv_confusion)
-      } else {
-        as.data.frame.matrix(r$confusion)
-      }
+      cm <- as.data.frame.matrix(r$confusion)
 
       cm$Actual <- paste0("<b>", rownames(cm), "</b>")
       cm <- cm[, c("Actual", setdiff(names(cm), "Actual"))]
@@ -636,6 +675,13 @@ LDAServer <- function(id, data, shared_explanatory, shared_response, clear_trigg
 
     # Main calculation
     observeEvent(input$calculate, {
+      # Hand the shared R process's RNG state back when Calculate returns, as
+      # k-NN and XGBoost do. The seeded split already restores it, but
+      # MASS's predict() and lda(CV = TRUE) break class ties with a random
+      # draw (max.col), which they make even when there is no tie.
+      restore_rng <- knn_save_rng()
+      on.exit(restore_rng(), add = TRUE)
+
       # Any unexpected error (bad column names, a degenerate class, an
       # unreadable value, ...) is reported in the message area instead of
       # ending the session.
@@ -758,14 +804,46 @@ LDAServer <- function(id, data, shared_explanatory, shared_response, clear_trigg
                Reduce(function(a, b) call("+", a, b), lapply(predictors, as.name))),
           env = baseenv()
         )
-        lda_message(NULL)
-        lda_fit <- MASS::lda(lda_formula, data = analysis_df)
+        evaluation <- if (identical(input$evaluation, "loocv")) "loocv" else "split"
+        n          <- nrow(analysis_df)
 
+        if (evaluation == "split") {
+          # Train / test split: the same seeded draw as Random Forest, k-NN,
+          # XGBoost and CART (rf_with_seed() puts the shared RNG state back
+          # afterwards), so every classifier is tested on the same rows. LDA is
+          # fitted on the training rows and evaluated on the test rows.
+          n_train <- floor(n * (input$split / 100))
+          if (n_train < 10) {
+            lda_message("Training set is too small. Try increasing the split percentage or using a larger dataset.")
+            return()
+          }
+          train_idx <- rf_with_seed(123, sample(seq_len(n), size = n_train))
+          test_idx  <- setdiff(seq_len(n), train_idx)
+        } else {
+          # Leave-one-out: fitted on every row; each row is predicted by a fit
+          # that leaves that row out.
+          n_train   <- n
+          train_idx <- seq_len(n)
+          test_idx  <- NULL
+        }
+
+        lda_message(NULL)
+        lda_fit <- MASS::lda(lda_formula, data = analysis_df[train_idx, , drop = FALSE])
+
+        # Discriminant scores of every row, for the LD plot
         lda_pred <- predict(lda_fit, analysis_df[, predictors, drop = FALSE])
 
+        if (evaluation == "split") {
+          eval_actual <- analysis_df[[resp_col]][test_idx]
+          eval_pred   <- lda_pred$class[test_idx]
+        } else {
+          eval_actual <- analysis_df[[resp_col]]
+          eval_pred   <- MASS::lda(lda_formula, data = analysis_df, CV = TRUE)$class
+        }
+
         confusion_mat <- table(
-          Actual = analysis_df[[resp_col]],
-          Predicted = lda_pred$class
+          Actual = eval_actual,
+          Predicted = eval_pred
         )
 
         accuracy <- sum(diag(confusion_mat)) / sum(confusion_mat)
@@ -788,22 +866,7 @@ LDAServer <- function(id, data, shared_explanatory, shared_response, clear_trigg
           Class = analysis_df[[resp_col]]
         )
 
-        cv_confusion <- NULL
-        cv_accuracy <- NULL
-
-        if (isTRUE(input$useCV)) {
-          lda_cv <- MASS::lda(lda_formula, data = analysis_df, CV = TRUE)
-
-          cv_confusion <- table(
-            Actual = analysis_df[[resp_col]],
-            Predicted = lda_cv$class
-          )
-
-          cv_accuracy <- sum(diag(cv_confusion)) / sum(cv_confusion)
-        }
-
-        class_report_preds <- if (isTRUE(input$useCV)) lda_cv$class else lda_pred$class
-        lda_class_report   <- knn_classification_report(analysis_df[[resp_col]], class_report_preds)$report
+        lda_class_report <- knn_classification_report(eval_actual, eval_pred)$report
 
         res <- list(
           fit = lda_fit,
@@ -811,12 +874,14 @@ LDAServer <- function(id, data, shared_explanatory, shared_response, clear_trigg
           accuracy = accuracy,
           prop_trace = prop_trace,
           scores = scores_df,
-          cv_confusion = cv_confusion,
-          cv_accuracy = cv_accuracy,
-          use_cv = isTRUE(input$useCV),
+          evaluation = evaluation,
+          split = if (evaluation == "split") input$split else NULL,
+          n_train = n_train,
+          n_test = length(test_idx),
+          test_idx = test_idx,
           response = resp_col,
           predictors = predictors,
-          n = nrow(analysis_df),
+          n = n,
           class_dist = class_dist_df,
           class_report = lda_class_report
         )
@@ -861,8 +926,23 @@ LDAServer <- function(id, data, shared_explanatory, shared_response, clear_trigg
 
       updatePickerInput(session, "response", selected = character(0))
       updatePickerInput(session, "predictors", selected = character(0))
+      updateRadioButtons(session, "evaluation", selected = "split")
+      updateSliderInput(session, "split", value = 80)
       updateNavbarPage(session, "ldaMainPanel", selected = "uploaded_data_tab")
     })
+
+    # Train/Test split shared by every classifier (held in machineLearning.R),
+    # so they all draw the same test rows: moving this slider moves the others,
+    # and a method opened later starts at the shared value. ignoreInit keeps
+    # this slider's default from overwriting a value set in another method.
+    if (!is.null(shared_split)) {
+      observeEvent(input$split, shared_split(input$split), ignoreInit = TRUE)
+      observeEvent(shared_split(), {
+        if (!identical(input$split, shared_split())) {
+          updateSliderInput(session, "split", value = shared_split())
+        }
+      })
+    }
 
     # Clear Data (parent sidebar): the dataset is gone, so drop results, errors
     # and the variable choices, and put this method's settings back to their
@@ -890,7 +970,8 @@ LDAServer <- function(id, data, shared_explanatory, shared_response, clear_trigg
 
         updatePickerInput(session, "response",   choices = character(0), selected = character(0))
         updatePickerInput(session, "predictors", choices = character(0), selected = character(0))
-        updateCheckboxInput(session, "useCV", value = FALSE)
+        updateRadioButtons(session, "evaluation", selected = "split")
+        updateSliderInput(session, "split", value = 80)
         updateNavbarPage(session, "ldaMainPanel", selected = "uploaded_data_tab")
       }, ignoreInit = TRUE)
     }
