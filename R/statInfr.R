@@ -5496,7 +5496,7 @@ statInfrServer <- function(id) {
 
       data <- rbind(data, c(sum(data[, "Df"]), sum(data[, "Sum Sq"]), NA, NA, NA))
       rownames(data) <- c("Between Groups (Model)", "Within Groups (Error)", "Total")
-      colNames <- c("df", "Sum of Squares (SS)", "Mean Sum of Squares (MS)", "F-ratio", "P-Value")
+      colNames <- c("df", "Sum of Squares (SS)", "Mean Square (MS)", "F-ratio", "P-Value")
 
       style <- function(...) {
         args <- rlang::list2(...)
@@ -5565,7 +5565,7 @@ statInfrServer <- function(id) {
                                  tags$th("Sources of Variation"),
                                  tags$th("df"),
                                  tags$th("Sum of Squares (SS)"),
-                                 tags$th("Mean Sum of Squares (MS)"),
+                                 tags$th("Mean Square (MS)"),
                                  tags$th("F-ratio"),
                                  tags$th("P-Value")
                                )

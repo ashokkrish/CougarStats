@@ -501,9 +501,7 @@ lineTestConfig <- list(
     run        = function(model, datx, daty) {
       resids <- residuals(model)
       has_ties <- anyDuplicated(resids) > 0
-      ks <- suppressWarnings(ks.test(resids, "pnorm",
-                                     mean = mean(resids),
-                                     sd   = sd(resids)))
+      ks <- suppressWarnings(ks.test(resids, "pnorm"))
       note <- if (has_ties) "Ties detected in residuals; p-value may be unreliable." else NULL
       list(
         statistic = round(ks$statistic, 4),
@@ -2718,7 +2716,7 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NUL
       src_style  <- paste(cell_style, "font-weight: bold;")
 
       hdrs <- c("Sources of Variation", "df", "Sum of Squares (SS)",
-                "Mean Sum of Squares (MS)", "F-ratio", "P-Value")
+                "Mean Square (MS)", "F-ratio", "P-Value")
       rows <- list(
         c("Regression (Model)", "\\( p \\)",
           "\\( SSR = \\sum\\limits_{i=1}^{n} (\\hat{y}_i - \\bar{y})^2 \\)",
@@ -2773,7 +2771,7 @@ SLRServer <- function(id, reg_data, input_mode, reset_upload, upload_error = NUL
       )
       rownames(data) <- c("Regression (Model)", "Error (Residual)", "Total")
 
-      colNames <- c("df", "Sum of Squares (SS)", "Mean Sum of Squares (MS)", "F-ratio", "P-Value")
+      colNames <- c("df", "Sum of Squares (SS)", "Mean Square (MS)", "F-ratio", "P-Value")
 
       headers <- htmltools::withTags(table(
         class = 'display',

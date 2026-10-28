@@ -1026,7 +1026,7 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, u
       src_style  <- paste(cell_style, "font-weight: bold;")
 
       hdrs <- c("Sources of Variation", "df", "Sum of Squares (SS)",
-                "Mean Sum of Squares (MS)", "F-ratio", "P-Value")
+                "Mean Square (MS)", "F-ratio", "P-Value")
       rows <- list(
         c("Regression (Model)", "\\( k \\)",
           "\\( SSR = \\sum\\limits_{i=1}^{n} (\\hat{y}_i - \\bar{y})^2 \\)",
@@ -1091,7 +1091,7 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, u
       )
       rownames(data) <- c("Regression (Model)", "Error (Residual)", "Total")
 
-      colNames <- c("df", "Sum of Squares (SS)", "Mean Sum of Squares (MS)", "F-ratio", "P-Value")
+      colNames <- c("df", "Sum of Squares (SS)", "Mean Square (MS)", "F-ratio", "P-Value")
 
       headers <- htmltools::withTags(table(
         class = 'display',
@@ -1309,9 +1309,7 @@ PolynomialRegressionServer <- function(id, reg_data, input_mode, reset_upload, u
         run        = function(model) {
           resids <- residuals(model)
           has_ties <- anyDuplicated(resids) > 0
-          ks <- suppressWarnings(ks.test(resids, "pnorm",
-                                         mean = mean(resids),
-                                         sd   = sd(resids)))
+          ks <- suppressWarnings(ks.test(resids, "pnorm"))
           note <- if (has_ties) "Ties detected in residuals; p-value may be unreliable." else NULL
           list(statistic = round(ks$statistic, 4), p_value = round(ks$p.value, 4), note = note)
         }
