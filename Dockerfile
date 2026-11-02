@@ -9,8 +9,8 @@ RUN apt-get update && \
             libcairo2-dev \
             libxt-dev \
             libssl-dev \
-            libtcl \
-            libtk   \
+            libtcl8.6 \
+            libtk8.6   \
             libfftw3-dev \
             libnode-dev \
             nodejs \
