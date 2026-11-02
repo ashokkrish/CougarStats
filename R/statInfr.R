@@ -1631,6 +1631,8 @@ statInfrUI <- function(id) {
                 multiple = TRUE,
                 selected = c(
                   "Side-by-side Boxplot",
+                  "Histogram of Residuals",
+                  "Q-Q Plot of Residuals",
                   "Plot Group Means"
                 ),
                 options = list(
@@ -13936,7 +13938,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       updatePickerInput(session,"twoPopVarPlots",selected = c("twoPopVarBoxplot", "twoPopVarQQPlot"))
       updatePickerInput(session,"oneSDPlots",selected = c("oneSDBoxplot", "oneSDHistogram"))
       updatePickerInput(session,"sidebysidewRankPlots",selected = c("sidebysidewRankSum", "sidebysidewRankQQ"))
-      updatePickerInput(session,"anovaGraphs",selected = c("Side-by-side Boxplot", "Plot Group Means"))
+      updatePickerInput(session,"anovaGraphs", selected = c("Side-by-side Boxplot", "Histogram of Residuals", "Q-Q Plot of Residuals", "Plot Group Means"))
       updatePickerInput(session,"kwGraphs",selected = c("Side-by-side Boxplot", "Plot Group Means"))
 
       ## -- Sheet selections: reset Excel uploads to their first sheet rather

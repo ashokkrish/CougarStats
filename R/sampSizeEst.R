@@ -541,33 +541,32 @@ sampSizeEstServer <- function(id) {
     ### ------------ Component Display -------------------------------------------
     
     observeEvent(input$goSampSizeEst, {
-      if(sse_iv$is_valid()) {
-        shinyjs::show(id = "ssEstMP")
-        #shinyjs::show(id = "ssEstimationMP")
+      shinyjs::show(id = "ssEstMP")
+      if (sse_iv$is_valid()) {
+        shinyjs::show(id = "ssEstData")
       } else {
-        shinyjs::hide(id = "ssEstMP")
-        #shinyjs::hide(id = "ssEstimationMP")
+        shinyjs::hide(id = "ssEstData")
       }
     })
-
-    # The results panel starts out hidden (see ssEstimationMP), so these only
-    # need to react to changes made after the module has started.
-    observeEvent(!sse_iv$is_valid(), {
-      shinyjs::hide(id = "ssEstimationMP") # Should this line be commented???
-      shinyjs::hide(id = "ssEstMP")
+    
+    observeEvent(sse_iv$is_valid(), {
+      if (sse_iv$is_valid()) {
+        shinyjs::show(id = "ssEstData")
+      } else {
+        shinyjs::hide(id = "ssEstData")
+      }
     }, ignoreInit = TRUE)
-
-    observeEvent(input$sampSizeEstParameter, {
+    
+    observeEvent(list(input$sampSizeEstParameter, input$sseEstimationType,
+                      input$sseEstimationTypeProp, input$ssePopuSD, 
+                      input$sseMeanMargErr, input$sseMeanWoI,
+                      input$ssePropMargErr, input$ssePropWoI, input$sseTargetProp), {
       shinyjs::hide(id = "ssEstMP")
+      shinyjs::hide(id = "ssEstData")
     }, ignoreInit = TRUE)
-
-    # observeEvent(input$goSampSizeEst, {
-    #   shinyjs::show(id = "ssEstMP")
-    # })
 
     observeEvent(input$resetSampSizeEst, {
       shinyjs::hide(id = "ssEstMP")
-      #hide(id = "ssEstimationMP")
       shinyjs::reset("sidebarWrap")
     })
   })
