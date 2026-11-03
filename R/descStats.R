@@ -1081,14 +1081,14 @@ descStatsServer <- function(id) {
       
       withMathJax(
         sprintf("\\( \\bar{x} = \\dfrac{\\sum x}{n} = \\dfrac{%s}{%s} = %s \\)",
-                calc$sumX,
-                df['Observations', 3],
-                df['Mean', 3]),
+                round(as.numeric(calc$sumX), 4),
+                round(as.numeric(df['Observations', 3]), 4),
+                round(as.numeric(df['Mean', 3]), 4)),
         br(),
         br()
       )
     })
-
+    
     output$dsSDCalc <- renderUI({
       calc <- getCalc()
       df   <- calc$df
@@ -1096,11 +1096,11 @@ descStatsServer <- function(id) {
       withMathJax(
         sprintf("\\( s = \\sqrt{ \\dfrac{\\sum x^{2} - \\dfrac{(\\sum x)^{2}}{n} }{n - 1} } \\)"),
         sprintf("\\( = \\sqrt{ \\dfrac{%s - \\dfrac{(%s)^{2}}{%s} }{%s - 1} } = %s \\)",
-                calc$sumX2,
-                calc$sumX,
-                df['Observations', 3],
-                df['Observations', 3],
-                df['Sample Standard Deviation', 3]),
+                round(as.numeric(calc$sumX2), 4),
+                round(as.numeric(calc$sumX), 4),
+                round(as.numeric(df['Observations', 3]), 4),
+                round(as.numeric(df['Observations', 3]), 4),
+                round(as.numeric(df['Sample Standard Deviation', 3]), 4)),
         br(),
         br()
       )
@@ -1110,15 +1110,15 @@ descStatsServer <- function(id) {
       df <- getCalc()$df
       
       div(style = "margin: 20px 0;",
-      withMathJax(
-        sprintf("\\( IQR = Q_{3} - Q_{1} \\)"),
-        sprintf("\\( =  %s - (%s) = %s \\)",
-                df['Third Quartile (Q3)', 3],
-                df['First Quartile (Q1)', 3],
-                df['IQR', 3]),
-        br(),
-        br()
-        )
+          withMathJax(
+            sprintf("\\( IQR = Q_{3} - Q_{1} \\)"),
+            sprintf("\\( = %s - (%s) = %s \\)",
+                    round(as.numeric(df['Third Quartile (Q3)', 3]), 4),
+                    round(as.numeric(df['First Quartile (Q1)', 3]), 4),
+                    round(as.numeric(df['IQR', 3]), 4)),
+            br(),
+            br()
+          )
       )
     })
     
@@ -1126,15 +1126,15 @@ descStatsServer <- function(id) {
       df <- getCalc()$df
       
       div(style = "margin: 20px 0;",
-      withMathJax(
-        sprintf("\\( \\text{Range} = \\text{Maximum} - \\text{Minimum} \\)"),
-        sprintf("\\( = %s - %s = %s \\)",
-                df['Maximum', 3],
-                df['Minimum', 3],
-                df['Range', 3]),
-        br(),
-        br()
-        )
+          withMathJax(
+            sprintf("\\( \\text{Range} = \\text{Maximum} - \\text{Minimum} \\)"),
+            sprintf("\\( = %s - %s = %s \\)",
+                    round(as.numeric(df['Maximum', 3]), 4),
+                    round(as.numeric(df['Minimum', 3]), 4),
+                    round(as.numeric(df['Range', 3]), 4)),
+            br(),
+            br()
+          )
       )
     })
     
@@ -1142,15 +1142,15 @@ descStatsServer <- function(id) {
       df <- getCalc()$df
       
       div(style = "margin: 20px 0;",
-      withMathJax(
-        sprintf("\\( SE_{\\bar{x}} = \\dfrac{s}{\\sqrt{n}} \\)"),
-        sprintf("\\( = \\dfrac{%s}{\\sqrt{%s}} = %s \\)",
-                df['Sample Standard Deviation', 3],
-                df['Observations', 3],
-                df['Standard Error of the Mean', 3]),
-        br(),
-        br()
-        )
+          withMathJax(
+            sprintf("\\( SE_{\\bar{x}} = \\dfrac{s}{\\sqrt{n}} \\)"),
+            sprintf("\\( = \\dfrac{%s}{\\sqrt{%s}} = %s \\)",
+                    round(as.numeric(df['Sample Standard Deviation', 3]), 4),
+                    round(as.numeric(df['Observations', 3]), 4),
+                    round(as.numeric(df['Standard Error of the Mean', 3]), 4)),
+            br(),
+            br()
+          )
       )
     })
     
@@ -1162,13 +1162,13 @@ descStatsServer <- function(id) {
             sprintf("\\( CV = \\dfrac{s}{\\bar{x}} \\)"),
             if (as.numeric(df['Mean', 3]) == 0) {
               sprintf("\\( = \\dfrac{%s}{%s} = \\text{Undefined} \\)",
-                      df['Sample Standard Deviation', 3],
-                      df['Mean', 3])
+                      round(as.numeric(df['Sample Standard Deviation', 3]), 4),
+                      round(as.numeric(df['Mean', 3]), 4))
             } else {
               sprintf("\\( = \\dfrac{%s}{%s} = %s \\)",
-                      df['Sample Standard Deviation', 3],
-                      df['Mean', 3],
-                      df['Coefficient of Variation', 3])
+                      round(as.numeric(df['Sample Standard Deviation', 3]), 4),
+                      round(as.numeric(df['Mean', 3]), 4),
+                      round(as.numeric(df['Coefficient of Variation', 3]), 4))
             },
             br(),
             br()

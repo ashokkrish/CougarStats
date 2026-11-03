@@ -332,15 +332,15 @@ sampSizeEstServer <- function(id) {
         if (input$sampSizeEstParameter == 'Population Mean') {
           validate(
             need(input$ssePopuSD, "Population Standard Deviation is required.") %then%
-              need(input$ssePopuSD > 0, "Population Standard Deviation must be positive."),
+              need(input$ssePopuSD > 0, "The Population Standard Deviation (σ) must be a positive value greater than zero."),
             
             if (input$sseEstimationType == 'Margin of Error') {
               need(input$sseMeanMargErr, "Margin of Error is required.") %then%
-                need(input$sseMeanMargErr > 0, "Margin of Error must be positive.")
+                need(input$sseMeanMargErr > 0, "Margin of Error must be a positive value greater than zero.")
             },
             if (input$sseEstimationType == 'Width of Interval') {
               need(input$sseMeanWoI, "Width of Interval is required.") %then%
-                need(input$sseMeanWoI > 0, "Width of Interval must be positive.")
+                need(input$sseMeanWoI > 0, "Width of Interval must be a positive value greater than zero.")
             },
             errorClass = "myClass"
           )
