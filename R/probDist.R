@@ -4338,7 +4338,10 @@ probDistServer <- function(id) {
       # spacing is the same as when the plot followed the box in one renderUI
       tagList(
         hr(), br(),
-        plotOutput(session$ns("studentTDistrPlot"))
+        div(
+          style = "width = 45%",
+          plotOutput(session$ns("studentTDistrPlot"), height = "400px")
+        )
       )
     })
     
@@ -4391,7 +4394,10 @@ probDistServer <- function(id) {
       # spacing is the same as when the plot followed the box in one renderUI
       tagList(
         hr(), br(),
-        plotOutput(session$ns("studentTCriticalPlot"))
+        div(
+          style = "width: 45%;",
+          plotOutput(session$ns("studentTCriticalPlot"), height = "400px")
+        )
       )
     })
     

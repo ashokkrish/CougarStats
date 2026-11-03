@@ -1081,14 +1081,14 @@ descStatsServer <- function(id) {
       
       withMathJax(
         sprintf("\\( \\bar{x} = \\dfrac{\\sum x}{n} = \\dfrac{%s}{%s} = %s \\)",
-                calc$sumX,
-                df['Observations', 3],
-                df['Mean', 3]),
+                round(as.numeric(calc$sumX), 4),
+                round(as.numeric(df['Observations', 3]), 4),
+                round(as.numeric(df['Mean', 3]), 4)),
         br(),
         br()
       )
     })
-
+    
     output$dsSDCalc <- renderUI({
       calc <- getCalc()
       df   <- calc$df
@@ -1096,11 +1096,11 @@ descStatsServer <- function(id) {
       withMathJax(
         sprintf("\\( s = \\sqrt{ \\dfrac{\\sum x^{2} - \\dfrac{(\\sum x)^{2}}{n} }{n - 1} } \\)"),
         sprintf("\\( = \\sqrt{ \\dfrac{%s - \\dfrac{(%s)^{2}}{%s} }{%s - 1} } = %s \\)",
-                calc$sumX2,
-                calc$sumX,
-                df['Observations', 3],
-                df['Observations', 3],
-                df['Sample Standard Deviation', 3]),
+                round(as.numeric(calc$sumX2), 4),
+                round(as.numeric(calc$sumX), 4),
+                round(as.numeric(df['Observations', 3]), 4),
+                round(as.numeric(df['Observations', 3]), 4),
+                round(as.numeric(df['Sample Standard Deviation', 3]), 4)),
         br(),
         br()
       )
@@ -1110,15 +1110,15 @@ descStatsServer <- function(id) {
       df <- getCalc()$df
       
       div(style = "margin: 20px 0;",
-      withMathJax(
-        sprintf("\\( IQR = Q_{3} - Q_{1} \\)"),
-        sprintf("\\( =  %s - (%s) = %s \\)",
-                df['Third Quartile (Q3)', 3],
-                df['First Quartile (Q1)', 3],
-                df['IQR', 3]),
-        br(),
-        br()
-        )
+          withMathJax(
+            sprintf("\\( IQR = Q_{3} - Q_{1} \\)"),
+            sprintf("\\( = %s - (%s) = %s \\)",
+                    round(as.numeric(df['Third Quartile (Q3)', 3]), 4),
+                    round(as.numeric(df['First Quartile (Q1)', 3]), 4),
+                    round(as.numeric(df['IQR', 3]), 4)),
+            br(),
+            br()
+          )
       )
     })
     
@@ -1126,15 +1126,15 @@ descStatsServer <- function(id) {
       df <- getCalc()$df
       
       div(style = "margin: 20px 0;",
-      withMathJax(
-        sprintf("\\( \\text{Range} = \\text{Maximum} - \\text{Minimum} \\)"),
-        sprintf("\\( = %s - %s = %s \\)",
-                df['Maximum', 3],
-                df['Minimum', 3],
-                df['Range', 3]),
-        br(),
-        br()
-        )
+          withMathJax(
+            sprintf("\\( \\text{Range} = \\text{Maximum} - \\text{Minimum} \\)"),
+            sprintf("\\( = %s - %s = %s \\)",
+                    round(as.numeric(df['Maximum', 3]), 4),
+                    round(as.numeric(df['Minimum', 3]), 4),
+                    round(as.numeric(df['Range', 3]), 4)),
+            br(),
+            br()
+          )
       )
     })
     
@@ -1142,15 +1142,15 @@ descStatsServer <- function(id) {
       df <- getCalc()$df
       
       div(style = "margin: 20px 0;",
-      withMathJax(
-        sprintf("\\( SE_{\\bar{x}} = \\dfrac{s}{\\sqrt{n}} \\)"),
-        sprintf("\\( = \\dfrac{%s}{\\sqrt{%s}} = %s \\)",
-                df['Sample Standard Deviation', 3],
-                df['Observations', 3],
-                df['Standard Error of the Mean', 3]),
-        br(),
-        br()
-        )
+          withMathJax(
+            sprintf("\\( SE_{\\bar{x}} = \\dfrac{s}{\\sqrt{n}} \\)"),
+            sprintf("\\( = \\dfrac{%s}{\\sqrt{%s}} = %s \\)",
+                    round(as.numeric(df['Sample Standard Deviation', 3]), 4),
+                    round(as.numeric(df['Observations', 3]), 4),
+                    round(as.numeric(df['Standard Error of the Mean', 3]), 4)),
+            br(),
+            br()
+          )
       )
     })
     
@@ -1158,15 +1158,21 @@ descStatsServer <- function(id) {
       df <- getCalc()$df
       
       div(style = "margin: 20px 0;",
-      withMathJax(
-        sprintf("\\( CV = \\dfrac{s}{\\bar{x}} \\)"),
-        sprintf("\\( = \\dfrac{%s}{%s} = %s \\)",
-                df['Sample Standard Deviation', 3],
-                df['Mean', 3],
-                df['Coefficient of Variation', 3]),
-        br(),
-        br()
-        )
+          withMathJax(
+            sprintf("\\( CV = \\dfrac{s}{\\bar{x}} \\)"),
+            if (as.numeric(df['Mean', 3]) == 0) {
+              sprintf("\\( = \\dfrac{%s}{%s} = \\text{Undefined} \\)",
+                      round(as.numeric(df['Sample Standard Deviation', 3]), 4),
+                      round(as.numeric(df['Mean', 3]), 4))
+            } else {
+              sprintf("\\( = \\dfrac{%s}{%s} = %s \\)",
+                      round(as.numeric(df['Sample Standard Deviation', 3]), 4),
+                      round(as.numeric(df['Mean', 3]), 4),
+                      round(as.numeric(df['Coefficient of Variation', 3]), 4))
+            },
+            br(),
+            br()
+          )
       )
     })
     
@@ -1217,66 +1223,21 @@ descStatsServer <- function(id) {
     output$dsHistogram <- renderPlot({
       dat <- getCalc()$dat
       
-      hist <- ggplot(data.frame(x = dat)) +
-        geom_histogram(
-                       aes(x = x, y = if (input[["dsHisto-Density"]]) after_stat(density) else after_stat(count)),
-                       bins = 15,
-                       boundary = min(dat),
-                       closed = "right",
-                       fill = input[["dsHisto-Colour"]],
-                       color = "black") +
-        labs(title = input[["dsHisto-Title"]],
-             x = input[["dsHisto-Xlab"]],
-             y = input[["dsHisto-Ylab"]]) +
-        theme_void() +
-        theme(plot.title = element_text(size = 24,
-                                        face = "bold",
-                                        hjust = 0.5,
-                                        margin = margin(0,0,10,0)),
-              axis.title.x = element_text(size = 16,
-                                          face = "bold",
-                                          vjust = -1.5,
-                                          margin = margin(8,0,0,0)),
-              axis.title.y = element_text(size = 16,
-                                          face = "bold",
-                                          vjust = 1.5,
-                                          margin = margin(0,8,0,0)),
-              axis.text.x.bottom = element_text(size = 14,
-                                                face = "bold",
-                                                margin = margin(8,0,0,0)),
-              axis.text.y.left = element_text(size = 14,
-                                              face = "bold",
-                                              margin = margin(0,8,0,0)),
-              plot.margin = unit(c(1, 1, 1, 1),"cm"),
-              panel.border = element_rect(fill = NA))
-      
-      hist <- hist + scale_x_continuous(n.breaks = 10)
-      
-      if("Major" %in% input[["dsHisto-Gridlines"]]) {
-        hist <- hist + theme(panel.grid.major = element_line(colour = "#D9D9D9"))
-      }
-
-      if("Minor" %in% input[["dsHisto-Gridlines"]]) {
-        hist <- hist + theme(panel.grid.minor = element_line(colour = "#D9D9D9"))
-      }
-      
-      if(input[["dsHisto-Density"]]) {
-        hist <- hist +
-          geom_density(
-            aes(x = x, y = after_stat(density)),
-            colour = "orange",
-            linewidth = 1.5
-          ) +
-          scale_y_continuous(
-            limits = c(0, NA),
-            breaks = scales::breaks_pretty(n = 6)
-          )
-      }
-      
-      hist
-    }, height = function() {GetPlotHeight(input[["dsHisto-Height"]], input[["dsHisto-HeightPx"]], ui = FALSE)},
-       width = function() {GetPlotWidth(input[["dsHisto-Width"]], input[["dsHisto-WidthPx"]], ui = FALSE)})
-    
+      RenderHistogram(
+        dat = dat,
+        plotColour = input[["dsHisto-Colour"]],
+        plotTitle = input[["dsHisto-Title"]],
+        plotXlab = input[["dsHisto-Xlab"]],
+        plotYlab = input[["dsHisto-Ylab"]],
+        gridlines = input[["dsHisto-Gridlines"]],
+        density = input[["dsHisto-Density"]]
+      )
+    }, height = function() {
+      GetPlotHeight(input[["dsHisto-Height"]], input[["dsHisto-HeightPx"]], ui = FALSE)
+    },
+    width = function() {
+      GetPlotWidth(input[["dsHisto-Width"]], input[["dsHisto-WidthPx"]], ui = FALSE)
+    })
     
     observeEvent(input[["dsHisto-Density"]], {
       updateTextInput(

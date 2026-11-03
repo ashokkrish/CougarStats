@@ -16,10 +16,6 @@ RenderHistogram <- function(dat, plotColour, plotTitle, plotXlab, plotYlab = "Fr
         aes(x = x),
         colour = "orange",
         linewidth = 1.5
-      ) +
-      scale_y_continuous(
-        limits = c(0, NA),
-        breaks = scales::breaks_pretty(n = 6)
       )
   } else {
     hist <- hist +
@@ -34,6 +30,11 @@ RenderHistogram <- function(dat, plotColour, plotTitle, plotXlab, plotYlab = "Fr
   }
   
   hist <- hist +
+    scale_y_continuous(
+      limits = c(0, NA),
+      expand = expansion(mult = c(0, 0.05)),
+      breaks = scales::breaks_pretty(n = 6)
+    ) +
     labs(
       title = plotTitle,
       x = plotXlab,
@@ -70,7 +71,7 @@ RenderHistogram <- function(dat, plotColour, plotTitle, plotXlab, plotYlab = "Fr
         margin = ggplot2::margin(0,8,0,0)
       ),
       plot.margin = unit(c(1, 1, 1, 1), "cm"),
-      panel.border = element_rect(fill = NA)
+      axis.line = element_line(colour = "black")
     )
   
   hist <- hist + scale_x_continuous(n.breaks = 10)
