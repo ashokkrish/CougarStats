@@ -5408,6 +5408,10 @@ statInfrServer <- function(id) {
         br(),
         br(),
         p(tags$b("ANOVA Table:")),
+        withMathJax(
+          uiOutput(session$ns("oneWayAnovaTableTemplate"))
+        ),
+        br(),
         DTOutput(session$ns("oneWayAnovaTable"), width = '900px'),
         ## uiOutput(session$ns("oneWayAnovaTableHTML"), width = '900px'),
         br(),
@@ -5485,6 +5489,59 @@ statInfrServer <- function(id) {
       )
       
       return(ftable)
+    }
+    
+    PrintANOVATableTemplate <- function() {
+      data <- matrix(
+        c(
+          "\\(k - 1\\)",
+          "\\(SSB = \\sum_{i=1}^{k} n_i(\\bar{x}_i - \\bar{x})^2\\)",
+          "\\(MSB = \\dfrac{SSB}{k - 1}\\)",
+          "\\(F_{obs} = \\dfrac{MSB}{MSW}\\)",
+          "\\(P(F > F_{obs})\\)",
+          "\\(n - k\\)",
+          "\\(SSW = \\sum_{i=1}^{k} (n_i - 1)s_i^2\\)",
+          "\\(MSW = \\dfrac{SSW}{n - k}\\)",
+          "\\(\\ast\\)",
+          "",
+          "\\(n - 1\\)",
+          "\\(SST = \\sum\\sum(x_{ij} - \\bar{x})^2\\)",
+          "\\(\\ast\\)",
+          "\\(\\ast\\)",
+          ""
+        ),
+        nrow = 3,
+        byrow = TRUE
+      )
+      
+      rownames(data) <- c("Between Groups (Model)", "Within Groups (Error)", "Total")
+      colNames <- c("df", "Sum of Squares (SS)", "Mean Square (MS)", "F-ratio", "P-Value")
+      
+      tags$table(
+        class = "table table-bordered",
+        style = "width: auto; white-space: nowrap; text-align: center;",
+        tags$thead(
+          tags$tr(
+            tags$th("Sources of Variation"),
+            lapply(colNames, tags$th)
+          )
+        ),
+        tags$tbody(
+          lapply(seq_len(nrow(data)), function(i) {
+            tags$tr(
+              tags$th(rownames(data)[i]),
+              lapply(seq_len(ncol(data)), function(j) {
+                if (i == 3 && j == 1) {
+                  tags$th(HTML(data[i, j]))
+                } else {
+                  tags$td(HTML(data[i, j]))
+                }
+              })
+            )
+          })
+        )
+      ) |>
+        withMathJax()
     }
     
     PrintANOVATable <- function() {
@@ -12099,6 +12156,11 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
     })
     
     #### ---------------- ANOVA Table ----
+    output$oneWayAnovaTableTemplate <- renderUI({
+      req(siValid())
+      PrintANOVATableTemplate()
+    })
+    
     output$oneWayAnovaTable <- renderDT({
       req(siValid())
       PrintANOVATable()
