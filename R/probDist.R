@@ -4339,7 +4339,7 @@ probDistServer <- function(id) {
       tagList(
         hr(), br(),
         div(
-          style = "width = 45%",
+          style = "width: 45%",
           plotOutput(session$ns("studentTDistrPlot"), height = "400px")
         )
       )

@@ -5407,11 +5407,13 @@ statInfrServer <- function(id) {
         DTOutput(session$ns("oneWayFactorTable"), width = '600px'),
         br(),
         br(),
-        p(tags$b("ANOVA Table:")),
+        p(tags$b("ANOVA Table Formulas:")),
         withMathJax(
           uiOutput(session$ns("oneWayAnovaTableTemplate"))
         ),
+        p(HTML("where <i>n</i> is the total sample size and <i>k</i> is the number of independent groups.")),
         br(),
+        p(tags$b("ANOVA Table:")),
         DTOutput(session$ns("oneWayAnovaTable"), width = '900px'),
         ## uiOutput(session$ns("oneWayAnovaTableHTML"), width = '900px'),
         br(),
