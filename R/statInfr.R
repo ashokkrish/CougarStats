@@ -5387,13 +5387,13 @@ statInfrServer <- function(id) {
         p(HTML("where <i>n</i> is the total sample size and <i>k</i> is the number of independent groups.")),
         br(),
         p(tags$b("ANOVA Table:")),
-        DTOutput(session$ns("oneWayAnovaTable"), width = '900px'),
+        uiOutput(session$ns("oneWayAnovaTable"), width = '900px'),
         ## uiOutput(session$ns("oneWayAnovaTableHTML"), width = '900px'),
         #br(),
         br(),
         p(tags$b("Test Statistic:")),
         formatLaTeXBigOrSmallNumbers(
-          sprintf("\\( F = \\dfrac{MSB}{MSE} = \\dfrac{%0.4g}{%0.4g} = %0.4g \\)",
+          sprintf("\\( F = \\dfrac{MSB}{MSE} = \\dfrac{%.4f}{%.4f} = %.4f \\)",
                   anovaOneWayResults()$test[1,"Mean Sq"],
                   anovaOneWayResults()$test[2,"Mean Sq"],
                   anovaOneWayResults()$test[1,"F value"])
@@ -5521,59 +5521,56 @@ statInfrServer <- function(id) {
     
     PrintANOVATable <- function() {
       data <- anovaOneWayResults()$test
-
-      if (data[1, "Pr(>F)"] < 0.0001 && data[1, "Pr(>F)"] > 0) {
+      
+      pValue <- data[1, "Pr(>F)"]
+      
+      # format p value
+      if (pValue < 0.0001 && pValue > 0) {
         data[1, "Pr(>F)"] <- "P < 0.0001"
       } else {
-        data[1, "Pr(>F)"] <- paste(round(data[1, "Pr(>F)"], 4))
+        data[1, "Pr(>F)"] <- sprintf("%.4f", pValue)
       }
 
-      data <- rbind(data, c(sum(data[, "Df"]), sum(data[, "Sum Sq"]), NA, NA, NA))
-      rownames(data) <- c("Between Groups (Model)", "Within Groups (Error)", "Total")
+      displayData <- matrix("", nrow = 3, ncol = 5)
+      
+      # btwn groups
+      displayData[1, ] <- c(sprintf("%.0f", data[1, "Df"]), sprintf("%.4f", data[1, "Sum Sq"]),
+        sprintf("%.4f", data[1, "Mean Sq"]), sprintf("%.4f", data[1, "F value"]), data[1, "Pr(>F)"])
+      
+      # within groups
+      displayData[2, ] <- c(sprintf("%.0f", data[2, "Df"]),  sprintf("%.4f", data[2, "Sum Sq"]), sprintf("%.4f", data[2, "Mean Sq"]), "*", "")
+      
+      # total
+      displayData[3, ] <- c(sprintf("%.0f", sum(data[, "Df"])), sprintf("%.4f", sum(data[, "Sum Sq"])), "*", "*", "")
+      
+      rownames(displayData) <- c("Between Groups (Model)", "Within Groups (Error)", "Total")
+      
       colNames <- c("df", "Sum of Squares (SS)", "Mean Square (MS)", "F-ratio", "P-Value")
-
-      style <- function(...) {
-        args <- rlang::list2(...)
-        paste(names(args), args, sep = ": ", collapse = "; ")
-      }
-      rule <- function(p) sprintf("1px solid rgba(0, 0, 0, %0.02f)", p)
-      style_a <- style(border = rule(0.15), `border-bottom` = rule(0.30))
-      style_b <- style(`border-right` = rule(0.15), `border-top` = rule(0.15))
-
-      headers <- withTags(table(
-        class = "display",
-        thead(tr(th("Sources of Variation", style = style_a),
-                 lapply(colNames, th, style = style_b)))
-      ))
-
-      ## FIXME: data table is heavy handed for what is created. Using standard
-      ## CSS with a standard HTML table is probably a lot easier!
-      datatable(data[, 0:5],
-                class = "cell-border stripe",
-                container = headers,
-                options = list(
-                  dom = "t",
-                  pageLength = -1,
-                  ordering = FALSE,
-                  searching = FALSE,
-                  paging = FALSE,
-                  autoWidth = FALSE,
-                  scrollX = TRUE,
-                  columnDefs = list(
-                    list(className = "dt-center", targets = 0:5),
-                    list(width = "150px", targets = 2:5)
-                  )
-                ),
-                selection = "none",
-                escape = FALSE,
-                filter = "none") |>
-        formatRound(columns = 1, digits = 0) |>
-        ## FIXME: the use of formatRound here is not appropriate to the numbers
-        ## when rare, so we'll instead use character values after formatting
-        ## numbers like in the LaTeX equations.
-        formatRound(columns = 2:4, digits = 4) |>
-        formatStyle(columns = c(0, 4), fontWeight = "bold") %>%
-        formatStyle(columns = 1:5, target = "row", fontWeight = styleRow(3, "bold"))
+      
+      tags$table(
+        class = "table table-bordered",
+        style = "width: auto; white-space: nowrap; text-align: center;",
+        tags$thead(
+          tags$tr(
+            tags$th("Sources of Variation"),
+            lapply(colNames, tags$th)
+          )
+        ),
+        tags$tbody(
+          lapply(seq_len(nrow(displayData)), function(i) {
+            tags$tr(
+              tags$th(rownames(displayData)[i]),
+              lapply(seq_len(ncol(displayData)), function(j) {
+                if (i == 3 && j %in% 1:2) {
+                  tags$th(displayData[i, j])
+                } else {
+                  tags$td(displayData[i, j])
+                }
+              })
+            )
+          })
+        )
+      )
     }
 
     PrintANOVATableHTML <- function() {
@@ -12124,7 +12121,7 @@ To resolve: Verify your input data. If success rates are truly 100% across both 
       PrintANOVATableTemplate()
     })
     
-    output$oneWayAnovaTable <- renderDT({
+    output$oneWayAnovaTable <- renderUI({
       req(siValid())
       PrintANOVATable()
     })
