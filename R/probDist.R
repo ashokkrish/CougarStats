@@ -2844,7 +2844,7 @@ probDistServer <- function(id) {
           {
             validate(
               need(input$lambdaPoisson && input$lambdaPoisson > 0, "Average Number of Successes (lambda) must be greater than zero"),
-              need(input$xPoisson , "Number of Successes (x) must be a positive integer") %then%
+              need(input$xPoisson , "Enter a value for the Number of Successes (x)") %then%
                 need(input$xPoisson >= 0 && input$xPoisson %% 1 == 0, "Number of Successes (x) must be a positive integer"),
               errorClass = "myClass")
           }
