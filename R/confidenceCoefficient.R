@@ -448,7 +448,7 @@ confidenceCoefficientServer <- function(id) {
               br(),
               br(),
               
-              sprintf("Given a sample size of \\(n\\) is %s, an anticipated proportion of %s, and a desired margin of error of %s, the resulting confidence coefficient is
+              sprintf("Given a sample size of \\(n\\) is %s, a target proportion of %s, and a desired margin of error of %s, the resulting confidence coefficient is
                     %.0f%%. In other words, a %.0f%% confidence interval constructed using the normal approximation would achieve the specified precision",
                       input$ccPropSampSize,
                       input$ccTargetProp,
@@ -481,7 +481,7 @@ confidenceCoefficientServer <- function(id) {
               br(),
               br(),
 
-              sprintf("Given a sample size of \\(n\\) is %s, an anticipated proportion of %s, and a desired width of interval of %s, the resulting confidence coefficient is %.0f%%.
+              sprintf("Given a sample size of \\(n\\) is %s, a target proportion of %s, and a desired width of interval of %s, the resulting confidence coefficient is %.0f%%.
                     In other words, a %.0f%% confidence interval constructed using the normal approximation would achieve the specified precision.",
                       input$ccPropSampSize,
                       input$ccTargetProp,
@@ -509,7 +509,7 @@ confidenceCoefficientServer <- function(id) {
             withMathJax(), br(),
             sprintf("\\(\\text{Confidence Coefficient} = %.0f\\%%\\)", confCoe * 100),
             br(), br(),
-            tags$em("Note: When the data cannot be assumed to follow a normal distribution, there isn’t a simple formula to calculate the required sample size. Instead, the confidence interval is found by testing different values until the exact interval width is narrow enough and meets the target width. This approach is based on the Clopper–Pearson exact method for binomial proportions.")
+            tags$em("Note: When the data cannot be assumed to follow a normal distribution, there isn’t a simple formula to calculate the required confidence coefficient. Instead, the confidence interval is found by testing different values until the exact interval width is narrow enough and meets the target width. This approach is based on the Clopper–Pearson exact method for binomial proportions.")
           )
         }
       }
