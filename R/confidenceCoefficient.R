@@ -449,7 +449,7 @@ confidenceCoefficientServer <- function(id) {
               br(),
               
               sprintf("Given a sample size of \\(n\\) is %s, a target proportion of %s, and a desired margin of error of %s, the resulting confidence coefficient is
-                    %.0f%%. In other words, a %.0f%% confidence interval constructed using the normal approximation would achieve the specified precision",
+                    %.0f%%. In other words, a %.0f%% confidence interval constructed using the normal approximation would achieve the specified precision.",
                       input$ccPropSampSize,
                       input$ccTargetProp,
                       input$ccPropMargErr,
